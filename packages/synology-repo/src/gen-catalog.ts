@@ -72,8 +72,16 @@ const meta = {
 
 // --- Read the package's own INFO + icon so the catalog can never disagree ------
 // DSM compares `version` to the installed version.
-const { package: pkg, version: rawVersion, dname, desc, arch, firmware, size, md5 } =
-  readSpkInfo(spk);
+const {
+  package: pkg,
+  version: rawVersion,
+  dname,
+  desc,
+  arch,
+  firmware,
+  size,
+  md5,
+} = readSpkInfo(spk);
 
 // build.sh stamps nightlies `X.Y.Z.BUILD-BUILD` (4th feature segment). DSM's
 // package-center list hides a package whose feature version has a 4th segment

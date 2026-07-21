@@ -73,7 +73,8 @@ function dsmPackages(catalog: Catalog, params: URLSearchParams, origin: string) 
   if (
     beta &&
     nightly &&
-    (!stable || cmpDsmVersion(dsmVersion(entryVersion(nightly)), dsmVersion(entryVersion(stable))) > 0)
+    (!stable ||
+      cmpDsmVersion(dsmVersion(entryVersion(nightly)), dsmVersion(entryVersion(stable))) > 0)
   ) {
     pick = nightly;
   }

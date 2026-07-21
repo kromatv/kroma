@@ -624,6 +624,7 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
   // a socket that stops responding mid-session (hard startup failures already fail
   // fast via mpv://error + the engine's status probe). AVPlay reports its own
   // prepare errors. After a grace period, log what we know and surface the failure.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadBeat is an intentional dep, not read in the body; each buffering beat re-arms the grace timer (see note below).
   useEffect(() => {
     if (surface === 'avplay' || ready || error) return;
     // The native software-decode planes (ExoPlayer's libVLC fallback, mpv) can take

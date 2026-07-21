@@ -175,7 +175,7 @@ export const SectionPoster = memo(function SectionPoster({
       onToggleWatched={() => toggleWatched(item.id)}
       onClick={() =>
         isEpisode
-          ? navigate({ to: '/show/$id', params: { id: item.showId! } })
+          ? navigate({ to: '/show/$id', params: { id: item.showId ?? item.id } })
           : navigate({ to: '/movie/$id', params: { id: item.id } })
       }
     />
