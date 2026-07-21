@@ -692,7 +692,9 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
-        run: bun run tauri build ${{ runner.os == 'Linux' && '--no-default-features' || '' }} --bundles ${{ needs.version.outputs.channel == 'nightly' && matrix.nightly_bundles || matrix.bundles }}
+        # `--no-default-features` is a cargo flag: the Tauri v2 CLI only forwards it
+        # to the runner after `--` (a bare `--no-default-features` is rejected).
+        run: bun run tauri build --bundles ${{ needs.version.outputs.channel == 'nightly' && matrix.nightly_bundles || matrix.bundles }} ${{ runner.os == 'Linux' && '-- --no-default-features' || '' }}
 
       # macOS: build the .app UNSIGNED, embed libmpv so it is self-contained, THEN sign
       # + notarize + package the dmg. This order is REQUIRED: dylibbundler rewrites the

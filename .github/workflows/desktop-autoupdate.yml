@@ -94,7 +94,7 @@ jobs:
           # The release .dmg DOES bundle libmpv; bringing it here is a follow-up.
           - os: macos-14
             bundles: app,dmg
-            extra_args: '--no-default-features'
+            extra_args: '-- --no-default-features'
           # Windows auto-update bundles libmpv (self-contained mpv-2.dll beside the exe).
           - os: windows-latest
             bundles: nsis
@@ -103,7 +103,7 @@ jobs:
           # libmpv2 crate (needs .so.2 / mpv 0.35+); the binary is itself libmpv.
           - os: ubuntu-22.04
             bundles: appimage,deb
-            extra_args: '--no-default-features'
+            extra_args: '-- --no-default-features'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -161,7 +161,9 @@ jobs:
         with:
           projectPath: clients/desktop
           releaseId: ${{ needs.create-release.outputs.release_id }}
-          args: ${{ matrix.extra_args }} --bundles ${{ matrix.bundles }}
+          # extra_args carries the cargo `-- --no-default-features` forward marker,
+          # so it MUST trail the tauri flags (the CLI rejects a bare --no-default-features).
+          args: --bundles ${{ matrix.bundles }} ${{ matrix.extra_args }}
 
       # Tauri's default bundler sweeps the runner's wayland/glib/gstreamer libs
       # into the AppImage, which breaks it on Mesa 25+ hosts (SteamOS 3.7+:
