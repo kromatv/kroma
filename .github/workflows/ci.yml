@@ -134,9 +134,15 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
 
+      # shared-key (not the default per-job key) so this cache is one stable
+      # entry instead of a per-job copy; save only from main so PR runs restore
+      # but never add 400 MB entries to the 10 GB repo quota (going over it
+      # LRU-evicts everything, which is what made every Rust job build cold).
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: clients/desktop/src-tauri
+          shared-key: desktop-check
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       # Tauri v2 Linux system deps (compile-time only; mpv stays a runtime dep).
       - name: Install Linux system dependencies
@@ -174,6 +180,11 @@ jobs:
     name: Server (Rust) clippy + test
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # Debug info is most of the bytes in a dev/test target dir (this cache was
+      # 1.0-1.5 GB per copy). CI only needs pass/fail, not symbolized backtraces,
+      # so drop it: smaller cache, faster linking, less quota pressure.
+      CARGO_PROFILE_DEV_DEBUG: '0'
     defaults:
       run:
         working-directory: server
@@ -184,9 +195,15 @@ jobs:
         with:
           components: clippy, rustfmt
 
+      # One stable entry (shared-key), written only from main: PRs used to save a
+      # ~1.4 GB copy each, and four of them alone exceeded half the 10 GB repo
+      # cache quota - which evicted the .spk/module/desktop caches and forced
+      # cold builds everywhere. See the same pattern in sonar.yml/release.yml.
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: server
+          shared-key: server
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       # Non-blocking: the codebase uses a custom import grouping, not rustfmt's.
       - name: rustfmt --check

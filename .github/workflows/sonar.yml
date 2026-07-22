@@ -71,19 +71,52 @@ jobs:
         run: bun run test:coverage
 
       # --- Rust coverage (best-effort; never blocks the scan) -----------------
+      # main pushes always measure Rust; PRs only when they actually touch Rust
+      # (the instrumented workspace build is ~10 min, the bulk of this job).
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: rustchanges
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            rust:
+              - 'server/**'
+              # kroma-engine include_str!s these catalogs at compile time.
+              - 'packages/core/src/locales/**'
+
+      # Single gate the Rust steps below share: always on main, on PRs only when
+      # Rust actually changed.
+      - id: rustgate
+        env:
+          RUN: ${{ github.event_name != 'pull_request' || steps.rustchanges.outputs.rust == 'true' }}
+        run: echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        if: steps.rustgate.outputs.run == 'true'
         with:
           components: llvm-tools-preview
 
+      # Its own stable entry: llvm-cov builds with -C instrument-coverage, so
+      # these artifacts can't be shared with ci.yml's plain test build. Saved
+      # from main only (see ci.yml for the quota rationale) - without this the
+      # instrumented tree was re-uploaded per PR AND evicted before reuse, so
+      # every scan paid a ~10 min cold build.
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        if: steps.rustgate.outputs.run == 'true'
         with:
           workspaces: server
+          shared-key: server-coverage
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2
+        if: steps.rustgate.outputs.run == 'true'
         with:
           tool: cargo-llvm-cov
 
       - name: Rust coverage (cargo-llvm-cov -> server/lcov.info)
+        # Skipped on PRs that touch no Rust: Sonar's gate scores NEW code, and a
+        # frontend-only PR adds no Rust lines to cover. main always runs it, so
+        # the branch-level Rust coverage figure never drifts.
+        if: steps.rustgate.outputs.run == 'true'
         working-directory: server
         continue-on-error: true
         # Capped so a cold instrumented build of the big server workspace

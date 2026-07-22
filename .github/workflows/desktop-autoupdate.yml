@@ -112,9 +112,13 @@ jobs:
         with:
           bun-version: '1.3.14'
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+      # Same key as release.yml's desktop job: identical release build of the
+      # same workspace, so the two share one cache entry per OS instead of
+      # keeping two cold copies each.
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: clients/desktop/src-tauri
+          shared-key: desktop-release
       - name: Install Linux system dependencies
         if: runner.os == 'Linux'
         run: |

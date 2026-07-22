@@ -203,14 +203,16 @@ jobs:
             "${{ matrix.image }}" \
             bash -euo pipefail /tmp/kmod-build.sh
 
-      # The container runs as root and leaves root-owned files in server/target;
-      # rust-cache's post-save step then failed silently, so the cache NEVER
-      # persisted and every release recompiled the full dep tree (candle,
-      # librqbit, ... ~11 min). Hand ownership back before anything tries to
-      # read or save the tree.
+      # The container runs as root and leaves root-owned files in server/target
+      # AND in the mounted ~/.cargo/registry; rust-cache's post-save step then
+      # died on the registry half ("tar: ../../../.cargo/registry/...: Cannot
+      # open: Permission denied" -> exit 2 -> "Failed to save"), so the cache
+      # NEVER persisted and every release recompiled the full dep tree (candle,
+      # librqbit, ... ~11 min). rust-cache saves ~/.cargo too, so BOTH trees
+      # must be handed back before anything tries to read or save them.
       - name: Fix target ownership (container leg)
         if: always() && matrix.image != ''
-        run: sudo chown -R "$(id -u):$(id -g)" server/target || true
+        run: sudo chown -R "$(id -u):$(id -g)" server/target "$HOME/.cargo" || true
 
       # Stage + zstd-pack each binary (and build its vite frontend) into
       # dist/modules/<id>-<target>.kmod (+ a .sha256 sidecar each). On cross
@@ -553,9 +555,14 @@ jobs:
       # rustup is present so it can auto-install the pin.
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
 
+      # shared-key `desktop-release`: the SAME release build runs here and in
+      # desktop-autoupdate.yml, which used to cache under two different
+      # job-derived keys (~400 MB x 3 OSes, twice over) and warm neither. One
+      # key per OS = half the quota and a warm start for whichever runs next.
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: clients/desktop/src-tauri
+          shared-key: desktop-release
 
       # Tauri v2 Linux system deps. NB: the Linux release is built --no-default-features
       # (see the build step), i.e. WITHOUT the in-process libmpv engine, so no
