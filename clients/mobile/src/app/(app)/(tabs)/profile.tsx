@@ -5,12 +5,12 @@
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar } from '../../../components/Avatar';
-import { formatBytes, useDownloads } from '../../../lib/downloads';
-import { useT } from '../../../lib/i18n';
-import { boxed, contentWidth } from '../../../lib/layout';
-import { useClient, useSession } from '../../../lib/session';
-import { colors, radius, spacing, TAB_BAR_CLEARANCE, type } from '../../../lib/theme';
+import { Avatar } from '#mobile/components/Avatar';
+import { formatBytes, useDownloads } from '#mobile/lib/downloads';
+import { useT } from '#mobile/lib/i18n';
+import { boxed, contentWidth } from '#mobile/lib/layout';
+import { useClient, useSession } from '#mobile/lib/session';
+import { colors, radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
 import {
   ChevronRightIcon,
   DownloadIcon,
@@ -20,7 +20,7 @@ import {
   PencilIcon,
   TvIcon,
   UsersIcon,
-} from '../../../player/icons';
+} from '#mobile/player/icons';
 
 function Row({
   icon,

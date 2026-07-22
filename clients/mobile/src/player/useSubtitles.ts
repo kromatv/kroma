@@ -14,7 +14,7 @@ import {
 } from '@kroma/core';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { DownloadEntry } from '../lib/downloads';
+import type { DownloadEntry } from '#mobile/lib/downloads';
 
 export interface SubView {
   index: number;

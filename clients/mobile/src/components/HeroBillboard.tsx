@@ -7,11 +7,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { useT } from '../lib/i18n';
-import { useIsWide } from '../lib/layout';
-import { useClient } from '../lib/session';
-import { colors, radius, SHADE, spacing, type } from '../lib/theme';
-import { CheckIcon, PlayIcon, PlusIcon } from '../player/icons';
+import { useT } from '#mobile/lib/i18n';
+import { useIsWide } from '#mobile/lib/layout';
+import { useClient } from '#mobile/lib/session';
+import { colors, radius, SHADE, spacing, type } from '#mobile/lib/theme';
+import { CheckIcon, PlayIcon, PlusIcon } from '#mobile/player/icons';
 import { FadeImage } from './FadeImage';
 
 export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {

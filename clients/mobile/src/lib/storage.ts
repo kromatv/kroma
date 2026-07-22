@@ -98,6 +98,11 @@ export async function saveActive(active: ActivePointer | null): Promise<void> {
 
 const PIN_KEY_PREFIX = 'kroma.mobile.pin.';
 
+/** One account on one server, sanitized down to a keychain-safe identifier. */
+function accountSlug(serverUrl: string, userId: string): string {
+  return `${serverUrl}.${userId}`.replace(/[^A-Za-z0-9._-]/g, '_');
+}
+
 function pinStoreKey(serverUrl: string, userId: string): string {
   return `${PIN_KEY_PREFIX}${serverUrl}.${userId}`.replace(/[^A-Za-z0-9._-]/g, '_');
 }
@@ -157,7 +162,7 @@ function bioLockSentinelKey(serverUrl: string, userId: string): string {
 }
 
 function bioLockFlagKey(serverUrl: string, userId: string): string {
-  return `biolock.${`${serverUrl}.${userId}`.replace(/[^A-Za-z0-9._-]/g, '_')}`;
+  return `biolock.${accountSlug(serverUrl, userId)}`;
 }
 
 /** Whether this profile is biometric-locked on this device. Fails CLOSED: an
@@ -219,7 +224,7 @@ export async function passBiometricLock(
 // pad-typed PIN and tries Face ID / Touch ID first on the next unlock).
 
 function bioPrefKey(serverUrl: string, userId: string): string {
-  return `bio.${`${serverUrl}.${userId}`.replace(/[^A-Za-z0-9._-]/g, '_')}`;
+  return `bio.${accountSlug(serverUrl, userId)}`;
 }
 
 export async function isBiometricUnlockEnabled(

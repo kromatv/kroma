@@ -4,9 +4,9 @@
 
 import type { MediaItem } from '@kroma/core';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { type DownloadState, useDownloads } from '../lib/downloads';
-import { useT } from '../lib/i18n';
-import { colors, radius, spacing, type } from '../lib/theme';
+import { type DownloadState, useDownloads } from '#mobile/lib/downloads';
+import { useT } from '#mobile/lib/i18n';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
 import {
   CheckIcon,
   DownloadIcon,
@@ -15,7 +15,7 @@ import {
   FlagIcon,
   PlayIcon,
   PlusIcon,
-} from '../player/icons';
+} from '#mobile/player/icons';
 
 function downloadBarLabel(
   state: DownloadState,

@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { colors, radius } from '../lib/theme';
+import { colors, radius } from '#mobile/lib/theme';
 import type { StoryboardTile } from './useStoryboard';
 
 const BAR_H = 3;

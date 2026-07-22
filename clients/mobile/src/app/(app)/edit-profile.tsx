@@ -6,13 +6,13 @@ import { KromaApiError, langName } from '@kroma/core';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Avatar } from '../../components/Avatar';
-import { PageHeader } from '../../components/PageHeader';
-import { Button, Chip, Screen, TextField } from '../../components/ui';
-import { useT } from '../../lib/i18n';
-import { boxed, contentWidth } from '../../lib/layout';
-import { useClient, useSession } from '../../lib/session';
-import { colors, radius, spacing, type } from '../../lib/theme';
+import { Avatar } from '#mobile/components/Avatar';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { Button, Chip, Screen, TextField } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { boxed, contentWidth } from '#mobile/lib/layout';
+import { useClient, useSession } from '#mobile/lib/session';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 const TRACK_LANGS = [null, 'fr', 'en', 'es', 'de', 'it', 'ja', 'ko'] as const;
 

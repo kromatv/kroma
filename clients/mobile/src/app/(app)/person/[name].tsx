@@ -3,14 +3,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
-import { type CardModel, movieCard, showCard } from '../../../components/cards';
-import { PageHeader } from '../../../components/PageHeader';
-import { gridMetrics, PosterGrid } from '../../../components/PosterGrid';
-import { ProfileTabIcon } from '../../../components/tabIcons';
-import { EmptyState, Loading, Screen } from '../../../components/ui';
-import { useT } from '../../../lib/i18n';
-import { useClient } from '../../../lib/session';
-import { colors } from '../../../lib/theme';
+import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
+import { ProfileTabIcon } from '#mobile/components/tabIcons';
+import { EmptyState, Loading, Screen } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { colors } from '#mobile/lib/theme';
 
 export default function PersonPage() {
   const { name } = useLocalSearchParams<{ name: string }>();

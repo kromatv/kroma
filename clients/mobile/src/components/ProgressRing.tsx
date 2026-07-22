@@ -2,7 +2,7 @@
 
 import { ActivityIndicator } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors } from '../lib/theme';
+import { colors } from '#mobile/lib/theme';
 
 export function ProgressRing({
   progress,

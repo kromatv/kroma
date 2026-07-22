@@ -3,8 +3,8 @@
 // the sign-in screen.
 
 import { ScrollView, StyleSheet } from 'react-native';
-import { useT } from '../lib/i18n';
-import { spacing } from '../lib/theme';
+import { useT } from '#mobile/lib/i18n';
+import { spacing } from '#mobile/lib/theme';
 import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
 import { AddTile, ProfileTile } from './onboarding';
 import { ErrorBanner } from './ui';

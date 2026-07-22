@@ -12,7 +12,7 @@ import {
   type ServerEntry,
   saveActive,
   setBiometricLockEnabled,
-} from '../storage';
+} from '#mobile/lib/storage';
 import { useBootRestore } from './boot';
 import { sameAccount, useAccountStore, useServerStore } from './stores';
 
@@ -66,7 +66,7 @@ function makeClient(serverUrl: string): KromaClient {
 export function SessionProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [status, setStatus] = useState<AuthSession['status']>('booting');
   const [serverUrl, setServerUrl] = useState<string | null>(null);
-  const [user, setUserState] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [client, setClient] = useState<KromaClient | null>(null);
   const accounts = useAccountStore();
   const servers = useServerStore();
@@ -79,7 +79,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
         try {
           const { token: newToken, user: refreshed } = await next.exchangeToken(accessToken);
           next.setAuthToken(newToken);
-          setUserState(refreshed);
+          setUser(refreshed);
           return newToken;
         } catch {
           return undefined;
@@ -87,7 +87,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       });
       setClient(next);
       setServerUrl(url);
-      setUserState(freshUser);
+      setUser(freshUser);
       setStatus('signedIn');
       const account: MobileAccount = { serverUrl: url, accessToken, user: freshUser };
       accounts.persist([
@@ -168,7 +168,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
           ? accounts.ref.current.find((a) => sameAccount(a, serverUrl, activeUser.id))
           : undefined;
       setClient(null);
-      setUserState(null);
+      setUser(null);
       setStatus('signedOut');
       void saveActive(null);
       if (forgetActive && activeUser && serverUrl) {
@@ -203,9 +203,9 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
     [accounts, servers],
   );
 
-  const setUser = useCallback(
+  const updateUser = useCallback(
     (u: User) => {
-      setUserState(u);
+      setUser(u);
       if (!serverUrl) return;
       accounts.persist(
         accounts.ref.current.map((a) => (sameAccount(a, serverUrl, u.id) ? { ...a, user: u } : a)),
@@ -232,7 +232,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       signOut,
       forgetAccount,
       forgetServer,
-      setUser,
+      setUser: updateUser,
     }),
     [
       status,
@@ -250,7 +250,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       signOut,
       forgetAccount,
       forgetServer,
-      setUser,
+      updateUser,
     ],
   );
 

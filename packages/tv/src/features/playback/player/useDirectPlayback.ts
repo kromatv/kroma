@@ -136,18 +136,10 @@ function detectTvEnv(): PlayEnv {
 /** The concrete backend to build for this item. */
 type Engine = 'mpv' | 'exo' | 'avplay' | 'video-direct' | 'video-remux';
 
-/** Resolve the backend from the user's engine preference, falling back to the
- * automatic decision. `auto` on Tizen keeps AVPlay (hardware surround), but the user
- * can force the HTML5 (`<video>` + hls.js) remux path instead; a manual choice that
- * isn't available on this platform (e.g. `mpv` off the Linux shell, `avplay` off
- * Tizen) quietly falls through to `auto`. */
-function resolveEngine(pref: EnginePref, env: PlayEnv, autoDirect: boolean): Engine {
-  // A stored engine no longer offered on this platform (e.g. a device left on
-  // `remux` after it was retired on Android TV, where the WebView cannot decode
-  // HEVC) must not strand playback on a dead engine - degrade it to `auto`.
-  if (pref !== 'auto' && !availableEngines().includes(pref)) pref = 'auto';
-  const tizenNative = env.platform === 'tizen' && avplayAvailable();
-  // Manual overrides.
+/** The backend the user explicitly asked for, or `null` when the pref is `auto` or
+ * names an engine this platform can't run (e.g. `mpv` off the Linux shell,
+ * `avplay` off Tizen) - both fall through to the automatic decision. */
+function manualEngine(pref: EnginePref, tizenNative: boolean): Engine | null {
   if (pref === 'avplay' && tizenNative) return 'avplay';
   if (pref === 'webview') return 'video-direct';
   if (pref === 'remux') return 'video-remux';
@@ -156,11 +148,29 @@ function resolveEngine(pref: EnginePref, env: PlayEnv, autoDirect: boolean): Eng
   // libVLC runs on the same native bridge as ExoPlayer (surface 'exo'); the
   // forceVlc flag (see planEngine) tells the bridge to software-decode from the start.
   if (pref === 'vlc' && exoAvailable()) return 'exo';
-  // auto:
+  return null;
+}
+
+/** The automatic backend for this platform: native planes where they exist
+ * (AVPlay on Tizen for hardware surround, mpv on the desktop shell, ExoPlayer on
+ * Android TV), else `<video>` direct-play or the server remux. */
+function autoEngine(env: PlayEnv, tizenNative: boolean, autoDirect: boolean): Engine {
   if (tizenNative) return 'avplay';
   if (env.platform === 'desktop' && mpvAvailable()) return 'mpv';
   if (env.platform === 'androidtv' && exoAvailable()) return 'exo';
   return autoDirect ? 'video-direct' : 'video-remux';
+}
+
+/** Resolve the backend from the user's engine preference, falling back to the
+ * automatic decision. `auto` on Tizen keeps AVPlay (hardware surround), but the user
+ * can force the HTML5 (`<video>` + hls.js) remux path instead. */
+function resolveEngine(pref: EnginePref, env: PlayEnv, autoDirect: boolean): Engine {
+  // A stored engine no longer offered on this platform (e.g. a device left on
+  // `remux` after it was retired on Android TV, where the WebView cannot decode
+  // HEVC) must not strand playback on a dead engine - degrade it to `auto`.
+  const wanted = pref !== 'auto' && availableEngines().includes(pref) ? pref : 'auto';
+  const tizenNative = env.platform === 'tizen' && avplayAvailable();
+  return manualEngine(wanted, tizenNative) ?? autoEngine(env, tizenNative, autoDirect);
 }
 
 /** A plain, single-audio MP4 a bare TV `<video>` direct-plays natively. */

@@ -2,9 +2,9 @@
 // section and the manual add row. Presentation only; selection, connection
 // and the discovery loop stay in the sign-in screen.
 
-import { useT } from '../lib/i18n';
-import { colors } from '../lib/theme';
-import { PlusIcon } from '../player/icons';
+import { useT } from '#mobile/lib/i18n';
+import { colors } from '#mobile/lib/theme';
+import { PlusIcon } from '#mobile/player/icons';
 import { BackLink, OnboardingBox, OnboardingTitle } from './OnboardingScreen';
 import { ServerList, ServerRow, ServerSectionHeader, ServerSectionHint } from './serverRows';
 import { ErrorBanner } from './ui';

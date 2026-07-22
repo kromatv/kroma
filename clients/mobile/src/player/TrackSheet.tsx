@@ -16,9 +16,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Chip } from '../components/ui';
-import { useT } from '../lib/i18n';
-import { colors, radius, spacing, type } from '../lib/theme';
+import { Chip } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
 import type { Engine } from './engine';
 import { CheckIcon } from './icons';
 

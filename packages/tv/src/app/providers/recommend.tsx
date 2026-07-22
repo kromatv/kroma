@@ -1,4 +1,4 @@
-import type { KromaClient, Section, SectionItem } from '@kroma/core';
+import type { KromaClient, MediaItem, Section, SectionItem } from '@kroma/core';
 import {
   createContext,
   type ReactNode,
@@ -24,31 +24,46 @@ type HomeChannelSpec = { title: string; items: HomeProgram[] };
  * (their server ids are fixed; see services/sections build_home). */
 const GENERIC_HOME_ROWS = ['recent', 'for-you', 'trending'] as const;
 
+/** Per-row cap; the launcher shows only a handful anyway. */
+const MAX_PROGRAMS = 20;
+
+/** One launcher program for a movie. The art is the public composited card
+ * (backdrop + KROMA logo), busted by the item's addedAt. */
+function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
+  const art = `${client.baseUrl}/api/items/${encodeURIComponent(movie.id)}/card?v=${encodeURIComponent(movie.addedAt)}`;
+  return {
+    id: movie.id,
+    title: movie.title,
+    subtitle: movie.year ? String(movie.year) : '',
+    imageUrl: art,
+    kind: 'movie',
+  };
+}
+
+/** The section's de-duplicated movie programs, capped. Movies only: the preview
+ * deep link resolves a movie id. */
+function programsOf(section: Section, client: KromaClient): HomeProgram[] {
+  const seen = new Set<string>();
+  const items: HomeProgram[] = [];
+  for (const e of section.items) {
+    if (e.type !== 'movie' || seen.has(e.item.id)) continue;
+    seen.add(e.item.id);
+    items.push(toProgram(e.item, client));
+    if (items.length >= MAX_PROGRAMS) break;
+  }
+  return items;
+}
+
 /** Map the generic home sections into named launcher rows (one KROMA preview channel
  * each) the native Android shell publishes to the Google TV home - the multi-row
- * equivalent of the Tizen shortcuts. Movies only (the preview deep link resolves a
- * movie id); the art is the public composited card (backdrop + KROMA logo). */
+ * equivalent of the Tizen shortcuts. */
 function toHomeChannels(sections: Section[], client: KromaClient): HomeChannelSpec[] {
   const byId = new Map(sections.map((s) => [s.id, s]));
   const channels: HomeChannelSpec[] = [];
   for (const id of GENERIC_HOME_ROWS) {
     const s = byId.get(id);
     if (!s) continue;
-    const seen = new Set<string>();
-    const items: HomeProgram[] = [];
-    for (const e of s.items) {
-      if (e.type !== 'movie' || seen.has(e.item.id)) continue;
-      seen.add(e.item.id);
-      const m = e.item;
-      items.push({
-        id: m.id,
-        title: m.title,
-        subtitle: m.year ? String(m.year) : '',
-        imageUrl: `${client.baseUrl}/api/items/${encodeURIComponent(m.id)}/card?v=${encodeURIComponent(m.addedAt)}`,
-        kind: 'movie',
-      });
-      if (items.length >= 20) break; // per-row cap; the launcher shows only a handful
-    }
+    const items = programsOf(s, client);
     if (items.length) channels.push({ title: s.title, items });
   }
   // The generic rows are matched by fixed server section ids; if the server ever

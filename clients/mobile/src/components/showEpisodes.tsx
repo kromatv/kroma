@@ -4,11 +4,11 @@
 import { formatRuntime, type MediaItem, type ProgressEntry, sizedImageUrl } from '@kroma/core';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useDownloads } from '../lib/downloads';
-import { useT } from '../lib/i18n';
-import { useClient } from '../lib/session';
-import { absoluteFill, colors, radius, type } from '../lib/theme';
-import { CheckIcon, DownloadIcon, PlayIcon } from '../player/icons';
+import { useDownloads } from '#mobile/lib/downloads';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { absoluteFill, colors, radius, type } from '#mobile/lib/theme';
+import { CheckIcon, DownloadIcon, PlayIcon } from '#mobile/player/icons';
 import { DownloadButton } from './DownloadButton';
 import { FadeImage } from './FadeImage';
 import { ProgressRing } from './ProgressRing';

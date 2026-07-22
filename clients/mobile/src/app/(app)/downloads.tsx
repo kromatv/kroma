@@ -9,16 +9,16 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { FadeImage } from '../../components/FadeImage';
-import { PageHeader } from '../../components/PageHeader';
-import { ProgressRing } from '../../components/ProgressRing';
-import { EmptyState, Screen } from '../../components/ui';
-import { type DownloadEntry, formatBytes, useDownloads } from '../../lib/downloads';
-import { useT } from '../../lib/i18n';
-import { boxed, contentWidth } from '../../lib/layout';
-import { useClient } from '../../lib/session';
-import { colors, radius, spacing, type } from '../../lib/theme';
-import { DownloadIcon, PlayIcon, TrashIcon } from '../../player/icons';
+import { FadeImage } from '#mobile/components/FadeImage';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { ProgressRing } from '#mobile/components/ProgressRing';
+import { EmptyState, Screen } from '#mobile/components/ui';
+import { type DownloadEntry, formatBytes, useDownloads } from '#mobile/lib/downloads';
+import { useT } from '#mobile/lib/i18n';
+import { boxed, contentWidth } from '#mobile/lib/layout';
+import { useClient } from '#mobile/lib/session';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { DownloadIcon, PlayIcon, TrashIcon } from '#mobile/player/icons';
 
 function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
   return (

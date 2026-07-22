@@ -1,18 +1,59 @@
 // Movie / episode detail: cinematic hero, Netflix-style action block, genre
 // chips, cast and similar rails.
 
-import { formatRuntime, formatTimecode, qualityBadge, sizedImageUrl } from '@kroma/core';
+import {
+  formatRuntime,
+  formatTimecode,
+  type MediaItem,
+  type ProgressEntry,
+  qualityBadge,
+  sizedImageUrl,
+} from '@kroma/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import { MediaRail, movieCard } from '../../../components/cards';
-import { CastRail, DetailActions, DetailHero, MetaBadge } from '../../../components/detail';
-import { Chip, ErrorView, ExpandableText, Loading, SectionTitle } from '../../../components/ui';
-import { useT } from '../../../lib/i18n';
-import { SplitColumns } from '../../../lib/layout';
-import { useClient } from '../../../lib/session';
-import { colors, posterWidth, spacing, type } from '../../../lib/theme';
+import { MediaRail, movieCard } from '#mobile/components/cards';
+import { CastRail, DetailActions, DetailHero, MetaBadge } from '#mobile/components/detail';
+import { Chip, ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { SplitColumns } from '#mobile/lib/layout';
+import { useClient } from '#mobile/lib/session';
+import { colors, posterWidth, spacing, type } from '#mobile/lib/theme';
+
+/** Show + "S01E02" line above an episode's title; movies have no context. */
+function episodeContext(media: MediaItem): string | undefined {
+  if (media.kind !== 'episode' || !media.showTitle) return undefined;
+  const numbering =
+    media.season != null && media.episode != null ? ` · S${media.season}E${media.episode}` : '';
+  return `${media.showTitle}${numbering}`;
+}
+
+/** Saved position worth resuming from (anything under 30s starts over). */
+function resumeSeconds(progress: ProgressEntry | null | undefined): number {
+  return progress && progress.positionMs > 30_000 ? progress.positionMs / 1000 : 0;
+}
+
+function reportPath(media: MediaItem, title: string): string {
+  const kind = media.kind === 'episode' ? 'episode' : 'movie';
+  return `/report/${media.id}?kind=${kind}&title=${encodeURIComponent(title)}`;
+}
+
+/** Year / runtime / quality / HDR / rating strip under the hero title. */
+function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
+  const runtime = formatRuntime(media.durationMs);
+  const badge = qualityBadge(media);
+  const rating = media.metadata?.rating;
+  return (
+    <>
+      {media.year ? <Text style={styles.metaText}>{media.year}</Text> : null}
+      {runtime ? <Text style={styles.metaText}>{runtime}</Text> : null}
+      {badge ? <MetaBadge>{badge}</MetaBadge> : null}
+      {media.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
+      {rating ? <Text style={styles.rating}>★ {rating.toFixed(1)}</Text> : null}
+    </>
+  );
+}
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -67,17 +108,9 @@ export default function ItemDetail() {
     Math.min(1280, width * 2),
   );
   const title = media.metadata?.title ?? media.title;
-  const resumeSec =
-    progress.data && progress.data.positionMs > 30_000 ? progress.data.positionMs / 1000 : 0;
+  const resumeSec = resumeSeconds(progress.data);
   const cardW = posterWidth(width);
   const cast = media.metadata?.cast ?? [];
-  const badge = qualityBadge(media);
-  const rating = media.metadata?.rating;
-  const runtime = formatRuntime(media.durationMs);
-  const context =
-    media.kind === 'episode' && media.showTitle
-      ? `${media.showTitle}${media.season != null && media.episode != null ? ` · S${media.season}E${media.episode}` : ''}`
-      : undefined;
 
   return (
     <Animated.ScrollView
@@ -91,16 +124,8 @@ export default function ItemDetail() {
         art={backdrop}
         seed={media.id}
         title={title}
-        context={context}
-        meta={
-          <>
-            {media.year ? <Text style={styles.metaText}>{media.year}</Text> : null}
-            {runtime ? <Text style={styles.metaText}>{runtime}</Text> : null}
-            {badge ? <MetaBadge>{badge}</MetaBadge> : null}
-            {media.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
-            {rating ? <Text style={styles.rating}>★ {rating.toFixed(1)}</Text> : null}
-          </>
-        }
+        context={episodeContext(media)}
+        meta={<ItemMeta media={media} />}
       />
 
       {/* Tablets: actions column beside the overview column. */}
@@ -118,11 +143,7 @@ export default function ItemDetail() {
             onToggleList={() => toggleList.mutate()}
             watched={isWatched}
             onToggleWatched={() => toggleWatched.mutate()}
-            onReport={() =>
-              router.push(
-                `/report/${media.id}?kind=${media.kind === 'episode' ? 'episode' : 'movie'}&title=${encodeURIComponent(title)}` as never,
-              )
-            }
+            onReport={() => router.push(reportPath(media, title) as never)}
             item={media}
           />
         }

@@ -4,8 +4,8 @@
 
 import { type DiscoveredServer, discoverServers, KromaClient, type PublicUser } from '@kroma/core';
 import { useEffect, useRef, useState } from 'react';
-import { getDeviceLocalIp } from '../lib/localIp';
-import { isBiometricLockEnabled, type MobileAccount } from '../lib/storage';
+import { getDeviceLocalIp } from '#mobile/lib/localIp';
+import { isBiometricLockEnabled, type MobileAccount } from '#mobile/lib/storage';
 
 /** Stable identity of a remembered account across servers. */
 export const keyOf = (a: MobileAccount) => `${a.serverUrl}::${a.user.id}`;

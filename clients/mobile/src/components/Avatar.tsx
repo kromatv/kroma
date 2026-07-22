@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../lib/theme';
+import { colors } from '#mobile/lib/theme';
 
 function initialsOf(name: string): string {
   const parts = name
@@ -14,7 +14,7 @@ function initialsOf(name: string): string {
     .split(/[\s._-]+/)
     .filter(Boolean);
   const first = parts[0]?.[0] ?? '?';
-  const second = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : (parts[0]?.[1] ?? '');
+  const second = parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : (parts[0]?.[1] ?? '');
   return `${first}${second}`.toUpperCase();
 }
 

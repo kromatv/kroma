@@ -13,7 +13,7 @@
 import type { KromaClient, MediaItem } from '@kroma/core';
 import { type AudioTrack, useVideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { decideSource } from '../caps';
+import { decideSource } from '#mobile/player/caps';
 import { useEngineControls } from './controls';
 import {
   type AudioFilterMode,
@@ -59,8 +59,8 @@ export function useKromaEngine(
   const [mode, setMode] = useState(core.mode);
   const [audioIndex, setAudioIndex] = useState(0);
   const [localAudio, setLocalAudio] = useState<AudioTrack[]>([]);
-  const [filter, setFilterState] = useState<AudioFilterMode>('off');
-  const [rate, setRateState] = useState(1);
+  const [filter, setFilter] = useState<AudioFilterMode>('off');
+  const [rate, setRate] = useState(1);
 
   const player = useVideoPlayer(null, (p) => {
     p.timeUpdateEventInterval = 0.5;
@@ -182,7 +182,7 @@ export function useKromaEngine(
       // actually produced playback time and the clock sits near the end.
       player.addListener('playToEnd', () => {
         if (!core.started) return;
-        const end = player.duration > 0 ? player.duration : 0;
+        const end = Math.max(player.duration, 0);
         if (end > 0 && player.currentTime < end - 5) return;
         setEndedNonce((n) => n + 1);
       }),
@@ -222,8 +222,8 @@ export function useKromaEngine(
     directPlayable: decision.direct,
     setCur,
     setAudioIndex,
-    setFilterState,
-    setRateState,
+    setFilterState: setFilter,
+    setRateState: setRate,
   });
 
   return {

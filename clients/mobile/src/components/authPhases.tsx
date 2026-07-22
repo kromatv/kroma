@@ -2,8 +2,8 @@
 // form. Presentation only; auth calls and phase switching stay in sign-in.
 
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { useT } from '../lib/i18n';
-import { colors, spacing, type } from '../lib/theme';
+import { useT } from '#mobile/lib/i18n';
+import { colors, spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
 import { BackLink, OnboardingBox, OnboardingTitle } from './OnboardingScreen';
 import { PinPad } from './onboarding';

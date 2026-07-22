@@ -4,8 +4,8 @@
 
 import { useRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, radius, type } from '../lib/theme';
-import { LockIcon, PlusIcon } from '../player/icons';
+import { colors, radius, type } from '#mobile/lib/theme';
+import { LockIcon, PlusIcon } from '#mobile/player/icons';
 import { Avatar } from './Avatar';
 
 const TILE_AVATAR = 84;

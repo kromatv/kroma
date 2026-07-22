@@ -4,7 +4,7 @@
 
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { colors } from '../lib/theme';
+import { colors } from '#mobile/lib/theme';
 import { KromaWheel } from './KromaWheel';
 
 const KR_PATH =

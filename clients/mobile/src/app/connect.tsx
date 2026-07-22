@@ -9,10 +9,10 @@ import {
   OnboardingBox,
   OnboardingScreen,
   OnboardingTitle,
-} from '../components/OnboardingScreen';
-import { Button, ErrorBanner, TextField } from '../components/ui';
-import { useT } from '../lib/i18n';
-import { useSession } from '../lib/session';
+} from '#mobile/components/OnboardingScreen';
+import { Button, ErrorBanner, TextField } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useSession } from '#mobile/lib/session';
 
 export default function Connect() {
   const t = useT();

@@ -4,13 +4,13 @@ import { LOCALES } from '@kroma/core';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { PageHeader } from '../../../components/PageHeader';
-import { Screen } from '../../../components/ui';
-import { useI18n, useT } from '../../../lib/i18n';
-import { boxed, contentWidth } from '../../../lib/layout';
-import { useSession } from '../../../lib/session';
-import { colors, radius, spacing, type } from '../../../lib/theme';
-import { ChevronRightIcon } from '../../../player/icons';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { Screen } from '#mobile/components/ui';
+import { useI18n, useT } from '#mobile/lib/i18n';
+import { boxed, contentWidth } from '#mobile/lib/layout';
+import { useSession } from '#mobile/lib/session';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { ChevronRightIcon } from '#mobile/player/icons';
 
 export default function Settings() {
   const t = useT();

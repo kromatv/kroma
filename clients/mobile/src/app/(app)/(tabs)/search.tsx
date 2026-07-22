@@ -8,15 +8,15 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { type CardModel, movieCard, showCard } from '../../../components/cards';
-import { FadeImage } from '../../../components/FadeImage';
-import { gridMetrics, PosterGrid } from '../../../components/PosterGrid';
-import { SearchTabIcon } from '../../../components/tabIcons';
-import { EmptyState, Loading, TextField } from '../../../components/ui';
-import { useT } from '../../../lib/i18n';
-import { useClient } from '../../../lib/session';
-import { colors, radius, spacing, TAB_BAR_CLEARANCE, type } from '../../../lib/theme';
-import { PlayIcon } from '../../../player/icons';
+import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
+import { FadeImage } from '#mobile/components/FadeImage';
+import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
+import { SearchTabIcon } from '#mobile/components/tabIcons';
+import { EmptyState, Loading, TextField } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { colors, radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
+import { PlayIcon } from '#mobile/player/icons';
 
 function useDebounced(value: string, ms: number): string {
   const [debounced, setDebounced] = useState(value);

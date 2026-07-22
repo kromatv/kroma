@@ -11,13 +11,13 @@ import {
   OnboardingBox,
   OnboardingScreen,
   OnboardingTitle,
-} from '../../components/OnboardingScreen';
-import { CodeCells } from '../../components/onboarding';
-import { ErrorBanner } from '../../components/ui';
-import { useT } from '../../lib/i18n';
-import { useClient } from '../../lib/session';
-import { absoluteFill, colors, radius, spacing, type } from '../../lib/theme';
-import { CheckIcon, ScanIcon, TvIcon } from '../../player/icons';
+} from '#mobile/components/OnboardingScreen';
+import { CodeCells } from '#mobile/components/onboarding';
+import { ErrorBanner } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { absoluteFill, colors, radius, spacing, type } from '#mobile/lib/theme';
+import { CheckIcon, ScanIcon, TvIcon } from '#mobile/player/icons';
 
 // expo-camera is a NATIVE module and expo-router imports every route at boot:
 // a static import would crash the whole app on a binary built before the
@@ -31,12 +31,15 @@ function loadCamera(): typeof import('expo-camera') | null {
 }
 const camera = loadCamera();
 
+const QUERY_CODE = /[?&]code=(\d{4,8})/;
+const BARE_CODE = /^\d{4,8}$/;
+
 /** Pull a Quick Connect code out of a scanned QR payload: the authorize URL's
  * `code` query param, or a bare numeric code. */
 export function codeFromQr(payload: string): string | null {
-  const fromQuery = payload.match(/[?&]code=([0-9]{4,8})/);
+  const fromQuery = QUERY_CODE.exec(payload);
   if (fromQuery?.[1]) return fromQuery[1];
-  const bare = payload.trim().match(/^[0-9]{4,8}$/);
+  const bare = BARE_CODE.exec(payload.trim());
   return bare ? bare[0] : null;
 }
 

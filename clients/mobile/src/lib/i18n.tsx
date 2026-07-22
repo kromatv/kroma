@@ -55,10 +55,10 @@ function osLocale(): Locale | null {
 
 export function I18nProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { user, client } = useSession();
-  const [override, setOverrideState] = useState<Locale | null>(null);
+  const [override, setOverride] = useState<Locale | null>(null);
 
   useEffect(() => {
-    void loadPref('locale').then((v) => setOverrideState(normalizeLocale(v)));
+    void loadPref('locale').then((v) => setOverride(normalizeLocale(v)));
   }, []);
 
   const locale = override ?? osLocale() ?? normalizeLocale(user?.language) ?? DEFAULT_LOCALE;
@@ -68,14 +68,14 @@ export function I18nProvider({ children }: Readonly<{ children: ReactNode }>) {
     client?.setLocale(locale);
   }, [client, locale]);
 
-  const setOverride = useCallback((next: Locale | null) => {
-    setOverrideState(next);
+  const applyOverride = useCallback((next: Locale | null) => {
+    setOverride(next);
     void savePref('locale', next);
   }, []);
 
   const value = useMemo<I18n>(
-    () => ({ locale, t: createTranslator(locale), override, setOverride }),
-    [locale, override, setOverride],
+    () => ({ locale, t: createTranslator(locale), override, setOverride: applyOverride }),
+    [locale, override, applyOverride],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

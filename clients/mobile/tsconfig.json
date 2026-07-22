@@ -2,9 +2,14 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // `#mobile/*` mirrors the repo's per-package alias convention (`#tv/*` in
+    // packages/tv, `#web/*` in clients/web), so a module is named by what it is
+    // rather than by how far up the tree it sits. Declared in package.json
+    // "imports" as well, so Metro resolves it as a real Node subpath import and
+    // not only through this TypeScript-level mapping.
     "paths": {
-      "@/*": ["./src/*"],
-      "@/assets/*": ["./assets/*"]
+      "#mobile/*": ["./src/*"],
+      "#mobile-assets/*": ["./assets/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]

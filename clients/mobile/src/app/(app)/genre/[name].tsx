@@ -5,14 +5,14 @@ import { hasGenre, type MediaItem, type Show, sortTitles } from '@kroma/core';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
-import { type CardModel, movieCard, showCard } from '../../../components/cards';
-import { PageHeader } from '../../../components/PageHeader';
-import { PosterGrid } from '../../../components/PosterGrid';
-import { FilmTabIcon } from '../../../components/tabIcons';
-import { EmptyState, Loading, Screen } from '../../../components/ui';
-import { useT } from '../../../lib/i18n';
-import { useClient } from '../../../lib/session';
-import { colors, posterWidth } from '../../../lib/theme';
+import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { PosterGrid } from '#mobile/components/PosterGrid';
+import { FilmTabIcon } from '#mobile/components/tabIcons';
+import { EmptyState, Loading, Screen } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { colors, posterWidth } from '#mobile/lib/theme';
 
 function isShow(entry: MediaItem | Show): entry is Show {
   return 'seasonCount' in entry;

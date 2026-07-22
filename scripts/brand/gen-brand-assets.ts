@@ -12,6 +12,11 @@
 // render it live (webfont + inline SVG) with the same metrics.
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+// Relative, not '@kroma/core': the repo root declares no workspace dependency,
+// so bun does not link the packages into the root node_modules. The wheel
+// geometry lives there so the generated icons and the in-app logo are provably
+// the same shape.
+import { wheelSectors } from '../../packages/core/src/brand';
 
 const REPO = fileURLToPath(new URL('../..', import.meta.url)).replace(/\/$/, '');
 const DIR = import.meta.dir;
@@ -29,29 +34,8 @@ const MA_D =
 const LOCKUP_W = 457.4;
 const LOCKUP_H = 100;
 
+/** Two decimals, so regenerating an asset never produces a spurious diff. */
 const round2 = (n: number) => Math.round(n * 100) / 100;
-
-// Annular wheel sectors around (cx, cy): mask-free equivalent of the export's
-// masked wheel. Default = the Frame 2 frame (cx 209, cy 50, R 50, r 17.045).
-export function wheelSectors(cx = 209, cy = 50, R = 50, r = 17.045): string[] {
-  const rad = (deg: number) => (deg * Math.PI) / 180;
-  const pt = (radius: number, deg: number) => [
-    round2(cx + radius * Math.sin(rad(deg))),
-    round2(cy - radius * Math.cos(rad(deg))),
-  ];
-  const out: string[] = [];
-  for (let i = 0; i < 6; i++) {
-    const [a1, a2] = [i * 60, i * 60 + 60];
-    const [ox1, oy1] = pt(R, a1);
-    const [ox2, oy2] = pt(R, a2);
-    const [ix1, iy1] = pt(r, a1);
-    const [ix2, iy2] = pt(r, a2);
-    out.push(
-      `M${ix1} ${iy1} L${ox1} ${oy1} A${R} ${R} 0 0 1 ${ox2} ${oy2} L${ix2} ${iy2} A${r} ${r} 0 0 0 ${ix1} ${iy1} Z`,
-    );
-  }
-  return out;
-}
 
 function wheelSvgPaths(cx?: number, cy?: number, R?: number, r?: number): string {
   return wheelSectors(cx, cy, R, r)

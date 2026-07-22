@@ -14,12 +14,13 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use axum::extract::{Request, State};
-use axum::http::{HeaderMap, StatusCode};
-use axum::middleware::{from_fn_with_state, Next};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::middleware::from_fn_with_state;
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use axum::{Extension, Json, Router};
+use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_supervisor::Supervisor;
 
 use crate::model::Category;
@@ -33,41 +34,6 @@ pub fn routes(host_token: String) -> Router<SharedState> {
     Router::new()
         .route("/_host/register-job", post(register_job))
         .route_layer(from_fn_with_state(HostToken(host_token), require_host_token))
-}
-
-#[derive(Clone)]
-struct HostToken(String);
-
-/// Reject a request whose bearer does not match the shared host token.
-async fn require_host_token(
-    State(token): State<HostToken>,
-    headers: HeaderMap,
-    req: Request,
-    next: Next,
-) -> Response {
-    let ok = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "))
-        .is_some_and(|t| ct_eq(t.as_bytes(), token.0.as_bytes()));
-    if ok {
-        next.run(req).await
-    } else {
-        (StatusCode::UNAUTHORIZED, "bad host token").into_response()
-    }
-}
-
-/// Constant-time byte comparison, so matching the shared host token never leaks a
-/// shared prefix through timing.
-fn ct_eq(a: &[u8], b: &[u8]) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut diff = 0u8;
-    for (x, y) in a.iter().zip(b) {
-        diff |= x ^ y;
-    }
-    diff == 0
 }
 
 #[derive(serde::Deserialize)]

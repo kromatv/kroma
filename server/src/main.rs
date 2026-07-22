@@ -146,21 +146,7 @@ async fn main() -> anyhow::Result<()> {
         data = services::demo::demo_data();
     }
 
-    if mount_outage {
-        warn!(
-            media_dirs = config.media_dirs.len(),
-            "configured media dirs produced no items; keeping the existing index (mount offline?) and skipping sync"
-        );
-    } else {
-        db::sync_all(&db, &data.libraries, &data.shows, &data.items, &data.mtimes)
-            .context("failed to persist library")?;
-        info!(
-            libraries = data.libraries.len(),
-            shows = data.shows.len(),
-            items = data.items.len(),
-            "library index ready (phase 1)"
-        );
-    }
+    persist_startup_scan(&db, &data, mount_outage, config.media_dirs.len())?;
 
     let addr = config.socket_addr();
 
@@ -400,35 +386,13 @@ async fn main() -> anyhow::Result<()> {
     // module in place). Opt-out via `moduleAutoUpdate`. This is what keeps the
     // modules current after a server `.spk` update, instead of leaving each one
     // to be updated by hand in Admin -> Modules.
-    if state.settings.get_bool("moduleAutoUpdate", true) {
-        let state = state.clone();
-        let supervisor = supervisor.clone();
-        tokio::spawn(async move {
-            let updated = api::admin::store::install::auto_update(&state, &supervisor).await;
-            if !updated.is_empty() {
-                info!(count = updated.len(), "module auto-update: modules brought current");
-            }
-        });
-    }
+    spawn_module_auto_update(&state, &supervisor);
 
     // Serve HTTPS in parallel with plain HTTP when enabled (axum-server
     // terminates TLS; it keeps the SocketAddr connect-info). Its `Handle` is
     // shut down after the HTTP listener drains, so both stop together.
     let https_handle = axum_server::Handle::new();
-    if let Some((_cert, rustls_config, https_socket)) = https {
-        info!("KROMA listening on https://{https_socket}  (self-signed)");
-        let handle = https_handle.clone();
-        let app_https = app.clone();
-        tokio::spawn(async move {
-            if let Err(e) = axum_server::bind_rustls(https_socket, rustls_config)
-                .handle(handle)
-                .serve(app_https.into_make_service_with_connect_info::<std::net::SocketAddr>())
-                .await
-            {
-                warn!(error = %e, "HTTPS listener stopped");
-            }
-        });
-    }
+    spawn_https_listener(https, &app, https_handle.clone());
 
     // The HTTP listener serves the full app, or (opt-in) a thin router that
     // redirects to HTTPS while still exposing the cert download over plain HTTP.
@@ -461,13 +425,97 @@ async fn main() -> anyhow::Result<()> {
     // skipping this orphans them).
     info!("shutting down: cancelling running jobs + stopping module processes");
     state.jobs.cancel_all();
+    await_jobs_drained(&state).await;
+    supervisor.stop_all();
+
+    Ok(())
+}
+
+/// Persist the phase-1 startup scan, unless the configured media dirs produced
+/// nothing (`mount_outage`): syncing an empty scan would make `sync_all` treat
+/// every real library as "vanished" and cascade-delete it along with all the
+/// expensive probed metadata, so the existing index is kept instead and the
+/// watcher re-syncs once the mount returns.
+fn persist_startup_scan(
+    db: &db::Pool,
+    data: &services::scan::ScanData,
+    mount_outage: bool,
+    media_dirs: usize,
+) -> anyhow::Result<()> {
+    if mount_outage {
+        warn!(
+            media_dirs,
+            "configured media dirs produced no items; keeping the existing index (mount offline?) and skipping sync"
+        );
+        return Ok(());
+    }
+    db::sync_all(db, &data.libraries, &data.shows, &data.items, &data.mtimes)
+        .context("failed to persist library")?;
+    info!(
+        libraries = data.libraries.len(),
+        shows = data.shows.len(),
+        items = data.items.len(),
+        "library index ready (phase 1)"
+    );
+    Ok(())
+}
+
+/// Auto-update installed modules to the newest compatible catalog version, in the
+/// background so it never delays boot (each update stops + respawns its module in
+/// place). Opt-out via `moduleAutoUpdate`. This is what keeps the modules current
+/// after a server `.spk` update, instead of leaving each one to be updated by hand
+/// in Admin -> Modules.
+fn spawn_module_auto_update(
+    state: &state::SharedState,
+    supervisor: &std::sync::Arc<kroma_module_supervisor::Supervisor>,
+) {
+    if !state.settings.get_bool("moduleAutoUpdate", true) {
+        return;
+    }
+    let state = state.clone();
+    let supervisor = supervisor.clone();
+    tokio::spawn(async move {
+        let updated = api::admin::store::install::auto_update(&state, &supervisor).await;
+        if !updated.is_empty() {
+            info!(count = updated.len(), "module auto-update: modules brought current");
+        }
+    });
+}
+
+/// Serve the full app over TLS in parallel with plain HTTP, when HTTPS is on.
+/// `handle` is shut down after the HTTP listener drains, so both stop together.
+fn spawn_https_listener(
+    https: Option<(
+        std::path::PathBuf,
+        axum_server::tls_rustls::RustlsConfig,
+        std::net::SocketAddr,
+    )>,
+    app: &axum::Router,
+    handle: axum_server::Handle,
+) {
+    let Some((_cert, rustls_config, https_socket)) = https else {
+        return;
+    };
+    info!("KROMA listening on https://{https_socket}  (self-signed)");
+    let app_https = app.clone();
+    tokio::spawn(async move {
+        if let Err(e) = axum_server::bind_rustls(https_socket, rustls_config)
+            .handle(handle)
+            .serve(app_https.into_make_service_with_connect_info::<std::net::SocketAddr>())
+            .await
+        {
+            warn!(error = %e, "HTTPS listener stopped");
+        }
+    });
+}
+
+/// Give jobs that were asked to cancel a bounded window (15s) to observe the flag
+/// and record themselves as `cancelled`, before the module sidecars are stopped.
+async fn await_jobs_drained(state: &state::SharedState) {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
     while state.jobs.running_count() > 0 && std::time::Instant::now() < deadline {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     }
-    supervisor.stop_all();
-
-    Ok(())
 }
 
 /// The public certificate download route (`GET /api/tls/cert.pem`), served as an

@@ -8,10 +8,11 @@
 import { apiErrorText, KromaApiError } from '@kroma/core';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { CredentialsPhase, PinPhase } from '../components/authPhases';
-import { OnboardingScreen } from '../components/OnboardingScreen';
-import { type GateTile, ProfileGate } from '../components/ProfileGate';
-import { ServerPicker } from '../components/ServerPicker';
+import { CredentialsPhase, PinPhase } from '#mobile/components/authPhases';
+import { OnboardingScreen } from '#mobile/components/OnboardingScreen';
+import { type GateTile, ProfileGate } from '#mobile/components/ProfileGate';
+import { ServerPicker } from '#mobile/components/ServerPicker';
+import { type EnterSavedDeps, enterSavedAccount, type Phase } from '#mobile/components/signInFlow';
 import {
   hostOf,
   keyOf,
@@ -19,25 +20,11 @@ import {
   useClientCache,
   useDiscoveryLoop,
   useServerRoster,
-} from '../components/signInHooks';
-import { passProfileBiometricGate } from '../lib/biometricGate';
-import { useT } from '../lib/i18n';
-import { useSession } from '../lib/session';
-import {
-  deletePinBehindBiometrics,
-  isBiometricUnlockEnabled,
-  type MobileAccount,
-  readPinBehindBiometrics,
-  savePinBehindBiometrics,
-} from '../lib/storage';
-import { useServerProbes } from '../lib/useServerProbes';
-
-type Phase =
-  | { kind: 'gate' }
-  | { kind: 'server' }
-  | { kind: 'pin'; account: MobileAccount }
-  | { kind: 'password'; username: string; avatarUrl: string | null }
-  | { kind: 'form' };
+} from '#mobile/components/signInHooks';
+import { useT } from '#mobile/lib/i18n';
+import { useSession } from '#mobile/lib/session';
+import type { MobileAccount } from '#mobile/lib/storage';
+import { useServerProbes } from '#mobile/lib/useServerProbes';
 
 export default function SignIn() {
   const t = useT();
@@ -93,69 +80,17 @@ export default function SignIn() {
     setError(null);
   };
 
-  const enterSaved = async (account: MobileAccount, withPin?: string) => {
-    setBusy(withPin === undefined ? keyOf(account) : 'pin');
-    setError(null);
-    // PIN-less profiles may carry a device Face ID lock; it must pass first.
-    if (!(await passProfileBiometricGate(account, t('auth.faceUnlock')))) {
-      setBusy(null);
-      return;
-    }
-    try {
-      await session.switchAccount(account, withPin);
-      // A PIN typed on the pad worked: keep it behind Face ID for next time
-      // (unless biometric unlock is turned off in the profile-lock settings).
-      if (withPin !== undefined)
-        void isBiometricUnlockEnabled(account.serverUrl, account.user.id).then(
-          (enabled) =>
-            enabled && savePinBehindBiometrics(account.serverUrl, account.user.id, withPin),
-        );
-      router.replace('/(app)/(tabs)');
-    } catch (err) {
-      if (!(err instanceof KromaApiError)) {
-        setBusy(null);
-        setError(t('auth.loginFailed'));
-        return;
-      }
-      const body = err.body as { pinRequired?: boolean } | undefined;
-      if (body?.pinRequired) {
-        // Face ID first: a stored PIN unlocks without showing the pad.
-        const stored = (await isBiometricUnlockEnabled(account.serverUrl, account.user.id))
-          ? await readPinBehindBiometrics(account.serverUrl, account.user.id, t('auth.faceUnlock'))
-          : null;
-        if (stored) {
-          try {
-            await session.switchAccount(account, stored);
-            router.replace('/(app)/(tabs)');
-            return;
-          } catch {
-            // The PIN changed since it was stored: drop it, ask on the pad.
-            void deletePinBehindBiometrics(account.serverUrl, account.user.id);
-          }
-        }
-        setBusy(null);
-        setPin('');
-        setPhase({ kind: 'pin', account });
-        return;
-      }
-      setBusy(null);
-      if (withPin !== undefined) {
-        // Wrong or locked PIN: the server message is localized; stay on the pad.
-        setPin('');
-        setError(apiErrorText(err, t('auth.pinIncorrect')));
-        return;
-      }
-      // Revoked device token: forget it, fall back to that profile's password.
-      session.forgetAccount(account);
-      session.selectServer(account.serverUrl);
-      setPhase({
-        kind: 'password',
-        username: account.user.username,
-        avatarUrl: account.user.avatarUrl ?? null,
-      });
-      setError(t('auth.sessionExpiredHint'));
-    }
+  const enterDeps: EnterSavedDeps = {
+    session,
+    t,
+    enterApp: () => router.replace('/(app)/(tabs)'),
+    setBusy,
+    setError,
+    setPin,
+    setPhase,
   };
+  const enterSaved = (account: MobileAccount, withPin?: string) =>
+    enterSavedAccount(enterDeps, account, withPin);
 
   const submit = async (who: string) => {
     if (!who.trim() || !password) return;

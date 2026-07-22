@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { CatalogueScreen } from '../../../components/CatalogueScreen';
-import { useT } from '../../../lib/i18n';
-import { useClient } from '../../../lib/session';
+import { CatalogueScreen } from '#mobile/components/CatalogueScreen';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
 
 export default function Series() {
   const t = useT();

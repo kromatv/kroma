@@ -3,7 +3,7 @@
 
 import type { KromaClient, MediaItem, StoryboardManifest } from '@kroma/core';
 import { useEffect, useState } from 'react';
-import type { DownloadEntry } from '../lib/downloads';
+import type { DownloadEntry } from '#mobile/lib/downloads';
 
 export interface StoryboardTile {
   /** Sprite sheet URL. */

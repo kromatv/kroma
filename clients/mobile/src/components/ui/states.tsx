@@ -3,8 +3,8 @@
 
 import { type ReactNode, useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, type } from '../../lib/theme';
-import { AlertIcon } from '../../player/icons';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { AlertIcon } from '#mobile/player/icons';
 import { Button } from './controls';
 
 /** Inline error surface: tinted banner with an icon and a small shake when the

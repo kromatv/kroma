@@ -18,7 +18,7 @@ import {
   useState,
 } from 'react';
 import { Alert } from 'react-native';
-import { useT } from '../i18n';
+import { useT } from '#mobile/lib/i18n';
 import {
   type DownloadEntry,
   type DownloadState,
@@ -103,6 +103,11 @@ export function DownloadsProvider({
     setQueuedIds(next);
   }, []);
 
+  /** Publish one transfer's progress fraction on the active map. */
+  const trackProgress = useCallback((itemId: string, frac: number) => {
+    setActive((a) => ({ ...a, [itemId]: frac }));
+  }, []);
+
   // The remux endpoint makes every title downloadable; keep the check for the
   // rare item with no file at all.
   const canDownload = useCallback(
@@ -114,7 +119,7 @@ export function DownloadsProvider({
     (item: MediaItem) => {
       if (!client || runningRef.current.has(item.id)) return;
       runningRef.current.add(item.id);
-      setActive((a) => ({ ...a, [item.id]: 0 }));
+      trackProgress(item.id, 0);
       void (async () => {
         try {
           const entry = await runTransfer(client, item, {
@@ -124,7 +129,7 @@ export function DownloadsProvider({
               // handle to act on; honour it now instead of downloading anyway.
               return !cancelledRef.current.delete(item.id);
             },
-            onProgress: (frac) => setActive((a) => ({ ...a, [item.id]: frac })),
+            onProgress: (frac) => trackProgress(item.id, frac),
           });
           commitEntries([...entriesRef.current.filter((e) => e.itemId !== item.id), entry]);
         } catch (err) {
@@ -150,7 +155,7 @@ export function DownloadsProvider({
         }
       })();
     },
-    [client, commitEntries, t],
+    [client, commitEntries, trackProgress, t],
   );
 
   // pump() lives behind a ref so runDownload's finally can call the latest one.

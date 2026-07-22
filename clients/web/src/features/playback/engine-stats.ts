@@ -23,6 +23,46 @@ export interface EngineLiveStats {
   currentCodecs?: string;
 }
 
+/** bits/s -> rounded kbps, dropping the zero/absent figure engines report before
+ * they have measured anything. */
+function kbps(bitsPerSec: number | undefined): number | undefined {
+  return bitsPerSec ? Math.round(bitsPerSec / 1000) : undefined;
+}
+
+/** Keep only real numbers (the counters read NaN before the first sample). */
+function finite(n: number | undefined): number | undefined {
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Shaka's `getStats()` snapshot, the richest source (bandwidth estimate, stalls,
+ * buffering time, bytes, codecs). Null before its first load resolves. */
+function shakaStats(shaka: ShakaPlayerLike): EngineLiveStats | null {
+  try {
+    const s = shaka.getStats();
+    return {
+      streamBitrateKbps: kbps(s.streamBandwidth),
+      estBandwidthKbps: kbps(s.estimatedBandwidth),
+      stalls: finite(s.stallsDetected),
+      bufferingSec: finite(s.bufferingTime),
+      bytesDownloaded: s.bytesDownloaded || undefined,
+      currentCodecs: s.currentCodecs || undefined,
+    };
+  } catch {
+    return null; // Shaka throws from getStats() before the first load resolves
+  }
+}
+
+/** What hls.js exposes: the ABR bandwidth estimate and the current level's
+ * declared bitrate. */
+function hlsStats(hls: HlsInstance): EngineLiveStats {
+  const est = hls.bandwidthEstimate;
+  const level = hls.levels?.[hls.currentLevel];
+  return {
+    streamBitrateKbps: kbps(level?.bitrate),
+    estBandwidthKbps: Number.isFinite(est) && est > 0 ? kbps(est) : undefined,
+  };
+}
+
 /**
  * Read live metrics from the active engine. Shaka's `getStats()` is the richest
  * source (bandwidth estimate, stalls, buffering time, bytes, codecs); hls.js
@@ -33,31 +73,8 @@ export function readEngineStats(
   hls: HlsInstance | null,
   shaka: ShakaPlayerLike | null,
 ): EngineLiveStats | null {
-  if (shaka) {
-    try {
-      const s = shaka.getStats();
-      return {
-        streamBitrateKbps: s.streamBandwidth ? Math.round(s.streamBandwidth / 1000) : undefined,
-        estBandwidthKbps: s.estimatedBandwidth
-          ? Math.round(s.estimatedBandwidth / 1000)
-          : undefined,
-        stalls: Number.isFinite(s.stallsDetected) ? s.stallsDetected : undefined,
-        bufferingSec: Number.isFinite(s.bufferingTime) ? s.bufferingTime : undefined,
-        bytesDownloaded: s.bytesDownloaded || undefined,
-        currentCodecs: s.currentCodecs || undefined,
-      };
-    } catch {
-      return null; // Shaka throws from getStats() before the first load resolves
-    }
-  }
-  if (hls) {
-    const est = hls.bandwidthEstimate;
-    const level = hls.levels?.[hls.currentLevel];
-    return {
-      streamBitrateKbps: level?.bitrate ? Math.round(level.bitrate / 1000) : undefined,
-      estBandwidthKbps: Number.isFinite(est) && est > 0 ? Math.round(est / 1000) : undefined,
-    };
-  }
+  if (shaka) return shakaStats(shaka);
+  if (hls) return hlsStats(hls);
   return null;
 }
 

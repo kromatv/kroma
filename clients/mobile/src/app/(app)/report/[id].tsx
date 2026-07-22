@@ -14,12 +14,12 @@ import {
   Text,
   View,
 } from 'react-native';
-import { PageHeader } from '../../../components/PageHeader';
-import { Button, Screen, TextField } from '../../../components/ui';
-import { useT } from '../../../lib/i18n';
-import { useClient } from '../../../lib/session';
-import { colors, radius, spacing, type } from '../../../lib/theme';
-import { CheckIcon, FlagIcon } from '../../../player/icons';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { Button, Screen, TextField } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { CheckIcon, FlagIcon } from '#mobile/player/icons';
 
 const CATEGORIES: { key: ReportCategory; label: string; hint: string }[] = [
   { key: 'metadata', label: 'report.category.metadata', hint: 'report.category.metadataHint' },

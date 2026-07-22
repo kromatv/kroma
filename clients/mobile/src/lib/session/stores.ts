@@ -9,7 +9,12 @@
 // to the keychain writes twice, or a ref assigned in the render body goes stale.
 
 import { useCallback, useRef, useState } from 'react';
-import { type MobileAccount, type ServerEntry, saveAccounts, saveServers } from '../storage';
+import {
+  type MobileAccount,
+  type ServerEntry,
+  saveAccounts,
+  saveServers,
+} from '#mobile/lib/storage';
 
 /** Are these the same remembered profile? Account identity is (server, user):
  * the same person on two servers is two accounts, and the same server can hold

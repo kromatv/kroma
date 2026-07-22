@@ -4,7 +4,7 @@
 
 import type { KromaClient, MediaItem } from '@kroma/core';
 import * as FileSystem from 'expo-file-system/legacy';
-import { canRawDownload, downloadCopyCodecs } from '../../player/caps';
+import { canRawDownload, downloadCopyCodecs } from '#mobile/player/caps';
 import { fetchSidecars } from './sidecars';
 import { type DownloadEntry, ensureDir, mediaPath } from './store';
 

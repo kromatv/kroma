@@ -14,12 +14,12 @@
 set -euo pipefail
 
 APP="${1:?usage: bundle-libmpv-macos.sh <path-to-KROMA.app>}"
-[ -d "$APP" ] || { echo "bundle-libmpv-macos: no .app at $APP" >&2; exit 1; }
+[[ -d "$APP" ]] || { echo "bundle-libmpv-macos: no .app at $APP" >&2; exit 1; }
 
 EXE_DIR="$APP/Contents/MacOS"
 # The Tauri binary (named after productName); exactly one Mach-O executable lives here.
 EXE="$(find "$EXE_DIR" -maxdepth 1 -type f -perm -111 | head -n1)"
-[ -n "$EXE" ] || { echo "bundle-libmpv-macos: no executable in $EXE_DIR" >&2; exit 1; }
+[[ -n "$EXE" ]] || { echo "bundle-libmpv-macos: no executable in $EXE_DIR" >&2; exit 1; }
 
 if ! command -v dylibbundler >/dev/null 2>&1; then
   echo "bundle-libmpv-macos: dylibbundler not found (brew install dylibbundler)" >&2

@@ -11,7 +11,7 @@ import {
   type TextInputProps,
   View,
 } from 'react-native';
-import { colors, radius, spacing } from '../../lib/theme';
+import { colors, radius, spacing } from '#mobile/lib/theme';
 
 export function Button({
   label,

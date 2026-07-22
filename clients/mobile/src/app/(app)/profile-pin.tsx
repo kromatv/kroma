@@ -7,12 +7,12 @@
 import { apiErrorText } from '@kroma/core';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { PageHeader } from '../../components/PageHeader';
-import { BioSwitchRow, LockCard, PinWizard } from '../../components/profileLock';
-import { Button, ErrorBanner, Screen } from '../../components/ui';
-import { useT } from '../../lib/i18n';
-import { boxed, contentWidth } from '../../lib/layout';
-import { useClient, useSession } from '../../lib/session';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { BioSwitchRow, LockCard, PinWizard } from '#mobile/components/profileLock';
+import { Button, ErrorBanner, Screen } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { boxed, contentWidth } from '#mobile/lib/layout';
+import { useClient, useSession } from '#mobile/lib/session';
 import {
   canStoreBiometricPin,
   deletePinBehindBiometrics,
@@ -22,8 +22,8 @@ import {
   savePinBehindBiometrics,
   setBiometricLockEnabled,
   setBiometricUnlockEnabled,
-} from '../../lib/storage';
-import { colors, spacing, type } from '../../lib/theme';
+} from '#mobile/lib/storage';
+import { colors, spacing, type } from '#mobile/lib/theme';
 
 /** Where a completed "enter your current PIN" step goes next. */
 type After = 'new' | 'remove' | 'bio';

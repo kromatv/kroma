@@ -14,6 +14,9 @@
 // dozens of signatures for no real gain on these error paths.
 #![allow(clippy::result_large_err)]
 
+/// The shared-host-token guard used by every hop of the module IPC.
+pub mod host_token;
+
 use std::any::{Any, TypeId};
 use std::path::Path;
 use std::sync::Arc;

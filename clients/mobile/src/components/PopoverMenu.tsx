@@ -13,8 +13,8 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { colors, radius, spacing, type } from '../lib/theme';
-import { CheckIcon } from '../player/icons';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { CheckIcon } from '#mobile/player/icons';
 
 export interface PopoverAnchor {
   x: number;

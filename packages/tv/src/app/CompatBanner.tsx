@@ -7,6 +7,11 @@ import { useConnection } from '#tv/app/providers/connection';
 // build requires (see @kroma/core `checkServerCompat`). Deliberately PASSIVE - it
 // takes no D-pad focus, so it never disrupts navigation - and it clears itself the
 // moment the server is updated. Inline styles keep it legacy-TV safe.
+//
+// Rendered as <output>, HTML's native live region (implicit role="status"). Blink
+// has mapped <output> to the status role since well before the Chromium 53 engine
+// of the legacy webOS tier, and `position: fixed` blockifies the element's inline
+// default display, so the banner looks and announces the same on every tier.
 const style: CSSProperties = {
   position: 'fixed',
   top: 0,
@@ -25,8 +30,8 @@ export function CompatBanner() {
   const t = useT();
   if (compat !== 'server-outdated') return null;
   return (
-    <div style={style} role="status">
+    <output style={style}>
       {`⚠ ${t('compat.serverOutdated', { server: serverVersion ?? '?', client: CLIENT_BUILD.version })}`}
-    </div>
+    </output>
   );
 }

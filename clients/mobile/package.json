@@ -3,6 +3,10 @@
   "main": "expo-router/entry",
   "version": "0.1.3",
   "private": true,
+  "imports": {
+    "#mobile/*": "./src/*",
+    "#mobile-assets/*": "./assets/*"
+  },
   "description": "KROMA mobile client (iPhone / iPad / Android) built with Expo + React Native.",
   "scripts": {
     "start": "expo start",

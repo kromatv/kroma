@@ -5,10 +5,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { DownloadsProvider } from '../lib/downloads';
-import { I18nProvider } from '../lib/i18n';
-import { SessionProvider, useSession } from '../lib/session';
-import { colors } from '../lib/theme';
+import { DownloadsProvider } from '#mobile/lib/downloads';
+import { I18nProvider } from '#mobile/lib/i18n';
+import { SessionProvider, useSession } from '#mobile/lib/session';
+import { colors } from '#mobile/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 

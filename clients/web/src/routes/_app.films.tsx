@@ -1,27 +1,18 @@
-import { collectGenres, hasGenre, isSortMode, type SortMode, sortTitles } from '@kroma/core';
+import { collectGenres, hasGenre, sortTitles } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { IconMovie } from '@tabler/icons-react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { BrowseBar } from '#web/features/catalog/browse-bar';
+import { validateBrowseSearch } from '#web/features/catalog/browse-search';
 import { MovieGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
 import { EmptyState, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
-interface BrowseSearch {
-  sort?: SortMode;
-  genre?: string;
-}
-
 export const Route = createFileRoute('/_app/films')({
-  validateSearch: (s: Record<string, unknown>): BrowseSearch => {
-    const out: BrowseSearch = {};
-    if (isSortMode(s.sort)) out.sort = s.sort;
-    if (typeof s.genre === 'string' && s.genre) out.genre = s.genre;
-    return out;
-  },
+  validateSearch: validateBrowseSearch,
   loader: async ({ context: { queryClient } }) => {
     if (!isAuthed()) return;
     await queryClient.ensureQueryData(catalogQueries.moviesView());

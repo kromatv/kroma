@@ -5,8 +5,8 @@
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { spacing, type } from '../lib/theme';
-import { BackIcon } from '../player/icons';
+import { spacing, type } from '#mobile/lib/theme';
+import { BackIcon } from '#mobile/player/icons';
 
 export function PageHeader({ title, right }: Readonly<{ title: string; right?: ReactNode }>) {
   const router = useRouter();

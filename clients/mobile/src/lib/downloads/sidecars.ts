@@ -8,7 +8,7 @@ import { type DownloadEntry, mediaPath, type OfflineSub } from './store';
 
 export interface Sidecars {
   subs: OfflineSub[];
-  storyboard?: DownloadEntry['storyboard'];
+  storyboard?: NonNullable<DownloadEntry['storyboard']>;
 }
 
 /** Embedded text subtitles (by track index) plus any AI-generated ones the

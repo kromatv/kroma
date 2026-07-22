@@ -3,11 +3,11 @@
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { FadeImage } from '../../components/FadeImage';
-import { useT } from '../../lib/i18n';
-import { useClient } from '../../lib/session';
-import { absoluteFill, colors, radius } from '../../lib/theme';
-import { PlayIcon } from '../icons';
+import { FadeImage } from '#mobile/components/FadeImage';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { absoluteFill, colors, radius } from '#mobile/lib/theme';
+import { PlayIcon } from '#mobile/player/icons';
 
 /** The current subtitle line. It rides above the controls when they are up, so
  * the two never overlap. */

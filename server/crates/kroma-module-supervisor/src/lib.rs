@@ -14,11 +14,12 @@ use std::sync::{Arc, RwLock};
 
 use axum::body::Body;
 use axum::extract::{Request, State};
-use axum::http::{HeaderMap, StatusCode};
-use axum::middleware::{from_fn_with_state, Next};
+use axum::http::StatusCode;
+use axum::middleware::from_fn_with_state;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::{Event, HostCtx};
 use serde_json::{json, Value};
 
@@ -518,11 +519,6 @@ pub async fn proxy_to(port: u16, path_and_query: &str, req: Request) -> Response
 
 // --- The /api/_host/* callback API modules call back into --------------------
 
-#[derive(Clone)]
-struct HostAuth {
-    token: String,
-}
-
 /// Build the `/_host/*` callback router (mount under `/api`). Generic over the
 /// core's [`HostCtx`] state so the handlers resolve settings / events / jobs
 /// against the real app. Guarded by the shared `token`.
@@ -538,33 +534,7 @@ where
         .route("/_host/enabled", get(module_enabled::<S>))
         .route("/_host/libraries", get(library_folders::<S>))
         .route("/_host/tmdb", get(tmdb_config::<S>))
-        .route_layer(from_fn_with_state(HostAuth { token }, auth))
-}
-
-async fn auth(State(auth): State<HostAuth>, headers: HeaderMap, req: Request, next: Next) -> Response {
-    let ok = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "))
-        .is_some_and(|t| ct_eq(t.as_bytes(), auth.token.as_bytes()));
-    if ok {
-        next.run(req).await
-    } else {
-        (StatusCode::UNAUTHORIZED, "bad host token").into_response()
-    }
-}
-
-/// Constant-time byte comparison, so matching the shared host token never leaks a
-/// shared prefix through timing.
-fn ct_eq(a: &[u8], b: &[u8]) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut diff = 0u8;
-    for (x, y) in a.iter().zip(b) {
-        diff |= x ^ y;
-    }
-    diff == 0
+        .route_layer(from_fn_with_state(HostToken(token), require_host_token))
 }
 
 #[derive(serde::Deserialize)]

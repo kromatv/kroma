@@ -96,7 +96,9 @@ export function StatsPanel({
         hist.set(m.key, series);
       }
       // Drop history for series no longer reported (e.g. engine changed).
-      for (const key of [...hist.keys()]) if (!live.has(key)) hist.delete(key);
+      // Deleting the current key while iterating a Map is well-defined (the
+      // iterator simply skips removed entries), so no snapshot copy is needed.
+      for (const key of hist.keys()) if (!live.has(key)) hist.delete(key);
     };
     const tick = () => {
       const snap = getStatsRef.current();

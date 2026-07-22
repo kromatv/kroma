@@ -3,7 +3,7 @@
 // no gutter is left over on the right.
 
 import { FlatList, useWindowDimensions } from 'react-native';
-import { spacing, TAB_BAR_CLEARANCE } from '../lib/theme';
+import { spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
 import { type CardModel, PosterCard } from './cards';
 
 const GAP = 12;

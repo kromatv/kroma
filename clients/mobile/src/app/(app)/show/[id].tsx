@@ -9,15 +9,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import { CastRail, DetailHero, MetaBadge } from '../../../components/detail';
-import { type PopoverAnchor, PopoverMenu } from '../../../components/PopoverMenu';
-import { EpisodeRow, SeasonDownload, UpNextCard } from '../../../components/showEpisodes';
-import { Chip, ErrorView, ExpandableText, Loading, SectionTitle } from '../../../components/ui';
-import { useT } from '../../../lib/i18n';
-import { useIsWide } from '../../../lib/layout';
-import { useClient } from '../../../lib/session';
-import { colors, radius, spacing, type } from '../../../lib/theme';
-import { ChevronDownIcon, FlagIcon, PlayIcon } from '../../../player/icons';
+import { CastRail, DetailHero, MetaBadge } from '#mobile/components/detail';
+import { type PopoverAnchor, PopoverMenu } from '#mobile/components/PopoverMenu';
+import { EpisodeRow, SeasonDownload, UpNextCard } from '#mobile/components/showEpisodes';
+import { Chip, ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useIsWide } from '#mobile/lib/layout';
+import { useClient } from '#mobile/lib/session';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { ChevronDownIcon, FlagIcon, PlayIcon } from '#mobile/player/icons';
 
 export default function ShowDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -76,12 +76,10 @@ export default function ShowDetail() {
   const nextFrac =
     nextProgress && nextTotal > 0 ? Math.min(1, nextProgress.positionMs / nextTotal) : 0;
   const cast = show.metadata?.cast ?? season?.cast ?? [];
+  const episodeKey = upNext.data?.resume ? 'player.resumeEpisode' : 'player.playEpisode';
   const playLabel =
-    next && next.season != null && next.episode != null
-      ? t(upNext.data?.resume ? 'player.resumeEpisode' : 'player.playEpisode', {
-          season: next.season,
-          episode: next.episode,
-        })
+    next?.season != null && next.episode != null
+      ? t(episodeKey, { season: next.season, episode: next.episode })
       : t('player.play');
 
   return (

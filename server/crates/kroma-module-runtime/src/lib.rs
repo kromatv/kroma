@@ -24,6 +24,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use kroma_db::Pool;
 use kroma_domain::{Permission, User};
+use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::{json_error, Event, HostCtx, ServerModule};
 
 /// The environment the core supervisor hands each module process.
@@ -338,8 +339,8 @@ pub async fn serve(
     // same guard the job-run and `/_host/*` callback APIs already use. Applied
     // before `_health` is added so the liveness probe stays unauthenticated.
     let extra = extra.route_layer(axum::middleware::from_fn_with_state(
-        HostTokenAuth { token: env.host_token.clone() },
-        host_token_auth,
+        HostToken(env.host_token.clone()),
+        require_host_token,
     ));
 
     // Serve every module's routes + any extra port routes + a health probe, plus
@@ -386,54 +387,15 @@ struct JobSpec {
     schedule: Option<String>,
 }
 
-/// The shared-host-token guard state, used by both the `/_port/*` cross-module
-/// routes and the `/_job/run/*` scheduler endpoint (the same token the module
-/// authenticates its own core callbacks with).
-#[derive(Clone)]
-struct HostTokenAuth {
-    token: String,
-}
-
 /// Build the `/_job/run/{key}` sub-router the core scheduler POSTs to in order to
-/// run a contributed job's pass in this process. Guarded by the shared host token;
-/// the run-fn map rides as a request extension.
+/// run a contributed job's pass in this process. Guarded by the shared host token
+/// (the same token the module authenticates its own core callbacks with); the
+/// run-fn map rides as a request extension.
 fn job_router(job_fns: HashMap<&'static str, JobFn>, token: String) -> axum::Router<RemoteHost> {
     axum::Router::new()
         .route("/_job/run/{key}", axum::routing::post(run_job))
-        .route_layer(axum::middleware::from_fn_with_state(HostTokenAuth { token }, host_token_auth))
+        .route_layer(axum::middleware::from_fn_with_state(HostToken(token), require_host_token))
         .layer(axum::Extension(Arc::new(job_fns)))
-}
-
-/// Reject a request whose bearer does not match the shared host token.
-async fn host_token_auth(
-    axum::extract::State(auth): axum::extract::State<HostTokenAuth>,
-    headers: axum::http::HeaderMap,
-    req: axum::extract::Request,
-    next: axum::middleware::Next,
-) -> Response {
-    let ok = headers
-        .get(axum::http::header::AUTHORIZATION)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.strip_prefix("Bearer "))
-        .is_some_and(|t| ct_eq(t.as_bytes(), auth.token.as_bytes()));
-    if ok {
-        next.run(req).await
-    } else {
-        (StatusCode::UNAUTHORIZED, "bad host token").into_response()
-    }
-}
-
-/// Constant-time byte comparison, so matching the host token never leaks a shared
-/// prefix through timing.
-fn ct_eq(a: &[u8], b: &[u8]) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut diff = 0u8;
-    for (x, y) in a.iter().zip(b) {
-        diff |= x ^ y;
-    }
-    diff == 0
 }
 
 /// Run a contributed job's pass on the blocking pool (DB + network): 200 on

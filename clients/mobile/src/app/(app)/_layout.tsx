@@ -1,7 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
-import { isTablet } from '../../lib/layout';
-import { useSession } from '../../lib/session';
-import { colors } from '../../lib/theme';
+import { isTablet } from '#mobile/lib/layout';
+import { useSession } from '#mobile/lib/session';
+import { colors } from '#mobile/lib/theme';
 
 /** Everything behind the auth gate: tabs, detail pages, the player. */
 export default function AppLayout() {

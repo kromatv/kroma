@@ -4,13 +4,13 @@
 import { LOCALES, type Locale } from '@kroma/core';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { PageHeader } from '../../../components/PageHeader';
-import { Screen } from '../../../components/ui';
-import { useI18n, useT } from '../../../lib/i18n';
-import { boxed, contentWidth } from '../../../lib/layout';
-import { useClient, useSession } from '../../../lib/session';
-import { colors, radius, spacing, type } from '../../../lib/theme';
-import { CheckIcon } from '../../../player/icons';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { Screen } from '#mobile/components/ui';
+import { useI18n, useT } from '#mobile/lib/i18n';
+import { boxed, contentWidth } from '#mobile/lib/layout';
+import { useClient, useSession } from '#mobile/lib/session';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { CheckIcon } from '#mobile/player/icons';
 
 export default function LanguageSettings() {
   const t = useT();

@@ -13,12 +13,12 @@ import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { FadeImage } from '../../components/FadeImage';
-import { PageHeader } from '../../components/PageHeader';
-import { Loading, Screen } from '../../components/ui';
-import { useT } from '../../lib/i18n';
-import { useClient } from '../../lib/session';
-import { colors, radius, SHADE, spacing, type } from '../../lib/theme';
+import { FadeImage } from '#mobile/components/FadeImage';
+import { PageHeader } from '#mobile/components/PageHeader';
+import { Loading, Screen } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { colors, radius, SHADE, spacing, type } from '#mobile/lib/theme';
 
 interface GenreTileModel {
   name: string;

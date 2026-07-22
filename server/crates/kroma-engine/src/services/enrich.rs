@@ -471,29 +471,7 @@ fn on_write_ok(
     by_lang: &std::collections::HashMap<String, Metadata>,
     langs: &[&str],
 ) {
-    // A *trusted* match renames the catalog title to TMDB's, so a corrected match
-    // finally updates the displayed name (fiche + cards read the row directly)
-    // instead of leaving the filename parse behind. The full-text search index is
-    // rebuilt from these rows separately: `search.reindex` is chained after the
-    // `metadata` stage (this runs inside it), so the new title becomes searchable
-    // once the stage completes. `job.pin` is set only for an operator correction
-    // or an acquisition-hinted import; a plain auto-search match keeps its parsed
-    // title (often the more reliable label for a low-confidence guess). No file on
-    // disk is touched. Best-effort: a rename failure must not drop the metadata.
-    if job.pin.is_some() {
-        if let Some(title) =
-            meta.title.as_deref().map(str::trim).filter(|t| !t.is_empty() && *t != job.title)
-        {
-            let renamed = if job.is_show {
-                db::set_show_title(&eng.pool, &job.id, title)
-            } else {
-                db::set_item_title(&eng.pool, &job.id, title)
-            };
-            if let Err(e) = renamed {
-                warn!(id = %job.id, error = %e, "failed to rename catalog title after a pinned match");
-            }
-        }
-    }
+    rename_if_pinned(eng, job, meta);
     // Dual-write the language-agnostic cache: the invariant core once, plus a
     // translation row per supported language (title/overview/genres/characters).
     let kind = if job.is_show { db::metadata_core::SHOW } else { db::metadata_core::ITEM };
@@ -518,6 +496,36 @@ fn on_write_ok(
     } else {
         ServerEvent::ItemUpdated { id: job.id.clone() }
     });
+}
+
+/// Rename the catalog row to TMDB's title when the match was *trusted*.
+///
+/// A corrected match must finally update the displayed name (fiche + cards read
+/// the row directly) instead of leaving the filename parse behind. The full-text
+/// search index is rebuilt from these rows separately: `search.reindex` is chained
+/// after the `metadata` stage (the caller runs inside it), so the new title
+/// becomes searchable once the stage completes. `job.pin` is set only for an
+/// operator correction or an acquisition-hinted import; a plain auto-search match
+/// keeps its parsed title (often the more reliable label for a low-confidence
+/// guess). No file on disk is touched. Best-effort: a rename failure must not drop
+/// the metadata.
+fn rename_if_pinned(eng: &Engine, job: &Job, meta: &Metadata) {
+    if job.pin.is_none() {
+        return;
+    }
+    let Some(title) =
+        meta.title.as_deref().map(str::trim).filter(|t| !t.is_empty() && *t != job.title)
+    else {
+        return;
+    };
+    let renamed = if job.is_show {
+        db::set_show_title(&eng.pool, &job.id, title)
+    } else {
+        db::set_item_title(&eng.pool, &job.id, title)
+    };
+    if let Err(e) = renamed {
+        warn!(id = %job.id, error = %e, "failed to rename catalog title after a pinned match");
+    }
 }
 
 /// Pick the primary language key from a per-language map: the household base code

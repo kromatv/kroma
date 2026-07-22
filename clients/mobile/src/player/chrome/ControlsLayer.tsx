@@ -6,9 +6,9 @@ import { episodeTag, formatTimecode, type MediaItem } from '@kroma/core';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
-import { useT } from '../../lib/i18n';
-import { absoluteFill, colors, spacing } from '../../lib/theme';
-import type { Engine } from '../engine';
+import { useT } from '#mobile/lib/i18n';
+import { absoluteFill, colors, spacing } from '#mobile/lib/theme';
+import type { Engine } from '#mobile/player/engine';
 import {
   Back10Icon,
   BackIcon,
@@ -17,9 +17,9 @@ import {
   PipIcon,
   PlayIcon,
   TracksIcon,
-} from '../icons';
-import { ScrubBar } from '../ScrubBar';
-import type { StoryboardTile } from '../useStoryboard';
+} from '#mobile/player/icons';
+import { ScrubBar } from '#mobile/player/ScrubBar';
+import type { StoryboardTile } from '#mobile/player/useStoryboard';
 
 export function ControlsLayer({
   engine,

@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import { useSession } from '../lib/session';
+import { useSession } from '#mobile/lib/session';
 
 /** Entry dispatch: booting shows nothing (native splash is still up). */
 export default function Index() {

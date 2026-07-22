@@ -5,8 +5,8 @@
 import { type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useT } from '../../lib/i18n';
-import { colors, spacing, type } from '../../lib/theme';
+import { useT } from '#mobile/lib/i18n';
+import { colors, spacing, type } from '#mobile/lib/theme';
 
 export { Button, Chip, TextField } from './controls';
 export { EmptyState, ErrorBanner, ErrorView, Loading } from './states';

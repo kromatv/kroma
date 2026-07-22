@@ -56,11 +56,20 @@ class VlcPlayer(
         // first attach; feed VLC the REAL dimensions once the surface is laid out
         // (else it renders into a wrong-sized corner of the plane).
         surface.holder.addCallback(object : SurfaceHolder.Callback {
-            override fun surfaceCreated(holder: SurfaceHolder) {}
+            override fun surfaceCreated(holder: SurfaceHolder) {
+                // Intentionally empty: SurfaceHolder.Callback forces all three methods,
+                // but VLC is attached to the surface by ensureAttached() on load(), and
+                // surfaceChanged() below always fires right after creation with the real
+                // size. Nothing left to do here.
+            }
             override fun surfaceChanged(holder: SurfaceHolder, f: Int, w: Int, h: Int) {
                 if (attached && w > 0 && h > 0) player.vlcVout.setWindowSize(w, h)
             }
-            override fun surfaceDestroyed(holder: SurfaceHolder) {}
+            override fun surfaceDestroyed(holder: SurfaceHolder) {
+                // Intentionally empty: detaching the vout is driven by the player
+                // lifecycle (stop() / release()), not by the surface going away, so
+                // tearing it down here would fight those and double-detach.
+            }
         })
     }
 

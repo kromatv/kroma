@@ -49,8 +49,12 @@ android {
 }
 
 dependencies {
-    // Single source of truth for the media3 (ExoPlayer) version.
+    // Single source of truth for every dependency version (no version catalog in
+    // this standalone Android project, so the versions live here as vals).
     val media3Version = "1.5.1"
+    val libvlcVersion = "3.6.0"
+    val tvproviderVersion = "1.0.0"
+    val webkitVersion = "1.12.1"
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     // HLS media source: the stream-copy master fallback (`master=true` loads).
     implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
@@ -60,14 +64,14 @@ dependencies {
     // Main10, DTS, TrueHD) is unplayable; libVLC carries its own ffmpeg-based
     // decoders and plays anything, so it's the fallback when ExoPlayer can't
     // decode. See VlcPlayer / ExoBridge.
-    implementation("org.videolan.android:libvlc-all:3.6.0")
+    implementation("org.videolan.android:libvlc-all:$libvlcVersion")
     // TvProvider: publish the "continue watching" list into the launcher's
     // system Watch Next row (the Tizen Smart Hub carousel equivalent). See WatchNext.kt.
-    implementation("androidx.tvprovider:tvprovider:1.0.0")
+    implementation("androidx.tvprovider:tvprovider:$tvproviderVersion")
     // WebViewAssetLoader: serve the bundled web app over a real https origin
     // (appassets.androidplatform.net) instead of file://, so the Vite ES-module
     // bundle (`<script type="module">` + dynamic import()) actually loads. From
     // file:// the WebView blocks module scripts (CORS null origin) and the app
     // never renders (black screen). See MainActivity.
-    implementation("androidx.webkit:webkit:1.12.1")
+    implementation("androidx.webkit:webkit:$webkitVersion")
 }

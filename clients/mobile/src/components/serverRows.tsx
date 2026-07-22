@@ -4,8 +4,8 @@
 
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, spacing, type } from '../lib/theme';
-import { ChevronRightIcon } from '../player/icons';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { ChevronRightIcon } from '#mobile/player/icons';
 
 /** Soft surface card the rows stack in (the profile-rows card language). */
 export function ServerList({ children }: Readonly<{ children: ReactNode }>) {

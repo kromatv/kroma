@@ -10,17 +10,17 @@ import type { VideoView as VideoViewRef } from 'expo-video';
 import { VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { ErrorView, Loading } from '../../../components/ui';
-import { type DownloadEntry, useDownloads } from '../../../lib/downloads';
-import { useT } from '../../../lib/i18n';
-import { useClient } from '../../../lib/session';
-import { colors } from '../../../lib/theme';
-import { useKromaEngine } from '../../../player/engine';
-import { useHeartbeat } from '../../../player/heartbeat';
-import { PlayerChrome } from '../../../player/PlayerChrome';
-import { TrackSheet } from '../../../player/TrackSheet';
-import { useStoryboard } from '../../../player/useStoryboard';
-import { useSubtitles } from '../../../player/useSubtitles';
+import { ErrorView, Loading } from '#mobile/components/ui';
+import { type DownloadEntry, useDownloads } from '#mobile/lib/downloads';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { colors } from '#mobile/lib/theme';
+import { useKromaEngine } from '#mobile/player/engine';
+import { useHeartbeat } from '#mobile/player/heartbeat';
+import { PlayerChrome } from '#mobile/player/PlayerChrome';
+import { TrackSheet } from '#mobile/player/TrackSheet';
+import { useStoryboard } from '#mobile/player/useStoryboard';
+import { useSubtitles } from '#mobile/player/useSubtitles';
 
 /** Resume from saved progress when meaningfully started and not basically done. */
 function resumeSec(positionMs: number | undefined, durationMs: number | null): number {

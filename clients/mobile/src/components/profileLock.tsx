@@ -3,8 +3,8 @@
 // and auth calls stay in the route (app/(app)/profile-pin.tsx).
 
 import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
-import { useT } from '../lib/i18n';
-import { colors, radius, spacing, type } from '../lib/theme';
+import { useT } from '#mobile/lib/i18n';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
 import { CodeCells } from './onboarding';
 import { Button, ErrorBanner } from './ui';
 

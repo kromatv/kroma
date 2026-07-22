@@ -15,9 +15,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useT } from '../lib/i18n';
-import { boxed, contentWidth, useIsWide } from '../lib/layout';
-import { colors, SHADE, spacing, type } from '../lib/theme';
+import { useT } from '#mobile/lib/i18n';
+import { boxed, contentWidth, useIsWide } from '#mobile/lib/layout';
+import { colors, SHADE, spacing, type } from '#mobile/lib/theme';
 import { KromaLockup } from './KromaLockup';
 
 /** Full-screen scaffold: ink background, amber wash over the top, the fixed
@@ -27,7 +27,7 @@ export function OnboardingScreen({
   children,
 }: Readonly<{
   /** Android KeyboardAvoidingView behavior override; iOS always pads. */
-  keyboardBehavior?: KeyboardAvoidingViewProps['behavior'];
+  keyboardBehavior?: NonNullable<KeyboardAvoidingViewProps['behavior']>;
   children: ReactNode;
 }>) {
   const insets = useSafeAreaInsets();

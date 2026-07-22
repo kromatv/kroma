@@ -2,6 +2,7 @@ import {
   type CSSProperties,
   type ImgHTMLAttributes,
   type ReactNode,
+  type RefObject,
   type SyntheticEvent,
   useEffect,
   useRef,
@@ -42,16 +43,16 @@ export interface ImageProps {
   className?: string;
   /** Extra styles merged onto the container. */
   style?: CSSProperties;
-  loading?: ImgAttrs['loading'];
+  loading?: NonNullable<ImgAttrs['loading']>;
   /** Fetch priority hint. Set `'high'` on the one above-the-fold hero/backdrop
    *  that is the LCP element; leave unset (browser default) everywhere else. */
-  fetchPriority?: ImgAttrs['fetchPriority'];
-  decoding?: ImgAttrs['decoding'];
+  fetchPriority?: NonNullable<ImgAttrs['fetchPriority']>;
+  decoding?: NonNullable<ImgAttrs['decoding']>;
   draggable?: boolean;
   sizes?: string;
   srcSet?: string;
-  crossOrigin?: ImgAttrs['crossOrigin'];
-  referrerPolicy?: ImgAttrs['referrerPolicy'];
+  crossOrigin?: NonNullable<ImgAttrs['crossOrigin']>;
+  referrerPolicy?: NonNullable<ImgAttrs['referrerPolicy']>;
   onLoad?: (e: SyntheticEvent<HTMLImageElement>) => void;
   onError?: (e: SyntheticEvent<HTMLImageElement>) => void;
 }
@@ -67,6 +68,86 @@ const FILL: CSSProperties = {
   width: '100%',
   height: '100%',
 };
+
+/** The live cross-fade state for the current `src`: whether it has decoded, and
+ * the previously loaded image held underneath while it does. */
+interface CrossFade {
+  loaded: boolean;
+  errored: boolean;
+  /** The previous, still fully loaded image kept under the incoming one. */
+  under: string | null;
+  imgRef: RefObject<HTMLImageElement | null>;
+  markLoaded: () => void;
+  markErrored: () => void;
+}
+
+/** Drive the load-in / cross-fade state machine for `src`. Split out of the
+ * component so the render stays a plain description of the layers. */
+function useCrossFade(src: string | null, duration: number): CrossFade {
+  const [shown, setShown] = useState<string | null>(src);
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  const [under, setUnder] = useState<string | null>(null);
+  const loadedSrcRef = useRef<string | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Adjust state during render when `src` changes (avoids a one-frame flicker a
+  // post-commit effect would cause): promote the last fully-loaded image to the
+  // underlay and start the incoming one from opacity 0. Clearing to null (or the
+  // same url) drops the underlay so we never cross-fade from a stale image.
+  if (shown !== src) {
+    const prev = loadedSrcRef.current;
+    setUnder(src && prev && prev !== src ? prev : null);
+    setShown(src);
+    setLoaded(false);
+    setErrored(false);
+  }
+
+  // Cached images can already be `complete` before React attaches `onLoad`, so
+  // the load event never fires mark them loaded on mount to reveal them.
+  useEffect(() => {
+    const el = imgRef.current;
+    if (el?.complete && el.naturalWidth > 0) {
+      loadedSrcRef.current = src;
+      setLoaded(true);
+    }
+  }, [src]);
+
+  // Drop the underlay once the incoming image has finished fading in over it.
+  useEffect(() => {
+    if (!loaded || under == null) return;
+    const id = setTimeout(() => setUnder(null), duration);
+    return () => clearTimeout(id);
+  }, [loaded, under, duration]);
+
+  const markLoaded = () => {
+    loadedSrcRef.current = src;
+    setLoaded(true);
+  };
+
+  const markErrored = () => {
+    setErrored(true);
+    setUnder(null);
+  };
+
+  return { loaded, errored, under, imgRef, markLoaded, markErrored };
+}
+
+/** The container box: `fill` stretches it to a positioned parent; otherwise it is
+ * a relative box the caller sizes (via className) and the positioning context for
+ * the layered images. */
+function containerStyle(
+  o: Readonly<Pick<ImageProps, 'fill' | 'radius' | 'background' | 'style'>>,
+): CSSProperties {
+  return {
+    position: o.fill ? 'absolute' : 'relative',
+    ...(o.fill ? { top: 0, right: 0, bottom: 0, left: 0 } : null),
+    overflow: 'hidden',
+    borderRadius: o.radius,
+    background: o.background,
+    ...o.style,
+  };
+}
 
 /**
  * Generic image surface with a built-in fade a shadcn-style drop-in wherever
@@ -110,51 +191,15 @@ export function Image({
   onLoad,
   onError,
 }: Readonly<ImageProps>) {
-  const [shown, setShown] = useState<string | null>(src);
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
-  const [under, setUnder] = useState<string | null>(null);
-  const loadedSrcRef = useRef<string | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-
-  // Adjust state during render when `src` changes (avoids a one-frame flicker a
-  // post-commit effect would cause): promote the last fully-loaded image to the
-  // underlay and start the incoming one from opacity 0. Clearing to null (or the
-  // same url) drops the underlay so we never cross-fade from a stale image.
-  if (shown !== src) {
-    const prev = loadedSrcRef.current;
-    setUnder(src && prev && prev !== src ? prev : null);
-    setShown(src);
-    setLoaded(false);
-    setErrored(false);
-  }
-
-  // Cached images can already be `complete` before React attaches `onLoad`, so
-  // the load event never fires mark them loaded on mount to reveal them.
-  useEffect(() => {
-    const el = imgRef.current;
-    if (el?.complete && el.naturalWidth > 0) {
-      loadedSrcRef.current = src;
-      setLoaded(true);
-    }
-  }, [src]);
-
-  // Drop the underlay once the incoming image has finished fading in over it.
-  useEffect(() => {
-    if (!loaded || under == null) return;
-    const id = setTimeout(() => setUnder(null), duration);
-    return () => clearTimeout(id);
-  }, [loaded, under, duration]);
+  const { loaded, errored, under, imgRef, markLoaded, markErrored } = useCrossFade(src, duration);
 
   const handleLoad = (e: SyntheticEvent<HTMLImageElement>) => {
-    loadedSrcRef.current = src;
-    setLoaded(true);
+    markLoaded();
     onLoad?.(e);
   };
 
   const handleError = (e: SyntheticEvent<HTMLImageElement>) => {
-    setErrored(true);
-    setUnder(null);
+    markErrored();
     onError?.(e);
   };
 
@@ -162,20 +207,7 @@ export function Image({
   const showFallback = fallback != null && (!src || errored);
 
   return (
-    <div
-      className={className}
-      style={{
-        // `fill` stretches to a positioned parent; otherwise the container is a
-        // relative box the caller sizes (via className) and the positioning
-        // context for the layered images.
-        position: fill ? 'absolute' : 'relative',
-        ...(fill ? { top: 0, right: 0, bottom: 0, left: 0 } : null),
-        overflow: 'hidden',
-        borderRadius: radius,
-        background,
-        ...style,
-      }}
-    >
+    <div className={className} style={containerStyle({ fill, radius, background, style })}>
       {under && under !== src ? (
         <img
           key="under"

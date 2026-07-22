@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { colors, posterWidth, radius, spacing, type } from '../lib/theme';
+import { colors, posterWidth, radius, spacing, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
 export interface CardModel {

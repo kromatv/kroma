@@ -38,7 +38,8 @@ export function adminReports(ctx: RequestContext, query?: ReportQuery): Promise<
   if (query?.kind) params.set('kind', query.kind);
   if (query?.q) params.set('q', query.q);
   const qs = params.toString();
-  return ctx.json<ReportsView>(`/admin/reports${qs ? `?${qs}` : ''}`);
+  const search = qs ? `?${qs}` : '';
+  return ctx.json<ReportsView>(`/admin/reports${search}`);
 }
 
 /** Resolve a report (`reports.manage`). */

@@ -12,15 +12,15 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar } from '../../../components/Avatar';
-import { ContinueRail, MediaRail, movieCard, sectionCard } from '../../../components/cards';
-import { HeroBillboard } from '../../../components/HeroBillboard';
-import { KromaLockup } from '../../../components/KromaLockup';
-import { Chip, ErrorView, Loading, SectionTitle } from '../../../components/ui';
-import { useT } from '../../../lib/i18n';
-import { useClient, useSession } from '../../../lib/session';
-import { colors, posterWidth, spacing, TAB_BAR_CLEARANCE } from '../../../lib/theme';
-import { DownloadIcon } from '../../../player/icons';
+import { Avatar } from '#mobile/components/Avatar';
+import { ContinueRail, MediaRail, movieCard, sectionCard } from '#mobile/components/cards';
+import { HeroBillboard } from '#mobile/components/HeroBillboard';
+import { KromaLockup } from '#mobile/components/KromaLockup';
+import { Chip, ErrorView, Loading, SectionTitle } from '#mobile/components/ui';
+import { useT } from '#mobile/lib/i18n';
+import { useClient, useSession } from '#mobile/lib/session';
+import { colors, posterWidth, spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
+import { DownloadIcon } from '#mobile/player/icons';
 
 function HomeHeader() {
   const { user } = useSession();

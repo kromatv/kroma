@@ -4,10 +4,10 @@
 import type { MediaItem } from '@kroma/core';
 import { useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
-import { useDownloads } from '../lib/downloads';
-import { useT } from '../lib/i18n';
-import { colors } from '../lib/theme';
-import { CheckIcon, DownloadIcon } from '../player/icons';
+import { useDownloads } from '#mobile/lib/downloads';
+import { useT } from '#mobile/lib/i18n';
+import { colors } from '#mobile/lib/theme';
+import { CheckIcon, DownloadIcon } from '#mobile/player/icons';
 import { ProgressRing } from './ProgressRing';
 
 const RING = 34;

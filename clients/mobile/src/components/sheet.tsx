@@ -12,8 +12,8 @@ import {
 import { forwardRef, type ReactNode, useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, spacing, type } from '../lib/theme';
-import { CheckIcon } from '../player/icons';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { CheckIcon } from '#mobile/player/icons';
 
 export type AppSheetRef = BottomSheetModal;
 

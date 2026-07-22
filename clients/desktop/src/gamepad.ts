@@ -55,7 +55,7 @@ export function startGamepadBridge(): () => void {
 
   const stateFor = (pad: Gamepad): PadState => {
     let state = pads.get(pad.index);
-    if (!state || state.id !== pad.id) {
+    if (state?.id !== pad.id) {
       state = freshPadState(pad.id);
       pads.set(pad.index, state);
       console.info(
@@ -66,35 +66,44 @@ export function startGamepadBridge(): () => void {
     return state;
   };
 
-  const tick = () => {
-    if (stopped) return;
+  const rawSnapshot = (pad: Gamepad): string => {
+    const btns = pad.buttons.flatMap((b, i) => (b.pressed || b.value > 0.05 ? [i] : []));
+    const axes = pad.axes.map((v) => v.toFixed(2)).join(',');
+    return `[gamepad] raw pad${pad.index} buttons=[${btns.join(',')}] axes=[${axes}]`;
+  };
+
+  // A fresh press is the interesting moment for layout debugging: dump the raw pad
+  // snapshots collected this frame (once per frame, not per held frame).
+  const dumpRaw = (raw: string[]): void => {
+    if (!debug) return;
+    for (const line of raw.splice(0)) console.debug(line);
+  };
+
+  // Poll every connected pad: collect the keys currently active across all of them,
+  // forget the states of pads that went away, and append this frame's debug snapshots.
+  const pollPads = (raw: string[]): Set<EmitKey> => {
     const active = new Set<EmitKey>();
     const seen = new Set<number>();
-    const raw: string[] = [];
     for (const pad of navigator.getGamepads()) {
       if (!pad) continue;
       seen.add(pad.index);
       const state = stateFor(pad);
       updateCalibration(pad, state);
       for (const k of activeKeys(pad, state)) active.add(k);
-      if (debug) {
-        const btns = pad.buttons.flatMap((b, i) => (b.pressed || b.value > 0.05 ? [i] : []));
-        const axes = pad.axes.map((v) => v.toFixed(2)).join(',');
-        raw.push(`[gamepad] raw pad${pad.index} buttons=[${btns.join(',')}] axes=[${axes}]`);
-      }
+      if (debug) raw.push(rawSnapshot(pad));
     }
     for (const index of pads.keys()) {
       if (!seen.has(index)) pads.delete(index);
     }
-    const t = now();
+    return active;
+  };
 
-    // Newly pressed -> keydown; still-held repeatable key past its due time -> repeat.
+  // Newly pressed -> keydown; still-held repeatable key past its due time -> repeat.
+  const emitPresses = (active: Set<EmitKey>, raw: string[], t: number): void => {
     for (const k of active) {
       const state = held.get(k);
       if (!state) {
-        // A fresh press is the interesting moment for layout debugging: dump the
-        // raw pad snapshot alongside it (once per frame, not per held frame).
-        if (debug) for (const line of raw.splice(0)) console.debug(line);
+        dumpRaw(raw);
         fire('keydown', k, false);
         held.set(k, { nextRepeat: t + REPEAT_DELAY_MS });
       } else if (REPEATABLE.has(k) && t >= state.nextRepeat) {
@@ -102,13 +111,25 @@ export function startGamepadBridge(): () => void {
         state.nextRepeat = t + REPEAT_EVERY_MS;
       }
     }
-    // Released -> keyup (drives e.g. the player's commit-seek-on-release).
+  };
+
+  // Released -> keyup (drives e.g. the player's commit-seek-on-release).
+  const emitReleases = (active: Set<EmitKey>): void => {
     for (const k of held.keys()) {
       if (!active.has(k)) {
         fire('keyup', k, false);
         held.delete(k);
       }
     }
+  };
+
+  const tick = () => {
+    if (stopped) return;
+    const raw: string[] = [];
+    const active = pollPads(raw);
+    const t = now();
+    emitPresses(active, raw, t);
+    emitReleases(active);
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);

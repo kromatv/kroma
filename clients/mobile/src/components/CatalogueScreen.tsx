@@ -13,9 +13,9 @@ import {
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useT } from '../lib/i18n';
-import { useClient } from '../lib/session';
-import { colors, spacing, type } from '../lib/theme';
+import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
+import { colors, spacing, type } from '#mobile/lib/theme';
 import { type CardModel, movieCard, showCard } from './cards';
 import { gridMetrics, PosterGrid } from './PosterGrid';
 import { FilmTabIcon } from './tabIcons';

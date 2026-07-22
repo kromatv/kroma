@@ -10,9 +10,9 @@ import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useClient } from '../lib/session';
-import { colors, SHADE, spacing, type } from '../lib/theme';
-import { BackIcon } from '../player/icons';
+import { useClient } from '#mobile/lib/session';
+import { colors, SHADE, spacing, type } from '#mobile/lib/theme';
+import { BackIcon } from '#mobile/player/icons';
 import { Avatar } from './Avatar';
 import { FadeImage } from './FadeImage';
 
