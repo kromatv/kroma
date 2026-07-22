@@ -18,6 +18,17 @@
 // Prevents an extra console window on Windows in release; a no-op on Linux/macOS.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+// Platform-independent core of the three in-process libmpv engines (engine slot,
+// shared init options, observed properties, event pump, command mapping). Compiled
+// whenever at least one of them is, i.e. in any `libmpv` build; a
+// `--no-default-features` build drops it with them.
+#[cfg(all(
+    feature = "libmpv",
+    any(target_os = "linux", target_os = "macos", target_os = "windows")
+))]
+#[allow(dead_code)]
+mod libmpv_shared;
+
 // The mpv BINARY IPC runtime (Deck): unix socket, Linux only. Still the default
 // Linux backend (process isolation + VO fallback ladder), and the automatic
 // fallback when the in-process libmpv engine can't come up.
