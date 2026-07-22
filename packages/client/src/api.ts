@@ -198,6 +198,15 @@ export class KromaClient {
     return Boolean(this.authToken);
   }
 
+  /** Headers a RAW request must carry to authenticate as this session: for
+   * transfers that don't go through `json`/`blob` because the platform owns the
+   * socket (the native file downloader behind [`downloadUrl`]). Media-element
+   * URLs (`streamUrl`, `hlsMasterUrl`) need nothing - those routes are public
+   * precisely because a `<video>` can't send a header. */
+  authHeaders(): Record<string, string> {
+    return this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {};
+  }
+
   private async json<T>(path: string, init?: RequestInit, retried = false): Promise<T> {
     try {
       return await requestJson<T>(
@@ -302,6 +311,9 @@ export class KromaClient {
   }
   streamUrl(id: string): string {
     return media.streamUrl(this.ctx, id);
+  }
+  downloadUrl(id: string, copyCodecs?: string[]): string {
+    return media.downloadUrl(this.ctx, id, copyCodecs);
   }
   hlsMasterUrl(
     id: string,

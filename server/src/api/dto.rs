@@ -15,6 +15,18 @@ use crate::services::settings::SettingGroup;
 #[derive(Serialize)]
 pub struct Health {
     pub status: &'static str,
+    /// The admin-configured server name, so clients can label saved servers.
+    /// LAN callers only: this endpoint is public, and the name is usually a
+    /// household label ("Salon", a family name) that a box exposed through the
+    /// tunnel should not hand to anonymous scanners. Remote clients keep the
+    /// name they saved at pairing time.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    /// Stable, opaque per-install identity, so a client that reached this server
+    /// through several origins lists it once. Deliberately carries no
+    /// information about the box (see `settings::ensure_instance_id`).
+    #[serde(rename = "instanceId")]
+    pub instance_id: String,
     pub version: &'static str,
     pub ffprobe: bool,
     pub libraries: usize,

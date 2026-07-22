@@ -1,0 +1,84 @@
+{
+  "expo": {
+    "name": "KROMA",
+    "slug": "kroma",
+    "version": "0.1.3",
+    "orientation": "default",
+    "icon": "./assets/images/icon.png",
+    "scheme": "kroma",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0C",
+    "ios": {
+      "bundleIdentifier": "tv.kroma.mobile",
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": ["en", "fr"],
+        "UIViewControllerBasedStatusBarAppearance": false,
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "NSLocalNetworkUsageDescription": "KROMA searches your local network to find your media server.",
+        "NSBonjourServices": ["_http._tcp", "_kroma._tcp"]
+      }
+    },
+    "android": {
+      "package": "tv.kroma.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A0C",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "KROMA uses Face ID to unlock PIN-protected profiles."
+        }
+      ],
+      "expo-localization",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0A0C",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
+      ],
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "KROMA uses your photo library to set your profile picture."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "KROMA scans your TV's QR code to sign it in."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

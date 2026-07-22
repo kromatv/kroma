@@ -21,6 +21,9 @@ export interface DiscoverOptions {
   port?: number;
   /** Max concurrent probes during a subnet scan. Default 48. */
   concurrency?: number;
+  /** This device's LAN IPv4, for platforms whose runtime cannot derive it
+   * (React Native); tried before the built-in per-platform resolvers. */
+  localIp?: string;
   fetch?: typeof globalThis.fetch;
 }
 
@@ -40,7 +43,7 @@ export async function discoverServer(opts: DiscoverOptions = {}): Promise<string
 
   // 2) Subnet scan needs this device's own LAN IP.
   if (opts.scanSubnet !== false) {
-    const ip = await getLocalIPv4();
+    const ip = opts.localIp ?? (await getLocalIPv4());
     if (ip) {
       const hosts = subnetCandidates(ip, port);
       const scanHit = await raceForServer(
@@ -53,6 +56,73 @@ export async function discoverServer(opts: DiscoverOptions = {}): Promise<string
     }
   }
   return null;
+}
+
+/** One server found by [`discoverServers`]: its origin plus the identity bits
+ *  of its `/api/health` answer. */
+export interface DiscoveredServer {
+  url: string;
+  /** Admin-configured server name (absent on servers predating it, and on
+   *  servers that classify this client as WAN). */
+  name?: string;
+  version?: string;
+  /** Stable per-install id (absent on servers predating it). */
+  instanceId?: string;
+}
+
+/** The identity two answers must share to be "the same server". Servers mint a
+ *  stable `instanceId`; only when talking to one too old to send it do we fall
+ *  back to a content fingerprint, which is a guess (two fresh installs are both
+ *  "KROMA", same version, 0 libraries) - so the fallback is namespaced and left
+ *  deliberately unable to collide with a real id. */
+function identityOf(body: HealthBody): string {
+  if (body.instanceId) return `id:${body.instanceId}`;
+  return `fp:${[body.name, body.version, body.libraries, body.items, body.shows].join('|')}`;
+}
+
+/** Probe candidates AND the whole local subnet; resolve EVERY live KROMA
+ *  server. Duplicate answers for the same server (e.g. its mDNS name and its
+ *  IP) are collapsed on [`identityOf`], keeping the first origin. Both sweeps
+ *  run concurrently: a `.local` candidate that no resolver answers burns its
+ *  full timeout, and the subnet has no reason to wait for it. */
+export async function discoverServers(opts: DiscoverOptions = {}): Promise<DiscoveredServer[]> {
+  const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
+  if (!fetchFn) return [];
+  const port = opts.port ?? 4040;
+
+  const named = (opts.candidates ?? DEFAULT_DISCOVERY_CANDIDATES).map(stripTrailingSlash);
+  const subnet = async () => {
+    if (opts.scanSubnet === false) return [];
+    const ip = opts.localIp ?? (await getLocalIPv4());
+    if (!ip) return [];
+    return probeAll(
+      subnetCandidates(ip, port),
+      fetchFn,
+      opts.timeoutMs ?? 1500,
+      opts.concurrency ?? 48,
+    );
+  };
+  // Named candidates stay FIRST in the result so a friendly `.local` origin wins
+  // over the bare IP for the same server.
+  const [namedHits, subnetHits] = await Promise.all([
+    probeAll(named, fetchFn, opts.timeoutMs ?? 2000, named.length),
+    subnet(),
+  ]);
+
+  const seen = new Set<string>();
+  const found: DiscoveredServer[] = [];
+  for (const hit of [...namedHits, ...subnetHits]) {
+    const key = identityOf(hit.body);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    found.push({
+      url: hit.url,
+      name: hit.body.name,
+      version: hit.body.version,
+      instanceId: hit.body.instanceId,
+    });
+  }
+  return found;
 }
 
 /** All `http://<prefix>.1..254:<port>` origins for the /24 containing `ip`
@@ -219,22 +289,71 @@ function raceForServer(
   });
 }
 
+/** Probe every url (≤ `concurrency` at a time) and collect ALL live servers,
+ *  in probe order. Unlike [`raceForServer`] this waits for the full sweep. */
+async function probeAll(
+  urls: string[],
+  fetchFn: typeof globalThis.fetch,
+  timeoutMs: number,
+  concurrency: number,
+): Promise<Array<{ url: string; body: HealthBody }>> {
+  // Results are written into the slot they were claimed from, so probe order
+  // holds by construction: no post-hoc sort, and no dependence on the urls
+  // being unique.
+  const slots: Array<{ url: string; body: HealthBody } | null> = urls.map(() => null);
+  let next = 0;
+  const worker = async () => {
+    while (next < urls.length) {
+      const i = next++;
+      const url = urls[i];
+      if (url === undefined) break;
+      const body = await probeHealth(fetchFn, url, timeoutMs);
+      if (body) slots[i] = { url, body };
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.max(1, Math.min(concurrency, urls.length)) }, worker),
+  );
+  return slots.filter((hit): hit is { url: string; body: HealthBody } => hit !== null);
+}
+
+interface HealthBody {
+  status?: string;
+  name?: string;
+  version?: string;
+  instanceId?: string;
+  libraries?: number;
+  items?: number;
+  shows?: number;
+}
+
+async function probeHealth(
+  fetchFn: typeof globalThis.fetch,
+  base: string,
+  timeoutMs: number,
+): Promise<HealthBody | null> {
+  const ctrl = new AbortController();
+  // Cleared in `finally`: on the throw path (abort, DNS failure, connection
+  // refused) an un-cleared timer stays armed, and a /24 sweep arms 253 of them.
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetchFn(`${base}/api/health`, { signal: ctrl.signal });
+    if (!res.ok) return null;
+    const body = (await res.json()) as HealthBody;
+    return body?.status === 'ok' ? body : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function probe(
   fetchFn: typeof globalThis.fetch,
   base: string,
   timeoutMs: number,
 ): Promise<boolean> {
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-    const res = await fetchFn(`${base}/api/health`, { signal: ctrl.signal });
-    clearTimeout(timer);
-    if (!res.ok) return false;
-    const body = (await res.json()) as { status?: string };
-    return body?.status === 'ok';
-  } catch {
-    return false;
-  }
+  return (await probeHealth(fetchFn, base, timeoutMs)) !== null;
 }
 
 function stripTrailingSlash(url: string): string {

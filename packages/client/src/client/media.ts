@@ -136,6 +136,25 @@ export function streamUrl(ctx: RequestContext, id: string): string {
   return `${ctx.baseUrl}/api/items/${encodeURIComponent(id)}/stream`;
 }
 
+/** One-file offline download: the title remuxed on the fly to fragmented MP4
+ * (video stream-copied; EVERY audio track kept, each copied or AAC-transcoded
+ * server-side so the file plays on any phone with all languages switchable
+ * offline). `copyCodecs` narrows which codecs the server may stream-copy to
+ * the ones THIS device decodes natively (e.g. `['aac']` on Android phones,
+ * which usually lack Dolby decoders). Chunked, no Content-Length.
+ *
+ * The three states are distinct on the wire: omitting `copyCodecs` sends no
+ * `copy` param at all ("no preference" = the server's full copy set), while an
+ * EMPTY array sends an empty one ("this device decodes none of them, transcode
+ * everything"). Collapsing the two would turn "copy nothing" into "copy all"
+ * and hand a phone Dolby tracks it can't decode, offline, where the player has
+ * no fallback left. */
+export function downloadUrl(ctx: RequestContext, id: string, copyCodecs?: string[]): string {
+  const base = `${ctx.baseUrl}/api/items/${encodeURIComponent(id)}/download`;
+  if (!copyCodecs) return base;
+  return `${base}?copy=${encodeURIComponent(copyCodecs.join(','))}`;
+}
+
 /** Server-side loudness-filter variant of the HLS master (night-mode volume
  * leveling for engines with no local audio DSP, e.g. Tizen AVPlay). The names
  * match the client Web Audio compressor modes; either one forces the AAC

@@ -2,7 +2,9 @@
 //! the server status / scan / logs handlers. All responses are JSON unless noted.
 //! DB work runs on `spawn_blocking` threads via [`crate::api::util`].
 
-use axum::extract::{Path, Query, State};
+use std::net::SocketAddr;
+
+use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -46,10 +48,25 @@ pub struct LibraryQuery {
 }
 
 /// `GET /api/health`
-pub async fn health(State(state): State<SharedState>) -> Result<Response, Response> {
+///
+/// Public (the TV health monitor and the mobile server picker poll it before any
+/// login), so the human-readable server name is attached for LAN callers only;
+/// see [`super::dto::Health::name`].
+pub async fn health(
+    State(state): State<SharedState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: axum::http::HeaderMap,
+) -> Result<Response, Response> {
     let (libraries, items, shows) = query(&state.db, move |pool| db::counts(&pool)).await?;
+    let ip = crate::api::util::client_ip(&headers, &addr);
+    let is_lan = crate::services::playback::is_lan(
+        &ip,
+        &crate::services::settings::local_networks(&state.settings),
+    );
     Ok(Json(super::dto::Health {
         status: "ok",
+        name: is_lan.then(|| crate::services::settings::server_name(&state.settings)),
+        instance_id: state.instance_id.clone(),
         version: env!("CARGO_PKG_VERSION"),
         ffprobe: state.ffprobe_available,
         libraries,

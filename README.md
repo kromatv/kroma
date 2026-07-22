@@ -169,6 +169,7 @@ kroma/
 │  ├─ tizen/  @kroma/tizen   Samsung TV thin shell + config.xml → .wgt
 │  ├─ webos/  @kroma/webos   LG TV thin shell (modern + legacy tiers) → .ipk
 │  ├─ androidtv/ @kroma/androidtv  Android TV WebView shell + native ExoPlayer → .apk
+│  ├─ mobile/ @kroma/mobile   iPhone / iPad / Android app (Expo + expo-video) → .ipa/.apk
 │  └─ tv-build/              shared TV-shell build pipeline (tv.target.ts per shell)
 └─ design/                  imported design source (tokens, components, guidelines, KROMA.dc.html)
 ```
@@ -183,6 +184,7 @@ kroma/
 | `@kroma/tizen` | Samsung TV (Tizen) shell | [clients/tizen/README.md](clients/tizen/README.md) |
 | `@kroma/webos` | LG TV (webOS) shell, modern + legacy (2018+) tiers | [clients/webos/README.md](clients/webos/README.md) |
 | `@kroma/androidtv` | Android TV / Google TV shell (WebView + ExoPlayer) | [clients/androidtv/README.md](clients/androidtv/README.md) |
+| `@kroma/mobile` | iPhone / iPad / Android app (Expo, offline downloads) | [clients/mobile/README.md](clients/mobile/README.md) |
 | `design` | Design system source (tokens, guidelines) | [design/readme.md](design/readme.md) |
 
 ## Prerequisites
@@ -231,6 +233,7 @@ bun run dev:androidtv  # :5176   Android TV
 | **Samsung TV** (Tizen) | `bun run dev:tizen` | `make -C clients/tizen deploy TV_IP=…` → `.wgt` ([tizen README](clients/tizen/README.md) · [SETUP](clients/tizen/SETUP.md)) |
 | **LG TV** (webOS) | `bun run dev:webos` | `ares-package clients/webos/dist` → `.ipk` ([webos README](clients/webos/README.md)) |
 | **Android TV / Google TV** | `bun run dev:androidtv` | `bun run build:androidtv` then `./gradlew assembleRelease` → `.apk` ([androidtv README](clients/androidtv/README.md)) |
+| **iPhone / iPad / Android** | `bun run dev:mobile` | `bun run ios` / `bun run android` in `clients/mobile` (Expo prebuild + native build) ([mobile README](clients/mobile/README.md)) |
 
 Every TV shell is driven by its `tv.target.ts` (platform, dev port, engine
 floors) through the shared pipeline in

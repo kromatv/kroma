@@ -20,9 +20,18 @@ use crate::json_error;
 /// a [`ByteSink`] (the dashboard's LAN/WAN bandwidth counters). Backpressure from
 /// the socket drives `poll_read`, so this tracks bytes as they are actually
 /// delivered, not merely read ahead.
-struct CountingReader<R> {
+pub struct CountingReader<R> {
     inner: R,
     sink: ByteSink,
+}
+
+impl<R> CountingReader<R> {
+    /// Meter `inner`'s bytes into `sink`. Used for file bodies here and for the
+    /// download remux's ffmpeg pipe in the API layer, so every media byte the
+    /// server delivers lands on the same LAN/WAN counters.
+    pub fn new(inner: R, sink: ByteSink) -> Self {
+        Self { inner, sink }
+    }
 }
 
 impl<R: AsyncRead + Unpin> AsyncRead for CountingReader<R> {

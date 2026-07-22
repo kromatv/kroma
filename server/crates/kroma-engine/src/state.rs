@@ -64,6 +64,14 @@ pub struct AppState {
     /// In-flight on-device subtitle generations (Whisper / translate), tracked so
     /// the player can poll live progress + ETA and cancel.
     pub subtitle_gen: Arc<GenRegistry>,
+    /// Stable identity of this install, served on `/api/health` so a client can
+    /// tell "the same server through two origins" from "two servers".
+    pub instance_id: String,
+    /// Admission control for offline-download remuxes. Each one holds an ffmpeg
+    /// for the whole transfer (minutes, not the seconds an HLS segment takes), so
+    /// unlike the HLS semaphore a full gate returns `503` instead of queueing:
+    /// a phone that waits an hour for a permit has already timed out.
+    pub downloads: Arc<tokio::sync::Semaphore>,
     /// Weak self-reference (seeded via `Arc::new_cyclic`) so a relocated module's
     /// `HostCtx::trigger_job` can hand a background job the full `SharedState` it
     /// runs against (jobs are `Fn(SharedState)`, and the `Arc` is otherwise lost
@@ -113,6 +121,14 @@ impl AppState {
             crate::services::settings::transcode_cache_limit_bytes(&settings),
         );
         let storyboard = Storyboard::new(&config.data_dir);
+        // Mint (or read back) this install's stable identity before anything can
+        // serve `/api/health`.
+        let instance_id = crate::services::settings::ensure_instance_id(&settings, &db);
+        // Offline downloads draw from the same operator-facing budget as the HLS
+        // remux sessions rather than inventing a second knob.
+        let downloads = Arc::new(tokio::sync::Semaphore::new(
+            crate::services::settings::max_transcodes(&settings),
+        ));
         // Every module service + peer port (the download manager, the VPN bridge,
         // the Remote connector, the VpnProxy / TorrentFetch ports) is built by the
         // binary (the composition root) and passed in via `module_services`, so the
@@ -162,6 +178,8 @@ impl AppState {
             vectors: Arc::new(VectorCache::new()),
             jobs: Arc::new(jobs),
             subtitle_gen: Arc::new(GenRegistry::default()),
+            instance_id,
+            downloads,
             me: weak.clone(),
             services,
         })

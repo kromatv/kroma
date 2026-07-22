@@ -296,6 +296,12 @@ export type Treatment = z.infer<typeof Treatment>;
 /** `GET /api/health`. */
 export const Health = z.object({
   status: z.string(),
+  /** Admin-configured server name. Absent on servers predating it, and on any
+   * server that classifies the caller as WAN (the name is LAN-only). */
+  name: z.string().optional(),
+  /** Stable per-install id, for telling "one server, two origins" from "two
+   * servers". Absent on servers predating it. */
+  instanceId: z.string().optional(),
   version: z.string(),
   ffprobe: z.boolean(),
   libraries: z.number(),

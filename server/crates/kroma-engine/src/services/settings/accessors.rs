@@ -24,6 +24,23 @@ pub fn local_networks(settings: &Settings) -> Vec<String> {
         .collect()
 }
 
+/// A stable opaque identity for THIS install, minted on first boot and persisted
+/// with the settings. Clients reach one server through several origins (its mDNS
+/// name, its LAN IP, a tunnel hostname) and need to collapse those into one
+/// entry; matching on name/version/library counts collides between two fresh
+/// installs (both "KROMA", same version, 0 libraries), so discovery matches on
+/// this instead. Opaque and non-guessable: it is served on the public health
+/// endpoint, so it must carry no information about the box.
+pub fn ensure_instance_id(settings: &Settings, pool: &Pool) -> String {
+    let existing = settings.get_str("instanceId", "");
+    if !existing.trim().is_empty() {
+        return existing;
+    }
+    let id = crate::services::auth::random_token();
+    settings.set_patch(pool, BTreeMap::from([("instanceId".to_string(), json!(id.clone()))]));
+    id
+}
+
 /// The persisted display name for the server (falls back to "KROMA").
 pub fn server_name(settings: &Settings) -> String {
     let n = settings.get_str("serverName", "KROMA");

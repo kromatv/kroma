@@ -3,6 +3,7 @@ import type { Metadata } from '../types';
 import { KromaApiError, type RequestContext } from './base';
 import {
   backdropFor,
+  downloadUrl,
   featured,
   hlsMasterUrl,
   items,
@@ -96,6 +97,19 @@ describe('stream / poster / subtitle URL builders', () => {
   it('logsUrl carries the tail count (default 200)', () => {
     expect(logsUrl(ctx)).toBe('http://kroma.test/api/logs?tail=200');
     expect(logsUrl(ctx, 50)).toBe('http://kroma.test/api/logs?tail=50');
+  });
+
+  it('downloadUrl carries the client copy-codec set only when given', () => {
+    expect(downloadUrl(ctx, 'a b')).toBe('http://kroma.test/api/items/a%20b/download');
+    expect(downloadUrl(ctx, 'id', ['aac', 'ac3', 'eac3'])).toBe(
+      'http://kroma.test/api/items/id/download?copy=aac%2Cac3%2Ceac3',
+    );
+  });
+
+  it('downloadUrl keeps "copy nothing" distinct from "no preference"', () => {
+    // Empty set = transcode every track; omitted = the server's full copy set.
+    expect(downloadUrl(ctx, 'id', [])).toBe('http://kroma.test/api/items/id/download?copy=');
+    expect(downloadUrl(ctx, 'id')).toBe('http://kroma.test/api/items/id/download');
   });
 });
 

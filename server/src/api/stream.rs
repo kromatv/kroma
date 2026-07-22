@@ -23,6 +23,7 @@ use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
+use tokio::io::AsyncReadExt;
 
 /// The byte sink for a media request, targeting the LAN or WAN bandwidth counter
 /// by the client's network class (same classification as playback sessions).
@@ -33,6 +34,8 @@ fn byte_sink(state: &SharedState, headers: &HeaderMap, addr: &SocketAddr) -> cra
 }
 
 /// Direct-play streaming, HLS remux, storyboard previews and subtitle tracks.
+/// Public: a `<video>` / hls.js element can't attach a bearer to the URLs it
+/// fetches, so these stay open under the LAN trust model.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/items/{id}/stream", get(stream_item))
@@ -41,6 +44,267 @@ pub fn routes() -> Router<SharedState> {
         .route("/items/{id}/storyboard", get(storyboard))
         .route("/items/{id}/storyboard.img", get(storyboard_image))
         .route("/items/{id}/subtitles/{track}", get(subtitles))
+}
+
+/// Session-gated media routes. The offline download is a plain HTTP fetch made
+/// by the app (not by a media element), so it can carry a bearer - and it must,
+/// because each call holds an ffmpeg for the length of a whole film.
+pub fn protected_routes() -> Router<SharedState> {
+    Router::new().route("/items/{id}/download", get(download_item))
+}
+
+/// Whether a download can stream-copy `codec`: it must be fMP4-copy-safe
+/// (mirrors the clients' `FMP4_COPY_CODECS`; anything else - DTS/TrueHD/FLAC/
+/// Opus/... - transcodes to stereo AAC) AND, when the client sent the `copy`
+/// set of codecs IT decodes natively, be in that set. Android phones usually
+/// lack Dolby decoders so they send `aac`; iOS sends `aac,ac3,eac3`. No set =
+/// the historical full copy set.
+fn download_copies_audio(codec: Option<&str>, client_set: Option<&str>) -> bool {
+    let Some(codec) = codec else { return false };
+    if !matches!(codec, "aac" | "ac3" | "eac3") {
+        return false;
+    }
+    match client_set {
+        None => true,
+        Some(set) => set.split(',').any(|c| c.trim().eq_ignore_ascii_case(codec)),
+    }
+}
+
+/// ffmpeg map/codec args for a download's audio: EVERY track rides along (in
+/// stream order, so offline pickers can select by ordinal; the MP4 muxer puts
+/// them in one alternate group, which is what AVFoundation synthesizes local
+/// audio selection from), each stream-copied when copy-safe for this client
+/// and stereo-AAC otherwise. An unprobed item (empty track list) keeps the
+/// historical first-track-only mapping.
+fn download_audio_args(
+    tracks: &[crate::model::AudioStream],
+    fallback_codec: Option<&str>,
+    client_set: Option<&str>,
+) -> Vec<String> {
+    if tracks.is_empty() {
+        // Unprobed item: we don't know what's in there, so the single map stays
+        // optional (a video-only file must still download).
+        let mut args: Vec<String> = vec!["-map".into(), "0:a:0?".into()];
+        args.extend(audio_codec_args(":a", download_copies_audio(fallback_codec, client_set)));
+        return args;
+    }
+    let mut sorted: Vec<&crate::model::AudioStream> = tracks.iter().collect();
+    sorted.sort_by_key(|t| t.index);
+    let mut args: Vec<String> = Vec::new();
+    for (out, t) in sorted.iter().enumerate() {
+        // NOT optional (`0:a:N?`): the per-track codec options below are numbered
+        // by OUTPUT position, so a map that silently matches nothing shifts every
+        // later stream and lands `copy` on a track meant to be transcoded (a DTS
+        // stream the phone can't decode, offline, where there's no fallback).
+        // The track list is our own probe, so a miss means the file changed on
+        // disk since the scan: fail loudly and let the user rescan.
+        args.extend(["-map".into(), format!("0:a:{}", t.index)]);
+        args.extend(audio_codec_args(&format!(":a:{out}"), download_copies_audio(Some(t.codec.as_str()), client_set)));
+    }
+    args
+}
+
+/// `-c/-ac/-b` for one output audio stream: `copy`, or stereo AAC at 192k.
+/// `spec` is the ffmpeg stream specifier suffix (`""` for the whole output,
+/// `":a:2"` for one track), so the unprobed fallback and the per-track path
+/// emit the same recipe from one place.
+fn audio_codec_args(spec: &str, copy: bool) -> Vec<String> {
+    if copy {
+        return vec![format!("-c{spec}"), "copy".into()];
+    }
+    vec![
+        format!("-c{spec}"),
+        "aac".into(),
+        format!("-ac{spec}"),
+        "2".into(),
+        format!("-b{spec}"),
+        "192k".into(),
+    ]
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DownloadQuery {
+    /// Comma-separated audio codecs this client decodes natively; see
+    /// [`download_copies_audio`]. Absent = `aac,ac3,eac3`. PRESENT BUT EMPTY
+    /// (`?copy=`) = none of them, transcode every track: a client that decodes
+    /// nothing copy-safe must not be served the default set.
+    pub copy: Option<String>,
+}
+
+/// `GET /api/items/:id/download` (optional `?copy=aac,ac3`) → the whole title
+/// as ONE fragmented MP4, remuxed on the fly (video stream-copied, every audio
+/// track copied or AAC-transcoded per [`download_audio_args`]) and streamed
+/// chunked as ffmpeg produces it. This is the offline-download source for
+/// mobile clients: unlike `/stream` it always yields a container/codec combo
+/// phones can play locally (an MKV library would otherwise be un-downloadable
+/// on iOS), with all languages kept switchable offline. No `Content-Length`
+/// (the remux size is unknown up front).
+///
+/// Session-gated (unlike `/stream`, which is public because a `<video>` element
+/// can't attach a bearer): a downloader is an HTTP client that CAN send one, and
+/// each call costs a long-lived ffmpeg, so this must not be anonymous. Admission
+/// is capped by `state.downloads`; a full gate answers `503` rather than parking
+/// the request behind a transfer that may run for an hour.
+pub async fn download_item(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+    Query(q): Query<DownloadQuery>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+) -> Result<Response, Response> {
+    let permit = state.downloads.clone().try_acquire_owned().map_err(|_| {
+        json_error(StatusCode::SERVICE_UNAVAILABLE, "too many downloads in progress, try again later")
+    })?;
+    let item = query(&state.db, move |pool| db::get_item(&pool, &id))
+        .await?
+        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
+    let abs = item
+        .abs_path
+        .clone()
+        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "no file for item"))?;
+    if !std::path::Path::new(&abs).exists() {
+        return Err(json_error(StatusCode::NOT_FOUND, "media file unavailable (mount offline?)"));
+    }
+
+    let is_hevc = item.video.as_ref().map(|v| v.codec == "hevc").unwrap_or(false);
+    let mut cmd = tokio::process::Command::new("ffmpeg");
+    cmd.args(["-v", "error", "-nostdin", "-i"])
+        .arg(&abs)
+        .args(["-map", "0:v:0", "-c:v", "copy"]);
+    if is_hevc {
+        // Apple decoders require the `hvc1` sample-entry tag; stream-copied
+        // HEVC defaults to `hev1`, which plays AUDIO ONLY on iOS local files.
+        cmd.args(["-tag:v", "hvc1"]);
+    }
+    cmd.args(download_audio_args(
+        &item.audio_tracks,
+        item.audio.as_ref().map(|a| a.codec.as_str()),
+        q.copy.as_deref(),
+    ));
+    // NO `empty_moov`: the muxer cannot write an upfront moov for EAC3 (codec
+    // params are only known after parsing packets); with plain `frag_keyframe`
+    // it emits the moov with the first fragment, which a pipe handles fine.
+    // `-dn -map_chapters -1` keep data/chapter tracks out of the file.
+    cmd.args([
+        "-dn",
+        "-map_chapters",
+        "-1",
+        "-movflags",
+        "frag_keyframe+default_base_moof",
+        "-f",
+        "mp4",
+        "pipe:1",
+    ]);
+    cmd.stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| json_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("ffmpeg spawn failed: {e}")))?;
+    let mut stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| json_error(StatusCode::INTERNAL_SERVER_ERROR, "ffmpeg stdout unavailable"))?;
+    let mut stderr = child.stderr.take();
+
+    // Wait for the FIRST bytes before committing to a `200`. Everything that can
+    // go wrong structurally - a video codec the MP4 muxer can't carry (VC-1,
+    // MPEG-2), a mapped audio track that is no longer in the file, a missing
+    // video stream - is decided in the muxer's init, BEFORE it writes a single
+    // byte. Once the status line is on the wire there is no way left to say
+    // "this failed", and the client would store a truncated file as a finished
+    // download. So: no output = a real error response.
+    //
+    // One read, not a full buffer: the `ftyp` box lands the moment init
+    // succeeds, whereas the first fragment waits for the next keyframe, which on
+    // a long-GOP title can be minutes. Blocking the response headers that long
+    // would trip the client's own request timeout.
+    let mut head = vec![0u8; 64 * 1024];
+    let filled = stdout.read(&mut head).await.unwrap_or(0);
+    if filled == 0 {
+        let detail = match stderr.as_mut() {
+            Some(e) => {
+                let mut buf = String::new();
+                let _ = e.read_to_string(&mut buf).await;
+                buf.lines().last().unwrap_or_default().trim().to_string()
+            }
+            None => String::new(),
+        };
+        let _ = child.wait().await;
+        tracing::warn!(item = %item.id, path = %abs, error = %detail, "download remux produced no output");
+        return Err(json_error(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            &if detail.is_empty() {
+                "this title could not be converted for download".to_string()
+            } else {
+                format!("this title could not be converted for download: {detail}")
+            },
+        ));
+    }
+    head.truncate(filled);
+
+    // Reap the child off to the side, draining stderr so a chatty ffmpeg can't
+    // block on a full pipe. A client that aborts the download closes the read
+    // end, ffmpeg hits EPIPE on its next write and exits, and this task collects
+    // it - no zombie either way. The permit rides along so the slot is returned
+    // exactly when the process is gone, not when the handler returns.
+    let item_id = item.id.clone();
+    tokio::spawn(async move {
+        let mut detail = String::new();
+        if let Some(mut e) = stderr {
+            let _ = e.read_to_string(&mut detail).await;
+        }
+        match child.wait().await {
+            Ok(status) if !status.success() => {
+                tracing::warn!(item = %item_id, %status, error = %detail.trim(), "download remux exited non-zero");
+            }
+            _ => {}
+        }
+        drop(permit);
+    });
+
+    // The head bytes are pushed back in front of the live pipe, and the whole
+    // thing is metered into the same LAN/WAN bandwidth counters `/stream` and the
+    // HLS segments feed - a 20 GB download is not invisible on the dashboard.
+    let sink = byte_sink(&state, &headers, &addr);
+    let body = crate::infra::stream::CountingReader::new(
+        std::io::Cursor::new(head).chain(stdout),
+        sink,
+    );
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "video/mp4")
+        .header(header::CONTENT_DISPOSITION, content_disposition(&item.title))
+        .body(Body::from_stream(tokio_util::io::ReaderStream::new(body)))
+        .map_err(|e| json_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("response build failed: {e}")))
+}
+
+/// `Content-Disposition` for a download. HTTP header values are ISO-8859-1, so
+/// the ASCII `filename` is transliterated (Rust's `is_alphanumeric` is Unicode-
+/// aware: an unfiltered "Amélie" would put raw UTF-8 bytes in the header and
+/// arrive mojibake), and the real title rides in the RFC 5987 `filename*` form
+/// that every modern client prefers.
+fn content_disposition(title: &str) -> String {
+    let ascii: String = title
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() || c == ' ' || c == '-' { c } else { '_' })
+        .collect();
+    let ascii = ascii.trim();
+    // A title with nothing transliterable ("極主夫道") would become bare
+    // underscores, which is a worse filename than a generic one.
+    let ascii = if ascii.chars().any(|c| c.is_ascii_alphanumeric()) { ascii } else { "download" };
+    let encoded: String = title
+        .bytes()
+        .map(|b| {
+            if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') {
+                (b as char).to_string()
+            } else {
+                format!("%{b:02X}")
+            }
+        })
+        .collect();
+    format!("attachment; filename=\"{ascii}.mp4\"; filename*=UTF-8''{encoded}.mp4")
 }
 
 #[derive(Debug, Deserialize)]
@@ -348,4 +612,74 @@ mod tests {
         assert_eq!(StreamMode::parse("bogus"), None);
     }
 
+    fn track(index: u32, codec: &str) -> crate::model::AudioStream {
+        crate::model::AudioStream {
+            index,
+            codec: codec.into(),
+            channels: None,
+            language: None,
+            title: None,
+            default: false,
+        }
+    }
+
+    #[test]
+    fn download_copy_gate_honors_safe_set_and_client_set() {
+        assert!(download_copies_audio(Some("eac3"), None));
+        assert!(!download_copies_audio(Some("dts"), None));
+        assert!(!download_copies_audio(None, None));
+        assert!(download_copies_audio(Some("aac"), Some("aac")));
+        assert!(!download_copies_audio(Some("eac3"), Some("aac")));
+        assert!(download_copies_audio(Some("ac3"), Some("aac, AC3")));
+        // `?copy=` (present, empty) means "this device decodes none of them",
+        // which must NOT fall back to the default full copy set.
+        assert!(!download_copies_audio(Some("aac"), Some("")));
+        assert!(!download_copies_audio(Some("eac3"), Some("")));
+    }
+
+    #[test]
+    fn download_audio_args_unprobed_fallback() {
+        assert_eq!(
+            download_audio_args(&[], Some("aac"), None),
+            ["-map", "0:a:0?", "-c:a", "copy"]
+        );
+        assert_eq!(
+            download_audio_args(&[], Some("dts"), None),
+            ["-map", "0:a:0?", "-c:a", "aac", "-ac:a", "2", "-b:a", "192k"]
+        );
+    }
+
+    #[test]
+    fn content_disposition_is_ascii_with_utf8_filename_star() {
+        let cd = content_disposition("Amélie");
+        assert!(cd.is_ascii(), "header value must be ASCII: {cd}");
+        assert!(cd.contains("filename=\"Am_lie.mp4\""));
+        assert!(cd.contains("filename*=UTF-8''Am%C3%A9lie.mp4"));
+        assert!(content_disposition("???").contains("filename=\"download.mp4\""));
+    }
+
+    #[test]
+    fn download_audio_args_maps_every_track_with_per_track_codecs() {
+        let tracks = [track(0, "eac3"), track(1, "dts"), track(2, "aac")];
+        assert_eq!(
+            download_audio_args(&tracks, Some("eac3"), None),
+            [
+                "-map", "0:a:0", "-c:a:0", "copy",
+                "-map", "0:a:1", "-c:a:1", "aac", "-ac:a:1", "2", "-b:a:1", "192k",
+                "-map", "0:a:2", "-c:a:2", "copy",
+            ]
+        );
+    }
+
+    #[test]
+    fn download_audio_args_client_set_forces_transcode_and_sorts_by_index() {
+        let tracks = [track(1, "aac"), track(0, "eac3")];
+        assert_eq!(
+            download_audio_args(&tracks, None, Some("aac")),
+            [
+                "-map", "0:a:0", "-c:a:0", "aac", "-ac:a:0", "2", "-b:a:0", "192k",
+                "-map", "0:a:1", "-c:a:1", "copy",
+            ]
+        );
+    }
 }

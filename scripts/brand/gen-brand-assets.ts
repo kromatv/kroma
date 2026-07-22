@@ -227,6 +227,32 @@ await png(`${REPO}/clients/synology/spk/PACKAGE_ICON.PNG`, 72, INK, {
 await png(`${REPO}/clients/synology/spk/PACKAGE_ICON_256.PNG`, 256, INK, { alpha: false });
 await png(`${DIR}/tauri-source-1024.png`, 1024, INK, { radiusFrac: 0.225 });
 
+// Mobile (Expo) app icons. iOS masks its own corners (opaque, square). The
+// Android adaptive foreground keeps the wheel inside the 66/108 safe zone; the
+// monochrome layer is the wheel silhouette Android tints itself. The splash
+// icon is the bare wheel on the ink splash background.
+await png(`${REPO}/clients/mobile/assets/images/icon.png`, 1024, INK, { alpha: false });
+await png(`${REPO}/clients/mobile/assets/images/android-icon-foreground.png`, 1024, 'none', {
+  symbolFrac: 0.5,
+});
+await png(`${REPO}/clients/mobile/assets/images/splash-icon.png`, 512, 'none', {
+  symbolFrac: 1.0,
+});
+{
+  const size = 1024;
+  const d = size * 0.5;
+  const c = size / 2;
+  const paths = wheelSectors(c, c, d / 2, (d / 2) * (17.045 / 50))
+    .map((p) => `<path d="${p}" fill="${IVORY}"/>`)
+    .join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`;
+  await sharp(Buffer.from(svg))
+    .resize(size, size)
+    .png()
+    .toFile(`${REPO}/clients/mobile/assets/images/android-icon-monochrome.png`);
+  console.log('wrote', `${REPO}/clients/mobile/assets/images/android-icon-monochrome.png`);
+}
+
 // ----- vector mark (no letters): the favicon every surface shares -----------
 /** The bare chromatic wheel, same hub/outer ratio as the lockup's O. */
 function markSvg(): string {

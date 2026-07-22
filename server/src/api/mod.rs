@@ -148,6 +148,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     // <audio> element / plain fetch that can't attach a bearer.
     let content = Router::new()
         .merge(media::routes())
+        .merge(stream::protected_routes())
         .merge(search::routes())
         .merge(people::routes())
         .merge(metadata::routes())
