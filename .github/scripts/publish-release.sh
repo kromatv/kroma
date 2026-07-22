@@ -14,13 +14,13 @@ set -euo pipefail
 # already-published one as success, and delete the empty duplicates.
 LIST=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=30" \
   --jq "[.[] | select(.tag_name == \"${TAG}\") | {id, draft, assets: (.assets|length)}]")
-if [ "$(echo "$LIST" | jq 'length')" = "0" ]; then
+if [[ "$(echo "$LIST" | jq 'length')" = "0" ]]; then
   echo "no release object for ${TAG}"; exit 1
 fi
 # The real release = most assets; on a tie prefer an already-published one.
 TARGET=$(echo "$LIST" | jq -r 'sort_by([.assets, (if .draft then 0 else 1 end)]) | last | .id')
 DRAFT=$(echo "$LIST" | jq -r --argjson id "$TARGET" '.[] | select(.id==$id) | .draft')
-if [ "$DRAFT" = "true" ]; then
+if [[ "$DRAFT" = "true" ]]; then
   gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${TARGET}" \
     -F draft=false -f make_latest=true >/dev/null
   echo "published ${TAG} (release id ${TARGET})"

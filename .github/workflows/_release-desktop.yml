@@ -26,9 +26,6 @@ on:
         type: string
         required: true
 
-permissions:
-  contents: write # create the Release + upload assets
-
 env:
   BUN_VERSION: '1.3.14' # keep in sync with release.yml
 
@@ -68,6 +65,8 @@ jobs:
               clients/desktop/src-tauri/target/release/bundle/appimage/*.AppImage
               clients/desktop/src-tauri/target/release/bundle/deb/*.deb
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write # attach assets to the Release
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

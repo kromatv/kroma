@@ -43,9 +43,6 @@ on:
         type: string
         required: true
 
-permissions:
-  contents: write # create the Release + upload assets
-
 env:
   BUN_VERSION: '1.3.14' # keep in sync with release.yml
 
@@ -54,6 +51,8 @@ jobs:
     name: Mobile .apk (Firebase)
     if: ${{ inputs.proceed == 'true' && (inputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach assets to the Release
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -146,6 +145,8 @@ jobs:
     # dependencies: package 'apple' is using Swift tools version 6.2.0" thousands
     # of lines into an xcodebuild log, so the guard step below states it plainly.
     runs-on: macos-26
+    permissions:
+      contents: read # only reads the repo and uploads run artifacts
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

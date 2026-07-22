@@ -57,9 +57,6 @@ on:
         default: none
         required: false
 
-permissions:
-  contents: write # create the Release + upload assets
-
 # Serialize releases per tag/ref, but NEVER cancel an in-flight one: a superseded
 # release build could leave a partially-uploaded Release. Queue instead of cancel.
 concurrency:
@@ -79,6 +76,8 @@ jobs:
   version:
     name: Resolve version
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # only reads the repo and uploads run artifacts
     timeout-minutes: 45
     env:
       GH_TOKEN: ${{ github.token }}
@@ -172,6 +171,8 @@ jobs:
     needs: [version, modules, tv, desktop]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach assets to the Release
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -192,6 +193,8 @@ jobs:
     needs: [version, modules, tv, desktop]
     if: needs.version.outputs.channel == 'nightly'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach assets to the Release
     timeout-minutes: 15
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

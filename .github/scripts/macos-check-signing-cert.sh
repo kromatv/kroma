@@ -7,7 +7,7 @@
 # Output (GITHUB_OUTPUT): sign=true|false
 set -euo pipefail
 
-if [ -z "$APPLE_CERTIFICATE" ]; then
+if [[ -z "$APPLE_CERTIFICATE" ]]; then
   echo "No APPLE_CERTIFICATE secret; building unsigned."
   echo "sign=false" >> "$GITHUB_OUTPUT"; exit 0
 fi

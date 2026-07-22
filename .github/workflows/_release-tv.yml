@@ -25,9 +25,6 @@ on:
         type: string
         required: true
 
-permissions:
-  contents: write # create the Release + upload assets
-
 env:
   BUN_VERSION: '1.3.14' # keep in sync with release.yml
 
@@ -36,6 +33,8 @@ jobs:
     name: webOS .ipk (modern + legacy tiers)
     if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach assets to the Release
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -62,7 +61,10 @@ jobs:
       # (ancient) minifier cannot parse modern ES2020 output (hls.js chunk).
       - name: Package .ipk
         run: |
-          npm install -g @webos-tools/cli
+          # Pinned: an unlocked `npm install -g` would silently change the
+          # packager between releases, and an .ipk is not something to
+          # rebuild differently on a whim.
+          npm install -g @webos-tools/cli@3.1.2
           ares-package clients/webos/dist -o clients/webos/out --no-minify
 
       - name: Upload .ipk artifact
@@ -86,6 +88,8 @@ jobs:
     name: Tizen .wgt (dev-certificate signed)
     if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach assets to the Release
     timeout-minutes: 45
     env:
       TIZEN_STUDIO_VER: '6.0'
@@ -126,7 +130,9 @@ jobs:
       - name: Install Tizen Studio CLI
         run: |
           if [ ! -f web-cli.bin ]; then
-            wget -q -O web-cli.bin "https://download.tizen.org/sdk/Installer/tizen-studio_${TIZEN_STUDIO_VER}/web-cli_Tizen_Studio_${TIZEN_STUDIO_VER}_ubuntu-64.bin"
+            # --https-only: the installer is fetched over TLS and a redirect
+            # must not be allowed to downgrade that to plain http.
+            wget -q --https-only -O web-cli.bin "https://download.tizen.org/sdk/Installer/tizen-studio_${TIZEN_STUDIO_VER}/web-cli_Tizen_Studio_${TIZEN_STUDIO_VER}_ubuntu-64.bin"
           fi
           chmod +x web-cli.bin
           ./web-cli.bin --accept-license --no-java-check "$HOME/tizen-studio"
@@ -167,6 +173,8 @@ jobs:
     name: Android TV .apk
     if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # attach assets to the Release
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

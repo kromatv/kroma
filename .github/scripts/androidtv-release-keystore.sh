@@ -8,7 +8,7 @@
 # Outputs (GITHUB_OUTPUT): task, apk. Exports the keystore to GITHUB_ENV.
 set -euo pipefail
 
-if [ -z "$ANDROID_KEYSTORE" ]; then
+if [[ -z "$ANDROID_KEYSTORE" ]]; then
   echo "No ANDROID_KEYSTORE secret; building a debug-signed APK."
   echo "task=assembleDebug" >> "$GITHUB_OUTPUT"
   echo "apk=debug/app-debug.apk" >> "$GITHUB_OUTPUT"

@@ -31,7 +31,7 @@ find assets -type f -print0 | xargs -0 gh release upload nightly --clobber
   echo "Every artifact of a stable release, rebuilt nightly from main:"
   echo "desktop installers, TV packages, module bundles + modules.json,"
   echo "and the per-push canary Synology .spk. Unstable by definition."
-  if [ -n "$LAST" ]; then
+  if [[ -n "$LAST" ]]; then
     echo
     echo "Changes since the previous nightly:"
     git log --oneline --no-decorate "$LAST"..HEAD 2>/dev/null | head -40 | sed 's/^/- /' || true

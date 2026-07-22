@@ -9,7 +9,7 @@ set -euo pipefail
 
 BUNDLE=clients/desktop/src-tauri/target/release/bundle
 APP=$(find "$BUNDLE/macos" -maxdepth 1 -name '*.app' | head -n1)
-if [ "$SIGN" = "true" ]; then
+if [[ "$SIGN" = "true" ]]; then
   kc="$RUNNER_TEMP/kroma-sign.keychain-db"
   security create-keychain -p '' "$kc"
   security default-keychain -s "$kc"
@@ -26,7 +26,7 @@ fi
 mkdir -p "$BUNDLE/dmg"
 DMG="$BUNDLE/dmg/KROMA_$(uname -m).dmg"
 hdiutil create -volname KROMA -srcfolder "$APP" -ov -format UDZO "$DMG"
-if [ "$SIGN" = "true" ]; then
+if [[ "$SIGN" = "true" ]]; then
   codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$DMG"
   xcrun notarytool submit "$DMG" \
     --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
