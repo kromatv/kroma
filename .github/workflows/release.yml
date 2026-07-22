@@ -135,7 +135,7 @@ jobs:
   mobile:
     name: Mobile
     needs: version
-    if: ${{ needs.version.outputs.proceed == 'true' && needs.version.outputs.channel == 'stable' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
+    if: ${{ needs.version.outputs.proceed == 'true' && (needs.version.outputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-mobile.yml
     with:
       version: ${{ needs.version.outputs.version }}

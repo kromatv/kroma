@@ -1,8 +1,9 @@
 name: Release mobile beta channels
 
 # The phone/tablet client goes to the two beta channels BETA.md points testers
-# at: Firebase App Distribution (Android) and TestFlight (iOS). Stable tags
-# only - a nightly would burn a TestFlight build number and spam every tester.
+# at: Firebase App Distribution (Android) and TestFlight (iOS). Stable tags or
+# an explicit manual run - never a nightly, which would burn a TestFlight build
+# number and spam every tester.
 #
 # Both legs stamp the release version and a monotonic build number INTO
 # app.json before `expo prebuild`, because that is the only moment the values
@@ -51,7 +52,7 @@ env:
 jobs:
   mobile-android:
     name: Mobile .apk (Firebase)
-    if: ${{ inputs.proceed == 'true' && inputs.channel == 'stable' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
+    if: ${{ inputs.proceed == 'true' && (inputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -108,7 +109,7 @@ jobs:
       # first), and `secrets` is not available there at all. Same shape as the
       # optional keystore step in the Android TV job.
       - name: Distribute to Firebase App Distribution
-        if: github.event_name == 'push'
+        if: ${{ github.event_name == 'push' || github.event.inputs.targets == 'mobile' }}
         env:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
@@ -130,7 +131,7 @@ jobs:
           rm -f "$RUNNER_TEMP/firebase-sa.json"
 
       - name: Attach to the Release
-        if: github.event_name == 'push'
+        if: ${{ github.event_name == 'push' || github.event.inputs.targets == 'mobile' }}
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           draft: true
@@ -138,8 +139,13 @@ jobs:
 
   mobile-ios:
     name: Mobile .ipa (TestFlight)
-    if: ${{ inputs.proceed == 'true' && inputs.channel == 'stable' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
-    runs-on: macos-15
+    if: ${{ inputs.proceed == 'true' && (inputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
+    # macos-26, NOT macos-15: Expo SDK 57 pulls Swift packages built with Swift
+    # tools 6.2 (expo-modules-jsi), and the macos-15 image tops out at Xcode 16.4
+    # / Swift 6.1. That mismatch fails as "Could not resolve package
+    # dependencies: package 'apple' is using Swift tools version 6.2.0" thousands
+    # of lines into an xcodebuild log, so the guard step below states it plainly.
+    runs-on: macos-26
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -151,6 +157,26 @@ jobs:
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
           node-version: '22'
+
+      # Select the newest Xcode the image carries and assert its Swift is new
+      # enough for the Expo SDK's Swift packages. Checking here turns a runner
+      # image drift into one readable line instead of a package-resolution error
+      # buried in a 10k-line archive log.
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          newest=$(find /Applications -maxdepth 1 -name 'Xcode*.app' | sort -V | tail -1)
+          [ -n "$newest" ] || { echo "no Xcode on this runner"; exit 1; }
+          sudo xcode-select -s "$newest"
+          echo "using $newest"
+          xcodebuild -version
+          swift_version=$(swift --version 2>&1 | sed -nE 's/.*Swift version ([0-9]+\.[0-9]+).*/\1/p' | head -1)
+          echo "swift $swift_version"
+          # Expo SDK 57's expo-modules-jsi declares swift-tools-version 6.2.
+          if [ "$(printf '%s\n6.2\n' "$swift_version" | sort -V | head -1)" != "6.2" ]; then
+            echo "::error::Swift $swift_version is too old for the Expo SDK (needs 6.2+). Bump the runner image."
+            exit 1
+          fi
 
       # An App Store build needs a real Apple Distribution identity and an
       # App Store provisioning profile for tv.kroma.mobile. Without them there
@@ -210,7 +236,7 @@ jobs:
       # An App Store Connect API key is preferred; the app-specific password the
       # desktop job already uses for notarization is the fallback.
       - name: Upload to TestFlight
-        if: ${{ steps.signing.outputs.ready == 'true' && github.event_name == 'push' }}
+        if: ${{ steps.signing.outputs.ready == 'true' && (github.event_name == 'push' || github.event.inputs.targets == 'mobile') }}
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
