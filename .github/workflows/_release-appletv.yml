@@ -276,7 +276,12 @@ jobs:
         # A CANDIDATE build compiles the .ipa and stops there - that is what the
         # gate needs to know. Distribution is a deploy-time act, not a
         # side effect of every push to main.
-        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || github.event.inputs.targets == 'tv') }}
+        # `targets` says what to BUILD; it must not also mean "ship it".
+        # A dispatch with targets=mobile, run to time the archive, pushed a
+        # real build to TestFlight and burned a build number - distribution
+        # was riding on a selector that only ever meant scope. It now needs
+        # the explicit `distribute` input, so a build-only run stays one.
+        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || github.event.inputs.distribute == 'true') }}
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}

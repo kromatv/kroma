@@ -74,6 +74,11 @@ on:
         options: [none, nightly]
         default: none
         required: false
+      distribute:
+        description: 'Also push the mobile/TV builds to TestFlight + Firebase'
+        type: boolean
+        default: false
+        required: false
 
 # Candidates supersede; nightlies queue.
 #

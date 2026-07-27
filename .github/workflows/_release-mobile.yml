@@ -122,7 +122,12 @@ jobs:
       # optional keystore step in the Android TV job.
       - name: Distribute to Firebase App Distribution
         # See the Apple TV job: candidates build, they do not distribute.
-        if: ${{ inputs.channel == 'stable' || github.event.inputs.targets == 'mobile' }}
+        # `targets` says what to BUILD; it must not also mean "ship it".
+        # A dispatch with targets=mobile, run to time the archive, pushed a
+        # real build to TestFlight and burned a build number - distribution
+        # was riding on a selector that only ever meant scope. It now needs
+        # the explicit `distribute` input, so a build-only run stays one.
+        if: ${{ inputs.channel == 'stable' || github.event.inputs.distribute == 'true' }}
         env:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
@@ -366,7 +371,12 @@ jobs:
 
       - name: Upload to TestFlight
         # See the Apple TV job: candidates build, they do not distribute.
-        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || github.event.inputs.targets == 'mobile') }}
+        # `targets` says what to BUILD; it must not also mean "ship it".
+        # A dispatch with targets=mobile, run to time the archive, pushed a
+        # real build to TestFlight and burned a build number - distribution
+        # was riding on a selector that only ever meant scope. It now needs
+        # the explicit `distribute` input, so a build-only run stays one.
+        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || github.event.inputs.distribute == 'true') }}
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
