@@ -33,6 +33,7 @@ export function ControlsLayer({
   next,
   onPlayNext,
   onPip,
+  onCast,
 }: Readonly<{
   engine: Engine;
   item: MediaItem;
@@ -45,6 +46,8 @@ export function ControlsLayer({
   next?: MediaItem | null;
   onPlayNext?(): void;
   onPip?(): void;
+  /** Hand this playback to a TV. Absent when nothing is castable. */
+  onCast?(): void;
 }>) {
   const t = useT();
   const title = item.showTitle ?? item.metadata?.title ?? item.title;
@@ -182,6 +185,16 @@ export function ControlsLayer({
                 icon="player-track-next"
                 label={t('player.nextEpisode')}
                 onPress={onPlayNext}
+              />
+            ) : null}
+            {onCast ? (
+              <RowShortcut
+                icon="cast"
+                label={t('cast.moveToTv')}
+                onPress={() => {
+                  onCast();
+                  poke();
+                }}
               />
             ) : null}
             {onPip ? (

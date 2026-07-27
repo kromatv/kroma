@@ -128,6 +128,7 @@ export function PlayerChrome({
   next,
   onPlayNext,
   onPip,
+  onCast,
 }: Readonly<{
   engine: Engine;
   item: MediaItem;
@@ -147,6 +148,8 @@ export function PlayerChrome({
   next?: MediaItem | null;
   onPlayNext?(): void;
   onPip?(): void;
+  /** Hand this playback to a TV (absent when nothing is castable). */
+  onCast?(): void;
 }>) {
   const t = useT();
   const insets = useSafeAreaInsets();
@@ -285,6 +288,7 @@ export function PlayerChrome({
             next={next}
             onPlayNext={onPlayNext}
             onPip={onPip}
+            onCast={onCast}
           />
         ) : null}
       </View>

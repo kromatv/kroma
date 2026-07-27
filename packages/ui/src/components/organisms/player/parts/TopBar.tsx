@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
@@ -20,6 +20,9 @@ export interface TopBarProps {
   onBack: () => void;
   /** Whether the nav machine currently rests on the back button. */
   backFocused?: boolean;
+  /** Host-supplied controls for the right edge (the web's "play on TV"). The
+   * TV passes none: it is the screen things are cast TO. */
+  actions?: ReactNode;
 }
 
 const SCRIM = 'linear-gradient(180deg, rgba(0,0,0,0.65), transparent)';
@@ -32,6 +35,7 @@ export const TopBar = memo(function TopBar({
   warn,
   onBack,
   backFocused,
+  actions,
 }: Readonly<TopBarProps>) {
   const t = useT();
   return (
@@ -68,11 +72,16 @@ export const TopBar = memo(function TopBar({
           </Txt>
         ) : null}
       </Box>
-      {warn ? (
-        <Box shrink={0} ml="auto" radius="pill" bg="accentSoft" px={14} py={8}>
-          <Txt style={{ fontFamily: fonts.ui, fontSize: 13, fontWeight: '600' }} color="accent">
-            {warn}
-          </Txt>
+      {warn || actions ? (
+        <Box shrink={0} ml="auto" row align="center" gap={12}>
+          {warn ? (
+            <Box radius="pill" bg="accentSoft" px={14} py={8}>
+              <Txt style={{ fontFamily: fonts.ui, fontSize: 13, fontWeight: '600' }} color="accent">
+                {warn}
+              </Txt>
+            </Box>
+          ) : null}
+          {actions}
         </Box>
       ) : null}
     </Box>

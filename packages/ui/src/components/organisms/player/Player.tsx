@@ -79,6 +79,9 @@ export interface PlayerProps {
   terminated?: ReactNode;
   /** Floating toasts (resume prompt, etc.). */
   children?: ReactNode;
+  /** Host controls for the top bar's right edge - the web's "play on TV". The
+   * TV passes none: it is the screen a film is cast TO, not from. */
+  actions?: ReactNode;
   /** The element that goes fullscreen on web (the player root). */
   /** The player's root host view. The web client keeps it to drive the browser
    *  Fullscreen API on the container. */
@@ -503,6 +506,7 @@ export function Player(props: Readonly<PlayerProps>) {
           title={props.title}
           subtitle={props.subtitle}
           warn={props.warn}
+          actions={props.actions}
           onBack={props.onClose}
         />
       </Box>

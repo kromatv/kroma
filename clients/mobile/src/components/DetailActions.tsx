@@ -2,9 +2,13 @@
 // full-width quiet download bar, then a centered row of equal-width icon-label
 // actions (my list / watched / report) with an amber icon + label active state.
 
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem } from '@kroma/core';
+import { useCast } from '@kroma/ui';
 import { Button, Icon } from '@kroma/ui/kit';
+import { useRef } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { type DownloadState, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
@@ -72,6 +76,10 @@ export function DetailActions({
   const downloads = useDownloads();
   const state = downloads.stateFor(item.id);
   const bar = downloadBarLabel(state, t);
+  // "Play on TV" appears only when there IS a TV: an action that can't do
+  // anything is worse than no action at all.
+  const { available, playOn } = useCast();
+  const devices = useRef<BottomSheetModal>(null);
   return (
     <View style={styles.actions}>
       <Button icon="player-play-filled" label={playLabel} onPress={onPlay} />
@@ -147,6 +155,17 @@ export function DetailActions({
             </Text>
           </Pressable>
         ) : null}
+        {available ? (
+          <Pressable
+            onPress={() => devices.current?.present()}
+            style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
+          >
+            <Icon name="cast" size={24} stroke={1.8} />
+            <Text numberOfLines={1} style={styles.secondaryLabel}>
+              {t('cast.title')}
+            </Text>
+          </Pressable>
+        ) : null}
         {onReport ? (
           <Pressable
             onPress={onReport}
@@ -159,6 +178,16 @@ export function DetailActions({
           </Pressable>
         ) : null}
       </View>
+      {/* Picking a TV here STARTS the title on it - the position is the account's
+          own resume point, which the receiver already knows. */}
+      <CastSheet
+        ref={devices}
+        offerLocal={false}
+        onPick={(id) => {
+          devices.current?.dismiss();
+          if (id) void playOn(id, item.id);
+        }}
+      />
     </View>
   );
 }

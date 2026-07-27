@@ -19,7 +19,9 @@ const KEY = 'kroma:cast-receiver-id';
 let seq = 0;
 
 function mint(): string {
-  return `tv-${Date.now().toString(36)}-${(seq++).toString(36)}-${Math.floor(Math.random() * 0xffffff)
+  return `tv-${Date.now().toString(36)}-${(seq++).toString(36)}-${Math.floor(
+    Math.random() * 0xffffff,
+  )
     .toString(36)
     .padStart(4, '0')}`;
 }

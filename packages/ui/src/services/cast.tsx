@@ -74,7 +74,8 @@ const IDLE: Cast = {
 };
 
 export interface CastProviderProps {
-  client: KromaClient;
+  /** Null while a shell is still resolving its session; treated as "not yet". */
+  client: KromaClient | null;
   /** Gates everything on being signed in - the roster needs a session. */
   enabled: boolean;
   children: ReactNode;
@@ -92,7 +93,7 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
   const [, setTick] = useState(0);
 
   const refresh = useCallback(() => {
-    if (!enabled) return;
+    if (!enabled || !client) return;
     client
       .castReceivers()
       .then(setReceivers)
@@ -101,7 +102,7 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
 
   // Roster: fetched once, then kept live off the bus.
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !client) {
       setReceivers([]);
       setActiveId(null);
       return;
@@ -155,6 +156,7 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
 
   const sendTo = useCallback(
     async (receiverId: string, command: CastCommand): Promise<boolean> => {
+      if (!client) return false;
       try {
         await client.sendCastCommand(receiverId, command);
         setError(null);

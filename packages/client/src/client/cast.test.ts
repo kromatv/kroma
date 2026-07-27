@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CastReceiver, type CastAnnounceBody } from '../schemas/cast';
+import { type CastAnnounceBody, CastReceiver } from '../schemas/cast';
 import type { RequestContext } from './base';
 import { announceCast, castReceivers, sendCastCommand, unregisterCast } from './cast';
 

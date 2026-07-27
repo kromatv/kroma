@@ -8,6 +8,7 @@ export * from './discovery';
 export * from './ids';
 export * from './media';
 export * from './modules';
+export * from './notifications';
 export * from './pipeline';
 export * from './reports';
 export * from './rules';

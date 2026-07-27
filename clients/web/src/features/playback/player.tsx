@@ -1,6 +1,7 @@
 import {
   audioSupport,
   formatTimecode as fmtTime,
+  type ItemId,
   type MediaItem,
   playerSubtitle,
 } from '@kroma/core';
@@ -9,6 +10,7 @@ import { Button } from '@kroma/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';
+import { CastHandoff } from '#web/features/playback/cast/cast-handoff';
 import { IconStopped } from '#web/features/playback/icons';
 import { Toast } from '#web/features/playback/player-toast';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
@@ -126,6 +128,15 @@ export function Player({
       title={item.title}
       subtitle={playerSubtitle(item)}
       warn={warn}
+      // Hand this film to a TV: the position goes with it, and the browser
+      // stops once the set has it.
+      actions={
+        <CastHandoff
+          itemId={item.id as ItemId}
+          positionMs={() => pb.getPosition() * 1000}
+          onHandedOff={onClose}
+        />
+      }
       markers={item.markers ?? undefined}
       tileAt={tileAt}
       appearance={appearance}

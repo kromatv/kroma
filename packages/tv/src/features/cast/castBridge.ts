@@ -56,6 +56,13 @@ function takeCastSeek(itemId: string): number | null {
   return positionMs;
 }
 
+/** How a remote should draw the transport. `buffering` is "playing, stalled":
+ * the sender keeps the pause button and adds a spinner. */
+function transportState(controller: PlayerController): 'buffering' | 'playing' | 'paused' {
+  if (controller.waiting) return 'buffering';
+  return controller.playing ? 'playing' : 'paused';
+}
+
 /** What the receiver reports about the running player, or null when idle.
  *
  * The track lists are the *player's*, labelled exactly as its own pickers label
@@ -63,12 +70,11 @@ function takeCastSeek(itemId: string): number | null {
 export function castReport(t: Translate): CastPlaybackReport | null {
   if (!target) return null;
   const { item, controller } = target;
-  const state = controller.waiting ? 'buffering' : controller.playing ? 'playing' : 'paused';
   return {
     itemId: item.id,
     positionMs: Math.max(0, Math.round(controller.cur * 1000)),
     durationMs: controller.dur > 0 ? Math.round(controller.dur * 1000) : null,
-    state,
+    state: transportState(controller),
     audioTracks: controller.audioTracks.map((track, i) => ({
       index: track.index,
       label: audioTrackLabel(t, track) ?? `#${i + 1}`,
@@ -80,8 +86,7 @@ export function castReport(t: Translate): CastPlaybackReport | null {
       .filter((s) => s.selectable)
       .map((s) => ({
         index: s.index,
-        label:
-          (s.ai && s.label ? s.label : langName(t, s.language)) || t('player.langUnknown'),
+        label: (s.ai && s.label ? s.label : langName(t, s.language)) || t('player.langUnknown'),
       })),
     subtitleIndex: controller.subtitleIndex ?? undefined,
   };
@@ -96,7 +101,9 @@ export function castReport(t: Translate): CastPlaybackReport | null {
  * cadence instead of re-rendering with it.
  */
 export function useCastTarget(item: MediaItem, controller: PlayerController): void {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: deliberately dependency-free - it re-registers each render because `controller` is a new object per tick.
+  // No dependency array on purpose: `controller` is a new object on every
+  // playback tick, so the registration is refreshed each render (an assignment)
+  // rather than diffed.
   useEffect(() => {
     setCastTarget({ item, controller });
     return () => setCastTarget(null);

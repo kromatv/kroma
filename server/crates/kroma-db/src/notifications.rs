@@ -218,6 +218,57 @@ pub fn followers_of_show(conn: &Connection, show_id: &str) -> rusqlite::Result<V
     rows.collect()
 }
 
+/// A catalogue entry that appeared since a watermark, for the media digest.
+#[derive(Debug, Clone)]
+pub struct AddedTitle {
+    pub id: String,
+    /// `movie` | `episode` (and the odd `video`); shows are reached via `show_id`.
+    pub kind: String,
+    pub title: String,
+    pub show_id: Option<String>,
+    pub show_title: Option<String>,
+    pub season: Option<u32>,
+    pub episode: Option<u32>,
+    /// ISO-8601, and therefore lexicographically ordered the digest's watermark.
+    pub added_at: String,
+}
+
+/// Everything added to the catalogue strictly after `since`.
+///
+/// `added_at` is ISO-8601, so a plain string comparison is a correct "newer
+/// than" test and uses the natural ordering. `limit` bounds a first import or a
+/// re-scan of a big library from loading the whole catalogue into memory the
+/// digest only ever reports a count and a sample title anyway.
+pub fn items_added_since(
+    conn: &Connection,
+    since: &str,
+    limit: usize,
+) -> rusqlite::Result<Vec<AddedTitle>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, kind, title, show_id, show_title, season, episode, added_at FROM items \
+         WHERE added_at > ?1 ORDER BY added_at DESC LIMIT ?2",
+    )?;
+    let rows = stmt.query_map(params![since, limit as i64], |r| {
+        Ok(AddedTitle {
+            id: r.get(0)?,
+            kind: r.get(1)?,
+            title: r.get(2)?,
+            show_id: r.get(3)?,
+            show_title: r.get(4)?,
+            season: r.get(5)?,
+            episode: r.get(6)?,
+            added_at: r.get(7)?,
+        })
+    })?;
+    rows.collect()
+}
+
+/// The newest `added_at` in the catalogue, for seeding the digest watermark on a
+/// first run so an initial import never notifies anyone about 4000 films.
+pub fn newest_added_at(conn: &Connection) -> rusqlite::Result<Option<String>> {
+    conn.query_row("SELECT MAX(added_at) FROM items", [], |r| r.get(0))
+}
+
 // ----- delivery preferences ---------------------------------------------------
 
 /// One user's full preference matrix, defaults filled in.

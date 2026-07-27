@@ -4,7 +4,7 @@
 // similar, and the owned-only Treatments + AI rails. Replaces the old split
 // movie/show fiche vs discover fiche.
 
-import { apiErrorText, type EpisodeRef, formatRuntime } from '@kroma/core';
+import { apiErrorText, type EpisodeRef, formatRuntime, type ItemId } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -142,6 +142,9 @@ function TitleHero({
       playLabel={view.playLabel ?? undefined}
       themeUrl={view.themeUrl}
       watched={listState.watched}
+      // Owned titles only: there is nothing to start on a TV until the file is
+      // in the library.
+      castItemId={owned && localId ? (localId as ItemId) : undefined}
       onToggleWatched={listState.onToggleWatched}
       inList={listState.inList}
       onToggleList={listState.onToggleList}

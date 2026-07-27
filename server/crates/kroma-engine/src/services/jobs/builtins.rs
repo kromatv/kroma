@@ -20,6 +20,7 @@ mod cache_cleanup;
 mod library_missing;
 mod library_scan;
 mod metadata_enrich;
+mod notifications_digest;
 mod reco_refresh;
 mod reembed;
 mod search_reindex;
@@ -55,6 +56,7 @@ const JOBS: &[Builtin] = &[
     library_missing::SPEC,
     metadata_enrich::SPEC,
     search_reindex::SPEC,
+    notifications_digest::SPEC,
     // The acquisition jobs (search / import / match) moved out to the
     // tv.kroma.torrents module crate; the binary registers them via the module's
     // exported job roster passed to `AppState::new`, so the core roster below

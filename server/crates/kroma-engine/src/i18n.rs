@@ -62,6 +62,14 @@ pub fn normalize(tag: &str) -> Option<&'static str> {
     i18n().normalize_locale(tag)
 }
 
+/// Whether `key` names a real entry in the catalogs. Lets a caller tell a
+/// translatable key apart from ordinary text, which is how notification params
+/// carry a localizable value (a job's `jobs.{key}.name`) alongside literal ones
+/// (a film title). See `services::notify::render`.
+pub fn is_message_key(key: &str) -> bool {
+    i18n().is_message_key(key)
+}
+
 /// A user's account locale for server-rendered strings. Admin endpoints are
 /// always authenticated, so the (account-synced) preference is the right source;
 /// falls back to [`DEFAULT_LOCALE`] for an unset/unknown value. Shared by the

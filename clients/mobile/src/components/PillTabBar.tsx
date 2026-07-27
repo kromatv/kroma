@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CastMiniBar } from '#mobile/components/cast/CastMiniBar';
 
 export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTabBarProps>) {
   const insets = useSafeAreaInsets();
@@ -25,6 +26,9 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
       pointerEvents="box-none"
       style={[styles.dock, { bottom: Math.max(insets.bottom, 12) + 8 }]}
     >
+      {/* Above the pill, so "playing on Salon" travels with the tab bar rather
+          than being pinned to one screen. Renders nothing when not casting. */}
+      <CastMiniBar />
       {/* Shadow lives on an unclipped wrapper; the pill itself clips the blur. */}
       <View style={styles.shadow}>
         <NavPill

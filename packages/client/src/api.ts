@@ -15,6 +15,7 @@ import * as discovery from './client/discovery';
 import * as library from './client/library';
 import * as media from './client/media';
 import * as moduleRegistry from './client/modules';
+import * as notifications from './client/notifications';
 import * as organize from './client/organize';
 import * as playback from './client/playback';
 import type { RematchKind } from './client/rematch';
@@ -72,6 +73,8 @@ import type {
   ModuleInfo,
   NamingTemplatesView,
   NamingView,
+  NotificationPrefs,
+  NotificationsView,
   OrganizePlan,
   OrganizeResult,
   PasskeyInfo,
@@ -670,6 +673,31 @@ export class KromaClient {
   }
   deleteReport(id: string): Promise<void> {
     return reports.deleteReport(this.ctx, id);
+  }
+
+  // ----- notification centre ----------------------------------------------------
+
+  listNotifications(): Promise<NotificationsView> {
+    return notifications.listNotifications(this.ctx);
+  }
+  markNotificationsRead(ids: string[]): Promise<{ unread: number }> {
+    return notifications.markRead(this.ctx, ids);
+  }
+  markAllNotificationsRead(): Promise<{ unread: number }> {
+    return notifications.markAllRead(this.ctx);
+  }
+  deleteNotification(id: string): Promise<void> {
+    return notifications.deleteNotification(this.ctx, id);
+  }
+  getNotificationPrefs(): Promise<NotificationPrefs> {
+    return notifications.getNotificationPrefs(this.ctx);
+  }
+  setNotificationPrefs(prefs: NotificationPrefs): Promise<NotificationPrefs> {
+    return notifications.setNotificationPrefs(this.ctx, prefs);
+  }
+  /** Run a notification's `api` action (approve / deny straight from the row). */
+  runNotificationAction(action: { href: string; method?: string }): Promise<void> {
+    return notifications.runNotificationAction(this.ctx, action);
   }
 
   // ----- admin: naming / organize -----------------------------------------------

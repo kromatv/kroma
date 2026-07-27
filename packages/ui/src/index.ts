@@ -8,6 +8,8 @@ export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSugge
 export { useAiSuggest } from './services/aiSuggest';
 export type { ActivateResult, AuthSession } from './services/auth';
 export { useAuthSession } from './services/auth';
+export type { Cast, CastProviderProps } from './services/cast';
+export { CastProvider, useCast } from './services/cast';
 export type { I18nProviderProps } from './services/i18n';
 export { I18nProvider, useLocale, useSetLocale, useT } from './services/i18n';
 export type { LocaleProviderProps } from './services/locale';

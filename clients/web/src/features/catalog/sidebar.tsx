@@ -28,6 +28,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import { CapabilityChip } from '#web/features/accounts/capability-chip';
 import { UserAvatar } from '#web/features/accounts/user-avatar';
+import { NotificationBell } from '#web/features/notifications/panel';
 import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
@@ -51,8 +52,9 @@ export function Sidebar() {
     <aside className="sticky top-0 hidden h-screen flex-col self-start border-r border-border bg-[#0C0C0E] lg:flex">
       {/* Fixed header: brand */}
       <div className="shrink-0 px-4.5 pb-2 pt-7">
-        <div className="px-2 pb-2">
+        <div className="flex items-center justify-between px-2 pb-2">
           <Logo size={24} />
+          <NotificationBell />
         </div>
       </div>
       <SidebarBody />
@@ -124,41 +126,44 @@ export function MobileTopbar() {
       <Link to="/" aria-label="KROMA">
         <Logo size={20} />
       </Link>
-      <Dialog.Root open={open} onOpenChange={setOpen}>
-        <Dialog.Trigger asChild>
-          <button
-            type="button"
-            aria-label={t('nav.menu')}
-            className="flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/4 hover:text-text"
-          >
-            <IconMenu2 size={22} />
-          </button>
-        </Dialog.Trigger>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 animate-[fade-in_.2s_var(--ease-out)] lg:hidden" />
-          <Dialog.Content
-            className="fixed inset-y-0 left-0 z-50 flex w-full flex-col border-border bg-[#0C0C0E] outline-none sm:w-[min(19rem,85vw)] sm:border-r lg:hidden"
-            aria-describedby={undefined}
-          >
-            <Dialog.Title className="sr-only">KROMA</Dialog.Title>
-            <div className="flex shrink-0 items-center justify-between px-4.5 pb-2 pt-[max(1.75rem,env(safe-area-inset-top))]">
-              <div className="px-2 pb-2">
-                <Logo size={24} />
+      <div className="flex items-center gap-0.5">
+        <NotificationBell />
+        <Dialog.Root open={open} onOpenChange={setOpen}>
+          <Dialog.Trigger asChild>
+            <button
+              type="button"
+              aria-label={t('nav.menu')}
+              className="flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/4 hover:text-text"
+            >
+              <IconMenu2 size={22} />
+            </button>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 animate-[fade-in_.2s_var(--ease-out)] lg:hidden" />
+            <Dialog.Content
+              className="fixed inset-y-0 left-0 z-50 flex w-full flex-col border-border bg-[#0C0C0E] outline-none sm:w-[min(19rem,85vw)] sm:border-r lg:hidden"
+              aria-describedby={undefined}
+            >
+              <Dialog.Title className="sr-only">KROMA</Dialog.Title>
+              <div className="flex shrink-0 items-center justify-between px-4.5 pb-2 pt-[max(1.75rem,env(safe-area-inset-top))]">
+                <div className="px-2 pb-2">
+                  <Logo size={24} />
+                </div>
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    aria-label={t('common.close')}
+                    className="flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/4 hover:text-text"
+                  >
+                    <IconX size={20} />
+                  </button>
+                </Dialog.Close>
               </div>
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label={t('common.close')}
-                  className="flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/4 hover:text-text"
-                >
-                  <IconX size={20} />
-                </button>
-              </Dialog.Close>
-            </div>
-            <SidebarBody />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+              <SidebarBody />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </div>
     </header>
   );
 }

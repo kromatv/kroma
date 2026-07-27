@@ -344,6 +344,16 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     fn publish(&self, event: Event) {
         (**self).publish(event)
     }
+    // MUST be forwarded like everything else: both have a deliberately inert
+    // default (drop / no-op), so omitting them here would not fail to compile,
+    // it would silently swallow every addressed event and every notification the
+    // moment a call goes through `Arc<AppState>` (which is how the app calls it).
+    fn publish_to(&self, user_id: &str, event: Event) {
+        (**self).publish_to(user_id, event)
+    }
+    fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize {
+        (**self).notify(audience, spec)
+    }
     fn trigger_job(&self, key: &'static str, reason: &'static str) {
         (**self).trigger_job(key, reason)
     }
@@ -491,6 +501,87 @@ mod tests {
         fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
             self.svc.as_ref().filter(|(t, _)| *t == type_id).map(|(_, v)| v.clone())
         }
+    }
+
+    /// A host that records the two seam methods with an inert default, so the
+    /// `Arc` blanket impl can be checked for actually forwarding them.
+    #[derive(Default)]
+    struct RecordingHost {
+        addressed: std::sync::Mutex<Vec<String>>,
+        notified: std::sync::Mutex<Vec<String>>,
+    }
+    impl HostCtx for RecordingHost {
+        fn db(&self) -> &Pool {
+            unimplemented!()
+        }
+        fn data_dir(&self) -> &Path {
+            Path::new("/tmp")
+        }
+        fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
+            Ok(())
+        }
+        fn require_any_admin(&self, _user: &User) -> Result<(), Response> {
+            Ok(())
+        }
+        fn lerr(&self, _user: &User, _status: StatusCode, _key: &str) -> Response {
+            unimplemented!()
+        }
+        fn setting_str(&self, _key: &str, default: &str) -> String {
+            default.to_string()
+        }
+        fn setting_bool(&self, _key: &str, default: bool) -> bool {
+            default
+        }
+        fn setting_i64(&self, _key: &str, default: i64) -> i64 {
+            default
+        }
+        fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
+        fn publish(&self, _event: Event) {}
+        fn publish_to(&self, user_id: &str, _event: Event) {
+            self.addressed.lock().unwrap().push(user_id.to_string());
+        }
+        fn notify(&self, _audience: &Audience, spec: &NotificationSpec) -> usize {
+            self.notified.lock().unwrap().push(spec.event.as_str().to_string());
+            1
+        }
+        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
+        fn module_enabled(&self, _id: &str) -> bool {
+            true
+        }
+        fn library_folders(&self) -> Vec<LibraryFolders> {
+            Vec::new()
+        }
+        fn tmdb_api_key(&self) -> Option<String> {
+            None
+        }
+        fn metadata_language(&self) -> String {
+            "en".into()
+        }
+        fn get_service(&self, _type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
+            None
+        }
+    }
+
+    /// Regression guard. `publish_to` and `notify` have inert defaults (drop /
+    /// no-op), so leaving them out of the `Arc` blanket impl COMPILES FINE and
+    /// then silently swallows every notification the app raises — the app calls
+    /// through `Arc<AppState>`, never `AppState` directly. This asserts the
+    /// forwarding is real; any future defaulted method needs the same treatment.
+    #[test]
+    fn the_arc_blanket_impl_forwards_the_defaulted_methods() {
+        let host = Arc::new(RecordingHost::default());
+        let via_arc: &dyn HostCtx = &host;
+
+        via_arc.publish_to("ana", Event::new("notification.created", serde_json::json!({})));
+        let spec = NotificationSpec::new(
+            NotificationEvent::RequestApproved,
+            "notifications.request.approved.title",
+            "notifications.request.approved.body",
+        );
+        assert_eq!(via_arc.notify(&Audience::user("ana"), &spec), 1);
+
+        assert_eq!(host.addressed.lock().unwrap().as_slice(), ["ana"]);
+        assert_eq!(host.notified.lock().unwrap().as_slice(), ["request.approved"]);
     }
 
     #[test]

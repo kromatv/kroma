@@ -45,6 +45,7 @@ because Rust is fast and the video is never re-encoded.
 | 🔒 **VPN + kill switch** | managed WireGuard→SOCKS5 bridge; downloads pause the instant the tunnel drops | no Gluetun |
 | ▶️ **Player** | direct-play, HEVC-first — original files range-streamed, decoded natively | no transcode farm |
 | 📺 **Clients** | web, mobile-responsive web, Samsung, LG, Android TV, desktop | one codebase |
+| 📱 **Cast** | start a title on the TV from your phone or browser, then drive it — play/pause, seek, tracks, next episode | no Chromecast needed |
 | ✨ **AI** | on-device recommendations + semantic search, Whisper subtitle generation, optional LLM | no cloud |
 | 👥 **Multi-user** | accounts, profiles, PIN locks, passkeys, invites, per-user permissions | share safely |
 | 📊 **Statistics** | live download/library/watch dashboards over a real-time WebSocket bus | at a glance |

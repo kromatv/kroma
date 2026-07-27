@@ -274,6 +274,11 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("llmDefaultProvider".into(), json!(""));
     // libraries: persisted multi-folder definitions (seeded from env on first run).
     m.insert("libraries".into(), json!(null));
+    // How far the media digest has already reported (an ISO-8601 `items.added_at`).
+    // Empty means "never run": the first pass adopts the current library as its
+    // baseline and stays silent, so switching notifications on doesn't announce a
+    // whole existing catalogue. See `services::notify::digest`.
+    m.insert("notifications.digest.since".into(), json!(""));
     m
 }
 

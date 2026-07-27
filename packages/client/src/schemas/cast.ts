@@ -6,8 +6,8 @@
 // sides speak the shapes below.
 
 import { z } from 'zod';
-import { MediaItem } from './media';
 import { ItemId } from './ids';
+import { MediaItem } from './media';
 
 /** What a receiver is doing. `buffering` is "playing but stalled" - a sender
  * keeps showing the pause button and adds a spinner. The catch-all keeps an

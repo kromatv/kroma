@@ -27,7 +27,11 @@ function controller(overrides: Partial<PlayerController> = {}) {
 }
 
 function deps(): CastDeps & {
-  nav: { reset: ReturnType<typeof vi.fn>; swap: ReturnType<typeof vi.fn>; home: ReturnType<typeof vi.fn> };
+  nav: {
+    reset: ReturnType<typeof vi.fn>;
+    swap: ReturnType<typeof vi.fn>;
+    home: ReturnType<typeof vi.fn>;
+  };
 } {
   return {
     client: {
@@ -44,7 +48,9 @@ describe('play', () => {
   it('launches the title with no history behind it', async () => {
     const d = deps();
     await applyCastCommand({ type: 'play', itemId: 'it1' as never, positionMs: 60_000 }, d);
-    expect(d.nav.reset).toHaveBeenCalledWith('player', { item: expect.objectContaining({ id: 'it1' }) });
+    expect(d.nav.reset).toHaveBeenCalledWith('player', {
+      item: expect.objectContaining({ id: 'it1' }),
+    });
   });
 
   it('seeks instead of relaunching when the TV is already on that title', async () => {
@@ -107,7 +113,10 @@ describe('skipNext / stop', () => {
     setCastTarget({ item: item('s01e01'), controller: controller() });
     const d = deps();
     await applyCastCommand({ type: 'skipNext' }, d);
-    expect(d.nav.swap).toHaveBeenCalledWith('player', expect.objectContaining({ item: expect.objectContaining({ id: 's01e02' }) }));
+    expect(d.nav.swap).toHaveBeenCalledWith(
+      'player',
+      expect.objectContaining({ item: expect.objectContaining({ id: 's01e02' }) }),
+    );
   });
 
   it('leaves the player alone when there is no next episode', async () => {

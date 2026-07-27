@@ -2,7 +2,9 @@
 // landscape on phones, keeps the screen awake, resumes from saved progress,
 // reports the playback heartbeat, and autoplays the next episode on end.
 
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { audioTracksOf, langCode, type MediaItem, preferredAudioIndex } from '@kroma/core';
+import { useCast } from '@kroma/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
@@ -10,6 +12,7 @@ import type { VideoView as VideoViewRef } from 'expo-video';
 import { VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { ErrorView, Loading } from '#mobile/components/ui';
 import { type DownloadEntry, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
@@ -87,6 +90,11 @@ function PlayerBody({
     enabled: !localUri && item.kind === 'episode',
     staleTime: 5 * 60_000,
   });
+
+  // Handing this film to a TV: the position travels with it, so the set picks
+  // up exactly where the phone was rather than at the last saved beat.
+  const cast = useCast();
+  const devices = useRef<BottomSheetModal>(null);
 
   const [terminated, setTerminated] = useState<string | null>(null);
   useHeartbeat(
@@ -181,12 +189,28 @@ function PlayerBody({
         }}
         onOpenSheet={(view) => setSheet(view ?? 'menu')}
         onPip={() => viewRef.current?.startPictureInPicture()}
+        onCast={cast.available ? () => devices.current?.present() : undefined}
         tileFor={tileFor}
         next={next.data ?? null}
         onPlayNext={() => {
           navigatedRef.current = true;
           engine.shutdown();
           if (next.data) router.replace(`/player/${next.data.id}` as never);
+        }}
+      />
+      <CastSheet
+        ref={devices}
+        offerLocal={false}
+        onPick={async (id) => {
+          devices.current?.dismiss();
+          if (!id) return;
+          const ok = await cast.playOn(id, item.id, Math.round(engine.cur * 1000));
+          // The phone stops playing what the TV just picked up - two screens on
+          // the same film, one of them in your hand, is nobody's intent.
+          if (ok) {
+            engine.shutdown();
+            goBack(router);
+          }
         }}
       />
       <TrackSheet

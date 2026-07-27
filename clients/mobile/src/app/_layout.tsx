@@ -1,5 +1,5 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { I18nProvider as KitI18nProvider } from '@kroma/ui';
+import { CastProvider, I18nProvider as KitI18nProvider } from '@kroma/ui';
 import { setImageBackend } from '@kroma/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
@@ -56,18 +56,23 @@ function Shell() {
       <I18nProvider>
         <KitI18nBridge>
           <DownloadsProvider client={client}>
-            <BottomSheetModalProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: colors.bg },
-                  animation: 'fade',
-                  // Phones are portrait-only outside the player (which sets its
-                  // own landscape lock in (app)/_layout); tablets rotate freely.
-                  orientation: isTablet ? 'default' : 'portrait',
-                }}
-              />
-            </BottomSheetModalProvider>
+            {/* Which TV this phone is driving is app-wide: the button on a
+                detail page, the bar above the tabs and the remote screen are
+                three views of one session. */}
+            <CastProvider client={client} enabled={status === 'signedIn'}>
+              <BottomSheetModalProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: colors.bg },
+                    animation: 'fade',
+                    // Phones are portrait-only outside the player (which sets its
+                    // own landscape lock in (app)/_layout); tablets rotate freely.
+                    orientation: isTablet ? 'default' : 'portrait',
+                  }}
+                />
+              </BottomSheetModalProvider>
+            </CastProvider>
           </DownloadsProvider>
         </KitI18nBridge>
       </I18nProvider>

@@ -4,6 +4,7 @@ import {
   canDirectPlay,
   channelLabel,
   codecLabel,
+  type ItemId,
   langName,
   type MediaItem,
   posterColors,
@@ -15,6 +16,7 @@ import { BackButton, IconButton, radius } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import { HeroBackdrop } from '#web/features/catalog/hero-backdrop';
+import { CastButton } from '#web/features/playback/cast/cast-button';
 import { imageUrl } from '#web/shared/lib/api';
 import {
   Avatar,
@@ -108,6 +110,9 @@ export interface DetailHeroProps {
   primaryAction?: ReactNode;
   onBack: () => void;
   onPlay?: () => void;
+  /** Local catalog id, so the hero can offer "Play on TV" beside Play. Omitted
+   * for titles that aren't in the library (nothing to cast). */
+  castItemId?: ItemId;
   /** Watched state for the title; omit (undefined) to hide the watched toggle. */
   watched?: boolean;
   /** Flip the watched flag. Required for the watched toggle to render. */
@@ -147,6 +152,7 @@ export function DetailHero({
   primaryAction,
   onBack,
   onPlay,
+  castItemId,
   watched,
   onToggleWatched,
   inList,
@@ -234,6 +240,7 @@ export function DetailHero({
                   onPress={onPlay}
                 />
               ) : null)}
+            {castItemId ? <CastButton itemId={castItemId} /> : null}
             <WatchedButton watched={watched} onToggle={onToggleWatched} />
             <ListButton inList={inList} onToggle={onToggleList} />
             <ReportButton onReport={onReport} />

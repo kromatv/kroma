@@ -684,6 +684,11 @@ pub fn on_download_imported<S: HostCtx>(state: &S, request_id: &str) -> Result<(
     if req.status != status {
         db::set_request_status(state.db(), request_id, status, None, None, now_ms())?;
         publish(state, request_id, status);
+        // The download landed and was imported: the requester's "ready to watch"
+        // moment. Transition-gated like every other notify site, so a re-import
+        // of an already-available request stays quiet.
+        let link = request_link(state, &req);
+        notify_requester(state, &req, status, &link);
     }
     Ok(())
 }

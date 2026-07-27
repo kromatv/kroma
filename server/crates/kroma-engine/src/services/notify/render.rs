@@ -6,21 +6,36 @@
 //! what keeps a pushed title and its in-app row saying the same thing.
 
 use kroma_db::notifications::StoredNotification;
-use kroma_domain::{Notification, NotificationAction, User};
+use kroma_domain::{Notification, NotificationAction};
 
 use crate::i18n;
 
 /// The locale to render for: the account's preference, else the server default.
-/// Mirrors `api::reports::locale`, the same resolution every localized response
-/// already uses.
-pub fn locale_of(user: &User) -> &'static str {
-    user.language.as_deref().and_then(i18n::normalize).unwrap_or(i18n::DEFAULT_LOCALE)
+pub use crate::i18n::user_locale as locale_of;
+
+/// Resolve the interpolation vars for `locale`.
+///
+/// A param value that is itself a catalog key is translated first, so a producer
+/// can pass a localizable value (a job's `jobs.{key}.name`) the same way it
+/// passes a literal one (a film title). Ordinary text never collides with this:
+/// a real title is not a message key.
+fn vars_for(stored: &StoredNotification, locale: &str) -> Vec<(String, String)> {
+    stored
+        .params
+        .iter()
+        .map(|(k, v)| {
+            let value =
+                if i18n::is_message_key(v) { i18n::t(locale, v, &[]) } else { v.clone() };
+            (k.clone(), value)
+        })
+        .collect()
 }
 
 /// Render one stored notification into its wire shape.
 pub fn render(stored: &StoredNotification, locale: &str) -> Notification {
+    let resolved = vars_for(stored, locale);
     let vars: Vec<(&str, &str)> =
-        stored.params.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+        resolved.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
     Notification {
         id: stored.id.clone(),
         category: stored.category,
@@ -109,6 +124,25 @@ mod tests {
         assert_eq!(out.actions[0].style, ActionStyle::Primary);
         // The button label is resolved, not left as a key.
         assert!(!out.actions[0].label.starts_with("notifications."));
+    }
+
+    #[test]
+    fn a_param_that_is_itself_a_catalog_key_gets_translated() {
+        let mut s = stored();
+        s.title_key = "notifications.system.job.failed.title".into();
+        s.body_key = "notifications.system.job.failed.body".into();
+        // The jobs domain names its display strings by key; a notification about
+        // a failed job passes that key through as a param.
+        s.params = BTreeMap::from([("job".to_string(), "jobs.library.scan.name".to_string())]);
+        let out = render(&s, "en");
+        assert!(!out.body.contains("jobs.library.scan.name"), "raw key leaked: {}", out.body);
+    }
+
+    #[test]
+    fn ordinary_param_text_is_left_alone() {
+        // A film title must never be mistaken for a key and rewritten.
+        let out = render(&stored(), "en");
+        assert!(out.body.contains("Dune"), "{}", out.body);
     }
 
     #[test]

@@ -43,6 +43,11 @@ export type ServerEvent =
   | { type: 'pipeline.stats'; stages: StageStat[] }
   | { type: 'request.updated'; id: string; status: string }
   | { type: 'report.updated'; id: string; status: string }
+  // Notification events are ADDRESSED: the server sends them only to the sockets
+  // signed in as the recipient, so receiving one always means "this is yours".
+  // Both carry the new unread total so a bell badge updates without a refetch.
+  | { type: 'notification.created'; id: string; unread: number }
+  | { type: 'notification.read'; unread: number }
   | {
       type: 'download.progress';
       id: string;

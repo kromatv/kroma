@@ -476,6 +476,26 @@ fn run_job(
         status: status.to_string(),
     });
 
+    // A failed background job is the one piece of server health nobody sees
+    // unless they happen to open Tâches, so it goes to the operators' inbox.
+    // Only failures: a successful nightly scan is not news. `notifications.digest`
+    // is excluded so a broken notifier cannot notify about itself in a loop.
+    if status == "failed" && key != "notifications.digest" {
+        let spec = crate::model::NotificationSpec::new(
+            crate::model::NotificationEvent::SystemJobFailed,
+            "notifications.system.job.failed.title",
+            "notifications.system.job.failed.body",
+        )
+        // The job's own display name is an i18n key the client already knows.
+        .param("job", format!("jobs.{key}.name"))
+        .link("/admin/jobs");
+        crate::services::notify::emit(
+            &state,
+            &crate::model::Audience::permission(crate::model::Permission::SettingsManage),
+            &spec,
+        );
+    }
+
     chain_after(&manager, &state, job, key, status);
 }
 

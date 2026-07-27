@@ -200,6 +200,21 @@ export const userQueries = {
   /** The account's registered passkeys (for the /account security section). */
   passkeys: () =>
     queryOptions({ queryKey: ['passkeys'] as const, queryFn: () => kromaClient().listPasskeys() }),
+
+  /** The notification centre. No poll: the server pushes `notification.created`
+   * over the (addressed) event stream, so the bell invalidates on demand. */
+  notifications: () =>
+    queryOptions({
+      queryKey: ['notifications'] as const,
+      queryFn: () => kromaClient().listNotifications(),
+    }),
+
+  /** The per-category delivery matrix (for the /account settings section). */
+  notificationPrefs: () =>
+    queryOptions({
+      queryKey: ['notifications', 'prefs'] as const,
+      queryFn: () => kromaClient().getNotificationPrefs(),
+    }),
 } as const;
 
 // ---- Server ---------------------------------------------------------------

@@ -10,6 +10,7 @@
 //! (`api::util::blocking`, a job thread), never inline in an async handler the
 //! same rule the requests service follows.
 
+pub mod digest;
 pub mod render;
 
 use kroma_db::notifications::NewNotification;
