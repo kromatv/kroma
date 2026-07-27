@@ -214,14 +214,20 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
             />
             <button
               type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(link).then(
-                  () => {
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1500);
-                  },
-                  () => undefined,
-                );
+              // try/catch, not the promise's reject handler: `navigator.clipboard`
+              // is UNDEFINED outside a secure context, so on the plain-http LAN
+              // address a self-hosted server is normally reached on, this throws
+              // a TypeError synchronously - before there is a promise for
+              // `.then(_, onRejected)` to reject. The field beside it is
+              // readOnly + select-on-focus, so the link stays copyable by hand.
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(link);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                } catch {
+                  /* clipboard unavailable (insecure context) or blocked */
+                }
               }}
               className="shrink-0 rounded-lg bg-white/10 px-3.5 py-2.5 text-[13px] font-semibold"
             >

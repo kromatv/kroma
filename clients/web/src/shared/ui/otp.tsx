@@ -29,9 +29,19 @@ export function Otp({
   autoFocus,
   ariaLabel,
 }: Readonly<OtpProps>) {
-  // Stable, non-index keys for the fixed positional slot row (regenerated only
-  // when the slot count changes).
-  const slotKeys = useMemo(() => Array.from({ length }, () => crypto.randomUUID()), [length]);
+  // Keys for the fixed positional slot row. Derived from the position, NOT from
+  // crypto.randomUUID(): that is only defined in a SECURE CONTEXT, and a
+  // self-hosted server is normally reached over plain http on a LAN address
+  // (http://192.168.x.x:4040), where it is undefined and throws
+  // "crypto.randomUUID is not a function" - taking the whole login screen down
+  // with it, which is the one screen nobody can route around.
+  //
+  // A position is the right key here anyway. These slots never reorder or get
+  // inserted into; slot 0 is always slot 0, so its index IS its identity.
+  const slotKeys = useMemo(
+    () => Array.from({ length }, (_, index) => `otp-slot-${index}`),
+    [length],
+  );
   return (
     <OTPInput
       maxLength={length}
