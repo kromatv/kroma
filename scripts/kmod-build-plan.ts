@@ -17,14 +17,32 @@ import { crateAndBin, packableModules } from './pack-module';
 const target = process.env.KMOD_TARGET?.trim();
 const targetArg = target ? ` --target ${target}` : '';
 
-const lines: string[] = [];
+const packages: string[] = [];
+const features: string[] = [];
 for (const dir of packableModules()) {
-  const { pkg, bin, features } = crateAndBin(dir);
+  const { pkg, bin, features: feats } = crateAndBin(dir);
   if (!bin) continue; // library module: nothing to compile
-  const feat = features.length ? ` --features ${features.join(',')}` : '';
-  lines.push(`cargo build --profile release-kmod -p ${pkg} --bin ${bin}${feat}${targetArg}`);
+  packages.push(`-p ${pkg}`);
+  // PACKAGE-QUALIFIED, because one invocation builds all nine: a bare
+  // `--features local` would be ambiguous across nine packages, and cargo
+  // rejects it.
+  features.push(...feats.map((f) => `${pkg}/${f}`));
 }
 
-// One combined line keeps cargo's dependency graph warm across modules while
-// still honoring per-crate features (cargo unifies features workspace-wide).
-process.stdout.write(`${lines.join('\n')}\n`);
+// ONE invocation, not one per module, and the difference is not the dependency
+// graph - it is the LINKER. The release profile is `lto = true` with
+// `codegen-units = 1`, so each binary's link step is single-threaded and, run as
+// nine separate cargo commands, they were also SEQUENTIAL: nine slow links, one
+// after another, on a runner with cores sitting idle. Selecting all nine
+// packages in one build lets cargo run those links in parallel, which is most of
+// what the ~8 minute cross-compile step was spending its time on.
+//
+// The tradeoff is feature unification: with every package selected at once,
+// cargo (resolver v2) unifies features across the shared dependencies of all
+// nine, so a binary can link a dependency with a feature another module asked
+// for. Cargo features are additive by contract, so this is a size question
+// rather than a behaviour one.
+const feat = features.length ? ` --features ${features.join(',')}` : '';
+process.stdout.write(
+  `cargo build --profile release-kmod ${packages.join(' ')}${feat}${targetArg}\n`,
+);

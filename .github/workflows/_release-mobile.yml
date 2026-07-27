@@ -70,6 +70,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # The Android TV job has had this from the start and builds its APK in
+      # ~8 minutes; this one did not, and took ~25 for the same kind of work.
+      # Nothing else explained the gap: same runner, same Gradle, same React
+      # Native. Without it every run re-downloads the dependency graph and
+      # re-runs every transform, because a fresh runner has no ~/.gradle at all.
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          gradle-version: '8.13'
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
