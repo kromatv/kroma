@@ -21,6 +21,7 @@ pub mod quickconnect;
 pub mod playback;
 pub mod cast;
 pub mod requests;
+pub mod notify;
 pub mod library_missing;
 pub mod settings;
 pub mod subtitles;

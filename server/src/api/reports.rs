@@ -16,7 +16,10 @@ use crate::api::util::query;
 use crate::db;
 use crate::i18n;
 use crate::infra::events::ServerEvent;
-use crate::model::{CreateReportBody, Kind, MediaItem, Permission, ReportSubjectKind, User};
+use crate::model::{
+    Audience, CreateReportBody, Kind, MediaItem, NotificationEvent, NotificationSpec, Permission,
+    ReportSubjectKind, User,
+};
 use crate::services::auth::random_token;
 use crate::services::jobs::now_ms;
 use crate::services::scan::short_hash;
@@ -110,6 +113,26 @@ pub async fn create(
                 id: report.id.clone(),
                 status: report.status.as_str().into(),
             });
+            // Tell the triage queue's owners there is something to look at.
+            let spec = NotificationSpec::new(
+                NotificationEvent::ReportSubmitted,
+                "notifications.report.submitted.title",
+                "notifications.report.submitted.body",
+            )
+            .param("title", report.subject_title.clone())
+            .param("user", user.username.clone())
+            .link("/admin/reports");
+            let bg = state.clone();
+            // `emit` resolves the audience and writes rows: blocking work.
+            let _ = crate::api::util::blocking(move || {
+                kroma_engine::services::notify::emit(
+                    &bg,
+                    &Audience::permission(Permission::ReportsManage),
+                    &spec,
+                );
+                Ok(())
+            })
+            .await;
             Ok(Json(report).into_response())
         }
         None => Err(lerr(loc, StatusCode::NOT_FOUND, "error.itemNotFound")),

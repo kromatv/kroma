@@ -237,6 +237,27 @@ impl HostCtx for RemoteHost {
         );
     }
 
+    fn notify(
+        &self,
+        audience: &kroma_module_host::Audience,
+        spec: &kroma_module_host::NotificationSpec,
+    ) -> usize {
+        // The core does the work (resolve, filter by prefs, persist, push); this
+        // side only ships the intent across and reports how many were reached.
+        let Ok(body) = serde_json::to_value(serde_json::json!({
+            "audience": audience,
+            "spec": spec,
+        })) else {
+            return 0;
+        };
+        self.callback()
+            .post_json(&self.host_url("notify"), &body)
+            .ok()
+            .and_then(|r| r.json::<serde_json::Value>().ok())
+            .and_then(|v| v.get("sent").and_then(serde_json::Value::as_u64))
+            .unwrap_or(0) as usize
+    }
+
     fn trigger_job(&self, key: &'static str, reason: &'static str) {
         let _ = self
             .callback()

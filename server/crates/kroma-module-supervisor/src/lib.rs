@@ -530,6 +530,7 @@ where
         .route("/_host/setting", get(get_setting::<S>))
         .route("/_host/settings", post(set_settings::<S>))
         .route("/_host/events", post(publish_event::<S>))
+        .route("/_host/notify", post(notify::<S>))
         .route("/_host/job", post(trigger_job::<S>))
         .route("/_host/enabled", get(module_enabled::<S>))
         .route("/_host/libraries", get(library_folders::<S>))
@@ -575,6 +576,19 @@ struct EventBody {
 async fn publish_event<S: HostCtx>(State(host): State<S>, Json(body): Json<EventBody>) -> StatusCode {
     host.publish(Event { topic: body.topic, payload: body.payload });
     StatusCode::NO_CONTENT
+}
+
+#[derive(serde::Deserialize)]
+struct NotifyBody {
+    audience: kroma_module_host::Audience,
+    spec: kroma_module_host::NotificationSpec,
+}
+
+/// A sidecar module raising a notification. The core owns audience resolution
+/// and preference filtering, so a module can't reach past a user's settings.
+async fn notify<S: HostCtx>(State(host): State<S>, Json(body): Json<NotifyBody>) -> Json<Value> {
+    let sent = host.notify(&body.audience, &body.spec);
+    Json(json!({ "sent": sent }))
 }
 
 #[derive(serde::Deserialize)]

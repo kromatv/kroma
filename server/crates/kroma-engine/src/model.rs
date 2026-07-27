@@ -16,4 +16,5 @@ pub use crate::domain::jobs::*;
 pub use crate::domain::pipeline::*;
 pub use crate::domain::requests::*;
 pub use crate::domain::reports::*;
+pub use crate::domain::notifications::*;
 pub use crate::domain::section::*;

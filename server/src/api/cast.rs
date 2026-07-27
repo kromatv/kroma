@@ -56,7 +56,7 @@ fn require_playback(user: &User) -> Result<(), Response> {
 }
 
 fn bad_id(user: &User) -> Response {
-    lerr(locale(user), StatusCode::BAD_REQUEST, "error.badRequest")
+    lerr(locale(user), StatusCode::BAD_REQUEST, "error.castBadReceiver")
 }
 
 #[derive(Debug, Deserialize)]
@@ -236,7 +236,7 @@ pub async fn command(
             .unwrap_or_default()
             .is_some();
         if !known {
-            return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.notFound"));
+            return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.itemNotFound"));
         }
     }
 

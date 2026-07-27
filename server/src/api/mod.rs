@@ -11,6 +11,7 @@ pub mod poster;
 pub mod ws;
 
 mod accounts;
+mod cast;
 mod discover;
 mod downloads_overlay;
 mod extract;
@@ -25,6 +26,7 @@ mod people;
 mod pin;
 mod recommend;
 mod rematch;
+mod notifications;
 mod reports;
 mod requests;
 mod search;
@@ -56,6 +58,8 @@ mod it_media;
 #[cfg(test)]
 mod it_playback;
 #[cfg(test)]
+mod it_cast;
+#[cfg(test)]
 mod it_invites;
 #[cfg(test)]
 mod it_admin;
@@ -65,6 +69,8 @@ mod it_admin2;
 mod it_admin_manage;
 #[cfg(test)]
 mod it_reports;
+#[cfg(test)]
+mod it_notifications;
 
 use std::sync::Arc;
 
@@ -157,10 +163,12 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(online_subs::routes())
         .merge(home::routes())
         .merge(playback::routes())
+        .merge(cast::routes())
         .merge(discover::routes())
         .merge(rematch::routes())
         .merge(requests::routes())
         .merge(reports::routes())
+        .merge(notifications::routes())
         .merge(modules::routes())
         .route_layer(from_fn_with_state(state.clone(), require_session));
 

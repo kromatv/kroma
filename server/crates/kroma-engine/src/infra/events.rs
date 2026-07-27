@@ -232,6 +232,12 @@ impl Bus {
         self.send(Audience::Everyone, &value);
     }
 
+    /// [`Self::publish_value`], addressed to one user. The notification service
+    /// reaches this through `HostCtx::publish_to`.
+    pub fn publish_value_to(&self, user_id: &str, value: serde_json::Value) {
+        self.send(Audience::User(user_id.into()), &value);
+    }
+
     /// Serialize once and hand the envelope to the channel. Skipped entirely
     /// while nobody is subscribed, so publishing costs nothing on a headless
     /// server.

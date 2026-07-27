@@ -250,20 +250,63 @@ impl PushCategory {
     }
 }
 
+/// Who should be told about something.
+///
+/// Serializable because it crosses the module boundary: an out-of-process
+/// `.kmod` names an audience and the core resolves it (a module has no business
+/// enumerating accounts itself).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum Audience {
+    /// One account, by id (the requester whose film arrived).
+    User { id: String },
+    /// Everyone holding a capability (the moderators who must review a request).
+    Permission { permission: crate::accounts::Permission },
+    /// Everyone with an account (a new film in the library).
+    Everyone,
+    /// Everyone who follows a show it is in their list, they marked it
+    /// watched, or they have progress on an episode (a new episode aired).
+    Followers { show_id: String },
+}
+
+impl Audience {
+    /// `Audience::User` from anything string-ish, so call sites read as prose.
+    pub fn user(id: impl Into<String>) -> Self {
+        Audience::User { id: id.into() }
+    }
+
+    pub fn permission(permission: crate::accounts::Permission) -> Self {
+        Audience::Permission { permission }
+    }
+
+    pub fn followers(show_id: impl Into<String>) -> Self {
+        Audience::Followers { show_id: show_id.into() }
+    }
+}
+
 /// What a producer hands to `services::notify::emit`: keys, not text.
-#[derive(Debug, Clone)]
+///
+/// Serializable for the same reason as [`Audience`]: this is the payload a
+/// module posts to the host's callback API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NotificationSpec {
     pub event: NotificationEvent,
     pub title_key: String,
     pub body_key: String,
     /// Interpolation vars for both keys (`{title}`, `{count}`, …).
+    #[serde(default)]
     pub params: BTreeMap<String, String>,
     /// In-app route a tap opens.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
     /// Poster / backdrop shown on the row and in a rich push.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
+    #[serde(default)]
     pub actions: Vec<ActionSpec>,
     /// Which registered action set a native push should use.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub push_category: Option<PushCategory>,
 }
 

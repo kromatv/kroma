@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use crate::infra::events::{Bus, ServerEvent};
 use crate::model::{
     CastCommand, CastCommandEnvelope, CastNowPlaying, CastPlayback, CastReceiver, CastState,
-    MediaItem,
+    CastTrack, MediaItem,
 };
 
 /// A receiver that stops heartbeating for this long is gone (TV switched off,
@@ -28,6 +28,10 @@ const MAX_INBOX: usize = 16;
 /// here rather than trusted.
 const MAX_NAME: usize = 48;
 const MAX_PLATFORM: usize = 32;
+/// Same treatment for the track lists a receiver advertises: they are rendered
+/// in a remote's pickers, so both their length and their labels are bounded.
+const MAX_TRACKS: usize = 64;
+const MAX_TRACK_LABEL: usize = 64;
 /// Bounds on a relative skip, so a hostile `deltaMs` can't overflow the
 /// receiver's clock arithmetic.
 const MAX_SKIP_MS: i64 = 24 * 60 * 60 * 1000;
@@ -91,8 +95,10 @@ impl Receiver {
                 position_ms: pb.position_ms,
                 duration_ms: pb.duration_ms.or_else(|| item.duration_ms.and_then(|d| i64::try_from(d).ok())),
                 state: pb.state,
-                audio: pb.audio.clone(),
-                subtitle: pb.subtitle.clone(),
+                audio_tracks: pb.audio_tracks.clone(),
+                audio_index: pb.audio_index,
+                subtitles: pb.subtitles.clone(),
+                subtitle_index: pb.subtitle_index,
             }),
             _ => None,
         };
@@ -112,9 +118,14 @@ impl Receiver {
     fn differs(&self, next: Option<&CastPlayback>) -> bool {
         match (self.playback.as_ref(), next) {
             (None, None) => false,
-            (Some(a), Some(b)) => a.item_id != b.item_id || a.state != b.state
-                || a.audio != b.audio
-                || a.subtitle != b.subtitle,
+            (Some(a), Some(b)) => {
+                a.item_id != b.item_id
+                    || a.state != b.state
+                    || a.audio_index != b.audio_index
+                    || a.subtitle_index != b.subtitle_index
+                    || a.audio_tracks != b.audio_tracks
+                    || a.subtitles != b.subtitles
+            }
             _ => true,
         }
     }
@@ -179,7 +190,7 @@ impl Registry {
         if ann.playback.is_none() {
             entry.item = None;
         }
-        entry.playback = ann.playback;
+        entry.playback = ann.playback.map(trim_tracks);
         entry.last_seen = Instant::now();
 
         // Ack: everything the receiver says it applied leaves the inbox. What
@@ -233,14 +244,16 @@ impl Registry {
         v
     }
 
-    /// Whether `user_id` registered this receiver. Gates unregistering and the
-    /// event bus's targeted delivery.
-    pub fn owns(&self, receiver_id: &str, user_id: &str) -> bool {
+    /// The account a live receiver is signed into. Commands are addressed to it
+    /// on the event bus, so a TV's orders reach that account's sockets and no
+    /// others. `None` once the receiver is gone.
+    pub fn owner_of(&self, receiver_id: &str) -> Option<String> {
         self.inner
             .read()
             .unwrap()
             .get(receiver_id)
-            .is_some_and(|r| r.live() && r.user_id == user_id)
+            .filter(|r| r.live())
+            .map(|r| r.user_id.clone())
     }
 
     /// Drop a receiver on its own request (sign-out / app quit). Scoped to the
@@ -292,6 +305,19 @@ fn clean(s: &str, max: usize) -> String {
     out.trim().to_string()
 }
 
+/// Bound the advertised track lists the same way as the display name: they are
+/// drawn in other people's remotes, so neither their length nor their labels are
+/// taken on trust.
+fn trim_tracks(mut pb: CastPlayback) -> CastPlayback {
+    for list in [&mut pb.audio_tracks, &mut pb.subtitles] {
+        list.truncate(MAX_TRACKS);
+        for track in list.iter_mut() {
+            track.label = clean(&track.label, MAX_TRACK_LABEL);
+        }
+    }
+    pb
+}
+
 /// Clamp the numeric fields of a command into a sane range before it is stored,
 /// so a hostile sender can't hand the TV a position that overflows its clock.
 fn clamp(command: CastCommand) -> CastCommand {
@@ -307,5 +333,258 @@ fn clamp(command: CastCommand) -> CastCommand {
             delta_ms: delta_ms.clamp(-MAX_SKIP_MS, MAX_SKIP_MS),
         },
         other => other,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Kind;
+
+    fn item(id: &str) -> MediaItem {
+        MediaItem {
+            id: id.into(),
+            title: "The Film".into(),
+            kind: Kind::Movie,
+            year: Some(2020),
+            duration_ms: Some(7_200_000),
+            container: "mkv".into(),
+            video: None,
+            audio: None,
+            audio_tracks: Vec::new(),
+            subtitles: Vec::new(),
+            library: "lib".into(),
+            show_id: None,
+            show_title: None,
+            season: None,
+            episode: None,
+            episode_end: None,
+            episode_title: None,
+            rel_path: None,
+            added_at: "t".into(),
+            metadata: None,
+            abs_path: None,
+            files: Vec::new(),
+            default_file_id: None,
+            markers: Vec::new(),
+            audio_analysis: None,
+        }
+    }
+
+    fn playing(item_id: &str, position_ms: i64) -> CastPlayback {
+        CastPlayback {
+            item_id: item_id.into(),
+            position_ms,
+            duration_ms: Some(7_200_000),
+            state: CastState::Playing,
+            audio_tracks: vec![CastTrack { index: 0, label: "English 5.1".into() }],
+            audio_index: Some(0),
+            subtitles: Vec::new(),
+            subtitle_index: None,
+        }
+    }
+
+    fn beat(id: &str, seq: u64, playback: Option<CastPlayback>) -> Announce {
+        Announce {
+            receiver_id: id.into(),
+            name: "Salon".into(),
+            platform: "Apple TV".into(),
+            last_applied_seq: seq,
+            playback,
+        }
+    }
+
+    fn announce_ok(reg: &Registry, ann: Announce, user: &str, item: Option<MediaItem>) -> Vec<CastCommandEnvelope> {
+        match reg.announce(ann, user, "Alice", "LAN".into(), item) {
+            Announced::Ok { commands, .. } => commands,
+            _ => panic!("expected the announce to be accepted"),
+        }
+    }
+
+    #[test]
+    fn a_receiver_appears_with_what_it_is_playing() {
+        let reg = Registry::new();
+        // First beat: the caller was told to resolve the item, and does.
+        assert!(reg.wants_item("tv-salon-01", "it1"));
+        announce_ok(&reg, beat("tv-salon-01", 0, Some(playing("it1", 1000))), "u1", Some(item("it1")));
+        // Second beat on the same title needs no lookup.
+        assert!(!reg.wants_item("tv-salon-01", "it1"));
+        assert!(reg.wants_item("tv-salon-01", "it2"));
+
+        let list = reg.list("u1");
+        assert_eq!(list.len(), 1);
+        assert!(list[0].mine);
+        assert_eq!(list[0].name, "Salon");
+        let np = list[0].now_playing.as_ref().expect("now playing");
+        assert_eq!(np.item.id, "it1");
+        assert_eq!(np.position_ms, 1000);
+        // Someone else sees the same TV, but not as theirs.
+        assert!(!reg.list("u2")[0].mine);
+    }
+
+    #[test]
+    fn going_idle_clears_the_title() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, Some(playing("it1", 10))), "u1", Some(item("it1")));
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        assert!(reg.list("u1")[0].now_playing.is_none());
+        // ...and the next title is fetched afresh rather than reusing the old one.
+        assert!(reg.wants_item("tv-salon-01", "it1"));
+    }
+
+    #[test]
+    fn another_account_cannot_claim_a_registered_receiver() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        // The whole point: an id is bound to its account, so a second account
+        // can't answer to it and collect the commands meant for the real TV.
+        assert!(matches!(
+            reg.announce(beat("tv-salon-01", 0, None), "u2", "Bob", "LAN".into(), None),
+            Announced::Taken
+        ));
+        assert_eq!(reg.owner_of("tv-salon-01").as_deref(), Some("u1"));
+    }
+
+    #[test]
+    fn the_roster_is_bounded() {
+        let reg = Registry::new();
+        for n in 0..MAX_RECEIVERS {
+            announce_ok(&reg, beat(&format!("tv-{n:04}-xxxx"), 0, None), "u1", None);
+        }
+        assert!(matches!(
+            reg.announce(beat("tv-9999-xxxx", 0, None), "u1", "Alice", "LAN".into(), None),
+            Announced::Full
+        ));
+        // A full roster refuses the newcomer rather than evicting a live TV -
+        // otherwise a flood of invented ids would push the real one out.
+        assert_eq!(reg.list("u1").len(), MAX_RECEIVERS);
+    }
+
+    #[test]
+    fn commands_replay_until_they_are_acked() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        let first = reg.enqueue("tv-salon-01", CastCommand::Pause).expect("queued");
+        let second = reg
+            .enqueue("tv-salon-01", CastCommand::Seek { position_ms: 5000 })
+            .expect("queued");
+        assert_eq!((first.seq, second.seq), (1, 2));
+
+        // Nothing acked yet → both come back (the push may never have landed).
+        let pending = announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        assert_eq!(pending.len(), 2);
+        // Acking the first leaves only the second.
+        let pending = announce_ok(&reg, beat("tv-salon-01", 1, None), "u1", None);
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].seq, 2);
+        // Acking both empties the inbox, and seqs keep climbing.
+        assert!(announce_ok(&reg, beat("tv-salon-01", 2, None), "u1", None).is_empty());
+        assert_eq!(reg.enqueue("tv-salon-01", CastCommand::Stop).unwrap().seq, 3);
+    }
+
+    #[test]
+    fn the_inbox_is_bounded_and_keeps_the_freshest() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        for _ in 0..(MAX_INBOX + 5) {
+            reg.enqueue("tv-salon-01", CastCommand::Pause);
+        }
+        let pending = announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        assert_eq!(pending.len(), MAX_INBOX);
+        // The survivors are the LAST ones queued: what the viewer just pressed.
+        assert_eq!(pending.last().unwrap().seq, (MAX_INBOX + 5) as u64);
+    }
+
+    #[test]
+    fn commands_for_an_unknown_or_dead_receiver_are_refused() {
+        let reg = Registry::new();
+        assert!(reg.enqueue("tv-ghost-01", CastCommand::Pause).is_none());
+        assert!(reg.owner_of("tv-ghost-01").is_none());
+
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        {
+            let mut map = reg.inner.write().unwrap();
+            map.get_mut("tv-salon-01").unwrap().last_seen = Instant::now() - Duration::from_secs(120);
+        }
+        assert!(reg.enqueue("tv-salon-01", CastCommand::Pause).is_none());
+        assert!(reg.list("u1").is_empty());
+        assert!(reg.reap());
+        assert!(!reg.reap()); // nothing left to sweep
+    }
+
+    #[test]
+    fn only_the_owner_can_unregister() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        assert!(!reg.remove_owned("tv-salon-01", "u2"));
+        assert_eq!(reg.list("u1").len(), 1);
+        assert!(reg.remove_owned("tv-salon-01", "u1"));
+        assert!(reg.list("u1").is_empty());
+        // Removing what isn't there is a no-op, not an error.
+        assert!(!reg.remove_owned("tv-salon-01", "u1"));
+    }
+
+    #[test]
+    fn roster_changes_are_announced_but_a_scrub_is_not() {
+        let reg = Registry::new();
+        let changed = |a: Announce, item: Option<MediaItem>| match reg.announce(a, "u1", "Alice", "LAN".into(), item) {
+            Announced::Ok { changed, .. } => changed,
+            _ => panic!("accepted"),
+        };
+        assert!(changed(beat("tv-salon-01", 0, Some(playing("it1", 0))), Some(item("it1"))));
+        // Position alone moving is NOT a roster change: it rides cast.position.
+        assert!(!changed(beat("tv-salon-01", 0, Some(playing("it1", 30_000))), None));
+        // A new title, a pause, or a new name is.
+        assert!(changed(beat("tv-salon-01", 0, Some(playing("it2", 0))), Some(item("it2"))));
+        let mut paused = playing("it2", 100);
+        paused.state = CastState::Paused;
+        assert!(changed(beat("tv-salon-01", 0, Some(paused)), None));
+    }
+
+    #[test]
+    fn display_strings_are_capped_and_stripped() {
+        let reg = Registry::new();
+        let mut ann = beat("tv-salon-01", 0, None);
+        ann.name = format!("  Sa\u{7}lon{}  ", "x".repeat(200));
+        ann.platform = "tv\nOS".into();
+        announce_ok(&reg, ann, "u1", None);
+        let row = &reg.list("u1")[0];
+        assert!(!row.name.contains('\u{7}'), "control chars are stripped: {:?}", row.name);
+        assert!(row.name.len() <= MAX_NAME);
+        assert_eq!(row.platform, "tvOS");
+    }
+
+    #[test]
+    fn receiver_ids_have_a_fixed_shape() {
+        assert!(valid_receiver_id("tv-salon-01"));
+        assert!(valid_receiver_id(&"a".repeat(64)));
+        assert!(!valid_receiver_id("short"));
+        assert!(!valid_receiver_id(&"a".repeat(65)));
+        // No path separators, spaces or unicode: the id is a map key that is
+        // echoed back to other clients.
+        assert!(!valid_receiver_id("../../etc/passwd"));
+        assert!(!valid_receiver_id("tv salon 01"));
+        assert!(!valid_receiver_id("télé-salon"));
+    }
+
+    #[test]
+    fn positions_are_clamped_before_they_reach_the_tv() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        let seek = reg
+            .enqueue("tv-salon-01", CastCommand::Seek { position_ms: -5 })
+            .unwrap();
+        assert_eq!(seek.command, CastCommand::Seek { position_ms: 0 });
+        let skip = reg
+            .enqueue("tv-salon-01", CastCommand::Skip { delta_ms: i64::MIN })
+            .unwrap();
+        assert_eq!(skip.command, CastCommand::Skip { delta_ms: -MAX_SKIP_MS });
+        let play = reg
+            .enqueue(
+                "tv-salon-01",
+                CastCommand::Play { item_id: "it1".into(), position_ms: i64::MAX },
+            )
+            .unwrap();
+        assert_eq!(play.command, CastCommand::Play { item_id: "it1".into(), position_ms: MAX_SKIP_MS });
     }
 }

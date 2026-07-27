@@ -43,3 +43,6 @@ export type JobRunId = ReturnType<typeof JobRunId.of>;
 
 export const LibraryId = brandedId('LibraryId');
 export type LibraryId = ReturnType<typeof LibraryId.of>;
+
+export const NotificationId = brandedId('NotificationId');
+export type NotificationId = ReturnType<typeof NotificationId.of>;

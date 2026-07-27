@@ -79,6 +79,28 @@ impl HostCtx for AppState {
         self.events.publish_value(serde_json::Value::Object(obj));
     }
 
+    fn publish_to(&self, user_id: &str, event: Event) {
+        // Same wire shape as `publish` above; only the envelope's audience
+        // differs, so `ws.rs` forwards it to this user's sockets alone.
+        let serde_json::Value::Object(mut obj) = event.payload else {
+            tracing::warn!(topic = %event.topic, "module event payload is not a JSON object; dropping");
+            return;
+        };
+        obj.insert("type".to_string(), serde_json::Value::String(event.topic));
+        self.events.publish_value_to(user_id, serde_json::Value::Object(obj));
+    }
+
+    fn notify(
+        &self,
+        audience: &kroma_module_host::Audience,
+        spec: &kroma_module_host::NotificationSpec,
+    ) -> usize {
+        // In-core modules and the core itself land on the same code path as the
+        // out-of-process ones (which arrive here via `/api/_host/notify`), so
+        // preferences and audience rules are enforced in exactly one place.
+        crate::services::notify::emit(self, audience, spec)
+    }
+
     fn trigger_job(&self, key: &'static str, reason: &'static str) {
         if let Some(state) = self.shared() {
             let _ = state.jobs.trigger(state.clone(), JobKey(key), reason);

@@ -24,6 +24,17 @@ pub enum CastState {
     Unknown,
 }
 
+/// One selectable track on the receiver, as *its* player numbers them.
+///
+/// The receiver sends its own lists rather than letting senders derive them from
+/// the catalog item: a TV's subtitle list also holds AI-generated tracks the item
+/// never had, so an index guessed from the file would select the wrong track.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CastTrack {
+    pub index: i64,
+    pub label: String,
+}
+
 /// What a receiver reports about its own playback on each heartbeat. It knows
 /// the item only by id; the server resolves that to the catalog entry senders
 /// render (see [`CastNowPlaying`]).
@@ -36,12 +47,16 @@ pub struct CastPlayback {
     #[serde(rename = "durationMs", default)]
     pub duration_ms: Option<i64>,
     pub state: CastState,
-    /// Label of the selected audio track, as the receiver's player names it.
+    /// The audio tracks this player offers, and which one is live.
+    #[serde(rename = "audioTracks", default)]
+    pub audio_tracks: Vec<CastTrack>,
+    #[serde(rename = "audioIndex", default)]
+    pub audio_index: Option<i64>,
+    /// The subtitle tracks it offers; `None` index = subtitles off.
     #[serde(default)]
-    pub audio: Option<String>,
-    /// Label of the selected subtitle track (absent / "off" → none).
-    #[serde(default)]
-    pub subtitle: Option<String>,
+    pub subtitles: Vec<CastTrack>,
+    #[serde(rename = "subtitleIndex", default)]
+    pub subtitle_index: Option<i64>,
 }
 
 /// What a receiver is playing, as senders render it: the catalog item (so the
@@ -55,10 +70,15 @@ pub struct CastNowPlaying {
     #[serde(rename = "durationMs")]
     pub duration_ms: Option<i64>,
     pub state: CastState,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub audio: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub subtitle: Option<String>,
+    /// The receiver's own track lists + selections, so a remote's pickers offer
+    /// exactly what that player has (AI subtitle tracks included).
+    #[serde(rename = "audioTracks")]
+    pub audio_tracks: Vec<CastTrack>,
+    #[serde(rename = "audioIndex", skip_serializing_if = "Option::is_none")]
+    pub audio_index: Option<i64>,
+    pub subtitles: Vec<CastTrack>,
+    #[serde(rename = "subtitleIndex", skip_serializing_if = "Option::is_none")]
+    pub subtitle_index: Option<i64>,
 }
 
 /// One live receiver in the picker.

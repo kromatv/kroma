@@ -30,6 +30,12 @@ use axum::Json;
 
 use kroma_db::Pool;
 use kroma_domain::{Permission, User};
+// Re-exported so a module crate builds notifications from `kroma_module_host`
+// (or the SDK's prelude) without naming `kroma-domain` directly.
+pub use kroma_domain::{
+    ActionKind, ActionSpec, ActionStyle, Audience, NotificationCategory, NotificationEvent,
+    NotificationSpec, PushCategory,
+};
 
 /// Build a JSON error response `{ "error": "<message>" }` with the given status.
 /// The one definition; `kroma-engine` and the binary re-export it so existing
@@ -155,6 +161,41 @@ pub trait HostCtx: Send + Sync + 'static {
     /// WebSocket clients). The event's topic + payload are generic; the host
     /// forwards them without knowing the module's event types.
     fn publish(&self, event: Event);
+    /// Publish an event addressed to ONE user, for content that is personal
+    /// (notifications: "your request was denied" names its recipient).
+    ///
+    /// The default DROPS the event rather than falling back to [`Self::publish`]:
+    /// a host that cannot address its bus must not quietly broadcast personal
+    /// content to every connected client. The real app state overrides it.
+    fn publish_to(&self, user_id: &str, event: Event) {
+        let _ = (user_id, event);
+    }
+
+    /// Raise a durable notification: it lands in the recipients' notification
+    /// centre and (once they've subscribed a device) is pushed to them.
+    ///
+    /// This is the module-facing half of the notifications domain. A module says
+    /// WHAT happened and WHO cares the core resolves the audience, honours each
+    /// recipient's per-category preferences, and renders the i18n keys in their
+    /// language. A module never enumerates accounts or formats text itself.
+    ///
+    /// Returns how many accounts were notified. The default is a no-op for hosts
+    /// without a notification store (mocks, bare test harnesses).
+    ///
+    /// ```ignore
+    /// ctx.notify(
+    ///     &Audience::permission(Permission::SettingsManage),
+    ///     &NotificationSpec::new(
+    ///         NotificationEvent::SystemVpnDown,
+    ///         "notifications.system.vpn.down.title",
+    ///         "notifications.system.vpn.down.body",
+    ///     ),
+    /// );
+    /// ```
+    fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize {
+        let _ = (audience, spec);
+        0
+    }
     /// Trigger a background job by its key (e.g. `"acquisition.import"`), running
     /// against the app state. No-op if the key is unknown or already running.
     fn trigger_job(&self, key: &'static str, reason: &'static str);

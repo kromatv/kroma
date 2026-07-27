@@ -9,6 +9,7 @@ import {
   requestBlob,
   requestJson,
 } from './client/base';
+import * as cast from './client/cast';
 import type { DiscoverType } from './client/discovery';
 import * as discovery from './client/discovery';
 import * as library from './client/library';
@@ -30,6 +31,10 @@ import type {
   AuthConfig,
   AuthResult,
   CalendarEntry,
+  CastAnnounceBody,
+  CastAnnounceReply,
+  CastCommand,
+  CastReceiver,
   ClientTestResult,
   ContinueItem,
   CreateReportBody,
@@ -565,6 +570,25 @@ export class KromaClient {
   }
   stopPlayback(sessionId: string): Promise<void> {
     return playback.stopPlayback(this.ctx, sessionId);
+  }
+
+  // ----- cast (drive playback on another device) ------------------------------
+
+  /** Receiver side: register + heartbeat + ack, and collect pending commands. */
+  announceCast(body: CastAnnounceBody): Promise<CastAnnounceReply> {
+    return cast.announceCast(this.ctx, body);
+  }
+  /** Receiver side: leave the roster now instead of waiting out the TTL. */
+  unregisterCast(receiverId: string): Promise<void> {
+    return cast.unregisterCast(this.ctx, receiverId);
+  }
+  /** Sender side: the live receivers, this account's own devices first. */
+  castReceivers(): Promise<CastReceiver[]> {
+    return cast.castReceivers(this.ctx);
+  }
+  /** Sender side: send one order; resolves with its sequence number. */
+  sendCastCommand(receiverId: string, command: CastCommand): Promise<number> {
+    return cast.sendCastCommand(this.ctx, receiverId, command);
   }
 
   // ----- discovery / requests -------------------------------------------------

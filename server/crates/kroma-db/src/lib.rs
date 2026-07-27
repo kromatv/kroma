@@ -42,6 +42,7 @@ pub mod audio_analysis;
 pub mod pipeline;
 mod requests;
 mod reports;
+pub mod notifications;
 mod taste;
 mod curated;
 mod suggest;

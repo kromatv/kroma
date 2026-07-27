@@ -3,7 +3,7 @@
 // (scan finished, metadata/art resolved). Auto-reconnects with backoff.
 
 import { sessionToken } from './session';
-import type { StageStat } from './types';
+import type { CastCommand, CastState, StageStat } from './types';
 
 export type ServerEvent =
   | { type: 'hello'; version: string }
@@ -20,6 +20,21 @@ export type ServerEvent =
   | { type: 'playback.updated'; count: number }
   | { type: 'playback.stopped'; count: number }
   | { type: 'playback.terminate'; sessionId: string; message: string }
+  /** The cast roster changed (a TV appeared, went away, or changed title).
+   * Senders refetch `castReceivers()`. */
+  | { type: 'cast.receivers' }
+  /** A receiver's scrub position moved. Fires on every heartbeat of a playing
+   * TV, so it stays tiny: a remote moves its progress bar and refetches nothing. */
+  | {
+      type: 'cast.position';
+      receiverId: string;
+      positionMs: number;
+      durationMs?: number;
+      state: CastState;
+    }
+  /** An order for one receiver. Addressed by the server to the account the TV is
+   * signed into, so only that household's sockets ever see it. */
+  | { type: 'cast.command'; receiverId: string; seq: number; command: CastCommand }
   | { type: 'settings.updated' }
   | { type: 'job.started'; key: string; runId: string }
   | { type: 'job.progress'; key: string; runId: string; done: number; total: number }

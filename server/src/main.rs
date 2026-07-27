@@ -316,6 +316,10 @@ async fn main() -> anyhow::Result<()> {
         .playback
         .spawn_reaper(state.db.clone(), state.events.clone());
 
+    // Cast receivers: drop TVs that stopped announcing, so the picker on every
+    // phone stops offering a set that is off.
+    state.cast.spawn_reaper(state.events.clone());
+
     // Sample CPU / RAM for the admin dashboard charts. Bandwidth is metered
     // separately: the media handlers feed delivered bytes into the sampler's
     // LAN/WAN counters (via `ByteSink`), which it converts to Mb/s each tick.

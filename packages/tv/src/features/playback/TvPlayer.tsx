@@ -10,6 +10,7 @@ import { Box, Button, Icon, Txt } from '@kroma/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
+import { useCastTarget } from '#tv/features/cast/castBridge';
 import { PlayerSurface } from '#tv/features/playback/player/PlayerSurface';
 import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 import { useNowPlaying } from '#tv/features/playback/player/useNowPlaying';
@@ -50,6 +51,9 @@ export function TvPlayer() {
   const playerFlags = useMemo(() => ({ ...TV_FLAGS, pointer: mousePointer }), [mousePointer]);
 
   const { controller, pb, subtitleGen } = useTvController(client, item);
+  // Publish this player to the cast receiver, so a phone can drive it (and pick
+  // up the position a cast "play" asked to start from).
+  useCastTarget(item, controller);
   const [appearance, setAppearance] = useSubtitleAppearance();
   const storyboard = useStoryboard(client, item.id);
   const tileAt = useCallback((sec: number) => storyboard.tile(sec, PREVIEW_W), [storyboard]);

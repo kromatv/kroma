@@ -497,7 +497,7 @@ pub(crate) const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_notifications_unread
         ON notifications(user_id) WHERE read_at IS NULL;
 
-    -- Per-user delivery matrix. A MISSING row means "on" for both channels, so a
+    -- Per-user delivery matrix. A MISSING row means 'on' for both channels, so a
     -- newly added category starts enabled without backfilling every user, and
     -- only deviations from the default cost a row.
     CREATE TABLE IF NOT EXISTS notification_prefs (

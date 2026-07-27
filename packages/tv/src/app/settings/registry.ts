@@ -27,6 +27,7 @@ import {
   keyboardLayoutStore,
 } from '#tv/app/keyboardLayoutPref';
 import { prefValue, useLangPrefs } from '#tv/app/langPref';
+import { castReceiverPrefStore } from '#tv/features/cast/castPref';
 import { actionItem, choiceItem, type RowIcon, type SettingsItem, toggleItem } from './items';
 import { perfHudPrefStore, useStoredPref } from './store';
 
@@ -156,6 +157,21 @@ export const perfHudSetting: SettingsItem = toggleItem({
   },
 });
 
+/** Whether this TV joins the cast roster, i.e. whether a phone or a browser on
+ * this server may start a title on it and drive playback. Device-level and on by
+ * default: a set in the living room is exactly the thing a remote wants to
+ * reach. Turning it off unregisters the receiver at once. */
+export const castReceiverSetting: SettingsItem = toggleItem({
+  id: 'castReceiver',
+  level: 'device',
+  label: 'settings.castReceiver',
+  icon: 'cast',
+  use: () => {
+    const [on, set] = useStoredPref(castReceiverPrefStore);
+    return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
+  },
+});
+
 /** Quit the app - desktop + Android TV shells (fullscreen, no window chrome). */
 export const quitAppItem: SettingsItem = actionItem({
   id: 'quitApp',
@@ -178,6 +194,7 @@ export function aboutItem(open: () => void): SettingsItem {
 export const DEVICE_SETTINGS: readonly SettingsItem[] = [
   localeSetting,
   keyboardLayoutSetting,
+  castReceiverSetting,
   gpuRenderingSetting,
   perfHudSetting,
 ];
@@ -189,6 +206,7 @@ export const PROFILE_SETTINGS: readonly SettingsItem[] = [
   subtitleLanguageSetting,
   keyboardLayoutSetting,
   engineSetting,
+  castReceiverSetting,
   gpuRenderingSetting,
   perfHudSetting,
 ];
@@ -237,7 +255,7 @@ export const SETTINGS_GROUPS: Record<SettingsGroupId, SettingsGroup> = {
     id: 'device',
     label: 'settings.device',
     icon: 'device-tv',
-    items: [keyboardLayoutSetting, gpuRenderingSetting],
+    items: [keyboardLayoutSetting, castReceiverSetting, gpuRenderingSetting],
   },
 };
 

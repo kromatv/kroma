@@ -16,9 +16,10 @@ use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
 use crate::infra::events::ServerEvent;
+use crate::api::util::blocking;
 use crate::model::{
-    Permission, Report, ReportCategory, ReportCounts, ReportStatus, ReportSubjectKind, ReportsView,
-    User,
+    Audience, NotificationEvent, NotificationSpec, Permission, Report, ReportCategory, ReportCounts,
+    ReportStatus, ReportSubjectKind, ReportsView, User,
 };
 use crate::services::jobs::now_ms;
 use crate::state::SharedState;
@@ -127,9 +128,50 @@ async fn transition(
                 id: report.id.clone(),
                 status: report.status.as_str().into(),
             });
+            notify_reporter(&state, &report).await;
             Ok(Json(report).into_response())
         }
         None => Err(lerr(loc, StatusCode::NOT_FOUND, "error.reportNotFound")),
+    }
+}
+
+/// Tell whoever filed the report that it was triaged.
+///
+/// Only the two TERMINAL outcomes are worth a notification: a reopen is internal
+/// churn between moderators, and the reporter would just see their closed report
+/// flap. Reports filed anonymously have nobody to tell.
+async fn notify_reporter(state: &SharedState, report: &Report) {
+    let (event, key) = match report.status {
+        ReportStatus::Resolved => (NotificationEvent::ReportResolved, "resolved"),
+        ReportStatus::Dismissed => (NotificationEvent::ReportDismissed, "dismissed"),
+        ReportStatus::Open => return,
+    };
+    let Some(reporter) = report.reported_by.clone() else {
+        return;
+    };
+    let spec = NotificationSpec::new(
+        event,
+        &format!("notifications.report.{key}.title"),
+        &format!("notifications.report.{key}.body"),
+    )
+    .param("title", report.subject_title.clone())
+    .link(format!("/{}/{}", subject_route(report), report.subject_id));
+    let state = state.clone();
+    // `emit` resolves the audience and writes rows: blocking work, so it must
+    // not run inline on the async runtime.
+    let _ = blocking(move || {
+        kroma_engine::services::notify::emit(&state, &Audience::user(&reporter), &spec);
+        Ok(())
+    })
+    .await;
+}
+
+/// The client route a report's subject lives at.
+fn subject_route(report: &Report) -> &'static str {
+    match report.subject_kind {
+        ReportSubjectKind::Show => "show",
+        // A reported episode deep-links to its own item page, same as a movie.
+        ReportSubjectKind::Movie | ReportSubjectKind::Episode => "movie",
     }
 }
 

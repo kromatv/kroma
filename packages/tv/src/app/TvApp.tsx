@@ -24,6 +24,7 @@ import { TvProfileMenu } from '#tv/features/accounts/TvProfileMenu';
 import { TvProfiles } from '#tv/features/accounts/TvProfiles';
 import { TvQuickConnect } from '#tv/features/accounts/TvQuickConnect';
 import { TvSettingsGroup } from '#tv/features/accounts/TvSettingsGroup';
+import { CastReceiverProvider } from '#tv/features/cast/CastReceiverProvider';
 import { BROWSE_CHROME } from '#tv/features/catalog/home/chrome';
 import { TvGenreGrid } from '#tv/features/catalog/TvGenreGrid';
 import { TvGenres } from '#tv/features/catalog/TvGenres';
@@ -78,7 +79,12 @@ export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly
                   <RecommendProvider>
                     <MyListProvider>
                       <WatchedProvider>
-                        <TvRouterGuard />
+                        {/* Above the router, not inside the player: a TV must be
+                            castable from its home screen, which is where a phone
+                            reaches for it. */}
+                        <CastReceiverProvider>
+                          <TvRouterGuard />
+                        </CastReceiverProvider>
                       </WatchedProvider>
                     </MyListProvider>
                   </RecommendProvider>

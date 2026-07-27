@@ -45,6 +45,8 @@ pub struct AppState {
     pub quickconnect: QuickConnect,
     /// Live playback sessions (the dashboard's "En cours de lecture" panel).
     pub playback: Registry,
+    /// Live cast receivers: the TVs a phone or a browser can drive right now.
+    pub cast: crate::services::cast::Registry,
     /// Rolling CPU / RAM / bandwidth metrics (the dashboard charts).
     pub metrics: Metrics,
     /// Content embedder, built once at startup (the MiniLM backend loads a model;
@@ -172,6 +174,7 @@ impl AppState {
             storyboard,
             quickconnect: quickconnect::new(),
             playback: Registry::new(),
+            cast: crate::services::cast::Registry::new(),
             metrics: Metrics::new(),
             embedder,
             search: Arc::new(SearchEngine::new().expect("init search index")),

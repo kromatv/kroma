@@ -195,6 +195,10 @@ jobs:
           IOS_CERTIFICATE: ${{ secrets.MOBILE_IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.MOBILE_IOS_CERTIFICATE_PASSWORD }}
           IOS_PROFILE: ${{ secrets.TVOS_PROVISIONING_PROFILE }}
+          # The Top Shelf extension is a separate bundle id and so a separate
+          # profile; without it that target goes unsigned and the export fails
+          # with "No profiles for 'tv.kroma.mobile.TopShelf' were found".
+          IOS_PROFILE_EXTRA: ${{ secrets.TVOS_TOPSHELF_PROVISIONING_PROFILE }}
         run: .github/scripts/ios-import-signing-assets.sh
 
       # DerivedData is cached SEPARATELY from the project above, and with
@@ -228,6 +232,11 @@ jobs:
           # The only two things that differ from the phone archive.
           SDK: appletvos
           ARTIFACT: KROMA-appletv
+          # Two targets, a profile each, pinned per target in the pbxproj. The
+          # archive on 2026-07-27 signed with "Apple Development: Created via
+          # API" and then failed the export for BOTH bundle ids - automatic
+          # signing inventing an identity rather than using the ones installed.
+          MANUAL_SIGNING: '1'
           # Authenticates `-allowProvisioningUpdates`: the Expo template leaves
           # the project on automatic signing, so xcodebuild resolves the App
           # Store profile itself and cannot do it anonymously.

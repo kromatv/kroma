@@ -3,6 +3,7 @@
 export * from './accounts';
 export * from './acquisition';
 export * from './admin';
+export * from './cast';
 export * from './discovery';
 export * from './ids';
 export * from './media';

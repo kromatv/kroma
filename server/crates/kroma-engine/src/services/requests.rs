@@ -17,7 +17,8 @@ use kroma_module_host::{Event, HostCtx};
 use crate::db;
 use crate::infra::metadata::discover;
 use crate::model::{
-    CreateRequestBody, EpisodeRef, MediaRequest, Permission, RequestKind, RequestStatus, User,
+    ActionKind, ActionSpec, ActionStyle, Audience, CreateRequestBody, EpisodeRef, MediaRequest,
+    NotificationEvent, NotificationSpec, Permission, PushCategory, RequestKind, RequestStatus, User,
 };
 use crate::services::jobs::now_ms;
 
@@ -42,6 +43,115 @@ fn publish<S: HostCtx>(state: &S, req_id: &str, status: RequestStatus) {
         "request.updated",
         json!({ "id": req_id, "status": status.as_str() }),
     ));
+}
+
+/// Tell the person who asked that their request moved.
+///
+/// Deliberately NOT folded into [`publish`]: that fires on every touch,
+/// including a duplicate-merge that changes no status, and a notification must
+/// mark a real transition. Every call site below sits behind an actual state
+/// change. A request filed before accounts existed (`requested_by` NULL) has
+/// nobody to tell.
+fn notify_requester<S: HostCtx>(state: &S, req: &MediaRequest, status: RequestStatus, link: &str) {
+    let Some(user_id) = req.requested_by.as_deref() else {
+        return;
+    };
+    let (event, key) = match status {
+        RequestStatus::Approved => (NotificationEvent::RequestApproved, "approved"),
+        RequestStatus::Denied => (NotificationEvent::RequestDenied, "denied"),
+        RequestStatus::Available | RequestStatus::PartiallyAvailable => {
+            (NotificationEvent::RequestAvailable, "available")
+        }
+        // Pending is where a request starts, and searching/downloading/importing
+        // are machinery the requester did not ask to watch. Only the four
+        // outcomes above are worth interrupting someone for.
+        RequestStatus::Pending
+        | RequestStatus::Searching
+        | RequestStatus::Downloading
+        | RequestStatus::Importing
+        | RequestStatus::Failed => return,
+    };
+    let available = matches!(status, RequestStatus::Available | RequestStatus::PartiallyAvailable);
+    let mut spec = NotificationSpec::new(
+        event,
+        &format!("notifications.request.{key}.title"),
+        &format!("notifications.request.{key}.body"),
+    )
+    .param("title", req.title.clone())
+    .image(req.poster_url.clone())
+    .link(link);
+    if let Some(note) = req.note.as_deref().filter(|_| status == RequestStatus::Denied) {
+        spec = spec.param("note", note);
+    }
+    if available {
+        // "Ready to watch" is the one notification worth a button: it takes you
+        // straight into the title instead of the requests list.
+        spec = spec.push_category(PushCategory::MediaAvailable).action(ActionSpec {
+            id: "watch".into(),
+            label_key: "notifications.action.watch".into(),
+            kind: ActionKind::Link,
+            href: link.to_string(),
+            method: None,
+            style: ActionStyle::Primary,
+        });
+    }
+    state.notify(&Audience::user(user_id), &spec);
+}
+
+/// Tell the moderators a request is waiting for them, with Approve / Deny on the
+/// notification itself so a decision costs one tap and no navigation.
+fn notify_moderators<S: HostCtx>(state: &S, req: &MediaRequest, requester: &User) {
+    let spec = NotificationSpec::new(
+        NotificationEvent::RequestSubmitted,
+        "notifications.request.submitted.title",
+        "notifications.request.submitted.body",
+    )
+    .param("title", req.title.clone())
+    .param("user", requester.username.clone())
+    .image(req.poster_url.clone())
+    .link("/admin/requests")
+    .push_category(PushCategory::RequestReview)
+    .action(ActionSpec {
+        id: "approve".into(),
+        label_key: "notifications.action.approve".into(),
+        kind: ActionKind::Api,
+        href: format!("/api/requests/{}/approve", req.id),
+        method: Some("POST".into()),
+        style: ActionStyle::Primary,
+    })
+    .action(ActionSpec {
+        id: "deny".into(),
+        label_key: "notifications.action.deny".into(),
+        kind: ActionKind::Api,
+        href: format!("/api/requests/{}/deny", req.id),
+        method: Some("POST".into()),
+        style: ActionStyle::Danger,
+    });
+    state.notify(&Audience::permission(Permission::RequestsManage), &spec);
+}
+
+/// Where a request's notification should take you: the title itself once it is
+/// in the catalogue, else the requests list.
+fn request_link<S: HostCtx>(state: &S, req: &MediaRequest) -> String {
+    let local = state.db().get().ok().and_then(|conn| match req.kind {
+        RequestKind::Movie => {
+            db::movie_item_by_tmdb(&conn, req.tmdb_id).ok().flatten().map(|id| format!("/movie/{id}"))
+        }
+        RequestKind::Show => {
+            db::show_by_tmdb(&conn, req.tmdb_id).ok().flatten().map(|id| format!("/show/{id}"))
+        }
+    });
+    local.unwrap_or_else(|| "/requests".to_string())
+}
+
+/// Re-read a request and notify its author of a transition. Best effort: a
+/// notification is never the point of the operation that triggered it.
+fn notify_transition<S: HostCtx>(state: &S, id: &str, status: RequestStatus) {
+    let Ok(conn) = state.db().get() else { return };
+    let Ok(Some(req)) = db::get_request(&conn, id) else { return };
+    drop(conn);
+    let link = request_link(state, &req);
+    notify_requester(state, &req, status, &link);
 }
 
 /// Create (or duplicate-merge) a request. Auto-approves when the requester
@@ -108,7 +218,17 @@ pub fn create_request<S: HostCtx>(state: &S, user: &User, body: &CreateRequestBo
     } else {
         // The title may already sit in the library (e.g. season subset overlap):
         // let the matcher flip it right away rather than waiting for the cron.
-        let _ = match_one(state, &id)?;
+        let matched = match_one(state, &id)?;
+        // Only bother the moderators if it is genuinely waiting on them: a
+        // request that the matcher just satisfied needs no review.
+        if matched.is_none() || matched == Some(RequestStatus::Pending) {
+            let conn = state.db().get()?;
+            let pending = db::get_request(&conn, &id)?;
+            drop(conn);
+            if let Some(pending) = pending {
+                notify_moderators(state, &pending, user);
+            }
+        }
     }
 
     let conn = state.db().get()?;
@@ -161,6 +281,9 @@ pub fn approve_request<S: HostCtx>(state: &S, id: &str, reviewer: Option<&str>) 
     materialize_wanted(state, id)?;
     let status = match_one(state, id)?.unwrap_or(RequestStatus::Approved);
     publish(state, id, status);
+    // Approving is a real transition, so the requester hears about it whether it
+    // merely got green-lit or the matcher found it already on disk.
+    notify_transition(state, id, status);
     // Fire the wanted-list search right away (registered with the downloads
     // milestone; until then the trigger is a no-op on the unknown key).
     state.trigger_job("acquisition.search", "request-approved");
@@ -175,6 +298,7 @@ pub fn deny_request<S: HostCtx>(state: &S, id: &str, reviewer: &str, note: Optio
         bail!("request not found");
     }
     publish(state, id, RequestStatus::Denied);
+    notify_transition(state, id, RequestStatus::Denied);
     let conn = state.db().get()?;
     db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request vanished after deny"))
 }
@@ -594,6 +718,10 @@ fn match_movie<S: HostCtx>(
     db::set_wanted_status(state.db(), &wanted_ids, "available", now_ms())?;
     if req.status != RequestStatus::Available {
         db::set_request_status(state.db(), &req.id, RequestStatus::Available, None, None, now_ms())?;
+        // The film they asked for just landed guarded by the transition above,
+        // so a re-match over an already-available request stays quiet.
+        let link = request_link(state, req);
+        notify_requester(state, req, RequestStatus::Available, &link);
     }
     Ok(Some(RequestStatus::Available))
 }
@@ -634,6 +762,10 @@ fn match_show<S: HostCtx>(
     }
     if new_status != req.status {
         db::set_request_status(state.db(), &req.id, new_status, None, None, now_ms())?;
+        // Fires at most twice per show request (pending -> partial -> available),
+        // never once per episode: the write above is already transition-gated.
+        let link = request_link(state, req);
+        notify_requester(state, req, new_status, &link);
     }
     Ok(Some(new_status))
 }
