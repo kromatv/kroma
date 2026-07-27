@@ -134,10 +134,11 @@ jobs:
       proceed: ${{ needs.version.outputs.proceed }}
     secrets: inherit
 
-  # The fourth television, kept out of the job above and out of the publish
-  # `needs` below for the same reason `mobile` is: it ships to TestFlight rather
-  # than to a file, so it must not put Apple's upload service on the critical
-  # path of a server release. Same `targets: tv` selector as its siblings.
+  # The fourth television, kept out of the job above because it ships to
+  # TestFlight rather than to a file. It IS in the publish `needs` below: a
+  # release is a statement that this version builds everywhere, and an .ipa that
+  # never compiled is not something to find out about after the fact. Same
+  # `targets: tv` selector as its siblings.
   appletv:
     name: Apple TV
     needs: version
@@ -154,9 +155,10 @@ jobs:
 
   # ---------------------------------------------------------------- Mobile ---
 
-  # Firebase App Distribution + TestFlight. Deliberately absent from the
-  # publish/publish-nightly `needs` below: a beta-channel hiccup must never hold
-  # back a server release.
+  # Firebase App Distribution + TestFlight. Present in the publish `needs` below
+  # (a broken mobile build must not reach a tag), absent from publish-nightly's:
+  # this job is stable-only, so on the nightly channel it is SKIPPED, and a
+  # skipped dependency skips its dependents.
   mobile:
     name: Mobile
     needs: version
@@ -196,9 +198,17 @@ jobs:
   # the catalog lands (or forever, if a job fails mid-rollout). Publishing is
   # atomic: either the complete release goes live, or the previous one stays
   # "latest". A failed rollout leaves a draft to inspect/delete.
+  #
+  # `appletv` and `mobile` are in this list even though they attach nothing to
+  # the Release. They used to be left out so an upload hiccup could not hold back
+  # a server release, and the cost of that showed up in v0.1.34: both .ipa builds
+  # failed and the Release went out anyway, green, with two platforms silently
+  # broken. A tag is a claim that the version builds everywhere - so the gate now
+  # covers everywhere, and a genuinely flaky Apple upload gets a re-run rather
+  # than a pass.
   publish:
     name: Publish the Release
-    needs: [version, modules, tv, desktop]
+    needs: [version, modules, tv, desktop, appletv, mobile]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:

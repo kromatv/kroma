@@ -88,6 +88,31 @@
   "engines": {
     "bun": ">=1.3.0"
   },
+  "//react-native": [
+    "Every client runs the tvOS fork, so `react-native` is an ALIAS everywhere.",
+    "Both entries below exist for a reason a comment has to carry, because",
+    "neither is reachable from the workspace manifests that declare the alias.",
+    "",
+    "`overrides` forces the alias onto TRANSITIVE peers. The Expo modules,",
+    "reanimated, screens, gesture-handler and ~30 others declare",
+    "`react-native: *`, and bun satisfies a bare `*` from the registry - so",
+    "without this the tree carries TWO React Natives and those libraries link",
+    "against the non-tvOS one.",
+    "",
+    "The root dependency is what makes `expo prebuild` work. ReactNativeDependencies.podspec",
+    "locates its own package by running `require.resolve('react-native', {paths: [__dir__]})`",
+    "from inside bun's isolated store; the alias symlinks live in the WORKSPACES,",
+    "which that walk never visits. Node does check <repo>/node_modules on the way",
+    "up, so putting the alias here is what it finds. Without it the resolve throws,",
+    "the podspec's rescue falls back to `__dir__/../..` - a directory with no",
+    "package.json - and prebuild dies. That is what broke both .ipa builds in v0.1.34."
+  ],
+  "overrides": {
+    "react-native": "npm:react-native-tvos@0.86.0-2"
+  },
+  "dependencies": {
+    "react-native": "npm:react-native-tvos@0.86.0-2"
+  },
   "patchedDependencies": {
     "react-native-svg@15.15.4": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",
     "react-native-svg@15.15.5": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",

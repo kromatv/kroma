@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { KromaClient, MediaItem } from '@kroma/core';
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { useSubtitleSelection } from './useSubtitleSelection';
 
 const client = {
@@ -21,8 +21,25 @@ const item = {
   ],
 } as unknown as MediaItem;
 
-const active = (pref?: string | null) =>
-  renderHook(() => useSubtitleSelection(client, item, pref)).result.current.active;
+// The hook fetches generated subtitles in an effect, and the re-render that
+// promise triggers is queued on React's scheduler as a MACROTASK. Every
+// assertion below is synchronous, so the render would otherwise land after
+// vitest has torn the jsdom environment down - react-dom reaches for `window`,
+// finds nothing, and throws into a test that has already passed. That is an
+// uncaught exception rather than a failure: the suite reports all green and
+// exits 1 anyway. Unmounting cancels the work, and the tick gives anything
+// already queued a chance to run while `window` still exists.
+//
+// It reproduces only on a slow machine. Draining it here rather than waiting
+// for the next CI runner to be busy enough.
+afterEach(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+const active = (pref?: string | null) => {
+  const { result, unmount } = renderHook(() => useSubtitleSelection(client, item, pref));
+  const selected = result.current.active;
+  unmount();
+  return selected;
+};
 
 describe('useSubtitleSelection preferred language', () => {
   it('auto-enables the renderable track matching the preference', () => {

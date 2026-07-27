@@ -44,17 +44,15 @@ const ctx = {
   createGain: vi.fn(() => gain),
 };
 
-/** Install the graph. A class, not an arrow: the module calls `new
- * AudioContext()`, which vitest refuses for a non-function implementation. */
+/** Install the graph. A plain function, because the module calls `new
+ * AudioContext()` and every one of those calls has to hand back the ONE shared
+ * stub above: `new` on a function that returns an object yields that object.
+ * An arrow cannot be `new`ed at all, and a class returning from its constructor
+ * does the same thing while reading as a mistake. */
 function stubAudio() {
-  vi.stubGlobal(
-    'AudioContext',
-    class {
-      constructor() {
-        return ctx as never;
-      }
-    },
-  );
+  vi.stubGlobal('AudioContext', function AudioContextStub() {
+    return ctx;
+  });
   return { ctx, comp, gain, source };
 }
 
