@@ -2,25 +2,31 @@ import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type UserConfig } from 'vite';
-import { clientVersion } from '../tv-build/shell';
+import { RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, webResolve } from '../tv-build/rnw';
+import { buildDefine } from '../tv-build/shell';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
+const shellDir = fileURLToPath(new URL('.', import.meta.url));
 
 // Unlike the Tizen / webOS shells, the Steam Deck runs a current desktop Chromium
 // (SteamOS 3, Arch-based), so there is no old-webview floor: no Lightning CSS
 // down-levelling and a modern build target. The shared @kroma/tv CSS (Tailwind v4
 // cascade layers, color-mix, oklch) is emitted as-is and the browser handles it.
 // Return type pinned to UserConfig so the config resolves against a single
-// defineConfig overload (some tsgo builds otherwise report a spurious TS2769
+// defineConfig overload (some TypeScript builds otherwise report a spurious TS2769
 // "no overload matches" on the function form across platforms).
 export default defineConfig(
   ({ command }): UserConfig => ({
     plugins: [tailwindcss(), react()],
-    // This build's version, for the server-compatibility banner (see @kroma/tv
-    // CompatBanner / @kroma/core checkServerCompat).
-    define: { __KROMA_VERSION__: JSON.stringify(clientVersion(repoRoot)) },
-    // `#tv/*` -> the @kroma/tv package src (mirrors tsconfig.base paths; Vite needs it explicitly).
-    resolve: { alias: { '#tv': fileURLToPath(new URL('../../packages/tv/src', import.meta.url)) } },
+    // This build's identity: its version for the server-compatibility banner (see
+    // @kroma/tv CompatBanner / @kroma/core checkServerCompat), and the commit /
+    // date / repository the About screen shows.
+    define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE },
+    // `#tv/*` -> the @kroma/tv package src (mirrors tsconfig.base paths; Vite needs
+    // it explicitly), plus the shared react-native -> react-native-web redirect.
+    resolve: webResolve({
+      '#tv': fileURLToPath(new URL('../../packages/tv/src', import.meta.url)),
+    }),
     // Loadable both from a served origin and directly via file:// in a kiosk, so keep
     // assets relative. The app talks to the KROMA server cross-origin either way (same
     // as the TV clients), via the in-app connect flow.
@@ -34,7 +40,10 @@ export default defineConfig(
       port: 5178,
       fs: { allow: [repoRoot] },
     },
-    optimizeDeps: { exclude: ['@kroma/ui', '@kroma/core', '@kroma/tv'] },
+    optimizeDeps: {
+      exclude: ['@kroma/ui', '@kroma/core', '@kroma/tv'],
+      include: RNW_OPTIMIZE_INCLUDE,
+    },
     build: {
       target: 'es2022',
       outDir: 'dist',

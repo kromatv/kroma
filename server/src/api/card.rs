@@ -42,7 +42,7 @@ const BADGE_H: f32 = BADGE_SIZE + BADGE_PAD_Y * 2.0;
 fn font() -> &'static Font {
     static FONT: OnceLock<Font> = OnceLock::new();
     FONT.get_or_init(|| {
-        let bytes = include_bytes!("../../assets/fonts/HankenGrotesk.ttf") as &[u8];
+        let bytes = include_bytes!("../../../packages/ui/src/assets/fonts/HankenGrotesk.ttf") as &[u8];
         Font::from_bytes(bytes, fontdue::FontSettings::default()).expect("bundled font parses")
     })
 }
@@ -62,15 +62,18 @@ pub struct Card<'a> {
 /// Composite a card and encode it to JPEG. `None` if the base PNG can't decode.
 pub fn render(card: &Card) -> Option<Vec<u8>> {
     let mut pm = Pixmap::decode_png(card.base_png).ok()?;
+    // Every layout metric in this file is tuned for the 640×360 tile; a larger
+    // base (the 1280×720 Top Shelf card) scales them all uniformly.
+    let s = pm.width() as f32 / W as f32;
 
     paint_scrims(&mut pm);
 
     // Title-treatment artwork (bottom-left). Drawn only when present no text
     // fallback, by design: a card with no logo simply shows the bare backdrop.
     if let Some(logo) = card.logo_png.and_then(|b| Pixmap::decode_png(b).ok()) {
-        let y = H as f32 - MARGIN - logo.height() as f32;
+        let y = pm.height() as f32 - MARGIN * s - logo.height() as f32;
         pm.draw_pixmap(
-            MARGIN as i32,
+            (MARGIN * s) as i32,
             y as i32,
             logo.as_ref(),
             &PixmapPaint::default(),
@@ -80,14 +83,14 @@ pub fn render(card: &Card) -> Option<Vec<u8>> {
     }
 
     if !card.label.is_empty() {
-        paint_badge(&mut pm, &card.label.to_uppercase());
+        paint_badge(&mut pm, &card.label.to_uppercase(), s);
     }
 
     // KROMA brand lockup, top-right, vertically centred on the badge row.
-    brand::paint(&mut pm, MARGIN + BADGE_H / 2.0);
+    brand::paint(&mut pm, (MARGIN + BADGE_H / 2.0) * s, s);
 
     if let Some(p) = card.progress {
-        paint_progress(&mut pm, p.clamp(0.0, 1.0));
+        paint_progress(&mut pm, p.clamp(0.0, 1.0), s);
     }
 
     Some(encode_jpeg(&pm))
@@ -108,7 +111,7 @@ fn fill_vgradient(pm: &mut Pixmap, y0: f32, y1: f32, top: Color, bottom: Color) 
     ) {
         let paint = Paint { shader, ..Default::default() };
         pm.fill_rect(
-            Rect::from_xywh(0.0, 0.0, W as f32, H as f32).unwrap(),
+            Rect::from_xywh(0.0, 0.0, pm.width() as f32, pm.height() as f32).unwrap(),
             &paint,
             Transform::identity(),
             None,
@@ -117,7 +120,7 @@ fn fill_vgradient(pm: &mut Pixmap, y0: f32, y1: f32, top: Color, bottom: Color) 
 }
 
 fn paint_scrims(pm: &mut Pixmap) {
-    let h = H as f32;
+    let h = pm.height() as f32;
     // Bottom scrim so the title logo stays legible over bright art.
     fill_vgradient(
         pm,
@@ -137,12 +140,14 @@ fn paint_scrims(pm: &mut Pixmap) {
 }
 
 /// Top-left category pill: translucent dark rounded rect + amber uppercase label.
-fn paint_badge(pm: &mut Pixmap, text: &str) {
+fn paint_badge(pm: &mut Pixmap, text: &str, s: f32) {
     let f = font();
-    let tw = text_width(f, text, BADGE_SIZE, BADGE_TRACKING);
-    let bw = tw + BADGE_PAD_X * 2.0;
-    let bh = BADGE_H;
-    let (x, y) = (MARGIN, MARGIN);
+    let (size, tracking) = (BADGE_SIZE * s, BADGE_TRACKING * s);
+    let (pad_x, pad_y) = (BADGE_PAD_X * s, BADGE_PAD_Y * s);
+    let tw = text_width(f, text, size, tracking);
+    let bw = tw + pad_x * 2.0;
+    let bh = BADGE_H * s;
+    let (x, y) = (MARGIN * s, MARGIN * s);
 
     if let Some(pill) = rounded_rect(x, y, bw, bh, bh / 2.0) {
         let mut bg = Paint::default();
@@ -155,22 +160,22 @@ fn paint_badge(pm: &mut Pixmap, text: &str) {
         pm,
         f,
         text,
-        x + BADGE_PAD_X,
-        y + BADGE_PAD_Y + BADGE_SIZE * 0.82,
-        &TextStyle { size: BADGE_SIZE, color: ACCENT, tracking: BADGE_TRACKING },
+        x + pad_x,
+        y + pad_y + size * 0.82,
+        &TextStyle { size, color: ACCENT, tracking },
     );
 }
 
-fn paint_progress(pm: &mut Pixmap, frac: f32) {
-    let (w, y) = (W as f32, H as f32 - 10.0);
-    let (x0, x1) = (MARGIN, w - MARGIN);
+fn paint_progress(pm: &mut Pixmap, frac: f32, s: f32) {
+    let (w, y) = (pm.width() as f32, pm.height() as f32 - 10.0 * s);
+    let (x0, x1) = (MARGIN * s, w - MARGIN * s);
     let mut tp = Paint::default();
     tp.set_color_rgba8(255, 255, 255, 70);
-    pm.fill_rect(Rect::from_xywh(x0, y, x1 - x0, 4.0).unwrap(), &tp, Transform::identity(), None);
+    pm.fill_rect(Rect::from_xywh(x0, y, x1 - x0, 4.0 * s).unwrap(), &tp, Transform::identity(), None);
     if frac > 0.0 {
         let mut fp = Paint::default();
         fp.set_color_rgba8(ACCENT.0, ACCENT.1, ACCENT.2, 255);
-        pm.fill_rect(Rect::from_xywh(x0, y, (x1 - x0) * frac, 4.0).unwrap(), &fp, Transform::identity(), None);
+        pm.fill_rect(Rect::from_xywh(x0, y, (x1 - x0) * frac, 4.0 * s).unwrap(), &fp, Transform::identity(), None);
     }
 }
 
@@ -252,13 +257,13 @@ fn text_width(font: &Font, text: &str, size: f32, tracking: f32) -> f32 {
 
 fn encode_jpeg(pm: &Pixmap) -> Vec<u8> {
     let data = pm.data();
-    let mut rgb = Vec::with_capacity((W * H * 3) as usize);
+    let mut rgb = Vec::with_capacity((pm.width() * pm.height() * 3) as usize);
     for px in data.chunks_exact(4) {
         rgb.extend_from_slice(&px[..3]);
     }
     let mut out = Vec::new();
     Encoder::new(&mut out, 82)
-        .encode(&rgb, W as u16, H as u16, ColorType::Rgb)
+        .encode(&rgb, pm.width() as u16, pm.height() as u16, ColorType::Rgb)
         .expect("jpeg encode");
     out
 }

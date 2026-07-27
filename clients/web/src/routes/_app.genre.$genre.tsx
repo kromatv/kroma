@@ -1,6 +1,7 @@
 import { compareTitles, hasGenre, isSortMode, type Sortable, type SortMode } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconCategory } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
@@ -8,7 +9,7 @@ import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
 interface GenreSearch {
   sort?: SortMode;
@@ -66,7 +67,7 @@ function GenrePage() {
     <main className={PAGE_MAIN}>
       <h1 className={PAGE_TITLE}>{genre}</h1>
       {entries.length === 0 ? (
-        <EmptyState icon={<IconCategory size={32} stroke={1.5} />} title={t('search.noResults')} />
+        <EmptyState icon="category" title={t('search.noResults')} />
       ) : (
         <>
           <BrowseBar

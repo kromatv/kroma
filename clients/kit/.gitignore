@@ -1,0 +1,15 @@
+# Expo
+.expo/
+expo-env.d.ts
+
+# Vite
+dist/
+
+# Generated native projects. `expo prebuild` writes these from app.json, so
+# they are output rather than source - and the TV variant overwrites the phone
+# one, which is exactly why neither is committed.
+/ios
+/android
+
+# Metro
+.metro-health-check*

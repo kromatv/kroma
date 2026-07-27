@@ -1,5 +1,11 @@
-import { type DownloadedSub, isTextSubtitle, type KromaClient, type MediaItem } from '@kroma/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  type DownloadedSub,
+  isTextSubtitle,
+  type KromaClient,
+  type MediaItem,
+  preferredSubIndex,
+} from '@kroma/core';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface SubView {
   index: number;
@@ -27,7 +33,13 @@ export interface SubtitleSelection {
 /** Resolves an item's renderable subtitle tracks (embedded + on-device generated)
  * and tracks the active selection. The custom <TvSubtitles> layer renders cues
  * itself, so "picking" is just state. */
-export function useSubtitleSelection(client: KromaClient, item: MediaItem): SubtitleSelection {
+export function useSubtitleSelection(
+  client: KromaClient,
+  item: MediaItem,
+  /** The account's preferred subtitle language: a code auto-enables that track
+   * when the file has it, `off` (or nothing) leaves subtitles off. */
+  subtitleLanguage?: string | null,
+): SubtitleSelection {
   const [active, setActive] = useState<number | null>(null);
   const [downloaded, setDownloaded] = useState<DownloadedSub[]>([]);
   const [nonce, setNonce] = useState(0);
@@ -45,14 +57,31 @@ export function useSubtitleSelection(client: KromaClient, item: MediaItem): Subt
   }, [client, item.id, nonce]);
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
+  // The file's own text tracks. Known synchronously, which is what lets the
+  // language preference land before the first cue would have been drawn.
+  const embedded = useMemo<SubView[]>(
+    () =>
+      item.subtitles
+        .map((s, index) => ({
+          index,
+          language: s.language,
+          url: isTextSubtitle(s.codec) ? client.subtitleUrl(item.id, index) : null,
+        }))
+        .filter((s) => s.url),
+    [client, item],
+  );
+
+  // Auto-enable the preferred language, once per item (an in-place swap counts
+  // as a new item). Only embedded tracks are considered - an AI-generated one is
+  // never turned on behind the viewer's back. No match = subtitles stay off.
+  const appliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (appliedRef.current === item.id) return;
+    appliedRef.current = item.id;
+    setActive(preferredSubIndex(embedded, subtitleLanguage));
+  }, [item.id, embedded, subtitleLanguage]);
+
   const rendered = useMemo<SubView[]>(() => {
-    const embedded: SubView[] = item.subtitles
-      .map((s, index) => ({
-        index,
-        language: s.language,
-        url: isTextSubtitle(s.codec) ? client.subtitleUrl(item.id, index) : null,
-      }))
-      .filter((s) => s.url);
     // Generated tracks get high indices (1000+) so they never collide with embedded.
     const gen: SubView[] = downloaded.map((d, i) => ({
       index: 1000 + i,
@@ -63,7 +92,7 @@ export function useSubtitleSelection(client: KromaClient, item: MediaItem): Subt
       ai: true,
     }));
     return [...embedded, ...gen];
-  }, [client, item, downloaded]);
+  }, [client, embedded, downloaded]);
 
   const options = useMemo<(number | null)[]>(
     () => [null, ...rendered.map((s) => s.index)],

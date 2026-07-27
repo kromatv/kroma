@@ -1,17 +1,17 @@
 import { compareTitles, hasGenre, posterColors, type SortMode } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Box, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';
-import { useFocusNav } from '#tv/app/useFocusNav';
 import {
   AmbientBackdrop,
   type CatalogEntry as Entry,
   entryBackdrop,
   entryPoster,
 } from '#tv/features/catalog/home/AmbientBackdrop';
-import { TvTopNav } from '#tv/features/catalog/home/TopNav';
-import { type GridCard, TvGrid as PosterGrid } from '#tv/features/catalog/home/TvGrid';
+import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
+import { EMPTY, TITLE } from '#tv/features/catalog/screenStyle';
 
 // Best-known titles first (rating, then year) the same ranking as the person grid.
 const SORT: SortMode = 'rating';
@@ -62,35 +62,32 @@ export function TvGenreGrid() {
   const backdrop = entryBackdrop(client, focused);
 
   return (
-    <div className="fixed inset-0 isolate flex flex-col overflow-hidden bg-bg animate-[tv-fade-in_0.3s_ease]">
+    <Box fill bg="bg" overflow="hidden" style={{ isolation: 'isolate' }}>
       <AmbientBackdrop
         src={backdrop}
         colors={focused ? posterColors(focused.item.id) : ['#1c1c22', '#0a0a0c']}
       />
-      <header className="px-16 pb-6 pt-28">
-        <div className="mb-2 font-sans text-[13px] font-bold uppercase tracking-[0.22em] text-accent">
+      <Box px={64} pt={112} pb={24} gap={8}>
+        <Txt variant="overlineTv" color="accent">
           {t('nav.genres')}
-        </div>
-        <h1 className="m-0 font-display text-[clamp(34px,5.5vh,60px)] font-bold leading-[0.98] tracking-[-0.02em]">
+        </Txt>
+        <Txt variant="hero" style={TITLE}>
           {name}
-        </h1>
-        <div className="mt-2 font-sans text-[16px] font-semibold text-muted">
+        </Txt>
+        <Txt style={{ fontSize: 16, fontWeight: '600' }} color="textMuted">
           {t('person.titleCount', { count: cards.length })}
-        </div>
-      </header>
+        </Txt>
+      </Box>
 
       {cards.length ? (
         <PosterGrid cards={cards} />
       ) : (
-        <div className="flex flex-1 items-center justify-center px-16">
-          <p className="max-w-160 text-center font-sans text-[18px] font-medium text-dim">
+        <Box flex center px={64}>
+          <Txt style={EMPTY} color="textDim">
             {t('genres.empty')}
-          </p>
-        </div>
+          </Txt>
+        </Box>
       )}
-
-      {/* Persistent nav last in DOM so a poster keeps the initial focus. */}
-      <TvTopNav />
-    </div>
+    </Box>
   );
 }

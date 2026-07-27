@@ -8,16 +8,23 @@ import {
   sizedImageUrl,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import {
+  Box,
+  CategoryTile,
+  FocusRegion,
+  FocusScroll,
+  Txt,
+  tintGradient,
+  useFocusNav,
+} from '@kroma/ui/kit';
 import { useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav } from '#tv/app/router';
-import { useFocusNav } from '#tv/app/useFocusNav';
-import { TvTopNav } from '#tv/features/catalog/home/TopNav';
-import { TvArt } from '#tv/shared/TvMedia';
+import { TITLE } from '#tv/features/catalog/screenStyle';
 
 /** Genre picker: every genre in the library (movies + shows), most common first.
  * Selecting one drills into {@link TvGenreGrid}. Derives the genre list from the
- * already-loaded catalogue no extra request, like {@link TvPerson}. Each card is
+ * already-loaded catalogue: no extra request, like {@link TvPerson}. Each card is
  * fronted by the genre's best-rated backdrop, washed in its signature colour. */
 export function TvGenres() {
   const { movies, shows } = useConnection();
@@ -31,80 +38,108 @@ export function TvGenres() {
   const showcases = useMemo(() => genreShowcases(catalogue), [catalogue]);
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-bg animate-[tv-fade-in_0.3s_ease]">
-      <header className="px-16 pb-4 pt-28">
-        <h1 className="m-0 font-display text-[clamp(34px,5.5vh,60px)] font-bold leading-[0.98] tracking-[-0.02em]">
+    <Box fill bg="bg" overflow="hidden">
+      <Box px={64} pt={112} pb={16}>
+        <Txt variant="hero" style={TITLE}>
           {t('nav.genres')}
-        </h1>
-      </header>
+        </Txt>
+      </Box>
 
       {genres.length ? (
-        <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-16 pb-18 pt-2">
-          <div className="flex flex-wrap gap-3">
-            {genres.map((g) => {
-              const pick = showcases.get(g.name);
-              return (
-                <GenreCard
-                  key={g.name}
-                  genre={g}
-                  count={t('person.titleCount', { count: g.count })}
-                  backdrop={pick ? client.backdropFor(pick) : null}
-                  onClick={() => nav.go('genre', { name: g.name })}
-                />
-              );
-            })}
-          </div>
-        </div>
+        <FocusScroll style={GENRE_SCROLL} contentStyle={GENRE_CONTENT} offsetFromStart={120}>
+          {/* The field WRAPS on screen, so it is a grid, and it has to be
+              declared as one: a single row would leave Up and Down with nowhere
+              to go and make Right walk all twenty-odd genres in a line. One
+              region per visible line, exactly what the eye sees. */}
+          {lines(genres, GENRE_COLUMNS).map((line, row) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the line's identity.
+            <FocusRegion key={row} style={GENRE_LINE}>
+              {line.map((g, column) => {
+                const pick = showcases.get(g.name);
+                return (
+                  <GenreCard
+                    autoFocus={row === 0 && column === 0}
+                    key={g.name}
+                    genre={g}
+                    count={t('person.titleCount', { count: g.count })}
+                    backdrop={pick ? client.backdropFor(pick, CARD_W) : null}
+                    onPress={() => nav.go('genre', { name: g.name })}
+                  />
+                );
+              })}
+            </FocusRegion>
+          ))}
+        </FocusScroll>
       ) : (
-        <div className="flex flex-1 items-center justify-center px-16">
-          <p className="max-w-160 text-center font-sans text-[18px] font-medium text-dim">
+        <Box flex center px={64}>
+          <Txt
+            style={{ fontSize: 18, fontWeight: '500', textAlign: 'center', maxWidth: 640 }}
+            color="textDim"
+          >
             {t('genres.empty')}
-          </p>
-        </div>
+          </Txt>
+        </Box>
       )}
-
-      {/* Persistent nav last in DOM so a genre tile keeps the initial focus. */}
-      <TvTopNav active="genres" />
-    </div>
+    </Box>
   );
 }
 
-/** One genre tile: library backdrop (or the genre-colour gradient) under a
- * bottom-heavy wash of the genre's hue. The button's own padding keeps the
- * global amber focus ring clear of the artwork. */
+/** One genre tile. The arrangement - artwork, wash, label block - is the kit's
+ * `<CategoryTile>`; what stays here is the part that is actually about genres,
+ * which is where each hue comes from. */
 function GenreCard({
   genre,
   count,
   backdrop,
-  onClick,
-}: Readonly<{ genre: GenreCount; count: string; backdrop: string | null; onClick: () => void }>) {
+  onPress,
+  autoFocus,
+}: Readonly<{
+  genre: GenreCount;
+  count: string;
+  backdrop: string | null;
+  onPress: () => void;
+  /** Marks this card the screen's focus entry point. */
+  autoFocus?: boolean;
+}>) {
   return (
-    <button
-      type="button"
-      data-focus=""
-      onClick={onClick}
-      className="w-85 flex-none cursor-pointer rounded-[20px] border-none bg-transparent p-1.5 text-left outline-none transition-transform focus:scale-[1.04]"
-    >
-      <div className="relative aspect-video overflow-hidden rounded-[14px] bg-surface-1 shadow-card [contain-intrinsic-size:328px_185px] [content-visibility:auto]">
-        <TvArt
-          src={sizedImageUrl(backdrop, 328)}
-          colors={genreColors(genre.name)}
-          position="50% 25%"
-        />
-        <div className="absolute inset-0" style={{ background: genreTint(genre.name) }} />
-        <div className="absolute inset-x-5 bottom-4">
-          <div
-            className="mb-2 h-1 w-7 rounded-full"
-            style={{ background: genreAccent(genre.name) }}
-          />
-          <div className="font-display text-[23px] font-bold leading-[1.05] text-white">
-            {genre.name}
-          </div>
-          <div className="mt-0.5 font-sans text-[14px] font-semibold text-[rgba(255,255,255,0.72)] tabular-nums">
-            {count}
-          </div>
-        </div>
-      </div>
-    </button>
+    <CategoryTile
+      label={genre.name}
+      meta={count}
+      art={sizedImageUrl(backdrop, 328)}
+      background={tintGradient(genreColors(genre.name))}
+      wash={genreTint(genre.name)}
+      accent={genreAccent(genre.name)}
+      onPress={onPress}
+      autoFocus={autoFocus}
+    />
   );
 }
+
+/** 1792pt of content fits five 340pt cards with 12pt gaps, which is what the
+ * wrap produces on the 1920 stage. Declared rather than measured: the stage is
+ * fixed, and the navigator needs the shape before anything is laid out. */
+const GENRE_COLUMNS = 5;
+
+const GENRE_LINE = { flexDirection: 'row' as const, gap: 12 };
+
+/** Split a list into lines of `size`, so each visible line can be a row. */
+function lines<T>(items: readonly T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let at = 0; at < items.length; at += size) out.push(items.slice(at, at + size));
+  return out;
+}
+
+/** The page scroller's own box: the navigator scrolls it to follow focus. */
+const GENRE_SCROLL = { flex: 1, minHeight: 0 } as const;
+
+/** The padding belongs to the CONTENT, not to the scroller's own box: on the
+ * box it would pad the viewport and clip the last row instead of the list. */
+const GENRE_CONTENT = {
+  paddingHorizontal: 64,
+  paddingTop: 8,
+  paddingBottom: 72,
+  gap: 12,
+} as const;
+
+/** A genre card is drawn 340pt wide; 320 is the rendition bucket just under it. */
+const CARD_W = 320;

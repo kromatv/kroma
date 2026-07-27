@@ -5,6 +5,7 @@
 
 import {
   apiErrorText,
+  Button,
   Field,
   type IndexerDefinitionDetailView,
   type IndexerDefinitionView,
@@ -19,7 +20,7 @@ import {
   useAsyncAction,
   useT,
 } from '@kroma/module-sdk';
-import { IconLoader2, IconSearch } from '@tabler/icons-react';
+import { IconSearch } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createCallable } from 'react-call';
 
@@ -192,15 +193,14 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
             className="min-w-0 flex-1 bg-transparent py-2.25 text-[13.5px] font-semibold text-text outline-none"
           />
         </div>
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
+          label={t('indexers.syncDefs')}
           onClick={sync}
-          disabled={syncing}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/12 bg-[#1A1A20] px-3 py-2 text-[12.5px] font-semibold text-white/80 hover:bg-[#222229] disabled:opacity-60"
-        >
-          {syncing ? <IconLoader2 size={13} stroke={2.4} className="animate-spin" /> : null}
-          {t('indexers.syncDefs')}
-        </button>
+          loading={syncing}
+          className="shrink-0"
+        />
       </div>
 
       {error ? <p className="mb-2 text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}

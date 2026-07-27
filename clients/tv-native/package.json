@@ -1,0 +1,43 @@
+{
+  "name": "@kroma/tv-native",
+  "version": "0.1.3",
+  "private": true,
+  "main": "index.js",
+  "description": "KROMA native TV client (Apple TV + Android TV): the shared @kroma/tv experience compiled by React Native instead of rendered in a WebView.",
+  "scripts": {
+    "start": "EXPO_TV=1 expo start",
+    "ios": "EXPO_TV=1 REACT_NATIVE_NODE_MODULES_DIR=\"$PWD/node_modules\" expo run:ios",
+    "android": "EXPO_TV=1 expo run:android",
+    "prebuild": "EXPO_TV=1 expo prebuild --clean",
+    "pod": "cd ios && REACT_NATIVE_NODE_MODULES_DIR=\"$PWD/../node_modules\" pod install",
+    "bundle:check": "bun ../expo-build/bundle-check.ts . EXPO_TV=1 --max 10",
+    "typecheck": "tsc --noEmit",
+    "focus:probe": "bun ./scripts/focus-probe.ts",
+    "perf:androidtv": "bun ./scripts/perf-androidtv.ts"
+  },
+  "dependencies": {
+    "@kroma/core": "workspace:*",
+    "@kroma/tv": "workspace:*",
+    "@kroma/ui": "workspace:*",
+    "expo": "~57.0.8",
+    "expo-blur": "~57.0.2",
+    "expo-constants": "~57.0.6",
+    "expo-file-system": "~57.0.1",
+    "expo-font": "~57.0.1",
+    "expo-keep-awake": "~57.0.1",
+    "expo-splash-screen": "~57.0.5",
+    "expo-status-bar": "~57.0.1",
+    "expo-video": "~57.0.2",
+    "react": "19.2.3",
+    "react-native": "npm:react-native-tvos@0.86.0-2",
+    "react-native-svg": "15.15.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@react-native-tvos/config-tv": "^0.1.6",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.0",
+    "expo-atlas": "^0.4.0",
+    "typescript": "^7.0.2"
+  }
+}

@@ -129,11 +129,18 @@ pub struct DownloadQuery {
     /// (`?copy=`) = none of them, transcode every track: a client that decodes
     /// nothing copy-safe must not be served the default set.
     pub copy: Option<String>,
+    /// Comma-separated VIDEO codecs this client decodes natively. Absent =
+    /// stream-copy whatever the source carries (the pre-capability contract).
+    /// Present with the source codec missing from the set (or the file
+    /// unprobed) = transcode to H.264 - the video analog of `copy`: offline
+    /// playback has no master to fall back to.
+    pub video: Option<String>,
 }
 
-/// `GET /api/items/:id/download` (optional `?copy=aac,ac3`) → the whole title
-/// as ONE fragmented MP4, remuxed on the fly (video stream-copied, every audio
-/// track copied or AAC-transcoded per [`download_audio_args`]) and streamed
+/// `GET /api/items/:id/download` (optional `?copy=aac,ac3`, `?video=hevc,h264`)
+/// → the whole title as ONE fragmented MP4, remuxed on the fly (video
+/// stream-copied when the client decodes it - see [`DownloadQuery::video`] -
+/// every audio track copied or AAC-transcoded per [`download_audio_args`]) and streamed
 /// chunked as ffmpeg produces it. This is the offline-download source for
 /// mobile clients: unlike `/stream` it always yields a container/codec combo
 /// phones can play locally (an MKV library would otherwise be un-downloadable
@@ -166,15 +173,28 @@ pub async fn download_item(
         return Err(json_error(StatusCode::NOT_FOUND, "media file unavailable (mount offline?)"));
     }
 
-    let is_hevc = item.video.as_ref().map(|v| v.codec == "hevc").unwrap_or(false);
+    let source_video = item.video.as_ref().map(|v| v.codec.as_str());
+    let video_copy = match (q.video.as_deref(), source_video) {
+        (None, _) => true,
+        (Some(set), Some(codec)) => set.split(',').any(|c| c.trim().eq_ignore_ascii_case(codec)),
+        (Some(_), None) => false,
+    };
     let mut cmd = tokio::process::Command::new("ffmpeg");
-    cmd.args(["-v", "error", "-nostdin", "-i"])
-        .arg(&abs)
-        .args(["-map", "0:v:0", "-c:v", "copy"]);
-    if is_hevc {
-        // Apple decoders require the `hvc1` sample-entry tag; stream-copied
-        // HEVC defaults to `hev1`, which plays AUDIO ONLY on iOS local files.
-        cmd.args(["-tag:v", "hvc1"]);
+    cmd.args(["-v", "error", "-nostdin", "-i"]).arg(&abs).args(["-map", "0:v:0"]);
+    if video_copy {
+        cmd.args(["-c:v", "copy"]);
+        if source_video == Some("hevc") {
+            // Apple decoders require the `hvc1` sample-entry tag; stream-copied
+            // HEVC defaults to `hev1`, which plays AUDIO ONLY on iOS local files.
+            cmd.args(["-tag:v", "hvc1"]);
+        }
+    } else {
+        // The ONE video transcode in the server, and only because offline has
+        // no fallback: a downloaded source the device cannot decode (AV1 on a
+        // pre-A17 iPhone) plays its audio under a black frame. H.264 8-bit
+        // because every download target decodes it. HDR sources are not
+        // tone-mapped (no zimg dependency); they read washed-out but visible.
+        cmd.args(["-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p"]);
     }
     cmd.args(download_audio_args(
         &item.audio_tracks,

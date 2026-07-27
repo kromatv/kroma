@@ -1,7 +1,8 @@
+import { Image } from '@kroma/admin-kit';
 import { sizedImageUrl } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
-import { IconCheck } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useT } from '@kroma/ui';
+import { IconButton, VirtualRail } from '@kroma/ui/kit';
+import { type ReactElement, useState } from 'react';
 
 export interface PosterProps {
   title: string;
@@ -20,6 +21,51 @@ export interface PosterProps {
    * scales from phone to desktop). */
   width?: number;
   onClick?: () => void;
+}
+
+/** Poster-rail geometry: the pitch targets the desktop `--card-w` maximum, and
+ * the kit rail fits a whole number of tiles into whatever width it gets. */
+const RAIL_TILE = 208;
+const RAIL_GAP = 18;
+/** Vertical room for the tiles' hover lift (6px) + amber ring shadow. */
+const RAIL_PAD = 12;
+
+export interface PosterRailProps<T> {
+  data: readonly T[];
+  /** One tile. The cell stretches it to its own width (same `*:w-full!`
+   * override as the poster grids), so tiles need no width prop. */
+  renderItem: (item: T, index: number) => ReactElement;
+  /** Extra tile height below the 2:3 artwork (a caption strip). */
+  extra?: number;
+  onEndReached?: () => void;
+}
+
+/**
+ * The design system's `VirtualRail` sized for poster tiles: wheel pan, hover
+ * paging arrows and edge fades come from the kit. The pitch is a target - the
+ * rail shares its width out into whole cells - so each tile fills its cell and
+ * a wrapper caps growth back at the design width on the odd viewport where a
+ * cell comes out wider.
+ */
+export function PosterRail<T>({
+  data,
+  renderItem,
+  extra = 0,
+  onEndReached,
+}: Readonly<PosterRailProps<T>>) {
+  return (
+    <VirtualRail
+      data={data}
+      itemWidth={RAIL_TILE + RAIL_GAP}
+      gap={RAIL_GAP}
+      style={{ height: Math.round(RAIL_TILE * 1.5) + extra + RAIL_PAD * 2 }}
+      contentStyle={{ paddingVertical: RAIL_PAD }}
+      onEndReached={onEndReached}
+      renderItem={(item, index) => (
+        <div className="mx-auto w-full max-w-52 *:w-full!">{renderItem(item, index)}</div>
+      )}
+    />
+  );
 }
 
 /**
@@ -87,24 +133,23 @@ export function Poster({
         </div>
       </button>
       {showToggle ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleWatched?.();
-          }}
-          aria-pressed={watched ?? false}
-          aria-label={watched ? t('content.markUnwatched') : t('content.markWatched')}
-          title={watched ? t('content.watched') : t('content.markWatched')}
-          className={`absolute left-2.5 top-2.5 z-2 flex h-7 w-7 items-center justify-center rounded-full border backdrop-blur-sm transition-all duration-150
-            ${
-              watched
-                ? 'border-accent bg-accent text-black opacity-100'
-                : 'border-white/40 bg-[rgba(10,10,12,.55)] text-white opacity-0 hover:bg-[rgba(10,10,12,.85)]! group-hover:opacity-100 group-focus-within:opacity-100'
-            }`}
+        // The kit disc floats over the card exactly where the old toggle sat;
+        // the wrapper keeps the reveal-on-hover behaviour (persistent when
+        // watched, appearing with the card's hover/focus otherwise).
+        <div
+          className={`absolute left-2.5 top-2.5 z-2 transition-opacity duration-150 ${
+            watched ? '' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+          }`}
         >
-          <IconCheck size={15} stroke={3} />
-        </button>
+          <IconButton
+            variant={watched ? 'primary' : 'scrim'}
+            size={28}
+            glyph={15}
+            icon="check"
+            label={watched ? t('content.markUnwatched') : t('content.markWatched')}
+            onPress={() => onToggleWatched?.()}
+          />
+        </div>
       ) : null}
     </div>
   );

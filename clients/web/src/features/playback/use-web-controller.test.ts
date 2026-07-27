@@ -5,12 +5,13 @@ import type { MovieView } from '#web/shared/lib/api';
 
 // use-web-controller is the adapter that folds the engine + subtitle + filter
 // hooks into the shared PlayerController. We mock those sources and assert the
-// contract it derives (playbackMode, scrub wiring, loop, pass-through mapping).
+// contract it derives (playbackMode, scrub wiring, pass-through mapping).
 const H = vi.hoisted(() => ({
   pb: null as Record<string, unknown> | null,
   subs: null as Record<string, unknown> | null,
   filter: { mode: 'off', setMode: vi.fn(), supported: true },
   endedHandler: null as (() => void) | null,
+  rememberAudio: vi.fn(),
 }));
 
 vi.mock('#web/features/playback/use-video-playback', () => ({
@@ -24,16 +25,21 @@ vi.mock('@kroma/ui', () => ({
   useAudioFilter: () => H.filter,
   useT: () => (k: string) => k,
 }));
-vi.mock('@kroma/core', () => ({
+// `refineTrackLang` stays REAL: "picking a track remembers its dub variant" is
+// behaviour this file tests, and a stubbed matcher would only assert the stub.
+vi.mock('@kroma/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/core')>()),
   audioTrackLabel: () => 'English 5.1',
   qualityBadgeForVideo: () => 'HDR',
+}));
+vi.mock('#web/shared/lib/lang-pref', () => ({
+  useLangPrefs: () => ({ setAudio: H.rememberAudio }),
 }));
 
 const { useWebController } = await import('#web/features/playback/use-web-controller');
 
 function fakeVideo() {
   return {
-    loop: false,
     addEventListener: vi.fn((ev: string, h: () => void) => {
       if (ev === 'ended') H.endedHandler = h;
     }),
@@ -107,6 +113,7 @@ beforeEach(() => {
   H.filter = { mode: 'off', setMode: vi.fn(), supported: true };
   H.pb = makePb();
   H.subs = makeSubs();
+  H.rememberAudio.mockClear();
 });
 afterEach(() => {
   cleanup();
@@ -147,6 +154,36 @@ describe('useWebController controller mapping', () => {
   });
 });
 
+describe('useWebController audio preference', () => {
+  it("remembers the picked track's language, refined by the dub variant", () => {
+    H.pb = makePb({
+      audioTracks: [
+        { index: 0, language: 'eng' },
+        { index: 1, language: 'fre', title: 'VFQ AC3 5.1' },
+        { index: 2, language: 'fre', title: 'VFF AC3 5.1' },
+      ],
+    });
+    const { result } = render();
+
+    result.current.controller.setAudio(1);
+    expect(H.pb?.setAudio).toHaveBeenCalledWith(1);
+    // Not plain 'fr': VFQ and VFF are two different dubs, and a viewer who
+    // picked Quebec must not be handed France on the next title.
+    expect(H.rememberAudio).toHaveBeenCalledWith('fr-CA');
+
+    result.current.controller.setAudio(2);
+    expect(H.rememberAudio).toHaveBeenLastCalledWith('fr-FR');
+  });
+
+  it('leaves the preference alone for a track that declares no language', () => {
+    H.pb = makePb({ audioTracks: [{ index: 0, language: null, title: 'Commentary' }] });
+    const { result } = render();
+    result.current.controller.setAudio(0);
+    expect(H.pb?.setAudio).toHaveBeenCalledWith(0);
+    expect(H.rememberAudio).not.toHaveBeenCalled();
+  });
+});
+
 describe('useWebController playbackMode', () => {
   it('is "direct" for a bare <video src>', () => {
     H.pb = makePb({ useHls: false });
@@ -162,7 +199,7 @@ describe('useWebController playbackMode', () => {
   });
 });
 
-describe('useWebController scrub + loop', () => {
+describe('useWebController scrub', () => {
   it('previews a scrub position and commits it as a single seek', () => {
     const { result } = render();
     act(() => result.current.controller.scrubPreview(55));
@@ -170,14 +207,6 @@ describe('useWebController scrub + loop', () => {
     act(() => result.current.controller.scrubCommit());
     expect(H.pb?.seekTo).toHaveBeenCalledWith(55);
     expect(result.current.controller.seekPreview).toBeNull();
-  });
-
-  it('setLoop toggles the flag and the <video> loop property', () => {
-    const { result } = render();
-    const v = (H.pb as { videoRef: { current: { loop: boolean } } }).videoRef.current;
-    act(() => result.current.controller.setLoop(true));
-    expect(result.current.controller.loop).toBe(true);
-    expect(v.loop).toBe(true);
   });
 });
 

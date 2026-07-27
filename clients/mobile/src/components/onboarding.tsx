@@ -2,10 +2,17 @@
 // screens: profile tiles for the "Who's watching?" gate and the segmented
 // code cells (PIN pad, Quick Connect code).
 
+import { Icon, Spinner } from '@kroma/ui/kit';
 import { useRef } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  type ReturnKeyTypeOptions,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { colors, radius, type } from '#mobile/lib/theme';
-import { LockIcon, PlusIcon } from '#mobile/player/icons';
 import { Avatar } from './Avatar';
 
 const TILE_AVATAR = 84;
@@ -40,12 +47,12 @@ export function ProfileTile({
         <Avatar uri={avatarUri} name={name} size={TILE_AVATAR} />
         {locked && !busy ? (
           <View style={styles.lockBadge}>
-            <LockIcon size={13} color={colors.text} />
+            <Icon name="lock" size={13} stroke={2.2} color={colors.text} />
           </View>
         ) : null}
         {busy ? (
           <View style={styles.tileBusy}>
-            <ActivityIndicator color={colors.text} />
+            <Spinner size={24} color={colors.text} />
           </View>
         ) : null}
       </View>
@@ -68,7 +75,7 @@ export function AddTile({ label, onPress }: Readonly<{ label: string; onPress():
       style={({ pressed }) => [styles.tile, pressed && { opacity: 0.6 }]}
     >
       <View style={styles.addCircle}>
-        <PlusIcon size={30} color={colors.textDim} />
+        <Icon name="plus" size={30} stroke={2.2} color={colors.textDim} />
       </View>
       <Text numberOfLines={1} style={[styles.tileName, { color: colors.textDim }]}>
         {label}
@@ -130,6 +137,23 @@ export function CodeCells({
         maxLength={length}
         autoFocus
         editable={editable}
+        // Opt OUT of AutoFill: nothing here is fillable - the masked entry is
+        // a local PIN, and the code comes off the TV's own screen, never out
+        // of an SMS.
+        textContentType="none"
+        autoComplete="off"
+        // No keyboard accessory bar. The tvos fork of React Native counts the
+        // DEFAULT return key type as wanting one (upstream does not), so every
+        // number-pad here grew a toolbar whose button is titled after the enum
+        // - a floating pill reading "Default" over the code cells on iOS 26.
+        // `continue` is the one type its set leaves out, and a number pad
+        // renders no return key, so this changes nothing else (verified in
+        // RCTBaseTextInputView.mm setDefaultInputAccessoryView and on the
+        // simulator). The button served nothing anyway: this field refocuses
+        // on blur, so dismissing the keyboard just bounced it. The cast is for
+        // the fork's .d.ts alone, whose union forgot `continue`; the runtime
+        // maps it (RCTTextInputUtils.mm) and upstream's types have it.
+        returnKeyType={'continue' as unknown as ReturnKeyTypeOptions}
         onBlur={() => {
           if (refocusOnBlur) inputRef.current?.focus();
         }}

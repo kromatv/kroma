@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Free-size, unlike the packaged shells. A television IS a 1920x1080 panel,
+         so those shells pin the viewport to the stage they are authored against;
+         a browser window is any shape at all, and the layout reflows for it (the
+         same path the desktop shell takes on macOS/Windows). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KROMA</title>
+    <!-- Critical: paint the stage black from the very first frame, before the
+         bundled CSS loads, so the launch never flashes a white body. -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0a0a0c;
+        color-scheme: dark;
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

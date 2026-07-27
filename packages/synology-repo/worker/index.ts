@@ -131,7 +131,12 @@ export default {
     try {
       catalog = await loadCatalog(env, (p) => ctx.waitUntil(p));
     } catch (err) {
-      return json({ packages: [], error: String(err) }, 503);
+      // The detail goes to the worker log, not to the caller: this is a public
+      // endpoint, and `String(err)` on a failed fetch carries the upstream URL
+      // (and whatever a thrown message happens to embed) straight to anyone who
+      // asks. The status is what a client can act on.
+      console.error('catalog load failed', err);
+      return json({ packages: [], error: 'catalog unavailable' }, 503);
     }
 
     switch (path) {

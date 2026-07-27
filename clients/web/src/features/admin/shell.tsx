@@ -11,7 +11,8 @@ import {
   type ServerInfo,
 } from '@kroma/core';
 import type { ModuleNav } from '@kroma/module-sdk';
-import { Logo, useT } from '@kroma/ui';
+import { useT } from '@kroma/ui';
+import { Logo } from '@kroma/ui/kit';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
   IconApps,

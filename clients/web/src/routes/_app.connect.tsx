@@ -1,4 +1,5 @@
 import { useT } from '@kroma/ui';
+import { Button } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
@@ -76,13 +77,13 @@ function ConnectPage() {
             {status === 'err' ? (
               <p className="text-[13px] font-medium text-danger">{t('connect.invalidCode')}</p>
             ) : null}
-            <button
-              type="submit"
-              disabled={busy || code.trim().length < 4}
-              className="w-full rounded-md bg-accent py-3.5 text-[15px] font-bold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-50"
-            >
-              {busy ? t('auth.loggingIn') : t('connect.authorize')}
-            </button>
+            <Button
+              block
+              label={busy ? t('auth.loggingIn') : t('connect.authorize')}
+              onPress={() => void submit()}
+              loading={busy}
+              disabled={code.trim().length < 4}
+            />
           </form>
         )}
       </div>

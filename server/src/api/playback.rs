@@ -166,10 +166,13 @@ pub struct StopBody {
 /// history immediately (rather than waiting for the reaper).
 pub async fn stop(
     State(state): State<SharedState>,
-    AuthUser(_user): AuthUser,
+    AuthUser(user): AuthUser,
     Json(body): Json<StopBody>,
 ) -> Response {
-    if let Some(session) = state.playback.remove(&body.session_id) {
+    // Owner-scoped: a viewer ends their OWN session. Naming somebody else's is a
+    // no-op rather than an error, so this cannot be used to discover session ids
+    // either. Admins terminate through the admin route.
+    if let Some(session) = state.playback.remove_owned(&body.session_id, &user.id) {
         let _ = query(&state.db, move |pool| {
             playback::record(&pool, &session);
             Ok(())

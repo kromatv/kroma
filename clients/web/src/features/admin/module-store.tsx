@@ -5,7 +5,8 @@
 // POST /store/install-id, which resolves missing hard dependencies from the
 // same catalog and verifies each download's sha256 before unpacking.
 
-import { Image } from '@kroma/ui';
+import { Image } from '@kroma/admin-kit';
+import { Button } from '@kroma/ui/kit';
 import { IconSearch } from '@tabler/icons-react';
 import { type ReactNode, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
@@ -86,15 +87,14 @@ function StoreCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate font-semibold text-text">{m.name}</span>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            active
+            size="sm"
+            label="Install"
+            onPress={() => onInstall(m.id)}
             disabled={busy || !m.compatible}
-            title={m.compatible ? undefined : (m.reason ?? undefined)}
-            onClick={() => onInstall(m.id)}
-            className="shrink-0 rounded bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent disabled:opacity-50"
-          >
-            Install
-          </button>
+          />
         </div>
         <div className="text-[11px] text-dim">
           {m.id} · v{m.version}
@@ -148,14 +148,15 @@ function RegistryUrlEditor({
           className="text-[12px]"
         />
       </InputGroup>
-      <button
-        type="button"
-        disabled={saving || !url.trim()}
-        onClick={() => void save()}
-        className="rounded bg-accent-soft px-3 py-1.5 text-xs font-semibold text-accent disabled:opacity-50"
-      >
-        {saving ? 'Saving...' : 'Save & retry'}
-      </button>
+      <Button
+        variant="outline"
+        active
+        size="sm"
+        label={saving ? 'Saving...' : 'Save & retry'}
+        onPress={() => void save()}
+        loading={saving}
+        disabled={!url.trim()}
+      />
     </div>
   );
 }

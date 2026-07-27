@@ -138,8 +138,37 @@ describe('buildWebStats', () => {
     const withEngine =
       buildWebStats(input({ engine: { estBandwidthKbps: 512, streamBitrateKbps: 8200 } })).meters ??
       [];
-    expect(withEngine.map((m) => m.key)).toEqual(['buffer', 'bandwidth', 'bitrate']);
+    // Throughput leads, because the bandwidth/bitrate gap is the diagnostic a
+    // stall investigation starts from; buffer follows on its own axis.
+    expect(withEngine.map((m) => m.key)).toEqual(['bandwidth', 'bitrate', 'buffer']);
     expect(withEngine.find((m) => m.key === 'bandwidth')?.display).toBe('512 kb/s');
     expect(withEngine.find((m) => m.key === 'bitrate')?.value).toBe(8200);
+  });
+
+  it('puts bandwidth and bitrate on one axis, with bandwidth owning the band', () => {
+    const meters =
+      buildWebStats(input({ engine: { estBandwidthKbps: 512, streamBitrateKbps: 8200 } })).meters ??
+      [];
+    const bandwidth = meters.find((m) => m.key === 'bandwidth');
+    const bitrate = meters.find((m) => m.key === 'bitrate');
+    // Same unit, so they may share a chart - and the gap between them is the point.
+    expect(bandwidth?.chart).toBe('throughput');
+    expect(bitrate?.chart).toBe('throughput');
+    expect(bandwidth?.band).toBe(true);
+    expect(bitrate?.band).toBeUndefined();
+  });
+
+  it('keeps buffer off the throughput axis and gives it a low-water reference', () => {
+    const buffer = (buildWebStats(input()).meters ?? []).find((m) => m.key === 'buffer');
+    // Seconds against kb/s on one axis would flatten this to a dead line.
+    expect(buffer?.chart).toBeUndefined();
+    expect(buffer?.reference?.value).toBe(10);
+  });
+
+  it('sets no colours, leaving the panel to assign the validated palette', () => {
+    const meters =
+      buildWebStats(input({ engine: { estBandwidthKbps: 512, streamBitrateKbps: 8200 } })).meters ??
+      [];
+    expect(meters.every((m) => m.color === undefined)).toBe(true);
   });
 });

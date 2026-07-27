@@ -12,7 +12,8 @@ import {
   type StoredSession,
   UserId,
 } from '@kroma/core';
-import { type ActivateResult, Logo, useT } from '@kroma/ui';
+import { type ActivateResult, useT } from '@kroma/ui';
+import { Button, Logo } from '@kroma/ui/kit';
 import { IconLock, IconPlus } from '@tabler/icons-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
@@ -472,13 +473,13 @@ function PinEntry({
       {/* Status line: spinner while verifying, else the error / cooldown. */}
       <div className="flex h-5 items-center gap-2">{status}</div>
 
-      <button
-        type="button"
-        onClick={onBack}
-        className="text-[14px] font-medium text-muted hover:text-text"
-      >
-        ← {t('common.back')}
-      </button>
+      <Button
+        variant="ghost"
+        size="sm"
+        icon="chevron-left"
+        label={t('common.back')}
+        onPress={onBack}
+      />
     </div>
   );
 }

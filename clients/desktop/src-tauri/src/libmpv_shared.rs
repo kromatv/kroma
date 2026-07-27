@@ -84,6 +84,43 @@ pub fn apply_common_options(init: &MpvInitializer) -> MpvResult<()> {
     init.set_property("sub-auto", "no")?;
     init.set_property("sid", "no")?;
     init.set_property("terminal", false)?;
+    // No mpv Lua. Two independent reasons, either of which is sufficient:
+    //
+    // 1. They are dead weight. The built-in scripts are mpv's OWN interface -
+    //    the on-screen controller, the stats overlay (`i`), the console, the
+    //    ytdl hook, auto-profiles. KROMA draws every one of those itself in
+    //    React over a transparent webview, and there is no keyboard bound to
+    //    mpv at all, so the scripts render nothing and answer nobody.
+    //
+    // 2. On macOS they are FATAL. The scripts run on LuaJIT, which compiles and
+    //    then executes machine code at runtime. Under the hardened runtime
+    //    (required for notarization) that is exactly what the kernel refuses:
+    //    the app is SIGKILLed a few seconds into playback init with
+    //    CODESIGNING / "Invalid Page" - an instruction-abort permission fault
+    //    on the JIT's own r-x page, on the `*/stats` thread. Allowing it would
+    //    mean shipping `com.apple.security.cs.allow-unsigned-executable-memory`,
+    //    weakening the hardened runtime app-wide to run scripts we do not want.
+    //
+    // EVERY built-in script has to be named individually. `load-scripts=no` is
+    // NOT enough and the name is a trap: it governs only the USER scripts
+    // auto-loaded from the config directory, not the ones mpv ships. Setting it
+    // alone leaves all of the below running - the crash reproduced unchanged,
+    // and the mpv thread names in the report (`*/stats`, `*/console`,
+    // `*/select`, ...) are exactly this list.
+    for option in [
+        "load-scripts",       // user scripts in ~/.config/mpv/scripts
+        "load-stats-overlay", // */stats
+        "load-console",       // */console
+        "load-auto-profiles", // */auto_profiles
+        "load-select",        // */select
+        "load-positioning",   // */positioning
+        "load-commands",      // */commands
+        "load-context-menu",  // */context_menu
+        "osc",                // the on-screen controller
+        "ytdl",               // */ytdl_hook
+    ] {
+        init.set_property(option, "no")?;
+    }
     Ok(())
 }
 

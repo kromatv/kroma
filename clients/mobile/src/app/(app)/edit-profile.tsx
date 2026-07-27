@@ -1,54 +1,91 @@
 // Edit profile: photo, personal information, preferred playback languages and
 // password, all synced to the account (same PATCH /auth/me + avatar upload as
 // the web client).
+//
+// The photo is the avatar itself - the same tappable identity block as the
+// profile tab, with the badge as the affordance - and the language choices are
+// two rows opening a bottom sheet rather than two walls of chips: eight
+// options twice over pushed the security section a screen and a half down.
+// The sheet they open is <LangPickerSheet>, which offers every language rather
+// than the seven this screen used to hardcode.
 
-import { KromaApiError, langName } from '@kroma/core';
+import { KromaApiError, LANG_OFF, langName } from '@kroma/core';
+import { Button, Icon, type IconName, Spinner } from '@kroma/ui/kit';
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Avatar } from '#mobile/components/Avatar';
+import { type LangPickerRef, LangPickerSheet } from '#mobile/components/LangPickerSheet';
 import { PageHeader } from '#mobile/components/PageHeader';
-import { Button, Chip, Screen, TextField } from '#mobile/components/ui';
+import { Screen, TextField } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
+import { useLangPrefs } from '#mobile/lib/langPrefs';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
-const TRACK_LANGS = [null, 'fr', 'en', 'es', 'de', 'it', 'ja', 'ko'] as const;
+/** A save's outcome, shown in place: amber for done, red for refused. */
+type Note = { text: string; ok: boolean } | null;
 
 function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.card}>{children}</View>
+      {children}
     </View>
   );
 }
 
-function LangPicker({
+function Message({ note }: Readonly<{ note: Note }>) {
+  if (!note) return null;
+  return (
+    <Text style={[styles.message, { color: note.ok ? colors.accent : colors.danger }]}>
+      {note.text}
+    </Text>
+  );
+}
+
+/** A preference row: glyph well, label, the current choice, and the selector
+ * mark that says "picks in place" (the profile tab's chevron-right means "goes
+ * somewhere"; this opens a sheet). */
+function PrefRow({
+  icon,
   label,
   value,
-  onPick,
-}: Readonly<{
-  label: string;
-  value: string | null;
-  onPick(code: string | null): void;
-}>) {
-  const t = useT();
+  onPress,
+}: Readonly<{ icon: IconName; label: string; value: string; onPress(): void }>) {
   return (
-    <View style={styles.langBlock}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.langRow}>
-        {TRACK_LANGS.map((code) => (
-          <Chip
-            key={code ?? 'none'}
-            label={code ? (langName(t, code) ?? code.toUpperCase()) : t('account.noPreference')}
-            active={value === code}
-            onPress={() => onPick(code)}
-          />
-        ))}
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
+      <View style={styles.rowIconLabel}>
+        <View style={styles.rowIconBox}>
+          <Icon name={icon} size={19} stroke={1.8} color={colors.accent} />
+        </View>
+        {/* The label yields, the value does not: "Langue des sous-titres
+            préférée" can lose its tail to an ellipsis, but a choice squeezed
+            to "Franç…" reads as broken. */}
+        <Text numberOfLines={1} style={styles.rowLabel}>
+          {label}
+        </Text>
       </View>
-    </View>
+      <View style={styles.rowRight}>
+        <Text numberOfLines={1} style={styles.rowValue}>
+          {value}
+        </Text>
+        <Icon name="selector" size={16} stroke={2} color={colors.textFaint} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -56,21 +93,38 @@ export default function EditProfile() {
   const t = useT();
   const client = useClient();
   const { user, setUser } = useSession();
+  const { setAudio: setAudioPref, setSubtitle: setSubtitlePref } = useLangPrefs();
 
   const [username, setUsername] = useState(user?.username ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [savingInfo, setSavingInfo] = useState(false);
-  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [infoNote, setInfoNote] = useState<Note>(null);
 
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordNote, setPasswordNote] = useState<Note>(null);
 
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarNote, setAvatarNote] = useState<Note>(null);
+
+  /** Which preference the sheet is picking for. It also keys the sheet's
+   * title, so one sheet serves both rows. */
+  const [picking, setPicking] = useState<'audio' | 'subtitle'>('audio');
+  const sheet = useRef<LangPickerRef>(null);
 
   const avatar = client.resolveArt(user?.avatarUrl);
+
+  /** The row's reading of a stored track language - the dub VARIANT included,
+   * because that is the choice that was made: a viewer who picked the VFQ track
+   * reads "Français (Canada)" here, not a "Français" that hides which of the two
+   * dubs the next title will open on. */
+  const langLabel = (value: string | null | undefined): string => {
+    if (value === LANG_OFF) return t('player.subtitlesOff');
+    if (!value) return t('account.noPreference');
+    return langName(t, value) ?? value.toUpperCase();
+  };
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -82,13 +136,13 @@ export default function EditProfile() {
     const asset = result.assets?.[0];
     if (result.canceled || !asset) return;
     setAvatarBusy(true);
-    setInfoMessage(null);
+    setAvatarNote(null);
     try {
       const blob = await (await fetch(asset.uri)).blob();
       const { avatarUrl } = await client.uploadAvatar(blob);
       if (user) setUser({ ...user, avatarUrl });
     } catch {
-      setInfoMessage(t('account.avatarFailed'));
+      setAvatarNote({ text: t('account.avatarFailed'), ok: false });
     } finally {
       setAvatarBusy(false);
     }
@@ -96,53 +150,58 @@ export default function EditProfile() {
 
   const saveInfo = async () => {
     setSavingInfo(true);
-    setInfoMessage(null);
+    setInfoNote(null);
     try {
       const { user: updated } = await client.updateAccount({
         username: username.trim(),
         email: email.trim(),
       });
       setUser(updated);
-      setInfoMessage(t('account.profileSaved'));
+      setInfoNote({ text: t('account.profileSaved'), ok: true });
     } catch (err) {
-      if (err instanceof KromaApiError && err.status === 409) setInfoMessage(t('auth.emailTaken'));
-      else setInfoMessage(t('account.saveFailed'));
+      if (err instanceof KromaApiError && err.status === 409)
+        setInfoNote({ text: t('auth.emailTaken'), ok: false });
+      else setInfoNote({ text: t('account.saveFailed'), ok: false });
     } finally {
       setSavingInfo(false);
     }
   };
 
-  const savePref = async (patch: {
-    audioLanguage?: string | null;
-    subtitleLanguage?: string | null;
-  }) => {
-    try {
-      const { user: updated } = await client.updateAccount(patch);
-      setUser(updated);
-    } catch {
-      // Preference sync is best-effort; the UI reflects the server state.
-    }
+  // Through the shared hook, not a hand-rolled PATCH: it normalizes the picked
+  // code (the `none` sentinel is a UI value and must never be stored, and a dub
+  // region has to survive), updates the local user optimistically so the row
+  // changes on tap rather than after the round-trip, and drops a no-op write.
+  const savePref = (code: string | null) => {
+    sheet.current?.dismiss();
+    (picking === 'audio' ? setAudioPref : setSubtitlePref)(code);
   };
 
   const savePassword = async () => {
     if (next !== confirm) {
-      setPasswordMessage(t('account.passwordMismatch'));
+      setPasswordNote({ text: t('account.passwordMismatch'), ok: false });
       return;
     }
     setSavingPassword(true);
-    setPasswordMessage(null);
+    setPasswordNote(null);
     try {
       await client.changePassword(current, next);
       setCurrent('');
       setNext('');
       setConfirm('');
-      setPasswordMessage(t('account.profileSaved'));
+      setPasswordNote({ text: t('account.profileSaved'), ok: true });
     } catch {
-      setPasswordMessage(t('account.saveFailed'));
+      setPasswordNote({ text: t('account.saveFailed'), ok: false });
     } finally {
       setSavingPassword(false);
     }
   };
+
+  const openPicker = (kind: 'audio' | 'subtitle') => {
+    setPicking(kind);
+    sheet.current?.present();
+  };
+
+  const pickedValue = picking === 'audio' ? user?.audioLanguage : user?.subtitleLanguage;
 
   return (
     <Screen padded={false}>
@@ -152,70 +211,97 @@ export default function EditProfile() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <Section title={t('account.sectionPhoto')}>
-            <View style={styles.avatarRow}>
-              <Avatar uri={avatar} name={user?.username} size={88} />
-              <View style={{ flex: 1, gap: 6 }}>
-                <Button
-                  label={t('account.changePhoto')}
-                  kind="ghost"
-                  onPress={() => void pickPhoto()}
-                  loading={avatarBusy}
-                />
-                <Text style={styles.hint}>{t('account.photoHint')}</Text>
+          {/* The photo IS the control, like the profile tab's identity block -
+              the badge is the affordance, and it spins while the upload runs. */}
+          <View style={styles.identity}>
+            <Pressable
+              onPress={() => void pickPhoto()}
+              disabled={avatarBusy}
+              accessibilityRole="button"
+              accessibilityLabel={t('account.changePhoto')}
+              style={({ pressed }) => [pressed && { opacity: 0.85 }]}
+            >
+              <Avatar uri={avatar} name={user?.username} size={104} />
+              <View style={styles.editBadge}>
+                {avatarBusy ? (
+                  <Spinner size={14} thickness={2} color={colors.accentInk} />
+                ) : (
+                  <Icon name="camera" size={14} stroke={2} color={colors.accentInk} />
+                )}
               </View>
-            </View>
-          </Section>
+            </Pressable>
+            <Text style={styles.photoHint}>{t('account.photoHint')}</Text>
+            <Message note={avatarNote} />
+          </View>
 
           <Section title={t('account.sectionInfo')}>
-            <View style={styles.fields}>
+            <View style={styles.card}>
               <Text style={styles.fieldLabel}>{t('auth.username')}</Text>
-              <TextField value={username} onChangeText={setUsername} />
+              <TextField icon="user" value={username} onChangeText={setUsername} />
               <Text style={styles.fieldLabel}>{t('auth.email')}</Text>
-              <TextField value={email} onChangeText={setEmail} keyboardType="email-address" />
+              <TextField
+                icon="mail"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+              />
               <Button
                 label={t('common.save')}
                 onPress={() => void saveInfo()}
                 loading={savingInfo}
                 disabled={!username.trim() || !email.trim()}
+                style={styles.submit}
               />
-              {infoMessage ? <Text style={styles.message}>{infoMessage}</Text> : null}
+              <Message note={infoNote} />
             </View>
           </Section>
 
           <Section title={t('account.sectionPrefs')}>
-            <LangPicker
-              label={t('account.audioLanguage')}
-              value={user?.audioLanguage ?? null}
-              onPick={(code) => void savePref({ audioLanguage: code })}
-            />
-            <LangPicker
-              label={t('account.subtitleLanguage')}
-              value={user?.subtitleLanguage ?? null}
-              onPick={(code) => void savePref({ subtitleLanguage: code })}
-            />
+            <View style={styles.rowCard}>
+              <PrefRow
+                icon="volume"
+                label={t('account.audioLanguage')}
+                value={langLabel(user?.audioLanguage)}
+                onPress={() => openPicker('audio')}
+              />
+              <PrefRow
+                icon="badge-cc"
+                label={t('account.subtitleLanguage')}
+                value={langLabel(user?.subtitleLanguage)}
+                onPress={() => openPicker('subtitle')}
+              />
+            </View>
           </Section>
 
           <Section title={t('account.sectionSecurity')}>
-            <View style={styles.fields}>
+            <View style={styles.card}>
               <Text style={styles.fieldLabel}>{t('account.currentPassword')}</Text>
-              <TextField value={current} onChangeText={setCurrent} secureTextEntry />
+              <TextField icon="lock" value={current} onChangeText={setCurrent} secureTextEntry />
               <Text style={styles.fieldLabel}>{t('account.newPassword')}</Text>
-              <TextField value={next} onChangeText={setNext} secureTextEntry />
+              <TextField icon="lock" value={next} onChangeText={setNext} secureTextEntry />
               <Text style={styles.fieldLabel}>{t('account.confirmPassword')}</Text>
-              <TextField value={confirm} onChangeText={setConfirm} secureTextEntry />
+              <TextField icon="lock" value={confirm} onChangeText={setConfirm} secureTextEntry />
               <Button
+                variant="glass"
                 label={t('account.updatePassword')}
-                kind="ghost"
                 onPress={() => void savePassword()}
                 loading={savingPassword}
                 disabled={!current || next.length < 4}
+                style={styles.submit}
               />
-              {passwordMessage ? <Text style={styles.message}>{passwordMessage}</Text> : null}
+              <Message note={passwordNote} />
             </View>
           </Section>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <LangPickerSheet
+        ref={sheet}
+        title={picking === 'audio' ? t('account.audioLanguage') : t('account.subtitleLanguage')}
+        value={pickedValue}
+        offerOff={picking === 'subtitle'}
+        onPick={savePref}
+      />
     </Screen>
   );
 }
@@ -227,26 +313,70 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     ...boxed(contentWidth.form),
   },
+  identity: { alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  editBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: colors.bg,
+  },
+  photoHint: { ...type.small, textAlign: 'center', marginTop: 2 },
   section: { gap: spacing.xs },
   sectionTitle: {
     ...type.small,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 2,
+    paddingLeft: 2,
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
-    gap: spacing.md,
+    gap: 10,
   },
-  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  hint: { ...type.small },
-  fields: { gap: 10 },
+  /** The rows carry their own padding, so their card holds them edge to edge
+   * the way the profile tab's does. */
+  rowCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 54,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.md,
+    borderRadius: radius.md,
+  },
+  rowPressed: { backgroundColor: colors.surfaceRaised },
+  rowIconLabel: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  rowIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowLabel: { ...type.body, fontWeight: '500', flexShrink: 1 },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  rowValue: { ...type.caption },
   fieldLabel: { ...type.caption, marginTop: 2 },
-  message: { ...type.caption, color: colors.accent, textAlign: 'center' },
-  langBlock: { gap: 8 },
-  langRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  submit: { marginTop: 4 },
+  message: { ...type.caption, textAlign: 'center' },
 });

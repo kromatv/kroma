@@ -1,6 +1,7 @@
 import { collectGenres, hasGenre, sortTitles } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconMovie } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
@@ -9,7 +10,7 @@ import { validateBrowseSearch } from '#web/features/catalog/browse-search';
 import { MovieGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/films')({
   validateSearch: validateBrowseSearch,
@@ -49,7 +50,7 @@ function FilmsPage() {
     <main className={PAGE_MAIN}>
       <h1 className={PAGE_TITLE}>{t('nav.films')}</h1>
       {movies.length === 0 ? (
-        <EmptyState icon={<IconMovie size={32} stroke={1.5} />} title={t('content.filmsEmpty')} />
+        <EmptyState icon="movie" title={t('content.filmsEmpty')} />
       ) : (
         <>
           <BrowseBar
@@ -60,7 +61,7 @@ function FilmsPage() {
             onGenre={(g) => navigate({ search: (p) => ({ ...p, genre: g }) })}
           />
           {view.length === 0 ? (
-            <EmptyState icon={<IconMovie size={32} stroke={1.5} />} title={t('search.noResults')} />
+            <EmptyState icon="movie" title={t('search.noResults')} />
           ) : (
             <MovieGrid movies={view} />
           )}

@@ -1,45 +1,91 @@
 // Home: brand header, Netflix-style billboard, quick category chips, continue
 // watching, my list, then the server's personalized rails.
 
+import { Chip, Icon, IconButton } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import {
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '#mobile/components/Avatar';
-import { ContinueRail, MediaRail, movieCard, sectionCard } from '#mobile/components/cards';
+import {
+  ContinueRail,
+  MediaRail,
+  movieCard,
+  sectionCard,
+  showCard,
+} from '#mobile/components/cards';
 import { HeroBillboard } from '#mobile/components/HeroBillboard';
 import { KromaLockup } from '#mobile/components/KromaLockup';
-import { Chip, ErrorView, Loading, SectionTitle } from '#mobile/components/ui';
+import { ProgressRing } from '#mobile/components/ProgressRing';
+import { ErrorView, Loading, SectionTitle } from '#mobile/components/ui';
+import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
+import { useGutters } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
 import { colors, posterWidth, spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
-import { DownloadIcon } from '#mobile/player/icons';
+
+/** The header's downloads shortcut, doubling as a live status pill: the icon
+ * becomes the running transfer's progress ring, with a count badge when more
+ * titles wait behind it. */
+function DownloadsGlyph() {
+  const downloads = useDownloads();
+  const pending = downloads.downloading.length + downloads.queuedItems.length;
+  if (pending === 0) return <Icon name="download" size={22} stroke={2} />;
+  const progress = downloads.downloading[0]?.progress ?? -1;
+  return (
+    <View style={styles.dlGlyph}>
+      <ProgressRing progress={progress} size={26} stroke={2.5} />
+      {progress >= 0 ? (
+        <View pointerEvents="none" style={styles.dlArrow}>
+          <Icon name="download" size={12} stroke={2.6} />
+        </View>
+      ) : null}
+      {pending > 1 ? (
+        <View style={styles.dlCount}>
+          <Text style={styles.dlCountText}>{pending}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
 
 function HomeHeader() {
   const { user } = useSession();
   const client = useClient();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const gutters = useGutters();
   const avatar = client.resolveArt(user?.avatarUrl);
   return (
-    <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
+    <View style={[styles.header, { paddingTop: insets.top + spacing.sm }, gutters.style]}>
       <View style={styles.brandRow}>
         <KromaLockup height={20} />
       </View>
       <View style={styles.headerActions}>
-        <Pressable onPress={() => router.push('/downloads' as never)} hitSlop={10}>
-          <DownloadIcon size={22} />
-        </Pressable>
-        <Pressable onPress={() => router.push('/profile' as never)} hitSlop={8}>
+        <IconButton
+          variant="ghost"
+          size={40}
+          glyph={22}
+          hitSlop={10}
+          onPress={() => router.push('/downloads' as never)}
+        >
+          <DownloadsGlyph />
+        </IconButton>
+        <IconButton
+          variant="ghost"
+          size={40}
+          hitSlop={8}
+          onPress={() => router.push('/profile' as never)}
+        >
           <Avatar uri={avatar} name={user?.username} size={28} />
-        </Pressable>
+        </IconButton>
       </View>
     </View>
   );
@@ -48,13 +94,14 @@ function HomeHeader() {
 function CategoryChips() {
   const t = useT();
   const router = useRouter();
+  const gutters = useGutters();
   const chips = [
     { label: t('nav.films'), route: '/films' },
     { label: t('nav.series'), route: '/series' },
     { label: t('nav.genres'), route: '/genres' },
   ];
   return (
-    <View style={styles.chips}>
+    <View style={[styles.chips, gutters.style]}>
       {chips.map((chip) => (
         <Chip
           key={chip.route}
@@ -75,9 +122,19 @@ function MyListRail() {
   const items = useQuery({
     queryKey: ['myListItems', ids.data],
     enabled: (ids.data?.length ?? 0) > 0,
+    // A list id names a movie OR a show (same contract the web and TV resolve),
+    // so a miss on the item endpoint is retried as a show rather than dropped -
+    // bookmarked series used to vanish from this rail.
     queryFn: async () => {
       const found = await Promise.all(
-        (ids.data ?? []).slice(0, 24).map((id) => client.item(id).catch(() => null)),
+        (ids.data ?? []).slice(0, 24).map(async (id) => {
+          const movie = await client.item(id).catch(() => null);
+          if (movie) return { kind: 'movie', movie } as const;
+          // The detail payload wraps the show with its seasons; the card only
+          // needs the show itself.
+          const detail = await client.show(id).catch(() => null);
+          return detail ? ({ kind: 'show', show: detail.show } as const) : null;
+        }),
       );
       return found.filter((x) => x !== null);
     },
@@ -86,7 +143,13 @@ function MyListRail() {
   return (
     <View>
       <SectionTitle>{t('nav.myList')}</SectionTitle>
-      <MediaRail cards={items.data.map((m) => movieCard(m, client, cardW))} />
+      <MediaRail
+        cards={items.data.map((entry) =>
+          entry.kind === 'movie'
+            ? movieCard(entry.movie, client, cardW)
+            : showCard(entry.show, client, cardW),
+        )}
+      />
     </View>
   );
 }
@@ -163,15 +226,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  dlGlyph: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
+  dlArrow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dlCount: {
+    position: 'absolute',
+    top: -5,
+    right: -8,
+    minWidth: 15,
+    height: 15,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dlCountText: { color: colors.accentInk, fontSize: 10, fontWeight: '700' },
   chips: {
     flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: spacing.md,
     marginTop: spacing.md,
   },
 });

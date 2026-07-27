@@ -6,7 +6,7 @@
 
 import { apiErrorText, type EpisodeRef, formatRuntime } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconLoader2, IconPlus } from '@tabler/icons-react';
+import { Button } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -376,19 +376,12 @@ function RequestCta({
   }
   if (!view.canRequest) return null;
   return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onRequest}
-      className="inline-flex items-center gap-2 rounded-md bg-accent px-6 py-3.5 text-[15px] font-bold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-60"
-    >
-      {busy ? (
-        <IconLoader2 size={17} stroke={2.4} className="animate-spin" />
-      ) : (
-        <IconPlus size={17} stroke={2.6} />
-      )}
-      {view.kind === 'show' ? t('discover.requestShow') : t('discover.request')}
-    </button>
+    <Button
+      icon="plus"
+      label={view.kind === 'show' ? t('discover.requestShow') : t('discover.request')}
+      onPress={onRequest}
+      loading={busy}
+    />
   );
 }
 

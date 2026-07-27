@@ -5,7 +5,7 @@
 // window must collapse back to the single-column phone flow.
 
 import * as Device from 'expo-device';
-import type { ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import {
   type StyleProp,
   StyleSheet,
@@ -13,6 +13,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from './theme';
 
 /** Device class, for capabilities that genuinely follow the hardware (e.g.
@@ -28,6 +29,25 @@ export const WIDE_BREAKPOINT = 700;
 export function useIsWide(min: number = WIDE_BREAKPOINT): boolean {
   const { width } = useWindowDimensions();
   return width >= min;
+}
+
+/** Horizontal page gutters: the standard page padding, grown to clear the
+ * notch / Dynamic Island when the hardware inset sits at a side edge
+ * (landscape). Full-bleed surfaces (home rails, grids, hero cards) pad their
+ * content by these instead of a bare `spacing.md`; `style` is the ready-made
+ * padding pair for the common case. */
+export function useGutters(min: number = spacing.md): {
+  left: number;
+  right: number;
+  style: { paddingLeft: number; paddingRight: number };
+} {
+  const insets = useSafeAreaInsets();
+  const left = Math.max(insets.left, min);
+  const right = Math.max(insets.right, min);
+  return useMemo(
+    () => ({ left, right, style: { paddingLeft: left, paddingRight: right } }),
+    [left, right],
+  );
 }
 
 /** Shared content-column caps (pt): one vocabulary instead of magic numbers. */

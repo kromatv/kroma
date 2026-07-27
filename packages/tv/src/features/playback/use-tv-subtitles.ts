@@ -1,4 +1,10 @@
-import { GEN_LANGS, type KromaClient, type MediaItem, type SubCapabilities } from '@kroma/core';
+import {
+  GEN_LANGS,
+  type KromaClient,
+  LANG_OFF,
+  type MediaItem,
+  type SubCapabilities,
+} from '@kroma/core';
 import {
   type PlayerSub,
   type SubtitleGenBundle,
@@ -6,6 +12,7 @@ import {
   useSubtitleGenerations,
 } from '@kroma/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { LangPrefs } from '#tv/app/langPref';
 import { useSubtitleSelection } from '#tv/features/playback/player/useSubtitleSelection';
 
 export interface TvSubtitles {
@@ -20,9 +27,17 @@ export interface TvSubtitles {
  * on-device generated) mapped to {@link PlayerSub}, plus the prop-driven
  * generation bundle the shared Settings panel consumes. Wraps the existing
  * `useSubtitleSelection` and the shared generation poll.
+ *
+ * The account's preferred subtitle language is applied on open AND updated by
+ * the picker: turning on French subtitles here is what makes the next title
+ * open with French subtitles too.
  */
-export function useTvSubtitles(client: KromaClient, item: MediaItem): TvSubtitles {
-  const sel = useSubtitleSelection(client, item);
+export function useTvSubtitles(
+  client: KromaClient,
+  item: MediaItem,
+  langs: LangPrefs,
+): TvSubtitles {
+  const sel = useSubtitleSelection(client, item, langs.subtitle);
   const [caps, setCaps] = useState<SubCapabilities | null>(null);
 
   useEffect(() => {
@@ -54,6 +69,24 @@ export function useTvSubtitles(client: KromaClient, item: MediaItem): TvSubtitle
         subId: s.subId,
       })),
     [sel.rendered, item.subtitles],
+  );
+
+  // A pick is also a preference. Turning subtitles OFF is a real choice, so it
+  // is remembered as such; picking a track whose language the file never
+  // declared leaves the stored preference alone (there is nothing to store).
+  const { pick } = sel;
+  const { setSubtitle } = langs;
+  const setActive = useCallback(
+    (index: number | null) => {
+      pick(index);
+      if (index == null) {
+        setSubtitle(LANG_OFF);
+        return;
+      }
+      const language = sel.rendered.find((s) => s.index === index)?.language;
+      if (language) setSubtitle(language);
+    },
+    [pick, setSubtitle, sel.rendered],
   );
 
   const onDelete = useCallback(
@@ -109,5 +142,5 @@ export function useTvSubtitles(client: KromaClient, item: MediaItem): TvSubtitle
     onStart,
   };
 
-  return { subtitles, activeIndex: sel.active, setActive: sel.pick, subtitleGen };
+  return { subtitles, activeIndex: sel.active, setActive, subtitleGen };
 }

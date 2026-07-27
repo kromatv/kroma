@@ -1,0 +1,26 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.tvlauncher'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.tvlauncher"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // TvProvider: the content-provider contracts for the launcher home rows - the
+  // system "Continue watching" (Watch Next) row and an app's own named preview
+  // channels. This is the whole reason the module is native: there is no way to
+  // write either from JS. See WatchNext.kt / HomeChannel.kt.
+  implementation "androidx.tvprovider:tvprovider:1.0.0"
+}

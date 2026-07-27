@@ -16,8 +16,8 @@ bun run dev:tizen       # Vite dev server :5174 use arrow keys + Enter as a remo
 ## Build / prepare the app
 
 ```bash
-bun run tizen:prepare   # builds → clients/tizen/dist + prints the packaging command
-# (equivalent to `bun run build:tizen`; dist gets config.xml + icon.png from public/)
+bun run build:tizen     # builds → clients/tizen/dist (config.xml + icon.png come from public/)
+# package it:  cd clients/tizen && tizen build-web && tizen package -t wgt -s <cert-profile> -- dist
 ```
 
 ## Smart Hub preview (new-movies carousel)
@@ -104,8 +104,18 @@ make redeploy                     # fast iteration after a code change
 Or via bun from the repo root: `bun run --filter @kroma/tizen deploy` (after a
 `.tizen.env` is configured).
 
+## Publishing to Samsung Apps TV
+
+See [STORE.md](./STORE.md) — TV Seller Office membership (a new seller can launch
+in the **US only**), assets, listing fields, the FCC caption/TTS requirement, and
+what Samsung's testers need in order to be able to test a client for a server
+they cannot reach.
+
 Notes:
 - `config.xml` targets Tizen 6.0+ (2021+ TVs), package id `KromaTV001`.
+- The package version is stamped from the product version at build time
+  ([`stamp-version.ts`](../tv-build/stamp-version.ts)); bump `server/Cargo.toml`,
+  not `config.xml`.
 - Retail Samsung TVs require a **Samsung** signing certificate tied to the TV's
   DUID see [SETUP.md](./SETUP.md) step 3. A self-signed cert only works on the
   emulator.

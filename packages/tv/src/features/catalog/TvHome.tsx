@@ -11,6 +11,24 @@ import {
   type Show,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import {
+  Badge,
+  Box,
+  Button,
+  colors,
+  FocusRegion,
+  FocusScroll,
+  FocusSlot,
+  gradient,
+  Img,
+  MediaCard,
+  qualityTone,
+  Rail,
+  Txt,
+  tintGradient,
+  useFocusNav,
+  useGrowingCount,
+} from '@kroma/ui/kit';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useContinue } from '#tv/app/providers/continue';
@@ -18,13 +36,57 @@ import { useMyList } from '#tv/app/providers/mylist';
 import { useRecommend } from '#tv/app/providers/recommend';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav } from '#tv/app/router';
-import { useFocusNav } from '#tv/app/useFocusNav';
-import { TvTopNav } from '#tv/features/catalog/home/TopNav';
-import { badgeClasses, PlayGlyph, TvArt, TvCard } from '#tv/shared/TvMedia';
+import { HintBar } from '#tv/features/catalog/home/HintBar';
 
 const RAIL_LIMIT = 20;
-const HERO_VEIL =
-  'absolute inset-0 bg-[linear-gradient(90deg,#0A0A0C_5%,transparent_60%),linear-gradient(0deg,#0A0A0C_1%,transparent_48%)]';
+
+/** How many rails mount at once. */
+const ROW_CHUNK = 3;
+
+// Two layers rather than one comma-separated background-image: a multi-value
+// background is a CSS-only luxury React Native's gradient support lacks.
+const HERO_VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 5%, transparent 60%)`;
+const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 48%)`;
+
+// The design sizes the hero with viewport units (64vh, min 520px) and its title
+// with clamp(42px, 7.6vh, 82px). On the fixed 1920x1080 stage those resolve to
+// constants, and a vh would mean something different on each of the four targets.
+const PAGE_SCROLL = { flex: 1, minHeight: 0 } as const;
+
+/** The padding belongs to the CONTENT, not to the scroller's own box. */
+const PAGE_CONTENT = { paddingBottom: 40 } as const;
+
+const HERO_ACTIONS = { flexDirection: 'row' as const, gap: 18 };
+
+const HERO_HEIGHT = 691;
+const HERO_EMPTY_HEIGHT = 432;
+const HERO_TITLE = {
+  fontSize: 82,
+  lineHeight: 79,
+  fontWeight: '700' as const,
+  letterSpacing: -1.64,
+};
+
+/** The hero's eyebrow is a size up from the kit role: it sits under 66px of
+ * title, and the design opens it to match. Tracking follows the size. */
+const FEATURED_LABEL = { fontSize: 14 };
+
+/**
+ * What one home tile occupies, so the row can be virtualised.
+ *
+ * A <MediaCard> at its default 328 width, 16:9, and the 24px gap after it: the
+ * list positions its tiles rather than laying them out, so it has to be told the
+ * pitch. The home rows are the long ones - dozens of films each, a dozen rows -
+ * and they are what made the screen get heavier the longer it was used.
+ */
+const ROW_TILE = { width: 328 + 24, height: Math.round((328 * 9) / 16) };
+
+const ROW_TITLE = {
+  fontSize: 28,
+  lineHeight: 30,
+  fontWeight: '700' as const,
+  letterSpacing: -0.56,
+};
 
 interface Row {
   key: string;
@@ -107,30 +169,30 @@ export function TvHome() {
       if (e.type === 'show') {
         const s = e.show;
         return (
-          <TvCard
+          <MediaCard
             key={`${key}-${s.id}`}
             title={s.title}
-            genre={s.metadata?.genres?.[0] ?? t('content.series')}
-            backdrop={client.backdropFor(s) ?? client.showPosterFor(s)}
-            colors={posterColors(s.id)}
+            overline={s.metadata?.genres?.[0] ?? t('content.series')}
+            art={client.backdropFor(s, TILE_W) ?? client.showPosterFor(s, TILE_W)}
+            tint={posterColors(s.id)}
             watched={isWatched(s.id)}
-            progress={s.progress ?? null}
+            progress={s.progress == null ? null : s.progress / 100}
             width={330}
-            onClick={() => onSelectShow(s)}
+            onPress={() => onSelectShow(s)}
           />
         );
       }
       const m = e.item;
       return (
-        <TvCard
+        <MediaCard
           key={`${key}-${m.id}`}
           title={m.title}
-          genre={m.metadata?.genres?.[0] ?? t('content.film')}
-          backdrop={client.backdropFor(m) ?? client.posterFor(m)}
-          colors={posterColors(m.id)}
+          overline={m.metadata?.genres?.[0] ?? t('content.film')}
+          art={client.backdropFor(m, TILE_W) ?? client.posterFor(m, TILE_W)}
+          tint={posterColors(m.id)}
           watched={isWatched(m.id)}
           width={330}
-          onClick={() => onSelectMovie(m)}
+          onPress={() => onSelectMovie(m)}
         />
       );
     },
@@ -168,15 +230,15 @@ export function TvHome() {
                 ? `${item.showTitle} · ${episodeTag(item)}`
                 : t('content.film');
             return (
-              <TvCard
+              <MediaCard
                 key={`continue-${item.id}`}
                 title={item.title}
-                genre={genre}
-                backdrop={client.backdropFor(item) ?? client.posterFor(item)}
-                colors={posterColors(item.id)}
-                progress={pct}
+                overline={genre}
+                art={client.backdropFor(item, TILE_W) ?? client.posterFor(item, TILE_W)}
+                tint={posterColors(item.id)}
+                progress={pct / 100}
                 width={330}
-                onClick={() => onPlay(item)}
+                onPress={() => onPlay(item)}
               />
             );
           }),
@@ -199,18 +261,18 @@ export function TvHome() {
           cards: shows
             .slice(0, RAIL_LIMIT)
             .map((s) => (
-              <TvCard
+              <MediaCard
                 key={s.id}
                 title={s.title}
-                genre={
+                overline={
                   s.metadata?.genres?.[0] ?? t('content.seasonCount', { count: s.seasonCount })
                 }
-                backdrop={client.backdropFor(s) ?? client.showPosterFor(s)}
-                colors={posterColors(s.id)}
+                art={client.backdropFor(s, TILE_W) ?? client.showPosterFor(s, TILE_W)}
+                tint={posterColors(s.id)}
                 watched={isWatched(s.id)}
-                progress={s.progress ?? null}
+                progress={s.progress == null ? null : s.progress / 100}
                 width={330}
-                onClick={() => onSelectShow(s)}
+                onPress={() => onSelectShow(s)}
               />
             )),
         }
@@ -229,82 +291,112 @@ export function TvHome() {
     t,
   ]);
 
+  // How many rails are mounted. Three is already more than fits on screen, and
+  // the rest arrive as the focus comes down (see <FocusSlot onActive>).
+  const {
+    count: rowCount,
+    isNearEnd: nearLastRow,
+    grow: growRows,
+  } = useGrowingCount(rows.length, ROW_CHUNK);
+
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-bg">
-      <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto pb-10">
-        {hero && heroId ? (
-          <section className="relative h-[64vh] min-h-[520px]">
-            <TvArt src={heroBackdrop} colors={posterColors(heroId)} position="50% 22%" priority />
-            <div className={HERO_VEIL} />
-            <div className="absolute bottom-9 left-16 z-2 max-w-205">
-              <div className="mb-4 font-sans text-[14px] font-bold uppercase tracking-[0.24em] text-accent">
-                {t('content.featured')}
-              </div>
-              <h1 className="m-0 mb-3.5 font-display text-[clamp(42px,7.6vh,82px)] font-bold leading-[0.96] tracking-[-0.02em]">
-                {hero.type === 'show' ? hero.show.title : hero.item.title}
-              </h1>
-              <div className="mb-3.5 flex flex-wrap items-center gap-3 font-sans text-[17px] font-semibold text-muted">
-                {heroMeta?.rating ? (
-                  <>
-                    <span className="font-bold text-accent">{heroMeta.rating.toFixed(1)}★</span>
-                    <span className="text-dim">·</span>
-                  </>
+    <Box fill bg="bg" overflow="hidden">
+      <FocusScroll style={PAGE_SCROLL} contentStyle={PAGE_CONTENT} offsetFromStart={120}>
+        {/* A permanent slot for the hero row: it arrives from the server after
+            the first rails have already mounted, and the navigator orders rows
+            by the order they mount. */}
+        <FocusSlot>
+          {hero && heroId ? (
+            <Box h={HERO_HEIGHT}>
+              <Img
+                src={heroBackdrop}
+                background={tintGradient(posterColors(heroId))}
+                position="50% 22%"
+                priority
+                fill
+              />
+              <Box fill pointerEvents="none" style={gradient(HERO_VEIL_HORIZONTAL)} />
+              <Box fill pointerEvents="none" style={gradient(HERO_VEIL_VERTICAL)} />
+              <Box absolute left={64} bottom={36} z={2} maxW={820}>
+                <Txt variant="overlineTv" style={FEATURED_LABEL} color="accent">
+                  {t('content.featured')}
+                </Txt>
+                <Txt variant="hero" style={[HERO_TITLE, { marginTop: 16, marginBottom: 14 }]}>
+                  {hero.type === 'show' ? hero.show.title : hero.item.title}
+                </Txt>
+                <Box row wrap align="center" gap={12} mb={14}>
+                  {heroMeta?.rating ? (
+                    <>
+                      <Txt style={{ fontSize: 17, fontWeight: '700' }} color="accent">
+                        {`${heroMeta.rating.toFixed(1)}\u2605`}
+                      </Txt>
+                      <Txt style={{ fontSize: 17, fontWeight: '600' }} color="textDim">
+                        ·
+                      </Txt>
+                    </>
+                  ) : null}
+                  <Txt style={{ fontSize: 17, fontWeight: '600' }} color="textMuted">
+                    {heroLine(hero)}
+                  </Txt>
+                  {heroBadge ? <Badge tone={qualityTone(heroBadge)}>{heroBadge}</Badge> : null}
+                </Box>
+                {heroMeta?.overview ? (
+                  <Txt
+                    lines={3}
+                    style={{ fontSize: 20, lineHeight: 30, maxWidth: 720, marginBottom: 22 }}
+                    color="rgba(244, 243, 240, 0.82)"
+                  >
+                    {heroMeta.overview}
+                  </Txt>
                 ) : null}
-                <span>{heroLine(hero)}</span>
-                {heroBadge ? <span className={badgeClasses(heroBadge)}>{heroBadge}</span> : null}
-              </div>
-              {heroMeta?.overview ? (
-                <p className="m-0 mb-5.5 max-w-180 font-sans text-[clamp(15px,2.3vh,20px)] leading-normal text-[rgba(244,243,240,0.82)] line-clamp-3">
-                  {heroMeta.overview}
-                </p>
-              ) : null}
-              <div className="flex gap-4.5">
-                <button
-                  className="inline-flex cursor-pointer items-center gap-3 rounded-lg bg-accent px-10 py-4.5 font-sans text-[20px] font-bold text-accent-ink transition-transform focus:scale-[1.04]"
-                  data-focus=""
-                  type="button"
-                  onClick={() =>
-                    hero.type === 'movie' ? onPlay(hero.item) : onSelectShow(hero.show)
-                  }
-                >
-                  <PlayGlyph />
-                  {hero.type === 'movie' ? t('player.play') : t('content.moreInfo')}
-                </button>
-                <button
-                  className="inline-flex cursor-pointer items-center gap-3 rounded-lg border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.12)] px-8.5 py-4.5 font-sans text-[20px] font-semibold text-text transition-transform focus:scale-[1.04]"
-                  data-focus=""
-                  type="button"
-                  onClick={() => onSelectEntry(hero)}
-                >
-                  {t('content.moreInfo')}
-                </button>
-              </div>
-            </div>
-          </section>
-        ) : (
-          <div className="h-[40vh]" />
-        )}
+                {/* The hero's two actions are one row: Left and Right move
+                  between them, Up and Down leave for the bar or the rails. */}
+                <FocusRegion style={HERO_ACTIONS}>
+                  <Button
+                    size="tv"
+                    // Home's entry point: the hero's own action, which is what the
+                    // design puts the eye on.
+                    autoFocus
+                    icon="player-play-filled"
+                    label={hero.type === 'movie' ? t('player.play') : t('content.moreInfo')}
+                    onPress={() =>
+                      hero.type === 'movie' ? onPlay(hero.item) : onSelectShow(hero.show)
+                    }
+                  />
+                  <Button
+                    size="tv"
+                    variant="outline"
+                    label={t('content.moreInfo')}
+                    onPress={() => onSelectEntry(hero)}
+                    style={{ paddingHorizontal: 34 }}
+                  />
+                </FocusRegion>
+              </Box>
+            </Box>
+          ) : (
+            <Box h={HERO_EMPTY_HEIGHT} />
+          )}
+        </FocusSlot>
 
-        {rows.map((row) => (
-          <div key={row.key} className="mb-2">
-            <h2 className="mt-4.5 mb-4 px-16 font-display text-[28px] font-bold tracking-[-0.02em]">
-              {row.title}
-            </h2>
-            <div className="scrollbar-none flex gap-6 overflow-x-auto px-16 py-8">{row.cards}</div>
-          </div>
+        {/* The rails BELOW the fold are not mounted until the focus comes near
+            them. Measured on the bench (clients/tv-build/perf-bench.ts, CPU
+            throttled to a television's): a screen of 480 controls runs at 46fps
+            with 73ms frames, the same screen at 128 runs clean. Three rails is
+            already more than fits on screen. */}
+        {rows.slice(0, rowCount).map((row, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the slot - see <FocusSlot>.
+          <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
+            <Box mb={8} mt={18}>
+              <Rail title={row.title} titleStyle={ROW_TITLE} gap={24} item={ROW_TILE}>
+                {row.cards}
+              </Rail>
+            </Box>
+          </FocusSlot>
         ))}
-      </div>
+      </FocusScroll>
 
-      <TvTopNav active="home" />
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center gap-7.5 bg-[linear-gradient(0deg,rgba(10,10,12,0.8),transparent)] p-4 font-sans text-[13px] font-semibold text-dim">
-        <span>{t('content.hintBrowse')}</span>
-        <span>{t('content.hintRows')}</span>
-        <span>
-          <b className="font-bold text-accent">{t('content.hintOk')}</b> {t('content.hintOpen')}
-        </span>
-      </div>
-    </div>
+      <HintBar browseKey="content.hintBrowse" />
+    </Box>
   );
 }
 
@@ -321,3 +413,8 @@ function heroLine(e: SectionItem): string {
     .filter(Boolean)
     .join(' · ');
 }
+
+/** A rail tile is drawn 330pt wide and the server serves fixed rendition
+ * buckets (160/320/480/780), so 320 is asked for: a 3% upscale nobody can see
+ * on a television, against half the pixels to decode of the 480 bucket. */
+const TILE_W = 320;

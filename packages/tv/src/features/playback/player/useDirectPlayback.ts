@@ -1,18 +1,14 @@
 import {
   type AudioTrack,
-  audioTrackId,
   audioTrackLabel,
   audioTracksOf,
-  avplayDirectPlayable,
   canDirectPlay,
   type DirectPlayVerdict,
   type KromaClient,
   type MediaItem,
   type MessageKey,
-  NATIVE_TV_CAPS,
   type PlayEnv,
-  resolveAudioRelativeIndex,
-  selectEngine,
+  preferredAudioIndex,
 } from '@kroma/core';
 import {
   type AudioFilterMode,
@@ -23,35 +19,37 @@ import {
 } from '@kroma/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  availableEngines,
   type EnginePref,
   getEnginePref,
   setEnginePref as persistEnginePref,
 } from '#tv/app/enginePref';
-import { AvplayEngine } from '#tv/features/playback/player/avplayEngine';
+// Which backend to build for an item, and how to build it. Platform-split: the
+// browser targets get the <video>/hls.js, AVPlay and mpv engines, the native TV
+// app gets expo-video. This hook drives whichever it is handed.
+import { createTvEngine, planEngine } from '#tv/features/playback/player/backend';
 import {
-  avplayAvailable,
   type EngineListeners,
-  exoAvailable,
   getTauri,
   mpvAvailable,
+  renditionFor,
+  type Surface,
   type TvEngine,
 } from '#tv/features/playback/player/engine';
-import { ExoEngine } from '#tv/features/playback/player/exoEngine';
-import { HtmlEngine } from '#tv/features/playback/player/htmlEngine';
-import { MpvEngine } from '#tv/features/playback/player/mpvEngine';
 import { useResumeAndPersist } from '#tv/features/playback/player/useResumeAndPersist';
 import { useSeekGesture } from '#tv/features/playback/player/useSeekGesture';
 
-/** Which in-page surface (if any) an engine renders to. */
-type Surface = 'video' | 'avplay' | 'mpv' | 'exo';
+export type { Surface };
 
 export interface Playback {
   /** The HTML `<video>` surface (HTML engine). Null while the AVPlay surface is used. */
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  /** The live engine, for the surface component to read whatever it needs from
+   *  the backend it was handed (the native surface renders the engine's own
+   *  player; the browser surfaces are driven through the refs above). */
+  engineRef: React.RefObject<TvEngine | null>;
   /** The AVPlay `<object>` surface (native Tizen engine). */
   objectRef: React.RefObject<HTMLObjectElement | null>;
-  /** Which surface to render. `mpv`/`exo` render nothing in-page (native plane behind). */
+  /** Which surface to render. `mpv` renders nothing in-page (native plane behind). */
   surface: Surface;
   /** The active engine override (per-device pref); `auto` lets `planEngine` decide. */
   enginePref: EnginePref;
@@ -94,11 +92,6 @@ export interface Playback {
   seekTo: (absSec: number) => void;
   /** Read the absolute current position in seconds. */
   getPosition: () => number;
-  /** Begin a directional seek press (remote key / mouse button down). A short press
-   * is a stacking tap; held past a threshold it becomes an accelerating scrub. */
-  seekPress: (dir: -1 | 1) => void;
-  /** A discrete directional tap (OK on a focused rewind/forward control). */
-  seekTap: (dir: -1 | 1) => void;
   /** Live-preview an absolute position while clicking / dragging the scrub bar. */
   seekScrub: (absSec: number) => void;
   /** Commit the current scrub preview (drag release / bar click). */
@@ -109,13 +102,15 @@ export interface Playback {
   endedNonce: number;
   /** Increments on every committed seek (re-anchors the subtitle cue pointer). */
   seekNonce: number;
+  /** Changes whenever the engine swaps the object the surface renders, so the
+   *  surface component re-renders against the new one. */
+  surfaceNonce: number;
 }
 
 /** The browser/platform environment for engine selection (TVs are Chromium; the
  * @kroma/desktop shell is a Tauri app whose native mpv bridge is detectable). */
 function detectTvEnv(): PlayEnv {
   if (mpvAvailable()) return { platform: 'desktop', safari: false }; // Linux shell -> mpv
-  if (exoAvailable()) return { platform: 'androidtv', safari: false }; // Android TV shell -> ExoPlayer
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   // Tauri on macOS = WKWebView (Safari engine: native HEVC + AC3/EAC3), so treat it
   // as Safari web - caps + engine selection then match the in-page <video> we use
@@ -133,282 +128,13 @@ function detectTvEnv(): PlayEnv {
   };
 }
 
-/** The concrete backend to build for this item. */
-type Engine = 'mpv' | 'exo' | 'avplay' | 'video-direct' | 'video-remux';
-
-/** The backend the user explicitly asked for, or `null` when the pref is `auto` or
- * names an engine this platform can't run (e.g. `mpv` off the Linux shell,
- * `avplay` off Tizen) - both fall through to the automatic decision. */
-function manualEngine(pref: EnginePref, tizenNative: boolean): Engine | null {
-  if (pref === 'avplay' && tizenNative) return 'avplay';
-  if (pref === 'webview') return 'video-direct';
-  if (pref === 'remux') return 'video-remux';
-  if (pref === 'mpv' && mpvAvailable()) return 'mpv';
-  if (pref === 'exo' && exoAvailable()) return 'exo';
-  // libVLC runs on the same native bridge as ExoPlayer (surface 'exo'); the
-  // forceVlc flag (see planEngine) tells the bridge to software-decode from the start.
-  if (pref === 'vlc' && exoAvailable()) return 'exo';
-  return null;
-}
-
-/** The automatic backend for this platform: native planes where they exist
- * (AVPlay on Tizen for hardware surround, mpv on the desktop shell, ExoPlayer on
- * Android TV), else `<video>` direct-play or the server remux. */
-function autoEngine(env: PlayEnv, tizenNative: boolean, autoDirect: boolean): Engine {
-  if (tizenNative) return 'avplay';
-  if (env.platform === 'desktop' && mpvAvailable()) return 'mpv';
-  if (env.platform === 'androidtv' && exoAvailable()) return 'exo';
-  return autoDirect ? 'video-direct' : 'video-remux';
-}
-
-/** Resolve the backend from the user's engine preference, falling back to the
- * automatic decision. `auto` on Tizen keeps AVPlay (hardware surround), but the user
- * can force the HTML5 (`<video>` + hls.js) remux path instead. */
-function resolveEngine(pref: EnginePref, env: PlayEnv, autoDirect: boolean): Engine {
-  // A stored engine no longer offered on this platform (e.g. a device left on
-  // `remux` after it was retired on Android TV, where the WebView cannot decode
-  // HEVC) must not strand playback on a dead engine - degrade it to `auto`.
-  const wanted = pref !== 'auto' && availableEngines().includes(pref) ? pref : 'auto';
-  const tizenNative = env.platform === 'tizen' && avplayAvailable();
-  return manualEngine(wanted, tizenNative) ?? autoEngine(env, tizenNative, autoDirect);
-}
-
-/** A plain, single-audio MP4 a bare TV `<video>` direct-plays natively. */
-function tvDirectPlay(item: MediaItem): boolean {
-  const container = (item.container ?? '').toLowerCase();
-  if (container !== 'mp4' && container !== 'mov' && container !== 'm4v') return false;
-  if (!canDirectPlay(item, NATIVE_TV_CAPS).canDirectPlay) return false;
-  return audioTracksOf(item).length <= 1;
-}
-
-/** Container MIME the webview needs to demux a bare `<video src>`. */
-const CONTAINER_MIME: Record<string, string> = {
-  mp4: 'video/mp4',
-  mov: 'video/mp4',
-  m4v: 'video/mp4',
-  webm: 'video/webm',
-};
-
-/** Whether the webview can demux this item's container for a direct `<video src>`.
- * Safari / WKWebView has no Matroska (MKV) or AVI demuxer, so a forced direct-play
- * on one loads forever at HAVE_NOTHING with no error - callers fall back to the
- * server remux (which repackages it into a webview-playable stream) instead. */
-function webviewCanDirectPlay(item: MediaItem): boolean {
-  if (typeof document === 'undefined') return true;
-  const mime = CONTAINER_MIME[(item.container ?? '').toLowerCase()];
-  if (!mime) return false;
-  return document.createElement('video').canPlayType(mime) !== '';
-}
-
-/** The audio-relative rendition to select for the chosen track, resolved from a
- * stable identity so a reordered track list still picks the right language. */
-function renditionFor(item: MediaItem, audioIndex: number): number {
+/** The audio track a title should open on: the preferred language if the file
+ * carries it, else the file's own default (else the first track). */
+function openingAudioIndex(item: MediaItem, audioLanguage?: string | null): number {
   const tracks = audioTracksOf(item);
-  const want =
-    tracks.find((t) => t.index === audioIndex) ?? tracks.find((t) => t.default) ?? tracks[0];
-  if (!want) return 0;
-  return resolveAudioRelativeIndex(tracks, audioTrackId(want));
-}
-
-/** The resolved backend plan for an item: which engine + surface, the direct-play
- * flags, and the heartbeat playback mode. Pure (no React) so it stays out of the
- * hook body. */
-interface EnginePlan {
-  eng: Engine;
-  surface: Surface;
-  useMpv: boolean;
-  useExo: boolean;
-  useAvplay: boolean;
-  avplayDirect: boolean;
-  exoDirect: boolean;
-  /** The user forced the "libVLC" engine: play every item through libVLC (software
-   * decode) from the start, on the ExoPlayer bridge/surface. */
-  forceVlc: boolean;
-  direct: boolean;
-  masterAac: boolean;
-  playbackMode: 'direct' | 'remux' | 'transcode';
-}
-
-/** mpv / ExoPlayer / AVPlay render to their own plane behind the transparent UI,
- * so none of them uses an in-page media element. */
-function surfaceFor(useMpv: boolean, useExo: boolean, useAvplay: boolean): Surface {
-  if (useMpv) return 'mpv';
-  if (useExo) return 'exo';
-  if (useAvplay) return 'avplay';
-  return 'video';
-}
-
-/** Video is always copied. AVPlay-direct plays the original file (direct);
- * AVPlay-master passes surround through (remux); only the hls.js AAC master
- * (webOS / MSE without AC3) re-encodes audio (transcode). */
-function playbackModeFor(flags: {
-  useMpv: boolean;
-  useExo: boolean;
-  useAvplay: boolean;
-  exoDirect: boolean;
-  avplayDirect: boolean;
-  direct: boolean;
-  aacMaster: boolean;
-}): 'direct' | 'remux' | 'transcode' {
-  const { useMpv, useExo, useAvplay, exoDirect, avplayDirect, direct, aacMaster } = flags;
-  if (useMpv) return 'direct'; // mpv opens the original file (master only on fallback)
-  if (useExo) return exoDirect ? 'direct' : 'remux';
-  if (useAvplay) return avplayDirect ? 'direct' : 'remux';
-  if (!direct) return aacMaster ? 'transcode' : 'remux';
-  return 'direct';
-}
-
-/** Resolve the concrete backend decision for an item + environment + user pref. */
-function planEngine(item: MediaItem, env: PlayEnv, pref: EnginePref): EnginePlan {
-  const decision = selectEngine(item, env);
-  const autoDirect = decision.kind === 'direct' || tvDirectPlay(item);
-  // The user can override the automatic engine (profile menu -> Playback engine);
-  // `auto` follows selectEngine.
-  let eng = resolveEngine(pref, env, autoDirect);
-  // A direct `<video>` on a container the webview can't demux (MKV/AVI in Safari)
-  // would spin forever, so fall back to the server remux which repackages it.
-  if (eng === 'video-direct' && !webviewCanDirectPlay(item)) eng = 'video-remux';
-  const useMpv = eng === 'mpv';
-  const useExo = eng === 'exo';
-  const useAvplay = eng === 'avplay';
-  // The user forced libVLC (runs on the exo bridge). It software-decodes ANY
-  // codec, so it always opens the ORIGINAL file directly (no pointless server
-  // remux), regardless of what the device's hardware decoders can handle.
-  const forceVlc = useExo && pref === 'vlc';
-  // ExoPlayer demuxes (at least) the same container set AVPlay does, so the same
-  // gate decides whether it opens the ORIGINAL file (zero server work).
-  const avplayDirect = useAvplay && avplayDirectPlayable(item);
-  const exoDirect = useExo && (forceVlc || avplayDirectPlayable(item));
-  const direct = eng === 'video-direct';
-  return {
-    eng,
-    surface: surfaceFor(useMpv, useExo, useAvplay),
-    useMpv,
-    useExo,
-    useAvplay,
-    avplayDirect,
-    exoDirect,
-    forceVlc,
-    direct,
-    // Env-aware: Safari's native HLS decodes AC3/E-AC3 so its master is stream-copied
-    // (5.1 kept); Chromium/webOS MSE can't, so `selectEngine` marks those AAC.
-    masterAac: decision.aacMaster,
-    playbackMode: playbackModeFor({
-      useMpv,
-      useExo,
-      useAvplay,
-      exoDirect,
-      avplayDirect,
-      direct,
-      aacMaster: decision.aacMaster,
-    }),
-  };
-}
-
-/** Build the concrete backend for a resolved plan. Returns `null` only when the
- * in-page `<video>` surface isn't mounted yet (the caller retries next render); the
- * native-plane engines are always constructed. */
-function createTvEngine(args: {
-  eng: Engine;
-  client: KromaClient;
-  item: MediaItem;
-  durationSec: number;
-  rendition: number;
-  startSec: number;
-  exoDirect: boolean;
-  avplayDirect: boolean;
-  forceVlc: boolean;
-  direct: boolean;
-  masterAac: boolean;
-  audioFilter: AudioFilterMode;
-  forceNativeHls: boolean | undefined;
-  video: HTMLVideoElement | null;
-  listeners: EngineListeners;
-}): TvEngine | null {
-  const {
-    eng,
-    client,
-    item,
-    durationSec,
-    rendition,
-    startSec,
-    exoDirect,
-    avplayDirect,
-    forceVlc,
-    direct,
-    masterAac: aacMaster,
-    audioFilter,
-    forceNativeHls,
-    video,
-    listeners,
-  } = args;
-  if (eng === 'mpv') {
-    // Native mpv opens the original file directly (VA-API decode); an internal
-    // direct->master fallback covers the rare file it cannot demux.
-    const engine = new MpvEngine({
-      client,
-      item,
-      durationSec,
-      initialRendition: rendition,
-      startSec,
-      direct: true,
-      audioFilter,
-      listeners,
-    });
-    engine.start(); // async subscribe/open kept out of the constructor
-    return engine;
-  }
-  if (eng === 'exo') {
-    // Native ExoPlayer opens the original file directly (hardware decode); an
-    // internal direct->master fallback covers the rare file it cannot open.
-    // `forceVlc` makes libVLC the primary player (software-decode every codec).
-    return new ExoEngine({
-      client,
-      item,
-      durationSec,
-      initialRendition: rendition,
-      startSec,
-      direct: exoDirect,
-      forceVlc,
-      audioFilter,
-      listeners,
-    });
-  }
-  if (eng === 'avplay') {
-    return new AvplayEngine({
-      client,
-      item,
-      durationSec,
-      initialRendition: rendition,
-      startSec,
-      direct: avplayDirect,
-      audioFilter,
-      listeners,
-    });
-  }
-  if (!video) return null;
-  return new HtmlEngine({
-    video,
-    client,
-    item,
-    direct,
-    masterAac: aacMaster,
-    forceNativeHls,
-    initialRendition: rendition,
-    durationSec,
-    startSec,
-    listeners,
-  });
-}
-
-/** A human label for the current TV device (admin dashboard). */
-function tvDeviceLabel(useMpv: boolean, useExo: boolean): string {
-  if (useMpv) return 'Desktop';
-  if (useExo) return 'Android TV';
-  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent || '';
-  if (/Tizen/i.test(ua)) return 'Samsung TV';
-  if (/web0?s|LG/i.test(ua)) return 'LG TV';
-  return 'TV';
+  const preferred = preferredAudioIndex(tracks, audioLanguage);
+  if (preferred != null) return preferred;
+  return (tracks.find((tr) => tr.default) ?? tracks[0])?.index ?? 0;
 }
 
 /**
@@ -418,7 +144,13 @@ function tvDeviceLabel(useMpv: boolean, useExo: boolean): string {
  * the `tizen-avplay` engine); on webOS / for direct-play it uses `<video>` (+
  * hls.js). State is mirrored into React; resume + progress are persisted.
  */
-export function useDirectPlayback(client: KromaClient, item: MediaItem): Playback {
+export function useDirectPlayback(
+  client: KromaClient,
+  item: MediaItem,
+  /** The account's preferred audio language, applied to the OPENING track pick
+   * whenever the file carries it (see @kroma/core preferredAudioIndex). */
+  audioLanguage?: string | null,
+): Playback {
   const t = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const objectRef = useRef<HTMLObjectElement>(null);
@@ -442,14 +174,28 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
   const [bufEnd, setBufEnd] = useState(0);
   const [endedNonce, setEndedNonce] = useState(0);
   const [seekNonce, setSeekNonce] = useState(0);
-  const [audioIndex, setAudioIndex] = useState(() => {
-    const tracks = audioTracksOf(item);
-    return (tracks.find((t) => t.default) ?? tracks[0])?.index ?? 0;
-  });
+  // Bumped when the engine replaces the object the surface renders (the native
+  // backend's expo-video player). `engineRef` is a ref, so without this the
+  // surface would never learn - see EngineListeners.onSurfaceChange.
+  const [surfaceNonce, setSurfaceNonce] = useState(0);
+  // The opening audio track: the account's preferred language when the file has
+  // it, else the file's own default. Read in the INITIALISER (not an effect) so
+  // it is already right when the engine is built - the engine muxes the chosen
+  // rendition into its source, so a late switch would re-anchor the stream.
+  const [audioIndex, setAudioIndex] = useState(() => openingAudioIndex(item, audioLanguage));
   const audioIndexRef = useRef(audioIndex);
   audioIndexRef.current = audioIndex;
 
   const audioTracks = audioTracksOf(item);
+
+  // Re-apply on an in-place item change (up-next autoplay swaps the item under
+  // this hook). Keyed by id so a manual switch during playback is never undone.
+  const prefItemRef = useRef(item.id);
+  useEffect(() => {
+    if (prefItemRef.current === item.id) return;
+    prefItemRef.current = item.id;
+    setAudioIndex(openingAudioIndex(item, audioLanguage));
+  }, [item, audioLanguage]);
 
   // Engine decision. On Tizen EVERYTHING goes through native AVPlay (hardware
   // plane, surround passthrough): the engine opens the ORIGINAL file directly
@@ -465,18 +211,11 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
   // lecture") re-plans + rebuilds the engine live. Seeded from the per-device
   // pref (shared with the profile-menu picker).
   const [enginePref, setEnginePrefState] = useState<EnginePref>(getEnginePref);
-  const {
-    eng,
-    surface,
-    useMpv,
-    useExo,
-    avplayDirect,
-    exoDirect,
-    forceVlc,
-    direct,
-    masterAac,
-    playbackMode,
-  } = planEngine(item, env, enginePref);
+  // The plan is forwarded to `createTvEngine` WHOLE: which flags a backend needs
+  // is that backend's business (five engines' worth on the browser targets, none
+  // on the native one), and this hook deliberately does not learn them.
+  const plan = planEngine(item, env, enginePref);
+  const { surface, playbackMode, deviceLabel, rebuildKey } = plan;
   const durationSec = item.durationMs ? item.durationMs / 1000 : 0;
   // The runtime decode verdict for this item (from probed `capabilities()`). Drives
   // the pre-play warning and, when a `<video>`-engine attempt fails, the SPECIFIC
@@ -567,6 +306,7 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
       onEnded: () => setEndedNonce((n) => n + 1),
       onError: () => setError(failKey),
       onAudioFilterUnavailable: () => setAudioFilterSupported(false),
+      onSurfaceChange: () => setSurfaceNonce((n) => n + 1),
       onReady: () => {
         setReady(true);
         // A load that finally signals ready IS working - clear any premature error
@@ -582,23 +322,17 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
     };
 
     const engine = createTvEngine({
-      eng,
+      plan,
       client,
       item,
       durationSec,
       rendition: renditionFor(item, audioIndexRef.current),
       startSec,
-      exoDirect,
-      avplayDirect,
-      forceVlc,
-      direct,
-      masterAac,
       // Persisted mode, read at build time so a remembered filter is active from
       // the first frame (AVPlay even picks its source from it); later changes
       // arrive in place through setAudioFilter.
       audioFilter: storedAudioFilter(),
-      forceNativeHls: env.nativeHls,
-      video: videoRef.current,
+      dom: { video: videoRef.current, nativeHls: env.nativeHls },
       listeners,
     });
     if (!engine) return; // <video> surface not mounted yet; rebuild next render
@@ -611,18 +345,9 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
       engine.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    client,
-    item,
-    eng,
-    exoDirect,
-    avplayDirect,
-    direct,
-    masterAac,
-    durationSec,
-    startSec,
-    failKey,
-  ]);
+    // `rebuildKey` stands in for every backend flag the plan resolved, so this
+    // list no longer has to name them one by one (and no longer misses one).
+  }, [client, item, rebuildKey, durationSec, startSec, failKey]);
 
   // In-place audio rendition switch: no source reload, picture keeps playing.
   useEffect(() => {
@@ -644,10 +369,10 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
     // "codec not supported" toast. `loadBeat` is in the deps: each buffering signal
     // re-arms this timer, so a slow-but-alive load never trips it (and a dead one,
     // which emits nothing, still fails after the grace).
-    const graceMs = surface === 'exo' || surface === 'mpv' ? 30000 : 15000;
+    const graceMs = surface === 'mpv' ? 30000 : 15000;
     const graceS = graceMs / 1000;
-    const id = window.setTimeout(() => {
-      if (surface === 'mpv' || surface === 'exo') {
+    const id = setTimeout(() => {
+      if (surface === 'mpv') {
         console.error(`[KROMA] ${surface} engine did not signal ready in ${graceS}s`);
       } else {
         const v = videoRef.current;
@@ -660,7 +385,7 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
       }
       setError(failKey);
     }, graceMs);
-    return () => window.clearTimeout(id);
+    return () => clearTimeout(id);
   }, [surface, ready, error, failKey, loadBeat]);
 
   const getPosition = useCallback(() => engineRef.current?.position() ?? 0, []);
@@ -705,7 +430,7 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
     pingSignal: `${playing}|${waiting}|${audioIndex}`,
     mode: playbackMode,
     player: 'KROMA TV',
-    device: tvDeviceLabel(useMpv, useExo),
+    device: deviceLabel,
     eventsBaseUrl: client.baseUrl,
     idPrefix: 'tv',
     onTerminated: (message) => {
@@ -731,7 +456,19 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
 
   const seekTo = useCallback(
     (absSec: number) => {
-      engineRef.current?.seekTo(clamp(absSec));
+      const target = clamp(absSec);
+      // Move the cursor to where the viewer put it, NOW.
+      //
+      // The gesture drops its preview the moment it commits, so until the engine
+      // reports a position from the new anchor the bar falls back to the old
+      // `cur` - the cursor flew to the target, snapped back to where it started,
+      // and jumped forward again a second later. On the anchored master that
+      // second is a whole HLS re-anchor, which made every seek look broken.
+      //
+      // Safe because a stale report cannot overwrite it: the engine drops
+      // timeUpdates from a player it has replaced (see ExpoVideoEngine.subscribe).
+      setCur(target);
+      engineRef.current?.seekTo(target);
       setSeekNonce((n) => n + 1);
     },
     [clamp],
@@ -739,18 +476,14 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
 
   const seek = useCallback((delta: number) => seekTo(getPosition() + delta), [seekTo, getPosition]);
 
-  // Tap-vs-hold seek gesture shared by the remote and the mouse: a short press
-  // stacks fixed 5s taps into one commit (precise), a held press turns into an
-  // accelerating scrub (fast), and `scrub` drives the same preview from an
-  // absolute position for a mouse click / drag on the bar. Only ONE real seek per
-  // gesture; with the VOD master / direct source that seek is instant.
+  // Scrub gesture shared by the remote and the mouse: `scrub` drives a preview
+  // from an absolute position for a mouse click / drag on the bar. Only ONE real
+  // seek per gesture; with the VOD master / direct source that seek is instant.
   const {
     preview: seekPreview,
-    press: seekPress,
-    tap: seekTap,
     scrub: seekScrub,
     commit: seekScrubCommit,
-  } = useSeekGesture({ getPosition, duration: runtime, seekTo });
+  } = useSeekGesture({ duration: runtime, seekTo });
 
   const setAudio = useCallback(
     (index: number) => setAudioIndex((c) => (c === index ? c : index)),
@@ -774,6 +507,7 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
   return {
     videoRef,
     objectRef,
+    engineRef,
     surface,
     enginePref,
     setEngine,
@@ -796,12 +530,11 @@ export function useDirectPlayback(client: KromaClient, item: MediaItem): Playbac
     seek,
     seekTo,
     getPosition,
-    seekPress,
-    seekTap,
     seekScrub,
     seekScrubCommit,
     seekPreview,
     endedNonce,
     seekNonce,
+    surfaceNonce,
   };
 }

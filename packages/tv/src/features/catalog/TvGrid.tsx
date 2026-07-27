@@ -9,20 +9,21 @@ import {
   sortTitles,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Box, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
-import { useFocusNav } from '#tv/app/useFocusNav';
 import {
   AmbientBackdrop,
   type CatalogEntry as Entry,
   entryBackdrop,
   entryPoster,
 } from '#tv/features/catalog/home/AmbientBackdrop';
-import { TvTopNav } from '#tv/features/catalog/home/TopNav';
-import { type GridCard, TvGrid as PosterGrid } from '#tv/features/catalog/home/TvGrid';
+import { HintBar } from '#tv/features/catalog/home/HintBar';
+import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
+import { EMPTY } from '#tv/features/catalog/screenStyle';
 import { BrowseFilters, BrowseHeader } from '#tv/features/catalog/TvBrowseHeader';
 
 /** The section label over the grid, one key per section. */
@@ -127,12 +128,11 @@ export function TvGrid() {
   const empty = kind === 'mylist' && cards.length === 0;
 
   return (
-    <div className="fixed inset-0 isolate flex flex-col overflow-hidden bg-bg">
+    <Box fill bg="bg" overflow="hidden" style={{ isolation: 'isolate' }}>
       <AmbientBackdrop
         src={entryBackdrop(client, focused)}
         colors={focused ? posterColors(focused.item.id) : ['#1c1c22', '#0a0a0c']}
       />
-      <TvTopNav active={kind} />
 
       <BrowseHeader
         label={t(LABEL_KEY[kind])}
@@ -152,22 +152,16 @@ export function TvGrid() {
       ) : null}
 
       {empty ? (
-        <div className="flex flex-1 items-center justify-center px-16">
-          <p className="max-w-160 text-center font-sans text-[18px] font-medium text-dim">
+        <Box flex center px={64}>
+          <Txt style={EMPTY} color="textDim">
             {t('content.myListEmpty')}
-          </p>
-        </div>
+          </Txt>
+        </Box>
       ) : (
         <PosterGrid cards={cards} />
       )}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center gap-7.5 bg-[linear-gradient(0deg,rgba(10,10,12,0.85),transparent)] p-4 font-sans text-[13px] font-semibold text-dim">
-        <span>{t('content.hintBrowseAll')}</span>
-        <span>{t('content.hintRows')}</span>
-        <span>
-          <b className="font-bold text-accent">{t('content.hintOk')}</b> {t('content.hintOpen')}
-        </span>
-      </div>
-    </div>
+      <HintBar browseKey="content.hintBrowseAll" strength={0.85} />
+    </Box>
   );
 }

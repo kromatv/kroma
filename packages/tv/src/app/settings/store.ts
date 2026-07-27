@@ -49,3 +49,8 @@ export function useStoredPref<T extends string>(
   const value = useSyncExternalStore(pref.subscribe, pref.get, pref.get);
   return [value, pref.set] as const;
 }
+
+/** The performance HUD's on/off, kept with the other device preferences so it
+ * survives a restart: a stutter you are chasing rarely reproduces on the first
+ * launch. */
+export const perfHudPrefStore = reactivePref('kroma:perf-hud', ['off', 'on'] as const, 'off');

@@ -6,6 +6,7 @@
 import {
   type DownloadView,
   formatBytes,
+  IconButton,
   type MessageKey,
   ProgressBar,
   useT,
@@ -291,13 +292,13 @@ function RowActionsMenu({
     <div className="flex justify-end">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button
-            type="button"
-            aria-label={t('downloads.rowActions')}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/12 bg-[#1A1A20] text-white/70 outline-none transition-colors hover:text-white data-[state=open]:bg-white/8 data-[state=open]:text-white"
-          >
-            <IconDotsVertical size={15} stroke={2} />
-          </button>
+          <IconButton
+            icon={IconDotsVertical}
+            label={t('downloads.rowActions')}
+            size={32}
+            iconSize={15}
+            className="data-[state=open]:bg-white/8 data-[state=open]:text-white"
+          />
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content align="end" sideOffset={6} className={MENU}>

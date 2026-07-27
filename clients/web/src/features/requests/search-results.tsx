@@ -4,13 +4,14 @@
 
 import { posterColors, type SearchHit } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconMoodEmpty } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
 import type { DiscoverSearchState } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, SkeletonRow } from '#web/shared/ui';
+import { SkeletonRow } from '#web/shared/ui';
 import { Poster } from '#web/shared/ui/poster';
 
 // Same auto-fill poster grid as the catalogue (see cards.tsx GRID).
@@ -76,7 +77,7 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
   if (nothing) {
     return (
       <EmptyState
-        icon={<IconMoodEmpty size={32} stroke={1.5} />}
+        icon="mood-empty"
         title={t('discover.noResults')}
         hint={t('discover.noResultsHint')}
       />

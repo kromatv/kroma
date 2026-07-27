@@ -1,21 +1,16 @@
-import { getExo, getTauri } from '#tv/features/playback/player/engine';
+import { getTauri } from '#tv/features/playback/player/engine';
 
-/** Whether the hosting shell can terminate the whole app. Two shells qualify:
- * the desktop (Tauri) shell and the Android TV shell - both run fullscreen
- * without window chrome, so the UI must offer the way out itself. Real TVs
- * (Tizen/webOS) quit through their own system UI, so the row stays hidden. */
+/** Whether the hosting shell can terminate the whole app. Only the desktop
+ * (Tauri) shell qualifies: it runs fullscreen without window chrome, so the UI
+ * must offer the way out itself. Real TVs (Tizen/webOS) quit through their own
+ * system UI, and the native TV app through the platform's Home button, so the
+ * row stays hidden on both. */
 export function canQuitApp(): boolean {
-  return getTauri() != null || typeof getExo()?.quit === 'function';
+  return getTauri() != null;
 }
 
-/** Ask the hosting shell to close the app: the desktop `app_quit` command (which
- * exits through the event loop and so also stops the mpv sidecar), or the
- * Android bridge's `quit` (finishes the activity and clears the task). */
+/** Ask the hosting shell to close the app: the desktop `app_quit` command, which
+ * exits through the event loop and so also stops the mpv sidecar. */
 export function quitApp(): void {
-  const tauri = getTauri();
-  if (tauri != null) {
-    void tauri.core.invoke('app_quit');
-    return;
-  }
-  getExo()?.quit?.();
+  void getTauri()?.core.invoke('app_quit');
 }

@@ -1,5 +1,6 @@
 import { useT } from '@kroma/ui';
-import { IconAlertTriangle, IconDownload, IconUpload } from '@tabler/icons-react';
+import { Button } from '@kroma/ui/kit';
+import { IconAlertTriangle } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { ExportModal, ImportModal, isEncryptedFile } from '#web/features/admin/backup-modals';
@@ -39,9 +40,14 @@ function BackupPage() {
         <ActionRow
           desc={t('admin.backupExportDesc')}
           action={
-            <PrimaryButton onClick={() => void ExportModal.call()} icon={IconDownload}>
-              {t('admin.backupExport')}
-            </PrimaryButton>
+            <Button
+              variant="outline"
+              active
+              size="sm"
+              icon="download"
+              label={t('admin.backupExport')}
+              onPress={() => void ExportModal.call()}
+            />
           }
         />
       </Section>
@@ -61,9 +67,14 @@ function BackupPage() {
                   if (file) void onFilePicked(file);
                 }}
               />
-              <PrimaryButton onClick={() => fileRef.current?.click()} icon={IconUpload}>
-                {t('admin.backupImport')}
-              </PrimaryButton>
+              <Button
+                variant="outline"
+                active
+                size="sm"
+                icon="upload"
+                label={t('admin.backupImport')}
+                onPress={() => fileRef.current?.click()}
+              />
             </>
           }
         />
@@ -83,22 +94,5 @@ function ActionRow({ desc, action }: Readonly<{ desc: string; action: React.Reac
       <p className="max-w-160 text-[13.5px] text-dim">{desc}</p>
       <div className="shrink-0">{action}</div>
     </Card>
-  );
-}
-
-function PrimaryButton({
-  onClick,
-  icon: Icon,
-  children,
-}: Readonly<{ onClick: () => void; icon: typeof IconDownload; children: React.ReactNode }>) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-[9px] border border-[#F4B642]/25 bg-[#F4B642]/12 px-3.75 py-2.25 text-[13px] font-semibold text-[#F4B642]"
-    >
-      <Icon size={16} stroke={1.9} />
-      {children}
-    </button>
   );
 }

@@ -6,7 +6,8 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{demo_item_id, demo_show_id, get, send, test_app};
+use crate::api::test_support::{demo_item_id, demo_show_id, get, seed_session, send, test_app};
+use crate::model::Permission;
 
 // ----- live-session heartbeat -------------------------------------------------
 
@@ -42,6 +43,53 @@ async fn ping_upserts_then_stop_ends_the_session() {
     // Stop ends it and the live list drops back to empty.
     let (status, _) =
         send(&t.app, "POST", "/api/playback/stop", Some(&t.token), Some(json!({ "sessionId": "sess-1" }))).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
+    assert_eq!(admin["sessions"].as_array().map(Vec::len), Some(0));
+}
+
+#[tokio::test]
+async fn stop_will_not_end_another_viewers_session() {
+    let t = test_app();
+    let item = demo_item_id("The Matrix");
+
+    // The owner starts watching.
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/playback/ping",
+        Some(&t.token),
+        Some(json!({ "sessionId": "sess-owner", "itemId": item, "positionMs": 1000 })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // A different account names that session id. It answers 204 either way - the
+    // endpoint must not double as a way to discover which sessions exist - but
+    // the session has to survive.
+    let (_id, intruder) =
+        seed_session(&t.state, "intruder@test.dev", "intruder", &[Permission::Playback]);
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/playback/stop",
+        Some(&intruder),
+        Some(json!({ "sessionId": "sess-owner" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
+    assert_eq!(admin["sessions"].as_array().map(Vec::len), Some(1), "someone else ended it");
+
+    // The viewer whose session it is can still end their own.
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/playback/stop",
+        Some(&t.token),
+        Some(json!({ "sessionId": "sess-owner" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
     assert_eq!(admin["sessions"].as_array().map(Vec::len), Some(0));

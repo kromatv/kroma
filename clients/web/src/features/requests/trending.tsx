@@ -7,11 +7,14 @@ import { useT } from '@kroma/ui';
 import { IconChevronRight, IconFlame } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { DiscoverCard } from '#web/features/requests/discover-card';
-import { Rail, SkeletonRow } from '#web/shared/ui';
+import { PosterRail, SkeletonRow } from '#web/shared/ui';
 
 const RAIL_HEADING =
   'flex items-center gap-2 font-display text-[22px] font-bold tracking-[-.02em] text-text';
 const SECTION_TITLE = `mb-4 mt-9 ${RAIL_HEADING}`;
+
+/** DiscoverCard's caption strip under the 2:3 art (title + kind/year lines). */
+const CAPTION_H = 52;
 
 function TrendRail({
   title,
@@ -36,11 +39,7 @@ function TrendRail({
           <IconChevronRight size={15} stroke={2.4} />
         </Link>
       </div>
-      <Rail label={title}>
-        {entries.map((e) => (
-          <DiscoverCard key={`${e.kind}-${e.tmdbId}`} entry={e} />
-        ))}
-      </Rail>
+      <PosterRail data={entries} extra={CAPTION_H} renderItem={(e) => <DiscoverCard entry={e} />} />
     </section>
   );
 }

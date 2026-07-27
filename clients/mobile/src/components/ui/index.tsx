@@ -2,13 +2,15 @@
 // text surfaces, re-exporting the controls and state views so every screen keeps
 // importing them from one place.
 
-import { type ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { ExpandableText as KitExpandableText } from '@kroma/ui/kit';
+import type { ReactNode } from 'react';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
+import { useGutters } from '#mobile/lib/layout';
 import { colors, spacing, type } from '#mobile/lib/theme';
 
-export { Button, Chip, TextField } from './controls';
+export { TextField } from './controls';
 export { EmptyState, ErrorBanner, ErrorView, Loading } from './states';
 
 export function Screen({
@@ -21,12 +23,19 @@ export function Screen({
   style?: ViewStyle;
 }>) {
   const insets = useSafeAreaInsets();
+  // Horizontal insets matter too: in landscape the notch / Dynamic Island sits
+  // at the LEFT edge and content slid straight under it. The screen's own
+  // padding absorbs the inset rather than stacking on top of it.
+  const pad = padded ? spacing.md : 0;
   return (
     <View
       style={[
         styles.screen,
-        { paddingTop: insets.top },
-        padded && { paddingHorizontal: spacing.md },
+        {
+          paddingTop: insets.top,
+          paddingLeft: Math.max(insets.left, pad),
+          paddingRight: Math.max(insets.right, pad),
+        },
         style,
       ]}
     >
@@ -35,55 +44,34 @@ export function Screen({
   );
 }
 
-/** Netflix-style collapsed paragraph: clamped with a "more" toggle. A clamped
- * Text reports the CLAMPED count in onTextLayout, so the real line count is
- * measured on a hidden unclamped copy rendered behind the visible one. */
+/** Netflix-style collapsed paragraph, from the design system. What stays here
+ * is this app's call shape: the "more" label bound to its i18n, and the phone's
+ * own reading style for a synopsis. */
 export function ExpandableText({
   children,
   lines = 3,
 }: Readonly<{ children: string; lines?: number }>) {
   const t = useT();
-  const [expanded, setExpanded] = useState(false);
-  const [clampable, setClampable] = useState(false);
   return (
-    <Pressable onPress={() => clampable && setExpanded((v) => !v)}>
-      <Text style={styles.expandable} numberOfLines={expanded ? undefined : lines}>
-        {children}
-      </Text>
-      <Text
-        accessible={false}
-        style={[styles.expandable, styles.expandGhost]}
-        onTextLayout={(e) => setClampable(e.nativeEvent.lines.length > lines)}
-      >
-        {children}
-      </Text>
-      {clampable && !expanded ? (
-        <Text style={styles.expandMore}>{`… ${t('content.moreInfo')}`}</Text>
-      ) : null}
-    </Pressable>
+    <KitExpandableText lines={lines} moreLabel={t('content.moreInfo')} style={styles.expandable}>
+      {children}
+    </KitExpandableText>
   );
 }
 
 export function SectionTitle({ children }: Readonly<{ children: ReactNode }>) {
-  return <Text style={styles.sectionTitle}>{children}</Text>;
+  // Gutter-aware: section titles sit on full-bleed pages (home, detail), so
+  // they clear the landscape notch themselves.
+  const gutters = useGutters();
+  return <Text style={[styles.sectionTitle, gutters.style]}>{children}</Text>;
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   expandable: { ...type.body, color: colors.textDim, lineHeight: 22 },
-  expandMore: { ...type.caption, color: colors.text, fontWeight: '700', marginTop: 2 },
-  expandGhost: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    opacity: 0,
-    pointerEvents: 'none',
-  },
   sectionTitle: {
     ...type.section,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
   },
 });

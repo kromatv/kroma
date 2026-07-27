@@ -44,8 +44,9 @@ export function PinCard() {
     setConfirm('');
   };
 
-  const submit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  // Optional event: the form's Enter-key submit passes one, the kit button none.
+  const submit = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     if (pin.length !== 4 || (hasPin && current.length !== 4)) return;
     if (pin !== confirm) {
       setMismatch(true);
@@ -94,24 +95,21 @@ export function PinCard() {
         <PinField label={t('account.confirmPin')} value={confirm} onChange={setConfirm} />
         <div className="flex flex-wrap items-center gap-3">
           <Button
-            type="submit"
             size="sm"
-            disabled={
-              pin.length !== 4 || (hasPin && current.length !== 4) || save.status === 'saving'
-            }
-          >
-            {save.status === 'saving' ? t('common.saving') : submitLabel}
-          </Button>
+            label={save.status === 'saving' ? t('common.saving') : submitLabel}
+            onPress={submit}
+            loading={save.status === 'saving'}
+            disabled={pin.length !== 4 || (hasPin && current.length !== 4)}
+          />
           {hasPin ? (
             <Button
-              type="button"
               variant="ghost"
               size="sm"
-              onClick={removePin}
-              disabled={current.length !== 4 || remove.status === 'saving'}
-            >
-              {remove.status === 'saving' ? t('common.saving') : t('account.removePin')}
-            </Button>
+              label={remove.status === 'saving' ? t('common.saving') : t('account.removePin')}
+              onPress={removePin}
+              loading={remove.status === 'saving'}
+              disabled={current.length !== 4}
+            />
           ) : null}
           {mismatch ? (
             <span className="text-[13px] font-medium text-danger">{t('account.pinMismatch')}</span>

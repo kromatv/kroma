@@ -32,7 +32,7 @@ own README for details.
 git clone https://github.com/maxscharwath/kroma.git
 cd kroma
 bun install
-bun run dev      # media server (:4040) + web client (:5173) together
+bun run dev      # media server (:4040) + web client (:3000) together
 ```
 
 With no media configured, the server seeds demo titles so the UI is populated

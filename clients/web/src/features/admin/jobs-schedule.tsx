@@ -5,11 +5,21 @@
 
 import { type JobInfo, KromaApiError } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button, Chip, Txt } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { Field, Modal, ModalActions, TextInput } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
+
+/** Cron strings read best in a monospace, which the kit chip's label is not. */
+const CRON = {
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  fontSize: 11.5,
+  fontWeight: '600',
+} as const;
+/** The reset link's metrics, tinted accent inside a ghost kit button. */
+const RESET_LABEL = { fontSize: 12, fontWeight: '600' } as const;
 
 const PRESETS: { label: string; expr: string }[] = [
   { label: '@hourly', expr: '0 * * * *' },
@@ -50,33 +60,24 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
 
       <div className="mb-3 flex flex-wrap gap-2">
         {PRESETS.map((p) => (
-          <button
-            key={p.expr}
-            type="button"
-            onClick={() => setValue(p.expr)}
-            className="rounded-[7px] border border-border-strong bg-surface-2 px-2.5 py-1 font-mono text-[11.5px] font-semibold text-text/75 hover:border-accent/50"
-          >
-            {p.label}
-          </button>
+          <Chip key={p.expr} variant="surface" onPress={() => setValue(p.expr)}>
+            <Txt style={CRON} color="textMuted">
+              {p.label}
+            </Txt>
+          </Chip>
         ))}
-        <button
-          type="button"
-          onClick={() => setValue('')}
-          className="rounded-[7px] border border-border-strong bg-surface-2 px-2.5 py-1 text-[11.5px] font-semibold text-text/75 hover:border-accent/50"
-        >
-          {t('jobs.manual')}
-        </button>
+        <Chip variant="surface" label={t('jobs.manual')} onPress={() => setValue('')} />
       </div>
 
       <p className="mb-1 text-[12px] leading-relaxed text-dim">{t('jobs.cronHint')}</p>
       {job.defaultSchedule && job.defaultSchedule !== value ? (
-        <button
-          type="button"
-          onClick={() => setValue(job.defaultSchedule ?? '')}
-          className="text-[12px] font-semibold text-accent"
-        >
-          {t('jobs.resetDefault')} ({job.defaultSchedule})
-        </button>
+        <div className="flex">
+          <Button variant="ghost" size="sm" onPress={() => setValue(job.defaultSchedule ?? '')}>
+            <Txt color="accent" style={RESET_LABEL}>
+              {t('jobs.resetDefault')} ({job.defaultSchedule})
+            </Txt>
+          </Button>
+        </div>
       ) : null}
 
       {error ? (

@@ -10,8 +10,8 @@
   "scripts": {
     "gen": "bun run src/gen-catalog.ts",
     "preview": "bun run src/preview.ts",
-    "typecheck": "tsgo --noEmit",
-    "build": "tsgo --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^22.10.0"

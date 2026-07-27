@@ -5,7 +5,7 @@
 
 import type { NamingTemplatesView } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconX } from '@tabler/icons-react';
+import { Button, IconButton } from '@kroma/ui/kit';
 import { useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { Select } from '#web/shared/ui';
@@ -171,14 +171,14 @@ export const NamingTokenModal = createCallable<
           <div className="font-display text-[18px] font-bold">
             {t('naming.tokensTitle')} <span className="text-dim">· {fieldLabel}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => call.end()}
-            className="text-dim hover:text-text"
-            aria-label={t('common.close')}
-          >
-            <IconX size={18} stroke={2.2} />
-          </button>
+          <IconButton
+            variant="ghost"
+            size={30}
+            glyph={18}
+            icon="x"
+            label={t('common.close')}
+            onPress={() => call.end()}
+          />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
@@ -241,13 +241,7 @@ export const NamingTokenModal = createCallable<
             onChange={(e) => onChange(e.target.value)}
             className="min-w-0 flex-1 rounded-[9px] border border-border-strong bg-[#0F0F13] px-3.5 py-2.5 font-mono text-[13px] text-text outline-none focus:border-accent/60"
           />
-          <button
-            type="button"
-            onClick={() => call.end()}
-            className="shrink-0 rounded-xl bg-accent px-5 py-2.5 text-[14px] font-bold text-accent-ink hover:bg-accent-hover"
-          >
-            {t('common.close')}
-          </button>
+          <Button size="sm" label={t('common.close')} onPress={() => call.end()} />
         </div>
       </div>
     </div>

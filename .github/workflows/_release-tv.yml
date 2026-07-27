@@ -130,9 +130,11 @@ jobs:
       - name: Install Tizen Studio CLI
         run: |
           if [ ! -f web-cli.bin ]; then
-            # --https-only: the installer is fetched over TLS and a redirect
-            # must not be allowed to downgrade that to plain http.
-            wget -q --https-only -O web-cli.bin "https://download.tizen.org/sdk/Installer/tizen-studio_${TIZEN_STUDIO_VER}/web-cli_Tizen_Studio_${TIZEN_STUDIO_VER}_ubuntu-64.bin"
+            # --max-redirect=0: the URL serves the installer directly (200, no
+            # hops), so nothing legitimate needs a redirect - and refusing them
+            # outright is what stops one being pointed somewhere else.
+            # --https-only backs it up: TLS cannot be downgraded to plain http.
+            wget -q --https-only --max-redirect=0 -O web-cli.bin "https://download.tizen.org/sdk/Installer/tizen-studio_${TIZEN_STUDIO_VER}/web-cli_Tizen_Studio_${TIZEN_STUDIO_VER}_ubuntu-64.bin"
           fi
           chmod +x web-cli.bin
           ./web-cli.bin --accept-license --no-java-check "$HOME/tizen-studio"
@@ -169,8 +171,8 @@ jobs:
           draft: true
           files: clients/tizen/dist/*.wgt
 
-  androidtv:
-    name: Android TV .apk
+  tv-native:
+    name: Android TV .apk (native app)
     if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
@@ -195,29 +197,28 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # Web bundle (production) -> synced into android/app/src/main/assets/kroma.
-      - name: Build web bundle
-        run: bun run build:androidtv
+      # `android/` is generated and gitignored, so the project is built from the
+      # Expo config every time. EXPO_TV=1 is what makes it a LEANBACK app (see
+      # @react-native-tvos/config-tv); without it this silently produces a phone
+      # APK that no television will show.
+      - name: Prebuild the Android project
+        run: |
+          # Monotonic versionCode: minutes since 2020 (read by app.config.js).
+          export KROMA_VERSION_CODE=$(( ( $(date -u +%s) - 1577836800 ) / 60 ))
+          bun run --filter '@kroma/tv-native' prebuild -- --platform android
 
-      # Release-sign when the keystore secrets exist; otherwise ship the
-      # debug-signed APK (installable via adb / Downloader for sideloading).
-      - name: Release keystore (optional)
-        id: ks
-        env:
-          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: .github/scripts/androidtv-release-keystore.sh
-
+      # NOTE: this is signed with the Expo template's debug keystore, which is
+      # what its `release` buildType is wired to. That is installable via adb /
+      # Downloader for sideloading (the same fallback the previous WebView shell
+      # shipped when no keystore secret was set), but it is NOT a Play-uploadable
+      # artifact. Real release signing needs a config plugin to rewrite the
+      # generated signingConfig - the ANDROID_KEYSTORE* secrets are unused until
+      # then.
       - name: Build APK
         run: |
-          # versionCode: minutes since 2020, monotonic across releases.
-          VC=$(( ( $(date -u +%s) - 1577836800 ) / 60 ))
-          gradle -p clients/androidtv/android ${{ steps.ks.outputs.task }} \
-            -PkromaVersion="${{ inputs.triplet }}" -PkromaVersionCode="$VC"
+          gradle -p clients/tv-native/android assembleRelease
           mkdir -p out
-          cp "clients/androidtv/android/app/build/outputs/apk/${{ steps.ks.outputs.apk }}" \
+          cp clients/tv-native/android/app/build/outputs/apk/release/app-release.apk \
             "out/KROMA-androidtv-${{ inputs.version }}.apk"
 
       - name: Upload .apk artifact

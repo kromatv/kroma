@@ -3,22 +3,23 @@
 
 import type { SectionItem } from '@kroma/core';
 import { sizedImageUrl } from '@kroma/core';
+import { Button } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
-import { useIsWide } from '#mobile/lib/layout';
+import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
 import { colors, radius, SHADE, spacing, type } from '#mobile/lib/theme';
-import { CheckIcon, PlayIcon, PlusIcon } from '#mobile/player/icons';
 import { FadeImage } from './FadeImage';
 
 export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   const t = useT();
   const client = useClient();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const gutters = useGutters();
   const queryClient = useQueryClient();
 
   const media = entry.type === 'movie' ? entry.item : entry.show;
@@ -26,12 +27,14 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   const title = media.metadata?.title ?? media.title;
   const genres = media.metadata?.genres?.slice(0, 3) ?? [];
   const detailRoute = entry.type === 'movie' ? `/item/${id}` : `/show/${id}`;
-  // Narrow windows get the tall poster card; wide ones a backdrop billboard
-  // whose height leaves the pill dock clear.
+  // Narrow portrait windows get the tall poster card; wide OR landscape ones a
+  // backdrop billboard (a landscape phone is wide but short - a poster card
+  // would tower past the viewport).
   const wide = useIsWide();
+  const backdrop = wide || width > height;
   const poster =
     entry.type === 'movie' ? client.posterFor(entry.item) : client.showPosterFor(entry.show);
-  const art = wide
+  const art = backdrop
     ? (sizedImageUrl(client.backdropFor(media), 1600) ?? sizedImageUrl(poster, 1600))
     : (sizedImageUrl(poster, 780) ?? sizedImageUrl(client.backdropFor(media), 780));
 
@@ -47,8 +50,12 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
     else router.push(detailRoute as never);
   };
 
-  const w = Math.min(width - spacing.md * 2, wide ? 820 : 480);
-  const h = wide ? Math.round(w * 0.52) : w * 1.42;
+  // Both variants cap against the window HEIGHT so the billboard never
+  // outgrows the viewport (landscape phones are ~390pt tall).
+  const w = Math.min(width - gutters.left - gutters.right, backdrop ? 820 : 480);
+  const h = backdrop
+    ? Math.min(Math.round(w * 0.52), Math.round(height * 0.5))
+    : Math.min(Math.round(w * 1.42), Math.round(height * 0.72));
 
   return (
     <View style={[styles.wrap, { width: w, height: h }]}>
@@ -70,20 +77,20 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
           </Text>
         ) : null}
         <View style={styles.buttons}>
-          <Pressable
+          <Button
+            icon="player-play-filled"
+            label={t('player.play')}
+            style={styles.cta}
             onPress={play}
-            style={({ pressed }) => [styles.play, pressed && { opacity: 0.85 }]}
-          >
-            <PlayIcon size={20} color={colors.accentInk} />
-            <Text style={styles.playLabel}>{t('player.play')}</Text>
-          </Pressable>
-          <Pressable
+          />
+          <Button
+            variant="outline"
+            active={inList}
+            icon={inList ? 'check' : 'plus'}
+            label={t('nav.myList')}
+            style={styles.cta}
             onPress={() => toggleList.mutate()}
-            style={({ pressed }) => [styles.list, pressed && { opacity: 0.85 }]}
-          >
-            {inList ? <CheckIcon size={18} /> : <PlusIcon size={18} />}
-            <Text style={styles.listLabel}>{t('nav.myList')}</Text>
-          </Pressable>
+          />
         </View>
       </View>
     </View>
@@ -117,26 +124,5 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 480,
   },
-  play: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 46,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accent,
-  },
-  playLabel: { color: colors.accentInk, fontSize: 15, fontWeight: '800' },
-  list: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    minHeight: 46,
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(38, 38, 46, 0.85)',
-  },
-  listLabel: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  cta: { flex: 1 },
 });

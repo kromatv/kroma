@@ -20,7 +20,17 @@ function mov(
   } as unknown as MediaItem;
 }
 
-type Doc = { sections: Array<{ title: string; tiles: any[] }> };
+/** The shape the Smart Hub preview JSON is asserted against. Written out rather
+ * than `any`, so a change to the card payload shows up here as a type error. */
+interface Tile {
+  title: string;
+  subtitle?: string;
+  is_playable: boolean;
+  image_ratio: string;
+  image_url: string;
+  action_data: string;
+}
+type Doc = { sections: Array<{ title: string; tiles: Tile[] }> };
 const parse = (s: string | null): Doc => JSON.parse(s as string) as Doc;
 
 describe('buildPreviewData', () => {
@@ -39,7 +49,7 @@ describe('buildPreviewData', () => {
     expect(out.sections).toHaveLength(1);
     expect(out.sections[0]?.title).toBe('Ajout récent');
     expect(out.sections[0]?.tiles.map((t) => t.title)).toEqual(['New', 'Old']);
-    const tile = out.sections[0]?.tiles[0];
+    const tile = out.sections[0]?.tiles[0] as Tile;
     expect(tile.is_playable).toBe(false);
     expect(tile.image_ratio).toBe('16by9');
     expect(tile.image_url).toContain('http://kroma.test/api/items/b/card?');
@@ -52,7 +62,7 @@ describe('buildPreviewData', () => {
       buildPreviewData(client, [mov({ id: 'a' }), mov({ id: 'b', metadata: null })]),
     );
     expect(out.sections[0]?.tiles).toHaveLength(1);
-    expect(out.sections[0]?.tiles[0].image_url).toContain('/items/a/');
+    expect(out.sections[0]?.tiles[0]?.image_url).toContain('/items/a/');
   });
 
   it('caps each row at 20 tiles', () => {
@@ -70,8 +80,8 @@ describe('buildPreviewData', () => {
     const out = parse(buildPreviewData(client, [mov({ id: 'a' })], cont));
     expect(out.sections[0]?.title).toBe('Reprendre la lecture');
     expect(out.sections[1]?.title).toBe('Ajout récent');
-    expect(out.sections[0]?.tiles[0].image_url).toContain('progress=0.300');
-    expect(out.sections[0]?.tiles[0].image_url).toContain('label=Reprendre');
+    expect(out.sections[0]?.tiles[0]?.image_url).toContain('progress=0.300');
+    expect(out.sections[0]?.tiles[0]?.image_url).toContain('label=Reprendre');
   });
 
   it('omits the progress param when there is no duration', () => {
@@ -79,7 +89,7 @@ describe('buildPreviewData', () => {
       { item: mov({ id: 'r1' }), positionMs: 300, durationMs: null } as unknown as ContinueItem,
     ];
     const out = parse(buildPreviewData(client, [], cont));
-    expect(out.sections[0]?.tiles[0].image_url).not.toContain('progress=');
+    expect(out.sections[0]?.tiles[0]?.image_url).not.toContain('progress=');
   });
 
   it('points an episode tile at its show', () => {
@@ -88,9 +98,9 @@ describe('buildPreviewData', () => {
         mov({ id: 'e1', kind: 'episode', showId: 's9', showTitle: 'Show' }),
       ]),
     );
-    const tile = out.sections[0]?.tiles[0];
+    const tile = out.sections[0]?.tiles[0] as Tile;
     expect(tile.title).toBe('Show');
     expect(JSON.parse(tile.action_data)).toEqual({ type: 'show', id: 's9' });
-    expect(tile.subtitle.startsWith('Série')).toBe(true);
+    expect(tile.subtitle?.startsWith('Série')).toBe(true);
   });
 });

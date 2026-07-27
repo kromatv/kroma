@@ -5,6 +5,7 @@
 
 import {
   apiErrorText,
+  Button,
   Field,
   formatBytes,
   type ManualReleaseView,
@@ -18,7 +19,7 @@ import {
   useAsyncAction,
   useT,
 } from '@kroma/module-sdk';
-import { IconDownload, IconLoader2, IconSearch, IconWand } from '@tabler/icons-react';
+import { IconDownload, IconSearch, IconWand } from '@tabler/icons-react';
 import { useState } from 'react';
 
 type Kind = 'movie' | 'episode' | 'season';
@@ -230,19 +231,16 @@ export function ManualGrabModal({
             placeholder="magnet:?xt=urn:btih:..."
             className="w-full min-w-0"
           />
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={IconWand}
+            label={t('manual.analyze')}
             onClick={analyze}
-            disabled={analyzing || !magnet.trim()}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-[9px] border border-white/12 bg-[#1A1A20] px-3.5 text-[13px] font-semibold text-white/80 hover:bg-[#222229] disabled:opacity-50"
-          >
-            {analyzing ? (
-              <IconLoader2 size={14} stroke={2.4} className="animate-spin" />
-            ) : (
-              <IconWand size={14} stroke={2} />
-            )}
-            {t('manual.analyze')}
-          </button>
+            disabled={!magnet.trim()}
+            loading={analyzing}
+            className="shrink-0"
+          />
         </div>
       </Field>
       {analyzeErr ? (
@@ -359,15 +357,14 @@ function AnalysisPanel({
           {seasonsLabel}
         </span>
         {videoFiles.length > 1 ? (
-          <button
-            type="button"
+          <Button
+            variant="quiet"
+            size="sm"
+            label={allVideoSelected ? t('manual.selectNone') : t('manual.selectAll')}
             onClick={() =>
               setSelected(allVideoSelected ? new Set() : new Set(videoFiles.map((f) => f.index)))
             }
-            className="text-[12px] font-semibold text-accent hover:underline"
-          >
-            {allVideoSelected ? t('manual.selectNone') : t('manual.selectAll')}
-          </button>
+          />
         ) : null}
       </div>
       <div className="max-h-52 overflow-y-auto">
@@ -457,15 +454,15 @@ function SearchPanel({
             className="min-w-0 flex-1 bg-transparent px-2.5 text-[13.5px] font-semibold text-text outline-none placeholder:text-dim"
           />
         </div>
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="sm"
+          label={t('manual.search')}
           onClick={onSearch}
-          disabled={searching || !query.trim()}
-          className="inline-flex items-center gap-1.5 rounded-[9px] bg-accent px-4 text-[13px] font-bold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
-        >
-          {searching ? <IconLoader2 size={14} stroke={2.4} className="animate-spin" /> : null}
-          {t('manual.search')}
-        </button>
+          disabled={!query.trim()}
+          loading={searching}
+          className="shrink-0"
+        />
       </div>
       {searchErr ? (
         <p className="mt-1.5 text-[12px] font-semibold text-[#F4B642]">{searchErr}</p>

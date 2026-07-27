@@ -4,6 +4,7 @@
 // stringified values the old text-only form sent).
 
 import type { ConfigField } from '@kroma/module-sdk';
+import { Button } from '@kroma/ui/kit';
 import { type ReactNode, useId, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
 import { Toggle } from '#web/features/admin/ui';
@@ -64,14 +65,16 @@ export function ModuleConfigForm({
       {fields.map((f) => (
         <Field key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
       ))}
-      <button
-        type="button"
-        onClick={() => void save()}
-        disabled={saving}
-        className="self-end rounded bg-accent-soft px-3 py-1 text-xs font-semibold text-accent disabled:opacity-50"
-      >
-        {saving ? 'Saving...' : 'Save'}
-      </button>
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          active
+          size="sm"
+          label={saving ? 'Saving...' : 'Save'}
+          onPress={() => void save()}
+          loading={saving}
+        />
+      </div>
     </div>
   );
 }

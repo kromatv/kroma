@@ -187,7 +187,7 @@ describe('ModuleRegistry route/nav/panel collection', () => {
     r.register(mod('b', { routes: [{ path: 'dup', component: comp as never }] }));
     const routes = r.routes();
     expect(routes).toHaveLength(1);
-    expect(routes[0]!.moduleId).toBe('a');
+    expect(routes[0]?.moduleId).toBe('a');
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('collides'));
     warn.mockRestore();
   });

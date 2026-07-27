@@ -1,10 +1,18 @@
-// One title, taken offline: pick the source, run the platform transfer, prove
-// the result is a whole media file, and collect the sidecars. Everything that
-// can go wrong throws; the caller owns queueing and UI state.
+// One title, taken offline: pick the source, hand the transfer to the
+// platform's background downloader (NSURLSession on iOS, DownloadManager or a
+// user-initiated data-transfer job on Android) so it keeps running while the
+// app is backgrounded or killed, prove the result is a whole media file, and
+// collect the sidecars. Everything that can go wrong throws; the caller owns
+// queueing and UI state.
 
+import {
+  completeHandler,
+  createDownloadTask,
+  type DownloadTask,
+} from '@kesha-antonov/react-native-background-downloader';
 import type { KromaClient, MediaItem } from '@kroma/core';
 import * as FileSystem from 'expo-file-system/legacy';
-import { canRawDownload, downloadCopyCodecs } from '#mobile/player/caps';
+import { canRawDownload, downloadCopyCodecs, downloadVideoCodecs } from '#mobile/player/caps';
 import { fetchSidecars } from './sidecars';
 import { type DownloadEntry, ensureDir, mediaPath } from './store';
 
@@ -15,12 +23,198 @@ const MIN_PLAUSIBLE_BYTES = 512 * 1024;
 /** Thrown for a user-initiated cancel, which must stay silent. */
 export const CANCELLED = 'cancelled';
 
+/** A network-shaped failure: the connection died, not the content. The caller
+ * requeues the title and retries when the network is back instead of
+ * surfacing an error the user can do nothing about. */
+export class TransferInterrupted extends Error {}
+
+/** iOS NSURLError codes for "the network went away mid-transfer". Background
+ * sessions absorb most of these on their own (the system waits and resumes);
+ * this catches the ones that still surface. */
+const RETRYABLE_IOS = new Set([-1001, -1003, -1004, -1005, -1009, -1020]);
+/** Android DownloadManager codes: unknown, HTTP data error, cannot resume. */
+const RETRYABLE_ANDROID = new Set([1000, 1004, 1008]);
+
+function isNetworkFailure(error: string, code: number): boolean {
+  return (
+    RETRYABLE_IOS.has(code) ||
+    RETRYABLE_ANDROID.has(code) ||
+    /network|connection|internet|timed? ?out|unreachable|ECONNRESET|ETIMEDOUT|ENETDOWN|socket/i.test(
+      error,
+    )
+  );
+}
+
+/** The caller's grip on a running platform transfer. Pause parks the task with
+ * native resume data (kept across app restarts); resume picks it back up. */
+export interface TransferHandle {
+  cancel(): void;
+  pause(): void;
+  resume(): void;
+}
+
 export interface TransferHooks {
   /** Called once the platform task exists. Return false to abort: a cancel that
    * arrived before there was anything to cancel. */
-  onTask(task: FileSystem.DownloadResumable): boolean;
+  onTask(handle: TransferHandle): boolean;
   /** 0..1, or -1 while the total size is unknown (the server remux is chunked). */
   onProgress(frac: number): void;
+}
+
+/** Everything needed to validate and index a finished file. Stored as the
+ * native task's metadata, so a transfer that outlives the app can still be
+ * re-adopted (or finalized) from its own snapshot on the next launch. */
+export interface TransferMeta {
+  item: MediaItem;
+  fileUri: string;
+  /** Byte-identical original vs server remux; only the raw size is exact. */
+  raw: boolean;
+  estimatedTotal: number | null;
+}
+
+function buildMeta(item: MediaItem): TransferMeta {
+  // Raw original when EVERYTHING in it plays offline on this device; otherwise
+  // the server remuxes to an fMP4 keeping every audio track, copy-codecs
+  // narrowed to what this device decodes so no downloaded track is dead.
+  const raw = canRawDownload(item);
+  // The remux stream is chunked (no Content-Length), but the source file size
+  // is a solid estimate: video bytes are copied verbatim. Cap at 99% so the
+  // ring only completes when the download does.
+  const estimatedTotal =
+    item.files.find((f) => f.id === item.defaultFileId)?.size ?? item.files[0]?.size ?? null;
+  return {
+    item,
+    raw,
+    estimatedTotal,
+    fileUri: mediaPath(item.id, raw ? (item.container || 'mp4').toLowerCase() : 'mp4'),
+  };
+}
+
+/** Read a TransferMeta back out of a reattached task, or null when the task
+ * was not created by this code (or predates this format). */
+export function transferMetaOf(task: DownloadTask): TransferMeta | null {
+  const meta = task.metadata as Partial<TransferMeta> | null;
+  return meta?.item && typeof meta.fileUri === 'string' && typeof meta.raw === 'boolean'
+    ? (meta as TransferMeta)
+    : null;
+}
+
+/** A resume that moves no bytes within this window is declared dead and the
+ * title restarts. Real byte-level resume only exists for raw downloads (the
+ * /stream file has HTTP validators); a remux is a live ffmpeg stream that can
+ * NEVER resume mid-byte - iOS quietly parks the task instead of failing it,
+ * which without this watchdog looks like a download frozen forever. */
+const RESUME_STALL_MS = 20_000;
+
+/** Wire the task's events into a promise and hand the cancel handle out.
+ * Fresh tasks are started; reattached ones are already running natively (a
+ * paused one is resumed). */
+function driveTask(
+  task: DownloadTask,
+  meta: TransferMeta,
+  hooks: TransferHooks,
+  fresh: boolean,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let watchdog: ReturnType<typeof setTimeout> | null = null;
+    const clearWatchdog = () => {
+      if (watchdog) clearTimeout(watchdog);
+      watchdog = null;
+    };
+    const fail = (err: Error) => {
+      clearWatchdog();
+      void task.stop().catch(() => undefined);
+      reject(err);
+    };
+    task.begin(({ headers }) => {
+      // A server without the /download endpoint answers with the SPA HTML shell
+      // (200 text/html): reject anything that is not media bytes so a garbage
+      // file is never registered as a finished download.
+      const contentType = Object.entries(headers).find(
+        ([k]) => k.toLowerCase() === 'content-type',
+      )?.[1];
+      if (contentType && !/video\/|octet-stream|matroska/i.test(contentType)) {
+        fail(new Error(`not a media response: ${contentType}`));
+      }
+    });
+    task.progress(({ bytesDownloaded, bytesTotal }) => {
+      clearWatchdog();
+      const total = bytesTotal > 0 ? bytesTotal : meta.estimatedTotal;
+      hooks.onProgress(total && total > 0 ? Math.min(0.99, bytesDownloaded / total) : -1);
+    });
+    task.done(() => {
+      clearWatchdog();
+      // Releases iOS's stored background-session completion handler.
+      completeHandler(task.id);
+      resolve();
+    });
+    task.error(({ error, errorCode }) => {
+      clearWatchdog();
+      const message = `${error} (code ${errorCode})`;
+      reject(
+        isNetworkFailure(error, errorCode) ? new TransferInterrupted(message) : new Error(message),
+      );
+    });
+    // A cancel that landed while the task was being created has no handle to
+    // act on; honour it now instead of downloading anyway.
+    const handle: TransferHandle = {
+      cancel: () => fail(new Error(CANCELLED)),
+      // A user pause emits NO event (the native side swallows the -999); the
+      // promise simply stays pending until resume or cancel.
+      pause: () => {
+        clearWatchdog();
+        void task.pause().catch(() => undefined);
+      },
+      resume: () => {
+        void task.resume().catch((e) => reject(new TransferInterrupted(String(e))));
+        clearWatchdog();
+        watchdog = setTimeout(
+          () => fail(new TransferInterrupted('resume moved no bytes')),
+          RESUME_STALL_MS,
+        );
+      },
+    };
+    if (!hooks.onTask(handle)) {
+      fail(new Error(CANCELLED));
+      return;
+    }
+    // A reattached task may have ended in the instant before its handlers were
+    // rewired; its events are gone, so settle from the state snapshot.
+    if (task.state === 'DONE') resolve();
+    else if (task.state === 'FAILED' || task.state === 'STOPPED')
+      reject(new TransferInterrupted('transfer died while unattended'));
+    else if (fresh) task.start();
+    // A reattached PAUSED task stays parked; the user resumes it explicitly.
+  });
+}
+
+/** The transfer resolving is NOT proof the file is whole: a chunked remux
+ * that dies mid-stream (ffmpeg killed, disk full, Wi-Fi drop) closes the
+ * connection cleanly, with no Content-Length to contradict it. A raw
+ * download is a byte copy, so its size is known exactly; for a remux only a
+ * floor is safe, since AAC-transcoding a lossless track can legitimately
+ * shrink the file a lot. */
+async function finalizeTransfer(client: KromaClient, meta: TransferMeta): Promise<DownloadEntry> {
+  const { item, fileUri, raw, estimatedTotal } = meta;
+  const info = await FileSystem.getInfoAsync(fileUri);
+  const size = info.exists && 'size' in info ? (info.size ?? 0) : 0;
+  if (raw && estimatedTotal && size !== estimatedTotal) {
+    throw new Error(`truncated: ${size} of ${estimatedTotal} bytes`);
+  }
+  if (size < MIN_PLAUSIBLE_BYTES) throw new Error(`truncated: ${size} bytes`);
+
+  const { subs, storyboard } = await fetchSidecars(client, item);
+  return {
+    itemId: item.id,
+    item,
+    fileUri,
+    posterUrl: client.posterFor(item),
+    backdropUrl: client.backdropFor(item),
+    sizeBytes: size,
+    downloadedAt: new Date().toISOString(),
+    subs,
+    storyboard,
+  };
 }
 
 export async function runTransfer(
@@ -28,78 +222,47 @@ export async function runTransfer(
   item: MediaItem,
   hooks: TransferHooks,
 ): Promise<DownloadEntry> {
-  // Raw original when EVERYTHING in it plays offline on this device; otherwise
-  // the server remuxes to an fMP4 keeping every audio track, copy-codecs
-  // narrowed to what this device decodes so no downloaded track is dead.
-  const raw = canRawDownload(item);
-  const fileUri = mediaPath(item.id, raw ? (item.container || 'mp4').toLowerCase() : 'mp4');
+  const meta = buildMeta(item);
   try {
     await ensureDir();
-    const url = raw ? client.streamUrl(item.id) : client.downloadUrl(item.id, downloadCopyCodecs());
-    // The remux stream is chunked (no Content-Length), but the source file size
-    // is a solid estimate: video bytes are copied verbatim. Cap at 99% so the
-    // ring only completes when the download does.
-    const estimatedTotal =
-      item.files.find((f) => f.id === item.defaultFileId)?.size ?? item.files[0]?.size ?? null;
+    const url = meta.raw
+      ? client.streamUrl(item.id)
+      : client.downloadUrl(item.id, downloadCopyCodecs(), downloadVideoCodecs());
     // `/download` is session-gated (it costs a server-side ffmpeg for the length
     // of a film), and this transfer is owned by the platform downloader, so the
     // bearer has to be attached by hand.
-    const task = FileSystem.createDownloadResumable(
+    const task = createDownloadTask({
+      id: item.id,
       url,
-      fileUri,
-      { headers: client.authHeaders() },
-      (p) => {
-        const total =
-          p.totalBytesExpectedToWrite > 0 ? p.totalBytesExpectedToWrite : estimatedTotal;
-        hooks.onProgress(total && total > 0 ? Math.min(0.99, p.totalBytesWritten / total) : -1);
-      },
-    );
-    if (!hooks.onTask(task)) throw new Error(CANCELLED);
-
-    const result = await task.downloadAsync();
-    if (!result) throw new Error(CANCELLED);
-    if (result.status < 200 || result.status >= 300) {
-      throw new Error(`server answered ${result.status}`);
-    }
-    // A server without the /download endpoint answers with the SPA HTML shell
-    // (200 text/html): reject anything that is not media bytes so a garbage file
-    // is never registered as a finished download.
-    const contentType = Object.entries(result.headers).find(
-      ([k]) => k.toLowerCase() === 'content-type',
-    )?.[1];
-    if (contentType && !/video\/|octet-stream|matroska/i.test(contentType)) {
-      throw new Error(`not a media response: ${contentType}`);
-    }
-
-    const info = await FileSystem.getInfoAsync(fileUri);
-    const size = info.exists && 'size' in info ? (info.size ?? 0) : 0;
-    // The transfer resolving is NOT proof the file is whole: a chunked remux
-    // that dies mid-stream (ffmpeg killed, disk full, Wi-Fi drop) closes the
-    // connection cleanly, with no Content-Length to contradict it. A raw
-    // download is a byte copy, so its size is known exactly; for a remux only a
-    // floor is safe, since AAC-transcoding a lossless track can legitimately
-    // shrink the file a lot.
-    if (raw && estimatedTotal && size !== estimatedTotal) {
-      throw new Error(`truncated: ${size} of ${estimatedTotal} bytes`);
-    }
-    if (size < MIN_PLAUSIBLE_BYTES) throw new Error(`truncated: ${size} bytes`);
-
-    const { subs, storyboard } = await fetchSidecars(client, item);
-    return {
-      itemId: item.id,
-      item,
-      fileUri,
-      posterUrl: client.posterFor(item),
-      backdropUrl: client.backdropFor(item),
-      sizeBytes: size,
-      downloadedAt: new Date().toISOString(),
-      subs,
-      storyboard,
-    };
+      destination: meta.fileUri,
+      headers: client.authHeaders(),
+      metadata: meta,
+    });
+    await driveTask(task, meta, hooks, true);
+    return await finalizeTransfer(client, meta);
   } catch (err) {
     // Nothing half-written survives a failure: the file would otherwise be an
     // orphan no index entry claims.
-    await FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => undefined);
+    await FileSystem.deleteAsync(meta.fileUri, { idempotent: true }).catch(() => undefined);
+    throw err;
+  }
+}
+
+/** Re-adopt a transfer the platform kept alive (or finished) while the app was
+ * away: rewire its events into fresh hooks, or just validate and index the
+ * file if the task already completed. */
+export async function adoptTransfer(
+  client: KromaClient,
+  task: DownloadTask,
+  meta: TransferMeta,
+  hooks: TransferHooks,
+): Promise<DownloadEntry> {
+  try {
+    if (task.state === 'DONE') completeHandler(task.id);
+    else await driveTask(task, meta, hooks, false);
+    return await finalizeTransfer(client, meta);
+  } catch (err) {
+    await FileSystem.deleteAsync(meta.fileUri, { idempotent: true }).catch(() => undefined);
     throw err;
   }
 }

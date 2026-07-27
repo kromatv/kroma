@@ -213,6 +213,16 @@ pub fn show_title(pool: &Pool, id: &str) -> Result<Option<String>> {
         .ok())
 }
 
+/// The show's resolved poster artwork (`metadata.posterUrl`), when enrichment
+/// found one. `None` for an unknown show or one still on the placeholder.
+pub fn show_poster_art(pool: &Pool, id: &str) -> Result<Option<String>> {
+    let conn = pool.get()?;
+    let raw: Option<Option<String>> = conn
+        .query_row("SELECT metadata FROM shows WHERE id = ?1", params![id], |r| r.get(0))
+        .ok();
+    Ok(parse_metadata(raw.flatten()).and_then(|m| m.poster_url))
+}
+
 pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
     let conn = pool.get()?;
     let show = conn

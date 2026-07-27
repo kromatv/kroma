@@ -4,13 +4,8 @@
 
 import { hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import {
-  IconArrowLeft,
-  IconChevronLeft,
-  IconChevronRight,
-  IconFlame,
-  IconMoodEmpty,
-} from '@tabler/icons-react';
+import { Button, EmptyState } from '@kroma/ui/kit';
+import { IconArrowLeft, IconFlame } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -19,7 +14,7 @@ import {
   useTrendingPage,
 } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
 // Same auto-fill poster grid as the catalogue (see cards.tsx GRID).
 const GRID =
@@ -57,7 +52,7 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
       </h1>
 
       {!canDiscover ? (
-        <EmptyState icon={<IconMoodEmpty size={32} stroke={1.5} />} title={t('discover.empty')} />
+        <EmptyState icon="mood-empty" title={t('discover.empty')} />
       ) : (
         <>
           <Body state={state} />
@@ -83,9 +78,7 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
     );
   }
   if (state.entries.length === 0) {
-    return (
-      <EmptyState icon={<IconMoodEmpty size={32} stroke={1.5} />} title={t('discover.noResults')} />
-    );
+    return <EmptyState icon="mood-empty" title={t('discover.noResults')} />;
   }
   return (
     <div className={GRID}>
@@ -103,26 +96,27 @@ function Pager({
 }: Readonly<{ page: number; totalPages: number; onGo: (n: number) => void }>) {
   const t = useT();
   if (totalPages <= 1) return null;
-  const btn =
-    'inline-flex h-10 items-center gap-1.5 rounded-xl border border-border-strong bg-surface-1 px-4 text-[13.5px] font-semibold text-text transition-colors hover:border-accent/60 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border-strong';
   return (
     <div className="mt-10 flex items-center justify-center gap-4">
-      <button type="button" className={btn} onClick={() => onGo(page - 1)} disabled={page <= 1}>
-        <IconChevronLeft size={16} stroke={2.4} />
-        {t('discover.prev')}
-      </button>
+      <Button
+        variant="glass"
+        size="sm"
+        icon="chevron-left"
+        label={t('discover.prev')}
+        onPress={() => onGo(page - 1)}
+        disabled={page <= 1}
+      />
       <span className="text-[13.5px] font-semibold tabular-nums text-dim">
         {t('discover.pageOf', { page: String(page), total: String(totalPages) })}
       </span>
-      <button
-        type="button"
-        className={btn}
-        onClick={() => onGo(page + 1)}
+      <Button
+        variant="glass"
+        size="sm"
+        iconRight="chevron-right"
+        label={t('discover.next')}
+        onPress={() => onGo(page + 1)}
         disabled={page >= totalPages}
-      >
-        {t('discover.next')}
-        <IconChevronRight size={16} stroke={2.4} />
-      </button>
+      />
     </div>
   );
 }

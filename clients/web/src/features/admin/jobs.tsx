@@ -5,15 +5,8 @@
 
 import { type JobInfo, KromaEvents, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import {
-  IconBolt,
-  IconCalendarClock,
-  IconChevronDown,
-  IconClock,
-  IconClockBolt,
-  IconPlayerPlay,
-  IconPlayerStop,
-} from '@tabler/icons-react';
+import { Button, Chip, EmptyState, IconButton, Txt } from '@kroma/ui/kit';
+import { IconBolt, IconClock } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { JobDetailPanel } from '#web/features/admin/jobs-detail';
 import { dur, rel } from '#web/features/admin/jobs-format';
@@ -22,7 +15,14 @@ import { PageHeader, useAsyncAction, useCap, usePoll } from '#web/features/admin
 import { C, Card, Pill, ProgressBar, Section, Toggle } from '#web/features/admin/ui';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, TableSkeleton } from '#web/shared/ui';
+import { TableSkeleton } from '#web/shared/ui';
+
+/** Cron strings read best in a monospace, which the kit chip's label is not. */
+const CRON = {
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  fontSize: 11.5,
+  fontWeight: '600',
+} as const;
 
 /** Live progress pushed over the WS bus, keyed by job key. */
 type LiveProgress = Record<string, { done: number; total: number }>;
@@ -69,9 +69,7 @@ export function JobsPage() {
           </div>
         </Section>
       ))}
-      {data && jobs.length === 0 ? (
-        <EmptyState icon={<IconClockBolt size={32} stroke={1.5} />} title={t('jobs.empty')} />
-      ) : null}
+      {data && jobs.length === 0 ? <EmptyState icon="clock-bolt" title={t('jobs.empty')} /> : null}
     </>
   );
 }
@@ -125,38 +123,32 @@ function JobActions({
         <Toggle on={job.enabled} onChange={canManage ? onToggle : undefined} />
       ) : null}
       {job.running ? (
-        <button
-          type="button"
-          onClick={onCancel}
+        <Button
+          variant="danger"
+          size="sm"
+          icon="player-stop"
+          label={t('jobs.cancel')}
+          onPress={onCancel}
           disabled={!canManage || busy}
-          className="inline-flex items-center gap-1.5 rounded-[9px] border border-[#E8536A]/25 bg-[#E8536A]/10 px-3.5 py-2.25 text-[13px] font-semibold text-[#E8536A] disabled:opacity-50"
-        >
-          <IconPlayerStop size={15} stroke={2} />
-          {t('jobs.cancel')}
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onRun}
-          disabled={!canManage || busy}
-          className="inline-flex items-center gap-1.5 rounded-[9px] border border-border-strong bg-surface-2 px-3.5 py-2.25 text-[13px] font-semibold text-text disabled:opacity-50"
-        >
-          <IconPlayerPlay size={15} stroke={2} />
-          {t('jobs.runNow')}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={onToggleOpen}
-        className="rounded-md p-1.5 text-muted transition-colors hover:text-text"
-        aria-label={t('jobs.history')}
-      >
-        <IconChevronDown
-          size={18}
-          stroke={2}
-          className={`transition-transform ${open ? 'rotate-180' : ''}`}
         />
-      </button>
+      ) : (
+        <Button
+          variant="glass"
+          size="sm"
+          icon="player-play"
+          label={t('jobs.runNow')}
+          onPress={onRun}
+          disabled={!canManage || busy}
+        />
+      )}
+      <IconButton
+        variant="ghost"
+        size={30}
+        glyph={18}
+        icon={open ? 'chevron-up' : 'chevron-down'}
+        label={t('jobs.history')}
+        onPress={onToggleOpen}
+      />
     </div>
   );
 }
@@ -254,16 +246,12 @@ function ScheduleChip({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => v
   const t = useT();
   const label = job.schedule ?? t('jobs.manual');
   return (
-    <button
-      type="button"
-      onClick={onEdit}
-      disabled={!onEdit}
-      className="inline-flex items-center gap-1.5 rounded-[7px] border border-border-strong bg-surface-2 px-2 py-0.75 font-mono text-[11.5px] font-semibold text-text/75 disabled:cursor-default enabled:hover:border-accent/50"
-    >
-      <IconCalendarClock size={13} stroke={1.8} />
-      {label}
-      {job.customized ? <span className="text-accent">•</span> : null}
-    </button>
+    <Chip variant="surface" icon="calendar-clock" onPress={onEdit} disabled={!onEdit}>
+      <Txt style={CRON} color="textMuted">
+        {label}
+      </Txt>
+      {job.customized ? <Txt color="accent">•</Txt> : null}
+    </Chip>
   );
 }
 

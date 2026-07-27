@@ -107,9 +107,13 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
           {t('account.sessionActive')}
         </span>
       ) : (
-        <Button variant="ghost" size="sm" onClick={revoke} disabled={revoking}>
-          {revoking ? t('common.saving') : t('account.signOutDevice')}
-        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          label={revoking ? t('common.saving') : t('account.signOutDevice')}
+          onPress={revoke}
+          loading={revoking}
+        />
       )}
     </div>
   );

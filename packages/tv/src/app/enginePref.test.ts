@@ -12,7 +12,6 @@ function fakeStorage(initial: Record<string, string> = {}) {
 }
 
 const tauri = { core: { invoke: () => undefined }, event: { listen: () => undefined } };
-const exo = { load: () => undefined, command: () => undefined };
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -68,12 +67,6 @@ describe('getEnginePref / setEnginePref', () => {
 });
 
 describe('availableEngines', () => {
-  it('offers exo + vlc on the Android TV shell (not remux - the WebView cannot decode HEVC)', () => {
-    vi.stubGlobal('__KROMA_ANDROID__', exo);
-    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Linux; Android 12)' });
-    expect(availableEngines()).toEqual(['auto', 'exo', 'vlc']);
-  });
-
   it('offers avplay + remux on Tizen', () => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (SMART-TV; Tizen 6.0)' });
     expect(availableEngines()).toEqual(['auto', 'avplay', 'remux']);
@@ -111,7 +104,7 @@ describe('availableEngines', () => {
 
 describe('ENGINE_LABEL_KEY', () => {
   it('maps every engine to its i18n label key', () => {
-    const engines: EnginePref[] = ['auto', 'avplay', 'webview', 'remux', 'mpv', 'exo', 'vlc'];
+    const engines: EnginePref[] = ['auto', 'avplay', 'webview', 'remux', 'mpv'];
     for (const e of engines) {
       expect(ENGINE_LABEL_KEY[e]).toBe(`playbackEngine.${e}`);
     }

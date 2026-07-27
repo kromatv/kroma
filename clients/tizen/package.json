@@ -6,10 +6,10 @@
   "description": "KROMA Samsung Tizen TV client thin shell over @kroma/tv.",
   "scripts": {
     "dev": "vite",
-    "build": "tsgo --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && bun ../tv-build/stamp-version.ts",
     "build:fast": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsc --noEmit",
     "doctor": "make doctor",
     "package": "make package",
     "deploy": "make deploy",
@@ -20,7 +20,8 @@
     "@kroma/tv": "workspace:*",
     "@kroma/ui": "workspace:*",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",

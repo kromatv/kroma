@@ -1,22 +1,31 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_DISCOVERY_CANDIDATES,
   discoverServer,
   discoverServers,
   getLocalIPv4,
+  resolveServerOrigin,
   subnetCandidates,
 } from './discover';
 
 // A fetch stub driven by a URL -> health-body map. Any URL absent from the map
 // resolves as a non-ok response (a dead host).
-type Health = { ok?: boolean; status?: string; throws?: boolean; body?: Record<string, unknown> };
+type Health = {
+  ok?: boolean;
+  status?: string;
+  throws?: boolean;
+  body?: Record<string, unknown>;
+  /** Where the answer really came from, when the server redirected. */
+  url?: string;
+};
 function fakeFetch(map: Record<string, Health>): typeof globalThis.fetch {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     const h = map[url];
-    if (!h) return { ok: false, json: async () => ({}) } as Response;
+    if (!h) return { ok: false, url, json: async () => ({}) } as Response;
     return {
       ok: h.ok ?? true,
+      url: h.url ?? url,
       json: async () => {
         if (h.throws) throw new Error('bad json');
         return { status: h.status ?? 'ok', ...h.body };
@@ -48,7 +57,138 @@ describe('subnetCandidates', () => {
 });
 
 describe('getLocalIPv4', () => {
+  afterEach(() => {
+    for (const key of ['tizen', 'webOS', 'RTCPeerConnection']) {
+      delete (globalThis as Record<string, unknown>)[key];
+    }
+  });
+
   it('resolves null when no platform network API is available (node)', async () => {
+    await expect(getLocalIPv4()).resolves.toBeNull();
+  });
+
+  // Tizen. `getPropertyValue(prop, onSuccess, onError)`, asked for Wi-Fi first
+  // and Ethernet second. A set that is plugged in AND associated answers both,
+  // which is why the order is the preference.
+  function tizenWith(answers: Record<string, { ipAddress?: string } | 'error'>) {
+    (globalThis as Record<string, unknown>).tizen = {
+      systeminfo: {
+        getPropertyValue(
+          prop: string,
+          onSuccess: (v: { ipAddress?: string }) => void,
+          onError: () => void,
+        ) {
+          const a = answers[prop];
+          if (a === undefined || a === 'error') onError();
+          else onSuccess(a);
+        },
+      },
+    };
+  }
+
+  it('takes the Tizen Wi-Fi address when there is one', async () => {
+    tizenWith({ WIFI_NETWORK: { ipAddress: '192.168.1.42' } });
+    await expect(getLocalIPv4()).resolves.toBe('192.168.1.42');
+  });
+
+  it('falls back to Tizen Ethernet when Wi-Fi is unset', async () => {
+    // 0.0.0.0 is what an idle Tizen radio reports, and it is not an address.
+    tizenWith({
+      WIFI_NETWORK: { ipAddress: '0.0.0.0' },
+      ETHERNET_NETWORK: { ipAddress: '10.0.0.7' },
+    });
+    await expect(getLocalIPv4()).resolves.toBe('10.0.0.7');
+  });
+
+  it('falls back to Tizen Ethernet when the Wi-Fi query itself fails', async () => {
+    tizenWith({ WIFI_NETWORK: 'error', ETHERNET_NETWORK: { ipAddress: '10.0.0.8' } });
+    await expect(getLocalIPv4()).resolves.toBe('10.0.0.8');
+  });
+
+  it('resolves null when neither Tizen interface answers', async () => {
+    tizenWith({ WIFI_NETWORK: 'error', ETHERNET_NETWORK: 'error' });
+    await expect(getLocalIPv4()).resolves.toBeNull();
+  });
+
+  it('survives a Tizen bridge that throws outright', async () => {
+    (globalThis as Record<string, unknown>).tizen = {
+      systeminfo: {
+        getPropertyValue() {
+          throw new Error('systeminfo unavailable');
+        },
+      },
+    };
+    await expect(getLocalIPv4()).resolves.toBeNull();
+  });
+
+  // webOS. One luna call; wired wins over wifi for the same "plugged in is the
+  // better route" reason.
+  function webOsWith(res: unknown, fail = false) {
+    (globalThis as Record<string, unknown>).webOS = {
+      service: {
+        request(_uri: string, opts: { onSuccess: (r: unknown) => void; onFailure: () => void }) {
+          if (fail) opts.onFailure();
+          else opts.onSuccess(res);
+        },
+      },
+    };
+  }
+
+  it('prefers the webOS wired address over the wireless one', async () => {
+    webOsWith({ wired: { ipAddress: '10.1.1.5' }, wifi: { ipAddress: '192.168.0.9' } });
+    await expect(getLocalIPv4()).resolves.toBe('10.1.1.5');
+  });
+
+  it('uses the webOS wifi address when there is no wired one', async () => {
+    webOsWith({ wifi: { ipAddress: '192.168.0.9' } });
+    await expect(getLocalIPv4()).resolves.toBe('192.168.0.9');
+  });
+
+  it('resolves null when the webOS request fails', async () => {
+    webOsWith(null, true);
+    await expect(getLocalIPv4()).resolves.toBeNull();
+  });
+
+  // WebRTC, the browser fallback: read the host candidate off an ICE gather.
+  function rtcEmitting(candidates: (string | null)[]) {
+    (globalThis as Record<string, unknown>).RTCPeerConnection = class {
+      onicecandidate: ((e: { candidate: { candidate: string } | null }) => void) | null = null;
+      createDataChannel() {}
+      close() {}
+      setLocalDescription() {}
+      async createOffer() {
+        queueMicrotask(() => {
+          for (const c of candidates) {
+            this.onicecandidate?.({ candidate: c === null ? null : { candidate: c } });
+          }
+        });
+        return {};
+      }
+    };
+  }
+
+  it('reads a private IPv4 out of an ICE candidate', async () => {
+    rtcEmitting(['candidate:1 1 udp 2113 192.168.4.21 54321 typ host']);
+    await expect(getLocalIPv4()).resolves.toBe('192.168.4.21');
+  });
+
+  it('ignores mDNS-obfuscated and public candidates', async () => {
+    // `.local` carries no address at all, and a public reflexive address is the
+    // router's, not this device's - neither can seed a subnet scan.
+    rtcEmitting([
+      'candidate:1 1 udp 2113 9f8e.local 54321 typ host',
+      'candidate:2 1 udp 1686 203.0.113.7 54321 typ srflx',
+      'candidate:3 1 udp 2113 172.16.3.9 54321 typ host',
+    ]);
+    await expect(getLocalIPv4()).resolves.toBe('172.16.3.9');
+  });
+
+  it('resolves null when the peer connection cannot be built', async () => {
+    (globalThis as Record<string, unknown>).RTCPeerConnection = class {
+      constructor() {
+        throw new Error('no webrtc');
+      }
+    };
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 });
@@ -181,5 +321,134 @@ describe('discoverServers', () => {
       fetch: fakeFetch({}),
     });
     expect(found).toEqual([]);
+  });
+});
+
+describe('resolveServerOrigin', () => {
+  const H = '/api/health';
+
+  it('prefers TLS on the standard port for a bare host', async () => {
+    const fetch = fakeFetch({
+      [`https://media.example.net${H}`]: {},
+      [`http://media.example.net${H}`]: {},
+    });
+    expect(await resolveServerOrigin('media.example.net', { fetch })).toEqual({
+      url: 'https://media.example.net',
+      secure: true,
+    });
+  });
+
+  it("falls back to this project's own port when the standard ones are dead", async () => {
+    const fetch = fakeFetch({ [`http://media.example.net:4040${H}`]: {} });
+    expect(await resolveServerOrigin('media.example.net', { fetch })).toEqual({
+      url: 'http://media.example.net:4040',
+      secure: false,
+    });
+  });
+
+  // The case that makes the padlock honest: a plain-http probe SUCCEEDS against
+  // a server that redirects, so only the final URL can be trusted.
+  it('reports https when http redirects to it', async () => {
+    const fetch = fakeFetch({
+      [`http://media.example.net${H}`]: { url: `https://media.example.net${H}` },
+    });
+    expect(await resolveServerOrigin('media.example.net', { fetch })).toEqual({
+      url: 'https://media.example.net',
+      secure: true,
+    });
+  });
+
+  it('honours an explicit scheme and port exactly', async () => {
+    const fetch = fakeFetch({ [`https://media.example.net:8443${H}`]: {} });
+    expect(await resolveServerOrigin('https://media.example.net:8443', { fetch })).toEqual({
+      url: 'https://media.example.net:8443',
+      secure: true,
+    });
+  });
+
+  it('tries 4040 for an explicit scheme with no port', async () => {
+    const fetch = fakeFetch({ [`https://media.example.net:4040${H}`]: {} });
+    expect(await resolveServerOrigin('https://media.example.net', { fetch })).toEqual({
+      url: 'https://media.example.net:4040',
+      secure: true,
+    });
+  });
+
+  it('never swaps a typed scheme for the other one', async () => {
+    const fetch = fakeFetch({ [`https://media.example.net${H}`]: {} });
+    expect(await resolveServerOrigin('http://media.example.net', { fetch })).toBeNull();
+  });
+
+  it('is null when nothing answers, which is not the same as insecure', async () => {
+    expect(await resolveServerOrigin('media.example.net', { fetch: fakeFetch({}) })).toBeNull();
+  });
+
+  it('ignores an empty address', async () => {
+    expect(await resolveServerOrigin('   ', { fetch: fakeFetch({}) })).toBeNull();
+  });
+});
+
+describe('discovery via the DNS-SD browse', () => {
+  const H = '/api/health';
+
+  it('prefers an announced server over the named candidate', async () => {
+    const fetch = fakeFetch({
+      [`http://kroma.local:4040${H}`]: {},
+      [`http://announced.local:9000${H}`]: {},
+    });
+    const browse = async () => [{ host: 'announced.local', port: 9000 }];
+    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+      'http://announced.local:9000',
+    );
+  });
+
+  // The whole point of announcing: a port the sweep would never have scanned.
+  it('finds a server on a port nothing would have guessed', async () => {
+    const fetch = fakeFetch({ [`https://media.local:8443${H}`]: {} });
+    const browse = async () => [{ host: 'media.local', port: 8443 }];
+    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+      'https://media.local:8443',
+    );
+  });
+
+  it('falls back to the named candidate when the browse finds nothing', async () => {
+    const fetch = fakeFetch({ [`http://kroma.local:4040${H}`]: {} });
+    const browse = async () => [];
+    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+      'http://kroma.local:4040',
+    );
+  });
+
+  // An accelerator in front of two working fallbacks must never be the reason
+  // discovery fails.
+  it('falls back when the browse throws', async () => {
+    const fetch = fakeFetch({ [`http://kroma.local:4040${H}`]: {} });
+    const browse = async () => {
+      throw new Error('no multicast on this network');
+    };
+    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+      'http://kroma.local:4040',
+    );
+  });
+
+  it('ignores an announced server that does not actually answer', async () => {
+    const fetch = fakeFetch({ [`http://kroma.local:4040${H}`]: {} });
+    const browse = async () => [{ host: 'ghost.local', port: 4040 }];
+    await expect(discoverServer({ browse, scanSubnet: false, fetch })).resolves.toBe(
+      'http://kroma.local:4040',
+    );
+  });
+
+  it('lists announced servers first in discoverServers', async () => {
+    const fetch = fakeFetch({
+      [`http://kroma.local:4040${H}`]: { body: { instanceId: 'named' } },
+      [`http://announced.local:9000${H}`]: { body: { instanceId: 'announced' } },
+    });
+    const browse = async () => [{ host: 'announced.local', port: 9000 }];
+    const found = await discoverServers({ browse, scanSubnet: false, fetch });
+    expect(found.map((f) => f.url)).toEqual([
+      'http://announced.local:9000',
+      'http://kroma.local:4040',
+    ]);
   });
 });

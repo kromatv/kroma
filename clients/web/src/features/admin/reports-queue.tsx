@@ -4,7 +4,8 @@
 
 import { KromaEvents, type Report, type ReportCategory, type ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconFlag } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useEffect, useState } from 'react';
 import { ReportDrawer } from '#web/features/admin/report-drawer';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
@@ -21,7 +22,7 @@ import {
 import { Avatar } from '#web/features/admin/ui';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, TableSkeleton } from '#web/shared/ui';
+import { TableSkeleton } from '#web/shared/ui';
 
 type StatusBucket = ReportStatus | 'all';
 type CategoryFilter = ReportCategory | 'all';
@@ -229,7 +230,7 @@ export function ReportsQueuePage() {
         {data && rows.length === 0 ? (
           <div className="py-6">
             <EmptyState
-              icon={<IconFlag size={32} stroke={1.5} />}
+              icon="flag"
               title={all.length === 0 ? t('reports.empty') : t('reports.noMatch')}
             />
           </div>

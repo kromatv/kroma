@@ -3,6 +3,9 @@
 // a clean empty state.
 
 import { episodeTag, formatRuntime, type MediaItem } from '@kroma/core';
+import { Icon } from '@kroma/ui/kit';
+import { useQuery } from '@tanstack/react-query';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -18,7 +21,6 @@ import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
-import { DownloadIcon, PlayIcon, TrashIcon } from '#mobile/player/icons';
 
 function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
   return (
@@ -26,7 +28,7 @@ function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
       <FadeImage uri={uri} seed={seed} radius={radius.sm} style={styles.thumb} />
       <View style={styles.playBadge}>
         <View style={styles.playCircle}>
-          <PlayIcon size={15} />
+          <Icon name="player-play-filled" size={15} />
         </View>
       </View>
     </View>
@@ -57,7 +59,7 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
           }}
           style={styles.deleteAction}
         >
-          <TrashIcon size={22} />
+          <Icon name="trash" size={22} stroke={2} />
           <Text style={styles.deleteLabel}>{t('common.delete')}</Text>
         </Pressable>
       )}
@@ -80,8 +82,17 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
   );
 }
 
-function activeLabel(t: ReturnType<typeof useT>, progress: number, queued?: boolean): string {
-  if (queued) return t('offline.queued');
+function activeLabel(
+  t: ReturnType<typeof useT>,
+  progress: number,
+  mode: 'downloading' | 'paused' | 'queued',
+): string {
+  if (mode === 'queued') return t('offline.queued');
+  if (mode === 'paused') {
+    return progress >= 0
+      ? `${t('offline.paused')} · ${Math.round(progress * 100)}%`
+      : t('offline.paused');
+  }
   if (progress >= 0) return t('offline.downloading', { percent: Math.round(progress * 100) });
   return t('offline.downloading', { percent: '' }).replace('%', '').trim();
 }
@@ -89,39 +100,133 @@ function activeLabel(t: ReturnType<typeof useT>, progress: number, queued?: bool
 function ActiveRow({
   item,
   progress,
-  queued,
+  mode,
 }: Readonly<{
   item: MediaItem;
   progress: number;
-  queued?: boolean;
+  mode: 'downloading' | 'paused' | 'queued';
 }>) {
   const t = useT();
   const client = useClient();
   const downloads = useDownloads();
-  const confirmCancel = () =>
-    Alert.alert(t('offline.cancelDownload'), undefined, [
-      { text: t('common.back'), style: 'cancel' },
+  const showOptions = () => {
+    if (mode === 'queued') {
+      Alert.alert(t('offline.cancelDownload'), undefined, [
+        { text: t('common.back'), style: 'cancel' },
+        {
+          text: t('offline.cancelDownload'),
+          style: 'destructive',
+          onPress: () => downloads.cancel(item.id),
+        },
+      ]);
+      return;
+    }
+    const paused = mode === 'paused';
+    Alert.alert(item.showTitle ?? item.metadata?.title ?? item.title, undefined, [
+      {
+        text: t(paused ? 'offline.resume' : 'offline.pause'),
+        onPress: () => (paused ? downloads.resume(item.id) : downloads.pause(item.id)),
+      },
       {
         text: t('offline.cancelDownload'),
         style: 'destructive',
         onPress: () => downloads.cancel(item.id),
       },
+      { text: t('common.back'), style: 'cancel' },
     ]);
+  };
   return (
-    <Pressable onPress={confirmCancel} style={styles.row}>
+    <Pressable onPress={showOptions} style={styles.row}>
       <RowArt uri={client.backdropFor(item) ?? client.posterFor(item)} seed={item.id} />
       <View style={styles.text}>
         <Text numberOfLines={2} style={styles.rowTitle}>
           {item.showTitle ?? item.metadata?.title ?? item.title}
         </Text>
         <Text numberOfLines={1} style={styles.rowSub}>
-          {activeLabel(t, progress, queued)}
+          {activeLabel(t, progress, mode)}
         </Text>
       </View>
       <View style={styles.ringBox}>
-        <ProgressRing progress={progress} size={36} />
+        {mode === 'paused' ? (
+          <View style={styles.pausedRing}>
+            <ProgressRing progress={Math.max(0.02, progress)} size={36} />
+            <View pointerEvents="none" style={styles.pausedRingGlyph}>
+              <Icon name="player-pause-filled" size={12} color={colors.textDim} />
+            </View>
+          </View>
+        ) : (
+          <ProgressRing progress={progress} size={36} />
+        )}
       </View>
     </Pressable>
+  );
+}
+
+function LegendItem({
+  color,
+  outlined,
+  label,
+}: Readonly<{ color?: string; outlined?: boolean; label: string }>) {
+  return (
+    <View style={styles.legendItem}>
+      <View
+        style={[
+          styles.legendDot,
+          outlined
+            ? { borderWidth: 1.5, borderColor: colors.borderStrong }
+            : { backgroundColor: color },
+        ]}
+      />
+      <Text style={styles.legendText}>{label}</Text>
+    </View>
+  );
+}
+
+/** Netflix-style device storage meter: what the downloads occupy on this
+ * phone, against everything else and what is left. One bar, identity carried
+ * by the legend dots; the sizes stay in ink, never in segment colour. */
+function StorageMeter() {
+  const t = useT();
+  const downloads = useDownloads();
+  const storage = useQuery({
+    queryKey: ['deviceStorage'],
+    queryFn: async () => ({
+      free: await FileSystem.getFreeDiskStorageAsync(),
+      total: await FileSystem.getTotalDiskCapacityAsync(),
+    }),
+    refetchInterval: 30_000,
+  });
+  if (!storage.data || storage.data.total <= 0) return null;
+  const { free, total } = storage.data;
+  const app = downloads.totalBytes;
+  const other = Math.max(0, total - free - app);
+  return (
+    <View style={styles.meter}>
+      <View style={styles.meterTrack}>
+        <View style={[styles.meterFill, { flex: other / total }]} />
+        {app > 0 ? (
+          <View
+            style={[
+              styles.meterFill,
+              // A film on a terabyte of flash is a fraction of a pixel; a
+              // download that exists must stay visible.
+              { flex: app / total, minWidth: 6, backgroundColor: colors.accent },
+            ]}
+          />
+        ) : null}
+        <View style={{ flex: free / total }} />
+      </View>
+      <View style={styles.meterLegend}>
+        {app > 0 ? (
+          <LegendItem color={colors.accent} label={`KROMA · ${formatBytes(app)}`} />
+        ) : null}
+        <LegendItem
+          color={colors.borderStrong}
+          label={`${t('offline.storageOther')} · ${formatBytes(other)}`}
+        />
+        <LegendItem outlined label={`${t('offline.storageFree')} · ${formatBytes(free)}`} />
+      </View>
+    </View>
   );
 }
 
@@ -131,6 +236,7 @@ export default function Downloads() {
   const hasAnything =
     downloads.entries.length > 0 ||
     downloads.downloading.length > 0 ||
+    downloads.paused.length > 0 ||
     downloads.queuedItems.length > 0;
 
   return (
@@ -143,28 +249,27 @@ export default function Downloads() {
           renderItem={({ item }) => <DownloadRow entry={item} />}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            downloads.downloading.length > 0 || downloads.queuedItems.length > 0 ? (
+            downloads.downloading.length > 0 ||
+            downloads.paused.length > 0 ||
+            downloads.queuedItems.length > 0 ? (
               <View style={styles.activeBlock}>
                 {downloads.downloading.map(({ item, progress }) => (
-                  <ActiveRow key={item.id} item={item} progress={progress} />
+                  <ActiveRow key={item.id} item={item} progress={progress} mode="downloading" />
+                ))}
+                {downloads.paused.map(({ item, progress }) => (
+                  <ActiveRow key={item.id} item={item} progress={progress} mode="paused" />
                 ))}
                 {downloads.queuedItems.map((item) => (
-                  <ActiveRow key={item.id} item={item} progress={-1} queued />
+                  <ActiveRow key={item.id} item={item} progress={-1} mode="queued" />
                 ))}
               </View>
             ) : null
           }
-          ListFooterComponent={
-            downloads.entries.length > 0 ? (
-              <Text style={styles.footer}>
-                {t('offline.storageUsed', { size: formatBytes(downloads.totalBytes) })}
-              </Text>
-            ) : null
-          }
+          ListFooterComponent={<StorageMeter />}
         />
       ) : (
         <EmptyState
-          icon={<DownloadIcon size={34} color={colors.textDim} />}
+          icon={<Icon name="download" size={34} stroke={2} color={colors.textDim} />}
           title={t('offline.downloads')}
           hint={t('offline.empty')}
         />
@@ -211,6 +316,16 @@ const styles = StyleSheet.create({
   rowTitle: { ...type.body, fontWeight: '600' },
   rowSub: { ...type.small },
   ringBox: { paddingRight: 4 },
+  pausedRing: { alignItems: 'center', justifyContent: 'center' },
+  pausedRingGlyph: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   deleteAction: {
     width: 92,
     marginLeft: 8,
@@ -221,5 +336,24 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   deleteLabel: { ...type.small, color: colors.text, fontWeight: '700' },
-  footer: { ...type.small, textAlign: 'center', marginTop: spacing.md },
+  meter: { marginTop: spacing.lg, paddingHorizontal: 8, gap: 10 },
+  meterTrack: {
+    flexDirection: 'row',
+    height: 8,
+    borderRadius: 999,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceRaised,
+    gap: 2,
+  },
+  meterFill: { borderRadius: 999, backgroundColor: colors.borderStrong },
+  meterLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: spacing.md,
+    rowGap: 6,
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { ...type.small, color: colors.textDim },
 });

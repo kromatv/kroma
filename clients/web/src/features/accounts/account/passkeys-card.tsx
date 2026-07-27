@@ -5,7 +5,8 @@
 
 import { apiErrorText, type PasskeyInfo } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconKey, IconPlus, IconShieldLock } from '@tabler/icons-react';
+import { Txt } from '@kroma/ui/kit';
+import { IconKey, IconShieldLock } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { deviceInfo } from '#web/features/accounts/account/sessions-card';
@@ -15,6 +16,9 @@ import { kromaClient } from '#web/shared/lib/api';
 import { userQueries } from '#web/shared/lib/queries';
 import { createPasskey, passkeysSupported } from '#web/shared/lib/webauthn';
 import { Button } from '#web/shared/ui';
+
+/** The kit sm-button label metrics, tinted danger for the destructive text action. */
+const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
 /** A DOMException raised because the user dismissed the browser prompt (not a
  * real failure worth surfacing). */
@@ -60,14 +64,10 @@ function PasskeyRow({
           </div>
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={remove}
-        disabled={removing}
-        className="text-danger"
-      >
-        {removing ? t('common.saving') : t('common.delete')}
+      <Button variant="ghost" size="sm" onPress={remove} loading={removing}>
+        <Txt color="danger" style={DANGER_LABEL}>
+          {removing ? t('common.saving') : t('common.delete')}
+        </Txt>
       </Button>
     </div>
   );
@@ -120,13 +120,11 @@ export function PasskeysCard() {
         {supported ? (
           <Button
             size="sm"
-            icon={<IconPlus size={15} />}
-            onClick={add}
-            disabled={busy}
-            className="flex-none"
-          >
-            {busy ? t('common.saving') : t('account.passkeyAdd')}
-          </Button>
+            icon="plus"
+            label={busy ? t('common.saving') : t('account.passkeyAdd')}
+            onPress={add}
+            loading={busy}
+          />
         ) : null}
       </div>
 

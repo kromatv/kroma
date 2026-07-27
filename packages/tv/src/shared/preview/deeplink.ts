@@ -31,20 +31,42 @@ function parsePayload(raw: string): DeepLink | null {
   return null;
 }
 
-/** The Android TV shell (MainActivity) hands a Watch Next tile's item id in via
- *  `?deeplink=<id>` on cold launch. We don't know movie-vs-show here, so target
- *  the movie catalog (the common continue-watching case); an unmatched id simply
- *  doesn't navigate. */
-function readAndroidDeepLink(): DeepLink | null {
-  if (typeof location === 'undefined') return null;
-  const id = new URLSearchParams(location.search).get('deeplink');
-  return id ? { type: 'movie', id } : null;
+// A deep link handed in by a SHELL rather than read off a platform global.
+//
+// The native TV app is the case: its launcher rows arrive through React
+// Native's `Linking`, which no code in this package can subscribe to. So the
+// shell parses the URL and pushes the result here, exactly the way
+// `app/searchRequest` takes a search from Siri.
+//
+// A link that arrives before anyone is listening is KEPT (a launcher tile cold-
+// starts the app, so the link exists while there is still no tree to put it in)
+// and read by `readDeepLink` when the catalogue mounts. Once there IS a
+// listener the link goes straight to it and nothing is kept - otherwise a later
+// remount would replay a tile the user opened minutes ago.
+let pending: DeepLink | null = null;
+const listeners = new Set<(link: DeepLink) => void>();
+
+/** Open `link`, from outside React. Called by a shell (see the native TV app's
+ * `lib/launcher-links`). */
+export function requestDeepLink(link: DeepLink): void {
+  if (listeners.size === 0) {
+    pending = link;
+    return;
+  }
+  for (const listener of listeners) listener(link);
+}
+
+/** The link a shell pushed before the app was listening, once. */
+function takePendingDeepLink(): DeepLink | null {
+  const link = pending;
+  pending = null;
+  return link;
 }
 
 /** The tile selection that launched/targeted the app, or null. */
 export function readDeepLink(): DeepLink | null {
   const t = tizen();
-  if (!t) return readAndroidDeepLink();
+  if (!t) return takePendingDeepLink();
   try {
     const req = t.application.getCurrentApplication().getRequestedAppControl();
     const payload = req?.appControl.data.find((d) => d.key === 'PAYLOAD')?.value?.[0];
@@ -58,23 +80,32 @@ export function readDeepLink(): DeepLink | null {
  *  launch is covered by readDeepLink(); this handles selection while open.
  *  Returns a cleanup function. */
 export function onDeepLink(cb: (link: DeepLink) => void): () => void {
-  if (typeof window === 'undefined') return () => undefined;
-  // Android TV warm start: MainActivity dispatches `kroma-deeplink` with the item
-  // id as `detail` (see MainActivity.onNewIntent).
-  const android = (e: Event) => {
-    const id = (e as CustomEvent<string>).detail;
-    if (typeof id === 'string' && id) cb({ type: 'movie', id });
+  // The shell bus first: it is the only source on the native TV clients, and it
+  // is where a link pushed while the app was starting is waiting.
+  listeners.add(cb);
+  const link = takePendingDeepLink();
+  if (link) cb(link);
+  const unsubscribe = () => {
+    listeners.delete(cb);
   };
-  window.addEventListener('kroma-deeplink', android);
 
-  if (!tizen()) return () => window.removeEventListener('kroma-deeplink', android);
+  // The sources below are WebView-shell events, so the native TV clients have
+  // nothing to subscribe to. Testing `window` alone is not enough to detect
+  // them: React Native defines `window` as an alias of `global`, and only trips
+  // over `addEventListener` missing from it.
+  if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+    return unsubscribe;
+  }
+  // Tizen warm start: the platform re-targets the running app with a new
+  // appControl when another preview tile is selected.
+  if (!tizen()) return unsubscribe;
   const handler = () => {
     const link = readDeepLink();
     if (link) cb(link);
   };
   window.addEventListener('appcontrol', handler);
   return () => {
+    unsubscribe();
     window.removeEventListener('appcontrol', handler);
-    window.removeEventListener('kroma-deeplink', android);
   };
 }

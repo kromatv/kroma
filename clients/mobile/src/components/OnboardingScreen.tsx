@@ -3,6 +3,7 @@
 // position on every screen and every phase; content swaps beneath it with no
 // motion, so steps feel like one continuous surface instead of new pages.
 
+import { BackButton } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import {
@@ -24,12 +25,18 @@ import { KromaLockup } from './KromaLockup';
  * lockup anchor, keyboard avoidance and safe-area padding. */
 export function OnboardingScreen({
   keyboardBehavior,
+  onBack,
   children,
 }: Readonly<{
   /** Android KeyboardAvoidingView behavior override; iOS always pads. */
   keyboardBehavior?: NonNullable<KeyboardAvoidingViewProps['behavior']>;
+  /** Show the app's standard top-left back chevron. For screens whose content
+   *  keeps the keyboard up (the connect code), where a <BackLink> pinned to
+   *  the bottom of the column spends its whole life hidden behind it. */
+  onBack?: () => void;
   children: ReactNode;
 }>) {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const wide = useIsWide();
   return (
@@ -39,6 +46,17 @@ export function OnboardingScreen({
         style={styles.wash}
         pointerEvents="none"
       />
+      {onBack ? (
+        <View style={[styles.back, { top: insets.top + 8 }]}>
+          <BackButton
+            variant="ghost"
+            size={40}
+            hitSlop={12}
+            label={t('common.back')}
+            onPress={onBack}
+          />
+        </View>
+      ) : null}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : keyboardBehavior}
         style={styles.body}
@@ -105,6 +123,9 @@ export function BackLink({ onPress }: Readonly<{ onPress(): void }>) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   wash: { position: 'absolute', top: 0, left: 0, right: 0, height: '40%' },
+  /** Above the wash and outside the keyboard-avoiding column, so it neither
+   * tints nor moves when the keyboard does. */
+  back: { position: 'absolute', left: spacing.md, zIndex: 2 },
   body: { flex: 1 },
   inner: {
     flex: 1,

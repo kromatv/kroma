@@ -2,9 +2,11 @@
 // cancel action for still-pending ones. Slow poll + a page-scoped event
 // stream (request.updated reloads, download.progress patches the bar).
 
+import { Image } from '@kroma/admin-kit';
 import { KromaEvents, type MediaRequest, posterColors, sizedImageUrl } from '@kroma/core';
-import { Image, useLocale, useT } from '@kroma/ui';
-import { IconCalendarClock, IconInbox, IconLoader2, IconX } from '@tabler/icons-react';
+import { useLocale, useT } from '@kroma/ui';
+import { Button, EmptyState, IconButton } from '@kroma/ui/kit';
+import { IconCalendarClock } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
@@ -13,7 +15,7 @@ import { seasonsSummary } from '#web/features/requests/status';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
 
 export function MyRequestsPage() {
   const t = useT();
@@ -74,16 +76,14 @@ export function MyRequestsPage() {
 
       {requests?.length === 0 ? (
         <EmptyState
-          icon={<IconInbox size={32} stroke={1.5} />}
+          icon="inbox"
           title={t('requests.myEmpty')}
           action={
-            <button
-              type="button"
-              onClick={() => navigate({ to: '/search' })}
-              className="mt-4 rounded-xl bg-accent px-5 py-2.5 text-[14px] font-bold text-accent-ink hover:bg-accent-hover"
-            >
-              {t('requests.myEmptyCta')}
-            </button>
+            <Button
+              size="sm"
+              label={t('requests.myEmptyCta')}
+              onPress={() => navigate({ to: '/search' })}
+            />
           }
         />
       ) : null}
@@ -182,19 +182,15 @@ function RequestRow({
       </button>
       <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
       {req.status === 'pending' ? (
-        <button
-          type="button"
+        <IconButton
+          size={36}
+          glyph={15}
+          radius={8}
+          icon="x"
+          label={t('requests.cancel')}
+          onPress={onCancel}
           disabled={busy}
-          onClick={onCancel}
-          title={t('requests.cancel')}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/12 bg-[#1A1A20] text-white/55 hover:text-[#E8536A] disabled:opacity-50"
-        >
-          {busy ? (
-            <IconLoader2 size={15} stroke={2.4} className="animate-spin" />
-          ) : (
-            <IconX size={15} stroke={2.2} />
-          )}
-        </button>
+        />
       ) : null}
     </div>
   );

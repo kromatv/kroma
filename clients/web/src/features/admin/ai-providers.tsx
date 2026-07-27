@@ -5,13 +5,13 @@
 // Remove. Backed by /api/admin/llm* each card probes its own in-progress values.
 import type { KromaClient, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Icon, Button as KitButton, Txt } from '@kroma/ui/kit';
 import {
   IconCheck,
   IconChevronDown,
   IconPlugConnected,
   IconReload,
   IconStar,
-  IconTrash,
   IconX,
 } from '@tabler/icons-react';
 import { type ReactNode, useState } from 'react';
@@ -28,6 +28,9 @@ import {
   Toggle,
 } from '#web/features/admin/ui';
 import { SearchSelect } from './search-select';
+
+/** The kit sm-button label metrics, tinted danger for the destructive action. */
+const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
 /** Editable provider the view fields plus a transient `apiKey` ('' = keep the
  *  stored secret) and `hasApiKey` (whether one is stored server-side). */
@@ -290,14 +293,14 @@ function CardActions({
           {probe.text}
         </span>
       ) : null}
-      <button
-        type="button"
-        onClick={onRemove}
-        className="ml-auto inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#E8536A]"
-      >
-        <IconTrash size={15} stroke={2} />
-        {t('admin.aiRemoveProvider')}
-      </button>
+      <div className="ml-auto">
+        <KitButton variant="ghost" size="sm" onPress={onRemove}>
+          <Icon name="trash" size={15} color="danger" />
+          <Txt color="danger" style={DANGER_LABEL}>
+            {t('admin.aiRemoveProvider')}
+          </Txt>
+        </KitButton>
+      </div>
     </div>
   );
 }

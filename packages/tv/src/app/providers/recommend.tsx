@@ -8,12 +8,20 @@ import {
   useRef,
   useState,
 } from 'react';
+import { launcherBackend } from '#tv/app/launcher';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
-import { getExo } from '#tv/features/playback/player/engine';
 
-type HomeProgram = { id: string; title: string; subtitle: string; imageUrl: string; kind: string };
-// The native shell keys each launcher channel by its ROW INDEX (see HomeChannel.kt),
+type HomeProgram = {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  /** Clean full-size art for launchers that draw their own chrome (Top Shelf). */
+  backdropUrl?: string;
+  kind: string;
+};
+// The launcher backend keys each channel by its ROW INDEX (see HomeChannel.kt),
 // so the section id is not sent - only the display title + its programs.
 type HomeChannelSpec = { title: string; items: HomeProgram[] };
 
@@ -36,6 +44,7 @@ function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
     title: movie.title,
     subtitle: movie.year ? String(movie.year) : '',
     imageUrl: art,
+    backdropUrl: client.backdropFor(movie) ?? undefined,
     kind: 'movie',
   };
 }
@@ -126,18 +135,18 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
   // Mirror the recently-added + suggested titles into a KROMA preview channel on
   // the Android TV / Google TV launcher home. Guarded on the serialized payload
   // (the effect re-runs on render churn) so it pushes once per real change.
-  // No-op off the Android shell (getExo() null / no method).
+  // No-op on a television with no launcher backend registered.
   const lastPushed = useRef<string>('');
   useEffect(() => {
-    const exo = getExo();
-    if (!exo?.setHomeChannel || !client) return;
+    const launcher = launcherBackend();
+    if (!launcher || !client) return;
     const json = JSON.stringify(toHomeChannels(sections, client));
     if (json === lastPushed.current) return;
     // Don't create empty channels on the first (pre-load) render; an empty push
     // is only meaningful as a clear AFTER we've published something.
     if (json === '[]' && lastPushed.current === '') return;
     lastPushed.current = json;
-    exo.setHomeChannel(json);
+    launcher.setHomeChannel(json);
   }, [sections, client]);
 
   const value = useMemo<Recommend>(() => ({ sections, featured }), [sections, featured]);

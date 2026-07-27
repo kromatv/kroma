@@ -125,6 +125,19 @@ export const catalogQueries = {
       queryFn: () => kromaClient().personCredits(name),
     }),
 
+  /** The provider profile behind a credit (biography, birth, birthplace). A
+   * page renders fine without it, so a failed lookup resolves to an empty
+   * envelope rather than throwing the route into its error boundary. */
+  personDetails: (name: string) =>
+    queryOptions({
+      queryKey: ['person-details', name] as const,
+      staleTime: 60 * 60_000,
+      queryFn: () =>
+        kromaClient()
+          .personDetails(name)
+          .catch(() => ({ name, person: null })),
+    }),
+
   upNext: (showId: string) =>
     queryOptions({
       queryKey: ['upNext', showId] as const,

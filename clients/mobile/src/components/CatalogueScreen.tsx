@@ -10,16 +10,17 @@ import {
   type SortMode,
   sortTitles,
 } from '@kroma/core';
+import { Chip, Icon } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
+import { useGutters } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
 import { colors, spacing, type } from '#mobile/lib/theme';
 import { type CardModel, movieCard, showCard } from './cards';
 import { gridMetrics, PosterGrid } from './PosterGrid';
-import { FilmTabIcon } from './tabIcons';
-import { Chip, EmptyState, ErrorView, Loading } from './ui';
+import { EmptyState, ErrorView, Loading } from './ui';
 
 const SORT_KEYS = {
   added: 'browse.sort.added',
@@ -49,7 +50,8 @@ export function CatalogueScreen<T extends MediaItem | Show>({
   const client = useClient();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { cardW } = gridMetrics(width);
+  const gutters = useGutters();
+  const { cardW } = gridMetrics(width, gutters.left + gutters.right);
   const [sort, setSort] = useState<SortMode>('added');
   const [genre, setGenre] = useState<string | null>(null);
 
@@ -80,8 +82,8 @@ export function CatalogueScreen<T extends MediaItem | Show>({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
-        style={styles.chipStrip}
+        contentContainerStyle={[styles.chipRow, gutters.style]}
+        style={[styles.chipStrip, { marginLeft: -gutters.left, marginRight: -gutters.right }]}
       >
         {SORT_MODES.map((mode) => (
           <Chip
@@ -96,8 +98,8 @@ export function CatalogueScreen<T extends MediaItem | Show>({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
-          style={styles.chipStrip}
+          contentContainerStyle={[styles.chipRow, gutters.style]}
+          style={[styles.chipStrip, { marginLeft: -gutters.left, marginRight: -gutters.right }]}
         >
           <Chip
             label={t('browse.allGenres')}
@@ -122,10 +124,11 @@ export function CatalogueScreen<T extends MediaItem | Show>({
     <View style={styles.screen}>
       <PosterGrid
         cards={cards}
+        gutters={gutters}
         header={header}
         empty={
           <EmptyState
-            icon={<FilmTabIcon color={colors.textDim} size={34} />}
+            icon={<Icon name="movie" size={34} stroke={1.8} color={colors.textDim} />}
             title={t('search.noResults')}
           />
         }
@@ -141,6 +144,8 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: spacing.sm },
   title: { ...type.display, fontSize: 30 },
   count: { ...type.caption },
-  chipStrip: { marginHorizontal: -spacing.md, marginBottom: spacing.sm },
-  chipRow: { gap: 8, paddingHorizontal: spacing.md },
+  // Bleed the strips back out over the grid's gutters; the inline margins /
+  // paddings mirror the live gutter widths.
+  chipStrip: { marginBottom: spacing.sm },
+  chipRow: { gap: 8 },
 });

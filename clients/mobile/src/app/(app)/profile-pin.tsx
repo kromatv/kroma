@@ -5,11 +5,12 @@
 // is a one-step-at-a-time wizard; the server verifies the current PIN.
 
 import { apiErrorText } from '@kroma/core';
+import { Button } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { BioSwitchRow, LockCard, PinWizard } from '#mobile/components/profileLock';
-import { Button, ErrorBanner, Screen } from '#mobile/components/ui';
+import { ErrorBanner, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
@@ -216,8 +217,8 @@ export default function ProfilePin() {
                   onPress={() => begin({ kind: 'current', after: 'new' })}
                 />
                 <Button
+                  variant="glass"
                   label={t('account.removePin')}
-                  kind="ghost"
                   onPress={() => begin({ kind: 'current', after: 'remove' })}
                 />
               </View>

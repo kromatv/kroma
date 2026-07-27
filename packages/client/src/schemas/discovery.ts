@@ -195,6 +195,33 @@ export const SearchResponse = z.object({
 });
 export type SearchResponse = z.infer<typeof SearchResponse>;
 
+/** One person's provider profile: the biography and life facts shown above
+ * their filmography. Everything but the id is optional TMDB fills these in for
+ * the best-known names only. */
+export const PersonDetail = z.object({
+  tmdbId: z.number(),
+  /** The provider's spelling of the name (accents a filename may have lost). */
+  name: z.string(),
+  biography: z.string().nullish(),
+  /** `YYYY-MM-DD`; the age is derived client-side. */
+  birthday: z.string().nullish(),
+  deathday: z.string().nullish(),
+  placeOfBirth: z.string().nullish(),
+  /** TMDB's department vocabulary ("Acting", "Directing", …), translated in the UI. */
+  knownFor: z.string().nullish(),
+  profileUrl: z.string().nullish(),
+  tmdbUrl: z.string(),
+});
+export type PersonDetail = z.infer<typeof PersonDetail>;
+
+/** `GET /api/people/details?name=…` `person` is null whenever the provider has
+ * nothing to say (no key, unknown name, provider down). */
+export const PersonDetailResponse = z.object({
+  name: z.string(),
+  person: PersonDetail.nullish(),
+});
+export type PersonDetailResponse = z.infer<typeof PersonDetailResponse>;
+
 /** `GET /api/people?name=…` every movie + show one person is credited in. */
 export const PersonResponse = z.object({
   name: z.string(),

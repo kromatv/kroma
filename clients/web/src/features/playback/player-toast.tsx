@@ -1,4 +1,5 @@
 import { useT } from '@kroma/ui';
+import { IconButton } from '@kroma/ui/kit';
 
 /** Centered top toast for transient player notices (audio re-encode, resume, errors). */
 export function Toast({
@@ -20,14 +21,14 @@ export function Toast({
     >
       <span className="text-[13px] text-white/90">{children}</span>
       {action}
-      <button
-        type="button"
-        onClick={onDismiss}
-        className="text-white/50 hover:text-white"
-        aria-label={t('player.dismiss')}
-      >
-        ✕
-      </button>
+      <IconButton
+        variant="ghost"
+        size={28}
+        glyph={16}
+        icon="x"
+        label={t('player.dismiss')}
+        onPress={onDismiss}
+      />
     </div>
   );
 }

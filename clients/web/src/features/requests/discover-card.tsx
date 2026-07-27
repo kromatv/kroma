@@ -2,8 +2,9 @@
 // rating + availability/request chip, and a hover "request" affordance.
 // Clicks route to the local fiche when owned, else the discover detail.
 
+import { Image } from '@kroma/admin-kit';
 import { type DiscoverEntry, posterColors, sizedImageUrl } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
+import { useT } from '@kroma/ui';
 import { IconPlus, IconStarFilled } from '@tabler/icons-react';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';

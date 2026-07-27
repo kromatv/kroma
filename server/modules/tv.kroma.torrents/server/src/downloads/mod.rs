@@ -210,6 +210,7 @@ impl DownloadManager {
     /// healthy or connecting torrent is never disturbed. Blocking (curl +
     /// engine); the monitor calls it on its own thread, serialized with its
     /// status polls so the brief remove/re-add window is never mis-read.
+    #[cfg(feature = "rqbit")]
     pub fn reseed_stalled(&self, host: &dyn HostCtx) {
         // No proxy => librqbit's own (direct) announce works; nothing to do.
         let Some(proxy) = active_proxy_url(host) else { return };
@@ -253,6 +254,13 @@ impl DownloadManager {
             }
         }
     }
+
+    /// Without the embedded engine there is nothing to re-seed: the stalled-swarm
+    /// problem above is librqbit's proxied-announce blind spot, and Transmission /
+    /// qBittorrent announce for themselves. Kept as a no-op rather than gating the
+    /// caller, so the monitor's loop reads the same in both builds.
+    #[cfg(not(feature = "rqbit"))]
+    pub fn reseed_stalled(&self, _host: &dyn HostCtx) {}
 
     /// Fetch a torrent's file list (metadata only, no download) via the
     /// preferred engine, so the admin can analyze + select before grabbing.

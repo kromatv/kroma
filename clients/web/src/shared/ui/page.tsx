@@ -2,9 +2,10 @@
 // admin console, via PageHeader) so titles, subtitles, gutters, and vertical
 // rhythm are identical everywhere. Change a value here and it moves on all pages.
 
-// EmptyState is a shared design-system primitive (@kroma/ui); re-exported here so
-// pages keep importing it from `#web/shared/ui` alongside the page-layout tokens.
-export { EmptyState } from '@kroma/ui';
+// EmptyState is the design system's own (@kroma/ui/kit) - there is one, not a
+// browser copy and a 10-foot copy. Re-exported here so pages keep importing it
+// from `#web/shared/ui` alongside the page-layout tokens.
+export { EmptyState } from '@kroma/ui/kit';
 
 /** Standard page wrapper: full-width, page gutter, vertical rhythm. Applied by
  * the catalogue pages directly and by the admin shell's <main>. */

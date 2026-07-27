@@ -1,6 +1,6 @@
 {
   "id": "tv.kroma.webos",
-  "version": "0.1.0",
+  "version": "0.1.33",
   "vendor": "KROMA",
   "type": "web",
   "main": "index.html",
@@ -8,7 +8,8 @@
   "icon": "icon.png",
   "largeIcon": "icon-large.png",
   "bgColor": "#0A0A0C",
-  "iconColor": "#F4B642",
+  "splashBackground": "splash.png",
+  "iconColor": "#0A0A0C",
   "disableBackHistoryAPI": true,
   "supportTouchMode": "none",
   "handlesRelaunch": true

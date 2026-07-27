@@ -88,6 +88,39 @@ pub struct CrewMember {
     pub profile_url: Option<String>,
 }
 
+/// One person's provider profile (TMDB): the biography and the life facts the
+/// person page shows above their filmography.
+///
+/// Unlike [`CastMember`] this is NOT stored with a title's metadata: a person is
+/// not a library entity, so it is resolved on demand by name and cached in
+/// memory (see `infra::metadata::person`). Every field is optional because TMDB
+/// leaves most of them blank for all but the best-known names.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PersonDetail {
+    #[serde(rename = "tmdbId")]
+    pub tmdb_id: u64,
+    /// The provider's own spelling of the name (accents the filename lost).
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub biography: Option<String>,
+    /// `YYYY-MM-DD`; clients compute the age from it in the reader's locale.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub birthday: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deathday: Option<String>,
+    #[serde(rename = "placeOfBirth", skip_serializing_if = "Option::is_none")]
+    pub place_of_birth: Option<String>,
+    /// TMDB's `known_for_department` (`"Acting"`, `"Directing"`, …). A provider
+    /// vocabulary, translated client-side.
+    #[serde(rename = "knownFor", skip_serializing_if = "Option::is_none")]
+    pub known_for: Option<String>,
+    /// Portrait, localized to `/api/images/<hash>.webp` like every other artwork.
+    #[serde(rename = "profileUrl", skip_serializing_if = "Option::is_none")]
+    pub profile_url: Option<String>,
+    #[serde(rename = "tmdbUrl")]
+    pub tmdb_url: String,
+}
+
 fn default_provider() -> &'static str {
     "tmdb"
 }

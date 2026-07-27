@@ -4,13 +4,14 @@
 
 import { type DiscoverType, hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconMoodEmpty, IconSearch, IconX } from '@tabler/icons-react';
+import { Chip, EmptyState, IconButton } from '@kroma/ui/kit';
+import { IconSearch } from '@tabler/icons-react';
 import { type ReactNode, useState } from 'react';
 import { SearchResults } from '#web/features/requests/search-results';
 import { TrendingBrowse } from '#web/features/requests/trending';
 import { useDiscoverSearch, useTrending } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
+import { PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
 
 const TYPES: {
   value: DiscoverType;
@@ -39,9 +40,7 @@ export function SearchPage() {
   } else if (canDiscover) {
     body = <TrendingBrowse entries={trending.entries} loading={trending.loading} type={type} />;
   } else {
-    body = (
-      <EmptyState icon={<IconMoodEmpty size={32} stroke={1.5} />} title={t('discover.empty')} />
-    );
+    body = <EmptyState icon="mood-empty" title={t('discover.empty')} />;
   }
 
   return (
@@ -70,28 +69,26 @@ export function SearchPage() {
                 className="min-w-0 flex-1 bg-transparent px-3.5 text-[16px] font-semibold text-text outline-none placeholder:font-medium placeholder:text-dim"
               />
               {query ? (
-                <button
-                  type="button"
-                  onClick={() => setQuery('')}
-                  className="shrink-0 rounded-full p-1 text-dim hover:bg-white/6 hover:text-text"
-                >
-                  <IconX size={18} stroke={2.2} />
-                </button>
+                <IconButton
+                  variant="ghost"
+                  size={28}
+                  glyph={18}
+                  icon="x"
+                  onPress={() => setQuery('')}
+                />
               ) : null}
             </label>
 
             {canDiscover ? (
-              <div className="flex gap-1.5 rounded-xl bg-white/4 p-1">
+              <div className="flex gap-1.5">
                 {TYPES.map((tp) => (
-                  <button
+                  <Chip
                     key={tp.value}
-                    type="button"
-                    onClick={() => setType(tp.value)}
-                    aria-pressed={type === tp.value}
-                    className={`rounded-[9px] px-4 py-2.5 text-[13.5px] font-semibold transition-colors max-sm:text-[15px] ${type === tp.value ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-white/4 hover:text-text'}`}
-                  >
-                    {t(tp.labelKey)}
-                  </button>
+                    active={type === tp.value}
+                    variant="subtle"
+                    label={t(tp.labelKey)}
+                    onPress={() => setType(tp.value)}
+                  />
                 ))}
               </div>
             ) : null}

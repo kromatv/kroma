@@ -3,7 +3,7 @@
 // `#web/shared/ui/page`) so a module page aligns with the built-in pages.
 
 import { useT } from '@kroma/ui';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, type TablerIcon } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 /** Standard page `<h1>` (mirrors `#web/shared/ui/page` PAGE_TITLE). */
@@ -48,15 +48,20 @@ export function PageHeader({
   );
 }
 
-/** The amber primary action button used in headers ("Inviter", "Ajouter", ...). */
+/** The amber primary action button used in headers ("Inviter", "Ajouter", ...).
+ * Scaled up from `Button variant="primary"` on purpose: header CTAs are the one
+ * page-level action, so they get the larger px/py/text. `icon` swaps the leading
+ * glyph (defaults to a plus); `plus={false}` hides it. */
 export function HeaderAction({
   label,
   onClick,
   plus = true,
+  icon: Icon = IconPlus,
 }: Readonly<{
   label: string;
   onClick?: () => void;
   plus?: boolean;
+  icon?: TablerIcon;
 }>) {
   return (
     <button
@@ -64,7 +69,7 @@ export function HeaderAction({
       onClick={onClick}
       className="inline-flex shrink-0 items-center gap-2 rounded-md bg-accent px-4.5 py-2.75 text-[14px] font-bold text-accent-ink transition-colors hover:bg-accent-hover"
     >
-      {plus ? <IconPlus size={16} stroke={2.6} /> : null}
+      {plus ? <Icon size={16} stroke={2.6} /> : null}
       {label}
     </button>
   );

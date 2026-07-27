@@ -1,128 +1,68 @@
-// Interactive primitives. Press feedback is color-only (~150ms, no transforms),
-// matching the product's interaction rules.
+// The text entry. Buttons and chips are the kit's own (@kroma/ui/kit).
 
-import type { ReactNode } from 'react';
+import { Icon, type IconName } from '@kroma/ui/kit';
 import {
-  ActivityIndicator,
-  Pressable,
+  type StyleProp,
   StyleSheet,
-  Text,
   TextInput,
   type TextInputProps,
   View,
+  type ViewStyle,
 } from 'react-native';
 import { colors, radius, spacing } from '#mobile/lib/theme';
 
-export function Button({
-  label,
-  onPress,
-  kind = 'primary',
-  disabled,
-  loading,
+/** The entry, with the design system's fixed glyph well: every field carries a
+ * leading icon naming what it holds, and the well is a constant size so a field
+ * with an icon is never taller than its neighbours (the kit TextField's rule).
+ * `icon` is a KIT icon name - the same shared Tabler set every surface draws
+ * from - and `style` lands on the WELL, so call sites keep sizing the box they
+ * always did. */
+export function TextField({
   icon,
-}: Readonly<{
-  label: string;
-  onPress: () => void;
-  kind?: 'primary' | 'ghost' | 'danger';
-  disabled?: boolean;
-  loading?: boolean;
-  icon?: ReactNode;
-}>) {
+  style,
+  multiline,
+  ...props
+}: Readonly<Omit<TextInputProps, 'style'> & { icon?: IconName; style?: StyleProp<ViewStyle> }>) {
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled || loading}
-      style={({ pressed }) => [
-        styles.button,
-        kind === 'primary' && { backgroundColor: pressed ? '#E8E6E1' : colors.text },
-        kind === 'ghost' && {
-          backgroundColor: pressed ? colors.surfaceRaised : colors.surface,
-          borderWidth: 1,
-          borderColor: colors.border,
-        },
-        kind === 'danger' && { backgroundColor: pressed ? '#D8574C' : colors.danger },
-        (disabled || loading) && { opacity: 0.5 },
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={kind === 'primary' ? colors.bg : colors.text} />
-      ) : (
-        <View style={styles.buttonRow}>
-          {icon}
-          <Text
-            style={[styles.buttonLabel, { color: kind === 'primary' ? colors.bg : colors.text }]}
-          >
-            {label}
-          </Text>
+    <View style={[styles.inputWell, multiline && styles.inputWellMultiline, style]}>
+      {icon ? (
+        <View style={[styles.inputIcon, multiline && styles.inputIconMultiline]}>
+          <Icon name={icon} size={18} stroke={1.8} color={colors.textFaint} />
         </View>
-      )}
-    </Pressable>
-  );
-}
-
-export function TextField(props: Readonly<TextInputProps>) {
-  return (
-    <TextInput
-      placeholderTextColor={colors.textFaint}
-      autoCapitalize="none"
-      autoCorrect={false}
-      {...props}
-      style={[styles.input, props.style]}
-    />
-  );
-}
-
-/** Filled selector chip: quiet surface at rest, accent fill when active. */
-export function Chip({
-  label,
-  active,
-  onPress,
-}: Readonly<{
-  label: string;
-  active?: boolean;
-  onPress(): void;
-}>) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.chip,
-        active && { backgroundColor: colors.accent },
-        !active && pressed && { backgroundColor: colors.surfaceHigh },
-      ]}
-    >
-      <Text style={[styles.chipLabel, active && { color: colors.accentInk, fontWeight: '800' }]}>
-        {label}
-      </Text>
-    </Pressable>
+      ) : null}
+      <TextInput
+        placeholderTextColor={colors.textFaint}
+        autoCapitalize="none"
+        autoCorrect={false}
+        multiline={multiline}
+        {...props}
+        style={styles.inputInner}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    minHeight: 48,
-    borderRadius: radius.md,
+  inputWell: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  buttonRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  buttonLabel: { fontSize: 15, fontWeight: '700' },
-  chip: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: colors.surfaceRaised,
-  },
-  chipLabel: { fontSize: 13, color: colors.text, fontWeight: '600' },
-  input: {
+    gap: 10,
     minHeight: 48,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    color: colors.text,
     paddingHorizontal: spacing.md,
+  },
+  /** A growing entry reads from its first line, so its glyph pins to the top. */
+  inputWellMultiline: { alignItems: 'flex-start', paddingVertical: 12 },
+  inputIcon: { width: 20, alignItems: 'center' },
+  inputIconMultiline: { paddingTop: 2 },
+  inputInner: {
+    flex: 1,
+    minWidth: 0,
+    color: colors.text,
     fontSize: 15,
+    paddingVertical: 0,
   },
 });

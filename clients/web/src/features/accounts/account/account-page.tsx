@@ -6,15 +6,10 @@
 // signed-in account and syncs across devices via the server.
 
 import type { AccountPatch } from '@kroma/core';
+import { prefValue } from '@kroma/core/react';
 import { useT } from '@kroma/ui';
-import {
-  IconAt,
-  IconCheck,
-  IconDeviceFloppy,
-  IconLogout,
-  IconMail,
-  IconUserOff,
-} from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+import { IconAt, IconCheck, IconMail } from '@tabler/icons-react';
 import { useState } from 'react';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';
 import { PinCard } from '#web/features/accounts/account/pin-card';
@@ -24,7 +19,7 @@ import { SecurityCard } from '#web/features/accounts/account/security-card';
 import { SessionsCard } from '#web/features/accounts/account/sessions-card';
 import { LabeledInput, Panel, Section, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { Button, EmptyState, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
+import { Button, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
 
 export function AccountPage() {
   const t = useT();
@@ -33,7 +28,7 @@ export function AccountPage() {
   if (!user) {
     return (
       <main className="min-w-0 px-(--gutter-web) pb-20 pt-9">
-        <EmptyState icon={<IconUserOff size={32} stroke={1.5} />} title={t('account.signedOut')} />
+        <EmptyState icon="user-off" title={t('account.signedOut')} />
       </main>
     );
   }
@@ -50,8 +45,13 @@ function ProfileEditor() {
   // Pending edits for the batch-saved fields, seeded once from the account.
   const [username, setUsername] = useState(user?.username ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
-  const [audio, setAudio] = useState(user?.audioLanguage ?? NONE);
-  const [subtitle, setSubtitle] = useState(user?.subtitleLanguage ?? NONE);
+  // Through `prefValue`, always: the server stores a playback language
+  // lower-cased (`norm_media_lang`), so a Quebec preference comes back as
+  // `fr-ca` while the picker's option for it is `fr-CA`. Seeded raw, the select
+  // matched no option, `withCurrent` appended a second "Français" row, and the
+  // form read as dirty the moment it loaded.
+  const [audio, setAudio] = useState(prefValue(user?.audioLanguage ?? null));
+  const [subtitle, setSubtitle] = useState(prefValue(user?.subtitleLanguage ?? null));
   const save = useSave();
 
   if (!user) return null;
@@ -61,15 +61,15 @@ function ProfileEditor() {
   const dirty =
     trimmedName !== user.username ||
     trimmedEmail !== user.email ||
-    audio !== (user.audioLanguage ?? NONE) ||
-    subtitle !== (user.subtitleLanguage ?? NONE);
+    audio !== prefValue(user.audioLanguage ?? null) ||
+    subtitle !== prefValue(user.subtitleLanguage ?? null);
   const canSave = dirty && trimmedName.length > 0 && trimmedEmail.length > 0;
 
   const reset = () => {
     setUsername(user.username);
     setEmail(user.email);
-    setAudio(user.audioLanguage ?? NONE);
-    setSubtitle(user.subtitleLanguage ?? NONE);
+    setAudio(prefValue(user.audioLanguage ?? null));
+    setSubtitle(prefValue(user.subtitleLanguage ?? null));
   };
 
   const saveProfile = () => {
@@ -77,8 +77,9 @@ function ProfileEditor() {
     const patch: AccountPatch = {};
     if (trimmedName !== user.username) patch.username = trimmedName;
     if (trimmedEmail !== user.email) patch.email = trimmedEmail;
-    if (audio !== (user.audioLanguage ?? NONE)) patch.audioLanguage = audio === NONE ? null : audio;
-    if (subtitle !== (user.subtitleLanguage ?? NONE))
+    if (audio !== prefValue(user.audioLanguage ?? null))
+      patch.audioLanguage = audio === NONE ? null : audio;
+    if (subtitle !== prefValue(user.subtitleLanguage ?? null))
       patch.subtitleLanguage = subtitle === NONE ? null : subtitle;
 
     save.run(async () => {
@@ -93,8 +94,8 @@ function ProfileEditor() {
       // fields so the form settles to "no unsaved changes".
       setUsername(u.username);
       setEmail(u.email);
-      setAudio(u.audioLanguage ?? NONE);
-      setSubtitle(u.subtitleLanguage ?? NONE);
+      setAudio(prefValue(u.audioLanguage ?? null));
+      setSubtitle(prefValue(u.subtitleLanguage ?? null));
     }, t('account.saveFailed'));
   };
 
@@ -108,11 +109,10 @@ function ProfileEditor() {
         <Button
           variant="ghost"
           size="sm"
-          icon={<IconLogout size={16} />}
-          onClick={() => void logout()}
-        >
-          {t('auth.logout')}
-        </Button>
+          icon="logout"
+          label={t('auth.logout')}
+          onPress={() => void logout()}
+        />
       </header>
 
       <Section title={t('account.sectionPhoto')}>
@@ -164,17 +164,21 @@ function ProfileEditor() {
               <SaveStatusLabel dirty={dirty} status={save.status} error={save.error} />
             </div>
             <div className="flex flex-none gap-2.5">
-              <Button variant="glass" size="sm" onClick={reset} disabled={!dirty}>
-                {t('common.cancel')}
-              </Button>
+              <Button
+                variant="glass"
+                size="sm"
+                label={t('common.cancel')}
+                onPress={reset}
+                disabled={!dirty}
+              />
               <Button
                 size="sm"
-                icon={<IconDeviceFloppy size={16} />}
-                onClick={saveProfile}
-                disabled={!canSave || save.status === 'saving'}
-              >
-                {save.status === 'saving' ? t('common.saving') : t('common.save')}
-              </Button>
+                icon="device-floppy"
+                label={save.status === 'saving' ? t('common.saving') : t('common.save')}
+                onPress={saveProfile}
+                loading={save.status === 'saving'}
+                disabled={!canSave}
+              />
             </div>
           </div>
         ) : null}

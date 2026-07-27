@@ -2,8 +2,9 @@
 // (metadata, or the failing/running stage), the treatment "flow" of status dots,
 // the overall status pill, and a reprocess shortcut.
 
+import { Image } from '@kroma/admin-kit';
 import type { ElementRow, MessageKey, Translate, Treatment } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
+import { useT } from '@kroma/ui';
 import { IconCheck, IconLoader2, IconRefresh, IconX } from '@tabler/icons-react';
 import {
   fmtDur,

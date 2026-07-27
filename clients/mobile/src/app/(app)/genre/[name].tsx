@@ -2,13 +2,13 @@
 // genre's hue as the header accent.
 
 import { hasGenre, type MediaItem, type Show, sortTitles } from '@kroma/core';
+import { Icon } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { PosterGrid } from '#mobile/components/PosterGrid';
-import { FilmTabIcon } from '#mobile/components/tabIcons';
 import { EmptyState, Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
@@ -52,7 +52,7 @@ export default function GenrePage() {
         cards={cards}
         empty={
           <EmptyState
-            icon={<FilmTabIcon color={colors.textDim} size={34} />}
+            icon={<Icon name="movie" size={34} stroke={1.8} color={colors.textDim} />}
             title={t('search.noResults')}
           />
         }

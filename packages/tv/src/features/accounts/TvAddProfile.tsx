@@ -1,23 +1,22 @@
 import { normalizeServerUrl as norm } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconChevronRight, IconPlus, IconServer2 } from '@tabler/icons-react';
-import { type ReactNode, useEffect, useMemo } from 'react';
+import { Box, FocusColumn, Hint, Spinner, Txt, useFocusNav } from '@kroma/ui/kit';
+import { useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
-import { useFocusNav } from '#tv/app/useFocusNav';
 import { useServersHealth } from '#tv/app/useServersHealth';
-import { StatusDot } from '#tv/features/accounts/ServerStatus';
+import { ActionRow, ServerRow, ServerRowSkeleton } from '#tv/features/accounts/ServerRow';
 import { AuthScreen, hostOf } from '#tv/shared/ui';
 
-interface Row {
-  key: string;
-  icon: ReactNode;
-  iconAccent?: boolean;
-  title: string;
-  sub: string;
-  /** Server origin for the live status dot, or undefined for the manual row. */
-  url?: string;
-  onSelect: () => void;
+interface Entry {
+  url: string;
+  /** Name to show until the server states its own (saved label, else host). */
+  fallbackName: string;
+  /** The label this server was saved under, if it is saved at all. */
+  savedName?: string | null;
+  address: string;
+  /** Discovered on the LAN but not saved yet. */
+  isNew: boolean;
 }
 
 /** "host" or "host · port N" for a server URL. */
@@ -33,7 +32,9 @@ function addrOf(url: string): string {
 /**
  * Add-profile wizard, step 1 choose a server. One "Serveurs disponibles" list
  * (LAN-discovered + saved, with a discovery spinner) followed by "Ajouter
- * manuellement". Picking any of them points the client at it and advances to
+ * manuellement". Every listed server is polled on its public `/api/health`, so a
+ * row states what it is (name, version, catalogue size) and whether it answers
+ * before you commit to it. Picking one points the client at it and advances to
  * Quick Connect. The wizard never offers a password or registration.
  */
 export function TvAddProfile() {
@@ -46,108 +47,110 @@ export function TvAddProfile() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on open.
   useEffect(() => discover(), []);
 
+  // A single "Serveurs disponibles" section: discovered servers first (tagged
+  // "nouveau" when not yet saved), then any saved-but-not-discovered.
+  const entries = useMemo<Entry[]>(() => {
+    const localUrls = discovered.map((u) => norm(u));
+    const of = (url: string, saved?: { name?: string | null }, isNew = false): Entry => ({
+      url,
+      fallbackName: saved?.name || (hostOf(url) ?? url),
+      savedName: saved?.name,
+      address: addrOf(url),
+      isNew,
+    });
+    const out = localUrls.map((url) => {
+      const saved = servers.find((s) => s.url === url);
+      return of(url, saved, !saved);
+    });
+    for (const s of servers.filter((sv) => !localUrls.includes(sv.url))) out.push(of(s.url, s));
+    return out;
+  }, [discovered, servers]);
+
+  // Probe each listed server so a row shows whether it actually answers (a saved
+  // server can be offline; a freshly discovered one is reachable but confirmed
+  // here) and what it is. Public endpoint: no session needed.
+  const health = useServersHealth(entries.map((e) => e.url));
+
   const pick = (url: string, name?: string | null) => {
     addServer(url, name);
     nav.go('quick');
   };
 
-  // A single "Serveurs disponibles" section: discovered servers first (tagged
-  // "nouveau" when not yet saved), then any saved-but-not-discovered, then the
-  // manual-entry row exactly the design's layout.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `pick` and `nav` are stable enough here; rows rebuild on the reactive inputs (discovered/servers/t) only.
-  const rows = useMemo<Row[]>(() => {
-    const localUrls = discovered.map((u) => norm(u));
-    const out: Row[] = [];
-    for (const url of localUrls) {
-      const saved = servers.find((s) => s.url === url);
-      out.push({
-        key: `srv-${url}`,
-        icon: <IconServer2 size={24} stroke={1.7} />,
-        title: saved?.name || (hostOf(url) ?? url),
-        sub: saved ? addrOf(url) : `${addrOf(url)} · ${t('addProfile.new')}`,
-        url,
-        onSelect: () => pick(url, saved?.name),
-      });
-    }
-    for (const s of servers.filter((sv) => !localUrls.includes(sv.url))) {
-      out.push({
-        key: `srv-${s.url}`,
-        icon: <IconServer2 size={24} stroke={1.7} />,
-        title: s.name || (hostOf(s.url) ?? s.url),
-        sub: addrOf(s.url),
-        url: s.url,
-        onSelect: () => pick(s.url, s.name),
-      });
-    }
-    out.push({
-      key: 'manual',
-      icon: <IconPlus size={24} stroke={1.7} />,
-      iconAccent: true,
-      title: t('addProfile.addManually'),
-      sub: t('addProfile.addManuallySub'),
-      onSelect: () => nav.go('connect'),
-    });
-    return out;
-  }, [discovered, servers, t]);
-
-  // Probe each listed server so a row shows whether it actually answers (a saved
-  // server can be offline; a freshly discovered one is reachable but confirmed here).
-  const health = useServersHealth(rows.map((r) => r.url).filter((u): u is string => !!u));
-
   return (
     <AuthScreen>
-      <div className="w-full max-w-[720px]">
-        <h1 className="m-0 mb-1.5 text-center font-display text-[40px] font-semibold">
+      <Box w="100%" maxW={720}>
+        <Txt
+          variant="h1"
+          style={{ fontSize: 40, fontWeight: '600', textAlign: 'center', marginBottom: 6 }}
+        >
           {t('addProfile.title')}
-        </h1>
-        <p className="m-0 mb-9 text-center font-sans text-[16px] font-medium text-dim">
+        </Txt>
+        <Txt
+          style={{ fontSize: 16, fontWeight: '500', textAlign: 'center', marginBottom: 36 }}
+          color="textDim"
+        >
           {t('addProfile.subtitle')}
-        </p>
+        </Txt>
 
-        <div className="mb-3 flex items-center gap-2.5">
-          <span className="font-sans text-[12px] font-bold uppercase tracking-[0.16em] text-[rgba(244,243,240,0.42)]">
+        <Box row align="center" gap={10} mb={12}>
+          <Txt variant="overlineTv" style={SECTION} color="rgba(244, 243, 240, 0.42)">
             {t('addProfile.availableServers')}
-          </span>
-          {discovering ? (
-            <span className="h-3.25 w-3.25 rounded-full border-2 border-[rgba(244,180,66,0.3)] border-t-accent animate-[tvp-spin_0.8s_linear_infinite]" />
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-3">
-          {rows.map((r) => (
-            <button
-              key={r.key}
-              data-focus=""
-              type="button"
-              onClick={r.onSelect}
-              className="flex items-center gap-4 rounded-[15px] border border-border bg-[rgba(255,255,255,0.03)] px-5 py-4 text-left outline-none transition-transform focus:scale-[1.02] focus:border-accent"
-            >
-              <span
-                className={`flex h-11.5 w-11.5 flex-none items-center justify-center rounded-xl ${
-                  r.iconAccent
-                    ? 'bg-accent-soft text-accent'
-                    : 'bg-[rgba(255,255,255,0.06)] text-muted'
-                }`}
-              >
-                {r.icon}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-sans text-[19px] font-bold text-text">
-                  {r.title}
-                </span>
-                <span className="block truncate font-sans text-[14px] font-medium text-dim">
-                  {r.sub}
-                </span>
-              </span>
-              {r.url ? <StatusDot online={health[r.url]} /> : null}
-              <IconChevronRight size={22} className="flex-none text-dim" />
-            </button>
-          ))}
-        </div>
+          </Txt>
+          {discovering ? <Spinner size={13} thickness={2} /> : null}
+        </Box>
+        <Box gap={12}>
+          {/* The servers get a group of their own, mounted whether or not any
+              server is known yet. The navigator orders a group's children by the
+              order they REGISTERED, not by where they sit, so a server found by
+              discovery a second later would otherwise register behind "Ajouter
+              manuellement" and Down would walk past that row forever. This group
+              holds their place above it; the keys are POSITIONS for the same
+              reason (a server prepended to the list must not register last). */}
+          <FocusColumn style={LIST}>
+            {entries.map((e, index) => {
+              const probe = health[e.url];
+              return (
+                <ServerRow
+                  // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity here - it is the slot in the list, and the navigator registers by mount order.
+                  key={index}
+                  address={e.address}
+                  fallbackName={e.fallbackName}
+                  isNew={e.isNew}
+                  probe={probe}
+                  autoFocus={index === 0}
+                  // The health answer is the freshest name the server has, so a
+                  // renamed server is saved under its new label, not the old one.
+                  onPress={() => pick(e.url, probe?.name ?? e.savedName)}
+                />
+              );
+            })}
+            {/* Nothing found YET: show the shape of a row rather than a gap. */}
+            {entries.length === 0 && discovering ? <ServerRowSkeleton /> : null}
+          </FocusColumn>
+          <ActionRow
+            icon="plus"
+            title={t('addProfile.addManually')}
+            sub={t('addProfile.addManuallySub')}
+            autoFocus={entries.length === 0}
+            onPress={() => nav.go('connect')}
+          />
+        </Box>
 
-        <div className="mt-7 text-center font-sans text-[14px] font-medium text-[rgba(244,243,240,0.4)]">
-          {t('addProfile.navHint')}
-        </div>
-      </div>
+        <Hint
+          text={t('addProfile.navHint')}
+          size={14}
+          gap={4}
+          justify="center"
+          mt={28}
+          color="rgba(244, 243, 240, 0.4)"
+          textStyle={{ fontWeight: '500' }}
+        />
+      </Box>
     </AuthScreen>
   );
 }
+
+const LIST = { gap: 12 };
+
+/** A size down from the kit role: this list sits inside a dialog-width column. */
+const SECTION = { fontSize: 12 };

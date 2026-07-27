@@ -11,6 +11,7 @@ import {
   logsUrl,
   movies,
   personCredits,
+  personDetails,
   posterFor,
   posterUrl,
   resolveArt,
@@ -125,6 +126,26 @@ describe('resolveArt + art helpers', () => {
     expect(resolveArt(ctx, undefined)).toBeNull();
   });
 
+  it('asks the server for the width the artwork is actually drawn at', () => {
+    // The cached originals are full-size and a browse grid decodes a hundred of
+    // them; the server serves bucketed renditions from `?w=`.
+    expect(resolveArt(ctx, '/api/images/x.webp', 320)).toBe(
+      'http://kroma.test/api/images/x.webp?w=320',
+    );
+    expect(
+      posterFor(ctx, { id: 'i', metadata: { posterUrl: '/api/images/p.webp' } as Metadata }, 203),
+    ).toBe('http://kroma.test/api/images/p.webp?w=203');
+    expect(backdropFor(ctx, meta({ backdropUrl: '/api/images/b.webp' }), 320)).toBe(
+      'http://kroma.test/api/images/b.webp?w=320',
+    );
+    // A hero backdrop is wider than the largest bucket, so it asks for nothing.
+    expect(resolveArt(ctx, '/api/images/x.webp')).toBe('http://kroma.test/api/images/x.webp');
+    // An absolute TMDB fallback is not ours to resize.
+    expect(resolveArt(ctx, 'https://image.tmdb.org/x.jpg', 320)).toBe(
+      'https://image.tmdb.org/x.jpg',
+    );
+  });
+
   it('posterFor uses cached art when present, else the generated poster', () => {
     expect(
       posterFor(ctx, { id: 'i1', metadata: { posterUrl: '/api/images/p.webp' } as Metadata }),
@@ -169,6 +190,12 @@ describe('catalogue reads (json delegation)', () => {
     expect(calls[0]).toBe('/people?name=Ana+de+Armas&library=lib1');
     // themed uses encodeURIComponent (space -> %20), not URLSearchParams (+).
     expect(calls[1]).toBe('/themed?q=christmas%20movie');
+  });
+
+  it('personDetails asks the provider endpoint, not the catalogue one', () => {
+    const { ctx: c, calls } = recordCtx();
+    void personDetails(c, 'Ana de Armas');
+    expect(calls[0]).toBe('/people/details?name=Ana+de+Armas');
   });
 
   it('featured reads the hero endpoint', () => {

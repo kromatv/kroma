@@ -1,7 +1,7 @@
 import { OptionSelect } from '@kroma/admin-kit';
 import type { MetricsSnapshot, PlaybackSession, TopUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconPlayerPlay, IconUsers } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
 import { HistoryBars, MetricsChart } from '#web/features/admin/charts';
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
@@ -9,7 +9,6 @@ import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
 import { Avatar, C, Card, FilterLabel, Section } from '#web/features/admin/ui';
 import { decimal, formatDuration, formatMbps } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState } from '#web/shared/ui';
 
 /** A range picker for the day-scoped stats sections (Top users, Play history),
  * bound to the `?days=` the backend already accepts. Replaces the old static,
@@ -98,10 +97,7 @@ export function DashboardScreen() {
 
       <Section title={t('admin.nowPlaying')}>
         {sessions.length === 0 ? (
-          <EmptyState
-            icon={<IconPlayerPlay size={32} stroke={1.5} />}
-            title={t('admin.noPlayback')}
-          />
+          <EmptyState icon="player-play" title={t('admin.noPlayback')} />
         ) : (
           <div className="flex flex-col gap-3.5">
             {sessions.map((s) => (
@@ -138,7 +134,7 @@ export function DashboardScreen() {
             ))}
           </div>
         ) : (
-          <EmptyState icon={<IconUsers size={32} stroke={1.5} />} title={t('admin.noHistory')} />
+          <EmptyState icon="users" title={t('admin.noHistory')} />
         )}
       </Section>
 

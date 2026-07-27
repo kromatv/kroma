@@ -89,6 +89,15 @@ export function downloadCopyCodecs(): string[] {
   return [...FMP4_COPY_CODECS].filter((codec) => audio[codec] === true);
 }
 
+/** The `?video=` set for `/download`: video codecs this runtime decodes in
+ * hardware. A source outside the set is transcoded to H.264 by the server -
+ * offline has no master fallback, so an undecodable video track downloads as
+ * audio under a black frame (AV1 on a pre-A17 iPhone did exactly that). */
+export function downloadVideoCodecs(): string[] {
+  const caps = mobileCaps();
+  return (['hevc', 'h264', 'av1', 'vp9'] as const).filter((codec) => caps[codec] === true);
+}
+
 /** Whether the ORIGINAL file can be downloaded raw (byte-identical, zero server
  * work) and still play FULLY offline: container demuxable + video decodable +
  * every audio track strictly decodable. Stricter than {@link decideSource}

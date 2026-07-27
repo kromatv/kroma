@@ -6,8 +6,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsgo --noEmit",
-    "build": "tsgo --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
   },
   "dependencies": {
     "@kroma/module-sdk": "workspace:*"
@@ -17,6 +17,6 @@
   },
   "devDependencies": {
     "@types/react": "^19",
-    "typescript": "^5.6.3"
+    "typescript": "^7.0.2"
   }
 }

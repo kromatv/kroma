@@ -1,8 +1,11 @@
-// Circular progress ring (downloads). Indeterminate (< 0) renders a spinner.
+// Circular progress ring (downloads), from the design system.
+//
+// The ring itself is @kroma/ui's <ProgressRing>; what stays here is this app's
+// own contract, which the shared component deliberately does not have: a
+// negative value means "indeterminate", and a queued download shows the
+// platform spinner rather than a ring stuck at zero.
 
-import { ActivityIndicator } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
-import { colors } from '#mobile/lib/theme';
+import { colors, ProgressRing as Ring, Spinner } from '@kroma/ui/kit';
 
 export function ProgressRing({
   progress,
@@ -14,31 +17,16 @@ export function ProgressRing({
   size?: number;
   stroke?: number;
 }>) {
-  if (progress < 0) return <ActivityIndicator size="small" color={colors.accent} />;
-  const r = size / 2 - stroke;
-  const c = 2 * Math.PI * r;
+  if (progress < 0) return <Spinner size={20} color={colors.accent} />;
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <Circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke={colors.borderStrong}
-        strokeWidth={stroke}
-        fill="none"
-      />
-      <Circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        stroke={colors.accent}
-        strokeWidth={stroke}
-        fill="none"
-        strokeDasharray={`${c}`}
-        strokeDashoffset={c * (1 - Math.max(0.02, progress))}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-    </Svg>
+    <Ring
+      // A ring at exactly 0 reads as broken rather than as "just started", so
+      // the first sliver is always drawn.
+      value={Math.max(0.02, progress)}
+      size={size}
+      stroke={stroke}
+      track={colors.borderStrong}
+      fill={colors.accent}
+    />
   );
 }

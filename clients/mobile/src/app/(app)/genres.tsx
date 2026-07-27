@@ -13,12 +13,13 @@ import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, SHADE, spacing, type } from '#mobile/lib/theme';
+import { colors, radius, SHADE, shade, spacing, type } from '#mobile/lib/theme';
 
 interface GenreTileModel {
   name: string;
@@ -32,6 +33,7 @@ export default function Genres() {
   const client = useClient();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   const catalogue = useQuery({
     queryKey: ['genreCatalogue'],
@@ -56,8 +58,11 @@ export default function Genres() {
     };
   });
 
-  const cols = width >= 700 ? 3 : 2;
-  const tileW = Math.floor((width - spacing.md * 2 - 12 * (cols - 1)) / cols);
+  // The surrounding <Screen> already consumed the horizontal safe-area insets
+  // (landscape notch), so the tile math works on what is left of the window.
+  const usable = width - insets.left - insets.right;
+  const cols = usable >= 700 ? 3 : 2;
+  const tileW = Math.floor((usable - spacing.md * 2 - 12 * (cols - 1)) / cols);
 
   return (
     <Screen padded={false}>
@@ -82,7 +87,7 @@ export default function Genres() {
                 <FadeImage uri={tile.art} seed={tile.name} style={StyleSheet.absoluteFill} />
               ) : null}
               <LinearGradient
-                colors={[SHADE.transparent, SHADE.transparent, 'rgba(10, 10, 12, 0.85)']}
+                colors={[SHADE.transparent, SHADE.transparent, shade(0.85)]}
                 locations={[0, 0.45, 1]}
                 style={StyleSheet.absoluteFill}
               />

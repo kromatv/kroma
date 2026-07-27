@@ -6,6 +6,7 @@
 
 import {
   apiErrorText,
+  Button,
   Card,
   Denied,
   Modal,
@@ -20,7 +21,7 @@ import {
   useT,
   type VpnTestResult,
 } from '@kroma/module-sdk';
-import { IconLoader2, IconShield, IconShieldCheck, IconShieldX } from '@tabler/icons-react';
+import { IconShield, IconShieldCheck, IconShieldX } from '@tabler/icons-react';
 import { useState } from 'react';
 
 // The VPN is global to several flows (torrent downloads and, optionally, indexer
@@ -82,23 +83,20 @@ export function VpnCard() {
         </div>
         <div className="flex items-center gap-2">
           {configured ? (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
+              label={t('vpn.test')}
               onClick={runTest}
-              disabled={test.busy}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/12 bg-[#1A1A20] px-3 py-2 text-[12.5px] font-semibold text-white/80 hover:bg-[#222229] disabled:opacity-60"
-            >
-              {test.busy ? <IconLoader2 size={13} stroke={2.4} className="animate-spin" /> : null}
-              {t('vpn.test')}
-            </button>
+              loading={test.busy}
+            />
           ) : null}
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="sm"
+            label={t(state?.wgConfigured ? 'vpn.reconfigure' : 'vpn.configure')}
             onClick={() => setModal(true)}
-            className="rounded-lg bg-accent px-3.5 py-2 text-[12.5px] font-bold text-accent-ink hover:bg-accent-hover"
-          >
-            {t(state?.wgConfigured ? 'vpn.reconfigure' : 'vpn.configure')}
-          </button>
+          />
         </div>
       </div>
 

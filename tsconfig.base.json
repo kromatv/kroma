@@ -7,6 +7,7 @@
     "jsx": "react-jsx",
     "paths": {
       "#tv/*": ["./packages/tv/src/*"],
+      "#ui/*": ["./packages/ui/src/*"],
       "#web/*": ["./clients/web/src/*"]
     },
     "strict": true,

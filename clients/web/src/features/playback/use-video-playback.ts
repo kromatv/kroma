@@ -5,6 +5,7 @@ import {
   MSE_CAPS,
   masterNeedsAac,
   type PlayEnv,
+  preferredAudioIndex,
   SAFARI_CAPS,
   selectEngine,
 } from '@kroma/core';
@@ -14,7 +15,6 @@ import {
   setWebEnginePref,
   type WebEnginePref,
 } from '#web/features/playback/engine-pref';
-import { preferredAudioIndex } from '#web/features/playback/track-prefs';
 import {
   attachMediaSource,
   bindMediaEvents,

@@ -18,6 +18,7 @@
 // stay out of the mouse-driven paths.
 
 import { isTizenRuntime, isWebOsRuntime } from '@kroma/core';
+import { webWindow } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { createContext, useContext, useMemo } from 'react';
 
@@ -44,6 +45,7 @@ export interface TvEnvOverrides {
 
 function finePointer(): boolean {
   try {
+    // biome-ignore lint/style/noRestrictedGlobals: audited - the typeof guard is the point; a TV without matchMedia reports no fine pointer, which is correct.
     return typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
   } catch {
     return false;
@@ -65,6 +67,13 @@ const TV_RUNTIME: Record<string, (ua: string) => boolean> = {
  * Tizen bundle previewed in desktop Chrome (the dev shell) has no "Tizen" UA,
  * so it keeps desktop input affordances. */
 function onRealTv(platform: string): boolean {
+  // The native clients (Apple TV / Android TV, compiled by React Native) settle
+  // this before any sniffing: there is no DOM, and no browser preview of a
+  // signed tvOS binary either - it only ever runs on the television it was built
+  // for. Without this an Apple TV claimed a hardware keyboard, which swapped the
+  // D-pad on-screen keyboard for typeable inputs nobody can type into, and took
+  // the PIN screen down with it (its keydown listener is a DOM listener).
+  if (!webWindow()) return true;
   const probe = TV_RUNTIME[platform];
   if (!probe) return false;
   try {

@@ -1,11 +1,10 @@
 // Whole-surface states: what a screen shows instead of content while it is
 // loading, empty, or broken, plus the inline error banner forms use.
 
+import { Button, Icon, Spinner } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
-import { AlertIcon } from '#mobile/player/icons';
-import { Button } from './controls';
 
 /** Inline error surface: tinted banner with an icon and a small shake when the
  * message appears or changes, so failures read at a glance instead of as a
@@ -29,7 +28,7 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   if (!message) return null;
   return (
     <Animated.View style={[styles.box, { opacity: fade, transform: [{ translateX: shake }] }]}>
-      <AlertIcon size={17} color={colors.danger} />
+      <Icon name="alert-circle" size={17} stroke={2} color={colors.danger} />
       <Text style={styles.boxText}>{message}</Text>
     </Animated.View>
   );
@@ -38,8 +37,8 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
 export function Loading({ label }: Readonly<{ label?: string }>) {
   return (
     <View style={styles.center}>
-      <ActivityIndicator color={colors.textDim} size="large" />
-      {label ? <Text style={styles.centerText}>{label}</Text> : null}
+      <Spinner size={36} color={colors.textDim} />
+      {label ? <Text style={[styles.centerText, styles.loadingLabel]}>{label}</Text> : null}
     </View>
   );
 }
@@ -58,7 +57,7 @@ export function ErrorView({
       <Text style={styles.centerText}>{message}</Text>
       {onRetry && retryLabel ? (
         <View style={styles.retry}>
-          <Button label={retryLabel} onPress={onRetry} kind="ghost" />
+          <Button variant="glass" label={retryLabel} onPress={onRetry} />
         </View>
       ) : null}
     </View>
@@ -86,7 +85,7 @@ export function EmptyState({
       {hint ? <Text style={styles.emptyHint}>{hint}</Text> : null}
       {actionLabel && onAction ? (
         <View style={styles.emptyAction}>
-          <Button label={actionLabel} kind="ghost" onPress={onAction} />
+          <Button variant="glass" label={actionLabel} onPress={onAction} />
         </View>
       ) : null}
     </View>
@@ -108,6 +107,7 @@ const styles = StyleSheet.create({
   boxText: { ...type.caption, color: '#FF8A80', flex: 1, fontWeight: '600' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   centerText: { ...type.caption, textAlign: 'center' },
+  loadingLabel: { marginTop: spacing.md },
   retry: { marginTop: spacing.md, minWidth: 160 },
   emptyBox: {
     flex: 1,

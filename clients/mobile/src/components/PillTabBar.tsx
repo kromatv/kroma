@@ -1,15 +1,22 @@
 // Floating liquid-glass tab bar: a centered capsule hovering above the
-// content instead of an edge-to-edge bar. Inactive routes are icon-only; the
-// focused route expands into its own inner lens with the label. Screens keep
-// scrolling underneath (they already pad by TAB_BAR_CLEARANCE).
+// content instead of an edge-to-edge bar. Screens keep scrolling underneath
+// (they already pad by TAB_BAR_CLEARANCE).
+//
+// The capsule is the kit's <NavPill> - the same one the TV's top nav draws at
+// 10-foot metrics - at `sm`: inactive routes icon-only, the focused route in
+// its own amber lens with the label. What stays here is the expo-router glue
+// (routes, events) and the platform split this file has always owned: iOS gets
+// its BlurView (composited on the GPU), passed to the pill as `backdrop`;
+// Android keeps the solid fill.
 
+import { NavPill, NavPillItem } from '@kroma/ui/kit';
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 // Type-only deep import: expo-router vendors react-navigation and does not
 // re-export the tab bar props type from its root.
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, type } from '#mobile/lib/theme';
 
 export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTabBarProps>) {
   const insets = useSafeAreaInsets();
@@ -18,16 +25,26 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
       pointerEvents="box-none"
       style={[styles.dock, { bottom: Math.max(insets.bottom, 12) + 8 }]}
     >
+      {/* Shadow lives on an unclipped wrapper; the pill itself clips the blur. */}
       <View style={styles.shadow}>
-        <View style={styles.pill}>
-          {Platform.OS === 'ios' ? (
-            <BlurView tint="dark" intensity={60} style={StyleSheet.absoluteFill} />
-          ) : null}
+        <NavPill
+          size="sm"
+          // The pill's slide reports each crossing; a selection tick under the
+          // thumb is how the preview reads through a moving finger. Null is
+          // the slide ending - nothing to feel there.
+          onPreview={(label) => {
+            if (label !== null) void Haptics.selectionAsync();
+          }}
+          backdrop={
+            Platform.OS === 'ios' ? (
+              <BlurView tint="dark" intensity={60} style={StyleSheet.absoluteFill} />
+            ) : undefined
+          }
+        >
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key];
             const focused = state.index === index;
             const label = options.title ?? route.name;
-            const color = focused ? colors.accentBright : colors.textFaint;
             const onPress = () => {
               const event = navigation.emit({
                 type: 'tabPress',
@@ -37,25 +54,18 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
               if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
             };
             return (
-              <Pressable
+              <NavPillItem
                 key={route.key}
+                // The route's own icon component, handed the item's current
+                // ink so its colour still travels with the amber lens.
+                icon={(ink) => options.tabBarIcon?.({ focused, color: ink, size: 22 })}
+                label={label}
+                active={focused}
                 onPress={onPress}
-                onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
-                accessibilityRole="button"
-                accessibilityState={{ selected: focused }}
-                accessibilityLabel={label}
-                style={({ pressed }) => [
-                  styles.item,
-                  focused && styles.itemActive,
-                  pressed && { opacity: 0.7 },
-                ]}
-              >
-                {options.tabBarIcon?.({ focused, color, size: 22 })}
-                {focused ? <Text style={[styles.label, { color }]}>{label}</Text> : null}
-              </Pressable>
+              />
             );
           })}
-        </View>
+        </NavPill>
       </View>
     </View>
   );
@@ -63,7 +73,6 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
 
 const styles = StyleSheet.create({
   dock: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
-  // Shadow lives on an unclipped wrapper; the pill itself clips the blur.
   shadow: {
     borderRadius: 999,
     shadowColor: '#000',
@@ -72,28 +81,4 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 12,
   },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    padding: 6,
-    borderRadius: 999,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: Platform.OS === 'ios' ? 'rgba(18, 18, 22, 0.55)' : 'rgba(18, 18, 22, 0.96)',
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 13,
-    paddingVertical: 10,
-    borderRadius: 999,
-  },
-  itemActive: {
-    backgroundColor: colors.accentSoft,
-    paddingHorizontal: 16,
-  },
-  label: { ...type.caption, fontSize: 12, fontWeight: '700' },
 });

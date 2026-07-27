@@ -2,6 +2,7 @@
 // (continuous LAN sweep); this screen is only the manual path: one field,
 // one button. A bare host tries https then http (session.connect).
 
+import { Button } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -10,7 +11,7 @@ import {
   OnboardingScreen,
   OnboardingTitle,
 } from '#mobile/components/OnboardingScreen';
-import { Button, ErrorBanner, TextField } from '#mobile/components/ui';
+import { ErrorBanner, TextField } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useSession } from '#mobile/lib/session';
 
@@ -41,6 +42,7 @@ export default function Connect() {
       <OnboardingBox>
         <OnboardingTitle title={t('connect.addServerTitle')} />
         <TextField
+          icon="server-2"
           value={url}
           onChangeText={(v) => {
             setUrl(v);

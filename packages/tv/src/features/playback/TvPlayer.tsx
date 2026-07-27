@@ -1,10 +1,16 @@
-import { audioSupport, type MediaItem, playerSubtitle, type Translate } from '@kroma/core';
+import {
+  audioSupport,
+  type MediaItem,
+  playerSubtitle,
+  type ReportCategory,
+  type Translate,
+} from '@kroma/core';
 import { Player, TV_FLAGS, type UpNextItem, useSubtitleAppearance, useT } from '@kroma/ui';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, Icon, Txt } from '@kroma/ui/kit';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
-import { BackChevron, StopGlyph } from '#tv/features/playback/player/icons';
-import { FOCUS_RING } from '#tv/features/playback/player/playerStyles';
+import { PlayerSurface } from '#tv/features/playback/player/PlayerSurface';
 import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 import { useNowPlaying } from '#tv/features/playback/player/useNowPlaying';
 import { useStoryboard } from '#tv/features/playback/player/useStoryboard';
@@ -101,7 +107,9 @@ export function TvPlayer() {
   // transparent once a fresh frame is up (kept opaque while loading).
   useEffect(() => {
     const native = pb.surface !== 'video';
+    // biome-ignore lint/style/noRestrictedGlobals: audited - the typeof guard returns before this on native, where there is no page to make transparent.
     if (!native || !pb.ready || typeof document === 'undefined') return;
+    // biome-ignore lint/style/noRestrictedGlobals: audited - unreachable on native, the typeof guard above returns first.
     const el = document.documentElement;
     el.classList.add('kroma-native-surface');
     return () => el.classList.remove('kroma-native-surface');
@@ -120,43 +128,22 @@ export function TvPlayer() {
       }
     : null;
 
-  let surface: ReactNode;
-  if (pb.surface === 'avplay') {
-    // NO child text: AVPlay renders the video to a hardware plane, not into this
-    // <object>'s box, so any fallback children (e.g. the title) would render
-    // VISIBLY over the plane - a static title stuck top-left on every file.
-    // aria-label carries the accessible name without drawing anything.
-    surface = (
-      <object
-        ref={pb.objectRef}
-        type="application/avplayer"
-        style={{ width: '100%', height: '100%' }}
-        aria-label={item.title}
-      />
-    );
-  } else if (pb.surface === 'mpv' || pb.surface === 'exo') {
-    surface = <div style={{ width: '100%', height: '100%' }} role="img" aria-label={item.title} />;
-  } else {
-    surface = (
-      // Subtitles render via the shared SubtitleRenderer; the empty captions track
-      // only satisfies the media-caption a11y requirement. Fill / object-fit come
-      // from the shared stage's `[&>video]:*` rules; borderRadius stays inline
-      // (guaranteed) so the remux shrink-card is rounded on the legacy-tier build.
-      // crossOrigin is REQUIRED for the audio filter: the TV shells load the app
-      // from their own origin (file:// / tauri://) while media comes from the
-      // server, and a non-CORS media element routed into Web Audio outputs
-      // SILENCE (tainted). The server replies permissive CORS, so this is safe.
-      <video
-        ref={pb.videoRef}
-        autoPlay
-        playsInline
-        crossOrigin="anonymous"
-        style={{ borderRadius: 'inherit' }}
-      >
-        <track kind="captions" />
-      </video>
-    );
-  }
+  const surface = <PlayerSurface pb={pb} title={item.title} />;
+
+  // Reporting from inside the player targets exactly what is playing, which for
+  // a series is the EPISODE, not the show: the whole reason a viewer reaches for
+  // this mid-film is that this file is broken.
+  const onReport = useCallback(
+    async (category: ReportCategory) => {
+      await client.createReport({
+        subjectKind: item.kind === 'episode' ? 'episode' : 'movie',
+        subjectId: item.id,
+        category,
+        message: null,
+      });
+    },
+    [client, item.id, item.kind],
+  );
 
   return (
     <Player
@@ -170,6 +157,7 @@ export function TvPlayer() {
       appearance={appearance}
       onAppearance={setAppearance}
       subtitleGen={subtitleGen}
+      onReport={onReport}
       upNext={up.data}
       onPlayItem={onPlayItem}
       onPlayNext={next ? goNext : undefined}
@@ -181,25 +169,25 @@ export function TvPlayer() {
       onClose={nav.back}
       terminated={
         pb.terminated != null ? (
-          <div className="absolute inset-0 z-80 flex flex-col items-center justify-center gap-6 bg-[rgba(0,0,0,0.92)] px-16 text-center backdrop-blur-sm">
-            <span className="text-[#E8536A]">
-              <StopGlyph size={64} />
-            </span>
-            <div className="font-display text-[30px] font-bold text-white">
+          <Box fill z={80} center gap={24} px={64} bg="rgba(0, 0, 0, 0.92)">
+            <Icon name="player-stop-filled" size={64} color="#E8536A" />
+            <Txt variant="h1" style={{ fontSize: 30, textAlign: 'center' }} color="#FFFFFF">
               {t('player.stoppedTitle')}
-            </div>
-            <p className="max-w-2xl font-sans text-[18px] leading-relaxed text-[rgba(244,243,240,0.72)]">
-              {pb.terminated || t('player.stoppedDefault')}
-            </p>
-            <button
-              type="button"
-              onClick={nav.back}
-              className={`mt-2 flex cursor-pointer items-center gap-2 rounded-full bg-accent px-7 py-3 font-sans text-[16px] font-bold text-accent-ink outline-none ${FOCUS_RING}`}
+            </Txt>
+            <Txt
+              style={{ fontSize: 18, lineHeight: 27, textAlign: 'center', maxWidth: 672 }}
+              color="rgba(244, 243, 240, 0.72)"
             >
-              <BackChevron />
-              {t('player.back')}
-            </button>
-          </div>
+              {pb.terminated || t('player.stoppedDefault')}
+            </Txt>
+            <Button
+              icon="chevron-left"
+              label={t('player.back')}
+              onPress={nav.back}
+              style={{ borderRadius: 999, marginTop: 8 }}
+              autoFocus
+            />
+          </Box>
         ) : null
       }
     />

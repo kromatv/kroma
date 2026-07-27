@@ -6,10 +6,10 @@
   "description": "KROMA native desktop client: Tauri shell over @kroma/tv with native mpv playback + gamepad input. Steam Deck is the primary target.",
   "scripts": {
     "dev": "vite",
-    "build": "tsgo --noEmit && vite build",
+    "build": "tsc --noEmit && vite build",
     "build:fast": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsc --noEmit",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build --bundles appimage",
@@ -25,7 +25,8 @@
     "@tauri-apps/plugin-process": "^2",
     "@tauri-apps/plugin-updater": "^2",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4",

@@ -2,7 +2,7 @@
 // landscape on phones, keeps the screen awake, resumes from saved progress,
 // reports the playback heartbeat, and autoplays the next episode on end.
 
-import { audioTracksOf, langCode, type MediaItem } from '@kroma/core';
+import { audioTracksOf, langCode, type MediaItem, preferredAudioIndex } from '@kroma/core';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
@@ -13,13 +13,16 @@ import { StyleSheet, View } from 'react-native';
 import { ErrorView, Loading } from '#mobile/components/ui';
 import { type DownloadEntry, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
+import { useLangPrefs } from '#mobile/lib/langPrefs';
+import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { colors } from '#mobile/lib/theme';
 import { useKromaEngine } from '#mobile/player/engine';
 import { useHeartbeat } from '#mobile/player/heartbeat';
 import { PlayerChrome } from '#mobile/player/PlayerChrome';
-import { TrackSheet } from '#mobile/player/TrackSheet';
+import { type SheetView, TrackSheet } from '#mobile/player/TrackSheet';
 import { useStoryboard } from '#mobile/player/useStoryboard';
+import { useSubAppearance } from '#mobile/player/useSubAppearance';
 import { useSubtitles } from '#mobile/player/useSubtitles';
 
 /** Resume from saved progress when meaningfully started and not basically done. */
@@ -43,11 +46,39 @@ function PlayerBody({
   const t = useT();
   const client = useClient();
   const router = useRouter();
-  const engine = useKromaEngine(client, item, startSec, localUri);
+  const prefs = useLangPrefs();
+  // The account's preferred audio language decides the OPENING track when the
+  // file carries it (the TV's openingAudioIndex, same core helper). Offline
+  // keeps the file's default: local ordinals are the native player's business.
+  const startAudio = localUri ? 0 : (preferredAudioIndex(audioTracksOf(item), prefs.audio) ?? 0);
+  const engine = useKromaEngine(client, item, startSec, localUri, startAudio);
   const navigation = useNavigation();
-  const subs = useSubtitles(client, item, offline);
+  const subs = useSubtitles(client, item, offline, prefs.subtitle);
   const tileFor = useStoryboard(client, item, !localUri, offline);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  // Which sheet view is open, or null: the gear opens the menu, the CC capsule
+  // jumps straight to subtitles.
+  const [sheet, setSheet] = useState<SheetView | null>(null);
+  const [appearance, setAppearance] = useSubAppearance();
+  const [statsOn, setStatsOn] = useState(false);
+  // Pinch-to-zoom, the YouTube gesture: pinch out fills the screen (cover),
+  // pinch in returns to letterboxed fit (contain).
+  const [fill, setFill] = useState(false);
+
+  // Subtitle status for the chrome's top pill. The sheet closes on pick, so
+  // the wait (a first request can sit through the server extracting the whole
+  // file) and the give-up both have to be said on the VIDEO, not in the sheet.
+  const [subFailedNote, setSubFailedNote] = useState<string | null>(null);
+  const prevFailedCount = useRef(0);
+  useEffect(() => {
+    if (subs.failed.size > prevFailedCount.current) {
+      setSubFailedNote(t('error.subtitleUnavailable'));
+      const id = setTimeout(() => setSubFailedNote(null), 2500);
+      prevFailedCount.current = subs.failed.size;
+      return () => clearTimeout(id);
+    }
+    prevFailedCount.current = subs.failed.size;
+  }, [subs.failed, t]);
+  const subNotice = subs.loading ? t('player.subPreparing') : subFailedNote;
   const navigatedRef = useRef(false);
   const viewRef = useRef<VideoViewRef>(null);
   const next = useQuery({
@@ -57,21 +88,31 @@ function PlayerBody({
     staleTime: 5 * 60_000,
   });
 
-  useHeartbeat(client, item, () => ({
-    positionSec: engine.cur,
-    durationSec: engine.dur,
-    playing: engine.playing,
-    waiting: engine.waiting,
-    mode: engine.mode,
-    aac: engine.mode === 'master' && engine.filter !== 'off',
-    audioLang: engine.offline
-      ? engine.localAudio[engine.audioIndex]?.language || undefined
-      : (audioTracksOf(item).find((a) => a.index === engine.audioIndex)?.language ?? undefined),
-    subtitleLang:
-      subs.active !== null
-        ? langCode(subs.tracks.find((s) => s.index === subs.active)?.language)
-        : undefined,
-  }));
+  const [terminated, setTerminated] = useState<string | null>(null);
+  useHeartbeat(
+    client,
+    item,
+    () => ({
+      positionSec: engine.cur,
+      durationSec: engine.dur,
+      playing: engine.playing,
+      waiting: engine.waiting,
+      mode: engine.mode,
+      aac: engine.mode === 'master' && engine.filter !== 'off',
+      audioLang: engine.offline
+        ? engine.localAudio[engine.audioIndex]?.language || undefined
+        : (audioTracksOf(item).find((a) => a.index === engine.audioIndex)?.language ?? undefined),
+      subtitleLang:
+        subs.active !== null
+          ? langCode(subs.tracks.find((s) => s.index === subs.active)?.language)
+          : undefined,
+    }),
+    // Admin stop: halt the stream on the spot and show the message screen.
+    (message) => {
+      engine.shutdown();
+      setTerminated(message.trim() || '');
+    },
+  );
 
   // The screen leaving the stack for ANY reason (pop, replace, gesture) must
   // kill audio before the native dismissal even starts.
@@ -88,17 +129,27 @@ function PlayerBody({
       .nextEpisode(item.id)
       .then((next) => {
         if (next) router.replace(`/player/${next.id}` as never);
-        else router.back();
+        else goBack(router);
       })
-      .catch(() => router.back());
+      .catch(() => goBack(router));
   }, [engine.endedNonce, engine, client, item.id, router]);
+
+  if (terminated != null) {
+    return (
+      <ErrorView
+        message={terminated || t('player.stoppedDefault')}
+        retryLabel={t('player.back')}
+        onRetry={() => goBack(router)}
+      />
+    );
+  }
 
   if (engine.failed) {
     return (
       <ErrorView
         message={t('error.serverTitle')}
         retryLabel={t('player.back')}
-        onRetry={() => router.back()}
+        onRetry={() => goBack(router)}
       />
     );
   }
@@ -109,7 +160,7 @@ function PlayerBody({
         ref={viewRef}
         player={engine.player}
         style={StyleSheet.absoluteFill}
-        contentFit="contain"
+        contentFit={fill ? 'cover' : 'contain'}
         nativeControls={false}
         allowsPictureInPicture
         startsPictureInPictureAutomatically
@@ -118,11 +169,17 @@ function PlayerBody({
         engine={engine}
         item={item}
         cue={subs.cueAt(engine.cur)}
+        appearance={appearance}
+        statsOn={statsOn}
+        onToggleStats={() => setStatsOn((v) => !v)}
+        fill={fill}
+        onZoom={setFill}
+        notice={subNotice}
         onBack={() => {
           engine.shutdown();
-          router.back();
+          goBack(router);
         }}
-        onOpenSheet={() => setSheetOpen(true)}
+        onOpenSheet={(view) => setSheet(view ?? 'menu')}
         onPip={() => viewRef.current?.startPictureInPicture()}
         tileFor={tileFor}
         next={next.data ?? null}
@@ -133,11 +190,16 @@ function PlayerBody({
         }}
       />
       <TrackSheet
-        visible={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        visible={sheet !== null}
+        initialView={sheet ?? 'menu'}
+        onClose={() => setSheet(null)}
         engine={engine}
         subs={subs}
         item={item}
+        appearance={appearance}
+        onAppearance={setAppearance}
+        statsOn={statsOn}
+        onToggleStats={() => setStatsOn((v) => !v)}
       />
     </View>
   );
@@ -182,7 +244,12 @@ export default function PlayerScreen() {
   if (item.isError)
     return (
       <ErrorView
-        message={t('error.serverBody')}
+        // Dev builds say WHAT failed; release keeps the friendly copy.
+        message={
+          __DEV__ && item.error instanceof Error
+            ? `${t('error.serverBody')}\n\n[dev] ${item.error.message}`
+            : t('error.serverBody')
+        }
         retryLabel={t('error.retry')}
         onRetry={() => item.refetch()}
       />

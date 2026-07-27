@@ -1,75 +1,68 @@
-// Kroma mobile design tokens, mirroring packages/ui/src/styles/tokens/colors.css
-// (deep cinematic charcoal surfaces + the warm amber brand accent) and the
-// chromatic wheel from scripts/brand/gen-brand-assets.ts.
+// The mobile app's design vocabulary, sourced entirely from @kroma/ui.
+//
+// Nothing here holds a VALUE. The palette, the brand wheel and the shade stops
+// are the design system's 10-foot tokens (they are the same colours on every
+// form factor); the radii, spacing and type ramp are its mobile scale. This file
+// only maps them onto the names the mobile screens already use, so a colour can
+// never drift between the phone, the TV and the web again.
+//
+// The one rename worth knowing about: this app has always called
+// `colors.textDim` the 62% ink and `colors.textFaint` the 45% one, while the
+// design system calls those `textMuted` and `textDim`. The mapping below keeps
+// the app's meaning and takes the system's values.
+
+import { colors as kit, mobileType } from '@kroma/ui/kit';
+
+// Straight pass-throughs: re-exported rather than rebound, so no local name
+// stands between the screens and the token they are actually using.
+export {
+  absoluteFill,
+  mobileRadius as radius,
+  mobileSpace as spacing,
+  SHADE,
+  shade,
+  WHEEL_COLORS,
+} from '@kroma/ui/kit';
 
 export const colors = {
-  bg: '#0A0A0C',
-  surface: '#121216',
-  surfaceRaised: '#1C1C22',
-  surfaceHigh: '#26262E',
-  border: 'rgba(255, 255, 255, 0.08)',
-  borderStrong: 'rgba(255, 255, 255, 0.14)',
-  overlay: 'rgba(18, 18, 22, 0.86)',
-  text: '#F4F3F0',
-  textDim: 'rgba(244, 243, 240, 0.62)',
-  textFaint: 'rgba(244, 243, 240, 0.45)',
-  accent: '#F4B642',
-  accentBright: '#FFD262',
-  accentSoft: 'rgba(242, 180, 66, 0.16)',
-  accentInk: '#0A0A0C',
-  success: '#46D08D',
-  info: '#86A8FF',
-  danger: '#E53935',
+  bg: kit.bg,
+  surface: kit.surface1,
+  surfaceRaised: kit.surface2,
+  surfaceHigh: kit.surface3,
+  border: kit.border,
+  borderStrong: kit.borderStrong,
+  overlay: kit.overlay,
+  text: kit.text,
+  /** 62% ink. The design system calls this `textMuted`. */
+  textDim: kit.textMuted,
+  /** 45% ink. The design system calls this `textDim`. */
+  textFaint: kit.textDim,
+  accent: kit.accent,
+  accentBright: kit.accentBright,
+  accentSoft: kit.accentSoft,
+  accentInk: kit.accentInk,
+  success: kit.success,
+  info: kit.info,
+  danger: kit.danger,
 } as const;
 
-export const WHEEL_COLORS = [
-  '#F2685C',
-  '#F4B642',
-  '#5FBF8F',
-  '#4F9DE0',
-  '#6366F1',
-  '#A855F7',
-] as const;
-
-/** Billboard / poster shade stops (transparent -> page background). */
-export const SHADE = {
-  transparent: 'rgba(10, 10, 12, 0)',
-  mid: 'rgba(10, 10, 12, 0.55)',
-  full: '#0A0A0C',
-} as const;
-
-export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 28,
-} as const;
-
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-} as const;
-
-/** RN 0.86 dropped StyleSheet.absoluteFillObject; local equivalent. */
-export const absoluteFill = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-} as const;
-
+/**
+ * The phone type ramp, INKED. The kit's `mobileType` deliberately bakes no
+ * colour (a role must be reusable on any surface), but this app's screens
+ * spread `...type.x` everywhere and mostly say nothing about colour - and
+ * React Native's silent default is BLACK, which on this app's near-black
+ * surfaces rendered every unlabelled heading invisible. So the app's own ramp
+ * carries the app's default ink; a style that wants another colour already
+ * spells it after the spread, where it still wins.
+ */
 export const type = {
-  display: { fontSize: 34, fontWeight: '800' as const, color: colors.text, letterSpacing: -0.8 },
-  title: { fontSize: 28, fontWeight: '800' as const, color: colors.text, letterSpacing: -0.5 },
-  heading: { fontSize: 20, fontWeight: '700' as const, color: colors.text, letterSpacing: -0.3 },
-  section: { fontSize: 18, fontWeight: '700' as const, color: colors.text, letterSpacing: -0.3 },
-  body: { fontSize: 15, fontWeight: '400' as const, color: colors.text },
-  caption: { fontSize: 13, fontWeight: '400' as const, color: colors.textDim },
-  small: { fontSize: 11, fontWeight: '600' as const, color: colors.textFaint },
+  display: { ...mobileType.display, color: kit.text },
+  title: { ...mobileType.title, color: kit.text },
+  heading: { ...mobileType.heading, color: kit.text },
+  section: { ...mobileType.section, color: kit.text },
+  body: { ...mobileType.body, color: kit.text },
+  caption: { ...mobileType.caption, color: kit.textMuted },
+  small: { ...mobileType.small, color: kit.textMuted },
 } as const;
 
 /** Height of the floating (translucent) tab bar; tab screens pad their scroll

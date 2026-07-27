@@ -5,12 +5,13 @@
 
 import type { LogEntry, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconSearch, IconTerminal2 } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+import { IconSearch } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { Card, SegmentedControl, Select, Toggle } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, TableSkeleton } from '#web/shared/ui';
+import { TableSkeleton } from '#web/shared/ui';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '#web/shared/ui/input-group';
 
 type LevelFilter = 'all' | 'info' | 'warn' | 'error';
@@ -97,7 +98,7 @@ export function LogsPage() {
       </div>
       {data === null ? <TableSkeleton rows={10} /> : null}
       {data && entries.length === 0 ? (
-        <EmptyState icon={<IconTerminal2 size={32} stroke={1.5} />} title={t('logs.empty')} />
+        <EmptyState icon="terminal-2" title={t('logs.empty')} />
       ) : null}
       {entries.length > 0 ? (
         <Card className="p-0">

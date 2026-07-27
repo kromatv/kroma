@@ -10,14 +10,12 @@
 
 import { hasPermission, type MessageKey, type Treatment } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button } from '@kroma/ui/kit';
 import {
   IconAlertTriangleFilled,
   IconCircle,
   IconCircleCheckFilled,
-  IconFileInfo,
   IconLoader2,
-  IconRefresh,
-  IconWand,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -113,35 +111,32 @@ export function TreatmentsPanel({
         })}
         <div className="ml-auto flex items-center gap-2">
           {admin && kind === 'item' ? (
-            <button
-              type="button"
-              onClick={() => void MediaInfoModal.call({ id, title })}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/12 bg-white/8 px-3.5 py-2 text-[13px] font-semibold text-white/85 transition-colors hover:bg-white/12"
-            >
-              <IconFileInfo size={15} stroke={2} />
-              {t('mediaInfo.action')}
-            </button>
+            <Button
+              variant="glass"
+              size="sm"
+              icon="file-info"
+              label={t('mediaInfo.action')}
+              onPress={() => void MediaInfoModal.call({ id, title })}
+            />
           ) : null}
           {canFix ? (
-            <button
-              type="button"
-              onClick={() => void openRematch()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/12 bg-white/8 px-3.5 py-2 text-[13px] font-semibold text-white/85 transition-colors hover:bg-white/12"
-            >
-              <IconWand size={15} stroke={2} />
-              {t('rematch.action')}
-            </button>
+            <Button
+              variant="glass"
+              size="sm"
+              icon="wand"
+              label={t('rematch.action')}
+              onPress={() => void openRematch()}
+            />
           ) : null}
           {admin ? (
-            <button
-              type="button"
-              onClick={reprocess}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/12 bg-white/8 px-3.5 py-2 text-[13px] font-semibold text-white/85 transition-colors hover:bg-white/12 disabled:opacity-50"
-            >
-              <IconRefresh size={15} stroke={2} className={busy ? 'animate-spin' : ''} />
-              {t('pipeline.reprocessBtn')}
-            </button>
+            <Button
+              variant="glass"
+              size="sm"
+              icon="refresh"
+              label={t('pipeline.reprocessBtn')}
+              onPress={reprocess}
+              loading={busy}
+            />
           ) : null}
         </div>
       </div>

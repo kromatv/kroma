@@ -3,7 +3,8 @@
 
 import { apiErrorText, type NamingTemplatesView, type OrganizePlan } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconArrowRight, IconBraces, IconLoader2, IconWand } from '@tabler/icons-react';
+import { Button } from '@kroma/ui/kit';
+import { IconArrowRight } from '@tabler/icons-react';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { NamingTokenModal } from '#web/features/admin/naming-tokens';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
@@ -118,15 +119,13 @@ export function NamingPage() {
                     onChange={(e) => set(f.key, e.target.value)}
                     className="w-full rounded-[9px] border border-border-strong bg-[#0F0F13] px-3.5 py-2.5 font-mono text-[13px] text-text outline-none focus:border-accent/60"
                   />
-                  <button
-                    type="button"
-                    onClick={() => openTokens(f.key)}
-                    title={t('naming.tokensTitle')}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-[9px] border border-white/12 bg-[#1A1A20] px-3 text-[13px] font-semibold text-white/80 hover:bg-[#222229]"
-                  >
-                    <IconBraces size={15} stroke={2} />
-                    {t('naming.tokens')}
-                  </button>
+                  <Button
+                    variant="glass"
+                    size="sm"
+                    icon="braces"
+                    label={t('naming.tokens')}
+                    onPress={() => openTokens(f.key)}
+                  />
                 </div>
               </label>
             ))}
@@ -162,15 +161,13 @@ export function NamingPage() {
         ) : null}
 
         <div className="mt-5 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving || !tpl}
-            className="inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.75 text-[14px] font-bold text-accent-ink hover:bg-accent-hover disabled:opacity-60"
-          >
-            {saving ? <IconLoader2 size={15} stroke={2.4} className="animate-spin" /> : null}
-            {t('common.save')}
-          </button>
+          <Button
+            size="sm"
+            label={t('common.save')}
+            onPress={save}
+            loading={saving}
+            disabled={!tpl}
+          />
           {saved ? (
             <span className="text-[13px] font-semibold text-[#46D08D]">{t('common.saved')}</span>
           ) : null}
@@ -232,19 +229,14 @@ function RenameSection() {
     <Section
       title={t('naming.renameTitle')}
       right={
-        <button
-          type="button"
-          onClick={preview}
-          disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/12 bg-[#1A1A20] px-3.5 py-2 text-[13px] font-semibold text-white/80 hover:bg-[#222229] disabled:opacity-60"
-        >
-          {busy ? (
-            <IconLoader2 size={14} stroke={2.4} className="animate-spin" />
-          ) : (
-            <IconWand size={14} stroke={2} />
-          )}
-          {t('naming.preview2')}
-        </button>
+        <Button
+          variant="glass"
+          size="sm"
+          icon="wand"
+          label={t('naming.preview2')}
+          onPress={preview}
+          loading={busy}
+        />
       }
     >
       <p className="mb-3 text-[13.5px] leading-relaxed text-dim">{t('naming.renameHelp')}</p>
@@ -271,14 +263,14 @@ function RenameSection() {
                   <MoveRow key={`${m.from}`} from={m.from} to={m.to} />
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={() => void askApply()}
-                disabled={busy}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.75 text-[14px] font-bold text-accent-ink hover:bg-accent-hover disabled:opacity-60"
-              >
-                {t('naming.apply', { n: String(plan.moves.length) })}
-              </button>
+              <div className="mt-4 flex">
+                <Button
+                  size="sm"
+                  label={t('naming.apply', { n: String(plan.moves.length) })}
+                  onPress={() => void askApply()}
+                  disabled={busy}
+                />
+              </div>
             </>
           ) : (
             <div className="py-4 text-center text-[13.5px] font-medium text-[#46D08D]">

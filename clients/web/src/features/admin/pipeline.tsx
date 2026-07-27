@@ -5,13 +5,8 @@
 
 import { type ElementRow, type KromaClient, KromaEvents, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import {
-  IconChevronLeft,
-  IconChevronRight,
-  IconInbox,
-  IconPlayerPause,
-  IconPlayerPlay,
-} from '@tabler/icons-react';
+import { Button, EmptyState } from '@kroma/ui/kit';
+import { IconPlayerPause } from '@tabler/icons-react';
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
 import { ElementRowView } from '#web/features/admin/pipeline-row';
@@ -27,9 +22,14 @@ import {
 } from '#web/features/admin/table-console';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState } from '#web/shared/ui';
 
 const PER_PAGE = 30;
+
+/** The paused pipeline's resume affordance: a success wash over the kit glass. */
+const RESUME_FILL = {
+  backgroundColor: 'rgba(70, 208, 141, 0.14)',
+  borderColor: 'rgba(70, 208, 141, 0.4)',
+} as const;
 const apiKind = (el: ElementRow): 'item' | 'show' => (el.kind === 'series' ? 'show' : 'item');
 
 // Server events that should refresh the pipeline table.
@@ -214,23 +214,14 @@ export function PipelinePage() {
         action={
           <div className="flex min-w-0 flex-wrap items-center gap-3">
             {canManage ? (
-              <button
-                type="button"
-                onClick={togglePause}
-                title={t(paused ? 'pipeline.resumeHint' : 'pipeline.pauseHint')}
-                className={`inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-[13.5px] font-semibold transition-colors ${
-                  paused
-                    ? 'border-[#46D08D]/40 bg-[#46D08D]/[0.14] text-[#46D08D] hover:bg-[#46D08D]/20'
-                    : 'border-white/12 bg-[#1A1A20] text-white/80 hover:bg-[#222229]'
-                }`}
-              >
-                {paused ? (
-                  <IconPlayerPlay size={15} stroke={2} />
-                ) : (
-                  <IconPlayerPause size={15} stroke={2} />
-                )}
-                {t(paused ? 'pipeline.resume' : 'pipeline.pause')}
-              </button>
+              <Button
+                variant="glass"
+                size="sm"
+                icon={paused ? 'player-play' : 'player-pause'}
+                label={t(paused ? 'pipeline.resume' : 'pipeline.pause')}
+                onPress={togglePause}
+                style={paused ? RESUME_FILL : null}
+              />
             ) : null}
             <ConsoleSearch
               value={q}
@@ -355,7 +346,7 @@ export function PipelinePage() {
 
         {data && rows.length === 0 ? (
           <div className="py-6">
-            <EmptyState icon={<IconInbox size={32} stroke={1.5} />} title={t('pipeline.noMatch')} />
+            <EmptyState icon="inbox" title={t('pipeline.noMatch')} />
           </div>
         ) : null}
 
@@ -416,15 +407,14 @@ function Pager({
   label,
 }: Readonly<{ dir: 'prev' | 'next'; disabled: boolean; onClick: () => void; label: string }>) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Button
+      variant="glass"
+      size="sm"
+      icon={dir === 'prev' ? 'chevron-left' : undefined}
+      iconRight={dir === 'next' ? 'chevron-right' : undefined}
+      label={label}
+      onPress={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12.5px] font-semibold ${disabled ? 'cursor-not-allowed border-white/6 bg-[#141419] text-white/[0.28]' : 'border-white/12 bg-[#1A1A20] text-white/80'}`}
-    >
-      {dir === 'prev' ? <IconChevronLeft size={13} stroke={2.6} /> : null}
-      {label}
-      {dir === 'next' ? <IconChevronRight size={13} stroke={2.6} /> : null}
-    </button>
+    />
   );
 }

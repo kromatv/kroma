@@ -11,6 +11,7 @@ use crate::api::error::json_error;
 use crate::api::poster::render_poster;
 use crate::api::util::{blocking, query};
 use crate::db;
+use crate::model::Kind;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
@@ -36,7 +37,10 @@ pub async fn show_poster(
     Ok(render_poster(&id, &title))
 }
 
-/// `GET /api/items/:id/poster` → inline SVG placeholder.
+/// `GET /api/items/:id/poster` → the show's real poster for an episode, else the
+/// inline SVG placeholder. An episode has no poster of its own (enrichment only
+/// gives it a still), so a poster rail showing one - My List, a search grid -
+/// always got the placeholder tile; the show's artwork is what that tile means.
 pub async fn item_poster(
     State(state): State<SharedState>,
     Path(id): Path<String>,
@@ -45,7 +49,26 @@ pub async fn item_poster(
     let item = query(&state.db, move |pool| db::get_item(&pool, &id2))
         .await?
         .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
+    if item.kind == Kind::Episode {
+        if let Some(show_id) = item.show_id.clone() {
+            let art = query(&state.db, move |pool| db::show_poster_art(&pool, &show_id)).await?;
+            if let Some(url) = art {
+                return Ok(redirect_to_art(&url));
+            }
+        }
+    }
     Ok(render_poster(&id, &item.title))
+}
+
+/// 302 to a cached artwork URL. Cached for a day like the placeholder - the
+/// target is content-addressed, so a stale redirect still resolves.
+fn redirect_to_art(url: &str) -> Response {
+    Response::builder()
+        .status(StatusCode::FOUND)
+        .header(header::LOCATION, url)
+        .header(header::CACHE_CONTROL, "public, max-age=86400")
+        .body(Body::empty())
+        .unwrap()
 }
 
 /// Allowed `?w=` rendition widths. A fixed bucket set keeps the on-disk cache
@@ -160,11 +183,15 @@ pub struct CardQuery {
     pub label: Option<String>,
     /// Resume fraction 0.0–1.0 → draws a progress bar.
     pub progress: Option<f32>,
+    /// Requested display width. Anything above 640 selects the 1280×720
+    /// rendition (the Apple TV Top Shelf card); default is the 640×360 tile.
+    pub w: Option<u32>,
 }
 
-/// `GET /api/items/:id/card?label=&progress=` → a 640×360 landscape JPEG "card"
-/// (backdrop + category badge + KROMA brand logo + title-treatment logo) for
-/// Samsung TV Smart Hub preview tiles.
+/// `GET /api/items/:id/card?label=&progress=&w=` → a 16:9 landscape JPEG "card"
+/// (backdrop + category badge + KROMA brand logo + title-treatment logo):
+/// 640×360 for Samsung TV Smart Hub preview tiles, 1280×720 (`w>640`) for the
+/// Apple TV Top Shelf.
 pub async fn item_card(
     State(state): State<SharedState>,
     Path(id): Path<String>,
@@ -194,15 +221,16 @@ pub async fn item_card(
 
     let label = q.label.unwrap_or_default();
     let progress = q.progress;
+    let scale: u32 = if q.w.unwrap_or(640) > 640 { 2 } else { 1 };
     let data_dir = state.config.data_dir.clone();
 
     let rendered = blocking(move || {
-        let Some(base_path) = crate::infra::image::card_base_png(&data_dir, &webp) else {
+        let Some(base_path) = crate::infra::image::card_base_png(&data_dir, &webp, scale) else {
             return Ok(None);
         };
         let base = std::fs::read(&base_path)?;
         let logo_bytes = logo
-            .and_then(|name| crate::infra::image::card_logo_png(&data_dir, &name))
+            .and_then(|name| crate::infra::image::card_logo_png(&data_dir, &name, scale))
             .and_then(|path| std::fs::read(&path).ok());
         Ok(crate::api::card::render(&crate::api::card::Card {
             base_png: &base,

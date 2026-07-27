@@ -5,27 +5,38 @@
   "description": "KROMA shared 10-foot TV experience spatial remote navigation, home, player. Mounted by the Tizen and webOS shells.",
   "exports": {
     ".": "./src/index.tsx",
+    "./mount": "./src/mount.web.tsx",
     "./tv.css": "./src/tv.css"
   },
   "scripts": {
-    "typecheck": "tsgo --noEmit",
-    "build": "tsgo --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
   },
   "dependencies": {
     "@kroma/core": "workspace:*",
     "@kroma/ui": "workspace:*",
     "@tabler/icons-react": "^3.44.0",
     "hls.js": "^1.5.0",
-    "qrcode-generator": "^2.0.4"
+    "qrcode-generator": "^2.0.4",
+    "@kroma/workbench": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "react-native": "*",
+    "expo-video": "*"
   },
   "devDependencies": {
     "@types/qrcode-generator": "^1.0.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "react-native": "npm:react-native-tvos@0.86.0-2",
+    "expo-video": "~57.0.1"
+  },
+  "peerDependenciesMeta": {
+    "expo-video": {
+      "optional": true
+    }
   }
 }

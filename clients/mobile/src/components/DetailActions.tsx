@@ -3,19 +3,11 @@
 // actions (my list / watched / report) with an amber icon + label active state.
 
 import type { MediaItem } from '@kroma/core';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Button, Icon } from '@kroma/ui/kit';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { type DownloadState, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
-import {
-  CheckIcon,
-  DownloadIcon,
-  EyeCheckIcon,
-  EyeIcon,
-  FlagIcon,
-  PlayIcon,
-  PlusIcon,
-} from '#mobile/player/icons';
 
 function downloadBarLabel(
   state: DownloadState,
@@ -30,7 +22,31 @@ function downloadBarLabel(
           : t('offline.downloading', { percent: '' }).replace('%', '').trim(),
       done: false,
     };
+  if (state.status === 'paused')
+    return {
+      label:
+        state.progress >= 0
+          ? `${t('offline.paused')} · ${Math.round(state.progress * 100)}%`
+          : t('offline.paused'),
+      done: false,
+    };
+  if (state.status === 'queued') return { label: t('offline.queued'), done: false };
   return { label: t('offline.download'), done: false };
+}
+
+function barIcon(state: DownloadState) {
+  if (state.status === 'done')
+    return <Icon name="check" size={20} stroke={2.4} color={colors.accent} />;
+  if (state.status === 'paused')
+    return <Icon name="player-pause-filled" size={18} color={colors.textDim} />;
+  return (
+    <Icon
+      name="download"
+      size={20}
+      stroke={2}
+      color={state.status === 'downloading' ? colors.accent : colors.text}
+    />
+  );
 }
 
 export function DetailActions({
@@ -58,35 +74,43 @@ export function DetailActions({
   const bar = downloadBarLabel(state, t);
   return (
     <View style={styles.actions}>
-      <Pressable
-        onPress={onPlay}
-        style={({ pressed }) => [styles.play, pressed && { opacity: 0.85 }]}
-      >
-        <PlayIcon size={22} color={colors.accentInk} />
-        <Text style={styles.playLabel}>{playLabel}</Text>
-      </Pressable>
+      <Button icon="player-play-filled" label={playLabel} onPress={onPlay} />
       <Pressable
         onPress={() => {
+          const title = item.metadata?.title ?? item.title;
           if (state.status === 'none') downloads.start(item);
-          else if (state.status === 'downloading') downloads.cancel(item.id);
-          else if (state.status === 'done') void downloads.remove(item.id);
+          else if (state.status === 'queued') downloads.cancel(item.id);
+          else if (state.status === 'downloading') {
+            Alert.alert(title, undefined, [
+              { text: t('offline.pause'), onPress: () => downloads.pause(item.id) },
+              {
+                text: t('offline.cancelDownload'),
+                style: 'destructive',
+                onPress: () => downloads.cancel(item.id),
+              },
+              { text: t('common.back'), style: 'cancel' },
+            ]);
+          } else if (state.status === 'paused') {
+            Alert.alert(title, undefined, [
+              { text: t('offline.resume'), onPress: () => downloads.resume(item.id) },
+              {
+                text: t('offline.cancelDownload'),
+                style: 'destructive',
+                onPress: () => downloads.cancel(item.id),
+              },
+              { text: t('common.back'), style: 'cancel' },
+            ]);
+          } else if (state.status === 'done') void downloads.remove(item.id);
         }}
         style={({ pressed }) => [styles.downloadBar, pressed && { opacity: 0.85 }]}
       >
-        {state.status === 'downloading' && state.progress > 0 ? (
+        {(state.status === 'downloading' || state.status === 'paused') && state.progress > 0 ? (
           <View
             style={[styles.downloadBarFill, { width: `${Math.round(state.progress * 100)}%` }]}
             pointerEvents="none"
           />
         ) : null}
-        {bar.done ? (
-          <CheckIcon size={20} color={colors.accent} />
-        ) : (
-          <DownloadIcon
-            size={20}
-            color={state.status === 'downloading' ? colors.accent : colors.text}
-          />
-        )}
+        {barIcon(state)}
         <Text style={[styles.downloadBarLabel, bar.done && { color: colors.accent }]}>
           {bar.label}
         </Text>
@@ -96,7 +120,11 @@ export function DetailActions({
           onPress={onToggleList}
           style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
         >
-          {inList ? <CheckIcon size={24} color={colors.accent} /> : <PlusIcon size={24} />}
+          {inList ? (
+            <Icon name="check" size={24} stroke={2.4} color={colors.accent} />
+          ) : (
+            <Icon name="plus" size={24} stroke={2.2} />
+          )}
           <Text numberOfLines={1} style={[styles.secondaryLabel, inList && styles.secondaryActive]}>
             {t('nav.myList')}
           </Text>
@@ -106,7 +134,11 @@ export function DetailActions({
             onPress={onToggleWatched}
             style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
           >
-            {watched ? <EyeCheckIcon size={24} color={colors.accent} /> : <EyeIcon size={24} />}
+            {watched ? (
+              <Icon name="eye-check" size={24} stroke={1.8} color={colors.accent} />
+            ) : (
+              <Icon name="eye" size={24} stroke={1.8} />
+            )}
             <Text
               numberOfLines={1}
               style={[styles.secondaryLabel, watched && styles.secondaryActive]}
@@ -120,7 +152,7 @@ export function DetailActions({
             onPress={onReport}
             style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
           >
-            <FlagIcon size={24} />
+            <Icon name="flag" size={24} stroke={1.8} />
             <Text numberOfLines={1} style={styles.secondaryLabel}>
               {t('reports.sheet')}
             </Text>
@@ -133,16 +165,6 @@ export function DetailActions({
 
 const styles = StyleSheet.create({
   actions: { gap: spacing.sm },
-  play: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    minHeight: 52,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-  },
-  playLabel: { color: colors.accentInk, fontSize: 16, fontWeight: '800' },
   downloadBar: {
     flexDirection: 'row',
     alignItems: 'center',

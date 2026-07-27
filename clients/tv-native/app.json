@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "KROMA",
+    "slug": "kroma-tv",
+    "version": "0.1.3",
+    "orientation": "landscape",
+    "icon": "./assets/icon.png",
+    "scheme": "kroma",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "tv.kroma.mobile",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": ["en", "fr"],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsLocalNetworking": true
+        },
+        "NSLocalNetworkUsageDescription": "KROMA searches your local network to find your media server.",
+        "NSBonjourServices": ["_http._tcp", "_kroma._tcp"],
+        "NSSiriUsageDescription": "KROMA lets you ask Siri to search for something to watch in your library."
+      }
+    },
+    "android": {
+      "package": "tv.kroma.tv"
+    },
+    "plugins": [
+      [
+        "@react-native-tvos/config-tv",
+        {
+          "isTV": true,
+          "showVerboseWarnings": false,
+          "androidTVBanner": "./assets/tv/android-tv-banner.png",
+          "androidTVIcon": "./assets/tv/android-tv-icon.png",
+          "appleTVImages": {
+            "iconSmall": "./assets/tv/apple-icon-small.png",
+            "iconSmall2x": "./assets/tv/apple-icon-small-2x.png",
+            "icon": "./assets/tv/apple-icon.png",
+            "topShelf": "./assets/tv/apple-top-shelf.png",
+            "topShelf2x": "./assets/tv/apple-top-shelf-2x.png",
+            "topShelfWide": "./assets/tv/apple-top-shelf-wide.png",
+            "topShelfWide2x": "./assets/tv/apple-top-shelf-wide-2x.png"
+          }
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0A0C",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      "./plugins/with-siri-intents",
+      "./plugins/with-tv-key-events",
+      "./plugins/with-top-shelf",
+      "./plugins/with-tv-blur-link",
+      "expo-video"
+    ],
+    "experiments": {
+      "tsconfigPaths": true
+    }
+  }
+}

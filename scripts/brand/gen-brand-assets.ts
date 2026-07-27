@@ -10,6 +10,7 @@
 //
 // The in-app lockup is NOT generated from here: @kroma/ui <Logo>/<KromaMark>
 // render it live (webfont + inline SVG) with the same metrics.
+import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 // Relative, not '@kroma/core': the repo root declares no workspace dependency,
@@ -125,44 +126,7 @@ ${lockupPaths(IVORY)}
   console.log('wrote banner.svg');
 }
 
-// ---- 4. Android TV banner vector drawable -------------------------------------
-
-{
-  const w = 240;
-  const s = Math.round((w / LOCKUP_W) * 100000) / 100000;
-  const tx = round2((320 - w) / 2);
-  const ty = round2((180 - LOCKUP_H * s) / 2);
-  const xml = `<?xml version="1.0" encoding="utf-8"?>
-<!-- KROMA launcher banner (320x180): the official horizontal lockup (outlined
-     letters + chromatic-wheel O, mask-free annular sectors). -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="320dp"
-    android:height="180dp"
-    android:viewportWidth="320"
-    android:viewportHeight="180">
-
-    <path
-        android:pathData="M0,0h320v180h-320z"
-        android:fillColor="#0A0A0C" />
-
-    <group
-        android:translateX="${tx}"
-        android:translateY="${ty}"
-        android:scaleX="${s}"
-        android:scaleY="${s}">
-        <path android:pathData="${KR_D}" android:fillColor="#F4F3F0" />
-${wheelSectors()
-  .map((d, i) => `        <path android:pathData="${d}" android:fillColor="${WHEEL_COLORS[i]}" />`)
-  .join('\n')}
-        <path android:pathData="${MA_D}" android:fillColor="#F4F3F0" />
-    </group>
-</vector>
-`;
-  await Bun.write(`${REPO}/clients/androidtv/android/app/src/main/res/drawable/tv_banner.xml`, xml);
-  console.log('wrote tv_banner.xml');
-}
-
-// ---- 5. raster icons (wheel full-bleed in its own box) ------------------------
+// ---- 4. raster icons (wheel full-bleed in its own box) ------------------------
 
 // Icon SVG: wheel centred, `symbolFrac` = true wheel diameter / icon size.
 function iconSvg(size: number, bg: string, radiusFrac: number, symbolFrac: number): string {
@@ -235,6 +199,56 @@ await png(`${REPO}/clients/mobile/assets/images/splash-icon.png`, 512, 'none', {
     .png()
     .toFile(`${REPO}/clients/mobile/assets/images/android-icon-monochrome.png`);
   console.log('wrote', `${REPO}/clients/mobile/assets/images/android-icon-monochrome.png`);
+}
+
+// ---- 5. native TV client (Apple TV + Android TV) ------------------------------
+
+// TV brand surfaces are landscape plates, not square icons: the tvOS app icon
+// is 400x240, the top shelf is a 1920x720 banner and the Android TV banner is
+// 320x180. All of them carry the horizontal lockup centred on flat ink. Flat,
+// not the repo banner's amber halo: an 8-bit PNG gradient stretched over 1440
+// TV pixels bands into visible concentric rings.
+function platePng(outPath: string, w: number, h: number, lockupFrac: number): Promise<void> {
+  const s = (w * lockupFrac) / LOCKUP_W;
+  const x = round2((w - LOCKUP_W * s) / 2);
+  const y = round2((h - LOCKUP_H * s) / 2);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="${INK}"/><g transform="translate(${x},${y}) scale(${round2(s * 10000) / 10000})">
+${lockupPaths(IVORY)}
+</g></svg>`;
+  return sharp(Buffer.from(svg))
+    .resize(w, h)
+    .removeAlpha()
+    .png()
+    .toFile(outPath)
+    .then(() => {
+      console.log('wrote', outPath);
+    });
+}
+
+{
+  const TVN = `${REPO}/clients/tv-native/assets`;
+  await mkdir(`${TVN}/tv`, { recursive: true });
+
+  // Square icon expo prebuild still needs for the non-TV fallback targets.
+  await png(`${TVN}/icon.png`, 1024, INK, { alpha: false });
+  await png(`${TVN}/splash-icon.png`, 512, 'none', { symbolFrac: 1.0 });
+
+  // Apple TV brand assets. The sizes are exact: @react-native-tvos/config-tv
+  // copies them verbatim into the TVAppIcon brand asset catalog, and Xcode (and
+  // App Store submission) rejects anything off by a pixel or carrying alpha.
+  // The layered icon repeats one plate on all three parallax layers.
+  await platePng(`${TVN}/tv/apple-icon-small.png`, 400, 240, 0.66);
+  await platePng(`${TVN}/tv/apple-icon-small-2x.png`, 800, 480, 0.66);
+  await platePng(`${TVN}/tv/apple-icon.png`, 1280, 768, 0.66);
+  await platePng(`${TVN}/tv/apple-top-shelf.png`, 1920, 720, 0.28);
+  await platePng(`${TVN}/tv/apple-top-shelf-2x.png`, 3840, 1440, 0.28);
+  await platePng(`${TVN}/tv/apple-top-shelf-wide.png`, 2320, 720, 0.24);
+  await platePng(`${TVN}/tv/apple-top-shelf-wide-2x.png`, 4640, 1440, 0.24);
+
+  // Android TV. The banner is the leanback launcher tile (320x180, lockup); the
+  // icon is copied unresized into every mipmap bucket, so it ships at xhdpi.
+  await platePng(`${TVN}/tv/android-tv-banner.png`, 320, 180, 0.75);
+  await png(`${TVN}/tv/android-tv-icon.png`, 320, INK, { symbolFrac: 0.64, alpha: false });
 }
 
 // ----- vector mark (no letters): the favicon every surface shares -----------

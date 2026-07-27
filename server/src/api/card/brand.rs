@@ -11,13 +11,13 @@ use std::sync::OnceLock;
 use fontdue::Font;
 use tiny_skia::{FillRule, Paint, PathBuilder, Pixmap, Transform};
 
-use super::{draw_text, text_width, TextStyle, MARGIN, W, WHITE};
+use super::{draw_text, text_width, TextStyle, MARGIN, WHITE};
 
 /// The wordmark face: Bricolage Grotesque ExtraBold, per the "1b Chroma" logo spec.
 fn font() -> &'static Font {
     static FONT: OnceLock<Font> = OnceLock::new();
     FONT.get_or_init(|| {
-        let bytes = include_bytes!("../../../assets/fonts/BricolageGrotesque-ExtraBold.ttf") as &[u8];
+        let bytes = include_bytes!("../../../../packages/ui/src/assets/fonts/BricolageGrotesque-ExtraBold.ttf") as &[u8];
         Font::from_bytes(bytes, fontdue::FontSettings::default()).expect("bundled font parses")
     })
 }
@@ -35,10 +35,11 @@ const WHEEL: [(u8, u8, u8); 6] = [
 
 /// Paint the lockup right-aligned to the margin and vertically centred on `cy`:
 /// wheel ~.91em, optically centred on the caps, asymmetric side gaps, -.014em
-/// tracking (all from the official export).
-pub(super) fn paint(pm: &mut Pixmap, cy: f32) {
+/// tracking (all from the official export). `s` scales every metric off the
+/// 640×360 layout (2.0 on the 1280×720 Top Shelf card).
+pub(super) fn paint(pm: &mut Pixmap, cy: f32, s: f32) {
     let f = font();
-    let size = 20.0;
+    let size = 20.0 * s;
     let tracking = size * -0.014;
     let wheel = size * 0.91;
     let (gap_l, gap_r) = (size * 0.055, size * 0.09);
@@ -46,7 +47,7 @@ pub(super) fn paint(pm: &mut Pixmap, cy: f32) {
     let w_kr = text_width(f, "KR", size, tracking);
     let w_ma = text_width(f, "MA", size, tracking);
     let total = w_kr + gap_l + wheel + gap_r + w_ma;
-    let x0 = W as f32 - MARGIN - total;
+    let x0 = pm.width() as f32 - MARGIN * s - total;
     let baseline = cy + size * 0.32;
 
     let style = TextStyle { size, color: WHITE, tracking };
@@ -114,14 +115,14 @@ fn paint_wheel(pm: &mut Pixmap, x: f32, y: f32, size: f32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::card::H;
+    use crate::api::card::{H, W};
 
     /// The lockup draws, and it stays inside the card: right-aligned to the
     /// margin, on the badge row.
     #[test]
     fn lockup_paints_in_the_top_right_corner() {
         let mut pm = Pixmap::new(W, H).expect("pixmap");
-        paint(&mut pm, MARGIN + 21.0);
+        paint(&mut pm, MARGIN + 21.0, 1.0);
         let lit = |x: u32, y: u32| pm.pixel(x, y).is_some_and(|p| p.alpha() > 0);
         assert!((W / 2..W).any(|x| (0..80).any(|y| lit(x, y))), "the lockup drew nothing");
         // Right-aligned to the margin, so the edge column is never touched.

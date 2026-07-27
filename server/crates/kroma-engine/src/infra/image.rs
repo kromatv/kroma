@@ -90,28 +90,33 @@ fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String
 }
 
 /// A title logo (alpha preserved) bounded to fit a card, for overlay. Scales the
-/// cached PNG down to ≤300×120 and caches as `<name>.logo.png`. `name` is a bare
-/// cached logo filename (`<hash>.png`).
-pub fn card_logo_png(data_dir: &Path, name: &str) -> Option<PathBuf> {
+/// cached PNG down to ≤300×120 (`scale` 1) or ≤600×240 (`scale` 2, the Apple TV
+/// Top Shelf card) and caches as `<name>.logo.png` / `<name>.logo2x.png`.
+/// `name` is a bare cached logo filename (`<hash>.png`).
+pub fn card_logo_png(data_dir: &Path, name: &str, scale: u32) -> Option<PathBuf> {
     let dir = images_dir(data_dir);
+    let (w, h, sfx) = if scale >= 2 { (600, 240, "2x") } else { (300, 120, "") };
     ffmpeg_rendition(
         &dir.join(name),
-        &dir.join(format!("{name}.logo.png")),
-        "scale=300:120:force_original_aspect_ratio=decrease",
+        &dir.join(format!("{name}.logo{sfx}.png")),
+        &format!("scale={w}:{h}:force_original_aspect_ratio=decrease"),
         &[],
     )
 }
 
-/// 640×360 (16:9) cover-fit PNG of a cached WebP, used as the base layer for a
-/// Smart Hub preview "card" (tiny-skia decodes PNG natively). ffmpeg scales to
-/// fill then centre-crops. Cached as `<hash>.webp.card.png`. `webp_name` is a
-/// bare, path-checked cache filename.
-pub fn card_base_png(data_dir: &Path, webp_name: &str) -> Option<PathBuf> {
+/// 16:9 cover-fit PNG of a cached WebP, used as the base layer for a preview
+/// "card" (tiny-skia decodes PNG natively): 640×360 at `scale` 1 (Smart Hub
+/// tiles), 1280×720 at `scale` 2 (the Apple TV Top Shelf, whose cards render
+/// nearly full-width on a 4K screen). ffmpeg scales to fill then centre-crops.
+/// Cached as `<hash>.webp.card.png` / `<hash>.webp.card2x.png`. `webp_name` is
+/// a bare, path-checked cache filename.
+pub fn card_base_png(data_dir: &Path, webp_name: &str, scale: u32) -> Option<PathBuf> {
     let dir = images_dir(data_dir);
+    let (w, h, sfx) = if scale >= 2 { (1280, 720, "2x") } else { (640, 360, "") };
     ffmpeg_rendition(
         &dir.join(webp_name),
-        &dir.join(format!("{webp_name}.card.png")),
-        "scale=640:360:force_original_aspect_ratio=increase,crop=640:360",
+        &dir.join(format!("{webp_name}.card{sfx}.png")),
+        &format!("scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}"),
         &[],
     )
 }
@@ -227,6 +232,14 @@ fn finalize(tmp: &Path, out: &Path) -> Option<PathBuf> {
             None
         }
     }
+}
+
+/// Ensure a remote image is cached as WebP and return its public path, or
+/// `None` on failure (the caller keeps the provider URL). The one entry point
+/// for art that arrives outside title enrichment for instance a person's
+/// portrait, resolved per request rather than stored on a row.
+pub fn cache_remote(data_dir: &Path, remote_url: &str) -> Option<String> {
+    cache(data_dir, remote_url)
 }
 
 /// Ensure `remote_url` is cached as WebP and return its public path

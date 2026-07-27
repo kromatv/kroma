@@ -55,13 +55,22 @@ Requires the **webOS TV CLI** (`@webos-tools/cli`, provides `ares-*`), not bundl
 here. After `build:webos`:
 
 ```bash
-ares-package clients/webos/dist                       # → tv.kroma.webos_0.1.0_all.ipk
+ares-package clients/webos/dist                       # → tv.kroma.webos_<version>_all.ipk
 ares-setup-device                                     # register your TV (Developer Mode app)
-ares-install tv.kroma.webos_0.1.0_all.ipk -d <tv>
+ares-install tv.kroma.webos_<version>_all.ipk -d <tv>
 ares-launch tv.kroma.webos -d <tv>
 ```
 
+## Publishing to the LG Content Store
+
+See [STORE.md](./STORE.md) — Seller Lounge account, assets, listing fields, the
+self-checklist items that need real attention, and what LG's QA needs in order to
+be able to test a client for a server it cannot reach.
+
 Notes:
+- The package version is stamped from the product version at build time
+  ([`stamp-version.ts`](../tv-build/stamp-version.ts)); bump `server/Cargo.toml`,
+  not `appinfo.json`.
 - `disableBackHistoryAPI: true` routes the remote Back button to the app, where
   `@kroma/core`'s remote mapping (`keyCode 461`) handles it.
 - Arrow keys + OK drive spatial focus navigation; media keys control the player.

@@ -89,7 +89,47 @@ export interface SavedServer {
   lastUsedAt: number;
 }
 
-function storage(): Storage | null {
+/**
+ * The key/value store sessions live in. Only the three methods used here are
+ * required, so a client can supply anything: the browsers pass `localStorage`
+ * (the default), and the native apps pass their own device store.
+ */
+export interface SessionStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+let installed: SessionStorage | null = null;
+
+/**
+ * Install the device store for a platform that has no `localStorage`.
+ *
+ * React Native has none, so without this every save here was a SILENT no-op and
+ * the signed-in profile vanished on relaunch. It is a seam rather than a
+ * platform branch because each native client already knows how it wants to
+ * persist, and this package must not depend on any of them.
+ *
+ * Call it once, before the app reads a session.
+ */
+export function setSessionStorage(storage: SessionStorage | null): void {
+  installed = storage;
+}
+
+/**
+ * The device store this platform is using, or null where there is none.
+ *
+ * Exported because sessions are not the only thing a client persists per device:
+ * the TV's own preferences (language, keyboard layout, recent searches) need the
+ * same store, and hard-coding `localStorage` in each of them is exactly how they
+ * all came to be silently unsaved on React Native.
+ */
+export function deviceStorage(): SessionStorage | null {
+  return storage();
+}
+
+function storage(): SessionStorage | null {
+  if (installed) return installed;
   try {
     return typeof localStorage !== 'undefined' ? localStorage : null;
   } catch {

@@ -1,0 +1,90 @@
+/* KROMA global stylesheet import once per app: `import '@kroma/ui/styles.css'`. */
+@import "./fonts.css";
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/effects.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--kroma-bg);
+  color: var(--kroma-text);
+  font: var(--type-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--kroma-accent-soft);
+  color: var(--kroma-text);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font-ui);
+}
+
+/* Amber focus ring visible everywhere, essential for 10-foot TV navigation. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus-sm);
+  border-radius: var(--radius-sm);
+}
+
+/* Except inside a field: <TextField> owns its focus visual (the accent border),
+   so the ring must not box the inner control - and the ring's radius must not
+   ride along either: it rounds the input's own corners, which then clip the
+   ::selection band into a pill. Editable elements only ever get DOM focus on
+   shells with a physical keyboard - a TV renders a non-focusable value display
+   instead - so the 10-foot ring loses nothing. */
+input:focus-visible,
+textarea:focus-visible {
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.kroma-overline {
+  font: var(--type-overline);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--kroma-text-muted);
+}
+
+/*
+ * Off-screen poster tiles skip layout + paint until they approach the viewport
+ * (Netflix/Disney+-style efficiency for long rails) while remaining in the DOM,
+ * so TV remote focus navigation can still reach and scroll to them. Progressive
+ * enhancement older TV browsers without content-visibility simply render all.
+ */
+.kroma-poster {
+  content-visibility: auto;
+  contain-intrinsic-size: 200px 320px;
+}
+
+/* Slow ambient amber breathing used behind heroes. */
+@keyframes kroma-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}

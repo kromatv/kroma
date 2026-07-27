@@ -152,13 +152,14 @@ kroma-engine = { path = "crates/kroma-engine" }
 # Feature knobs are unchanged for callers (`cargo build`, CI, the Synology .spk),
 # but the code they toggle now lives in kroma-engine and its leaf crates, so each
 # just forwards to `kroma-engine/<feature>`. Cargo unifies features globally, so
-# flipping these enables the right candle/librqbit graph wherever it's used.
-default = ["whisper-local", "torrent-rqbit"]
+# flipping these enables the right candle graph wherever it's used.
+default = ["whisper-local"]
 
-# Embedded BitTorrent engine (librqbit). ON by default. Off drops the librqbit
-# graph; the "rqbit" client kind reports "not compiled" and Transmission /
-# qBittorrent (plain curl) remain.
-torrent-rqbit = ["kroma-torrent/rqbit"]
+# NB: there is no `torrent-rqbit` knob here any more. The download engine is a
+# SIDECAR (tv.kroma.torrents), and its `.kmod` turns librqbit on through its own
+# `[package.metadata.kmod] features = ["rqbit"]`, which modules:pack forwards to
+# cargo. The core forwarding the same feature only pulled librqbit into the
+# server binary's dependency graph for code nothing in `src/` reaches.
 
 # Multilingual semantic embeddings (MiniLM via candle). OFF by default (the
 # dependency-free lexical embedder is the default). Forwarded straight to the
@@ -203,18 +204,17 @@ anyhow = { workspace = true }
 # api handlers touch rusqlite params directly on the shared Pool.
 rusqlite = { workspace = true }
 # Used directly by api handlers: time (timestamp formatting), hex, zip (backup
-# download), walkdir + sysinfo (storage/stats endpoints), and the acquisition
-# view types from kroma-torrent.
+# download), walkdir + sysinfo (storage/stats endpoints).
 time = { workspace = true }
 hex = { workspace = true }
 zip = { workspace = true }
 walkdir = { workspace = true }
 sysinfo = { workspace = true }
-kroma-torrent = { workspace = true }
-# The acquisition vertical (search / grab / analyze routes + the search/import/
-# match jobs). The binary repoints the request-tied search/grab handlers here and
-# passes its JOBS to AppState. It deps kroma-torrent, never the reverse (no cycle).
-kroma-acquisition = { workspace = true }
+# NB: kroma-torrent and kroma-acquisition are deliberately NOT deps of the binary.
+# Both verticals moved out of process - the core reaches them through the port
+# clients in main.rs (`AcquisitionSearchClient`, `TorrentFetchClient`, resolved to
+# their sidecars), so `src/` names neither crate. They stayed listed here after the
+# cutover and dragged librqbit into the binary's dependency graph for nothing.
 # The module kernel (composition root): registers every compile-time module's
 # `MODULE` const, collects their ServerModules, and drives the enable/disable +
 # admin-mount lifecycle. Formerly server/src/modules; now its own crate.

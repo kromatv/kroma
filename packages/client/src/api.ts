@@ -71,6 +71,7 @@ import type {
   OrganizeResult,
   PasskeyInfo,
   Permission,
+  PersonDetailResponse,
   PersonResponse,
   PipelineElements,
   PipelineTaskView,
@@ -297,6 +298,10 @@ export class KromaClient {
   personCredits(name: string, opts?: { libraryId?: string }): Promise<PersonResponse> {
     return media.personCredits(this.ctx, name, opts);
   }
+  /** The person behind a credit: biography and life facts, from the provider. */
+  personDetails(name: string): Promise<PersonDetailResponse> {
+    return media.personDetails(this.ctx, name);
+  }
   scan(): Promise<{ runId: string }> {
     return media.scan(this.ctx);
   }
@@ -312,8 +317,8 @@ export class KromaClient {
   streamUrl(id: string): string {
     return media.streamUrl(this.ctx, id);
   }
-  downloadUrl(id: string, copyCodecs?: string[]): string {
-    return media.downloadUrl(this.ctx, id, copyCodecs);
+  downloadUrl(id: string, copyCodecs?: string[], videoCodecs?: string[]): string {
+    return media.downloadUrl(this.ctx, id, copyCodecs, videoCodecs);
   }
   hlsMasterUrl(
     id: string,
@@ -348,17 +353,17 @@ export class KromaClient {
   showPosterUrl(id: string): string {
     return media.showPosterUrl(this.ctx, id);
   }
-  resolveArt(url?: string | null): string | null {
-    return media.resolveArt(this.ctx, url);
+  resolveArt(url?: string | null, width?: number): string | null {
+    return media.resolveArt(this.ctx, url, width);
   }
-  posterFor(item: { id: string; metadata?: Metadata | null }): string {
-    return media.posterFor(this.ctx, item);
+  posterFor(item: { id: string; metadata?: Metadata | null }, width?: number): string {
+    return media.posterFor(this.ctx, item, width);
   }
-  showPosterFor(show: Pick<Show, 'id' | 'metadata'>): string {
-    return media.showPosterFor(this.ctx, show);
+  showPosterFor(show: Pick<Show, 'id' | 'metadata'>, width?: number): string {
+    return media.showPosterFor(this.ctx, show, width);
   }
-  backdropFor(x: { metadata?: Metadata | null }): string | null {
-    return media.backdropFor(this.ctx, x);
+  backdropFor(x: { metadata?: Metadata | null }, width?: number): string | null {
+    return media.backdropFor(this.ctx, x, width);
   }
   themeFor(x: { metadata?: Metadata | null }): string | null {
     return media.themeFor(this.ctx, x);

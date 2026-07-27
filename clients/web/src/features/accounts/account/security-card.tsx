@@ -4,7 +4,6 @@
 // the fields clear.
 
 import { useT } from '@kroma/ui';
-import { IconDeviceFloppy } from '@tabler/icons-react';
 import { useState } from 'react';
 import {
   LabeledInput,
@@ -28,8 +27,9 @@ export function SecurityCard() {
   const mismatch = confirm.length > 0 && next !== confirm;
   const valid = current.length > 0 && next.length >= 4 && confirm.length > 0 && !mismatch;
 
-  const submit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  // Optional event: the form's Enter-key submit passes one, the kit button none.
+  const submit = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     if (!valid) return;
     save.run(async () => {
       await client.changePassword(current, next);
@@ -102,13 +102,13 @@ export function SecurityCard() {
 
         <div className="flex items-center gap-3 sm:col-span-2">
           <Button
-            type="submit"
             size="sm"
-            icon={<IconDeviceFloppy size={16} />}
-            disabled={!valid || save.status === 'saving'}
-          >
-            {save.status === 'saving' ? t('common.saving') : t('account.updatePassword')}
-          </Button>
+            icon="device-floppy"
+            label={save.status === 'saving' ? t('common.saving') : t('account.updatePassword')}
+            onPress={submit}
+            loading={save.status === 'saving'}
+            disabled={!valid}
+          />
           <StatusText status={save.status} error={save.error} />
         </div>
       </form>

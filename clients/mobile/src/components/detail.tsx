@@ -3,17 +3,19 @@
 // cast rail. The Netflix-style action block lives in DetailActions.tsx.
 
 import type { CastMember } from '@kroma/core';
-import { sizedImageUrl } from '@kroma/core';
+import { posterColors, sizedImageUrl } from '@kroma/core';
+import { BackButton, PersonCard, tintGradient } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useT } from '#mobile/lib/i18n';
+import { useGutters } from '#mobile/lib/layout';
+import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { colors, SHADE, spacing, type } from '#mobile/lib/theme';
-import { BackIcon } from '#mobile/player/icons';
-import { Avatar } from './Avatar';
 import { FadeImage } from './FadeImage';
 
 export { DetailActions } from './DetailActions';
@@ -44,10 +46,14 @@ export function DetailHero({
   meta?: ReactNode;
   scrollY?: SharedValue<number>;
 }>) {
+  const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const height = Math.min(width * 0.62, 460);
+  const gutters = useGutters();
+  const { width, height: windowH } = useWindowDimensions();
+  // Capped against the window height too: on a landscape phone a width-driven
+  // hero would fill the whole ~390pt viewport.
+  const height = Math.min(width * 0.62, 460, Math.round(windowH * 0.72));
 
   const stretch = useAnimatedStyle(() => {
     // Only overscroll (y < 0) stretches: scale from the top anchor with the
@@ -68,14 +74,15 @@ export function DetailHero({
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
-      <Pressable
-        onPress={() => router.back()}
-        hitSlop={12}
-        style={[styles.back, { top: insets.top + 6 }]}
-      >
-        <BackIcon />
-      </Pressable>
-      <View style={styles.heroText}>
+      <View style={[styles.back, { top: insets.top + 6, left: gutters.left }]}>
+        <BackButton
+          size={40}
+          hitSlop={12}
+          label={t('common.back')}
+          onPress={() => goBack(router)}
+        />
+      </View>
+      <View style={[styles.heroText, { left: gutters.left, right: gutters.right }]}>
         {context ? <Text style={styles.context}>{context}</Text> : null}
         <Text numberOfLines={2} style={styles.heroTitle}>
           {title}
@@ -87,58 +94,38 @@ export function DetailHero({
 }
 
 /** Circular cast photos with an initials fallback when no photo exists;
- * tapping a member opens their credits page. */
+ * tapping a member opens their credits page. The tile is the kit's
+ * <PersonCard> at its phone size - the TV's detail page draws the same one. */
 export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
   const client = useClient();
   const router = useRouter();
+  const gutters = useGutters();
   if (cast.length === 0) return null;
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.castRail}
+      contentContainerStyle={[styles.castRail, gutters.style]}
     >
       {cast.slice(0, 15).map((member) => (
-        <Pressable
+        <PersonCard
           key={member.name}
+          size="sm"
+          name={member.name}
+          role={member.character}
+          photo={sizedImageUrl(client.resolveArt(member.profileUrl), 320)}
+          gradient={tintGradient(posterColors(member.name))}
           onPress={() => router.push(`/person/${encodeURIComponent(member.name)}` as never)}
-          style={({ pressed }) => [styles.castCard, pressed && { opacity: 0.7 }]}
-        >
-          <Avatar
-            uri={sizedImageUrl(client.resolveArt(member.profileUrl), 320)}
-            name={member.name}
-            size={84}
-          />
-          <Text numberOfLines={2} style={styles.castName}>
-            {member.name}
-          </Text>
-          {member.character ? (
-            <Text numberOfLines={1} style={styles.castRole}>
-              {member.character}
-            </Text>
-          ) : null}
-        </Pressable>
+        />
       ))}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  back: {
-    position: 'absolute',
-    left: spacing.md,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(10, 10, 12, 0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
+  back: { position: 'absolute', zIndex: 2 },
   heroText: {
     position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
     bottom: spacing.sm,
     gap: 6,
   },
@@ -158,14 +145,5 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   badgeText: { fontSize: 12, fontWeight: '600', color: colors.text },
-  castRail: { paddingHorizontal: spacing.md, gap: 12 },
-  castCard: { width: 92, alignItems: 'center' },
-  castName: {
-    ...type.small,
-    color: colors.text,
-    marginTop: 6,
-    textAlign: 'center',
-    lineHeight: 14,
-  },
-  castRole: { ...type.small, fontSize: 10, marginTop: 1, textAlign: 'center' },
+  castRail: { gap: 12 },
 });

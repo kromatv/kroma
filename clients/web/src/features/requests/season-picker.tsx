@@ -3,7 +3,8 @@
 // master, and the request action.
 
 import { useLocale, useT } from '@kroma/ui';
-import { IconCheck, IconLoader2, IconX } from '@tabler/icons-react';
+import { Button, IconButton } from '@kroma/ui/kit';
+import { IconCheck } from '@tabler/icons-react';
 import { useState } from 'react';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import type { TitleSeason } from '#web/shared/lib/titleView';
@@ -66,9 +67,14 @@ export function SeasonPicker({
             </div>
             <h2 className="mt-1 font-display text-[19px] font-bold">{title}</h2>
           </div>
-          <button type="button" onClick={onClose} className="text-white/60 hover:text-white">
-            <IconX size={20} stroke={2.1} />
-          </button>
+          <IconButton
+            variant="ghost"
+            size={32}
+            glyph={20}
+            icon="x"
+            label={t('common.close')}
+            onPress={onClose}
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -93,15 +99,13 @@ export function SeasonPicker({
         </div>
 
         <div className="border-t border-white/[0.07] px-6 py-4.5">
-          <button
-            type="button"
-            disabled={busy || selected.size === 0}
-            onClick={submit}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3.5 text-[14px] font-bold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-50"
-          >
-            {busy ? <IconLoader2 size={16} stroke={2.4} className="animate-spin" /> : null}
-            {t('discover.requestN', { n: String(selected.size) })}
-          </button>
+          <Button
+            block
+            label={t('discover.requestN', { n: String(selected.size) })}
+            onPress={submit}
+            loading={busy}
+            disabled={selected.size === 0}
+          />
         </div>
       </aside>
     </>

@@ -5,7 +5,8 @@
 
 import type { ScoredReleaseView } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconChevronDown, IconDownload, IconExternalLink } from '@tabler/icons-react';
+import { IconButton } from '@kroma/ui/kit';
+import { IconChevronDown, IconExternalLink } from '@tabler/icons-react';
 import { useState } from 'react';
 import { formatBytes } from '#web/shared/lib/adminFormat';
 
@@ -113,19 +114,16 @@ function ReleaseRow({
           </span>
         ) : null}
         {canGrab && r.grabbable ? (
-          <button
-            type="button"
+          <IconButton
+            size={28}
+            glyph={13}
+            radius={8}
+            icon="download"
+            active
+            label={override ? t('requests.grabAnyway') : t('requests.grab')}
+            onPress={() => onGrab(r)}
             disabled={busy}
-            onClick={() => onGrab(r)}
-            title={override ? t('requests.grabAnyway') : t('requests.grab')}
-            className={`flex h-7 w-7 flex-[0_0_28px] items-center justify-center rounded-lg border disabled:opacity-50 ${
-              override
-                ? 'border-[#F4B642]/35 bg-[#F4B642]/10 text-[#F4B642] hover:bg-[#F4B642]/20'
-                : 'border-accent/30 bg-accent/10 text-accent hover:bg-accent/20'
-            }`}
-          >
-            <IconDownload size={13} stroke={2.3} />
-          </button>
+          />
         ) : null}
       </div>
 

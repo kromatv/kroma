@@ -4,7 +4,7 @@
 // the long-lived accessToken is stored and exchanged on demand for a
 // short-lived bearer kept in memory; a 401 mid-flight silently re-exchanges.
 
-import { KromaClient, normalizeServerUrl, type User } from '@kroma/core';
+import { KromaClient, normalizeServerUrl, setSessionToken, type User } from '@kroma/core';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import {
   deletePinBehindBiometrics,
@@ -75,10 +75,17 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
     (url: string, accessToken: string, token: string, freshUser: User) => {
       const next = makeClient(url);
       next.setAuthToken(token);
+      // The live-events WebSocket (`KromaEvents`) authenticates through the
+      // module-level session store, not the client instance - the upgrade
+      // carries the token as a subprotocol. Without this line the socket 401s
+      // silently forever, which is how the admin's "stop this session" never
+      // reached the phone.
+      setSessionToken(token);
       next.setRefreshHandler(async () => {
         try {
           const { token: newToken, user: refreshed } = await next.exchangeToken(accessToken);
           next.setAuthToken(newToken);
+          setSessionToken(newToken);
           setUser(refreshed);
           return newToken;
         } catch {
@@ -170,6 +177,8 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       setClient(null);
       setUser(null);
       setStatus('signedOut');
+      // The events socket must not keep authenticating as the account we left.
+      setSessionToken(undefined);
       void saveActive(null);
       if (forgetActive && activeUser && serverUrl) {
         accounts.forget(serverUrl, activeUser.id);

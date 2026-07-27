@@ -1,15 +1,17 @@
 import { useT } from '@kroma/ui';
+import { Box, Hint, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useNav } from '#tv/app/router';
-import { DEVICE_SETTINGS } from '#tv/app/settings/registry';
-import { useFocusNav } from '#tv/app/useFocusNav';
+import { aboutItem, DEVICE_SETTINGS, quitAppItem } from '#tv/app/settings/registry';
 import { AuthScreen, KromaMark } from '#tv/shared/ui';
 import { SettingsRows } from './SettingsRows';
 
 /**
  * Device settings (route `deviceSettings`), reachable from the signed-out
  * profile picker: the device-level prefs that must not require an account.
- * The rows come straight from the settings registry (DEVICE_SETTINGS);
- * account-level extras live in TvProfileMenu.
+ * The rows come straight from the settings registry (DEVICE_SETTINGS), plus the
+ * two the registry cannot own outright - About, which needs this screen's
+ * navigator, and Quit, which belongs last. Account-level extras live in
+ * TvProfileMenu.
  */
 export function TvDeviceSettings() {
   const nav = useNav();
@@ -18,20 +20,28 @@ export function TvDeviceSettings() {
 
   return (
     <AuthScreen>
-      <div className="mb-8">
+      <Box mb={32}>
         <KromaMark size={40} />
-      </div>
-      <h1 className="m-0 mb-9 font-display text-[44px] font-semibold leading-none">
+      </Box>
+      <Txt
+        variant="hero"
+        style={{ fontSize: 44, lineHeight: 44, fontWeight: '600', marginBottom: 36 }}
+      >
         {t('deviceSettings.title')}
-      </h1>
+      </Txt>
 
-      <div className="flex w-full max-w-[560px] flex-col gap-3">
-        <SettingsRows items={DEVICE_SETTINGS} />
-      </div>
+      <Box w="100%" maxW={560} gap={12}>
+        <SettingsRows items={[...DEVICE_SETTINGS, aboutItem(() => nav.go('about')), quitAppItem]} />
+      </Box>
 
-      <div className="mt-7 font-sans text-[14px] font-medium text-[rgba(244,243,240,0.4)]">
-        {t('profileMenu.navHint')}
-      </div>
+      <Hint
+        text={t('profileMenu.navHint')}
+        size={14}
+        gap={4}
+        mt={28}
+        color="rgba(244, 243, 240, 0.4)"
+        textStyle={{ fontWeight: '500' }}
+      />
     </AuthScreen>
   );
 }

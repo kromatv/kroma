@@ -1,8 +1,0 @@
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "types": ["node", "react", "react-dom", "vite/client"]
-  },
-  "include": ["src", "vite.config.ts"]
-}

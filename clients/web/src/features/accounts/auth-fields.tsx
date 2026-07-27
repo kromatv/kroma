@@ -3,7 +3,8 @@
 // render the exact same avatar tile + email/username/password inputs, so that
 // block lives here once and is driven by controlled props.
 
-import { Image, useT } from '@kroma/ui';
+import { Image } from '@kroma/admin-kit';
+import { useT } from '@kroma/ui';
 import { IconPlus } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { avatarGradient, initials } from '#web/features/accounts/user-avatar';

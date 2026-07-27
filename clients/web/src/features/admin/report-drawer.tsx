@@ -4,19 +4,15 @@
 
 import type { Report, ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import {
-  IconArrowBackUp,
-  IconCheck,
-  IconExternalLink,
-  IconLoader2,
-  IconTrash,
-  IconX,
-} from '@tabler/icons-react';
+import { Button, IconButton } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
 import { Avatar } from '#web/features/admin/ui';
+
+/** RN style for a kit button that shares the row like the old `flex-1` CTAs. */
+const FLEX_1 = { flex: 1 } as const;
 
 function Header({ report, onClose }: Readonly<{ report: Report; onClose: () => void }>) {
   const t = useT();
@@ -28,9 +24,14 @@ function Header({ report, onClose }: Readonly<{ report: Report; onClose: () => v
         <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
           {t('reports.sheet')}
         </span>
-        <button type="button" onClick={onClose} className="text-white/60 hover:text-white">
-          <IconX size={20} stroke={2.1} />
-        </button>
+        <IconButton
+          variant="ghost"
+          size={32}
+          glyph={20}
+          icon="x"
+          label={t('common.close')}
+          onPress={onClose}
+        />
       </div>
       <div className="mb-2.5 flex flex-wrap items-center gap-2">
         <span
@@ -155,14 +156,15 @@ export const ReportDrawer = createCallable<
           )}
 
           {ficheTo ? (
-            <button
-              type="button"
-              onClick={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
-              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/12 bg-[#1A1A20] px-3.5 py-2.5 text-[13px] font-semibold text-white/80 transition-colors hover:bg-[#222229]"
-            >
-              <IconExternalLink size={15} stroke={2} />
-              {t('reports.viewTitle')}
-            </button>
+            <div className="mt-4 flex">
+              <Button
+                variant="glass"
+                size="sm"
+                icon="external-link"
+                label={t('reports.viewTitle')}
+                onPress={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
+              />
+            </div>
           ) : null}
         </div>
 
@@ -170,49 +172,41 @@ export const ReportDrawer = createCallable<
           <div className="flex gap-2.5 border-t border-white/[0.07] px-6 py-4.5">
             {report.status === 'open' ? (
               <>
-                <button
-                  type="button"
+                <Button
+                  icon="check"
+                  label={t('reports.actionResolve')}
+                  onPress={() => run(onResolve, 'resolved')}
+                  loading={busy}
+                  style={FLEX_1}
+                />
+                <Button
+                  variant="glass"
+                  icon="x"
+                  label={t('reports.actionDismiss')}
+                  onPress={() => run(onDismiss, 'dismissed')}
                   disabled={busy}
-                  onClick={() => run(onResolve, 'resolved')}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-[13.5px] font-bold text-[#0A0A0C] transition-colors hover:bg-accent-hover disabled:opacity-60"
-                >
-                  {busy ? (
-                    <IconLoader2 size={15} stroke={2.4} className="animate-spin" />
-                  ) : (
-                    <IconCheck size={15} stroke={2.8} />
-                  )}
-                  {t('reports.actionResolve')}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => run(onDismiss, 'dismissed')}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/12 bg-[#1A1A20] px-4 py-3 text-[13.5px] font-bold text-white/75 transition-colors hover:bg-[#222229] disabled:opacity-60"
-                >
-                  <IconX size={15} stroke={2.6} />
-                  {t('reports.actionDismiss')}
-                </button>
+                  style={FLEX_1}
+                />
               </>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="glass"
+                icon="arrow-back-up"
+                label={t('reports.actionReopen')}
+                onPress={() => run(onReopen, 'open')}
                 disabled={busy}
-                onClick={() => run(onReopen, 'open')}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/12 bg-[#1A1A20] px-4 py-3 text-[13.5px] font-bold text-white/85 transition-colors hover:bg-[#222229] disabled:opacity-60"
-              >
-                <IconArrowBackUp size={15} stroke={2.4} />
-                {t('reports.actionReopen')}
-              </button>
+                style={FLEX_1}
+              />
             )}
-            <button
-              type="button"
+            <IconButton
+              size={46}
+              glyph={16}
+              radius={12}
+              icon="trash"
+              label={t('reports.actionDelete')}
+              onPress={del}
               disabled={busy}
-              onClick={del}
-              title={t('reports.actionDelete')}
-              className="flex h-[46px] w-[46px] flex-[0_0_46px] items-center justify-center rounded-xl border border-white/12 bg-[#1A1A20] text-white/60 transition-colors hover:text-[#E8536A]"
-            >
-              <IconTrash size={16} stroke={2} />
-            </button>
+            />
           </div>
         ) : null}
       </aside>

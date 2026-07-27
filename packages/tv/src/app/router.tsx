@@ -1,4 +1,5 @@
-import type { KromaClient, MediaItem, Show, StoredSession } from '@kroma/core';
+import type { KromaClient, MediaItem, ReportSubjectKind, Show, StoredSession } from '@kroma/core';
+import { Box, FocusScope, PageMain, PerfHud } from '@kroma/ui/kit';
 import {
   type ComponentType,
   createContext,
@@ -10,6 +11,8 @@ import {
   useMemo,
   useState,
 } from 'react';
+import type { SettingsGroupId } from '#tv/app/settings/registry';
+import { perfHudPrefStore, useStoredPref } from '#tv/app/settings/store';
 
 /**
  * A tiny, type-safe, zero-dependency router for the 10-foot app TanStack-grade
@@ -41,10 +44,15 @@ export interface TvRoutes {
   /** Device-level settings reachable while signed out: language, on-screen
    * keyboard layout, and the desktop shell's GPU/quit extras. */
   deviceSettings: undefined;
+  /** Which build of the client is running: version, commit, branch, build date,
+   * repository. Reachable from device settings and from the profile menu. */
+  about: undefined;
   /** PIN entry: verify a locked profile, or set/clear the active account's PIN. */
   pin: { intent: 'verify' | 'set' | 'clear'; account?: StoredSession };
-  /** Profile menu: language, PIN, switch profile, sign out, forget server. */
+  /** Profile menu: the settings groups, PIN, switch profile, sign out. */
   profileMenu: undefined;
+  /** One group of settings (languages / playback / device), opened from a menu. */
+  settingsGroup: { group: SettingsGroupId };
   home: undefined;
   /** Full-screen catalogue grid for one section (Films / Séries / Ma liste). */
   grid: { kind: 'films' | 'series' | 'mylist' };
@@ -60,6 +68,22 @@ export interface TvRoutes {
   movie: { item: MediaItem };
   show: { show: Show };
   player: { item: MediaItem };
+  /** Report a problem on a title (the detail pages' "Signaler un problème").
+   * `episodes` carries the loaded season of a series, which turns the subject
+   * row on so a viewer can point at the one episode that is broken instead of
+   * the whole show. */
+  report: {
+    kind: ReportSubjectKind;
+    id: string;
+    title: string;
+    episodes?: ReportEpisode[];
+  };
+}
+
+/** One episode a report may target: its id and how the subject row names it. */
+export interface ReportEpisode {
+  id: string;
+  label: string;
 }
 
 export type RouteName = keyof TvRoutes;
@@ -111,6 +135,7 @@ const DEV_NAV_KEY = 'kroma:dev-nav';
 function loadDevStack(): TvRoute[] | null {
   if (!IS_DEV) return null;
   try {
+    // biome-ignore lint/style/noRestrictedGlobals: audited - dev-only (IS_DEV) and inside try/catch, so React Native simply keeps the default stack.
     const saved = sessionStorage.getItem(DEV_NAV_KEY);
     const parsed = saved ? (JSON.parse(saved) as TvRoute[]) : null;
     return parsed?.length ? parsed : null;
@@ -128,14 +153,39 @@ function loadDevStack(): TvRoute[] | null {
 export type TvScreens = { [K in RouteName]: ComponentType };
 const ScreensCtx = createContext<TvScreens | null>(null);
 
+/**
+ * Chrome that outlives the screen under it: the browse screens' top bar.
+ *
+ * It has to be rendered by the OUTLET rather than by each screen, and the reason
+ * is the nav pill's travelling lens. A screen that draws its own bar hands the
+ * remote a new <NavPill> on every section change, and a lens with no previous
+ * box to leave arrives instead of travelling - so the one animation the design
+ * asks for could never play, on any target. Rendered here, one bar survives the
+ * swap and the lens moves from the old section to the new one.
+ *
+ * It stays INSIDE the screen's <FocusScope>: the scope is the spatial tree, and
+ * a bar outside it is a bar the remote cannot reach. So the routes that share
+ * the chrome also share one scope, and the screen inside it is keyed instead
+ * (`entryKey` is what re-decides where focus opens on arrival).
+ */
+export interface TvChrome {
+  /** The routes that show it - and therefore share one focus scope. */
+  routes: readonly RouteName[];
+  /** Drawn ABOVE the screen in tree order, as the bar always was: the navigator
+   *  moves in tree order and the bar is visually at the top. */
+  render: ComponentType;
+}
+const ChromeCtx = createContext<TvChrome | null>(null);
+
 function make<K extends RouteName>(name: K, params?: TvRoutes[K]): TvRoute {
   return { name, params } as TvRoute;
 }
 
 export function TvNavProvider({
   screens,
+  chrome,
   children,
-}: Readonly<{ screens: TvScreens; children: ReactNode }>) {
+}: Readonly<{ screens: TvScreens; chrome?: TvChrome; children: ReactNode }>) {
   // Start on the profile picker the signed-out home. Adding a server happens
   // inside the Add-profile wizard, never as the launch screen. The guard advances
   // to `home` once a session resolves.
@@ -145,6 +195,7 @@ export function TvNavProvider({
   useEffect(() => {
     if (!IS_DEV) return;
     try {
+      // biome-ignore lint/style/noRestrictedGlobals: audited - dev-only (IS_DEV) and inside try/catch.
       sessionStorage.setItem(DEV_NAV_KEY, JSON.stringify(stack));
     } catch {
       /* ignore quota/availability */
@@ -187,7 +238,9 @@ export function TvNavProvider({
   );
   return (
     <NavCtx.Provider value={value}>
-      <ScreensCtx.Provider value={screens}>{children}</ScreensCtx.Provider>
+      <ScreensCtx.Provider value={screens}>
+        <ChromeCtx.Provider value={chrome ?? null}>{children}</ChromeCtx.Provider>
+      </ScreensCtx.Provider>
     </NavCtx.Provider>
   );
 }
@@ -233,27 +286,51 @@ export function useClient(): KromaClient {
 export function TvOutlet() {
   const { route } = useNav();
   const screens = useContext(ScreensCtx);
+  const chrome = useContext(ChromeCtx);
   if (!screens) throw new Error('<TvOutlet> must be inside <TvNavProvider screens={…}>');
   const Screen = screens[route.name];
+  const Chrome = chrome?.routes.includes(route.name) ? chrome.render : null;
   // Key the player by item id so an "up next" / recommendation swap - which keeps
   // the same `player` route on top - REMOUNTS it, starting the new title from a
   // clean state (engine, resume, progress) instead of inheriting the previous
   // one's. Other screens keep their instance across same-route navigation.
   const key = route.name === 'player' ? `player:${route.params.item.id}` : route.name;
-  // The single page landmark. Every screen root is `position:fixed inset-0`, so
-  // this wrapper is layout-neutral (0-height in flow) it exists only to give
-  // assistive tech / Lighthouse the required <main>. The key stays on <Screen>
-  // so a same-route param swap (e.g. up-next) still remounts just the screen.
+  // The single page landmark: a real <main> in the browser, nothing at all on
+  // the native TVs, which have no such concept (see @kroma/ui lib/landmark).
+  // The key stays on <Screen> so a same-route param swap (e.g. up-next) still
+  // remounts just the screen.
   //
   // <Suspense> catches the lazily-loaded player chunk on the first play; its
   // fallback is a plain themed black fill (fixed inset-0), which reads as the
   // player fading up rather than a flash. Non-lazy screens never suspend, so
   // this is invisible for all of browse.
+  // <FocusScope> is what gives a new screen its entry point on Apple TV and
+  // Android TV: the OS focus engine will not invent one, so without it a screen
+  // whose controls do not declare `autoFocus` mounts with focus nowhere and the
+  // remote does nothing at all. On the browser targets it is a plain box, so the
+  // tree is identical on both.
+  //
+  // The screens that share the chrome share ONE scope, so the bar inside it
+  // keeps its instance (see TvChrome); everywhere else the scope is keyed with
+  // the screen, exactly as before. Either way `entryKey` names the screen, so
+  // each arrival re-decides where focus opens.
+  const scopeKey = Chrome ? 'chrome' : key;
   return (
-    <main>
-      <Suspense fallback={<div className="fixed inset-0 bg-bg" />}>
-        <Screen key={key} />
+    <PageMain>
+      <Suspense fallback={<Box fill bg="bg" />}>
+        <FocusScope key={scopeKey} entryKey={key}>
+          {Chrome ? <Chrome /> : null}
+          <Screen key={key} />
+        </FocusScope>
       </Suspense>
-    </main>
+      {/* Outside the scope on purpose: the read-out must survive a screen
+          change, and it is not something the remote can land on. */}
+      <PerfHud enabled={usePerfHud()} />
+    </PageMain>
   );
+}
+
+/** Whether the performance read-out is on (a device preference). */
+function usePerfHud(): boolean {
+  return useStoredPref(perfHudPrefStore)[0] === 'on';
 }

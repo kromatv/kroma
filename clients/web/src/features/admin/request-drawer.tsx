@@ -3,7 +3,7 @@
 // with optional reason / delete). The interactive release search joins with
 // the indexer milestone.
 
-import { useModuleEnabled } from '@kroma/admin-kit';
+import { Image, useModuleEnabled } from '@kroma/admin-kit';
 import {
   apiErrorText,
   type InteractiveSearchView,
@@ -11,8 +11,8 @@ import {
   type MessageKey,
   type ScoredReleaseView,
 } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
-import { IconCheck, IconLoader2, IconSearch, IconTrash, IconX } from '@tabler/icons-react';
+import { useT } from '@kroma/ui';
+import { Button, IconButton } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
@@ -22,6 +22,9 @@ import { Avatar } from '#web/features/admin/ui';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import { seasonsSummary } from '#web/features/requests/status';
 import { useAuth } from '#web/shared/lib/auth';
+
+/** RN style for a kit button that shares the row like the old `flex-1` CTAs. */
+const FLEX_1 = { flex: 1 } as const;
 
 interface SearchState {
   busy: boolean;
@@ -57,9 +60,14 @@ function DrawerHeader({ req, onClose }: Readonly<{ req: MediaRequest; onClose: (
         <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
           {t('requests.sheet')}
         </span>
-        <button type="button" onClick={onClose} className="text-white/60 hover:text-white">
-          <IconX size={20} stroke={2.1} />
-        </button>
+        <IconButton
+          variant="ghost"
+          size={32}
+          glyph={20}
+          icon="x"
+          label={t('common.close')}
+          onPress={onClose}
+        />
       </div>
       <div className="flex gap-4">
         <DrawerPoster req={req} />
@@ -135,19 +143,14 @@ function SearchPanel({
         <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
           {t('requests.interactiveSearch')}
         </span>
-        <button
-          type="button"
-          onClick={onSearch}
-          disabled={search.busy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/12 bg-[#1A1A20] px-3 py-1.5 text-[12px] font-semibold text-white/80 hover:bg-[#222229] disabled:opacity-60"
-        >
-          {search.busy ? (
-            <IconLoader2 size={12} stroke={2.4} className="animate-spin" />
-          ) : (
-            <IconSearch size={12} stroke={2.4} />
-          )}
-          {t(search.busy ? 'requests.searching2' : 'requests.searchNow')}
-        </button>
+        <Button
+          variant="glass"
+          size="sm"
+          icon="search"
+          label={t(search.busy ? 'requests.searching2' : 'requests.searchNow')}
+          onPress={onSearch}
+          loading={search.busy}
+        />
       </div>
       {search.error ? (
         <div className="rounded-lg border border-[#E8536A]/18 bg-[#E8536A]/8 px-3 py-2 text-[12px] font-semibold text-[#EF8091]">
@@ -197,26 +200,15 @@ function DenyForm({
         className="w-full rounded-xl border border-white/12 bg-[#15151A] px-3.5 py-3 text-[13.5px] font-medium text-white outline-none placeholder:text-white/35 focus:border-white/25"
       />
       <div className="flex gap-2.5">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => onDeny(note.trim())}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#E8536A] px-4 py-3 text-[13.5px] font-bold text-white transition-colors hover:bg-[#EF8091] disabled:opacity-60"
-        >
-          {busy ? (
-            <IconLoader2 size={15} stroke={2.4} className="animate-spin" />
-          ) : (
-            <IconX size={15} stroke={2.6} />
-          )}
-          {t('requests.confirmDeny')}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-xl border border-white/12 bg-[#1A1A20] px-4 py-3 text-[13.5px] font-semibold text-white/75"
-        >
-          {t('common.cancel')}
-        </button>
+        <Button
+          variant="danger"
+          icon="x"
+          label={t('requests.confirmDeny')}
+          onPress={() => onDeny(note.trim())}
+          loading={busy}
+          style={FLEX_1}
+        />
+        <Button variant="glass" label={t('common.cancel')} onPress={onCancel} />
       </div>
     </div>
   );
@@ -239,39 +231,32 @@ function ModerationButtons({
   return (
     <div className="flex gap-2.5">
       {req.status === 'pending' || req.status === 'failed' ? (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onApprove}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-[13.5px] font-bold text-[#0A0A0C] transition-colors hover:bg-accent-hover disabled:opacity-60"
-        >
-          {busy ? (
-            <IconLoader2 size={15} stroke={2.4} className="animate-spin" />
-          ) : (
-            <IconCheck size={15} stroke={2.8} />
-          )}
-          {t(req.status === 'failed' ? 'requests.retry' : 'requests.approve')}
-        </button>
+        <Button
+          icon="check"
+          label={t(req.status === 'failed' ? 'requests.retry' : 'requests.approve')}
+          onPress={onApprove}
+          loading={busy}
+          style={FLEX_1}
+        />
       ) : null}
       {req.status === 'pending' ? (
-        <button
-          type="button"
-          onClick={onStartDeny}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#E8536A]/35 bg-[#E8536A]/10 px-4 py-3 text-[13.5px] font-bold text-[#E8536A] transition-colors hover:bg-[#E8536A]/20"
-        >
-          <IconX size={15} stroke={2.6} />
-          {t('requests.deny')}
-        </button>
+        <Button
+          variant="danger"
+          icon="x"
+          label={t('requests.deny')}
+          onPress={onStartDeny}
+          style={FLEX_1}
+        />
       ) : null}
-      <button
-        type="button"
+      <IconButton
+        size={46}
+        glyph={16}
+        radius={12}
+        icon="trash"
+        label={t('requests.delete')}
+        onPress={onDelete}
         disabled={busy}
-        onClick={onDelete}
-        title={t('requests.delete')}
-        className="flex h-[46px] w-[46px] flex-[0_0_46px] items-center justify-center rounded-xl border border-white/12 bg-[#1A1A20] text-white/60 transition-colors hover:text-[#E8536A]"
-      >
-        <IconTrash size={16} stroke={2} />
-      </button>
+      />
     </div>
   );
 }

@@ -48,11 +48,10 @@ export function PhotoCard() {
           <Button
             variant="glass"
             size="sm"
-            onClick={() => fileRef.current?.click()}
-            disabled={avatar.status === 'saving'}
-          >
-            {avatar.status === 'saving' ? t('common.saving') : t('account.changePhoto')}
-          </Button>
+            label={avatar.status === 'saving' ? t('common.saving') : t('account.changePhoto')}
+            onPress={() => fileRef.current?.click()}
+            loading={avatar.status === 'saving'}
+          />
           <StatusText status={avatar.status} error={avatar.error} />
         </div>
       </div>

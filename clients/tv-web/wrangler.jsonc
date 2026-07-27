@@ -1,0 +1,29 @@
+// KROMA on the web — the 10-foot TV experience as a static site on tv.kroma.tv.
+//
+// An assets-only Worker (no `main`): Cloudflare serves clients/tv-web/dist
+// straight from the edge, so there is no script to run and nothing to keep warm.
+// Deploy from this directory:
+//   bun run deploy          (builds dist/ first, then wrangler deploy)
+//   bunx wrangler@4 deploy  (assumes dist/ is already built)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kroma-tv",
+  "compatibility_date": "2026-07-01",
+  "observability": { "enabled": true },
+  // Keep the <name>.workers.dev URL alongside the custom domain (fallback +
+  // while the tv.kroma.tv cert provisions).
+  "workers_dev": true,
+  "assets": {
+    "directory": "./dist",
+    // Unlike the kit, the TV app's router is a MEMORY history ("a TV has no
+    // address bar" - packages/tv/src/app/router.tsx), so it never puts a screen
+    // in the URL and there is no deep link to rehydrate. The SPA fallback is
+    // still the right handling for a stray path: serve the app rather than a
+    // 404, and it opens at home.
+    "not_found_handling": "single-page-application"
+  },
+  // Served at https://tv.kroma.tv/. Requires the kroma.tv zone on this
+  // Cloudflare account; wrangler provisions the custom domain + DNS record on
+  // deploy.
+  "routes": [{ "pattern": "tv.kroma.tv", "custom_domain": true }]
+}

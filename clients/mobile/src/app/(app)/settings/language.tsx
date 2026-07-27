@@ -2,6 +2,7 @@
 // clients so the choice follows the user everywhere.
 
 import { LOCALES, type Locale } from '@kroma/core';
+import { Icon } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
@@ -10,7 +11,6 @@ import { useI18n, useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
-import { CheckIcon } from '#mobile/player/icons';
 
 export default function LanguageSettings() {
   const t = useT();
@@ -48,7 +48,9 @@ export default function LanguageSettings() {
               <Text style={[styles.rowLabel, locale === l.code && { fontWeight: '700' }]}>
                 {t(l.labelKey)}
               </Text>
-              {locale === l.code ? <CheckIcon size={17} color={colors.accent} /> : null}
+              {locale === l.code ? (
+                <Icon name="check" size={17} stroke={2.4} color={colors.accent} />
+              ) : null}
             </Pressable>
           ))}
         </View>

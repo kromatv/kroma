@@ -248,18 +248,6 @@ describe('selectEngine', () => {
     expect(selectEngine(item, DESKTOP)).toEqual({ kind: 'desktop-mpv', aacMaster: false });
   });
 
-  it('always routes Android TV to android-exo (native decode, stream-copy master)', () => {
-    const item = makeItem({
-      container: 'mkv',
-      videoCodec: 'hevc',
-      audio: [track({ index: 0, codec: 'eac3', channels: 6, default: true })],
-    });
-    expect(selectEngine(item, { platform: 'androidtv', safari: false })).toEqual({
-      kind: 'android-exo',
-      aacMaster: false,
-    });
-  });
-
   it('direct-plays a plain mp4 on webOS, but always reports tizen-avplay on Tizen', () => {
     const item = makeItem({
       container: 'mp4',

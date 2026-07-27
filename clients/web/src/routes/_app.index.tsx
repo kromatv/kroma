@@ -1,5 +1,6 @@
 import { useT } from '@kroma/ui';
-import { IconMovie } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Hero, ShowRail } from '#web/features/catalog/cards';
@@ -7,7 +8,7 @@ import { ContinueRow } from '#web/features/catalog/continue-row';
 import { HomeSections } from '#web/features/catalog/home-sections';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries, type HeroEntry } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PageSkeleton } from '#web/shared/ui';
+import { PAGE_MAIN, PageSkeleton } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/')({
   loader: async ({ context: { queryClient } }) => {
@@ -39,11 +40,7 @@ function HomePage() {
   if (movies.length === 0 && shows.length === 0) {
     return (
       <main className={PAGE_MAIN}>
-        <EmptyState
-          icon={<IconMovie size={32} stroke={1.5} />}
-          title={t('content.homeEmpty')}
-          hint={t('content.homeEmptyHint')}
-        />
+        <EmptyState icon="movie" title={t('content.homeEmpty')} hint={t('content.homeEmptyHint')} />
       </main>
     );
   }

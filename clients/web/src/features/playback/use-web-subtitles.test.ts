@@ -13,9 +13,14 @@ const H = vi.hoisted(() => ({
   cancel: vi.fn(),
   refresh: vi.fn(),
   lastGenOpts: null as { onComplete: (subId: string) => void } | null,
+  updateUser: vi.fn(),
+  updateAccount: vi.fn(async () => ({})),
 }));
 
-vi.mock('@kroma/core', () => ({
+// The language matcher is the real one (it IS what this test exercises); the
+// catalog-facing bits stay stubbed.
+vi.mock('@kroma/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/core')>()),
   GEN_LANGS: [
     { code: 'fr', label: 'Français' },
     { code: 'en', label: 'English' },
@@ -44,7 +49,16 @@ vi.mock('#web/shared/lib/api', () => ({
   }),
 }));
 
-vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => ({ user: H.user }) }));
+// The picker now WRITES the preference as well as reading it (see
+// `useLangPrefs` in shared/lib/lang-pref), so the stub owes it the two things
+// that hook binds to: the optimistic local update and the account PATCH.
+vi.mock('#web/shared/lib/auth', () => ({
+  useAuth: () => ({
+    user: H.user,
+    updateUser: H.updateUser,
+    client: { updateAccount: H.updateAccount },
+  }),
+}));
 
 const { useWebSubtitles } = await import('#web/features/playback/use-web-subtitles');
 

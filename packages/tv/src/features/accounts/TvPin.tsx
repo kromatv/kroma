@@ -6,19 +6,16 @@ import {
   type User,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Avatar, Box, Icon, Keypad, PinField, Spinner, Txt, useFocusNav } from '@kroma/ui/kit';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav, useParams } from '#tv/app/router';
-import { useFocusNav } from '#tv/app/useFocusNav';
-import { AuthScreen, artUrl, Keypad, LockGlyph, ProfileAvatar } from '#tv/shared/ui';
+import { AuthScreen, artUrl } from '#tv/shared/ui';
 
 /** PINs are a fixed 4 digits; the last digit auto-validates (no OK press). */
 const PIN_LENGTH = 4;
-
-/** Stable keys for the fixed PIN dot row (one per digit slot). */
-const PIN_DOTS = Array.from({ length: PIN_LENGTH }, (_, i) => `pin-dot-${i}`);
 
 interface HeaderUser {
   name: string;
@@ -157,10 +154,10 @@ export function TvPin() {
     }
   };
 
-  const submit = async () => {
+  // Auto-validation: the PinField reports a full code through `onComplete`, so
+  // a completed PIN validates or is rejected the instant it is typed.
+  const submit = async (pin: string) => {
     if (busy || cooldown > 0) return;
-    const pin = buffer;
-    if (pin.length < PIN_LENGTH) return; // auto-submit only fires on a full PIN
     setError('');
     setBusy(true);
     try {
@@ -174,12 +171,6 @@ export function TvPin() {
     }
   };
 
-  // Auto-validate the instant the PIN is complete, so no OK press is needed.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fire only when the buffer fills; `submit` reads fresh state via closure.
-  useEffect(() => {
-    if (buffer.length === PIN_LENGTH) void submit();
-  }, [buffer]);
-
   const addDigit = (d: string) => {
     if (busy || cooldown > 0) return;
     setError('');
@@ -191,86 +182,75 @@ export function TvPin() {
     setBuffer((b) => b.slice(0, -1));
   };
 
-  // Desktop: type the PIN with the number-row / numpad (Delete edits). Digits and
-  // Delete aren't remote keys, so they don't collide with useFocusNav's arrows /
-  // Back; on a TV (on-screen keypad) this listener never attaches. A ref carries
-  // the lock so the listener stays stable (no re-subscribe per keystroke).
+  // Desktop types the PIN with the number-row / numpad; the PinField owns that
+  // capture. On a TV (`physicalKeyboard` false) the on-screen keypad below is
+  // what a remote uses, feeding the same buffer.
   const { physicalKeyboard } = useEnv();
-  const locked = useRef(false);
-  locked.current = busy || cooldown > 0;
-  useEffect(() => {
-    if (!physicalKeyboard) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (locked.current) return;
-      if (/^\d$/.test(e.key)) {
-        setError('');
-        setBuffer((b) => (b.length < PIN_LENGTH ? b + e.key : b));
-      } else if (e.key === 'Delete') {
-        setBuffer((b) => b.slice(0, -1));
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [physicalKeyboard]);
 
   return (
     <AuthScreen>
       {headerUser ? (
-        <ProfileAvatar
+        <Avatar
           name={headerUser.name}
           seed={headerUser.seed}
           size={118}
-          radius={30}
+          roundness={0.25}
           src={headerUser.src}
         />
       ) : null}
-      <h1 className="m-0 mt-6 mb-1 font-display text-[32px] font-semibold">{headerUser?.name}</h1>
-      <div className="flex items-center gap-2 font-sans text-[15px] font-medium text-dim">
-        <span className="text-accent">
-          <LockGlyph size={14} />
-        </span>
-        {t(subtitle)}
-      </div>
+      <Txt variant="h1" style={{ fontSize: 32, fontWeight: '600', marginTop: 24, marginBottom: 4 }}>
+        {headerUser?.name}
+      </Txt>
+      <Box row align="center" gap={8}>
+        <Icon name="lock" size={14} color="accent" />
+        <Txt style={{ fontSize: 15, fontWeight: '500' }} color="textDim">
+          {t(subtitle)}
+        </Txt>
+      </Box>
 
-      <div
-        key={shake}
-        className={`mt-8 flex gap-4.5 ${shake ? 'animate-[tv-shake_0.4s_ease]' : ''} ${busy ? 'animate-pulse' : ''}`}
-      >
-        {PIN_DOTS.map((dotKey, i) => (
-          <span
-            key={dotKey}
-            className="h-4.5 w-4.5 rounded-full border-2 transition-all"
-            style={{
-              background: i < buffer.length ? '#F4B642' : 'transparent',
-              borderColor: i < buffer.length ? '#F4B642' : 'rgba(255,255,255,0.25)',
-            }}
-          />
-        ))}
-      </div>
+      <Box key={shake} mt={32}>
+        <PinField
+          length={PIN_LENGTH}
+          value={buffer}
+          onChange={(next) => {
+            if (busy || cooldown > 0) return;
+            setError('');
+            setBuffer(next);
+          }}
+          onComplete={(pin) => void submit(pin)}
+          disabled={busy}
+          physicalKeyboard={physicalKeyboard}
+        />
+      </Box>
 
-      <div className="flex h-6 items-center gap-2">
+      <Box row align="center" gap={8} h={24}>
         {busy ? (
           <>
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-[rgba(255,255,255,0.25)] border-t-accent" />
-            <span className="font-sans text-[14px] font-medium text-dim">{t('pin.verifying')}</span>
+            <Spinner size={16} thickness={2} />
+            <Txt style={{ fontSize: 14, fontWeight: '500' }} color="textDim">
+              {t('pin.verifying')}
+            </Txt>
           </>
         ) : null}
         {!busy && error ? (
-          <span className="font-sans text-[14px] font-semibold text-danger">
+          <Txt style={{ fontSize: 14, fontWeight: '600' }} color="danger">
             {error === 'auth.pinLocked' && cooldown > 0
               ? t('pin.lockedRetry', { seconds: cooldown })
               : t(error)}
-          </span>
+          </Txt>
         ) : null}
-      </div>
+      </Box>
 
-      <div className="mt-2">
+      <Box mt={8}>
         <Keypad onDigit={addDigit} onDelete={removeDigit} />
-      </div>
+      </Box>
 
-      <span className="mt-7 font-sans text-[14px] font-medium text-[rgba(244,243,240,0.38)]">
+      <Txt
+        style={{ fontSize: 14, fontWeight: '500', marginTop: 28 }}
+        color="rgba(244, 243, 240, 0.38)"
+      >
         {t('pin.backHint')}
-      </span>
+      </Txt>
     </AuthScreen>
   );
 }

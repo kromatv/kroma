@@ -1,25 +1,76 @@
 import type { AudioTrack, MediaItem, VideoTrack } from '@kroma/client';
-import type { MessageKey, Translate } from './i18n';
+import type { Translate } from './i18n';
+import { langKey } from './lang';
 import { match } from './match';
 import { formatRuntime } from './player';
 
+/**
+ * How many image pixels to ask for per CSS pixel.
+ *
+ * This used to be a flat 2, "for crisp hidpi/TV rendering", and the second half
+ * of that is wrong: a 1920x1080 television reports a devicePixelRatio of 1, so
+ * every request was for four times the pixels the panel can show. Measured on a
+ * Samsung LS03D, the ambient backdrop behind the browse grids was being fetched
+ * at `?w=2560` and decoded for a 1920-wide screen - and it is re-decoded every
+ * time the focus settles on a new tile. A retina browser really does have two
+ * device pixels per CSS pixel and still gets its 2x.
+ *
+ * Rounded and capped: a 3x phone gains nothing visible over 2x and pays for it
+ * in decode, and a fractional ratio would defeat the server's bucketing.
+ */
+function artworkRatio(): number {
+  const dpr = (globalThis as { devicePixelRatio?: number }).devicePixelRatio;
+  return Math.min(2, Math.max(1, Math.round(dpr ?? 1)));
+}
+
 /** Request a downscaled rendition of LOCALLY-CACHED artwork (`?w=`, snapped to
  * a server-side bucket): a 200px card must not download the full 780px poster.
- * Pass the DISPLAY width; this asks for 2x for crisp hidpi/TV rendering. Remote
- * (TMDB fallback) URLs and non-image URLs pass through untouched. */
+ * Pass the DISPLAY width; this scales it by the device's real pixel ratio (see
+ * {@link artworkRatio}). Remote (TMDB fallback) URLs and non-image URLs pass
+ * through untouched. */
 export function sizedImageUrl(url: string | null | undefined, displayWidth: number): string | null {
   if (!url) return null;
   if (!url.includes('/api/images/') || url.includes('?')) return url;
-  return `${url}?w=${Math.max(1, Math.round(displayWidth * 2))}`;
+  return `${url}?w=${Math.max(1, Math.round(displayWidth * artworkRatio()))}`;
 }
 
-/** Deterministic hue (0-359) for a string: a rolling 31x hash, unsigned. The one
- * hash behind every generated colour (key-art gradients here, genre art in
- * genre-art.ts) so the same name always lands on the same hue. */
-export function hueFromString(s: string): number {
+/** Schemes an <img> may load. `data:` is narrowed to images: a bare `data:`
+ * allow-list would also admit `data:text/html`, which is a navigation payload
+ * rather than artwork. */
+const IMAGE_SCHEME = /^(?:https?:|blob:|data:image\/)/i;
+
+/**
+ * An artwork URL that is safe to hand to an `<img src>`, or null.
+ *
+ * Poster and backdrop URLs arrive from whichever server the client is signed
+ * into, so they are third-party input on every surface. A scheme-relative or
+ * relative path is ours and passes; anything with a scheme must be one that only
+ * ever paints (`javascript:` is the one that does not, and it is a DOM-sink
+ * finding on every <img> the taint reaches).
+ */
+export function safeImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  // No scheme at all: a path on the current origin, which is where our own
+  // /api/images/ URLs land. `//host/x` is scheme-relative and inherits https.
+  if (trimmed.startsWith('/') || !/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
+  return IMAGE_SCHEME.test(trimmed) ? trimmed : null;
+}
+
+/** The ONE hash behind every generated colour: a rolling 31x hash, unsigned.
+ * Exposed raw for the pickers that need a modulus other than 360 (avatar
+ * gradients, placeholder tilts), so every derived colour keys off the same
+ * value for the same string. */
+export function hashString(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + (s.codePointAt(i) ?? 0)) >>> 0;
-  return h % 360;
+  return h;
+}
+
+/** Deterministic hue (0-359) for a string (key-art gradients here, genre art in
+ * genre-art.ts) so the same name always lands on the same hue. */
+export function hueFromString(s: string): number {
+  return hashString(s) % 360;
 }
 
 /** Deterministic two-stop key-art gradient derived from an item id. */
@@ -121,42 +172,13 @@ export function channelLabel(ch: number | null | undefined): string | null {
   return `${ch}.0`;
 }
 
-/** ISO 639 code (2- or 3-letter) → the `lang.*` catalog key for its native name. */
-const LANG_KEYS: Record<string, MessageKey> = {
-  fr: 'lang.fr',
-  fra: 'lang.fr',
-  fre: 'lang.fr',
-  en: 'lang.en',
-  eng: 'lang.en',
-  es: 'lang.es',
-  spa: 'lang.es',
-  de: 'lang.de',
-  ger: 'lang.de',
-  deu: 'lang.de',
-  it: 'lang.it',
-  ita: 'lang.it',
-  ja: 'lang.ja',
-  jpn: 'lang.ja',
-  ko: 'lang.ko',
-  kor: 'lang.ko',
-  zh: 'lang.zh',
-  zho: 'lang.zh',
-  chi: 'lang.zh',
-  ru: 'lang.ru',
-  rus: 'lang.ru',
-  pt: 'lang.pt',
-  por: 'lang.pt',
-  nl: 'lang.nl',
-  dut: 'lang.nl',
-  nld: 'lang.nl',
-};
-
 /** Localized language name for an ISO code, the upper-cased code if unknown, or
  * null when there is no code at all. Shared by every client (audio/subtitle track
- * labels localize identically). */
+ * labels localize identically). Any spelling `langBase` knows resolves to the
+ * same name, so "fre", "fra" and "fr-FR" all read "Français". */
 export function langName(t: Translate, code: string | null | undefined): string | null {
   if (!code) return null;
-  const key = LANG_KEYS[code.toLowerCase()];
+  const key = langKey(code);
   return key ? t(key) : code.toUpperCase();
 }
 
@@ -173,4 +195,39 @@ export function audioTrackLabel(
   const codec = track.codec ? track.codec.toUpperCase() : undefined;
   const label = [name, channelLabel(track.channels), codec].filter(Boolean).join(' · ');
   return label || undefined;
+}
+
+// ----- build identity -------------------------------------------------------
+//
+// Every shell shows what it was built from - the TV's About screen, the phone's
+// settings, the kit's stamp - and each had grown its own copy of these three,
+// two of them byte-identical down to the doc comment. They take primitives
+// rather than a BuildInfo, because each shell reads that record from its own
+// bundler (Expo's manifest, a Vite define) and only the fields matter here.
+
+/** The commit as it should be READ - flagged when the tree it was built from had
+ * uncommitted changes, since that hash alone no longer describes the binary. */
+export function commitLabel(commit: string | null | undefined, dirty: boolean): string | null {
+  if (!commit) return null;
+  return dirty ? `${commit}-dirty` : commit;
+}
+
+/** `https://github.com/owner/repo` -> `github.com/owner/repo`, the same trim the
+ * server row gives its URL. A television cannot follow the link, so it is shown
+ * as something to TYPE elsewhere. */
+export function repoLabel(repository: string | null | undefined): string | null {
+  return repository?.replace(/^https?:\/\//, '') ?? null;
+}
+
+/** The build stamp in the reader's own locale. Falls back to the raw ISO string
+ * rather than to nothing: an unparseable date is still information. */
+export function formatBuildDate(iso: string | null | undefined, locale: string): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  try {
+    return date.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+  } catch {
+    return date.toISOString();
+  }
 }

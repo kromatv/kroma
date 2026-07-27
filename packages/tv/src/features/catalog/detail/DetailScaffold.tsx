@@ -1,17 +1,37 @@
 import { posterColors } from '@kroma/core';
+import {
+  Badge,
+  Box,
+  colors,
+  FocusScroll,
+  FocusSlot,
+  gradient,
+  Img,
+  qualityTone,
+  Txt,
+  tintGradient,
+} from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
-import { TvTopNav } from '#tv/features/catalog/home/TopNav';
-import { badgeClasses, TvArt } from '#tv/shared/TvMedia';
 
-const VEIL =
-  'absolute inset-0 bg-[linear-gradient(90deg,#0A0A0C_12%,transparent_68%),linear-gradient(0deg,#0A0A0C_4%,transparent_60%)]';
+// Two layers rather than one comma-separated background-image: multi-value
+// backgrounds are a CSS-only luxury React Native's gradient support lacks.
+const VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 12%, transparent 68%)`;
+const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
+
+// clamp(46px, 7.6vh, 86px) resolves to 82px on the fixed 1080-tall stage.
+const TITLE = { fontSize: 82, lineHeight: 78, fontWeight: '700' as const, letterSpacing: -1.64 };
 
 /**
  * Shared chrome for the Film / Série detail screens: full-bleed backdrop, veil,
- * the overline + title + meta row + synopsis header, and the (deliberately
- * last-focusable) Retour button. Screen-specific actions and extras render as
- * `children` they come before Retour in the DOM, so the first action (Lecture)
- * stays the initial spatial-focus target on mount.
+ * the overline + title + meta row + synopsis header, and the persistent top nav.
+ *
+ * The screen's `actions` are a prop rather than the first of its `children`
+ * because the header and its buttons are ONE row: the eye reads them as one
+ * block, and so does the page's scroller, which shows a row from its top. Were
+ * the buttons a row of their own, taking the focus would align THEM near the top
+ * of the screen and push the title and the synopsis off it - and coming back up
+ * from the episodes would do exactly the same, so the header would never return.
+ * Everything below the header renders as `children`, one row each.
  */
 export function TvDetailScaffold({
   id,
@@ -22,6 +42,7 @@ export function TvDetailScaffold({
   meta,
   badge,
   overview,
+  actions,
   children,
 }: Readonly<{
   id: string;
@@ -32,46 +53,70 @@ export function TvDetailScaffold({
   meta: string;
   badge: string | null;
   overview: string | null | undefined;
+  actions: ReactNode;
   children: ReactNode;
 }>) {
   return (
-    <div className="fixed inset-0 overflow-hidden bg-bg">
-      <TvArt src={backdrop} colors={posterColors(id)} position="50% 18%" />
-      <div className={VEIL} />
+    <Box fill bg="bg" overflow="hidden">
+      <Img src={backdrop} background={tintGradient(posterColors(id))} position="50% 18%" fill />
+      <Box fill pointerEvents="none" style={gradient(VEIL_HORIZONTAL)} />
+      <Box fill pointerEvents="none" style={gradient(VEIL_VERTICAL)} />
 
-      <div className="scrollbar-none absolute inset-0 overflow-y-auto px-16 pt-[34vh] pb-16">
-        <div className="mb-3.5 font-sans text-[13px] font-bold uppercase tracking-[0.2em] text-accent">
-          {kind}
-        </div>
-        <h1 className="m-0 mb-4 font-display text-[clamp(46px,7.6vh,86px)] font-bold leading-[0.95] tracking-[-0.02em]">
-          {title}
-        </h1>
+      <FocusScroll style={DETAIL_SCROLL} contentStyle={DETAIL_CONTENT} offsetFromStart={120}>
+        {/* The header and the actions, one row: the page shows it whole. */}
+        <FocusSlot>
+          <Txt variant="overlineTv" color="accent">
+            {kind}
+          </Txt>
+          <Txt variant="hero" style={[TITLE, { marginTop: 14, marginBottom: 16 }]}>
+            {title}
+          </Txt>
 
-        <div className="mb-4.5 flex flex-wrap items-center gap-3.25 font-sans text-[18px] font-semibold text-muted">
-          {rating ? (
-            <>
-              <span className="font-bold text-accent">{rating.toFixed(1)}★</span>
-              <span className="text-dim">·</span>
-            </>
+          <Box row wrap align="center" gap={13} mb={18}>
+            {rating ? (
+              <>
+                <Txt style={{ fontSize: 18, fontWeight: '700' }} color="accent">
+                  {`${rating.toFixed(1)}★`}
+                </Txt>
+                <Txt style={{ fontSize: 18, fontWeight: '600' }} color="textDim">
+                  ·
+                </Txt>
+              </>
+            ) : null}
+            <Txt style={{ fontSize: 18, fontWeight: '600' }} color="textMuted">
+              {meta}
+            </Txt>
+            {badge ? <Badge tone={qualityTone(badge)}>{badge}</Badge> : null}
+          </Box>
+
+          {overview ? (
+            <Txt
+              lines={3}
+              style={{ fontSize: 20, lineHeight: 30, maxWidth: 680, marginBottom: 26 }}
+              color="rgba(244, 243, 240, 0.82)"
+            >
+              {overview}
+            </Txt>
           ) : null}
-          <span>{meta}</span>
-          {badge ? <span className={badgeClasses(badge)}>{badge}</span> : null}
-        </div>
 
-        {overview ? (
-          <p className="m-0 mb-6.5 max-w-170 font-sans text-[20px] leading-normal text-[rgba(244,243,240,0.82)] line-clamp-3">
-            {overview}
-          </p>
-        ) : null}
+          {actions}
+        </FocusSlot>
 
         {children}
-      </div>
-
-      {/* Persistent nav (brand + section pills) for quick jumps. Rendered after the
-          content so the first action (Lecture) stays the initial focus. It replaces
-          the old standalone "Retour" chip Back is the remote key, and the other
-          browse screens carry no such hint. */}
-      <TvTopNav />
-    </div>
+      </FocusScroll>
+    </Box>
   );
 }
+
+/** The page scroller's own box: the navigator scrolls it to follow focus. */
+const DETAIL_SCROLL = {
+  position: 'absolute' as const,
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+} as const;
+
+/** The padding belongs to the CONTENT, not to the scroller's own box: on the
+ * box it would pad the viewport and clip the last row instead of the list. */
+const DETAIL_CONTENT = { paddingHorizontal: 64, paddingTop: 367, paddingBottom: 64 } as const;

@@ -13,6 +13,7 @@ import {
 } from '@kroma/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Connection } from '#tv/app/providers/connection';
+import { serverBrowse } from '#tv/app/serverBrowse';
 import { useServerHealth } from '#tv/app/useServerHealth';
 import { type DeepLink, onDeepLink, publishPreview, readDeepLink } from '#tv/shared/preview';
 import { initialServers } from '#tv/shared/server';
@@ -113,7 +114,10 @@ export function useCatalogue(platform: string): Catalogue {
   const discover = useCallback(() => {
     setDiscovering(true);
     let cancelled = false;
-    void discoverServer().then((found) => {
+    // The browse is read at call time, not at mount: the shell registers it at
+    // the app root, and a discovery that ran first would otherwise be stuck on
+    // the sweep for the life of the process.
+    void discoverServer({ browse: serverBrowse() ?? undefined }).then((found) => {
       if (cancelled) return;
       setDiscovering(false);
       if (found) {

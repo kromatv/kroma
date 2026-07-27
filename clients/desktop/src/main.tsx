@@ -1,5 +1,5 @@
 import '@kroma/tv/tv.css';
-import { mountTv } from '@kroma/tv';
+import { mountTv } from '@kroma/tv/mount';
 // Display-matched grade of the brand-intro film, bundled by THIS shell only: the
 // Tauri window is transparent (native mpv plane behind the webview), which costs
 // <video> its compositor fast path, so the shared 4K60 HEVC film decodes and

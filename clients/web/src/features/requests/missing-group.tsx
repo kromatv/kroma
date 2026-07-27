@@ -4,9 +4,10 @@
 // swallow the page. Row/series checkboxes and search buttons report back to the
 // page through callbacks; all mutation state lives in `missing.tsx`.
 
+import { Image } from '@kroma/admin-kit';
 import { type CalendarEntry, episodeTag, posterColors, sizedImageUrl } from '@kroma/core';
-import { Image, useLocale, useT } from '@kroma/ui';
-import { IconLoader2, IconSearch } from '@tabler/icons-react';
+import { useLocale, useT } from '@kroma/ui';
+import { Button, IconButton, Spinner } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { relativeAirDate } from '#web/features/requests/airdate';
 
@@ -96,20 +97,14 @@ export function MissingGroupCard({
           </div>
         </button>
         {canAct ? (
-          <button
-            type="button"
-            disabled={groupBusy}
-            onClick={() => onSearch(group.items)}
-            title={t('requests.searchTitle')}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/12 bg-[#1A1A20] px-3 text-[12.5px] font-bold text-white/75 hover:text-accent disabled:opacity-50"
-          >
-            {groupBusy ? (
-              <IconLoader2 size={15} stroke={2.4} className="animate-spin" />
-            ) : (
-              <IconSearch size={15} stroke={2.2} />
-            )}
-            {t('requests.search')}
-          </button>
+          <Button
+            variant="glass"
+            size="sm"
+            icon="search"
+            label={t('requests.search')}
+            onPress={() => onSearch(group.items)}
+            loading={groupBusy}
+          />
         ) : null}
       </div>
       <EpisodeList
@@ -184,16 +179,17 @@ function EpisodeList({
         />
       ))}
       {entries.length > COLLAPSE_OVER ? (
-        <li>
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="w-full px-3.5 py-2.5 text-left text-[12.5px] font-bold text-dim hover:text-accent"
-          >
-            {collapsed
-              ? t('requests.showMore', { count: entries.length - COLLAPSED_ROWS })
-              : t('requests.showLess')}
-          </button>
+        <li className="px-1.5 py-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            label={
+              collapsed
+                ? t('requests.showMore', { count: entries.length - COLLAPSED_ROWS })
+                : t('requests.showLess')
+            }
+            onPress={() => setExpanded((v) => !v)}
+          />
         </li>
       ) : null}
     </ul>
@@ -233,19 +229,18 @@ function EpisodeRow({
         )}
       </span>
       {canAct ? (
-        <button
-          type="button"
+        <IconButton
+          variant="ghost"
+          size={32}
+          glyph={15}
+          radius={8}
+          icon="search"
+          label={t('requests.searchTitle')}
+          onPress={onSearch}
           disabled={busy}
-          onClick={onSearch}
-          title={t('requests.searchTitle')}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-white/45 hover:bg-white/5 hover:text-accent disabled:opacity-40"
         >
-          {busy ? (
-            <IconLoader2 size={15} stroke={2.2} className="animate-spin" />
-          ) : (
-            <IconSearch size={15} stroke={2} />
-          )}
-        </button>
+          {busy ? <Spinner size={15} /> : null}
+        </IconButton>
       ) : null}
     </li>
   );

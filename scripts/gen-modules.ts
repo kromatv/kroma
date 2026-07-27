@@ -67,7 +67,7 @@ interface Gen {
 const generated: Gen[] = [];
 // Guards against two sources resolving to the same runtime id or the same crate
 // name (e.g. `tv.kroma.a-b` and `tv.kroma.a.b` both slug to `a-b`), which would
-// otherwise fail deep in cargo/tsgo with a duplicate-dependency error.
+// otherwise fail deep in cargo/tsc with a duplicate-dependency error.
 const seenIds = new Set<string>();
 const seenCrates = new Set<string>();
 
@@ -161,10 +161,10 @@ serde_json = { workspace = true }
         version: manifest.version,
         type: 'module',
         exports: { '.': './src/index.tsx' },
-        scripts: { typecheck: 'tsgo --noEmit', build: 'tsgo --noEmit' },
+        scripts: { typecheck: 'tsc --noEmit', build: 'tsc --noEmit' },
         dependencies: { '@kroma/module-sdk': 'workspace:*' },
         peerDependencies: { react: '>=18' },
-        devDependencies: { '@types/react': '^19', typescript: '^5.6.3' },
+        devDependencies: { '@types/react': '^19', typescript: '^7.0.2' },
       },
       null,
       2,
@@ -301,13 +301,13 @@ write(
       version: '0.0.0',
       type: 'module',
       exports: { '.': './src/index.ts' },
-      scripts: { typecheck: 'tsgo --noEmit', build: 'tsgo --noEmit' },
+      scripts: { typecheck: 'tsc --noEmit', build: 'tsc --noEmit' },
       dependencies: Object.fromEntries([
         ['@kroma/module-sdk', 'workspace:*'],
         ...generated.map((g) => [g.pkg, 'workspace:*'] as const),
       ]),
       peerDependencies: { react: '>=18' },
-      devDependencies: { '@types/react': '^19', typescript: '^5.6.3' },
+      devDependencies: { '@types/react': '^19', typescript: '^7.0.2' },
     },
     null,
     2,

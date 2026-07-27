@@ -7,14 +7,7 @@ const g = globalThis as unknown as G;
 // Each test may inject browser/TV globals; strip them all afterwards so the node
 // baseline (no DOM, no MediaSource) is restored.
 afterEach(() => {
-  for (const k of [
-    'tizen',
-    'webOS',
-    '__KROMA_ANDROID__',
-    'MediaSource',
-    'matchMedia',
-    'document',
-  ]) {
+  for (const k of ['tizen', 'webOS', 'MediaSource', 'matchMedia', 'document']) {
     delete g[k];
   }
 });
@@ -51,11 +44,6 @@ describe('detectCapabilities (TV platforms)', () => {
 
   it('treats webOS as platform-tv', () => {
     g.webOS = {};
-    expect(detectCapabilities().source).toBe('platform-tv');
-  });
-
-  it('treats the Android TV shell (__KROMA_ANDROID__) as platform-tv', () => {
-    g.__KROMA_ANDROID__ = {};
     expect(detectCapabilities().source).toBe('platform-tv');
   });
 });

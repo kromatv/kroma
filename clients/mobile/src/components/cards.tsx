@@ -4,17 +4,23 @@
 
 import {
   type ContinueItem,
+  episodeTag,
   type KromaClient,
   type MediaItem,
   type SectionItem,
   type Show,
   sizedImageUrl,
 } from '@kroma/core';
+import { VirtualRail } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { colors, posterWidth, radius, spacing, type } from '#mobile/lib/theme';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useGutters } from '#mobile/lib/layout';
+import { colors, posterWidth, radius, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
+
+/** The space between rail tiles; the rail's pitch is tile width plus this. */
+const GAP = 12;
 
 export interface CardModel {
   key: string;
@@ -29,7 +35,7 @@ export function movieCard(item: MediaItem, client: KromaClient, width: number): 
     key: item.id,
     title: item.metadata?.title ?? item.title,
     subtitle: item.year ? String(item.year) : undefined,
-    poster: sizedImageUrl(client.posterFor(item), width * 2),
+    poster: sizedImageUrl(client.posterFor(item), width),
     route: `/item/${item.id}`,
   };
 }
@@ -39,7 +45,7 @@ export function showCard(show: Show, client: KromaClient, width: number): CardMo
     key: show.id,
     title: show.metadata?.title ?? show.title,
     subtitle: show.year ? String(show.year) : undefined,
-    poster: sizedImageUrl(client.showPosterFor(show), width * 2),
+    poster: sizedImageUrl(client.showPosterFor(show), width),
     route: `/show/${show.id}`,
   };
 }
@@ -55,7 +61,8 @@ export const PosterCard = memo(function PosterCard({
   width,
 }: Readonly<{
   card: CardModel;
-  width: number;
+  /** A rail tile fills its pitch cell ('100%'); the grid passes its column width. */
+  width: number | '100%';
 }>) {
   const router = useRouter();
   return (
@@ -67,7 +74,7 @@ export const PosterCard = memo(function PosterCard({
         uri={card.poster}
         seed={card.key}
         radius={radius.sm}
-        style={{ width, height: width * 1.5 }}
+        style={{ width, aspectRatio: 2 / 3 }}
       />
     </Pressable>
   );
@@ -75,18 +82,18 @@ export const PosterCard = memo(function PosterCard({
 
 export function MediaRail({ cards }: Readonly<{ cards: CardModel[] }>) {
   const { width: windowWidth } = useWindowDimensions();
+  const gutters = useGutters();
   const width = posterWidth(windowWidth);
   return (
-    <FlatList
-      horizontal
+    <VirtualRail
       data={cards}
-      keyExtractor={(c) => c.key}
-      renderItem={({ item }) => <PosterCard card={item} width={width} />}
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.rail}
-      initialNumToRender={6}
-      windowSize={5}
-      removeClippedSubviews
+      itemWidth={width + GAP}
+      gap={GAP}
+      // The pitch only ever tightens on the phone, so the authored poster
+      // height is the rail's ceiling.
+      style={{ height: Math.ceil(width * 1.5) }}
+      contentStyle={gutters.style}
+      renderItem={(card) => <PosterCard card={card} width="100%" />}
     />
   );
 }
@@ -96,18 +103,20 @@ export function ContinueCard({
   entry,
   client,
   width,
+  artWidth,
 }: Readonly<{
   entry: ContinueItem;
   client: KromaClient;
-  width: number;
+  /** The tile fills its rail cell ('100%'); `artWidth` sizes the fetch. */
+  width: number | '100%';
+  artWidth: number;
 }>) {
   const router = useRouter();
   const { item, positionMs, durationMs } = entry;
   const total = durationMs ?? item.durationMs ?? 0;
   const frac = total > 0 ? Math.min(1, positionMs / total) : 0;
-  const backdrop = sizedImageUrl(client.backdropFor(item) ?? client.posterFor(item), width * 2);
-  const tag =
-    item.season != null && item.episode != null ? `S${item.season}E${item.episode}` : undefined;
+  const backdrop = sizedImageUrl(client.backdropFor(item) ?? client.posterFor(item), artWidth);
+  const tag = episodeTag(item) || undefined;
   return (
     <Pressable
       onPress={() => router.push(`/player/${item.id}` as never)}
@@ -118,7 +127,7 @@ export function ContinueCard({
           uri={backdrop}
           seed={item.id}
           radius={radius.sm}
-          style={{ width, height: (width * 9) / 16 }}
+          style={{ width, aspectRatio: 16 / 9 }}
         />
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${frac * 100}%` }]} />
@@ -132,6 +141,9 @@ export function ContinueCard({
   );
 }
 
+/** The resume tile's caption block (title + episode tag), for the rail height. */
+const CONTINUE_TEXT = 42;
+
 export function ContinueRail({
   entries,
   client,
@@ -140,21 +152,23 @@ export function ContinueRail({
   client: KromaClient;
 }>) {
   const { width: windowWidth } = useWindowDimensions();
+  const gutters = useGutters();
   const width = Math.min(300, windowWidth * 0.55);
   return (
-    <FlatList
-      horizontal
+    <VirtualRail
       data={entries}
-      keyExtractor={(e) => e.item.id}
-      renderItem={({ item }) => <ContinueCard entry={item} client={client} width={width} />}
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.rail}
+      itemWidth={width + GAP}
+      gap={GAP}
+      style={{ height: Math.ceil((width * 9) / 16) + CONTINUE_TEXT }}
+      contentStyle={gutters.style}
+      renderItem={(entry) => (
+        <ContinueCard entry={entry} client={client} width="100%" artWidth={width} />
+      )}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  rail: { paddingHorizontal: spacing.md, gap: 12 },
   cardTitle: { ...type.caption, color: colors.text, marginTop: 6 },
   cardSub: { ...type.small, marginTop: 1 },
   progressTrack: {

@@ -9,7 +9,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { Poster, Rail, RailSkeleton } from '#web/shared/ui';
+import { Poster, PosterRail, RailSkeleton } from '#web/shared/ui';
 
 const SECTION_TITLE = 'mb-5 mt-10 font-display text-[22px] font-bold tracking-[-.02em] text-text';
 
@@ -36,8 +36,9 @@ function ContinueRail() {
   return (
     <section>
       <h2 className={SECTION_TITLE}>{t('content.continueWatching')}</h2>
-      <Rail label={t('content.continueWatching')}>
-        {items.map(({ item, positionMs, durationMs }) => {
+      <PosterRail
+        data={items}
+        renderItem={({ item, positionMs, durationMs }) => {
           const dur = durationMs ?? item.durationMs ?? 0;
           const pct = dur > 0 ? Math.min(100, Math.round((positionMs / dur) * 100)) : 0;
           const label =
@@ -46,7 +47,6 @@ function ContinueRail() {
               : t('content.film');
           return (
             <Poster
-              key={item.id}
               title={item.title}
               genre={label}
               colors={posterColors(item.id)}
@@ -55,8 +55,8 @@ function ContinueRail() {
               onClick={() => navigate({ to: '/watch/$id', params: { id: item.id } })}
             />
           );
-        })}
-      </Rail>
+        }}
+      />
     </section>
   );
 }

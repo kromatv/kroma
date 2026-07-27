@@ -1,8 +1,14 @@
 // Resume persistence + the admin-visible playback session heartbeat, sharing
 // one interval. Progress is saved on a coarser cadence than the ping and again
 // on unmount so a swipe-away never loses more than a few seconds.
+//
+// It also listens for the admin TERMINATING this session, both ways the shared
+// service (@kroma/ui services/playback) hears it: the `playback.terminate`
+// event on the live WS bus, and a 410 on the next ping as the fallback. This
+// hook should eventually BE that shared service - it only still exists apart
+// because it also owns the phone's progress persistence.
 
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { KromaApiError, type KromaClient, KromaEvents, type MediaItem } from '@kroma/core';
 import * as Device from 'expo-device';
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
@@ -49,13 +55,26 @@ export function useHeartbeat(
   client: KromaClient,
   item: MediaItem,
   snapshot: () => HeartbeatSnapshot,
+  /** Fired ONCE when an admin terminates this session: the custom message, or
+   *  '' for the localized default. The player pauses and shows it. */
+  onTerminated?: (message: string) => void,
 ): void {
   const snapRef = useRef(snapshot);
   snapRef.current = snapshot;
+  const onTerminatedRef = useRef(onTerminated);
+  onTerminatedRef.current = onTerminated;
 
   useEffect(() => {
     const device = Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android');
     const sessionId = newSessionId(device);
+    // Once terminated: stop pinging (a ping would re-register the session the
+    // admin just removed) and skip the redundant stop on unmount.
+    let terminated = false;
+    const fireTerminated = (message: string) => {
+      if (terminated) return;
+      terminated = true;
+      onTerminatedRef.current?.(message);
+    };
 
     const save = () => {
       const s = snapRef.current();
@@ -70,6 +89,7 @@ export function useHeartbeat(
     };
 
     const ping = () => {
+      if (terminated) return;
       const s = snapRef.current();
       void client
         .pingPlayback({
@@ -84,7 +104,10 @@ export function useHeartbeat(
           audio: s.audioLang,
           subtitle: s.subtitleLang,
         })
-        .catch(() => undefined);
+        .catch((e: unknown) => {
+          // 410 Gone → an admin terminated this session (WS fallback).
+          if (e instanceof KromaApiError && e.status === 410) fireTerminated('');
+        });
     };
 
     ping();
@@ -93,10 +116,23 @@ export function useHeartbeat(
       save();
     }, PING_MS);
 
+    // The prompt channel: the admin's stop arrives as a live event, matched to
+    // THIS session's id, so the phone halts within a beat rather than at the
+    // next ping.
+    const events = new KromaEvents(client.baseUrl, {
+      onEvent: (e) => {
+        if (e.type === 'playback.terminate' && e.sessionId === sessionId) {
+          fireTerminated(e.message);
+        }
+      },
+    });
+    events.connect();
+
     return () => {
       clearInterval(timer);
+      events.close();
       save();
-      void client.stopPlayback(sessionId).catch(() => undefined);
+      if (!terminated) void client.stopPlayback(sessionId).catch(() => undefined);
     };
   }, [client, item.id]);
 }

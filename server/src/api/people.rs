@@ -11,18 +11,20 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
-use crate::api::dto::{PersonResponse, SearchHit};
-use crate::api::util::query;
+use crate::api::dto::{PersonDetailResponse, PersonResponse, SearchHit};
+use crate::api::util::{blocking, query};
 use crate::db;
 use crate::i18n::ReqLocale;
+use crate::infra::{image, metadata};
 use crate::model::{MediaItem, Metadata, Show};
+use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
-/// `GET /api/people`.
+/// `GET /api/people`, `GET /api/people/details`.
 pub fn routes() -> Router<SharedState> {
-    Router::new().route("/people", get(person))
+    Router::new().route("/people", get(person)).route("/people/details", get(details))
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,6 +59,44 @@ pub async fn person(
     })
     .await?;
     Ok(Json(resp).into_response())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NameParams {
+    /// The person's name, as a credit spells it.
+    pub name: Option<String>,
+}
+
+/// `GET /api/people/details?name=` → [`PersonDetailResponse`]: the biography and
+/// life facts behind a credit, from TMDB.
+///
+/// Never an error when the provider has nothing to say: `person` is simply
+/// `null` (no TMDB key, an unknown name, a provider hiccup). The person page is
+/// the filmography first and the biography second, and it must render either
+/// way. The portrait is cached locally on the way out, so it is served from
+/// `/api/images` with the same `?w=` sizing as every other artwork.
+pub async fn details(
+    State(state): State<SharedState>,
+    Query(p): Query<NameParams>,
+) -> Result<Response, Response> {
+    let name = p.name.unwrap_or_default().trim().to_string();
+    let Some(api_key) = state.config.tmdb_api_key.clone().filter(|_| !name.is_empty()) else {
+        return Ok(Json(PersonDetailResponse { name, person: None }).into_response());
+    };
+    let language = settings::metadata_language(&state.settings, &state.config);
+    let data_dir = state.config.data_dir.clone();
+    let lookup = name.clone();
+    // curl (twice, on a cache miss) plus an image download: blocking work.
+    let person = blocking(move || {
+        Ok(metadata::person::detail(&api_key, &language, &lookup).map(|mut p| {
+            if let Some(local) = p.profile_url.as_deref().and_then(|u| image::cache_remote(&data_dir, u)) {
+                p.profile_url = Some(local);
+            }
+            p
+        }))
+    })
+    .await?;
+    Ok(Json(PersonDetailResponse { name, person }).into_response())
 }
 
 /// Merge movies + shows into one [`SearchHit`] list, optionally scoped to a single

@@ -1,0 +1,168 @@
+diff --git a/dist/index.js b/dist/index.js
+index 878c408263af6c4ea6919801b415fe16579b899a..44d581e6ab15b85a474a0864ff87a3a541e446f8 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -3066,8 +3066,34 @@ const useWebVirtualizedListAnimation = ({
+   currentlyFocusedItemIndex,
+   vertical = false,
+   scrollDuration,
+-  scrollOffsetsArray
++  scrollOffsetsArray,
++  freeScrollFraction = null
+ }) => {
++  // PATCH(kroma): free scrolling for the wheel. A non-null fraction is a
++  // FRACTIONAL item index; the translation interpolates between the two
++  // neighbouring scroll offsets and renders WITHOUT a transition, so the strip
++  // tracks the input exactly. Setting it back to null re-enables the row
++  // transition, which then glides from wherever the wheel left the strip to the
++  // focused row's offset - the snap. The offsets array already clamps at both
++  // ends (stick-to-* behaviours flatten there), so overscroll cannot happen.
++  if (freeScrollFraction != null) {
++    const last = scrollOffsetsArray.length - 1;
++    const clamped = Math.min(Math.max(freeScrollFraction, 0), last);
++    const low = Math.floor(clamped);
++    const high = Math.min(low + 1, last);
++    const t = clamped - low;
++    const value = scrollOffsetsArray[low] + (scrollOffsetsArray[high] - scrollOffsetsArray[low]) * t;
++    return {
++      transitionDuration: '0ms',
++      transitionProperty: 'transform',
++      transitionTimingFunction: 'ease-out',
++      transform: [vertical ? {
++        translateY: value
++      } : {
++        translateX: value
++      }]
++    };
++  }
+   const animationDuration = `${scrollDuration}ms`;
+   const newTranslationValue = scrollOffsetsArray[currentlyFocusedItemIndex];
+   return {
+@@ -4733,6 +4759,7 @@ exports.VirtualizedList = (0, TypedMemo_1.typedMemo)(({
+   nbMaxOfItems,
+   keyExtractor,
+   scrollDuration = 200,
++  freeScrollFraction = null,
+   listSizeInPx,
+   scrollBehavior = 'stick-to-start',
+   testID
+@@ -4772,7 +4799,8 @@ exports.VirtualizedList = (0, TypedMemo_1.typedMemo)(({
+     currentlyFocusedItemIndex,
+     vertical,
+     scrollDuration,
+-    scrollOffsetsArray: allScrollOffsets
++    scrollOffsetsArray: allScrollOffsets,
++    freeScrollFraction
+   }) : (0, useVirtualizedListAnimation_1.useVirtualizedListAnimation)({
+     currentlyFocusedItemIndex,
+     vertical,
+diff --git a/dist/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.d.ts b/dist/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.d.ts
+index 9b4cd4361f00e9d316551dd995d2248cf413e2eb..04d53ae241c7080bd58c423243bc5b4e95ef6725 100644
+--- a/dist/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.d.ts
++++ b/dist/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.d.ts
+@@ -53,7 +53,7 @@ export type GridRowType<T> = {
+  * The row framed in dotted lines corresponds to a virtualized component.
+  * There is no virtualization inside rows.
+  */
+-export declare const SpatialNavigationVirtualizedGrid: (<T>(props: Pick<SpatialNavigationVirtualizedListWithScrollProps<T>, "data" | "style" | "testID" | "scrollDuration" | "renderItem" | "onEndReached" | "nbMaxOfItems" | "scrollBehavior"> & PointerScrollProps & {
++export declare const SpatialNavigationVirtualizedGrid: (<T>(props: Pick<SpatialNavigationVirtualizedListWithScrollProps<T>, "data" | "style" | "testID" | "scrollDuration" | "freeScrollFraction" | "renderItem" | "onEndReached" | "nbMaxOfItems" | "scrollBehavior"> & PointerScrollProps & {
+     itemHeight: number;
+     header?: JSX.Element;
+     headerSize?: number;
+diff --git a/dist/spatial-navigation/components/virtualizedList/VirtualizedList.d.ts b/dist/spatial-navigation/components/virtualizedList/VirtualizedList.d.ts
+index e91dd866eac4e7cab8a02d7f588939fe83a685f7..a6540d896be4f54f0d9fdde7bd02a63f10d89a02 100644
+--- a/dist/spatial-navigation/components/virtualizedList/VirtualizedList.d.ts
++++ b/dist/spatial-navigation/components/virtualizedList/VirtualizedList.d.ts
+@@ -36,6 +36,11 @@ export interface VirtualizedListProps<T> {
+     nbMaxOfItems?: number;
+     /** Duration of a scrolling animation inside the VirtualizedList */
+     scrollDuration?: number;
++    /** PATCH(kroma): a FRACTIONAL item index the web list renders at, without a
++     * transition - the wheel's free-scroll position. null (the default) restores
++     * the row-quantised, transitioned behaviour, gliding from wherever the
++     * fraction left the strip: the snap. Web only; native ignores it. */
++    freeScrollFraction?: number | null;
+     /** The size of the list in its scrollable axis */
+     listSizeInPx: number;
+     scrollBehavior?: ScrollBehavior;
+diff --git a/src/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.tsx b/src/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.tsx
+index 654d9aebde58bce7296031ef1a47641ef470ef89..967415114eb29c18ac48750943fd7281183e6af1 100644
+--- a/src/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.tsx
++++ b/src/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.tsx
+@@ -23,6 +23,7 @@ type SpatialNavigationVirtualizedGridProps<T> = Pick<
+   | 'nbMaxOfItems'
+   | 'scrollBehavior'
+   | 'scrollDuration'
++  | 'freeScrollFraction'
+   | 'testID'
+ > &
+   PointerScrollProps & {
+diff --git a/src/spatial-navigation/components/virtualizedList/VirtualizedList.tsx b/src/spatial-navigation/components/virtualizedList/VirtualizedList.tsx
+index 12a599deb1172d2b434df9f2498bf28a248d7b46..d0351015fc33473ad121e76321ce25a080b606db 100644
+--- a/src/spatial-navigation/components/virtualizedList/VirtualizedList.tsx
++++ b/src/spatial-navigation/components/virtualizedList/VirtualizedList.tsx
+@@ -45,6 +45,8 @@ export interface VirtualizedListProps<T> {
+   nbMaxOfItems?: number;
+   /** Duration of a scrolling animation inside the VirtualizedList */
+   scrollDuration?: number;
++  /** PATCH(kroma): fractional free-scroll index (web). null = normal row transitions. */
++  freeScrollFraction?: number | null;
+   /** The size of the list in its scrollable axis */
+   listSizeInPx: number;
+   scrollBehavior?: ScrollBehavior;
+@@ -144,6 +146,7 @@ export const VirtualizedList = typedMemo(
+     nbMaxOfItems,
+     keyExtractor,
+     scrollDuration = 200,
++    freeScrollFraction = null,
+     listSizeInPx,
+     scrollBehavior = 'stick-to-start',
+     testID,
+@@ -205,6 +208,7 @@ export const VirtualizedList = typedMemo(
+             vertical,
+             scrollDuration,
+             scrollOffsetsArray: allScrollOffsets,
++            freeScrollFraction,
+           })
+         : useVirtualizedListAnimation({
+             currentlyFocusedItemIndex,
+diff --git a/src/spatial-navigation/components/virtualizedList/hooks/useVirtualizedListAnimation.ts b/src/spatial-navigation/components/virtualizedList/hooks/useVirtualizedListAnimation.ts
+index c2c033f168c055f1bc3ebfaa0da4885a2a1823db..06091d3113c2fccada62af0628b092e1edcd009e 100644
+--- a/src/spatial-navigation/components/virtualizedList/hooks/useVirtualizedListAnimation.ts
++++ b/src/spatial-navigation/components/virtualizedList/hooks/useVirtualizedListAnimation.ts
+@@ -30,7 +30,24 @@ export const useWebVirtualizedListAnimation: TypeVirtualizedListAnimation = ({
+   vertical = false,
+   scrollDuration,
+   scrollOffsetsArray,
++  freeScrollFraction = null,
+ }) => {
++  // PATCH(kroma): free scrolling for the wheel - see dist/index.js for the
++  // running copy of this block.
++  if (freeScrollFraction != null) {
++    const last = scrollOffsetsArray.length - 1;
++    const clamped = Math.min(Math.max(freeScrollFraction, 0), last);
++    const low = Math.floor(clamped);
++    const high = Math.min(low + 1, last);
++    const t = clamped - low;
++    const value = scrollOffsetsArray[low] + (scrollOffsetsArray[high] - scrollOffsetsArray[low]) * t;
++    return {
++      transitionDuration: '0ms',
++      transitionProperty: 'transform',
++      transitionTimingFunction: 'ease-out',
++      transform: [vertical ? { translateY: value } : { translateX: value }],
++    };
++  }
+   const animationDuration = `${scrollDuration}ms`;
+   const newTranslationValue = scrollOffsetsArray[currentlyFocusedItemIndex];
+ 
+diff --git a/src/spatial-navigation/types/TypeVirtualizedListAnimation.ts b/src/spatial-navigation/types/TypeVirtualizedListAnimation.ts
+index d1d778d18fd0edcfc181224dc426d9fc85d1f951..68b7fdd8147b1fe384e82a2a1bfeb5ede8f5dd6a 100644
+--- a/src/spatial-navigation/types/TypeVirtualizedListAnimation.ts
++++ b/src/spatial-navigation/types/TypeVirtualizedListAnimation.ts
+@@ -5,4 +5,6 @@ export type TypeVirtualizedListAnimation = (args: {
+   vertical?: boolean;
+   scrollDuration: number;
+   scrollOffsetsArray: number[];
++  /** PATCH(kroma): fractional free-scroll index; see useWebVirtualizedListAnimation. */
++  freeScrollFraction?: number | null;
+ }) => Animated.WithAnimatedValue<ViewStyle>;

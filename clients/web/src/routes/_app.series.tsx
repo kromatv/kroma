@@ -1,6 +1,7 @@
 import { collectGenres, hasGenre, sortTitles } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconDeviceTv } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
@@ -9,7 +10,7 @@ import { validateBrowseSearch } from '#web/features/catalog/browse-search';
 import { ShowGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/series')({
   validateSearch: validateBrowseSearch,
@@ -49,10 +50,7 @@ function SeriesPage() {
     <main className={PAGE_MAIN}>
       <h1 className={PAGE_TITLE}>{t('nav.series')}</h1>
       {shows.length === 0 ? (
-        <EmptyState
-          icon={<IconDeviceTv size={32} stroke={1.5} />}
-          title={t('content.seriesEmpty')}
-        />
+        <EmptyState icon="device-tv" title={t('content.seriesEmpty')} />
       ) : (
         <>
           <BrowseBar
@@ -63,10 +61,7 @@ function SeriesPage() {
             onGenre={(g) => navigate({ search: (p) => ({ ...p, genre: g }) })}
           />
           {view.length === 0 ? (
-            <EmptyState
-              icon={<IconDeviceTv size={32} stroke={1.5} />}
-              title={t('search.noResults')}
-            />
+            <EmptyState icon="device-tv" title={t('search.noResults')} />
           ) : (
             <ShowGrid shows={view} />
           )}

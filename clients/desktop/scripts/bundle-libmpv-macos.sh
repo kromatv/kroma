@@ -34,6 +34,40 @@ dylibbundler -cd -od -b \
   -d "$APP/Contents/Frameworks" \
   -p "@executable_path/../Frameworks"
 
+# Collapse duplicate LC_RPATH entries.
+#
+# dyld on macOS 26+ treats a REPEATED rpath as a fatal error - the app dies at
+# launch with "Library not loaded ... (duplicate LC_RPATH
+# '@executable_path/../Frameworks/')" and never reaches main(). Older dyld simply
+# ignored the repeat, which is why this survived unnoticed: the bundle is only
+# broken on a current macOS.
+#
+# dylibbundler is what repeats it. It runs `install_name_tool -add_rpath` each
+# time it fixes a binary, without checking whether that rpath is already there,
+# so anything reachable by MORE THAN ONE path through the dependency graph gets
+# it twice - libmpv is both a direct dependency of the executable and a
+# dependency of other bundled dylibs.
+rpaths_of() {
+  local binary="$1"
+  otool -l "$binary" | awk '/cmd LC_RPATH/ { f = 1; next } f && /^ *path / { print $2; f = 0 }'
+}
+
+prune_duplicate_rpaths() {
+  local binary="$1"
+  for dup in $(rpaths_of "$binary" | sort | uniq -d); do
+    # -delete_rpath removes ONE occurrence per call, so loop until one is left.
+    while [[ "$(rpaths_of "$binary" | grep -cx -- "$dup" || true)" -gt 1 ]]; do
+      install_name_tool -delete_rpath "$dup" "$binary"
+    done
+    echo "bundle-libmpv-macos: collapsed duplicate rpath $dup in $(basename "$binary")"
+  done
+}
+
+prune_duplicate_rpaths "$EXE"
+for lib in "$APP/Contents/Frameworks"/*.dylib; do
+  [[ -f "$lib" ]] && prune_duplicate_rpaths "$lib"
+done
+
 echo "bundle-libmpv-macos: done"
 # Fail loudly if any absolute Homebrew path survived (would break on a clean Mac).
 if otool -L "$EXE" | grep -qE '/opt/homebrew|/usr/local/(opt|Cellar)'; then

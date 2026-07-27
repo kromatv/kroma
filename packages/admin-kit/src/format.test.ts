@@ -50,9 +50,9 @@ describe('decimal', () => {
   });
 
   it('honors a requested digit count (rounding)', () => {
-    expect(decimal(3.14159, 2)).toBe('3,14');
-    expect(decimal(3.14159, 0)).toBe('3');
-    expect(decimal(2.71828, 3)).toBe('2,718');
+    expect(decimal(Math.PI, 2)).toBe('3,14');
+    expect(decimal(Math.PI, 0)).toBe('3');
+    expect(decimal(Math.E, 3)).toBe('2,718');
   });
 });
 

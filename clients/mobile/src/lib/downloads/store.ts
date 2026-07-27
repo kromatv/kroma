@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 export const DIR = `${FileSystem.documentDirectory}kroma-downloads/`;
 const INDEX = `${DIR}index.json`;
+const WANTED = `${DIR}wanted.json`;
 
 export interface OfflineSub {
   index: number;
@@ -35,6 +36,8 @@ export type DownloadState =
   | { status: 'none' }
   /** progress is 0..1, or -1 when the total size is unknown (server remux). */
   | { status: 'downloading'; progress: number }
+  /** User-paused; the platform holds resume data, even across app restarts. */
+  | { status: 'paused'; progress: number }
   | { status: 'queued' }
   | { status: 'done'; entry: DownloadEntry };
 
@@ -62,21 +65,48 @@ export async function writeIndex(entries: DownloadEntry[]): Promise<void> {
   await FileSystem.writeAsStringAsync(INDEX, JSON.stringify(entries));
 }
 
+/** The titles the user asked for that are not yet in the index: the running
+ * transfer plus the queue. Persisted so a download the platform could not keep
+ * alive across an app kill (iOS cancels background tasks on force-quit) is
+ * requeued on the next launch instead of silently forgotten. */
+export async function readWanted(): Promise<MediaItem[]> {
+  try {
+    const raw = await FileSystem.readAsStringAsync(WANTED);
+    return JSON.parse(raw) as MediaItem[];
+  } catch {
+    return [];
+  }
+}
+
+export async function writeWanted(items: MediaItem[]): Promise<void> {
+  await ensureDir();
+  await FileSystem.writeAsStringAsync(WANTED, JSON.stringify(items));
+}
+
 /** Delete everything in the download directory that no index entry claims.
  *
  * A transfer killed with the app (swipe-away, OOM, reboot) leaves its partial
  * file behind with no entry pointing at it: invisible to `remove()`, uncounted
  * in the storage total, and never cleaned up. On a 20 GB film that is 20 GB the
- * user cannot reclaim from inside the app. Runs once at startup, when no
- * transfer is in flight, so a live download can't be swept out from under
- * itself. */
-export async function sweepOrphans(entries: DownloadEntry[]): Promise<void> {
+ * user cannot reclaim from inside the app. Runs once at startup, after the
+ * still-running platform transfers have been re-adopted: their in-flight files
+ * (`live`) are spoken for, not orphans. */
+export async function sweepOrphans(
+  entries: DownloadEntry[],
+  live: Iterable<string> = [],
+): Promise<void> {
   try {
-    const known = new Set<string>([INDEX]);
+    const known = new Set<string>([INDEX, WANTED]);
     for (const entry of entries) {
       known.add(entry.fileUri);
       for (const sub of entry.subs ?? []) known.add(sub.path);
       if (entry.storyboard) known.add(entry.storyboard.spritePath);
+    }
+    for (const uri of live) {
+      known.add(uri);
+      // The Android downloader stages into a sibling temp file until the
+      // transfer completes.
+      known.add(`${uri}.tmp`);
     }
     const names = await FileSystem.readDirectoryAsync(DIR);
     await Promise.all(

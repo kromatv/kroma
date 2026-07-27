@@ -1,15 +1,12 @@
 import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button, EmptyState, IconButton } from '@kroma/ui/kit';
 import {
   IconDeviceTv,
   IconFolder,
-  IconLibrary,
   IconMovie,
   IconMusic,
   IconPhoto,
-  IconPlus,
-  IconRefresh,
-  IconX,
   type TablerIcon,
 } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -25,7 +22,14 @@ import { Denied, HeaderAction, PageHeader, useCap, usePoll } from '#web/features
 import { Card } from '#web/features/admin/ui';
 import { formatBytes, relativeSeen } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, TableSkeleton } from '#web/shared/ui';
+import { TableSkeleton } from '#web/shared/ui';
+
+/** The add-folder affordance keeps its dashed outline on the kit's ghost. */
+const DASHED = {
+  borderWidth: 1,
+  borderColor: 'rgba(255, 255, 255, 0.2)',
+  borderStyle: 'dashed',
+} as const;
 
 const ICONS: Record<string, TablerIcon> = {
   film: IconMovie,
@@ -77,7 +81,7 @@ function LibrariesPageInner() {
       ) : null}
       {data && libraries.length === 0 ? (
         <EmptyState
-          icon={<IconLibrary size={32} stroke={1.5} />}
+          icon="library"
           title={t('admin.noLibraries')}
           action={<HeaderAction label={t('admin.addLibrary')} onClick={() => void openAdd()} />}
         />
@@ -185,45 +189,37 @@ function LibraryCard({
             <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text/78">
               {path}
             </span>
-            <button
-              type="button"
-              onClick={() => void removeFolder(path)}
-              className="shrink-0 text-text/35 hover:text-danger"
-              aria-label={t('admin.removeFolder')}
-            >
-              <IconX size={15} stroke={2} />
-            </button>
+            <IconButton
+              variant="ghost"
+              size={26}
+              glyph={15}
+              icon="x"
+              label={t('admin.removeFolder')}
+              onPress={() => void removeFolder(path)}
+            />
           </div>
         ))}
         <FolderPicker value={newFolder} onChange={setNewFolder} />
-        <button
-          type="button"
-          onClick={() => void addFolder()}
+        <Button
+          variant="ghost"
+          size="sm"
+          icon="plus"
+          label={t('common.add')}
+          onPress={() => void addFolder()}
           disabled={!newFolder.trim()}
-          className="inline-flex items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-border-strong px-3 py-2.5 text-[12.5px] font-semibold text-text/70 disabled:opacity-40"
-        >
-          <IconPlus size={14} stroke={2.4} />
-          {t('common.add')}
-        </button>
+          style={DASHED}
+        />
       </div>
 
       <div className="flex gap-2.5 px-5 py-3.5">
-        <button
-          type="button"
-          onClick={() => void scan()}
-          disabled={scanning}
-          className="inline-flex items-center gap-1.5 rounded-[9px] bg-accent px-3.5 py-2 text-[13px] font-semibold text-accent-ink disabled:opacity-60"
-        >
-          <IconRefresh size={14} stroke={2.3} />
-          {scanning ? t('admin.scanning') : t('admin.scan')}
-        </button>
-        <button
-          type="button"
-          onClick={onManage}
-          className="rounded-[9px] border border-border-strong bg-surface-2 px-3.5 py-2 text-[13px] font-semibold text-text/78"
-        >
-          {t('common.manage')}
-        </button>
+        <Button
+          size="sm"
+          icon="refresh"
+          label={scanning ? t('admin.scanning') : t('admin.scan')}
+          onPress={() => void scan()}
+          loading={scanning}
+        />
+        <Button variant="glass" size="sm" label={t('common.manage')} onPress={onManage} />
       </div>
     </Card>
   );

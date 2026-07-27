@@ -5,10 +5,12 @@
 import {
   AddEngineModal,
   apiErrorText,
+  Button,
   Card,
   type ClientTestResult,
   type DownloadClientView,
   EmptyState,
+  IconButton,
   Pill,
   Section,
   TableSkeleton,
@@ -18,7 +20,7 @@ import {
   usePoll,
   useT,
 } from '@kroma/module-sdk';
-import { IconCpu, IconLoader2, IconPencil, IconPlus, IconServer } from '@tabler/icons-react';
+import { IconCpu, IconPencil, IconPlus, IconServer } from '@tabler/icons-react';
 import { useState } from 'react';
 import { DownloadClientModal } from './download-client-modals';
 
@@ -86,14 +88,13 @@ export function DownloadClientsSection() {
   // external download-client engine is enabled).
   const addButton =
     engines.length > 0 ? (
-      <button
-        type="button"
+      <Button
+        variant="secondary"
+        size="sm"
+        icon={IconPlus}
+        label={t('dlclients.add')}
         onClick={() => void openAdd()}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-white/12 bg-[#1A1A20] px-3 py-2 text-[12.5px] font-semibold text-white/80 hover:bg-[#222229]"
-      >
-        <IconPlus size={14} stroke={2.4} />
-        {t('dlclients.add')}
-      </button>
+      />
     ) : null;
 
   return (
@@ -126,26 +127,20 @@ export function DownloadClientsSection() {
             <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-white/6 pt-3">
               <TestLine test={tests[c.id]} />
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  label={t('dlclients.test')}
                   onClick={() => test(c)}
-                  disabled={tests[c.id]?.busy}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/12 bg-[#1A1A20] px-3 py-1.5 text-[12px] font-semibold text-white/80 hover:bg-[#222229] disabled:opacity-60"
-                >
-                  {tests[c.id]?.busy ? (
-                    <IconLoader2 size={12} stroke={2.4} className="animate-spin" />
-                  ) : null}
-                  {t('dlclients.test')}
-                </button>
+                  loading={tests[c.id]?.busy}
+                />
                 {!c.builtin ? (
-                  <button
-                    type="button"
+                  <IconButton
+                    icon={IconPencil}
+                    label={t('dlclients.edit')}
+                    size={30}
                     onClick={() => void openEdit(c)}
-                    title={t('dlclients.edit')}
-                    className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-white/12 bg-[#1A1A20] text-white/70 hover:text-white"
-                  >
-                    <IconPencil size={13} stroke={2} />
-                  </button>
+                  />
                 ) : null}
               </div>
             </div>
@@ -154,7 +149,7 @@ export function DownloadClientsSection() {
       </div>
       {data && clients.length === 0 ? (
         <EmptyState
-          icon={<IconServer size={32} stroke={1.5} />}
+          icon="server"
           title={t('dlclients.empty')}
           action={addButton ?? undefined}
         />

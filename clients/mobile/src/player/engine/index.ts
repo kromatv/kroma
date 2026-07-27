@@ -31,10 +31,16 @@ export function useKromaEngine(
   startSec: number,
   /** Local file to play instead of the server (offline download). */
   localUri?: string,
+  /** The audio track the title OPENS on - the account's preferred language,
+   *  resolved by the caller (see @kroma/core preferredAudioIndex). */
+  startAudioIndex = 0,
 ): Engine {
   const decision = useMemo(() => decideSource(item), [item]);
   const core = useRef<EngineCore>({
-    mode: localUri || decision.direct ? 'direct' : 'master',
+    // A non-default OPENING track forces the master exactly as a manual switch
+    // does (see controls.setAudio): direct play always carries the container's
+    // default audio, so a preferred language can only be honoured by the remux.
+    mode: localUri || (decision.direct && startAudioIndex === 0) ? 'direct' : 'master',
     baseSec: 0,
     elSec: 0,
     bufSec: 0,
@@ -42,7 +48,7 @@ export function useKromaEngine(
     forceAac: decision.aacMaster,
     resumeOnLoad: true,
     pendingSeek: decision.direct && startSec > 0 ? startSec : null,
-    audioIndex: 0,
+    audioIndex: startAudioIndex,
     filter: 'off',
     loadId: 0,
     started: false,
@@ -57,7 +63,7 @@ export function useKromaEngine(
   const [failed, setFailed] = useState(false);
   const [endedNonce, setEndedNonce] = useState(0);
   const [mode, setMode] = useState(core.mode);
-  const [audioIndex, setAudioIndex] = useState(0);
+  const [audioIndex, setAudioIndex] = useState(startAudioIndex);
   const [localAudio, setLocalAudio] = useState<AudioTrack[]>([]);
   const [filter, setFilter] = useState<AudioFilterMode>('off');
   const [rate, setRate] = useState(1);

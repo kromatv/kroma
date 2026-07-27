@@ -2,9 +2,10 @@
 // status (and, on failure, the error + a per-stage retry), a series episode
 // aggregate, and the "reprocess this element" action.
 
+import { Image } from '@kroma/admin-kit';
 import type { ElementRow, MessageKey } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
-import { IconLoader2, IconRefresh, IconX } from '@tabler/icons-react';
+import { useT } from '@kroma/ui';
+import { Button, IconButton } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
 import { fmtDur, kindMeta, posterGrad, statusMeta } from '#web/features/admin/pipeline-meta';
@@ -75,9 +76,14 @@ export const PipelineDrawer = createCallable<
             <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
               {t('pipeline.elementSheet')}
             </span>
-            <button type="button" onClick={close} className="text-white/60 hover:text-white">
-              <IconX size={20} stroke={2.1} />
-            </button>
+            <IconButton
+              variant="ghost"
+              size={32}
+              glyph={20}
+              icon="x"
+              label={t('common.close')}
+              onPress={close}
+            />
           </div>
           <div className="flex gap-4">
             <DrawerPoster el={el} />
@@ -127,19 +133,16 @@ export const PipelineDrawer = createCallable<
                         {t(`pipeline.st.${tr.status}` as MessageKey)}
                       </span>
                       {/* Run just this stage now, at top priority (also acts as a retry on failure). */}
-                      <button
-                        type="button"
-                        onClick={() => onRetryStage(tr.key)}
+                      <IconButton
+                        size={28}
+                        glyph={13}
+                        radius={8}
+                        icon="refresh"
+                        active={failed}
+                        label={failed ? t('pipeline.retryStage') : t('pipeline.runStage')}
+                        onPress={() => onRetryStage(tr.key)}
                         disabled={busy}
-                        title={failed ? t('pipeline.retryStage') : t('pipeline.runStage')}
-                        className={`flex h-7 w-7 flex-[0_0_28px] items-center justify-center rounded-lg border disabled:opacity-50 ${failed ? 'border-accent/30 bg-accent/10 text-accent' : 'border-white/12 bg-white/6 text-white/65 hover:text-white'}`}
-                      >
-                        <IconRefresh
-                          size={13}
-                          stroke={2.3}
-                          className={busy ? 'animate-spin' : ''}
-                        />
-                      </button>
+                      />
                     </div>
                   </div>
                   {failed && tr.error ? (
@@ -170,19 +173,13 @@ export const PipelineDrawer = createCallable<
         </div>
 
         <div className="border-t border-white/[0.07] px-6 py-4.5">
-          <button
-            type="button"
-            onClick={onReprocess}
-            disabled={busy}
-            className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-accent px-4 py-3.5 text-[14px] font-bold text-[#0A0A0C] transition-colors hover:bg-accent-hover disabled:opacity-60"
-          >
-            {busy ? (
-              <IconLoader2 size={16} stroke={2.3} className="animate-spin" />
-            ) : (
-              <IconRefresh size={16} stroke={2.3} />
-            )}
-            {t('pipeline.reprocessElement')}
-          </button>
+          <Button
+            block
+            icon="refresh"
+            label={t('pipeline.reprocessElement')}
+            onPress={onReprocess}
+            loading={busy}
+          />
           <div className="mt-2.5 text-center text-[11.5px] font-medium text-white/42">
             {t('pipeline.reprocessNote')}
           </div>

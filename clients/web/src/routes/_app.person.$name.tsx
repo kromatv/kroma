@@ -1,17 +1,18 @@
 import { personDisplayName, personInvolvement, posterColors, roleLabels } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconUserX } from '@tabler/icons-react';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { EmptyState } from '@kroma/ui/kit';
+
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { initials } from '#web/features/catalog/detail';
+import { PersonProfile } from '#web/features/catalog/person-profile';
 import { imageUrl, isAuthed, kromaClient, toMovieView, toShowView } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-  EmptyState,
   PAGE_MAIN,
   PAGE_TITLE,
   PageSkeleton,
@@ -23,6 +24,9 @@ export const Route = createFileRoute('/_app/person/$name')({
   loader: async ({ params, context: { queryClient } }) => {
     if (!isAuthed()) throw redirect({ to: '/' });
     // TanStack decodes the path param; the API matches the name case-insensitively.
+    // The biography is prefetched but not awaited: it is a provider round trip,
+    // and the page is worth showing the moment the credits are in.
+    void queryClient.prefetchQuery(catalogQueries.personDetails(params.name));
     await queryClient.ensureQueryData(catalogQueries.personCredits(params.name));
   },
   pendingComponent: () => <PageSkeleton rails={0} />,
@@ -33,6 +37,8 @@ function PersonPage() {
   const t = useT();
   const { name: rawName } = Route.useParams();
   const { data } = useSuspenseQuery(catalogQueries.personCredits(rawName));
+  const { data: profile } = useQuery(catalogQueries.personDetails(rawName));
+  const detail = profile?.person ?? null;
   const c = kromaClient();
   const results = data.results;
   const entries: CatalogEntry[] = results.map((hit) =>
@@ -40,12 +46,14 @@ function PersonPage() {
       ? { kind: 'show', show: toShowView(c, hit.show) }
       : { kind: 'movie', movie: toMovieView(c, hit.item) },
   );
-  // Cast/crew (and the best profile photo) ride along in each result's metadata,
-  // so the header's name/photo/roles are derived client-side no extra request.
+  // Roles (and a usable photo) ride along in each result's metadata, so the
+  // header is complete from the credits alone; the provider profile only ever
+  // improves it, with a better portrait, the accented spelling of the name, and
+  // the facts + biography below.
   const metas = results.map((hit) => (hit.type === 'show' ? hit.show.metadata : hit.item.metadata));
-  const name = personDisplayName(metas, rawName);
+  const name = detail?.name ?? personDisplayName(metas, rawName);
   const involvement = personInvolvement(metas, rawName);
-  const photo = imageUrl(involvement.profileUrl);
+  const photo = imageUrl(detail?.profileUrl ?? involvement.profileUrl);
   const [g1, g2] = posterColors(name);
   const roles = roleLabels(t, involvement);
 
@@ -75,10 +83,11 @@ function PersonPage() {
           </div>
         </div>
       </header>
+      <PersonProfile detail={detail} />
       {entries.length ? (
         <CatalogGrid entries={entries} />
       ) : (
-        <EmptyState icon={<IconUserX size={32} stroke={1.5} />} title={t('person.empty')} />
+        <EmptyState icon="user-x" title={t('person.empty')} />
       )}
     </main>
   );

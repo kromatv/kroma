@@ -1,3 +1,4 @@
+import { Image } from '@kroma/admin-kit';
 import {
   type CastMember,
   canDirectPlay,
@@ -9,21 +10,21 @@ import {
   type Translate,
   type VideoTrack,
 } from '@kroma/core';
-import { Image, useT, useThemeAudio } from '@kroma/ui';
-import {
-  IconCheck,
-  IconChevronLeft,
-  IconFlag,
-  IconPlayerPlayFilled,
-  IconPlus,
-  IconVolume,
-  IconVolumeOff,
-} from '@tabler/icons-react';
+import { useT, useThemeAudio } from '@kroma/ui';
+import { BackButton, IconButton, radius } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import { HeroBackdrop } from '#web/features/catalog/hero-backdrop';
 import { imageUrl } from '#web/shared/lib/api';
-import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Poster, Rail } from '#web/shared/ui';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+  Button,
+  Poster,
+  PosterRail,
+} from '#web/shared/ui';
 
 export type QualityTone = '4K' | 'HDR' | 'H.265';
 
@@ -69,10 +70,6 @@ export function audioFlagLabel(
 export function subString(t: Translate, item: Pick<MediaItem, 'subtitles'>): string {
   const langs = [...new Set(item.subtitles.map((s) => langName(t, s.language)).filter(Boolean))];
   return langs.length ? langs.join(', ') : t('subtitle.none');
-}
-
-function PlayIcon() {
-  return <IconPlayerPlayFilled size={18} />;
 }
 
 function Field({ label, value }: Readonly<{ label: string; value: string }>) {
@@ -177,15 +174,9 @@ export function DetailHero({
     <div className="relative min-h-[62vh]">
       <HeroBackdrop backdrop={art.backdrop} gradient={heroGradient} />
 
-      <button
-        type="button"
-        onClick={onBack}
-        aria-label={t('common.back')}
-        className="absolute left-4 top-4 z-3 flex h-10.5 w-10.5 items-center justify-center rounded-full sm:left-8 sm:top-6.5
-          border border-white/12 bg-[rgba(10,10,12,.5)] backdrop-blur-sm transition-colors hover:bg-[rgba(10,10,12,.8)]"
-      >
-        <IconChevronLeft size={20} stroke={2} color="#fff" />
-      </button>
+      <div className="absolute left-4 top-4 z-3 sm:left-8 sm:top-6.5">
+        <BackButton size={42} label={t('common.back')} onPress={onBack} />
+      </div>
 
       <ThemeToggle theme={theme} />
 
@@ -237,9 +228,11 @@ export function DetailHero({
           <div className="mb-6.5 flex flex-wrap items-center gap-3.5">
             {primaryAction ??
               (onPlay ? (
-                <Button onClick={onPlay} icon={<PlayIcon />}>
-                  {playLabel ?? t('content.play')}
-                </Button>
+                <Button
+                  icon="player-play-filled"
+                  label={playLabel ?? t('content.play')}
+                  onPress={onPlay}
+                />
               ) : null)}
             <WatchedButton watched={watched} onToggle={onToggleWatched} />
             <ListButton inList={inList} onToggle={onToggleList} />
@@ -260,20 +253,16 @@ function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudi
   const t = useT();
   if (!theme.active) return null;
   return (
-    <button
-      type="button"
-      onClick={theme.toggle}
-      aria-label={theme.muted ? t('content.unmuteTheme') : t('content.muteTheme')}
-      title={theme.muted ? t('content.unmuteTheme') : t('content.muteTheme')}
-      className="absolute right-4 top-4 z-3 flex h-10.5 w-10.5 items-center justify-center rounded-full sm:right-8 sm:top-6.5
-        border border-white/12 bg-[rgba(10,10,12,.5)] backdrop-blur-sm transition-colors hover:bg-[rgba(10,10,12,.8)]"
-    >
-      {theme.muted ? (
-        <IconVolumeOff size={19} stroke={2} color="#fff" />
-      ) : (
-        <IconVolume size={19} stroke={2} color="#fff" />
-      )}
-    </button>
+    <div className="absolute right-4 top-4 z-3 sm:right-8 sm:top-6.5">
+      <IconButton
+        variant="scrim"
+        size={42}
+        glyph={19}
+        icon={theme.muted ? 'volume-off' : 'volume'}
+        label={theme.muted ? t('content.unmuteTheme') : t('content.muteTheme')}
+        onPress={theme.toggle}
+      />
+    </div>
   );
 }
 
@@ -310,22 +299,13 @@ function WatchedButton({
   const t = useT();
   if (!onToggle) return null;
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={watched ?? false}
-      aria-label={watched ? t('content.markUnwatched') : t('content.markWatched')}
-      title={watched ? t('content.watched') : t('content.markWatched')}
-      className={`flex h-12.5 items-center gap-2 rounded-md border px-4 text-[14px] font-semibold transition-colors
-        ${
-          watched
-            ? 'border-accent bg-accent text-black hover:bg-accent/90'
-            : 'border-border-strong bg-white/10 text-text hover:bg-white/15'
-        }`}
-    >
-      <IconCheck size={19} stroke={2.4} />
-      {watched ? t('content.watched') : t('content.markWatched')}
-    </button>
+    <Button
+      variant="outline"
+      active={watched ?? false}
+      icon="check"
+      label={watched ? t('content.watched') : t('content.markWatched')}
+      onPress={onToggle}
+    />
   );
 }
 
@@ -334,21 +314,15 @@ function ListButton({ inList, onToggle }: Readonly<{ inList?: boolean; onToggle?
   const t = useT();
   if (!onToggle) return null;
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={inList ?? false}
-      aria-label={inList ? t('content.removeFromList') : t('content.addToList')}
-      title={inList ? t('content.inList') : t('content.addToList')}
-      className={`flex h-12.5 w-12.5 items-center justify-center rounded-md border transition-colors
-        ${
-          inList
-            ? 'border-accent bg-accent-soft text-accent hover:bg-accent-soft/80'
-            : 'border-border-strong bg-white/10 text-text hover:bg-white/15'
-        }`}
-    >
-      {inList ? <IconCheck size={20} stroke={2.4} /> : <IconPlus size={20} stroke={2} />}
-    </button>
+    <IconButton
+      size={50}
+      glyph={20}
+      radius={radius.md}
+      active={inList ?? false}
+      icon={inList ? 'check' : 'plus'}
+      label={inList ? t('content.removeFromList') : t('content.addToList')}
+      onPress={onToggle}
+    />
   );
 }
 
@@ -357,15 +331,14 @@ function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
   const t = useT();
   if (!onReport) return null;
   return (
-    <button
-      type="button"
-      onClick={onReport}
-      aria-label={t('report.action')}
-      title={t('report.action')}
-      className="flex h-12.5 w-12.5 items-center justify-center rounded-md border border-border-strong bg-white/10 text-text transition-colors hover:bg-white/15"
-    >
-      <IconFlag size={19} stroke={2} />
-    </button>
+    <IconButton
+      size={50}
+      glyph={19}
+      radius={radius.md}
+      icon="flag"
+      label={t('report.action')}
+      onPress={onReport}
+    />
   );
 }
 
@@ -411,7 +384,11 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
       <h2 className="mb-4.5 px-(--gutter-web) font-display text-[22px] font-bold tracking-[-.02em]">
         {t('content.cast')}
       </h2>
-      <Rail gap={22} padded label={t('content.cast')}>
+      {/* A named <section> for assistive tech, same as the old shared Rail. */}
+      <section
+        aria-label={t('content.cast')}
+        className="flex gap-5.5 overflow-x-auto px-(--gutter-web) py-4 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
+      >
         {cast.map((p) => {
           const [g1, g2] = posterColors(p.name);
           const photo = imageUrl(p.profileUrl);
@@ -450,7 +427,7 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
             </button>
           );
         })}
-      </Rail>
+      </section>
     </section>
   );
 }
@@ -467,18 +444,20 @@ export function SimilarRail({
       <h2 className="mb-4 px-(--gutter-web) font-display text-[22px] font-bold tracking-[-.02em]">
         {title}
       </h2>
-      <Rail gap={18} padded label={title}>
-        {items.map((m) => (
-          <Poster
-            key={m.id}
-            title={m.title}
-            genre={m.genre}
-            colors={posterColors(m.id)}
-            poster={m.poster}
-            onClick={() => onOpen(m.id)}
-          />
-        ))}
-      </Rail>
+      <div className="px-(--gutter-web)">
+        <PosterRail
+          data={items}
+          renderItem={(m) => (
+            <Poster
+              title={m.title}
+              genre={m.genre}
+              colors={posterColors(m.id)}
+              poster={m.poster}
+              onClick={() => onOpen(m.id)}
+            />
+          )}
+        />
+      </div>
     </section>
   );
 }

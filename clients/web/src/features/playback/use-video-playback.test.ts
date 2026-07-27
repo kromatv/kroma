@@ -18,7 +18,10 @@ const H = vi.hoisted(() => {
   };
 });
 
-vi.mock('@kroma/core', () => ({
+// The language matcher is the real one (it IS what this test exercises); the
+// engine/capability surface stays stubbed.
+vi.mock('@kroma/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/core')>()),
   audioTracksOf: () => H.tracks,
   capabilities: () => ({}),
   MSE_CAPS: {},

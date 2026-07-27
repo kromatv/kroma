@@ -4,9 +4,16 @@
 // presses "use this folder". Browsing state is internal (seeded from `value`).
 import type { AdminFsList } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconCheck, IconChevronRight, IconCornerLeftUp, IconFolder } from '@tabler/icons-react';
+import { Button, IconButton } from '@kroma/ui/kit';
+import { IconChevronRight, IconFolder } from '@tabler/icons-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
+
+/** The already-picked state: a success wash over the kit's glass button. */
+const SELECTED_FILL = {
+  backgroundColor: 'rgba(70, 208, 141, 0.15)',
+  borderColor: 'rgba(70, 208, 141, 0.35)',
+} as const;
 
 export function FolderPicker({
   value,
@@ -70,16 +77,16 @@ export function FolderPicker({
   return (
     <div className="overflow-hidden rounded-md border border-border-strong bg-[#0F0F13]">
       <div className="flex items-center gap-2 border-b border-white/6 px-3 py-2.5">
-        <button
-          type="button"
-          onClick={() => list?.parent != null && setPath(list.parent)}
+        <IconButton
+          variant="ghost"
+          size={26}
+          glyph={16}
+          radius={8}
+          icon="corner-left-up"
+          label={t('admin.parentFolder')}
+          onPress={() => list?.parent != null && setPath(list.parent)}
           disabled={list?.parent == null}
-          aria-label={t('admin.parentFolder')}
-          title={t('admin.parentFolder')}
-          className="shrink-0 rounded-md p-1 text-text/55 hover:text-text disabled:opacity-30"
-        >
-          <IconCornerLeftUp size={16} stroke={2} />
-        </button>
+        />
         <IconFolder size={15} stroke={1.8} className="shrink-0 text-accent" />
         <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-text/80">
           {atRoot ? t('admin.volumes') : path}
@@ -92,19 +99,15 @@ export function FolderPicker({
         <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold text-dim">
           {value || ''}
         </span>
-        <button
-          type="button"
-          onClick={() => onChange(path)}
+        <Button
+          size="sm"
+          variant={isSelected ? 'glass' : 'primary'}
+          icon="check"
+          label={t('admin.selectFolder')}
+          onPress={() => onChange(path)}
           disabled={!canSelect}
-          className={`inline-flex shrink-0 items-center gap-1.5 rounded-[8px] px-3 py-1.75 text-[12.5px] font-bold transition-colors disabled:opacity-40 ${
-            isSelected
-              ? 'bg-success/15 text-success'
-              : 'bg-accent text-accent-ink hover:bg-accent-hover'
-          }`}
-        >
-          <IconCheck size={14} stroke={2.4} />
-          {t('admin.selectFolder')}
-        </button>
+          style={isSelected ? SELECTED_FILL : null}
+        />
       </div>
     </div>
   );

@@ -2,10 +2,10 @@
 // soft surface card (name + host sub-line + chevron, color-only press
 // feedback) plus the uppercase section header and hint that frame them.
 
+import { Icon, Spinner } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
-import { ChevronRightIcon } from '#mobile/player/icons';
 
 /** Soft surface card the rows stack in (the profile-rows card language). */
 export function ServerList({ children }: Readonly<{ children: ReactNode }>) {
@@ -51,7 +51,7 @@ export function ServerRow({
           </Text>
         ) : null}
       </View>
-      <ChevronRightIcon size={16} color={colors.textFaint} />
+      <Icon name="chevron-right" size={16} stroke={2.2} color={colors.textFaint} />
     </Pressable>
   );
 }
@@ -64,7 +64,7 @@ export function ServerSectionHeader({
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      {loading ? <ActivityIndicator size="small" color={colors.textFaint} /> : null}
+      {loading ? <Spinner size={18} color={colors.textFaint} /> : null}
     </View>
   );
 }

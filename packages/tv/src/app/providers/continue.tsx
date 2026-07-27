@@ -9,9 +9,9 @@ import {
   useRef,
   useState,
 } from 'react';
+import { launcherBackend } from '#tv/app/launcher';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
-import { getExo } from '#tv/features/playback/player/engine';
 
 /** The server-composited 16:9 "card" (backdrop + KROMA logo + "Reprendre" badge +
  * resume bar) - the same vignette the Tizen Smart Hub tiles use. Public endpoint,
@@ -24,7 +24,12 @@ function cardArt(c: ContinueItem, client: KromaClient): string {
   return `${client.baseUrl}/api/items/${encodeURIComponent(c.item.id)}/card?${params}`;
 }
 
-/** Shape the native Android shell's Watch Next row consumes (see WatchNext.kt). */
+/** Shape the launcher backend's Watch Next row consumes (see WatchNext.kt in the
+ * native TV app's `tv-launcher` module, and the Top Shelf extension's
+ * ContentProvider.swift). `imageUrl` is the composited vignette for launchers
+ * that show raw tiles (Android, Tizen); `backdropUrl` is the clean full-size
+ * art for launchers that draw their own chrome - Top Shelf adds the title and
+ * a progress bar itself, so a baked-in bar would show twice there. */
 function toWatchNext(items: ContinueItem[], client: KromaClient) {
   return items.map((c) => {
     const it = c.item;
@@ -33,6 +38,10 @@ function toWatchNext(items: ContinueItem[], client: KromaClient) {
       title: it.showTitle ?? it.title,
       subtitle: it.episodeTitle ?? (it.year ? String(it.year) : ''),
       imageUrl: cardArt(c, client),
+      backdropUrl: client.backdropFor(it) ?? undefined,
+      // For an episode: launchers link the card to the SHOW (kroma://show/<id>),
+      // because the movie catalogue cannot resolve an episode id (launcher-links).
+      showId: it.showId ?? undefined,
       progressMs: Math.round(c.positionMs),
       durationMs: Math.round(c.durationMs ?? 0),
       kind: it.kind,
@@ -73,18 +82,18 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
 
   // Mirror the list into the Android TV / Google TV launcher's system "Continue
   // watching" (Watch Next) row, so it shows on the platform home even when the
-  // app is closed. No-op off the Android shell (getExo() null / no method).
+  // app is closed. No-op on a television with no launcher backend registered.
   // Guard on the serialized payload: this effect re-runs on every `items`/render
   // churn, and pushing the SAME list repeatedly raced the native sync into
   // duplicate rows - only push when the content actually changed.
   const lastPushed = useRef<string>('');
   useEffect(() => {
-    const exo = getExo();
-    if (!exo?.setContinueWatching || !client) return;
+    const launcher = launcherBackend();
+    if (!launcher || !client) return;
     const json = JSON.stringify(toWatchNext(items, client));
     if (json === lastPushed.current) return;
     lastPushed.current = json;
-    exo.setContinueWatching(json);
+    launcher.setContinueWatching(json);
   }, [items, client]);
 
   const value = useMemo<Continue>(() => ({ items, refresh }), [items, refresh]);

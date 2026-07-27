@@ -1,14 +1,28 @@
 import type { AuthResult, KromaClient, MessageKey, QuickConnectInit } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Box, Spinner, SvgXml, Txt, useFocusNav } from '@kroma/ui/kit';
+// Imported STATICALLY, not with `import()`. Metro has no code splitting: a
+// dynamic import is a lazy bundle fetch that needs the dev server's HMR client,
+// and it fails outright when that is not connected ("Expected HMRClient.setup()
+// call at startup"), which is exactly how the QR went missing on Apple TV. The
+// library is a few kilobytes, so there was never anything to gain by deferring.
+import qrcode from 'qrcode-generator';
 import { useEffect, useState } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
-import { useFocusNav } from '#tv/app/useFocusNav';
 import { AuthScreen, KromaMark } from '#tv/shared/ui';
 
 /** Regenerate the code this many seconds before the server-side TTL lapses. */
 const EXPIRY_MARGIN_SEC = 5;
+
+/**
+ * `qrcode-generator` is a UMD module: `module.exports` IS the factory function,
+ * with no `default` property and no `__esModule` flag. Vite synthesises a default
+ * export for CommonJS, so `mod.default` works on every browser target; Metro does
+ * not, so on Apple TV and Android TV `mod.default` is undefined and calling it
+ * throws. Take whichever shape the bundler actually produced.
+ */
 
 /**
  * Quick Connect (route `quick`) against the active server: shows a code + QR; an
@@ -73,15 +87,17 @@ export function TvQuickConnect() {
         setQr(null);
         const url = connectUrl(client, init.code, init.authorizeUrl);
         if (url) {
-          void import('qrcode-generator')
-            .then((mod) => {
-              if (cancelled) return;
-              const qrc = mod.default(0, 'M');
-              qrc.addData(url);
-              qrc.make();
-              setQr(qrc.createSvgTag({ cellSize: 6, margin: 1, scalable: true }));
-            })
-            .catch(() => undefined);
+          try {
+            const qrc = qrcode(0, 'M');
+            qrc.addData(url);
+            qrc.make();
+            setQr(qrc.createSvgTag({ cellSize: 6, margin: 1, scalable: true }));
+          } catch (cause) {
+            // The code on screen still pairs the device without a QR, so this
+            // must not take the screen down. It must not be SILENT either:
+            // swallowing it is how a missing QR went unnoticed on Apple TV.
+            console.warn('[kroma] QR code unavailable:', cause);
+          }
         }
         // Proactively mint a fresh code a touch before the server TTL lapses, so
         // the code on screen is always valid to approve (independent of the poll
@@ -104,56 +120,82 @@ export function TvQuickConnect() {
 
   return (
     <AuthScreen>
-      <div className="mb-9">
+      <Box mb={36}>
         <KromaMark size={40} />
-      </div>
-      <h1 className="m-0 mb-4 font-display text-[44px] font-semibold leading-none">
+      </Box>
+      <Txt
+        variant="hero"
+        style={{ fontSize: 44, lineHeight: 44, fontWeight: '600', marginBottom: 16 }}
+      >
         {t('connect.quickConnect')}
-      </h1>
-      <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-border bg-[rgba(255,255,255,0.05)] px-4 py-2.25">
-        <span className="h-2 w-2 rounded-full bg-accent" />
-        <span className="font-sans text-[15px] font-semibold text-[rgba(244,243,240,0.88)]">
+      </Txt>
+      <Box
+        row
+        align="center"
+        gap={10}
+        mb={28}
+        px={16}
+        py={9}
+        radius="pill"
+        border="border"
+        bg="rgba(255, 255, 255, 0.05)"
+      >
+        <Box w={8} h={8} radius="pill" bg="accent" />
+        <Txt style={{ fontSize: 15, fontWeight: '600' }} color="rgba(244, 243, 240, 0.88)">
           {activeServerName ?? 'KROMA'}
-        </span>
-      </div>
+        </Txt>
+      </Box>
 
-      {error ? <p className="font-sans text-[16px] text-danger">{t(error)}</p> : null}
+      {error ? (
+        <Txt style={{ fontSize: 16 }} color="danger">
+          {t(error)}
+        </Txt>
+      ) : null}
 
       {!error && info ? (
         <>
           {qr ? (
-            <div
-              className="flex h-[280px] w-[280px] items-center justify-center rounded-[28px] bg-white p-5 shadow-pop [&>svg]:h-full [&>svg]:w-full"
-              // biome-ignore lint/security/noDangerouslySetInnerHtml: app-generated QR SVG built by qrcode-generator from a trusted server URL + server-issued code, never user input.
-              dangerouslySetInnerHTML={{ __html: qr }}
-            />
+            <Box w={280} h={280} center radius={28} bg="#FFFFFF" p={20} shadow="pop">
+              <SvgXml xml={qr} width="100%" height="100%" />
+            </Box>
           ) : null}
-          <div className="mt-5 font-sans text-[17px] font-medium text-dim">
+          <Txt style={{ fontSize: 17, fontWeight: '500', marginTop: 20 }} color="textDim">
             {t('connect.scanQrConnected')}
-          </div>
-          <div className="mt-6 font-sans text-[17px] font-medium text-muted">
+          </Txt>
+          <Txt
+            style={{ fontSize: 17, fontWeight: '500', marginTop: 24, textAlign: 'center' }}
+            color="textMuted"
+          >
             {t('connect.orInAppPrefix')}
-            <b className="text-text">{t('nav.connectDevice')}</b>
+            <Txt style={{ fontSize: 17, fontWeight: '700' }}>{t('nav.connectDevice')}</Txt>
             {t('connect.orInAppSuffix')}
-          </div>
-          <div className="mt-5 flex gap-7 font-display text-[96px] font-bold leading-none text-accent tabular-nums">
+          </Txt>
+          <Txt style={CODE} color="accent">
             {info.code}
-          </div>
-          <div className="mt-7 inline-flex items-center gap-2.5 rounded-full border border-[rgba(70,208,141,0.25)] bg-[rgba(70,208,141,0.1)] px-4.5 py-2.5">
-            <span className="h-2.25 w-2.25 rounded-full bg-success animate-[tv-breathe_1.6s_ease-in-out_infinite]" />
-            <span className="font-sans text-[14px] font-semibold text-success">
+          </Txt>
+          <Box
+            row
+            align="center"
+            gap={10}
+            mt={28}
+            px={18}
+            py={10}
+            radius="pill"
+            border="rgba(70, 208, 141, 0.25)"
+            bg="rgba(70, 208, 141, 0.1)"
+          >
+            <Box w={9} h={9} radius="pill" bg="success" />
+            <Txt style={{ fontSize: 14, fontWeight: '600' }} color="success">
               {t('connect.waitingApproval')}
-            </span>
-          </div>
+            </Txt>
+          </Box>
         </>
       ) : null}
-      {!error && !info ? (
-        <div className="h-10 w-10 rounded-full border-[3px] border-[rgba(255,255,255,0.2)] border-t-accent animate-[tvp-spin_0.9s_linear_infinite]" />
-      ) : null}
+      {!error && !info ? <Spinner size={40} thickness={3} /> : null}
 
-      <p className="mt-6 font-sans text-[15px] font-medium text-dim">
+      <Txt style={{ fontSize: 15, fontWeight: '500', marginTop: 24 }} color="textDim">
         {t('connect.backToProfiles')}
-      </p>
+      </Txt>
     </AuthScreen>
   );
 }
@@ -174,3 +216,12 @@ function connectUrl(client: KromaClient, code: string, serverUrl?: string | null
     return '';
   }
 }
+
+const CODE = {
+  fontSize: 96,
+  lineHeight: 96,
+  fontWeight: '700' as const,
+  letterSpacing: 8,
+  marginTop: 20,
+  fontVariant: ['tabular-nums' as const],
+};

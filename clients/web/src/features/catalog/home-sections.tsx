@@ -9,7 +9,7 @@ import { Suspense } from 'react';
 import { SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { Rail, RailSkeleton } from '#web/shared/ui';
+import { PosterRail, RailSkeleton } from '#web/shared/ui';
 
 const SECTION_TITLE = 'mb-5 mt-10 font-display text-[22px] font-bold tracking-[-.02em] text-text';
 
@@ -47,14 +47,7 @@ function Sections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
         return (
           <section key={section.id}>
             <h2 className={SECTION_TITLE}>{section.title}</h2>
-            <Rail label={section.title}>
-              {items.map((entry) => (
-                <SectionPoster
-                  key={entry.type === 'show' ? entry.show.id : entry.item.id}
-                  entry={entry}
-                />
-              ))}
-            </Rail>
+            <PosterRail data={items} renderItem={(entry) => <SectionPoster entry={entry} />} />
           </section>
         );
       })}

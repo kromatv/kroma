@@ -4,15 +4,11 @@
 // plays what it has and requests the gaps on one screen. Extracted from the old
 // show fiche + the discover season cards.
 
+import { Image } from '@kroma/admin-kit';
 import { type CastMember, formatRuntime, type MediaItem, posterColors } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
-import {
-  IconCheck,
-  IconChevronRight,
-  IconFlag,
-  IconPlayerPlayFilled,
-  IconPlus,
-} from '@tabler/icons-react';
+import { useT } from '@kroma/ui';
+import { Button, Chip, IconButton } from '@kroma/ui/kit';
+import { IconCheck, IconPlayerPlayFilled, IconPlus } from '@tabler/icons-react';
 import { type ReactNode, useState } from 'react';
 import { CastRail } from '#web/features/catalog/detail';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
@@ -94,35 +90,27 @@ function EpisodeRow({
           ) : null}
         </div>
       </button>
-      <button
-        type="button"
-        onClick={() =>
+      <IconButton
+        size={36}
+        glyph={16}
+        icon="flag"
+        label={t('report.action')}
+        onPress={() =>
           void ReportDialog.call({
             subjectKind: 'episode',
             subjectId: episode.id,
             subjectTitle: reportLabel,
           })
         }
-        aria-label={t('report.action')}
-        title={t('report.action')}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-strong bg-white/5 text-text opacity-60 transition-colors hover:bg-white/15 hover:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
-      >
-        <IconFlag size={16} stroke={2} />
-      </button>
-      <button
-        type="button"
-        onClick={onToggleWatched}
-        aria-pressed={watched}
-        aria-label={watched ? t('content.markUnwatched') : t('content.markWatched')}
-        title={watched ? t('content.watched') : t('content.markWatched')}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors ${
-          watched
-            ? 'border-accent bg-accent text-black'
-            : 'border-border-strong bg-white/5 text-text opacity-60 hover:bg-white/15 hover:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100'
-        }`}
-      >
-        <IconCheck size={17} stroke={2.4} />
-      </button>
+      />
+      <IconButton
+        size={36}
+        glyph={17}
+        icon="check"
+        active={watched}
+        label={watched ? t('content.markUnwatched') : t('content.markWatched')}
+        onPress={onToggleWatched}
+      />
     </div>
   );
 }
@@ -155,16 +143,15 @@ function MissingEpisodeRow({
       {pending ? (
         <RequestStatusChip status="pending" size="card" />
       ) : (
-        <button
-          type="button"
+        <IconButton
+          size={36}
+          glyph={17}
+          icon="plus"
+          active
+          label={t('requests.requestEpisode')}
+          onPress={onRequest}
           disabled={busy}
-          onClick={onRequest}
-          aria-label={t('requests.requestEpisode')}
-          title={t('requests.requestEpisode')}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-accent/30 bg-accent/12 text-accent transition-colors hover:bg-accent hover:text-accent-ink disabled:opacity-50"
-        >
-          <IconPlus size={17} stroke={2.6} />
-        </button>
+        />
       )}
     </div>
   );
@@ -179,24 +166,14 @@ function SeasonSwitcher({
   const t = useT();
   return (
     <div className="scrollbar-none flex gap-2 overflow-x-auto px-(--gutter-web)">
-      {seasons.map((s) => {
-        const active = s.number === current;
-        return (
-          <button
-            key={s.number}
-            type="button"
-            onClick={() => onPick(s.number)}
-            aria-current={active}
-            className={`shrink-0 rounded-full px-4.5 py-2 text-[14px] font-semibold transition-colors ${
-              active
-                ? 'bg-accent text-black'
-                : 'border border-border-strong bg-white/7 text-text hover:bg-white/12'
-            }`}
-          >
-            {t('content.season', { number: s.number })}
-          </button>
-        );
-      })}
+      {seasons.map((s) => (
+        <Chip
+          key={s.number}
+          active={s.number === current}
+          label={t('content.season', { number: s.number })}
+          onPress={() => onPick(s.number)}
+        />
+      ))}
     </div>
   );
 }
@@ -313,16 +290,15 @@ export function SeasonSection({
           {t('content.episodes')}
         </h2>
         {hasOpen ? (
-          <button
-            type="button"
-            onClick={onPickAll}
-            title={t('discover.requestSeasonsHint')}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1.5 text-[12.5px] font-bold text-accent transition-colors hover:bg-accent/20"
-          >
-            <IconPlus size={14} stroke={2.6} />
-            {t('discover.requestSeasons')}
-            <IconChevronRight size={14} stroke={2.4} />
-          </button>
+          <Button
+            variant="outline"
+            active
+            size="sm"
+            icon="plus"
+            iconRight="chevron-right"
+            label={t('discover.requestSeasons')}
+            onPress={onPickAll}
+          />
         ) : null}
       </div>
 

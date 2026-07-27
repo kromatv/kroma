@@ -7,14 +7,14 @@
 
 import { type CalendarEntry, hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconInbox, IconLoader2, IconSearch } from '@tabler/icons-react';
+import { Button, EmptyState } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { epKey, type MissingGroup, MissingGroupCard } from '#web/features/requests/missing-group';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
 
 /** Toggle a single row key in a selection set (returns a fresh set). */
 function toggleKey(prev: Set<string>, key: string): Set<string> {
@@ -160,7 +160,7 @@ export function MissingPage() {
 
       {entries?.length === 0 ? (
         <EmptyState
-          icon={<IconInbox size={32} stroke={1.5} />}
+          icon="inbox"
           title={t('requests.missingEmpty')}
           hint={t('requests.missingEmptyHint')}
         />
@@ -220,14 +220,14 @@ function MissingActions({
   return (
     <div className="mt-1 flex items-center gap-2">
       {canManage && selectedCount > 0 ? (
-        <button
-          type="button"
-          onClick={onSearchSelected}
-          className="inline-flex items-center gap-2 rounded-xl border border-accent/40 bg-accent-soft px-4 py-2.5 text-[13.5px] font-bold text-accent hover:bg-accent/15"
-        >
-          <IconSearch size={16} stroke={2.2} />
-          {t('requests.searchSelected', { count: selectedCount })}
-        </button>
+        <Button
+          variant="outline"
+          active
+          size="sm"
+          icon="search"
+          label={t('requests.searchSelected', { count: selectedCount })}
+          onPress={onSearchSelected}
+        />
       ) : null}
       {canManage ? <SearchAllButton state={searchAll} onClick={onSearchAll} /> : null}
     </div>
@@ -242,18 +242,13 @@ function SearchAllButton({
 }: Readonly<{ state: SearchAllState; onClick: () => void }>) {
   const t = useT();
   return (
-    <button
-      type="button"
-      disabled={state !== 'idle'}
-      onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-[13.5px] font-bold text-accent-ink hover:bg-accent-hover disabled:opacity-60"
-    >
-      {state === 'busy' ? (
-        <IconLoader2 size={16} stroke={2.2} className="animate-spin" />
-      ) : (
-        <IconSearch size={16} stroke={2.2} />
-      )}
-      {t(state === 'done' ? 'requests.searchStarted' : 'requests.searchAll')}
-    </button>
+    <Button
+      size="sm"
+      icon="search"
+      label={t(state === 'done' ? 'requests.searchStarted' : 'requests.searchAll')}
+      onPress={onClick}
+      loading={state === 'busy'}
+      disabled={state === 'done'}
+    />
   );
 }

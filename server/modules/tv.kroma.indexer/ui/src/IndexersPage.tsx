@@ -5,11 +5,13 @@
 import {
   AddEngineModal,
   apiErrorText,
+  Button,
   Card,
   Denied,
   EmptyState,
   type EngineCapability,
   HeaderAction,
+  IconButton,
   type IndexerTestResult,
   type IndexerView,
   type MessageKey,
@@ -23,7 +25,7 @@ import {
   usePoll,
   useT,
 } from '@kroma/module-sdk';
-import { IconAntenna, IconLoader2, IconPencil } from '@tabler/icons-react';
+import { IconAntenna, IconPencil } from '@tabler/icons-react';
 import { useState } from 'react';
 import {
   BuiltinIndexerModal,
@@ -134,7 +136,7 @@ export default function IndexersPage() {
 
       {indexers.length === 0 && data ? (
         <EmptyState
-          icon={<IconAntenna size={32} stroke={1.5} />}
+          icon="antenna"
           title={t('indexers.emptyTitle')}
           hint={engines.length === 0 ? t('indexers.noEngines') : t('indexers.emptyBody')}
           action={addButtons ?? undefined}
@@ -209,23 +211,14 @@ function IndexerCard({
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/6 pt-3.5">
         <TestLine ix={ix} test={test} />
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
+            label={t('indexers.test')}
             onClick={onTest}
-            disabled={test?.busy}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/12 bg-[#1A1A20] px-3 py-2 text-[12.5px] font-semibold text-white/80 hover:bg-[#222229] disabled:opacity-60"
-          >
-            {test?.busy ? <IconLoader2 size={13} stroke={2.4} className="animate-spin" /> : null}
-            {t('indexers.test')}
-          </button>
-          <button
-            type="button"
-            onClick={onEdit}
-            title={t('indexers.edit')}
-            className="flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-white/12 bg-[#1A1A20] text-white/70 hover:text-white"
-          >
-            <IconPencil size={14} stroke={2} />
-          </button>
+            loading={test?.busy}
+          />
+          <IconButton icon={IconPencil} label={t('indexers.edit')} onClick={onEdit} />
         </div>
       </div>
     </Card>

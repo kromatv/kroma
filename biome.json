@@ -17,7 +17,7 @@
       "!clients/synology",
       "!server",
       "!clients/web/src/styles.css",
-      "!packages/ui/src/tailwind.css",
+      "!packages/ui/src/styles/tailwind.css",
       "!packages/tv/src/tv.css"
     ]
   },
@@ -54,14 +54,47 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.test.ts", "**/*.test.tsx"],
+      "includes": [
+        "packages/ui/src/**/*.ts",
+        "packages/ui/src/**/*.tsx",
+        "packages/tv/src/**/*.ts",
+        "packages/tv/src/**/*.tsx",
+        "!packages/**/*.web.ts",
+        "!packages/**/*.web.tsx",
+        "!packages/**/*.test.ts",
+        "!packages/**/*.test.tsx",
+        "!packages/ui/src/components/organisms/kroma-intro/**",
+        "!packages/tv/src/shared/preview/**",
+        "!packages/tv/src/features/playback/player/avplayEngine.ts",
+        "!packages/tv/src/features/playback/player/htmlEngine.ts",
+        "!packages/tv/src/features/playback/player/useNowPlaying.ts",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!**/preview/**",
+        "!packages/ui/src/lib/dom.ts",
+        "!packages/tv/src/shared/preview/cards.test.ts",
+        "!packages/tv/src/shared/preview/deeplink.test.ts"
+      ],
       "linter": {
         "rules": {
-          "style": { "noNonNullAssertion": "off", "noNestedTernary": "off" },
-          "suspicious": {
-            "noExplicitAny": "off",
-            "noApproximativeNumericConstant": "off",
-            "noTemplateCurlyInString": "off"
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "Audio": "Browser-only. React Native throws ReferenceError, which the runtime turns into SIGABRT. Add a `.web.ts` half and give the native side its own.",
+                  "AudioContext": "Browser-only. Add a `.web.ts` half.",
+                  "IntersectionObserver": "Browser-only. Grow from a measured scroll position instead (see @kroma/ui useGrowingCount).",
+                  "MutationObserver": "Browser-only. Add a `.web.ts` half.",
+                  "document": "Browser-only. React Native has no DOM: add a `.web.ts` half, or guard with `typeof document !== 'undefined'`.",
+                  "getComputedStyle": "Browser-only. Measure with onLayout instead.",
+                  "localStorage": "Browser-only. React Native has none: use the client's device store (see setSessionStorage).",
+                  "matchMedia": "Browser-only. Use Platform / useWindowDimensions.",
+                  "sessionStorage": "Browser-only. React Native has none.",
+                  "window": "The worst one: React Native DEFINES `window` (it is `global`), so `typeof window !== 'undefined'` passes and `window.addEventListener` is then undefined rather than absent - \"undefined is not a function\", at render, on a TV. Use `webWindow()` from @kroma/ui/kit, or add a `.web.ts` half."
+                }
+              }
+            }
           }
         }
       }

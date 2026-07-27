@@ -175,7 +175,15 @@ export default {
     try {
       data = await loadCatalog(env, (p) => ctx.waitUntil(p));
     } catch (err) {
-      return jsonResponse(JSON.stringify({ schema: 2, modules: [], error: String(err) }), 60);
+      // The detail goes to the worker log, not to the caller: this is a public
+      // endpoint, and `String(err)` on a failed fetch carries the upstream URL
+      // (and whatever a thrown message happens to embed) straight to anyone who
+      // asks.
+      console.error('catalog load failed', err);
+      return jsonResponse(
+        JSON.stringify({ schema: 2, modules: [], error: 'catalog unavailable' }),
+        60,
+      );
     }
 
     if (path === '/modules.json' || path === '/all.json') return jsonResponse(data.body, 300);

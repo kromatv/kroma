@@ -3,7 +3,8 @@
 // chips, column heads, a count summary, a floating toast and an event-driven,
 // throttled reload. These live here once instead of being copy/pasted per page.
 
-import { IconSearch, IconX } from '@tabler/icons-react';
+import { IconButton, Chip as KitChip, Txt } from '@kroma/ui/kit';
+import { IconSearch } from '@tabler/icons-react';
 import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '#web/shared/ui/input-group';
 
@@ -50,13 +51,7 @@ export function ConsoleSearch({
           className="text-[14px] font-semibold"
         />
         {value ? (
-          <button
-            type="button"
-            onClick={() => onChange('')}
-            className="shrink-0 text-white/50 hover:text-white"
-          >
-            <IconX size={16} stroke={2.2} />
-          </button>
+          <IconButton variant="ghost" size={28} glyph={16} icon="x" onPress={() => onChange('')} />
         ) : null}
       </InputGroup>
     </div>
@@ -92,7 +87,15 @@ export function Head({
   );
 }
 
-/** A filter chip. `tone` picks the active accent (defaults to the pink accent). */
+/** Kit-chip label metrics; the console renders its own `Txt` children so the
+ * status dot can lead and the count can trail inside the same pill. */
+const CHIP_LABEL = { fontSize: 13, fontWeight: '600' } as const;
+const CHIP_COUNT = { fontSize: 13, fontWeight: '600', opacity: 0.6 } as const;
+/** The blue filter family (element type), painted over the kit's active fill. */
+const BLUE_ACTIVE = { backgroundColor: '#86A8FF' } as const;
+
+/** A filter chip on the kit pill. `tone` picks the active fill (defaults to the
+ * amber accent; `blue` keeps the console's type-filter family). */
 export function Chip({
   label,
   count,
@@ -108,22 +111,19 @@ export function Chip({
   tone?: 'accent' | 'blue';
   onClick: () => void;
 }>) {
-  const active =
-    tone === 'accent'
-      ? 'border-accent/35 bg-accent/[0.14] text-accent'
-      : 'border-[#86A8FF]/35 bg-[#86A8FF]/[0.14] text-[#86A8FF]';
+  const ink = on ? 'accentInk' : 'textMuted';
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors ${on ? active : 'border-white/8 bg-[#15151A] text-white/65'}`}
-    >
+    <KitChip active={on} onPress={onClick} style={on && tone === 'blue' ? BLUE_ACTIVE : null}>
       {dot ? <span className="h-[7px] w-[7px] rounded-full" style={{ background: dot }} /> : null}
-      {label}
+      <Txt style={CHIP_LABEL} color={ink}>
+        {label}
+      </Txt>
       {count != null ? (
-        <span className="tabular-nums opacity-60">{count.toLocaleString()}</span>
+        <Txt style={CHIP_COUNT} color={ink}>
+          {count.toLocaleString()}
+        </Txt>
       ) : null}
-    </button>
+    </KitChip>
   );
 }
 

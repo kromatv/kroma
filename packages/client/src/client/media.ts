@@ -6,6 +6,7 @@ import type {
   Library,
   MediaItem,
   Metadata,
+  PersonDetailResponse,
   PersonResponse,
   SearchResponse,
   Section,
@@ -110,6 +111,15 @@ export function personCredits(
   return ctx.json<PersonResponse>(`/people?${params.toString()}`);
 }
 
+/** The person behind a credit biography, birth, birthplace from the metadata
+ * provider. Independent of {@link personCredits} (which reads the local
+ * catalogue), so a person page fires both in parallel and renders the
+ * filmography whether or not the provider answers. */
+export function personDetails(ctx: RequestContext, name: string): Promise<PersonDetailResponse> {
+  const params = new URLSearchParams({ name });
+  return ctx.json<PersonDetailResponse>(`/people/details?${params.toString()}`);
+}
+
 export function scan(ctx: RequestContext): Promise<{ runId: string }> {
   return ctx.json<{ runId: string }>('/scan', { method: 'POST' });
 }
@@ -148,11 +158,21 @@ export function streamUrl(ctx: RequestContext, id: string): string {
  * EMPTY array sends an empty one ("this device decodes none of them, transcode
  * everything"). Collapsing the two would turn "copy nothing" into "copy all"
  * and hand a phone Dolby tracks it can't decode, offline, where the player has
- * no fallback left. */
-export function downloadUrl(ctx: RequestContext, id: string, copyCodecs?: string[]): string {
+ * no fallback left. `videoCodecs` follows the same three states for the video
+ * track: omitted = stream-copy always; listed = the server transcodes to H.264
+ * when the source codec is not in the set (AV1 on a pre-A17 iPhone downloaded
+ * as audio under a black frame otherwise). */
+export function downloadUrl(
+  ctx: RequestContext,
+  id: string,
+  copyCodecs?: string[],
+  videoCodecs?: string[],
+): string {
   const base = `${ctx.baseUrl}/api/items/${encodeURIComponent(id)}/download`;
-  if (!copyCodecs) return base;
-  return `${base}?copy=${encodeURIComponent(copyCodecs.join(','))}`;
+  const params: string[] = [];
+  if (copyCodecs) params.push(`copy=${encodeURIComponent(copyCodecs.join(','))}`);
+  if (videoCodecs) params.push(`video=${encodeURIComponent(videoCodecs.join(','))}`);
+  return params.length ? `${base}?${params.join('&')}` : base;
 }
 
 /** Server-side loudness-filter variant of the HLS master (night-mode volume
@@ -205,11 +225,31 @@ export function showPosterUrl(ctx: RequestContext, id: string): string {
   return `${ctx.baseUrl}/api/shows/${encodeURIComponent(id)}/poster`;
 }
 
-/** Resolve a metadata image URL against the server origin. Cached WebP art is
- * stored as a relative path (`/api/images/…`); TMDB fallbacks are absolute. */
-export function resolveArt(ctx: RequestContext, url?: string | null): string | null {
+/**
+ * Resolve a metadata image URL against the server origin, at the size it will
+ * actually be shown.
+ *
+ * Cached WebP art is stored as a relative path (`/api/images/…`); TMDB
+ * fallbacks are absolute and are handed back untouched.
+ *
+ * `width` matters more than it looks on a television. The cached artwork is
+ * full-size, and a browse grid decodes a hundred of them: asking for the
+ * displayed width instead lets the server hand over a rendition it has already
+ * made (`?w=`, snapped to a fixed bucket and cached on disk), which is the
+ * difference between a Samsung TV that scrolls and one that stutters. Leave it
+ * out for artwork shown large - a hero backdrop is wider than the largest
+ * bucket, so a rendition would only make it worse.
+ */
+export function resolveArt(
+  ctx: RequestContext,
+  url?: string | null,
+  width?: number,
+): string | null {
   if (!url) return null;
-  return /^https?:\/\//.test(url) ? url : `${ctx.baseUrl}${url}`;
+  if (/^https?:\/\//.test(url)) return url;
+  const join = url.includes('?') ? '&' : '?';
+  const sized = width ? `${url}${join}w=${Math.round(width)}` : url;
+  return `${ctx.baseUrl}${sized}`;
 }
 
 /** Best poster for a movie/episode: real cached TMDB art if resolved, else the
@@ -217,18 +257,27 @@ export function resolveArt(ctx: RequestContext, url?: string | null): string | n
 export function posterFor(
   ctx: RequestContext,
   x: { id: string; metadata?: Metadata | null },
+  width?: number,
 ): string {
-  return resolveArt(ctx, x.metadata?.posterUrl) ?? posterUrl(ctx, x.id);
+  return resolveArt(ctx, x.metadata?.posterUrl, width) ?? posterUrl(ctx, x.id);
 }
 
 /** Best poster for a show: real cached TMDB art if resolved, else the SVG. */
-export function showPosterFor(ctx: RequestContext, x: Pick<Show, 'id' | 'metadata'>): string {
-  return resolveArt(ctx, x.metadata?.posterUrl) ?? showPosterUrl(ctx, x.id);
+export function showPosterFor(
+  ctx: RequestContext,
+  x: Pick<Show, 'id' | 'metadata'>,
+  width?: number,
+): string {
+  return resolveArt(ctx, x.metadata?.posterUrl, width) ?? showPosterUrl(ctx, x.id);
 }
 
 /** Cover/backdrop art for a movie or show, or `null` when none was resolved. */
-export function backdropFor(ctx: RequestContext, x: { metadata?: Metadata | null }): string | null {
-  return resolveArt(ctx, x.metadata?.backdropUrl);
+export function backdropFor(
+  ctx: RequestContext,
+  x: { metadata?: Metadata | null },
+  width?: number,
+): string | null {
+  return resolveArt(ctx, x.metadata?.backdropUrl, width);
 }
 
 /** Plex-style theme song for a movie or show, or `null` when none was resolved.

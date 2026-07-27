@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
+import { RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, RNW_SSR_NO_EXTERNAL, webResolve } from '../tv-build/rnw';
 import { buildInfoPlugin } from './build-info';
 
 // `vite build` used to sit idle for exactly 5 minutes after the prerender: the
@@ -35,6 +36,8 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const apiTarget = process.env.KROMA_SERVER_URL ?? 'http://localhost:4040';
 
 export default defineConfig({
+  // See rnw.ts: react-native-web's Animated reads React Native's `global`.
+  define: RNW_DEFINE,
   // Tailwind v4 + TanStack Start in SPA mode + React. The build prerenders only an
   // app shell (index.html) and the client renders/loads at runtime so the whole
   // app ships as static files the Rust server serves on the same origin (the
@@ -56,16 +59,17 @@ export default defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     exitAfterBuild(),
   ],
-  resolve: {
-    // `#web/*` → this app's src (mirrors tsconfig.base paths; Vite needs it explicitly).
-    alias: { '#web': fileURLToPath(new URL('./src', import.meta.url)) },
-    // One React copy: the other clients stay on their own React, so pin this
-    // bundle to a single react/react-dom (guards against "Invalid hook call").
-    // `react-call` is deduped too: its callables keep a module-level store, so a
-    // second copy (bundled from a module UI's own node_modules) would give the
-    // Root and the `.call()` different stores and the modal would never open.
-    dedupe: ['react', 'react-dom', 'react-call'],
-  },
+  // `#web/*` → this app's src (mirrors tsconfig.base paths; Vite needs it
+  // explicitly), plus the react-native → react-native-web redirect, the `.web.*`
+  // precedence and the single-React dedupe every browser target shares
+  // (clients/tv-build/rnw.ts). This app is DOM React, but the shared player
+  // chrome it mounts comes from @kroma/ui, which is written once against React
+  // Native so it can also run on a TV.
+  //
+  // `react-call` is deduped on top: its callables keep a module-level store, so a
+  // second copy (bundled from a module UI's own node_modules) would give the Root
+  // and the `.call()` different stores and the modal would never open.
+  resolve: webResolve({ '#web': fileURLToPath(new URL('./src', import.meta.url)) }, ['react-call']),
   server: {
     // Allow importing TS source from the workspace packages (@kroma/ui, @kroma/core).
     fs: { allow: [repoRoot] },
@@ -76,7 +80,21 @@ export default defineConfig({
       '/api': { target: apiTarget, changeOrigin: true, ws: true },
     },
   },
-  // Workspace packages ship raw TS source bundle them for SSR (don't externalize).
-  ssr: { noExternal: ['@kroma/ui', '@kroma/core'] },
-  optimizeDeps: { exclude: ['@kroma/ui', '@kroma/core'] },
+  // Workspace packages ship raw TS source, so bundle them for SSR rather than
+  // externalizing. `RNW_SSR_NO_EXTERNAL` adds the packages that must ride along
+  // BECAUSE of `webResolve`'s aliases - it is exported next to them so the
+  // alias and its precondition cannot separate.
+  ssr: {
+    noExternal: ['@kroma/ui', '@kroma/core', ...RNW_SSR_NO_EXTERNAL],
+    // Its dist is also a webpack UMD bundle; the SSR module runner executes it
+    // as ESM where neither `module` nor `this` exist, so the UMD wrapper
+    // crashes. Prebundling converts it to real ESM (and its react-native
+    // external lands on react-native-web via the alias). The `>` path is
+    // needed because bun's isolated installs only expose it under @kroma/ui.
+    optimizeDeps: { include: ['@kroma/ui > react-tv-space-navigation'] },
+  },
+  optimizeDeps: {
+    exclude: ['@kroma/ui', '@kroma/core'],
+    include: RNW_OPTIMIZE_INCLUDE,
+  },
 });

@@ -8,8 +8,8 @@
     "./vite": "./vite.ts"
   },
   "scripts": {
-    "typecheck": "tsgo --noEmit",
-    "build": "tsgo --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
   },
   "dependencies": {
     "@kroma/admin-kit": "workspace:*",

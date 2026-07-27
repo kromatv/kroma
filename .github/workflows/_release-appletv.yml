@@ -1,0 +1,224 @@
+name: Release Apple TV beta channel
+
+# The Apple TV client, to TestFlight.
+#
+# WHY THIS IS NOT IN _release-tv.yml, WHICH BUILDS EVERY OTHER TELEVISION. The
+# other three TV clients produce a FILE - a webOS .ipk, a Tizen .wgt, an Android
+# TV .apk - which is attached to the GitHub Release and sideloaded by hand, so
+# `publish` rightly waits on them: the release is not complete without its
+# assets. This one produces nothing a user can install; an App Store .ipa is
+# only reachable through TestFlight. Leaving it in that workflow would put the
+# Apple upload service on the critical path of every server release, which is
+# the exact coupling _release-mobile.yml exists to avoid ("a beta-channel hiccup
+# must never hold back a server release"). So it is its own called workflow,
+# absent from the publish job's `needs`, next to the phone app rather than next
+# to the televisions.
+#
+# It ships the SAME app record as the phone: App Store Connect 6793457018 carries
+# iOS and tvOS as two platforms of one listing (a universal purchase), which is
+# why both sign as `tv.kroma.mobile` - see clients/tv-native/app.config.js.
+#
+# Stable tags or an explicit manual run, never a nightly: a TestFlight build
+# number is spent for good, and a nightly that burned one would also mail every
+# tester about it.
+#
+# `expo prebuild` runs under NODE, never under the bun runtime: bun's runtime
+# corrupts the template extraction (NUL-padded files). bun stays the package
+# manager.
+#
+# `targets` is read straight off `github.event.inputs` rather than through a
+# workflow input: in a called workflow the `github` context is still the
+# CALLER's, so the gating expression stays byte-identical to its siblings'.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Full release version (may carry a -nightly.YYYYMMDD suffix).'
+        type: string
+        required: true
+      triplet:
+        description: 'Sanitized x.y.z. App Store Connect rejects a version carrying a channel suffix.'
+        type: string
+        required: true
+      channel:
+        description: 'stable | nightly | none. Only `stable` reaches TestFlight.'
+        type: string
+        required: true
+      proceed:
+        description: 'false when a nightly has nothing new to build.'
+        type: string
+        required: true
+
+env:
+  BUN_VERSION: '1.3.14' # keep in sync with release.yml
+
+jobs:
+  appletv:
+    name: Apple TV .ipa (TestFlight)
+    if: ${{ inputs.proceed == 'true' && (inputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    # macos-26, NOT macos-15, for the reason the phone job spells out: Expo SDK
+    # 57 pulls Swift packages built with Swift tools 6.2 (expo-modules-jsi), and
+    # the macos-15 image tops out at Xcode 16.4 / Swift 6.1. The guard step below
+    # states that in one line instead of letting it surface as a package
+    # resolution error thousands of lines into an xcodebuild log.
+    runs-on: macos-26
+    permissions:
+      contents: read # only reads the repo and uploads run artifacts
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: '22'
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          newest=$(find /Applications -maxdepth 1 -name 'Xcode*.app' | sort -V | tail -1)
+          [ -n "$newest" ] || { echo "no Xcode on this runner"; exit 1; }
+          sudo xcode-select -s "$newest"
+          echo "using $newest"
+          xcodebuild -version
+          swift_version=$(swift --version 2>&1 | sed -nE 's/.*Swift version ([0-9]+\.[0-9]+).*/\1/p' | head -1)
+          echo "swift $swift_version"
+          # Expo SDK 57's expo-modules-jsi declares swift-tools-version 6.2.
+          if [ "$(printf '%s\n6.2\n' "$swift_version" | sort -V | head -1)" != "6.2" ]; then
+            echo "::error::Swift $swift_version is too old for the Expo SDK (needs 6.2+). Bump the runner image."
+            exit 1
+          fi
+
+      # The CERTIFICATE is the phone app's, deliberately: one Apple Distribution
+      # identity signs every platform a team ships, and these two are the same
+      # bundle id besides. The PROFILE is not shared - Apple mints one per
+      # platform - hence a tvOS-only secret beside it. Without either there is
+      # nothing uploadable, so the job no-ops rather than failing the release,
+      # the stance every optional signing step in this fleet takes.
+      #
+      # Since the Top Shelf extension (tv-native's with-top-shelf plugin), the
+      # imported profile alone no longer covers the whole archive: the app
+      # embeds KromaTopShelf, which signs as tv.kroma.mobile.TopShelf with its
+      # own App Store profile that only the ASC-key-authenticated automatic
+      # signing can resolve (it registers the App ID, the App Group, and mints
+      # both profiles on first archive). The profile secret stays required as
+      # this gate, but the ASC key trio is what actually signs - and the App
+      # Group's first appearance invalidates previously minted tv.kroma.mobile
+      # profiles, which automatic signing re-mints and a stored one cannot.
+      - name: Check signing secrets
+        id: signing
+        env:
+          IOS_CERTIFICATE: ${{ secrets.MOBILE_IOS_CERTIFICATE }}
+          TVOS_PROFILE: ${{ secrets.TVOS_PROVISIONING_PROFILE }}
+        run: |
+          if [ -z "$IOS_CERTIFICATE" ] || [ -z "$TVOS_PROFILE" ]; then
+            echo "No MOBILE_IOS_CERTIFICATE / TVOS_PROVISIONING_PROFILE; skipping the Apple TV build."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.signing.outputs.ready == 'true'
+        run: bun install --frozen-lockfile
+
+      # `ios/` is generated and gitignored, so the project is built from the Expo
+      # config every time. EXPO_TV=1 (set by the package's own `prebuild` script)
+      # is what makes it an APPLE TV target rather than a phone one - SDKROOT
+      # appletvos, device family 3, a tvOS Podfile. Without it this produces an
+      # iPhone project that the tvOS profile cannot sign.
+      #
+      # Version and build number reach the project through app.config.js rather
+      # than a stamping script, because that file already had to compute them for
+      # Android. KROMA_VERSION pins the plain x.y.z App Store Connect will accept
+      # (its default source, server/Cargo.toml, is not what the caller resolved
+      # for a nightly); KROMA_VERSION_CODE is the monotonic build number, minutes
+      # since 2020 - the same base the Android TV and phone jobs use. Reusing a
+      # (version, build) pair is refused on upload, an hour after the archive
+      # that produced it began.
+      - name: Prebuild the tvOS project
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          KROMA_VERSION: ${{ inputs.triplet }}
+        run: |
+          set -euo pipefail
+          export KROMA_VERSION_CODE=$(( ( $(date -u +%s) - 1577836800 ) / 60 ))
+          bun run --filter '@kroma/tv-native' prebuild -- --platform ios --no-install
+          # REACT_NATIVE_NODE_MODULES_DIR: the Podfile resolves react-native from
+          # wherever node does, and in this bun workspace the tvOS fork
+          # (react-native-tvos) sits in the PACKAGE's node_modules, not the
+          # workspace root's. Without it CocoaPods builds the phone fork's pods
+          # into a tvOS target. Same value as the package's own `pod` script.
+          cd clients/tv-native/ios
+          REACT_NATIVE_NODE_MODULES_DIR="$PWD/../node_modules" pod install
+
+      - name: Import certificate + provisioning profile
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          IOS_CERTIFICATE: ${{ secrets.MOBILE_IOS_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.MOBILE_IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROFILE: ${{ secrets.TVOS_PROVISIONING_PROFILE }}
+        run: .github/scripts/ios-import-signing-assets.sh
+
+      - name: Archive + export .ipa
+        if: steps.signing.outputs.ready == 'true'
+        working-directory: clients/tv-native/ios
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          VERSION: ${{ inputs.version }}
+          # The only two things that differ from the phone archive.
+          SDK: appletvos
+          ARTIFACT: KROMA-appletv
+          # Authenticates `-allowProvisioningUpdates`: the Expo template leaves
+          # the project on automatic signing, so xcodebuild resolves the App
+          # Store profile itself and cannot do it anonymously.
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        # Called by absolute path: this step runs from clients/tv-native/ios.
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/ios-archive-export-ipa.sh"
+
+      # `-t tvos` is the whole difference from the phone upload: the platform is
+      # what tells App Store Connect which half of the record this build belongs
+      # to. A tvOS .ipa sent as `-t ios` is rejected outright.
+      #
+      # An App Store Connect API key is preferred; the app-specific password the
+      # desktop job already uses for notarization is the fallback.
+      - name: Upload to TestFlight
+        if: ${{ steps.signing.outputs.ready == 'true' && (github.event_name == 'push' || github.event.inputs.targets == 'tv') }}
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          IPA="out/KROMA-appletv-${{ inputs.version }}.ipa"
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_PRIVATE_KEY" ]; then
+            mkdir -p "$HOME/.appstoreconnect/private_keys"
+            printf '%s' "$ASC_PRIVATE_KEY" \
+              > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+            xcrun altool --upload-app -f "$IPA" -t tvos \
+              --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+            rm -rf "$HOME/.appstoreconnect"
+          elif [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ]; then
+            xcrun altool --upload-app -f "$IPA" -t tvos -u "$APPLE_ID" -p "$APPLE_PASSWORD"
+          else
+            echo "No App Store Connect credentials; the .ipa is built but not uploaded."
+          fi
+
+      # Not attached to the Release: an App Store .ipa cannot be sideloaded onto
+      # an Apple TV, so publishing it beside the .ipk/.wgt/.apk would only offer
+      # testers a file they have no way to install.
+      - name: Upload .ipa artifact
+        if: steps.signing.outputs.ready == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-appletv-ipa
+          path: out/*.ipa
+          if-no-files-found: error

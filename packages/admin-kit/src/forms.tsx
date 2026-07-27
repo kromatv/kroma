@@ -6,6 +6,7 @@
 import * as RSelect from '@radix-ui/react-select';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
+import { Button } from './controls';
 
 export interface SelectOption {
   value: string;
@@ -224,21 +225,13 @@ export function ModalActions({
         </button>
       ) : null}
       <div className="flex gap-2.5">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-md px-4 py-2.5 text-[14px] font-semibold text-muted"
-        >
-          {cancelLabel}
-        </button>
-        <button
-          type="button"
+        <Button variant="quiet" label={cancelLabel} onClick={onCancel} />
+        <Button
+          variant="primary"
+          label={confirmLabel}
           onClick={onConfirm}
           disabled={busy || disabled}
-          className="rounded-md bg-accent px-5 py-2.5 text-[14px] font-bold text-accent-ink disabled:opacity-50"
-        >
-          {confirmLabel}
-        </button>
+        />
       </div>
     </div>
   );

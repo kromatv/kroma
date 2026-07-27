@@ -2,12 +2,12 @@
 // type the 4-digit code, then authorize that device into this account (mirror
 // of the web flow, POST /auth/quickconnect/authorize).
 
+import { Icon } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
-  BackLink,
   OnboardingBox,
   OnboardingScreen,
   OnboardingTitle,
@@ -15,9 +15,9 @@ import {
 import { CodeCells } from '#mobile/components/onboarding';
 import { ErrorBanner } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
+import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { absoluteFill, colors, radius, spacing, type } from '#mobile/lib/theme';
-import { CheckIcon, ScanIcon, TvIcon } from '#mobile/player/icons';
 
 // expo-camera is a NATIVE module and expo-router imports every route at boot:
 // a static import would crash the whole app on a binary built before the
@@ -103,12 +103,12 @@ export default function ConnectDevice() {
   };
 
   return (
-    <OnboardingScreen keyboardBehavior="height">
+    <OnboardingScreen keyboardBehavior="height" onBack={() => goBack(router)}>
       <OnboardingBox>
         {state === 'done' ? (
           <View style={styles.center}>
             <View style={styles.doneBadge}>
-              <CheckIcon size={34} color={colors.accentInk} />
+              <Icon name="check" size={34} stroke={2.4} color={colors.accentInk} />
             </View>
             <OnboardingTitle
               title={t('connect.connected')}
@@ -139,13 +139,13 @@ export default function ConnectDevice() {
                         pressed && { backgroundColor: colors.surfaceHigh },
                       ]}
                     >
-                      <ScanIcon size={34} color={colors.accent} />
+                      <Icon name="scan" size={34} stroke={1.8} color={colors.accent} />
                       <Text style={styles.cameraOffLabel}>{t('connect.scanTvQr')}</Text>
                     </Pressable>
                   )}
                 </View>
               ) : (
-                <TvIcon size={56} color={colors.accent} />
+                <Icon name="device-tv" size={56} stroke={1.8} color={colors.accent} />
               )}
               <CodeCells
                 value={code}
@@ -158,7 +158,6 @@ export default function ConnectDevice() {
             <ErrorBanner message={state === 'error' ? t('connect.invalidCode') : null} />
           </>
         )}
-        <BackLink onPress={() => router.back()} />
       </OnboardingBox>
     </OnboardingScreen>
   );

@@ -13,6 +13,9 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.bg },
+        // Phones live in portrait everywhere except the player: dismissing the
+        // landscape player then snaps back natively. Tablets rotate freely.
+        orientation: isTablet ? 'default' : 'portrait',
       }}
     >
       <Stack.Screen

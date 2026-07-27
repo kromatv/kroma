@@ -1,13 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  avplayAvailable,
-  exoAvailable,
-  getAvplay,
-  getExo,
-  getTauri,
-  mpvAvailable,
-  resolveMasterStart,
-} from './engine';
+import { avplayAvailable, getAvplay, getTauri, mpvAvailable, resolveMasterStart } from './engine';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -68,25 +60,6 @@ describe('mpvAvailable', () => {
     expect(mpvAvailable()).toBe(false);
     vi.stubGlobal('__KROMA_MPV__', true);
     expect(mpvAvailable()).toBe(true);
-  });
-});
-
-describe('getExo / exoAvailable', () => {
-  it('is null / false without the Android bridge', () => {
-    expect(getExo()).toBeNull();
-    expect(exoAvailable()).toBe(false);
-  });
-
-  it('is null when the bridge is missing a method', () => {
-    vi.stubGlobal('__KROMA_ANDROID__', { load: () => {} }); // no command()
-    expect(getExo()).toBeNull();
-  });
-
-  it('returns the bridge when both load() and command() exist', () => {
-    const bridge = { load: () => {}, command: () => {} };
-    vi.stubGlobal('__KROMA_ANDROID__', bridge);
-    expect(getExo()).toBe(bridge);
-    expect(exoAvailable()).toBe(true);
   });
 });
 

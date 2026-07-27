@@ -2,11 +2,12 @@
 // biometric switch row and the step-at-a-time masked PIN wizard. All state
 // and auth calls stay in the route (app/(app)/profile-pin.tsx).
 
-import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
+import { Button, Spinner, Switch } from '@kroma/ui/kit';
+import { StyleSheet, Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 import { CodeCells } from './onboarding';
-import { Button, ErrorBanner } from './ui';
+import { ErrorBanner } from './ui';
 
 export function LockCard({
   title,
@@ -42,13 +43,9 @@ export function BioSwitchRow({
   return (
     <View style={styles.bioRow}>
       <Text style={styles.bioLabel}>{label}</Text>
-      <Switch
-        value={value}
-        disabled={disabled}
-        onValueChange={onChange}
-        trackColor={{ false: colors.surfaceHigh, true: colors.accent }}
-        thumbColor={colors.text}
-      />
+      {/* The KIT's switch - same amber track and animated flip as every other
+          surface - in place of the OS one this row used to style by hand. */}
+      <Switch checked={value} disabled={disabled} onChange={onChange} />
     </View>
   );
 }
@@ -74,9 +71,9 @@ export function PinWizard({
     <View style={styles.wizard}>
       <Text style={styles.wizardSub}>{subtitle}</Text>
       <CodeCells value={pin} masked editable={!busy} onChange={onChange} />
-      {busy ? <ActivityIndicator color={colors.textDim} /> : null}
+      {busy ? <Spinner size={24} color={colors.textDim} /> : null}
       <ErrorBanner message={error} />
-      <Button label={t('common.cancel')} kind="ghost" onPress={onCancel} />
+      <Button variant="glass" label={t('common.cancel')} onPress={onCancel} />
     </View>
   );
 }

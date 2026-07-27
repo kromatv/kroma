@@ -4,7 +4,7 @@
 // don't exist during SSR, so it renders nothing on the server and until the first
 // client effect decides whether it should play (no hydration mismatch).
 
-import { KromaIntro } from '@kroma/ui';
+import { KromaIntro } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 
 const SEEN_KEY = 'kroma:intro-seen';

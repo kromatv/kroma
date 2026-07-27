@@ -1,3 +1,10 @@
+// @vitest-environment jsdom
+//
+// These cases describe BROWSER shells (a Tizen bundle previewed in desktop
+// Chrome, a webOS build, the desktop shell), and computeEnv now separates the
+// native targets from them by asking whether a DOM window exists. Without a
+// document here, every case would look native and the assertions would be
+// describing something the tests do not mean.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { computeEnv } from './env';
 

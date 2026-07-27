@@ -4,20 +4,20 @@
 // components live in components/showEpisodes.tsx.
 
 import { sizedImageUrl } from '@kroma/core';
+import { Button, Chip } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { CastRail, DetailHero, MetaBadge } from '#mobile/components/detail';
 import { type PopoverAnchor, PopoverMenu } from '#mobile/components/PopoverMenu';
 import { EpisodeRow, SeasonDownload, UpNextCard } from '#mobile/components/showEpisodes';
-import { Chip, ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
+import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
-import { useIsWide } from '#mobile/lib/layout';
+import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
-import { ChevronDownIcon, FlagIcon, PlayIcon } from '#mobile/player/icons';
+import { colors, spacing, type } from '#mobile/lib/theme';
 
 export default function ShowDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,6 +26,8 @@ export default function ShowDetail() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = useIsWide();
+  // Landscape-safe page gutters (grow past spacing.md to clear the notch).
+  const gutterPad = useGutters().style;
   const [seasonIdx, setSeasonIdx] = useState(0);
   const [seasonAnchor, setSeasonAnchor] = useState<PopoverAnchor | null>(null);
   const seasonButtonRef = useRef<View>(null);
@@ -65,7 +67,7 @@ export default function ShowDetail() {
   const season = seasons[Math.min(seasonIdx, seasons.length - 1)];
   const backdrop = sizedImageUrl(
     client.backdropFor(show) ?? client.showPosterFor(show),
-    Math.min(1280, width * 2),
+    Math.min(1280, width),
   );
   const title = show.metadata?.title ?? show.title;
   const next = upNext.data?.item;
@@ -112,13 +114,11 @@ export default function ShowDetail() {
         const info = (
           <>
             {next ? (
-              <Pressable
+              <Button
+                icon="player-play-filled"
+                label={playLabel}
                 onPress={() => router.push(`/player/${next.id}` as never)}
-                style={({ pressed }) => [styles.play, pressed && { opacity: 0.85 }]}
-              >
-                <PlayIcon size={22} color={colors.accentInk} />
-                <Text style={styles.playLabel}>{playLabel}</Text>
-              </Pressable>
+              />
             ) : null}
 
             {next ? <UpNextCard next={next} frac={nextFrac} /> : null}
@@ -137,48 +137,47 @@ export default function ShowDetail() {
                 ))}
               </View>
             ) : null}
-            <Pressable
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="flag"
+              label={t('report.action')}
+              style={styles.reportRow}
               onPress={() =>
                 router.push(
                   `/report/${show.id}?kind=show&title=${encodeURIComponent(title)}` as never,
                 )
               }
-              style={({ pressed }) => [styles.reportRow, pressed && { opacity: 0.7 }]}
-            >
-              <FlagIcon size={16} color={colors.textDim} />
-              <Text style={styles.reportLabel}>{t('report.action')}</Text>
-            </Pressable>
+            />
           </>
         );
 
         const episodesPane = (
           <>
-            <View style={[styles.tabsRow, wide && styles.tabsRowWide]}>
+            <View style={[styles.tabsRow, wide ? styles.tabsRowWide : gutterPad]}>
               <View style={styles.tabActive}>
                 <Text style={styles.tabActiveText}>{t('content.episodes')}</Text>
               </View>
             </View>
 
-            <View style={styles.seasonHeader}>
-              <Pressable
+            <View style={[styles.seasonHeader, !wide && gutterPad]}>
+              <Button
                 ref={seasonButtonRef}
+                variant="glass"
+                size="sm"
+                iconRight="chevron-down"
+                label={t('content.season', { number: season?.number ?? 1 })}
                 onPress={() =>
                   seasonButtonRef.current?.measureInWindow(
                     (x: number, y: number, width: number, height: number) =>
                       setSeasonAnchor({ x, y, width, height }),
                   )
                 }
-                style={({ pressed }) => [styles.seasonButton, pressed && { opacity: 0.8 }]}
-              >
-                <Text style={styles.seasonButtonText}>
-                  {t('content.season', { number: season?.number ?? 1 })}
-                </Text>
-                <ChevronDownIcon size={16} />
-              </Pressable>
+              />
               <SeasonDownload episodes={season?.episodes ?? []} />
             </View>
 
-            <View style={styles.episodes}>
+            <View style={[styles.episodes, !wide && gutterPad]}>
               {(season?.episodes ?? []).map((ep) => (
                 <EpisodeRow
                   key={ep.id}
@@ -194,13 +193,13 @@ export default function ShowDetail() {
         // Wide windows put the episode list beside the info column; narrow
         // ones keep the stacked flow.
         return wide ? (
-          <View style={styles.split}>
+          <View style={[styles.split, gutterPad]}>
             <View style={styles.splitInfo}>{info}</View>
             <View style={styles.splitEpisodes}>{episodesPane}</View>
           </View>
         ) : (
           <>
-            <View style={styles.body}>{info}</View>
+            <View style={[styles.body, gutterPad]}>{info}</View>
             {episodesPane}
           </>
         );
@@ -231,25 +230,13 @@ export default function ShowDetail() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  body: { paddingHorizontal: spacing.md, paddingTop: spacing.md, gap: spacing.md },
+  body: { paddingTop: spacing.md, gap: spacing.md },
   metaText: { ...type.caption, color: colors.text, fontWeight: '600' },
   rating: { ...type.caption, color: colors.accent, fontWeight: '700' },
-  play: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    minHeight: 52,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-  },
-  playLabel: { color: colors.accentInk, fontSize: 16, fontWeight: '800' },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  reportRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
-  reportLabel: { ...type.small, color: colors.textDim, fontWeight: '600' },
+  reportRow: { alignSelf: 'flex-start' },
   tabsRow: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.md,
     marginTop: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
@@ -264,26 +251,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
   },
-  seasonButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-  },
-  seasonButtonText: { ...type.caption, color: colors.text, fontWeight: '700' },
-  episodes: { paddingHorizontal: spacing.md, gap: 4 },
+  episodes: { gap: 4 },
   split: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.lg,
-    paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
   },
   splitInfo: { flex: 2, gap: spacing.md },

@@ -1,0 +1,77 @@
+diff --git a/scripts/rnsvg_utils.rb b/scripts/rnsvg_utils.rb
+index 54ec0325cf4a83baf6bab9209566153593e439c0..68ea2977064a5272f13941f1590023604e4e8e06 100644
+--- a/scripts/rnsvg_utils.rb
++++ b/scripts/rnsvg_utils.rb
+@@ -1,10 +1,45 @@
+ # Copied from Reanimated https://github.com/software-mansion/react-native-reanimated/blob/c6d68151644056476518241b0087b1ed900b39b6/packages/react-native-reanimated/scripts/reanimated_utils.rb
++#
++# PATCHED (kroma). Upstream resolved `react-native/package.json` through node,
++# then threw the resolved path away and kept only its grandparent directory, to
++# which it re-appended the literal 'react-native/package.json'. That round trip
++# assumes the package lives in a directory literally named `react-native`, and
++# in this repo neither half of that holds:
++#
++#   * every native client aliases `react-native: npm:react-native-tvos`, so the
++#     real directory is named `react-native-tvos`;
++#   * bun's isolated linker stores it content-addressed under
++#     `node_modules/.bun/react-native-tvos@<ver>+<hash>/node_modules/`, reached
++#     only through a symlink.
++#
++# So the re-appended path never existed, the lookup fell through to
++# ENV['REACT_NATIVE_NODE_MODULES_DIR'], and when that was unset `File.join(nil,
++# ..)` raised `no implicit conversion of nil into String` from inside the
++# podspec - masking the actionable error on line 27 below and surfacing instead
++# as `Invalid RNSVG.podspec file`.
++#
++# The fix is to trust the path node already gave us instead of rebuilding it.
++# Upstream's env-var override is kept as the fallback it always was.
++
++def rnsvg_parse_json_file(path)
++  return nil if path == nil || path.empty?
++  return nil if !File.exist?(path)
++  return JSON.parse(File.read(path))
++end
++
+ def rnsvg_try_to_parse_react_native_package_json(node_modules_dir)
+-  react_native_package_json_path = File.join(node_modules_dir, 'react-native/package.json')
+-  if !File.exist?(react_native_package_json_path)
+-    return nil
+-  end
+-  return JSON.parse(File.read(react_native_package_json_path))
++  return nil if node_modules_dir == nil || node_modules_dir.empty?
++  return rnsvg_parse_json_file(File.join(node_modules_dir, 'react-native/package.json'))
++end
++
++# Ask node where `react-native/package.json` actually is. Returns nil rather
++# than a broken path when node is missing or resolution fails, so the caller can
++# fall through to the env var instead of dying here.
++def rnsvg_resolve_react_native_package_json()
++  installation_root = Pod::Config.instance.installation_root.to_s
++  resolved = `cd "#{installation_root}" && node --print "require.resolve('react-native/package.json')" 2>/dev/null`.strip
++  return nil if !$?.success? || resolved.empty?
++  return resolved
+ end
+ 
+ def rnsvg_find_config()
+@@ -14,13 +49,19 @@ def rnsvg_find_config()
+     :react_native_node_modules_dir => nil,
+   }
+ 
+-  react_native_node_modules_dir = File.join(File.dirname(`cd "#{Pod::Config.instance.installation_root.to_s}" && node --print "require.resolve('react-native/package.json')"`), '..')
+-  react_native_json = rnsvg_try_to_parse_react_native_package_json(react_native_node_modules_dir)
++  # Use the resolved path DIRECTLY. `File.join(dirname, '..')` is still how the
++  # enclosing node_modules dir is derived, but it is no longer used to re-find
++  # the manifest we already hold.
++  react_native_package_json_path = rnsvg_resolve_react_native_package_json()
++  react_native_json = rnsvg_parse_json_file(react_native_package_json_path)
++  react_native_node_modules_dir =
++    react_native_json == nil ? nil : File.join(File.dirname(react_native_package_json_path), '..')
+ 
+   if react_native_json == nil
+     # user configuration, just in case
+     node_modules_dir = ENV["REACT_NATIVE_NODE_MODULES_DIR"]
+     react_native_json = rnsvg_try_to_parse_react_native_package_json(node_modules_dir)
++    react_native_node_modules_dir = node_modules_dir if react_native_json != nil
+   end
+ 
+   if react_native_json == nil

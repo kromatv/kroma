@@ -4,7 +4,8 @@
 
 import { KromaEvents, type MediaRequest, type RequestStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconInbox } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useEffect, useState } from 'react';
 import { RequestDrawer } from '#web/features/admin/request-drawer';
 import { RequestRowView } from '#web/features/admin/request-row';
@@ -20,7 +21,7 @@ import {
 } from '#web/features/admin/table-console';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, TableSkeleton } from '#web/shared/ui';
+import { TableSkeleton } from '#web/shared/ui';
 
 /** Filter-chip buckets over the wire statuses. */
 const BUCKETS: Record<string, (s: RequestStatus) => boolean> = {
@@ -180,7 +181,7 @@ export function RequestsQueuePage() {
         {data && rows.length === 0 ? (
           <div className="py-6">
             <EmptyState
-              icon={<IconInbox size={32} stroke={1.5} />}
+              icon="inbox"
               title={all.length === 0 ? t('requests.empty') : t('requests.noMatch')}
             />
           </div>

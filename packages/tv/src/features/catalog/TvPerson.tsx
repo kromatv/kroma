@@ -1,17 +1,22 @@
 import type { Metadata } from '@kroma/core';
 import { creditsPerson, personInvolvement, posterColors, roleLabels } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
-import { useMemo, useState } from 'react';
+import { useT } from '@kroma/ui';
+import { Box, Txt, useFocusNav } from '@kroma/ui/kit';
+import { useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';
-import { useFocusNav } from '#tv/app/useFocusNav';
-import { TvTopNav } from '#tv/features/catalog/home/TopNav';
-import { type GridCard, TvGrid as PosterGrid } from '#tv/features/catalog/home/TvGrid';
-import { gradFor, initials } from '#tv/shared/ui';
+import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
+import { PersonHeader } from '#tv/features/catalog/person/PersonHeader';
+import { usePersonDetail } from '#tv/features/catalog/person/usePersonDetail';
+import { EMPTY } from '#tv/features/catalog/screenStyle';
 
-/** Everything one cast/crew person is credited in reached by selecting a face
- * in a detail page's "Distribution" rail. Filters the already-loaded catalogue
- * locally (no extra request), ranked best-known work first. */
+/** Everything one cast/crew person is credited in, under who they are reached
+ * by selecting a face in a detail page's "Distribution" rail.
+ *
+ * The filmography is filtered out of the already-loaded catalogue (no request,
+ * ranked best-known work first); the biography beside it is the one thing the
+ * library cannot know, so it comes from the metadata provider and lands a
+ * moment later. */
 export function TvPerson() {
   const { name } = useParams('person');
   const { movies, shows } = useConnection();
@@ -33,7 +38,7 @@ export function TvPerson() {
       card: {
         id: m.id,
         title: m.title,
-        poster: client.posterFor(m),
+        poster: client.posterFor(m, POSTER_W),
         colors: posterColors(m.id),
         onClick: () => nav.go('movie', { item: m }),
       } satisfies GridCard,
@@ -43,7 +48,7 @@ export function TvPerson() {
       card: {
         id: s.id,
         title: s.title,
-        poster: client.showPosterFor(s),
+        poster: client.showPosterFor(s, POSTER_W),
         colors: posterColors(s.id),
         onClick: () => nav.go('show', { show: s }),
       } satisfies GridCard,
@@ -56,61 +61,37 @@ export function TvPerson() {
     return { cards, involvement: personInvolvement(metas, name) };
   }, [movies, shows, name, client, nav]);
 
-  const photo = client.resolveArt(involvement.profileUrl);
+  const detail = usePersonDetail(name);
+  // The provider's portrait is the better one (a bigger source, and it exists
+  // for people who only ever crewed); the credit's photo is the instant one.
+  const photo = client.resolveArt(detail?.profileUrl ?? involvement.profileUrl, PORTRAIT_W);
   const roles = roleLabels(t, involvement);
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-bg animate-[tv-fade-in_0.3s_ease]">
-      {/* Header sits below the persistent nav bar (pt clears it); Back is the
-          remote key, so no separate hint. */}
-      <header className="flex items-center gap-6 px-16 pb-6 pt-28">
-        <PersonAvatar photo={photo} name={name} />
-        <div className="min-w-0">
-          {roles.length ? (
-            <div className="mb-2 font-sans text-[13px] font-bold uppercase tracking-[0.22em] text-accent">
-              {roles.join(' · ')}
-            </div>
-          ) : null}
-          <h1 className="m-0 font-display text-[clamp(34px,5.5vh,60px)] font-bold leading-[0.98] tracking-[-0.02em]">
-            {name}
-          </h1>
-          <div className="mt-2 font-sans text-[16px] font-semibold text-muted">
-            {t('person.titleCount', { count: cards.length })}
-          </div>
-        </div>
-      </header>
+    <Box fill bg="bg" overflow="hidden">
+      {/* Header sits below the persistent nav bar (its top padding clears it);
+          Back is the remote key, so no separate hint. */}
+      <PersonHeader
+        name={detail?.name ?? name}
+        roles={roles}
+        photo={photo}
+        titleCount={cards.length}
+        detail={detail}
+      />
 
       {cards.length ? (
         <PosterGrid cards={cards} />
       ) : (
-        <div className="flex flex-1 items-center justify-center px-16">
-          <p className="max-w-160 text-center font-sans text-[18px] font-medium text-dim">
+        <Box flex center px={64}>
+          <Txt style={EMPTY} color="textDim">
             {t('person.empty')}
-          </p>
-        </div>
+          </Txt>
+        </Box>
       )}
-
-      {/* Persistent nav last in DOM so a poster keeps the initial focus. */}
-      <TvTopNav />
-    </div>
+    </Box>
   );
 }
 
-/** Round headshot: the photo (over its gradient placeholder) or initials. */
-function PersonAvatar({ photo, name }: Readonly<{ photo: string | null; name: string }>) {
-  const [failed, setFailed] = useState(false);
-  const showImg = Boolean(photo) && !failed;
-  return (
-    <div
-      className="relative flex h-24 w-24 flex-none items-center justify-center overflow-hidden rounded-full font-display text-[32px] font-bold text-[rgba(255,255,255,0.9)] shadow-card"
-      style={{ background: gradFor(name) }}
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_22%,rgba(255,255,255,0.2),transparent_60%)]" />
-      {showImg ? (
-        <Image src={photo} fit="cover" fill onError={() => setFailed(true)} />
-      ) : (
-        initials(name)
-      )}
-    </div>
-  );
-}
+/** The filmography posters, and the portrait beside the name. */
+const POSTER_W = 203;
+const PORTRAIT_W = 220;

@@ -1,5 +1,5 @@
 import type { AudioTrack, MediaItem, VideoTrack } from '@kroma/client';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   audioTrackLabel,
   channelLabel,
@@ -14,6 +14,7 @@ import {
   posterColors,
   qualityBadge,
   qualityBadgeForVideo,
+  safeImageUrl,
   sizedImageUrl,
 } from './format';
 import type { Translate } from './i18n';
@@ -90,13 +91,30 @@ describe('playerSubtitle', () => {
 
 // ----- sizedImageUrl ---------------------------------------------------------
 
+// The pixel ratio is read from the global at call time, so a stub must not leak
+// into the next test.
+afterEach(() => vi.unstubAllGlobals());
+
 describe('sizedImageUrl', () => {
-  it('appends a 2x width bucket to a local cached-art URL', () => {
+  /** jsdom reports a ratio of 1, which is also what a 1920x1080 television
+   * reports - and asking a television for 2x was four times the pixels it can
+   * show, on every backdrop swap. */
+  it('asks for the display width on a 1x screen (a television)', () => {
+    expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=200');
+  });
+
+  it('asks for 2x on a retina screen', () => {
+    vi.stubGlobal('devicePixelRatio', 2);
+    expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=400');
+  });
+
+  it('caps the ratio at 2, so a 3x phone does not decode 3x the pixels', () => {
+    vi.stubGlobal('devicePixelRatio', 3);
     expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=400');
   });
 
   it('rounds and floors the requested width to at least 1', () => {
-    expect(sizedImageUrl('/api/images/x', 100.4)).toBe('/api/images/x?w=201');
+    expect(sizedImageUrl('/api/images/x', 100.4)).toBe('/api/images/x?w=100');
     expect(sizedImageUrl('/api/images/x', 0)).toBe('/api/images/x?w=1');
   });
 
@@ -287,5 +305,39 @@ describe('audioTrackLabel', () => {
   it('returns undefined for no track', () => {
     expect(audioTrackLabel(t, null)).toBeUndefined();
     expect(audioTrackLabel(t, undefined)).toBeUndefined();
+  });
+});
+
+// ----- safeImageUrl ----------------------------------------------------------
+
+describe('safeImageUrl', () => {
+  it('passes our own artwork paths through untouched', () => {
+    expect(safeImageUrl('/api/images/abc?w=200')).toBe('/api/images/abc?w=200');
+    expect(safeImageUrl('poster.jpg')).toBe('poster.jpg');
+    expect(safeImageUrl('//cdn.example.com/a.jpg')).toBe('//cdn.example.com/a.jpg');
+  });
+
+  it('allows the schemes that only ever paint', () => {
+    expect(safeImageUrl('https://image.tmdb.org/t/p/w780/x.jpg')).toBe(
+      'https://image.tmdb.org/t/p/w780/x.jpg',
+    );
+    expect(safeImageUrl('http://nas.local/a.png')).toBe('http://nas.local/a.png');
+    expect(safeImageUrl('blob:https://app/9f')).toBe('blob:https://app/9f');
+    expect(safeImageUrl('data:image/png;base64,iVBOR')).toBe('data:image/png;base64,iVBOR');
+  });
+
+  it('rejects a scheme that navigates or executes', () => {
+    expect(safeImageUrl('javascript:alert(1)')).toBeNull();
+    // Case and leading whitespace must not sneak one past the check.
+    expect(safeImageUrl('  JaVaScRiPt:alert(1)')).toBeNull();
+    // data: is narrowed to images - data:text/html is a payload, not artwork.
+    expect(safeImageUrl('data:text/html,<script>alert(1)</script>')).toBeNull();
+    expect(safeImageUrl('vbscript:msgbox')).toBeNull();
+  });
+
+  it('treats absent artwork as absent', () => {
+    expect(safeImageUrl(null)).toBeNull();
+    expect(safeImageUrl(undefined)).toBeNull();
+    expect(safeImageUrl('')).toBeNull();
   });
 });

@@ -4,7 +4,8 @@
 
 import { isEmail, isPassword, isUsername, type PublicUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconInfoCircle, IconKey } from '@tabler/icons-react';
+import { Button } from '@kroma/ui/kit';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { useState } from 'react';
 import { INPUT, RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { UserAvatar } from '#web/features/accounts/user-avatar';
@@ -98,24 +99,23 @@ export function LoginForm({
         {busy ? t('auth.loggingIn') : t('auth.login')}
       </button>
       {canUsePasskey && onPasskey ? (
-        <button
-          type="button"
+        <Button
+          block
+          variant="glass"
+          icon="key"
+          label={t('auth.passkeyLogin')}
+          onPress={() => onPasskey()}
           disabled={busy}
-          onClick={() => onPasskey()}
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-border-strong py-3 text-[14px] font-semibold text-text transition-colors hover:bg-white/5 disabled:opacity-50"
-        >
-          <IconKey size={17} stroke={1.8} />
-          {t('auth.passkeyLogin')}
-        </button>
+        />
       ) : null}
       {canGoBack ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-[14px] font-medium text-muted hover:text-text"
-        >
-          ← {t('common.back')}
-        </button>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon="chevron-left"
+          label={t('common.back')}
+          onPress={onBack}
+        />
       ) : null}
     </form>
   );
@@ -156,21 +156,23 @@ export function RegisterForm({
 
       {error ? <p className="text-[13px] font-medium text-danger">{error}</p> : null}
 
-      <button
-        type="submit"
-        disabled={busy || !valid}
-        className="mt-1 w-full rounded-md bg-accent py-3.5 text-[15px] font-bold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-50"
-      >
-        {busy ? t('auth.creating') : t('auth.createAccount')}
-      </button>
+      <Button
+        block
+        label={busy ? t('auth.creating') : t('auth.createAccount')}
+        onPress={() => {
+          if (valid) onSubmit(email.trim(), username.trim(), password, avatar);
+        }}
+        loading={busy}
+        disabled={!valid}
+      />
       {canGoBack ? (
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-[14px] font-medium text-muted hover:text-text"
-        >
-          ← {t('common.back')}
-        </button>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon="chevron-left"
+          label={t('common.back')}
+          onPress={onBack}
+        />
       ) : null}
     </form>
   );

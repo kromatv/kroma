@@ -23,12 +23,19 @@ use crate::domain::media::SubtitleTrack;
 
 /// Extraction wall-clock budget, scaled to the file: a text-subtitle demux is
 /// bandwidth-bound (ffmpeg reads the container front-to-back), so budget the
-/// size at a conservative 20 MB/s, clamped to 150s..900s. The old FIXED 150s
+/// size at a conservative 20 MB/s, clamped to 150s..7200s. The old FIXED 150s
 /// permanently starved big files: the pass timed out, the partial output was
 /// discarded, and the next toggle started the whole read from zero again.
+///
+/// The ceiling used to be 900s, which was the same starvation one size up: at
+/// the budgeted 20 MB/s that is an 18 GB file, and a 4K remux is routinely
+/// 40-80 GB - so its nightly pre-warm was killed at 900s, the partial output
+/// discarded, and every retry started the whole read again, forever. The pass
+/// runs once per (file, mtime) and caches for good, so a long ceiling costs
+/// one long night, not a slow server.
 pub fn timeout_for(abs: &str) -> Duration {
     let size = std::fs::metadata(abs).map(|m| m.len()).unwrap_or(0);
-    let secs = (size / (20 * 1024 * 1024)).clamp(150, 900);
+    let secs = (size / (20 * 1024 * 1024)).clamp(150, 7200);
     Duration::from_secs(secs)
 }
 

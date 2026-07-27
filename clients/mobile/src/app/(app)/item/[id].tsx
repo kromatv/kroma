@@ -2,6 +2,7 @@
 // chips, cast and similar rails.
 
 import {
+  episodeTag,
   formatRuntime,
   formatTimecode,
   type MediaItem,
@@ -9,24 +10,24 @@ import {
   qualityBadge,
   sizedImageUrl,
 } from '@kroma/core';
+import { Chip } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { MediaRail, movieCard } from '#mobile/components/cards';
 import { CastRail, DetailActions, DetailHero, MetaBadge } from '#mobile/components/detail';
-import { Chip, ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
+import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
-import { SplitColumns } from '#mobile/lib/layout';
+import { SplitColumns, useGutters } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
 import { colors, posterWidth, spacing, type } from '#mobile/lib/theme';
 
 /** Show + "S01E02" line above an episode's title; movies have no context. */
 function episodeContext(media: MediaItem): string | undefined {
   if (media.kind !== 'episode' || !media.showTitle) return undefined;
-  const numbering =
-    media.season != null && media.episode != null ? ` · S${media.season}E${media.episode}` : '';
-  return `${media.showTitle}${numbering}`;
+  const numbering = episodeTag(media);
+  return numbering ? `${media.showTitle} · ${numbering}` : media.showTitle;
 }
 
 /** Saved position worth resuming from (anything under 30s starts over). */
@@ -61,6 +62,7 @@ export default function ItemDetail() {
   const client = useClient();
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const gutters = useGutters();
   const queryClient = useQueryClient();
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
@@ -105,7 +107,7 @@ export default function ItemDetail() {
   const media = item.data;
   const backdrop = sizedImageUrl(
     client.backdropFor(media) ?? client.posterFor(media),
-    Math.min(1280, width * 2),
+    Math.min(1280, width),
   );
   const title = media.metadata?.title ?? media.title;
   const resumeSec = resumeSeconds(progress.data);
@@ -130,7 +132,7 @@ export default function ItemDetail() {
 
       {/* Tablets: actions column beside the overview column. */}
       <SplitColumns
-        style={styles.body}
+        style={[styles.body, gutters.style]}
         left={
           <DetailActions
             playLabel={
@@ -186,7 +188,7 @@ export default function ItemDetail() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  body: { paddingHorizontal: spacing.md, paddingTop: spacing.md, gap: spacing.md },
+  body: { paddingTop: spacing.md, gap: spacing.md },
   metaText: { ...type.caption, color: colors.text, fontWeight: '600' },
   rating: { ...type.caption, color: colors.accent, fontWeight: '700' },
   genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

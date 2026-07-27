@@ -1,4 +1,4 @@
-import { audioTrackLabel, qualityBadgeForVideo } from '@kroma/core';
+import { audioTrackLabel, qualityBadgeForVideo, refineTrackLang } from '@kroma/core';
 import {
   type PlayerController,
   type PlayerStats,
@@ -13,6 +13,7 @@ import { useVideoPlayback } from '#web/features/playback/use-video-playback';
 import { useWebSubtitles } from '#web/features/playback/use-web-subtitles';
 import { buildWebStats } from '#web/features/playback/web-stats';
 import type { MovieView } from '#web/shared/lib/api';
+import { useLangPrefs } from '#web/shared/lib/lang-pref';
 
 export interface WebController {
   controller: PlayerController;
@@ -27,7 +28,7 @@ export interface WebController {
 }
 
 /**
- * Adapts the web engine (`useVideoPlayback`) + subtitle / audio-filter / loop /
+ * Adapts the web engine (`useVideoPlayback`) + subtitle / audio-filter /
  * scrub / stats state into the shared {@link PlayerController} the unified
  * `<Player>` consumes. Everything web-specific (HLS remux, PiP-as-shell, the
  * one-shot bitrate probe) is hidden behind the contract.
@@ -38,20 +39,23 @@ export function useWebController(item: MovieView): WebController {
   const subs = useWebSubtitles(item, t);
   const filter = useAudioFilter(pb.videoRef, `${pb.anchor}:${pb.audioIndex}`);
 
-  // Loop (reapplied whenever the <video> remounts on re-anchor / audio switch).
-  const [loopState, setLoopState] = useState(false);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: anchor/audioIndex are intentional remount triggers, not read values. The <video> is keyed by anchor+audio, so re-anchoring / switching audio mounts a fresh element that must have `loop` reapplied. Depending on `pb` itself would rerun on every render.
-  useEffect(() => {
-    const v = pb.videoRef.current;
-    if (v) v.loop = loopState;
-  }, [loopState, pb.anchor, pb.audioIndex, pb.videoRef]);
-  const setLoop = useCallback(
-    (b: boolean) => {
-      setLoopState(b);
-      const v = pb.videoRef.current;
-      if (v) v.loop = b;
+  // Switching audio track is also how a viewer says "I watch in French": store
+  // the track's language as the preference - REFINED by the dub variant its
+  // title betrays ('fre' + "VFF …" → 'fr-FR'), so choosing the France dub can
+  // never auto-pick the Quebec one on the next title. A track with no declared
+  // language leaves the stored preference alone - nothing to learn from it.
+  // The same three lines the TV controller runs; this client simply went
+  // without them, and so read a preference it could never write.
+  const { setAudio: rememberAudio } = useLangPrefs();
+  const { setAudio: pickAudio, audioTracks } = pb;
+  const setAudio = useCallback(
+    (index: number) => {
+      pickAudio(index);
+      const track = audioTracks.find((a) => a.index === index);
+      const code = refineTrackLang(track?.language, track?.title);
+      if (code) rememberAudio(code);
     },
-    [pb.videoRef],
+    [pickAudio, rememberAudio, audioTracks],
   );
 
   // Scrub preview (absolute seconds) for the shared chapter bar: preview follows
@@ -189,11 +193,9 @@ export function useWebController(item: MovieView): WebController {
     toggleMute: pb.toggleMute,
     rate: pb.rate,
     setRate: pb.applyRate,
-    loop: loopState,
-    setLoop,
     audioTracks: pb.audioTracks,
     audioIndex: pb.audioIndex,
-    setAudio: pb.setAudio,
+    setAudio,
     subtitles: subs.subtitles,
     subtitleIndex: subs.activeIndex,
     setSubtitle: subs.setActive,

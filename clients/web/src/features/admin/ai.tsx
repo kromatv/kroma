@@ -4,13 +4,13 @@
 // save the lot. Backed by /api/admin/llm*.
 import type { LlmAdminConfig } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { EmptyState } from '@kroma/ui/kit';
 import { IconDeviceFloppy, IconPlus, IconSparkles } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { ProviderCard, type ProviderForm } from '#web/features/admin/ai-providers';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 import { Button, C, Card, Pill, Section, Toggle } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState } from '#web/shared/ui';
 
 /** A provider row in the form. The persisted `id` is owned by the server (blank
  *  for a not-yet-saved provider); `key` is a client-only, ephemeral handle used
@@ -163,7 +163,7 @@ export function AiPage() {
         <p className="-mt-2 mb-4 text-[12.5px] text-dim">{t('admin.aiProvidersHint')}</p>
         {cfg.providers.length === 0 ? (
           <EmptyState
-            icon={<IconSparkles size={32} stroke={1.5} />}
+            icon="sparkles"
             title={t('admin.aiNoProviders')}
             action={
               <Button label={t('admin.aiAddProvider')} icon={IconPlus} onClick={addProvider} />

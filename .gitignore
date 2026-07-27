@@ -52,8 +52,11 @@ scripts/serve-nas.sh
 # Logs
 *.log
 
-# Local runtime data dir (single-port dev: DB, WAL/SHM, logs, image cache)
+# Local runtime data dir (single-port dev: DB, WAL/SHM, logs, image cache).
+# Not just the root one: a client run from its own directory writes its own
+# (clients/mobile/data holds a SQLite DB + WAL + rotated logs).
 /data/
+clients/*/data/
 
 # Cloudflare Workers local state
 **/.wrangler/
@@ -63,3 +66,14 @@ coverage/
 
 # Brand generator intermediate (input to `bunx tauri icon`, not a shipped asset).
 scripts/brand/tauri-source-1024.png
+
+# Workbench screenshots (bun run shots): review artefacts, not sources.
+.shots/
+
+# Recorded profiles + traces (clients/tv-build/perf-profile.ts). Big, and a
+# measurement of one machine at one moment: keep the numbers, not the files.
+/perf/
+
+# Rasterised lockup that `bun run store:art` composes the store artwork from.
+# The artwork it produces IS committed (clients/*/store/); this is the scratch.
+/.store-art/

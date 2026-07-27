@@ -3,6 +3,7 @@
 // flow (POST /api/reports).
 
 import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
+import { Button, Icon } from '@kroma/ui/kit';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -15,11 +16,11 @@ import {
   View,
 } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
-import { Button, Screen, TextField } from '#mobile/components/ui';
+import { Screen, TextField } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
+import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
-import { CheckIcon, FlagIcon } from '#mobile/player/icons';
 
 const CATEGORIES: { key: ReportCategory; label: string; hint: string }[] = [
   { key: 'metadata', label: 'report.category.metadata', hint: 'report.category.metadataHint' },
@@ -51,7 +52,7 @@ export default function ReportProblem() {
         message: message.trim() || null,
       });
       setState('done');
-      setTimeout(() => router.back(), 1400);
+      setTimeout(() => goBack(router), 1400);
     } catch {
       setState('idle');
       setError(t('report.failed'));
@@ -64,7 +65,7 @@ export default function ReportProblem() {
       {state === 'done' ? (
         <View style={styles.done}>
           <View style={styles.doneBadge}>
-            <CheckIcon size={30} color={colors.accentInk} />
+            <Icon name="check" size={30} stroke={2.4} color={colors.accentInk} />
           </View>
           <Text style={styles.doneText}>{t('report.submitted')}</Text>
         </View>
@@ -76,7 +77,7 @@ export default function ReportProblem() {
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             {title ? (
               <View style={styles.subjectRow}>
-                <FlagIcon size={16} color={colors.accent} />
+                <Icon name="flag" size={16} stroke={1.8} color={colors.accent} />
                 <Text numberOfLines={1} style={styles.subject}>
                   {title}
                 </Text>
@@ -103,7 +104,9 @@ export default function ReportProblem() {
                       </Text>
                       <Text style={styles.cardHint}>{t(c.hint as never)}</Text>
                     </View>
-                    {active ? <CheckIcon size={18} color={colors.accent} /> : null}
+                    {active ? (
+                      <Icon name="check" size={18} stroke={2.4} color={colors.accent} />
+                    ) : null}
                   </Pressable>
                 );
               })}
@@ -111,6 +114,7 @@ export default function ReportProblem() {
 
             <Text style={styles.group}>{t('report.message')}</Text>
             <TextField
+              icon="message-2"
               value={message}
               onChangeText={setMessage}
               placeholder={t('report.messagePlaceholder')}

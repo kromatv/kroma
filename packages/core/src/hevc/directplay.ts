@@ -299,16 +299,10 @@ export const NATIVE_TV_CAPS: PlaybackCapabilities = {
 
 // ----- engine selection ------------------------------------------------------
 
-export type PlayerEngineKind =
-  | 'direct'
-  | 'web-mse'
-  | 'tizen-avplay'
-  | 'webos'
-  | 'desktop-mpv'
-  | 'android-exo';
+export type PlayerEngineKind = 'direct' | 'web-mse' | 'tizen-avplay' | 'webos' | 'desktop-mpv';
 
 export interface PlayEnv {
-  platform: 'web' | 'tizen' | 'webos' | 'desktop' | 'androidtv';
+  platform: 'web' | 'tizen' | 'webos' | 'desktop';
   safari: boolean;
   /** Runtime-probed capabilities of a bare `<video>` element (canPlayType /
    * MediaSource), when the caller has a DOM to probe. Widens direct-play beyond
@@ -363,6 +357,35 @@ export function avplayDirectPlayable(item: MediaItem): boolean {
   return canDirectPlay(item, NATIVE_TV_CAPS).canDirectPlay;
 }
 
+/** Containers AVFoundation demuxes, which is a MUCH shorter list than any other
+ * player's: the QuickTime/MP4 family and nothing else. No Matroska, no WebM, no
+ * MPEG-TS - Apple has never shipped a demuxer for them and no framework flag
+ * turns one on. */
+const APPLE_CONTAINERS = new Set(['mp4', 'mov', 'm4v']);
+
+/** Containers Android's Media3 / ExoPlayer extractors handle. Broad, and the
+ * same set Samsung's AVPlay covers. */
+const MEDIA3_CONTAINERS = AVPLAY_CONTAINERS;
+
+/**
+ * Whether the NATIVE clients (expo-video: AVPlayer on Apple TV, Media3 on
+ * Android TV) can open this item's ORIGINAL file, or whether it has to come
+ * through the server's remux.
+ *
+ * Split by platform because the container support is where the two players
+ * differ most, and getting it wrong is not free: tvOS answered an MKV with
+ * "Cannot Open", and the doomed attempt cost two seconds of black screen before
+ * the fallback plus a released-player race in expo-video that could take the
+ * whole app down. The video/audio codec question is shared ({@link
+ * NATIVE_TV_CAPS}) - both decode HEVC, AC-3 and E-AC-3 in hardware.
+ */
+export function nativeDirectPlayable(item: MediaItem, os: 'ios' | 'android'): boolean {
+  const container = (item.container ?? '').toLowerCase();
+  const containers = os === 'ios' ? APPLE_CONTAINERS : MEDIA3_CONTAINERS;
+  if (!containers.has(container)) return false;
+  return canDirectPlay(item, NATIVE_TV_CAPS).canDirectPlay;
+}
+
 /**
  * Pick the playback engine (and master variant) for an item in an environment.
  * Pure so it is fully unit-tested.
@@ -381,17 +404,10 @@ export function avplayDirectPlayable(item: MediaItem): boolean {
  *    native seeking, in-place audio-track switching via `aid`), so the server
  *    only sends bytes. Like AVPlay the engine keeps a direct→master fallback for
  *    the rare file mpv cannot demux, so the master (when used) is stream-copy.
- *  - androidtv: `android-exo` always. The shell's media3/ExoPlayer bridge plays
- *    the ORIGINAL file directly (hardware HEVC + platform surround decode,
- *    in-place audio switching) with a direct→master fallback, so the master
- *    (when used) is stream-copy - the same shape as AVPlay/mpv.
  */
 export function selectEngine(item: MediaItem, env: PlayEnv): EngineDecision {
   if (env.platform === 'desktop') {
     return { kind: 'desktop-mpv', aacMaster: false };
-  }
-  if (env.platform === 'androidtv') {
-    return { kind: 'android-exo', aacMaster: false };
   }
   if (env.platform === 'tizen') {
     return { kind: 'tizen-avplay', aacMaster: false };

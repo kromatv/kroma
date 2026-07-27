@@ -12,19 +12,23 @@
 //    Chromium 53-94). dist/index.html is rewritten into an ES5 loader that
 //    picks the tier at runtime. See legacy-css.ts / legacy-finalize.ts.
 
-import { readFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { ConfigEnv, UserConfig } from 'vite';
+import { collectBuildInfo, productVersion } from '../build-info/index.js';
 import { tvFrame } from '../tv-frame.vite';
 import { legacyFinalize } from './legacy-finalize';
+import { KROMA_SOURCE_PACKAGES, RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, webResolve } from './rnw';
 
 export interface TvTarget {
-  /** Which TV this shell is for (diagnostics label; playback wiring is runtime-detected). */
-  platform: 'tizen' | 'webos' | 'androidtv';
+  /** Which TV this shell is for (diagnostics label; playback wiring is runtime-detected).
+   * `bench` is not a television: the perf bench reuses this exact build so it
+   * measures the shipping pipeline rather than an approximation of it. `web` is
+   * the 10-foot experience served from an origin (tv.kroma.tv) rather than
+   * packaged - same build, no platform SDK. */
+  platform: 'tizen' | 'webos' | 'bench' | 'web';
   /** Vite dev-server port for this shell. */
   port: number;
   /** Chrome floor of the MODERN bundle's Lightning CSS down-level. Tailwind v4
@@ -39,6 +43,11 @@ export interface TvTarget {
   deviceDev?: boolean;
 }
 
+/** Build for the profiler rather than for the television: readable names and
+ * source maps, so a recorded profile attributes time to components instead of to
+ * single letters. Off unless asked for. */
+const PROFILE = process.env.KROMA_PROFILE === '1';
+
 /** This machine's LAN IPv4 a dev TV connects back to for the HMR websocket.
  * KROMA_TV_HOST (set by dev-device.sh) wins; the scan is only a fallback. */
 function lanIp(): string | undefined {
@@ -48,33 +57,43 @@ function lanIp(): string | undefined {
     .find((a) => a.family === 'IPv4' && !a.internal)?.address;
 }
 
-/** The MODERN tier config. `shellUrl` is the calling vite.config's import.meta.url. */
-/** This client build's version, baked in as `__KROMA_VERSION__` for the
- * server-compatibility banner. CI stamps `KROMA_VERSION`; otherwise it reads the
- * repo's single source of truth (server/Cargo.toml), so a local build reports the
- * real version too rather than a placeholder. */
-export function clientVersion(repoRoot: string): string {
-  if (process.env.KROMA_VERSION) return process.env.KROMA_VERSION;
-  try {
-    const toml = readFileSync(join(repoRoot, 'server', 'Cargo.toml'), 'utf8');
-    return /^version\s*=\s*"([^"]+)"/m.exec(toml)?.[1] ?? 'dev';
-  } catch {
-    return 'dev';
-  }
+/**
+ * What a browser shell bakes in about its own build, as Vite `define` entries.
+ *
+ *   __KROMA_VERSION__  the version alone, which the server-compatibility banner
+ *                      compares (see @kroma/tv CompatBanner). It is the PRODUCT's
+ *                      version, not the shell package's - CI stamps
+ *                      `KROMA_VERSION`, else server/Cargo.toml, the repo's single
+ *                      source of truth - falling back to 'dev', which the compat
+ *                      check treats as always-compatible.
+ *   __KROMA_BUILD__    the whole identity (commit, branch, date, repository) the
+ *                      About screen shows. The native TV app gets the same object
+ *                      by the other road; see clients/build-info/index.js.
+ *
+ * `shellDir` is the shell's own directory, which is where git is asked.
+ */
+export function buildDefine(repoRoot: string, shellDir: string): Record<string, string> {
+  const info = collectBuildInfo(shellDir, { version: productVersion(repoRoot) ?? 'dev' });
+  return {
+    __KROMA_VERSION__: JSON.stringify(info.version),
+    __KROMA_BUILD__: JSON.stringify(info),
+  };
 }
 
 export function tvShellConfig(shellUrl: string, target: TvTarget) {
   const repoRoot = fileURLToPath(new URL('../..', shellUrl));
+  const shellDir = fileURLToPath(new URL('.', shellUrl));
   const deviceDev = target.deviceDev === true && process.env.KROMA_TV_DEVICE === '1';
   const floor = target.chromeFloor ?? 99;
   return ({ command }: ConfigEnv): UserConfig => ({
-    define: { __KROMA_VERSION__: JSON.stringify(clientVersion(repoRoot)) },
+    define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE },
     // `tvFrame()` is dev-only (apply: 'serve'): letterboxes the app into a
     // 1920x1080 stage in a desktop browser; on a real TV the panel already is
     // that canvas, so device mode turns it off.
     plugins: [tailwindcss(), react(), tvFrame({ enabled: !deviceDev })],
-    // `#tv/*` -> the @kroma/tv package src (mirrors tsconfig.base paths).
-    resolve: { alias: { '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)) } },
+    // `#tv/*` -> the @kroma/tv package src (mirrors tsconfig.base paths), plus
+    // the react-native -> react-native-web redirect every browser target needs.
+    resolve: webResolve({ '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)) }),
     // Packaged TV apps load from a local path: assets must be referenced relatively.
     base: './',
     server: {
@@ -83,7 +102,10 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
       hmr: deviceDev ? { host: lanIp(), protocol: 'ws' } : undefined,
       fs: { allow: [repoRoot] },
     },
-    optimizeDeps: { exclude: ['@kroma/ui', '@kroma/core', '@kroma/tv'] },
+    optimizeDeps: {
+      exclude: KROMA_SOURCE_PACKAGES,
+      include: RNW_OPTIMIZE_INCLUDE,
+    },
     // Down-level the modern CSS Tailwind emits (color-mix, oklch) to plain
     // fallbacks. Fonts load via <link> in index.html so no remote @import
     // reaches the transformer. Version encoding: major << 16.
@@ -99,6 +121,12 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
       cssMinify: 'lightningcss',
       modulePreload: { polyfill: false },
       reportCompressedSize: true,
+      // A profile of a mangled bundle names every frame `Zt`, which is the same
+      // as having no profile at all. KROMA_PROFILE=1 keeps the names and emits
+      // the maps, so clients/tv-build/perf-profile.ts (and the DevTools
+      // Performance panel it writes for) can say which component is spending the
+      // frame. Never on for a shipped build: it is bigger and slower to parse.
+      sourcemap: PROFILE,
       rolldownOptions: {
         // Strip logging from shipped bundles; dev keeps console.* so on-TV logs
         // still surface in the platform log collector. vite 8 IGNORES
@@ -106,7 +134,7 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
         // output options now. Legal comments are already stripped by minify.
         output: {
           minify:
-            command === 'build'
+            command === 'build' && !PROFILE
               ? { compress: { dropConsole: true, dropDebugger: true }, mangle: true, codegen: true }
               : undefined,
         },
@@ -129,7 +157,14 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
       react(),
       legacyFinalize({ distDir: fileURLToPath(new URL('dist', shellUrl)), chrome }),
     ],
-    resolve: { alias: { '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)) } },
+    define: RNW_DEFINE,
+    // `#tv/workbench` FIRST: Vite matches string aliases by prefix in order, so
+    // a bare `#tv` listed first would swallow it. See workbench-stub.tsx for why
+    // the legacy tier drops the workbench entirely.
+    resolve: webResolve({
+      '#tv/workbench': fileURLToPath(new URL('workbench-stub.tsx', import.meta.url)),
+      '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)),
+    }),
     base: './',
     // appinfo/manifest + icons are already copied into dist/ by the modern build.
     publicDir: false,

@@ -13,11 +13,15 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "prebuild": "expo prebuild",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bundle:check": "bun ../expo-build/bundle-check.ts ."
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.14",
+    "@kesha-antonov/react-native-background-downloader": "^4.5.9",
     "@kroma/core": "workspace:*",
+    "@kroma/ui": "workspace:*",
+    "@kroma/workbench": "workspace:*",
     "@tabler/icons-react-native": "^3.45.0",
     "@tanstack/react-query": "^5.101.4",
     "expo": "~57.0.7",
@@ -43,7 +47,7 @@
     "expo-system-ui": "~57.0.1",
     "expo-video": "~57.0.1",
     "react": "19.2.8",
-    "react-native": "0.86.0",
+    "react-native": "npm:react-native-tvos@0.86.0-2",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-reanimated": "4.5.0",
     "react-native-safe-area-context": "~5.7.0",

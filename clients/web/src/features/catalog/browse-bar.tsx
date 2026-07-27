@@ -1,6 +1,6 @@
 import { type GenreCount, type MessageKey, SORT_MODES, type SortMode } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import type { ReactNode } from 'react';
+import { Chip } from '@kroma/ui/kit';
 import { Select } from '#web/shared/ui';
 
 const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
@@ -38,36 +38,23 @@ export function BrowseBar({ sort, onSort, genres, genre, onGenre }: Readonly<Bro
       </div>
       {genres.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          <GenreChip active={!genre} onClick={() => onGenre(undefined)}>
-            {t('browse.allGenres')}
-          </GenreChip>
+          <Chip
+            active={!genre}
+            variant="subtle"
+            label={t('browse.allGenres')}
+            onPress={() => onGenre(undefined)}
+          />
           {genres.map((g) => (
-            <GenreChip key={g.name} active={g.name === genre} onClick={() => onGenre(g.name)}>
-              {g.name}
-            </GenreChip>
+            <Chip
+              key={g.name}
+              active={g.name === genre}
+              variant="subtle"
+              label={g.name}
+              onPress={() => onGenre(g.name)}
+            />
           ))}
         </div>
       ) : null}
     </div>
-  );
-}
-
-/** A clickable genre pill matching the shared `Chip` visual. */
-function GenreChip({
-  active,
-  onClick,
-  children,
-}: Readonly<{ active: boolean; onClick: () => void; children: ReactNode }>) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${
-        active ? 'bg-accent text-accent-ink' : 'bg-white/8 text-text hover:bg-white/12'
-      }`}
-    >
-      {children}
-    </button>
   );
 }

@@ -1,0 +1,34 @@
+{
+  "name": "@kroma/tv-web",
+  "version": "0.1.3",
+  "private": true,
+  "type": "module",
+  "description": "KROMA 10-foot TV experience served from the web (tv.kroma.tv) thin shell over @kroma/tv.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "preview:edge": "bunx wrangler@4 dev",
+    "deploy": "bun run build && bunx wrangler@4 deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kroma/core": "workspace:*",
+    "@kroma/tv": "workspace:*",
+    "@kroma/ui": "workspace:*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.3",
+    "lightningcss": "^1.27.0",
+    "tailwindcss": "^4",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4"
+  }
+}

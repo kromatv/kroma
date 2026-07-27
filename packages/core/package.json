@@ -4,16 +4,27 @@
   "type": "module",
   "description": "KROMA shared core API client, media types, HEVC capability detection, remote-control mapping, direct-play helpers.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./react": "./src/react/index.ts"
   },
   "scripts": {
-    "typecheck": "tsgo --noEmit",
-    "build": "tsgo --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
   },
   "dependencies": {
     "@kroma/client": "workspace:*"
   },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@types/react": "^19",
+    "react": "19.2.8",
     "typescript": "^7.0.2"
   }
 }

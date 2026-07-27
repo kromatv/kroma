@@ -9,6 +9,10 @@ name: Build & Release
 #     developer mode accept it)
 #   - Android TV .apk (release-signed when the keystore secrets are set, else
 #     debug-signed for sideloading)
+#   - Apple TV .ipa, to TestFlight. Its own called workflow rather than a fourth
+#     job in the TV one, because unlike the .ipk/.wgt/.apk it is not a file a
+#     tester can sideload, so it must not gate the Release - see the comment on
+#     the `appletv` job.
 #   - Mobile .apk + .ipa, pushed to the two beta channels BETA.md points testers
 #     at (Firebase App Distribution, TestFlight). Stable tags only, and NOT in
 #     the publish job's `needs`: a beta-channel hiccup must never hold back a
@@ -127,6 +131,24 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
+      proceed: ${{ needs.version.outputs.proceed }}
+    secrets: inherit
+
+  # The fourth television, kept out of the job above and out of the publish
+  # `needs` below for the same reason `mobile` is: it ships to TestFlight rather
+  # than to a file, so it must not put Apple's upload service on the critical
+  # path of a server release. Same `targets: tv` selector as its siblings.
+  appletv:
+    name: Apple TV
+    needs: version
+    if: ${{ needs.version.outputs.proceed == 'true' && (needs.version.outputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    uses: ./.github/workflows/_release-appletv.yml
+    permissions:
+      contents: read # passed down to the called workflow
+    with:
+      version: ${{ needs.version.outputs.version }}
+      triplet: ${{ needs.version.outputs.triplet }}
+      channel: ${{ needs.version.outputs.channel }}
       proceed: ${{ needs.version.outputs.proceed }}
     secrets: inherit
 

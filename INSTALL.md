@@ -200,10 +200,14 @@ zipped). KROMA shows up under "Your apps" like any installed app; storage is
 tight on these dongles (8 GB) but the app is only ~4 MB.
 
 Notes:
-- Release APKs are debug-signed unless the repo's Android keystore secrets are
-  configured. Android refuses to update an app whose signature changed if an
-  install fails with a signature error: `adb uninstall tv.kroma.androidtv`, then
-  install the new one.
+- Release APKs are debug-signed. Android refuses to update an app whose
+  signature changed if an install fails with a signature error:
+  `adb uninstall tv.kroma.tv`, then install the new one.
+- **Upgrading from a KROMA older than 0.2:** the Android TV client used to be a
+  WebView shell under the package id `tv.kroma.androidtv`; it is now the native
+  React Native app, `tv.kroma.tv`. A different package id installs ALONGSIDE the
+  old one rather than replacing it, so remove the old app once:
+  `adb uninstall tv.kroma.androidtv`.
 
 ## macOS `.dmg` (and removing the quarantine)
 

@@ -4,10 +4,11 @@
 // in the same Poster/Rail as the home + similar rails (movies *and* shows). Empty
 // items or a timeout → render nothing.
 
-import { ProgressRing, useAiSuggest, useT } from '@kroma/ui';
+import { useAiSuggest, useT } from '@kroma/ui';
+import { ProgressRing } from '@kroma/ui/kit';
 import { SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
-import { Rail } from '#web/shared/ui';
+import { PosterRail } from '#web/shared/ui';
 
 const HEADING = 'mb-1 px-(--gutter-web) font-display text-[22px] font-bold tracking-[-.02em]';
 
@@ -25,14 +26,12 @@ export function AiSuggestRail({ id }: Readonly<{ id: string }>) {
         ) : (
           <div className="mb-3" />
         )}
-        <Rail gap={18} padded label={section.title}>
-          {section.items.map((entry) => (
-            <SectionPoster
-              key={entry.type === 'show' ? entry.show.id : entry.item.id}
-              entry={entry}
-            />
-          ))}
-        </Rail>
+        <div className="px-(--gutter-web)">
+          <PosterRail
+            data={section.items}
+            renderItem={(entry) => <SectionPoster entry={entry} />}
+          />
+        </div>
       </section>
     );
   }

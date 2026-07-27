@@ -9,19 +9,21 @@ import {
   type ReportSubjectKind,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button, IconButton } from '@kroma/ui/kit';
 import {
   IconCheck,
   IconDotsCircleHorizontal,
   IconInfoCircle,
-  IconLoader2,
   IconMessage,
   IconVideo,
   IconVolume,
-  IconX,
 } from '@tabler/icons-react';
 import { type ComponentType, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';
+
+/** RN style for a kit button that shares the row like the old `flex-1` CTAs. */
+const FLEX_1 = { flex: 1 } as const;
 
 interface CategoryMeta {
   key: ReportCategory;
@@ -107,14 +109,14 @@ export const ReportDialog = createCallable<
               </div>
               <h2 className="mt-1 truncate font-display text-[20px] font-bold">{subjectTitle}</h2>
             </div>
-            <button
-              type="button"
-              onClick={() => call.end()}
-              aria-label={t('common.close')}
-              className="shrink-0 rounded-xl border border-white/9 bg-[#15151A] px-2.5 py-2 text-white/60 hover:bg-[#1a1a20] hover:text-white"
-            >
-              <IconX size={18} stroke={2.1} />
-            </button>
+            <IconButton
+              size={36}
+              glyph={18}
+              radius={12}
+              icon="x"
+              label={t('common.close')}
+              onPress={() => call.end()}
+            />
           </header>
 
           {sent ? (
@@ -123,13 +125,7 @@ export const ReportDialog = createCallable<
                 <IconCheck size={30} stroke={2.4} />
               </span>
               <p className="text-[15px] font-semibold text-white/85">{t('report.submitted')}</p>
-              <button
-                type="button"
-                onClick={() => call.end()}
-                className="rounded-xl bg-accent px-5 py-2.5 text-[13.5px] font-bold text-[#0A0A0C] transition-colors hover:bg-accent-hover"
-              >
-                {t('common.close')}
-              </button>
+              <Button size="sm" label={t('common.close')} onPress={() => call.end()} />
             </div>
           ) : (
             <div className="flex-1 space-y-5 overflow-y-auto px-7 py-5">
@@ -194,22 +190,8 @@ export const ReportDialog = createCallable<
               ) : null}
 
               <div className="flex gap-2.5">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={submit}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-[13.5px] font-bold text-[#0A0A0C] transition-colors hover:bg-accent-hover disabled:opacity-60"
-                >
-                  {busy ? <IconLoader2 size={15} stroke={2.4} className="animate-spin" /> : null}
-                  {t('report.submit')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => call.end()}
-                  className="rounded-xl border border-white/12 bg-[#1A1A20] px-4 py-3 text-[13.5px] font-semibold text-white/75 hover:bg-[#222229]"
-                >
-                  {t('common.cancel')}
-                </button>
+                <Button label={t('report.submit')} onPress={submit} loading={busy} style={FLEX_1} />
+                <Button variant="glass" label={t('common.cancel')} onPress={() => call.end()} />
               </div>
             </div>
           )}

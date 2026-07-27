@@ -2,13 +2,13 @@
 // download control, the up-next resume card and the episode rows.
 
 import { formatRuntime, type MediaItem, type ProgressEntry, sizedImageUrl } from '@kroma/core';
+import { Button, Icon } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { absoluteFill, colors, radius, type } from '#mobile/lib/theme';
-import { CheckIcon, DownloadIcon, PlayIcon } from '#mobile/player/icons';
 import { DownloadButton } from './DownloadButton';
 import { FadeImage } from './FadeImage';
 import { ProgressRing } from './ProgressRing';
@@ -26,7 +26,7 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
   if (done === episodes.length) {
     return (
       <View style={styles.seasonDl}>
-        <CheckIcon size={16} color={colors.accent} />
+        <Icon name="check" size={16} stroke={2.4} color={colors.accent} />
         <Text style={[styles.seasonDlLabel, { color: colors.accent }]}>
           {t('offline.downloaded')}
         </Text>
@@ -35,32 +35,33 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
   }
   if (busy > 0) {
     return (
-      <Pressable
+      <Button
+        variant="ghost"
+        size="sm"
+        hitSlop={8}
+        label={`${done}/${episodes.length}`}
         onPress={() => {
           for (const ep of episodes) {
             const st = downloads.stateFor(ep.id);
             if (st.status === 'downloading' || st.status === 'queued') downloads.cancel(ep.id);
           }
         }}
-        hitSlop={8}
-        style={({ pressed }) => [styles.seasonDl, pressed && { opacity: 0.7 }]}
       >
         <ProgressRing progress={-1} size={18} />
-        <Text style={styles.seasonDlLabel}>{`${done}/${episodes.length}`}</Text>
-      </Pressable>
+      </Button>
     );
   }
   return (
-    <Pressable
+    <Button
+      variant="ghost"
+      size="sm"
+      hitSlop={8}
+      icon="download"
+      label={t('offline.downloadSeason')}
       onPress={() => {
         for (const ep of episodes) downloads.start(ep);
       }}
-      hitSlop={8}
-      style={({ pressed }) => [styles.seasonDl, pressed && { opacity: 0.7 }]}
-    >
-      <DownloadIcon size={16} color={colors.text} />
-      <Text style={styles.seasonDlLabel}>{t('offline.downloadSeason')}</Text>
-    </Pressable>
+    />
   );
 }
 
@@ -94,7 +95,7 @@ export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: num
           {next.episodeTitle ?? next.title}
         </Text>
       </View>
-      <PlayIcon size={20} />
+      <Icon name="player-play-filled" size={20} />
     </Pressable>
   );
 }
@@ -129,7 +130,7 @@ export function EpisodeRow({
         />
         <View style={styles.epPlayBadge}>
           <View style={styles.epPlayCircle}>
-            <PlayIcon size={15} />
+            <Icon name="player-play-filled" size={15} />
           </View>
         </View>
         {frac > 0 ? (
@@ -144,7 +145,7 @@ export function EpisodeRow({
             {episode.episode != null ? `${episode.episode}. ` : ''}
             {episode.episodeTitle ?? episode.title}
           </Text>
-          {watched ? <CheckIcon size={14} color={colors.success} /> : null}
+          {watched ? <Icon name="check" size={14} stroke={2.4} color={colors.success} /> : null}
         </View>
         {runtime ? <Text style={styles.epMeta}>{runtime}</Text> : null}
         {overview ? (

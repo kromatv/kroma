@@ -1,18 +1,17 @@
 import { useT } from '@kroma/ui';
-import { IconLock, IconLogout, IconUsersGroup } from '@tabler/icons-react';
+import { Avatar, Box, Hint, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
 import { actionItem } from '#tv/app/settings/items';
-import { PROFILE_SETTINGS, quitAppItem } from '#tv/app/settings/registry';
-import { useFocusNav } from '#tv/app/useFocusNav';
-import { AuthScreen, ProfileAvatar } from '#tv/shared/ui';
+import { aboutItem, groupItem, quitAppItem, SETTINGS_GROUPS } from '#tv/app/settings/registry';
+import { AuthScreen } from '#tv/shared/ui';
 import { SettingsRows } from './SettingsRows';
 
-/** Profile menu (route `profileMenu`): the shared settings block
- * (PROFILE_SETTINGS: language, keyboard, engine, GPU) followed by the
- * account rows built inline - PIN, change profile, sign out, quit. Removing a
- * server happens by signing its profiles out, not from here. Every stateful
+/** Profile menu (route `profileMenu`): the settings GROUPS (languages,
+ * playback, device - each opening a screen of its own) followed by the account
+ * rows built inline - PIN, change profile, sign out, quit. Removing a server
+ * happens by signing its profiles out, not from here. Every stateful
  * hook lives inside SettingsRows' row components, so the `!user` early return
  * below can't break hook order. */
 export function TvProfileMenu() {
@@ -30,10 +29,16 @@ export function TvProfileMenu() {
   };
 
   const rows = [
-    ...PROFILE_SETTINGS,
+    // The settings, one step deeper: three rows that each open a screen, rather
+    // than the seven that used to sit here. Twelve rows did not fit a 1080
+    // screen, so the avatar and the name - the one thing that says WHOSE menu
+    // this is - scrolled away the moment you moved.
+    ...Object.values(SETTINGS_GROUPS).map((group) =>
+      groupItem(group, () => nav.go('settingsGroup', { group: group.id })),
+    ),
     actionItem({
       id: 'pin',
-      icon: IconLock,
+      icon: 'lock',
       label: user.hasPin ? 'profileMenu.removePin' : 'profileMenu.setPin',
       badge: user.hasPin
         ? { label: 'profileMenu.on', tone: 'success' as const }
@@ -42,34 +47,42 @@ export function TvProfileMenu() {
     }),
     actionItem({
       id: 'changeProfile',
-      icon: IconUsersGroup,
+      icon: 'users-group',
       label: 'nav.changeProfile',
       run: switchProfile,
     }),
-    actionItem({ id: 'signOut', icon: IconLogout, label: 'auth.logout', run: onSignOut }),
+    actionItem({ id: 'signOut', icon: 'logout', label: 'auth.logout', run: onSignOut }),
+    aboutItem(() => nav.go('about')),
     quitAppItem,
   ];
 
   return (
     <AuthScreen>
-      <div className="mb-8 flex flex-col items-center gap-3.5">
-        <ProfileAvatar
+      <Box align="center" gap={14} mb={32}>
+        <Avatar
           name={user.username}
           seed={user.id}
           size={96}
-          radius={26}
+          roundness={0.27}
           src={client?.resolveArt(user.avatarUrl)}
         />
-        <h1 className="m-0 font-display text-[32px] font-semibold">{user.username}</h1>
-      </div>
+        <Txt variant="h1" style={{ fontSize: 32, fontWeight: '600' }}>
+          {user.username}
+        </Txt>
+      </Box>
 
-      <div className="flex w-full max-w-[560px] flex-col gap-3">
+      <Box w="100%" maxW={560} gap={12}>
         <SettingsRows items={rows} />
-      </div>
+      </Box>
 
-      <div className="mt-7 font-sans text-[14px] font-medium text-[rgba(244,243,240,0.4)]">
-        {t('profileMenu.navHint')}
-      </div>
+      <Hint
+        text={t('profileMenu.navHint')}
+        size={14}
+        gap={4}
+        mt={28}
+        color="rgba(244, 243, 240, 0.4)"
+        textStyle={{ fontWeight: '500' }}
+      />
     </AuthScreen>
   );
 }

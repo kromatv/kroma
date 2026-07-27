@@ -15,6 +15,7 @@ testing someone else's server, ask them for its address (something like
 | Device | How |
 |---|---|
 | iPhone, iPad | [TestFlight](#iphone-and-ipad) |
+| Apple TV | [TestFlight](#apple-tv) |
 | Android phone or tablet | [Firebase](#android-phone-and-tablet) |
 | Beamer, Android TV, Google TV, Fire TV, Shield | [Manual install](#beamer-and-android-tv) |
 | Computer | Just open your server's address in a browser |
@@ -31,6 +32,23 @@ notifies you whenever a new version is available.
 
 > The link goes live once Apple has approved the first beta build. If it still
 > shows an error, the review is in progress: try again later.
+
+## Apple TV
+
+The Apple TV app is the same beta as the iPhone one, so there is nothing new to
+join: if you already did the steps above, you are already a tester for it.
+
+1. On your **iPhone or iPad**, join the beta using the link above. There is no
+   way to open a link on an Apple TV, which is why this step happens on a phone.
+2. On the **Apple TV**, open the **TestFlight** app (it is built in — press the
+   Home button and look for it, or search for it in the App Store).
+3. Sign in with the **same Apple Account** you used on your phone.
+4. KROMA appears in the list. Select it, then **Install**.
+
+Updates work exactly like the phone: TestFlight offers each new version.
+
+> Both apps are one and the same on the App Store, so installing KROMA on your
+> phone also entitles you to it on your Apple TV, and vice versa.
 
 ## Android phone and tablet
 
@@ -117,7 +135,12 @@ The setting also lives under **Settings** > **Apps** > **Special access** >
 **"App not installed" or a signature error**
 An older KROMA is already present and was signed with a different key.
 Uninstall it first, then install again. From a command line:
-`adb uninstall tv.kroma.androidtv`.
+`adb uninstall tv.kroma.tv`.
+
+**Two KROMA apps on the home screen**
+The Android TV client used to be a WebView shell (`tv.kroma.androidtv`) and is
+now the native app (`tv.kroma.tv`). The new package id installs alongside the
+old one instead of replacing it: `adb uninstall tv.kroma.androidtv` once.
 
 **The app cannot find the server**
 Check that the device and the server are on the same network, and enter the

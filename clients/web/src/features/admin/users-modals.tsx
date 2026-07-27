@@ -1,5 +1,6 @@
 import { type AdminUser, type Invite, PERMISSIONS, type Permission } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button } from '@kroma/ui/kit';
 import { IconMail } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
@@ -40,20 +41,18 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
         </div>
       </div>
       <div className="flex shrink-0 gap-2.5">
-        <button
-          type="button"
-          onClick={() => void resend()}
-          className="rounded-[9px] border border-border-strong bg-surface-2 px-3.5 py-2 text-[13px] font-semibold text-text/78"
-        >
-          {copied ? t('common.linkCopied') : t('admin.resend')}
-        </button>
-        <button
-          type="button"
-          onClick={() => void client.revokeInvite(inv.token).then(onChange)}
-          className="rounded-[9px] border border-[#E8536A]/25 bg-[#E8536A]/10 px-3.5 py-2 text-[13px] font-semibold text-[#E8536A]"
-        >
-          {t('common.cancel')}
-        </button>
+        <Button
+          variant="glass"
+          size="sm"
+          label={copied ? t('common.linkCopied') : t('admin.resend')}
+          onPress={() => void resend()}
+        />
+        <Button
+          variant="danger"
+          size="sm"
+          label={t('common.cancel')}
+          onPress={() => void client.revokeInvite(inv.token).then(onChange)}
+        />
       </div>
     </div>
   );

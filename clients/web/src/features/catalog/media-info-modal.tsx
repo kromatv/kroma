@@ -5,7 +5,8 @@
 
 import type { MediaFile, MediaItem } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconLoader2, IconX } from '@tabler/icons-react';
+import { IconButton } from '@kroma/ui/kit';
+import { IconLoader2 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { createCallable } from 'react-call';
 import { FileCard } from '#web/features/catalog/media-info-card';
@@ -37,14 +38,14 @@ export const MediaInfoModal = createCallable<{ id: string; title: string }, void
                 </div>
                 <h2 className="mt-1 truncate font-display text-[20px] font-bold">{title}</h2>
               </div>
-              <button
-                type="button"
-                onClick={() => call.end()}
-                aria-label={t('common.close')}
-                className="shrink-0 rounded-xl border border-white/9 bg-[#15151A] px-2.5 py-2 text-white/60 hover:bg-[#1a1a20] hover:text-white"
-              >
-                <IconX size={18} stroke={2.1} />
-              </button>
+              <IconButton
+                size={36}
+                glyph={18}
+                radius={12}
+                icon="x"
+                label={t('common.close')}
+                onPress={() => call.end()}
+              />
             </header>
 
             <div className="flex-1 space-y-5 overflow-y-auto px-7 py-5">

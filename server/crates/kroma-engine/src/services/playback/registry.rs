@@ -190,8 +190,29 @@ impl Registry {
 
     /// Remove a session explicitly (client signalled stop). Returns it so the
     /// caller can record history.
+    ///
+    /// Unauthenticated by design - callers that act on a viewer's request must
+    /// use [`Registry::remove_owned`] instead.
     pub fn remove(&self, session_id: &str) -> Option<Session> {
         self.inner.write().unwrap().remove(session_id)
+    }
+
+    /// Remove a session ONLY if `user_id` is the viewer watching it.
+    ///
+    /// `/playback/stop` used to remove any session by id, so any authenticated
+    /// account could end anyone else's playback just by naming their session -
+    /// and the ids were `Math.random()`, so naming one was not hard. Admins keep
+    /// their own terminate route; this one is "I stopped watching".
+    ///
+    /// Returns `None` both for an unknown id and for someone else's, so the
+    /// result cannot be used to probe which sessions exist. The lookup and the
+    /// removal share one write lock, so two racing stops cannot interleave.
+    pub fn remove_owned(&self, session_id: &str, user_id: &str) -> Option<Session> {
+        let mut sessions = self.inner.write().unwrap();
+        let owned = sessions
+            .get(session_id)
+            .is_some_and(|s| s.user_id.as_deref() == Some(user_id));
+        if owned { sessions.remove(session_id) } else { None }
     }
 
     /// Snapshot all live (non-stale) sessions, newest first.

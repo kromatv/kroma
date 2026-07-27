@@ -1,40 +1,25 @@
-export type { UseAiSuggestOptions, UseAiSuggestResult } from './aiSuggest';
-export { useAiSuggest } from './aiSuggest';
-export type { ActivateResult, AuthSession } from './auth';
-export { useAuthSession } from './auth';
-export type { AvatarProps } from './components/Avatar';
-export { Avatar } from './components/Avatar';
-export type { BadgeProps, BadgeTone } from './components/Badge';
-export { Badge } from './components/Badge';
-export type { ButtonProps, ButtonSize, ButtonVariant } from './components/Button';
-export { Button } from './components/Button';
-export type { ChipProps } from './components/Chip';
-export { Chip } from './components/Chip';
-export type { EmptyStateProps } from './components/EmptyState';
-export { EmptyState } from './components/EmptyState';
-export type { ImageProps } from './components/Image';
-export { Image } from './components/Image';
-export type { KromaIntroProps } from './components/KromaIntro';
-export { KromaIntro } from './components/KromaIntro';
-export type { KromaMarkProps, KromaMarkSpin } from './components/KromaMark';
-export { KROMA_WHEEL_COLORS, KROMA_WHEEL_SEGMENTS, KromaMark } from './components/KromaMark';
-export type { LogoProps } from './components/Logo';
-export { Logo } from './components/Logo';
-export type { PosterCardProps } from './components/PosterCard';
-export { PosterCard } from './components/PosterCard';
-export type { ProgressRingProps } from './components/ProgressRing';
-export { ProgressRing } from './components/ProgressRing';
-export { CardSkeleton, Skeleton, TableSkeleton } from './components/Skeleton';
-export type { I18nProviderProps } from './i18n';
-export { I18nProvider, useLocale, useSetLocale, useT } from './i18n';
-export type { LocaleProviderProps } from './locale';
-export { LocaleProvider } from './locale';
-export type { PlaybackHeartbeatParams } from './playback';
-export { usePlaybackHeartbeat } from './playback';
-export * from './player';
-export type { Storyboard, StoryboardTile } from './storyboard';
-export { useStoryboard } from './storyboard';
-export type { SubtitleGenerationsOptions, SubtitleGenerationsResult } from './subtitleGenerations';
-export { useSubtitleGenerations } from './subtitleGenerations';
-export type { ThemeAudio } from './themeAudio';
-export { useThemeAudio } from './themeAudio';
+// @kroma/ui: the SERVICES half of the design system - the hooks and providers
+// that talk to the server or hold app state - plus the player, whose props are
+// those services' own types. The components are `@kroma/ui/kit`; see kit.ts for
+// why the two are disjoint and how that is (not) enforced.
+
+export * from './components/organisms/player';
+export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
+export { useAiSuggest } from './services/aiSuggest';
+export type { ActivateResult, AuthSession } from './services/auth';
+export { useAuthSession } from './services/auth';
+export type { I18nProviderProps } from './services/i18n';
+export { I18nProvider, useLocale, useSetLocale, useT } from './services/i18n';
+export type { LocaleProviderProps } from './services/locale';
+export { LocaleProvider } from './services/locale';
+export type { PlaybackHeartbeatParams } from './services/playback';
+export { usePlaybackHeartbeat } from './services/playback';
+export type { Storyboard, StoryboardTile } from './services/storyboard';
+export { useStoryboard } from './services/storyboard';
+export type {
+  SubtitleGenerationsOptions,
+  SubtitleGenerationsResult,
+} from './services/subtitleGenerations';
+export { useSubtitleGenerations } from './services/subtitleGenerations';
+export type { ThemeAudio } from './services/themeAudio';
+export { useThemeAudio } from './services/themeAudio';

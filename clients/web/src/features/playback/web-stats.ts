@@ -1,21 +1,7 @@
-import type { AudioTrack, Translate } from '@kroma/core';
+import { type AudioTrack, formatTimecode as clock, type Translate } from '@kroma/core';
 import type { PlayerMeter, PlayerStats } from '@kroma/ui';
 import type { EngineLiveStats } from '#web/features/playback/engine-stats';
 import type { MovieView } from '#web/shared/lib/api';
-
-// Sparkline colours for the live meters, readable on the dark frosted card.
-const METER_COLORS = { buffer: '#5fd0a6', bandwidth: '#5c8df6', bitrate: '#f6b45c' };
-
-/** Format seconds as `H:MM:SS` (or `M:SS`). */
-function clock(s: number): string {
-  if (!Number.isFinite(s) || s < 0) s = 0;
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = Math.floor(s % 60);
-  const mm = h ? String(m).padStart(2, '0') : String(m);
-  const hours = h ? `${h}:` : '';
-  return `${hours}${mm}:${String(sec).padStart(2, '0')}`;
-}
 
 const READY = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT', 'HAVE_FUTURE', 'HAVE_ENOUGH'];
 const NETWORK = ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'];
@@ -116,74 +102,117 @@ function audioFormatLabel(selAudio: AudioTrack | undefined, item: MovieView): st
   return `${acodec}${channels}${language}`;
 }
 
-/** The verbose HLS/transport diagnostics rows shown under the headline fields. */
-function statsRows(s: WebStatsInput, m: StatsMetrics): { label: string; value: string }[] {
+/** A row of the panel's `extra` list, in the block it belongs to. The panel
+ * renders each `group` as its own titled column, which is what keeps twenty
+ * diagnostics readable. */
+type ExtraRow = { label: string; value: string; group?: string };
+
+/** The verbose HLS/transport diagnostics rows shown under the headline fields,
+ * sorted into three blocks: what the FILE is, what the TRANSPORT is doing, and
+ * what this CLIENT is. */
+function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
   const { v, item, cur, useHls, anchor, baseSec, engine, t } = s;
   const { dw, dh, dpr, rel, conn, rate } = m;
   const position = useHls ? `${clock(cur)} · rel ${rel.toFixed(0)}s` : clock(cur);
-  const push = (label: string, value: string | undefined) => {
-    if (value != null && value !== '') rows.push({ label, value });
+  const push = (group: string, label: string, value: string | undefined) => {
+    if (value != null && value !== '') rows.push({ group, label, value });
   };
-  const rows: { label: string; value: string }[] = [
-    { label: t('stats.title2'), value: item.title },
-    { label: t('stats.container'), value: item.container.toUpperCase() },
-    { label: t('stats.position'), value: position },
-    { label: t('stats.display'), value: dw && dh ? `${dw}×${dh} @${dpr}x` : '-' },
-    { label: t('stats.size'), value: s.bytes ? `${(s.bytes / 1e9).toFixed(2)} Go` : '…' },
+  const media = t('stats.groupMedia');
+  const transport = t('stats.groupTransport');
+  const client = t('stats.groupClient');
+
+  const rows: ExtraRow[] = [
+    { group: media, label: t('stats.title2'), value: item.title },
+    { group: media, label: t('stats.container'), value: item.container.toUpperCase() },
+    { group: media, label: t('stats.position'), value: position },
     {
-      label: t('stats.volume'),
-      value: `${Math.round((v?.volume ?? 1) * 100)}%${v?.muted ? t('stats.volumeMuted') : ''}`,
+      group: media,
+      label: t('stats.size'),
+      value: s.bytes ? `${(s.bytes / 1e9).toFixed(2)} Go` : '…',
     },
   ];
-  if (rate !== 1) push(t('stats.speed'), `${rate.toFixed(2)}×`);
-  // Live engine transport (Shaka / hls.js): real bitrate, bandwidth estimate,
-  // rebuffering and bytes fetched. Absent on direct-play / native HLS.
-  if (engine) {
-    push(t('stats.streamBitrate'), kbps(engine.streamBitrateKbps));
-    push(t('stats.bandwidth'), kbps(engine.estBandwidthKbps));
-    if (engine.stalls != null) {
-      const buffering = engine.bufferingSec ? ` (${engine.bufferingSec.toFixed(1)}s)` : '';
-      push(t('stats.stalls'), `${engine.stalls}${buffering}`);
-    }
-    push(t('stats.downloaded'), bytesH(engine.bytesDownloaded));
-    push(t('stats.codecs'), engine.currentCodecs);
-  }
-  push(t('stats.state'), `${READY[v?.readyState ?? 0]} · NET_${NETWORK[v?.networkState ?? 0]}`);
-  push(
-    t('stats.connection'),
-    conn.downlink ? `${conn.downlink} Mb/s · ${conn.effectiveType ?? ''}` : '-',
-  );
   if (useHls) {
-    rows.splice(3, 0, {
+    rows.push({
+      group: media,
       label: t('stats.anchor'),
       value: `${clock(anchor)} (${baseSec.toFixed(0)}s)`,
     });
   }
+  // Live engine transport (Shaka / hls.js): real bitrate, bandwidth estimate,
+  // rebuffering and bytes fetched. Absent on direct-play / native HLS.
+  if (engine) {
+    push(transport, t('stats.streamBitrate'), kbps(engine.streamBitrateKbps));
+    push(transport, t('stats.bandwidth'), kbps(engine.estBandwidthKbps));
+    if (engine.stalls != null) {
+      const buffering = engine.bufferingSec ? ` (${engine.bufferingSec.toFixed(1)}s)` : '';
+      push(transport, t('stats.stalls'), `${engine.stalls}${buffering}`);
+    }
+    push(transport, t('stats.downloaded'), bytesH(engine.bytesDownloaded));
+    push(transport, t('stats.codecs'), engine.currentCodecs);
+  }
+  push(
+    transport,
+    t('stats.state'),
+    `${READY[v?.readyState ?? 0]} · NET_${NETWORK[v?.networkState ?? 0]}`,
+  );
+  push(client, t('stats.display'), dw && dh ? `${dw}×${dh} @${dpr}x` : '-');
+  push(
+    client,
+    t('stats.volume'),
+    `${Math.round((v?.volume ?? 1) * 100)}%${v?.muted ? t('stats.volumeMuted') : ''}`,
+  );
+  if (rate !== 1) push(client, t('stats.speed'), `${rate.toFixed(2)}×`);
+  push(
+    client,
+    t('stats.connection'),
+    conn.downlink ? `${conn.downlink} Mb/s · ${conn.effectiveType ?? ''}` : '-',
+  );
   return rows;
 }
 
-/** The live numeric series drawn as sparklines: buffer health (always), plus the
- * engine's bandwidth estimate and current stream bitrate when an MSE engine is
- * attached. Each carries the instantaneous `value` (graphed) and a formatted
- * `display` (shown beside the graph). */
+/**
+ * Where a buffer stops being comfortable, as the panel's reference line.
+ *
+ * A low-water mark, not the goal: the engines here are tuned to buffer 120 s
+ * ahead (video-engine.ts FORWARD_BUFFER_SEC), so a healthy stream sits far above
+ * this. 10 s is Shaka's own default `bufferingGoal` - the level the library
+ * considers merely adequate - which makes a trace sagging toward it the earliest
+ * honest warning that the connection is losing.
+ */
+const LOW_BUFFER_SEC = 10;
+
+/**
+ * The live numeric series the panel charts.
+ *
+ * Bandwidth and bitrate SHARE a chart, because they share a unit and because the
+ * gap between them is the actual diagnostic: while the connection is delivering
+ * more than the stream is asking for there is slack, and when the two meet the
+ * stream is about to stall. As two independently auto-scaled sparklines - which
+ * is what they were - that relationship was invisible, and each one's wobble was
+ * scaled up to look alarming no matter how steady the stream was.
+ *
+ * Buffer keeps its own chart: it is seconds, not kb/s, and putting it on the same
+ * axis as a number ~3000x larger would flatten it to a dead line.
+ *
+ * No colours are set here. The panel assigns them from the design system's
+ * validated series palette, which is checked as a SET (adjacent contrast, and
+ * separation under each kind of colourblindness); hand-picking one per call site
+ * is how a set stops being a set.
+ */
 function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
-  const meters: PlayerMeter[] = [
-    {
-      key: 'buffer',
-      label: s.t('stats.buffer'),
-      value: m.bufferAhead,
-      display: s.t('stats.bufferAhead', { seconds: m.bufferAhead.toFixed(1) }),
-      color: METER_COLORS.buffer,
-    },
-  ];
+  const meters: PlayerMeter[] = [];
   const eng = s.engine;
+  // Bandwidth first: it is the upper series of the pair, and the one that owns
+  // the band drawn between them.
   if (eng?.estBandwidthKbps) {
     meters.push({
       key: 'bandwidth',
       label: s.t('stats.bandwidth'),
       value: eng.estBandwidthKbps,
       display: kbps(eng.estBandwidthKbps) ?? '-',
-      color: METER_COLORS.bandwidth,
+      chart: 'throughput',
+      chartLabel: s.t('stats.throughput'),
+      band: true,
     });
   }
   if (eng?.streamBitrateKbps) {
@@ -192,9 +221,19 @@ function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
       label: s.t('stats.streamBitrate'),
       value: eng.streamBitrateKbps,
       display: kbps(eng.streamBitrateKbps) ?? '-',
-      color: METER_COLORS.bitrate,
+      chart: 'throughput',
     });
   }
+  meters.push({
+    key: 'buffer',
+    label: s.t('stats.buffer'),
+    value: m.bufferAhead,
+    display: s.t('stats.bufferAhead', { seconds: m.bufferAhead.toFixed(1) }),
+    reference: {
+      value: LOW_BUFFER_SEC,
+      label: s.t('stats.bufferAhead', { seconds: String(LOW_BUFFER_SEC) }),
+    },
+  });
   return meters;
 }
 

@@ -1,14 +1,14 @@
 // Loading-placeholder kit. The base `Skeleton` primitive plus the admin
-// table/card shells come from the design system (@kroma/ui); this file adds the
+// table/card shells come from the browser primitives (@kroma/admin-kit); this file adds the
 // catalogue-specific composites shaped like the real layouts they stand in for
 // (rails, the title-detail page) so a loading screen keeps the page's structure
 // instead of a blank gap or a spinner. Used as `<Suspense>` fallbacks and route
 // `pendingComponent`s. Every list here is a fixed-length placeholder that never
 // reorders, so an index key is correct.
 
-import { Skeleton } from '@kroma/ui';
+import { Skeleton } from '@kroma/admin-kit';
 
-export { CardSkeleton, Skeleton, TableSkeleton } from '@kroma/ui';
+export { CardSkeleton, Skeleton, TableSkeleton } from '@kroma/admin-kit';
 
 /** A stack of text-line placeholders; the last line is shortened like real text. */
 export function SkeletonText({

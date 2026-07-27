@@ -1,13 +1,14 @@
 import { ItemId, ShowId } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconListDetails } from '@tabler/icons-react';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
 import { useMyList } from '#web/shared/lib/mylist';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/mylist')({
   // The catalogue is public/SSR; the per-user list is hydrated client-side, so we
@@ -60,10 +61,7 @@ function MyListPage() {
     <main className={PAGE_MAIN}>
       <h1 className={PAGE_TITLE}>{t('nav.myList')}</h1>
       {ready && entries.length === 0 ? (
-        <EmptyState
-          icon={<IconListDetails size={32} stroke={1.5} />}
-          title={t('content.myListEmpty')}
-        />
+        <EmptyState icon="list-details" title={t('content.myListEmpty')} />
       ) : (
         <div className="mt-6">
           <CatalogGrid entries={entries} />

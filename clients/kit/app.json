@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "KROMA Kit",
+    "slug": "kroma-kit",
+    "version": "0.1.3",
+    "orientation": "default",
+    "scheme": "kroma-kit",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0C",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "tv.kroma.kit",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "tv.kroma.kit"
+    },
+    "plugins": [["@react-native-tvos/config-tv", { "showVerboseWarnings": false }]],
+    "experiments": {
+      "tsconfigPaths": true
+    }
+  }
+}

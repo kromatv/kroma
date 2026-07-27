@@ -168,7 +168,7 @@ kroma/
 │  ├─ web/    @kroma/web     desktop browser shell (sidebar) TanStack Start SSR + Tailwind v4
 │  ├─ tizen/  @kroma/tizen   Samsung TV thin shell + config.xml → .wgt
 │  ├─ webos/  @kroma/webos   LG TV thin shell (modern + legacy tiers) → .ipk
-│  ├─ androidtv/ @kroma/androidtv  Android TV WebView shell + native ExoPlayer → .apk
+│  ├─ tv-native/ @kroma/tv-native  Apple TV + Android TV native app (React Native) → .ipa/.apk
 │  ├─ mobile/ @kroma/mobile   iPhone / iPad / Android app (Expo + expo-video) → .ipa/.apk
 │  └─ tv-build/              shared TV-shell build pipeline (tv.target.ts per shell)
 └─ design/                  imported design source (tokens, components, guidelines, KROMA.dc.html)
@@ -183,7 +183,7 @@ kroma/
 | `@kroma/web` | Desktop browser client | [clients/web/README.md](clients/web/README.md) |
 | `@kroma/tizen` | Samsung TV (Tizen) shell | [clients/tizen/README.md](clients/tizen/README.md) |
 | `@kroma/webos` | LG TV (webOS) shell, modern + legacy (2018+) tiers | [clients/webos/README.md](clients/webos/README.md) |
-| `@kroma/androidtv` | Android TV / Google TV shell (WebView + ExoPlayer) | [clients/androidtv/README.md](clients/androidtv/README.md) |
+| `@kroma/tv-native` | Apple TV + Android TV native app (React Native) | [clients/tv-native](clients/tv-native) |
 | `@kroma/mobile` | iPhone / iPad / Android app (Expo, offline downloads) | [clients/mobile/README.md](clients/mobile/README.md) |
 | `design` | Design system source (tokens, guidelines) | [design/readme.md](design/readme.md) |
 
@@ -211,20 +211,24 @@ KROMA_MEDIA_DIRS=/volume1/media bun run server
 ```
 
 ```bash
-bun start        # also builds (prepares) the Tizen app first, then runs dev
+bun run dev:all  # the same, plus the Tizen shell on :5174
 ```
 
 Prefer separate terminals? `bun run server`, then `bun run dev:web`.
 
 ## Platforms
 
-Each TV client runs in a normal desktop browser for development **arrow keys +
+Every root script is `<verb>:<target>`: **`dev:`** starts a dev server (Vite, or
+Metro for the native apps), **`run:`** compiles a native app and launches it on a
+simulator or a device, **`build:`** / **`deploy:`** ship it. `bun run` with no
+argument lists them all.
+
+Each TV *shell* runs in a normal desktop browser for development **arrow keys +
 Enter act as the remote**:
 
 ```bash
 bun run dev:tizen      # :5174   Samsung
 bun run dev:webos      # :5175   LG
-bun run dev:androidtv  # :5176   Android TV
 ```
 
 | Platform | Dev | Package & install |
@@ -232,8 +236,19 @@ bun run dev:androidtv  # :5176   Android TV
 | **Web** (desktop browser) | `bun run dev:web` | `bun run build:web` → static/SSR bundle ([web README](clients/web/README.md)) |
 | **Samsung TV** (Tizen) | `bun run dev:tizen` | `make -C clients/tizen deploy TV_IP=…` → `.wgt` ([tizen README](clients/tizen/README.md) · [SETUP](clients/tizen/SETUP.md)) |
 | **LG TV** (webOS) | `bun run dev:webos` | `ares-package clients/webos/dist` → `.ipk` ([webos README](clients/webos/README.md)) |
-| **Android TV / Google TV** | `bun run dev:androidtv` | `bun run build:androidtv` then `./gradlew assembleRelease` → `.apk` ([androidtv README](clients/androidtv/README.md)) |
-| **iPhone / iPad / Android** | `bun run dev:mobile` | `bun run ios` / `bun run android` in `clients/mobile` (Expo prebuild + native build) ([mobile README](clients/mobile/README.md)) |
+| **Apple TV / Android TV / Google TV** | `bun run run:tv-native:appletv` · `run:tv-native:androidtv` | Expo prebuild + native build; `bun run bundle:tv-native` is the JS-only gate ([tv-native](clients/tv-native)) |
+| **iPhone / iPad / Android** | `bun run run:mobile:ios` · `run:mobile:android` | Expo prebuild + native build; `bun run bundle:mobile` is the JS-only gate ([mobile README](clients/mobile/README.md)) |
+| **Design system workbench** | `bun run dev:kit` · `run:kit:appletv` · `run:kit:ios` | `bun run deploy:kit` → ui.kroma.tv ([kit README](clients/kit/README.md)) |
+
+The `run:` scripts pass their extra flags straight through to Expo: a physical
+device is `bun run run:tv-native:appletv --device "Salon"`, and adding
+`--configuration Release` installs a standalone build that needs no Metro at
+all. `dev:mobile` and `dev:tv-native` start Metro alone, for when the app is
+already installed.
+
+Two Expo apps at once collide on Metro's port: `--port 8083` moves the *server*,
+but a debug build still asks :8081 until you tell that install otherwise —
+`xcrun simctl spawn <udid> defaults write tv.kroma.mobile RCT_jsLocation localhost:8083`.
 
 Every TV shell is driven by its `tv.target.ts` (platform, dev port, engine
 floors) through the shared pipeline in

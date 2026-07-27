@@ -7,7 +7,7 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{demo_item_id, demo_show_id, get, raw, test_app};
+use crate::api::test_support::{demo_item_id, demo_show_id, get, raw, test_app, test_app_with_tmdb};
 use serde_json::Value;
 
 /// The demo Movies-library id, resolved through the live libraries endpoint.
@@ -281,4 +281,25 @@ async fn people_lookup_merges_movie_and_show_credits() {
         get(&t.app, &format!("/api/people?name=Ada%20Lovelace&library={matrix_lib}"), Some(&t.token)).await;
     assert_eq!(scoped["results"].as_array().map(Vec::len), Some(1));
     assert_eq!(scoped["results"][0]["type"], json!("movie"));
+}
+
+#[tokio::test]
+async fn person_details_are_a_soft_miss_without_a_provider() {
+    let t = test_app(); // no TMDB key configured
+    let (status, body): (StatusCode, Value) =
+        get(&t.app, "/api/people/details?name=Ada%20Lovelace", Some(&t.token)).await;
+    // A biography nobody can fetch is not an error: the page still has a
+    // filmography to render, so the envelope comes back with a null person.
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["name"], json!("Ada Lovelace"));
+    assert_eq!(body["person"], Value::Null);
+}
+
+#[tokio::test]
+async fn person_details_with_a_blank_name_never_reaches_the_provider() {
+    let t = test_app_with_tmdb();
+    let (status, body): (StatusCode, Value) = get(&t.app, "/api/people/details", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["name"], json!(""));
+    assert_eq!(body["person"], Value::Null);
 }

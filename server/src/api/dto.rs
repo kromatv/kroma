@@ -292,3 +292,14 @@ pub struct PersonResponse {
     pub name: String,
     pub results: Vec<SearchHit>,
 }
+
+/// `GET /api/people/details?name=…` the person behind a credit, from the
+/// metadata provider. `person` is `null` whenever the provider has nothing (no
+/// key, unknown name, provider down): the page renders the filmography either
+/// way, so this is a soft miss, never an error.
+#[derive(Serialize)]
+pub struct PersonDetailResponse {
+    /// Echoed, so a client can key a cache on what it asked for.
+    pub name: String,
+    pub person: Option<crate::model::PersonDetail>,
+}

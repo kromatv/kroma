@@ -1,7 +1,9 @@
-import { KromaIntro } from '@kroma/ui';
-import { lazy, useEffect, useState } from 'react';
+import { configureRemote } from '@kroma/ui/kit';
+import { useEffect } from 'react';
+import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
-import { type RedirectRule, resolveRedirect } from '#tv/app/guard';
+import { resolveRedirect } from '#tv/app/guard';
+import { GUARD } from '#tv/app/navPolicy';
 import { AuthProvider, useAuth } from '#tv/app/providers/auth';
 import { ConnectionProvider, useConnection } from '#tv/app/providers/connection';
 import { ContinueProvider } from '#tv/app/providers/continue';
@@ -10,15 +12,10 @@ import { LocaleProvider } from '#tv/app/providers/locale';
 import { MyListProvider } from '#tv/app/providers/mylist';
 import { RecommendProvider } from '#tv/app/providers/recommend';
 import { WatchedProvider } from '#tv/app/providers/watched';
-import {
-  type RouteName,
-  TvClientProvider,
-  TvNavProvider,
-  TvOutlet,
-  type TvScreens,
-  useNav,
-} from '#tv/app/router';
+import { TvClientProvider, TvNavProvider, TvOutlet, type TvScreens, useNav } from '#tv/app/router';
+import { onSearchRequest } from '#tv/app/searchRequest';
 import { useCatalogue } from '#tv/app/useCatalogue';
+import { TvAbout } from '#tv/features/accounts/TvAbout';
 import { TvAddProfile } from '#tv/features/accounts/TvAddProfile';
 import { TvConnect } from '#tv/features/accounts/TvConnect';
 import { TvDeviceSettings } from '#tv/features/accounts/TvDeviceSettings';
@@ -26,6 +23,8 @@ import { TvPin } from '#tv/features/accounts/TvPin';
 import { TvProfileMenu } from '#tv/features/accounts/TvProfileMenu';
 import { TvProfiles } from '#tv/features/accounts/TvProfiles';
 import { TvQuickConnect } from '#tv/features/accounts/TvQuickConnect';
+import { TvSettingsGroup } from '#tv/features/accounts/TvSettingsGroup';
+import { BROWSE_CHROME } from '#tv/features/catalog/home/chrome';
 import { TvGenreGrid } from '#tv/features/catalog/TvGenreGrid';
 import { TvGenres } from '#tv/features/catalog/TvGenres';
 import { TvGrid } from '#tv/features/catalog/TvGrid';
@@ -34,16 +33,10 @@ import { TvMovieDetail } from '#tv/features/catalog/TvMovieDetail';
 import { TvPerson } from '#tv/features/catalog/TvPerson';
 import { TvSearch } from '#tv/features/catalog/TvSearch';
 import { TvShowDetail } from '#tv/features/catalog/TvShowDetail';
-
-// The player (its 4 playback engines + the seek / subtitle / stats stack) is the
-// app's heaviest screen and is only reached once the user starts playback lazy
-// it so the browse-first initial bundle stays lean. TvPlayer is a NAMED export,
-// so shim it to a default for React.lazy. The `<Suspense>` that catches this
-// lives in <TvOutlet> (app/router.tsx). Legacy-tier IIFE builds inline dynamic
-// imports back into their single classic file, so only the modern tiers split.
-const TvPlayer = lazy(() =>
-  import('#tv/features/playback/TvPlayer').then((m) => ({ default: m.TvPlayer })),
-);
+// How the player is loaded is a PLATFORM decision, not an app one: the browser
+// targets code-split it, the native ones cannot (and must not - see the module).
+import { TvPlayer } from '#tv/features/playback/playerChunk';
+import { TvReport } from '#tv/features/reports/TvReport';
 
 export interface TvAppProps {
   /** Platform label shown in diagnostics, e.g. "Tizen" / "webOS". */
@@ -59,25 +52,18 @@ export interface TvAppProps {
   introVideoSrc?: string;
 }
 
-// The brand intro plays once per launch. sessionStorage survives Vite HMR (so dev
-// reloads don't replay it) but is fresh on a real TV cold-start.
-const INTRO_SEEN_KEY = 'kroma:intro-seen';
-const introAlreadySeen = (() => {
-  try {
-    return sessionStorage.getItem(INTRO_SEEN_KEY) === '1';
-  } catch {
-    return false;
-  }
-})();
+// One remote, one navigator. Wired at module scope so it is in place before the
+// first screen renders, on every shell: the tvOS/Android event emitter and the
+// browser TVs' key events both end in the same four directions.
+configureRemote();
 
 export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly<TvAppProps>) {
   const { connection, client, activeServerUrl, setActiveServer, setSignedIn } =
     useCatalogue(platform);
-  const [introDone, setIntroDone] = useState(introAlreadySeen);
 
   return (
     <EnvProvider platform={platform} overrides={capabilities}>
-      <TvNavProvider screens={SCREENS}>
+      <TvNavProvider screens={SCREENS} chrome={BROWSE_CHROME}>
         <ConnectionProvider value={connection}>
           <TvClientProvider client={client}>
             <AuthProvider
@@ -102,20 +88,7 @@ export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly
           </TvClientProvider>
         </ConnectionProvider>
       </TvNavProvider>
-      {introDone ? null : (
-        <KromaIntro
-          lite
-          videoSrc={introVideoSrc}
-          onDone={() => {
-            try {
-              sessionStorage.setItem(INTRO_SEEN_KEY, '1');
-            } catch {
-              /* ignore */
-            }
-            setIntroDone(true);
-          }}
-        />
-      )}
+      <BrandIntro videoSrc={introVideoSrc} />
     </EnvProvider>
   );
 }
@@ -127,8 +100,10 @@ const SCREENS: TvScreens = {
   addProfile: TvAddProfile,
   quick: TvQuickConnect,
   deviceSettings: TvDeviceSettings,
+  about: TvAbout,
   pin: TvPin,
   profileMenu: TvProfileMenu,
+  settingsGroup: TvSettingsGroup,
   home: TvHome,
   grid: TvGrid,
   genres: TvGenres,
@@ -138,46 +113,8 @@ const SCREENS: TvScreens = {
   movie: TvMovieDetail,
   show: TvShowDetail,
   player: TvPlayer,
+  report: TvReport,
 };
-
-// Screen groups for the navigation guard. The profile picker is the signed-out
-// home even with no servers yet it shows just "Ajouter un profil", which opens
-// the wizard (where `connect` / "Ajouter manuellement" lives). So `connect` is an
-// auth-flow screen, never the launch screen.
-const AUTH_SCREENS = [
-  'profiles',
-  'addProfile',
-  'connect',
-  'quick',
-  'pin',
-  'deviceSettings',
-] as const; // signed out
-const APP_SCREENS = [
-  'home',
-  'grid',
-  'genres',
-  'genre',
-  'search',
-  'person',
-  'movie',
-  'show',
-  'player',
-  'profileMenu',
-  'pin',
-] as const; // signed in (pin: set/clear)
-
-interface GuardState {
-  signedIn: boolean;
-}
-
-type GuardTarget = 'profiles' | 'home';
-
-// Declarative navigation policy (first match wins): signed-out → the picker /
-// auth flow; signed-in → the app.
-const GUARD: readonly RedirectRule<GuardState, RouteName, GuardTarget>[] = [
-  { when: (s) => !s.signedIn, to: 'profiles', allow: AUTH_SCREENS },
-  { when: () => true, to: 'home', allow: APP_SCREENS },
-];
 
 /** Drives the route from connection + session, then renders the routed screen. */
 function TvRouterGuard() {
@@ -188,6 +125,15 @@ function TvRouterGuard() {
   useEffect(() => {
     const target = resolveRedirect(GUARD, { signedIn: Boolean(user) }, nav.route.name);
     if (target) nav.replace(target);
+  }, [user, nav]);
+
+  // A search asked for from outside the app (Siri on Apple TV). Only once signed
+  // in: there is no catalogue to search before that, and the guard would bounce
+  // the screen straight back anyway. The query itself is read by the search
+  // screen as it mounts.
+  useEffect(() => {
+    if (!user) return;
+    return onSearchRequest(() => nav.reset('search'));
   }, [user, nav]);
 
   // Apply a pending Smart-Hub deep link once signed in and its target is loaded.

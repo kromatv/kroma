@@ -1,0 +1,24 @@
+<!-- Merged into the app manifest, so publishing to the launcher home carries its
+     own requirements instead of leaving them to be remembered in app.json.
+
+     - WRITE_EPG_DATA: publishing the rows at all.
+     - READ_EPG_DATA: read back our OWN published rows so a sync can reconcile
+       them (drop stale + de-duplicate) instead of leaving orphans. Without it
+       every sync is blind and the rows pile up.
+     - <queries>: since Android 11, package visibility means an app cannot see or
+       message the TV launcher without declaring it. Without this the AppsFilter
+       BLOCKS the interaction, so `requestChannelBrowsable` never reaches the
+       launcher and our channels never surface. The two Google TV packages plus
+       the channel-browsable intent (which covers non-Google launchers too). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="com.android.providers.tv.permission.READ_EPG_DATA" />
+  <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
+
+  <queries>
+    <package android:name="com.google.android.tvlauncher" />
+    <package android:name="com.google.android.tvrecommendations" />
+    <intent>
+      <action android:name="android.media.tv.action.REQUEST_CHANNEL_BROWSABLE" />
+    </intent>
+  </queries>
+</manifest>

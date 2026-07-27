@@ -1,12 +1,15 @@
-// Native counterpart of the @kroma/ui <Image> fade primitive: artwork fades in
-// on load and cross-fades on source change (expo-image does both natively),
-// over the same per-title gradient placeholder the other clients use.
+// Artwork with the design system's fade, over the per-title gradient the other
+// clients use.
+//
+// This is @kroma/ui's <Img>: it fades in on load and cross-fades when the source
+// changes, and it shows the deterministic genre gradient instantly so a tile is
+// never blank. What stays here is only this app's call shape (`uri` + `seed`),
+// which the screens already use everywhere.
 
 import { posterColors } from '@kroma/core';
-import { Image, type ImageContentFit } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Img, tintGradient } from '@kroma/ui/kit';
+import type { ImageContentFit } from 'expo-image';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { StyleSheet, View } from 'react-native';
 
 export interface FadeImageProps {
   uri: string | null;
@@ -24,24 +27,13 @@ export function FadeImage({
   radius = 0,
   style,
 }: Readonly<FadeImageProps>) {
-  const [from, to] = posterColors(seed ?? uri ?? 'kroma');
   return (
-    <View style={[styles.box, { borderRadius: radius }, style]}>
-      <LinearGradient colors={[from, to]} style={StyleSheet.absoluteFill} />
-      {uri ? (
-        <Image
-          source={{ uri }}
-          contentFit={fit}
-          transition={250}
-          cachePolicy="memory-disk"
-          style={StyleSheet.absoluteFill}
-          recyclingKey={uri}
-        />
-      ) : null}
-    </View>
+    <Img
+      src={uri}
+      background={tintGradient(posterColors(seed ?? uri ?? 'kroma'))}
+      fit={fit === 'contain' ? 'contain' : 'cover'}
+      radius={radius}
+      style={style}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  box: { overflow: 'hidden', backgroundColor: '#141418' },
-});

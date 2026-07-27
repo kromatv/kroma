@@ -5,7 +5,6 @@
 
 import { apiErrorText, KromaApiError, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconHome, IconLogin, IconRefresh } from '@tabler/icons-react';
 import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
 import { Button, Logo } from '#web/shared/ui';
 
@@ -77,23 +76,24 @@ function ErrorScreen({
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           {onRetry ? (
-            <Button variant="glass" size="sm" icon={<IconRefresh size={16} />} onClick={onRetry}>
-              {t('error.retry')}
-            </Button>
+            <Button
+              variant="glass"
+              size="sm"
+              icon="refresh"
+              label={t('error.retry')}
+              onPress={onRetry}
+            />
           ) : null}
           {onSignIn ? (
-            <Button size="sm" icon={<IconLogin size={16} />} onClick={onSignIn}>
-              {t('auth.login')}
-            </Button>
+            <Button size="sm" icon="login" label={t('auth.login')} onPress={onSignIn} />
           ) : null}
           <Button
             variant={onSignIn ? 'glass' : 'primary'}
             size="sm"
-            icon={<IconHome size={16} />}
-            onClick={() => void router.navigate({ to: '/' })}
-          >
-            {t('error.home')}
-          </Button>
+            icon="home"
+            label={t('error.home')}
+            onPress={() => void router.navigate({ to: '/' })}
+          />
         </div>
       </div>
     </main>

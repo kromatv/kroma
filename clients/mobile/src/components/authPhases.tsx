@@ -1,13 +1,14 @@
 // The inner sign-in phases: the PIN pad unlock and the password / credentials
 // form. Presentation only; auth calls and phase switching stay in sign-in.
 
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { Button, Spinner } from '@kroma/ui/kit';
+import { StyleSheet, Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { colors, spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
 import { BackLink, OnboardingBox, OnboardingTitle } from './OnboardingScreen';
 import { PinPad } from './onboarding';
-import { Button, ErrorBanner, TextField } from './ui';
+import { ErrorBanner, TextField } from './ui';
 
 export type Identity = { name: string; avatarUri: string | null };
 
@@ -48,7 +49,7 @@ export function PinPhase({
     <OnboardingBox>
       <IdentityHeader identity={identity} subtitle={t('auth.pinRequired')} />
       <PinPad value={pin} disabled={disabled} onChange={onChange} />
-      {checking ? <ActivityIndicator color={colors.textDim} /> : null}
+      {checking ? <Spinner size={24} color={colors.textDim} /> : null}
       <ErrorBanner message={error} />
       <BackLink onPress={onBack} />
     </OnboardingBox>
@@ -90,6 +91,7 @@ export function CredentialsPhase({
       )}
       {identity ? null : (
         <TextField
+          icon="user"
           value={identifier}
           onChangeText={onIdentifier}
           placeholder={t('auth.emailOrUsername')}
@@ -99,6 +101,7 @@ export function CredentialsPhase({
         />
       )}
       <TextField
+        icon="lock"
         value={password}
         onChangeText={onPassword}
         placeholder={t('auth.password')}

@@ -78,15 +78,33 @@ function detectHdr(): boolean {
  * (LG) TVs, HEVC (incl. 10-bit / HDR) is hardware-decoded and reliable even
  * when `canPlayType` is conservative so we treat those platforms as HEVC-capable.
  * The Android TV shell is the same shape: its media3/ExoPlayer bridge (which
- * injects `__KROMA_ANDROID__`) decodes through the platform, not the webview.
+ * decodes through the platform, not the webview.
  */
+/**
+ * The native clients (Apple TV, Android TV, the phone app), which have a
+ * platform decoder rather than a `<video>` element.
+ *
+ * Everything below this point probes a browser - `canPlayType`, `MediaSource` -
+ * and React Native has neither, so the probe answered "no" to every codec. An
+ * Apple TV that hardware-decodes HEVC was told it could not, and every HEVC
+ * title played under a "this device cannot decode H.265" warning.
+ *
+ * `navigator.product`, not `typeof document`: React Native sets it to
+ * 'ReactNative', while a server-side render has no document EITHER and must keep
+ * falling through to the browser answer it will hydrate into.
+ */
+function isReactNative(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    (navigator as { product?: string }).product === 'ReactNative'
+  );
+}
+
 export function detectCapabilities(): PlaybackCapabilities {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const isTizen = isTizenRuntime(ua);
   const isWebOS = isWebOsRuntime(ua);
-  const isAndroidTvShell = (globalThis as Record<string, unknown>).__KROMA_ANDROID__ !== undefined;
-
-  if (isTizen || isWebOS || isAndroidTvShell) {
+  if (isTizen || isWebOS || isReactNative()) {
     // TVs hardware-decode the common surround codecs (AC3/EAC3/DTS) too.
     const tvAudio: AudioCapabilities = {
       aac: true,

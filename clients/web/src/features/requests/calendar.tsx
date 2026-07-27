@@ -4,9 +4,11 @@
 // Releases landing within the week get the accent date treatment so the
 // imminent stuff pops out of the list.
 
+import { Image } from '@kroma/admin-kit';
 import { type CalendarEntry, episodeTag, posterColors, sizedImageUrl } from '@kroma/core';
-import { Image, useLocale, useT } from '@kroma/ui';
-import { IconCalendarClock, IconChecks } from '@tabler/icons-react';
+import { useLocale, useT } from '@kroma/ui';
+import { EmptyState } from '@kroma/ui/kit';
+import { IconChecks } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -17,7 +19,7 @@ import {
   shortDayLabel,
 } from '#web/features/requests/airdate';
 import { userQueries } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
 
 /** Releases at most this many days out get the accent "imminent" date. */
 const IMMINENT_DAYS = 7;
@@ -62,7 +64,7 @@ export function ComingSoonPage() {
 
       {entries?.length === 0 ? (
         <EmptyState
-          icon={<IconCalendarClock size={32} stroke={1.5} />}
+          icon="calendar-clock"
           title={t('requests.calendarEmpty')}
           hint={t('requests.calendarEmptyHint')}
         />

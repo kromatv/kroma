@@ -5,9 +5,10 @@
 // and /api/admin/store. The Store grid lives in module-store.tsx, the
 // dependency chips in module-deps.tsx.
 
+import { Image } from '@kroma/admin-kit';
 import { sessionToken } from '@kroma/core';
 import { moduleIconUrl } from '@kroma/module-sdk';
-import { Image } from '@kroma/ui';
+import { Button, Txt } from '@kroma/ui/kit';
 import { useRef, useState } from 'react';
 import { type AdminModule, adminApi } from '#web/features/admin/module-api';
 import { ModuleConfigForm } from '#web/features/admin/module-config-form';
@@ -23,6 +24,9 @@ import { Denied, useCap, usePoll } from '#web/features/admin/shell';
 import { Card, Pill, Toggle } from '#web/features/admin/ui';
 import { useModuleSettingsPanels, useRefreshModules } from '#web/modules/ModuleHostProvider';
 import { apiBase } from '#web/shared/lib/api';
+
+/** The kit sm-button label metrics, tinted danger for the destructive action. */
+const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
 /** POST a module bundle (raw .kmod bytes) to the install endpoint. */
 async function installBundle(file: File): Promise<void> {
@@ -249,24 +253,21 @@ function InstalledCard({
           {(update || m.removable) && (
             <div className="mt-3 flex items-center gap-2">
               {update && (
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
+                  active
+                  size="sm"
+                  label={`Update to v${update.version}`}
+                  onPress={onUpdate}
                   disabled={busy}
-                  onClick={onUpdate}
-                  className="rounded bg-accent-soft px-3 py-1 text-xs font-semibold text-accent disabled:opacity-50"
-                >
-                  Update to v{update.version}
-                </button>
+                />
               )}
               {m.removable && (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={onUninstall}
-                  className="rounded border border-border px-3 py-1 text-xs font-semibold text-danger disabled:opacity-50"
-                >
-                  Uninstall
-                </button>
+                <Button variant="ghost" size="sm" onPress={onUninstall} disabled={busy}>
+                  <Txt color="danger" style={DANGER_LABEL}>
+                    Uninstall
+                  </Txt>
+                </Button>
               )}
             </div>
           )}

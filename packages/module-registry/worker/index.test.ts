@@ -80,7 +80,7 @@ describe('module-registry worker', () => {
     expect(await res.json()).toEqual(CATALOG);
   });
 
-  it('degrades to an empty catalog with an error field when GitHub is unreachable', async () => {
+  it('degrades to an empty catalog when GitHub is unreachable', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -91,17 +91,35 @@ describe('module-registry worker', () => {
     const body = (await res.json()) as { schema: number; modules: unknown[]; error: string };
     expect(body.schema).toBe(2);
     expect(body.modules).toEqual([]);
-    expect(body.error).toContain('offline');
+    expect(body.error).toBe('catalog unavailable');
   });
 
-  it('surfaces a non-OK upstream status through the error path', async () => {
+  // This endpoint is public and unauthenticated. It used to answer with
+  // `String(err)`, which on a failed fetch names the upstream URL and repeats
+  // whatever a thrown message happens to carry.
+  it('does not disclose the upstream failure to the caller', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('connect ECONNREFUSED 10.0.0.7:443 while fetching secret-host');
+      }),
+    );
+    const res = await worker.fetch(req('/modules.json'), {}, ctx());
+    const raw = await res.text();
+    expect(raw).not.toContain('ECONNREFUSED');
+    expect(raw).not.toContain('secret-host');
+    expect(raw).not.toContain('10.0.0.7');
+  });
+
+  it('degrades the same way on a non-OK upstream status', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response('nope', { status: 404 })),
     );
     const res = await worker.fetch(req('/modules.json'), {}, ctx());
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toContain('404');
+    const body = (await res.json()) as { modules: unknown[]; error: string };
+    expect(body.modules).toEqual([]);
+    expect(body.error).toBe('catalog unavailable');
   });
 
   it('exports the default repo', () => {

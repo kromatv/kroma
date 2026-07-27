@@ -1,3 +1,9 @@
+import {
+  audioTrackId,
+  audioTracksOf,
+  type MediaItem,
+  resolveAudioRelativeIndex,
+} from '@kroma/core';
 import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
 
 // A thin playback-engine abstraction for the TV player so the same hook/UI can
@@ -26,11 +32,24 @@ export interface EngineListeners {
    * filtered remux failed). The chrome hides the row instead of showing a mode
    * that is doing nothing. */
   onAudioFilterUnavailable?(): void;
+  /**
+   * The engine swapped the object the surface renders, and the surface must be
+   * re-rendered against the new one.
+   *
+   * Only the native backend fires this. The browser surfaces are stable DOM
+   * elements the engine attaches to (`videoRef`, `objectRef`), so they never
+   * change identity; expo-video's player is a value the engine OWNS and
+   * REPLACES - on the direct→remux fallback, and on every seek of an anchored
+   * master. Without this the `<VideoView>` kept rendering the previous player
+   * after it had been released: the picture went black and stayed black, and
+   * scrubbing an MKV was impossible.
+   */
+  onSurfaceChange?(): void;
 }
 
 /** The uniform surface the hook + UI talk to, regardless of backend. */
 export interface TvEngine {
-  readonly kind: 'video' | 'avplay' | 'mpv' | 'exo';
+  readonly kind: 'video' | 'avplay' | 'mpv';
   play(): void;
   pause(): void;
   isPaused(): boolean;
@@ -46,12 +65,12 @@ export interface TvEngine {
   setAudioRendition(rendition: number): void;
   /** Resize the native video plane to a fraction-rect (or `null` = fullscreen), so
    *  the chrome can shrink it into the settings card. Only the native engines
-   *  (AVPlay / mpv / ExoPlayer) implement it; the HTML `<video>` engine omits it
+   *  (AVPlay / mpv) implement it; the HTML `<video>` engine omits it
    *  (the chrome CSS-transforms its element instead). */
   setRect?(rect: PlaneRect | null): void;
   /** Apply the shared audio filter / volume normalizer (§7) in place. Only the
    *  native engines implement it, each with its own DSP (mpv `af` chain,
-   *  ExoPlayer DynamicsProcessing, AVPlay via the server's filtered remux); the
+   *  AVPlay via the server's filtered remux); the
    *  HTML `<video>` engine omits it (the chrome's Web Audio graph taps its
    *  in-page element instead). */
   setAudioFilter?(mode: AudioFilterMode): void;
@@ -60,6 +79,23 @@ export interface TvEngine {
    *  itself later through `onAudioFilterUnavailable`. */
   audioFilterSupported?(): boolean;
   destroy(): void;
+}
+
+/** Which surface an engine renders through. Derived from {@link TvEngine} so the
+ * two backends cannot drift from the engines they actually build. */
+export type Surface = TvEngine['kind'];
+
+/** The audio-relative rendition to select for the chosen track, resolved from a
+ * stable identity so a reordered track list still picks the right language.
+ *
+ * Platform-neutral, so it lives here rather than in either backend half: it was
+ * written out twice, and a fix to one copy was invisible to the other build. */
+export function renditionFor(item: MediaItem, audioIndex: number): number {
+  const tracks = audioTracksOf(item);
+  const want =
+    tracks.find((t) => t.index === audioIndex) ?? tracks.find((t) => t.default) ?? tracks[0];
+  if (!want) return 0;
+  return resolveAudioRelativeIndex(tracks, audioTrackId(want));
 }
 
 // ----- Tizen AVPlay typings (not in the TS lib; declared loosely) -------------
@@ -150,58 +186,6 @@ export function mpvAvailable(): boolean {
   if (/Linux/i.test(ua) && !/Android/i.test(ua)) return true; // Deck: mpv binary
   // macOS: the in-process libmpv engine flags itself in Rust `setup` once it's up.
   return '__KROMA_MPV__' in globalThis;
-}
-
-// ----- Android TV ExoPlayer bridge --------------------------------------------
-// The @kroma/androidtv shell hosts the app in a WebView with a native media3 /
-// ExoPlayer instance rendering to a SurfaceView BEHIND it (the same "video plane
-// behind the page" model as AVPlay/mpv). The Kotlin side injects this object via
-// addJavascriptInterface, and pushes events by calling the global
-// `__kromaExoEvent(payload)` the engine installs. Inert in a plain browser.
-
-/** The command surface the Android shell injects as `__KROMA_ANDROID__`. */
-export interface ExoShellBridge {
-  /** Load a URL (replaces the current item). `master` hints HLS vs progressive. */
-  load(url: string, startSec: number, master: boolean): void;
-  /** JSON command:
-   *  `{op: 'play'|'pause'|'seek'|'audio'|'filter'|'stop'|'rect', value?: number}`
-   *  (`filter` value: 0 = off, 1 = standard, 2 = night). */
-  command(json: string): void;
-  /** Whether a DynamicsProcessing effect can actually be attached right now
-   *  (false on API < 28, on audio passthrough, or once construction has
-   *  thrown). Optional: an older installed APK does not expose it, and there
-   *  the old assume-supported behaviour stands. */
-  audioFilterSupported?(): boolean;
-  /** Terminate the whole app (the "Quitter" menu row). Optional: an older
-   *  installed APK does not expose it, so the quit row stays hidden there. */
-  quit?(): void;
-  /** Force the native playback engine for subsequent loads: `'vlc'` makes libVLC
-   *  the primary player (software-decode every codec), any other value restores
-   *  the ExoPlayer-first default. Optional: an older APK ignores the "libVLC"
-   *  engine choice and stays on ExoPlayer+fallback. */
-  setEngine?(mode: string): void;
-  /** Publish the "continue watching" list to the launcher's system Watch Next
-   *  row. JSON array of `{id,title,subtitle?,imageUrl?,progressMs,durationMs,
-   *  kind}`; `[]` clears it. Optional: absent on older installed APKs. */
-  setContinueWatching?(json: string): void;
-  /** Publish the recently-added + suggested titles to a KROMA preview channel
-   *  (a dedicated row on the launcher home). JSON array of
-   *  `{id,title,subtitle?,imageUrl?,kind}`; `[]` clears it. Optional. */
-  setHomeChannel?(json: string): void;
-}
-
-/** The injected ExoPlayer bridge when running inside the Android TV shell, else null. */
-export function getExo(): ExoShellBridge | null {
-  const w = globalThis as unknown as { __KROMA_ANDROID__?: Partial<ExoShellBridge> };
-  const b = w.__KROMA_ANDROID__;
-  return typeof b?.load === 'function' && typeof b?.command === 'function'
-    ? (b as ExoShellBridge)
-    : null;
-}
-
-/** Whether to drive playback through the native ExoPlayer bridge. */
-export function exoAvailable(): boolean {
-  return getExo() != null;
 }
 
 /**

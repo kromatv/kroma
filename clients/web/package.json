@@ -9,7 +9,7 @@
     "build": "vite build && node scripts/precompress.mjs dist/client",
     "preview": "vite preview --port 3000",
     "generate-routes": "tsr generate",
-    "typecheck": "tsr generate && tsgo --noEmit"
+    "typecheck": "tsr generate && tsc --noEmit"
   },
   "dependencies": {
     "@kroma/admin-kit": "workspace:*",
@@ -40,6 +40,7 @@
     "react-call": "^2.0.2",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.0",
+    "react-native-web": "^0.21.2",
     "shaka-player": "^5.2.2"
   },
   "devDependencies": {
@@ -55,6 +56,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.3",
     "babel-plugin-react-compiler": "^1.0.0",
+    "react-native": "npm:react-native-tvos@0.86.0-2",
     "tailwindcss": "^4",
     "typescript": "^7.0.2",
     "vite": "^8.1.4"

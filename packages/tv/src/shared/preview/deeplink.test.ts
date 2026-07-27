@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { onDeepLink, readDeepLink } from './deeplink';
+import { onDeepLink, readDeepLink, requestDeepLink } from './deeplink';
 
 type Opts = {
   payload?: string; // the PAYLOAD value[0], if present
@@ -8,13 +8,16 @@ type Opts = {
   throwControl?: boolean; // getRequestedAppControl() throws
 };
 
+/** The app-control data for one case: a wrong key, the payload, or nothing. */
+function payloadData(opts: Opts) {
+  if (opts.noPayloadKey) return [{ key: 'OTHER', value: ['x'] }];
+  if (opts.payload !== undefined) return [{ key: 'PAYLOAD', value: [opts.payload] }];
+  return [];
+}
+
 /** Install a fake `tizen` global whose requested app-control carries `payload`. */
 function stubTizen(opts: Opts = {}) {
-  const data = opts.noPayloadKey
-    ? [{ key: 'OTHER', value: ['x'] }]
-    : opts.payload !== undefined
-      ? [{ key: 'PAYLOAD', value: [opts.payload] }]
-      : [];
+  const data = payloadData(opts);
   const getRequestedAppControl = () => {
     if (opts.throwControl) throw new Error('boom');
     if (opts.nullControl) return null;
@@ -35,9 +38,18 @@ describe('readDeepLink', () => {
     expect(readDeepLink()).toBeNull();
   });
 
-  it('reads the Android TV ?deeplink= param as a movie target', () => {
-    vi.stubGlobal('location', { search: '?deeplink=itm42' });
+  it('reads a link a shell pushed before the app was listening', () => {
+    // A launcher tile cold-starts the app, so the link exists while there is
+    // still no tree to put it in (see requestDeepLink).
+    requestDeepLink({ type: 'movie', id: 'itm42' });
     expect(readDeepLink()).toEqual({ type: 'movie', id: 'itm42' });
+  });
+
+  it('hands a pushed link over only once', () => {
+    // Otherwise a later remount replays a tile the user opened minutes ago.
+    requestDeepLink({ type: 'show', id: 'sh7' });
+    expect(readDeepLink()).toEqual({ type: 'show', id: 'sh7' });
+    expect(readDeepLink()).toBeNull();
   });
 
   it('decodes a direct JSON payload', () => {
@@ -86,6 +98,34 @@ describe('onDeepLink', () => {
   it('returns a no-op cleanup when there is no tizen platform', () => {
     const cleanup = onDeepLink(() => undefined);
     expect(cleanup()).toBeUndefined();
+  });
+
+  it('delivers a shell push straight to a live listener', () => {
+    const seen: unknown[] = [];
+    const cleanup = onDeepLink((link) => seen.push(link));
+    requestDeepLink({ type: 'movie', id: 'warm' });
+    expect(seen).toEqual([{ type: 'movie', id: 'warm' }]);
+    // Delivered, so nothing is kept: a remount must not replay it.
+    cleanup();
+    expect(readDeepLink()).toBeNull();
+  });
+
+  it('replays a link that arrived before the listener existed', () => {
+    requestDeepLink({ type: 'show', id: 'cold' });
+    const seen: unknown[] = [];
+    const cleanup = onDeepLink((link) => seen.push(link));
+    expect(seen).toEqual([{ type: 'show', id: 'cold' }]);
+    cleanup();
+  });
+
+  it('stops delivering after cleanup, and keeps the link for the next listener', () => {
+    const seen: unknown[] = [];
+    onDeepLink((link) => seen.push(link))();
+    requestDeepLink({ type: 'movie', id: 'gone' });
+    expect(seen).toEqual([]);
+    // With nobody listening it is kept, exactly like a cold start - which also
+    // drains it, so the module is left clean for the next test.
+    expect(readDeepLink()).toEqual({ type: 'movie', id: 'gone' });
   });
 
   it('subscribes to appcontrol and fires cb with the decoded link', () => {

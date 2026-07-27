@@ -2,6 +2,7 @@
 // destinations (downloads / quick connect / settings), quiet sign-out.
 // Everything else lives in dedicated pages.
 
+import { Button, Icon, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,16 +12,6 @@ import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
 import { colors, radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
-import {
-  ChevronRightIcon,
-  DownloadIcon,
-  GearIcon,
-  LockIcon,
-  LogoutIcon,
-  PencilIcon,
-  TvIcon,
-  UsersIcon,
-} from '#mobile/player/icons';
 
 function Row({
   icon,
@@ -48,7 +39,7 @@ function Row({
             {value}
           </Text>
         ) : null}
-        <ChevronRightIcon size={16} color={colors.textFaint} />
+        <Icon name="chevron-right" size={16} stroke={2.2} color={colors.textFaint} />
       </View>
     </Pressable>
   );
@@ -65,7 +56,9 @@ export default function Profile() {
 
   return (
     <ScrollView
-      style={styles.screen}
+      // Horizontal insets on the frame keep the centered column clear of the
+      // landscape notch; the body's own padding stays the visual gutter.
+      style={[styles.screen, { paddingLeft: insets.left, paddingRight: insets.right }]}
       contentContainerStyle={[styles.body, { paddingTop: insets.top + spacing.xl }]}
     >
       <Pressable
@@ -75,7 +68,7 @@ export default function Profile() {
         <View>
           <Avatar uri={avatar} name={user?.username} size={96} />
           <View style={styles.editBadge}>
-            <PencilIcon size={13} color={colors.accentInk} />
+            <Icon name="pencil" size={13} stroke={1.8} color={colors.accentInk} />
           </View>
         </View>
         <Text style={styles.username}>{user?.username}</Text>
@@ -84,40 +77,40 @@ export default function Profile() {
 
       <View style={styles.card}>
         <Row
-          icon={<UsersIcon size={19} color={colors.accent} />}
+          icon={<Icon name="users" size={19} stroke={2} color={colors.accent} />}
           label={t('nav.changeProfile')}
           onPress={() => switchProfile()}
         />
         <Row
-          icon={<LockIcon size={19} color={colors.accent} />}
+          icon={<Icon name="lock" size={19} stroke={2.2} color={colors.accent} />}
           label={t('account.profileLock')}
           onPress={() => router.push('/profile-pin' as never)}
         />
         <Row
-          icon={<DownloadIcon size={19} color={colors.accent} />}
+          icon={<Icon name="download" size={19} stroke={2} color={colors.accent} />}
           label={t('offline.downloads')}
           value={downloads.entries.length > 0 ? formatBytes(downloads.totalBytes) : undefined}
           onPress={() => router.push('/downloads' as never)}
         />
         <Row
-          icon={<TvIcon size={19} color={colors.accent} />}
+          icon={<Icon name="device-tv" size={19} stroke={1.8} color={colors.accent} />}
           label={t('connect.title')}
           onPress={() => router.push('/connect-device' as never)}
         />
         <Row
-          icon={<GearIcon size={19} color={colors.accent} />}
+          icon={<Icon name="settings" size={19} stroke={1.8} color={colors.accent} />}
           label={t('nav.settings')}
           onPress={() => router.push('/settings' as never)}
         />
       </View>
 
-      <Pressable
-        onPress={() => void signOut()}
-        style={({ pressed }) => [styles.signOut, pressed && { opacity: 0.7 }]}
-      >
-        <LogoutIcon size={18} color={colors.danger} />
-        <Text style={styles.signOutText}>{t('auth.logout')}</Text>
-      </Pressable>
+      {/* The kit ghost inks text-colored; the danger reading comes via children. */}
+      <Button variant="ghost" style={styles.signOut} onPress={() => void signOut()}>
+        <Icon name="logout" size={18} stroke={1.8} color="danger" />
+        <Txt color="danger" style={styles.signOutText}>
+          {t('auth.logout')}
+        </Txt>
+      </Button>
     </ScrollView>
   );
 }
@@ -174,13 +167,8 @@ const styles = StyleSheet.create({
   rowLabel: { ...type.body, fontWeight: '500' },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
   rowValue: { ...type.caption, flexShrink: 1 },
-  signOut: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: spacing.sm,
-    minHeight: 46,
-  },
-  signOutText: { ...type.body, color: colors.danger, fontWeight: '700' },
+  signOut: { marginTop: spacing.sm },
+  // No `...type.body` here: the app ramp bakes the default ink, which would
+  // sit after Txt's own danger colour and win.
+  signOutText: { fontWeight: '700' },
 });

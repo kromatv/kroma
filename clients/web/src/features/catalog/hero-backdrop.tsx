@@ -1,4 +1,4 @@
-import { Image } from '@kroma/ui';
+import { Image } from '@kroma/admin-kit';
 
 /** Layered backdrop + scrims for the cinematic `DetailHero` (movie/series fiche).
  *

@@ -3,9 +3,11 @@
 // status banner, aggregate stat cards and the download-clients section.
 
 import {
+  Button,
   type DownloadView,
   EmptyState,
   formatBytes,
+  HeaderAction,
   KromaEventStream,
   Modal,
   ModalActions,
@@ -97,14 +99,7 @@ export default function DownloadsPage() {
         title={t('admin.downloadsTitle')}
         subtitle={t('admin.downloadsSub')}
         action={
-          <button
-            type="button"
-            onClick={() => setManual(true)}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-accent px-4.5 py-2.75 text-[14px] font-bold text-accent-ink transition-colors hover:bg-accent-hover"
-          >
-            <IconDownload size={16} stroke={2.4} />
-            {t('manual.title')}
-          </button>
+          <HeaderAction icon={IconDownload} label={t('manual.title')} onClick={() => setManual(true)} />
         }
       />
 
@@ -122,18 +117,30 @@ export default function DownloadsPage() {
 
       {activeRows.length > 0 ? (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <BulkBtn onClick={() => act(() => client.pauseAllDownloads())} busy={busy}>
-            <IconPlayerPause size={14} stroke={2.2} />
-            {t('downloads.pauseAll')}
-          </BulkBtn>
-          <BulkBtn onClick={() => act(() => client.resumeAllDownloads())} busy={busy}>
-            <IconPlayerPlay size={14} stroke={2.2} />
-            {t('downloads.resumeAll')}
-          </BulkBtn>
-          <BulkBtn onClick={() => act(() => client.reannounceDownloads())} busy={busy}>
-            <IconUsersPlus size={14} stroke={2.2} />
-            {t('downloads.askPeers')}
-          </BulkBtn>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={IconPlayerPause}
+            label={t('downloads.pauseAll')}
+            onClick={() => act(() => client.pauseAllDownloads())}
+            disabled={busy}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={IconPlayerPlay}
+            label={t('downloads.resumeAll')}
+            onClick={() => act(() => client.resumeAllDownloads())}
+            disabled={busy}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={IconUsersPlus}
+            label={t('downloads.askPeers')}
+            onClick={() => act(() => client.reannounceDownloads())}
+            disabled={busy}
+          />
         </div>
       ) : null}
 
@@ -165,7 +172,7 @@ export default function DownloadsPage() {
         {data && downloads.length === 0 ? (
           <div className="py-6">
             <EmptyState
-              icon={<IconDownload size={32} stroke={1.5} />}
+              icon="download"
               title={t('downloads.empty')}
             />
           </div>
@@ -276,22 +283,5 @@ function Head({ children, className = '' }: Readonly<{ children: ReactNode; clas
     >
       {children}
     </span>
-  );
-}
-
-function BulkBtn({
-  onClick,
-  busy,
-  children,
-}: Readonly<{ onClick: () => void; busy: boolean; children: ReactNode }>) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={busy}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/4 px-3 py-2 text-[12.5px] font-semibold text-white/75 transition-colors hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {children}
-    </button>
   );
 }

@@ -1,5 +1,6 @@
 import type { Volume } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button, EmptyState } from '@kroma/ui/kit';
 import { IconDatabase } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -7,7 +8,7 @@ import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { C, Card, ProgressBar, Section, Select, StatCard } from '#web/features/admin/ui';
 import { formatBytes } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
-import { confirmDialog, EmptyState } from '#web/shared/ui';
+import { confirmDialog } from '#web/shared/ui';
 
 export const Route = createFileRoute('/admin/storage')({
   component: StoragePage,
@@ -77,10 +78,7 @@ function StoragePage() {
             <VolumeCard key={v.mount} v={v} />
           ))}
           {data?.volumes.length === 0 ? (
-            <EmptyState
-              icon={<IconDatabase size={32} stroke={1.5} />}
-              title={t('admin.noVolumes')}
-            />
+            <EmptyState icon="database" title={t('admin.noVolumes')} />
           ) : null}
         </div>
       </Section>
@@ -152,14 +150,13 @@ function StoragePage() {
             title={t('admin.clearCache')}
             desc={t('admin.clearCacheDesc', { size: formatBytes(data?.cache.bytes ?? 0) })}
             right={
-              <button
-                type="button"
-                onClick={() => void clearCache()}
-                disabled={clearing}
-                className="rounded-[9px] border border-[#E8536A]/25 bg-[#E8536A]/10 px-3.75 py-2.25 text-[13px] font-semibold text-[#E8536A] disabled:opacity-50"
-              >
-                {clearing ? t('admin.clearing') : t('admin.clearNow')}
-              </button>
+              <Button
+                variant="danger"
+                size="sm"
+                label={clearing ? t('admin.clearing') : t('admin.clearNow')}
+                onPress={() => void clearCache()}
+                loading={clearing}
+              />
             }
           />
           <MaintRow
@@ -167,14 +164,13 @@ function StoragePage() {
             desc={t('admin.resetMetadataDesc')}
             border={false}
             right={
-              <button
-                type="button"
-                onClick={() => void resetMetadata()}
-                disabled={resetting}
-                className="rounded-[9px] border border-[#E8536A]/25 bg-[#E8536A]/10 px-3.75 py-2.25 text-[13px] font-semibold text-[#E8536A] disabled:opacity-50"
-              >
-                {resetting ? t('admin.resetting') : t('admin.resetMetadataBtn')}
-              </button>
+              <Button
+                variant="danger"
+                size="sm"
+                label={resetting ? t('admin.resetting') : t('admin.resetMetadataBtn')}
+                onPress={() => void resetMetadata()}
+                loading={resetting}
+              />
             }
           />
         </Card>

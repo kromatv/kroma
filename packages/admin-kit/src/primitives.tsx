@@ -1,11 +1,12 @@
 // Shared presentational primitives for the admin console, matching the
 // "Admin Serveur" design (cards, titled sections, stat cards, toggle/select
 // rows, progress bars, gradient avatars).
-import { Image } from '@kroma/ui';
+
 import { IconChevronDown } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { resolveImageUrl, useAdminKit } from './context';
 import { avatarGradient, initial } from './format';
+import { Image } from './image';
 
 /** Chart/semantic colors from the design that aren't Tailwind tokens. */
 export const C = {

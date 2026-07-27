@@ -54,6 +54,12 @@ jobs:
       - name: Unit tests (vitest)
         run: bun run test
 
+      # Hard gate: the generated token CSS matches the TypeScript tokens it is
+      # generated FROM. Without this a hand edit to src/styles/tokens survives,
+      # and the two halves of the design system drift apart silently.
+      - name: Design tokens are in step
+        run: bun run tokens:check
+
       # Hard gate: the Biome backlog is cleared (`bun run check` is clean), so
       # lint + format regressions now fail CI.
       - name: Biome (lint + format)
@@ -78,11 +84,6 @@ jobs:
           - name: webos
             build: bun run build:webos
             dist: clients/webos/dist
-          # Web bundle synced into the Android project's assets; the APK compile
-          # below is the only CI gate for the Kotlin shell.
-          - name: androidtv
-            build: bun run build:androidtv
-            dist: clients/androidtv/dist
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -96,23 +97,6 @@ jobs:
       - name: Build (production)
         run: ${{ matrix.build }}
 
-      - name: Set up JDK (Android shell)
-        if: matrix.name == 'androidtv'
-        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Gradle (Android shell)
-        if: matrix.name == 'androidtv'
-        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-        with:
-          gradle-version: '8.13'
-
-      - name: Compile Android TV APK
-        if: matrix.name == 'androidtv'
-        run: gradle -p clients/androidtv/android assembleDebug
-
       - name: Upload bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -120,6 +104,43 @@ jobs:
           path: ${{ matrix.dist }}
           retention-days: 7
           if-no-files-found: error
+
+  # The native TV app (Apple TV + Android TV). The Android half is the gate for
+  # the local Expo modules' Kotlin - the launcher rows in particular, which no
+  # JS-only check compiles. `android/` is generated (gitignored), so prebuild
+  # first. The Apple TV half needs a macOS runner and is not built here.
+  tv-native:
+    name: Native TV app (Android compile)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          gradle-version: '8.13'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # The JS gate: the Metro bundle must resolve on both platforms.
+      - name: Bundle check
+        run: bun run build:tv-native
+
+      - name: Prebuild the Android project
+        run: bun run --filter '@kroma/tv-native' prebuild -- --platform android
+
+      - name: Compile the APK
+        run: gradle -p clients/tv-native/android assembleDebug
 
   desktop-shell:
     name: Desktop shell (cargo check, Linux/mpv path)

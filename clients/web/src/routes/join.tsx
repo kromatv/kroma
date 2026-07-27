@@ -1,4 +1,5 @@
-import { Logo, useT } from '@kroma/ui';
+import { useT } from '@kroma/ui';
+import { Button, Logo } from '@kroma/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
@@ -106,13 +107,13 @@ function JoinPage() {
 
             {error ? <p className="text-[13px] font-medium text-danger">{error}</p> : null}
 
-            <button
-              type="submit"
-              disabled={busy || !valid}
-              className="mt-1 w-full rounded-md bg-accent py-3.5 text-[15px] font-bold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-50"
-            >
-              {busy ? t('auth.creating') : t('auth.createMyAccount')}
-            </button>
+            <Button
+              block
+              label={busy ? t('auth.creating') : t('auth.createMyAccount')}
+              onPress={() => void submit()}
+              loading={busy}
+              disabled={!valid}
+            />
           </form>
         ) : null}
       </div>

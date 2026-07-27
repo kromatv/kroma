@@ -17,12 +17,23 @@ export interface Cue {
   text: string;
 }
 
-/** Strip WebVTT inline markup (`<i>`, `<c.classname>`, `{...}`) to plain text. */
+/** Strip WebVTT inline markup (`<i>`, `<c.classname>`, `{...}`) to plain text.
+ *
+ * UNTIL STABLE, not one pass: removing the inner tag of `<<i>>` leaves `<>`
+ * behind, so a single sweep can hand a viewer the very markup it is here to
+ * take away. Each pass strictly shortens the string, so this terminates. */
 function clean(text: string): string {
-  return text
-    .replace(/<[^<>]+>/g, '')
-    .replace(/\{[^{}]+\}/g, '')
-    .trim();
+  return stripPairs(stripPairs(text, /<[^<>]*>/g), /\{[^{}]*\}/g).trim();
+}
+
+function stripPairs(text: string, pattern: RegExp): string {
+  let out = text;
+  let previous: string;
+  do {
+    previous = out;
+    out = out.replace(pattern, '');
+  } while (out !== previous);
+  return out;
 }
 
 /** Parse `HH:MM:SS.mmm` / `MM:SS.mmm` (`,` or `.` ms) to seconds. */

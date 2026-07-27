@@ -1,12 +1,13 @@
+import { Image } from '@kroma/admin-kit';
 import { metaLine, posterColors, type Section } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
+import { useT } from '@kroma/ui';
 import { useNavigate } from '@tanstack/react-router';
 import { memo } from 'react';
 import type { MovieView, ShowView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import type { HeroEntry } from '#web/shared/lib/queries';
 import { useWatched } from '#web/shared/lib/watched';
-import { Badge, Button, Poster, Rail } from '#web/shared/ui';
+import { Badge, Button, Poster, PosterRail } from '#web/shared/ui';
 
 type HeroBadge = '4K' | 'HDR' | 'H.265';
 
@@ -70,20 +71,21 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
         <div className="flex flex-wrap gap-3.5">
           {entry.type === 'movie' ? (
             <>
-              <Button onClick={() => navigate({ to: '/watch/$id', params: { id: media.id } })}>
-                {t('content.play')}
-              </Button>
+              <Button
+                label={t('content.play')}
+                onPress={() => navigate({ to: '/watch/$id', params: { id: media.id } })}
+              />
               <Button
                 variant="glass"
-                onClick={() => navigate({ to: '/movie/$id', params: { id: media.id } })}
-              >
-                {t('content.moreInfo')}
-              </Button>
+                label={t('content.moreInfo')}
+                onPress={() => navigate({ to: '/movie/$id', params: { id: media.id } })}
+              />
             </>
           ) : (
-            <Button onClick={() => navigate({ to: '/show/$id', params: { id: media.id } })}>
-              {t('content.moreInfo')}
-            </Button>
+            <Button
+              label={t('content.moreInfo')}
+              onPress={() => navigate({ to: '/show/$id', params: { id: media.id } })}
+            />
           )}
         </div>
       </div>
@@ -187,11 +189,7 @@ export function ShowRail({ title, shows }: Readonly<{ title: string; shows: Show
   return (
     <section>
       <h2 className={SECTION_TITLE}>{title}</h2>
-      <Rail label={title}>
-        {shows.map((show) => (
-          <ShowPoster key={show.id} show={show} />
-        ))}
-      </Rail>
+      <PosterRail data={shows} renderItem={(show) => <ShowPoster show={show} />} />
     </section>
   );
 }

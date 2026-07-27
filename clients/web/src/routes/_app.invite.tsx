@@ -1,10 +1,13 @@
 import { hasPermission, type Invite, PERMISSIONS, type Permission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconLock } from '@tabler/icons-react';
+import { Button, EmptyState, Txt } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
-import { EmptyState, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
+
+/** The kit sm-button label metrics, tinted danger for the destructive action. */
+const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
 // Admin page to invite users. Gated by the `users.manage` permission the only
 // way (besides the bootstrap owner) to create accounts is via these invites.
@@ -40,10 +43,7 @@ function InvitePage() {
   if (!allowed) {
     return (
       <main className={PAGE_MAIN}>
-        <EmptyState
-          icon={<IconLock size={32} stroke={1.5} />}
-          title={t('admin.noUsersPermission')}
-        />
+        <EmptyState icon="lock" title={t('admin.noUsersPermission')} />
       </main>
     );
   }
@@ -111,14 +111,14 @@ function InvitePage() {
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={() => void create()}
-          disabled={busy || selected.size === 0}
-          className="mt-5 rounded-md bg-accent px-5 py-3 text-[14px] font-bold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-50"
-        >
-          {busy ? t('common.creating') : t('admin.createInviteLink')}
-        </button>
+        <div className="mt-5 flex">
+          <Button
+            label={busy ? t('common.creating') : t('admin.createInviteLink')}
+            onPress={() => void create()}
+            loading={busy}
+            disabled={selected.size === 0}
+          />
+        </div>
 
         {link ? (
           <div className="mt-5 rounded-xl border border-accent/40 bg-accent-soft p-4">
@@ -132,13 +132,12 @@ function InvitePage() {
                 onFocus={(e) => e.currentTarget.select()}
                 className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-2 px-3 py-2.5 text-[13px] text-text"
               />
-              <button
-                type="button"
-                onClick={() => void copy()}
-                className="shrink-0 rounded-lg bg-white/10 px-3.5 py-2.5 text-[13px] font-semibold text-text hover:bg-white/15"
-              >
-                {copied ? t('common.copied') : t('common.copy')}
-              </button>
+              <Button
+                variant="glass"
+                size="sm"
+                label={copied ? t('common.copied') : t('common.copy')}
+                onPress={() => void copy()}
+              />
             </div>
           </div>
         ) : null}
@@ -157,13 +156,17 @@ function InvitePage() {
               >
                 <code className="truncate text-[13px] text-muted">{inv.token.slice(0, 12)}…</code>
                 <span className="text-[12px] text-dim">{inv.permissions.join(', ')}</span>
-                <button
-                  type="button"
-                  onClick={() => void client.revokeInvite(inv.token).then(refresh)}
-                  className="ml-auto shrink-0 text-[13px] font-medium text-danger hover:underline"
-                >
-                  {t('admin.revoke')}
-                </button>
+                <div className="ml-auto shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onPress={() => void client.revokeInvite(inv.token).then(refresh)}
+                  >
+                    <Txt color="danger" style={DANGER_LABEL}>
+                      {t('admin.revoke')}
+                    </Txt>
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

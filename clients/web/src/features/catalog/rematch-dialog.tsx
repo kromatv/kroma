@@ -8,9 +8,11 @@
 // rather than waiting for the new art (the fiche live-refreshes on the update
 // event).
 
+import { Image } from '@kroma/admin-kit';
 import { apiErrorText, type MatchCandidate } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
-import { IconCheck, IconLoader2, IconSearch, IconX } from '@tabler/icons-react';
+import { useT } from '@kroma/ui';
+import { Button, IconButton } from '@kroma/ui/kit';
+import { IconCheck, IconLoader2, IconSearch } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
@@ -96,22 +98,25 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                   aria-label={t('rematch.searchPlaceholder')}
                   className="w-[220px] max-w-[42vw] rounded-xl border border-white/9 bg-[#15151A] px-3.5 py-2.5 text-[14px] outline-none placeholder:text-white/30 focus:border-white/20"
                 />
-                <button
-                  type="submit"
+                {/* The form's Enter-key submit still works: a single-field form
+                    implicitly submits, so the kit button only mirrors it. */}
+                <IconButton
+                  size={41}
+                  glyph={16}
+                  radius={12}
+                  icon="search"
+                  label={t('rematch.search')}
+                  onPress={() => setSubmitted(query.trim() || undefined)}
                   disabled={isPending}
-                  aria-label={t('rematch.search')}
-                  className="flex items-center rounded-xl border border-white/9 bg-[#15151A] px-3.5 hover:bg-[#1a1a20] disabled:opacity-50"
-                >
-                  <IconSearch size={16} stroke={2.3} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => call.end(false)}
-                  aria-label={t('common.close')}
-                  className="flex items-center rounded-xl border border-white/9 bg-[#15151A] px-2.5 text-white/60 hover:bg-[#1a1a20] hover:text-white"
-                >
-                  <IconX size={18} stroke={2.1} />
-                </button>
+                />
+                <IconButton
+                  size={36}
+                  glyph={18}
+                  radius={12}
+                  icon="x"
+                  label={t('common.close')}
+                  onPress={() => call.end(false)}
+                />
               </form>
             </header>
 
@@ -148,17 +153,15 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
 
             {data?.pinned ? (
               <div className="border-t border-white/[0.07] px-7 py-4">
-                <button
-                  type="button"
-                  disabled={applying !== null}
-                  onClick={() => apply(null)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/9 px-4 py-3 text-[13px] font-bold text-white/70 hover:bg-white/4 disabled:opacity-50"
-                >
-                  {applying === 'reset' ? (
-                    <IconLoader2 size={15} stroke={2.4} className="animate-spin" />
-                  ) : null}
-                  {t('rematch.reset')}
-                </button>
+                <Button
+                  block
+                  variant="glass"
+                  size="sm"
+                  label={t('rematch.reset')}
+                  onPress={() => apply(null)}
+                  loading={applying === 'reset'}
+                  disabled={applying !== null && applying !== 'reset'}
+                />
               </div>
             ) : null}
           </section>

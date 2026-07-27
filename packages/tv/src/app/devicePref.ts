@@ -1,4 +1,10 @@
-// Device-scoped preferences, persisted in localStorage under the `kroma:*` keys.
+// Device-scoped preferences, persisted under the `kroma:*` keys.
+//
+// Through the client's device store rather than straight to `localStorage`: the
+// browsers get exactly that, and React Native (which has no localStorage) gets
+// the file-backed store its shell installs. Reaching for localStorage here is
+// why the TV's language and keyboard layout did not survive a relaunch on Apple
+// TV, silently.
 //
 // One place owns the storage rules every pref shares: reads and writes NEVER
 // throw (a TV in a locked-down profile, private mode, or a storage quota can
@@ -7,10 +13,12 @@
 //
 // Built on by enginePref, keyboardLayoutPref and the search history.
 
+import { deviceStorage } from '@kroma/core';
+
 /** The raw stored value for a device key, or null when absent/unavailable. */
 export function readDeviceValue(key: string): string | null {
   try {
-    return localStorage.getItem(key);
+    return deviceStorage()?.getItem(key) ?? null;
   } catch {
     return null; /* storage unavailable */
   }
@@ -19,7 +27,7 @@ export function readDeviceValue(key: string): string | null {
 /** Persist a device key, best effort (a failed write is not worth an error). */
 export function writeDeviceValue(key: string, value: string): void {
   try {
-    localStorage.setItem(key, value);
+    deviceStorage()?.setItem(key, value);
   } catch {
     /* storage unavailable */
   }

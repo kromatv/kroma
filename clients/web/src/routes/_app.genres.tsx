@@ -1,3 +1,4 @@
+import { Image } from '@kroma/admin-kit';
 import {
   collectGenres,
   type GenreCount,
@@ -7,14 +8,15 @@ import {
   genreTint,
   sizedImageUrl,
 } from '@kroma/core';
-import { Image, useT } from '@kroma/ui';
-import { IconCategory } from '@tabler/icons-react';
+import { useT } from '@kroma/ui';
+import { EmptyState } from '@kroma/ui/kit';
+
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { EmptyState, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/genres')({
   loader: async ({ context: { queryClient } }) => {
@@ -56,7 +58,7 @@ function GenresPage() {
     <main className={PAGE_MAIN}>
       <h1 className={PAGE_TITLE}>{t('nav.genres')}</h1>
       {genres.length === 0 ? (
-        <EmptyState icon={<IconCategory size={32} stroke={1.5} />} title={t('genres.empty')} />
+        <EmptyState icon="category" title={t('genres.empty')} />
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
           {genres.map((g) => (

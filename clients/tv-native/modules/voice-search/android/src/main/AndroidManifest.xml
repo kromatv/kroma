@@ -1,0 +1,19 @@
+<!-- Merged into the app manifest, so the voice capability carries its own
+     requirements instead of leaving them to be remembered in app.json.
+
+     - RECORD_AUDIO: the recogniser records. Still requested at runtime.
+     - <queries>: since Android 11 an app cannot even SEE the recognition
+       service without declaring the intent it binds to, and
+       SpeechRecognizer.isRecognitionAvailable() answers false without this.
+     - the microphone feature is NOT required: a television without one must
+       still install the app (it simply gets no mic button). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+  <queries>
+    <intent>
+      <action android:name="android.speech.RecognitionService" />
+    </intent>
+  </queries>
+</manifest>

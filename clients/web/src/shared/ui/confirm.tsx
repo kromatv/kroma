@@ -5,6 +5,7 @@
 // carry no open-state.
 
 import { Modal } from '@kroma/admin-kit';
+import { Button } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { createCallable } from 'react-call';
 
@@ -24,22 +25,13 @@ export const ConfirmDialog = createCallable<ConfirmProps, boolean>(
     <Modal title={title} onClose={() => call.end(false)}>
       {message ? <div className="mb-5 text-[13px] leading-relaxed text-dim">{message}</div> : null}
       <div className="flex justify-end gap-2.5">
-        <button
-          type="button"
-          onClick={() => call.end(false)}
-          className="rounded-md px-4 py-2.5 text-[14px] font-semibold text-muted"
-        >
-          {cancelLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => call.end(true)}
-          className={`rounded-md px-5 py-2.5 text-[14px] font-bold ${
-            destructive ? 'bg-[#E8536A] text-white' : 'bg-accent text-accent-ink'
-          }`}
-        >
-          {confirmLabel}
-        </button>
+        <Button variant="ghost" size="sm" label={cancelLabel} onPress={() => call.end(false)} />
+        <Button
+          variant={destructive ? 'danger' : 'primary'}
+          size="sm"
+          label={confirmLabel}
+          onPress={() => call.end(true)}
+        />
       </div>
     </Modal>
   ),

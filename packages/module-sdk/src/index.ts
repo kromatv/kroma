@@ -33,6 +33,10 @@ export type {
 export { apiErrorText, KromaEvents as KromaEventStream } from '@kroma/core';
 // i18n hook from @kroma/ui.
 export { useT } from '@kroma/ui';
+// `EmptyState` is the design system's own now, not an admin-kit copy: there is
+// one in the repo. Re-exported by name (not `export *`) so a module page keeps
+// importing it from this facade and nothing else changes.
+export { EmptyState } from '@kroma/ui/kit';
 export type { EventBus, EventKey } from './bus';
 export { createEventBus } from './bus';
 export type { KromaEvents, ModuleApiRegistry } from './contracts';

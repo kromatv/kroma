@@ -25,6 +25,24 @@ export interface DiscoverOptions {
    * (React Native); tried before the built-in per-platform resolvers. */
   localIp?: string;
   fetch?: typeof globalThis.fetch;
+  /**
+   * Ask the network where the servers are, instead of guessing.
+   *
+   * A DNS-SD browse for `_kroma._tcp`, which the server has advertised all
+   * along (server/modules/tv.kroma.mdns) carrying its real host and its real
+   * port. Injected rather than imported, because it is a NATIVE capability and
+   * this package must stay importable by a browser shell that has no such
+   * thing - the native TV app registers it, everything else passes nothing and
+   * keeps the sweep.
+   *
+   * Tried FIRST and trusted: it is the only route that can find a server on a
+   * port the sweep does not scan, on a subnet wider than a /24, or behind a
+   * reverse proxy. The sweep stays as the fallback for networks that block
+   * multicast, which is most hotel and campus wifi.
+   */
+  browse?: (timeoutMs: number) => Promise<Array<{ host: string; port: number; name?: string }>>;
+  /** How long to let the browse run. Default 1500. */
+  browseMs?: number;
 }
 
 export const DEFAULT_DISCOVERY_CANDIDATES = ['http://kroma.local:4040'];
@@ -36,9 +54,20 @@ export async function discoverServer(opts: DiscoverOptions = {}): Promise<string
   if (!fetchFn) return null;
   const port = opts.port ?? 4040;
 
-  // 1) Named candidates (mDNS hostname / baked default).
+  // 1) Ask the network, and try the named candidates AT THE SAME TIME.
+  //
+  // Concurrently rather than in order, which matters on the networks where this
+  // is most likely to disappoint: plenty of wifi blocks multicast outright, and
+  // there the browse contributes nothing but its full timeout. Run alongside,
+  // the worst case is the slower of the two instead of the sum. The browse is
+  // still PREFERRED when it answers - an origin the server published beats one
+  // this file guessed at.
   const named = (opts.candidates ?? DEFAULT_DISCOVERY_CANDIDATES).map(stripTrailingSlash);
-  const namedHit = await raceForServer(named, fetchFn, opts.timeoutMs ?? 2000);
+  const [announced, namedHit] = await Promise.all([
+    browsedOrigins(opts, fetchFn),
+    raceForServer(named, fetchFn, opts.timeoutMs ?? 2000),
+  ]);
+  if (announced.length > 0) return announced[0] ?? null;
   if (namedHit) return namedHit;
 
   // 2) Subnet scan needs this device's own LAN IP.
@@ -56,6 +85,163 @@ export async function discoverServer(opts: DiscoverOptions = {}): Promise<string
     }
   }
   return null;
+}
+
+/**
+ * What the DNS-SD browse found, as origins that actually answered.
+ *
+ * The browse hands back a host and a port and stops there, because that is all
+ * mDNS knows - whether that port speaks TLS is settled the only honest way, by
+ * asking it, which is also what gets an http-to-https redirect right.
+ *
+ * A browse that throws is a browse that found nothing: this is an accelerator
+ * in front of two working fallbacks, and it must never be the reason discovery
+ * fails.
+ */
+async function browsedOrigins(
+  opts: DiscoverOptions,
+  fetchFn: typeof globalThis.fetch,
+): Promise<string[]> {
+  if (!opts.browse) return [];
+  let announced: Array<{ host: string; port: number }> = [];
+  try {
+    announced = await opts.browse(opts.browseMs ?? 1500);
+  } catch {
+    return [];
+  }
+  const resolved = await Promise.all(
+    announced.map((service) =>
+      resolveServerOrigin(`${service.host}:${service.port}`, {
+        fetch: fetchFn,
+        timeoutMs: opts.timeoutMs ?? 2000,
+      }),
+    ),
+  );
+  return resolved.filter((hit) => hit !== null).map((hit) => hit.url);
+}
+
+/** What a typed address turned out to be: the origin that answered, and whether
+ *  it did so over TLS. */
+export interface ResolvedOrigin {
+  url: string;
+  secure: boolean;
+}
+
+/**
+ * Work out which scheme a typed address actually speaks.
+ *
+ * The address box takes `media.example.net` as readily as
+ * `https://media.example.net:4040`, because nobody wants to spell out a scheme
+ * on a television with a remote. That convenience used to be a silent DECISION:
+ * anything without a scheme was assumed to be `http://`, so a server that does
+ * have TLS was reached in the clear and nothing on screen ever said so.
+ *
+ * So both are probed instead - https FIRST, so a server that answers on either
+ * is saved as the secure one - and the winner is what gets stored and what the
+ * screen reports.
+ *
+ * An explicit scheme is an instruction, not a hint: it is probed exactly as
+ * typed and never quietly swapped for the other one.
+ *
+ * Returns null when nothing answers, which is not the same as "insecure": the
+ * caller still has an address it can save, it just has nothing to promise about
+ * it yet.
+ */
+export async function resolveServerOrigin(
+  address: string,
+  opts: { fetch?: typeof globalThis.fetch; timeoutMs?: number; port?: number } = {},
+): Promise<ResolvedOrigin | null> {
+  const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
+  if (!fetchFn) return null;
+  const typed = stripTrailingSlash(address.trim());
+  if (!typed) return null;
+  const timeoutMs = opts.timeoutMs ?? 2500;
+
+  const candidates = originCandidates(typed, opts.port ?? 4040);
+  // Probed CONCURRENTLY but resolved by PRIORITY: four candidates one after the
+  // other is four timeouts of waiting, and a server on the standard port must
+  // still beat the same host on 4040 even when 4040 answers first.
+  const reached = await Promise.all(
+    candidates.map((url) => probeFinalOrigin(fetchFn, url, timeoutMs)),
+  );
+  const winner = reached.find((origin) => origin !== null);
+  return winner ? { url: winner, secure: winner.toLowerCase().startsWith('https://') } : null;
+}
+
+/**
+ * Probe an origin and report where the answer ACTUALLY came from.
+ *
+ * The distinction matters because a server that redirects `http://` to
+ * `https://` answers a plain-http probe perfectly well - fetch follows the
+ * redirect - and taking the request at face value would file a TLS server under
+ * `http://`: the padlock would be missing on a screen that has earned it, and
+ * every later call would spend a round trip being redirected. So the final URL
+ * decides, not the one that was asked for.
+ */
+async function probeFinalOrigin(
+  fetchFn: typeof globalThis.fetch,
+  base: string,
+  timeoutMs: number,
+): Promise<string | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetchFn(`${base}/api/health`, { signal: ctrl.signal });
+    if (!res.ok) return null;
+    const body = (await res.json()) as HealthBody;
+    if (body?.status !== 'ok') return null;
+    // `res.url` is the URL after redirects. Empty on the odd fetch
+    // implementation that omits it, in which case the request stands as asked.
+    return originOf(res.url) ?? base;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** `https://host:443/api/health` -> `https://host`. Null for anything unparseable. */
+function originOf(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    return stripTrailingSlash(new URL(url).origin);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Every origin a typed address could plausibly mean, best first.
+ *
+ * The ambiguity is real and worth spelling out: this project's own server
+ * defaults to :4040, while anything behind a reverse proxy answers on the
+ * standard 443. A bare `media.example.net` could be either, so both are tried -
+ * secure before plain, standard port before 4040.
+ *
+ * Anything the address states explicitly is honoured rather than second-guessed:
+ * a typed scheme is never swapped, and a typed port is never replaced. Only what
+ * is MISSING gets guessed at.
+ */
+function originCandidates(typed: string, defaultPort: number): string[] {
+  const hasScheme = /^https?:\/\//i.test(typed);
+  // The authority only: a port lives before the first slash, so a path like
+  // `host/kroma` must not be mistaken for one.
+  const authority = typed.replace(/^https?:\/\//i, '').split('/')[0] ?? '';
+  const hasPort = /:\d+$/.test(authority);
+
+  if (hasScheme) {
+    // Explicit scheme with an explicit port is a complete instruction. Without a
+    // port, the standard one is meant first - but 4040 is worth a try before
+    // giving up, since that is where this project's server actually lives.
+    return hasPort ? [typed] : [typed, `${typed}:${defaultPort}`];
+  }
+  if (hasPort) return [`https://${typed}`, `http://${typed}`];
+  return [
+    `https://${typed}`,
+    `http://${typed}`,
+    `https://${typed}:${defaultPort}`,
+    `http://${typed}:${defaultPort}`,
+  ];
 }
 
 /** One server found by [`discoverServers`]: its origin plus the identity bits
@@ -102,16 +288,24 @@ export async function discoverServers(opts: DiscoverOptions = {}): Promise<Disco
       opts.concurrency ?? 48,
     );
   };
-  // Named candidates stay FIRST in the result so a friendly `.local` origin wins
+  // Announced servers come first, ahead even of the named candidates: an origin
+  // the server chose to publish beats one this file guessed at, and it is the
+  // only one that can carry a non-default port or a TLS front door.
+  const announced = async () => {
+    const origins = await browsedOrigins(opts, fetchFn);
+    return probeAll(origins, fetchFn, opts.timeoutMs ?? 2000, Math.max(1, origins.length));
+  };
+  // Named candidates stay ahead of the sweep so a friendly `.local` origin wins
   // over the bare IP for the same server.
-  const [namedHits, subnetHits] = await Promise.all([
+  const [announcedHits, namedHits, subnetHits] = await Promise.all([
+    announced(),
     probeAll(named, fetchFn, opts.timeoutMs ?? 2000, named.length),
     subnet(),
   ]);
 
   const seen = new Set<string>();
   const found: DiscoveredServer[] = [];
-  for (const hit of [...namedHits, ...subnetHits]) {
+  for (const hit of [...announcedHits, ...namedHits, ...subnetHits]) {
     const key = identityOf(hit.body);
     if (seen.has(key)) continue;
     seen.add(key);
