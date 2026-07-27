@@ -31,10 +31,21 @@ import sys
 import asc_api as asc
 
 BUNDLE = "tv.kroma.mobile"
-# (profileType, output basename). Both platforms of one App Store record share
-# the bundle id - see clients/tv-native/app.config.js - so they differ only by
-# the platform the profile is minted for.
-WANTED = [("IOS_APP_STORE", "ios"), ("TVOS_APP_STORE", "tvos")]
+# (bundle id, profileType, output basename).
+#
+# Both platforms of one App Store record share the bundle id - see
+# clients/tv-native/app.config.js - so the app's two profiles differ only by the
+# platform they are minted for.
+#
+# The Top Shelf extension is a SEPARATE App ID and needs its own profile. The
+# tvOS archive builds two targets, and manual signing has to name a profile for
+# each; without this one the extension falls back to a Team profile that does
+# not carry group.tv.kroma, and the archive dies on an entitlements mismatch.
+WANTED = [
+    (BUNDLE, "IOS_APP_STORE", "ios"),
+    (BUNDLE, "TVOS_APP_STORE", "tvos"),
+    (f"{BUNDLE}.TopShelf", "TVOS_APP_STORE", "tvos-topshelf"),
+]
 
 
 def main() -> int:
@@ -50,16 +61,12 @@ def main() -> int:
     # for the Top Shelf extension - which decodes and installs cleanly, so the
     # build fails later with the same "no profiles" message it started with.
     # Match the identifier here rather than trusting the server's filter.
-    bundles = [
-        b
+    # One prefix query covers the app AND its extension, then each is matched
+    # exactly below.
+    found = {
+        b["attributes"]["identifier"]: b["id"]
         for b in asc.get(f"bundleIds?filter[identifier]={BUNDLE}&limit=200", jwt).get("data", [])
-        if b["attributes"]["identifier"] == BUNDLE
-    ]
-    if not bundles:
-        print(f"::error::no App ID registered for {BUNDLE}")
-        return 1
-    bundle_id = bundles[0]["id"]
-    print(f"using App ID {BUNDLE} ({bundle_id})")
+    }
 
     certs = [
         c
@@ -75,13 +82,17 @@ def main() -> int:
     print(f"using certificate {certs[0]['attributes'].get('displayName','?')}")
 
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
-    for profile_type, basename in WANTED:
+    for bundle, profile_type, basename in WANTED:
+        bundle_id = found.get(bundle)
+        if not bundle_id:
+            print(f"::error::no App ID registered for {bundle}")
+            return 1
         # The bundle id is IN the name because the account also carries
         # tv.kroma.mobile.TopShelf, and a name that does not say which App ID it
         # belongs to is how a profile for the extension ends up looking like the
         # profile for the app. Apple rejects duplicate names outright (409), so
         # the collision surfaces immediately rather than as a silent wrong pick.
-        name = f"KROMA {BUNDLE} {profile_type} CI {stamp}"
+        name = f"KROMA {bundle} {profile_type} CI {stamp}"
         body = {
             "data": {
                 "type": "profiles",
@@ -92,8 +103,22 @@ def main() -> int:
                 },
             }
         }
-        created = asc.post("profiles", jwt, body)["data"]
-        attrs = created["attributes"]
+        # Re-runnable: Apple rejects a duplicate name with a 409, and a second
+        # run on the same day would otherwise fail after having done real work.
+        # An existing profile of this exact name is the one this run would have
+        # created, so reuse it rather than inventing a name to dodge the clash.
+        existing = next(
+            (
+                p
+                for p in asc.get("profiles?limit=200", jwt).get("data", [])
+                if p["attributes"].get("name") == name
+                and p["attributes"].get("profileState") == "ACTIVE"
+            ),
+            None,
+        )
+        attrs = (existing or asc.post("profiles", jwt, body)["data"])["attributes"]
+        if existing:
+            print("  (reusing the profile of this name minted earlier today)")
         # profileContent IS the .mobileprovision, already base64 - which is
         # exactly the form the GitHub secret holds, so it is written through
         # untouched rather than decoded and re-encoded.
@@ -104,8 +129,9 @@ def main() -> int:
 
     print()
     print("Now update the secrets:")
-    print(f"  gh secret set MOBILE_IOS_PROVISIONING_PROFILE < {args.out}/ios.b64")
-    print(f"  gh secret set TVOS_PROVISIONING_PROFILE      < {args.out}/tvos.b64")
+    print(f"  gh secret set MOBILE_IOS_PROVISIONING_PROFILE     < {args.out}/ios.b64")
+    print(f"  gh secret set TVOS_PROVISIONING_PROFILE           < {args.out}/tvos.b64")
+    print(f"  gh secret set TVOS_TOPSHELF_PROVISIONING_PROFILE  < {args.out}/tvos-topshelf.b64")
     return 0
 
 
