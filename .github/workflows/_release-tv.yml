@@ -228,11 +228,21 @@ jobs:
       # gradle.properties asks for 2GB - a sensible default for a laptop, and a
       # third of what this runner has, which costs GC time on the C++ and Hermes
       # steps.
+      # -PreactNativeArchitectures drops 32-bit x86. The generated
+      # gradle.properties asks for four ABIs, and the React Native C++ layer is
+      # compiled once per ABI, so that one is a quarter of the native build.
+      #
+      # Nothing runs it: every Android TV device ever shipped is ARM, and Google
+      # retired the 32-bit x86 emulator images in favour of x86_64 years ago.
+      # x86_64 is KEPT so an Intel Mac can still run the APK in an emulator -
+      # dropping that one too would halve the build again, but it is a real
+      # capability rather than dead weight.
       - name: Build APK
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
         run: |
-          gradle -p clients/tv-native/android assembleRelease --build-cache
+          gradle -p clients/tv-native/android assembleRelease --build-cache \
+            -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64
           mkdir -p out
           cp clients/tv-native/android/app/build/outputs/apk/release/app-release.apk \
             "out/KROMA-androidtv-${{ inputs.version }}.apk"
