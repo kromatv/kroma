@@ -41,7 +41,6 @@ const salon = (over: Partial<CastReceiver> = {}): CastReceiver =>
     id: 'tv-salon-01',
     name: 'Apple TV',
     platform: 'Apple TV',
-    mine: false,
     username: 'Salon',
     network: 'LAN',
     ...over,
@@ -101,27 +100,45 @@ describe('the roster', () => {
     expect(client.castReceivers).not.toHaveBeenCalled();
   });
 
-  it('refetches when the bus says the roster changed', async () => {
+  it('patches a changed row in place instead of refetching', async () => {
+    const client = fakeClient();
+    const { result } = mount(client);
+    await waitFor(() => expect(client.castReceivers).toHaveBeenCalledTimes(1));
+
+    act(() => events.onEvent?.({ type: 'cast.receiver', receiver: playing(1000) }));
+    await waitFor(() => expect(result.current.receivers[0]?.nowPlaying?.state).toBe('playing'));
+    // The whole point of carrying the row: one pause on one TV costs every
+    // sender a patch, not an HTTP round trip.
+    expect(client.castReceivers).toHaveBeenCalledTimes(1);
+
+    // A TV nobody had yet simply joins the list, in the server's own order.
+    act(() =>
+      events.onEvent?.({ type: 'cast.receiver', receiver: salon({ id: 'tv-a', name: 'AAA' }) }),
+    );
+    await waitFor(() => expect(result.current.receivers).toHaveLength(2));
+    expect(result.current.receivers[0]?.name).toBe('AAA');
+  });
+
+  it('resyncs on reconnect, where a gap may have swallowed a change', async () => {
     const client = fakeClient();
     mount(client);
     await waitFor(() => expect(client.castReceivers).toHaveBeenCalledTimes(1));
-    act(() => events.onEvent?.({ type: 'cast.receivers' }));
-    await waitFor(() => expect(client.castReceivers).toHaveBeenCalledTimes(2));
-    // A reconnect resyncs too - the gap may have swallowed an event.
     act(() => events.onOpen?.());
-    await waitFor(() => expect(client.castReceivers).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(client.castReceivers).toHaveBeenCalledTimes(2));
   });
 
-  it('drops the selection when the chosen TV leaves the roster', async () => {
+  it('drops the selection when the chosen TV goes away', async () => {
     const client = fakeClient();
     const { result } = mount(client);
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
     act(() => result.current.select('tv-salon-01'));
     await waitFor(() => expect(result.current.active?.id).toBe('tv-salon-01'));
 
-    client.castReceivers.mockResolvedValue([salon({ id: 'tv-chambre-02' })]);
-    act(() => events.onEvent?.({ type: 'cast.receivers' }));
+    // A TV whose socket closed is announced by id - no refetch, and the remote
+    // stops pretending it is driving something.
+    act(() => events.onEvent?.({ type: 'cast.receiver.gone', receiverId: 'tv-salon-01' }));
     await waitFor(() => expect(result.current.active).toBeNull());
+    expect(result.current.receivers).toHaveLength(0);
   });
 });
 

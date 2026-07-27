@@ -2945,6 +2945,7 @@ dependencies = [
  "kroma-module-host",
  "kroma-module-manifest",
  "kroma-primitives",
+ "kroma-webpush",
  "notify",
  "rusty-chromaprint",
  "serde",

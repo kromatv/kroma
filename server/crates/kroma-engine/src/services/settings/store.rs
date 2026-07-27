@@ -279,6 +279,14 @@ fn defaults() -> BTreeMap<String, Value> {
     // baseline and stays silent, so switching notifications on doesn't announce a
     // whole existing catalogue. See `services::notify::digest`.
     m.insert("notifications.digest.since".into(), json!(""));
+    // Web Push (RFC 8292) VAPID identity, minted on the first subscription and
+    // then left alone: rotating it invalidates every browser that has already
+    // subscribed. The private half never leaves the server.
+    m.insert("notifications.vapid.publicKey".into(), json!(""));
+    m.insert("notifications.vapid.privateKey".into(), json!(""));
+    // The RFC 8292 `sub` claim: who a push service operator contacts about this
+    // sender. Required to be present, not to be reachable.
+    m.insert("notifications.push.subject".into(), json!(""));
     m
 }
 

@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use crate::infra::events::{Bus, ServerEvent};
 use crate::model::{
     CastCommand, CastCommandEnvelope, CastNowPlaying, CastPlayback, CastReceiver, CastState,
-    CastTrack, MediaItem,
+    MediaItem,
 };
 
 /// A receiver that stops heartbeating for this long is gone (TV switched off,
@@ -450,7 +450,7 @@ fn clamp(command: CastCommand) -> CastCommand {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Kind;
+    use crate::model::{CastTrack, Kind};
 
     fn item(id: &str) -> MediaItem {
         MediaItem {

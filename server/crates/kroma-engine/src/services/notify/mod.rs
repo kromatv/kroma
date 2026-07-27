@@ -11,6 +11,7 @@
 //! same rule the requests service follows.
 
 pub mod digest;
+pub mod push;
 pub mod render;
 
 use kroma_db::notifications::NewNotification;
@@ -81,7 +82,7 @@ fn deliver<S: HostCtx>(
     spec: &NotificationSpec,
 ) -> anyhow::Result<bool> {
     let category = spec.category();
-    let (in_app, _push) = {
+    let (in_app, push_allowed) = {
         let conn = state.db().get()?;
         db::notifications::allows(&conn, &user.id, category)?
     };
@@ -123,6 +124,21 @@ fn deliver<S: HostCtx>(
         &user.id,
         Event::new("notification.created", json!({ "id": id, "unread": unread })),
     );
+
+    // Then the device. Rendered in the recipient's own language, exactly like
+    // the row they will see in the centre. Best effort by design: the row is
+    // already written, so a push service being down costs a push, not the
+    // notification.
+    if push_allowed {
+        let stored = {
+            let conn = state.db().get()?;
+            db::notifications::list_notifications(&conn, &user.id, 1, false)?
+        };
+        if let Some(stored) = stored.iter().find(|n| n.id == id) {
+            let rendered = render::render(stored, render::locale_of(user));
+            push::deliver(state, &user.id, &rendered);
+        }
+    }
     Ok(true)
 }
 

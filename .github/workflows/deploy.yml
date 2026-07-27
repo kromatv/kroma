@@ -164,6 +164,11 @@ jobs:
         run: .github/scripts/upload-to-testflight.sh
 
       - name: Upload the Apple TV build to TestFlight
+        # `!cancelled()` so one channel's outage does not silently skip the
+        # others. The Apple TV upload failing left the Android build
+        # undistributed with no error of its own - the step just never ran.
+        # The job still fails; every channel still gets its attempt.
+        if: ${{ !cancelled() }}
         env:
           IPA: dist/KROMA-appletv-${{ needs.verify.outputs.version }}.ipa
           PLATFORM: tvos
@@ -173,6 +178,11 @@ jobs:
       # App Distribution. Absent credentials skip rather than fail, same as the
       # Apple half.
       - name: Distribute the Android build to Firebase
+        # `!cancelled()` so one channel's outage does not silently skip the
+        # others. The Apple TV upload failing left the Android build
+        # undistributed with no error of its own - the step just never ran.
+        # The job still fails; every channel still gets its attempt.
+        if: ${{ !cancelled() }}
         env:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

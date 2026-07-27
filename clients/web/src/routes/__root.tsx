@@ -42,6 +42,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
       { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      // Makes the app installable which is also what unlocks Web Push on iOS,
+      // where notifications only work from a home-screen install.
+      { rel: 'manifest', href: '/manifest.webmanifest' },
     ],
   }),
   shellComponent: RootDocument,

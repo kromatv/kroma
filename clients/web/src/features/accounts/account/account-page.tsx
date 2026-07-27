@@ -11,6 +11,7 @@ import { useT } from '@kroma/ui';
 import { EmptyState } from '@kroma/ui/kit';
 import { IconAt, IconCheck, IconMail } from '@tabler/icons-react';
 import { useState } from 'react';
+import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';
 import { PinCard } from '#web/features/accounts/account/pin-card';
 import { NONE, PreferencesCard } from '#web/features/accounts/account/preferences-card';
@@ -147,6 +148,10 @@ function ProfileEditor() {
           onAudio={setAudio}
           onSubtitle={setSubtitle}
         />
+      </Section>
+
+      <Section title={t('account.sectionNotifications')}>
+        <NotificationsCard />
       </Section>
 
       <Section title={t('account.sectionSecurity')}>

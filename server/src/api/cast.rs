@@ -2,9 +2,11 @@
 //! title on the TV and then works as its remote (Spotify-Connect shaped, not
 //! Chromecast: the server is the rendezvous, so it works over the tunnel too).
 //!
-//! Two sides talk here. A **receiver** (the TV app) heartbeats `/cast/announce`
-//! with its name and what it is playing, and collects the commands queued for it.
-//! A **sender** lists `/cast/receivers` and posts to `/cast/receivers/:id/command`.
+//! Two sides talk here. A **sender** lists `/cast/receivers` and posts to
+//! `/cast/receivers/:id/command`. A **receiver** (the TV app) normally lives on
+//! the event socket instead of these routes (see `api::ws`): it attaches there
+//! and reports changes as they happen. `/cast/announce` is its FALLBACK - the
+//! same register + report + ack + collect, for a device whose socket is down.
 //!
 //! Everything requires a session **and** `playback` - the capability that means
 //! "may watch" - so an account that isn't allowed to stream can't drive a TV into
@@ -90,8 +92,9 @@ pub struct AnnounceReply {
 
 /// `POST /api/cast/announce` (Bearer) → `AnnounceReply`.
 ///
-/// Register + heartbeat + ack + collect, in one call: a receiver that cannot hold
-/// the WebSocket open still gets its commands here, one beat late.
+/// Register + heartbeat + ack + collect, in one call. The fallback path: a
+/// receiver that cannot hold its event socket open still gets its commands here,
+/// one beat late instead of never.
 pub async fn announce(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,

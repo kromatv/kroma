@@ -10,15 +10,21 @@
 //! `services::notify::render`), which is why reading is not a plain SELECT.
 
 use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Deserialize;
 
 use crate::api::extract::AuthUser;
-use crate::api::util::query;
+use crate::api::util::{blocking, query};
 use crate::db;
-use crate::model::{NotificationPrefs, NotificationsView};
+use crate::model::{
+    Notification, NotificationCategory, NotificationEvent, NotificationPrefs, NotificationsView,
+    SubscribeBody,
+};
+use crate::services::auth::random_token;
+use crate::services::scan::short_hash;
 use crate::services::notify;
 use crate::services::jobs::now_ms;
 use crate::state::SharedState;
@@ -33,6 +39,9 @@ pub fn routes() -> Router<SharedState> {
         .route("/notifications/read", post(read))
         .route("/notifications/{id}", axum::routing::delete(remove))
         .route("/notifications/prefs", get(get_prefs).put(put_prefs))
+        .route("/push/key", get(push_key))
+        .route("/push/subscribe", post(subscribe).delete(unsubscribe))
+        .route("/push/test", post(push_test))
 }
 
 /// `GET /api/notifications` the caller's inbox, newest first, plus the unread
@@ -129,4 +138,111 @@ pub async fn put_prefs(
     })
     .await?;
     Ok(Json(NotificationPrefs { categories }).into_response())
+}
+
+// ----- Web Push subscriptions -------------------------------------------------
+
+/// `GET /api/push/key` the server's VAPID public key, which the browser needs
+/// as `applicationServerKey` before it can subscribe. Also reports whether this
+/// account already has an endpoint registered, so the settings toggle renders in
+/// the right state without a second round trip.
+///
+/// The keypair is minted here on first call rather than at startup: a server
+/// whose users never enable push never needs one.
+pub async fn push_key(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    let bg = state.clone();
+    let uid = user.id.clone();
+    let (key, subscribed) = blocking(move || {
+        let key = kroma_engine::services::notify::push::public_key(&bg)?;
+        let subscribed = kroma_engine::services::notify::push::is_subscribed(&bg, &uid);
+        Ok((key, subscribed))
+    })
+    .await?;
+    Ok(Json(serde_json::json!({ "publicKey": key, "subscribed": subscribed })).into_response())
+}
+
+/// `POST /api/push/subscribe` register this device's push endpoint.
+///
+/// The endpoint is keyed on `(transport, endpoint)`, so re-subscribing the same
+/// browser updates its row rather than piling up duplicates, and a browser now
+/// signed into a different account moves with it.
+pub async fn subscribe(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    Json(body): Json<SubscribeBody>,
+) -> Result<Response, Response> {
+    let loc = notify::render::locale_of(&user).to_string();
+    let uid = user.id.clone();
+    query(&state.db, move |pool| {
+        let id = short_hash(&format!("push|{uid}|{}|{}", body.endpoint, random_token()));
+        db::push_subs::upsert_subscription(
+            &pool,
+            &db::push_subs::NewSubscription {
+                id,
+                user_id: uid,
+                transport: body.transport,
+                endpoint: body.endpoint,
+                p256dh: body.p256dh,
+                auth: body.auth,
+                device: body.device,
+                locale: Some(loc),
+            },
+            now_ms(),
+        )
+    })
+    .await?;
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+/// `DELETE /api/push/subscribe` drop this device's endpoint (the user turned
+/// push off, or the browser's subscription changed).
+pub async fn unsubscribe(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    Json(body): Json<UnsubscribeBody>,
+) -> Result<Response, Response> {
+    let uid = user.id.clone();
+    query(&state.db, move |pool| {
+        db::push_subs::delete_subscription(&pool, &uid, &body.endpoint).map(|_| ())
+    })
+    .await?;
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+/// `POST /api/push/subscribe` body's counterpart for removal.
+#[derive(Debug, Deserialize)]
+pub struct UnsubscribeBody {
+    pub endpoint: String,
+}
+
+/// `POST /api/push/test` send the caller one push, so "is this actually
+/// working?" is answerable from the settings screen instead of by waiting for a
+/// real event. Reports how many of the caller's devices accepted it.
+pub async fn push_test(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    let bg = state.clone();
+    let locale = notify::render::locale_of(&user).to_string();
+    let uid = user.id.clone();
+    let delivered = blocking(move || {
+        let notification = Notification {
+            id: "test".into(),
+            category: NotificationCategory::System,
+            event: NotificationEvent::SystemJobFailed,
+            title: kroma_engine::i18n::t(&locale, "notifications.test.title", &[]),
+            body: kroma_engine::i18n::t(&locale, "notifications.test.body", &[]),
+            link: Some("/".into()),
+            image_url: None,
+            actions: Vec::new(),
+            read: false,
+            created_at: now_ms(),
+        };
+        Ok(kroma_engine::services::notify::push::deliver(&bg, &uid, &notification))
+    })
+    .await?;
+    Ok(Json(serde_json::json!({ "delivered": delivered })).into_response())
 }

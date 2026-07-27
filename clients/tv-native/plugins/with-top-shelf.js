@@ -72,6 +72,15 @@ const infoPlist = (version, build) => `${plistHeader}
     <key>NSExtensionPointIdentifier</key><string>com.apple.tv-top-shelf</string>
     <key>NSExtensionPrincipalClass</key><string>$(PRODUCT_MODULE_NAME).ContentProvider</string>
   </dict>
+  <!-- Required, and required SEPARATELY from the app's own copy: an extension is
+       its own bundle and App Store validation checks each one. Without it the
+       .ipa builds, signs, and exports perfectly, and is then rejected at UPLOAD:
+       "Invalid Bundle. Your binary, 'tv.kroma.mobile.TopShelf', has a 64-bit
+       architecture slice, so you must include the arm64 value for the
+       UIRequiredDeviceCapabilities key" (90502). Every Apple TV is arm64, so
+       this is a declaration rather than a constraint. -->
+  <key>UIRequiredDeviceCapabilities</key>
+  <array><string>arm64</string></array>
 </dict>
 </plist>
 `;

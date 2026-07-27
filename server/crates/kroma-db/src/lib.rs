@@ -43,6 +43,7 @@ pub mod pipeline;
 mod requests;
 mod reports;
 pub mod notifications;
+pub mod push_subs;
 mod taste;
 mod curated;
 mod suggest;

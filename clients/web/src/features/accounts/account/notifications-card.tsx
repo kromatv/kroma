@@ -1,0 +1,223 @@
+// Notifications section: the push opt-in for this device, plus the per-category
+// delivery matrix for the account.
+//
+// The push toggle is per-DEVICE (a browser subscription belongs to this browser)
+// while the matrix is per-ACCOUNT — a distinction worth being explicit about in
+// the copy, because "why is my phone quiet but my laptop isn't" is otherwise a
+// mystery. When push can't work here at all, the row says which reason applies
+// instead of offering a switch that would silently do nothing.
+
+import type { CategoryPref, MessageKey, NotificationCategory } from '@kroma/core';
+import { useT } from '@kroma/ui';
+import { IconBell, IconBellOff } from '@tabler/icons-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { Panel } from '#web/features/accounts/account/ui';
+import {
+  disablePush,
+  enablePush,
+  type PushBlocker,
+  pushBlocker,
+} from '#web/features/notifications/push';
+import { kromaClient } from '#web/shared/lib/api';
+import { userQueries } from '#web/shared/lib/queries';
+import { Button } from '#web/shared/ui';
+
+const CATEGORY_LABEL: Record<NotificationCategory, MessageKey> = {
+  requests: 'notifications.category.requests',
+  media: 'notifications.category.media',
+  reports: 'notifications.category.reports',
+  downloads: 'notifications.category.downloads',
+  system: 'notifications.category.system',
+};
+
+const BLOCKER_LABEL: Record<PushBlocker, MessageKey> = {
+  unsupported: 'push.blocked.unsupported',
+  insecure: 'push.blocked.insecure',
+  'needs-install': 'push.blocked.needsInstall',
+  denied: 'push.blocked.denied',
+};
+
+export function NotificationsCard() {
+  return (
+    <>
+      <PushPanel />
+      <CategoryMatrix />
+    </>
+  );
+}
+
+/** Per-device push opt-in. */
+function PushPanel() {
+  const t = useT();
+  const qc = useQueryClient();
+  const [blocker, setBlocker] = useState<PushBlocker | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tested, setTested] = useState<number | null>(null);
+
+  // Capability check runs client-side only (it reads `navigator`), so it can't
+  // be part of the initial render on the prerendered shell.
+  useEffect(() => setBlocker(pushBlocker()), []);
+
+  const { data } = useQuery({
+    queryKey: ['push', 'key'] as const,
+    queryFn: () => kromaClient().pushKey(),
+  });
+  const subscribed = data?.subscribed ?? false;
+
+  const toggle = async () => {
+    setBusy(true);
+    setError(null);
+    setTested(null);
+    try {
+      if (subscribed) await disablePush();
+      else await enablePush();
+      await qc.invalidateQueries({ queryKey: ['push', 'key'] });
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : '';
+      setError(reason in BLOCKER_LABEL ? t(BLOCKER_LABEL[reason as PushBlocker]) : t('push.failed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendTest = async () => {
+    setBusy(true);
+    try {
+      const { delivered } = await kromaClient().testPush();
+      setTested(delivered);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Panel className="flex flex-col gap-3 p-5.5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-[14px] font-semibold text-text">
+            {subscribed ? <IconBell size={16} /> : <IconBellOff size={16} />}
+            {t('push.title')}
+          </p>
+          <p className="mt-1 text-[12.5px] leading-snug text-muted">{t('push.description')}</p>
+        </div>
+        {blocker ? null : (
+          <Button
+            variant={subscribed ? 'ghost' : 'primary'}
+            size="sm"
+            label={subscribed ? t('push.disable') : t('push.enable')}
+            onPress={toggle}
+            loading={busy}
+          />
+        )}
+      </div>
+
+      {blocker && (
+        <p className="rounded-lg bg-white/4 px-3 py-2 text-[12.5px] text-muted">
+          {t(BLOCKER_LABEL[blocker])}
+        </p>
+      )}
+      {error && <p className="text-[12.5px] text-red-300">{error}</p>}
+
+      {subscribed && !blocker && (
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" label={t('push.sendTest')} onPress={sendTest} loading={busy} />
+          {tested !== null && (
+            <span className="text-[12.5px] text-muted">
+              {tested > 0 ? t('push.testSent') : t('push.testFailed')}
+            </span>
+          )}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+/** Per-account, per-category delivery matrix. */
+function CategoryMatrix() {
+  const t = useT();
+  const qc = useQueryClient();
+  const { data, isPending } = useQuery(userQueries.notificationPrefs());
+  const [saving, setSaving] = useState<NotificationCategory | null>(null);
+
+  const update = async (category: NotificationCategory, patch: Partial<CategoryPref>) => {
+    if (!data) return;
+    setSaving(category);
+    try {
+      const categories = data.categories.map((c) =>
+        c.category === category ? { ...c, ...patch } : c,
+      );
+      await kromaClient().setNotificationPrefs({ categories });
+      await qc.invalidateQueries({ queryKey: userQueries.notificationPrefs().queryKey });
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  if (isPending || !data) {
+    return (
+      <Panel className="p-5.5">
+        <div className="h-32 animate-pulse rounded-lg bg-white/4" />
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel className="p-5.5">
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <p className="text-[14px] font-semibold text-text">{t('notifications.settings')}</p>
+        <div className="flex shrink-0 gap-4 text-[11px] font-semibold uppercase tracking-wide text-dim">
+          <span className="w-10 text-center">{t('notifications.channelInApp')}</span>
+          <span className="w-10 text-center">{t('notifications.channelPush')}</span>
+        </div>
+      </div>
+      <div className="flex flex-col divide-y divide-border">
+        {data.categories.map((pref) => (
+          <div key={pref.category} className="flex items-center justify-between gap-4 py-2.5">
+            <span className="min-w-0 truncate text-[13.5px] text-text">
+              {t(CATEGORY_LABEL[pref.category])}
+            </span>
+            <div className="flex shrink-0 gap-4">
+              <Toggle
+                checked={pref.inApp}
+                busy={saving === pref.category}
+                onChange={(inApp) => update(pref.category, { inApp })}
+              />
+              <Toggle
+                checked={pref.push}
+                busy={saving === pref.category}
+                onChange={(push) => update(pref.category, { push })}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
+function Toggle({
+  checked,
+  busy,
+  onChange,
+}: Readonly<{ checked: boolean; busy: boolean; onChange: (next: boolean) => void }>) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={busy}
+      onClick={() => onChange(!checked)}
+      className={`flex h-6 w-10 items-center rounded-full px-0.5 transition-colors disabled:opacity-50 ${
+        checked ? 'bg-accent' : 'bg-white/12'
+      }`}
+    >
+      <span
+        className={`h-5 w-5 rounded-full bg-white transition-transform ${
+          checked ? 'translate-x-4' : 'translate-x-0'
+        }`}
+      />
+    </button>
+  );
+}

@@ -291,6 +291,154 @@ async fn the_report_lifecycle_notifies_both_sides_but_not_on_reopen() {
     assert_eq!(ana_inbox["unread"], json!(1), "a reopen must not re-notify");
 }
 
+// ----- Web Push subscriptions -------------------------------------------------
+
+/// A real browser subscription shape (the RFC 8291 example keys serve as
+/// well-formed values; nothing here is actually sent anywhere).
+fn subscription(endpoint: &str) -> serde_json::Value {
+    json!({
+        "transport": "webpush",
+        "endpoint": endpoint,
+        "p256dh": "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+        "auth": "BTBZMqHH6r4Tts7J_aSIgg",
+        "device": "Firefox on Mac",
+    })
+}
+
+#[tokio::test]
+async fn the_vapid_key_is_minted_on_demand_and_then_stays_put() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "push1");
+
+    let (status, first) = get(&t.app, "/api/push/key", Some(&ana)).await;
+    assert_eq!(status, StatusCode::OK);
+    let key = first["publicKey"].as_str().unwrap().to_string();
+    assert!(!key.is_empty());
+    assert_eq!(first["subscribed"], json!(false));
+
+    // An uncompressed P-256 point is 65 bytes; anything else and no browser
+    // will accept it as an applicationServerKey.
+    let raw = base64_url_decode(&key);
+    assert_eq!(raw.len(), 65, "applicationServerKey must be a 65-byte point");
+    assert_eq!(raw[0], 0x04, "and uncompressed");
+
+    // Stable across calls: re-minting would silently break every existing
+    // browser subscription.
+    let (_, second) = get(&t.app, "/api/push/key", Some(&ana)).await;
+    assert_eq!(second["publicKey"], json!(key));
+}
+
+/// Minimal base64url decoder for the assertions above.
+fn base64_url_decode(s: &str) -> Vec<u8> {
+    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    let mut out = Vec::new();
+    let mut acc: u32 = 0;
+    let mut bits = 0;
+    for c in s.bytes() {
+        let Some(v) = ALPHABET.iter().position(|&a| a == c) else { continue };
+        acc = (acc << 6) | v as u32;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((acc >> bits) as u8);
+        }
+    }
+    out
+}
+
+#[tokio::test]
+async fn subscribing_registers_the_endpoint_and_flips_the_toggle() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "push2");
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/push/subscribe",
+        Some(&ana),
+        Some(subscription("https://push.example/wpush/v2/ana")),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let (_, key) = get(&t.app, "/api/push/key", Some(&ana)).await;
+    assert_eq!(key["subscribed"], json!(true));
+}
+
+#[tokio::test]
+async fn re_subscribing_the_same_browser_does_not_duplicate_it() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "push3");
+    let sub = subscription("https://push.example/wpush/v2/same");
+
+    for _ in 0..3 {
+        let (status, _) =
+            send(&t.app, "POST", "/api/push/subscribe", Some(&ana), Some(sub.clone())).await;
+        assert_eq!(status, StatusCode::NO_CONTENT);
+    }
+
+    // One endpoint, one row so one push, not three.
+    let (_, body) = send(&t.app, "POST", "/api/push/test", Some(&ana), Some(json!({}))).await;
+    // Delivery itself fails (push.example does not exist), but the count proves
+    // exactly one endpoint was attempted rather than three.
+    assert_eq!(body["delivered"], json!(0));
+}
+
+#[tokio::test]
+async fn unsubscribing_removes_only_the_callers_endpoint() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "push4");
+    let (_id2, bo) = member(&t, "push5");
+    let endpoint = "https://push.example/wpush/v2/shared-string";
+
+    send(&t.app, "POST", "/api/push/subscribe", Some(&ana), Some(subscription(endpoint))).await;
+    // Bo naming Ana's endpoint must not silence her device.
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/push/subscribe",
+        Some(&bo),
+        Some(json!({ "endpoint": endpoint })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, key) = get(&t.app, "/api/push/key", Some(&ana)).await;
+    assert_eq!(key["subscribed"], json!(true), "Bo must not be able to unsubscribe Ana");
+
+    // Ana can.
+    send(
+        &t.app,
+        "DELETE",
+        "/api/push/subscribe",
+        Some(&ana),
+        Some(json!({ "endpoint": endpoint })),
+    )
+    .await;
+    let (_, key) = get(&t.app, "/api/push/key", Some(&ana)).await;
+    assert_eq!(key["subscribed"], json!(false));
+}
+
+#[tokio::test]
+async fn the_push_endpoints_require_a_session() {
+    let t = test_app();
+    for (method, path) in
+        [("GET", "/api/push/key"), ("POST", "/api/push/subscribe"), ("POST", "/api/push/test")]
+    {
+        let (status, _) = send(&t.app, method, path, None, Some(json!({}))).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{method} {path}");
+    }
+}
+
+#[tokio::test]
+async fn a_test_push_with_no_devices_reports_zero_rather_than_failing() {
+    let t = test_app();
+    let (_id, ana) = member(&t, "push6");
+    let (status, body) =
+        send(&t.app, "POST", "/api/push/test", Some(&ana), Some(json!({}))).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["delivered"], json!(0));
+}
+
 #[tokio::test]
 async fn a_moderator_audience_reaches_the_capability_holder_only() {
     let t = test_app();

@@ -105,6 +105,7 @@ import type {
   SettingsView,
   Show,
   ShowDetail,
+  SubscribeBody,
   StorageInfo,
   SyncDefinitionsResult,
   TopUser,
@@ -698,6 +699,21 @@ export class KromaClient {
   /** Run a notification's `api` action (approve / deny straight from the row). */
   runNotificationAction(action: { href: string; method?: string }): Promise<void> {
     return notifications.runNotificationAction(this.ctx, action);
+  }
+
+  // ----- Web Push ---------------------------------------------------------------
+
+  pushKey(): Promise<{ publicKey: string; subscribed: boolean }> {
+    return notifications.pushKey(this.ctx);
+  }
+  subscribePush(body: SubscribeBody): Promise<void> {
+    return notifications.subscribePush(this.ctx, body);
+  }
+  unsubscribePush(endpoint: string): Promise<void> {
+    return notifications.unsubscribePush(this.ctx, endpoint);
+  }
+  testPush(): Promise<{ delivered: number }> {
+    return notifications.testPush(this.ctx);
   }
 
   // ----- admin: naming / organize -----------------------------------------------

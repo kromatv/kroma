@@ -5,7 +5,12 @@
 // inbox" parameter, because the server takes the user from the session and
 // ignores any id that says otherwise.
 
-import type { Notification, NotificationPrefs, NotificationsView } from '../types';
+import type {
+  Notification,
+  NotificationPrefs,
+  NotificationsView,
+  SubscribeBody,
+} from '../types';
 import type { RequestContext } from './base';
 
 const JSON_HEADERS = { 'content-type': 'application/json' };
@@ -54,6 +59,40 @@ export function setNotificationPrefs(
     headers: JSON_HEADERS,
     body: JSON.stringify(prefs),
   });
+}
+
+/** The server's VAPID public key (`applicationServerKey`), plus whether this
+ * account already has a push endpoint registered. The keypair is minted on the
+ * first call, so a server nobody enabled push on never grows one. */
+export function pushKey(
+  ctx: RequestContext,
+): Promise<{ publicKey: string; subscribed: boolean }> {
+  return ctx.json<{ publicKey: string; subscribed: boolean }>('/push/key');
+}
+
+/** Register this device's push endpoint. Re-registering the same endpoint
+ * updates it rather than duplicating, and moves it to the calling account. */
+export function subscribePush(ctx: RequestContext, body: SubscribeBody): Promise<void> {
+  return ctx.json<void>('/push/subscribe', {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify(body),
+  });
+}
+
+/** Drop this device's endpoint (scoped to the caller server-side). */
+export function unsubscribePush(ctx: RequestContext, endpoint: string): Promise<void> {
+  return ctx.json<void>('/push/subscribe', {
+    method: 'DELETE',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ endpoint }),
+  });
+}
+
+/** Send the caller one push, so "is this actually working?" is answerable from
+ * the settings screen. Returns how many of their devices accepted it. */
+export function testPush(ctx: RequestContext): Promise<{ delivered: number }> {
+  return ctx.json<{ delivered: number }>('/push/test', { method: 'POST' });
 }
 
 /** Run a notification's `api` action (approve / deny from the row itself). The

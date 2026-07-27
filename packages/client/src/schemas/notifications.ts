@@ -103,3 +103,15 @@ export type NotificationPrefs = z.infer<typeof NotificationPrefs>;
  * device token. */
 export const PushTransport = z.enum(['webpush', 'apns', 'fcm']);
 export type PushTransport = z.infer<typeof PushTransport>;
+
+/** `POST /api/push/subscribe`. Web Push sends `endpoint` plus both keys; the
+ * native transports send the device token as `endpoint` and omit the keys. */
+export const SubscribeBody = z.object({
+  transport: PushTransport,
+  endpoint: z.string(),
+  p256dh: z.string().optional(),
+  auth: z.string().optional(),
+  /** Human label for the "your devices" list (e.g. "Firefox on Mac"). */
+  device: z.string().optional(),
+});
+export type SubscribeBody = z.infer<typeof SubscribeBody>;
