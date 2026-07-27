@@ -56,7 +56,7 @@ env:
 jobs:
   appletv:
     name: Apple TV .ipa (TestFlight)
-    if: ${{ inputs.proceed == 'true' && (inputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ inputs.proceed == 'true' && (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     # macos-26, NOT macos-15, for the reason the phone job spells out: Expo SDK
     # 57 pulls Swift packages built with Swift tools 6.2 (expo-modules-jsi), and
     # the macos-15 image tops out at Xcode 16.4 / Swift 6.1. The guard step below
@@ -85,6 +85,8 @@ jobs:
           sudo xcode-select -s "$newest"
           echo "using $newest"
           xcodebuild -version
+          # Part of the DerivedData cache key: see the mobile job.
+          echo "XCODE_VERSION=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_ENV"
           swift_version=$(swift --version 2>&1 | sed -nE 's/.*Swift version ([0-9]+\.[0-9]+).*/\1/p' | head -1)
           echo "swift $swift_version"
           # Expo SDK 57's expo-modules-jsi declares swift-tools-version 6.2.
@@ -140,8 +142,39 @@ jobs:
       # since 2020 - the same base the Android TV and phone jobs use. Reusing a
       # (version, build) pair is refused on upload, an hour after the archive
       # that produced it began.
-      - name: Prebuild the tvOS project
+      # Same reasoning as the mobile job: the archive rebuilt every pod on every
+      # run because `expo prebuild` DELETES and regenerates ios/, so every
+      # source arrived with a new mtime and Xcode - which invalidates on mtime -
+      # rebuilt the lot. Caching Pods/ alone does nothing; prebuild wipes it.
+      # So cache the generated project and skip prebuild when its inputs match.
+      #
+      # EXACT key, no restore-keys: a near-miss would archive a project
+      # generated from a different config, and it would ship happily.
+      - name: Cache the prebuilt tvOS project
         if: steps.signing.outputs.ready == 'true'
+        id: ios-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            clients/tv-native/ios
+            ~/Library/Caches/CocoaPods
+          key: ios-tvnative-v1-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/tv-native/package.json', 'clients/tv-native/app.config.js') }}
+
+      # The build number is minutes-since-2020, so a restored project carries
+      # the one from the run that cached it and App Store Connect would refuse
+      # the duplicate. Re-stamp the plist rather than regenerate the project.
+      - name: Re-stamp the restored project
+        if: steps.signing.outputs.ready == 'true' && steps.ios-cache.outputs.cache-hit == 'true'
+        run: |
+          set -euo pipefail
+          plist=$(find clients/tv-native/ios -maxdepth 2 -name Info.plist | head -1)
+          [ -n "$plist" ] || { echo "::error::no Info.plist in the restored project"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ inputs.triplet }}" "$plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(( ( $(date -u +%s) - 1577836800 ) / 60 ))" "$plist"
+          echo "re-stamped $plist"
+
+      - name: Prebuild the tvOS project
+        if: steps.signing.outputs.ready == 'true' && steps.ios-cache.outputs.cache-hit != 'true'
         env:
           KROMA_VERSION: ${{ inputs.triplet }}
         run: |
@@ -181,6 +214,20 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         # Called by absolute path: this step runs from clients/tv-native/ios.
         run: bash "$GITHUB_WORKSPACE/.github/scripts/ios-archive-export-ipa.sh"
+
+      # DerivedData is what makes the NEXT archive incremental, but most of it
+      # is regenerable bulk that would blow the repo's 10GB cache budget and
+      # evict the Rust and Gradle caches by LRU. Keep the object files, drop
+      # the rest; a missing module cache costs seconds, a missing
+      # Intermediates.noindex costs the whole 16 minutes back.
+      - name: Trim DerivedData before it is cached
+        if: always() && steps.signing.outputs.ready == 'true'
+        run: |
+          dd=clients/tv-native/ios/build
+          [ -d "$dd" ] || exit 0
+          rm -rf "$dd/ModuleCache.noindex" "$dd/Index.noindex" "$dd/Logs" \
+                 "$dd/Build/Products" "$dd/SourcePackages/checkouts" || true
+          echo "DerivedData now $(du -sh "$dd" | cut -f1)"
 
       # `-t tvos` is the whole difference from the phone upload: the platform is
       # what tells App Store Connect which half of the record this build belongs

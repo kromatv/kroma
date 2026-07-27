@@ -39,9 +39,22 @@ if [[ -n "${ASC_KEY_ID:-}" ]] && [[ -n "${ASC_ISSUER_ID:-}" ]] && [[ -n "${ASC_P
         -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 fi
 
+# -derivedDataPath puts the build products somewhere the workflow can CACHE.
+# Xcode's default is a hashed folder under ~/Library/Developer/Xcode/DerivedData
+# whose name changes with the workspace path, so nothing could be restored into
+# it; a fixed path inside ios/ is what lets the next run reuse these objects.
+# The whole archive step was a full rebuild of ~700 pod sources every time.
+#
+# The three flags below drop work that only an EDITOR needs:
+#   COMPILER_INDEX_STORE_ENABLE  the index used for jump-to-definition
+#   -skipPackagePluginValidation \ prompts that cannot be answered on a runner
+#   -skipMacroValidation         / and are only asked because SPM macros are new
 xcodebuild -workspace KROMA.xcworkspace -scheme KROMA \
   -configuration Release -sdk "$sdk" \
   -archivePath "$RUNNER_TEMP/KROMA.xcarchive" \
+  -derivedDataPath build \
+  -skipPackagePluginValidation -skipMacroValidation \
+  COMPILER_INDEX_STORE_ENABLE=NO \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
   -allowProvisioningUpdates "${auth[@]}" archive
 cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
