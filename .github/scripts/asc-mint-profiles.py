@@ -44,11 +44,22 @@ def main() -> int:
 
     jwt = asc.token()
 
-    bundles = asc.get(f"bundleIds?filter[identifier]={BUNDLE}&limit=200", jwt).get("data", [])
+    # `filter[identifier]` is a PREFIX match, not an exact one: asking for
+    # tv.kroma.mobile also returns tv.kroma.mobile.TopShelf, and the extension
+    # sorts first. Taking [0] mints a perfectly valid, perfectly useless profile
+    # for the Top Shelf extension - which decodes and installs cleanly, so the
+    # build fails later with the same "no profiles" message it started with.
+    # Match the identifier here rather than trusting the server's filter.
+    bundles = [
+        b
+        for b in asc.get(f"bundleIds?filter[identifier]={BUNDLE}&limit=200", jwt).get("data", [])
+        if b["attributes"]["identifier"] == BUNDLE
+    ]
     if not bundles:
         print(f"::error::no App ID registered for {BUNDLE}")
         return 1
     bundle_id = bundles[0]["id"]
+    print(f"using App ID {BUNDLE} ({bundle_id})")
 
     certs = [
         c
@@ -65,7 +76,12 @@ def main() -> int:
 
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
     for profile_type, basename in WANTED:
-        name = f"KROMA {profile_type} CI {stamp}"
+        # The bundle id is IN the name because the account also carries
+        # tv.kroma.mobile.TopShelf, and a name that does not say which App ID it
+        # belongs to is how a profile for the extension ends up looking like the
+        # profile for the app. Apple rejects duplicate names outright (409), so
+        # the collision surfaces immediately rather than as a silent wrong pick.
+        name = f"KROMA {BUNDLE} {profile_type} CI {stamp}"
         body = {
             "data": {
                 "type": "profiles",
