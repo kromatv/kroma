@@ -1,0 +1,118 @@
+name: Deploy
+
+# Promote an already-built candidate to a published Release.
+#
+# Nothing is COMPILED here. Every push to main runs "Build & Release", which
+# builds the full artifact fleet for whatever version server/Cargo.toml is on
+# and uploads it. This workflow takes one of those runs, waits for a human to
+# approve it, and publishes those exact bytes under a tag.
+#
+# The point is that a version number is no longer spent by pressing the button.
+# A tag used to BE the trigger, so every pipeline bug - a missing profile, a
+# stale cache, a typo in a workflow - burned a version and needed a new one to
+# retry. Now: fix, push to main, main rebuilds the same version, promote when
+# the candidate is actually good.
+#
+# The approval is a GitHub Environment (`production`) with a required reviewer.
+# The job below sits in "Waiting" until it is approved from the run page, and a
+# rejection leaves the tag uncreated and the release unpublished.
+#
+#   gh workflow run deploy.yml -f build_run_id=<id>
+#
+# `build_run_id` is a "Build & Release" run whose Candidate gate passed - that
+# gate only exists when every platform built, so a run with a failed .ipa cannot
+# be promoted. The Synology .spk comes from the synology.yml run for the SAME
+# commit, resolved automatically.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: 'Build & Release run to promote (must have a green Candidate gate).'
+        required: true
+        type: string
+      prerelease:
+        description: 'Publish as a prerelease (not marked latest).'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false # never interrupt a half-uploaded release
+
+jobs:
+  # Everything that can be checked WITHOUT the approver's time is checked here,
+  # before the environment gate, so a rejected promotion is rejected for a real
+  # reason rather than a typo in the run id.
+  verify:
+    name: Verify the candidate
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # read the build run + its artifacts
+      contents: read
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      sha: ${{ steps.check.outputs.sha }}
+      synology_run: ${{ steps.check.outputs.synology_run }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_ID: ${{ inputs.build_run_id }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - id: check
+        name: The run is green, complete, and on main
+        run: .github/scripts/verify-candidate.sh
+
+  # The approval gate. `environment:` is what makes GitHub pause here; the
+  # protection rule on `production` names the reviewer. Everything below the
+  # gate is upload + publish, which is why a deploy is a couple of minutes
+  # rather than the twenty a rebuild costs.
+  publish:
+    name: Publish the Release
+    needs: verify
+    environment:
+      name: production
+      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ needs.verify.outputs.version }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read # download the candidate's artifacts
+      contents: write # create the tag + the Release
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.verify.outputs.version }}
+      TAG: v${{ needs.verify.outputs.version }}
+      SHA: ${{ needs.verify.outputs.sha }}
+      PRERELEASE: ${{ inputs.prerelease }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0 # full history for the release notes
+
+      # `merge-multiple` flattens every per-platform artifact into one directory,
+      # which is the shape the Release wants. Same call the nightly publisher
+      # makes, pointed at another run.
+      - name: Collect the candidate's artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: assets
+          merge-multiple: true
+          run-id: ${{ inputs.build_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Collect the Synology .spk
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: assets
+          merge-multiple: true
+          name: kroma-synology-spk
+          run-id: ${{ needs.verify.outputs.synology_run }}
+          github-token: ${{ github.token }}
+
+      - name: Tag the commit and publish
+        run: .github/scripts/deploy-release.sh

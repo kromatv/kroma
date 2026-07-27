@@ -16,7 +16,6 @@ name: Synology
 # share one build job (only the version differs).
 on:
   push:
-    tags: ['v*']
     branches: [main]
   workflow_dispatch:
 
@@ -65,7 +64,7 @@ jobs:
     # and dispatch legs run; a main push only builds when relevant files changed.
     if: >-
       always() && !cancelled()
-      && (startsWith(github.ref, 'refs/tags/v')
+      && (github.ref == 'refs/heads/main'
           || github.event_name == 'workflow_dispatch'
           || needs.changes.outputs.relevant == 'true')
     runs-on: ubuntu-latest
@@ -155,7 +154,7 @@ jobs:
       contents: read
     if: >-
       always() && !cancelled()
-      && (startsWith(github.ref, 'refs/tags/v')
+      && (github.ref == 'refs/heads/main'
           || github.event_name == 'workflow_dispatch'
           || needs.changes.outputs.relevant == 'true')
     runs-on: ubuntu-latest
@@ -308,37 +307,18 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  # tag -> attach the .spk + sidecar to that version's GitHub Release.
-  publish-stable:
-    name: Attach .spk to the release
-    # See the docker job: guard with always()/needs.build so the skipped `changes`
-    # job on tag pushes does not skip this attach (the bug that left v0.1.25/0.1.26
-    # releases without a .spk, freezing the package source at 0.1.24).
-    if: always() && !cancelled() && needs.build.result == 'success' && startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    permissions:
-      contents: write # create/update the release + upload assets
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: kroma-synology-spk
-          path: dist
-      - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
-        with:
-          # Attach into a DRAFT, like every other artifact job. This was the one
-          # call in the repo that left it off, and softprops defaults it to
-          # false - so attaching the .spk PUBLISHED the release, from a workflow
-          # that knows nothing about whether the other platforms built. It is
-          # what put v0.1.35 live (15:46:16) while the release run's own publish
-          # job was still gated behind two failing .ipa builds. `publish` in
-          # release.yml is the only thing allowed to flip a release live.
-          draft: true
-          files: |
-            dist/*.spk
-            dist/*.spk.info.json
-          generate_release_notes: true
+  # There is no attach-to-the-stable-release job here any more. This workflow
+  # used to run on tags and upload the .spk itself, which had two costs. It
+  # rebuilt the package, so the bytes on the Release were not the bytes anyone
+  # had tested; and its softprops call was the one in the repo without
+  # `draft: true`, so uploading PUBLISHED the release - from a workflow that
+  # knows nothing about whether the other platforms built. That is how v0.1.35
+  # went live at 15:46:16 with both .ipa builds failing and its own publish job
+  # still gated behind them.
+  #
+  # deploy.yml now takes `kroma-synology-spk` from the main-push run for the
+  # commit being promoted, so the .spk on a Release is the artifact that was
+  # built and approved rather than a same-source rebuild.
 
   # main -> rolling `nightly` prerelease with a FIXED asset name, so the catalog
   # link stays stable while the .spk bytes (and INFO version) change each build.

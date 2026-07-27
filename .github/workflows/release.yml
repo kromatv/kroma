@@ -1,6 +1,22 @@
 name: Build & Release
 
-# Tagging `vX.Y.Z` builds EVERY client artifact + publishes a GitHub Release:
+# Every push to main builds EVERY client artifact for the version
+# server/Cargo.toml is currently on, and publishes NOTHING. deploy.yml promotes
+# one of those runs to a Release behind an approval.
+#
+# It used to be the tag that triggered this, which meant a version number was
+# spent to find out whether the pipeline worked. Two releases in a row were lost
+# that way. Now a candidate can be rebuilt as many times as it takes - same
+# version, new run - and the number is only claimed once something good exists
+# to attach it to.
+#
+# It is also what makes the build fast enough to run on every push. GitHub scopes
+# a cache to the ref that wrote it, and a tag gets its OWN scope, so releases
+# never reused each other's caches: `No cache found`, ~2GB of Rust rebuilt from
+# scratch every time. Building on main writes to refs/heads/main, which every
+# later run can read.
+#
+# The artifact set:
 #   - Synology .spk (server + web SPA + ffmpeg, x86_64 musl)
 #   - Desktop installers (macOS .dmg, Windows .exe/.msi, Linux .AppImage/.deb)
 #   - LG webOS .ipk - ONE package carrying BOTH tiers (modern Chrome 99+ AND the
@@ -11,12 +27,9 @@ name: Build & Release
 #     debug-signed for sideloading)
 #   - Apple TV .ipa, to TestFlight. Its own called workflow rather than a fourth
 #     job in the TV one, because unlike the .ipk/.wgt/.apk it is not a file a
-#     tester can sideload, so it must not gate the Release - see the comment on
-#     the `appletv` job.
+#     tester can sideload.
 #   - Mobile .apk + .ipa, pushed to the two beta channels BETA.md points testers
-#     at (Firebase App Distribution, TestFlight). Stable tags only, and NOT in
-#     the publish job's `needs`: a beta-channel hiccup must never hold back a
-#     server release.
+#     at (Firebase App Distribution, TestFlight).
 #   - Module bundles (.kmod, zstd, one per build target) + modules.json: the
 #     machine-readable store catalog the in-app Admin -> Modules Store browses
 #     via releases/latest/download/modules.json
@@ -27,20 +40,21 @@ name: Build & Release
 # NIGHTLY channel: the nightly schedule (or a manual run with publish=nightly)
 # builds the SAME artifact set versioned `X.Y.Z-nightly.YYYYMMDD` and publishes
 # it to the rolling `nightly` prerelease (which also carries the per-push canary
-# .spk from synology.yml) - so a normal release and a nightly ship the same way,
-# and tagging is only needed for actual stable releases. Nights with no new
-# commits on main skip everything (~30s guard run).
+# .spk from synology.yml). Nights with no new commits on main skip everything
+# (~30s guard run). The nightly is the one channel that still publishes from
+# here, because it costs no version number to get wrong.
 #
 # Manual runs build artifacts without publishing a Release; `targets` scopes the
 # run (all | spk | desktop | tv | modules).
 #
 # The per-platform build jobs live in reusable workflows (_release-*.yml) that
 # this file calls; the calling job here carries the SAME gate as the jobs it
-# wraps, so a skipped platform still propagates a skip to `publish`.
+# wraps, so a skipped platform still propagates a skip to the candidate gate -
+# and deploy.yml refuses to promote a run whose gate did not pass.
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
   schedule:
     - cron: '0 3 * * *' # nightly, 03:00 UTC
   workflow_dispatch:
@@ -131,6 +145,7 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
+      channel: ${{ needs.version.outputs.channel }}
       proceed: ${{ needs.version.outputs.proceed }}
     secrets: inherit
 
@@ -142,7 +157,7 @@ jobs:
   appletv:
     name: Apple TV
     needs: version
-    if: ${{ needs.version.outputs.proceed == 'true' && (needs.version.outputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ needs.version.outputs.proceed == 'true' && (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-appletv.yml
     permissions:
       contents: read # passed down to the called workflow
@@ -162,7 +177,7 @@ jobs:
   mobile:
     name: Mobile
     needs: version
-    if: ${{ needs.version.outputs.proceed == 'true' && (needs.version.outputs.channel == 'stable' || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
+    if: ${{ needs.version.outputs.proceed == 'true' && (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-mobile.yml
     permissions:
       contents: write # passed down to the called workflow
@@ -203,27 +218,26 @@ jobs:
   # the Release. They used to be left out so an upload hiccup could not hold back
   # a server release, and the cost of that showed up in v0.1.34: both .ipa builds
   # failed and the Release went out anyway, green, with two platforms silently
-  # broken. A tag is a claim that the version builds everywhere - so the gate now
-  # covers everywhere, and a genuinely flaky Apple upload gets a re-run rather
-  # than a pass.
-  publish:
-    name: Publish the Release
+  # broken. A tag is a claim that the version builds everywhere - so the gate
+  # covers everywhere.
+  #
+  # This job no longer publishes anything; it is the CANDIDATE GATE. It reports
+  # whether the run that just finished is fit to promote, and deploy.yml refuses
+  # to promote a run whose gate did not pass. Publishing moved to deploy.yml so
+  # that a broken pipeline costs a re-push rather than a version number.
+  gate:
+    name: Candidate gate
     needs: [version, modules, tv, desktop, appletv, mobile]
-    if: github.event_name == 'push'
+    if: needs.version.outputs.channel == 'candidate'
     runs-on: ubuntu-latest
     permissions:
-      contents: write # attach assets to the Release
-    timeout-minutes: 10
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      TAG: v${{ needs.version.outputs.version }}
+      contents: read
+    timeout-minutes: 5
     steps:
-      # This job used to be pure `gh api` calls and needed no working copy;
-      # it runs a script now, so the repo has to be there.
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Flip the draft live (marked latest)
-        run: .github/scripts/publish-release.sh
+      - name: Every platform built
+        run: |
+          echo "::notice::Candidate ${{ needs.version.outputs.version }} is complete and promotable."
+          echo "Promote it with: gh workflow run deploy.yml -f build_run_id=${{ github.run_id }}"
 
   # Nightly channel: gather EVERY artifact this run built and publish them onto
   # the rolling `nightly` prerelease - the same release the per-push canary .spk

@@ -108,7 +108,8 @@ jobs:
       # first), and `secrets` is not available there at all. Same shape as the
       # optional keystore step in the Android TV job.
       - name: Distribute to Firebase App Distribution
-        if: ${{ github.event_name == 'push' || github.event.inputs.targets == 'mobile' }}
+        # See the Apple TV job: candidates build, they do not distribute.
+        if: ${{ inputs.channel == 'stable' || github.event.inputs.targets == 'mobile' }}
         env:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
@@ -130,7 +131,9 @@ jobs:
           rm -f "$RUNNER_TEMP/firebase-sa.json"
 
       - name: Attach to the Release
-        if: ${{ github.event_name == 'push' || github.event.inputs.targets == 'mobile' }}
+        # Only a STABLE release attaches here. A candidate build (push to main)
+        # uploads its artifacts and stops; deploy.yml publishes them later.
+        if: inputs.channel == 'stable'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           draft: true
@@ -237,7 +240,8 @@ jobs:
       # An App Store Connect API key is preferred; the app-specific password the
       # desktop job already uses for notarization is the fallback.
       - name: Upload to TestFlight
-        if: ${{ steps.signing.outputs.ready == 'true' && (github.event_name == 'push' || github.event.inputs.targets == 'mobile') }}
+        # See the Apple TV job: candidates build, they do not distribute.
+        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || github.event.inputs.targets == 'mobile') }}
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}

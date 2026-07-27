@@ -20,6 +20,10 @@ on:
         description: 'Sanitized x.y.z the TV stores require (appinfo.json / config.xml reject suffixes).'
         type: string
         required: true
+      channel:
+        description: 'stable | candidate | nightly | none. Only `stable` attaches to a Release.'
+        type: string
+        required: true
       proceed:
         description: 'false when a nightly has nothing new to build.'
         type: string
@@ -75,7 +79,9 @@ jobs:
           if-no-files-found: error
 
       - name: Attach to the Release
-        if: github.event_name == 'push'
+        # Only a STABLE release attaches here. A candidate build (push to main)
+        # uploads its artifacts and stops; deploy.yml publishes them later.
+        if: inputs.channel == 'stable'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           # Attach into a DRAFT: `releases/latest` ignores drafts, so the
@@ -162,7 +168,9 @@ jobs:
           if-no-files-found: error
 
       - name: Attach to the Release
-        if: github.event_name == 'push'
+        # Only a STABLE release attaches here. A candidate build (push to main)
+        # uploads its artifacts and stops; deploy.yml publishes them later.
+        if: inputs.channel == 'stable'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           # Attach into a DRAFT: `releases/latest` ignores drafts, so the
@@ -229,7 +237,9 @@ jobs:
           if-no-files-found: error
 
       - name: Attach to the Release
-        if: github.event_name == 'push'
+        # Only a STABLE release attaches here. A candidate build (push to main)
+        # uploads its artifacts and stops; deploy.yml publishes them later.
+        if: inputs.channel == 'stable'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           # Attach into a DRAFT: `releases/latest` ignores drafts, so the
