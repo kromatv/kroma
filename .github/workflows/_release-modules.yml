@@ -129,13 +129,30 @@ jobs:
         if: always() && matrix.image != ''
         run: sudo chown -R "$(id -u):$(id -g)" server/target "$HOME/.cargo" || true
 
+      # The native leg gets the same treatment the container legs already had:
+      # build all nine binaries in ONE cargo invocation, then pack them.
+      #
+      # modules:pack compiles per module when it has to, which meant nine
+      # sequential `cargo build` calls - and with `lto = true` and
+      # `codegen-units = 1` each of those links single-threaded, so the nine ran
+      # one after another while the runner's other cores sat idle. This leg was
+      # the slowest of the three (8.7 minutes in packing alone) purely because it
+      # never went through the build plan.
+      - name: Build every sidecar binary (native leg)
+        if: matrix.image == ''
+        run: |
+          set -euo pipefail
+          bun run scripts/kmod-build-plan.ts > /tmp/kmod-build.sh
+          echo "=== build plan ==="; cat /tmp/kmod-build.sh
+          (cd server && bash -euo pipefail /tmp/kmod-build.sh)
+
       # Stage + zstd-pack each binary (and build its vite frontend) into
-      # dist/modules/<id>-<target>.kmod (+ a .sha256 sidecar each). On cross
-      # legs KMOD_SKIP_BUILD reuses the binaries the container just produced;
-      # native legs compile with the host toolchain inside modules:pack.
+      # dist/modules/<id>-<target>.kmod (+ a .sha256 sidecar each).
+      # KMOD_SKIP_BUILD is now set on BOTH legs: whichever step above produced
+      # the binaries, this one only stages them.
       - name: Pack all modules
         env:
-          KMOD_SKIP_BUILD: ${{ matrix.image != '' && '1' || '0' }}
+          KMOD_SKIP_BUILD: '1'
         run: bun run modules:pack
 
       - name: Upload .kmod artifacts (+ checksums)
