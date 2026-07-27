@@ -1,0 +1,104 @@
+name: Apple signing doctor
+
+# Answers "why can't this sign?" using the secrets that already exist, without
+# printing any of them.
+#
+# Written because an .ipa failed at exportArchive with "No profiles for
+# 'tv.kroma.mobile' were found" while the ARCHIVE had succeeded - and the reason
+# was three lines earlier in a 10,000-line log: the archive had signed with
+# "Apple Development: Created via API" and an "iOS Team Provisioning Profile".
+# A development identity. Xcode mints one through the API when the keychain
+# holds no distribution certificate, so the archive succeeds and the App Store
+# export then finds nothing it can use.
+#
+# What it reports: the TYPE of each stored certificate, the type and expiry of
+# each stored profile, and what App Store Connect actually holds. Names and
+# dates only.
+#
+#   gh workflow run apple-signing-doctor.yml
+
+on:
+  workflow_dispatch:
+
+jobs:
+  doctor:
+    name: Inspect the signing assets
+    runs-on: macos-26
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # `security find-identity` prints the identity's COMMON NAME, which starts
+      # with the certificate type - "Apple Distribution: ..." vs "Apple
+      # Development: ...". That prefix is the whole answer, and it is not a
+      # secret; the team id in parentheses is masked by Actions anyway.
+      - name: What kind of certificate is stored?
+        env:
+          MOBILE_CERT: ${{ secrets.MOBILE_IOS_CERTIFICATE }}
+          MOBILE_CERT_PW: ${{ secrets.MOBILE_IOS_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MOBILE_CERT" ]; then echo "MOBILE_IOS_CERTIFICATE is empty"; exit 0; fi
+          kc="$RUNNER_TEMP/doctor.keychain-db"; pw=$(uuidgen)
+          security create-keychain -p "$pw" "$kc"
+          security unlock-keychain -p "$pw" "$kc"
+          printf '%s' "$MOBILE_CERT" | base64 --decode > "$RUNNER_TEMP/c.p12" 2>/dev/null \
+            || { echo "::error::MOBILE_IOS_CERTIFICATE is not valid base64"; exit 1; }
+          security import "$RUNNER_TEMP/c.p12" -k "$kc" -P "$MOBILE_CERT_PW" -T /usr/bin/codesign
+          echo "--- identities in the imported keychain ---"
+          security find-identity -v "$kc" || true
+          echo
+          echo "An App Store .ipa needs 'Apple Distribution'."
+          echo "'Apple Development' can archive but can NEVER export app-store-connect."
+          rm -f "$RUNNER_TEMP/c.p12"
+
+      # A development profile carries ProvisionedDevices; an App Store profile
+      # does not. That single key tells the two apart more reliably than the name.
+      - name: What kind of profiles are stored?
+        env:
+          IOS_PROFILE: ${{ secrets.MOBILE_IOS_PROVISIONING_PROFILE }}
+          TVOS_PROFILE: ${{ secrets.TVOS_PROVISIONING_PROFILE }}
+        run: |
+          set -euo pipefail
+          inspect() {
+            local label="$1" data="$2"
+            echo "--- $label ---"
+            if [ -z "$data" ]; then echo "  (secret is empty)"; return; fi
+            if ! printf '%s' "$data" | base64 --decode > "$RUNNER_TEMP/p.mobileprovision" 2>/dev/null; then
+              echo "  ::error::not valid base64 - this is what makes exportArchive say"
+              echo "  'The data couldn't be read because it isn't in the correct format'"
+              return
+            fi
+            if ! security cms -D -i "$RUNNER_TEMP/p.mobileprovision" > "$RUNNER_TEMP/p.plist" 2>/dev/null; then
+              echo "  ::error::decodes from base64 but is not a .mobileprovision"
+              return
+            fi
+            echo "  name:     $(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/p.plist" 2>/dev/null || echo '?')"
+            echo "  platform: $(/usr/libexec/PlistBuddy -c 'Print :Platform:0' "$RUNNER_TEMP/p.plist" 2>/dev/null || echo '?')"
+            echo "  expires:  $(/usr/libexec/PlistBuddy -c 'Print :ExpirationDate' "$RUNNER_TEMP/p.plist" 2>/dev/null || echo '?')"
+            echo "  app id:   $(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$RUNNER_TEMP/p.plist" 2>/dev/null || echo '?')"
+            if /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$RUNNER_TEMP/p.plist" >/dev/null 2>&1; then
+              echo "  type:     DEVELOPMENT / ad-hoc (has ProvisionedDevices) - cannot export app-store-connect"
+            else
+              echo "  type:     App Store distribution (no ProvisionedDevices)"
+            fi
+            rm -f "$RUNNER_TEMP/p.mobileprovision" "$RUNNER_TEMP/p.plist"
+          }
+          inspect "MOBILE_IOS_PROVISIONING_PROFILE" "$IOS_PROFILE"
+          inspect "TVOS_PROVISIONING_PROFILE" "$TVOS_PROFILE"
+
+      # The account's own view. Xcode's "-allowProvisioningUpdates" can only mint
+      # what the key is allowed to mint, so what is already there matters.
+      - name: What does App Store Connect actually hold?
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ASC_KEY_ID:-}" ]; then echo "no ASC key trio; skipping"; exit 0; fi
+          printf '%s' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/asc.p8"
+          python3 .github/scripts/asc-signing-report.py
+          rm -f "$RUNNER_TEMP/asc.p8"
