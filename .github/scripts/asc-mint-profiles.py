@@ -107,18 +107,26 @@ def main() -> int:
         # run on the same day would otherwise fail after having done real work.
         # An existing profile of this exact name is the one this run would have
         # created, so reuse it rather than inventing a name to dodge the clash.
+        same_name = [
+            p
+            for p in asc.get("profiles?limit=200", jwt).get("data", [])
+            if p["attributes"].get("name") == name
+        ]
         existing = next(
-            (
-                p
-                for p in asc.get("profiles?limit=200", jwt).get("data", [])
-                if p["attributes"].get("name") == name
-                and p["attributes"].get("profileState") == "ACTIVE"
-            ),
-            None,
+            (p for p in same_name if p["attributes"].get("profileState") == "ACTIVE"), None
         )
+        # A same-named INVALID profile is the common case on a re-run: enabling a
+        # capability invalidates every profile for the App ID, including one this
+        # script minted minutes earlier. It cannot be reused and it cannot be left
+        # alone either - Apple rejects the duplicate name with a 409 - and an
+        # invalid profile can sign nothing, so removing it costs nothing.
+        if not existing:
+            for dead in same_name:
+                asc.delete(f"profiles/{dead['id']}", jwt)
+                print(f"  (removed the invalidated profile of this name: {dead['id']})")
         attrs = (existing or asc.post("profiles", jwt, body)["data"])["attributes"]
         if existing:
-            print("  (reusing the profile of this name minted earlier today)")
+            print("  (reusing the still-ACTIVE profile of this name)")
         # profileContent IS the .mobileprovision, already base64 - which is
         # exactly the form the GitHub secret holds, so it is written through
         # untouched rather than decoded and re-encoded.

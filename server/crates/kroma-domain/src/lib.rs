@@ -9,6 +9,7 @@ pub mod media;
 pub mod metadata;
 pub mod accounts;
 pub mod playback;
+pub mod cast;
 pub mod library;
 pub mod admin;
 pub mod jobs;
@@ -17,12 +18,14 @@ pub mod naming;
 pub mod matching;
 pub mod requests;
 pub mod reports;
+pub mod notifications;
 pub mod section;
 
 // Flat re-export (mirrors the server's former `model.rs`). `naming` / `matching`
 // are intentionally not globbed here; reach them via their module path.
 pub use accounts::*;
 pub use admin::*;
+pub use cast::*;
 pub use jobs::*;
 pub use library::*;
 pub use media::*;
@@ -31,4 +34,5 @@ pub use pipeline::*;
 pub use playback::*;
 pub use requests::*;
 pub use reports::*;
+pub use notifications::*;
 pub use section::*;

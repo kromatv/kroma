@@ -10,3 +10,10 @@ license.workspace = true
 # on serde, so an accidental `use axum::` / `use rusqlite::` won't resolve.
 [dependencies]
 serde = { workspace = true }
+
+# Tests only, so the purity rule above still holds for library code: the wire
+# shapes here are a public contract, and asserting on them needs a serializer
+# (`cast.rs` and `notifications.rs` both check that a serde rename and its
+# `as_str()` spelling agree).
+[dev-dependencies]
+serde_json = { workspace = true }

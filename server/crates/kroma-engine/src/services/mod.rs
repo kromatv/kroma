@@ -19,6 +19,7 @@ pub mod search;
 pub mod sections;
 pub mod quickconnect;
 pub mod playback;
+pub mod cast;
 pub mod requests;
 pub mod library_missing;
 pub mod settings;

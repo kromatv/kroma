@@ -9,6 +9,7 @@ pub use crate::domain::media::*;
 pub use crate::domain::metadata::*;
 pub use crate::domain::accounts::*;
 pub use crate::domain::playback::*;
+pub use crate::domain::cast::*;
 pub use crate::domain::library::*;
 pub use crate::domain::admin::*;
 pub use crate::domain::jobs::*;

@@ -459,6 +459,77 @@ pub(crate) const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_reports_subject ON reports(subject_kind, subject_id);
     CREATE INDEX IF NOT EXISTS idx_reports_user    ON reports(reported_by, created_at DESC);
 
+    -- ----- notifications (see db::notifications / services::notify) --------------
+
+    -- One row per (user, thing that happened). The text is NOT stored: `title_key`
+    -- / `body_key` are i18n keys and `params` their interpolation vars, rendered
+    -- against the reader's locale on the way out, so switching language re-reads
+    -- the whole history in the new one (same catalogs as the clients, see
+    -- packages/core/src/locales).
+    --
+    -- `link` is the in-app route a tap opens, `image_url` the poster shown on the
+    -- row and in a rich push, and `actions` a JSON array of buttons
+    -- ([{id,labelKey,kind,href,method,style}]) so a notification can be acted on
+    -- without navigating. `push_category` names a UNNotificationCategory the
+    -- mobile app registered at launch APNs cannot render arbitrary buttons, so
+    -- native push picks from a fixed set while `actions` stays the full-fidelity
+    -- in-app form. `category` is requests|media|reports|downloads|system and is
+    -- derived from `event`; it is stored so the prefs filter and the UI grouping
+    -- are one indexed column. Timestamps are epoch ms.
+    CREATE TABLE IF NOT EXISTS notifications (
+        id            TEXT PRIMARY KEY,
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        category      TEXT NOT NULL,
+        event         TEXT NOT NULL,
+        title_key     TEXT NOT NULL,
+        body_key      TEXT NOT NULL,
+        params        TEXT NOT NULL DEFAULT '{}',
+        link          TEXT,
+        image_url     TEXT,
+        actions       TEXT NOT NULL DEFAULT '[]',
+        push_category TEXT,
+        read_at       INTEGER,
+        created_at    INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
+    -- Partial index: the bell badge counts unread only, and unread is the small
+    -- side of the table (rows are marked read and then aged out).
+    CREATE INDEX IF NOT EXISTS idx_notifications_unread
+        ON notifications(user_id) WHERE read_at IS NULL;
+
+    -- Per-user delivery matrix. A MISSING row means "on" for both channels, so a
+    -- newly added category starts enabled without backfilling every user, and
+    -- only deviations from the default cost a row.
+    CREATE TABLE IF NOT EXISTS notification_prefs (
+        user_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        category TEXT NOT NULL,
+        in_app   INTEGER NOT NULL DEFAULT 1,
+        push     INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (user_id, category)
+    );
+
+    -- One row per push endpoint (a browser, an iPhone, an Android handset).
+    -- `transport` is webpush|apns|fcm. For Web Push `endpoint` is the push
+    -- service URL and `p256dh`/`auth` are the subscription's client keys (RFC
+    -- 8291); for the native transports `endpoint` is the raw device token and
+    -- both keys are NULL. `failures` counts CONSECUTIVE delivery failures so a
+    -- dead endpoint is pruned; a 404/410 drops it immediately.
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id         TEXT PRIMARY KEY,
+        user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        transport  TEXT NOT NULL,
+        endpoint   TEXT NOT NULL,
+        p256dh     TEXT,
+        auth       TEXT,
+        device     TEXT,
+        locale     TEXT,
+        failures   INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        last_ok_at INTEGER,
+        UNIQUE (transport, endpoint)
+    );
+    CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id);
+
     -- The acquisition MODULE tables (`indexers`, `download_clients`, `downloads`)
     -- no longer live here: each is owned by its module crate and created at DB
     -- init via that module's `ServerModule::migrations` (run right after this core

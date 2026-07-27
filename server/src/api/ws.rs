@@ -41,20 +41,22 @@ pub async fn events(State(state): State<SharedState>, headers: HeaderMap, ws: We
     };
     let token = offered[SESSION_PROTO_PREFIX.len()..].to_string();
     let pool = state.db.clone();
-    let authed = tokio::task::spawn_blocking(move || crate::db::session_user(&pool, &token))
+    let user = tokio::task::spawn_blocking(move || crate::db::session_user(&pool, &token))
         .await
         .ok()
         .and_then(|r| r.ok())
-        .flatten()
-        .is_some();
-    if !authed {
+        .flatten();
+    let Some(user) = user else {
         return (StatusCode::UNAUTHORIZED, "invalid or expired session").into_response();
-    }
+    };
+    // Keep the id: the bus carries per-user events (notifications) alongside the
+    // server-wide ones, and this socket may only forward its own.
+    let viewer = user.id;
     // Echo the accepted subprotocol so the browser completes the handshake.
-    ws.protocols([offered]).on_upgrade(move |socket| pump(socket, state))
+    ws.protocols([offered]).on_upgrade(move |socket| pump(socket, state, viewer))
 }
 
-async fn pump(mut socket: WebSocket, state: SharedState) {
+async fn pump(mut socket: WebSocket, state: SharedState, viewer: String) {
     let mut rx = state.events.subscribe();
 
     // Greet so the client can confirm the stream is live. Serialization of a
@@ -79,8 +81,14 @@ async fn pump(mut socket: WebSocket, state: SharedState) {
         tokio::select! {
             event = rx.recv() => match event {
                 // Already serialized at publish time; per-subscriber cost is a copy.
-                Ok(json) => {
-                    if socket.send(Message::Text(json.to_string().into())).await.is_err() {
+                // Addressed events (notifications) reach every subscriber of the
+                // single broadcast channel, so the audience check is what keeps
+                // one user's notifications off everyone else's socket.
+                Ok(env) => {
+                    if !env.visible_to(&viewer) {
+                        continue;
+                    }
+                    if socket.send(Message::Text(env.json.to_string().into())).await.is_err() {
                         break; // client gone
                     }
                 }
