@@ -277,10 +277,32 @@ jobs:
           IOS_PROFILE: ${{ secrets.MOBILE_IOS_PROVISIONING_PROFILE }}
         run: .github/scripts/ios-import-signing-assets.sh
 
+      # DerivedData is cached SEPARATELY from the project above, and with
+      # restore/save rather than `cache`, because the two differ in the one way
+      # that matters: the generated project is immutable for a given config,
+      # while these object files change on every commit. actions/cache does not
+      # re-save a key that already hit - so sharing one entry froze DerivedData
+      # at whatever the first run stored (nothing), and the archive stayed a
+      # full rebuild while the cache reported a hit.
+      #
+      # Unique key per run + a prefix restore-key: every run restores the most
+      # recent objects and saves its own, which is what makes the compile
+      # incremental instead of merely cached.
+      - name: Restore DerivedData
+        if: steps.signing.outputs.ready == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .derived/mobile
+          key: dd-mobile-v1-${{ env.XCODE_VERSION }}-${{ github.run_id }}
+          restore-keys: |
+            dd-mobile-v1-${{ env.XCODE_VERSION }}-
+            dd-mobile-v1-
+
       - name: Archive + export .ipa
         if: steps.signing.outputs.ready == 'true'
         working-directory: clients/mobile/ios
         env:
+          DERIVED_DATA: ${{ github.workspace }}/.derived/mobile
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           VERSION: ${{ inputs.version }}
           # Authenticates `-allowProvisioningUpdates`: the Expo template leaves
@@ -292,22 +314,29 @@ jobs:
         # Called by absolute path: this step runs from clients/mobile/ios.
         run: bash "$GITHUB_WORKSPACE/.github/scripts/ios-archive-export-ipa.sh"
 
-      # DerivedData is what makes the NEXT archive incremental, but most of it
-      # is regenerable bulk that would blow the repo's 10GB cache budget and
-      # evict the Rust and Gradle caches by LRU. Keep the object files, drop
-      # the rest; a missing module cache costs seconds, a missing
-      # Intermediates.noindex costs the whole 16 minutes back.
-      - name: Trim DerivedData before it is cached
+
+      # An App Store Connect API key is preferred; the app-specific password
+      # the desktop job already uses for notarization is the fallback.
+      # Trimmed first: the repo's 10GB cache budget already holds ~2.5GB of Rust
+      # and ~1.2GB of Gradle, and an untrimmed pair of Apple projects would evict
+      # them by LRU. Intermediates.noindex is the part worth keeping - it is the
+      # object files; the rest regenerates in seconds.
+      - name: Trim and save DerivedData
         if: always() && steps.signing.outputs.ready == 'true'
         run: |
-          dd=clients/mobile/ios/build
-          [ -d "$dd" ] || exit 0
+          dd=.derived/mobile
+          [ -d "$dd" ] || { echo "no DerivedData at $dd"; exit 0; }
           rm -rf "$dd/ModuleCache.noindex" "$dd/Index.noindex" "$dd/Logs" \
                  "$dd/Build/Products" "$dd/SourcePackages/checkouts" || true
           echo "DerivedData now $(du -sh "$dd" | cut -f1)"
 
-      # An App Store Connect API key is preferred; the app-specific password
-      # the desktop job already uses for notarization is the fallback.
+      - name: Save DerivedData
+        if: always() && steps.signing.outputs.ready == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .derived/mobile
+          key: dd-mobile-v1-${{ env.XCODE_VERSION }}-${{ github.run_id }}
+
       - name: Upload to TestFlight
         # See the Apple TV job: candidates build, they do not distribute.
         if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || github.event.inputs.targets == 'mobile') }}

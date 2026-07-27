@@ -77,3 +77,7 @@ scripts/brand/tauri-source-1024.png
 # Rasterised lockup that `bun run store:art` composes the store artwork from.
 # The artwork it produces IS committed (clients/*/store/); this is the scratch.
 /.store-art/
+
+# Xcode DerivedData for the Apple builds, cached by CI (see _release-mobile.yml).
+# Out of ios/ deliberately: `expo prebuild` wipes that directory.
+/.derived/

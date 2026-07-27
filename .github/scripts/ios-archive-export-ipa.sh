@@ -42,8 +42,15 @@ fi
 # -derivedDataPath puts the build products somewhere the workflow can CACHE.
 # Xcode's default is a hashed folder under ~/Library/Developer/Xcode/DerivedData
 # whose name changes with the workspace path, so nothing could be restored into
-# it; a fixed path inside ios/ is what lets the next run reuse these objects.
-# The whole archive step was a full rebuild of ~700 pod sources every time.
+# it. The whole archive step was a full rebuild of ~700 pod sources every time.
+#
+# It must land OUTSIDE ios/, which is why the caller passes an absolute path.
+# `expo prebuild` deletes and regenerates ios/, so anything kept in there is
+# rebuilt from nothing on any run that regenerates - and, more subtly, the two
+# have different cache lifetimes: the generated project is immutable for a given
+# config, while these objects change on every commit. One cache entry cannot
+# serve both, because actions/cache does not re-save a key that already hit.
+derived="${DERIVED_DATA:-build}"
 #
 # The three flags below drop work that only an EDITOR needs:
 #   COMPILER_INDEX_STORE_ENABLE  the index used for jump-to-definition
@@ -52,7 +59,7 @@ fi
 xcodebuild -workspace KROMA.xcworkspace -scheme KROMA \
   -configuration Release -sdk "$sdk" \
   -archivePath "$RUNNER_TEMP/KROMA.xcarchive" \
-  -derivedDataPath build \
+  -derivedDataPath "$derived" \
   -skipPackagePluginValidation -skipMacroValidation \
   COMPILER_INDEX_STORE_ENABLE=NO \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
