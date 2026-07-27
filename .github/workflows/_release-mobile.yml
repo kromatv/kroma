@@ -383,21 +383,9 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-        run: |
-          set -euo pipefail
-          IPA="out/KROMA-mobile-${{ inputs.version }}.ipa"
-          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_PRIVATE_KEY" ]; then
-            mkdir -p "$HOME/.appstoreconnect/private_keys"
-            printf '%s' "$ASC_PRIVATE_KEY" \
-              > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
-            xcrun altool --upload-app -f "$IPA" -t ios \
-              --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
-            rm -rf "$HOME/.appstoreconnect"
-          elif [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ]; then
-            xcrun altool --upload-app -f "$IPA" -t ios -u "$APPLE_ID" -p "$APPLE_PASSWORD"
-          else
-            echo "No App Store Connect credentials; the .ipa is built but not uploaded."
-          fi
+          IPA: out/KROMA-mobile-${{ inputs.version }}.ipa
+          PLATFORM: ios
+        run: .github/scripts/upload-to-testflight.sh
 
       - name: Upload .ipa artifact
         if: steps.signing.outputs.ready == 'true'

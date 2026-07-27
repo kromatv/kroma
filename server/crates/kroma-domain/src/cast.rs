@@ -89,12 +89,10 @@ pub struct CastReceiver {
     pub name: String,
     /// Platform label shown under the name ("Apple TV", "Tizen", "webOS").
     pub platform: String,
-    /// Whether the reader's own account registered this receiver (the picker puts
-    /// "my" devices first). A boolean rather than the owner's account id: the
-    /// roster is readable by every viewer and carries no internal identifiers.
-    pub mine: bool,
-    /// Profile the TV is signed into. Shown in the picker because a household TV
-    /// usually runs its own profile, not the sender's.
+    /// Profile the TV is signed into. This is what tells two identical sets
+    /// apart, and it is deliberately the ONLY identity here: no account id, and
+    /// no per-reader "mine" flag - a row has to be identical for every viewer so
+    /// the bus can carry it to all of them instead of each one refetching.
     pub username: String,
     /// `LAN` | `WAN`, from the same classifier the playback dashboard uses.
     pub network: String,

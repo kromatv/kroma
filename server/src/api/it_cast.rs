@@ -37,11 +37,13 @@ async fn a_receiver_announces_and_a_sender_drives_it() {
     let (_, list) = get(&t.app, "/api/cast/receivers", Some(&t.token)).await;
     assert_eq!(list.as_array().map(Vec::len), Some(1));
     assert_eq!(list[0]["name"], "Salon");
-    assert_eq!(list[0]["mine"], true);
+    assert_eq!(list[0]["username"], "owner");
     assert!(list[0]["nowPlaying"].is_null());
-    // The roster carries nothing privileged - no address, no account id.
+    // The roster carries nothing privileged - no address, no account id, and no
+    // per-reader flag (which is what lets one row be broadcast to everyone).
     assert!(list[0].get("ip").is_none());
     assert!(list[0].get("userId").is_none());
+    assert!(list[0].get("mine").is_none());
 
     // A sender starts a title on it.
     let (status, sent) = send(
@@ -111,9 +113,9 @@ async fn another_account_cannot_take_over_a_receiver_id() {
     assert_eq!(list.as_array().map(Vec::len), Some(1));
 
     // He CAN see it and drive it: any TV on the server is castable, whichever
-    // profile it runs. It just isn't listed as his.
+    // profile it runs. The row names the profile it belongs to.
     let (_, list) = get(&t.app, "/api/cast/receivers", Some(&bob)).await;
-    assert_eq!(list[0]["mine"], false);
+    assert_eq!(list[0]["username"], "owner");
     let (status, _) = send(
         &t.app,
         "POST",

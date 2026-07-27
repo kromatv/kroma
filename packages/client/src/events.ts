@@ -3,7 +3,13 @@
 // (scan finished, metadata/art resolved). Auto-reconnects with backoff.
 
 import { sessionToken } from './session';
-import type { CastCommand, CastState, StageStat } from './types';
+import type {
+  CastClientMessage,
+  CastCommand,
+  CastReceiver,
+  CastState,
+  StageStat,
+} from './types';
 
 export type ServerEvent =
   | { type: 'hello'; version: string }
@@ -20,9 +26,11 @@ export type ServerEvent =
   | { type: 'playback.updated'; count: number }
   | { type: 'playback.stopped'; count: number }
   | { type: 'playback.terminate'; sessionId: string; message: string }
-  /** The cast roster changed (a TV appeared, went away, or changed title).
-   * Senders refetch `castReceivers()`. */
-  | { type: 'cast.receivers' }
+  /** A receiver appeared, or something a picker draws about it changed. Carries
+   * the whole row, so a sender patches its list in place and fetches nothing. */
+  | { type: 'cast.receiver'; receiver: CastReceiver }
+  /** A receiver left (socket closed, or it stopped announcing). */
+  | { type: 'cast.receiver.gone'; receiverId: string }
   /** A receiver's scrub position moved. Fires on every heartbeat of a playing
    * TV, so it stays tiny: a remote moves its progress bar and refetches nothing. */
   | {
@@ -85,6 +93,30 @@ export class KromaEvents {
     // http→ws, https→wss.
     this.url = `${baseUrl.replace(/^http/i, 'ws').replace(/(^|[^/])\/+$/, '$1')}/api/events`;
     this.opts = opts;
+  }
+
+  /**
+   * Send a frame UP the socket. The only upward traffic is a TV attaching itself
+   * as a cast receiver and reporting what it plays - which is why this exists at
+   * all: that used to be an HTTP heartbeat every ten seconds.
+   *
+   * Returns false when the socket isn't open, so the caller can fall back to the
+   * HTTP path rather than silently dropping the message.
+   */
+  send(message: CastClientMessage): boolean {
+    const ws = this.ws;
+    if (!ws || ws.readyState !== 1 /* OPEN */) return false;
+    try {
+      ws.send(JSON.stringify(message));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Whether the socket is currently open (the live path is available). */
+  get open(): boolean {
+    return this.ws?.readyState === 1;
   }
 
   connect(): void {

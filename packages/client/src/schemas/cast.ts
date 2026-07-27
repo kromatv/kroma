@@ -47,9 +47,10 @@ export const CastReceiver = z.object({
   name: z.string(),
   /** Platform label shown under the name ("Apple TV", "Tizen", "webOS"). */
   platform: z.string(),
-  /** Whether the reader's own account registered it (their devices sort first). */
-  mine: z.boolean(),
-  /** Profile the TV is signed into - usually not the sender's. */
+  /** Profile the TV is signed into - usually not the sender's, and the thing
+   * that tells two identical sets apart. The row deliberately carries no
+   * per-reader field, so the server can broadcast one row to every sender
+   * instead of each of them refetching the roster. */
   username: z.string(),
   network: z.enum(['LAN', 'WAN']).catch('WAN'),
   nowPlaying: CastNowPlaying.optional(),
@@ -82,7 +83,29 @@ export const CastCommandEnvelope = z.object({
 });
 export type CastCommandEnvelope = z.infer<typeof CastCommandEnvelope>;
 
-/** What a receiver reports on each heartbeat (`POST /api/cast/announce`). */
+/** What a receiver sends UP its event socket - the live path, which replaced a
+ * heartbeat every ten seconds. It says hello once, then speaks only when
+ * something changes, and acks the orders it applies. */
+export type CastClientMessage =
+  | { type: 'cast.hello'; receiverId: string; name: string; platform: string }
+  | { type: 'cast.state'; playback?: CastPlaybackReport | null }
+  | { type: 'cast.ack'; seq: number };
+
+/** What a receiver reports about its own playback. */
+export interface CastPlaybackReport {
+  itemId: string;
+  positionMs: number;
+  durationMs?: number | null;
+  state: Exclude<CastState, 'unknown'>;
+  /** This player's own track lists + selections (see {@link CastTrack}). */
+  audioTracks?: CastTrack[];
+  audioIndex?: number;
+  subtitles?: CastTrack[];
+  subtitleIndex?: number;
+}
+
+/** What a receiver reports on the HTTP fallback (`POST /api/cast/announce`),
+ * used only while its socket is down. */
 export interface CastAnnounceBody {
   receiverId: string;
   name: string;
@@ -90,17 +113,7 @@ export interface CastAnnounceBody {
   /** Highest seq applied so far; everything up to it leaves the server's inbox. */
   lastAppliedSeq: number;
   /** Omitted while the TV sits on its home screen. */
-  playback?: {
-    itemId: string;
-    positionMs: number;
-    durationMs?: number | null;
-    state: Exclude<CastState, 'unknown'>;
-    /** This player's own track lists + selections (see {@link CastTrack}). */
-    audioTracks?: CastTrack[];
-    audioIndex?: number;
-    subtitles?: CastTrack[];
-    subtitleIndex?: number;
-  };
+  playback?: CastPlaybackReport;
 }
 
 /** The heartbeat reply: whatever this receiver still has to apply. */

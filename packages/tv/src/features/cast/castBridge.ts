@@ -31,9 +31,45 @@ let target: Target | null = null;
 /** A position a `play` command asked for, applied once its player is ready. */
 let pendingSeek: { itemId: string; positionMs: number } | null = null;
 
+/** Subscribers woken when something a remote DRAWS changes (see `signature`). */
+const listeners = new Set<() => void>();
+let signature = '';
+
+/**
+ * Be told when the player changes in a way a sender must hear about.
+ *
+ * The position is deliberately not part of it: it changes ~4 times a second and
+ * senders interpolate it from the clock, so pushing it on every tick would put
+ * the heartbeat back by another name. What fires here is a title, a transport
+ * state, or a track selection - the things a person actually did.
+ */
+export function onCastReportChange(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** The material fields, as a comparable string. Cheap enough to build on every
+ * render of the player, which is where it is checked from. */
+function materialSignature(): string {
+  if (!target) return '';
+  const { item, controller } = target;
+  return [
+    item.id,
+    transportState(controller),
+    controller.audioIndex,
+    controller.subtitleIndex ?? 'off',
+    controller.audioTracks.length,
+    controller.subtitles.length,
+  ].join('|');
+}
+
 /** Register the running player as the cast target (called by the player). */
 export function setCastTarget(next: Target | null): void {
   target = next;
+  const now = materialSignature();
+  if (now === signature) return;
+  signature = now;
+  for (const listener of listeners) listener();
 }
 
 /** The running player, or null when the TV is not on the player screen. */

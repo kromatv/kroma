@@ -109,11 +109,17 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
     }
     refresh();
     const events = new KromaEvents(client.baseUrl, {
-      // A reconnect may have missed events; resync rather than trust the gap.
+      // Only on (re)connect: a gap in the stream may have swallowed a change, and
+      // the roster is the one thing worth resyncing wholesale.
       onOpen: refresh,
       onEvent: (e) => {
-        if (e.type === 'cast.receivers') refresh();
-        else if (e.type === 'cast.position') {
+        // Rows arrive whole, so a play/pause on one TV costs every sender a
+        // patch instead of a refetch.
+        if (e.type === 'cast.receiver') {
+          setReceivers((list) => upsert(list, e.receiver));
+        } else if (e.type === 'cast.receiver.gone') {
+          setReceivers((list) => list.filter((r) => r.id !== e.receiverId));
+        } else if (e.type === 'cast.position') {
           setBase({
             id: e.receiverId,
             positionMs: e.positionMs,
@@ -228,6 +234,15 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
   );
 
   return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;
+}
+
+/** Replace a receiver's row, or add it, keeping the list sorted by name (the
+ * server's own order, so a patched list and a refetched one agree). */
+function upsert(list: CastReceiver[], row: CastReceiver): CastReceiver[] {
+  const next = list.some((r) => r.id === row.id)
+    ? list.map((r) => (r.id === row.id ? row : r))
+    : [...list, row];
+  return next.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** What a receiver last reported, and when this sender heard it. */

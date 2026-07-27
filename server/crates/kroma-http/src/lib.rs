@@ -94,6 +94,19 @@ impl Fetch {
         run(cmd)
     }
 
+    /// POST a raw byte body (Web Push's `aes128gcm` ciphertext).
+    ///
+    /// The bytes go over the child's **stdin** (`--data-binary @-`), not an
+    /// argv entry: an encrypted body is arbitrary binary, and a command-line
+    /// argument cannot carry a NUL and would be mangled by any non-UTF-8 byte.
+    pub fn post_bytes(&self, url: &str, content_type: &str, body: &[u8]) -> Result<Response> {
+        let mut cmd = self.base_cmd();
+        cmd.arg("-H").arg(format!("content-type: {content_type}"));
+        cmd.arg("--data-binary").arg("@-");
+        cmd.arg(url);
+        run_with_stdin(cmd, Some(body))
+    }
+
     /// `application/x-www-form-urlencoded` POST (qBittorrent login/actions).
     pub fn post_form(&self, url: &str, fields: &[(&str, &str)]) -> Result<Response> {
         let mut cmd = self.base_cmd();
@@ -183,10 +196,36 @@ fn header_dump_path() -> PathBuf {
     std::env::temp_dir().join(format!("kroma-http-hdr-{}-{n}", std::process::id()))
 }
 
-fn run(mut cmd: Command) -> Result<Response> {
+fn run(cmd: Command) -> Result<Response> {
+    run_with_stdin(cmd, None)
+}
+
+/// Execute curl, optionally piping `stdin_body` to it (the `--data-binary @-`
+/// path). Writing on this thread is safe because curl streams the request body
+/// before producing a response, so it drains stdin rather than deadlocking on a
+/// full stdout pipe.
+fn run_with_stdin(mut cmd: Command, stdin_body: Option<&[u8]>) -> Result<Response> {
+    use std::io::Write;
+
     let hdr_path = header_dump_path();
     cmd.arg("-D").arg(&hdr_path);
-    let out = cmd.output().context("spawn curl")?;
+    let out = match stdin_body {
+        None => cmd.output().context("spawn curl")?,
+        Some(body) => {
+            cmd.stdin(std::process::Stdio::piped());
+            cmd.stdout(std::process::Stdio::piped());
+            cmd.stderr(std::process::Stdio::piped());
+            let mut child = cmd.spawn().context("spawn curl")?;
+            child
+                .stdin
+                .take()
+                .context("curl stdin was not piped")?
+                .write_all(body)
+                .context("write request body to curl")?;
+            // `stdin` dropped here, closing the pipe so curl sees EOF.
+            child.wait_with_output().context("wait for curl")?
+        }
+    };
     let raw_headers = std::fs::read_to_string(&hdr_path).unwrap_or_default();
     let _ = std::fs::remove_file(&hdr_path);
     if !out.status.success() {
@@ -350,6 +389,51 @@ mod tests {
         // The jar is passed for both read (-b) and write (-c).
         assert!(args.contains(&"-c".to_string()) && args.contains(&"-b".to_string()), "{args:?}");
         assert!(args.contains(&"/tmp/jar".to_string()), "{args:?}");
+    }
+
+    #[test]
+    fn post_bytes_sends_the_body_over_stdin_not_argv() {
+        // `--data-binary @-` (a literal, not the payload) is what keeps an
+        // encrypted push body intact: as an argv entry it would be truncated at
+        // the first NUL and mangled by any non-UTF-8 byte.
+        let args: Vec<String> = {
+            let mut cmd = Fetch::new().base_cmd();
+            cmd.arg("--data-binary").arg("@-");
+            cmd.get_args().map(|a| a.to_string_lossy().into_owned()).collect()
+        };
+        assert!(args.contains(&"@-".to_string()), "{args:?}");
+    }
+
+    /// Round-trips a body containing NULs and every byte value through a real
+    /// curl, proving the stdin path is byte-exact. Uses `file://` so the test
+    /// needs no network: curl writes the request body to the target path.
+    #[test]
+    fn post_bytes_round_trips_arbitrary_binary() {
+        let body: Vec<u8> = (0u8..=255).collect();
+        let dir = std::env::temp_dir().join(format!("kroma-http-bin-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let target = dir.join("uploaded.bin");
+        let _ = std::fs::remove_file(&target);
+
+        // curl's file:// upload writes the request body verbatim to the path.
+        let out = Command::new("curl")
+            .args(["-s", "-S", "--upload-file", "-"])
+            .arg(format!("file://{}", target.display()))
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .and_then(|mut child| {
+                use std::io::Write;
+                child.stdin.take().unwrap().write_all(&body)?;
+                child.wait_with_output()
+            });
+        let Ok(out) = out else {
+            return; // no curl on this machine: nothing to assert
+        };
+        assert!(out.status.success());
+        let written = std::fs::read(&target).expect("curl wrote the body");
+        assert_eq!(written, body, "every byte value must survive the stdin pipe");
+        let _ = std::fs::remove_file(&target);
     }
 
     #[test]

@@ -47,6 +47,27 @@ pub struct Announce {
     pub playback: Option<CastPlayback>,
 }
 
+/// What a receiver says when it attaches over its event socket.
+pub struct Hello {
+    pub receiver_id: String,
+    pub name: String,
+    pub platform: String,
+}
+
+/// How senders should hear about a state update (see [`Registry::set_state`]).
+pub enum StateChange {
+    /// Something a picker draws changed: broadcast the whole row.
+    Row(CastReceiver),
+    /// Only the scrub position moved: broadcast the tiny frame.
+    Position {
+        position_ms: i64,
+        duration_ms: Option<i64>,
+        state: CastState,
+    },
+    /// Nothing worth a frame (an idle TV repeating itself).
+    Nothing,
+}
+
 /// Result of [`Registry::announce`].
 pub enum Announced {
     /// Accepted. `commands` are the ones still unacked (push may have been lost);
@@ -87,8 +108,10 @@ impl Receiver {
         self.last_seen.elapsed() < RECEIVER_TTL
     }
 
-    /// The identity a sender sees: what's on screen, who it belongs to, nothing else.
-    fn view(&self, viewer_id: &str) -> CastReceiver {
+    /// The identity a sender sees: what's on screen, whose profile, nothing else.
+    /// Viewer-independent on purpose - that is what lets one row be broadcast to
+    /// every sender instead of each of them refetching the roster.
+    fn view(&self) -> CastReceiver {
         let now_playing = match (self.item.as_ref(), self.playback.as_ref()) {
             (Some(item), Some(pb)) if pb.state != CastState::Idle => Some(CastNowPlaying {
                 item: item.clone(),
@@ -106,7 +129,6 @@ impl Receiver {
             id: self.id.clone(),
             name: self.name.clone(),
             platform: self.platform.clone(),
-            mine: self.user_id == viewer_id,
             username: self.username.clone(),
             network: self.network.clone(),
             now_playing,
@@ -200,6 +222,84 @@ impl Registry {
         Announced::Ok { commands, changed }
     }
 
+    /// Register a receiver whose presence is its **socket**, not a heartbeat.
+    ///
+    /// The live path: the TV says hello once on its event socket and then only
+    /// speaks when something changes. Liveness comes from the connection itself
+    /// (the pump touches it on each keepalive tick, and drops it outright when
+    /// the socket closes), so a set that is switched off leaves every picker at
+    /// once instead of aging out of a TTL.
+    pub fn attach(&self, hello: Hello, user_id: &str, username: &str, network: String) -> Announced {
+        self.announce(
+            Announce {
+                receiver_id: hello.receiver_id,
+                name: hello.name,
+                platform: hello.platform,
+                // A reconnecting socket re-sends everything it has not applied;
+                // its own `cast.ack` frames are what clear the inbox.
+                last_applied_seq: 0,
+                playback: None,
+            },
+            user_id,
+            username,
+            network,
+            None,
+        )
+    }
+
+    /// Update what a socket-attached receiver is playing. Returns how senders
+    /// should hear about it, or `None` when the receiver is gone.
+    pub fn set_state(
+        &self,
+        receiver_id: &str,
+        playback: Option<CastPlayback>,
+        item: Option<MediaItem>,
+    ) -> Option<StateChange> {
+        let mut map = self.inner.write().unwrap();
+        let entry = map.get_mut(receiver_id)?;
+        let material = entry.differs(playback.as_ref());
+        if item.is_some() {
+            entry.item = item;
+        }
+        if playback.is_none() {
+            entry.item = None;
+        }
+        entry.playback = playback.map(trim_tracks);
+        entry.last_seen = Instant::now();
+        // A position that merely advanced rides the small `cast.position` frame;
+        // anything a picker draws (title, transport, tracks) sends the whole row.
+        Some(if material {
+            StateChange::Row(entry.view())
+        } else {
+            match entry.playback.as_ref() {
+                Some(pb) => StateChange::Position {
+                    position_ms: pb.position_ms,
+                    duration_ms: pb.duration_ms,
+                    state: pb.state,
+                },
+                None => StateChange::Nothing,
+            }
+        })
+    }
+
+    /// Drop everything the receiver has applied, by sequence number.
+    pub fn ack(&self, receiver_id: &str, seq: u64) {
+        let mut map = self.inner.write().unwrap();
+        if let Some(entry) = map.get_mut(receiver_id) {
+            entry.inbox.retain(|c| c.seq > seq);
+            entry.last_seen = Instant::now();
+        }
+    }
+
+    /// Keep a socket-attached receiver alive (called on the socket's keepalive
+    /// tick, so a paused film does not age out of the roster).
+    pub fn touch(&self, receiver_id: &str) {
+        let mut map = self.inner.write().unwrap();
+        if let Some(entry) = map.get_mut(receiver_id) {
+            entry.last_seen = Instant::now();
+        }
+    }
+
     /// Whether the caller must fetch `item_id` from the catalog before announcing
     /// (unknown receiver, or it moved to another title).
     pub fn wants_item(&self, receiver_id: &str, item_id: &str) -> bool {
@@ -230,18 +330,23 @@ impl Registry {
         Some(envelope)
     }
 
-    /// Every live receiver, the caller's own first, then by name.
-    pub fn list(&self, viewer_id: &str) -> Vec<CastReceiver> {
+    /// Every live receiver, by name.
+    pub fn list(&self) -> Vec<CastReceiver> {
         let mut v: Vec<CastReceiver> = self
             .inner
             .read()
             .unwrap()
             .values()
             .filter(|r| r.live())
-            .map(|r| r.view(viewer_id))
+            .map(Receiver::view)
             .collect();
-        v.sort_by(|a, b| b.mine.cmp(&a.mine).then_with(|| a.name.cmp(&b.name)));
+        v.sort_by(|a, b| a.name.cmp(&b.name));
         v
+    }
+
+    /// One receiver's row, for the bus (`None` once it is gone).
+    pub fn row(&self, receiver_id: &str) -> Option<CastReceiver> {
+        self.inner.read().unwrap().get(receiver_id).filter(|r| r.live()).map(Receiver::view)
     }
 
     /// The account a live receiver is signed into. Commands are addressed to it
@@ -267,23 +372,29 @@ impl Registry {
         }
     }
 
-    /// Drop expired receivers; true when something actually went (so the caller
-    /// only announces a roster change when there is one).
-    fn reap(&self) -> bool {
+    /// Drop expired receivers, returning their ids so each departure can be
+    /// announced by name (senders remove exactly that row).
+    fn reap(&self) -> Vec<String> {
         let mut map = self.inner.write().unwrap();
-        let before = map.len();
-        map.retain(|_, r| r.live());
-        map.len() != before
+        let gone: Vec<String> =
+            map.iter().filter(|(_, r)| !r.live()).map(|(id, _)| id.clone()).collect();
+        for id in &gone {
+            map.remove(id);
+        }
+        gone
     }
 
-    /// Sweep dead receivers out of the picker.
+    /// Sweep dead receivers out of the picker. This is now the BACKSTOP: a TV on
+    /// the socket path is dropped the moment its connection closes, and only one
+    /// that heartbeats over HTTP (or whose socket died without a close frame)
+    /// waits out the TTL here.
     pub fn spawn_reaper(&self, events: Bus) {
         let reg = self.clone();
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(REAP_INTERVAL).await;
-                if reg.reap() {
-                    events.publish(ServerEvent::CastReceivers);
+                for receiver_id in reg.reap() {
+                    events.publish(ServerEvent::CastReceiverGone { receiver_id });
                 }
             }
         });
@@ -411,15 +522,14 @@ mod tests {
         assert!(!reg.wants_item("tv-salon-01", "it1"));
         assert!(reg.wants_item("tv-salon-01", "it2"));
 
-        let list = reg.list("u1");
+        let list = reg.list();
         assert_eq!(list.len(), 1);
-        assert!(list[0].mine);
         assert_eq!(list[0].name, "Salon");
         let np = list[0].now_playing.as_ref().expect("now playing");
         assert_eq!(np.item.id, "it1");
         assert_eq!(np.position_ms, 1000);
-        // Someone else sees the same TV, but not as theirs.
-        assert!(!reg.list("u2")[0].mine);
+        // The row is viewer-independent, which is what lets the bus carry it.
+        assert_eq!(reg.row("tv-salon-01").map(|r| r.name), Some("Salon".to_string()));
     }
 
     #[test]
@@ -427,7 +537,7 @@ mod tests {
         let reg = Registry::new();
         announce_ok(&reg, beat("tv-salon-01", 0, Some(playing("it1", 10))), "u1", Some(item("it1")));
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
-        assert!(reg.list("u1")[0].now_playing.is_none());
+        assert!(reg.list()[0].now_playing.is_none());
         // ...and the next title is fetched afresh rather than reusing the old one.
         assert!(reg.wants_item("tv-salon-01", "it1"));
     }
@@ -457,7 +567,7 @@ mod tests {
         ));
         // A full roster refuses the newcomer rather than evicting a live TV -
         // otherwise a flood of invented ids would push the real one out.
-        assert_eq!(reg.list("u1").len(), MAX_RECEIVERS);
+        assert_eq!(reg.list().len(), MAX_RECEIVERS);
     }
 
     #[test]
@@ -507,9 +617,9 @@ mod tests {
             map.get_mut("tv-salon-01").unwrap().last_seen = Instant::now() - Duration::from_secs(120);
         }
         assert!(reg.enqueue("tv-salon-01", CastCommand::Pause).is_none());
-        assert!(reg.list("u1").is_empty());
-        assert!(reg.reap());
-        assert!(!reg.reap()); // nothing left to sweep
+        assert!(reg.list().is_empty());
+        assert_eq!(reg.reap(), vec!["tv-salon-01".to_string()]);
+        assert!(reg.reap().is_empty()); // nothing left to sweep
     }
 
     #[test]
@@ -517,9 +627,9 @@ mod tests {
         let reg = Registry::new();
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
         assert!(!reg.remove_owned("tv-salon-01", "u2"));
-        assert_eq!(reg.list("u1").len(), 1);
+        assert_eq!(reg.list().len(), 1);
         assert!(reg.remove_owned("tv-salon-01", "u1"));
-        assert!(reg.list("u1").is_empty());
+        assert!(reg.list().is_empty());
         // Removing what isn't there is a no-op, not an error.
         assert!(!reg.remove_owned("tv-salon-01", "u1"));
     }
@@ -548,7 +658,7 @@ mod tests {
         ann.name = format!("  Sa\u{7}lon{}  ", "x".repeat(200));
         ann.platform = "tv\nOS".into();
         announce_ok(&reg, ann, "u1", None);
-        let row = &reg.list("u1")[0];
+        let row = &reg.list()[0];
         assert!(!row.name.contains('\u{7}'), "control chars are stripped: {:?}", row.name);
         assert!(row.name.len() <= MAX_NAME);
         assert_eq!(row.platform, "tvOS");
@@ -565,6 +675,86 @@ mod tests {
         assert!(!valid_receiver_id("../../etc/passwd"));
         assert!(!valid_receiver_id("tv salon 01"));
         assert!(!valid_receiver_id("télé-salon"));
+    }
+
+    // ----- the socket path: presence is the connection ------------------------
+
+    #[test]
+    fn a_socket_attaches_a_receiver_and_reports_only_what_changed() {
+        let reg = Registry::new();
+        let hello = || Hello {
+            receiver_id: "tv-salon-01".into(),
+            name: "Salon".into(),
+            platform: "Apple TV".into(),
+        };
+        assert!(matches!(
+            reg.attach(hello(), "u1", "Alice", "LAN".into()),
+            Announced::Ok { .. }
+        ));
+        assert_eq!(reg.list().len(), 1);
+
+        // First title: a picker has to redraw, so the whole row goes out.
+        let change = reg.set_state("tv-salon-01", Some(playing("it1", 0)), Some(item("it1")));
+        assert!(matches!(change, Some(StateChange::Row(_))));
+
+        // The position merely advancing is the tiny frame - this is the whole
+        // point of the split: a playing film sends no rows at all.
+        let change = reg.set_state("tv-salon-01", Some(playing("it1", 30_000)), None);
+        match change {
+            Some(StateChange::Position { position_ms, state, .. }) => {
+                assert_eq!(position_ms, 30_000);
+                assert_eq!(state, CastState::Playing);
+            }
+            _ => panic!("a position-only update must not broadcast a row"),
+        }
+
+        // A pause is a row again: it changes what the remote draws.
+        let mut paused = playing("it1", 30_000);
+        paused.state = CastState::Paused;
+        assert!(matches!(
+            reg.set_state("tv-salon-01", Some(paused), None),
+            Some(StateChange::Row(_))
+        ));
+
+        // Leaving the player clears the title.
+        assert!(matches!(
+            reg.set_state("tv-salon-01", None, None),
+            Some(StateChange::Row(_))
+        ));
+        assert!(reg.list()[0].now_playing.is_none());
+
+        // An idle TV repeating itself is worth no frame at all.
+        assert!(matches!(reg.set_state("tv-salon-01", None, None), Some(StateChange::Nothing)));
+        // ...and a state update for a receiver that is gone is simply nothing.
+        assert!(reg.set_state("tv-ghost-01", None, None).is_none());
+    }
+
+    #[test]
+    fn a_socket_acks_by_sequence_and_keeps_itself_alive() {
+        let reg = Registry::new();
+        reg.attach(
+            Hello { receiver_id: "tv-salon-01".into(), name: "Salon".into(), platform: "tvOS".into() },
+            "u1",
+            "Alice",
+            "LAN".into(),
+        );
+        reg.enqueue("tv-salon-01", CastCommand::Pause);
+        reg.enqueue("tv-salon-01", CastCommand::Stop);
+        reg.ack("tv-salon-01", 1);
+        // Only the unacked one is left to replay if the socket ever drops.
+        let pending = announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].seq, 2);
+
+        // A paused film sends nothing for minutes; the socket's keepalive tick is
+        // what stops the TTL from reaping a set that is very much still there.
+        {
+            let mut map = reg.inner.write().unwrap();
+            map.get_mut("tv-salon-01").unwrap().last_seen = Instant::now() - Duration::from_secs(40);
+        }
+        reg.touch("tv-salon-01");
+        assert!(reg.reap().is_empty());
+        assert_eq!(reg.list().len(), 1);
     }
 
     #[test]

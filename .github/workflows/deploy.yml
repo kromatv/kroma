@@ -116,3 +116,78 @@ jobs:
 
       - name: Tag the commit and publish
         run: .github/scripts/deploy-release.sh
+
+  # Shipping to testers is a DEPLOY act, not a build one - which is the whole
+  # reason candidates do not do it. But moving publishing out of release.yml
+  # left distribution on no path at all: the candidate skips it because it is
+  # not `stable`, and this workflow did not do it either. v0.1.35 published
+  # correctly signed .ipa files for both platforms and uploaded neither.
+  #
+  # No `environment:` here deliberately. It runs only after `publish`, which a
+  # human already approved, so a second prompt would ask the same question
+  # twice. Failing here leaves the Release published and the beta channels
+  # behind - recoverable by re-running, and better than blocking a release on
+  # Apple's upload service.
+  distribute:
+    name: Push to the beta channels
+    needs: [verify, publish]
+    runs-on: macos-26 # xcrun altool
+    permissions:
+      actions: read # download the candidate's artifacts
+      contents: read
+    timeout-minutes: 45
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+      VERSION: ${{ needs.verify.outputs.version }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # The SAME artifacts the Release carries, from the same run - so what
+      # testers install is what was gated and approved, not a rebuild.
+      - name: Collect the mobile and Apple TV builds
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: dist
+          merge-multiple: true
+          pattern: kroma-{mobile,appletv}-*
+          run-id: ${{ inputs.build_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Upload the iPhone build to TestFlight
+        env:
+          IPA: dist/KROMA-mobile-${{ needs.verify.outputs.version }}.ipa
+          PLATFORM: ios
+        run: .github/scripts/upload-to-testflight.sh
+
+      - name: Upload the Apple TV build to TestFlight
+        env:
+          IPA: dist/KROMA-appletv-${{ needs.verify.outputs.version }}.ipa
+          PLATFORM: tvos
+        run: .github/scripts/upload-to-testflight.sh
+
+      # Android has no TestFlight equivalent; BETA.md points testers at Firebase
+      # App Distribution. Absent credentials skip rather than fail, same as the
+      # Apple half.
+      - name: Distribute the Android build to Firebase
+        env:
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_TESTER_GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS || 'testers' }}
+        run: |
+          set -euo pipefail
+          APK="dist/KROMA-mobile-${VERSION}.apk"
+          if [ -z "$FIREBASE_APP_ID" ] || [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "No Firebase credentials; $APK is attached to the Release but not pushed."
+            exit 0
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          trap 'rm -f "$RUNNER_TEMP/firebase-sa.json"' EXIT
+          npx --yes firebase-tools appdistribution:distribute "$APK" \
+            --app "$FIREBASE_APP_ID" \
+            --release-notes-file clients/mobile/distribution/release-notes.txt \
+            --groups "$FIREBASE_TESTER_GROUPS"

@@ -39,9 +39,18 @@ VERSION="$(gh api "repos/$GH_REPO/contents/server/Cargo.toml?ref=$SHA" \
   | sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' | head -1)"
 [[ -n "$VERSION" ]] || { echo "::error::Could not read a version from server/Cargo.toml at $SHA."; exit 1; }
 
-if gh release view "v$VERSION" >/dev/null 2>&1; then
-  echo "::error::v$VERSION is already released. Bump server/Cargo.toml on main first."
-  exit 1
+# Already released is only a conflict when it is a DIFFERENT commit. Re-running
+# the same promotion is legitimate and sometimes necessary - a release can
+# publish and then fail to reach the beta channels, and the fix for that is to
+# run it again, not to spend a version number on a retry. deploy-release.sh
+# reuses the tag and re-uploads with --clobber, so a repeat is a no-op.
+if released_sha=$(gh release view "v$VERSION" --json targetCommitish --jq '.targetCommitish' 2>/dev/null); then
+  if [[ "$released_sha" != "$SHA" ]]; then
+    echo "::error::v$VERSION is already released from $released_sha, not $SHA."
+    echo "Bump server/Cargo.toml on main before promoting a different commit."
+    exit 1
+  fi
+  echo "note: v$VERSION is already released from this same commit; re-running."
 fi
 
 # The .spk is built by synology.yml, a separate workflow, so it lives in a

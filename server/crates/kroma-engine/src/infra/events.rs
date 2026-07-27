@@ -61,11 +61,21 @@ pub enum ServerEvent {
         session_id: String,
         message: String,
     },
-    /// The cast roster changed: a TV appeared, went away, or moved to another
-    /// title. Senders refetch `GET /api/cast/receivers` (small, and always
-    /// consistent - cheaper than mirroring the whole roster onto the bus).
-    #[serde(rename = "cast.receivers")]
-    CastReceivers,
+    /// A receiver appeared, or something a picker draws about it changed (title,
+    /// transport, tracks, name). Carries the whole row so every sender patches
+    /// its list in place: the roster used to be refetched over HTTP by every
+    /// connected client on every change, which is N round-trips for one pause.
+    #[serde(rename = "cast.receiver")]
+    CastReceiverChanged {
+        receiver: Box<crate::model::CastReceiver>,
+    },
+    /// A receiver left: its socket closed, or it stopped announcing and was
+    /// reaped. Senders drop it from the picker.
+    #[serde(rename = "cast.receiver.gone")]
+    CastReceiverGone {
+        #[serde(rename = "receiverId")]
+        receiver_id: String,
+    },
     /// A receiver's scrub position advanced. Deliberately tiny and separate from
     /// `cast.receivers`: it fires on every heartbeat of a playing TV, and a
     /// sender only needs it to move a progress bar.

@@ -134,11 +134,16 @@ pub async fn announce(
 
     let commands = match outcome {
         Announced::Ok { commands, changed } => {
+            // The row itself rides the bus, so senders patch their picker in place
+            // instead of every one of them refetching the roster over HTTP.
             if changed {
-                state.events.publish(ServerEvent::CastReceivers);
+                if let Some(row) = state.cast.row(&body.receiver_id) {
+                    state.events.publish(ServerEvent::CastReceiverChanged {
+                        receiver: Box::new(row),
+                    });
+                }
             }
-            // The scrub position rides its own tiny event so a remote's progress
-            // bar tracks the TV without anyone refetching the roster.
+            // The scrub position rides its own tiny event.
             if let Some((position_ms, duration_ms, cast_state)) = position {
                 if !changed && cast_state != CastState::Idle {
                     state.events.publish(ServerEvent::CastPosition {
@@ -182,7 +187,7 @@ pub async fn announce(
 /// from the catalog.
 pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) -> Result<Response, Response> {
     require_playback(&user)?;
-    Ok(Json(state.cast.list(&user.id)).into_response())
+    Ok(Json(state.cast.list()).into_response())
 }
 
 /// `DELETE /api/cast/receivers/:id` (Bearer) → 204. A receiver leaving the
@@ -196,7 +201,7 @@ pub async fn unregister(
 ) -> Result<Response, Response> {
     require_playback(&user)?;
     if state.cast.remove_owned(&id, &user.id) {
-        state.events.publish(ServerEvent::CastReceivers);
+        state.events.publish(ServerEvent::CastReceiverGone { receiver_id: id });
     }
     Ok(StatusCode::NO_CONTENT.into_response())
 }
