@@ -75,11 +75,20 @@ on:
         default: none
         required: false
 
-# Serialize releases per tag/ref, but NEVER cancel an in-flight one: a superseded
-# release build could leave a partially-uploaded Release. Queue instead of cancel.
+# Candidates supersede; nightlies queue.
+#
+# This used to queue unconditionally, because a superseded run could leave a
+# partially-uploaded Release. That reason is gone: a candidate build publishes
+# NOTHING - deploy.yml does - so the only thing a superseded candidate can lose
+# is a result nobody wants any more. Queuing them cost real time; four pushes in
+# an afternoon meant the fourth waited an hour behind three builds of code that
+# had already been replaced.
+#
+# The nightly still publishes from here, so it keeps the old behaviour: `push`
+# is the candidate leg, `schedule` is the nightly one.
 concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 env:
   BUN_VERSION: '1.3.14'

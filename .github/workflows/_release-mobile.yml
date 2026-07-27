@@ -94,10 +94,13 @@ jobs:
       # APK and a future Play build are signed by different keys, so testers
       # would have to reinstall rather than update. Revisit when/if this ships
       # to the Play Store.
+      # See the Android TV job for why --build-cache and the larger heap.
       - name: Build APK
         working-directory: clients/mobile/android
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
         run: |
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon --build-cache
           mkdir -p "$GITHUB_WORKSPACE/out"
           cp app/build/outputs/apk/release/app-release.apk \
             "$GITHUB_WORKSPACE/out/KROMA-mobile-${{ inputs.version }}.apk"

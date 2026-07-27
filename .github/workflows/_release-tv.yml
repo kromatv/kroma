@@ -222,9 +222,17 @@ jobs:
       # artifact. Real release signing needs a config plugin to rewrite the
       # generated signingConfig - the ANDROID_KEYSTORE* secrets are unused until
       # then.
+      # --build-cache reuses task OUTPUTS across runs, which the dependency cache
+      # alone does not: setup-gradle persists ~/.gradle, but without this every
+      # task still re-executes. The heap is raised because the generated
+      # gradle.properties asks for 2GB - a sensible default for a laptop, and a
+      # third of what this runner has, which costs GC time on the C++ and Hermes
+      # steps.
       - name: Build APK
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
         run: |
-          gradle -p clients/tv-native/android assembleRelease
+          gradle -p clients/tv-native/android assembleRelease --build-cache
           mkdir -p out
           cp clients/tv-native/android/app/build/outputs/apk/release/app-release.apk \
             "out/KROMA-androidtv-${{ inputs.version }}.apk"
