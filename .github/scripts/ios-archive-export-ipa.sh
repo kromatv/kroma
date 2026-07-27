@@ -56,6 +56,37 @@ derived="${DERIVED_DATA:-build}"
 #   COMPILER_INDEX_STORE_ENABLE  the index used for jump-to-definition
 #   -skipPackagePluginValidation \ prompts that cannot be answered on a runner
 #   -skipMacroValidation         / and are only asked because SPM macros are new
+# MANUAL signing, when the caller asks for it and the app is a single target.
+#
+# Automatic signing does not merely pick the wrong profile - it MINTS. Given
+# `-allowProvisioningUpdates` and an API key it ignores the App Store profile
+# installed a step earlier, creates itself a fresh "Apple Development: Created
+# via API" certificate and a "Team Provisioning Profile", and signs with those.
+# The archive then succeeds and only the App Store export fails, blaming the
+# profile. Ten such certificates accumulated over this week's failed runs until
+# the account hit Apple's ceiling and NOTHING could sign: "Choose a certificate
+# to revoke. Your account has reached the maximum number of certificates."
+#
+# So the profile is read back from the one the import step installed - by NAME,
+# out of the file itself, so the two can never disagree.
+sign=(-allowProvisioningUpdates "${auth[@]}")
+export_signing="automatic"
+profile_name=""
+installed="$HOME/Library/MobileDevice/Provisioning Profiles/kroma.mobileprovision"
+if [[ "${MANUAL_SIGNING:-}" = "1" ]] && [[ -f "$installed" ]]; then
+  security cms -D -i "$installed" > "$RUNNER_TEMP/profile.plist"
+  profile_name=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$RUNNER_TEMP/profile.plist")
+  bundle_id=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' \
+    "$RUNNER_TEMP/profile.plist" | cut -d. -f2-)
+  echo "manual signing: '$profile_name' for $bundle_id"
+  # No -allowProvisioningUpdates: that flag IS the licence to invent a
+  # certificate, and nothing here should ever create one again.
+  sign=(CODE_SIGN_STYLE=Manual
+        CODE_SIGN_IDENTITY="Apple Distribution"
+        PROVISIONING_PROFILE_SPECIFIER="$profile_name")
+  export_signing="manual"
+fi
+
 xcodebuild -workspace KROMA.xcworkspace -scheme KROMA \
   -configuration Release -sdk "$sdk" \
   -archivePath "$RUNNER_TEMP/KROMA.xcarchive" \
@@ -63,7 +94,13 @@ xcodebuild -workspace KROMA.xcworkspace -scheme KROMA \
   -skipPackagePluginValidation -skipMacroValidation \
   COMPILER_INDEX_STORE_ENABLE=NO \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-  -allowProvisioningUpdates "${auth[@]}" archive
+  "${sign[@]}" archive
+
+profile_map=""
+if [[ "$export_signing" = "manual" ]]; then
+  profile_map="  <key>provisioningProfiles</key>
+  <dict><key>${bundle_id}</key><string>${profile_name}</string></dict>"
+fi
 cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -71,12 +108,14 @@ cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
   <key>method</key><string>app-store-connect</string>
   <key>teamID</key><string>${APPLE_TEAM_ID}</string>
   <key>uploadSymbols</key><true/>
+  <key>signingStyle</key><string>${export_signing}</string>
+${profile_map}
 </dict></plist>
 PLIST
 xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/KROMA.xcarchive" \
   -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
   -exportPath "$RUNNER_TEMP/export" \
-  -allowProvisioningUpdates "${auth[@]}"
+  "${auth[@]}"
 rm -rf "$RUNNER_TEMP/asc"
 mkdir -p "$GITHUB_WORKSPACE/out"
 cp "$RUNNER_TEMP/export"/*.ipa \

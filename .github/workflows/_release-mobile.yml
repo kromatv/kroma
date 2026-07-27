@@ -315,6 +315,12 @@ jobs:
         working-directory: clients/mobile/ios
         env:
           DERIVED_DATA: ${{ github.workspace }}/.derived/mobile
+          # The phone app is ONE target with empty entitlements, so a single
+          # profile covers it and manual signing is straightforward. The Apple TV
+          # app is not: it builds KROMA and KromaTopShelf, which need a profile
+          # each, so it stays on automatic until its App Group is registered and
+          # the per-target wiring is worth writing.
+          MANUAL_SIGNING: '1'
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           VERSION: ${{ inputs.version }}
           # Authenticates `-allowProvisioningUpdates`: the Expo template leaves
