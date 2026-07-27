@@ -345,8 +345,16 @@ jobs:
         run: |
           dd=.derived/mobile
           [ -d "$dd" ] || { echo "no DerivedData at $dd"; exit 0; }
-          rm -rf "$dd/ModuleCache.noindex" "$dd/Index.noindex" "$dd/Logs" \
-                 "$dd/Build/Products" "$dd/SourcePackages/checkouts" || true
+          # ModuleCache and Build/Products are KEPT. Deleting them is what kept
+          # the archive at ~14 minutes despite a restored cache: this is an
+          # ObjC/C++ project where essentially every file imports a Clang
+          # module, so an absent module cache invalidates the objects that
+          # depend on it and Xcode recompiled all ~540 of them. Products are the
+          # built frameworks - without them every link runs again too.
+          #
+          # What goes is only what regenerates for free: the source index no
+          # build reads, the logs, and SPM checkouts that are re-fetched.
+          rm -rf "$dd/Index.noindex" "$dd/Logs" "$dd/SourcePackages/checkouts" || true
           echo "DerivedData now $(du -sh "$dd" | cut -f1)"
 
       - name: Save DerivedData
