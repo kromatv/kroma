@@ -327,6 +327,14 @@ jobs:
           path: dist
       - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
+          # Attach into a DRAFT, like every other artifact job. This was the one
+          # call in the repo that left it off, and softprops defaults it to
+          # false - so attaching the .spk PUBLISHED the release, from a workflow
+          # that knows nothing about whether the other platforms built. It is
+          # what put v0.1.35 live (15:46:16) while the release run's own publish
+          # job was still gated behind two failing .ipa builds. `publish` in
+          # release.yml is the only thing allowed to flip a release live.
+          draft: true
           files: |
             dist/*.spk
             dist/*.spk.info.json
