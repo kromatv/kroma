@@ -286,4 +286,243 @@ mod tests {
         // A "12 new titles" digest should never wake a sleeping phone's radio.
         assert_eq!(urgency_of(&notification(NotificationCategory::Media)), Urgency::Low);
     }
+    // ----- delivery against a fake push service -----------------------------------
+    //
+    // `Fetch` shells out to curl, so a socket is the only seam. These drive the
+    // real signed request and, more to the point, the endpoint-health rules:
+    // which failures retire a device and which ones are just a bad night.
+
+    use std::io::{BufRead, BufReader, Read, Write};
+    use std::net::TcpListener;
+    use std::sync::{Arc, Mutex};
+
+    use kroma_db::push_subs::{self, NewSubscription};
+    use kroma_domain::PushTransport;
+
+    /// A push service that answers every POST with the same status.
+    struct FakeService {
+        endpoint: String,
+        hits: Arc<Mutex<usize>>,
+    }
+
+    impl FakeService {
+        fn answering(status: u16) -> Self {
+            let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+            let port = listener.local_addr().unwrap().port();
+            let hits = Arc::new(Mutex::new(0usize));
+            let counter = Arc::clone(&hits);
+
+            std::thread::spawn(move || {
+                for stream in listener.incoming() {
+                    let Ok(mut stream) = stream else { break };
+                    let mut reader = BufReader::new(stream.try_clone().unwrap());
+                    let mut line = String::new();
+                    if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                        continue;
+                    }
+                    let mut len = 0usize;
+                    loop {
+                        let mut header = String::new();
+                        if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
+                            break;
+                        }
+                        if let Some(v) = header.to_ascii_lowercase().strip_prefix("content-length:") {
+                            len = v.trim().parse().unwrap_or(0);
+                        }
+                    }
+                    if len > 0 {
+                        let mut body = vec![0u8; len];
+                        let _ = reader.read_exact(&mut body);
+                    }
+                    *counter.lock().unwrap() += 1;
+                    let resp = format!(
+                        "HTTP/1.1 {status} X\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                    );
+                    let _ = stream.write_all(resp.as_bytes());
+                    let _ = stream.flush();
+                }
+            });
+
+            Self { endpoint: format!("http://127.0.0.1:{port}/push/abc"), hits }
+        }
+
+        fn hits(&self) -> usize {
+            *self.hits.lock().unwrap()
+        }
+    }
+
+    /// A state with a real VAPID key, an account, and one registered endpoint.
+    fn state_with_endpoint(
+        endpoint: &str,
+        transport: PushTransport,
+        keys: bool,
+    ) -> (crate::state::SharedState, String) {
+        let state = crate::test_support::test_state();
+        // Mint a real key: `deliver` refuses to send without one.
+        public_key(&state).unwrap();
+        let user = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id;
+        // A subscriber's p256dh is a P-256 public point, which is exactly the
+        // shape of a VAPID public key - so one can stand in for the other.
+        let (p256dh, auth) = if keys {
+            (Some(VapidKey::generate().public_base64url()), Some("MDEyMzQ1Njc4OWFiY2RlZg".to_string()))
+        } else {
+            (None, None)
+        };
+        push_subs::upsert_subscription(
+            &state.db,
+            &NewSubscription {
+                id: "sub-1".into(),
+                user_id: user.clone(),
+                transport,
+                endpoint: endpoint.to_string(),
+                p256dh,
+                auth,
+                device: Some("Firefox".into()),
+                locale: Some("en".into()),
+            },
+            1,
+        )
+        .unwrap();
+        (state, user)
+    }
+
+    fn subscription_count(state: &crate::state::SharedState, user: &str) -> usize {
+        let conn = state.db.get().unwrap();
+        push_subs::subscriptions_for_user(&conn, user).unwrap().len()
+    }
+
+    #[test]
+    fn a_push_the_service_accepts_is_counted() {
+        let service = FakeService::answering(201);
+        let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+        let sent = deliver(&state, &user, &notification(NotificationCategory::Requests));
+        assert_eq!(sent, 1);
+        assert_eq!(service.hits(), 1);
+        assert_eq!(subscription_count(&state, &user), 1, "a working endpoint is kept");
+    }
+
+    #[test]
+    fn an_endpoint_the_browser_retired_is_dropped_on_the_spot() {
+        // 404/410 is permanent - the browser unsubscribed or the user cleared
+        // site data. Keeping the row would mean pushing into the void forever.
+        for gone in [404u16, 410] {
+            let service = FakeService::answering(gone);
+            let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+            assert_eq!(deliver(&state, &user, &notification(NotificationCategory::Requests)), 0);
+            assert_eq!(subscription_count(&state, &user), 0, "{gone} should retire the endpoint");
+        }
+    }
+
+    #[test]
+    fn a_service_having_a_bad_night_is_kept_until_it_has_had_several() {
+        // A 500 is transient. Dropping on the first one would unsubscribe every
+        // device during a push-service outage, and they would not come back
+        // until each user re-granted permission.
+        let service = FakeService::answering(500);
+        let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+        let note = notification(NotificationCategory::Requests);
+
+        for attempt in 1..push_subs::MAX_FAILURES {
+            assert_eq!(deliver(&state, &user, &note), 0);
+            assert_eq!(subscription_count(&state, &user), 1, "dropped after only {attempt}");
+        }
+        // The failure that reaches the ceiling retires it.
+        assert_eq!(deliver(&state, &user, &note), 0);
+        assert_eq!(subscription_count(&state, &user), 0);
+    }
+
+    #[test]
+    fn a_success_forgives_the_failures_before_it() {
+        // Otherwise a device that has been online for months would eventually
+        // accumulate its way to being dropped.
+        let failing = FakeService::answering(500);
+        let (state, user) = state_with_endpoint(&failing.endpoint, PushTransport::WebPush, true);
+        let note = notification(NotificationCategory::Requests);
+        deliver(&state, &user, &note);
+        deliver(&state, &user, &note);
+
+        // Re-point the same subscription id at a service that works.
+        let ok = FakeService::answering(201);
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute(
+                "UPDATE push_subscriptions SET endpoint = ?1 WHERE id = 'sub-1'",
+                [&ok.endpoint],
+            )
+            .unwrap();
+        assert_eq!(deliver(&state, &user, &note), 1);
+
+        let failures: i64 = state
+            .db
+            .get()
+            .unwrap()
+            .query_row("SELECT failures FROM push_subscriptions WHERE id = 'sub-1'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(failures, 0, "a delivery must reset the streak");
+    }
+
+    #[test]
+    fn a_transport_we_cannot_speak_yet_is_left_alone() {
+        // APNs/FCM rows are stored but not deliverable yet. They must be skipped
+        // rather than mangled through the Web Push encoding - and above all not
+        // counted as failures, which would eventually delete the device.
+        let service = FakeService::answering(201);
+        let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::Apns, true);
+        assert_eq!(deliver(&state, &user, &notification(NotificationCategory::Requests)), 0);
+        assert_eq!(service.hits(), 0, "nothing should have been sent");
+        assert_eq!(subscription_count(&state, &user), 1, "the device stays registered");
+    }
+
+    #[test]
+    fn a_web_push_row_without_its_keys_fails_that_endpoint_only() {
+        // Without p256dh/auth there is nothing to encrypt to. It is an error,
+        // not a panic, and it must not take the whole delivery down.
+        let service = FakeService::answering(201);
+        let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, false);
+        assert_eq!(deliver(&state, &user, &notification(NotificationCategory::Requests)), 0);
+        assert_eq!(service.hits(), 0);
+    }
+
+    #[test]
+    fn no_endpoints_means_no_work_at_all() {
+        let state = crate::test_support::test_state();
+        let user = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id;
+        assert_eq!(deliver(&state, &user, &notification(NotificationCategory::Media)), 0);
+        assert!(!is_subscribed(&state, &user));
+    }
+
+    #[test]
+    fn endpoints_without_a_usable_key_are_skipped_rather_than_re_keyed() {
+        // Minting a fresh keypair here would not match what those browsers
+        // subscribed with, so every push would be rejected anyway. This needs an
+        // operator, and the endpoints must survive until one shows up.
+        let service = FakeService::answering(201);
+        let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+        assert!(is_subscribed(&state, &user));
+
+        // Wipe the key, then corrupt it - both mean "no usable key".
+        for broken in ["", "not-a-base64url-key"] {
+            state.set_settings(std::collections::BTreeMap::from([(
+                VAPID_PRIVATE_KEY.to_string(),
+                json!(broken),
+            )]));
+            assert!(stored_key(&state).is_none(), "{broken:?} must not be usable");
+            assert_eq!(deliver(&state, &user, &notification(NotificationCategory::Requests)), 0);
+            assert_eq!(service.hits(), 0);
+            assert_eq!(subscription_count(&state, &user), 1, "the endpoint is not the problem");
+        }
+    }
+
+    #[test]
+    fn the_public_key_is_minted_once_and_then_reused() {
+        // The browser subscribes against this exact key; handing out a new one
+        // on every call would invalidate every existing subscription.
+        let state = crate::test_support::test_state();
+        let first = public_key(&state).unwrap();
+        assert!(!first.is_empty());
+        assert_eq!(public_key(&state).unwrap(), first);
+        assert_eq!(stored_key(&state).unwrap().public_base64url(), first);
+    }
 }

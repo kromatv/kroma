@@ -350,4 +350,118 @@ mod tests {
         // Two rows, not one clobbered by a colliding primary key.
         assert_eq!(db::notifications::unread_count(&conn, &ana).unwrap(), 2);
     }
+    /// A show plus one episode, and the three independent ways an account can
+    /// come to follow it.
+    fn seed_show(host: &RecordingHost) {
+        let conn = host.db().get().unwrap();
+        conn.execute("INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','shows','/x','now')", []).unwrap();
+        conn.execute("INSERT INTO shows (id,library,title,added_at) VALUES ('shw','lib','Show','now')", []).unwrap();
+        conn.execute(
+            "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,added_at) \
+             VALUES ('ep1','episode','E','mkv','lib','shw',1,1,'now')",
+            [],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn a_follower_is_anyone_who_listed_watched_or_started_the_show() {
+        // Three separate signals, deliberately unioned: someone who added the
+        // show to their list has never played it, and someone mid-season may
+        // never have used the list. Missing any of them means a new episode is
+        // announced to the wrong people.
+        let host = RecordingHost::new();
+        seed_show(&host);
+        let lister = user(&host, "l@t.dev", "Lister", &[]);
+        let watcher = user(&host, "w@t.dev", "Watcher", &[]);
+        let viewer = user(&host, "v@t.dev", "Viewer", &[]);
+        let stranger = user(&host, "s@t.dev", "Stranger", &[]);
+
+        let conn = host.db().get().unwrap();
+        conn.execute(
+            "INSERT INTO my_list (user_id,item_id,added_at) VALUES (?1,'shw',0)",
+            [&lister],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO watched (user_id,item_id,watched_at) VALUES (?1,'shw',0)",
+            [&watcher],
+        )
+        .unwrap();
+        // Progress is recorded against the EPISODE, and has to resolve up to the
+        // show it belongs to.
+        conn.execute(
+            "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) VALUES (?1,'ep1',60000,600000,0)",
+            [&viewer],
+        )
+        .unwrap();
+        drop(conn);
+
+        assert_eq!(emit(&host, &Audience::followers("shw"), &spec()), 3);
+        let conn = host.db().get().unwrap();
+        for follower in [&lister, &watcher, &viewer] {
+            assert_eq!(
+                db::notifications::unread_count(&conn, follower).unwrap(),
+                1,
+                "follower {follower} was missed"
+            );
+        }
+        assert_eq!(db::notifications::unread_count(&conn, &stranger).unwrap(), 0);
+    }
+
+    #[test]
+    fn following_a_show_twice_still_only_notifies_once() {
+        // The three signals are a UNION, not a sum: someone who listed a show AND
+        // is watching it must not get the same episode announced twice.
+        let host = RecordingHost::new();
+        seed_show(&host);
+        let keen = user(&host, "k@t.dev", "Keen", &[]);
+        let conn = host.db().get().unwrap();
+        conn.execute("INSERT INTO my_list (user_id,item_id,added_at) VALUES (?1,'shw',0)", [&keen]).unwrap();
+        conn.execute("INSERT INTO watched (user_id,item_id,watched_at) VALUES (?1,'shw',0)", [&keen]).unwrap();
+        conn.execute(
+            "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) VALUES (?1,'ep1',1,2,0)",
+            [&keen],
+        )
+        .unwrap();
+        drop(conn);
+
+        assert_eq!(emit(&host, &Audience::followers("shw"), &spec()), 1);
+        let conn = host.db().get().unwrap();
+        assert_eq!(db::notifications::unread_count(&conn, &keen).unwrap(), 1);
+    }
+
+    #[test]
+    fn a_show_nobody_follows_notifies_nobody() {
+        let host = RecordingHost::new();
+        seed_show(&host);
+        user(&host, "a@t.dev", "A", &[]);
+        assert_eq!(emit(&host, &Audience::followers("shw"), &spec()), 0);
+        assert_eq!(emit(&host, &Audience::followers("no-such-show"), &spec()), 0);
+        assert!(host.addressed().is_empty());
+    }
+
+    #[test]
+    fn the_row_the_push_renders_from_is_the_one_just_written() {
+        // `deliver` re-reads the notification it just inserted to render it for
+        // the device, via `ORDER BY created_at DESC LIMIT 1`. Two notifications
+        // landing in the same millisecond tie on that column, so this pins that
+        // the freshly-written row is still findable - if the lookup ever stops
+        // matching, the push is silently dropped while the in-app row is fine,
+        // which is close to invisible in production.
+        let host = RecordingHost::new();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        emit(&host, &Audience::user(ana.clone()), &spec());
+        emit(&host, &Audience::user(ana.clone()), &spec());
+
+        let conn = host.db().get().unwrap();
+        let rows = db::notifications::list_notifications(&conn, &ana, 10, false).unwrap();
+        assert_eq!(rows.len(), 2);
+        // Distinct ids, and the newest-first window of size 1 finds one of them
+        // rather than nothing.
+        assert_ne!(rows[0].id, rows[1].id);
+        let newest = db::notifications::list_notifications(&conn, &ana, 1, false).unwrap();
+        assert_eq!(newest.len(), 1);
+        assert!(rows.iter().any(|r| r.id == newest[0].id));
+    }
 }
