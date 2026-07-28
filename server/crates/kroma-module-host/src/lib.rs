@@ -457,6 +457,22 @@ mod tests {
 
     struct MockHost {
         svc: Option<(TypeId, Arc<dyn Any + Send + Sync>)>,
+        /// Every event that reached `publish`. The defaulted `publish_to` and
+        /// `notify` are deliberately NOT overridden here, so this doubles as the
+        /// host those defaults are tested against.
+        published: std::sync::Mutex<Vec<String>>,
+    }
+
+    impl MockHost {
+        fn new() -> Self {
+            Self { svc: None, published: std::sync::Mutex::new(Vec::new()) }
+        }
+        fn with_service(svc: (TypeId, Arc<dyn Any + Send + Sync>)) -> Self {
+            Self { svc: Some(svc), published: std::sync::Mutex::new(Vec::new()) }
+        }
+        fn broadcasts(&self) -> Vec<String> {
+            self.published.lock().unwrap().clone()
+        }
     }
     impl HostCtx for MockHost {
         fn db(&self) -> &Pool {
@@ -484,7 +500,9 @@ mod tests {
             default
         }
         fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
-        fn publish(&self, _event: Event) {}
+        fn publish(&self, event: Event) {
+            self.published.lock().unwrap().push(event.topic);
+        }
         fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
         fn module_enabled(&self, _id: &str) -> bool {
             true
@@ -596,21 +614,22 @@ mod tests {
             }
         }
         let port: Arc<dyn Greeter> = Arc::new(G);
-        let host = MockHost { svc: Some(port_service(port)) };
+        let host = MockHost::with_service(port_service(port));
         let resolved = resolve_port::<dyn Greeter>(&host).expect("port resolves");
         assert_eq!(resolved.hi(), "hi");
 
         // Nothing registered -> None.
-        let empty = MockHost { svc: None };
+        let empty = MockHost::new();
         assert!(resolve_port::<dyn Greeter>(&empty).is_none());
     }
 
     #[test]
     fn service_resolves_a_concrete_type() {
         struct Manager(u32);
-        let host = MockHost {
-            svc: Some((TypeId::of::<Manager>(), Arc::new(Manager(42)) as Arc<dyn Any + Send + Sync>)),
-        };
+        let host = MockHost::with_service((
+            TypeId::of::<Manager>(),
+            Arc::new(Manager(42)) as Arc<dyn Any + Send + Sync>,
+        ));
         let got = service::<Manager>(&host).expect("service resolves");
         assert_eq!(got.0, 42);
 
@@ -688,63 +707,18 @@ mod tests {
 
     // ----- the trait defaults, which are the whole point of a seam ----------------
 
-    /// A host that overrides NOTHING beyond the required methods, so every
-    /// default below is the one under test.
-    struct BareHost;
-    impl HostCtx for BareHost {
-        fn db(&self) -> &Pool {
-            unimplemented!("not exercised")
-        }
-        fn data_dir(&self) -> &Path {
-            Path::new("/tmp")
-        }
-        fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
-            Ok(())
-        }
-        fn require_any_admin(&self, _user: &User) -> Result<(), Response> {
-            Ok(())
-        }
-        fn lerr(&self, _user: &User, _status: StatusCode, _key: &str) -> Response {
-            unimplemented!("not exercised")
-        }
-        fn setting_str(&self, _key: &str, default: &str) -> String {
-            default.to_string()
-        }
-        fn setting_bool(&self, _key: &str, default: bool) -> bool {
-            default
-        }
-        fn setting_i64(&self, _key: &str, default: i64) -> i64 {
-            default
-        }
-        fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
-        fn publish(&self, _event: Event) {
-            panic!("a host that cannot address its bus must NOT fall back to broadcast");
-        }
-        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
-        fn module_enabled(&self, _id: &str) -> bool {
-            true
-        }
-        fn library_folders(&self) -> Vec<LibraryFolders> {
-            Vec::new()
-        }
-        fn tmdb_api_key(&self) -> Option<String> {
-            None
-        }
-        fn metadata_language(&self) -> String {
-            "en".into()
-        }
-        fn get_service(&self, _t: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
-            None
-        }
-    }
 
     #[test]
     fn an_addressed_event_is_dropped_rather_than_broadcast() {
         // The security-relevant default: `publish_to` carries personal content
         // ("your request was denied" names its recipient). A host that cannot
-        // address its bus must DROP it, never fall back to publish - the panic
-        // in BareHost::publish is the assertion.
-        BareHost.publish_to("user-1", Event::new("notification.created", json!({ "id": "n1" })));
+        // address its bus must DROP it, never fall back to publish.
+        let host = MockHost::new();
+        host.publish_to("user-1", Event::new("notification.created", json!({ "id": "n1" })));
+        assert!(
+            host.broadcasts().is_empty(),
+            "a host that cannot address its bus must NOT fall back to broadcast"
+        );
     }
 
     #[test]
@@ -756,8 +730,8 @@ mod tests {
             "notifications.request.approved.title",
             "notifications.request.approved.body",
         );
-        assert_eq!(BareHost.notify(&Audience::user("u1"), &spec), 0);
-        assert_eq!(BareHost.notify(&Audience::Everyone, &spec), 0);
+        assert_eq!(MockHost::new().notify(&Audience::user("u1"), &spec), 0);
+        assert_eq!(MockHost::new().notify(&Audience::Everyone, &spec), 0);
     }
 
     #[test]
@@ -767,20 +741,20 @@ mod tests {
         // non-empty would run SQL or mount routes nobody asked for.
         struct Bare;
         #[async_trait]
-        impl ServerModule<Arc<BareHost>> for Bare {
+        impl ServerModule<Arc<MockHost>> for Bare {
             fn id(&self) -> &'static str {
                 "tv.kroma.bare"
             }
         }
         assert_eq!(Bare.id(), "tv.kroma.bare");
         assert_eq!(Bare.migrations(), "");
-        assert!(Bare.admin_routes(&Arc::new(BareHost)).is_none());
+        assert!(Bare.admin_routes(&Arc::new(MockHost::new())).is_none());
         assert!(Bare.jobs().is_empty());
 
         // ...and its lifecycle hooks are no-ops that complete rather than panic.
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         rt.block_on(async {
-            let host: Arc<dyn HostCtx> = Arc::new(BareHost);
+            let host: Arc<dyn HostCtx> = Arc::new(MockHost::new());
             Bare.on_enable(host.clone()).await;
             Bare.on_disable(host).await;
         });
