@@ -138,6 +138,19 @@ fn human_bytes(bytes: u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
+
+    use crate::services::jobs::JobContext;
+    use crate::state::SharedState;
+    use crate::test_support::test_state;
+
+    /// Set the cache-limit label the trimmer reads.
+    fn set_limit(state: &SharedState, label: &str) {
+        state.settings.set_patch(
+            &state.db,
+            BTreeMap::from([("cacheLimit".to_string(), serde_json::json!(label))]),
+        );
+    }
 
     #[test]
     fn parse_limit_bytes_reads_leading_gigabytes() {
@@ -176,5 +189,127 @@ mod tests {
         assert_eq!(dir_size(&dir), 8);
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A file whose LOGICAL length is `len` but which occupies almost nothing on
+    /// disk. The trimmer only ever reads `metadata().len()`, so this exercises a
+    /// multi-gigabyte cache honestly without writing gigabytes - the smallest
+    /// budget the label parser can express is 1 Go.
+    fn sparse(path: &std::path::Path, len: u64, mtime_rank: u64) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let f = std::fs::File::create(path).unwrap();
+        f.set_len(len).unwrap();
+        drop(f);
+        // Distinct, ordered mtimes so "oldest first" is a defined order rather
+        // than whatever the filesystem happened to record.
+        let when = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(mtime_rank);
+        let f = std::fs::File::options().write(true).open(path).unwrap();
+        f.set_times(std::fs::FileTimes::new().set_modified(when)).unwrap();
+    }
+
+    fn images_dir(state: &crate::state::SharedState) -> std::path::PathBuf {
+        let dir = state.config.data_dir.join("images");
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn names(dir: &std::path::Path) -> Vec<String> {
+        let mut v: Vec<String> = std::fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().map(|t| t.is_file()).unwrap_or(false))
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        v.sort();
+        v
+    }
+
+    const GB: u64 = 1_000_000_000;
+
+    #[test]
+    fn an_unlimited_label_trims_nothing() {
+        let state = test_state();
+        set_limit(&state, "Illimité");
+        let images = images_dir(&state);
+        sparse(&images.join("a.jpg"), 5 * GB, 1);
+
+        enforce_image_limit(&JobContext::for_test(state.clone()), &images);
+        // Unparseable means "no budget", not "zero budget" - the opposite reading
+        // would wipe the whole cache the moment someone typed a word.
+        assert_eq!(names(&images), vec!["a.jpg"]);
+    }
+
+    #[test]
+    fn a_cache_within_budget_is_left_alone() {
+        let state = test_state();
+        set_limit(&state, "80 Go");
+        let images = images_dir(&state);
+        sparse(&images.join("a.jpg"), 1024, 1);
+
+        enforce_image_limit(&JobContext::for_test(state.clone()), &images);
+        assert_eq!(names(&images), vec!["a.jpg"]);
+    }
+
+    #[test]
+    fn over_budget_evicts_the_oldest_first() {
+        let state = test_state();
+        set_limit(&state, "2 Go");
+        let images = images_dir(&state);
+        sparse(&images.join("old.jpg"), 1500 * 1_000_000, 1);
+        sparse(&images.join("new.jpg"), 1500 * 1_000_000, 9);
+
+        enforce_image_limit(&JobContext::for_test(state.clone()), &images);
+        // Least-recently-fetched art goes first; 3 Go - 1.5 Go is under the 2 Go
+        // budget, so exactly one file is evicted.
+        assert_eq!(names(&images), vec!["new.jpg"]);
+    }
+
+    #[test]
+    fn never_evicts_an_avatar_an_account_still_references() {
+        let state = test_state();
+        set_limit(&state, "1 Go");
+        let images = images_dir(&state);
+        // NEVER, not "usually": the avatar is the OLDEST here, so a trimmer that
+        // only sorted by mtime would take it out first.
+        sparse(&images.join("avatar.png"), 1500 * 1_000_000, 1);
+        sparse(&images.join("poster.jpg"), 1500 * 1_000_000, 9);
+
+        let user = kroma_db::create_user(&state.db, "a@b.c", "A", "h", &[]).unwrap();
+        crate::db::set_user_avatar(&state.db, &user.id, Some("/images/avatar.png")).unwrap();
+
+        enforce_image_limit(&JobContext::for_test(state.clone()), &images);
+        // Uploaded avatars share this directory with poster art but are NOT
+        // regenerable: deleting one 404s the avatar with no way to refetch it.
+        // So the poster goes instead, even though it is newer.
+        assert_eq!(names(&images), vec!["avatar.png"]);
+    }
+
+    #[test]
+    fn stops_trimming_when_cancelled() {
+        let state = test_state();
+        set_limit(&state, "1 Go");
+        let images = images_dir(&state);
+        sparse(&images.join("a.jpg"), 1500 * 1_000_000, 1);
+        sparse(&images.join("b.jpg"), 1500 * 1_000_000, 2);
+
+        let handle = std::sync::Arc::new(crate::services::jobs::RunHandle::new(
+            "test-run".into(),
+            "cache.cleanup".into(),
+        ));
+        handle.request_cancel();
+        enforce_image_limit(&JobContext::from_handle(state.clone(), handle), &images);
+        // An admin cancelling mid-trim leaves the cache large rather than
+        // half-deleted at some arbitrary point.
+        assert_eq!(names(&images), vec!["a.jpg", "b.jpg"]);
+    }
+
+    #[test]
+    fn the_job_runs_end_to_end() {
+        let state = test_state();
+        set_limit(&state, "80 Go");
+        images_dir(&state);
+        // Reports the HLS footprint and enforces the image budget; neither half
+        // may fail the nightly maintenance run.
+        run(&JobContext::for_test(state)).unwrap();
     }
 }
