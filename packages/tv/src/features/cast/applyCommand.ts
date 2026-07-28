@@ -27,29 +27,51 @@ export interface CastDeps {
   nav: CastRouter;
 }
 
+/** The two commands that reach the network and the navigator, lifted out of the
+ * switch so the transport verbs below stay a flat table. */
+
+/** `play`: resume the running title, or launch the requested one. */
+async function play(
+  command: Extract<CastCommand, { type: 'play' }>,
+  deps: CastDeps,
+  target: ReturnType<typeof castTarget>,
+): Promise<void> {
+  const controller = target?.controller;
+  // Already on this title → a re-cast, not a relaunch: seek instead of
+  // remounting the engine, which would black the screen for a second.
+  if (target?.item.id === command.itemId) {
+    if (command.positionMs) controller?.seekTo(command.positionMs / 1000);
+    if (controller && !controller.playing) controller.togglePlay();
+    return;
+  }
+  const item = await deps.client.item(command.itemId).catch(() => null);
+  if (!item) return;
+  requestCastSeek(item.id, command.positionMs ?? 0);
+  // reset, not push: Back out of a cast-launched player goes home, because no
+  // detail screen was ever walked through to reach it.
+  deps.nav.reset('player', { item });
+}
+
+/** `skipNext`: advance to the next episode of what is playing. */
+async function skipNext(
+  deps: CastDeps,
+  target: NonNullable<ReturnType<typeof castTarget>>,
+): Promise<void> {
+  const next = await deps.client.nextEpisode(target.item.id).catch(() => null);
+  // swap, not push: what is behind the player stays behind it.
+  if (next) deps.nav.swap('player', { item: next });
+}
+
 /** Execute one order against the running player (or the router, for `play`). */
 export async function applyCastCommand(command: CastCommand, deps: CastDeps): Promise<void> {
-  const { client, nav } = deps;
   const target = castTarget();
   const controller = target?.controller;
 
   switch (command.type) {
-    case 'play': {
-      // Already on this title → a re-cast, not a relaunch: seek instead of
-      // remounting the engine, which would black the screen for a second.
-      if (target?.item.id === command.itemId) {
-        if (command.positionMs) controller?.seekTo(command.positionMs / 1000);
-        if (controller && !controller.playing) controller.togglePlay();
-        return;
-      }
-      const item = await client.item(command.itemId).catch(() => null);
-      if (!item) return;
-      requestCastSeek(item.id, command.positionMs ?? 0);
-      // reset, not push: Back out of a cast-launched player goes home, because
-      // no detail screen was ever walked through to reach it.
-      nav.reset('player', { item });
-      return;
-    }
+    case 'play':
+      return play(command, deps, target);
+    case 'skipNext':
+      return target ? skipNext(deps, target) : undefined;
     case 'pause':
       if (controller?.playing) controller.togglePlay();
       return;
@@ -65,17 +87,10 @@ export async function applyCastCommand(command: CastCommand, deps: CastDeps): Pr
     case 'skip':
       controller?.skip(command.deltaMs / 1000);
       return;
-    case 'skipNext': {
-      if (!target) return;
-      const next = await client.nextEpisode(target.item.id).catch(() => null);
-      // swap, not push: what is behind the player stays behind it.
-      if (next) nav.swap('player', { item: next });
-      return;
-    }
     case 'stop':
       // Only leaves the PLAYER. A stale `stop` (from a phone that missed a beat)
       // must not yank a viewer out of whatever they have browsed to since.
-      if (target) nav.home();
+      if (target) deps.nav.home();
       return;
     case 'setAudio':
       controller?.setAudio(command.index);

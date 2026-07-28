@@ -86,7 +86,7 @@ export function requestCastSeek(itemId: string, positionMs: number): void {
 
 /** Take the pending seek for `itemId`, if it is still the one wanted. Single-shot. */
 function takeCastSeek(itemId: string): number | null {
-  if (!pendingSeek || pendingSeek.itemId !== itemId) return null;
+  if (pendingSeek?.itemId !== itemId) return null;
   const { positionMs } = pendingSeek;
   pendingSeek = null;
   return positionMs;

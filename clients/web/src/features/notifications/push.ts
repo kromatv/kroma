@@ -149,18 +149,25 @@ function deviceLabel(): string {
 
 /** `applicationServerKey` must be raw bytes, not the base64url string. */
 export function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
-  const padded = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = value.replaceAll('-', '+').replaceAll('_', '/');
   const binary = atob(padded.padEnd(Math.ceil(padded.length / 4) * 4, '='));
   // Allocate the backing ArrayBuffer explicitly: `applicationServerKey` takes a
   // BufferSource over a plain ArrayBuffer, and a bare `new Uint8Array(n)` is
   // typed over the possibly-shared `ArrayBufferLike`.
   const bytes = new Uint8Array(new ArrayBuffer(binary.length));
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.codePointAt(i) ?? 0;
   return bytes;
 }
 
 export function bytesToBase64Url(bytes: Uint8Array): string {
   let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  for (const b of bytes) binary += String.fromCodePoint(b);
+  const b64 = btoa(binary).replaceAll('+', '-').replaceAll('/', '_');
+  // Strip the padding in one linear pass. A `/=+$/` regex is super-linear here:
+  // unanchored at the start, it retries and backtracks the run at every
+  // position (the same reasoning as stripTrailingSlash in the Synology
+  // generator, and sw.js's copy of this function).
+  let end = b64.length;
+  while (end > 0 && b64[end - 1] === '=') end--;
+  return b64.slice(0, end);
 }
