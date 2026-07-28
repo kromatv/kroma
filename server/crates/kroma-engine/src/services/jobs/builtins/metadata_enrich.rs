@@ -55,3 +55,89 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::run;
+    use crate::services::jobs::{JobContext, RunHandle};
+    use crate::state::SharedState;
+    use crate::test_support::{seed_movie, test_state, test_state_with_tmdb, FakeTmdb};
+
+    fn empty_page() -> serde_json::Value {
+        serde_json::json!({ "page": 1, "total_pages": 1, "results": [] })
+    }
+
+    /// Every line the run wrote to its log, which is what the Tâches console
+    /// shows and the only observable this job has.
+    fn log_lines(state: &SharedState, run_id: &str) -> Vec<String> {
+        let conn = state.db.get().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT level || ': ' || message FROM job_logs WHERE run_id = ?1 ORDER BY ts")
+            .unwrap();
+        let rows = stmt.query_map([run_id], |r| r.get::<_, String>(0)).unwrap();
+        rows.map(|r| r.unwrap()).collect()
+    }
+
+    fn run_with(state: &SharedState, cancelled: bool) -> Vec<String> {
+        let handle = std::sync::Arc::new(RunHandle::new("run-1".into(), "metadata.enrich".into()));
+        if cancelled {
+            handle.request_cancel();
+        }
+        run(&JobContext::from_handle(state.clone(), handle)).unwrap();
+        log_lines(state, "run-1")
+    }
+
+    #[test]
+    fn without_a_tmdb_key_the_job_says_so_and_does_nothing_else() {
+        // The common self-hosted case: a red job on every manual run would be
+        // wrong, since there is genuinely nothing to enrich from. But it must
+        // also not go on to spend the expensive reindex.
+        let state = test_state();
+        seed_movie(&state, "itm-1");
+
+        let lines = run_with(&state, false);
+        assert_eq!(lines.len(), 1, "{lines:?}");
+        assert!(lines[0].starts_with("warn: "), "{lines:?}");
+        assert!(lines[0].contains("TMDB"), "{lines:?}");
+        assert!(!lines.iter().any(|l| l.contains("index")), "{lines:?}");
+    }
+
+    #[test]
+    fn a_finished_pass_reports_its_counts_and_rebuilds_the_index() {
+        // Freshly-resolved cast / overview / localized titles are only
+        // searchable after the reindex, so a pass that skipped it leaves search
+        // stale until the next scan.
+        let state = test_state_with_tmdb("test-key");
+        seed_movie(&state, "itm-1");
+        let _tmdb = FakeTmdb::start(|_| (200, empty_page()));
+
+        let lines = run_with(&state, false);
+        let joined = lines.join("\n");
+        assert!(joined.contains("re-enriching"), "{joined}");
+        assert!(joined.contains("without a TMDB match"), "the counts were not reported: {joined}");
+        assert!(joined.contains("search index rebuilt"), "{joined}");
+    }
+
+    #[test]
+    fn a_cancelled_pass_stops_before_the_reindex() {
+        // Rebuilding the index for a catalogue the pass only half-touched spends
+        // the expensive half of the job on a result nobody asked to complete.
+        let state = test_state_with_tmdb("test-key");
+        seed_movie(&state, "itm-1");
+        let _tmdb = FakeTmdb::start(|_| (200, empty_page()));
+
+        let lines = run_with(&state, true);
+        let joined = lines.join("\n");
+        assert!(joined.contains("cancelled after"), "{joined}");
+        assert!(!joined.contains("rebuilding search index"), "reindexed anyway: {joined}");
+    }
+
+    #[test]
+    fn an_empty_catalogue_still_reports_and_reindexes() {
+        let state = test_state_with_tmdb("test-key");
+        let _tmdb = FakeTmdb::start(|_| (200, empty_page()));
+        let joined = run_with(&state, false).join("\n");
+        assert!(joined.contains("0 shows") || joined.contains("re-enriching 0"), "{joined}");
+        assert!(joined.contains("search index rebuilt"), "{joined}");
+    }
+}
