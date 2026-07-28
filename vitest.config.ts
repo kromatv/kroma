@@ -103,6 +103,9 @@ const include = [
   // screens are `.tsx`, so only the plain-TypeScript layer is collected - the
   // device session store, the launcher links, the Siri search bridge.
   'clients/tv-native/src/**/*.test.ts',
+  // The build-identity collector. Not a client: it runs in Node at build time
+  // and is required by an Expo app.config.js, which is why it has no src/.
+  'clients/build-info/**/*.test.ts',
   // The kit site is where the workbench is COMPOSED - the tool, the design
   // system's stories, and the config that joins them - so the integration test
   // for all three lives with the config rather than in either package.
