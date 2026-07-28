@@ -379,4 +379,174 @@ mod tests {
         assert_eq!(movies.len(), 1);
         assert!(shows.is_empty());
     }
+    // ----- episodes: one arrival per SHOW, not per file ----------------------------
+
+    /// A show plus a follower, so an episode announcement has an audience.
+    fn add_show(state: &crate::state::SharedState, show_id: &str, title: &str, follower: &str) {
+        let conn = state.db.get().unwrap();
+        conn.execute_batch(&format!(
+            "INSERT INTO libraries (id,name,kind,path,added_at) \
+               VALUES ('lib-tv','Séries','shows','/tv','2020-01-01T00:00:00Z'); \
+             INSERT INTO shows (id,library,title,added_at) \
+               VALUES ('{show_id}','lib-tv','{title}','2020-01-01T00:00:00Z'); \
+             INSERT INTO my_list (user_id,item_id,added_at) VALUES ('{follower}','{show_id}',0);"
+        ))
+        .unwrap();
+    }
+
+    fn add_episode(
+        state: &crate::state::SharedState,
+        id: &str,
+        show_id: &str,
+        season: u32,
+        episode: u32,
+        added_at: &str,
+    ) {
+        let conn = state.db.get().unwrap();
+        conn.execute_batch(&format!(
+            "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,added_at) \
+             VALUES ('{id}','episode','Ep {episode}','mkv','lib-tv','{show_id}',{season},{episode},'{added_at}')"
+        ))
+        .unwrap();
+    }
+
+    /// The notification bodies a user was sent, newest first.
+    fn bodies(state: &crate::state::SharedState, user: &str) -> Vec<String> {
+        let conn = state.db.get().unwrap();
+        db::notifications::list_notifications(&conn, user, 20, false)
+            .unwrap()
+            .into_iter()
+            .map(|n| n.body_key)
+            .collect()
+    }
+
+    /// Adopt the library so the next run reports only what is genuinely new.
+    ///
+    /// Needs a title present: the watermark is the newest `added_at`, so
+    /// adopting an EMPTY library leaves it empty and the next run seeds again
+    /// (see `an_empty_library_keeps_seeding_until_it_has_something`).
+    fn adopt(state: &crate::state::SharedState) {
+        add_movie(state, "baseline", "Baseline", "2020-01-01T00:00:00Z");
+        let seeded = run(state).unwrap();
+        assert!(seeded.seeded, "the baseline should have been adopted");
+    }
+
+    #[test]
+    fn an_empty_library_keeps_seeding_until_it_has_something() {
+        // Worth stating because it decides what happens to the FIRST title ever
+        // added: the watermark is the newest `added_at`, so an empty library
+        // adopts "" and the next run is another adoption. The first film is
+        // therefore adopted silently rather than announced - which is the right
+        // end of the trade (a fresh install should not notify about its own
+        // import), but it is not obvious from the code.
+        let (state, user) = seeded();
+        assert!(run(&state).unwrap().seeded);
+        assert_eq!(state.setting_str(WATERMARK_KEY, ""), "");
+
+        add_movie(&state, "m1", "Dune", "2026-01-01T00:00:00Z");
+        let second = run(&state).unwrap();
+        assert!(second.seeded, "still adopting, not announcing");
+        assert_eq!(second.sent, 0);
+        assert_eq!(unread(&state, &user), 0);
+        assert_eq!(state.setting_str(WATERMARK_KEY, ""), "2026-01-01T00:00:00Z");
+    }
+
+    #[test]
+    fn a_single_new_episode_is_announced_by_its_number() {
+        let (state, user) = seeded();
+        add_show(&state, "shw", "Severance", &user);
+        adopt(&state);
+
+        add_episode(&state, "e1", "shw", 1, 4, "2026-02-01T00:00:00Z");
+        let summary = run(&state).unwrap();
+        assert_eq!(summary.sent, 1);
+        assert_eq!(unread(&state, &user), 1);
+        assert_eq!(bodies(&state, &user), ["notifications.media.episode.body"]);
+    }
+
+    #[test]
+    fn a_season_drop_reads_as_one_arrival_not_four() {
+        // The whole reason the batch branch exists: ten episodes landing at once
+        // is one thing that happened, and ten notifications would be a reason to
+        // turn the feature off.
+        let (state, user) = seeded();
+        add_show(&state, "shw", "Severance", &user);
+        adopt(&state);
+
+        for ep in 1..=4 {
+            add_episode(&state, &format!("e{ep}"), "shw", 1, ep, "2026-02-01T00:00:00Z");
+        }
+        let summary = run(&state).unwrap();
+        assert_eq!(summary.sent, 1, "one notification, not four");
+        assert_eq!(unread(&state, &user), 1);
+        // ...and it uses the plural body, which carries the count.
+        assert_eq!(bodies(&state, &user), ["notifications.media.episodeMany.body"]);
+    }
+
+    #[test]
+    fn each_show_is_announced_separately() {
+        // Two shows updating on the same night are two arrivals, addressed to
+        // each show's own followers.
+        let (state, ana) = seeded();
+        let bo = kroma_db::create_user(&state.db, "bo@test.dev", "Bo", "h", &[]).unwrap().id;
+        add_show(&state, "shw-a", "Severance", &ana);
+        {
+            let conn = state.db.get().unwrap();
+            conn.execute_batch(
+                "INSERT INTO shows (id,library,title,added_at) \
+                   VALUES ('shw-b','lib-tv','Andor','2020-01-01T00:00:00Z'); \
+                 INSERT INTO my_list (user_id,item_id,added_at) VALUES ('BO','shw-b',0);"
+                    .replace("BO", &bo)
+                    .as_str(),
+            )
+            .unwrap();
+        }
+        adopt(&state);
+
+        add_episode(&state, "a1", "shw-a", 1, 1, "2026-02-01T00:00:00Z");
+        add_episode(&state, "b1", "shw-b", 1, 1, "2026-02-01T00:00:00Z");
+        let summary = run(&state).unwrap();
+        assert_eq!(summary.sent, 2);
+        // Each follower hears about their own show only.
+        assert_eq!(unread(&state, &ana), 1);
+        assert_eq!(unread(&state, &bo), 1);
+    }
+
+    #[test]
+    fn an_episode_nobody_follows_notifies_nobody() {
+        // The audience is the show's followers, so a series no account has
+        // touched is silent - it is not news to anyone.
+        let (state, user) = seeded();
+        {
+            let conn = state.db.get().unwrap();
+            conn.execute_batch(
+                "INSERT INTO libraries (id,name,kind,path,added_at) \
+                   VALUES ('lib-tv','Séries','shows','/tv','2020-01-01T00:00:00Z'); \
+                 INSERT INTO shows (id,library,title,added_at) \
+                   VALUES ('shw','lib-tv','Unwatched','2020-01-01T00:00:00Z');",
+            )
+            .unwrap();
+        }
+        adopt(&state);
+
+        add_episode(&state, "e1", "shw", 1, 1, "2026-02-01T00:00:00Z");
+        let summary = run(&state).unwrap();
+        assert_eq!(summary.sent, 0);
+        assert_eq!(unread(&state, &user), 0);
+    }
+
+    #[test]
+    fn movies_and_episodes_in_one_night_are_announced_separately() {
+        // Films go to Everyone; episodes go to each show's followers. Merging
+        // them would tell the whole household about a series they do not watch.
+        let (state, user) = seeded();
+        add_show(&state, "shw", "Severance", &user);
+        adopt(&state);
+
+        add_movie(&state, "m9", "Dune", "2026-02-01T00:00:00Z");
+        add_episode(&state, "e1", "shw", 1, 1, "2026-02-01T00:00:00Z");
+        let summary = run(&state).unwrap();
+        assert_eq!(summary.sent, 2, "one for the film, one for the show");
+        assert_eq!(unread(&state, &user), 2);
+    }
 }
