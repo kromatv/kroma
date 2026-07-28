@@ -33,3 +33,7 @@ walkdir = { workspace = true }
 # subvolumes on one filesystem (e.g. Synology @appdata -> a media shared folder),
 # where a hard link fails and the kernel is too old for std::fs::copy to reflink.
 rustix = { version = "1", features = ["fs"] }
+
+[dev-dependencies]
+# `oneshot`, to drive the sidecar routes without binding a port.
+tower = { workspace = true }
