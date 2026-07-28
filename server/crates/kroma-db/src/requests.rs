@@ -1031,5 +1031,181 @@ mod tests {
         );
         assert_eq!(library_gaps_list(&conn, 2).unwrap().len(), 2);
     }
-}
+    // ----- the calendar + the per-user views --------------------------------------
 
+    fn seed_user(conn: &Connection, id: &str) {
+        conn.execute(
+            "INSERT OR IGNORE INTO users (id,email,username,password_hash,created_at) \
+             VALUES (?1, ?1 || '@t.dev', ?1, 'h', 'now')",
+            params![id],
+        )
+        .unwrap();
+    }
+
+    fn req_by(pool: &Pool, id: &str, tmdb: u64, status: RequestStatus, owner: Option<&str>) {
+        {
+            let conn = pool.get().unwrap();
+            if let Some(o) = owner {
+                seed_user(&conn, o);
+            }
+        }
+        let mut new = new_req(id, RequestKind::Movie, tmdb, None);
+        new.status = status;
+        new.requested_by = owner.map(str::to_string);
+        new.title = format!("Title {id}");
+        insert_request(pool, &new, 1_000).unwrap();
+    }
+
+    fn wanted_row(id: &str, request_id: &str, air: Option<&str>, status: &str) -> WantedRow {
+        WantedRow {
+            id: id.into(),
+            request_id: request_id.into(),
+            kind: "movie".into(),
+            tmdb_id: 1,
+            imdb_id: None,
+            title: "T".into(),
+            year: Some(2020),
+            season: None,
+            episode: None,
+            air_date: air.map(str::to_string),
+            status: status.into(),
+            last_search_at: None,
+        }
+    }
+
+    #[test]
+    fn a_users_own_requests_are_the_only_ones_they_see() {
+        // The requests page is per-account: seeing someone else's asks would
+        // leak what the rest of the household is watching for.
+        let pool = pool();
+        req_by(&pool, "r-ana", 1, RequestStatus::Pending, Some("ana"));
+        req_by(&pool, "r-bo", 2, RequestStatus::Pending, Some("bo"));
+        req_by(&pool, "r-old", 3, RequestStatus::Pending, None);
+
+        let conn = pool.get().unwrap();
+        let ana = list_requests(&conn, Some("ana")).unwrap();
+        assert_eq!(ana.len(), 1);
+        assert_eq!(ana[0].id, "r-ana");
+
+        // The manager view spans everything, including the pre-accounts row.
+        assert_eq!(list_requests(&conn, None).unwrap().len(), 3);
+    }
+
+    #[test]
+    fn the_latest_request_for_a_title_is_the_newest_one() {
+        // Discover flags a title from its most recent request, so an old denial
+        // must not hide a fresh pending ask.
+        let pool = pool();
+        let mut denied = new_req("r-old", RequestKind::Movie, 603, None);
+        denied.status = RequestStatus::Denied;
+        insert_request(&pool, &denied, 1_000).unwrap();
+        let mut fresh = new_req("r-new", RequestKind::Movie, 603, None);
+        fresh.status = RequestStatus::Pending;
+        insert_request(&pool, &fresh, 2_000).unwrap();
+
+        let conn = pool.get().unwrap();
+        let found = latest_request_for(&conn, RequestKind::Movie, 603).unwrap().unwrap();
+        assert_eq!(found.0, "r-new");
+        assert_eq!(found.1, RequestStatus::Pending);
+
+        // A title nobody asked for has none, and the kind is part of the key.
+        assert!(latest_request_for(&conn, RequestKind::Movie, 999).unwrap().is_none());
+        assert!(latest_request_for(&conn, RequestKind::Show, 603).unwrap().is_none());
+    }
+
+    #[test]
+    fn the_calendar_shows_only_what_is_still_coming() {
+        // Four filters, and each one is a different way to put a wrong row in
+        // front of the user.
+        let pool = pool();
+        req_by(&pool, "r-1", 1, RequestStatus::Approved, Some("ana"));
+
+        insert_wanted(
+            &pool,
+            &[
+                wanted_row("w-future", "r-1", Some("2030-01-01"), "wanted"),
+                // Already out: it belongs in "missing", not "coming soon".
+                wanted_row("w-past", "r-1", Some("2020-01-01"), "wanted"),
+                // No date at all: nothing to put on a calendar.
+                wanted_row("w-undated", "r-1", None, "wanted"),
+                // Already here: it arrived, so it is not coming.
+                wanted_row("w-done", "r-1", Some("2030-02-01"), "available"),
+                // In flight, but still dated in the future - it stays.
+                wanted_row("w-grabbed", "r-1", Some("2030-03-01"), "grabbed"),
+            ],
+            1_000,
+        )
+        .unwrap();
+
+        let conn = pool.get().unwrap();
+        let out = upcoming_calendar(&conn, "2026-01-01", None, 50).unwrap();
+        let dates: Vec<&str> =
+            out.iter().filter_map(|e| e.air_date.as_deref()).collect();
+        assert_eq!(dates, ["2030-01-01", "2030-03-01"], "{out:?}");
+        // Soonest first, so the page reads as a schedule.
+        assert!(dates.windows(2).all(|w| w[0] <= w[1]));
+    }
+
+    #[test]
+    fn a_denied_request_drops_off_the_calendar_entirely() {
+        // Its episodes are still dated in the future, but nobody is going to
+        // acquire them - showing them promises something that will not arrive.
+        let pool = pool();
+        req_by(&pool, "r-denied", 1, RequestStatus::Denied, Some("ana"));
+        req_by(&pool, "r-live", 2, RequestStatus::Approved, Some("ana"));
+        insert_wanted(
+            &pool,
+            &[
+                wanted_row("w-dead", "r-denied", Some("2030-01-01"), "wanted"),
+                wanted_row("w-live", "r-live", Some("2030-01-02"), "wanted"),
+            ],
+            1_000,
+        )
+        .unwrap();
+
+        let conn = pool.get().unwrap();
+        let out = upcoming_calendar(&conn, "2026-01-01", None, 50).unwrap();
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].request_id.as_deref(), Some("r-live"));
+    }
+
+    #[test]
+    fn the_calendar_can_be_scoped_to_one_account_or_span_them_all() {
+        let pool = pool();
+        req_by(&pool, "r-ana", 1, RequestStatus::Approved, Some("ana"));
+        req_by(&pool, "r-bo", 2, RequestStatus::Approved, Some("bo"));
+        insert_wanted(
+            &pool,
+            &[
+                wanted_row("w-a", "r-ana", Some("2030-01-01"), "wanted"),
+                wanted_row("w-b", "r-bo", Some("2030-01-02"), "wanted"),
+            ],
+            1_000,
+        )
+        .unwrap();
+
+        let conn = pool.get().unwrap();
+        assert_eq!(upcoming_calendar(&conn, "2026-01-01", Some("ana"), 50).unwrap().len(), 1);
+        // `None` is the manager view, not "no rows".
+        assert_eq!(upcoming_calendar(&conn, "2026-01-01", None, 50).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn the_calendar_honours_its_limit() {
+        // The page is bounded; without this a household with a long watchlist
+        // would render hundreds of rows.
+        let pool = pool();
+        req_by(&pool, "r-1", 1, RequestStatus::Approved, Some("ana"));
+        let rows: Vec<WantedRow> = (1..=5)
+            .map(|n| wanted_row(&format!("w-{n}"), "r-1", Some(&format!("2030-01-0{n}")), "wanted"))
+            .collect();
+        insert_wanted(&pool, &rows, 1_000).unwrap();
+
+        let conn = pool.get().unwrap();
+        let out = upcoming_calendar(&conn, "2026-01-01", None, 2).unwrap();
+        assert_eq!(out.len(), 2);
+        // The limit keeps the SOONEST, not an arbitrary two.
+        assert_eq!(out[0].air_date.as_deref(), Some("2030-01-01"));
+        assert_eq!(out[1].air_date.as_deref(), Some("2030-01-02"));
+    }
+}
