@@ -199,8 +199,14 @@ mod tests {
     }
 
     fn seed_probed_season_with(state: &SharedState, show: &str, ep: &str, on_disk: bool) {
+        // Unique per CALL, not per episode id: several tests use "ep-1", they run
+        // in parallel, and a shared path means one test's file creation races
+        // another's removal.
+        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         seed_show_episode(state, show, ep);
-        let path = std::env::temp_dir().join(format!("kroma-marker-{}-{ep}.mkv", std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("kroma-marker-{}-{n}-{ep}.mkv", std::process::id()));
         if on_disk {
             std::fs::write(&path, b"not really a video").unwrap();
         } else {
