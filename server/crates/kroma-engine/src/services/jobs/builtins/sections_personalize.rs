@@ -95,7 +95,19 @@ fn short_id(id: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::short_id;
+    use super::{run, short_id};
+    use crate::services::jobs::JobContext;
+    use crate::test_support::test_state;
+
+    #[test]
+    fn skips_the_whole_pass_when_no_llm_is_configured() {
+        // The common case for a self-hosted install. Personalization is entirely
+        // LLM-driven, so there is nothing to do - and it must SKIP rather than
+        // fail, or the nightly log carries a red job forever on a server that is
+        // working exactly as configured.
+        let state = test_state();
+        run(&JobContext::for_test(state)).unwrap();
+    }
 
     #[test]
     fn short_id_truncates_to_eight_bytes() {
