@@ -7,7 +7,7 @@
 //
 //   VITE_KROMA_SERVER=http://your-server:4040 bun run build:webos
 //   (cd clients/webos && bunx vite preview --port 4173 --strictPort) &
-//   bun clients/tv-build/store-shots.mjs 4173 clients/webos/store/shots
+//   bun clients/tv-build/store-shots.ts 4173 clients/webos/store/shots
 //
 // The TV router is a MEMORY history ("a TV has no address bar" - see
 // packages/tv/src/app/router.tsx), so a screen is reached by pressing the keys a
@@ -22,7 +22,7 @@ import { chromium } from 'playwright';
 
 const REPO = new URL('../..', import.meta.url).pathname;
 const port = process.argv[2];
-if (!port) throw new Error('usage: store-shots.mjs <preview-port> <out-dir>');
+if (!port) throw new Error('usage: store-shots.ts <preview-port> <out-dir>');
 
 /** The output directory, proven to be inside the repo before anything is
  * created in it.
@@ -43,7 +43,7 @@ function outDirIn(repo, arg, usage) {
   return dir;
 }
 
-const OUT_DIR = outDirIn(REPO, process.argv[3], 'usage: store-shots.mjs <preview-port> <out-dir>');
+const OUT_DIR = outDirIn(REPO, process.argv[3], 'usage: store-shots.ts <preview-port> <out-dir>');
 mkdirSync(OUT_DIR, { recursive: true });
 
 /** Resolve a file INTO the output directory, refusing anything that climbs out.

@@ -6,7 +6,7 @@
   "description": "KROMA web client TanStack Start SSR shell.",
   "scripts": {
     "dev": "vite dev --port 3000",
-    "build": "vite build && node scripts/precompress.mjs dist/client",
+    "build": "vite build && bun scripts/precompress.ts dist/client",
     "preview": "vite preview --port 3000",
     "generate-routes": "tsr generate",
     "typecheck": "tsr generate && tsc --noEmit"

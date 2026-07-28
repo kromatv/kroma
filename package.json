@@ -17,7 +17,7 @@
     "tokens:gen": "bun run --filter '@kroma/ui' gen:css",
     "tokens:check": "bun run tokens:gen && git diff --exit-code -- packages/ui/src/styles/tokens",
     "shots": "bun run --filter '@kroma/ui' shots",
-    "store:art": "bun clients/tv-build/store-art.mjs .store-art && python3 clients/tv-build/store-art.py .store-art",
+    "store:art": "bun clients/tv-build/store-art.ts .store-art && python3 clients/tv-build/store-art.py .store-art",
     "start": "bun run tizen:prepare && bun run dev",
     "dev": "concurrently -k -n server,web,tv -c yellow,cyan,magenta \"bun run server:watch\" \"bun run dev:web\" \"VITE_KROMA_SERVER=http://localhost:4040 bun run dev:tizen\"",
     "dev:webonly": "concurrently -k -n server,web -c yellow,cyan \"bun run server:watch\" \"bun run dev:web\"",

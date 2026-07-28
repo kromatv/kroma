@@ -35,7 +35,7 @@ function outDirIn(repo, arg, usage) {
   return dir;
 }
 
-const OUT_DIR = outDirIn(REPO, process.argv[2], 'usage: store-art.mjs <out-dir>');
+const OUT_DIR = outDirIn(REPO, process.argv[2], 'usage: store-art.ts <out-dir>');
 mkdirSync(OUT_DIR, { recursive: true });
 
 /** Resolve a file INTO the output directory, refusing anything that climbs out.

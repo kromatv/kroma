@@ -117,7 +117,7 @@ each, free. It needs the English title and description filled in first.
 
 ## 6. Screenshots
 
-`bun clients/tv-build/store-shots.mjs` drives the built app with arrow keys and
+`bun clients/tv-build/store-shots.ts` drives the built app with arrow keys and
 captures 1920×1080 frames. It is verified working against the signed-out screens;
 the screens worth showing a buyer (home, a detail page, the player) need a server
 with a catalogue, so the key sequence must be tuned against that server:
@@ -125,7 +125,7 @@ with a catalogue, so the key sequence must be tuned against that server:
 ```bash
 VITE_KROMA_SERVER=http://your-server:4040 bun run build:webos
 (cd clients/webos && bunx vite preview --port 4173 --strictPort) &
-bun clients/tv-build/store-shots.mjs 4173 clients/webos/store/shots
+bun clients/tv-build/store-shots.ts 4173 clients/webos/store/shots
 ```
 
 The first screenshot is what webOS 6.0+ shows on the Apps main screen, so lead

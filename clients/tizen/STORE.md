@@ -127,7 +127,7 @@ Screenshots are captured from the real build:
 ```bash
 VITE_KROMA_SERVER=http://your-server:4040 bun run build:tizen
 (cd clients/tizen && bunx vite preview --port 4173 --strictPort) &
-bun clients/tv-build/store-shots.mjs 4173 clients/tizen/store/shots
+bun clients/tv-build/store-shots.ts 4173 clients/tizen/store/shots
 ```
 
 The tool is verified driving the app's signed-out screens; the screens worth

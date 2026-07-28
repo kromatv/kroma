@@ -9,7 +9,7 @@
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { collectBuildInfo } from '../build-info/index.js';
+import { collectBuildInfo } from '../build-info';
 import { propDocs } from '../tv-build/props-docs';
 import {
   KROMA_SOURCE_PACKAGES,

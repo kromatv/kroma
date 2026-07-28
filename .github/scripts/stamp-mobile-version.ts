@@ -13,13 +13,13 @@
 // what the Android TV job already does. It stays inside Android's 2100000000
 // ceiling until the year 5900.
 //
-// Usage: node .github/scripts/stamp-mobile-version.mjs <x.y.z>
+// Usage: node .github/scripts/stamp-mobile-version.ts <x.y.z>
 
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const version = process.argv[2];
 if (!/^\d+\.\d+\.\d+$/.test(version ?? '')) {
-  console.error(`usage: stamp-mobile-version.mjs <x.y.z> (got ${JSON.stringify(process.argv[2])})`);
+  console.error(`usage: stamp-mobile-version.ts <x.y.z> (got ${JSON.stringify(process.argv[2])})`);
   process.exit(1);
 }
 

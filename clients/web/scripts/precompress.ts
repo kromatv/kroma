@@ -22,7 +22,7 @@ const gzip = promisify(zlib.gzip);
 const ROOT = path.resolve(process.argv[2] ?? 'dist/client');
 const EXTENSIONS = new Set([
   '.js',
-  '.mjs',
+  '.ts',
   '.css',
   '.html',
   '.svg',

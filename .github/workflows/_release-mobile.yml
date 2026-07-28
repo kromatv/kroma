@@ -83,7 +83,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Stamp version + build number into app.json
-        run: node .github/scripts/stamp-mobile-version.mjs "${{ inputs.triplet }}"
+        run: bun .github/scripts/stamp-mobile-version.ts "${{ inputs.triplet }}"
 
       - name: Prebuild the Android project
         working-directory: clients/mobile
@@ -264,7 +264,7 @@ jobs:
       # every minute and guarantee a miss forever.
       - name: Stamp version + build number into app.json
         if: steps.signing.outputs.ready == 'true'
-        run: node .github/scripts/stamp-mobile-version.mjs "${{ inputs.triplet }}"
+        run: bun .github/scripts/stamp-mobile-version.ts "${{ inputs.triplet }}"
 
       - name: Prebuild the iOS project
         if: steps.signing.outputs.ready == 'true' && steps.ios-cache.outputs.cache-hit != 'true'
