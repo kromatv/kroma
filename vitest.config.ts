@@ -77,6 +77,12 @@ const environmentOptions = { jsdom: { url: 'http://localhost/' } };
 // needs one opts in with `// @vitest-environment jsdom`.
 const environment = 'node';
 
+// Unmount what a test rendered, after every test. @testing-library installs this
+// itself only when the runner exposes globals, which this project does not - so
+// without the file it is never installed and nothing says so. See the file for
+// what that leaks.
+const setupFiles = [dir('./vitest.setup.ts')];
+
 const include = [
   'packages/*/src/**/*.test.ts',
   'packages/*/src/**/*.test.tsx',
@@ -128,6 +134,7 @@ export default defineConfig({
           name: 'web',
           environment,
           environmentOptions,
+          setupFiles,
           include,
           // Overriding `exclude` REPLACES the defaults, which is how node_modules
           // gets scanned; keep them and add the other project's files.
@@ -150,6 +157,7 @@ export default defineConfig({
           name: 'native',
           environment,
           environmentOptions,
+          setupFiles,
           include: nativeInclude,
           server,
         },
