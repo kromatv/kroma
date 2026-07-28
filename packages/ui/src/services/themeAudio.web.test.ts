@@ -33,27 +33,24 @@ let created: FakeAudio[] = [];
  *  A class returning from its constructor does the same thing while reading as
  *  a mistake, and an arrow cannot be `new`ed at all. */
 function stubAudio(playImpl: () => unknown = () => Promise.resolve()) {
-  vi.stubGlobal(
-    'Audio',
-    function AudioStub(src: string) {
-      const a: FakeAudio = {
-        src,
-        loop: false,
-        preload: '',
-        volume: 1,
-        paused: true,
-        play: vi.fn(() => {
-          a.paused = false;
-          return playImpl();
-        }),
-        pause: vi.fn(() => {
-          a.paused = true;
-        }),
-      };
-      created.push(a);
-      return a;
-    },
-  );
+  vi.stubGlobal('Audio', function AudioStub(src: string) {
+    const a: FakeAudio = {
+      src,
+      loop: false,
+      preload: '',
+      volume: 1,
+      paused: true,
+      play: vi.fn(() => {
+        a.paused = false;
+        return playImpl();
+      }),
+      pause: vi.fn(() => {
+        a.paused = true;
+      }),
+    };
+    created.push(a);
+    return a;
+  });
 }
 
 function memoryStorage(initial: Record<string, string> = {}) {
