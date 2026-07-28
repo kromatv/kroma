@@ -265,3 +265,162 @@ mod tests {
         assert_eq!(compiled_manifests().len(), registry().manifests.manifests().len());
     }
 }
+
+#[cfg(test)]
+mod gate_tests {
+    //! The enabled-gate around a module's admin routes.
+    //!
+    //! The compile-time roster is empty in this build, so `mount_admin` has no
+    //! module to wrap - but the gate itself is what enforces "a disabled module's
+    //! admin API is not reachable", and it can be driven directly.
+
+    use axum::body::Body;
+    use axum::http::{Request as HttpRequest, StatusCode};
+    use axum::routing::get;
+    use tower::ServiceExt as _;
+
+    use super::*;
+
+    fn test_state() -> SharedState {
+        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("kroma-kernel-{}-{n}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let db = kroma_db::init(&dir.join("kroma.db")).unwrap();
+        let settings = kroma_engine::services::settings::Settings::load(&db);
+        let config = kroma_config::Config {
+            host: "127.0.0.1".into(),
+            port: 0,
+            data_dir: dir,
+            tmdb_language: "en-US".into(),
+            ..Default::default()
+        };
+        let embedder: Arc<dyn kroma_engine::ports::Embedder> =
+            Arc::new(kroma_engine::ports::NoopEmbedder);
+        kroma_engine::state::AppState::new(
+            config,
+            false,
+            db,
+            settings,
+            embedder,
+            std::collections::HashMap::new(),
+            &[],
+        )
+    }
+
+    /// A router with one route, wrapped by the gate for module `id`.
+    fn gated(state: SharedState, id: &'static str) -> Router {
+        module_scope(state.clone(), id, Router::new().route("/probe", get(|| async { "ok" })))
+            .with_state(state)
+    }
+
+    async fn status(router: Router, path: &str) -> StatusCode {
+        router
+            .oneshot(HttpRequest::builder().uri(path).body(Body::empty()).unwrap())
+            .await
+            .unwrap()
+            .status()
+    }
+
+    #[tokio::test]
+    async fn a_modules_admin_routes_answer_while_it_is_enabled() {
+        // Default-enabled: a module nobody toggled is on.
+        let state = test_state();
+        assert_eq!(status(gated(state, "tv.kroma.indexer"), "/probe").await, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn a_disabled_modules_admin_routes_are_not_reachable() {
+        // The whole point of the gate: turning a module off in the admin console
+        // has to take its API away too, not just hide the UI that calls it.
+        let state = test_state();
+        kroma_engine::modules::set_module_enabled(
+            &state.settings,
+            &state.db,
+            "tv.kroma.indexer",
+            false,
+        );
+        assert_eq!(status(gated(state, "tv.kroma.indexer"), "/probe").await, StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn the_gate_reads_the_live_setting_rather_than_a_boot_snapshot() {
+        // The router is built once at boot; toggling a module must take effect
+        // without a restart, which is why the middleware reads settings per
+        // request instead of capturing a bool.
+        let state = test_state();
+        let router = gated(state.clone(), "tv.kroma.vpn");
+        assert_eq!(status(router.clone(), "/probe").await, StatusCode::OK);
+
+        kroma_engine::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.vpn", false);
+        assert_eq!(status(router.clone(), "/probe").await, StatusCode::NOT_FOUND);
+
+        kroma_engine::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.vpn", true);
+        assert_eq!(status(router, "/probe").await, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn an_unrelated_path_404s_whether_the_module_is_on_or_off() {
+        // A path this module does not serve is a plain 404 either way - the gate
+        // must not turn it into a 500 or a hang.
+        //
+        // Note this does NOT pin `route_layer` over `layer`: with the module
+        // disabled both answer 404, so the status cannot tell them apart. The
+        // distinction is that `route_layer` skips the middleware entirely for
+        // unmatched paths, and this middleware has no side effect to observe.
+        let state = test_state();
+        assert_eq!(
+            status(gated(state.clone(), "tv.kroma.indexer"), "/not-a-route").await,
+            StatusCode::NOT_FOUND
+        );
+
+        kroma_engine::modules::set_module_enabled(
+            &state.settings,
+            &state.db,
+            "tv.kroma.indexer",
+            false,
+        );
+        assert_eq!(
+            status(gated(state, "tv.kroma.indexer"), "/not-a-route").await,
+            StatusCode::NOT_FOUND
+        );
+    }
+
+    #[tokio::test]
+    async fn one_modules_gate_does_not_close_anothers_routes() {
+        let state = test_state();
+        kroma_engine::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.vpn", false);
+
+        let merged = Router::new()
+            .merge(module_scope(
+                state.clone(),
+                "tv.kroma.vpn",
+                Router::new().route("/vpn", get(|| async { "vpn" })),
+            ))
+            .merge(module_scope(
+                state.clone(),
+                "tv.kroma.indexer",
+                Router::new().route("/indexer", get(|| async { "indexer" })),
+            ))
+            .with_state(state);
+
+        assert_eq!(status(merged.clone(), "/vpn").await, StatusCode::NOT_FOUND);
+        assert_eq!(status(merged, "/indexer").await, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn a_zero_module_build_mounts_and_migrates_nothing() {
+        // Every first-party module ships as an installable .kmod, so the compiled
+        // roster is empty. These have to be empty rather than panicking.
+        let state = test_state();
+        assert!(module_migrations().is_empty());
+        assert!(compiled_manifests().is_empty());
+        assert!(manifests(&state).is_empty(), "no supervisor, so nothing installed either");
+        assert!(installed_ids(&state).is_empty());
+        assert!(icon(&state, "tv.kroma.indexer").is_none());
+        assert!(find_server("tv.kroma.indexer").is_none());
+        // ...and bringing the (empty) set up is a no-op that completes.
+        apply_enabled_states(&state).await;
+    }
+}

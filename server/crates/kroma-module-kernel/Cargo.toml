@@ -24,3 +24,13 @@ kroma-module-supervisor = { workspace = true }
 axum = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
+
+[dev-dependencies]
+# The enabled-gate test drives a real router against a real settings store, so
+# it builds an AppState directly from the two leaf crates the engine aliases
+# privately.
+kroma-config = { workspace = true }
+kroma-db = { workspace = true }
+tokio = { workspace = true }
+# `oneshot`, to run one request through a Router without binding a port.
+tower = { workspace = true }

@@ -3032,12 +3032,16 @@ name = "kroma-module-kernel"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "kroma-config",
+ "kroma-db",
  "kroma-engine",
  "kroma-module-host",
  "kroma-module-manifest",
  "kroma-module-supervisor",
  "kroma-modules-generated",
  "serde_json",
+ "tokio",
+ "tower",
  "tracing",
 ]
 
