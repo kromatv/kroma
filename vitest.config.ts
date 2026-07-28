@@ -77,10 +77,11 @@ const include = [
   // runs here the same way; without this line its tests are collected by nothing
   // and its files can never be covered.
   'clients/tv-web/src/**/*.test.ts',
-  // The phone client's pure logic (paths, manifests, the orphan sweep). Its
-  // React Native screens are not testable here, but the lib/ layer is plain
-  // TypeScript over a mocked expo-file-system.
-  'clients/mobile/src/lib/**/*.test.ts',
+  // The phone client's pure logic - device storage and the session, the player's
+  // capability model, the sign-in flow. Its React Native SCREENS are not
+  // testable here, and they do not need excluding by path: a screen's test would
+  // be a `.tsx`, and only `.ts` is collected from this client.
+  'clients/mobile/src/**/*.test.ts',
   // The kit site is where the workbench is COMPOSED - the tool, the design
   // system's stories, and the config that joins them - so the integration test
   // for all three lives with the config rather than in either package.
