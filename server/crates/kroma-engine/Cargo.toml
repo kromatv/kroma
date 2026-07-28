@@ -41,3 +41,8 @@ notify = { workspace = true }
 sysinfo = { workspace = true }
 tantivy = { workspace = true }
 rusty-chromaprint = { workspace = true }
+
+[dev-dependencies]
+# The shared HostCtx doubles: `testing::Recording` taps a real app host's bus,
+# `testing::StubHost` stands in where there is no app at all.
+kroma-module-host = { workspace = true, features = ["testing"] }

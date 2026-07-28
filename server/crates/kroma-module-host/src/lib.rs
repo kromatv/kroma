@@ -17,6 +17,13 @@
 /// The shared-host-token guard used by every hop of the module IPC.
 pub mod host_token;
 
+/// Shared `HostCtx` test doubles, so a seam with ~25 methods is stubbed once
+/// rather than once per crate that tests against it. Behind the `testing`
+/// feature: dependents enable it as a dev-dependency, and no release build
+/// compiles it.
+#[cfg(any(test, feature = "testing"))]
+pub mod testing;
+
 use std::any::{Any, TypeId};
 use std::path::Path;
 use std::sync::Arc;
@@ -453,132 +460,8 @@ mod tests {
         assert_eq!((*back).hi(), "hi");
     }
 
-    // ----- test double: a HostCtx that only serves the service registry ----------
-
-    struct MockHost {
-        svc: Option<(TypeId, Arc<dyn Any + Send + Sync>)>,
-        /// Every event that reached `publish`. The defaulted `publish_to` and
-        /// `notify` are deliberately NOT overridden here, so this doubles as the
-        /// host those defaults are tested against.
-        published: std::sync::Mutex<Vec<String>>,
-    }
-
-    impl MockHost {
-        fn new() -> Self {
-            Self { svc: None, published: std::sync::Mutex::new(Vec::new()) }
-        }
-        fn with_service(svc: (TypeId, Arc<dyn Any + Send + Sync>)) -> Self {
-            Self { svc: Some(svc), published: std::sync::Mutex::new(Vec::new()) }
-        }
-        fn broadcasts(&self) -> Vec<String> {
-            self.published.lock().unwrap().clone()
-        }
-    }
-    impl HostCtx for MockHost {
-        fn db(&self) -> &Pool {
-            unimplemented!("db is not exercised by these tests")
-        }
-        fn data_dir(&self) -> &Path {
-            Path::new("/tmp")
-        }
-        fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
-            Ok(())
-        }
-        fn require_any_admin(&self, _user: &User) -> Result<(), Response> {
-            Ok(())
-        }
-        fn lerr(&self, _user: &User, _status: StatusCode, _key: &str) -> Response {
-            unimplemented!()
-        }
-        fn setting_str(&self, _key: &str, default: &str) -> String {
-            default.to_string()
-        }
-        fn setting_bool(&self, _key: &str, default: bool) -> bool {
-            default
-        }
-        fn setting_i64(&self, _key: &str, default: i64) -> i64 {
-            default
-        }
-        fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
-        fn publish(&self, event: Event) {
-            self.published.lock().unwrap().push(event.topic);
-        }
-        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
-        fn module_enabled(&self, _id: &str) -> bool {
-            true
-        }
-        fn library_folders(&self) -> Vec<LibraryFolders> {
-            Vec::new()
-        }
-        fn tmdb_api_key(&self) -> Option<String> {
-            None
-        }
-        fn metadata_language(&self) -> String {
-            "en".into()
-        }
-        fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
-            self.svc.as_ref().filter(|(t, _)| *t == type_id).map(|(_, v)| v.clone())
-        }
-    }
-
-    /// A host that records the two seam methods with an inert default, so the
-    /// `Arc` blanket impl can be checked for actually forwarding them.
-    #[derive(Default)]
-    struct RecordingHost {
-        addressed: std::sync::Mutex<Vec<String>>,
-        notified: std::sync::Mutex<Vec<String>>,
-    }
-    impl HostCtx for RecordingHost {
-        fn db(&self) -> &Pool {
-            unimplemented!()
-        }
-        fn data_dir(&self) -> &Path {
-            Path::new("/tmp")
-        }
-        fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
-            Ok(())
-        }
-        fn require_any_admin(&self, _user: &User) -> Result<(), Response> {
-            Ok(())
-        }
-        fn lerr(&self, _user: &User, _status: StatusCode, _key: &str) -> Response {
-            unimplemented!()
-        }
-        fn setting_str(&self, _key: &str, default: &str) -> String {
-            default.to_string()
-        }
-        fn setting_bool(&self, _key: &str, default: bool) -> bool {
-            default
-        }
-        fn setting_i64(&self, _key: &str, default: i64) -> i64 {
-            default
-        }
-        fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
-        fn publish(&self, _event: Event) {}
-        fn publish_to(&self, user_id: &str, _event: Event) {
-            self.addressed.lock().unwrap().push(user_id.to_string());
-        }
-        fn notify(&self, _audience: &Audience, spec: &NotificationSpec) -> usize {
-            self.notified.lock().unwrap().push(spec.event.as_str().to_string());
-            1
-        }
-        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
-        fn module_enabled(&self, _id: &str) -> bool {
-            true
-        }
-        fn library_folders(&self) -> Vec<LibraryFolders> {
-            Vec::new()
-        }
-        fn tmdb_api_key(&self) -> Option<String> {
-            None
-        }
-        fn metadata_language(&self) -> String {
-            "en".into()
-        }
-        fn get_service(&self, _type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
-            None
-        }
-    }
+    // The HostCtx doubles live in `crate::testing`, shared with every other
+    // crate that tests against this seam.
 
     /// Regression guard. `publish_to` and `notify` have inert defaults (drop /
     /// no-op), so leaving them out of the `Arc` blanket impl COMPILES FINE and
@@ -587,7 +470,7 @@ mod tests {
     /// forwarding is real; any future defaulted method needs the same treatment.
     #[test]
     fn the_arc_blanket_impl_forwards_the_defaulted_methods() {
-        let host = Arc::new(RecordingHost::default());
+        let host = Arc::new(testing::StubHost::new());
         let via_arc: &dyn HostCtx = &host;
 
         via_arc.publish_to("ana", Event::new("notification.created", serde_json::json!({})));
@@ -598,8 +481,11 @@ mod tests {
         );
         assert_eq!(via_arc.notify(&Audience::user("ana"), &spec), 1);
 
-        assert_eq!(host.addressed.lock().unwrap().as_slice(), ["ana"]);
-        assert_eq!(host.notified.lock().unwrap().as_slice(), ["request.approved"]);
+        assert_eq!(host.published(), [(Some("ana".to_string()), "notification.created".to_string())]);
+        assert_eq!(
+            host.notifications().iter().map(|(_, s)| s.event.as_str()).collect::<Vec<_>>(),
+            ["request.approved"]
+        );
     }
 
     #[test]
@@ -614,22 +500,19 @@ mod tests {
             }
         }
         let port: Arc<dyn Greeter> = Arc::new(G);
-        let host = MockHost::with_service(port_service(port));
+        let host = testing::StubHost::new().with_service_raw(port_service(port));
         let resolved = resolve_port::<dyn Greeter>(&host).expect("port resolves");
         assert_eq!(resolved.hi(), "hi");
 
         // Nothing registered -> None.
-        let empty = MockHost::new();
+        let empty = testing::StubHost::new();
         assert!(resolve_port::<dyn Greeter>(&empty).is_none());
     }
 
     #[test]
     fn service_resolves_a_concrete_type() {
         struct Manager(u32);
-        let host = MockHost::with_service((
-            TypeId::of::<Manager>(),
-            Arc::new(Manager(42)) as Arc<dyn Any + Send + Sync>,
-        ));
+        let host = testing::StubHost::new().with_service(Arc::new(Manager(42)));
         let got = service::<Manager>(&host).expect("service resolves");
         assert_eq!(got.0, 42);
 
@@ -713,7 +596,7 @@ mod tests {
         // The security-relevant default: `publish_to` carries personal content
         // ("your request was denied" names its recipient). A host that cannot
         // address its bus must DROP it, never fall back to publish.
-        let host = MockHost::new();
+        let host = testing::DefaultsProbe::new();
         host.publish_to("user-1", Event::new("notification.created", json!({ "id": "n1" })));
         assert!(
             host.broadcasts().is_empty(),
@@ -730,8 +613,8 @@ mod tests {
             "notifications.request.approved.title",
             "notifications.request.approved.body",
         );
-        assert_eq!(MockHost::new().notify(&Audience::user("u1"), &spec), 0);
-        assert_eq!(MockHost::new().notify(&Audience::Everyone, &spec), 0);
+        assert_eq!(testing::DefaultsProbe::new().notify(&Audience::user("u1"), &spec), 0);
+        assert_eq!(testing::DefaultsProbe::new().notify(&Audience::Everyone, &spec), 0);
     }
 
     #[test]
@@ -741,20 +624,20 @@ mod tests {
         // non-empty would run SQL or mount routes nobody asked for.
         struct Bare;
         #[async_trait]
-        impl ServerModule<Arc<MockHost>> for Bare {
+        impl ServerModule<Arc<testing::StubHost>> for Bare {
             fn id(&self) -> &'static str {
                 "tv.kroma.bare"
             }
         }
         assert_eq!(Bare.id(), "tv.kroma.bare");
         assert_eq!(Bare.migrations(), "");
-        assert!(Bare.admin_routes(&Arc::new(MockHost::new())).is_none());
+        assert!(Bare.admin_routes(&Arc::new(testing::StubHost::new())).is_none());
         assert!(Bare.jobs().is_empty());
 
         // ...and its lifecycle hooks are no-ops that complete rather than panic.
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         rt.block_on(async {
-            let host: Arc<dyn HostCtx> = Arc::new(MockHost::new());
+            let host: Arc<dyn HostCtx> = Arc::new(testing::StubHost::new());
             Bare.on_enable(host.clone()).await;
             Bare.on_disable(host).await;
         });

@@ -35,5 +35,8 @@ walkdir = { workspace = true }
 rustix = { version = "1", features = ["fs"] }
 
 [dev-dependencies]
+# The shared HostCtx doubles (`host::testing::StubHost`), reached through the
+# SDK's re-export. Enabling the feature here is what compiles them.
+kroma-module-host = { workspace = true, features = ["testing"] }
 # `oneshot`, to drive the sidecar routes without binding a port.
 tower = { workspace = true }

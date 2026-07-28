@@ -154,90 +154,18 @@ pub fn publish_unread<S: HostCtx>(state: &S, user_id: &str, unread: u32) {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-    use std::sync::Mutex;
-
     use kroma_domain::{NotificationCategory, NotificationEvent, Permission};
 
     use super::*;
     use crate::test_support;
 
-    /// A host that records what was published and to whom.
-    struct RecordingHost {
-        state: crate::state::SharedState,
-        published: Mutex<Vec<(Option<String>, String)>>,
-    }
+    /// A real app host with its bus tapped: the shared decorator forwards every
+    /// method to the app state and captures what was published, which is the
+    /// only thing these tests assert on.
+    type RecordingHost = kroma_module_host::testing::Recording<crate::state::SharedState>;
 
-    impl RecordingHost {
-        fn new() -> Self {
-            Self {
-                state: test_support::test_state(),
-                published: Mutex::new(Vec::new()),
-            }
-        }
-        fn addressed(&self) -> Vec<(Option<String>, String)> {
-            self.published.lock().unwrap().clone()
-        }
-    }
-
-    impl HostCtx for RecordingHost {
-        fn db(&self) -> &kroma_db::Pool {
-            &self.state.db
-        }
-        fn data_dir(&self) -> &std::path::Path {
-            self.state.data_dir()
-        }
-        fn require(&self, user: &User, perm: Permission) -> Result<(), axum::response::Response> {
-            self.state.require(user, perm)
-        }
-        fn require_any_admin(&self, user: &User) -> Result<(), axum::response::Response> {
-            self.state.require_any_admin(user)
-        }
-        fn lerr(
-            &self,
-            user: &User,
-            status: axum::http::StatusCode,
-            key: &str,
-        ) -> axum::response::Response {
-            self.state.lerr(user, status, key)
-        }
-        fn setting_str(&self, key: &str, default: &str) -> String {
-            self.state.setting_str(key, default)
-        }
-        fn setting_bool(&self, key: &str, default: bool) -> bool {
-            self.state.setting_bool(key, default)
-        }
-        fn setting_i64(&self, key: &str, default: i64) -> i64 {
-            self.state.setting_i64(key, default)
-        }
-        fn set_settings(&self, patch: BTreeMap<String, serde_json::Value>) {
-            self.state.set_settings(patch)
-        }
-        fn publish(&self, event: Event) {
-            self.published.lock().unwrap().push((None, event.topic));
-        }
-        fn publish_to(&self, user_id: &str, event: Event) {
-            self.published.lock().unwrap().push((Some(user_id.to_string()), event.topic));
-        }
-        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
-        fn module_enabled(&self, id: &str) -> bool {
-            self.state.module_enabled(id)
-        }
-        fn library_folders(&self) -> Vec<kroma_module_host::LibraryFolders> {
-            self.state.library_folders()
-        }
-        fn tmdb_api_key(&self) -> Option<String> {
-            self.state.tmdb_api_key()
-        }
-        fn metadata_language(&self) -> String {
-            self.state.metadata_language()
-        }
-        fn get_service(
-            &self,
-            type_id: std::any::TypeId,
-        ) -> Option<std::sync::Arc<dyn std::any::Any + Send + Sync>> {
-            self.state.get_service(type_id)
-        }
+    fn recording_host() -> RecordingHost {
+        RecordingHost::new(test_support::test_state())
     }
 
     fn spec() -> NotificationSpec {
@@ -255,7 +183,7 @@ mod tests {
 
     #[test]
     fn emit_to_one_user_writes_a_row_and_wakes_only_them() {
-        let host = RecordingHost::new();
+        let host = recording_host();
         let ana = user(&host, "ana@t.dev", "Ana", &[]);
         let bo = user(&host, "bo@t.dev", "Bo", &[]);
 
@@ -265,12 +193,12 @@ mod tests {
         assert_eq!(db::notifications::unread_count(&conn, &ana).unwrap(), 1);
         assert_eq!(db::notifications::unread_count(&conn, &bo).unwrap(), 0);
         // And the bus event was addressed, not broadcast.
-        assert_eq!(host.addressed(), vec![(Some(ana), "notification.created".to_string())]);
+        assert_eq!(host.published(), vec![(Some(ana), "notification.created".to_string())]);
     }
 
     #[test]
     fn permission_audience_reaches_only_capability_holders() {
-        let host = RecordingHost::new();
+        let host = recording_host();
         let mod_ = user(&host, "mod@t.dev", "Mod", &[Permission::RequestsManage]);
         let plain = user(&host, "plain@t.dev", "Plain", &[Permission::Playback]);
 
@@ -284,7 +212,7 @@ mod tests {
 
     #[test]
     fn everyone_audience_reaches_every_account() {
-        let host = RecordingHost::new();
+        let host = recording_host();
         let a = user(&host, "a@t.dev", "A", &[]);
         let b = user(&host, "b@t.dev", "B", &[]);
         assert_eq!(emit(&host, &Audience::Everyone, &spec()), 2);
@@ -295,7 +223,7 @@ mod tests {
 
     #[test]
     fn a_muted_category_is_skipped_without_a_row_or_an_event() {
-        let host = RecordingHost::new();
+        let host = recording_host();
         let ana = user(&host, "ana@t.dev", "Ana", &[]);
         db::notifications::set_prefs(
             host.db(),
@@ -311,12 +239,12 @@ mod tests {
         assert_eq!(emit(&host, &Audience::user(ana.clone()), &spec()), 0);
         let conn = host.db().get().unwrap();
         assert_eq!(db::notifications::unread_count(&conn, &ana).unwrap(), 0);
-        assert!(host.addressed().is_empty(), "muted user should not be woken");
+        assert!(host.published().is_empty(), "muted user should not be woken");
     }
 
     #[test]
     fn muting_one_category_leaves_the_others_alone() {
-        let host = RecordingHost::new();
+        let host = recording_host();
         let ana = user(&host, "ana@t.dev", "Ana", &[]);
         db::notifications::set_prefs(
             host.db(),
@@ -334,15 +262,15 @@ mod tests {
 
     #[test]
     fn an_unknown_user_id_notifies_nobody() {
-        let host = RecordingHost::new();
+        let host = recording_host();
         user(&host, "ana@t.dev", "Ana", &[]);
         assert_eq!(emit(&host, &Audience::user("ghost"), &spec()), 0);
-        assert!(host.addressed().is_empty());
+        assert!(host.published().is_empty());
     }
 
     #[test]
     fn each_emission_mints_a_distinct_id() {
-        let host = RecordingHost::new();
+        let host = recording_host();
         let ana = user(&host, "ana@t.dev", "Ana", &[]);
         emit(&host, &Audience::user(ana.clone()), &spec());
         emit(&host, &Audience::user(ana.clone()), &spec());
@@ -370,7 +298,7 @@ mod tests {
         // show to their list has never played it, and someone mid-season may
         // never have used the list. Missing any of them means a new episode is
         // announced to the wrong people.
-        let host = RecordingHost::new();
+        let host = recording_host();
         seed_show(&host);
         let lister = user(&host, "l@t.dev", "Lister", &[]);
         let watcher = user(&host, "w@t.dev", "Watcher", &[]);
@@ -413,7 +341,7 @@ mod tests {
     fn following_a_show_twice_still_only_notifies_once() {
         // The three signals are a UNION, not a sum: someone who listed a show AND
         // is watching it must not get the same episode announced twice.
-        let host = RecordingHost::new();
+        let host = recording_host();
         seed_show(&host);
         let keen = user(&host, "k@t.dev", "Keen", &[]);
         let conn = host.db().get().unwrap();
@@ -433,12 +361,12 @@ mod tests {
 
     #[test]
     fn a_show_nobody_follows_notifies_nobody() {
-        let host = RecordingHost::new();
+        let host = recording_host();
         seed_show(&host);
         user(&host, "a@t.dev", "A", &[]);
         assert_eq!(emit(&host, &Audience::followers("shw"), &spec()), 0);
         assert_eq!(emit(&host, &Audience::followers("no-such-show"), &spec()), 0);
-        assert!(host.addressed().is_empty());
+        assert!(host.published().is_empty());
     }
 
     #[test]
@@ -449,7 +377,7 @@ mod tests {
         // the freshly-written row is still findable - if the lookup ever stops
         // matching, the push is silently dropped while the in-app row is fine,
         // which is close to invisible in production.
-        let host = RecordingHost::new();
+        let host = recording_host();
         let ana = user(&host, "ana@t.dev", "Ana", &[]);
         emit(&host, &Audience::user(ana.clone()), &spec());
         emit(&host, &Audience::user(ana.clone()), &spec());

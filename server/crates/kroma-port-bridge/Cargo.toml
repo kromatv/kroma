@@ -17,3 +17,9 @@ tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
+
+[dev-dependencies]
+# The shared HostCtx doubles (`testing::StubHost`). Every bridge handler takes a
+# host it never touches, so the neutral stub is exactly right - and the tests no
+# longer carry their own copy of a 25-method impl.
+kroma-module-host = { workspace = true, features = ["testing"] }

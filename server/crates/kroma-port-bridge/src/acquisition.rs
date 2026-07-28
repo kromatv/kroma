@@ -52,13 +52,13 @@ mod tests {
 
     use super::*;
 
-    use crate::testing::MockHost;
+    use kroma_module_host::testing::StubHost;
 
     #[test]
     fn client_offline_errors() {
         let c = AcquisitionSearchClient::new(Arc::new(|| None));
-        assert!(c.interactive_search(&MockHost, "req-1").is_err());
-        assert!(c.grab(&MockHost, "req-1", "guid-1", "idx-1").is_err());
+        assert!(c.interactive_search(&StubHost::new(), "req-1").is_err());
+        assert!(c.grab(&StubHost::new(), "req-1", "guid-1", "idx-1").is_err());
     }
     // --- A live round trip -------------------------------------------------------
     //
@@ -126,7 +126,7 @@ mod tests {
         let resolve = serve(seen.clone(), Ok(json!({ "releases": [{ "guid": "g1" }] }))).await;
 
         let c = AcquisitionSearchClient::new(resolve);
-        let out = blocking(move || c.interactive_search(&MockHost, "req-1")).await.unwrap();
+        let out = blocking(move || c.interactive_search(&StubHost::new(), "req-1")).await.unwrap();
         assert_eq!(out["releases"][0]["guid"], "g1");
 
         let calls = seen.lock().unwrap();
@@ -145,7 +145,7 @@ mod tests {
         let resolve = serve(seen.clone(), Ok(json!({ "id": "dl-42" }))).await;
 
         let c = AcquisitionSearchClient::new(resolve);
-        let id = blocking(move || c.grab(&MockHost, "req-1", "guid-9", "idx-7")).await.unwrap();
+        let id = blocking(move || c.grab(&StubHost::new(), "req-1", "guid-9", "idx-7")).await.unwrap();
         assert_eq!(id, "dl-42");
 
         let calls = seen.lock().unwrap();
@@ -163,7 +163,7 @@ mod tests {
         let resolve = serve(seen, Err("indexer rejected the credentials".to_string())).await;
 
         let c = AcquisitionSearchClient::new(resolve);
-        let err = blocking(move || c.interactive_search(&MockHost, "req-1"))
+        let err = blocking(move || c.interactive_search(&StubHost::new(), "req-1"))
             .await
             .unwrap_err()
             .to_string();

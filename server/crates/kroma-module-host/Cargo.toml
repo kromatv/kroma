@@ -6,6 +6,12 @@ rust-version.workspace = true
 description = "The host seam: the narrow HostCtx contract + shared HTTP extractors a module crate's backend needs, without depending on the whole app (kroma-engine)."
 license.workspace = true
 
+[features]
+# Compiles `testing::{StubHost, Recording}`, the shared HostCtx doubles. Off by
+# default so nothing reaches a release build; crates that test against the seam
+# turn it on in their dev-dependencies.
+testing = []
+
 [dependencies]
 kroma-domain = { workspace = true }
 kroma-db = { workspace = true }

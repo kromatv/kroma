@@ -220,7 +220,7 @@ mod tests {
 
     // --- Test doubles ---------------------------------------------------------
 
-    use crate::testing::MockHost;
+    use kroma_module_host::testing::StubHost;
 
     fn sample_download_row(id: &str) -> DownloadRow {
         DownloadRow {
@@ -354,7 +354,7 @@ mod tests {
     async fn grab_handler_returns_row() {
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
         let spec = GrabSpec { magnet_or_url: "magnet:?xt=1".into(), ..Default::default() };
-        let Json(res) = grab_h::<MockHost>(State(MockHost), Extension(grab), Json(spec)).await;
+        let Json(res) = grab_h::<StubHost>(State(StubHost::new()), Extension(grab), Json(spec)).await;
         assert_eq!(res.unwrap().id, "grabbed");
     }
 
@@ -362,7 +362,7 @@ mod tests {
     async fn grab_handler_maps_error() {
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(ErrGrab);
         let Json(res) =
-            grab_h::<MockHost>(State(MockHost), Extension(grab), Json(GrabSpec::default())).await;
+            grab_h::<StubHost>(State(StubHost::new()), Extension(grab), Json(GrabSpec::default())).await;
         assert_eq!(res.unwrap_err(), "boom");
     }
 
@@ -371,7 +371,7 @@ mod tests {
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
         let req = MagnetReq { magnet_or_url: "magnet:?xt=1".into() };
         let Json(res) =
-            list_files_h::<MockHost>(State(MockHost), Extension(grab), Json(req)).await;
+            list_files_h::<StubHost>(State(StubHost::new()), Extension(grab), Json(req)).await;
         let files = res.unwrap();
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, "a.mkv");
@@ -380,11 +380,11 @@ mod tests {
     #[tokio::test]
     async fn gate_open_handler_reflects_engine() {
         let open: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
-        let Json(v) = gate_open_h::<MockHost>(Extension(open)).await;
+        let Json(v) = gate_open_h::<StubHost>(Extension(open)).await;
         assert!(v);
 
         let closed: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: false });
-        let Json(v) = gate_open_h::<MockHost>(Extension(closed)).await;
+        let Json(v) = gate_open_h::<StubHost>(Extension(closed)).await;
         assert!(!v);
     }
 
@@ -393,21 +393,21 @@ mod tests {
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
         let row = sample_download_row("x");
         let Json(()) =
-            activate_h::<MockHost>(State(MockHost), Extension(grab.clone()), Json(row.clone())).await;
-        let Json(()) = drop_data_h::<MockHost>(State(MockHost), Extension(grab), Json(row)).await;
+            activate_h::<StubHost>(State(StubHost::new()), Extension(grab.clone()), Json(row.clone())).await;
+        let Json(()) = drop_data_h::<StubHost>(State(StubHost::new()), Extension(grab), Json(row)).await;
     }
 
     #[tokio::test]
     async fn completed_handler_returns_rows() {
         let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
-        let Json(res) = completed_h::<MockHost>(State(MockHost), Extension(db)).await;
+        let Json(res) = completed_h::<StubHost>(State(StubHost::new()), Extension(db)).await;
         assert_eq!(res.unwrap().len(), 1);
     }
 
     #[tokio::test]
     async fn completed_handler_maps_error() {
         let db: Arc<dyn DownloadDbPort> = Arc::new(ErrDb);
-        let Json(res) = completed_h::<MockHost>(State(MockHost), Extension(db)).await;
+        let Json(res) = completed_h::<StubHost>(State(StubHost::new()), Extension(db)).await;
         assert_eq!(res.unwrap_err(), "boom");
     }
 
@@ -415,7 +415,7 @@ mod tests {
     async fn mark_imported_handler_acks() {
         let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
         let req = MarkImportedReq { id: "id".into(), paths: vec!["a".into()], now_ms: 7 };
-        let Json(res) = mark_imported_h::<MockHost>(State(MockHost), Extension(db), Json(req)).await;
+        let Json(res) = mark_imported_h::<StubHost>(State(StubHost::new()), Extension(db), Json(req)).await;
         assert!(res.is_ok());
     }
 
@@ -423,7 +423,7 @@ mod tests {
     async fn set_status_handler_returns_bool() {
         let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
         let req = SetStatusReq { id: "id".into(), status: "done".into(), error: None };
-        let Json(res) = set_status_h::<MockHost>(State(MockHost), Extension(db), Json(req)).await;
+        let Json(res) = set_status_h::<StubHost>(State(StubHost::new()), Extension(db), Json(req)).await;
         assert!(res.unwrap());
     }
 
@@ -432,22 +432,22 @@ mod tests {
     #[test]
     fn grab_client_offline_behavior() {
         let c = DownloadGrabClient::new(offline());
-        assert!(c.grab(&MockHost, GrabSpec::default()).is_err());
-        assert!(c.list_files(&MockHost, "magnet:?xt=1").is_err());
+        assert!(c.grab(&StubHost::new(), GrabSpec::default()).is_err());
+        assert!(c.list_files(&StubHost::new(), "magnet:?xt=1").is_err());
         // A transport hiccup defaults the gate OPEN (grab re-checks authoritatively).
         assert!(c.gate_open());
         // Infallible fire-and-forget calls must not panic when offline.
         let row = sample_download_row("x");
-        c.activate(&MockHost, &row);
-        c.drop_data(&MockHost, &row);
+        c.activate(&StubHost::new(), &row);
+        c.drop_data(&StubHost::new(), &row);
     }
 
     #[test]
     fn db_client_offline_errors() {
         let c = DownloadDbClient::new(offline());
-        assert!(c.completed_downloads(&MockHost).is_err());
-        assert!(c.mark_download_imported(&MockHost, "id", &["p".to_string()], 0).is_err());
-        assert!(c.set_download_status(&MockHost, "id", "done", None).is_err());
+        assert!(c.completed_downloads(&StubHost::new()).is_err());
+        assert!(c.mark_download_imported(&StubHost::new(), "id", &["p".to_string()], 0).is_err());
+        assert!(c.set_download_status(&StubHost::new(), "id", "done", None).is_err());
     }
 
     // --- Wire-struct serde ----------------------------------------------------
@@ -509,12 +509,12 @@ mod tests {
     async fn every_grab_verb_survives_the_round_trip() {
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
         let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
-        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+        let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadGrabClient::new(resolve);
         let row = blocking(move || {
             let spec = GrabSpec { magnet_or_url: "magnet:?xt=1".into(), ..Default::default() };
-            client.grab(&MockHost, spec)
+            client.grab(&StubHost::new(), spec)
         })
         .await
         .unwrap();
@@ -531,11 +531,11 @@ mod tests {
     async fn a_file_listing_survives_the_round_trip() {
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
         let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
-        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+        let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadGrabClient::new(resolve);
         let files =
-            blocking(move || client.list_files(&MockHost, "magnet:?xt=1")).await.unwrap();
+            blocking(move || client.list_files(&StubHost::new(), "magnet:?xt=1")).await.unwrap();
         assert_eq!(files.len(), 1);
         assert_eq!(files[0].path, "a.mkv");
         assert_eq!(files[0].size_bytes, 10);
@@ -548,7 +548,7 @@ mod tests {
         // the test that proves the default is not masking everything.
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: false });
         let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
-        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+        let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadGrabClient::new(resolve);
         assert!(!blocking(move || client.gate_open()).await);
@@ -560,12 +560,12 @@ mod tests {
         // failed grab into a successful one carrying nonsense.
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(ErrGrab);
         let db: Arc<dyn DownloadDbPort> = Arc::new(ErrDb);
-        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+        let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let grab_client = DownloadGrabClient::new(resolve.clone());
         let err = blocking(move || {
             let spec = GrabSpec { magnet_or_url: "magnet:?xt=1".into(), ..Default::default() };
-            grab_client.grab(&MockHost, spec)
+            grab_client.grab(&StubHost::new(), spec)
         })
         .await
         .unwrap_err()
@@ -573,7 +573,7 @@ mod tests {
         assert!(err.contains("boom"), "the provider's reason was lost: {err}");
 
         let db_client = DownloadDbClient::new(resolve);
-        let err = blocking(move || db_client.completed_downloads(&MockHost))
+        let err = blocking(move || db_client.completed_downloads(&StubHost::new()))
             .await
             .unwrap_err()
             .to_string();
@@ -584,12 +584,12 @@ mod tests {
     async fn the_ledger_verbs_survive_the_round_trip() {
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
         let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
-        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+        let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadDbClient::new(resolve);
         let done = blocking({
             let c = DownloadDbClient::new(client.resolve.clone());
-            move || c.completed_downloads(&MockHost)
+            move || c.completed_downloads(&StubHost::new())
         })
         .await
         .unwrap();
@@ -598,13 +598,13 @@ mod tests {
 
         let c = DownloadDbClient::new(client.resolve.clone());
         blocking(move || {
-            c.mark_download_imported(&MockHost, "done", &["/media/a.mkv".to_string()], 42)
+            c.mark_download_imported(&StubHost::new(), "done", &["/media/a.mkv".to_string()], 42)
         })
         .await
         .unwrap();
 
         let c = DownloadDbClient::new(client.resolve.clone());
-        assert!(blocking(move || c.set_download_status(&MockHost, "done", "imported", None))
+        assert!(blocking(move || c.set_download_status(&StubHost::new(), "done", "imported", None))
             .await
             .unwrap());
     }
@@ -644,13 +644,13 @@ mod tests {
         let counting = Arc::new(CountingGrab::default());
         let grab: Arc<dyn DownloadGrabPort> = counting.clone();
         let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
-        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+        let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadGrabClient::new(resolve);
         let row = sample_download_row("moved");
         blocking(move || {
-            client.activate(&MockHost, &row);
-            client.drop_data(&MockHost, &row);
+            client.activate(&StubHost::new(), &row);
+            client.drop_data(&StubHost::new(), &row);
         })
         .await;
 

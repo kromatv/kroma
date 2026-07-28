@@ -111,7 +111,7 @@ impl DownloadVpnPort for DownloadVpnClient {
 mod tests {
     use super::*;
 
-    use crate::testing::MockHost;
+    use kroma_module_host::testing::StubHost;
 
     struct StubProxy(Option<String>);
     impl VpnProxyPort for StubProxy {
@@ -144,11 +144,11 @@ mod tests {
     #[tokio::test]
     async fn proxy_url_handler_some_and_none() {
         let some: Arc<dyn VpnProxyPort> = Arc::new(StubProxy(Some("socks5://127.0.0.1:1080".into())));
-        let Json(v) = proxy_url_h::<MockHost>(State(MockHost), Extension(some)).await;
+        let Json(v) = proxy_url_h::<StubHost>(State(StubHost::new()), Extension(some)).await;
         assert_eq!(v.as_deref(), Some("socks5://127.0.0.1:1080"));
 
         let none: Arc<dyn VpnProxyPort> = Arc::new(StubProxy(None));
-        let Json(v) = proxy_url_h::<MockHost>(State(MockHost), Extension(none)).await;
+        let Json(v) = proxy_url_h::<StubHost>(State(StubHost::new()), Extension(none)).await;
         assert!(v.is_none());
     }
 
@@ -156,25 +156,25 @@ mod tests {
     async fn download_vpn_handlers() {
         let vpn: Arc<dyn DownloadVpnPort> = Arc::new(StubVpn);
 
-        let Json(status) = status_h::<MockHost>(State(MockHost), Extension(vpn.clone())).await;
+        let Json(status) = status_h::<StubHost>(State(StubHost::new()), Extension(vpn.clone())).await;
         assert!(status.unwrap().connected);
 
-        let Json(seal) = seal_h::<MockHost>(State(MockHost), Extension(vpn.clone())).await;
+        let Json(seal) = seal_h::<StubHost>(State(StubHost::new()), Extension(vpn.clone())).await;
         assert!(seal.unwrap().sealed);
 
-        let Json(()) = restart_h::<MockHost>(State(MockHost), Extension(vpn)).await;
+        let Json(()) = restart_h::<StubHost>(State(StubHost::new()), Extension(vpn)).await;
     }
 
     #[tokio::test]
     async fn clients_offline_return_none() {
         let proxy = VpnProxyClient::new(offline());
-        assert!(proxy.proxy_url(&MockHost).is_none());
+        assert!(proxy.proxy_url(&StubHost::new()).is_none());
 
         let vpn = DownloadVpnClient::new(offline());
         assert!(vpn.vpn_status().is_none());
-        assert!(vpn.vpn_seal_check(&MockHost).is_none());
+        assert!(vpn.vpn_seal_check(&StubHost::new()).is_none());
         // Fire-and-forget restart must not panic when the provider is offline.
-        vpn.restart_engine(&MockHost).await;
+        vpn.restart_engine(&StubHost::new()).await;
     }
     // --- A live round trip over the real bridge -----------------------------------
 
@@ -202,17 +202,17 @@ mod tests {
         // it must not arrive as a URL, and a URL must not arrive as None. Every
         // torrent's traffic routing hangs off this one value.
         let some: Arc<dyn VpnProxyPort> = Arc::new(StubProxy(Some("socks5://10.0.0.1:1080".into())));
-        let resolve = serve(vpnproxy_routes::<MockHost>(some), MockHost).await;
+        let resolve = serve(vpnproxy_routes::<StubHost>(some), StubHost::new()).await;
         let c = VpnProxyClient::new(resolve);
         assert_eq!(
-            blocking(move || c.proxy_url(&MockHost)).await.as_deref(),
+            blocking(move || c.proxy_url(&StubHost::new())).await.as_deref(),
             Some("socks5://10.0.0.1:1080")
         );
 
         let none: Arc<dyn VpnProxyPort> = Arc::new(StubProxy(None));
-        let resolve = serve(vpnproxy_routes::<MockHost>(none), MockHost).await;
+        let resolve = serve(vpnproxy_routes::<StubHost>(none), StubHost::new()).await;
         let c = VpnProxyClient::new(resolve);
-        assert!(blocking(move || c.proxy_url(&MockHost)).await.is_none());
+        assert!(blocking(move || c.proxy_url(&StubHost::new())).await.is_none());
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -220,17 +220,17 @@ mod tests {
         // These drive the kill switch. A field lost in transit reads as "not
         // connected" / "not sealed", which pauses every download.
         let vpn: Arc<dyn DownloadVpnPort> = Arc::new(StubVpn);
-        let resolve = serve(downloadvpn_routes::<MockHost>(vpn), MockHost).await;
+        let resolve = serve(downloadvpn_routes::<StubHost>(vpn), StubHost::new()).await;
 
         let c = DownloadVpnClient::new(resolve.clone());
         let status = blocking(move || c.vpn_status()).await.unwrap();
         assert!(status.connected);
 
         let c = DownloadVpnClient::new(resolve.clone());
-        let seal = blocking(move || c.vpn_seal_check(&MockHost)).await.unwrap();
+        let seal = blocking(move || c.vpn_seal_check(&StubHost::new())).await.unwrap();
         assert!(seal.sealed);
 
         // Fire-and-forget: it must reach the provider without erroring.
-        DownloadVpnClient::new(resolve).restart_engine(&MockHost).await;
+        DownloadVpnClient::new(resolve).restart_engine(&StubHost::new()).await;
     }
 }
