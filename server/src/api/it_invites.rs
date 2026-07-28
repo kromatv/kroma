@@ -189,3 +189,68 @@ async fn invite_management_requires_users_manage() {
     let (status, _) = get(&t.app, "/api/invites", Some(&m)).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
+
+// ----- the bootstrap owner ------------------------------------------------------
+
+/// A fresh server: no accounts at all. `test_app` seeds an owner, so the very
+/// first-registration path is otherwise unreachable.
+fn empty_of_accounts(t: &crate::api::test_support::TestApp) {
+    t.state.db.get().unwrap().execute("DELETE FROM users", []).unwrap();
+}
+
+#[tokio::test]
+async fn the_first_account_on_a_fresh_server_is_the_owner() {
+    // Nobody can mint an invite before the first account exists, so if this
+    // path required one a fresh install would be permanently unusable - and if
+    // it granted the default permissions instead, the owner could not reach the
+    // admin console to grant themselves any.
+    let t = test_app();
+    empty_of_accounts(&t);
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/auth/register",
+        None,
+        Some(json!({
+            "email": "first@test.dev",
+            "username": "first",
+            "password": "s3cret12",
+        })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["token"].is_string(), "registration opens a session");
+    let perms = body["user"]["permissions"].as_array().expect("permissions");
+    assert_eq!(
+        perms.len(),
+        Permission::all().len(),
+        "the bootstrap owner gets every permission: {perms:?}"
+    );
+}
+
+#[tokio::test]
+async fn only_the_very_first_account_skips_the_invite() {
+    // The second registration is invite-gated even though the first was not -
+    // otherwise the server is open to anyone who finds it.
+    let t = test_app();
+    empty_of_accounts(&t);
+
+    let register = |email: &'static str, username: &'static str| {
+        send(
+            &t.app,
+            "POST",
+            "/api/auth/register",
+            None,
+            Some(json!({ "email": email, "username": username, "password": "s3cret12" })),
+        )
+    };
+
+    let (first, _) = register("first@test.dev", "first").await;
+    assert_eq!(first, StatusCode::OK);
+
+    let (second, body) = register("second@test.dev", "second").await;
+    assert_eq!(second, StatusCode::FORBIDDEN);
+    assert!(body["error"].as_str().is_some_and(|m| !m.is_empty()), "{body}");
+}
