@@ -998,13 +998,17 @@ mod tests {
     // ----- DB-backed matcher tests (a minimal in-process HostCtx double) ----------
 
     /// A tiny [`HostCtx`] over a real temp DB pool: enough for the availability
-    /// matcher + ledger flips, which only touch `db()`, `publish()` (counted) and
-    /// `trigger_job()` (no-op). Everything else is unused here.
+    /// matcher + ledger flips, which only touch `db()`, `publish()` (counted),
+    /// `notify()` (recorded) and `trigger_job()` (no-op). Everything else is
+    /// unused here.
     struct TestHost {
         db: db::Pool,
         data_dir: std::path::PathBuf,
         tmdb: Option<String>,
         published: std::sync::atomic::AtomicUsize,
+        /// Every notification, with its audience: who hears what is the thing
+        /// worth asserting on.
+        notified: std::sync::Mutex<Vec<(Audience, NotificationSpec)>>,
     }
 
     impl TestHost {
@@ -1019,11 +1023,16 @@ mod tests {
                 data_dir: std::env::temp_dir(),
                 tmdb: Some("test-key".into()),
                 published: std::sync::atomic::AtomicUsize::new(0),
+                notified: std::sync::Mutex::new(Vec::new()),
             }
         }
 
         fn publishes(&self) -> usize {
             self.published.load(std::sync::atomic::Ordering::Relaxed)
+        }
+
+        fn notifications(&self) -> Vec<(Audience, NotificationSpec)> {
+            self.notified.lock().unwrap().clone()
         }
     }
 
@@ -1055,6 +1064,10 @@ mod tests {
         fn set_settings(&self, _p: std::collections::BTreeMap<String, serde_json::Value>) {}
         fn publish(&self, _e: Event) {
             self.published.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }
+        fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize {
+            self.notified.lock().unwrap().push((audience.clone(), spec.clone()));
+            1
         }
         fn trigger_job(&self, _k: &'static str, _r: &'static str) {}
         fn module_enabled(&self, _id: &str) -> bool {
@@ -1101,6 +1114,28 @@ mod tests {
     }
 
     fn insert_req(host: &TestHost, id: &str, kind: RequestKind, tmdb: u64, status: RequestStatus) {
+        insert_req_by(host, id, kind, tmdb, status, None);
+    }
+
+    /// `requests.requested_by` is a foreign key, so an authored request needs a
+    /// real account row behind it.
+    fn seed_user(host: &TestHost, id: &str) {
+        exec(host, &format!("INSERT OR IGNORE INTO users (id,email,username,password_hash,created_at) VALUES ('{id}','{id}@example.test','{id}','x','now')"));
+    }
+
+    /// As [`insert_req`], but with an author - the notification paths do nothing
+    /// without one.
+    fn insert_req_by(
+        host: &TestHost,
+        id: &str,
+        kind: RequestKind,
+        tmdb: u64,
+        status: RequestStatus,
+        requested_by: Option<&str>,
+    ) {
+        if let Some(uid) = requested_by {
+            seed_user(host, uid);
+        }
         db::insert_request(
             host.db(),
             &db::NewRequest {
@@ -1113,7 +1148,7 @@ mod tests {
                 seasons: None,
                 episodes: None,
                 status,
-                requested_by: None,
+                requested_by: requested_by.map(str::to_string),
             },
             now_ms(),
         )
@@ -1504,5 +1539,339 @@ mod tests {
         on_download_imported(&host, "r1").unwrap();
         assert_eq!(status_of_req(&host, "r1"), RequestStatus::Approved);
         assert_eq!(host.publishes(), 0);
+    }
+
+    // ----- notifications ---------------------------------------------------------
+    //
+    // The whole point of this layer is deciding WHO hears WHAT, and when not to
+    // speak at all. None of it touches TMDB.
+
+    fn user(id: &str, permissions: Vec<Permission>) -> User {
+        User {
+            id: id.into(),
+            email: format!("{id}@example.test"),
+            username: id.into(),
+            avatar_url: None,
+            language: None,
+            audio_language: None,
+            subtitle_language: None,
+            permissions,
+            created_at: "now".into(),
+            has_pin: false,
+        }
+    }
+
+    /// A request that has an author, so the notification path is not short-circuited.
+    fn req_by(kind: RequestKind, status: RequestStatus, requester: &str) -> MediaRequest {
+        let mut r = req(kind, status);
+        r.requested_by = Some(requester.into());
+        r
+    }
+
+    #[test]
+    fn only_the_four_outcomes_worth_interrupting_someone_for_notify() {
+        // Pending is where a request starts, and searching/downloading/importing
+        // are machinery nobody asked to watch. Notifying on those would make the
+        // feature a nuisance and train people to ignore it.
+        let host = TestHost::new();
+        let silent = [
+            RequestStatus::Pending,
+            RequestStatus::Searching,
+            RequestStatus::Downloading,
+            RequestStatus::Importing,
+            RequestStatus::Failed,
+        ];
+        for status in silent {
+            notify_requester(&host, &req_by(RequestKind::Movie, status, "u1"), status, "/requests");
+        }
+        assert!(host.notifications().is_empty(), "{silent:?} must stay quiet");
+
+        for status in [
+            RequestStatus::Approved,
+            RequestStatus::Denied,
+            RequestStatus::Available,
+            RequestStatus::PartiallyAvailable,
+        ] {
+            notify_requester(&host, &req_by(RequestKind::Movie, status, "u1"), status, "/requests");
+        }
+        let sent = host.notifications();
+        assert_eq!(sent.len(), 4);
+        let events: Vec<NotificationEvent> = sent.iter().map(|(_, s)| s.event).collect();
+        assert_eq!(
+            events,
+            [
+                NotificationEvent::RequestApproved,
+                NotificationEvent::RequestDenied,
+                NotificationEvent::RequestAvailable,
+                // A partially-available show is still "there is something to
+                // watch now", so it uses the same event.
+                NotificationEvent::RequestAvailable,
+            ]
+        );
+        // Each one is addressed to the person who asked, never broadcast.
+        for (audience, _) in &sent {
+            assert_eq!(audience, &Audience::user("u1"));
+        }
+        // The i18n key follows the outcome, since the four read very differently.
+        assert_eq!(sent[0].1.title_key, "notifications.request.approved.title");
+        assert_eq!(sent[1].1.body_key, "notifications.request.denied.body");
+        assert_eq!(sent[2].1.title_key, "notifications.request.available.title");
+    }
+
+    #[test]
+    fn a_request_filed_before_accounts_existed_has_nobody_to_tell() {
+        // `requested_by` is NULL for pre-accounts requests; notifying would mean
+        // inventing a recipient.
+        let host = TestHost::new();
+        let orphan = req(RequestKind::Movie, RequestStatus::Approved);
+        assert!(orphan.requested_by.is_none());
+        notify_requester(&host, &orphan, RequestStatus::Approved, "/requests");
+        assert!(host.notifications().is_empty());
+    }
+
+    #[test]
+    fn a_denial_carries_the_moderators_note_and_only_a_denial_does() {
+        let host = TestHost::new();
+        let mut denied = req_by(RequestKind::Movie, RequestStatus::Denied, "u1");
+        denied.note = Some("we already have this in 4K".into());
+        notify_requester(&host, &denied, RequestStatus::Denied, "/requests");
+
+        // The same request object approved instead: the note is a denial reason
+        // and would read as nonsense attached to good news.
+        let mut approved = denied.clone();
+        approved.status = RequestStatus::Approved;
+        notify_requester(&host, &approved, RequestStatus::Approved, "/requests");
+
+        let sent = host.notifications();
+        assert_eq!(sent[0].1.params.get("note").map(String::as_str), Some("we already have this in 4K"));
+        assert_eq!(sent[1].1.params.get("note"), None);
+        // The title is always interpolated, whatever the outcome.
+        assert_eq!(sent[0].1.params.get("title").map(String::as_str), Some("Title"));
+        assert_eq!(sent[1].1.params.get("title").map(String::as_str), Some("Title"));
+    }
+
+    #[test]
+    fn only_a_ready_to_watch_notification_gets_a_button() {
+        let host = TestHost::new();
+        let mut ready = req_by(RequestKind::Movie, RequestStatus::Available, "u1");
+        ready.poster_url = Some("https://img.example/p.jpg".into());
+        notify_requester(&host, &ready, RequestStatus::Available, "/movie/abc");
+        notify_requester(
+            &host,
+            &req_by(RequestKind::Movie, RequestStatus::Approved, "u1"),
+            RequestStatus::Approved,
+            "/requests",
+        );
+
+        let sent = host.notifications();
+        let available = &sent[0].1;
+        assert_eq!(available.push_category, Some(PushCategory::MediaAvailable));
+        assert_eq!(available.actions.len(), 1);
+        let watch = &available.actions[0];
+        assert_eq!(watch.id, "watch");
+        assert_eq!(watch.kind, ActionKind::Link);
+        // The button jumps straight into the title rather than the requests list,
+        // which is the entire reason it exists.
+        assert_eq!(watch.href, "/movie/abc");
+        assert_eq!(watch.method, None);
+        assert_eq!(available.link.as_deref(), Some("/movie/abc"));
+        assert_eq!(available.image_url.as_deref(), Some("https://img.example/p.jpg"));
+
+        // "Approved" is not actionable yet: nothing to watch, so no button.
+        assert!(sent[1].1.actions.is_empty());
+        assert_eq!(sent[1].1.push_category, None);
+    }
+
+    #[test]
+    fn moderators_can_decide_from_the_notification_itself() {
+        let host = TestHost::new();
+        let mut pending = req(RequestKind::Show, RequestStatus::Pending);
+        pending.id = "req-7".into();
+        notify_moderators(&host, &pending, &user("alice", vec![Permission::Playback]));
+
+        let sent = host.notifications();
+        assert_eq!(sent.len(), 1);
+        let (audience, spec) = &sent[0];
+        // Addressed by capability, not by a hardcoded owner: whoever holds the
+        // permission is a moderator.
+        assert_eq!(audience, &Audience::permission(Permission::RequestsManage));
+        assert_eq!(spec.event, NotificationEvent::RequestSubmitted);
+        assert_eq!(spec.params.get("user").map(String::as_str), Some("alice"));
+        assert_eq!(spec.link.as_deref(), Some("/admin/requests"));
+        assert_eq!(spec.push_category, Some(PushCategory::RequestReview));
+
+        let ids: Vec<&str> = spec.actions.iter().map(|a| a.id.as_str()).collect();
+        assert_eq!(ids, ["approve", "deny"]);
+        for action in &spec.actions {
+            // Both are API calls answered in place - a decision costs one tap and
+            // no navigation - so both need a method and the request's own id.
+            assert_eq!(action.kind, ActionKind::Api);
+            assert_eq!(action.method.as_deref(), Some("POST"));
+            assert!(action.href.contains("req-7"), "{}", action.href);
+        }
+        assert_eq!(sent[0].1.actions[0].style, ActionStyle::Primary);
+        assert_eq!(sent[0].1.actions[1].style, ActionStyle::Danger);
+    }
+
+    #[test]
+    fn a_notification_links_to_the_title_once_it_is_in_the_library() {
+        // Before the title exists locally there is nothing to link to, so the
+        // notification falls back to the requests list.
+        let host = TestHost::new();
+        let away = req(RequestKind::Movie, RequestStatus::Pending);
+        assert_eq!(request_link(&host, &away), "/requests");
+
+        seed_movie_item(&host, "item-9", 42);
+        assert_eq!(request_link(&host, &away), "/movie/item-9");
+
+        let show = req(RequestKind::Show, RequestStatus::Pending);
+        assert_eq!(request_link(&host, &show), "/requests", "no show with that tmdb id yet");
+        seed_show(&host, "show-9", 42, &[]);
+        assert_eq!(request_link(&host, &show), "/show/show-9");
+    }
+
+    #[test]
+    fn denying_a_request_tells_its_author_where_to_look() {
+        // The public path end to end: status flip, client event, notification.
+        let host = TestHost::new();
+        insert_req_by(&host, "r-deny", RequestKind::Movie, 42, RequestStatus::Pending, Some("u1"));
+        seed_movie_item(&host, "item-42", 42);
+
+        let before = host.publishes();
+        let denied = deny_request(&host, "r-deny", "mod-1", Some("duplicate")).unwrap();
+        assert_eq!(denied.status, RequestStatus::Denied);
+        assert_eq!(denied.note.as_deref(), Some("duplicate"));
+        assert_eq!(host.publishes(), before + 1);
+
+        let sent = host.notifications();
+        assert_eq!(sent.len(), 1);
+        assert_eq!(sent[0].0, Audience::user("u1"));
+        assert_eq!(sent[0].1.event, NotificationEvent::RequestDenied);
+        assert_eq!(sent[0].1.params.get("note").map(String::as_str), Some("duplicate"));
+        // The title happens to be in the library already, so the link points at it.
+        assert_eq!(sent[0].1.link.as_deref(), Some("/movie/item-42"));
+    }
+
+    #[test]
+    fn denying_a_request_that_is_not_there_fails_instead_of_inventing_one() {
+        let host = TestHost::new();
+        let err = deny_request(&host, "nope", "mod-1", None).unwrap_err().to_string();
+        assert!(err.contains("not found"), "{err}");
+        assert!(host.notifications().is_empty());
+    }
+
+    #[test]
+    fn approving_a_denied_request_is_refused_rather_than_silently_reopened() {
+        // Denial is a decision, not a state to bounce out of: re-asking has to go
+        // through a new request so the moderator sees it again.
+        let host = TestHost::new();
+        insert_req(&host, "r-x", RequestKind::Movie, 42, RequestStatus::Denied);
+        let err = approve_request(&host, "r-x", Some("mod-1")).unwrap_err().to_string();
+        assert!(err.contains("denied"), "{err}");
+
+        let err = approve_request(&host, "ghost", Some("mod-1")).unwrap_err().to_string();
+        assert!(err.contains("not found"), "{err}");
+    }
+
+    #[test]
+    fn creating_a_request_without_tmdb_configured_says_so() {
+        // Every path into this service needs TMDB; failing here names the actual
+        // problem instead of surfacing a lookup error later.
+        let mut host = TestHost::new();
+        host.tmdb = None;
+        let err = create_request(
+            &host,
+            &user("u1", vec![Permission::Playback]),
+            &CreateRequestBody {
+                kind: RequestKind::Movie,
+                tmdb_id: 42,
+                seasons: None,
+                episodes: None,
+            },
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("TMDB is not configured"), "{err}");
+    }
+
+    #[test]
+    fn a_refresh_pass_survives_a_request_it_cannot_refresh() {
+        // One bad TMDB id must not abort the cron for everyone else, and the
+        // count reports what actually refreshed - not what was attempted.
+        let mut host = TestHost::new();
+        host.tmdb = None; // every refresh_one fails at the first step
+        insert_req(&host, "r1", RequestKind::Movie, 42, RequestStatus::Approved);
+        insert_req(&host, "r2", RequestKind::Movie, 43, RequestStatus::Approved);
+        assert_eq!(refresh_pass(&host).unwrap(), 0);
+
+        // A request in a terminal state is skipped before TMDB is ever consulted,
+        // so an empty pass is not the same as a failing one.
+        let host2 = TestHost::new();
+        insert_req(&host2, "r3", RequestKind::Movie, 44, RequestStatus::Denied);
+        assert_eq!(refresh_pass(&host2).unwrap(), 0);
+    }
+
+    fn detail(kind: RequestKind, tmdb_id: u64, available: Option<&str>) -> discover::DiscoverRawDetail {
+        discover::DiscoverRawDetail {
+            kind,
+            tmdb_id,
+            title: "T".into(),
+            year: Some(2020),
+            poster_url: None,
+            backdrop_url: None,
+            overview: None,
+            tagline: None,
+            genres: Vec::new(),
+            rating: None,
+            runtime_min: None,
+            imdb_id: Some("tt0000001".into()),
+            seasons: Vec::new(),
+            cast: Vec::new(),
+            crew: Vec::new(),
+            similar: Vec::new(),
+            status: None,
+            next_air: None,
+            available_date: available.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn refresh_never_creates_a_ledger_for_a_request_nobody_approved() {
+        // A pending request has no wanted rows, and giving it some here would let
+        // the search pass start grabbing before a moderator green-lit it.
+        let host = TestHost::new();
+        insert_req(&host, "r1", RequestKind::Movie, 42, RequestStatus::Pending);
+        let req = req(RequestKind::Movie, RequestStatus::Pending);
+        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2026-01-01"))).unwrap();
+
+        let conn = host.db().get().unwrap();
+        assert!(db::wanted_for_request(&conn, "r1").unwrap().is_empty());
+    }
+
+    #[test]
+    fn refresh_backfills_a_missing_air_date_and_leaves_the_row_alone_otherwise() {
+        // The ledger is additive: a row that was already grabbed must keep its
+        // status, and a date that is already known must not be rewritten.
+        let host = TestHost::new();
+        insert_req(&host, "r1", RequestKind::Movie, 42, RequestStatus::Approved);
+        let undated = wanted("w1", "r1", None, None, None, "grabbed");
+        db::insert_wanted(host.db(), std::slice::from_ref(&undated), now_ms()).unwrap();
+
+        let req = req(RequestKind::Movie, RequestStatus::Approved);
+        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2026-03-04"))).unwrap();
+
+        let conn = host.db().get().unwrap();
+        let rows = db::wanted_for_request(&conn, "r1").unwrap();
+        drop(conn);
+        assert_eq!(rows.len(), 1, "the movie row is matched, not duplicated");
+        assert_eq!(rows[0].air_date.as_deref(), Some("2026-03-04"));
+        assert_eq!(rows[0].status, "grabbed", "an in-flight download is untouched");
+
+        // A second pass with a different date changes nothing: the writer guards
+        // on air_date IS NULL.
+        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2030-01-01"))).unwrap();
+        let conn = host.db().get().unwrap();
+        let rows = db::wanted_for_request(&conn, "r1").unwrap();
+        assert_eq!(rows[0].air_date.as_deref(), Some("2026-03-04"));
     }
 }
