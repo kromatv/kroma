@@ -28,7 +28,7 @@ mkdir -p "$dir"
 # replaced the first, and the extension would have gone unsigned.
 install_profile() {
   local b64="$1" tmp uuid name
-  [ -n "$b64" ] || return 0
+  [[ -n "$b64" ]] || return 0
   tmp=$(mktemp)
   printf '%s' "$b64" | base64 --decode > "$tmp"
   security cms -D -i "$tmp" > "$tmp.plist" 2>/dev/null \

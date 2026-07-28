@@ -47,7 +47,7 @@ function AppLayout() {
             report), so pages open them with `await X.call(...)` and hold no
             open-state. */}
         <CatalogModalHosts />
-        <CastPicker.Root />
+        <CastPicker />
         <CastBar />
       </div>
     </CastProvider>

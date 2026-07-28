@@ -99,7 +99,7 @@ export class KromaEvents {
    */
   send(message: CastClientMessage): boolean {
     const ws = this.ws;
-    if (!ws || ws.readyState !== 1 /* OPEN */) return false;
+    if (ws?.readyState !== 1 /* OPEN */) return false;
     try {
       ws.send(JSON.stringify(message));
       return true;
