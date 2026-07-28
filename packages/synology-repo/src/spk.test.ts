@@ -13,7 +13,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -28,7 +28,7 @@ let made = 0;
 function spk(members: Record<string, string | Buffer>): string {
   made += 1;
   const dir = join(work, `pkg-${made}`);
-  execFileSync('mkdir', ['-p', dir]);
+  mkdirSync(dir, { recursive: true });
   for (const [name, body] of Object.entries(members)) writeFileSync(join(dir, name), body);
   const out = join(work, `kroma-${made}.spk`);
   execFileSync('tar', ['-cf', out, '-C', dir, ...Object.keys(members)]);
@@ -144,7 +144,7 @@ describe('readSpkInfo', () => {
 
   it('reports the size and md5 of the FILE DSM will download', () => {
     const path = spk({ INFO });
-    const bytes = execFileSync('cat', [path]);
+    const bytes = readFileSync(path);
     const info = readSpkInfo(path);
     // These two are what the NAS verifies after downloading. Computed over
     // anything but the artefact itself, they fail at install time on a user's

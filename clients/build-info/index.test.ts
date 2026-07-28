@@ -19,7 +19,7 @@
 // what is being checked is exactly what `git` does in each case.
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -34,7 +34,7 @@ let made = 0;
 function project(options: { git?: boolean; remote?: string; version?: string } = {}): string {
   made += 1;
   const dir = join(work, `proj-${made}`);
-  execFileSync('mkdir', ['-p', dir]);
+  mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ version: options.version ?? '1.2.3' }));
   if (options.git) {
     const run = (...args: string[]) => execFileSync('git', args, { cwd: dir, stdio: 'ignore' });
@@ -147,7 +147,7 @@ describe('productVersion', () => {
 
   it('reads the repo’s single source of truth otherwise', () => {
     const root = join(work, 'repo-root');
-    execFileSync('mkdir', ['-p', join(root, 'server')]);
+    mkdirSync(join(root, 'server'), { recursive: true });
     writeFileSync(
       join(root, 'server', 'Cargo.toml'),
       '[package]\nname = "kroma-server"\nversion = "0.1.36"\nedition = "2021"\n',
@@ -159,7 +159,7 @@ describe('productVersion', () => {
 
   it('takes the FIRST version key, not one from a dependency', () => {
     const root = join(work, 'repo-deps');
-    execFileSync('mkdir', ['-p', join(root, 'server')]);
+    mkdirSync(join(root, 'server'), { recursive: true });
     writeFileSync(
       join(root, 'server', 'Cargo.toml'),
       '[package]\nversion = "0.1.36"\n\n[dependencies]\nserde = { version = "1.0.200" }\n',
@@ -232,7 +232,7 @@ describe('collectBuildInfo', () => {
   it('falls back to 0.0.0 when the package has no version', () => {
     made += 1;
     const dir = join(work, `proj-${made}`);
-    execFileSync('mkdir', ['-p', dir]);
+    mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, 'package.json'), '{}');
     // A version is shown on a settings screen; an empty one reads as a bug.
     expect(collectBuildInfo(dir).version).toBe('0.0.0');
