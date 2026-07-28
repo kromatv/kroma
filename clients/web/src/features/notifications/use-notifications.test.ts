@@ -8,7 +8,7 @@
 // for the same reason it is in production.
 import type { NotificationsView } from '@kroma/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -62,20 +62,19 @@ function view(unread: number): NotificationsView {
   return { notifications: [], unread } as unknown as NotificationsView;
 }
 
-/** Let a fetch settle and react-query deliver its batched cache notifications. */
-async function flush() {
-  await act(async () => {
-    await new Promise<void>((r) => setTimeout(r, 0));
-  });
+/** Wait for the badge to read `n`. A fixed number of turns is not enough: the
+ *  fetch and react-query's batched observer notifications settle on their own
+ *  schedule, and an instrumented CI run is slower than a local one. */
+async function expectBadge(read: () => number, n: number) {
+  await waitFor(() => expect(read()).toBe(n));
 }
 
-/** Push an event down the stream and let the resulting re-render settle. The
- *  write has to happen INSIDE the `act`: react-query batches its observer
- *  notifications, so an `act` that returns first leaves the badge unmoved. */
+/** Push an event down the stream. The write has to happen INSIDE the `act`:
+ *  react-query batches its observer notifications, so an `act` that returns
+ *  first leaves the badge unmoved. */
 async function push(e: { type: string; unread: number }) {
   await act(async () => {
     stream().emit(e);
-    await new Promise<void>((r) => setTimeout(r, 0));
   });
 }
 
@@ -108,8 +107,7 @@ describe('the unread badge', () => {
   it('reports whatever the inbox fetch returns', async () => {
     listNotifications.mockResolvedValue(view(7));
     const { result } = render(() => useUnreadCount());
-    await flush();
-    expect(result.current).toBe(7);
+    await expectBadge(() => result.current, 7);
   });
 
   it('follows the inbox rather than latching the first count it saw', async () => {
@@ -117,16 +115,13 @@ describe('the unread badge', () => {
     // its first value would sit on a stale number until a full reload.
     listNotifications.mockResolvedValue(view(7));
     const { result } = render(() => useUnreadCount());
-    await flush();
-
-    expect(result.current).toBe(7);
+    await expectBadge(() => result.current, 7);
 
     listNotifications.mockResolvedValue(view(2));
     await act(async () => {
       await client.invalidateQueries({ queryKey: userQueries.notifications().queryKey });
     });
-    await flush();
-    expect(result.current).toBe(2);
+    await expectBadge(() => result.current, 2);
   });
 });
 
@@ -146,10 +141,10 @@ describe('the event stream', () => {
       useNotificationStream();
       return useUnreadCount();
     });
-    await flush();
+    await expectBadge(() => result.current, 1);
 
     await push({ type: 'notification.created', unread: 4 });
-    expect(result.current).toBe(4);
+    await expectBadge(() => result.current, 4);
   });
 
   it('reacts to a read the same way it reacts to a new one', async () => {
@@ -160,10 +155,10 @@ describe('the event stream', () => {
       useNotificationStream();
       return useUnreadCount();
     });
-    await flush();
+    await expectBadge(() => result.current, 5);
 
     await push({ type: 'notification.read', unread: 2 });
-    expect(result.current).toBe(2);
+    await expectBadge(() => result.current, 2);
   });
 
   it('ignores every other kind of server event', async () => {
@@ -177,11 +172,11 @@ describe('the event stream', () => {
       useNotificationStream();
       return useUnreadCount();
     });
-    await flush();
+    await expectBadge(() => result.current, 6);
     const before = client.getQueryData(key);
 
     await push({ type: 'scan.finished', unread: 99 });
-    expect(result.current).toBe(6);
+    await expectBadge(() => result.current, 6);
     expect(client.getQueryData(key)).toBe(before);
   });
 

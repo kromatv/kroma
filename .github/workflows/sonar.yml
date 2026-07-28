@@ -65,9 +65,13 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: JS/TS coverage (vitest -> coverage/lcov.info)
-        # Tests are hard-gated in ci.yml; here we only need the lcov (vitest
-        # writes it even if a test fails), so a failure must not abort the scan.
-        continue-on-error: true
+        # NOT continue-on-error. It used to be, on the assumption that vitest
+        # still writes a usable lcov when a test fails - it does not. A single
+        # failing test left the report missing most of its files, every TS file
+        # scored 0%, and the project's coverage "dropped" ten points with a green
+        # Sonar job to explain it. Failing here is safe precisely because tests
+        # are hard-gated in ci.yml: a failure at this point means the lcov cannot
+        # be trusted, and no measurement beats a wrong one.
         run: bun run test:coverage
 
       # --- Rust coverage (best-effort; never blocks the scan) -----------------
