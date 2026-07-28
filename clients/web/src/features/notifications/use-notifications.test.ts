@@ -1,0 +1,236 @@
+// @vitest-environment jsdom
+//
+// The bell is driven by two halves that never call each other: a stream writes
+// the react-query cache, and a badge reads it. Nothing in the type system ties
+// the two to the same cache key, so a rename on one side would leave a bell that
+// simply never moves - silently, with no error anywhere. These tests run both
+// halves against the REAL `userQueries.notifications()` so that key is shared
+// for the same reason it is in production.
+import type { NotificationsView } from '@kroma/core';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+type Listener = (e: { type: string; unread: number }) => void;
+
+const H = vi.hoisted(() => ({
+  streams: [] as { url: string; emit: Listener; closed: boolean }[],
+}));
+
+vi.mock('@kroma/core', () => {
+  class KromaEvents {
+    private readonly self: { url: string; emit: Listener; closed: boolean };
+    constructor(url: string, opts: { onEvent: Listener }) {
+      this.self = { url, emit: opts.onEvent, closed: false };
+    }
+    connect() {
+      H.streams.push(this.self);
+    }
+    close() {
+      this.self.closed = true;
+    }
+  }
+  return { KromaEvents };
+});
+
+// The transport only. `queries.ts` itself is REAL below, so the cache key under
+// test is the one production uses.
+const listNotifications = vi.fn();
+vi.mock('#web/shared/lib/api', () => ({
+  apiBase: () => 'http://server.test',
+  kromaClient: () => ({ listNotifications }),
+  toMovieView: (v: unknown) => v,
+  toShowView: (v: unknown) => v,
+}));
+
+const { useNotificationStream, usePanelState, useUnreadCount } = await import(
+  '#web/features/notifications/use-notifications'
+);
+const { userQueries } = await import('#web/shared/lib/queries');
+
+let client: QueryClient;
+
+/** Render `hook` against a fresh cache; retries off so a rejected fetch settles. */
+function render<T>(hook: () => T) {
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client }, children);
+  return renderHook(hook, { wrapper });
+}
+
+function view(unread: number): NotificationsView {
+  return { notifications: [], unread } as unknown as NotificationsView;
+}
+
+/** Let a fetch settle and react-query deliver its batched cache notifications. */
+async function flush() {
+  await act(async () => {
+    await new Promise<void>((r) => setTimeout(r, 0));
+  });
+}
+
+/** Push an event down the stream and let the resulting re-render settle. The
+ *  write has to happen INSIDE the `act`: react-query batches its observer
+ *  notifications, so an `act` that returns first leaves the badge unmoved. */
+async function push(e: { type: string; unread: number }) {
+  await act(async () => {
+    stream().emit(e);
+    await new Promise<void>((r) => setTimeout(r, 0));
+  });
+}
+
+/** The stream this render opened. */
+function stream() {
+  const s = H.streams.at(-1);
+  if (!s) throw new Error('no stream was connected');
+  return s;
+}
+
+beforeEach(() => {
+  H.streams.length = 0;
+  listNotifications.mockReset().mockResolvedValue(view(0));
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+});
+
+afterEach(() => {
+  cleanup();
+  client.clear();
+});
+
+describe('the unread badge', () => {
+  it('reads zero before the inbox has ever loaded', () => {
+    // The bell renders on every page. `undefined` here would put NaN in the
+    // badge on the first paint of every cold load.
+    const { result } = render(() => useUnreadCount());
+    expect(result.current).toBe(0);
+  });
+
+  it('reports whatever the inbox fetch returns', async () => {
+    listNotifications.mockResolvedValue(view(7));
+    const { result } = render(() => useUnreadCount());
+    await flush();
+    expect(result.current).toBe(7);
+  });
+
+  it('follows the inbox rather than latching the first count it saw', async () => {
+    // Opening the panel marks things read, which refetches. A badge that kept
+    // its first value would sit on a stale number until a full reload.
+    listNotifications.mockResolvedValue(view(7));
+    const { result } = render(() => useUnreadCount());
+    await flush();
+
+    expect(result.current).toBe(7);
+
+    listNotifications.mockResolvedValue(view(2));
+    await act(async () => {
+      await client.invalidateQueries({ queryKey: userQueries.notifications().queryKey });
+    });
+    await flush();
+    expect(result.current).toBe(2);
+  });
+});
+
+describe('the event stream', () => {
+  it('connects to the server the client is signed into', () => {
+    render(() => useNotificationStream());
+    expect(stream().url).toBe('http://server.test');
+  });
+
+  it('moves the badge from the event itself, without waiting for a refetch', async () => {
+    // The refetch below NEVER resolves, so the only thing that can move this
+    // badge is the count carried on the event. That is the point: the panel is
+    // usually closed and the inbox response may be slow or never arrive.
+    listNotifications.mockReturnValue(new Promise(() => {}));
+    client.setQueryData(userQueries.notifications().queryKey, view(1));
+    const { result } = render(() => {
+      useNotificationStream();
+      return useUnreadCount();
+    });
+    await flush();
+
+    await push({ type: 'notification.created', unread: 4 });
+    expect(result.current).toBe(4);
+  });
+
+  it('reacts to a read the same way it reacts to a new one', async () => {
+    // Marking one read on another device must take the badge DOWN here.
+    listNotifications.mockReturnValue(new Promise(() => {}));
+    client.setQueryData(userQueries.notifications().queryKey, view(5));
+    const { result } = render(() => {
+      useNotificationStream();
+      return useUnreadCount();
+    });
+    await flush();
+
+    await push({ type: 'notification.read', unread: 2 });
+    expect(result.current).toBe(2);
+  });
+
+  it('ignores every other kind of server event', async () => {
+    // The stream carries the whole server's events - scans, playback, library
+    // updates. Only two of them concern the bell, and the cache entry must come
+    // out of the others byte-identical (not merely equal).
+    listNotifications.mockReturnValue(new Promise(() => {}));
+    const key = userQueries.notifications().queryKey;
+    client.setQueryData(key, view(6));
+    const { result } = render(() => {
+      useNotificationStream();
+      return useUnreadCount();
+    });
+    await flush();
+    const before = client.getQueryData(key);
+
+    await push({ type: 'scan.finished', unread: 99 });
+    expect(result.current).toBe(6);
+    expect(client.getQueryData(key)).toBe(before);
+  });
+
+  it('does not invent an inbox for a user who has never loaded one', async () => {
+    // Writing `{ unread }` into an empty cache would leave a view with no
+    // notifications array, which the panel renders by crashing.
+    render(() => useNotificationStream());
+    await push({ type: 'notification.created', unread: 4 });
+    expect(client.getQueryData(userQueries.notifications().queryKey)).toBeUndefined();
+  });
+
+  it('closes the stream when the bell unmounts', () => {
+    // One socket per mount, and the shell remounts on sign-out; leaking them
+    // leaves the browser reconnecting to a server it is no longer signed into.
+    const { unmount } = render(() => useNotificationStream());
+    const s = stream();
+    expect(s.closed).toBe(false);
+    unmount();
+    expect(s.closed).toBe(true);
+  });
+});
+
+describe('the panel latch', () => {
+  it('starts closed and unopened, so the inbox is never fetched to draw a bell', () => {
+    const { result } = render(() => usePanelState());
+    expect(result.current.open).toBe(false);
+    expect(result.current.everOpened).toBe(false);
+  });
+
+  it('flips both on the click that opens it', () => {
+    const { result } = render(() => usePanelState());
+    act(() => result.current.setOpen(true));
+    expect(result.current.open).toBe(true);
+    expect(result.current.everOpened).toBe(true);
+  });
+
+  it('stays latched once closed again', () => {
+    // The latch keeps the inbox query mounted; if it reset on close, every
+    // reopen would refetch and the panel would flash its skeleton each time.
+    const { result } = render(() => usePanelState());
+    act(() => result.current.setOpen(true));
+    act(() => result.current.setOpen(false));
+    expect(result.current.open).toBe(false);
+    expect(result.current.everOpened).toBe(true);
+  });
+
+  it('closing without ever opening leaves the latch alone', () => {
+    const { result } = render(() => usePanelState());
+    act(() => result.current.setOpen(false));
+    expect(result.current.everOpened).toBe(false);
+  });
+});

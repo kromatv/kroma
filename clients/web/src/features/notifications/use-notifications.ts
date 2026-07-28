@@ -46,14 +46,17 @@ export function usePanelState(): {
   setOpen: (open: boolean) => void;
   everOpened: boolean;
 } {
-  const [open, setOpenRaw] = useState(false);
+  const [open, setOpen] = useState(false);
   const [everOpened, setEverOpened] = useState(false);
   return {
     open,
+    everOpened,
+    // Wraps the setter so the latch flips on the same click that opens the
+    // panel. It only ever goes true: closing the panel must not unmount the
+    // inbox query, or every reopen would refetch from scratch.
     setOpen: (next: boolean) => {
       if (next) setEverOpened(true);
-      setOpenRaw(next);
+      setOpen(next);
     },
-    everOpened,
   };
 }
