@@ -16,3 +16,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
+
+[dev-dependencies]
+# `oneshot`, to drive the host-token guard without binding a port.
+tower = { workspace = true }
+tokio = { workspace = true }

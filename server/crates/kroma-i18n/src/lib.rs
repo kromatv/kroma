@@ -474,4 +474,117 @@ mod tests {
         assert_eq!(tr.t("hi", &[("name", "Sam")]), "Hi Sam");
         assert_eq!(i.translator("xx").locale(), "fr");
     }
+    // ----- the builder's other doors, and locale negotiation ----------------------
+
+    #[test]
+    fn every_build_error_says_which_catalog_is_wrong() {
+        // These surface at boot, where the only diagnostic is the message, so
+        // each one has to name the locale it is talking about.
+        let Err(missing) = I18n::builder().build() else { panic!("no default is an error") };
+        let missing = missing.to_string();
+        assert!(missing.contains("default locale"), "{missing}");
+
+        let Err(not_loaded) = I18n::builder().default_locale("de").catalog_json("en", "{}").build()
+        else {
+            panic!("a default with no catalog is an error")
+        };
+        let not_loaded = not_loaded.to_string();
+        assert!(not_loaded.contains("de"), "{not_loaded}");
+
+        // A catalog that is not a flat string map names the catalog AND carries
+        // the parse error, so the broken line is findable.
+        let Err(nested) =
+            I18n::builder().default_locale("fr").catalog_json("fr", r#"{ "a": { "b": "c" } }"#).build()
+        else {
+            panic!("a nested catalog is an error")
+        };
+        let nested = nested.to_string();
+        assert!(nested.contains("fr"), "{nested}");
+        assert!(nested.contains("flat"), "{nested}");
+    }
+
+    #[test]
+    fn a_catalog_can_be_supplied_already_parsed() {
+        // The app embeds its catalogs as JSON, but a module can hand over a map
+        // it built itself - both doors must reach the same engine.
+        let mut entries = HashMap::new();
+        entries.insert("hi".to_string(), "Hallo {name}".to_string());
+        let i18n = I18n::builder()
+            .default_locale("de")
+            .catalog("de", entries)
+            .build()
+            .unwrap();
+        assert_eq!(i18n.translate("de", "hi", &[("name", "Ana")]), "Hallo Ana");
+    }
+
+    #[test]
+    fn the_label_key_derivation_is_overridable() {
+        // The app decides where its native language names live; the engine only
+        // derives the key.
+        let i18n = I18n::builder()
+            .default_locale("fr")
+            .label_key(|c| format!("locales.{c}.native"))
+            .catalog_json("fr", r#"{ "locales.fr.native": "Français" }"#)
+            .build()
+            .unwrap();
+        let info: Vec<_> = i18n.locales().collect();
+        assert_eq!(info[0].label_key, "locales.fr.native");
+    }
+
+    #[test]
+    fn the_supported_list_puts_the_default_first() {
+        // The picker renders in this order, and the default is what an
+        // unconfigured client gets - showing it first is the point.
+        let i18n = fixture();
+        let codes: Vec<&str> = i18n.supported().collect();
+        assert_eq!(codes.first(), Some(&"fr"));
+        assert!(codes.contains(&"en"));
+
+        let labelled: Vec<&str> = i18n.locales().map(|l| l.code).collect();
+        assert_eq!(codes, labelled, "both views agree on the order");
+    }
+
+    #[test]
+    fn a_browser_header_picks_the_first_locale_we_actually_have() {
+        // Accept-Language is a ranked list of things the browser wants, most of
+        // which we will not have. Taking the first ENTRY rather than the first
+        // SUPPORTED one would drop everyone whose top choice we lack to the
+        // default.
+        let i18n = fixture();
+        assert_eq!(i18n.detect_locale(None, Some("de-DE,de;q=0.9,en;q=0.8")), "en");
+        // Quality values are stripped before matching.
+        assert_eq!(i18n.detect_locale(None, Some("en;q=0.8")), "en");
+        // Region and case are normalized away.
+        assert_eq!(i18n.detect_locale(None, Some("EN-GB")), "en");
+        // Nothing we have -> the default.
+        assert_eq!(i18n.detect_locale(None, Some("de,it,ja")), "fr");
+        assert_eq!(i18n.detect_locale(None, None), "fr");
+    }
+
+    #[test]
+    fn an_account_preference_outranks_the_browser() {
+        // The user chose this in their profile; the browser's header is a guess.
+        let i18n = fixture();
+        assert_eq!(i18n.detect_locale(Some("en"), Some("fr")), "en");
+        // ...but a preference we cannot serve falls through to the header
+        // rather than to the default.
+        assert_eq!(i18n.detect_locale(Some("de"), Some("en")), "en");
+        assert_eq!(i18n.detect_locale(Some(""), Some("en")), "en");
+    }
+
+    #[test]
+    fn an_unclosed_placeholder_is_left_alone_rather_than_eating_the_rest() {
+        // A translator typo must not truncate the sentence: whatever follows the
+        // stray `{` is still shown.
+        assert_eq!(interpolate("Salut {name", &[("name", "Ana")]), "Salut {name");
+        assert_eq!(interpolate("a {b c", &[]), "a {b c");
+    }
+
+    #[test]
+    fn an_unknown_placeholder_is_left_visible_so_it_gets_noticed() {
+        // Substituting an empty string would silently drop a word; leaving the
+        // token shows a translator exactly what is missing.
+        assert_eq!(interpolate("Salut {name}", &[]), "Salut {name}");
+        assert_eq!(interpolate("{a} et {b}", &[("a", "x")]), "x et {b}");
+    }
 }
