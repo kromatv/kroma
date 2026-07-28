@@ -500,4 +500,142 @@ mod tests {
         assert!(msg.contains("\"pending\":1"), "counts: {msg}");
         assert!(msg.contains("\"failed\":1"), "counts: {msg}");
     }
+    // ----- driving a real drain ---------------------------------------------------
+
+    use crate::test_support::test_state;
+
+    /// Subjects the synthetic stage reports, and the ids it was asked to
+    /// process. Statics because `Stage` holds plain `fn` pointers, not closures.
+    static SUBJECTS: std::sync::Mutex<Vec<(String, String)>> = std::sync::Mutex::new(Vec::new());
+    static PROCESSED: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+    static FAIL_ON: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+    /// One drain at a time: the statics above are shared state.
+    static SERIAL: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    fn enumerate_static(_state: &SharedState) -> Result<Vec<(String, String)>> {
+        Ok(SUBJECTS.lock().unwrap().clone())
+    }
+
+    fn process_static(_ctx: &JobContext, id: &str) -> Result<()> {
+        PROCESSED.lock().unwrap().push(id.to_string());
+        if FAIL_ON.lock().unwrap().as_deref() == Some(id) {
+            anyhow::bail!("this one always fails");
+        }
+        Ok(())
+    }
+
+    const TEST_STAGE: Stage = Stage {
+        short: "testing",
+        key: "pipeline.testing",
+        subject_kind: "item",
+        concurrency: 1,
+        pause_for_playback: false,
+        enumerate: enumerate_static,
+        process: process_static,
+    };
+
+    /// Set the subject set, drain once, and return the ids that were processed.
+    fn drain(state: &SharedState, subjects: &[(&str, &str)]) -> Vec<String> {
+        *SUBJECTS.lock().unwrap() =
+            subjects.iter().map(|(id, sig)| (id.to_string(), sig.to_string())).collect();
+        PROCESSED.lock().unwrap().clear();
+        run(&TEST_STAGE, &JobContext::for_test(state.clone())).unwrap();
+        let mut done = PROCESSED.lock().unwrap().clone();
+        done.sort();
+        done
+    }
+
+    fn status_of(state: &SharedState, id: &str) -> Option<String> {
+        state
+            .db
+            .get()
+            .unwrap()
+            .query_row(
+                "SELECT status FROM pipeline_tasks WHERE stage='testing' AND subject_id=?1",
+                [id],
+                |r| r.get(0),
+            )
+            .ok()
+    }
+
+    #[test]
+    fn a_drain_processes_every_subject_once_and_then_stops() {
+        let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let state = test_state();
+        *FAIL_ON.lock().unwrap() = None;
+
+        assert_eq!(drain(&state, &[("a", "v1"), ("b", "v1")]), ["a", "b"]);
+        // A second drain with the same signatures has nothing to do - that is
+        // what makes the pipeline cheap to re-run on a schedule.
+        assert!(drain(&state, &[("a", "v1"), ("b", "v1")]).is_empty());
+        // A changed signature re-queues only that subject.
+        assert_eq!(drain(&state, &[("a", "v2"), ("b", "v1")]), ["a"]);
+    }
+
+    #[test]
+    fn a_task_left_running_by_a_dead_drain_is_reclaimed() {
+        // One-run-per-key means no other drain of this stage can be live, so a
+        // `running` row was stranded by one that died mid-batch. `reconcile`
+        // deliberately never touches those, so without this reclaim they stay
+        // running until a server restart - the subject silently never
+        // reprocesses.
+        let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let state = test_state();
+        *FAIL_ON.lock().unwrap() = None;
+
+        crate::test_support::seed_task(&state, "testing", "item", "stranded", "running", None);
+        assert_eq!(status_of(&state, "stranded").as_deref(), Some("running"));
+
+        assert_eq!(drain(&state, &[("stranded", "v1")]), ["stranded"]);
+        assert_eq!(status_of(&state, "stranded").as_deref(), Some("done"));
+    }
+
+    #[test]
+    fn a_subject_that_left_the_set_is_dropped_from_the_ledger() {
+        // Otherwise a deleted title's task sits pending forever and every drain
+        // re-attempts a subject that no longer exists.
+        let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let state = test_state();
+        *FAIL_ON.lock().unwrap() = None;
+
+        drain(&state, &[("a", "v1"), ("gone", "v1")]);
+        assert!(status_of(&state, "gone").is_some());
+
+        drain(&state, &[("a", "v1")]);
+        assert_eq!(status_of(&state, "gone"), None, "the vanished subject was left behind");
+    }
+
+    #[test]
+    fn a_failing_subject_is_recorded_and_does_not_stop_the_others() {
+        // One bad file must not abandon the rest of the batch, and the failure
+        // has to be visible in the ledger rather than just retried forever.
+        let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let state = test_state();
+        *FAIL_ON.lock().unwrap() = Some("bad".to_string());
+
+        let done = drain(&state, &[("good", "v1"), ("bad", "v1")]);
+        assert_eq!(done, ["bad", "good"], "both were attempted");
+        assert_eq!(status_of(&state, "good").as_deref(), Some("done"));
+        assert_ne!(status_of(&state, "bad").as_deref(), Some("done"));
+        *FAIL_ON.lock().unwrap() = None;
+    }
+
+    #[test]
+    fn a_cancelled_drain_stops_claiming() {
+        let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let state = test_state();
+        *FAIL_ON.lock().unwrap() = None;
+        *SUBJECTS.lock().unwrap() =
+            (0..5).map(|n| (format!("s{n}"), "v1".to_string())).collect();
+        PROCESSED.lock().unwrap().clear();
+
+        let handle = std::sync::Arc::new(crate::services::jobs::RunHandle::new(
+            "t".into(),
+            "pipeline.testing".into(),
+        ));
+        handle.request_cancel();
+        run(&TEST_STAGE, &JobContext::from_handle(state, handle)).unwrap();
+
+        assert!(PROCESSED.lock().unwrap().is_empty(), "cancelled before the first claim");
+    }
 }
