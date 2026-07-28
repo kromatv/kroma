@@ -239,4 +239,92 @@ mod tests {
         assert_eq!(clean, "tr td.name");
         assert_eq!(terms, vec!["Téléchargé".to_string()]);
     }
+    // ----- the two pseudo-class scanners -------------------------------------------
+
+    #[test]
+    fn contains_terms_are_split_out_of_the_selector() {
+        // `:contains()` is a jQuery extension no CSS engine implements, so it is
+        // lifted out and applied as a text filter afterwards. Leaving it in the
+        // selector makes the whole thing fail to parse and the row match nothing.
+        let (clean, terms) = strip_contains(r#"tr:contains("Download")"#);
+        assert_eq!(clean, "tr");
+        assert_eq!(terms, ["Download"]);
+
+        // Unquoted is the same thing.
+        let (clean, terms) = strip_contains("tr:contains(Download)");
+        assert_eq!(clean, "tr");
+        assert_eq!(terms, ["Download"]);
+    }
+
+    #[test]
+    fn several_contains_terms_all_survive_and_the_rest_of_the_selector_is_kept() {
+        let (clean, terms) =
+            strip_contains(r#"table tr:contains("HD"):contains("x265") td.name"#);
+        assert_eq!(clean, "table tr td.name");
+        assert_eq!(terms, ["HD", "x265"]);
+    }
+
+    #[test]
+    fn a_contains_term_with_parentheses_inside_it_is_read_whole() {
+        // The argument is read by balancing parens, not by finding the first
+        // `)`, or a release named "Movie (2020)" would truncate to "Movie (2020"
+        // and match nothing.
+        let (clean, terms) = strip_contains(r#"tr:contains("Movie (2020) 1080p")"#);
+        assert_eq!(clean, "tr");
+        assert_eq!(terms, ["Movie (2020) 1080p"]);
+    }
+
+    #[test]
+    fn a_non_ascii_contains_term_does_not_corrupt_the_selector() {
+        // FR/DE trackers really do this. The scanner is byte-offset based, so a
+        // multi-byte char must not desync the slice - it would panic on a
+        // non-char-boundary or silently mangle the cleaned selector.
+        let (clean, terms) = strip_contains(r#"tr:contains("Téléchargé")"#);
+        assert_eq!(clean, "tr");
+        assert_eq!(terms, ["Téléchargé"]);
+
+        let (clean, terms) = strip_contains(r#"td.名前:contains("ダウンロード") a"#);
+        assert_eq!(clean, "td.名前 a");
+        assert_eq!(terms, ["ダウンロード"]);
+    }
+
+    #[test]
+    fn a_selector_with_no_contains_is_returned_untouched() {
+        let (clean, terms) = strip_contains("table tr td.name a");
+        assert_eq!(clean, "table tr td.name a");
+        assert!(terms.is_empty());
+    }
+
+    #[test]
+    fn has_groups_are_dropped_whole_for_engines_that_cannot_parse_them() {
+        // The last-resort fallback: better to match a superset of rows and
+        // filter later than to fail the selector outright and return nothing.
+        assert_eq!(strip_has("tr:has(a.download)"), "tr");
+        assert_eq!(strip_has("table tr:has(td.seeds) td.name"), "table tr td.name");
+    }
+
+    #[test]
+    fn a_nested_has_group_is_dropped_whole() {
+        // Balanced-paren scanning again: stopping at the first `)` would leave
+        // a dangling `)` behind and produce an unparseable selector.
+        assert_eq!(strip_has("tr:has(td:nth-child(2)) a"), "tr a");
+    }
+
+    #[test]
+    fn several_has_groups_are_all_dropped() {
+        assert_eq!(strip_has("tr:has(a):has(td.x) span"), "tr span");
+    }
+
+    #[test]
+    fn a_selector_with_no_has_is_returned_untouched() {
+        assert_eq!(strip_has("table tr td a"), "table tr td a");
+        assert_eq!(strip_has(""), "");
+    }
+
+    #[test]
+    fn an_unterminated_has_group_does_not_hang_or_panic() {
+        // A malformed definition should degrade, not spin.
+        let out = strip_has("tr:has(a.download");
+        assert!(out.len() <= "tr:has(a.download".len(), "{out}");
+    }
 }
