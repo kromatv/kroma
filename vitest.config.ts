@@ -106,6 +106,9 @@ const include = [
   // The build-identity collector. Not a client: it runs in Node at build time
   // and is required by an Expo app.config.js, which is why it has no src/.
   'clients/build-info/**/*.test.ts',
+  // The web client's own build-time plugin, which sits beside its vite config
+  // rather than under src/.
+  'clients/web/*.test.ts',
   // The kit site is where the workbench is COMPOSED - the tool, the design
   // system's stories, and the config that joins them - so the integration test
   // for all three lives with the config rather than in either package.
