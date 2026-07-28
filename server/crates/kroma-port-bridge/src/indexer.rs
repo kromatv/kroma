@@ -280,67 +280,7 @@ mod tests {
 
     /// A `HostCtx` whose methods are never invoked by these bridge handlers (the
     /// mock ports ignore `host`); only the trait bound needs to be satisfied.
-    #[derive(Clone)]
-    struct MockHost;
-    impl HostCtx for MockHost {
-        fn db(&self) -> &kroma_module_sdk::db::Pool {
-            unimplemented!("db is not touched by the bridge handlers")
-        }
-        fn data_dir(&self) -> &std::path::Path {
-            std::path::Path::new("/tmp")
-        }
-        fn require(
-            &self,
-            _user: &kroma_module_sdk::domain::User,
-            _perm: kroma_module_sdk::domain::Permission,
-        ) -> Result<(), axum::response::Response> {
-            Ok(())
-        }
-        fn require_any_admin(
-            &self,
-            _user: &kroma_module_sdk::domain::User,
-        ) -> Result<(), axum::response::Response> {
-            Ok(())
-        }
-        fn lerr(
-            &self,
-            _user: &kroma_module_sdk::domain::User,
-            _status: axum::http::StatusCode,
-            _key: &str,
-        ) -> axum::response::Response {
-            unimplemented!()
-        }
-        fn setting_str(&self, _key: &str, default: &str) -> String {
-            default.to_string()
-        }
-        fn setting_bool(&self, _key: &str, default: bool) -> bool {
-            default
-        }
-        fn setting_i64(&self, _key: &str, default: i64) -> i64 {
-            default
-        }
-        fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
-        fn publish(&self, _event: kroma_module_host::Event) {}
-        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
-        fn module_enabled(&self, _id: &str) -> bool {
-            true
-        }
-        fn library_folders(&self) -> Vec<kroma_module_host::LibraryFolders> {
-            Vec::new()
-        }
-        fn tmdb_api_key(&self) -> Option<String> {
-            None
-        }
-        fn metadata_language(&self) -> String {
-            "en".into()
-        }
-        fn get_service(
-            &self,
-            _type_id: std::any::TypeId,
-        ) -> Option<Arc<dyn std::any::Any + Send + Sync>> {
-            None
-        }
-    }
+    use crate::testing::MockHost;
 
     fn sample_row(id: &str) -> IndexerRow {
         IndexerRow {
