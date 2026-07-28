@@ -99,7 +99,11 @@ export default function DownloadsPage() {
         title={t('admin.downloadsTitle')}
         subtitle={t('admin.downloadsSub')}
         action={
-          <HeaderAction icon={IconDownload} label={t('manual.title')} onClick={() => setManual(true)} />
+          <HeaderAction
+            icon={IconDownload}
+            label={t('manual.title')}
+            onClick={() => setManual(true)}
+          />
         }
       />
 
@@ -171,10 +175,7 @@ export default function DownloadsPage() {
         {data === null ? <TableSkeleton rows={6} /> : null}
         {data && downloads.length === 0 ? (
           <div className="py-6">
-            <EmptyState
-              icon="download"
-              title={t('downloads.empty')}
-            />
+            <EmptyState icon="download" title={t('downloads.empty')} />
           </div>
         ) : null}
       </div>

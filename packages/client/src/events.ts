@@ -3,13 +3,7 @@
 // (scan finished, metadata/art resolved). Auto-reconnects with backoff.
 
 import { sessionToken } from './session';
-import type {
-  CastClientMessage,
-  CastCommand,
-  CastReceiver,
-  CastState,
-  StageStat,
-} from './types';
+import type { CastClientMessage, CastCommand, CastReceiver, CastState, StageStat } from './types';
 
 export type ServerEvent =
   | { type: 'hello'; version: string }

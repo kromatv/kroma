@@ -115,22 +115,35 @@ function keyOf(subscription: PushSubscription, name: 'p256dh' | 'auth'): string 
   return bytesToBase64Url(new Uint8Array(raw));
 }
 
+/** First matching label for `ua` from `[pattern, label]` pairs, or `fallback`.
+ *  ORDER MATTERS and is why this is a list rather than a map: Edge and Chrome
+ *  both claim "Chrome" in their user agent, and every Chromium browser also
+ *  claims "Safari", so the more specific pattern has to be tested first. */
+function firstMatch(ua: string, table: [RegExp, string][], fallback: string): string {
+  for (const [pattern, label] of table) if (pattern.test(ua)) return label;
+  return fallback;
+}
+
+const BROWSERS: [RegExp, string][] = [
+  [/Firefox\//, 'Firefox'],
+  [/Edg\//, 'Edge'],
+  [/Chrome\//, 'Chrome'],
+  [/Safari\//, 'Safari'],
+];
+
+const PLATFORMS: [RegExp, string][] = [
+  [/Windows/, 'Windows'],
+  [/Android/, 'Android'],
+  [/iPhone|iPad|iPod/, 'iOS'],
+  [/Mac OS X/, 'macOS'],
+  [/Linux/, 'Linux'],
+];
+
 /** A human label for the "your devices" list. Best effort, never precise. */
 function deviceLabel(): string {
   const ua = navigator.userAgent;
-  const browser =
-    /Firefox\//.test(ua) ? 'Firefox'
-    : /Edg\//.test(ua) ? 'Edge'
-    : /Chrome\//.test(ua) ? 'Chrome'
-    : /Safari\//.test(ua) ? 'Safari'
-    : 'Browser';
-  const os =
-    /Windows/.test(ua) ? 'Windows'
-    : /Android/.test(ua) ? 'Android'
-    : /iPhone|iPad|iPod/.test(ua) ? 'iOS'
-    : /Mac OS X/.test(ua) ? 'macOS'
-    : /Linux/.test(ua) ? 'Linux'
-    : '';
+  const browser = firstMatch(ua, BROWSERS, 'Browser');
+  const os = firstMatch(ua, PLATFORMS, '');
   return os ? `${browser} on ${os}` : browser;
 }
 

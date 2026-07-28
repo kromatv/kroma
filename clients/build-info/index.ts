@@ -111,9 +111,9 @@ export function collectBuildInfo(
 ): BuildInfo {
   // Read and parsed rather than `require`d: this module is ESM (see the note in
   // its package.json), and there is no `require` in an ES module.
-  const pkg = JSON.parse(
-    fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'),
-  ) as { version?: string };
+  const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8')) as {
+    version?: string;
+  };
   return {
     version: overrides?.version ?? pkg.version ?? '0.0.0',
     commit: git('rev-parse --short HEAD', projectRoot),

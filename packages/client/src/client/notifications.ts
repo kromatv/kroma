@@ -5,12 +5,7 @@
 // inbox" parameter, because the server takes the user from the session and
 // ignores any id that says otherwise.
 
-import type {
-  Notification,
-  NotificationPrefs,
-  NotificationsView,
-  SubscribeBody,
-} from '../types';
+import type { Notification, NotificationPrefs, NotificationsView, SubscribeBody } from '../types';
 import type { RequestContext } from './base';
 
 const JSON_HEADERS = { 'content-type': 'application/json' };
@@ -64,9 +59,7 @@ export function setNotificationPrefs(
 /** The server's VAPID public key (`applicationServerKey`), plus whether this
  * account already has a push endpoint registered. The keypair is minted on the
  * first call, so a server nobody enabled push on never grows one. */
-export function pushKey(
-  ctx: RequestContext,
-): Promise<{ publicKey: string; subscribed: boolean }> {
+export function pushKey(ctx: RequestContext): Promise<{ publicKey: string; subscribed: boolean }> {
   return ctx.json<{ publicKey: string; subscribed: boolean }>('/push/key');
 }
 

@@ -76,7 +76,9 @@ function PushPanel() {
       await qc.invalidateQueries({ queryKey: ['push', 'key'] });
     } catch (e) {
       const reason = e instanceof Error ? e.message : '';
-      setError(reason in BLOCKER_LABEL ? t(BLOCKER_LABEL[reason as PushBlocker]) : t('push.failed'));
+      setError(
+        reason in BLOCKER_LABEL ? t(BLOCKER_LABEL[reason as PushBlocker]) : t('push.failed'),
+      );
     } finally {
       setBusy(false);
     }
@@ -122,7 +124,13 @@ function PushPanel() {
 
       {subscribed && !blocker && (
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" label={t('push.sendTest')} onPress={sendTest} loading={busy} />
+          <Button
+            variant="ghost"
+            size="sm"
+            label={t('push.sendTest')}
+            onPress={sendTest}
+            loading={busy}
+          />
           {tested !== null && (
             <span className="text-[12.5px] text-muted">
               {tested > 0 ? t('push.testSent') : t('push.testFailed')}

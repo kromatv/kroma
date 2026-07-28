@@ -148,11 +148,7 @@ export function DownloadClientsSection() {
         ))}
       </div>
       {data && clients.length === 0 ? (
-        <EmptyState
-          icon="server"
-          title={t('dlclients.empty')}
-          action={addButton ?? undefined}
-        />
+        <EmptyState icon="server" title={t('dlclients.empty')} action={addButton ?? undefined} />
       ) : null}
 
       <DownloadClientModal />

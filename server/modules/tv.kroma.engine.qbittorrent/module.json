@@ -10,7 +10,13 @@
       "id": "qbittorrent",
       "label": "qBittorrent",
       "fields": [
-        { "key": "url", "label": "field.url", "type": "string", "placeholder": "http://nas:8080", "required": true },
+        {
+          "key": "url",
+          "label": "field.url",
+          "type": "string",
+          "placeholder": "http://nas:8080",
+          "required": true
+        },
         { "key": "username", "label": "field.username", "type": "string" },
         { "key": "password", "label": "field.password", "type": "string", "secret": true }
       ]
