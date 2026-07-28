@@ -3287,6 +3287,7 @@ dependencies = [
  "serde_json",
  "tokenizers 0.23.1",
  "tokio",
+ "tower",
  "tracing",
 ]
 

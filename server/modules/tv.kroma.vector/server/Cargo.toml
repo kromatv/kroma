@@ -38,3 +38,7 @@ tokenizers = { workspace = true, optional = true }
 candle-core = { workspace = true, optional = true, features = ["metal"] }
 candle-nn = { workspace = true, optional = true, features = ["metal"] }
 candle-transformers = { workspace = true, optional = true, features = ["metal"] }
+
+[dev-dependencies]
+# `oneshot`, to drive the embedder routes without binding a port.
+tower = { workspace = true }
