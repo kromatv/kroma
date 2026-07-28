@@ -99,6 +99,10 @@ const include = [
   // testable here, and they do not need excluding by path: a screen's test would
   // be a `.tsx`, and only `.ts` is collected from this client.
   'clients/mobile/src/**/*.test.ts',
+  // The native TV shell (Apple TV / Android TV). Same rule as the phone: its
+  // screens are `.tsx`, so only the plain-TypeScript layer is collected - the
+  // device session store, the launcher links, the Siri search bridge.
+  'clients/tv-native/src/**/*.test.ts',
   // The kit site is where the workbench is COMPOSED - the tool, the design
   // system's stories, and the config that joins them - so the integration test
   // for all three lives with the config rather than in either package.
