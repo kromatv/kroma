@@ -418,6 +418,36 @@ mod tests {
         browse_dirs(path.to_string()).unwrap_or_else(|_| panic!("{path} did not browse"))
     }
 
+    fn admin() -> User {
+        user_with(vec![Permission::LibraryManage])
+    }
+
+    /// A real app state, from the crate's own API harness. The CRUD handlers
+    /// read and write the persisted `libraries` setting, so nothing short of one
+    /// exercises them.
+    fn state() -> SharedState {
+        crate::api::test_support::test_app().state
+    }
+
+    /// The libraries as they are actually persisted, read back the way the
+    /// handlers read them.
+    fn defs(state: &SharedState) -> Vec<LibraryDef> {
+        settings::library_defs(&state.settings, &state.config)
+    }
+
+    async fn create(state: &SharedState, name: &str, folders: Vec<&str>) -> Result<String, Response> {
+        let body = CreateLibraryBody {
+            name: name.into(),
+            kind: Some("movies".into()),
+            folders: folders.into_iter().map(String::from).collect(),
+        };
+        let res = create_library(State(state.clone()), AuthUser(admin()), Json(body)).await?;
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let v: Value = serde_json::from_slice(&bytes).unwrap();
+        Ok(v["id"].as_str().unwrap().to_string())
+    }
+
     #[test]
     fn folder_lists_are_trimmed_deduped_and_stripped_of_blanks() {
         // These come from an admin typing paths into a form, so leading spaces
@@ -650,6 +680,287 @@ mod tests {
         .await
         .unwrap_err();
         assert_eq!(err.status(), StatusCode::NOT_FOUND);
+    }
+
+    // ----- creating, editing and removing a library ----------------------------
+
+    #[tokio::test]
+    async fn a_created_library_persists_with_its_folders_cleaned() {
+        let state = state();
+        let id = create(&state, "  Films  ", vec![" /media/films ", "", "/media/films"])
+            .await
+            .unwrap();
+
+        let saved = defs(&state);
+        assert_eq!(saved.len(), 1);
+        assert_eq!(saved[0].id, id);
+        // Trimmed, and the duplicate folder is gone - the scanner would otherwise
+        // walk the same tree twice.
+        assert_eq!(saved[0].name, "Films");
+        assert_eq!(saved[0].folders, ["/media/films"]);
+        assert_eq!(saved[0].kind, "movies");
+        // New libraries scan on their own; an admin should not have to remember.
+        assert!(saved[0].auto_scan);
+    }
+
+    #[tokio::test]
+    async fn every_library_gets_its_own_id() {
+        // The id is hashed from the name plus a random token. Two libraries that
+        // happen to share a name must still be two libraries, or editing one
+        // would silently edit the other.
+        let state = state();
+        let a = create(&state, "Films", vec!["/a"]).await.unwrap();
+        let b = create(&state, "Films", vec!["/b"]).await.unwrap();
+        assert_ne!(a, b);
+        assert_eq!(defs(&state).len(), 2);
+    }
+
+    #[tokio::test]
+    async fn a_library_needs_a_name() {
+        // A blank name renders as an unlabelled card nobody can identify.
+        let state = state();
+        for blank in ["", "   "] {
+            let body = CreateLibraryBody { name: blank.into(), kind: None, folders: Vec::new() };
+            let err = create_library(State(state.clone()), AuthUser(admin()), Json(body))
+                .await
+                .unwrap_err();
+            assert_eq!(err.status(), StatusCode::BAD_REQUEST);
+        }
+        assert!(defs(&state).is_empty(), "a rejected create must not persist anything");
+    }
+
+    #[tokio::test]
+    async fn creating_a_library_needs_the_permission() {
+        let state = state();
+        let body = CreateLibraryBody { name: "Films".into(), kind: None, folders: Vec::new() };
+        let err = create_library(
+            State(state.clone()),
+            AuthUser(user_with(vec![Permission::Playback, Permission::UsersManage])),
+            Json(body),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(err.status(), StatusCode::FORBIDDEN);
+        assert!(defs(&state).is_empty());
+    }
+
+    #[tokio::test]
+    async fn an_update_touches_only_the_fields_it_names() {
+        // The admin form PATCHes; an omitted field must keep its value rather
+        // than reset to a default.
+        let state = state();
+        let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
+
+        let body = UpdateLibraryBody {
+            name: Some("Cinéma".into()),
+            kind: None,
+            folders: None,
+            auto_scan: None,
+        };
+        let res =
+            update_library(State(state.clone()), AuthUser(admin()), AxPath(id), Json(body))
+                .await
+                .unwrap();
+        assert_eq!(res.status(), StatusCode::NO_CONTENT);
+
+        let saved = &defs(&state)[0];
+        assert_eq!(saved.name, "Cinéma");
+        assert_eq!(saved.kind, "movies");
+        assert_eq!(saved.folders, ["/media/films"]);
+        assert!(saved.auto_scan);
+    }
+
+    #[tokio::test]
+    async fn an_update_can_turn_auto_scan_off_without_touching_anything_else() {
+        // `Some(false)` has to survive: an `Option<bool>` that treated false as
+        // "not supplied" would make the toggle impossible to turn off.
+        let state = state();
+        let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
+
+        let body = UpdateLibraryBody {
+            name: None,
+            kind: None,
+            folders: None,
+            auto_scan: Some(false),
+        };
+        update_library(State(state.clone()), AuthUser(admin()), AxPath(id), Json(body))
+            .await
+            .unwrap();
+
+        let saved = &defs(&state)[0];
+        assert!(!saved.auto_scan);
+        assert_eq!(saved.name, "Films");
+    }
+
+    #[tokio::test]
+    async fn a_blank_new_name_is_ignored_rather_than_applied() {
+        // The form sends every field; a cleared name must not wipe the label.
+        let state = state();
+        let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
+
+        let body = UpdateLibraryBody {
+            name: Some("   ".into()),
+            kind: None,
+            folders: None,
+            auto_scan: None,
+        };
+        update_library(State(state.clone()), AuthUser(admin()), AxPath(id), Json(body))
+            .await
+            .unwrap();
+
+        assert_eq!(defs(&state)[0].name, "Films");
+    }
+
+    #[tokio::test]
+    async fn replacing_the_folders_cleans_them_too() {
+        let state = state();
+        let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
+
+        let body = UpdateLibraryBody {
+            name: None,
+            kind: Some("shows".into()),
+            folders: Some(vec![" /media/shows ".into(), "".into(), "/media/shows".into()]),
+            auto_scan: None,
+        };
+        update_library(State(state.clone()), AuthUser(admin()), AxPath(id), Json(body))
+            .await
+            .unwrap();
+
+        let saved = &defs(&state)[0];
+        assert_eq!(saved.folders, ["/media/shows"]);
+        assert_eq!(saved.kind, "shows");
+    }
+
+    #[tokio::test]
+    async fn editing_a_library_that_is_not_there_is_a_404() {
+        // A stale admin tab must not create a library by PATCHing a dead id.
+        let state = state();
+        create(&state, "Films", vec!["/media/films"]).await.unwrap();
+
+        let body = UpdateLibraryBody {
+            name: Some("Ghost".into()),
+            kind: None,
+            folders: None,
+            auto_scan: None,
+        };
+        let err = update_library(
+            State(state.clone()),
+            AuthUser(admin()),
+            AxPath("no-such-library".into()),
+            Json(body),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(err.status(), StatusCode::NOT_FOUND);
+
+        let saved = defs(&state);
+        assert_eq!(saved.len(), 1);
+        assert_eq!(saved[0].name, "Films");
+    }
+
+    #[tokio::test]
+    async fn deleting_removes_that_library_and_leaves_the_others() {
+        let state = state();
+        let films = create(&state, "Films", vec!["/media/films"]).await.unwrap();
+        let shows = create(&state, "Séries", vec!["/media/shows"]).await.unwrap();
+
+        let res = delete_library(State(state.clone()), AuthUser(admin()), AxPath(films))
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::NO_CONTENT);
+
+        let saved = defs(&state);
+        assert_eq!(saved.len(), 1);
+        assert_eq!(saved[0].id, shows);
+    }
+
+    #[tokio::test]
+    async fn deleting_a_library_that_is_not_there_is_a_404() {
+        // Not a silent success: a delete that "worked" on a dead id would hide
+        // that the admin's list is stale.
+        let state = state();
+        create(&state, "Films", vec!["/media/films"]).await.unwrap();
+        let err =
+            delete_library(State(state.clone()), AuthUser(admin()), AxPath("ghost".into()))
+                .await
+                .unwrap_err();
+        assert_eq!(err.status(), StatusCode::NOT_FOUND);
+        assert_eq!(defs(&state).len(), 1);
+    }
+
+    #[tokio::test]
+    async fn deleting_needs_the_permission() {
+        let state = state();
+        let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
+        let err = delete_library(
+            State(state.clone()),
+            AuthUser(user_with(vec![Permission::Playback])),
+            AxPath(id),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(err.status(), StatusCode::FORBIDDEN);
+        assert_eq!(defs(&state).len(), 1, "a refused delete must not remove anything");
+    }
+
+    #[tokio::test]
+    async fn a_scan_can_be_kicked_by_hand_and_is_gated() {
+        let state = state();
+        let res = scan_library(State(state.clone()), AuthUser(admin()), AxPath("any".into()))
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let err = scan_library(
+            State(state.clone()),
+            AuthUser(user_with(vec![Permission::Playback])),
+            AxPath("any".into()),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(err.status(), StatusCode::FORBIDDEN);
+    }
+
+    // ----- the library list ----------------------------------------------------
+
+    #[tokio::test]
+    async fn the_list_reports_every_library_with_a_zeroed_card() {
+        // A library with nothing scanned yet still has to render: the counts come
+        // from a stats query that has no row for it, and `None` there must read
+        // as zero rather than drop the card.
+        let state = state();
+        create(&state, "Films", vec!["/media/films"]).await.unwrap();
+
+        let res = list_libraries(State(state.clone()), AuthUser(admin())).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+        let v: Value = serde_json::from_slice(&bytes).unwrap();
+
+        let libs = v["libraries"].as_array().unwrap();
+        assert_eq!(libs.len(), 1);
+        assert_eq!(libs[0]["name"], "Films");
+        assert_eq!(libs[0]["kind"], "film");
+        assert_eq!(libs[0]["itemCount"], 0);
+        assert_eq!(libs[0]["sizeBytes"], 0);
+        assert_eq!(libs[0]["autoScan"], true);
+    }
+
+    #[tokio::test]
+    async fn the_list_is_open_to_any_admin_not_just_a_library_manager() {
+        // It is a read for the console shell; a requests moderator needs to see
+        // the libraries page without holding library.manage.
+        let state = state();
+        let res =
+            list_libraries(State(state.clone()), AuthUser(user_with(vec![Permission::UsersManage])))
+                .await
+                .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let err =
+            list_libraries(State(state.clone()), AuthUser(user_with(vec![Permission::Playback])))
+                .await
+                .unwrap_err();
+        assert_eq!(err.status(), StatusCode::FORBIDDEN);
     }
 
     // ----- library cards -------------------------------------------------------
