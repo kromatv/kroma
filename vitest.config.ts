@@ -2,14 +2,25 @@ import { fileURLToPath } from 'node:url';
 import { configDefaults, defineConfig } from 'vitest/config';
 import { propDocs } from './clients/tv-build/props-docs';
 import { WEB_EXTENSIONS } from './clients/tv-build/rnw';
+// By relative path, like propDocs above: the root workspace does not depend on
+// @kroma/module-sdk, so its published specifier is not resolvable from here.
+import { kromaModule } from './packages/module-sdk/vite';
 
 const dir = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
-// `virtual:kroma-props` - the Props tab's data, read by TypeScript's own checker
-// over @kroma/ui. The kit site's config loads this too; it is here so the kit's
-// tests exercise the REAL prop docs rather than a stub, which is the only way
-// `stories.web.ts` can be imported under the runner at all.
-const plugins = () => [propDocs({ tsconfig: dir('./packages/ui/tsconfig.json') })];
+const plugins = () => [
+  // `virtual:kroma-props` - the Props tab's data, read by TypeScript's own
+  // checker over @kroma/ui. The kit site's config loads this too; it is here so
+  // the kit's tests exercise the REAL prop docs rather than a stub, which is the
+  // only way `stories.web.ts` can be imported under the runner at all.
+  propDocs({ tsconfig: dir('./packages/ui/tsconfig.json') }),
+  // A module's entry file imports neither its manifest nor its locales - the
+  // folder layout is the contract, and this plugin is what fills them in. Every
+  // shell that bundles module UIs has it, so the runner needs it too: without
+  // it `defineModule({ ... })` throws "no manifest" on IMPORT, which makes the
+  // app's whole module roster unloadable in a test.
+  kromaModule(),
+];
 
 // The `#tv`/`#web` subpath aliases (from tsconfig paths) are resolved here so
 // source files that use them are importable under vitest. Shared by both
