@@ -888,4 +888,148 @@ mod tests {
         // A different requester's scope excludes them.
         assert!(missing_items(&conn, "2026-07-05", Some("someone-else"), 50).unwrap().is_empty());
     }
+
+    /// A show row, which `library_gaps` references by foreign key.
+    fn seed_show(p: &Pool, show_id: &str) {
+        let conn = p.get().unwrap();
+        // Idempotent: a test seeding two shows shares one library.
+        conn.execute(
+            "INSERT OR IGNORE INTO libraries (id, name, kind, path, added_at) \
+             VALUES ('lib1','Films','movies','/x','now')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO shows (id, library, title, added_at) VALUES (?1,'lib1','S','now')",
+            params![show_id],
+        )
+        .unwrap();
+    }
+
+    /// One missing episode, as `library_missing`'s scan records them.
+    fn gap(season: u32, episode: u32, air: &str) -> (u32, u32, Option<String>) {
+        (season, episode, Some(air.to_string()))
+    }
+
+    #[test]
+    fn replace_show_gaps_rewrites_only_that_show() {
+        let p = pool();
+        seed_show(&p, "s1");
+        seed_show(&p, "s2");
+        replace_show_gaps(&p, "s1", 1, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
+        replace_show_gaps(&p, "s2", 2, "Beta", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
+
+        // Re-scanning one show must not disturb another's rows: the scan walks
+        // shows one at a time and each write is that show's whole truth.
+        replace_show_gaps(&p, "s1", 1, "Alpha", None, &[gap(2, 5, "2021-02-02")], 2).unwrap();
+        let conn = p.get().unwrap();
+        let rows = library_gaps_list(&conn, 50).unwrap();
+        assert_eq!(rows.len(), 2);
+        let alpha = rows.iter().find(|r| r.title == "Alpha").unwrap();
+        assert_eq!((alpha.season, alpha.episode), (Some(2), Some(5)));
+        assert!(rows.iter().any(|r| r.title == "Beta"));
+    }
+
+    #[test]
+    fn replace_show_gaps_with_no_rows_clears_a_now_complete_show() {
+        let p = pool();
+        seed_show(&p, "s1");
+        replace_show_gaps(&p, "s1", 1, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
+        // The episode has since been downloaded, so the show has no gaps left -
+        // and the row has to GO, or the missing view lists an episode that is on
+        // disk.
+        replace_show_gaps(&p, "s1", 1, "Alpha", None, &[], 2).unwrap();
+        assert!(library_gaps_list(&p.get().unwrap(), 50).unwrap().is_empty());
+    }
+
+    #[test]
+    fn library_gaps_list_reports_gaps_as_unrequested_missing_rows() {
+        let p = pool();
+        seed_show(&p, "s1");
+        replace_show_gaps(&p, "s1", 42, "Alpha", Some("/p.jpg"), &[gap(1, 3, "2020-01-01")], 1)
+            .unwrap();
+
+        let rows = library_gaps_list(&p.get().unwrap(), 50).unwrap();
+        assert_eq!(rows.len(), 1);
+        let r = &rows[0];
+        // No request behind them yet - the client turns one into a request when
+        // the user asks to watch it.
+        assert!(r.request_id.is_none());
+        assert_eq!(r.status, "missing");
+        assert_eq!(r.tmdb_id, 42);
+        assert_eq!(r.poster_url.as_deref(), Some("/p.jpg"));
+        assert_eq!(r.air_date.as_deref(), Some("2020-01-01"));
+    }
+
+    #[test]
+    fn library_gaps_list_hides_a_show_that_already_has_an_open_request() {
+        let p = pool();
+        seed_show(&p, "s1");
+        replace_show_gaps(&p, "s1", 42, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 42, None), 1).unwrap();
+
+        // That request's own ledger already tracks these episodes; listing both
+        // shows the user the same missing episode twice.
+        assert!(library_gaps_list(&p.get().unwrap(), 50).unwrap().is_empty());
+    }
+
+    #[test]
+    fn library_gaps_list_shows_a_gap_again_once_its_request_is_denied() {
+        let p = pool();
+        seed_show(&p, "s1");
+        replace_show_gaps(&p, "s1", 42, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 42, None), 1).unwrap();
+        assert!(library_gaps_list(&p.get().unwrap(), 50).unwrap().is_empty());
+
+        set_request_status(&p, "r1", RequestStatus::Denied, None, None, 2).unwrap();
+        // A denied request tracks nothing, so the episode is missing again - and
+        // the user can ask for it a different way.
+        assert_eq!(library_gaps_list(&p.get().unwrap(), 50).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn library_gaps_list_ignores_a_movie_request_for_the_same_tmdb_id() {
+        let p = pool();
+        seed_show(&p, "s1");
+        replace_show_gaps(&p, "s1", 42, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
+        // tmdb ids are only unique WITHIN a kind, so a movie request numbered 42
+        // says nothing about show 42.
+        insert_request(&p, &new_req("r1", RequestKind::Movie, 42, None), 1).unwrap();
+        assert_eq!(library_gaps_list(&p.get().unwrap(), 50).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn library_gaps_list_sorts_by_title_then_episode_and_honours_the_limit() {
+        let p = pool();
+        seed_show(&p, "s1");
+        seed_show(&p, "s2");
+        replace_show_gaps(&p, "s2", 2, "Beta", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
+        replace_show_gaps(
+            &p,
+            "s1",
+            1,
+            "Alpha",
+            None,
+            &[gap(2, 1, "2020-01-01"), gap(1, 2, "2020-01-01")],
+            1,
+        )
+        .unwrap();
+
+        let conn = p.get().unwrap();
+        let rows = library_gaps_list(&conn, 50).unwrap();
+        let seen: Vec<(String, Option<u32>, Option<u32>)> =
+            rows.iter().map(|r| (r.title.clone(), r.season, r.episode)).collect();
+        // Title first, then season, then episode - the order the missing view
+        // renders, so a show's episodes read in sequence.
+        assert_eq!(
+            seen,
+            vec![
+                ("Alpha".into(), Some(1), Some(2)),
+                ("Alpha".into(), Some(2), Some(1)),
+                ("Beta".into(), Some(1), Some(1)),
+            ]
+        );
+        assert_eq!(library_gaps_list(&conn, 2).unwrap().len(), 2);
+    }
 }
+
