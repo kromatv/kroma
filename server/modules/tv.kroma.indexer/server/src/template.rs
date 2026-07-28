@@ -757,4 +757,90 @@ mod tests {
         // An invalid regex in re_replace leaves the input untouched.
         assert_eq!(render(r#"{{ re_replace .Keywords "[" "x" }}"#, &ctx()), "the matrix 1999");
     }
+    // ----- malformed templates degrade to their own source ------------------------
+    //
+    // A definition is community-maintained YAML: it WILL contain typos. Every
+    // one of these would otherwise be a hard error that hides every release from
+    // that tracker, so `render` falls back to the literal source and the broken
+    // bit is visible in the built URL instead.
+
+    #[track_caller]
+    fn unchanged(template: &str) {
+        assert_eq!(render(template, &ctx()), template, "should have come back verbatim");
+    }
+
+    #[test]
+    fn an_if_without_an_end_is_left_as_written() {
+        unchanged("{{ if .Config.freeleech }}&free=1");
+    }
+
+    #[test]
+    fn a_range_without_an_end_is_left_as_written() {
+        unchanged("{{ range .Categories }}&cat={{ . }}");
+    }
+
+    #[test]
+    fn a_stray_end_or_else_is_left_as_written() {
+        unchanged("&x=1{{ end }}");
+        unchanged("&x=1{{ else }}&y=2");
+    }
+
+    #[test]
+    fn an_unbalanced_parenthesis_is_left_as_written() {
+        unchanged("{{ if (eq .Config.sort \"seeders\" }}&s=1{{ end }}");
+    }
+
+    #[test]
+    fn an_empty_action_emits_nothing_but_a_dangling_pipe_is_an_error() {
+        // Two different shapes with two different answers, worth stating because
+        // they look alike: `{{ }}` PARSES (an empty pipeline, which evaluates to
+        // nothing), while `{{ | }}` is a pipe with no command on either side and
+        // falls back to the source.
+        assert_eq!(render("{{ }}", &ctx()), "");
+        unchanged("{{ | }}");
+    }
+
+    #[test]
+    fn an_unterminated_string_stops_at_the_end_of_its_action() {
+        // The action body is split on `}}` before it is tokenized, so an unclosed
+        // quote runs to the end of THAT action rather than swallowing the rest of
+        // the template - and never indexes past the input.
+        assert_eq!(
+            render("{{ if eq .Config.sort \"seeders }}&s=1{{ end }}", &ctx()),
+            "&s=1",
+            "the quote should close at the action boundary",
+        );
+    }
+
+
+
+    #[test]
+    fn a_multibyte_template_is_not_split_mid_character() {
+        // Definitions carry accented and CJK literals. The lexer advances by
+        // UTF-8 length on purpose: slicing mid-character would panic.
+        let c = ctx();
+        assert_eq!(render("&q=Téléchargé", &c), "&q=Téléchargé");
+        assert_eq!(render("&q=ダウンロード", &c), "&q=ダウンロード");
+        // ...including around an action.
+        assert_eq!(render("é{{ .Keywords }}é", &c), "éthe matrix 1999é");
+        // ...and inside a broken one, where the fallback returns the source.
+        unchanged("é{{ if .Config.freeleech }}é");
+    }
+
+    #[test]
+    fn a_template_with_no_actions_at_all_is_passed_straight_through() {
+        let c = ctx();
+        assert_eq!(render("", &c), "");
+        assert_eq!(render("/browse.php?x=1", &c), "/browse.php?x=1");
+        // A lone brace is text, not the start of an action.
+        assert_eq!(render("a{b}c", &c), "a{b}c");
+    }
+
+    #[test]
+    fn an_unknown_field_renders_empty_rather_than_the_expression() {
+        // The tracker gets `&x=` instead of `&x={{ .Config.nope }}`, which at
+        // worst returns nothing - sending the raw expression would look like a
+        // search term.
+        assert_eq!(render("&x={{ .Config.nope }}", &ctx()), "&x=");
+    }
 }
