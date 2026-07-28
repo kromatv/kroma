@@ -164,4 +164,95 @@ mod tests {
         assert_eq!(abs_ms(0.0, 12.0), 12_000); // intro window starts at 0
         assert_eq!(abs_ms(1200.0, 15.0), 1_215_000); // end window offset added
     }
+    // ----- matched_range over synthetic fingerprints -------------------------------
+    //
+    // A fingerprint is just a `Vec<u32>`; it does not have to come from audio, so
+    // the matcher can be driven without ffmpeg or a media file.
+
+    /// A fingerprint long enough for the matcher to align, deterministic so the
+    /// test cannot drift.
+    fn synthetic_fp(len: usize, seed: u32) -> Vec<u32> {
+        // A simple LCG: reproducible, and varied enough that two different seeds
+        // do not accidentally align.
+        let mut x = seed.wrapping_mul(2_654_435_761).wrapping_add(1);
+        (0..len)
+            .map(|_| {
+                x = x.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                x
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_chromaprint_config_is_the_fpcalc_preset() {
+        // The stored fingerprints are only comparable to each other under the
+        // SAME configuration; changing this silently invalidates every marker
+        // already computed.
+        let cfg = config();
+        assert_eq!(cfg.sample_rate(), Configuration::preset_test1().sample_rate());
+    }
+
+    #[test]
+    fn a_fingerprint_matched_against_itself_covers_its_whole_length() {
+        // The degenerate case that proves the plumbing: identical audio aligns
+        // perfectly, so the match should span essentially the whole window.
+        let fp = synthetic_fp(600, 1);
+        let got = matched_range(&fp, &fp, (0.0, 600.0), 1.0).expect("identical input must match");
+        assert!(got.0 < 1.0, "the match should start at the beginning, got {got:?}");
+        assert!(got.1 - got.0 > 30.0, "the match should be long, got {got:?}");
+    }
+
+    #[test]
+    fn a_match_outside_the_region_of_interest_is_not_returned() {
+        // The intro search only looks at the first minutes; a strong match later
+        // in the file is somebody else's marker.
+        let fp = synthetic_fp(600, 1);
+        assert_eq!(matched_range(&fp, &fp, (500.0, 600.0), 1.0), None);
+    }
+
+    #[test]
+    fn a_match_shorter_than_the_floor_is_not_a_marker() {
+        // A two-second coincidence is not an intro.
+        let fp = synthetic_fp(600, 1);
+        assert_eq!(matched_range(&fp, &fp, (0.0, 600.0), 10_000.0), None);
+    }
+
+    /// `a` with `bits` bits flipped in every value: the shape of the same intro
+    /// re-encoded at a different bitrate. Aligns, but not perfectly.
+    fn noisy(a: &[u32], bits: u32) -> Vec<u32> {
+        let mask = (1u32 << bits) - 1;
+        a.iter().map(|v| v ^ mask).collect()
+    }
+
+    #[test]
+    fn a_heavily_corrupted_fingerprint_yields_no_marker() {
+        // The same intro re-encoded badly enough stops matching at all.
+        //
+        // Note what this does NOT show: raising MAX_SCORE to 1000 still passes
+        // it, because chromaprint returns no segment here rather than a
+        // high-scoring one. The score floor's UPPER side is not reachable with
+        // synthetic fingerprints - it would need two real recordings of the same
+        // intro - so nothing here pins it, and the comment says so instead of the
+        // test implying otherwise.
+        let a = synthetic_fp(600, 1);
+        assert_eq!(matched_range(&a, &noisy(&a, 24), (0.0, 600.0), 10.0), None);
+    }
+
+    #[test]
+    fn two_unrelated_fingerprints_do_not_produce_a_marker() {
+        // The false-positive case that matters: two episodes with no shared
+        // intro must yield nothing, or every show grows a spurious skip button.
+        let a = synthetic_fp(600, 1);
+        let b = synthetic_fp(600, 999);
+        assert_eq!(matched_range(&a, &b, (0.0, 600.0), 10.0), None);
+    }
+
+    #[test]
+    fn an_empty_fingerprint_is_handled_rather_than_panicking() {
+        // A decode that produced no audio (a video-only file) reaches here as an
+        // empty vector.
+        assert_eq!(matched_range(&[], &[], (0.0, 600.0), 1.0), None);
+        let fp = synthetic_fp(600, 1);
+        assert_eq!(matched_range(&fp, &[], (0.0, 600.0), 1.0), None);
+    }
 }
