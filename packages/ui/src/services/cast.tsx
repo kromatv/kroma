@@ -23,7 +23,9 @@ import {
 } from '@kroma/core';
 import {
   createContext,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
   useCallback,
   useContext,
   useEffect,
@@ -83,6 +85,31 @@ export interface CastProviderProps {
   children: ReactNode;
 }
 
+/** Fold one bus event into the roster / position state.
+ *
+ * At module scope rather than inside the effect: rows arrive whole (a play or
+ * pause on one TV costs every sender a patch instead of a refetch), and keeping
+ * the fold here means the effect stays a flat wiring step.
+ */
+function applyCastEvent(
+  e: ServerEvent,
+  setReceivers: Dispatch<SetStateAction<CastReceiver[]>>,
+  setBase: Dispatch<SetStateAction<PositionBase | null>>,
+): void {
+  if (e.type === 'cast.receiver') {
+    setReceivers((list) => upsert(list, e.receiver));
+  } else if (e.type === 'cast.receiver.gone') {
+    setReceivers((list) => list.filter((r) => r.id !== e.receiverId));
+  } else if (e.type === 'cast.position') {
+    setBase({
+      id: e.receiverId,
+      positionMs: e.positionMs,
+      playing: e.state === 'playing',
+      at: Date.now(),
+    });
+  }
+}
+
 export function CastProvider({ client, enabled, children }: Readonly<CastProviderProps>) {
   const [receivers, setReceivers] = useState<CastReceiver[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -111,27 +138,11 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
       return;
     }
     refresh();
-    // Rows arrive whole, so a play/pause on one TV costs every sender a patch
-    // instead of a refetch. Named rather than inline so the effect stays flat.
-    const handleCastEvent = (e: ServerEvent) => {
-      if (e.type === 'cast.receiver') {
-        setReceivers((list) => upsert(list, e.receiver));
-      } else if (e.type === 'cast.receiver.gone') {
-        setReceivers((list) => list.filter((r) => r.id !== e.receiverId));
-      } else if (e.type === 'cast.position') {
-        setBase({
-          id: e.receiverId,
-          positionMs: e.positionMs,
-          playing: e.state === 'playing',
-          at: Date.now(),
-        });
-      }
-    };
     const events = new KromaEvents(client.baseUrl, {
       // Only on (re)connect: a gap in the stream may have swallowed a change, and
       // the roster is the one thing worth resyncing wholesale.
       onOpen: refresh,
-      onEvent: handleCastEvent,
+      onEvent: (e) => applyCastEvent(e, setReceivers, setBase),
     });
     events.connect();
     return () => events.close();

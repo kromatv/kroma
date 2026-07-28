@@ -44,14 +44,14 @@ function RemoteActions({
   onSubtitles,
   onNext,
   onStop,
-}: {
+}: Readonly<{
   playing: NowPlaying;
   isEpisode: boolean;
   onAudio: () => void;
   onSubtitles: () => void;
   onNext: () => void;
   onStop: () => void;
-}) {
+}>) {
   const t = useT();
   return (
     <View style={styles.actions}>
