@@ -381,3 +381,262 @@ pub fn reprocess(pool: &Pool, stage: &str) -> Result<usize> {
     )?;
     Ok(n)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    use super::*;
+
+    static SEQ: AtomicU32 = AtomicU32::new(0);
+
+    fn pool() -> Pool {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!("kroma-ops-{}-{n}.db", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        crate::init(&path).unwrap()
+    }
+
+    /// One task's `(status, attempts, priority)`.
+    fn row(p: &Pool, stage: &str, id: &str) -> (String, i64, i64) {
+        p.get()
+            .unwrap()
+            .query_row(
+                "SELECT status, attempts, priority FROM pipeline_tasks \
+                 WHERE stage=?1 AND subject_id=?2",
+                params![stage, id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap()
+    }
+
+    fn next_retry_at(p: &Pool, stage: &str, id: &str) -> Option<i64> {
+        p.get()
+            .unwrap()
+            .query_row(
+                "SELECT next_retry_at FROM pipeline_tasks WHERE stage=?1 AND subject_id=?2",
+                params![stage, id],
+                |r| r.get(0),
+            )
+            .unwrap()
+    }
+
+    fn ok(id: &str) -> TaskResult {
+        TaskResult { id: id.into(), error: None, duration_ms: 5 }
+    }
+
+    fn failed(id: &str, msg: &str) -> TaskResult {
+        TaskResult { id: id.into(), error: Some(msg.into()), duration_ms: 5 }
+    }
+
+    #[test]
+    fn backoff_grows_quadratically() {
+        // 5 min, then 20 min. A manually re-kicked stage must not hammer a flaky
+        // dependency with back-to-back retries seconds apart.
+        assert_eq!(retry_backoff_ms(1), 5 * 60 * 1000);
+        assert_eq!(retry_backoff_ms(2), 20 * 60 * 1000);
+        assert!(retry_backoff_ms(2) > retry_backoff_ms(1));
+    }
+
+    #[test]
+    fn enqueue_is_idempotent_and_keeps_the_higher_priority() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "a", 5, 1).unwrap();
+        enqueue(&p, "probe", "item", "a", 1, 2).unwrap();
+        // Re-enqueueing the same subject must not create a second task, and must
+        // not DOWNGRADE a priority someone raised deliberately.
+        assert_eq!(row(&p, "probe", "a"), ("pending".to_string(), 0, 5));
+    }
+
+    #[test]
+    fn enqueue_revives_a_settled_task() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "a", 0, 1).unwrap();
+        claim_batch(&p, "probe", 10, 2).unwrap();
+        finish_batch(&p, "probe", &[failed("a", "boom")], 3).unwrap();
+        assert_eq!(row(&p, "probe", "a").0, "failed");
+
+        enqueue(&p, "probe", "item", "a", 0, 4).unwrap();
+        // Back to pending with a CLEAN slate: the subject changed, so the old
+        // failure and its attempt count no longer describe it.
+        let (status, attempts, _) = row(&p, "probe", "a");
+        assert_eq!(status, "pending");
+        assert_eq!(attempts, 0);
+        assert!(next_retry_at(&p, "probe", "a").is_none());
+    }
+
+    #[test]
+    fn claim_takes_the_highest_priority_then_the_oldest() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "old", 0, 1).unwrap();
+        enqueue(&p, "probe", "item", "new", 0, 2).unwrap();
+        enqueue(&p, "probe", "item", "urgent", 9, 3).unwrap();
+
+        let picked = claim_batch(&p, "probe", 2, 10).unwrap();
+        let ids: Vec<&str> = picked.iter().map(|(id, _)| id.as_str()).collect();
+        // Priority first, then FIFO among equals - so a manual retry jumps the
+        // queue but two ordinary tasks keep their order.
+        assert_eq!(ids, vec!["urgent", "old"]);
+    }
+
+    #[test]
+    fn claim_flips_only_what_it_took() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "a", 0, 1).unwrap();
+        enqueue(&p, "probe", "item", "b", 0, 2).unwrap();
+        claim_batch(&p, "probe", 1, 10).unwrap();
+
+        assert_eq!(row(&p, "probe", "a").0, "running");
+        assert_eq!(row(&p, "probe", "b").0, "pending");
+    }
+
+    #[test]
+    fn claim_ignores_another_stage_and_anything_not_pending() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "a", 0, 1).unwrap();
+        enqueue(&p, "thumbs", "item", "b", 0, 1).unwrap();
+        claim_batch(&p, "probe", 10, 10).unwrap();
+
+        // Already running: a second drain of the same stage must not re-take it.
+        assert!(claim_batch(&p, "probe", 10, 11).unwrap().is_empty());
+        assert_eq!(row(&p, "thumbs", "b").0, "pending");
+    }
+
+    #[test]
+    fn finishing_a_success_clears_the_error_and_the_backoff() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "a", 0, 1).unwrap();
+        claim_batch(&p, "probe", 10, 2).unwrap();
+        finish_batch(&p, "probe", &[failed("a", "boom")], 3).unwrap();
+        retry(&p, "probe", Some("a")).unwrap();
+        claim_batch(&p, "probe", 10, 4).unwrap();
+        finish_batch(&p, "probe", &[ok("a")], 5).unwrap();
+
+        assert_eq!(row(&p, "probe", "a").0, "done");
+        // A stale next_retry_at on a done task would make a later reconcile think
+        // it is still waiting to be retried.
+        assert!(next_retry_at(&p, "probe", "a").is_none());
+    }
+
+    #[test]
+    fn each_failure_counts_an_attempt_and_backs_off_further() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "a", 0, 1).unwrap();
+        claim_batch(&p, "probe", 10, 2).unwrap();
+        finish_batch(&p, "probe", &[failed("a", "boom")], 1_000).unwrap();
+
+        let (status, attempts, _) = row(&p, "probe", "a");
+        assert_eq!((status.as_str(), attempts), ("failed", 1));
+        // The backoff is computed from the attempt this failure COMPLETES, so the
+        // first failure waits 5 minutes rather than 0.
+        assert_eq!(next_retry_at(&p, "probe", "a"), Some(1_000 + retry_backoff_ms(1)));
+
+        retry(&p, "probe", Some("a")).unwrap();
+        claim_batch(&p, "probe", 10, 2_000).unwrap();
+        finish_batch(&p, "probe", &[failed("a", "again")], 2_000).unwrap();
+        // `retry` resets attempts, so this is attempt 1 again - the counter tracks
+        // consecutive automatic failures, not lifetime ones.
+        assert_eq!(row(&p, "probe", "a").1, 1);
+    }
+
+    #[test]
+    fn reset_running_rescues_tasks_stranded_by_a_crash() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "a", 0, 1).unwrap();
+        enqueue(&p, "thumbs", "item", "b", 0, 1).unwrap();
+        claim_batch(&p, "probe", 10, 2).unwrap();
+        claim_batch(&p, "thumbs", 10, 2).unwrap();
+
+        // Scoped to one stage...
+        assert_eq!(reset_running(&p, Some("probe")).unwrap(), 1);
+        assert_eq!(row(&p, "probe", "a").0, "pending");
+        assert_eq!(row(&p, "thumbs", "b").0, "running");
+
+        // ...or every stage, which is what startup does after a crash: a task
+        // left `running` by a killed process is claimed by nobody, forever.
+        assert_eq!(reset_running(&p, None).unwrap(), 1);
+        assert_eq!(row(&p, "thumbs", "b").0, "pending");
+    }
+
+    #[test]
+    fn retry_touches_only_failed_tasks_and_raises_their_priority() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "bad", 0, 1).unwrap();
+        enqueue(&p, "probe", "item", "good", 0, 1).unwrap();
+        claim_batch(&p, "probe", 10, 2).unwrap();
+        finish_batch(&p, "probe", &[failed("bad", "boom"), ok("good")], 3).unwrap();
+
+        assert_eq!(retry(&p, "probe", None).unwrap(), 1);
+        let (status, attempts, priority) = row(&p, "probe", "bad");
+        assert_eq!((status.as_str(), attempts), ("pending", 0));
+        // A human asked for this one, so it goes ahead of the routine backlog.
+        assert!(priority > 0);
+        // The successful task is left alone: retrying it would redo finished work.
+        assert_eq!(row(&p, "probe", "good").0, "done");
+    }
+
+    #[test]
+    fn retry_can_name_a_single_subject() {
+        let p = pool();
+        for id in ["a", "b"] {
+            enqueue(&p, "probe", "item", id, 0, 1).unwrap();
+        }
+        claim_batch(&p, "probe", 10, 2).unwrap();
+        finish_batch(&p, "probe", &[failed("a", "x"), failed("b", "y")], 3).unwrap();
+
+        assert_eq!(retry(&p, "probe", Some("a")).unwrap(), 1);
+        assert_eq!(row(&p, "probe", "a").0, "pending");
+        assert_eq!(row(&p, "probe", "b").0, "failed");
+    }
+
+    #[test]
+    fn reprocess_requeues_everything_except_what_is_running() {
+        let p = pool();
+        for id in ["done1", "failed1", "running1"] {
+            enqueue(&p, "probe", "item", id, 0, 1).unwrap();
+        }
+        claim_batch(&p, "probe", 10, 2).unwrap();
+        finish_batch(&p, "probe", &[ok("done1"), failed("failed1", "x")], 3).unwrap();
+
+        assert_eq!(reprocess(&p, "probe").unwrap(), 2);
+        assert_eq!(row(&p, "probe", "done1").0, "pending");
+        assert_eq!(row(&p, "probe", "failed1").0, "pending");
+        // Requeueing a task a worker is mid-way through would run it twice.
+        assert_eq!(row(&p, "probe", "running1").0, "running");
+    }
+
+    #[test]
+    fn requeue_stage_clears_the_signature_so_the_skip_cannot_hold() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "a", 0, 1).unwrap();
+        claim_batch(&p, "probe", 10, 2).unwrap();
+        finish_batch(&p, "probe", &[ok("a")], 3).unwrap();
+        p.get()
+            .unwrap()
+            .execute("UPDATE pipeline_tasks SET input_sig='sig' WHERE subject_id='a'", [])
+            .unwrap();
+
+        assert_eq!(requeue_stage(&p, "probe", 10).unwrap(), 1);
+        assert_eq!(row(&p, "probe", "a").0, "pending");
+        // The outputs were wiped out of band, and the signature-based skip cannot
+        // see a missing file - so leaving the signature means the files never
+        // come back.
+        let sig: Option<String> = p
+            .get()
+            .unwrap()
+            .query_row("SELECT input_sig FROM pipeline_tasks WHERE subject_id='a'", [], |r| r.get(0))
+            .unwrap();
+        assert!(sig.is_none());
+    }
+
+    #[test]
+    fn requeue_stage_leaves_pending_and_running_alone() {
+        let p = pool();
+        enqueue(&p, "probe", "item", "pending1", 0, 1).unwrap();
+        enqueue(&p, "probe", "item", "running1", 0, 1).unwrap();
+        claim_batch(&p, "probe", 1, 2).unwrap();
+
+        // Only settled tasks are rebuilt; the other two are already going to run.
+        assert_eq!(requeue_stage(&p, "probe", 10).unwrap(), 0);
+    }
+}
