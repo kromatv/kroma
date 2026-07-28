@@ -289,4 +289,80 @@ mod tests {
         let _ = std::fs::remove_dir_all(&a);
         let _ = std::fs::remove_dir_all(&b);
     }
+    // ----- rescan_sync: the demo-seeding guard ------------------------------------
+
+    use crate::services::settings::{set_library_defs, LibraryDef};
+    use crate::test_support::test_state;
+
+    fn configured_library(dir: &std::path::Path) -> LibraryDef {
+        LibraryDef {
+            id: "lib-1".into(),
+            name: "Films".into(),
+            kind: "movies".into(),
+            folders: vec![dir.to_string_lossy().into_owned()],
+            auto_scan: true,
+        }
+    }
+
+    fn item_count(state: &crate::state::SharedState) -> i64 {
+        state
+            .db
+            .get()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM items", [], |r| r.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn a_server_with_nothing_configured_gets_the_demo_catalogue() {
+        // True demo mode: no libraries at all. Showing an empty app on first run
+        // makes it look broken, so the demo content stands in.
+        let state = test_state();
+        let data = rescan_sync(&state).unwrap();
+        assert!(!data.items.is_empty(), "demo content should have been seeded");
+        assert!(item_count(&state) > 0);
+    }
+
+    #[test]
+    fn a_configured_library_that_reads_empty_is_never_replaced_with_demo_content() {
+        // The case this guard exists for: an NAS/SMB share that is unmounted, or
+        // slow to mount, or briefly unreadable, scans as ZERO items. Seeding on
+        // an empty RESULT rather than an empty CONFIG would replace the user's
+        // real library with demo movies - and the next scan would have nothing
+        // to restore it from.
+        let state = test_state();
+        let empty = std::env::temp_dir().join(format!("kroma-unmounted-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&empty);
+        std::fs::create_dir_all(&empty).unwrap();
+        set_library_defs(&state.settings, &state.db, &[configured_library(&empty)]);
+
+        let data = rescan_sync(&state).unwrap();
+        assert!(data.items.is_empty(), "the folder is empty, so the scan is empty");
+        assert_eq!(item_count(&state), 0, "demo content was seeded over a real library");
+    }
+
+    #[test]
+    fn a_library_pointed_at_a_folder_that_is_not_there_is_also_left_alone() {
+        // Same failure, harsher: the mount point does not exist at all.
+        let state = test_state();
+        let missing = std::env::temp_dir().join("kroma-no-such-mount-point-ever");
+        let _ = std::fs::remove_dir_all(&missing);
+        set_library_defs(&state.settings, &state.db, &[configured_library(&missing)]);
+
+        rescan_sync(&state).unwrap();
+        assert_eq!(item_count(&state), 0);
+    }
+
+    #[test]
+    fn a_scan_announces_its_start_and_its_counts() {
+        // The UI shows a progress state off these, so a scan that never
+        // announces completion leaves a spinner running forever.
+        let state = test_state();
+        let data = scan_and_publish(&state).unwrap();
+        assert!(!data.items.is_empty(), "demo mode, so there is something to report");
+
+        let activity = crate::services::activity::snapshot(&state.activity);
+        let rendered = serde_json::to_string(&activity).unwrap_or_default();
+        assert!(rendered.contains("scan"), "the activity feed says nothing about the scan");
+    }
 }
