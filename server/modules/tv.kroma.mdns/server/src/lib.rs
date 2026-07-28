@@ -49,12 +49,16 @@ pub fn advertise(port: u16, instance: &str) -> Result<ServiceDaemon> {
 fn primary_lan_ip() -> Option<IpAddr> {
     let sock = UdpSocket::bind("0.0.0.0:0").ok()?;
     sock.connect("8.8.8.8:80").ok()?;
-    let ip = sock.local_addr().ok()?.ip();
-    if ip.is_loopback() || ip.is_unspecified() {
-        None
-    } else {
-        Some(ip)
-    }
+    usable_lan_ip(sock.local_addr().ok()?.ip())
+}
+
+/// Keep an address only if a client on the LAN could actually reach us at it.
+///
+/// A machine with no route reports loopback or the wildcard; advertising either
+/// hands every client an address that cannot work, which is worse than
+/// advertising nothing (the caller then falls back to auto addresses).
+fn usable_lan_ip(ip: IpAddr) -> Option<IpAddr> {
+    (!ip.is_loopback() && !ip.is_unspecified()).then_some(ip)
 }
 
 pub mod module;
@@ -111,4 +115,65 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for MdnsModule 
 /// This module's backend behavior, for the out-of-process runtime.
 pub fn server_module<S: HostCtx + Clone + Send + Sync + 'static>() -> Box<dyn ServerModule<S>> {
     Box::new(MdnsModule::default())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_advertised_names_have_the_shapes_dns_sd_requires() {
+        // These are wire constants, not labels. DNS-SD names are
+        // fully-qualified: without the trailing dot a resolver treats them as
+        // relative and appends the search domain, so `kroma.local` silently
+        // becomes `kroma.local.lan` on some networks and nothing resolves.
+        assert!(HOSTNAME.ends_with('.'), "{HOSTNAME}");
+        assert!(SERVICE_TYPE.ends_with('.'), "{SERVICE_TYPE}");
+        // The service type is `_<name>._<proto>.local.`; the client that looks
+        // us up hardcodes the same string.
+        assert_eq!(SERVICE_TYPE, "_kroma._tcp.local.");
+        assert!(HOSTNAME.ends_with(".local."), "a .local name is what clients try");
+    }
+
+    #[test]
+    fn the_primary_lan_ip_is_never_one_a_client_could_not_reach() {
+        // The point of picking ONE address is that a client must not be handed a
+        // dead one. Loopback and 0.0.0.0 are exactly that, and both are what a
+        // machine with no route reports - so they become `None` and the daemon
+        // falls back to auto addresses instead of advertising a lie.
+        //
+        // No packet is sent: connecting a UDP socket only consults the routing
+        // table, so this works offline.
+        match primary_lan_ip() {
+            Some(ip) => {
+                assert!(!ip.is_loopback(), "advertised loopback: {ip}");
+                assert!(!ip.is_unspecified(), "advertised the wildcard: {ip}");
+            }
+            // A sandbox with no route at all: the fallback path, not a failure.
+            None => {}
+        }
+    }
+
+    #[test]
+    fn an_address_no_client_could_reach_is_refused() {
+        // Advertising one of these is worse than advertising nothing: every
+        // client gets an address that cannot work. `None` makes the caller fall
+        // back to auto addresses instead.
+        use std::net::{Ipv4Addr, Ipv6Addr};
+        assert_eq!(usable_lan_ip(IpAddr::V4(Ipv4Addr::LOCALHOST)), None);
+        assert_eq!(usable_lan_ip(IpAddr::V4(Ipv4Addr::UNSPECIFIED)), None);
+        assert_eq!(usable_lan_ip(IpAddr::V6(Ipv6Addr::LOCALHOST)), None);
+        assert_eq!(usable_lan_ip(IpAddr::V6(Ipv6Addr::UNSPECIFIED)), None);
+
+        // A real LAN address survives.
+        let lan = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 42));
+        assert_eq!(usable_lan_ip(lan), Some(lan));
+    }
+
+    #[test]
+    fn asking_twice_gives_the_same_address() {
+        // It is read per call rather than cached, so a wandering answer would
+        // mean the advertised address depends on when the daemon started.
+        assert_eq!(primary_lan_ip(), primary_lan_ip());
+    }
 }
