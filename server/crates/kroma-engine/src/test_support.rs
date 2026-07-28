@@ -335,3 +335,82 @@ fn write_json_reply(stream: &mut std::net::TcpStream, status: u16, reply: &serde
     let _ = stream.write_all(payload.as_bytes());
     let _ = stream.flush();
 }
+
+/// A fake TMDB, for the services that go through it.
+///
+/// The base is a `#[cfg(test)]` override on `infra::metadata::client`, so the
+/// real client code runs - curl, the api_key param, the JSON decode - against a
+/// server on localhost. Points itself at the current thread on construction and
+/// releases it on drop, so parallel tests never share a base.
+pub(crate) struct FakeTmdb {
+    base: String,
+    seen: Arc<std::sync::Mutex<Vec<String>>>,
+}
+
+impl FakeTmdb {
+    /// `route` maps a request path (e.g. `/movie/603`) to `(status, body)`.
+    pub(crate) fn start(
+        route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static,
+    ) -> Self {
+        use std::io::{BufRead, BufReader, Write};
+
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+        let port = listener.local_addr().unwrap().port();
+        let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let log = Arc::clone(&seen);
+
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { break };
+                let mut reader = BufReader::new(match stream.try_clone() {
+                    Ok(c) => c,
+                    Err(_) => continue,
+                });
+                let mut request = String::new();
+                if reader.read_line(&mut request).unwrap_or(0) == 0 {
+                    continue;
+                }
+                loop {
+                    let mut header = String::new();
+                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
+                        break;
+                    }
+                }
+                // "GET /movie/603?api_key=x HTTP/1.1" -> "/movie/603"
+                let full = request.split_whitespace().nth(1).unwrap_or("").to_string();
+                let path = full.split('?').next().unwrap_or("").to_string();
+                log.lock().unwrap().push(full);
+
+                let (status, body) = route(&path);
+                let payload = body.to_string();
+                let head = format!(
+                    "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
+                    payload.len()
+                );
+                let _ = stream.write_all(head.as_bytes());
+                let _ = stream.write_all(payload.as_bytes());
+                let _ = stream.flush();
+            }
+        });
+
+        let base = format!("http://127.0.0.1:{port}");
+        crate::infra::metadata::test_override::set(&base);
+        Self { base, seen }
+    }
+
+    /// Every request path this fake received, query string included.
+    pub(crate) fn requests(&self) -> Vec<String> {
+        self.seen.lock().unwrap().clone()
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn base(&self) -> &str {
+        &self.base
+    }
+}
+
+impl Drop for FakeTmdb {
+    fn drop(&mut self) {
+        crate::infra::metadata::test_override::clear();
+    }
+}

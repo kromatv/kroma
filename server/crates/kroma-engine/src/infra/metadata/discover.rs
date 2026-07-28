@@ -9,7 +9,7 @@ use serde::Deserialize;
 use crate::domain::metadata::{CastMember, CrewMember};
 use crate::model::RequestKind;
 
-use super::client::{curl_json, API, IMG};
+use super::client::{api, curl_json, IMG};
 use super::common::{build_cast, build_crew, RawCreatedBy, RawCredits};
 
 /// How many top-billed cast / similar titles to keep on a discovery detail.
@@ -115,7 +115,7 @@ pub fn search(
         DiscoverScope::Shows => "search/tv",
         DiscoverScope::All => "search/multi",
     };
-    let resp: PageResp = curl_json(&format!("{API}/{path}"), api_key, &params)?;
+    let resp: PageResp = curl_json(&format!("{}/{path}", api()), api_key, &params)?;
     Ok(map_page(resp, scope))
 }
 
@@ -137,7 +137,7 @@ pub fn trending(
         DiscoverScope::All => "trending/all/week",
     };
     let params = vec![("language", language.to_string()), ("page", page.max(1).to_string())];
-    let resp: PageResp = curl_json(&format!("{API}/{path}"), api_key, &params)?;
+    let resp: PageResp = curl_json(&format!("{}/{path}", api()), api_key, &params)?;
     Ok(map_page(resp, scope))
 }
 
@@ -167,7 +167,7 @@ pub fn detail(
         ("language", language.to_string()),
         ("append_to_response", append.to_string()),
     ];
-    let mut d: DetailResp = match curl_json(&format!("{API}/{path}/{tmdb_id}"), api_key, &params) {
+    let mut d: DetailResp = match curl_json(&format!("{}/{path}/{tmdb_id}", api()), api_key, &params) {
         Ok(d) => d,
         // curl -f turns TMDB 404s into exit 22; treat any failure on the detail
         // endpoint as "not found" only when the id namespace mismatched is

@@ -18,7 +18,7 @@ use serde::Deserialize;
 
 use kroma_domain::matching::{self, Candidate, Query};
 
-use super::client::{curl_json, Target, API};
+use super::client::{api, curl_json, Target};
 
 /// Resolve `title`/`year` to the best TMDB id, or `Ok(None)` when nothing is a
 /// credible match (a miss the caller may cache). `Err(())` is a transport
@@ -78,7 +78,7 @@ fn search_page(
         params.push((target.year_param(), y.to_string()));
     }
     let resp: SearchResp =
-        curl_json(&format!("{API}/{}", target.search_path()), api_key, &params)?;
+        curl_json(&format!("{}/{}", api(), target.search_path()), api_key, &params)?;
     Ok(resp.results.into_iter().map(Into::into).collect())
 }
 

@@ -17,6 +17,10 @@
 
 mod cache;
 mod client;
+/// The TMDB base override, so tests can point the real client at a fake server.
+/// Test builds only - `client` itself stays private.
+#[cfg(test)]
+pub(crate) use client::test_override;
 mod common;
 pub mod discover;
 pub mod person;

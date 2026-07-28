@@ -1874,4 +1874,294 @@ mod tests {
         let rows = db::wanted_for_request(&conn, "r1").unwrap();
         assert_eq!(rows[0].air_date.as_deref(), Some("2026-03-04"));
     }
+    // ----- the whole lifecycle, against a fake TMDB -------------------------------
+    //
+    // Everything above stops at the first TMDB call. `client::api()` is
+    // overridable in test builds, so the REAL client (curl, the api_key param,
+    // the JSON decode) can run against a server on localhost - which is what
+    // makes create -> approve -> materialise reachable at all.
+
+    use crate::test_support::FakeTmdb;
+
+    /// The TMDB detail body for a movie, with only the fields this flow reads.
+    fn movie_detail(title: &str, year: &str) -> serde_json::Value {
+        json!({
+            "title": title,
+            "overview": "A film.",
+            "release_date": year,
+            "poster_path": "/p.jpg",
+            "imdb_id": "tt0000001",
+            "genres": [{ "id": 28, "name": "Action" }],
+        })
+    }
+
+    /// A show detail plus its season list.
+    fn show_detail(title: &str, seasons: &[u32]) -> serde_json::Value {
+        json!({
+            "name": title,
+            "overview": "A show.",
+            "first_air_date": "2020-01-01",
+            "status": "Returning Series",
+            "seasons": seasons
+                .iter()
+                .map(|n| json!({ "season_number": n, "name": format!("Season {n}") }))
+                .collect::<Vec<_>>(),
+        })
+    }
+
+    fn episodes(nums: &[u32], air: &str) -> serde_json::Value {
+        json!({
+            "episodes": nums
+                .iter()
+                .map(|n| json!({ "episode_number": n, "name": format!("E{n}"), "air_date": air }))
+                .collect::<Vec<_>>(),
+        })
+    }
+
+    fn body(user: &str) -> CreateRequestBody {
+        let _ = user;
+        CreateRequestBody { kind: RequestKind::Movie, tmdb_id: 603, seasons: None, episodes: None }
+    }
+
+    #[test]
+    fn creating_a_movie_request_takes_its_title_from_tmdb() {
+        // The title is stored on the request, not re-fetched, so the admin queue
+        // reads correctly even if TMDB later goes away.
+        let host = TestHost::new();
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/movie/603" => (200, movie_detail("The Matrix", "1999-03-31")),
+            _ => (404, json!({ "status_message": "Not Found" })),
+        });
+        seed_user(&host, "u1");
+
+        let req = create_request(&host, &user("u1", vec![Permission::Playback]), &body("u1")).unwrap();
+        assert_eq!(req.title, "The Matrix");
+        assert_eq!(req.year, Some(1999));
+        assert_eq!(req.status, RequestStatus::Pending);
+        assert_eq!(req.requested_by.as_deref(), Some("u1"));
+        // ...and the moderators were told it is waiting for them.
+        let sent = host.notifications();
+        assert_eq!(sent.len(), 1);
+        assert_eq!(sent[0].0, Audience::permission(Permission::RequestsManage));
+    }
+
+    #[test]
+    fn a_tmdb_id_that_does_not_resolve_is_refused_two_different_ways() {
+        // Storing it either way would put a row in the queue that can never be
+        // fulfilled - but the two failures are genuinely different and the
+        // message says which happened.
+        seed_user_and_fail(
+            // curl -f turns a 404 into a transport failure, indistinguishable
+            // from a dead network at this layer.
+            |_| (404, json!({ "status_message": "Not Found" })),
+            "TMDB lookup failed",
+        );
+        seed_user_and_fail(
+            // A 200 whose body carries neither `title` nor `name`: TMDB answered,
+            // and the answer is that there is no such title.
+            |_| (200, json!({ "overview": "no title field" })),
+            "title not found",
+        );
+    }
+
+    /// Run `create_request` against a TMDB that answers with `route`, and assert
+    /// the error names `expected`.
+    fn seed_user_and_fail(
+        route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static,
+        expected: &str,
+    ) {
+        let host = TestHost::new();
+        let _tmdb = FakeTmdb::start(route);
+        seed_user(&host, "u1");
+        let err = create_request(&host, &user("u1", vec![Permission::Playback]), &body("u1"))
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains(expected), "wanted {expected:?}, got {err:?}");
+    }
+
+    #[test]
+    fn asking_twice_folds_into_the_open_request_rather_than_duplicating() {
+        // Two people asking for the same film is one request, or the moderators
+        // review the same title repeatedly.
+        let host = TestHost::new();
+        let _tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
+        seed_user(&host, "u1");
+        seed_user(&host, "u2");
+
+        let first = create_request(&host, &user("u1", vec![Permission::Playback]), &body("u1")).unwrap();
+        let second = create_request(&host, &user("u2", vec![Permission::Playback]), &body("u2")).unwrap();
+        assert_eq!(first.id, second.id);
+        // The author stays the person who asked FIRST.
+        assert_eq!(second.requested_by.as_deref(), Some("u1"));
+    }
+
+    #[test]
+    fn a_requester_who_may_self_approve_skips_the_queue() {
+        // `requests.auto` exists so a household's owner does not review their own
+        // asks - the request arrives already approved, with a wanted ledger.
+        let host = TestHost::new();
+        let _tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
+        seed_user(&host, "owner");
+
+        let req = create_request(
+            &host,
+            &user("owner", vec![Permission::Playback, Permission::RequestsAuto]),
+            &body("owner"),
+        )
+        .unwrap();
+        assert_eq!(req.status, RequestStatus::Approved);
+
+        // A movie request materialises exactly one wanted row.
+        let conn = host.db().get().unwrap();
+        let wanted = db::wanted_for_request(&conn, &req.id).unwrap();
+        assert_eq!(wanted.len(), 1);
+        assert_eq!(wanted[0].kind, "movie");
+        assert_eq!(wanted[0].imdb_id.as_deref(), Some("tt0000001"));
+        drop(conn);
+
+        // ...and nobody was asked to review it.
+        assert!(
+            host.notifications().iter().all(|(a, _)| a != &Audience::permission(Permission::RequestsManage)),
+            "a self-approved request should not page the moderators"
+        );
+    }
+
+    #[test]
+    fn approving_a_show_builds_one_wanted_row_per_episode_of_every_season() {
+        // The ledger is episode-level: that is what lets a season pack and a
+        // single episode both satisfy part of one request.
+        let host = TestHost::new();
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, show_detail("Breaking Bad", &[1, 2])),
+            "/tv/1396/season/1" => (200, episodes(&[1, 2, 3], "2008-01-20")),
+            "/tv/1396/season/2" => (200, episodes(&[1, 2], "2009-03-08")),
+            _ => (404, json!({})),
+        });
+        insert_req(&host, "r-show", RequestKind::Show, 1396, RequestStatus::Pending);
+
+        approve_request(&host, "r-show", Some("mod-1")).unwrap();
+
+        let conn = host.db().get().unwrap();
+        let wanted = db::wanted_for_request(&conn, "r-show").unwrap();
+        assert_eq!(wanted.len(), 5, "3 + 2 episodes");
+        assert!(wanted.iter().all(|w| w.kind == "episode"));
+        let pairs: Vec<(u32, u32)> =
+            wanted.iter().filter_map(|w| Some((w.season?, w.episode?))).collect();
+        assert!(pairs.contains(&(1, 3)) && pairs.contains(&(2, 2)), "{pairs:?}");
+    }
+
+    #[test]
+    fn a_season_subset_only_materialises_the_seasons_that_were_asked_for() {
+        // Asking for season 2 must not queue season 1, and TMDB should not even
+        // be asked about it.
+        let host = TestHost::new();
+        let tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, show_detail("Breaking Bad", &[1, 2])),
+            "/tv/1396/season/2" => (200, episodes(&[1, 2], "2009-03-08")),
+            _ => (404, json!({})),
+        });
+        db::insert_request(
+            host.db(),
+            &db::NewRequest {
+                id: "r-s2".into(),
+                kind: RequestKind::Show,
+                tmdb_id: 1396,
+                title: "Breaking Bad".into(),
+                year: Some(2008),
+                poster_url: None,
+                seasons: Some(vec![2]),
+                episodes: None,
+                status: RequestStatus::Pending,
+                requested_by: None,
+            },
+            now_ms(),
+        )
+        .unwrap();
+
+        approve_request(&host, "r-s2", Some("mod-1")).unwrap();
+
+        let conn = host.db().get().unwrap();
+        let wanted = db::wanted_for_request(&conn, "r-s2").unwrap();
+        assert_eq!(wanted.len(), 2);
+        assert!(wanted.iter().all(|w| w.season == Some(2)));
+        drop(conn);
+
+        assert!(
+            !tmdb.requests().iter().any(|r| r.contains("/season/1")),
+            "season 1 was fetched for a season-2 request: {:?}",
+            tmdb.requests()
+        );
+    }
+
+    #[test]
+    fn a_show_tmdb_lists_no_episodes_for_is_refused_rather_than_approved_empty() {
+        // An empty ledger would sit "approved" forever with nothing to search.
+        let host = TestHost::new();
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, show_detail("Breaking Bad", &[1])),
+            _ => (200, json!({ "episodes": [] })),
+        });
+        insert_req(&host, "r-empty", RequestKind::Show, 1396, RequestStatus::Pending);
+
+        let err = approve_request(&host, "r-empty", Some("mod-1")).unwrap_err().to_string();
+        assert!(err.contains("no episodes"), "{err}");
+    }
+
+    #[test]
+    fn approving_tells_the_requester_and_kicks_the_search() {
+        let host = TestHost::new();
+        let _tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
+        insert_req_by(&host, "r-1", RequestKind::Movie, 603, RequestStatus::Pending, Some("u1"));
+
+        let approved = approve_request(&host, "r-1", Some("mod-1")).unwrap();
+        assert_eq!(approved.status, RequestStatus::Approved);
+        assert_eq!(approved.reviewed_by.as_deref(), Some("mod-1"));
+
+        let sent = host.notifications();
+        assert_eq!(sent.len(), 1);
+        assert_eq!(sent[0].0, Audience::user("u1"));
+        assert_eq!(sent[0].1.event, NotificationEvent::RequestApproved);
+    }
+
+    #[test]
+    fn the_refresh_pass_backfills_a_release_date_tmdb_did_not_have_before() {
+        // A movie requested before its release date was announced is gated out of
+        // search until it is out, then auto-grabbed. That only works if the
+        // refresh writes the date once TMDB publishes it.
+        let host = TestHost::new();
+        let _tmdb = FakeTmdb::start(|_| {
+            let mut d = movie_detail("Dune: Part Three", "2027-03-04");
+            d["release_dates"] = json!({
+                "results": [{
+                    "iso_3166_1": "US",
+                    "release_dates": [{ "type": 4, "release_date": "2027-05-01T00:00:00.000Z" }],
+                }]
+            });
+            (200, d)
+        });
+        insert_req(&host, "r-1", RequestKind::Movie, 603, RequestStatus::Approved);
+        let undated = wanted("w1", "r-1", None, None, None, "wanted");
+        db::insert_wanted(host.db(), std::slice::from_ref(&undated), now_ms()).unwrap();
+
+        assert_eq!(refresh_pass(&host).unwrap(), 1);
+
+        let conn = host.db().get().unwrap();
+        let rows = db::wanted_for_request(&conn, "r-1").unwrap();
+        assert!(rows[0].air_date.is_some(), "the release date was not backfilled");
+    }
+
+    #[test]
+    fn the_api_key_and_language_reach_tmdb_on_every_call() {
+        // A request built without them comes back in the wrong language, or
+        // unauthenticated.
+        let host = TestHost::new();
+        let tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
+        seed_user(&host, "u1");
+
+        create_request(&host, &user("u1", vec![Permission::Playback]), &body("u1")).unwrap();
+        let asked = tmdb.requests();
+        assert!(!asked.is_empty());
+        assert!(asked[0].contains("api_key=test-key"), "{}", asked[0]);
+        assert!(asked[0].contains("language=en-US"), "{}", asked[0]);
+    }
 }

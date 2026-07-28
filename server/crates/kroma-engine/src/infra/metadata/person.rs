@@ -23,7 +23,7 @@ use serde::Deserialize;
 
 use kroma_domain::PersonDetail;
 
-use super::client::{curl_json, API, IMG};
+use super::client::{api, curl_json, IMG};
 
 /// Process-wide memo of resolved people, keyed by `language|lowercased name`.
 /// Deliberately a module static rather than a field on the app state: it holds
@@ -75,7 +75,7 @@ fn resolve(api_key: &str, language: &str, name: &str) -> Option<PersonDetail> {
 fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
     let params =
         [("language", language.to_string()), ("query", name.to_string()), ("include_adult", "false".to_string())];
-    let page: SearchResp = curl_json(&format!("{API}/search/person"), api_key, &params).ok()?;
+    let page: SearchResp = curl_json(&format!("{}/search/person", api()), api_key, &params).ok()?;
     let exact = page.results.iter().find(|r| r.name.eq_ignore_ascii_case(name));
     exact.or_else(|| page.results.first()).map(|r| r.id)
 }
@@ -85,7 +85,7 @@ fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
 /// call site.
 fn profile(api_key: &str, language: &str, id: u64) -> Option<PersonDetail> {
     let params = [("language", language.to_string())];
-    let raw: RawPerson = curl_json(&format!("{API}/person/{id}"), api_key, &params).ok()?;
+    let raw: RawPerson = curl_json(&format!("{}/person/{id}", api()), api_key, &params).ok()?;
     Some(PersonDetail {
         tmdb_id: raw.id,
         name: raw.name,

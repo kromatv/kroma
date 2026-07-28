@@ -14,6 +14,44 @@ use super::common::{build_cast, build_crew, RawCreatedBy, RawCredits};
 use super::search;
 
 pub(super) const API: &str = "https://api.themoviedb.org/3";
+
+/// The TMDB base every request is built from.
+///
+/// A function rather than the bare const so the services that go THROUGH TMDB
+/// (requests, rematch, the missing-episode scan) can be tested against a fake
+/// server. The override below is `#[cfg(test)]`, so a release build compiles
+/// this to the constant and nothing else exists.
+pub(super) fn api() -> String {
+    #[cfg(test)]
+    if let Some(base) = test_override::get() {
+        return base;
+    }
+    API.to_string()
+}
+
+/// Test-only TMDB base override. Thread-local, so tests running in parallel
+/// cannot see each other's fake server.
+#[cfg(test)]
+pub(crate) mod test_override {
+    use std::cell::RefCell;
+
+    thread_local! {
+        static BASE: RefCell<Option<String>> = const { RefCell::new(None) };
+    }
+
+    pub(crate) fn get() -> Option<String> {
+        BASE.with(|b| b.borrow().clone())
+    }
+
+    /// Point TMDB at `base` for the rest of this thread's test.
+    pub(crate) fn set(base: &str) {
+        BASE.with(|b| *b.borrow_mut() = Some(base.to_string()));
+    }
+
+    pub(crate) fn clear() {
+        BASE.with(|b| *b.borrow_mut() = None);
+    }
+}
 pub(super) const IMG: &str = "https://image.tmdb.org/t/p";
 
 /// Whether to resolve against TMDB's movie or TV namespace.
@@ -236,7 +274,7 @@ fn fetch_details(
         ("include_image_language", format!("{lang2},en,null")),
     ];
     let d: Details =
-        curl_json(&format!("{API}/{}/{id}", target.detail_path()), api_key, &detail_params)?;
+        curl_json(&format!("{}/{}/{id}", api(), target.detail_path()), api_key, &detail_params)?;
 
     let ext = d.external_ids;
     let imdb_id = d
@@ -311,7 +349,7 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
         ("append_to_response", "credits".to_string()),
     ];
     let resp: SeasonResp =
-        match curl_json(&format!("{API}/tv/{tv_id}/season/{season}"), api_key, &params) {
+        match curl_json(&format!("{}/tv/{tv_id}/season/{season}", api()), api_key, &params) {
             Ok(r) => r,
             Err(()) => return SeasonData::default(),
         };
