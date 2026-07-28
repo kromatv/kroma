@@ -225,4 +225,157 @@ mod tests {
         // it did manage, not an error.
         assert_eq!(progress.seen(), vec![(1, 1)], "only the closing report");
     }
+    // ----- the actual diff, against a fake TMDB -----------------------------------
+    //
+    // Everything above stops before the first TMDB call. With the base
+    // overridable in test builds, the real diff runs.
+
+    use crate::test_support::FakeTmdb;
+
+    /// A show whose seasons TMDB knows about.
+    fn tmdb_show(seasons: &[u32]) -> serde_json::Value {
+        serde_json::json!({
+            "name": "Show",
+            "first_air_date": "2020-01-01",
+            "poster_path": "/p.jpg",
+            "seasons": seasons
+                .iter()
+                .map(|n| serde_json::json!({ "season_number": n }))
+                .collect::<Vec<_>>(),
+        })
+    }
+
+    /// `(episode number, air date)` pairs for one season.
+    fn tmdb_episodes(eps: &[(u32, Option<&str>)]) -> serde_json::Value {
+        serde_json::json!({
+            "episodes": eps
+                .iter()
+                .map(|(n, air)| serde_json::json!({ "episode_number": n, "air_date": air }))
+                .collect::<Vec<_>>(),
+        })
+    }
+
+    /// Give `show_id` a TMDB id so the scan will consider it.
+    fn link_to_tmdb(state: &crate::state::SharedState, show_id: &str, tmdb_id: u64) {
+        let mut meta: crate::model::Metadata = serde_json::from_str(
+            r#"{"tmdbId":0,"title":"Show","overview":null,"genres":[],"tmdbUrl":"https://x/1"}"#,
+        )
+        .unwrap();
+        meta.tmdb_id = tmdb_id;
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute(
+                &format!(
+                    "UPDATE shows SET metadata = json('{}') WHERE id = '{show_id}'",
+                    serde_json::to_string(&meta).unwrap()
+                ),
+                [],
+            )
+            .unwrap();
+    }
+
+    fn gaps(state: &crate::state::SharedState) -> Vec<(u32, u32)> {
+        let conn = state.db.get().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT season, episode FROM library_gaps ORDER BY season, episode")
+            .unwrap();
+        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
+        rows.map(|r| r.unwrap()).collect()
+    }
+
+    #[test]
+    fn only_aired_episodes_that_are_absent_count_as_missing() {
+        // The Sonarr rule this file exists to implement: an episode with no air
+        // date, or one that airs next month, is not a gap - it has not aired, so
+        // its absence is not a failure to acquire it.
+        let state = test_state_with_tmdb("test-key");
+        let (show, _ep) = seed_show_episode(&state, "shw-1", "ep-s1e1");
+        link_to_tmdb(&state, &show, 1396);
+
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, tmdb_show(&[1])),
+            "/tv/1396/season/1" => (
+                200,
+                tmdb_episodes(&[
+                    (1, Some("2020-01-01")), // aired AND on disk -> not a gap
+                    (2, Some("2020-01-08")), // aired, absent      -> a gap
+                    (3, Some("2999-01-01")), // future             -> not yet
+                    (4, None),               // undated            -> not yet
+                ]),
+            ),
+            _ => (404, serde_json::json!({})),
+        });
+
+        let progress = Progress::default();
+        let summary = scan(&state, &progress.record(), &never_cancelled()).unwrap();
+        assert_eq!(summary.shows, 1);
+        assert_eq!(summary.with_gaps, 1);
+        assert_eq!(summary.episodes, 1);
+        assert_eq!(gaps(&state), [(1, 2)]);
+    }
+
+    #[test]
+    fn a_show_that_is_complete_has_its_old_gaps_cleared() {
+        // The scan rewrites per show, so a series completed since the last run
+        // must stop being reported - otherwise the Missing view never empties.
+        let state = test_state_with_tmdb("test-key");
+        let (show, _ep) = seed_show_episode(&state, "shw-1", "ep-s1e1");
+        link_to_tmdb(&state, &show, 1396);
+
+        {
+            let _tmdb = FakeTmdb::start(|path| match path {
+                "/tv/1396" => (200, tmdb_show(&[1])),
+                _ => (200, tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))])),
+            });
+            scan(&state, &Progress::default().record(), &never_cancelled()).unwrap();
+            assert_eq!(gaps(&state), [(1, 2)]);
+        }
+
+        // Now TMDB only lists the episode that IS on disk.
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, tmdb_show(&[1])),
+            _ => (200, tmdb_episodes(&[(1, Some("2020-01-01"))])),
+        });
+        let summary = scan(&state, &Progress::default().record(), &never_cancelled()).unwrap();
+        assert_eq!(summary.with_gaps, 0);
+        assert!(gaps(&state).is_empty(), "a completed show is still reported as missing");
+    }
+
+    #[test]
+    fn a_show_tmdb_has_forgotten_skips_without_failing_the_run() {
+        // Per-show isolation: one vanished id must not abandon the rest of the
+        // library, which is the whole reason the scan catches per show.
+        let state = test_state_with_tmdb("test-key");
+        let (a, _) = seed_show_episode(&state, "shw-gone", "ep-a");
+        let (b, _) = seed_show_episode(&state, "shw-ok", "ep-b");
+        link_to_tmdb(&state, &a, 999_999);
+        link_to_tmdb(&state, &b, 1396);
+
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, tmdb_show(&[1])),
+            "/tv/1396/season/1" => {
+                (200, tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))]))
+            }
+            _ => (404, serde_json::json!({})),
+        });
+
+        let summary = scan(&state, &Progress::default().record(), &never_cancelled()).unwrap();
+        // Both shows were considered; only the reachable one produced gaps.
+        assert_eq!(summary.shows, 2);
+        assert_eq!(summary.with_gaps, 1);
+        assert_eq!(summary.episodes, 1);
+    }
+
+    #[test]
+    fn a_cancelled_scan_stops_where_it_was() {
+        let state = test_state_with_tmdb("test-key");
+        let (show, _) = seed_show_episode(&state, "shw-1", "ep-1");
+        link_to_tmdb(&state, &show, 1396);
+        let _tmdb = FakeTmdb::start(|_| (200, tmdb_show(&[1])));
+
+        let summary = scan(&state, &Progress::default().record(), &|| true).unwrap();
+        assert_eq!(summary.shows, 0, "cancellation is checked before the TMDB call");
+    }
 }

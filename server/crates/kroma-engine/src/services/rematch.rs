@@ -289,4 +289,130 @@ mod tests {
         h.original_title = String::new();
         assert_eq!(rank(&local, vec![h])[0].original_title, None);
     }
+    // ----- candidates() against a fake TMDB ---------------------------------------
+
+    use crate::test_support::{seed_movie, test_state_with_tmdb, FakeTmdb};
+
+    fn page(results: serde_json::Value) -> serde_json::Value {
+        serde_json::json!({ "page": 1, "total_pages": 1, "results": results })
+    }
+
+    fn tmdb_hit(id: u64, title: &str, year: &str) -> serde_json::Value {
+        serde_json::json!({ "id": id, "title": title, "release_date": year })
+    }
+
+    /// A movie in the catalogue whose parsed title is `title`.
+    fn seed_titled(state: &crate::state::SharedState, id: &str, title: &str, year: Option<u32>) {
+        seed_movie(state, id);
+        let year_sql = year.map(|y| y.to_string()).unwrap_or_else(|| "NULL".into());
+        // Titles here carry apostrophes on purpose (that is half the point of
+        // the folded retry), so escape them the SQL way.
+        let title = title.replace('\'', "''");
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute(
+                &format!("UPDATE items SET title = '{title}', year = {year_sql} WHERE id = '{id}'"),
+                [],
+            )
+            .unwrap();
+    }
+
+    #[test]
+    fn candidates_are_ranked_against_the_parsed_title_not_the_typed_query() {
+        // The operator often types a better query than the filename gave us, but
+        // the confidence shown has to stay honest about the FILE - otherwise a
+        // hand-typed exact title makes every result look certain.
+        let state = test_state_with_tmdb("test-key");
+        seed_titled(&state, "itm-1", "Matrix", Some(1999));
+
+        let _tmdb = FakeTmdb::start(|_| {
+            (
+                200,
+                page(serde_json::json!([
+                    tmdb_hit(603, "The Matrix", "1999-03-31"),
+                    tmdb_hit(605, "The Matrix Revolutions", "2003-11-05"),
+                ])),
+            )
+        });
+
+        let out = candidates(&state, Subject::Movie, "itm-1", Some("the matrix")).unwrap();
+        assert_eq!(out.query, "the matrix", "the typed query is what was searched");
+        assert_eq!(out.year, Some(1999), "but the year compared against is the file's");
+        assert_eq!(out.results.len(), 2);
+        // The 1999 title outranks the 2003 sequel because the FILE says 1999.
+        assert_eq!(out.results[0].tmdb_id, 603);
+    }
+
+    #[test]
+    fn an_empty_result_is_retried_with_the_folded_title() {
+        // TMDB is picky about apostrophes and leading articles: "L'Île aux chiens"
+        // comes back empty while "ile aux chiens" finds it. Without the retry the
+        // operator sees "no matches" for a title TMDB clearly has.
+        //
+        // The fake answers on the QUERY, so it can only be satisfied by the
+        // second, folded attempt.
+        let state = test_state_with_tmdb("test-key");
+        seed_titled(&state, "itm-1", "L\'Île aux chiens", Some(2018));
+
+        let tmdb = FakeTmdb::start(|_| (200, page(serde_json::json!([]))));
+        let out = candidates(&state, Subject::Movie, "itm-1", None).unwrap();
+        assert!(out.results.is_empty(), "nothing matched either spelling");
+        // BOTH spellings were tried - that is the behaviour under test.
+        let asked = tmdb.requests();
+        assert_eq!(asked.len(), 2, "expected a retry, got {asked:?}");
+        assert_ne!(asked[0], asked[1], "the retry must not repeat the same query");
+        // The retry drops the apostrophe and the accent.
+        assert!(!asked[1].contains("%27"), "the apostrophe survived: {}", asked[1]);
+    }
+
+    #[test]
+    fn a_decomposed_accent_is_stripped_before_the_search() {
+        // macOS filenames are NFD, so a parsed title carries `é` as `e` + U+0301.
+        // TMDB returns nothing for those - it even mismatches "Amélie" to an
+        // unrelated title - so the combining marks go before the query is sent.
+        let state = test_state_with_tmdb("test-key");
+        seed_titled(&state, "itm-1", "Ame\u{301}lie", Some(2001));
+
+        let tmdb = FakeTmdb::start(|_| {
+            (200, page(serde_json::json!([tmdb_hit(194, "Amélie", "2001-04-25")])))
+        });
+        candidates(&state, Subject::Movie, "itm-1", None).unwrap();
+
+        let sent = tmdb.requests();
+        assert!(!sent.is_empty());
+        // curl percent-encodes in LOWERCASE hex, so compare case-insensitively:
+        // U+0301 is %cc%81 on the wire.
+        let query = sent[0].to_ascii_lowercase();
+        assert!(!query.contains("%cc%81"), "the combining acute reached TMDB: {}", sent[0]);
+        assert!(query.contains("query=amelie"), "{}", sent[0]);
+    }
+
+    #[test]
+    fn rematching_without_a_tmdb_key_says_which_setting_is_missing() {
+        let state = crate::test_support::test_state();
+        seed_titled(&state, "itm-1", "Matrix", Some(1999));
+        let err = candidates(&state, Subject::Movie, "itm-1", None).unwrap_err().to_string();
+        assert!(err.contains("KROMA_TMDB_API_KEY"), "{err}");
+    }
+
+    #[test]
+    fn rematching_something_the_catalogue_does_not_have_is_an_error() {
+        let state = test_state_with_tmdb("test-key");
+        let err = candidates(&state, Subject::Movie, "nope", None).unwrap_err().to_string();
+        assert!(err.contains("nope"), "{err}");
+    }
+
+    #[test]
+    fn a_tmdb_search_that_fails_is_reported_rather_than_read_as_no_matches() {
+        // "No matches" sends the operator hunting for a better query; a failure
+        // tells them the problem is upstream.
+        let state = test_state_with_tmdb("test-key");
+        seed_titled(&state, "itm-1", "Matrix", Some(1999));
+        let _tmdb = FakeTmdb::start(|_| (500, serde_json::json!({ "status_message": "boom" })));
+
+        let err = candidates(&state, Subject::Movie, "itm-1", None).unwrap_err().to_string();
+        assert!(err.contains("TMDB search failed"), "{err}");
+    }
 }
