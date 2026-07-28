@@ -209,3 +209,98 @@ pub(crate) fn now_secs() -> i64 {
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
 }
+
+/// A fake OpenAI-compatible chat endpoint, for the LLM-backed jobs.
+///
+/// The provider base URL is a plain setting and the transport shells out to
+/// curl, so nothing has to be stubbed: point `llmBaseUrl` at one of these and
+/// the real client speaks to it. Each request is recorded so a test can assert
+/// on the prompt that was actually sent.
+pub(crate) struct FakeLlm {
+    base: String,
+    seen: Arc<std::sync::Mutex<Vec<serde_json::Value>>>,
+}
+
+impl FakeLlm {
+    /// Answer every completion with `content`.
+    pub(crate) fn always(content: &str) -> Self {
+        let content = content.to_string();
+        Self::routed(move |_| (200, serde_json::json!({
+            "choices": [{ "message": { "content": content } }]
+        })))
+    }
+
+    /// Answer with `status` and a body that is not a completion at all.
+    pub(crate) fn failing(status: u16) -> Self {
+        Self::routed(move |_| (status, serde_json::json!({ "error": "nope" })))
+    }
+
+    /// Full control: map the request body to `(status, response body)`.
+    pub(crate) fn routed(
+        route: impl Fn(&serde_json::Value) -> (u16, serde_json::Value) + Send + 'static,
+    ) -> Self {
+        use std::io::{BufRead, BufReader, Read, Write};
+
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+        let port = listener.local_addr().unwrap().port();
+        let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let log = Arc::clone(&seen);
+
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { break };
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                    continue;
+                }
+                let mut len = 0usize;
+                loop {
+                    let mut header = String::new();
+                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
+                        break;
+                    }
+                    if let Some(v) = header.to_ascii_lowercase().strip_prefix("content-length:") {
+                        len = v.trim().parse().unwrap_or(0);
+                    }
+                }
+                let mut body = vec![0u8; len];
+                if len > 0 {
+                    let _ = reader.read_exact(&mut body);
+                }
+                let request: serde_json::Value =
+                    serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null);
+                let (status, reply) = route(&request);
+                log.lock().unwrap().push(request);
+
+                let payload = reply.to_string();
+                let head = format!(
+                    "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
+                    payload.len()
+                );
+                let _ = stream.write_all(head.as_bytes());
+                let _ = stream.write_all(payload.as_bytes());
+                let _ = stream.flush();
+            }
+        });
+
+        Self { base: format!("http://127.0.0.1:{port}"), seen }
+    }
+
+    /// Every chat request this endpoint received, in order.
+    pub(crate) fn requests(&self) -> Vec<serde_json::Value> {
+        self.seen.lock().unwrap().clone()
+    }
+
+    /// Point a state's LLM settings at this endpoint.
+    pub(crate) fn configure(&self, state: &SharedState) {
+        use kroma_module_host::HostCtx as _;
+        state.set_settings(std::collections::BTreeMap::from([
+            ("llmEnabled".to_string(), serde_json::json!(true)),
+            ("llmProvider".to_string(), serde_json::json!("openai")),
+            ("llmBaseUrl".to_string(), serde_json::json!(self.base)),
+            ("llmModel".to_string(), serde_json::json!("test-model")),
+            ("llmApiKey".to_string(), serde_json::json!("test-key")),
+        ]));
+    }
+}

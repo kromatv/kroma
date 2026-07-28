@@ -190,7 +190,7 @@ fn interleave<T>(mut a: impl Iterator<Item = T>, mut b: impl Iterator<Item = T>)
 mod tests {
     use std::collections::HashMap;
 
-    use super::{interleave, run};
+    use super::{curate_with_prompt, curate_with_tools, interleave, run};
     use crate::services::jobs::JobContext;
     use crate::test_support::{seed_movie, seed_show_episode, test_state};
 
@@ -267,5 +267,195 @@ mod tests {
         assert_eq!(interleave([1, 2].into_iter(), std::iter::empty()), vec![1, 2]);
         // Both empty.
         assert!(interleave(std::iter::empty::<i32>(), std::iter::empty()).is_empty());
+    }
+    // ----- the two LLM curate paths, against a scripted model ----------------------
+    //
+    // Both take `&dyn LlmClient`, so the model can be a fake: what matters here
+    // is how a reply is turned into collections, not how it was fetched.
+
+    use std::sync::Mutex;
+
+    use crate::infra::llm::{LlmClient, ToolBox, ToolDef};
+    use crate::services::sections::curate;
+
+    /// A model that answers with whatever it was handed.
+    struct ScriptedLlm {
+        reply: anyhow::Result<String>,
+        tools: bool,
+        seen: Mutex<Vec<String>>,
+    }
+
+    impl ScriptedLlm {
+        fn saying(reply: &str) -> Self {
+            Self { reply: Ok(reply.to_string()), tools: false, seen: Mutex::new(Vec::new()) }
+        }
+        fn failing(message: &str) -> Self {
+            Self {
+                reply: Err(anyhow::anyhow!("{message}")),
+                tools: false,
+                seen: Mutex::new(Vec::new()),
+            }
+        }
+        fn with_tools(mut self) -> Self {
+            self.tools = true;
+            self
+        }
+        fn answer(&self, user: &str) -> anyhow::Result<String> {
+            self.seen.lock().unwrap().push(user.to_string());
+            match &self.reply {
+                Ok(r) => Ok(r.clone()),
+                Err(e) => Err(anyhow::anyhow!("{e}")),
+            }
+        }
+    }
+
+    impl LlmClient for ScriptedLlm {
+        fn available(&self) -> bool {
+            true
+        }
+        fn complete(&self, _system: &str, user: &str, _max_tokens: u32) -> anyhow::Result<String> {
+            self.answer(user)
+        }
+        fn supports_tools(&self) -> bool {
+            self.tools
+        }
+        fn run_tools(
+            &self,
+            _system: &str,
+            user: &str,
+            _tools: &[ToolDef],
+            _toolbox: &dyn ToolBox,
+            _max_tokens: u32,
+            _max_steps: usize,
+        ) -> anyhow::Result<String> {
+            self.answer(user)
+        }
+        fn describe(&self) -> String {
+            "scripted".into()
+        }
+    }
+
+    fn entry(id: &str, title: &str) -> curate::CatalogEntry {
+        curate::CatalogEntry {
+            id: id.into(),
+            title: title.into(),
+            year: Some(2000),
+            rating: 7.5,
+            genres: vec!["Drama".into()],
+            directors: vec!["Someone".into()],
+        }
+    }
+
+    /// A catalog big enough that a collection can clear MIN_ITEMS.
+    fn catalog() -> Vec<curate::CatalogEntry> {
+        (1..=8).map(|n| entry(&format!("itm-{n}"), &format!("Title {n}"))).collect()
+    }
+
+    fn reply_with(members: &[&str]) -> String {
+        let list = members.iter().map(|m| format!("\"{m}\"")).collect::<Vec<_>>().join(",");
+        format!(
+            r#"[{{"title":{{"en":"Slow Burn Thrillers"}},"reason":{{"en":"Because"}},"members":[{list}]}}]"#
+        )
+    }
+
+    #[test]
+    fn the_tool_path_resolves_members_as_catalog_ids() {
+        // Ids come back from the tools, so anything the model invents simply
+        // does not resolve - that is the point of the id path over the title one.
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let llm = ScriptedLlm::saying(&reply_with(&[
+            "itm-1", "itm-2", "itm-3", "itm-4", "itm-5", "not-a-real-id",
+        ]))
+        .with_tools();
+
+        let rows = curate_with_tools(&ctx, &llm, &catalog(), 4096).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].item_ids, ["itm-1", "itm-2", "itm-3", "itm-4", "itm-5"]);
+        assert_eq!(rows[0].source, "llm");
+        assert_eq!(rows[0].titles.get("en").map(String::as_str), Some("Slow Burn Thrillers"));
+    }
+
+    #[test]
+    fn a_collection_that_cannot_reach_the_floor_is_dropped_whole() {
+        // Four titles is not a row worth showing; keeping it would put a
+        // half-empty rail on the home page.
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let llm =
+            ScriptedLlm::saying(&reply_with(&["itm-1", "itm-2", "itm-3", "itm-4"])).with_tools();
+        assert!(curate_with_tools(&ctx, &llm, &catalog(), 4096).unwrap().is_empty());
+        assert!(curate::MIN_ITEMS > 4);
+    }
+
+    #[test]
+    fn the_prompt_path_matches_members_back_by_title() {
+        // The fallback hands titles to the model, so the model echoes titles -
+        // matched back case- and punctuation-insensitively.
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let llm = ScriptedLlm::saying(&reply_with(&[
+            "Title 1", "TITLE 2", "title 3", "Title 4", "Title 5",
+        ]));
+
+        let rows = curate_with_prompt(&ctx, &llm, &catalog(), 4096);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].item_ids.len(), 5);
+        assert!(rows[0].item_ids.contains(&"itm-2".to_string()), "{:?}", rows[0].item_ids);
+    }
+
+    #[test]
+    fn a_title_the_model_invented_does_not_resolve() {
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let llm = ScriptedLlm::saying(&reply_with(&[
+            "Title 1", "Title 2", "Title 3", "Title 4", "A Film We Do Not Have",
+        ]));
+        // Only four matched, so the whole collection goes.
+        assert!(curate_with_prompt(&ctx, &llm, &catalog(), 4096).is_empty());
+    }
+
+    #[test]
+    fn a_reply_that_is_not_json_is_logged_not_propagated() {
+        // The catalog-in-prompt path is already the fallback; failing hard here
+        // would lose the deterministic director collections too.
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let llm = ScriptedLlm::saying("I'm sorry, I can't help with that.");
+        assert!(curate_with_prompt(&ctx, &llm, &catalog(), 4096).is_empty());
+    }
+
+    #[test]
+    fn a_request_that_fails_outright_is_logged_not_propagated() {
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let llm = ScriptedLlm::failing("connection refused");
+        assert!(curate_with_prompt(&ctx, &llm, &catalog(), 4096).is_empty());
+    }
+
+    #[test]
+    fn the_tool_path_surfaces_its_failure_so_the_caller_can_fall_back() {
+        // Unlike the prompt path, this one returns Err on purpose: `run` uses it
+        // to decide to retry with catalog-in-prompt.
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let llm = ScriptedLlm::failing("tool loop exhausted").with_tools();
+        assert!(curate_with_tools(&ctx, &llm, &catalog(), 4096).is_err());
+
+        let unparseable = ScriptedLlm::saying("not json at all").with_tools();
+        assert!(curate_with_tools(&ctx, &unparseable, &catalog(), 4096).is_err());
+    }
+
+    #[test]
+    fn a_reply_wrapped_in_prose_or_fences_is_still_read() {
+        // Small local models routinely do both.
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let inner = reply_with(&["itm-1", "itm-2", "itm-3", "itm-4", "itm-5"]);
+        let llm = ScriptedLlm::saying(&format!(
+            "Sure! Here are the collections:\n```json\n{inner}\n```\nHope that helps."
+        ))
+        .with_tools();
+        assert_eq!(curate_with_tools(&ctx, &llm, &catalog(), 4096).unwrap().len(), 1);
     }
 }
