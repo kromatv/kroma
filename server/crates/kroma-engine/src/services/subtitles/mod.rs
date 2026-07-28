@@ -308,4 +308,223 @@ mod tests {
         assert_ne!(stable_id("a", "whisper", "French"), stable_id("a", "translate", "French"));
         assert!(stable_id("a", "whisper", "French").starts_with("dl"));
     }
+    // ----- generate() end to end --------------------------------------------------
+
+    use std::path::PathBuf;
+    use std::sync::atomic::AtomicBool;
+    use std::sync::Arc;
+
+    use crate::services::subtitles::progress::GenRegistry;
+    use crate::test_support::FakeLlm;
+
+    /// A Whisper port that returns whatever it was given, recording the model
+    /// spec and track it was asked for.
+    struct FakeWhisper {
+        output: Option<String>,
+        asked: std::sync::Mutex<Vec<(String, u32, Option<String>)>>,
+    }
+
+    impl FakeWhisper {
+        fn saying(text: Option<&str>) -> Self {
+            Self {
+                output: text.map(str::to_string),
+                asked: std::sync::Mutex::new(Vec::new()),
+            }
+        }
+    }
+
+    impl crate::ports::Whisper for FakeWhisper {
+        fn transcribe(
+            &self,
+            _data_dir: &Path,
+            model_spec: &str,
+            _input: &Path,
+            track: u32,
+            lang: Option<&str>,
+            on_stage: &dyn Fn(&str),
+            on_progress: &dyn Fn(usize, usize),
+            _cancel: &AtomicBool,
+        ) -> Option<String> {
+            self.asked.lock().unwrap().push((
+                model_spec.to_string(),
+                track,
+                lang.map(str::to_string),
+            ));
+            on_stage("transcribe");
+            on_progress(1, 1);
+            self.output.clone()
+        }
+    }
+
+    struct Env {
+        dir: PathBuf,
+        pool: Pool,
+        settings: Settings,
+    }
+
+    fn env() -> Env {
+        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("kroma-subgen-{}-{n}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let pool = crate::db::init(&dir.join("kroma.db")).unwrap();
+        // `downloaded_subtitles.item_id` is a foreign key, so the generation
+        // needs a real item to hang off.
+        {
+            let conn = pool.get().unwrap();
+            conn.execute(
+                "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO items (id,kind,title,container,library,added_at) \
+                 VALUES ('itm-1','movie','Title','mkv','lib','t')",
+                [],
+            )
+            .unwrap();
+        }
+        let settings = Settings::load(&pool);
+        Env { dir, pool, settings }
+    }
+
+    fn handle() -> Handle {
+        Arc::new(GenRegistry::default()).start("itm-1", "gen", Some("fr".into()))
+    }
+
+    const SOURCE_VTT: &str = "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nHello there\n\n";
+
+    fn spec(mode: GenMode, target: &str) -> GenSpec {
+        GenSpec {
+            mode,
+            target_lang: target.to_string(),
+            spoken_lang: Some("English".into()),
+            quality: Quality::Balanced,
+            audio_track: 2,
+            source_vtt: matches!(mode, GenMode::Translate).then(|| SOURCE_VTT.to_string()),
+        }
+    }
+
+    fn run(env: &Env, spec: &GenSpec, whisper: &dyn crate::ports::Whisper) -> Result<DownloadedSub, String> {
+        generate(
+            &env.settings,
+            &env.dir,
+            &env.pool,
+            "itm-1",
+            Path::new("/media/itm-1.mkv"),
+            spec,
+            &handle(),
+            whisper,
+        )
+    }
+
+    #[test]
+    fn a_translation_is_written_to_disk_and_recorded() {
+        let env = env();
+        let llm = FakeLlm::always("1. Bonjour à tous\n");
+        llm.configure_settings(&env.settings, &env.pool);
+
+        let sub = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None)).unwrap();
+        assert_eq!(sub.item_id, "itm-1");
+        // The ISO code is stored, never the display label - "Français" is not a
+        // valid language code and every consumer treats this field as one.
+        assert_eq!(sub.language.as_deref(), Some("fr"));
+        assert_eq!(sub.label, "Français");
+        let written = std::fs::read_to_string(&sub.path).unwrap();
+        assert!(written.contains("Bonjour"), "{written}");
+        // ...and it is in the database, so the player can find it.
+        let rows = crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].id, sub.id);
+    }
+
+    #[test]
+    fn regenerating_the_same_language_replaces_rather_than_duplicates() {
+        // The id is a stable (item, provider, target) triple for exactly this
+        // reason; without it a user who retries collects duplicate tracks.
+        let env = env();
+        let llm = FakeLlm::always("1. Bonjour\n");
+        llm.configure_settings(&env.settings, &env.pool);
+
+        let first = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None)).unwrap();
+        let second = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None)).unwrap();
+        assert_eq!(first.id, second.id);
+        assert_eq!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().len(), 1);
+
+        // A different target language is a different track.
+        let other = run(&env, &spec(GenMode::Translate, "Deutsch"), &FakeWhisper::saying(None)).unwrap();
+        assert_ne!(other.id, first.id);
+        assert_eq!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().len(), 2);
+    }
+
+    #[test]
+    fn a_target_language_we_cannot_map_keeps_its_label_without_inventing_a_code() {
+        let env = env();
+        let llm = FakeLlm::always("1. Something\n");
+        llm.configure_settings(&env.settings, &env.pool);
+
+        let sub = run(&env, &spec(GenMode::Translate, "Klingon"), &FakeWhisper::saying(None)).unwrap();
+        assert_eq!(sub.language, None, "an unknown label must not become a code");
+        assert_eq!(sub.label, "Klingon");
+    }
+
+    #[test]
+    fn translating_with_nothing_to_translate_from_says_so() {
+        let env = env();
+        let mut spec = spec(GenMode::Translate, "Français");
+        spec.source_vtt = None;
+        let err = run(&env, &spec, &FakeWhisper::saying(None)).unwrap_err();
+        assert!(err.contains("no source subtitle"), "{err}");
+    }
+
+    #[test]
+    fn a_transcription_uses_the_requested_model_track_and_language() {
+        // Getting the audio track wrong is the single most common cause of an
+        // empty transcript, so it has to be passed through exactly.
+        let env = env();
+        let whisper = FakeWhisper::saying(Some(
+            "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nHello there\n\n",
+        ));
+        let sub = run(&env, &spec(GenMode::Transcribe, "English"), &whisper).unwrap();
+        assert_eq!(sub.language.as_deref(), Some("en"));
+
+        let asked = whisper.asked.lock().unwrap();
+        assert_eq!(asked.len(), 1);
+        assert_eq!(asked[0].0, Quality::Balanced.model());
+        assert_eq!(asked[0].1, 2, "the audio track index was not passed through");
+        assert_eq!(asked[0].2.as_deref(), Some("en"), "the spoken language is sent as a CODE");
+    }
+
+    #[test]
+    fn a_whisper_that_produced_nothing_explains_the_usual_causes() {
+        // The user cannot see the server log; the message has to point at the
+        // two things they can actually change.
+        let env = env();
+        let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(None))
+            .unwrap_err();
+        assert!(err.contains("audio track"), "{err}");
+        assert!(err.contains("model"), "{err}");
+    }
+
+    #[test]
+    fn a_result_too_short_to_be_a_subtitle_is_refused() {
+        // A bare "WEBVTT" header is a successful call that produced nothing, and
+        // caching it would leave a permanently empty track on the item.
+        let env = env();
+        let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(Some("WEBVTT")))
+            .unwrap_err();
+        assert!(err.contains("empty"), "{err}");
+        assert!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_failing_translation_surfaces_the_reason_rather_than_a_blank_failure() {
+        let env = env();
+        // No provider configured at all.
+        let err = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None))
+            .unwrap_err();
+        assert!(err.contains("admin"), "{err}");
+        assert!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().is_empty());
+    }
 }

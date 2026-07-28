@@ -297,6 +297,21 @@ impl FakeLlm {
         self.seen.lock().unwrap().clone()
     }
 
+    /// Point a bare `Settings` at this endpoint (for services that take
+    /// `&Settings` rather than a whole state).
+    pub(crate) fn configure_settings(&self, settings: &Settings, pool: &db::Pool) {
+        settings.set_patch(
+            pool,
+            std::collections::BTreeMap::from([
+                ("llmEnabled".to_string(), serde_json::json!(true)),
+                ("llmProvider".to_string(), serde_json::json!("openai")),
+                ("llmBaseUrl".to_string(), serde_json::json!(self.base)),
+                ("llmModel".to_string(), serde_json::json!("test-model")),
+                ("llmApiKey".to_string(), serde_json::json!("test-key")),
+            ]),
+        );
+    }
+
     /// Point a state's LLM settings at this endpoint.
     pub(crate) fn configure(&self, state: &SharedState) {
         use kroma_module_host::HostCtx as _;
