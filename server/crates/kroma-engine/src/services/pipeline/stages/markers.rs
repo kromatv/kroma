@@ -183,4 +183,137 @@ mod tests {
 
         let _ = std::fs::remove_file(&path);
     }
+    // ----- enumerate + process ----------------------------------------------------
+
+    use super::{enumerate, process};
+    use crate::services::jobs::JobContext;
+    use crate::state::SharedState;
+    use crate::test_support::{seed_show_episode, test_state};
+
+    /// A show with one probed episode in season 1, which is the minimum for the
+    /// season to be in scope. `on_disk` controls whether the episode's file
+    /// actually exists - `seed_show_episode` points at a path that does not, and
+    /// an unreadable file collapses the whole season's signature.
+    fn seed_probed_season(state: &SharedState, show: &str, ep: &str) {
+        seed_probed_season_with(state, show, ep, true);
+    }
+
+    fn seed_probed_season_with(state: &SharedState, show: &str, ep: &str, on_disk: bool) {
+        seed_show_episode(state, show, ep);
+        let path = std::env::temp_dir().join(format!("kroma-marker-{}-{ep}.mkv", std::process::id()));
+        if on_disk {
+            std::fs::write(&path, b"not really a video").unwrap();
+        } else {
+            let _ = std::fs::remove_file(&path);
+        }
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute_batch(&format!(
+                "UPDATE items SET duration_ms = 1200000, abs_path = '{p}' WHERE id = '{ep}'; \
+                 UPDATE files SET abs_path = '{p}' WHERE item_id = '{ep}';",
+                p = path.to_string_lossy()
+            ))
+            .unwrap();
+    }
+
+    #[test]
+    fn one_unreadable_episode_collapses_the_whole_season() {
+        // A mount blip makes a file unreadable. Collapsing to the sentinel means
+        // `reconcile` SKIPS the season rather than treating the changed
+        // signature as new work - otherwise every flap re-fingerprints it.
+        let state = test_state();
+        seed_probed_season_with(&state, "shw-1", "ep-1", false);
+        set_mode(&state, "chapters");
+
+        let subjects = enumerate(&state).unwrap();
+        assert_eq!(subjects.len(), 1);
+        assert_eq!(subjects[0].1, crate::db::pipeline::UNREADABLE_SIG);
+    }
+
+    fn set_mode(state: &SharedState, mode: &str) {
+        use kroma_module_host::HostCtx as _;
+        state.set_settings(std::collections::BTreeMap::from([(
+            "introDetection".to_string(),
+            serde_json::json!(mode),
+        )]));
+    }
+
+    #[test]
+    fn detection_turned_off_puts_nothing_in_scope() {
+        // The ledger purges tasks for subjects that leave scope, so returning an
+        // empty set is how "off" actually stops the work - not a flag checked
+        // later, per season, after the fingerprinting has already run.
+        let state = test_state();
+        seed_probed_season(&state, "shw-1", "ep-1");
+        set_mode(&state, "off");
+        assert!(enumerate(&state).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_season_is_one_subject_named_show_then_season() {
+        let state = test_state();
+        seed_probed_season(&state, "shw-1", "ep-1");
+        set_mode(&state, "chapters");
+
+        let subjects = enumerate(&state).unwrap();
+        assert_eq!(subjects.len(), 1, "one subject per SEASON, not per episode");
+        assert_eq!(subjects[0].0, "shw-1#1");
+    }
+
+    #[test]
+    fn a_season_with_nothing_probed_yet_waits_rather_than_queuing() {
+        // Without a duration there is no playable file to fingerprint; queuing
+        // it would fail the task and need a manual retry once probe catches up.
+        let state = test_state();
+        seed_show_episode(&state, "shw-1", "ep-1"); // no duration_ms
+        set_mode(&state, "chapters");
+        assert!(enumerate(&state).unwrap().is_empty());
+    }
+
+    #[test]
+    fn changing_the_detection_mode_re_queues_the_season() {
+        // The mode is part of the signature, so switching from chapters to
+        // fingerprinting must re-run every season rather than leave the old
+        // markers in place.
+        let state = test_state();
+        seed_probed_season(&state, "shw-1", "ep-1");
+
+        set_mode(&state, "chapters");
+        let chapters = enumerate(&state).unwrap();
+        set_mode(&state, "fingerprint");
+        let fingerprint = enumerate(&state).unwrap();
+
+        assert_eq!(chapters[0].0, fingerprint[0].0, "same subject");
+        assert_ne!(chapters[0].1, fingerprint[0].1, "different signature");
+    }
+
+    #[test]
+    fn a_subject_id_that_is_not_a_season_is_named_in_the_error() {
+        // Subject ids come from the ledger, which can outlive a format change;
+        // the message has to say which row is wrong.
+        let state = test_state();
+        let ctx = JobContext::for_test(state);
+        let err = process(&ctx, "no-hash-here").unwrap_err().to_string();
+        assert!(err.contains("no-hash-here"), "{err}");
+
+        let err = process(&ctx, "shw-1#notanumber").unwrap_err().to_string();
+        assert!(err.contains("shw-1#notanumber"), "{err}");
+    }
+
+    #[test]
+    fn a_season_deleted_since_it_was_queued_errors_rather_than_panicking() {
+        // The ledger is enumerated up front, so the show or the season can be
+        // gone by the time the task runs.
+        let state = test_state();
+        let ctx = JobContext::for_test(state.clone());
+        let err = process(&ctx, "gone-show#1").unwrap_err().to_string();
+        assert!(err.contains("gone-show"), "{err}");
+
+        seed_probed_season(&state, "shw-1", "ep-1");
+        let ctx = JobContext::for_test(state);
+        let err = process(&ctx, "shw-1#99").unwrap_err().to_string();
+        assert!(err.contains("99"), "{err}");
+    }
 }
