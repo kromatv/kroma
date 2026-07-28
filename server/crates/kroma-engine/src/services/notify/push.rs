@@ -305,6 +305,31 @@ mod tests {
         hits: Arc<Mutex<usize>>,
     }
 
+    /// Read and discard one HTTP request. `false` when the peer sent nothing.
+    fn drain_request(stream: &std::net::TcpStream) -> bool {
+        let Ok(clone) = stream.try_clone() else { return false };
+        let mut reader = BufReader::new(clone);
+        let mut line = String::new();
+        if reader.read_line(&mut line).unwrap_or(0) == 0 {
+            return false;
+        }
+        let mut len = 0usize;
+        loop {
+            let mut header = String::new();
+            if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
+                break;
+            }
+            if let Some(v) = header.to_ascii_lowercase().strip_prefix("content-length:") {
+                len = v.trim().parse().unwrap_or(0);
+            }
+        }
+        if len > 0 {
+            let mut body = vec![0u8; len];
+            let _ = reader.read_exact(&mut body);
+        }
+        true
+    }
+
     impl FakeService {
         fn answering(status: u16) -> Self {
             let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
@@ -315,24 +340,8 @@ mod tests {
             std::thread::spawn(move || {
                 for stream in listener.incoming() {
                     let Ok(mut stream) = stream else { break };
-                    let mut reader = BufReader::new(stream.try_clone().unwrap());
-                    let mut line = String::new();
-                    if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                    if !drain_request(&stream) {
                         continue;
-                    }
-                    let mut len = 0usize;
-                    loop {
-                        let mut header = String::new();
-                        if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
-                            break;
-                        }
-                        if let Some(v) = header.to_ascii_lowercase().strip_prefix("content-length:") {
-                            len = v.trim().parse().unwrap_or(0);
-                        }
-                    }
-                    if len > 0 {
-                        let mut body = vec![0u8; len];
-                        let _ = reader.read_exact(&mut body);
                     }
                     *counter.lock().unwrap() += 1;
                     let resp = format!(

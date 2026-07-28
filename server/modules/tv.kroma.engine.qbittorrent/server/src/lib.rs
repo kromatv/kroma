@@ -285,6 +285,41 @@ mod tests {
     /// One canned answer: `(status, body)`.
     type Reply = (u16, String);
 
+    /// Read the request line, returning `"METHOD /path"` with any query dropped,
+    /// plus the declared body length. `None` when the peer sent nothing.
+    fn read_request(reader: &mut impl BufRead) -> Option<(String, usize)> {
+        let mut first = String::new();
+        if reader.read_line(&mut first).unwrap_or(0) == 0 {
+            return None;
+        }
+        // "GET /path?query HTTP/1.1" -> "GET /path"
+        let mut parts = first.split_whitespace();
+        let method = parts.next().unwrap_or("").to_string();
+        let path = parts.next().unwrap_or("").split('?').next().unwrap_or("").to_string();
+
+        let mut len = 0usize;
+        loop {
+            let mut line = String::new();
+            if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
+                return Some((format!("{method} {path}"), len));
+            }
+            if let Some(v) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                len = v.trim().parse().unwrap_or(0);
+            }
+        }
+    }
+
+    /// Serialize one reply onto the wire.
+    fn write_reply(stream: &mut impl Write, (status, body): Reply) {
+        let reason = if status == 200 { "OK" } else { "ERR" };
+        let resp = format!(
+            "HTTP/1.1 {status} {reason}\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+        let _ = stream.write_all(resp.as_bytes());
+        let _ = stream.flush();
+    }
+
     impl FakeQbit {
         /// `route` maps a request line ("POST /api/v2/auth/login") plus the call
         /// count for that route to a reply.
@@ -300,27 +335,9 @@ mod tests {
                 for stream in listener.incoming() {
                     let Ok(mut stream) = stream else { break };
                     let mut reader = BufReader::new(stream.try_clone().unwrap());
-                    let mut first = String::new();
-                    if reader.read_line(&mut first).unwrap_or(0) == 0 {
-                        continue;
-                    }
-                    // "GET /path?query HTTP/1.1" -> "GET /path"
-                    let mut parts = first.split_whitespace();
-                    let method = parts.next().unwrap_or("").to_string();
-                    let path = parts.next().unwrap_or("").split('?').next().unwrap_or("").to_string();
-                    let key = format!("{method} {path}");
+                    let Some((key, len)) = read_request(&mut reader) else { continue };
 
-                    // Drain the headers, then any body, so curl sees a clean close.
-                    let mut len = 0usize;
-                    loop {
-                        let mut line = String::new();
-                        if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
-                            break;
-                        }
-                        if let Some(v) = line.to_ascii_lowercase().strip_prefix("content-length:") {
-                            len = v.trim().parse().unwrap_or(0);
-                        }
-                    }
+                    // Drain the body so curl sees a clean close.
                     if len > 0 {
                         let mut body = vec![0u8; len];
                         let _ = reader.read_exact(&mut body);
@@ -328,16 +345,9 @@ mod tests {
 
                     let n = counts.entry(key.clone()).or_insert(0);
                     *n += 1;
-                    let (status, body) = route(&key, *n);
+                    let reply = route(&key, *n);
                     log.lock().unwrap().push(key);
-
-                    let reason = if status == 200 { "OK" } else { "ERR" };
-                    let resp = format!(
-                        "HTTP/1.1 {status} {reason}\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{body}",
-                        body.len()
-                    );
-                    let _ = stream.write_all(resp.as_bytes());
-                    let _ = stream.flush();
+                    write_reply(&mut stream, reply);
                 }
             });
 

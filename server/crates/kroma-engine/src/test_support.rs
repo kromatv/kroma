@@ -239,8 +239,6 @@ impl FakeLlm {
     pub(crate) fn routed(
         route: impl Fn(&serde_json::Value) -> (u16, serde_json::Value) + Send + 'static,
     ) -> Self {
-        use std::io::{BufRead, BufReader, Read, Write};
-
         let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
         let port = listener.local_addr().unwrap().port();
         let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
@@ -249,38 +247,10 @@ impl FakeLlm {
         std::thread::spawn(move || {
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
-                let mut reader = BufReader::new(stream.try_clone().unwrap());
-                let mut line = String::new();
-                if reader.read_line(&mut line).unwrap_or(0) == 0 {
-                    continue;
-                }
-                let mut len = 0usize;
-                loop {
-                    let mut header = String::new();
-                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
-                        break;
-                    }
-                    if let Some(v) = header.to_ascii_lowercase().strip_prefix("content-length:") {
-                        len = v.trim().parse().unwrap_or(0);
-                    }
-                }
-                let mut body = vec![0u8; len];
-                if len > 0 {
-                    let _ = reader.read_exact(&mut body);
-                }
-                let request: serde_json::Value =
-                    serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null);
+                let Some(request) = read_json_request(&stream) else { continue };
                 let (status, reply) = route(&request);
                 log.lock().unwrap().push(request);
-
-                let payload = reply.to_string();
-                let head = format!(
-                    "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
-                    payload.len()
-                );
-                let _ = stream.write_all(head.as_bytes());
-                let _ = stream.write_all(payload.as_bytes());
-                let _ = stream.flush();
+                write_json_reply(&mut stream, status, &reply);
             }
         });
 
@@ -323,4 +293,45 @@ impl FakeLlm {
             ("llmApiKey".to_string(), serde_json::json!("test-key")),
         ]));
     }
+}
+
+/// Read one HTTP request off `stream` and parse its body as JSON. `None` when
+/// the peer sent nothing.
+fn read_json_request(stream: &std::net::TcpStream) -> Option<serde_json::Value> {
+    use std::io::{BufRead, BufReader, Read};
+
+    let mut reader = BufReader::new(stream.try_clone().ok()?);
+    let mut line = String::new();
+    if reader.read_line(&mut line).unwrap_or(0) == 0 {
+        return None;
+    }
+    let mut len = 0usize;
+    loop {
+        let mut header = String::new();
+        if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
+            break;
+        }
+        if let Some(v) = header.to_ascii_lowercase().strip_prefix("content-length:") {
+            len = v.trim().parse().unwrap_or(0);
+        }
+    }
+    let mut body = vec![0u8; len];
+    if len > 0 {
+        let _ = reader.read_exact(&mut body);
+    }
+    Some(serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null))
+}
+
+/// Write a JSON reply with the given status.
+fn write_json_reply(stream: &mut std::net::TcpStream, status: u16, reply: &serde_json::Value) {
+    use std::io::Write;
+
+    let payload = reply.to_string();
+    let head = format!(
+        "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n",
+        payload.len()
+    );
+    let _ = stream.write_all(head.as_bytes());
+    let _ = stream.write_all(payload.as_bytes());
+    let _ = stream.flush();
 }

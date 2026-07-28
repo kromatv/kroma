@@ -393,6 +393,54 @@ mod tests {
         calls: Arc<Mutex<Vec<Call>>>,
     }
 
+    /// The request headers this fake cares about: the body length plus the two
+    /// the connector is responsible for setting.
+    #[derive(Default)]
+    struct Headers {
+        len: usize,
+        session: Option<String>,
+        auth: Option<String>,
+    }
+
+    /// Read the request line and headers, stopping at the blank line.
+    fn read_headers(reader: &mut impl BufRead) -> Option<Headers> {
+        let mut request_line = String::new();
+        if reader.read_line(&mut request_line).unwrap_or(0) == 0 {
+            return None;
+        }
+        let mut out = Headers::default();
+        loop {
+            let mut line = String::new();
+            if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
+                return Some(out);
+            }
+            let lower = line.to_ascii_lowercase();
+            let value = || line.split_once(':').map(|(_, v)| v.trim().to_string());
+            if let Some(v) = lower.strip_prefix("content-length:") {
+                out.len = v.trim().parse().unwrap_or(0);
+            } else if lower.starts_with("x-transmission-session-id:") {
+                out.session = value();
+            } else if lower.starts_with("authorization:") {
+                out.auth = value();
+            }
+        }
+    }
+
+    /// Serialize one reply onto the wire.
+    fn write_reply(stream: &mut impl Write, reply: Reply) {
+        let handshake =
+            reply.session.map(|s| format!("{SESSION_HEADER}: {s}\r\n")).unwrap_or_default();
+        let reason = if reply.status == 200 { "OK" } else { "ERR" };
+        let resp = format!(
+            "HTTP/1.1 {} {reason}\r\nContent-Length: {}\r\nContent-Type: application/json\r\n{handshake}Connection: close\r\n\r\n{}",
+            reply.status,
+            reply.body.len(),
+            reply.body,
+        );
+        let _ = stream.write_all(resp.as_bytes());
+        let _ = stream.flush();
+    }
+
     impl FakeTransmission {
         /// `route` maps an RPC method plus the call count for that method (1-based)
         /// to a reply.
@@ -408,29 +456,10 @@ mod tests {
                 for stream in listener.incoming() {
                     let Ok(mut stream) = stream else { break };
                     let mut reader = BufReader::new(stream.try_clone().unwrap());
-                    let mut request_line = String::new();
-                    if reader.read_line(&mut request_line).unwrap_or(0) == 0 {
-                        continue;
-                    }
+                    let Some(headers) = read_headers(&mut reader) else { continue };
 
-                    let (mut len, mut session, mut auth) = (0usize, None, None);
-                    loop {
-                        let mut line = String::new();
-                        if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
-                            break;
-                        }
-                        let lower = line.to_ascii_lowercase();
-                        let value = || line.split_once(':').map(|(_, v)| v.trim().to_string());
-                        if let Some(v) = lower.strip_prefix("content-length:") {
-                            len = v.trim().parse().unwrap_or(0);
-                        } else if lower.starts_with("x-transmission-session-id:") {
-                            session = value();
-                        } else if lower.starts_with("authorization:") {
-                            auth = value();
-                        }
-                    }
-                    let mut body = vec![0u8; len];
-                    if len > 0 {
+                    let mut body = vec![0u8; headers.len];
+                    if headers.len > 0 {
                         let _ = reader.read_exact(&mut body);
                     }
 
@@ -442,21 +471,13 @@ mod tests {
                     let n = counts.entry(method.clone()).or_insert(0);
                     *n += 1;
                     let reply = route(&method, &args, *n);
-                    log.lock().unwrap().push(Call { method, args, session, auth });
-
-                    let handshake = reply
-                        .session
-                        .map(|s| format!("{SESSION_HEADER}: {s}\r\n"))
-                        .unwrap_or_default();
-                    let reason = if reply.status == 200 { "OK" } else { "ERR" };
-                    let resp = format!(
-                        "HTTP/1.1 {} {reason}\r\nContent-Length: {}\r\nContent-Type: application/json\r\n{handshake}Connection: close\r\n\r\n{}",
-                        reply.status,
-                        reply.body.len(),
-                        reply.body,
-                    );
-                    let _ = stream.write_all(resp.as_bytes());
-                    let _ = stream.flush();
+                    log.lock().unwrap().push(Call {
+                        method,
+                        args,
+                        session: headers.session,
+                        auth: headers.auth,
+                    });
+                    write_reply(&mut stream, reply);
                 }
             });
 

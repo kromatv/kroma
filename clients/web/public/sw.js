@@ -65,7 +65,7 @@ self.addEventListener('notificationclick', (event) => {
  * ever coming to the foreground.
  */
 async function handleClick(action, link) {
-  if (action && action.kind === 'api') {
+  if (action?.kind === 'api') {
     try {
       // Same-origin: the session cookie/bearer is not available here, but the
       // API is on this origin and the request carries the browser's credentials.
@@ -75,7 +75,7 @@ async function handleClick(action, link) {
       // Fall through to opening the app so the user can act by hand.
     }
   }
-  const target = action && action.kind === 'link' ? action.href : link || '/';
+  const target = action?.kind === 'link' ? action.href : link || '/';
   await openApp(target);
 }
 
@@ -128,6 +128,12 @@ function base64Url(buffer) {
   if (!buffer) return null;
   const bytes = new Uint8Array(buffer);
   let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  for (const b of bytes) binary += String.fromCodePoint(b);
+  const b64 = btoa(binary).replaceAll('+', '-').replaceAll('/', '_');
+  // Strip the padding in one linear pass. A `/=+$/` regex is super-linear here:
+  // unanchored at the start, it retries and backtracks the run at every
+  // position (same reasoning as stripTrailingSlash in the Synology generator).
+  let end = b64.length;
+  while (end > 0 && b64[end - 1] === '=') end--;
+  return b64.slice(0, end);
 }
