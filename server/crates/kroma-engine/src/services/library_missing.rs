@@ -119,3 +119,110 @@ fn scan_one<S: HostCtx>(
     }
     Ok((detail.poster_url, gaps))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use super::*;
+    use crate::test_support::{seed_show_episode, test_state, test_state_with_tmdb};
+
+    /// A progress sink recording every `(done, total)` the scan reported.
+    #[derive(Default)]
+    struct Progress(RefCell<Vec<(usize, usize)>>);
+
+    impl Progress {
+        fn record(&self) -> impl Fn(usize, usize) + '_ {
+            move |done, total| self.0.borrow_mut().push((done, total))
+        }
+        fn seen(&self) -> Vec<(usize, usize)> {
+            self.0.borrow().clone()
+        }
+    }
+
+    fn never_cancelled() -> impl Fn() -> bool {
+        || false
+    }
+
+    /// How many gap rows the scan left behind. Zero for every case here: none of
+    /// them reaches TMDB, so none of them can discover a gap.
+    fn gap_rows(state: &crate::state::SharedState) -> i64 {
+        state
+            .db
+            .get()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM library_gaps", [], |r| r.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn refuses_to_scan_without_tmdb() {
+        // The whole scan is a TMDB diff, so with no key there is nothing to diff
+        // against - and saying so beats reporting an empty, "complete" library.
+        let state = test_state();
+        let progress = Progress::default();
+        let err = scan(&state, &progress.record(), &never_cancelled()).unwrap_err();
+        assert!(err.to_string().contains("TMDB is not configured"), "{err}");
+        assert!(progress.seen().is_empty(), "nothing was scanned, so nothing to report");
+    }
+
+    #[test]
+    fn an_empty_library_is_a_clean_scan() {
+        let state = test_state_with_tmdb("k");
+        let progress = Progress::default();
+        let summary = scan(&state, &progress.record(), &never_cancelled()).unwrap();
+
+        assert_eq!(summary.shows, 0);
+        assert_eq!(summary.with_gaps, 0);
+        assert_eq!(summary.episodes, 0);
+        // Still reports completion, so a caller's progress bar reaches the end
+        // rather than sitting at zero forever.
+        assert_eq!(progress.seen().last().copied(), Some((0, 0)));
+    }
+
+    #[test]
+    fn skips_a_show_that_has_not_been_enriched() {
+        // No TMDB id means no episode list to diff against. Counting it as
+        // scanned would report a complete show that was never checked.
+        let state = test_state_with_tmdb("k");
+        seed_show_episode(&state, "shw-1", "ep-1");
+        let progress = Progress::default();
+
+        let summary = scan(&state, &progress.record(), &never_cancelled()).unwrap();
+        assert_eq!(summary.shows, 0, "an un-enriched show is not a scanned show");
+        assert_eq!(summary.episodes, 0);
+        assert_eq!(gap_rows(&state), 0, "and it records no gaps for it");
+    }
+
+    #[test]
+    fn reports_the_real_total_while_it_walks() {
+        let state = test_state_with_tmdb("k");
+        seed_show_episode(&state, "shw-1", "ep-1");
+        seed_show_episode(&state, "shw-2", "ep-2");
+        let progress = Progress::default();
+
+        scan(&state, &progress.record(), &never_cancelled()).unwrap();
+        let seen = progress.seen();
+        // The total is every show in the library, not only the enriched ones -
+        // the bar measures the walk, and the walk visits all of them.
+        assert!(seen.iter().all(|&(_, total)| total == 2), "{seen:?}");
+        assert_eq!(seen.first().copied(), Some((0, 2)));
+        assert_eq!(seen.last().copied(), Some((2, 2)));
+    }
+
+    #[test]
+    fn stops_when_cancelled() {
+        // Checked BEFORE each show, so a cancel lands between shows rather than
+        // part-way through one - which is what keeps `library_gaps` consistent.
+        let state = test_state_with_tmdb("k");
+        seed_show_episode(&state, "shw-1", "ep-1");
+        let progress = Progress::default();
+
+        let summary = scan(&state, &progress.record(), &|| true).unwrap();
+        assert_eq!(summary.shows, 0);
+        assert_eq!(gap_rows(&state), 0);
+        // A cancelled run is not a failed one: the caller gets a summary of what
+        // it did manage, not an error.
+        assert_eq!(progress.seen(), vec![(1, 1)], "only the closing report");
+    }
+}

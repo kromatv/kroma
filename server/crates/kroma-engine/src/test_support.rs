@@ -47,6 +47,22 @@ fn test_config(data_dir: PathBuf) -> Config {
     }
 }
 
+/// Like [`test_state`], but with a TMDB key in the config.
+///
+/// For services that refuse to start without one. It does NOT make the network
+/// reachable and no test may rely on it doing so: it only gets a service past
+/// its "TMDB is not configured" guard, so the paths that never reach a request
+/// (an empty library, an un-enriched show, a cancelled run) can be exercised.
+pub(crate) fn test_state_with_tmdb(key: &str) -> SharedState {
+    let data_dir = unique_data_dir();
+    let db = db::init(&data_dir.join("kroma.db")).expect("init db");
+    let mut config = test_config(data_dir);
+    config.tmdb_api_key = Some(key.to_string());
+    let settings = Settings::load(&db);
+    let embedder: Arc<dyn Embedder> = Arc::new(NoopEmbedder);
+    AppState::new(config, false, db, settings, embedder, HashMap::new(), &[])
+}
+
 /// Build a minimal, real [`SharedState`]: fresh temp DB, loaded settings, a no-op
 /// embedder, empty module services, no module jobs, `ffprobe_available = false`.
 pub(crate) fn test_state() -> SharedState {
