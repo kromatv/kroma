@@ -352,7 +352,7 @@ impl FakeTmdb {
     pub(crate) fn start(
         route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static,
     ) -> Self {
-        use std::io::{BufRead, BufReader, Write};
+        use std::io::Write;
 
         let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
         let port = listener.local_addr().unwrap().port();
@@ -362,22 +362,8 @@ impl FakeTmdb {
         std::thread::spawn(move || {
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
-                let mut reader = BufReader::new(match stream.try_clone() {
-                    Ok(c) => c,
-                    Err(_) => continue,
-                });
-                let mut request = String::new();
-                if reader.read_line(&mut request).unwrap_or(0) == 0 {
-                    continue;
-                }
-                loop {
-                    let mut header = String::new();
-                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
-                        break;
-                    }
-                }
-                // "GET /movie/603?api_key=x HTTP/1.1" -> "/movie/603"
-                let full = request.split_whitespace().nth(1).unwrap_or("").to_string();
+                let Some(full) = read_request_target(&stream) else { continue };
+                // "/movie/603?api_key=x" -> "/movie/603"
                 let path = full.split('?').next().unwrap_or("").to_string();
                 log.lock().unwrap().push(full);
 
@@ -413,4 +399,25 @@ impl Drop for FakeTmdb {
     fn drop(&mut self) {
         crate::infra::metadata::test_override::clear();
     }
+}
+
+/// Read one HTTP request and return its target (`"/movie/603?api_key=x"`).
+/// `None` when the peer sent nothing.
+fn read_request_target(stream: &std::net::TcpStream) -> Option<String> {
+    use std::io::{BufRead, BufReader};
+
+    let mut reader = BufReader::new(stream.try_clone().ok()?);
+    let mut request = String::new();
+    if reader.read_line(&mut request).unwrap_or(0) == 0 {
+        return None;
+    }
+    // Drain the headers so the client sees a clean close.
+    loop {
+        let mut header = String::new();
+        if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
+            break;
+        }
+    }
+    // "GET /movie/603?api_key=x HTTP/1.1" -> "/movie/603?api_key=x"
+    Some(request.split_whitespace().nth(1).unwrap_or("").to_string())
 }

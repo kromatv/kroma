@@ -19,6 +19,7 @@ import {
   KromaApiError,
   type KromaClient,
   KromaEvents,
+  type ServerEvent,
 } from '@kroma/core';
 import {
   createContext,
@@ -27,6 +28,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from 'react';
@@ -89,8 +91,9 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
   // interpolates from here, so a progress bar moves between heartbeats.
   const [base, setBase] = useState<PositionBase | null>(null);
   // Bumped on a timer while a TV plays, purely to re-render the interpolated
-  // position (which is computed from the clock, not from state).
-  const [, setTick] = useState(0);
+  // position (which is computed from the clock, not from state). A reducer
+  // rather than `useState`: the counter's VALUE is never read, and this says so.
+  const [, rerender] = useReducer((n: number) => n + 1, 0);
 
   const refresh = useCallback(() => {
     if (!enabled || !client) return;
@@ -108,26 +111,27 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
       return;
     }
     refresh();
+    // Rows arrive whole, so a play/pause on one TV costs every sender a patch
+    // instead of a refetch. Named rather than inline so the effect stays flat.
+    const handleCastEvent = (e: ServerEvent) => {
+      if (e.type === 'cast.receiver') {
+        setReceivers((list) => upsert(list, e.receiver));
+      } else if (e.type === 'cast.receiver.gone') {
+        setReceivers((list) => list.filter((r) => r.id !== e.receiverId));
+      } else if (e.type === 'cast.position') {
+        setBase({
+          id: e.receiverId,
+          positionMs: e.positionMs,
+          playing: e.state === 'playing',
+          at: Date.now(),
+        });
+      }
+    };
     const events = new KromaEvents(client.baseUrl, {
       // Only on (re)connect: a gap in the stream may have swallowed a change, and
       // the roster is the one thing worth resyncing wholesale.
       onOpen: refresh,
-      onEvent: (e) => {
-        // Rows arrive whole, so a play/pause on one TV costs every sender a
-        // patch instead of a refetch.
-        if (e.type === 'cast.receiver') {
-          setReceivers((list) => upsert(list, e.receiver));
-        } else if (e.type === 'cast.receiver.gone') {
-          setReceivers((list) => list.filter((r) => r.id !== e.receiverId));
-        } else if (e.type === 'cast.position') {
-          setBase({
-            id: e.receiverId,
-            positionMs: e.positionMs,
-            playing: e.state === 'playing',
-            at: Date.now(),
-          });
-        }
-      },
+      onEvent: handleCastEvent,
     });
     events.connect();
     return () => events.close();
@@ -151,7 +155,7 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
   const playing = active?.nowPlaying?.state === 'playing';
   useEffect(() => {
     if (!playing) return;
-    const iv = setInterval(() => setTick((n) => n + 1), TICK_MS);
+    const iv = setInterval(rerender, TICK_MS);
     return () => clearInterval(iv);
   }, [playing]);
 

@@ -29,6 +29,56 @@ import { ScrubBar } from '#mobile/player/ScrubBar';
 /** How far ±10 s buttons jump, in milliseconds. */
 const SKIP_MS = 10_000;
 
+/** The row of secondary controls under the transport.
+ *
+ * Its own component because three of them are conditional - a title with one
+ * audio track, no subtitles, or that is not an episode hides them - and those
+ * branches belong here rather than in the screen.
+ */
+type NowPlaying = NonNullable<NonNullable<ReturnType<typeof useCast>['active']>['nowPlaying']>;
+
+function RemoteActions({
+  playing,
+  isEpisode,
+  onAudio,
+  onSubtitles,
+  onNext,
+  onStop,
+}: {
+  playing: NowPlaying;
+  isEpisode: boolean;
+  onAudio: () => void;
+  onSubtitles: () => void;
+  onNext: () => void;
+  onStop: () => void;
+}) {
+  const t = useT();
+  return (
+    <View style={styles.actions}>
+      {playing.audioTracks.length > 1 ? (
+        <Wide
+          icon="wave-sine"
+          label={t('player.audioTrack')}
+          value={labelOf(playing.audioTracks, playing.audioIndex)}
+          onPress={onAudio}
+        />
+      ) : null}
+      {playing.subtitles.length > 0 ? (
+        <Wide
+          icon="badge-cc"
+          label={t('player.subtitles')}
+          value={labelOf(playing.subtitles, playing.subtitleIndex) ?? t('player.subtitlesOff')}
+          onPress={onSubtitles}
+        />
+      ) : null}
+      {isEpisode ? (
+        <Wide icon="player-track-next" label={t('player.nextEpisode')} onPress={onNext} />
+      ) : null}
+      <Wide icon="player-stop-filled" label={t('cast.stop')} onPress={onStop} />
+    </View>
+  );
+}
+
 export default function CastRemoteScreen() {
   const t = useT();
   const router = useRouter();
@@ -129,42 +179,18 @@ export default function CastRemoteScreen() {
               />
             </View>
 
-            <View style={styles.actions}>
-              {playing.audioTracks.length > 1 ? (
-                <Wide
-                  icon="wave-sine"
-                  label={t('player.audioTrack')}
-                  value={labelOf(playing.audioTracks, playing.audioIndex)}
-                  onPress={() => audio.current?.present()}
-                />
-              ) : null}
-              {playing.subtitles.length > 0 ? (
-                <Wide
-                  icon="badge-cc"
-                  label={t('player.subtitles')}
-                  value={
-                    labelOf(playing.subtitles, playing.subtitleIndex) ?? t('player.subtitlesOff')
-                  }
-                  onPress={() => subtitles.current?.present()}
-                />
-              ) : null}
-              {item?.kind === 'episode' ? (
-                <Wide
-                  icon="player-track-next"
-                  label={t('player.nextEpisode')}
-                  onPress={() => void send({ type: 'skipNext' })}
-                />
-              ) : null}
-              <Wide
-                icon="player-stop-filled"
-                label={t('cast.stop')}
-                onPress={() => {
-                  void send({ type: 'stop' });
-                  select(null);
-                  goBack(router);
-                }}
-              />
-            </View>
+            <RemoteActions
+              playing={playing}
+              isEpisode={item?.kind === 'episode'}
+              onAudio={() => audio.current?.present()}
+              onSubtitles={() => subtitles.current?.present()}
+              onNext={() => void send({ type: 'skipNext' })}
+              onStop={() => {
+                void send({ type: 'stop' });
+                select(null);
+                goBack(router);
+              }}
+            />
           </>
         ) : (
           <Text style={styles.idle}>{t('cast.idle')}</Text>
