@@ -589,4 +589,130 @@ mod tests {
         let c = TorrentFetchClient::new(offline());
         assert!(c.fetch_torrent(&MockHost, "id", "http://x").is_none());
     }
+    // --- A live round trip over the real bridge -----------------------------------
+    //
+    // Mounts the REAL router and points REAL clients at it, so the wire is under
+    // test: paths, the `Result<T, String>` envelope, and the JSON shape of every
+    // boundary type. Those only disagree at runtime, in a sidecar.
+
+    async fn serve<S: HostCtx + Clone + Send + Sync + 'static>(
+        router: Router<S>,
+        state: S,
+    ) -> Resolver {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = router.with_state(state);
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+        let base = format!("http://{addr}");
+        Arc::new(move || Some((base.clone(), "test-token".to_string())))
+    }
+
+    async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
+        tokio::task::spawn_blocking(job).await.unwrap()
+    }
+
+    async fn live(fetch: FetchMode) -> Resolver {
+        let db: Arc<dyn IndexerDbPort> = Arc::new(OkDb);
+        let search: Arc<dyn IndexerSearchPort> = Arc::new(OkSearch);
+        let fetch: Arc<dyn TorrentFetchPort> = Arc::new(fetch);
+        serve(indexer_routes::<MockHost>(db, search, fetch), MockHost).await
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_indexer_ledger_survives_the_round_trip() {
+        let resolve = live(FetchMode(None)).await;
+
+        let c = IndexerDbClient::new(resolve.clone());
+        let all = blocking(move || c.list_indexers(&MockHost)).await.unwrap();
+        assert_eq!(all.len(), 2);
+        assert_eq!(all[0].id, "a");
+
+        let c = IndexerDbClient::new(resolve.clone());
+        assert_eq!(blocking(move || c.enabled_indexers(&MockHost)).await.unwrap().len(), 1);
+
+        // A hit and a miss are different answers, and `None` must not arrive as
+        // an error - an unknown indexer id is a normal lookup result.
+        let c = IndexerDbClient::new(resolve.clone());
+        assert!(blocking(move || c.get_indexer(&MockHost, "a")).await.unwrap().is_some());
+        let c = IndexerDbClient::new(resolve.clone());
+        assert!(blocking(move || c.get_indexer(&MockHost, "ghost")).await.unwrap().is_none());
+
+        let c = IndexerDbClient::new(resolve);
+        blocking(move || c.note_indexer_result(&MockHost, "a", false, Some("timeout"), 1))
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_search_carries_its_partial_errors_across() {
+        // A search that half-worked returns releases AND the indexers that
+        // failed. Dropping the errors on the wire would hide a broken tracker.
+        let resolve = live(FetchMode(None)).await;
+        let c = IndexerSearchClient::new(resolve);
+        let outcome = blocking(move || {
+            let row = sample_row("a");
+            let q = Query::Movie {
+                tmdb_id: Some(603),
+                imdb_id: None,
+                title: "The Matrix".into(),
+                year: Some(1999),
+            };
+            c.search(&MockHost, &row, &q, &[2000])
+        })
+        .await
+        .unwrap();
+        assert!(outcome.releases.is_empty());
+        assert_eq!(outcome.errors, ["partial"]);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_resolved_download_target_keeps_its_variant() {
+        // DownloadTarget is an enum on the wire; collapsing Magnet and
+        // TorrentUrl would hand the engine the wrong kind of link.
+        let resolve = live(FetchMode(None)).await;
+        let c = IndexerSearchClient::new(resolve);
+        let target = blocking(move || {
+            let row = sample_row("a");
+            c.resolve_download(&MockHost, &row, "Some.Release", None, "magnet:?xt=urn:btih:AB")
+        })
+        .await
+        .unwrap();
+        assert!(matches!(target, DownloadTarget::Magnet(m) if m == "magnet:?xt=urn:btih:AB"));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_three_torrent_fetch_answers_stay_distinct_across_the_wire() {
+        // None ("not mine, use a plain fetch"), Some(Ok(bytes)) and Some(Err)
+        // mean three different things to the caller. Flattening any pair of them
+        // silently changes what happens to a download.
+        let resolve = live(FetchMode(Some(Ok(vec![1, 2, 3])))).await;
+        let c = TorrentFetchClient::new(resolve);
+        let got = blocking(move || c.fetch_torrent(&MockHost, "a", "http://x/f.torrent")).await;
+        assert_eq!(got.unwrap().unwrap(), vec![1, 2, 3]);
+
+        let resolve = live(FetchMode(None)).await;
+        let c = TorrentFetchClient::new(resolve);
+        assert!(blocking(move || c.fetch_torrent(&MockHost, "a", "http://x/f.torrent"))
+            .await
+            .is_none());
+
+        let resolve = live(FetchMode(Some(Err(())))).await;
+        let c = TorrentFetchClient::new(resolve);
+        let got = blocking(move || c.fetch_torrent(&MockHost, "a", "http://x/f.torrent")).await;
+        assert!(got.unwrap().is_err());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_provider_error_crosses_the_wire_as_an_error() {
+        let db: Arc<dyn IndexerDbPort> = Arc::new(ErrDb);
+        let search: Arc<dyn IndexerSearchPort> = Arc::new(OkSearch);
+        let fetch: Arc<dyn TorrentFetchPort> = Arc::new(FetchMode(None));
+        let resolve = serve(indexer_routes::<MockHost>(db, search, fetch), MockHost).await;
+
+        let c = IndexerDbClient::new(resolve);
+        let err = blocking(move || c.list_indexers(&MockHost)).await.unwrap_err().to_string();
+        assert!(err.contains("boom"), "the provider's reason was lost: {err}");
+    }
 }

@@ -536,4 +536,185 @@ mod tests {
             serde_json::from_value(serde_json::json!({ "id": "d1", "status": "done" })).unwrap();
         assert!(ss.error.is_none());
     }
+    // --- A live round trip over the real bridge -----------------------------------
+    //
+    // Everything above drives one side or the other. This mounts the REAL router
+    // on a real port and points a REAL client at it, so the wire itself is under
+    // test: the `/_port/<port>/<method>` paths, the bearer token, the
+    // `Result<T, String>` envelope, and the JSON shape of every boundary type.
+    // Those only ever disagree at runtime, in a sidecar, which is the worst place
+    // to find out.
+
+    /// Serve `router` on an ephemeral port and return a resolver pointing at it.
+    async fn serve<S: HostCtx + Clone + Send + Sync + 'static>(
+        router: Router<S>,
+        state: S,
+    ) -> Resolver {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = router.with_state(state);
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+        let base = format!("http://{addr}");
+        Arc::new(move || Some((base.clone(), "test-token".to_string())))
+    }
+
+    /// Run a blocking port call off the runtime thread, so the server can answer.
+    async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
+        tokio::task::spawn_blocking(job).await.unwrap()
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn every_grab_verb_survives_the_round_trip() {
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
+        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+
+        let client = DownloadGrabClient::new(resolve);
+        let row = blocking(move || {
+            let spec = GrabSpec { magnet_or_url: "magnet:?xt=1".into(), ..Default::default() };
+            client.grab(&MockHost, spec)
+        })
+        .await
+        .unwrap();
+        // The whole DownloadRow made it across, not just the id: every field here
+        // is one the importer reads on the far side.
+        assert_eq!(row.id, "grabbed");
+        assert_eq!(row.release_title, "Movie.2020.1080p");
+        assert_eq!(row.tmdb_id, 1);
+        assert_eq!(row.info_hash.as_deref(), Some("hash"));
+        assert_eq!(row.size_bytes, Some(100));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_file_listing_survives_the_round_trip() {
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
+        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+
+        let client = DownloadGrabClient::new(resolve);
+        let files =
+            blocking(move || client.list_files(&MockHost, "magnet:?xt=1")).await.unwrap();
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0].path, "a.mkv");
+        assert_eq!(files[0].size_bytes, 10);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_gate_is_read_from_the_provider_when_it_is_reachable() {
+        // The client defaults OPEN when the bridge is down, so a closed gate is
+        // only ever observable through a working round trip - which makes this
+        // the test that proves the default is not masking everything.
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: false });
+        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+
+        let client = DownloadGrabClient::new(resolve);
+        assert!(!blocking(move || client.gate_open()).await);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_provider_error_crosses_the_wire_as_an_error() {
+        // The envelope is `Result<T, String>`; losing the Err arm would turn a
+        // failed grab into a successful one carrying nonsense.
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(ErrGrab);
+        let db: Arc<dyn DownloadDbPort> = Arc::new(ErrDb);
+        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+
+        let grab_client = DownloadGrabClient::new(resolve.clone());
+        let err = blocking(move || {
+            let spec = GrabSpec { magnet_or_url: "magnet:?xt=1".into(), ..Default::default() };
+            grab_client.grab(&MockHost, spec)
+        })
+        .await
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("boom"), "the provider's reason was lost: {err}");
+
+        let db_client = DownloadDbClient::new(resolve);
+        let err = blocking(move || db_client.completed_downloads(&MockHost))
+            .await
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("boom"), "{err}");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_ledger_verbs_survive_the_round_trip() {
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
+        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+
+        let client = DownloadDbClient::new(resolve);
+        let done = blocking({
+            let c = DownloadDbClient::new(client.resolve.clone());
+            move || c.completed_downloads(&MockHost)
+        })
+        .await
+        .unwrap();
+        assert_eq!(done.len(), 1);
+        assert_eq!(done[0].id, "done");
+
+        let c = DownloadDbClient::new(client.resolve.clone());
+        blocking(move || {
+            c.mark_download_imported(&MockHost, "done", &["/media/a.mkv".to_string()], 42)
+        })
+        .await
+        .unwrap();
+
+        let c = DownloadDbClient::new(client.resolve.clone());
+        assert!(blocking(move || c.set_download_status(&MockHost, "done", "imported", None))
+            .await
+            .unwrap());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_fire_and_forget_verbs_reach_the_provider() {
+        // `activate` and `drop_data` return nothing, so a broken route would be
+        // completely silent. Counting them on the provider side is the only way
+        // to see they arrived.
+        #[derive(Default)]
+        struct CountingGrab {
+            activated: std::sync::Mutex<Vec<String>>,
+            dropped: std::sync::Mutex<Vec<String>>,
+        }
+        impl DownloadGrabPort for CountingGrab {
+            fn grab(&self, _h: &dyn HostCtx, _s: GrabSpec) -> anyhow::Result<DownloadRow> {
+                Ok(sample_download_row("x"))
+            }
+            fn list_files(
+                &self,
+                _h: &dyn HostCtx,
+                _m: &str,
+            ) -> anyhow::Result<Vec<TorrentFileEntry>> {
+                Ok(Vec::new())
+            }
+            fn gate_open(&self) -> bool {
+                true
+            }
+            fn activate(&self, _h: &dyn HostCtx, row: &DownloadRow) {
+                self.activated.lock().unwrap().push(row.id.clone());
+            }
+            fn drop_data(&self, _h: &dyn HostCtx, row: &DownloadRow) {
+                self.dropped.lock().unwrap().push(row.id.clone());
+            }
+        }
+
+        let counting = Arc::new(CountingGrab::default());
+        let grab: Arc<dyn DownloadGrabPort> = counting.clone();
+        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let resolve = serve(download_routes::<MockHost>(grab, db), MockHost).await;
+
+        let client = DownloadGrabClient::new(resolve);
+        let row = sample_download_row("moved");
+        blocking(move || {
+            client.activate(&MockHost, &row);
+            client.drop_data(&MockHost, &row);
+        })
+        .await;
+
+        assert_eq!(&*counting.activated.lock().unwrap(), &["moved".to_string()]);
+        assert_eq!(&*counting.dropped.lock().unwrap(), &["moved".to_string()]);
+    }
 }

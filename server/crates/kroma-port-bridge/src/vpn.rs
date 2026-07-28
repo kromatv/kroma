@@ -236,4 +236,61 @@ mod tests {
         // Fire-and-forget restart must not panic when the provider is offline.
         vpn.restart_engine(&MockHost).await;
     }
+    // --- A live round trip over the real bridge -----------------------------------
+
+    async fn serve<S: HostCtx + Clone + Send + Sync + 'static>(
+        router: Router<S>,
+        state: S,
+    ) -> Resolver {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = router.with_state(state);
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+        let base = format!("http://{addr}");
+        Arc::new(move || Some((base.clone(), "test-token".to_string())))
+    }
+
+    async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
+        tokio::task::spawn_blocking(job).await.unwrap()
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_proxy_url_survives_the_round_trip_and_so_does_its_absence() {
+        // `None` here means "no tunnel configured", which is a normal state -
+        // it must not arrive as a URL, and a URL must not arrive as None. Every
+        // torrent's traffic routing hangs off this one value.
+        let some: Arc<dyn VpnProxyPort> = Arc::new(StubProxy(Some("socks5://10.0.0.1:1080".into())));
+        let resolve = serve(vpnproxy_routes::<MockHost>(some), MockHost).await;
+        let c = VpnProxyClient::new(resolve);
+        assert_eq!(
+            blocking(move || c.proxy_url(&MockHost)).await.as_deref(),
+            Some("socks5://10.0.0.1:1080")
+        );
+
+        let none: Arc<dyn VpnProxyPort> = Arc::new(StubProxy(None));
+        let resolve = serve(vpnproxy_routes::<MockHost>(none), MockHost).await;
+        let c = VpnProxyClient::new(resolve);
+        assert!(blocking(move || c.proxy_url(&MockHost)).await.is_none());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn the_vpn_status_and_seal_survive_the_round_trip() {
+        // These drive the kill switch. A field lost in transit reads as "not
+        // connected" / "not sealed", which pauses every download.
+        let vpn: Arc<dyn DownloadVpnPort> = Arc::new(StubVpn);
+        let resolve = serve(downloadvpn_routes::<MockHost>(vpn), MockHost).await;
+
+        let c = DownloadVpnClient::new(resolve.clone());
+        let status = blocking(move || c.vpn_status()).await.unwrap();
+        assert!(status.connected);
+
+        let c = DownloadVpnClient::new(resolve.clone());
+        let seal = blocking(move || c.vpn_seal_check(&MockHost)).await.unwrap();
+        assert!(seal.sealed);
+
+        // Fire-and-forget: it must reach the provider without erroring.
+        DownloadVpnClient::new(resolve).restart_engine(&MockHost).await;
+    }
 }
