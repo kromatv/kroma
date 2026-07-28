@@ -29,5 +29,7 @@ anyhow = { workspace = true }
 kroma-scene = { workspace = true }
 
 [dev-dependencies]
+# The shared HostCtx double (`testing::StubHost`) for the seam tests.
+kroma-module-host = { workspace = true, features = ["testing"] }
 # Only so a test can implement `HostCtx`, whose methods return axum responses.
 axum = { workspace = true }

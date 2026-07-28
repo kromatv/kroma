@@ -908,7 +908,7 @@ mod tests {
         set(&settings, &pool, "namingCase", "upper");
 
         let direct = NamingTemplates::from_settings(&settings);
-        let host = SettingsHost { settings, pool };
+        let host = settings_host(pool, settings);
         let seam = NamingTemplates::from_host(&host);
 
         assert_eq!(seam.movie_folder, direct.movie_folder);
@@ -927,76 +927,17 @@ mod tests {
     fn the_host_seam_also_refuses_a_blank_template() {
         let (pool, settings) = store();
         set(&settings, &pool, "namingEpisodeFile", "");
-        let host = SettingsHost { settings, pool };
+        let host = settings_host(pool, settings);
         let episode_file = NamingTemplates::from_host(&host).episode_file;
         assert!(!episode_file.trim().is_empty(), "a blank template names every file alike");
         assert!(episode_file.contains("season"), "{episode_file}");
     }
 
-    /// A `HostCtx` whose only real capability is the settings store, which is
-    /// all `from_host` touches.
-    struct SettingsHost {
-        settings: Settings,
-        pool: kroma_db::Pool,
-    }
-
-    impl crate::host::HostCtx for SettingsHost {
-        fn db(&self) -> &kroma_db::Pool {
-            &self.pool
-        }
-        fn data_dir(&self) -> &std::path::Path {
-            std::path::Path::new("/tmp")
-        }
-        fn require(
-            &self,
-            _user: &crate::domain::User,
-            _perm: crate::domain::Permission,
-        ) -> Result<(), axum::response::Response> {
-            Ok(())
-        }
-        fn require_any_admin(
-            &self,
-            _user: &crate::domain::User,
-        ) -> Result<(), axum::response::Response> {
-            Ok(())
-        }
-        fn lerr(
-            &self,
-            _user: &crate::domain::User,
-            _status: axum::http::StatusCode,
-            _key: &str,
-        ) -> axum::response::Response {
-            unimplemented!("not exercised")
-        }
-        fn setting_str(&self, key: &str, default: &str) -> String {
-            self.settings.get_str(key, default)
-        }
-        fn setting_bool(&self, _key: &str, default: bool) -> bool {
-            default
-        }
-        fn setting_i64(&self, _key: &str, default: i64) -> i64 {
-            default
-        }
-        fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
-        fn publish(&self, _event: kroma_module_host::Event) {}
-        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
-        fn module_enabled(&self, _id: &str) -> bool {
-            true
-        }
-        fn library_folders(&self) -> Vec<kroma_module_host::LibraryFolders> {
-            Vec::new()
-        }
-        fn tmdb_api_key(&self) -> Option<String> {
-            None
-        }
-        fn metadata_language(&self) -> String {
-            "en".into()
-        }
-        fn get_service(
-            &self,
-            _t: std::any::TypeId,
-        ) -> Option<std::sync::Arc<dyn std::any::Any + Send + Sync>> {
-            None
-        }
+    /// The shared stub, answering `setting_str` out of a REAL settings store -
+    /// which is the whole point here: `from_host` must see the store's own
+    /// registered defaults, not the caller's.
+    fn settings_host(pool: kroma_db::Pool, settings: Settings) -> impl crate::host::HostCtx {
+        kroma_module_host::testing::StubHost::with_pool(pool)
+            .with_string_settings(move |key, default| settings.get_str(key, default))
     }
 }

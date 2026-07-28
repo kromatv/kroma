@@ -40,6 +40,10 @@ pub type Published = (Option<String>, String);
 /// will look it up with.
 type Service = (TypeId, Arc<dyn Any + Send + Sync>);
 
+/// A stand-in for the app's real settings store: `(key, caller's default) ->
+/// value`, the exact shape of [`HostCtx::setting_str`].
+type StringSettings = Arc<dyn Fn(&str, &str) -> String + Send + Sync>;
+
 /// What a [`StubHost`] or [`Recording`] saw. Shared behind an `Arc` so a clone
 /// of the host - axum takes its state by value - observes the same traffic.
 #[derive(Default)]
@@ -95,6 +99,7 @@ pub struct StubHost {
     module_enabled: bool,
     libraries: Vec<LibraryFolders>,
     settings: Arc<Mutex<BTreeMap<String, serde_json::Value>>>,
+    string_settings: Option<StringSettings>,
     services: Arc<Mutex<Vec<Service>>>,
     log: Arc<Log>,
 }
@@ -116,6 +121,7 @@ impl StubHost {
             module_enabled: true,
             libraries: Vec::new(),
             settings: Arc::new(Mutex::new(BTreeMap::new())),
+            string_settings: None,
             services: Arc::new(Mutex::new(Vec::new())),
             log: Arc::new(Log::default()),
         }
@@ -158,6 +164,20 @@ impl StubHost {
     /// Answer `library_folders()` with `libraries` (default empty).
     pub fn with_libraries(mut self, libraries: Vec<LibraryFolders>) -> Self {
         self.libraries = libraries;
+        self
+    }
+
+    /// Answer every `setting_str` through `f` instead of the seeded map.
+    ///
+    /// For the one shape the map cannot imitate: a test whose SUBJECT is a real
+    /// settings store read through the seam, where the store's own registered
+    /// defaults - not the caller's - are what the assertion is about. `f` gets
+    /// the key and the caller's default, exactly as `setting_str` does.
+    pub fn with_string_settings(
+        mut self,
+        f: impl Fn(&str, &str) -> String + Send + Sync + 'static,
+    ) -> Self {
+        self.string_settings = Some(Arc::new(f));
         self
     }
 
@@ -227,6 +247,9 @@ impl HostCtx for StubHost {
         crate::json_error(status, key)
     }
     fn setting_str(&self, key: &str, default: &str) -> String {
+        if let Some(f) = &self.string_settings {
+            return f(key, default);
+        }
         match self.settings.lock().unwrap().get(key) {
             Some(serde_json::Value::String(s)) => s.clone(),
             Some(v) => v.to_string(),
@@ -544,6 +567,21 @@ mod tests {
 
         // An unseeded key still falls back, next to the seeded ones.
         assert_eq!(host.setting_str("other", "fallback"), "fallback");
+    }
+
+    #[test]
+    fn a_string_settings_source_takes_over_from_the_seeded_map() {
+        // The source sees the CALLER'S default, so a store with its own
+        // registered defaults can answer through the seam exactly as it would
+        // directly - which is the only reason this hook exists.
+        let host = StubHost::new()
+            .with_setting("k", json!("from the map"))
+            .with_string_settings(|key, default| format!("{key}/{default}"));
+
+        assert_eq!(host.setting_str("k", "fallback"), "k/fallback");
+        assert_eq!(host.setting_str("other", "d"), "other/d");
+        // Only strings route through it; the map still answers the rest.
+        assert!(host.setting_bool("flag", true));
     }
 
     #[test]
