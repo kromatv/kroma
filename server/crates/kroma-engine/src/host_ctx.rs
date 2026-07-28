@@ -270,4 +270,112 @@ mod tests {
         let state = test_state();
         assert!(state.get_service(std::any::TypeId::of::<u32>()).is_none());
     }
+    // ----- the rest of the seam ---------------------------------------------------
+
+    #[test]
+    fn a_modules_notification_goes_through_the_same_rules_as_the_cores() {
+        // The point of routing module `notify` through `services::notify::emit`
+        // is that preferences and audience are enforced in ONE place. A module
+        // that reached the notification table directly would ignore the mute a
+        // user set, and there would be no second place to fix it.
+        use kroma_domain::{
+            Audience, CategoryPref, NotificationCategory, NotificationEvent, NotificationSpec,
+        };
+
+        let state = test_state();
+        let ana = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id;
+        let spec = NotificationSpec::new(
+            NotificationEvent::RequestApproved,
+            "notifications.request.approved.title",
+            "notifications.request.approved.body",
+        );
+
+        assert_eq!(HostCtx::notify(&*state, &Audience::user(ana.clone()), &spec), 1);
+
+        // Now the user mutes that category; a module's notify must fall silent
+        // too.
+        kroma_db::notifications::set_prefs(
+            &state.db,
+            &ana,
+            &[CategoryPref {
+                category: NotificationCategory::Requests,
+                in_app: false,
+                push: false,
+            }],
+        )
+        .unwrap();
+        assert_eq!(HostCtx::notify(&*state, &Audience::user(ana), &spec), 0);
+    }
+
+    #[test]
+    fn a_module_sees_the_library_folders_the_app_is_configured_with() {
+        // This is how an importer decides WHERE a finished download goes, so the
+        // id / kind / name have to survive the mapping - a module placing files
+        // by name would put a show in the movies library if `name` were dropped.
+        use crate::services::settings::{set_library_defs, LibraryDef};
+
+        let state = test_state();
+        set_library_defs(
+            &state.settings,
+            &state.db,
+            &[
+                LibraryDef {
+                    id: "lib-films".into(),
+                    name: "Films".into(),
+                    kind: "movies".into(),
+                    folders: vec!["/media/films".into(), "/media/films2".into()],
+                    auto_scan: true,
+                },
+                LibraryDef {
+                    id: "lib-series".into(),
+                    name: "Séries".into(),
+                    kind: "shows".into(),
+                    folders: vec!["/media/series".into()],
+                    auto_scan: false,
+                },
+            ],
+        );
+
+        let seen = HostCtx::library_folders(&*state);
+        assert_eq!(seen.len(), 2);
+        assert_eq!(seen[0].id, "lib-films");
+        assert_eq!(seen[0].kind, "movies");
+        assert_eq!(seen[0].name, "Films");
+        assert_eq!(seen[0].folders, ["/media/films", "/media/films2"]);
+        assert_eq!(seen[1].kind, "shows");
+        assert_eq!(seen[1].name, "Séries");
+    }
+
+    #[test]
+    fn a_module_reads_the_same_enabled_flag_the_admin_toggles() {
+        // A module asking "is X on?" must get the admin's answer, not its own
+        // default - that is what lets one module gate on another.
+        let state = test_state();
+        assert!(HostCtx::module_enabled(&*state, "tv.kroma.indexer"), "unknown means on");
+
+        crate::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.indexer", false);
+        assert!(!HostCtx::module_enabled(&*state, "tv.kroma.indexer"));
+    }
+
+    #[test]
+    fn the_tmdb_key_and_language_come_from_the_apps_config() {
+        // A sidecar has no config file of its own; these are the only way it
+        // learns them, and a wrong language means every fetched title is in the
+        // wrong one.
+        let state = test_state();
+        assert_eq!(HostCtx::tmdb_api_key(&*state), None);
+        assert_eq!(HostCtx::metadata_language(&*state), state.config.tmdb_language);
+
+        let keyed = crate::test_support::test_state_with_tmdb("abc123");
+        assert_eq!(HostCtx::tmdb_api_key(&*keyed).as_deref(), Some("abc123"));
+    }
+
+    #[test]
+    fn triggering_an_unknown_job_is_a_no_op_rather_than_a_panic() {
+        // Modules trigger jobs by string key, and a key can outlive the job that
+        // owned it (a module disabled, a job renamed). It must not take the
+        // caller down.
+        let state = test_state();
+        HostCtx::trigger_job(&*state, "no.such.job", "test");
+    }
 }

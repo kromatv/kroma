@@ -109,3 +109,135 @@ fn blank_query_is_empty() {
     let e = engine();
     assert!(e.search("   ", 5).is_empty());
 }
+
+// ----- the language cache, through the real reindex path -------------------------
+
+use crate::test_support::{seed_movie, test_state};
+
+/// Store a localized row for `subject_id`, as the enrichment pass would.
+fn put_translation(state: &crate::state::SharedState, kind: &str, id: &str, lang: &str, data: serde_json::Value) {
+    state
+        .db
+        .get()
+        .unwrap()
+        .execute(
+            &format!(
+                "INSERT INTO translations (subject_kind,subject_id,lang,source,data,updated_at) \
+                 VALUES ('{kind}','{id}','{lang}','tmdb',json('{}'),0)",
+                data.to_string().replace('\'', "''")
+            ),
+            [],
+        )
+        .unwrap();
+}
+
+/// Give a movie its file title and the core metadata the indexer reads.
+fn seed_titled_movie(state: &crate::state::SharedState, id: &str, file_title: &str) {
+    seed_movie(state, id);
+    // Titles here carry apostrophes on purpose (a French title is the point),
+    // so escape them the SQL way - in the literal as well as inside the JSON.
+    let sql_title = file_title.replace('\'', "''");
+    let meta = serde_json::json!({
+        "tmdbId": 1,
+        "title": file_title,
+        "overview": "A shy waitress in Paris.",
+        "genres": ["Romance"],
+        "tmdbUrl": "https://x/1",
+    });
+    state
+        .db
+        .get()
+        .unwrap()
+        .execute(
+            &format!(
+                "UPDATE items SET title = '{sql_title}', metadata = json('{}') WHERE id = '{id}'",
+                meta.to_string().replace('\'', "''")
+            ),
+            [],
+        )
+        .unwrap();
+}
+
+#[test]
+fn a_title_is_findable_in_a_language_the_household_did_not_enrich_in() {
+    // The whole point of indexing every stored language: a household enriching
+    // in French must still find a film by its English title, and vice versa.
+    // Without it, search silently depends on an admin's metadata-language
+    // setting.
+    // The two titles share NO word: an earlier version used "Le Fabuleux
+    // Destin d'Amélie Poulain" against "Amelie", and the search matched through
+    // the FILENAME (accent folding), so the test passed even with translations
+    // switched off entirely.
+    let state = test_state();
+    seed_titled_movie(&state, "itm-1", "Le Fabuleux Destin de Poulain");
+    put_translation(
+        &state,
+        "item",
+        "itm-1",
+        "en",
+        serde_json::json!({ "title": "Amelie", "overview": "A shy waitress.", "genres": ["Romance"] }),
+    );
+
+    state.search.reindex_from_db(&state.db).unwrap();
+    assert_eq!(
+        state.search.search("Amelie", 5).first().map(|h| h.id.clone()).as_deref(),
+        Some("itm-1"),
+        "the English title was not indexed",
+    );
+    // ...and the filename title still matches.
+    assert_eq!(
+        state.search.search("Fabuleux", 5).first().map(|h| h.id.clone()).as_deref(),
+        Some("itm-1"),
+    );
+}
+
+#[test]
+fn a_localized_overview_and_genre_are_searchable_too() {
+    // Not just titles: someone searching a genre or a phrase from the synopsis
+    // in their own language should land on the title.
+    let state = test_state();
+    seed_titled_movie(&state, "itm-1", "Amélie");
+    put_translation(
+        &state,
+        "item",
+        "itm-1",
+        "de",
+        serde_json::json!({
+            "title": "Die fabelhafte Welt der Amelie",
+            "overview": "Eine schüchterne Kellnerin.",
+            "genres": ["Liebesfilm"],
+        }),
+    );
+
+    state.search.reindex_from_db(&state.db).unwrap();
+    assert!(!state.search.search("Kellnerin", 5).is_empty(), "the German overview was not indexed");
+    assert!(!state.search.search("Liebesfilm", 5).is_empty(), "the German genre was not indexed");
+}
+
+#[test]
+fn a_translation_that_matches_the_filename_does_not_become_an_alt_title() {
+    // Storing the same string twice would double its weight and let a title
+    // outrank a better match purely for having been enriched.
+    let state = test_state();
+    seed_titled_movie(&state, "itm-1", "Amelie");
+    put_translation(&state, "item", "itm-1", "en", serde_json::json!({ "title": "amelie" }));
+
+    state.search.reindex_from_db(&state.db).unwrap();
+    // Still findable - the point is only that it was not indexed twice.
+    assert_eq!(
+        state.search.search("Amelie", 5).first().map(|h| h.id.clone()).as_deref(),
+        Some("itm-1"),
+    );
+}
+
+#[test]
+fn a_catalogue_with_no_translations_still_indexes() {
+    // The common case before any enrichment has run.
+    let state = test_state();
+    seed_titled_movie(&state, "itm-1", "Amelie");
+    state.search.reindex_from_db(&state.db).unwrap();
+    assert_eq!(
+        state.search.search("Amelie", 5).first().map(|h| h.id.clone()).as_deref(),
+        Some("itm-1"),
+    );
+}
