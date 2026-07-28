@@ -87,3 +87,112 @@ impl JobManager {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_support::test_state;
+
+    /// A job key that certainly exists: the nightly cache trim.
+    const KNOWN: &str = "cache.cleanup";
+
+    #[test]
+    fn lists_every_registered_job() {
+        let state = test_state();
+        let infos = state.jobs.list(&state);
+        assert!(!infos.is_empty(), "the built-ins are registered at startup");
+        assert!(infos.iter().any(|i| i.key == KNOWN), "{:?}", infos.iter().map(|i| &i.key).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn names_jobs_by_i18n_key_rather_than_in_english() {
+        let state = test_state();
+        for info in state.jobs.list(&state) {
+            // The console renders these through the app's catalogs, so a literal
+            // here would be untranslatable English on a French install.
+            assert_eq!(info.name, format!("jobs.{}.name", info.key));
+            assert_eq!(info.description, format!("jobs.{}.desc", info.key));
+        }
+    }
+
+    #[test]
+    fn reports_nothing_running_on_a_quiet_server() {
+        let state = test_state();
+        for info in state.jobs.list(&state) {
+            assert!(!info.running);
+            assert!(info.run_id.is_none());
+            // None rather than 0/0: the console shows a bar only when there is
+            // progress to show, and 0/0 would render an empty one.
+            assert!(info.progress_done.is_none());
+            assert!(info.progress_total.is_none());
+        }
+    }
+
+    #[test]
+    fn schedules_a_next_run_for_an_enabled_job() {
+        let state = test_state();
+        let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
+        assert!(info.enabled, "built-ins start enabled");
+        assert!(info.next_run_at.is_some(), "a cron'd job knows when it fires next");
+        assert!(!info.customized, "and says so until an admin changes it");
+    }
+
+    #[test]
+    fn a_disabled_job_has_no_next_run() {
+        let state = test_state();
+        let job = state.jobs.resolve(KNOWN).unwrap();
+        state.jobs.update_schedule(&state.db, job, None, Some(false)).unwrap();
+
+        let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
+        assert!(!info.enabled);
+        // The console reads this to decide whether to show a countdown; a stale
+        // "next run" under a disabled job is a promise the scheduler will not keep.
+        assert!(info.next_run_at.is_none());
+        assert!(info.customized, "an admin touched it");
+    }
+
+    #[test]
+    fn an_unparseable_schedule_yields_no_next_run_rather_than_an_error() {
+        let state = test_state();
+        let job = state.jobs.resolve(KNOWN).unwrap();
+        // `update_schedule` rejects invalid cron, so the only way to hold one is
+        // a schedule of None - which is "no automatic run", not "run always".
+        state.jobs.update_schedule(&state.db, job, Some(None), None).unwrap();
+
+        let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
+        assert!(info.schedule.is_none());
+        assert!(info.next_run_at.is_none());
+    }
+
+    #[test]
+    fn keeps_the_builtin_default_alongside_an_admins_override() {
+        let state = test_state();
+        let job = state.jobs.resolve(KNOWN).unwrap();
+        state.jobs.update_schedule(&state.db, job, Some(Some("0 5 * * *".into())), None).unwrap();
+
+        let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
+        assert_eq!(info.schedule.as_deref(), Some("0 5 * * *"));
+        // Both are reported so the console can offer "reset to default" without
+        // hardcoding the built-in's cron in the UI.
+        assert!(info.default_schedule.is_some());
+        assert_ne!(info.schedule, info.default_schedule);
+    }
+
+    #[test]
+    fn detail_carries_the_info_plus_an_empty_history() {
+        let state = test_state();
+        let job = state.jobs.resolve(KNOWN).unwrap();
+        let detail = state.jobs.detail(&state, job).expect("a known job has a detail view");
+
+        assert_eq!(detail.info.key, KNOWN);
+        // A job that has never run has no runs - not an error, and not a
+        // placeholder row.
+        assert!(detail.runs.is_empty());
+        assert!(detail.info.last_run.is_none());
+    }
+
+    #[test]
+    fn resolves_no_key_for_a_job_that_does_not_exist() {
+        let state = test_state();
+        assert!(state.jobs.resolve("nope.not.a.job").is_none());
+    }
+}
