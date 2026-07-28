@@ -169,3 +169,141 @@ impl JobContext {
         self.log("error", message);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::test_state;
+
+    /// Every bus message published so far, as JSON.
+    fn drain(
+        rx: &mut tokio::sync::broadcast::Receiver<crate::infra::events::Envelope>,
+    ) -> Vec<serde_json::Value> {
+        let mut out = Vec::new();
+        while let Ok(env) = rx.try_recv() {
+            out.push(serde_json::from_str(&env).unwrap());
+        }
+        out
+    }
+
+    fn ctx() -> (crate::state::SharedState, Arc<RunHandle>, JobContext) {
+        let state = test_state();
+        let handle = Arc::new(RunHandle::new("run-1".into(), "test.job".into()));
+        let ctx = JobContext::from_handle(state.clone(), handle.clone());
+        (state, handle, ctx)
+    }
+
+    #[test]
+    fn reports_cancellation_the_admin_requested() {
+        let (_state, handle, ctx) = ctx();
+        assert!(!ctx.cancelled(), "a fresh run is not cancelled");
+        handle.request_cancel();
+        // Long jobs poll this between units of work; if it never flipped, the
+        // Cancel button in the console would do nothing.
+        assert!(ctx.cancelled());
+    }
+
+    #[test]
+    fn updates_the_in_memory_progress_on_every_call() {
+        let (_state, handle, ctx) = ctx();
+        ctx.progress(1, 100);
+        ctx.progress(2, 100);
+        ctx.progress(3, 100);
+        // The DB/WS writes are throttled, but the value the API reads is not -
+        // otherwise `GET /api/jobs` would show a figure up to a second stale.
+        assert_eq!(handle.progress(), (3, 100));
+    }
+
+    #[test]
+    fn throttles_the_broadcast_but_never_the_final_update() {
+        let (state, _handle, ctx) = ctx();
+        let mut rx = state.events.subscribe();
+
+        // A tight loop of mid-run updates: at most one gets out per second, so a
+        // fast job cannot flood every connected client.
+        for i in 1..50 {
+            ctx.progress(i, 100);
+        }
+        let mid = drain(&mut rx).len();
+        assert!(mid <= 2, "expected at most one throttled flush, saw {mid}");
+
+        // The terminal update always flushes, or the bar finishes at 49/100 and
+        // sits there.
+        ctx.progress(100, 100);
+        let last = drain(&mut rx);
+        assert_eq!(last.len(), 1);
+        assert_eq!(last[0]["type"], "job.progress");
+        assert_eq!(last[0]["done"], 100);
+        assert_eq!(last[0]["total"], 100);
+        assert_eq!(last[0]["runId"], "run-1");
+    }
+
+    #[test]
+    fn an_indeterminate_total_is_not_treated_as_terminal() {
+        let (state, _handle, ctx) = ctx();
+        let mut rx = state.events.subscribe();
+        // `total == 0` renders as an indeterminate bar. `done >= total` would be
+        // true for every such call, defeating the throttle entirely.
+        for i in 1..50 {
+            ctx.progress(i, 0);
+        }
+        assert!(drain(&mut rx).len() <= 2);
+    }
+
+    #[test]
+    fn logs_carry_their_level_to_the_console() {
+        let (state, _handle, ctx) = ctx();
+        let mut rx = state.events.subscribe();
+
+        ctx.debug("d");
+        ctx.info("i");
+        ctx.warn("w");
+        ctx.error("e");
+
+        let seen: Vec<(String, String)> = drain(&mut rx)
+            .iter()
+            .map(|v| (v["level"].as_str().unwrap().into(), v["message"].as_str().unwrap().into()))
+            .collect();
+        // ALL levels reach the run view, not just info: the Tâches log is meant
+        // to show the full story, including why something was skipped.
+        assert_eq!(
+            seen,
+            vec![
+                ("debug".to_string(), "d".to_string()),
+                ("info".into(), "i".into()),
+                ("warn".into(), "w".into()),
+                ("error".into(), "e".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_log_line_is_addressed_to_its_own_run() {
+        let (state, _handle, ctx) = ctx();
+        let mut rx = state.events.subscribe();
+        ctx.info("hello");
+
+        let events = drain(&mut rx);
+        assert_eq!(events[0]["type"], "job.log");
+        // The console filters by run id; without it a line lands under whichever
+        // run the user happens to have open.
+        assert_eq!(events[0]["runId"], "run-1");
+    }
+
+    #[test]
+    fn the_owned_logger_writes_to_the_same_run() {
+        let (state, _handle, ctx) = ctx();
+        let mut rx = state.events.subscribe();
+
+        // Handed to helpers that outlive a borrow of the context (the LLM
+        // connector's per-tool-call lines).
+        let logger = ctx.debug_logger();
+        drop(ctx);
+        logger("from a helper".into());
+
+        let events = drain(&mut rx);
+        assert_eq!(events[0]["runId"], "run-1");
+        assert_eq!(events[0]["level"], "debug");
+        assert_eq!(events[0]["message"], "from a helper");
+    }
+}

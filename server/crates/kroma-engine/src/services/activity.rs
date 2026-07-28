@@ -112,3 +112,133 @@ pub fn probe_completed(a: &Shared) {
         g.phase = "ready";
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn starts_idle_with_nothing_counted() {
+        // What `GET /api/status` answers on a server that has just booted.
+        let a = new();
+        let s = snapshot(&a);
+        assert_eq!(s.phase, "idle");
+        assert!(!s.scanning);
+        assert_eq!((s.libraries, s.shows, s.items), (0, 0, 0));
+        assert!(s.last_scan_at.is_none());
+    }
+
+    #[test]
+    fn a_snapshot_is_a_copy_rather_than_a_view() {
+        // The panel renders from it after the lock is released; a view would let
+        // the numbers shift underneath the render.
+        let a = new();
+        let before = snapshot(&a);
+        scan_started(&a);
+        assert_eq!(before.phase, "idle");
+        assert_eq!(snapshot(&a).phase, "scanning");
+    }
+
+    #[test]
+    fn a_scan_reports_its_counts_and_when_it_finished() {
+        let a = new();
+        scan_started(&a);
+        assert!(snapshot(&a).scanning);
+
+        scan_completed(&a, 2, 10, 340, "2026-06-10T12:00:00Z".into());
+        let s = snapshot(&a);
+        assert!(!s.scanning);
+        assert_eq!((s.libraries, s.shows, s.items), (2, 10, 340));
+        assert_eq!(s.last_scan_at.as_deref(), Some("2026-06-10T12:00:00Z"));
+        assert_eq!(s.phase, "ready");
+    }
+
+    #[test]
+    fn enriching_nothing_goes_straight_to_ready() {
+        // A scan that enriched everything already has a total of 0. Saying
+        // "enriching" there is a progress bar the user watches at 0/0 forever.
+        let a = new();
+        enrich_started(&a, 0);
+        assert_eq!(snapshot(&a).phase, "ready");
+        assert_eq!(snapshot(&a).enrich_total, 0);
+    }
+
+    #[test]
+    fn enriching_reports_progress_and_lands_exactly_on_the_total() {
+        let a = new();
+        enrich_started(&a, 40);
+        assert_eq!(snapshot(&a).phase, "enriching");
+
+        enrich_progress(&a, 12);
+        assert_eq!(snapshot(&a).enrich_done, 12);
+        // Still enriching: progress alone must not flip the phase.
+        assert_eq!(snapshot(&a).phase, "enriching");
+
+        enrich_completed(&a);
+        let s = snapshot(&a);
+        // Snapped to the total rather than left at the last reported number, so
+        // the bar never finishes at 39/40.
+        assert_eq!(s.enrich_done, s.enrich_total);
+        assert_eq!(s.phase, "ready");
+    }
+
+    #[test]
+    fn a_second_enrich_pass_resets_the_counter() {
+        let a = new();
+        enrich_started(&a, 10);
+        enrich_progress(&a, 10);
+        enrich_started(&a, 3);
+        // Carrying 10 into a 3-item pass shows 10/3.
+        assert_eq!(snapshot(&a).enrich_done, 0);
+        assert_eq!(snapshot(&a).enrich_total, 3);
+    }
+
+    #[test]
+    fn probing_nothing_leaves_the_phase_alone() {
+        let a = new();
+        scan_started(&a);
+        probe_started(&a, 0);
+        // Nothing to probe, so it must not announce a phase - least of all
+        // overwrite the scan that is still running.
+        assert_eq!(snapshot(&a).phase, "scanning");
+    }
+
+    #[test]
+    fn probing_reports_progress_and_lands_on_the_total() {
+        let a = new();
+        probe_started(&a, 8);
+        assert_eq!(snapshot(&a).phase, "probing");
+
+        probe_progress(&a, 3);
+        assert_eq!(snapshot(&a).probe_done, 3);
+
+        probe_completed(&a);
+        let s = snapshot(&a);
+        assert_eq!(s.probe_done, s.probe_total);
+        assert_eq!(s.phase, "ready");
+    }
+
+    #[test]
+    fn finishing_a_probe_does_not_clobber_a_scan_that_started_meanwhile() {
+        let a = new();
+        probe_started(&a, 5);
+        // Probing runs in the background, so a scan can begin before it ends.
+        scan_started(&a);
+        probe_completed(&a);
+
+        // The phase is only reset when it is still OURS. Otherwise the panel
+        // would report "ready" while a scan is visibly running.
+        assert_eq!(snapshot(&a).phase, "scanning");
+        assert_eq!(snapshot(&a).probe_done, 5);
+    }
+
+    #[test]
+    fn the_handle_is_shared_rather_than_copied() {
+        // The scan threads hold clones; a per-clone copy would leave the API
+        // reading a snapshot nobody updates.
+        let a = new();
+        let worker = Arc::clone(&a);
+        scan_started(&worker);
+        assert_eq!(snapshot(&a).phase, "scanning");
+    }
+}
