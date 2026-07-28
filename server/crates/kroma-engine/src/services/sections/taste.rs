@@ -276,4 +276,186 @@ mod tests {
         let watched: Vec<String> = (0..3).map(|i| format!("id{i}")).collect();
         assert!(cluster(&pool, &cache, &watched, 3).is_empty());
     }
+    // ----- cluster() against a real pool + cache ----------------------------------
+
+    use crate::test_support::{seed_library, seed_movie, test_state};
+
+    /// Two well-separated blobs in 2-D, plus the metadata each title carries.
+    fn seed_taste_library(state: &crate::state::SharedState) {
+        seed_library(state, "lib-movies", "movies");
+        // Blob A: four thrillers. Blob B: three comedies.
+        // Every title in a blob shares its dominant genre; the second genre
+        // varies so the "most common first" ordering is unambiguous rather than
+        // decided by the alphabetical tiebreak.
+        // The SMALLER blob comes first, so "biggest group first" has to actually
+        // reorder rather than agreeing with the order k-means happened to
+        // produce.
+        for (id, title, genres, x, y) in [
+            ("a1", "Airplane!", vec!["Comedy", "Parody"], 1.0, 0.02),
+            ("a2", "Groundhog Day", vec!["Comedy", "Romance"], 1.0, 0.0),
+            ("a3", "The Nice Guys", vec!["Comedy", "Action"], 0.98, 0.05),
+            ("b1", "Heat", vec!["Thriller", "Crime"], 0.02, 1.0),
+            ("b2", "Sicario", vec!["Thriller", "Crime"], 0.0, 1.0),
+            ("b3", "Prisoners", vec!["Thriller", "Mystery"], 0.05, 0.99),
+            ("b4", "Zodiac", vec!["Thriller", "History"], 0.03, 0.98),
+        ] {
+            seed_movie(state, id);
+            let meta = serde_json::json!({
+                "tmdbId": 1,
+                "title": title,
+                "overview": null,
+                "genres": genres,
+                "keywords": ["neo-noir", "ensemble"],
+                "tmdbUrl": "https://www.themoviedb.org/movie/1",
+            })
+            .to_string();
+            state
+                .db
+                .get()
+                .unwrap()
+                .execute(
+                    &format!("UPDATE items SET title = \'{title}\', metadata = json(\'{meta}\') WHERE id = \'{id}\'"),
+                    [],
+                )
+                .unwrap();
+            let mut v = vec![x, y];
+            normalize(&mut v);
+            crate::db::set_item_vector(&state.db, id, &v).unwrap();
+        }
+    }
+
+    fn warm_cache(state: &crate::state::SharedState) -> VectorCache {
+        let cache = VectorCache::new();
+        cache.refresh_if_stale(&state.db).unwrap();
+        cache
+    }
+
+    fn watched() -> Vec<String> {
+        ["a1", "a2", "a3", "b1", "b2", "b3", "b4"].iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn too_little_history_is_not_worth_clustering() {
+        // Below MIN_WATCHED the home falls back to the static themed bank -
+        // clusters built from three titles say more about noise than taste.
+        let state = test_state();
+        seed_taste_library(&state);
+        let cache = warm_cache(&state);
+        let thin: Vec<String> = watched().into_iter().take(MIN_WATCHED - 1).collect();
+        assert!(cluster(&state.db, &cache, &thin, 2).is_empty());
+    }
+
+    #[test]
+    fn history_without_embeddings_does_not_count_toward_the_minimum() {
+        // A big watch history of un-embedded titles is still no signal.
+        let state = test_state();
+        seed_taste_library(&state);
+        let cache = warm_cache(&state);
+        let mut ids = watched();
+        ids.extend((0..20).map(|n| format!("never-embedded-{n}")));
+        // The 7 real ones still cluster; the 20 phantoms neither help nor break it.
+        assert!(!cluster(&state.db, &cache, &ids, 2).is_empty());
+
+        let phantoms: Vec<String> = (0..20).map(|n| format!("never-embedded-{n}")).collect();
+        assert!(cluster(&state.db, &cache, &phantoms, 2).is_empty());
+    }
+
+    #[test]
+    fn taste_groups_come_back_biggest_first_and_split_by_subject() {
+        let state = test_state();
+        seed_taste_library(&state);
+        let cache = warm_cache(&state);
+        let clusters = cluster(&state.db, &cache, &watched(), 2);
+
+        assert_eq!(clusters.len(), 2);
+        // The four thrillers are the bigger group and come first, even though
+        // the three comedies are the ones k-means sees first.
+        assert_eq!(clusters[0].ids.len(), 4);
+        assert_eq!(clusters[1].ids.len(), 3);
+        // Each group is coherent: no comedy landed among the thrillers.
+        assert!(clusters[0].ids.iter().all(|id| id.starts_with('b')), "{:?}", clusters[0].ids);
+        assert!(clusters[1].ids.iter().all(|id| id.starts_with('a')), "{:?}", clusters[1].ids);
+        // ...and each is summarized by its own dominant genre, which is what the
+        // LLM gets to name it from.
+        assert_eq!(clusters[0].genres.first().map(String::as_str), Some("Thriller"));
+        assert_eq!(clusters[1].genres.first().map(String::as_str), Some("Comedy"));
+        assert_eq!(clusters[0].titles.len(), 4);
+        assert!(clusters[0].titles.contains(&"Heat".to_string()));
+    }
+
+    #[test]
+    fn clustering_the_same_history_twice_gives_the_same_answer() {
+        // The section titles are regenerated on a schedule; a non-deterministic
+        // clustering would reshuffle someone's home page for no reason.
+        let state = test_state();
+        seed_taste_library(&state);
+        let cache = warm_cache(&state);
+        let first = cluster(&state.db, &cache, &watched(), 2);
+        let second = cluster(&state.db, &cache, &watched(), 2);
+        let ids = |cs: &[Cluster]| cs.iter().map(|c| c.ids.clone()).collect::<Vec<_>>();
+        assert_eq!(ids(&first), ids(&second));
+    }
+
+    #[test]
+    fn k_is_clamped_to_what_the_history_can_support() {
+        let state = test_state();
+        seed_taste_library(&state);
+        let cache = warm_cache(&state);
+        // Asking for more groups than titles cannot produce empty groups.
+        let many = cluster(&state.db, &cache, &watched(), 100);
+        assert!(many.len() <= watched().len());
+        assert!(many.iter().all(|c| !c.ids.is_empty()));
+        // Asking for none still gives one.
+        assert_eq!(cluster(&state.db, &cache, &watched(), 0).len(), 1);
+    }
+
+    #[test]
+    fn a_partial_re_embed_keeps_only_the_new_dimension() {
+        // Mixing dimensions would poison the centroids, so only one survives -
+        // and it is the LARGEST, not the most common. Worth stating because it
+        // is asymmetric: switching to a bigger embedder makes the few new
+        // vectors win (and clustering goes quiet until the pass finishes),
+        // whereas switching to a smaller one lets the stale majority win until
+        // then.
+        let state = test_state();
+        seed_taste_library(&state);
+        // One title re-embedded at a larger dimension mid-pass.
+        crate::db::set_item_vector(&state.db, "a1", &[0.5, 0.5, 0.5, 0.5]).unwrap();
+        let cache = warm_cache(&state);
+        // Only that one vector is at the max dim, which is below MIN_WATCHED.
+        assert!(cluster(&state.db, &cache, &watched(), 2).is_empty());
+    }
+
+    #[test]
+    fn keywords_do_not_survive_the_write_that_enrichment_performs() {
+        // `aggregate_tags` collects `Metadata::keywords` for the LLM prompt, but
+        // that field is `#[serde(skip_serializing)]`: enrichment consumes it
+        // in-memory and never writes it. So a cluster built from stored metadata
+        // has genres and no keywords - not because the aggregation is wrong, but
+        // because there is nothing in the column to aggregate.
+        //
+        // Pinned rather than "fixed": whoever wants keywords in the taste prompt
+        // has to decide where they come from. Written through the real writer,
+        // since hand-rolled JSON would put them back and hide the whole point.
+        let state = test_state();
+        seed_taste_library(&state);
+        let mut meta: crate::model::Metadata = serde_json::from_str(
+            r#"{"tmdbId":1,"title":"Airplane!","overview":null,"genres":["Comedy"],"tmdbUrl":"https://x/1"}"#,
+        )
+        .unwrap();
+        meta.keywords = vec!["neo-noir".into(), "heist".into()];
+        assert_eq!(meta.keywords.len(), 2, "the value exists before the write");
+        crate::db::set_item_metadata(&state.db, "a1", &meta).unwrap();
+
+        let stored = crate::db::items_by_ids(&state.db, &["a1"]).unwrap();
+        let round_tripped = stored[0].metadata.as_ref().unwrap();
+        assert_eq!(round_tripped.genres, ["Comedy"], "genres do survive");
+        assert!(round_tripped.keywords.is_empty(), "keywords came back from the column");
+
+        let cache = warm_cache(&state);
+        let clusters = cluster(&state.db, &cache, &watched(), 2);
+        let a1_group = clusters.iter().find(|c| c.ids.iter().any(|id| id == "a1")).unwrap();
+        assert!(!a1_group.genres.is_empty());
+        assert!(a1_group.keywords.iter().all(|k| k != "heist"));
+    }
 }
