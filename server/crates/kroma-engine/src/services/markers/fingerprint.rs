@@ -6,6 +6,7 @@
 //! or the recurring credits theme (near the end). No external `fpcalc` binary: we
 //! already ship `ffmpeg` and fingerprint in-process.
 
+use std::ffi::OsString;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -39,19 +40,7 @@ pub fn fingerprint_window(
     let cfg = config();
     let sr = cfg.sample_rate();
     let mut cmd = Command::new("ffmpeg");
-    // Audio-only decode is single-stream work; cap the decoder pool so marker
-    // jobs never fan out threads across every core.
-    cmd.args(["-v", "error", "-nostdin", "-threads", "1"]);
-    if from_end {
-        cmd.arg("-sseof").arg(format!("-{secs}"));
-    }
-    cmd.arg("-i").arg(path);
-    if !from_end {
-        cmd.arg("-t").arg(secs.to_string());
-    }
-    cmd.args(["-vn", "-ac", "1", "-ar"])
-        .arg(sr.to_string())
-        .args(["-f", "s16le", "-"])
+    cmd.args(decode_args(path, secs, from_end, sr))
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
 
@@ -64,11 +53,7 @@ pub fn fingerprint_window(
     if !out.status.success() {
         bail!("ffmpeg exited with {}", out.status);
     }
-    let samples: Vec<i16> = out
-        .stdout
-        .chunks_exact(2)
-        .map(|b| i16::from_le_bytes([b[0], b[1]]))
-        .collect();
+    let samples = samples_from_pcm(&out.stdout);
     if samples.is_empty() {
         bail!("no audio decoded from {}", path.display());
     }
@@ -79,8 +64,57 @@ pub fn fingerprint_window(
     fp.finish();
     Ok(WindowFp {
         data: fp.fingerprint().to_vec(),
-        window_start_s: if from_end { (duration_s - secs as f64).max(0.0) } else { 0.0 },
+        window_start_s: window_start_s(secs, from_end, duration_s),
     })
+}
+
+/// The ffmpeg argv for one fingerprint window.
+///
+/// Split out because it is the part that fails SILENTLY. Seeking to the wrong
+/// end fingerprints the wrong part of the episode and places every marker
+/// somewhere plausible but wrong, and a sample rate that disagrees with the
+/// Chromaprint configuration produces fingerprints that simply never align -
+/// neither shows up as an error anywhere.
+fn decode_args(path: &Path, secs: u32, from_end: bool, sample_rate: u32) -> Vec<OsString> {
+    let mut args: Vec<OsString> = Vec::new();
+    // Audio-only decode is single-stream work; cap the decoder pool so marker
+    // jobs never fan out threads across every core.
+    args.extend(["-v", "error", "-nostdin", "-threads", "1"].map(OsString::from));
+    // `-sseof` is an INPUT option: it has to come before `-i` or ffmpeg applies
+    // it to the output and reads the file from the start.
+    if from_end {
+        args.push(OsString::from("-sseof"));
+        args.push(OsString::from(format!("-{secs}")));
+    }
+    args.push(OsString::from("-i"));
+    args.push(path.as_os_str().to_os_string());
+    // The end window is already bounded by the seek; `-t` there would cut it.
+    if !from_end {
+        args.push(OsString::from("-t"));
+        args.push(OsString::from(secs.to_string()));
+    }
+    args.extend(["-vn", "-ac", "1", "-ar"].map(OsString::from));
+    args.push(OsString::from(sample_rate.to_string()));
+    args.extend(["-f", "s16le", "-"].map(OsString::from));
+    args
+}
+
+/// Little-endian mono s16 PCM off ffmpeg's stdout. A trailing odd byte is a
+/// truncated sample and is dropped rather than read past the end of the buffer.
+fn samples_from_pcm(bytes: &[u8]) -> Vec<i16> {
+    bytes.chunks_exact(2).map(|b| i16::from_le_bytes([b[0], b[1]])).collect()
+}
+
+/// Where this window begins in the file, so a match's in-window time can be
+/// mapped back to an absolute position. Clamped at zero: an episode shorter
+/// than the credits window would otherwise anchor at a negative time and push
+/// every marker before the start of the file.
+fn window_start_s(secs: u32, from_end: bool, duration_s: f64) -> f64 {
+    if from_end {
+        (duration_s - f64::from(secs)).max(0.0)
+    } else {
+        0.0
+    }
 }
 
 /// The (start, end) seconds **within `a`'s window** of the longest well-aligned
@@ -132,6 +166,115 @@ pub fn abs_ms(window_start_s: f64, secs: f32) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    // ----- the ffmpeg argv --------------------------------------------------------
+
+    fn args(secs: u32, from_end: bool) -> Vec<String> {
+        decode_args(Path::new("/media/ep.mkv"), secs, from_end, 11025)
+            .into_iter()
+            .map(|a| a.to_string_lossy().to_string())
+            .collect()
+    }
+
+    /// Index of `flag` in `args`, or `None`.
+    fn at(args: &[String], flag: &str) -> Option<usize> {
+        args.iter().position(|a| a == flag)
+    }
+
+    #[test]
+    fn the_intro_window_reads_the_first_seconds() {
+        let a = args(30, false);
+        assert!(at(&a, "-sseof").is_none(), "the start window must not seek: {a:?}");
+        let t = at(&a, "-t").expect("bounded by -t");
+        assert_eq!(a[t + 1], "30");
+    }
+
+    #[test]
+    fn the_credits_window_seeks_from_the_end_instead_of_bounding_the_duration() {
+        // `-t 30` after a `-sseof -30` would cut the window at the file's own
+        // end anyway, but the seek is what makes it the LAST thirty seconds.
+        let a = args(30, true);
+        let s = at(&a, "-sseof").expect("seeks from the end");
+        assert_eq!(a[s + 1], "-30");
+        assert!(at(&a, "-t").is_none(), "the end window is bounded by the seek: {a:?}");
+    }
+
+    #[test]
+    fn the_seek_precedes_the_input() {
+        // `-sseof` is an INPUT option. After `-i` ffmpeg applies it to the
+        // output and reads the file from the start - the credits fingerprint
+        // would then be of the intro, and every credits marker would be wrong.
+        let a = args(30, true);
+        assert!(at(&a, "-sseof").unwrap() < at(&a, "-i").unwrap(), "{a:?}");
+    }
+
+    #[test]
+    fn the_decode_matches_what_chromaprint_was_configured_for() {
+        // Mono, and at the configuration's own sample rate. A mismatch does not
+        // error: it produces fingerprints that never align with each other, so
+        // the detector silently finds no intro in any show.
+        let a = args(30, false);
+        let ac = at(&a, "-ac").unwrap();
+        assert_eq!(a[ac + 1], "1");
+        let ar = at(&a, "-ar").unwrap();
+        assert_eq!(a[ar + 1], "11025");
+        assert_eq!(a[ar + 1], config().sample_rate().to_string());
+        // Raw little-endian s16 on stdout, which is what `samples_from_pcm` reads.
+        assert_eq!(a[at(&a, "-f").unwrap() + 1], "s16le");
+        assert_eq!(a.last().unwrap(), "-");
+    }
+
+    #[test]
+    fn video_is_dropped_and_the_decoder_stays_on_one_thread() {
+        // The marker pass already runs several episodes at once; letting each
+        // decode fan out across every core is how it starves playback.
+        let a = args(30, false);
+        assert!(a.contains(&"-vn".to_string()), "{a:?}");
+        assert_eq!(a[at(&a, "-threads").unwrap() + 1], "1");
+    }
+
+    #[test]
+    fn the_file_is_passed_through_untouched() {
+        // Paths with spaces or non-UTF-8 bytes reach ffmpeg as-is; building the
+        // argv as strings would mangle them.
+        let a = decode_args(Path::new("/media/Le Fabuleux Destin.mkv"), 30, false, 11025);
+        assert!(a.iter().any(|x| x == "/media/Le Fabuleux Destin.mkv"), "{a:?}");
+    }
+
+    // ----- the PCM stream ---------------------------------------------------------
+
+    #[test]
+    fn samples_are_read_little_endian() {
+        // ffmpeg writes s16le; reading it big-endian yields plausible-looking
+        // noise that fingerprints to nothing in common.
+        assert_eq!(samples_from_pcm(&[0x01, 0x00, 0x00, 0x80]), [1, -32768]);
+    }
+
+    #[test]
+    fn a_truncated_trailing_byte_is_dropped_rather_than_read_past() {
+        assert_eq!(samples_from_pcm(&[0x01, 0x00, 0x7f]), [1]);
+        assert!(samples_from_pcm(&[0x7f]).is_empty());
+        assert!(samples_from_pcm(&[]).is_empty());
+    }
+
+    // ----- anchoring the window ---------------------------------------------------
+
+    #[test]
+    fn the_intro_window_is_anchored_at_the_start_of_the_file() {
+        assert_eq!(window_start_s(30, false, 1800.0), 0.0);
+    }
+
+    #[test]
+    fn the_credits_window_is_anchored_that_far_from_the_end() {
+        assert_eq!(window_start_s(30, true, 1800.0), 1770.0);
+    }
+
+    #[test]
+    fn an_episode_shorter_than_the_window_still_anchors_at_zero() {
+        // A ten-second clip with a thirty-second credits window would otherwise
+        // anchor at -20s and put every marker before the start of the file.
+        assert_eq!(window_start_s(30, true, 10.0), 0.0);
+    }
+
     use super::*;
 
     #[test]
