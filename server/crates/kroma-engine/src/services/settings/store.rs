@@ -254,6 +254,11 @@ fn defaults() -> BTreeMap<String, Value> {
         "namingEpisodeFile".into(),
         json!("{Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}"),
     );
+    // MUST be registered: `set_patch` silently skips unknown keys, so without
+    // this line the admin's case choice is accepted by `save_naming`, answered
+    // with `{"ok": true}`, and thrown away - every other naming field saved and
+    // this one did not.
+    m.insert("namingCase".into(), json!("default"));
     // AI / LLM: powers personalized auto-named home sections + per-user taste
     // profiles (the `sections.personalize` job). Open-ended provider choice:
     // openai = any OpenAI-compatible server (Ollama, llama.cpp, LM Studio, …);

@@ -3081,6 +3081,7 @@ name = "kroma-module-sdk"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "kroma-db",
  "kroma-domain",
  "kroma-engine",

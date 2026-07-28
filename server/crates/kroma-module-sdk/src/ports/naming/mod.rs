@@ -792,4 +792,211 @@ mod tests {
         let p = tpl.episode_rel_path(&ctx, "mkv");
         assert_eq!(p.to_str().unwrap(), "Show/Pilot.mkv");
     }
+    // ----- where the templates come from ------------------------------------------
+
+    fn store() -> (kroma_db::Pool, Settings) {
+        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!("kroma-naming-{}-{n}.db", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        let pool = kroma_db::init(&path).unwrap();
+        let settings = Settings::load(&pool);
+        (pool, settings)
+    }
+
+    fn set(settings: &Settings, pool: &kroma_db::Pool, key: &str, value: &str) {
+        settings.set_patch(
+            pool,
+            std::collections::BTreeMap::from([(key.to_string(), serde_json::json!(value))]),
+        );
+    }
+
+    #[test]
+    fn an_unconfigured_server_names_files_the_same_way_either_default_would() {
+        // There are TWO defaults for these keys and they are not the same
+        // string: the settings store registers `{Title} ({Year})` while this
+        // module declares `{Movie Title} ({Release Year})`. `get_str` prefers
+        // the REGISTERED one, so the constants here never apply on a real
+        // server - they are the fallback for a host that does not know the key
+        // (an out-of-process module reading through a bare `setting_str`).
+        //
+        // That is harmless only because the two spellings are aliases for the
+        // same token, which is what this pins: edit either side and the paths
+        // must still match, or a fresh install starts naming files differently
+        // from a sidecar.
+        let (_pool, settings) = store();
+        let from_store = NamingTemplates::from_settings(&settings);
+        let from_constants = NamingTemplates {
+            movie_folder: DEFAULT_MOVIE_FOLDER.into(),
+            movie_file: DEFAULT_MOVIE_FILE.into(),
+            series_folder: DEFAULT_SERIES_FOLDER.into(),
+            season_folder: DEFAULT_SEASON_FOLDER.into(),
+            episode_file: DEFAULT_EPISODE_FILE.into(),
+            case: Casing::default(),
+        };
+
+        assert_ne!(from_store.movie_folder, from_constants.movie_folder, "two spellings");
+        assert_eq!(
+            from_store.movie_rel_path(&movie_ctx(), "mkv"),
+            from_constants.movie_rel_path(&movie_ctx(), "mkv"),
+            "the two defaults must name the same file",
+        );
+        assert_eq!(
+            from_store.episode_rel_path(&episode_ctx(), "mkv"),
+            from_constants.episode_rel_path(&episode_ctx(), "mkv"),
+        );
+    }
+
+    #[test]
+    fn a_template_an_admin_cleared_falls_back_rather_than_naming_everything_alike() {
+        // An empty template renders to an empty string, so every import in a
+        // library would land on the same path and overwrite the last one. A
+        // blank field means "I did not set this", not "name it nothing".
+        let (pool, settings) = store();
+        for key in [
+            "namingMovieFolder",
+            "namingMovieFile",
+            "namingSeriesFolder",
+            "namingSeasonFolder",
+            "namingEpisodeFile",
+        ] {
+            set(&settings, &pool, key, "   ");
+        }
+
+        // A cleared field falls back to the CONSTANT, while a field nobody ever
+        // touched falls back to the REGISTERED default - two different strings
+        // for the same two tokens. What has to hold is that both still name the
+        // same file, and that neither is empty.
+        let cleared = NamingTemplates::from_settings(&settings);
+        let (_p2, untouched) = store();
+        let fresh = NamingTemplates::from_settings(&untouched);
+
+        assert!(!cleared.movie_folder.trim().is_empty());
+        assert!(!cleared.episode_file.trim().is_empty());
+        assert_eq!(
+            cleared.movie_rel_path(&movie_ctx(), "mkv"),
+            fresh.movie_rel_path(&movie_ctx(), "mkv"),
+        );
+        assert_eq!(
+            cleared.episode_rel_path(&episode_ctx(), "mkv"),
+            fresh.episode_rel_path(&episode_ctx(), "mkv"),
+        );
+    }
+
+    #[test]
+    fn a_configured_template_is_used_as_written() {
+        let (pool, settings) = store();
+        set(&settings, &pool, "namingMovieFolder", "{Movie Title}");
+        set(&settings, &pool, "namingCase", "lower");
+
+        let t = NamingTemplates::from_settings(&settings);
+        assert_eq!(t.movie_folder, "{Movie Title}");
+        // ...and the case transform comes from the same place, visible in the
+        // path the template actually produces.
+        let path = t.movie_rel_path(&movie_ctx(), "mkv");
+        assert!(path.starts_with("the matrix"), "{path:?}");
+    }
+
+    #[test]
+    fn a_sidecar_reading_through_the_host_seam_gets_the_same_answers() {
+        // `from_host` exists so an out-of-process module can read the templates
+        // without linking the engine's `Settings` type. If the two drifted, the
+        // same file would be named differently depending on WHICH process
+        // imported it - and that is invisible until two of them disagree.
+        let (pool, settings) = store();
+        set(&settings, &pool, "namingMovieFolder", "{Movie Title} [{Release Year}]");
+        set(&settings, &pool, "namingCase", "upper");
+
+        let direct = NamingTemplates::from_settings(&settings);
+        let host = SettingsHost { settings, pool };
+        let seam = NamingTemplates::from_host(&host);
+
+        assert_eq!(seam.movie_folder, direct.movie_folder);
+        assert_eq!(seam.movie_file, direct.movie_file);
+        assert_eq!(seam.series_folder, direct.series_folder);
+        assert_eq!(seam.season_folder, direct.season_folder);
+        assert_eq!(seam.episode_file, direct.episode_file);
+        assert_eq!(
+            seam.movie_rel_path(&movie_ctx(), "mkv"),
+            direct.movie_rel_path(&movie_ctx(), "mkv"),
+            "the two readers must produce the same path for the same file",
+        );
+    }
+
+    #[test]
+    fn the_host_seam_also_refuses_a_blank_template() {
+        let (pool, settings) = store();
+        set(&settings, &pool, "namingEpisodeFile", "");
+        let host = SettingsHost { settings, pool };
+        let episode_file = NamingTemplates::from_host(&host).episode_file;
+        assert!(!episode_file.trim().is_empty(), "a blank template names every file alike");
+        assert!(episode_file.contains("season"), "{episode_file}");
+    }
+
+    /// A `HostCtx` whose only real capability is the settings store, which is
+    /// all `from_host` touches.
+    struct SettingsHost {
+        settings: Settings,
+        pool: kroma_db::Pool,
+    }
+
+    impl crate::host::HostCtx for SettingsHost {
+        fn db(&self) -> &kroma_db::Pool {
+            &self.pool
+        }
+        fn data_dir(&self) -> &std::path::Path {
+            std::path::Path::new("/tmp")
+        }
+        fn require(
+            &self,
+            _user: &crate::domain::User,
+            _perm: crate::domain::Permission,
+        ) -> Result<(), axum::response::Response> {
+            Ok(())
+        }
+        fn require_any_admin(
+            &self,
+            _user: &crate::domain::User,
+        ) -> Result<(), axum::response::Response> {
+            Ok(())
+        }
+        fn lerr(
+            &self,
+            _user: &crate::domain::User,
+            _status: axum::http::StatusCode,
+            _key: &str,
+        ) -> axum::response::Response {
+            unimplemented!("not exercised")
+        }
+        fn setting_str(&self, key: &str, default: &str) -> String {
+            self.settings.get_str(key, default)
+        }
+        fn setting_bool(&self, _key: &str, default: bool) -> bool {
+            default
+        }
+        fn setting_i64(&self, _key: &str, default: i64) -> i64 {
+            default
+        }
+        fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
+        fn publish(&self, _event: kroma_module_host::Event) {}
+        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
+        fn module_enabled(&self, _id: &str) -> bool {
+            true
+        }
+        fn library_folders(&self) -> Vec<kroma_module_host::LibraryFolders> {
+            Vec::new()
+        }
+        fn tmdb_api_key(&self) -> Option<String> {
+            None
+        }
+        fn metadata_language(&self) -> String {
+            "en".into()
+        }
+        fn get_service(
+            &self,
+            _t: std::any::TypeId,
+        ) -> Option<std::sync::Arc<dyn std::any::Any + Send + Sync>> {
+            None
+        }
+    }
 }
