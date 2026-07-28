@@ -109,6 +109,10 @@ const include = [
   // The web client's own build-time plugin, which sits beside its vite config
   // rather than under src/.
   'clients/web/*.test.ts',
+  // The Samsung TV client. Its background preview service is a Tizen JS service
+  // that ships verbatim from public/, so its test lives under src/ and loads the
+  // file - without this line nothing collects it and it can never be covered.
+  'clients/tizen/src/**/*.test.ts',
   // The kit site is where the workbench is COMPOSED - the tool, the design
   // system's stories, and the config that joins them - so the integration test
   // for all three lives with the config rather than in either package.
