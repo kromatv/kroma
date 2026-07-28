@@ -63,6 +63,20 @@ pub(crate) fn test_state_with_tmdb(key: &str) -> SharedState {
     AppState::new(config, false, db, settings, embedder, HashMap::new(), &[])
 }
 
+/// Like [`test_state`], but with a real (if trivial) embedder.
+///
+/// [`NoopEmbedder`] reports dim 0 and returns empty vectors, which makes every
+/// dimension comparison vacuous - a pass that stored nothing looks identical to
+/// one that stored everything. This one produces a vector of the requested
+/// length so "already at the active dim" is actually distinguishable.
+pub(crate) fn test_state_with_embedder(embedder: Arc<dyn Embedder>) -> SharedState {
+    let data_dir = unique_data_dir();
+    let db = db::init(&data_dir.join("kroma.db")).expect("init db");
+    let config = test_config(data_dir);
+    let settings = Settings::load(&db);
+    AppState::new(config, false, db, settings, embedder, HashMap::new(), &[])
+}
+
 /// Build a minimal, real [`SharedState`]: fresh temp DB, loaded settings, a no-op
 /// embedder, empty module services, no module jobs, `ffprobe_available = false`.
 pub(crate) fn test_state() -> SharedState {
