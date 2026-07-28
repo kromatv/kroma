@@ -88,7 +88,7 @@ describe('fetching the manifest', () => {
     const settled = storyboard.mock.calls.length;
 
     await vi.advanceTimersByTimeAsync(POLL_MS * 3);
-    expect(storyboard.mock.calls.length).toBe(settled);
+    expect(storyboard.mock.calls).toHaveLength(settled);
   });
 
   it('stops polling when the player closes', async () => {
