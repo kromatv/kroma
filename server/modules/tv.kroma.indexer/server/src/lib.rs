@@ -720,4 +720,106 @@ search:
         // A non-builtin (torznab) indexer is not cookie-gated here -> None.
         assert!(IndexerTorrentFetch.fetch_torrent(&host, "tz", "http://x/f.torrent").is_none());
     }
+    // ----- the ServerModule surface + the port error paths -------------------------
+
+    /// Any well-formed query - these tests are about the paths a search takes
+    /// BEFORE the query matters.
+    fn port_query() -> kroma_module_sdk::ports::Query {
+        kroma_module_sdk::ports::Query::Movie {
+            tmdb_id: Some(603),
+            imdb_id: None,
+            title: "The Matrix".into(),
+            year: Some(1999),
+        }
+    }
+
+    #[test]
+    fn the_module_declares_its_id_migrations_and_admin_routes() {
+        let host = DbHost { pool: db_pool() };
+        let module = server_module::<DbHost>();
+        // The id is the manifest id: the host keys enable/disable state on it, so
+        // a drift here silently detaches every stored setting.
+        assert_eq!(module.id(), MODULE_ID);
+        assert_eq!(module.id(), "tv.kroma.indexer");
+        // The module owns its own tables; without this the host applies nothing
+        // and every query fails at runtime rather than at install.
+        assert_eq!(module.migrations(), db::MIGRATIONS);
+        assert!(!db::MIGRATIONS.trim().is_empty());
+        assert!(module.admin_routes(&host).is_some(), "the admin UI has nowhere to talk to");
+    }
+
+    #[test]
+    fn a_torznab_search_without_the_torznab_engine_names_the_missing_piece() {
+        // The engine lives in a separate module. If it is disabled, the failure
+        // has to say so - and it has to be recorded ON the indexer row, because
+        // that is where the admin looks when an indexer stops returning results.
+        use kroma_module_sdk::ports::IndexerSearchPort;
+        let pool = db_pool();
+        let mut row = seed_row("tz-no-engine", "torznab", true, 100);
+        row.url = "http://tracker.invalid/api".into();
+        db::insert_indexer(&pool, &row).unwrap();
+        let host = DbHost { pool: pool.clone() };
+
+        let err = IndexerSearch
+            .search(&host, &row, &port_query(), &[2000])
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("torznab search engine unavailable"), "{err}");
+
+        let stored = db::get_indexer(&pool.get().unwrap(), "tz-no-engine").unwrap().unwrap();
+        assert_eq!(stored.last_ok_at, None);
+        assert!(
+            stored.last_error.as_deref().unwrap_or_default().contains("torznab"),
+            "the failure was not recorded on the row: {:?}",
+            stored.last_error
+        );
+    }
+
+    #[test]
+    fn a_builtin_search_for_a_definition_that_is_not_installed_fails_loudly() {
+        // A row can outlive its Cardigann definition (a removed definitions
+        // bundle, a renamed tracker). Erroring beats searching an empty session
+        // and reporting "no results", which reads as "nothing to grab".
+        use kroma_module_sdk::ports::IndexerSearchPort;
+        let pool = db_pool();
+        let mut row = seed_row("builtin-gone", admin::KIND_BUILTIN, true, 100);
+        row.definition_id = Some("a-tracker-that-does-not-exist".into());
+        db::insert_indexer(&pool, &row).unwrap();
+        let host = DbHost { pool };
+
+        assert!(IndexerSearch.search(&host, &row, &port_query(), &[2000]).is_err());
+    }
+
+    #[test]
+    fn resolving_a_plain_url_needs_the_indexers_session() {
+        // Unlike a magnet, an http link on a private tracker is cookie-gated:
+        // there is no fast path, so a session failure must surface rather than
+        // hand back an unauthenticated URL that downloads an HTML login page.
+        use kroma_module_sdk::ports::IndexerSearchPort;
+        let pool = db_pool();
+        let mut row = seed_row("builtin-nodef", admin::KIND_BUILTIN, true, 100);
+        row.definition_id = Some("also-missing".into());
+        db::insert_indexer(&pool, &row).unwrap();
+        let host = DbHost { pool };
+
+        assert!(IndexerSearch
+            .resolve_download(&host, &row, "Some.Release", None, "http://tracker.invalid/dl/1")
+            .is_err());
+    }
+
+    #[test]
+    fn fetching_a_torrent_from_a_builtin_indexer_reports_a_session_failure() {
+        // Distinct from the `None` cases above: a built-in row IS cookie-gated,
+        // so the caller must not silently fall back to a plain fetch - it gets
+        // Some(Err) and can say why the grab failed.
+        use kroma_module_sdk::ports::TorrentFetchPort;
+        let pool = db_pool();
+        let mut row = seed_row("builtin-fetch", admin::KIND_BUILTIN, true, 100);
+        row.definition_id = Some("nowhere-to-be-found".into());
+        db::insert_indexer(&pool, &row).unwrap();
+        let host = DbHost { pool };
+
+        let outcome = IndexerTorrentFetch.fetch_torrent(&host, "builtin-fetch", "http://x/f.torrent");
+        assert!(matches!(outcome, Some(Err(_))), "a built-in grab must not degrade to a plain fetch");
+    }
 }
