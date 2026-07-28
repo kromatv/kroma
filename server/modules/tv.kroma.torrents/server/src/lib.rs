@@ -244,68 +244,9 @@ mod tests {
 
     // ----- lifecycle against a host with no DownloadManager -----------------------
 
-    #[derive(Clone)]
-    struct BareHost;
-
-    impl kroma_module_sdk::host::HostCtx for BareHost {
-        fn db(&self) -> &kroma_module_sdk::db::Pool {
-            unimplemented!("the lifecycle hooks stop at the service lookup")
-        }
-        fn data_dir(&self) -> &std::path::Path {
-            std::path::Path::new("/tmp")
-        }
-        fn require(
-            &self,
-            _user: &kroma_module_sdk::domain::User,
-            _perm: kroma_module_sdk::domain::Permission,
-        ) -> Result<(), axum::response::Response> {
-            Ok(())
-        }
-        fn require_any_admin(
-            &self,
-            _user: &kroma_module_sdk::domain::User,
-        ) -> Result<(), axum::response::Response> {
-            Ok(())
-        }
-        fn lerr(
-            &self,
-            _user: &kroma_module_sdk::domain::User,
-            _status: axum::http::StatusCode,
-            _key: &str,
-        ) -> axum::response::Response {
-            unimplemented!("not exercised")
-        }
-        fn setting_str(&self, _key: &str, default: &str) -> String {
-            default.to_string()
-        }
-        fn setting_bool(&self, _key: &str, default: bool) -> bool {
-            default
-        }
-        fn setting_i64(&self, _key: &str, default: i64) -> i64 {
-            default
-        }
-        fn set_settings(&self, _patch: std::collections::BTreeMap<String, serde_json::Value>) {}
-        fn publish(&self, _event: kroma_module_sdk::host::Event) {}
-        fn trigger_job(&self, _key: &'static str, _reason: &'static str) {}
-        fn module_enabled(&self, _id: &str) -> bool {
-            true
-        }
-        fn library_folders(&self) -> Vec<kroma_module_sdk::host::LibraryFolders> {
-            Vec::new()
-        }
-        fn tmdb_api_key(&self) -> Option<String> {
-            None
-        }
-        fn metadata_language(&self) -> String {
-            "en".into()
-        }
-        fn get_service(
-            &self,
-            _t: std::any::TypeId,
-        ) -> Option<std::sync::Arc<dyn std::any::Any + Send + Sync>> {
-            None
-        }
-    }
+    /// The shared stub. These hooks stop at the service lookup, so the neutral
+    /// host (no database, nothing registered) is the whole fixture.
+    type BareHost = kroma_module_sdk::host::testing::StubHost;
 
     #[test]
     fn the_module_declares_its_id_migrations_and_admin_routes() {
@@ -315,7 +256,7 @@ mod tests {
         // and every download query fails at runtime rather than at install.
         assert_eq!(module.migrations(), db::MIGRATIONS);
         assert!(!db::MIGRATIONS.trim().is_empty());
-        assert!(module.admin_routes(&BareHost).is_some());
+        assert!(module.admin_routes(&BareHost::new()).is_some());
     }
 
     #[test]
@@ -328,7 +269,7 @@ mod tests {
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         rt.block_on(async {
             let host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx> =
-                std::sync::Arc::new(BareHost);
+                std::sync::Arc::new(BareHost::new());
             module.on_enable(host.clone()).await;
             module.on_disable(host).await;
         });

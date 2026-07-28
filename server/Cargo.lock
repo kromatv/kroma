@@ -2987,6 +2987,7 @@ dependencies = [
  "axum",
  "chrono",
  "indexmap 2.14.0",
+ "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
  "kroma-port-bridge",
@@ -3237,6 +3238,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
  "kroma-port-bridge",

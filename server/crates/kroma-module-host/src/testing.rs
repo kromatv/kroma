@@ -130,6 +130,13 @@ impl StubHost {
         Self { db: Some(kroma_db::init(&path).expect("init test db")), ..Self::new() }
     }
 
+    /// A host over a pool the caller already built. For a module whose tests
+    /// need their OWN migrations applied on top of the core schema, which
+    /// [`with_db`](Self::with_db) does not know about.
+    pub fn with_pool(pool: Pool) -> Self {
+        Self { db: Some(pool), ..Self::new() }
+    }
+
     /// Answer `tmdb_api_key()` with `key`.
     pub fn with_tmdb_key(mut self, key: &str) -> Self {
         self.tmdb_key = Some(key.into());

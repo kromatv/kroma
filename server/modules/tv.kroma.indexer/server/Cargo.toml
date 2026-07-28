@@ -38,3 +38,7 @@ libxml = { workspace = true, optional = true }
 [features]
 default = []
 xpath = ["dep:libxml"]
+
+[dev-dependencies]
+# The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
+kroma-module-host = { workspace = true, features = ["testing"] }

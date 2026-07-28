@@ -62,6 +62,8 @@ librqbit = { version = "=9.0.0-rc.0", optional = true, default-features = false,
 tokio = { version = "1", features = ["rt", "time"] }
 
 [dev-dependencies]
+# The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
+kroma-module-host = { workspace = true, features = ["testing"] }
 # The engine_probe example only: session logs for swarm diagnostics.
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
