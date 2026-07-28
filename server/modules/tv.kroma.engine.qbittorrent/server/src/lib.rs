@@ -265,7 +265,261 @@ pub fn server_module<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 
 
 #[cfg(test)]
 mod tests {
+    use std::io::{BufRead, BufReader, Read, Write};
+    use std::net::TcpListener;
+    use std::sync::{Arc, Mutex};
+
     use super::*;
+
+    /// A stand-in qBittorrent WebUI, speaking just enough HTTP/1.1 for curl.
+    ///
+    /// `Fetch` shells out to curl, so this has to be a real socket rather than a
+    /// mocked client - which is the point: it exercises the connector's actual
+    /// request/response handling, cookie jar and all, with no new dependency.
+    struct FakeQbit {
+        base: String,
+        /// Every "METHOD PATH" the connector asked for, in order.
+        seen: Arc<Mutex<Vec<String>>>,
+    }
+
+    /// One canned answer: `(status, body)`.
+    type Reply = (u16, String);
+
+    impl FakeQbit {
+        /// `route` maps a request line ("POST /api/v2/auth/login") plus the call
+        /// count for that route to a reply.
+        fn start(route: impl Fn(&str, usize) -> Reply + Send + 'static) -> Self {
+            let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+            let port = listener.local_addr().unwrap().port();
+            let seen = Arc::new(Mutex::new(Vec::new()));
+            let log = Arc::clone(&seen);
+
+            std::thread::spawn(move || {
+                let mut counts: std::collections::HashMap<String, usize> =
+                    std::collections::HashMap::new();
+                for stream in listener.incoming() {
+                    let Ok(mut stream) = stream else { break };
+                    let mut reader = BufReader::new(stream.try_clone().unwrap());
+                    let mut first = String::new();
+                    if reader.read_line(&mut first).unwrap_or(0) == 0 {
+                        continue;
+                    }
+                    // "GET /path?query HTTP/1.1" -> "GET /path"
+                    let mut parts = first.split_whitespace();
+                    let method = parts.next().unwrap_or("").to_string();
+                    let path = parts.next().unwrap_or("").split('?').next().unwrap_or("").to_string();
+                    let key = format!("{method} {path}");
+
+                    // Drain the headers, then any body, so curl sees a clean close.
+                    let mut len = 0usize;
+                    loop {
+                        let mut line = String::new();
+                        if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
+                            break;
+                        }
+                        if let Some(v) = line.to_ascii_lowercase().strip_prefix("content-length:") {
+                            len = v.trim().parse().unwrap_or(0);
+                        }
+                    }
+                    if len > 0 {
+                        let mut body = vec![0u8; len];
+                        let _ = reader.read_exact(&mut body);
+                    }
+
+                    let n = counts.entry(key.clone()).or_insert(0);
+                    *n += 1;
+                    let (status, body) = route(&key, *n);
+                    log.lock().unwrap().push(key);
+
+                    let reason = if status == 200 { "OK" } else { "ERR" };
+                    let resp = format!(
+                        "HTTP/1.1 {status} {reason}\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{body}",
+                        body.len()
+                    );
+                    let _ = stream.write_all(resp.as_bytes());
+                    let _ = stream.flush();
+                }
+            });
+
+            Self { base: format!("http://127.0.0.1:{port}"), seen }
+        }
+
+        fn client(&self) -> QBittorrent {
+            let def = ClientDef {
+                kind: "qbittorrent".into(),
+                url: self.base.clone(),
+                username: "u".into(),
+                password: "p".into(),
+            };
+            let jar = std::env::temp_dir().join(format!(
+                "kroma-qbit-jar-{}-{}.txt",
+                std::process::id(),
+                self.base.rsplit(':').next().unwrap_or("0")
+            ));
+            let _ = std::fs::remove_file(&jar);
+            QBittorrent::new(&def, jar)
+        }
+
+        fn requests(&self) -> Vec<String> {
+            self.seen.lock().unwrap().clone()
+        }
+    }
+
+    /// The routes a healthy server answers: login OK, one torrent, no files.
+    fn healthy(key: &str, _n: usize) -> Reply {
+        match key {
+            "POST /api/v2/auth/login" => (200, "Ok.".into()),
+            "GET /api/v2/app/version" => (200, "v4.6.0".into()),
+            "GET /api/v2/torrents/info" => (
+                200,
+                r#"[{"hash":"abc","name":"A Film","progress":0.5,"state":"downloading",
+                     "dlspeed":100,"upspeed":10,"num_leechs":2,"num_seeds":3,
+                     "num_incomplete":5,"num_complete":7,"size":1234,"save_path":"/d"}]"#
+                    .into(),
+            ),
+            "GET /api/v2/torrents/files" => (200, r#"[{"name":"a.mkv"}]"#.into()),
+            _ => (200, "Ok.".into()),
+        }
+    }
+
+    #[test]
+    fn test_reports_the_server_version() {
+        let s = FakeQbit::start(healthy);
+        // Exercises login + GET over a real socket, cookie jar included.
+        assert_eq!(s.client().test().unwrap(), "qBittorrent v4.6.0");
+        assert!(s.requests().contains(&"POST /api/v2/auth/login".to_string()));
+    }
+
+    #[test]
+    fn a_login_the_server_does_not_confirm_is_an_error() {
+        // qBittorrent answers 200 with "Fails." on bad credentials, so the STATUS
+        // is not enough - the body has to be read.
+        let s = FakeQbit::start(|key, _| match key {
+            "POST /api/v2/auth/login" => (200, "Fails.".into()),
+            _ => (200, String::new()),
+        });
+        let err = s.client().test().unwrap_err().to_string();
+        assert!(err.contains("authentication failed"), "{err}");
+    }
+
+    #[test]
+    fn a_403_re_logs_in_and_replays_the_request() {
+        // The SID cookie expires; the connector must recover silently rather than
+        // surfacing a 403 to the user mid-download.
+        let s = FakeQbit::start(|key, n| match (key, n) {
+            ("POST /api/v2/auth/login", _) => (200, "Ok.".into()),
+            ("GET /api/v2/torrents/info", 1) => (403, "Forbidden".into()),
+            ("GET /api/v2/torrents/info", _) => (200, r#"[{"hash":"abc","state":"downloading"}]"#.into()),
+            _ => (200, String::new()),
+        });
+        let status = s.client().status("abc").unwrap();
+        assert!(status.is_some(), "the replay after re-login must succeed");
+
+        let reqs = s.requests();
+        // Exactly the shape of the recovery: 403, login, retry.
+        assert_eq!(reqs[0], "GET /api/v2/torrents/info");
+        assert_eq!(reqs[1], "POST /api/v2/auth/login");
+        assert_eq!(reqs[2], "GET /api/v2/torrents/info");
+    }
+
+    #[test]
+    fn status_maps_a_live_torrent_onto_the_port_shape() {
+        let s = FakeQbit::start(healthy);
+        let st = s.client().status("abc").unwrap().expect("a status");
+
+        assert_eq!(st.name, "A Film");
+        assert_eq!(st.progress, 0.5);
+        assert_eq!(st.state, TorrentState::Downloading);
+        assert_eq!((st.down_bps, st.up_bps), (100, 10));
+        // Connected peers vs the swarm the tracker reported - two different
+        // numbers the UI shows side by side.
+        assert_eq!(st.peers, 5);
+        assert_eq!(st.peers_seen, 12);
+        assert_eq!(st.size_bytes, 1234);
+        assert_eq!(st.files, vec!["a.mkv".to_string()]);
+        assert!(st.error.is_none());
+    }
+
+    #[test]
+    fn status_is_none_for_a_hash_the_server_does_not_know() {
+        let s = FakeQbit::start(|key, _| match key {
+            "GET /api/v2/torrents/info" => (200, "[]".into()),
+            _ => (200, "Ok.".into()),
+        });
+        // None, not an error: a torrent removed out of band is a normal state the
+        // caller reconciles, not a failure.
+        assert!(s.client().status("gone").unwrap().is_none());
+    }
+
+    #[test]
+    fn an_errored_torrent_carries_its_state_as_the_error() {
+        let s = FakeQbit::start(|key, _| match key {
+            "GET /api/v2/torrents/info" => {
+                (200, r#"[{"hash":"abc","state":"missingFiles","progress":0.9}]"#.into())
+            }
+            _ => (200, "Ok.".into()),
+        });
+        let st = s.client().status("abc").unwrap().unwrap();
+        assert_eq!(st.state, TorrentState::Error);
+        assert_eq!(st.error.as_deref(), Some("state: missingFiles"));
+    }
+
+    #[test]
+    fn add_takes_the_hash_straight_from_a_magnet() {
+        let s = FakeQbit::start(healthy);
+        let req = AddTorrentReq {
+            magnet_or_url: "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567",
+            label: "kroma",
+            download_dir: Some("/downloads"),
+            only_files: None,
+            torrent_bytes: None,
+        };
+        let hash = s.client().add(&req).unwrap();
+
+        assert_eq!(hash, "0123456789abcdef0123456789abcdef01234567");
+        // A known hash means NO before/after category diff - that polling loop
+        // sleeps for seconds and is only for .torrent URLs.
+        assert!(!s.requests().iter().any(|r| r == "GET /api/v2/torrents/info"));
+    }
+
+    #[test]
+    fn add_fails_loudly_when_the_server_rejects_the_torrent() {
+        let s = FakeQbit::start(|key, _| match key {
+            "POST /api/v2/torrents/add" => (200, "Fails.".into()),
+            _ => (200, "Ok.".into()),
+        });
+        let req = AddTorrentReq {
+            magnet_or_url: "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567",
+            label: "kroma",
+            download_dir: None,
+            only_files: None,
+            torrent_bytes: None,
+        };
+        // Another 200-with-a-failure-body: silently returning a hash here would
+        // leave the ledger tracking a download that never started.
+        let err = s.client().add(&req).unwrap_err().to_string();
+        assert!(err.contains("rejected"), "{err}");
+    }
+
+    #[test]
+    fn the_lifecycle_verbs_hit_their_endpoints() {
+        let s = FakeQbit::start(healthy);
+        let c = s.client();
+        c.pause("abc").unwrap();
+        c.resume("abc").unwrap();
+        c.reannounce("abc").unwrap();
+        c.remove("abc", true).unwrap();
+
+        let reqs = s.requests();
+        for path in [
+            "POST /api/v2/torrents/pause",
+            "POST /api/v2/torrents/resume",
+            "POST /api/v2/torrents/reannounce",
+            "POST /api/v2/torrents/delete",
+        ] {
+            assert!(reqs.contains(&path.to_string()), "{path} not called: {reqs:?}");
+        }
+    }
 
     #[test]
     fn cookie_jars_are_stable_and_distinct() {
