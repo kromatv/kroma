@@ -441,4 +441,236 @@ search:
         assert_eq!(metas[0].id, "tracker");
         let _ = std::fs::remove_dir_all(&data);
     }
+    // ----- sync() against a fake tarball server -----------------------------------
+    //
+    // The transport is curl + the system tar, so a socket serving real .tar.gz
+    // bytes exercises the whole path: download, extract, pick the version, copy.
+
+    use std::io::{BufRead, BufReader, Write};
+    use std::net::TcpListener;
+    static SEQ: AtomicU32 = AtomicU32::new(0);
+
+    fn scratch(label: &str) -> PathBuf {
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("kroma-defs-{label}-{}-{n}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    const DEMO_YML: &str = "\
+id: demo
+name: Demo Tracker
+type: public
+description: A tracker for the tests
+links:
+  - https://demo.example/
+caps: {}
+search:
+  rows: {}
+";
+
+    /// Build a `.tar.gz` laid out the way the upstream repo is, and return its
+    /// bytes. `layout` maps a path inside the archive to its contents.
+    fn tarball(layout: &[(&str, &str)]) -> Vec<u8> {
+        let root = scratch("tar");
+        for (path, body) in layout {
+            let full = root.join(path);
+            std::fs::create_dir_all(full.parent().unwrap()).unwrap();
+            std::fs::write(&full, body).unwrap();
+        }
+        let archive = root.join("out.tar.gz");
+        let entries: Vec<String> = std::fs::read_dir(&root)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|n| n != "out.tar.gz")
+            .collect();
+        let ok = Command::new("tar")
+            .arg("-czf")
+            .arg(&archive)
+            .arg("-C")
+            .arg(&root)
+            .args(&entries)
+            .status()
+            .unwrap();
+        assert!(ok.success(), "could not build the fixture archive");
+        let bytes = std::fs::read(&archive).unwrap();
+        let _ = std::fs::remove_dir_all(&root);
+        bytes
+    }
+
+    /// Serve one body, with the given status, to every request.
+    fn serve(status: u16, body: Vec<u8>) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { break };
+                let mut reader = BufReader::new(stream.try_clone().unwrap());
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                    continue;
+                }
+                loop {
+                    let mut header = String::new();
+                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
+                        break;
+                    }
+                }
+                let head = format!(
+                    "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nContent-Type: application/gzip\r\nConnection: close\r\n\r\n",
+                    body.len()
+                );
+                let _ = stream.write_all(head.as_bytes());
+                let _ = stream.write_all(&body);
+                let _ = stream.flush();
+            }
+        });
+        format!("http://127.0.0.1:{port}/master.tar.gz")
+    }
+
+    fn store_for(source: String) -> DefinitionStore {
+        DefinitionStore { dir: scratch("cache"), source }
+    }
+
+    #[test]
+    fn a_sync_extracts_the_highest_schema_version_and_nothing_else() {
+        // The archive carries every schema version the upstream repo supports.
+        // Taking the wrong one means parsing definitions written against a
+        // schema this build does not model.
+        let bytes = tarball(&[
+            ("Indexers-master/definitions/v1/ancient.yml", DEMO_YML),
+            ("Indexers-master/definitions/v9/demo.yml", DEMO_YML),
+            ("Indexers-master/definitions/v11/demo.yml", DEMO_YML),
+            ("Indexers-master/definitions/v11/other.yaml", DEMO_YML),
+            ("Indexers-master/definitions/v11/README.md", "not a definition"),
+            ("Indexers-master/README.md", "ignored"),
+        ]);
+        let store = store_for(serve(200, bytes));
+        assert!(!store.is_populated(), "nothing cached before the first sync");
+
+        let report = store.sync().unwrap();
+        assert_eq!(report.version, "v11");
+        assert_eq!(report.count, 2, "the .md is not a definition");
+        assert!(store.is_populated());
+
+        // The files landed flat in the cache, and the scratch dir is gone.
+        assert!(store.dir().join("demo.yml").is_file());
+        assert!(store.dir().join("other.yaml").is_file());
+        assert!(!store.dir().join(".sync-tmp").exists(), "the temp dir was left behind");
+        assert!(!store.dir().join("ancient.yml").exists(), "an older version leaked in");
+    }
+
+    #[test]
+    fn a_synced_definition_can_be_listed_and_loaded() {
+        let bytes = tarball(&[("Indexers-master/definitions/v9/demo.yml", DEMO_YML)]);
+        let store = store_for(serve(200, bytes));
+        store.sync().unwrap();
+
+        let listed = store.list().unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].name, "Demo Tracker");
+        assert_eq!(listed[0].kind, "public");
+        assert_eq!(listed[0].links, ["https://demo.example/"]);
+        // The id is the FILE STEM, not the internal `id` - that is what a saved
+        // indexer stores and what `load` resolves.
+        assert_eq!(listed[0].id, "demo");
+
+        let parsed = store.load("demo").unwrap();
+        assert_eq!(parsed.name, "Demo Tracker");
+    }
+
+    #[test]
+    fn a_definition_whose_filename_differs_from_its_internal_id_is_keyed_by_the_file() {
+        // Real definitions do this (`darkpeers-api.yml` carries `id: darkpeers`).
+        // Keying on the internal id would make the row unloadable.
+        let bytes =
+            tarball(&[("Indexers-master/definitions/v9/demo-api.yml", DEMO_YML)]);
+        let store = store_for(serve(200, bytes));
+        store.sync().unwrap();
+
+        let listed = store.list().unwrap();
+        assert_eq!(listed[0].id, "demo-api", "the internal id was 'demo'");
+        assert!(store.load("demo-api").is_ok());
+        assert!(store.load("demo").is_err(), "the internal id must not resolve");
+    }
+
+    #[test]
+    fn an_archive_that_already_is_the_definitions_directory_still_works() {
+        // Not every mirror wraps the tree in a `<repo>-<branch>/` folder.
+        let bytes = tarball(&[("definitions/v9/demo.yml", DEMO_YML)]);
+        let store = store_for(serve(200, bytes));
+        assert_eq!(store.sync().unwrap().count, 1);
+    }
+
+    #[test]
+    fn a_sync_replaces_what_was_cached_before() {
+        // The admin re-syncs to pick up upstream fixes, so a second run must
+        // overwrite rather than fail on the existing files.
+        let first = tarball(&[("Indexers-master/definitions/v9/demo.yml", DEMO_YML)]);
+        let store = store_for(serve(200, first));
+        store.sync().unwrap();
+        let before = std::fs::read_to_string(store.dir().join("demo.yml")).unwrap();
+
+        let updated = DEMO_YML.replace("Demo Tracker", "Demo Tracker (renamed)");
+        let second = tarball(&[("Indexers-master/definitions/v9/demo.yml", &updated)]);
+        let store = DefinitionStore { dir: store.dir().to_path_buf(), source: serve(200, second) };
+        store.sync().unwrap();
+
+        let after = std::fs::read_to_string(store.dir().join("demo.yml")).unwrap();
+        assert_ne!(before, after);
+        assert_eq!(store.list().unwrap()[0].name, "Demo Tracker (renamed)");
+    }
+
+    #[test]
+    fn every_way_a_sync_can_fail_says_which_one_it_was() {
+        // These land in an admin toast, so "sync failed" alone is not enough to
+        // act on.
+        let unreachable = store_for("http://127.0.0.1:1/nope.tar.gz".into());
+        assert!(unreachable.sync().is_err(), "an unreachable source");
+
+        let missing = store_for(serve(404, b"not found".to_vec()));
+        assert!(missing.sync().is_err(), "a 404 from the source");
+
+        let not_an_archive = store_for(serve(200, b"this is not a gzip stream".to_vec()));
+        let err = not_an_archive.sync().unwrap_err().to_string();
+        assert!(err.contains("tar failed"), "{err}");
+
+        let wrong_shape = store_for(serve(200, tarball(&[("Indexers-master/README.md", "x")])));
+        let err = wrong_shape.sync().unwrap_err().to_string();
+        assert!(err.contains("no definitions/"), "{err}");
+
+        let no_versions =
+            store_for(serve(200, tarball(&[("Indexers-master/definitions/readme.txt", "x")])));
+        let err = no_versions.sync().unwrap_err().to_string();
+        assert!(err.contains("no version directory"), "{err}");
+
+        let empty_version =
+            store_for(serve(200, tarball(&[("Indexers-master/definitions/v9/notes.txt", "x")])));
+        let err = empty_version.sync().unwrap_err().to_string();
+        assert!(err.contains("no definitions"), "{err}");
+    }
+
+    #[test]
+    fn listing_a_cache_that_was_never_synced_is_empty_not_an_error() {
+        // The admin opens the browse page before ever syncing.
+        let store = DefinitionStore { dir: scratch("empty").join("never-created"), source: String::new() };
+        assert!(store.list().unwrap().is_empty());
+        assert!(!store.is_populated());
+    }
+
+    #[test]
+    fn a_definition_file_that_does_not_parse_is_skipped_rather_than_fatal() {
+        // One bad file upstream must not blank the whole browse list.
+        let store = store_for(String::new());
+        std::fs::create_dir_all(store.dir()).unwrap();
+        std::fs::write(store.dir().join("good.yml"), DEMO_YML).unwrap();
+        std::fs::write(store.dir().join("broken.yml"), "\t- : :\n").unwrap();
+        std::fs::write(store.dir().join("notes.txt"), "ignored").unwrap();
+
+        let listed = store.list().unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].id, "good");
+    }
 }
