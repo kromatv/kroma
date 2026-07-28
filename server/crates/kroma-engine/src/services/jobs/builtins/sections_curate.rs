@@ -188,7 +188,71 @@ fn interleave<T>(mut a: impl Iterator<Item = T>, mut b: impl Iterator<Item = T>)
 
 #[cfg(test)]
 mod tests {
-    use super::interleave;
+    use std::collections::HashMap;
+
+    use super::{interleave, run};
+    use crate::services::jobs::JobContext;
+    use crate::test_support::{seed_movie, seed_show_episode, test_state};
+
+
+    /// A curated row already in the table, so a run can be shown to REPLACE it.
+    fn stale_row() -> crate::db::CuratedRow {
+        crate::db::CuratedRow {
+            key: "stale".into(),
+            rank: 0,
+            source: "llm".into(),
+            item_ids: vec!["itm-gone".into()],
+            titles: HashMap::from([("en".to_string(), "Yesterday's row".to_string())]),
+            reasons: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn runs_on_an_empty_library() {
+        // A fresh install runs this nightly before anything is scanned; it must
+        // be a no-op rather than an error in the job log.
+        let state = test_state();
+        run(&JobContext::for_test(state.clone())).unwrap();
+        assert!(crate::db::get_curated(&state.db).unwrap().is_empty());
+    }
+
+    #[test]
+    fn runs_without_an_llm_configured() {
+        // The common case for a self-hosted install: no AI provider. The
+        // deterministic director collections still run - only the editorial rows
+        // are skipped - so the job must not fail or bail early.
+        let state = test_state();
+        seed_movie(&state, "itm-1");
+        seed_show_episode(&state, "shw-1", "ep-1");
+
+        run(&JobContext::for_test(state.clone())).unwrap();
+    }
+
+    #[test]
+    fn replaces_whatever_was_curated_before() {
+        let state = test_state();
+        crate::db::set_curated(&state.db, &[stale_row()]).unwrap();
+        assert_eq!(crate::db::get_curated(&state.db).unwrap().len(), 1);
+
+        run(&JobContext::for_test(state.clone())).unwrap();
+        // REPLACE-all, not merge: a collection whose members have since been
+        // deleted must not survive the next curation as a row pointing at
+        // nothing.
+        let after = crate::db::get_curated(&state.db).unwrap();
+        assert!(after.iter().all(|r| r.key != "stale"), "{:?}", after);
+    }
+
+    #[test]
+    fn ranks_every_row_contiguously_from_zero() {
+        let state = test_state();
+        seed_movie(&state, "itm-1");
+        run(&JobContext::for_test(state.clone())).unwrap();
+
+        // Rank is the display order the home screen reads; a gap or a duplicate
+        // is a row that sorts unpredictably against its neighbours.
+        let ranks: Vec<i64> = crate::db::get_curated(&state.db).unwrap().iter().map(|r| r.rank).collect();
+        assert_eq!(ranks, (0..ranks.len() as i64).collect::<Vec<_>>());
+    }
 
     #[test]
     fn interleave_alternates_and_drains_the_longer_side() {
