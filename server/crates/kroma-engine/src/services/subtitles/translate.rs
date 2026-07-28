@@ -504,4 +504,203 @@ mod tests {
         let out = translate_batch(&llm, &batch, "French", 8192).unwrap();
         assert_eq!(out, vec![Some("Bonjour".to_string()), None]);
     }
+    // ----- translate_vtt end to end -----------------------------------------------
+    //
+    // The provider chain is built from settings and the transport shells out to
+    // curl, so a fake OpenAI endpoint drives the whole pass: batching, the
+    // worker pool, failover, and reassembly.
+
+    use crate::services::subtitles::progress::GenRegistry;
+    use crate::test_support::FakeLlm as FakeEndpoint;
+
+    fn settings_pool() -> (kroma_db::Pool, Settings) {
+        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = SEQ.fetch_add(1, Ordering::Relaxed);
+        let path =
+            std::env::temp_dir().join(format!("kroma-translate-{}-{n}.db", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        let pool = crate::db::init(&path).unwrap();
+        let settings = Settings::load(&pool);
+        (pool, settings)
+    }
+
+    /// Point `settings` at a fake endpoint, as the admin IA page would.
+    fn configure(settings: &Settings, pool: &kroma_db::Pool, base: &str, max_tokens: i64) {
+        settings.set_patch(
+            pool,
+            std::collections::BTreeMap::from([
+                ("llmEnabled".to_string(), serde_json::json!(true)),
+                ("llmProvider".to_string(), serde_json::json!("openai")),
+                ("llmBaseUrl".to_string(), serde_json::json!(base)),
+                ("llmModel".to_string(), serde_json::json!("test-model")),
+                ("llmApiKey".to_string(), serde_json::json!("k")),
+                ("llmMaxTokens".to_string(), serde_json::json!(max_tokens)),
+            ]),
+        );
+    }
+
+    fn handle() -> Handle {
+        Arc::new(GenRegistry::default()).start("itm-1", "translate", Some("fr".into()))
+    }
+
+    /// A WebVTT with `n` cues.
+    fn vtt_with(n: usize) -> String {
+        let mut out = String::from("WEBVTT\n\n");
+        for i in 1..=n {
+            out.push_str(&format!(
+                "00:00:{:02}.000 --> 00:00:{:02}.000\nLine {i}\n\n",
+                i,
+                i + 1
+            ));
+        }
+        out
+    }
+
+    /// Echo back a correctly numbered reply for whatever was asked.
+    fn numbered_translation(request: &serde_json::Value) -> (u16, serde_json::Value) {
+        let user = request
+            .pointer("/messages/1/content")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        let body: String = user
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .map(|l| {
+                let (num, rest) = l.split_once('.').unwrap_or(("1", l));
+                format!("{}. [fr] {}\n", num.trim(), rest.trim())
+            })
+            .collect();
+        (200, serde_json::json!({ "choices": [{ "message": { "content": body } }] }))
+    }
+
+    #[test]
+    fn with_no_provider_configured_it_says_where_to_set_one() {
+        // This string reaches the user in the generation error, so it has to be
+        // actionable rather than "translation failed".
+        let (_pool, settings) = settings_pool();
+        let err = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap_err();
+        assert!(err.contains("admin"), "{err}");
+    }
+
+    #[test]
+    fn a_subtitle_with_no_cues_is_refused_before_any_request() {
+        let (pool, settings) = settings_pool();
+        let llm = FakeEndpoint::routed(numbered_translation);
+        configure(&settings, &pool, llm.base(), 4096);
+
+        let err = translate_vtt(&settings, "WEBVTT\n\n", "French", &handle()).unwrap_err();
+        assert!(err.contains("no cues"), "{err}");
+        assert!(llm.requests().is_empty(), "an empty subtitle should cost nothing");
+    }
+
+    #[test]
+    fn every_cue_comes_back_translated_with_its_timing_intact() {
+        let (pool, settings) = settings_pool();
+        let llm = FakeEndpoint::routed(numbered_translation);
+        configure(&settings, &pool, llm.base(), 4096);
+
+        let out = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap();
+        assert!(out.starts_with("WEBVTT"));
+        for i in 1..=3 {
+            assert!(out.contains(&format!("[fr] Line {i}")), "cue {i} missing from:\n{out}");
+        }
+        // Timings are structural - a translated line under the wrong timing is
+        // worse than an untranslated one.
+        assert!(out.contains("00:00:01.000 --> 00:00:02.000"));
+        assert!(out.contains("00:00:03.000 --> 00:00:04.000"));
+    }
+
+    #[test]
+    fn a_long_subtitle_is_split_into_batches() {
+        let (pool, settings) = settings_pool();
+        let llm = FakeEndpoint::routed(numbered_translation);
+        configure(&settings, &pool, llm.base(), 4096);
+
+        let cues = BATCH * 2 + 3;
+        let out = translate_vtt(&settings, &vtt_with(cues), "French", &handle()).unwrap();
+        assert_eq!(llm.requests().len(), 3, "{cues} cues at {BATCH} per batch");
+        assert!(out.contains(&format!("[fr] Line {cues}")), "the last cue was dropped");
+    }
+
+    #[test]
+    fn a_batch_the_model_mangled_keeps_its_original_text() {
+        // A blank line where a subtitle should be is worse than an untranslated
+        // one, so a batch that cannot be parsed falls back to the source.
+        let (pool, settings) = settings_pool();
+        let llm = FakeEndpoint::always("I cannot help with that request.");
+        configure(&settings, &pool, llm.base(), 4096);
+
+        // Every batch fails, so this is a hard error carrying the model's reply.
+        let err = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap_err();
+        assert!(err.contains("numbered format"), "{err}");
+        assert!(err.contains("cannot help"), "the model's actual reply is not in: {err}");
+    }
+
+    #[test]
+    fn a_partial_reply_fills_what_it_can_and_keeps_the_rest() {
+        // The model answered for most lines but skipped one. That batch counts as
+        // translated; the gap keeps its original text rather than going blank.
+        let (pool, settings) = settings_pool();
+        let llm = FakeEndpoint::routed(|request| {
+            let user = request
+                .pointer("/messages/1/content")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            let body: String = user
+                .lines()
+                .filter(|l| !l.trim().is_empty())
+                .filter(|l| !l.trim_start().starts_with("2."))
+                .map(|l| {
+                    let (num, rest) = l.split_once('.').unwrap_or(("1", l));
+                    format!("{}. [fr] {}\n", num.trim(), rest.trim())
+                })
+                .collect();
+            (200, serde_json::json!({ "choices": [{ "message": { "content": body } }] }))
+        });
+        configure(&settings, &pool, llm.base(), 4096);
+
+        let out = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap();
+        assert!(out.contains("[fr] Line 1"));
+        assert!(out.contains("[fr] Line 3"));
+        // Cue 2 kept its source text - present, and not translated.
+        assert!(out.contains("\nLine 2\n"), "the gap was blanked instead of kept:\n{out}");
+    }
+
+    #[test]
+    fn a_provider_that_is_down_surfaces_its_own_complaint() {
+        // "translation failed" tells an operator nothing; the LLM's actual
+        // error (auth, credits, model) is what they can act on.
+        let (pool, settings) = settings_pool();
+        let llm = FakeEndpoint::failing(401);
+        configure(&settings, &pool, llm.base(), 4096);
+
+        let err = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap_err();
+        assert!(err.contains("LLM request failed"), "{err}");
+    }
+
+    #[test]
+    fn the_providers_configured_token_cap_is_respected() {
+        // Translate used to always ask for BATCH*80+200 tokens, which a
+        // low-credit account rejects outright.
+        let (pool, settings) = settings_pool();
+        let llm = FakeEndpoint::routed(numbered_translation);
+        configure(&settings, &pool, llm.base(), 300);
+
+        translate_vtt(&settings, &vtt_with(BATCH), "French", &handle()).unwrap();
+        let asked = llm.requests()[0]["max_tokens"].as_u64().unwrap();
+        assert_eq!(asked, 300, "asked for more than the account allows");
+    }
+
+    #[test]
+    fn a_cancelled_translation_reports_as_cancelled() {
+        let (pool, settings) = settings_pool();
+        let llm = FakeEndpoint::routed(numbered_translation);
+        configure(&settings, &pool, llm.base(), 4096);
+
+        let reg = Arc::new(GenRegistry::default());
+        let h = reg.start("itm-1", "translate", Some("fr".into()));
+        reg.cancel(h.id());
+        let err = translate_vtt(&settings, &vtt_with(BATCH * 3), "French", &h).unwrap_err();
+        assert_eq!(err, "cancelled");
+    }
 }

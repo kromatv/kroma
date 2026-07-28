@@ -287,6 +287,11 @@ impl FakeLlm {
         Self { base: format!("http://127.0.0.1:{port}"), seen }
     }
 
+    /// The endpoint's base URL, for `llmBaseUrl`.
+    pub(crate) fn base(&self) -> &str {
+        &self.base
+    }
+
     /// Every chat request this endpoint received, in order.
     pub(crate) fn requests(&self) -> Vec<serde_json::Value> {
         self.seen.lock().unwrap().clone()
