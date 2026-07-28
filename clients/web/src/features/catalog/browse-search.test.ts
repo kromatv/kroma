@@ -1,0 +1,79 @@
+// The `?sort=&genre=` query string behind the Films and Series browse pages.
+//
+// The url is user-editable and shareable, so this is a trust boundary rather
+// than a formality: anything unrecognised has to be DROPPED, not passed through.
+// A `sort` the page has no comparator for renders an empty grid that looks like
+// an empty library, and it survives a bookmark, so the page stays broken every
+// time that link is opened.
+
+import { describe, expect, it } from 'vitest';
+import { validateBrowseSearch } from './browse-search';
+
+describe('validateBrowseSearch', () => {
+  it('keeps a sort mode the page understands', () => {
+    // 'added' is the browse default; whatever the union holds, a real member
+    // must survive.
+    const kept = validateBrowseSearch({ sort: 'added' });
+    expect(kept.sort).toBe('added');
+  });
+
+  it('drops a sort mode it does not', () => {
+    // A hand-typed or stale url. Passing it through renders an empty grid that
+    // reads as an empty library.
+    expect(validateBrowseSearch({ sort: 'sideways' })).toEqual({});
+  });
+
+  it('drops a sort that is not even a string', () => {
+    for (const sort of [42, null, undefined, {}, ['added']]) {
+      expect(validateBrowseSearch({ sort })).toEqual({});
+    }
+  });
+
+  it('keeps a genre', () => {
+    expect(validateBrowseSearch({ genre: 'Science Fiction' })).toEqual({
+      genre: 'Science Fiction',
+    });
+  });
+
+  it('drops an EMPTY genre rather than filtering on nothing', () => {
+    // `?genre=` is what a cleared filter leaves behind. Kept, it filters the
+    // grid down to titles whose genre is the empty string, i.e. none of them.
+    expect(validateBrowseSearch({ genre: '' })).toEqual({});
+  });
+
+  it('drops a genre that is not a string', () => {
+    for (const genre of [1, true, null, {}, ['Drama']]) {
+      expect(validateBrowseSearch({ genre })).toEqual({});
+    }
+  });
+
+  it('keeps both together', () => {
+    expect(validateBrowseSearch({ sort: 'added', genre: 'Drama' })).toEqual({
+      sort: 'added',
+      genre: 'Drama',
+    });
+  });
+
+  it('keeps the good half of a half-valid url', () => {
+    // One bad param must not cost the user the other one.
+    expect(validateBrowseSearch({ sort: 'nope', genre: 'Drama' })).toEqual({ genre: 'Drama' });
+  });
+
+  it('ignores parameters it was never asked about', () => {
+    // Analytics tags, a pasted `fbclid`, a param from a different page.
+    expect(validateBrowseSearch({ utm_source: 'x', page: '3', genre: 'Drama' })).toEqual({
+      genre: 'Drama',
+    });
+  });
+
+  it('is empty for an empty url', () => {
+    expect(validateBrowseSearch({})).toEqual({});
+  });
+
+  it('OMITS a dropped key rather than setting it undefined', () => {
+    // The router serialises the result back into the url; an explicit
+    // `undefined` is a `?sort=` that comes straight back here next navigation.
+    const out = validateBrowseSearch({ sort: 'nope' });
+    expect(Object.hasOwn(out, 'sort')).toBe(false);
+  });
+});
