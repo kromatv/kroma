@@ -330,3 +330,41 @@ fn clean_folders(folders: Vec<String>) -> Vec<String> {
 fn spawn_rescan(state: SharedState) {
     let _ = state.jobs.trigger(state.clone(), crate::services::jobs::JobKey("library.scan"), "library-edit");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn folder_lists_are_trimmed_deduped_and_stripped_of_blanks() {
+        // These come from an admin typing paths into a form, so leading spaces
+        // and a stray empty row are the normal case - and a duplicated folder
+        // would make the scanner walk the same tree twice and import every file
+        // under two logical ids.
+        assert_eq!(
+            clean_folders(vec![
+                "  /media/movies  ".into(),
+                "".into(),
+                "   ".into(),
+                "/media/movies".into(),
+                "/media/shows".into(),
+            ]),
+            ["/media/movies", "/media/shows"]
+        );
+    }
+
+    #[test]
+    fn the_first_spelling_of_a_folder_is_the_one_kept() {
+        // Dedupe happens AFTER the trim, so "/a" and " /a " are the same folder.
+        assert_eq!(clean_folders(vec![" /a ".into(), "/a".into(), "/b".into()]), ["/a", "/b"]);
+    }
+
+    #[test]
+    fn a_list_of_nothing_stays_a_list_of_nothing() {
+        // A library with no folders is allowed (it is configured later); this
+        // must not become a vec containing an empty string, which the scanner
+        // would treat as the filesystem root.
+        assert!(clean_folders(Vec::new()).is_empty());
+        assert!(clean_folders(vec!["".into(), "  ".into()]).is_empty());
+    }
+}

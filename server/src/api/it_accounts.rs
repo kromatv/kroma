@@ -584,3 +584,68 @@ async fn quick_connect_authorize_rejects_an_unknown_code_and_requires_auth() {
     .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+// ----- avatar upload ----------------------------------------------------------
+
+#[tokio::test]
+async fn an_empty_avatar_upload_is_refused_before_any_decoding() {
+    // The handler takes raw image bytes, so an empty body is the shape a client
+    // sends when its file picker was cancelled. Naming it beats handing an empty
+    // buffer to the encoder and reporting "unreadable image".
+    let t = test_app();
+    let (_uid, token) = seed_session(&t.state, "ana@test.dev", "ana", &[Permission::Playback]);
+
+    let (status, body) = send(&t.app, "POST", "/api/users/avatar", Some(&token), None).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    // The message is rendered in the caller's locale (the harness defaults to
+    // French), so this pins that a reason was returned, not its wording.
+    assert!(body["error"].as_str().is_some_and(|m| !m.is_empty()), "{body}");
+}
+
+#[tokio::test]
+async fn an_avatar_upload_needs_a_signed_in_account() {
+    // The avatar is written against the caller's own id; there is no id without
+    // a session.
+    let t = test_app();
+    let (status, _) = send(&t.app, "POST", "/api/users/avatar", None, None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn an_oversized_avatar_is_rejected_by_the_body_limit() {
+    // Belt and braces: the route carries a DefaultBodyLimit AND the handler
+    // re-checks the length. The limit answers first, so an 8 MB+ upload never
+    // reaches the handler - which is the point, since the whole body would
+    // otherwise be buffered in memory first.
+    let t = test_app();
+    let (_uid, token) = seed_session(&t.state, "ana@test.dev", "ana", &[Permission::Playback]);
+
+    let oversized = vec![b'x'; crate::api::accounts::MAX_AVATAR_BYTES + 1];
+    let (status, _h, _b) = raw_bytes(&t.app, "/api/users/avatar", &token, oversized).await;
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+}
+
+/// POST raw bytes (not JSON) to `uri` as `image/png`.
+async fn raw_bytes(
+    app: &axum::Router,
+    uri: &str,
+    token: &str,
+    bytes: Vec<u8>,
+) -> (StatusCode, axum::http::HeaderMap, Vec<u8>) {
+    use axum::body::Body;
+    use axum::http::Request;
+    use tower::ServiceExt as _;
+
+    let req = Request::builder()
+        .method("POST")
+        .uri(uri)
+        .header("authorization", format!("Bearer {token}"))
+        .header("content-type", "image/png")
+        .body(Body::from(bytes))
+        .expect("build request");
+    let resp = app.clone().oneshot(req).await.expect("response");
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap_or_default();
+    (status, headers, body.to_vec())
+}
