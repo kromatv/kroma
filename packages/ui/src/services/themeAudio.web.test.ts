@@ -63,6 +63,15 @@ function memoryStorage(initial: Record<string, string> = {}) {
   return map;
 }
 
+/** The element from the nth `new Audio()`. Asserted rather than indexed:
+ *  `noUncheckedIndexedAccess` types a bare index as possibly-undefined, and a
+ *  test that quietly skipped its assertions would be worse than one that fails. */
+function audioAt(i = 0): FakeAudio {
+  const a = created[i];
+  if (!a) throw new Error(`no Audio element was created at index ${i}`);
+  return a;
+}
+
 const MUTE_KEY = 'kroma.theme.muted';
 
 beforeEach(() => {
@@ -92,7 +101,7 @@ describe('useThemeAudio', () => {
     const { result } = renderHook(() => useThemeAudio('http://x/theme.mp3'));
     expect(result.current.active).toBe(true);
 
-    const a = created[0];
+    const a = audioAt();
     expect(a.src).toBe('http://x/theme.mp3');
     expect(a.loop).toBe(true);
     // Starts SILENT: the fade is the feature, and a theme that begins at full
@@ -115,7 +124,7 @@ describe('useThemeAudio', () => {
     expect(result.current.muted).toBe(true);
     // The element still exists - the toggle has to be able to start it - but
     // nothing was played.
-    expect(created[0].play).not.toHaveBeenCalled();
+    expect(audioAt().play).not.toHaveBeenCalled();
   });
 
   it('survives a browser that refuses to autoplay', async () => {
@@ -129,14 +138,14 @@ describe('useThemeAudio', () => {
       await Promise.resolve();
       vi.advanceTimersByTime(FADE_IN_MS);
     });
-    expect(created[0].play).toHaveBeenCalled();
+    expect(audioAt().play).toHaveBeenCalled();
   });
 
   it('retries on the first gesture when autoplay was blocked', async () => {
     memoryStorage();
     stubAudio();
     renderHook(() => useThemeAudio('http://x/theme.mp3'));
-    const a = created[0];
+    const a = audioAt();
 
     // Simulate the browser having refused: the element is paused again.
     a.paused = true;
@@ -152,7 +161,7 @@ describe('useThemeAudio', () => {
     memoryStorage();
     stubAudio();
     renderHook(() => useThemeAudio('http://x/theme.mp3'));
-    const a = created[0];
+    const a = audioAt();
     a.play.mockClear();
 
     await act(async () => {
@@ -186,15 +195,15 @@ describe('useThemeAudio', () => {
     await act(async () => {
       vi.advanceTimersByTime(1000);
     });
-    expect(created[0].volume).toBe(0);
-    expect(created[0].pause).toHaveBeenCalled();
+    expect(audioAt().volume).toBe(0);
+    expect(audioAt().pause).toHaveBeenCalled();
   });
 
   it('unmuting plays again and fades back to the quiet level', async () => {
     const store = memoryStorage({ [MUTE_KEY]: '1' });
     stubAudio();
     const { result } = renderHook(() => useThemeAudio('http://x/theme.mp3'));
-    const a = created[0];
+    const a = audioAt();
     a.play.mockClear();
 
     await act(async () => {
@@ -214,7 +223,7 @@ describe('useThemeAudio', () => {
     memoryStorage();
     stubAudio();
     const { unmount } = renderHook(() => useThemeAudio('http://x/theme.mp3'));
-    const a = created[0];
+    const a = audioAt();
 
     await act(async () => {
       await Promise.resolve();
@@ -236,7 +245,7 @@ describe('useThemeAudio', () => {
     const { rerender } = renderHook(({ url }) => useThemeAudio(url), {
       initialProps: { url: 'http://x/one.mp3' },
     });
-    const first = created[0];
+    const first = audioAt(0);
 
     // Swap themes PART WAY through the first fade-in. The cleanup owns a private
     // interval precisely so the new theme's fade cannot cancel it: sharing one
@@ -253,6 +262,6 @@ describe('useThemeAudio', () => {
     expect(created).toHaveLength(2);
     expect(first.pause).toHaveBeenCalled();
     expect(first.volume).toBe(0);
-    expect(created[1].src).toBe('http://x/two.mp3');
+    expect(audioAt(1).src).toBe('http://x/two.mp3');
   });
 });

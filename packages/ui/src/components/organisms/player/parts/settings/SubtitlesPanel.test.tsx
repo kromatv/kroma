@@ -20,6 +20,15 @@ import { SubtitlesPanel } from './SubtitlesPanel';
 
 afterEach(cleanup);
 
+/** The last control rendered in the tree - the trash beside a generated track
+ *  or generation row. Asserted rather than indexed, for the reason above. */
+function lastButton(container: HTMLElement): Element {
+  const buttons = container.querySelectorAll('[role="button"]');
+  const last = buttons[buttons.length - 1];
+  if (!last) throw new Error('no controls rendered');
+  return last;
+}
+
 const show = (ui: ReactElement) => render(<I18nProvider locale="en">{ui}</I18nProvider>);
 
 const sub = (over: Partial<PlayerSub> & { index: number }): PlayerSub => ({
@@ -135,9 +144,8 @@ describe('SubtitlesPanel', () => {
         onBack={vi.fn()}
       />,
     );
-    const trash = container.querySelectorAll('[role="button"]');
     // The last control on the row is the trash beside the track.
-    fireEvent.click(trash[trash.length - 1]);
+    fireEvent.click(lastButton(container));
     expect(onDelete).toHaveBeenCalledWith('s-42');
   });
 
@@ -238,8 +246,7 @@ describe('SubtitlesPanel', () => {
         onBack={vi.fn()}
       />,
     );
-    const buttons = container.querySelectorAll('[role="button"]');
-    fireEvent.click(buttons[buttons.length - 1]);
+    fireEvent.click(lastButton(container));
     expect(onCancel).toHaveBeenCalledWith('gen-9');
   });
 });
