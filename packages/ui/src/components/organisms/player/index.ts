@@ -9,7 +9,11 @@ export {
   useAudioFilter,
 } from './lib/audio-filter';
 export { currentChapter, currentChapterIndex, normalizeChapters } from './lib/chapters';
-export { clamp01, endsAtClock, pct } from './lib/fmt';
+// NOT `clamp01`: it is the progress atom's, and the kit already exports it. This
+// barrel is what `@kroma/ui` re-exports, so listing it here put the same name on
+// BOTH entry points - the exact overlap kit.ts says the two must never have. The
+// chrome's own files still take it from ./lib/fmt.
+export { endsAtClock, pct } from './lib/fmt';
 export {
   buildLeanStats,
   type LeanStatsInput,
