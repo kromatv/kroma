@@ -9,6 +9,7 @@ import type { ReactElement } from 'react';
 
 import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { colors, radius } from '#ui/lib/tokens';
@@ -18,8 +19,10 @@ import { Badge } from './badge';
 import { Button } from './button';
 import { Chip } from './chip';
 import { Icon } from './icon';
+import { IconButton } from './icon-button';
 import { clamp01, Progress } from './progress';
 import { Txt } from './text';
+import { TextArea } from './text-area';
 import { TextField } from './text-field';
 
 /** Every kit control is a node of the spatial navigator, and a node needs a
@@ -114,6 +117,30 @@ describe('Button', () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
+  it('steps its fill up under the pointer, and back down when it leaves', () => {
+    render(
+      <>
+        <Button label="A" variant="primary" />
+        <Button label="B" variant="outline" active />
+      </>,
+    );
+    fireEvent.pointerOver(inner('A'));
+    expect(css(inner('A')).backgroundColor).toBe(rgb(colors.accentHover));
+    fireEvent.pointerOut(inner('A'));
+    expect(css(inner('A')).backgroundColor).toBe(rgb(colors.accent));
+
+    // A toggle that is already on stays AMBER under the cursor: the white wash
+    // the other variants hover with would read as it switching itself off.
+    fireEvent.pointerOver(inner('B'));
+    expect(css(inner('B')).backgroundColor).toBe(colors.accentSoftHover);
+  });
+
+  it('does not light under the pointer while it is busy', () => {
+    render(<Button label="Envoi" loading />);
+    fireEvent.pointerOver(inner('Envoi'));
+    expect(css(inner('Envoi')).backgroundColor).toBe(rgb(colors.accent));
+  });
+
   it('renders leading and trailing glyphs', () => {
     const { container } = render(
       <Button label="Regler" icon="settings" iconRight="chevron-right" />,
@@ -138,6 +165,40 @@ describe('Badge and Chip', () => {
     expect(css(inner('FR')).backgroundColor).toBe(rgb(colors.accent));
     expect(css(inner('EN')).backgroundColor).not.toBe(rgb(colors.accent));
   });
+
+  it('lifts a chip under the pointer, up its own ladder either way', () => {
+    render(
+      <>
+        <Chip label="FR" active />
+        <Chip label="EN" />
+      </>,
+    );
+    fireEvent.pointerOver(inner('EN'));
+    expect(css(inner('EN')).backgroundColor).toBe('rgba(255, 255, 255, 0.13)');
+    // An active chip is a solid accent fill, so it climbs the amber ladder.
+    fireEvent.pointerOver(inner('FR'));
+    expect(css(inner('FR')).backgroundColor).toBe(rgb(colors.accentHover));
+  });
+});
+
+describe('IconButton', () => {
+  it('brightens its fill under the pointer, and an active one stays amber', () => {
+    render(
+      <>
+        <IconButton icon="x" label="Fermer" />
+        <IconButton icon="eye" label="Vu" active />
+      </>,
+    );
+    expect(css(inner('Fermer')).backgroundColor).toBe('rgba(255, 255, 255, 0.12)');
+
+    fireEvent.pointerOver(inner('Fermer'));
+    expect(css(inner('Fermer')).backgroundColor).toBe('rgba(255, 255, 255, 0.18)');
+    fireEvent.pointerOut(inner('Fermer'));
+    expect(css(inner('Fermer')).backgroundColor).toBe('rgba(255, 255, 255, 0.12)');
+
+    fireEvent.pointerOver(inner('Vu'));
+    expect(css(inner('Vu')).backgroundColor).toBe(colors.accentSoftHover);
+  });
 });
 
 describe('TextField', () => {
@@ -159,6 +220,29 @@ describe('TextField', () => {
     fireEvent.mouseDown(field);
     fireEvent.mouseUp(field);
     expect(document.activeElement).toBe(input);
+  });
+});
+
+describe('TextArea', () => {
+  it('is a real multi-line entry, named by its field, reporting what is typed', () => {
+    const onChange = vi.fn();
+    render(<Field label="Message" multiline rows={3} physicalKeyboard onChange={onChange} />);
+    const entry = screen.getByLabelText('Message');
+    expect(entry.tagName).toBe('TEXTAREA');
+    // `rows` is a floor in the kit's own line box, not a DOM rows attribute:
+    // one line of a TextArea is one line of a TextField, so the two line up in
+    // a form.
+    expect(css(entry).minHeight).toBe('72px');
+    fireEvent.change(entry, { target: { value: 'the server reboots at nine' } });
+    expect(onChange).toHaveBeenCalledWith('the server reboots at nine');
+  });
+
+  it('renders a display with a caret, not an input, where there is no keyboard', () => {
+    render(<TextArea value="the server reboots at nine" label="Message" />);
+    // A television must not be able to focus the entry at all: focusing it is
+    // what summons the platform IME over the app.
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByText('the server reboots at nine')).toBeTruthy();
   });
 });
 

@@ -105,6 +105,32 @@ describe('auth token, locale and hasAuth', () => {
   });
 });
 
+// A native shell's own name (see `clientUserAgent`). The account page lists a
+// device by what it sent when it signed in, so this has to ride on requests the
+// user never sees - the login itself, and the token exchange after it.
+describe('device User-Agent', () => {
+  it('rides on every request when the shell set one', async () => {
+    const { fetch, calls } = recordingFetch();
+    const client = new KromaClient({
+      baseUrl: 'http://kroma.test',
+      fetch,
+      userAgent: 'Kroma/0.1.3 (Apple TV; tvOS 26.0)',
+    });
+    await client.health();
+    await client.login('owner', 'pw').catch(() => undefined);
+    expect(calls).toHaveLength(2);
+    for (const call of calls) {
+      expect(call.headers.get('User-Agent')).toBe('Kroma/0.1.3 (Apple TV; tvOS 26.0)');
+    }
+  });
+
+  it('sets nothing when the shell did not: a browser owns its own', async () => {
+    const { client, calls } = makeClient();
+    await client.health();
+    expect(calls[0]?.headers.get('User-Agent')).toBeNull();
+  });
+});
+
 describe('silent refresh on 401 (json)', () => {
   // Fail the first request to a path with 401, then succeed on the retry.
   function refreshingFetch(failPathPart: string) {

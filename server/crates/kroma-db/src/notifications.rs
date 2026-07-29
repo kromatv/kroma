@@ -9,10 +9,10 @@
 
 use std::collections::BTreeMap;
 
-use rusqlite::OptionalExtension;
-
 use super::*;
-use kroma_domain::{ActionSpec, CategoryPref, NotificationCategory, NotificationEvent, PushCategory};
+use kroma_domain::{
+    ActionSpec, CategoryPref, NotificationCategory, NotificationEvent, ParamValue, PushCategory,
+};
 
 /// How many notifications to keep per user. Older ones are pruned on insert:
 /// this is an inbox, not an audit log, and the admin history views already cover
@@ -32,7 +32,7 @@ pub struct StoredNotification {
     pub event: NotificationEvent,
     pub title_key: String,
     pub body_key: String,
-    pub params: BTreeMap<String, String>,
+    pub params: BTreeMap<String, ParamValue>,
     pub link: Option<String>,
     pub image_url: Option<String>,
     pub actions: Vec<ActionSpec>,
@@ -54,7 +54,10 @@ fn row_to_notification(r: &Row) -> rusqlite::Result<StoredNotification> {
         // know. Skipping it would silently drop the row from the inbox, so both
         // fall back and the renderer just shows the stored keys.
         category: NotificationCategory::parse(&category).unwrap_or(NotificationCategory::System),
-        event: NotificationEvent::parse(&event).unwrap_or(NotificationEvent::SystemJobFailed),
+        // ... and an unknown event is exactly what `Custom` means, rather than
+        // the old fallback of `system.job.failed`, which told the reader a task
+        // had failed when nothing had.
+        event: NotificationEvent::parse(&event).unwrap_or(NotificationEvent::Custom),
         title_key: r.get(3)?,
         body_key: r.get(4)?,
         params: serde_json::from_str(&params).unwrap_or_default(),
@@ -67,24 +70,30 @@ fn row_to_notification(r: &Row) -> rusqlite::Result<StoredNotification> {
     })
 }
 
-/// A notification to insert. The id is minted by the caller (short hash, like
-/// every other domain); timestamps are stamped here.
-pub struct NewNotification {
-    pub id: String,
-    pub user_id: String,
-    pub event: NotificationEvent,
-    pub title_key: String,
-    pub body_key: String,
-    pub params: BTreeMap<String, String>,
-    pub link: Option<String>,
-    pub image_url: Option<String>,
-    pub actions: Vec<ActionSpec>,
-    pub push_category: Option<PushCategory>,
+/// Every image a stored notification still points at.
+///
+/// The image cache is trimmed by size (`cache_cleanup`), and art it evicts is
+/// refetched on demand - but an image UPLOADED for a notification has nowhere to
+/// come back from, so the trimmer has to know it is spoken for. Same protection
+/// the avatars already get, for the same reason.
+pub fn referenced_images(conn: &Connection) -> Result<Vec<String>> {
+    let mut stmt = conn.prepare("SELECT DISTINCT image_url FROM notifications WHERE image_url IS NOT NULL")?;
+    let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+    Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Insert one notification and enforce [`RETENTION_PER_USER`] for that user.
-pub fn insert_notification(pool: &Pool, n: &NewNotification, now_ms: i64) -> Result<()> {
-    let conn = pool.get()?;
+/// Insert one notification for `user_id`, enforce [`RETENTION_PER_USER`], and
+/// return that user's new unread count.
+///
+/// Takes the row in its stored shape (rather than a near-identical `NewX` twin)
+/// so the caller keeps the value it just built and can render a push from it
+/// without reading it back. Returning the unread tally folds what used to be a
+/// separate follow-up query into the same connection.
+pub fn insert_notification(
+    conn: &Connection,
+    user_id: &str,
+    n: &StoredNotification,
+) -> Result<u32> {
     // Serialization of a String map / a Vec of plain structs cannot realistically
     // fail; degrade to the empty shape rather than losing the whole notification.
     let params = serde_json::to_string(&n.params).unwrap_or_else(|_| "{}".into());
@@ -96,8 +105,16 @@ pub fn insert_notification(pool: &Pool, n: &NewNotification, now_ms: i64) -> Res
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
         params![
             n.id,
-            n.user_id,
-            n.event.category().as_str(),
+            user_id,
+            // The SPEC's category, not the event's default. They differ for
+            // exactly the case that needs them to: `Custom` reports `System`,
+            // while a module - or the console's composer - names the preference
+            // bucket its notification actually answers to. Writing the event's
+            // answer here filed every written notification under System, so a
+            // reader who muted System still got it and one who muted the chosen
+            // bucket did not, while `render` read the stored value and disagreed
+            // with the push that had already gone out.
+            n.category.as_str(),
             n.event.as_str(),
             n.title_key,
             n.body_key,
@@ -106,11 +123,11 @@ pub fn insert_notification(pool: &Pool, n: &NewNotification, now_ms: i64) -> Res
             n.image_url,
             actions,
             n.push_category.map(PushCategory::as_str),
-            now_ms
+            n.created_at
         ],
     )?;
-    prune(&conn, &n.user_id)?;
-    Ok(())
+    prune(conn, user_id)?;
+    Ok(unread_count(conn, user_id)?)
 }
 
 /// Drop everything past [`RETENTION_PER_USER`] for one user, newest kept.
@@ -282,13 +299,9 @@ pub fn prefs(conn: &Connection, user_id: &str) -> rusqlite::Result<Vec<CategoryP
         let category: String = r.get(0)?;
         let in_app: i64 = r.get(1)?;
         let push: i64 = r.get(2)?;
-        Ok((category, in_app != 0, push != 0))
+        Ok((category, (in_app != 0, push != 0)))
     })?;
-    let mut set: BTreeMap<String, (bool, bool)> = BTreeMap::new();
-    for row in rows {
-        let (category, in_app, push) = row?;
-        set.insert(category, (in_app, push));
-    }
+    let set: BTreeMap<String, (bool, bool)> = rows.collect::<rusqlite::Result<_>>()?;
     Ok(NotificationCategory::ALL
         .into_iter()
         .map(|category| {
@@ -299,24 +312,19 @@ pub fn prefs(conn: &Connection, user_id: &str) -> rusqlite::Result<Vec<CategoryP
 }
 
 /// Whether a category may be delivered to this user, as `(in_app, push)`.
+///
+/// Defined in terms of [`prefs`] so the "a missing row means on" rule has one
+/// home: stating it twice is how the settings matrix and the delivery check come
+/// to disagree. The table holds at most one small row per category per user.
 pub fn allows(
     conn: &Connection,
     user_id: &str,
     category: NotificationCategory,
 ) -> rusqlite::Result<(bool, bool)> {
-    let found = conn
-        .query_row(
-            "SELECT in_app, push FROM notification_prefs WHERE user_id = ?1 AND category = ?2",
-            params![user_id, category.as_str()],
-            |r| {
-                let in_app: i64 = r.get(0)?;
-                let push: i64 = r.get(1)?;
-                Ok((in_app != 0, push != 0))
-            },
-        )
-        .optional()?;
-    // No row = the default, which is on for both.
-    Ok(found.unwrap_or((true, true)))
+    Ok(prefs(conn, user_id)?
+        .into_iter()
+        .find(|p| p.category == category)
+        .map_or((true, true), |p| (p.in_app, p.push)))
 }
 
 /// Replace a user's preference matrix.
@@ -356,14 +364,14 @@ mod tests {
         (p, u1, u2)
     }
 
-    fn new(id: &str, user: &str) -> NewNotification {
-        NewNotification {
+    fn new(id: &str, created_at: i64) -> StoredNotification {
+        StoredNotification {
             id: id.into(),
-            user_id: user.into(),
+            category: NotificationEvent::RequestApproved.category(),
             event: NotificationEvent::RequestApproved,
             title_key: "notifications.request.approved.title".into(),
             body_key: "notifications.request.approved.body".into(),
-            params: BTreeMap::from([("title".to_string(), "Dune".to_string())]),
+            params: BTreeMap::from([("title".to_string(), ParamValue::Text("Dune".into()))]),
             link: Some("/movie/ab12".into()),
             image_url: Some("https://img/p.jpg".into()),
             actions: vec![ActionSpec {
@@ -375,20 +383,29 @@ mod tests {
                 style: ActionStyle::Primary,
             }],
             push_category: Some(PushCategory::MediaAvailable),
+            read: false,
+            created_at,
         }
+    }
+
+    /// Insert through a pooled connection, as the tests did before the signature
+    /// moved to `&Connection`.
+    fn insert(p: &Pool, id: &str, user: &str, at: i64) -> u32 {
+        let conn = p.get().unwrap();
+        insert_notification(&conn, user, &new(id, at)).unwrap()
     }
 
     #[test]
     fn insert_round_trips_every_rich_field() {
         let (p, u1, _) = pool();
-        insert_notification(&p, &new("n1", &u1), 1_000).unwrap();
+        insert(&p, "n1", &u1, 1_000);
         let conn = p.get().unwrap();
         let list = list_notifications(&conn, &u1, 50, false).unwrap();
         assert_eq!(list.len(), 1);
         let n = &list[0];
         assert_eq!(n.link.as_deref(), Some("/movie/ab12"));
         assert_eq!(n.image_url.as_deref(), Some("https://img/p.jpg"));
-        assert_eq!(n.params.get("title").map(String::as_str), Some("Dune"));
+        assert_eq!(n.params.get("title"), Some(&ParamValue::Text("Dune".into())));
         assert_eq!(n.actions.len(), 1);
         assert_eq!(n.actions[0].id, "view");
         assert_eq!(n.actions[0].kind, ActionKind::Link);
@@ -401,8 +418,8 @@ mod tests {
     #[test]
     fn listing_and_counting_are_scoped_to_one_user() {
         let (p, u1, u2) = pool();
-        insert_notification(&p, &new("n1", &u1), 1_000).unwrap();
-        insert_notification(&p, &new("n2", &u2), 1_000).unwrap();
+        insert(&p, "n1", &u1, 1_000);
+        insert(&p, "n2", &u2, 1_000);
         let conn = p.get().unwrap();
         assert_eq!(list_notifications(&conn, &u1, 50, false).unwrap().len(), 1);
         assert_eq!(unread_count(&conn, &u1).unwrap(), 1);
@@ -412,8 +429,8 @@ mod tests {
     #[test]
     fn mark_read_all_then_only_unread_listing_is_empty() {
         let (p, u1, _) = pool();
-        insert_notification(&p, &new("n1", &u1), 1_000).unwrap();
-        insert_notification(&p, &new("n2", &u1), 2_000).unwrap();
+        insert(&p, "n1", &u1, 1_000);
+        insert(&p, "n2", &u1, 2_000);
         assert_eq!(mark_read(&p, &u1, None, 9_000).unwrap(), 2);
         let conn = p.get().unwrap();
         assert_eq!(unread_count(&conn, &u1).unwrap(), 0);
@@ -426,8 +443,8 @@ mod tests {
     #[test]
     fn mark_read_by_id_cannot_touch_another_users_rows() {
         let (p, u1, u2) = pool();
-        insert_notification(&p, &new("mine", &u1), 1_000).unwrap();
-        insert_notification(&p, &new("theirs", &u2), 1_000).unwrap();
+        insert(&p, "mine", &u1, 1_000);
+        insert(&p, "theirs", &u2, 1_000);
         // u1 naming u2's id changes nothing the UPDATE is scoped to the caller.
         let ids = vec!["theirs".to_string()];
         assert_eq!(mark_read(&p, &u1, Some(&ids), 9_000).unwrap(), 0);
@@ -441,7 +458,7 @@ mod tests {
     #[test]
     fn delete_is_scoped_to_the_owner() {
         let (p, u1, u2) = pool();
-        insert_notification(&p, &new("n1", &u1), 1_000).unwrap();
+        insert(&p, "n1", &u1, 1_000);
         assert!(!delete_notification(&p, &u2, "n1").unwrap());
         assert!(delete_notification(&p, &u1, "n1").unwrap());
         let conn = p.get().unwrap();
@@ -452,7 +469,7 @@ mod tests {
     fn retention_keeps_the_newest_and_drops_the_rest() {
         let (p, u1, _) = pool();
         for i in 0..(RETENTION_PER_USER + 5) {
-            insert_notification(&p, &new(&format!("n{i}"), &u1), i as i64).unwrap();
+            insert(&p, &format!("n{i}"), &u1, i as i64);
         }
         let conn = p.get().unwrap();
         let list = list_notifications(&conn, &u1, 1_000, false).unwrap();
@@ -520,7 +537,7 @@ mod tests {
     #[test]
     fn deleting_a_user_takes_their_notifications_with_them() {
         let (p, u1, _) = pool();
-        insert_notification(&p, &new("n1", &u1), 1_000).unwrap();
+        insert(&p, "n1", &u1, 1_000);
         let conn = p.get().unwrap();
         conn.execute("DELETE FROM users WHERE id = ?1", params![u1]).unwrap();
         // ON DELETE CASCADE, so no orphan inbox survives the account.

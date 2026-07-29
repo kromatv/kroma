@@ -53,6 +53,10 @@ pub fn routes() -> Router<SharedState> {
         )
 }
 
+/// Widest an avatar is ever drawn (the account page's own header), doubled for
+/// retina. Anything above it is a photograph nobody will see at that size.
+const AVATAR_MAX_WIDTH: u32 = 512;
+
 /// Max avatar upload size (raw image bytes).
 pub const MAX_AVATAR_BYTES: usize = 8 * 1024 * 1024;
 
@@ -294,6 +298,7 @@ pub struct ExchangeBody {
 pub async fn exchange_token(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
+    headers: HeaderMap,
     Json(body): Json<ExchangeBody>,
 ) -> Response {
     let access = body.access_token.trim().to_string();
@@ -314,10 +319,16 @@ pub async fn exchange_token(
         }
     }
 
-    // Best-effort last-seen stamp, then mint a fresh session.
+    // Best-effort last-seen stamps - the account's, and the device credential's
+    // own, which also re-reads the device's label off this request. A phone is
+    // listed under the User-Agent it signed in with, and that was captured once,
+    // possibly by a build that sent nothing nameable.
     let uid = user.id.clone();
+    let ua = user_agent(&headers);
+    let seen = access.clone();
     let _ = query(&state.db, move |pool| {
         let _ = db::touch_last_seen(&pool, &uid);
+        let _ = db::touch_access_token(&pool, &seen, ua.as_deref());
         Ok(())
     })
     .await;
@@ -812,7 +823,7 @@ pub async fn upload_avatar(
 
     let data_dir = state.config.data_dir.clone();
     let bytes = body.to_vec();
-    let url = match blocking(move || Ok(crate::infra::image::store_upload(&data_dir, &bytes))).await {
+    let url = match blocking(move || Ok(crate::infra::image::store_upload(&data_dir, &bytes, Some(AVATAR_MAX_WIDTH)))).await {
         Ok(Some(u)) => u,
         Ok(None) => return lerr(loc, StatusCode::UNSUPPORTED_MEDIA_TYPE, "error.imageUnreadable"),
         Err(resp) => return resp,

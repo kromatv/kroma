@@ -55,7 +55,7 @@ export function SearchPage() {
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <label className="group/search relative flex h-14 w-full max-w-2xl items-center rounded-2xl border border-border-strong bg-surface-1 px-4 shadow-card transition-colors focus-within:border-accent/60">
+            <label className="group/search relative flex h-14 w-full max-w-2xl items-center rounded-2xl border border-border-strong bg-surface-1 px-4 shadow-card transition-colors">
               <IconSearch
                 size={20}
                 className="shrink-0 text-dim transition-colors group-focus-within/search:text-accent"
@@ -66,6 +66,8 @@ export function SearchPage() {
                 placeholder={t('discover.placeholder')}
                 // biome-ignore lint/a11y/noAutofocus: discovery is a search-first page
                 autoFocus
+                // The bordered label above is the field; it takes the ring.
+                data-focus-ring="off"
                 className="min-w-0 flex-1 bg-transparent px-3.5 text-[16px] font-semibold text-text outline-none placeholder:font-medium placeholder:text-dim"
               />
               {query ? (

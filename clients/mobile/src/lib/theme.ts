@@ -44,6 +44,10 @@ export const colors = {
   success: kit.success,
   info: kit.info,
   danger: kit.danger,
+  /** The quality-badge hues, borrowed as category tints by the notification
+   * centre so its glyphs read the same on the phone as in the browser. */
+  hdr: kit.hdr,
+  h265: kit.h265,
 } as const;
 
 /**

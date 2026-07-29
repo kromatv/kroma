@@ -39,6 +39,20 @@ export const CastNowPlaying = z.object({
 });
 export type CastNowPlaying = z.infer<typeof CastNowPlaying>;
 
+/** A sender currently driving a receiver: the phone or browser holding its
+ * remote. The TV lists these next to its own status and can disconnect one. */
+export const CastController = z.object({
+  id: z.string(),
+  /** What the device calls itself ("iPhone", "Chrome"). */
+  name: z.string(),
+  /** Whose account is driving - a household TV shows both. */
+  username: z.string(),
+  /** That person's avatar (a catalog art path), so a television can show WHO
+   * picked up its remote and not only what they are holding. */
+  avatarUrl: z.string().nullish(),
+});
+export type CastController = z.infer<typeof CastController>;
+
 /** One TV in the picker. Carries no address and no account id: the roster is
  * readable by every viewer on the server. */
 export const CastReceiver = z.object({
@@ -54,6 +68,8 @@ export const CastReceiver = z.object({
   username: z.string(),
   network: z.enum(['LAN', 'WAN']).catch('WAN'),
   nowPlaying: CastNowPlaying.optional(),
+  /** Who is driving it right now (empty for an unattended set). */
+  controllers: z.array(CastController).default([]),
 });
 export type CastReceiver = z.infer<typeof CastReceiver>;
 
@@ -89,7 +105,13 @@ export type CastCommandEnvelope = z.infer<typeof CastCommandEnvelope>;
 export type CastClientMessage =
   | { type: 'cast.hello'; receiverId: string; name: string; platform: string }
   | { type: 'cast.state'; playback?: CastPlaybackReport | null }
-  | { type: 'cast.ack'; seq: number };
+  | { type: 'cast.ack'; seq: number }
+  /** Sender: I am driving this receiver (until my socket goes away). */
+  | { type: 'cast.control'; receiverId: string; name: string }
+  /** Sender: I stopped driving. */
+  | { type: 'cast.release' }
+  /** Receiver: disconnect one of my remotes. */
+  | { type: 'cast.kick'; controllerId: string };
 
 /** What a receiver reports about its own playback. */
 export interface CastPlaybackReport {

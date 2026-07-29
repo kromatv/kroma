@@ -43,10 +43,13 @@ function ExpandableText({
    * (with a pixel of slack for sub-pixel line metrics). */
   const [shown, setShown] = useState(0);
   const [full, setFull] = useState(0);
+  const [hovered, setHovered] = useState(false);
   const clampable = full > shown + 1;
   return (
     <Pressable
       onPress={() => clampable && setExpanded((prev) => !prev)}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
       accessibilityRole={clampable ? 'button' : undefined}
     >
       <Txt
@@ -71,8 +74,16 @@ function ExpandableText({
       >
         {children}
       </Txt>
+      {/* The affordance answers the cursor by going amber: it is the one part
+          of the paragraph that does anything, and on the web that has to read
+          BEFORE the click. The hover callbacks fire on the browser targets
+          alone, so the phone and the TV keep the plain label. */}
       {clampable && !expanded ? (
-        <Txt variant="meta" style={styles.more}>{`… ${moreLabel}`}</Txt>
+        <Txt
+          variant="meta"
+          color={hovered ? 'accent' : 'text'}
+          style={styles.more}
+        >{`… ${moreLabel}`}</Txt>
       ) : null}
     </Pressable>
   );

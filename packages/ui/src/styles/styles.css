@@ -41,23 +41,26 @@ button {
   font-family: var(--font-ui);
 }
 
-/* Amber focus ring visible everywhere, essential for 10-foot TV navigation. */
+/* Amber focus ring visible everywhere, essential for 10-foot TV navigation.
+   The ring is a box-shadow, so it already takes whatever corners the control
+   has - which is why this rule must NEVER set border-radius. It used to force
+   `--radius-sm` on anything focused, and that repaints the CONTROL rather than
+   its ring: it rounded a square input's own corners, which then clipped the
+   ::selection band into a pill, and the `border-radius: 0` added to stop that
+   went on to square off every rounded field in the web app the moment it took
+   focus. Neither line is needed once the ring stops touching the radius. */
 :focus-visible {
   outline: none;
   box-shadow: var(--ring-focus-sm);
-  border-radius: var(--radius-sm);
 }
 
 /* Except inside a field: <TextField> owns its focus visual (the accent border),
-   so the ring must not box the inner control - and the ring's radius must not
-   ride along either: it rounds the input's own corners, which then clip the
-   ::selection band into a pill. Editable elements only ever get DOM focus on
-   shells with a physical keyboard - a TV renders a non-focusable value display
-   instead - so the 10-foot ring loses nothing. */
+   so the ring must not box the inner control. Editable elements only ever get
+   DOM focus on shells with a physical keyboard - a TV renders a non-focusable
+   value display instead - so the 10-foot ring loses nothing. */
 input:focus-visible,
 textarea:focus-visible {
   box-shadow: none;
-  border-radius: 0;
 }
 
 .kroma-overline {

@@ -3,6 +3,7 @@
 // full-filename presets and a separator helper. Clicking a token inserts it at
 // the cursor of the field being edited; clicking a preset replaces the field.
 
+import { TextInput } from '@kroma/admin-kit';
 import type { NamingTemplatesView } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, IconButton } from '@kroma/ui/kit';
@@ -235,12 +236,7 @@ export const NamingTokenModal = createCallable<
         </div>
 
         <div className="flex items-center gap-3 border-t border-white/[0.07] px-6 py-4">
-          <input
-            ref={inputRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="min-w-0 flex-1 rounded-[9px] border border-border-strong bg-[#0F0F13] px-3.5 py-2.5 font-mono text-[13px] text-text outline-none focus:border-accent/60"
-          />
+          <TextInput ref={inputRef} mono value={value} onChange={onChange} className="flex-1" />
           <Button size="sm" label={t('common.close')} onPress={() => call.end()} />
         </div>
       </div>

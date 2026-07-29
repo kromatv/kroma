@@ -51,6 +51,20 @@ export function backdropBlur(_px: number): ViewStyle {
 }
 
 /**
+ * A CSS `field-sizing: content` - a text control that sizes itself to whatever
+ * is typed into it - and a NO-OP here, like `maskImage`.
+ *
+ * React Native has no such property: a native entry that grows is one that
+ * measures its own content and sets its height, which <TextArea> does through
+ * `onContentSizeChange`. The browser targets hand the same job to the engine,
+ * where it costs no re-render (and, on a browser too old to know the property,
+ * degrades to a field that scrolls at the height `rows` asked for).
+ */
+export function fieldSizing(): ViewStyle {
+  return {};
+}
+
+/**
  * Promote a view to its own compositing layer.
  *
  * A no-op on native, where the OS compositor already decides layers and RN has

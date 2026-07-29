@@ -81,3 +81,8 @@ scripts/brand/tauri-source-1024.png
 # Xcode DerivedData for the Apple builds, cached by CI (see _release-mobile.yml).
 # Out of ios/ deliberately: `expo prebuild` wipes that directory.
 /.derived/
+
+# Python bytecode. Committed once by accident; the scanner reads a .pyc as
+# Python source and reports it as a file-encoding problem.
+__pycache__/
+*.pyc

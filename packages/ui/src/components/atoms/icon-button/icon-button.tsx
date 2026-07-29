@@ -38,13 +38,27 @@ const iconButtonVariants = sv({
   defaults: { variant: 'glass' },
 });
 
+/** How the button is filled. Named once, because the pressed-state table below
+ * has to cover exactly these and a second spelling could drift from it. */
+export type IconButtonVariant = 'glass' | 'ghost' | 'primary' | 'scrim';
+
 /** The brightened fill a finger gets: the touch reading of the focus state
  * (the player cluster's CTRL_ON for glass, the hover amber for primary). */
-const PRESSED: Record<'glass' | 'ghost' | 'primary' | 'scrim', ViewStyle> = {
+const PRESSED: Record<IconButtonVariant, ViewStyle> = {
   glass: { backgroundColor: 'rgba(255, 255, 255, 0.22)' },
   ghost: { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
   primary: { backgroundColor: colors.accentHover },
   scrim: { backgroundColor: 'rgba(40, 40, 48, 0.65)' },
+};
+
+/** The fill under a POINTER, one step short of `PRESSED` so hover → press reads
+ * as a single escalation. The web's own answer, and on a page that mounts no
+ * focus scope the only one a cursor gets - see <Focusable>'s `hoveredStyle`. */
+const HOVERED: Record<'glass' | 'ghost' | 'primary' | 'scrim', ViewStyle> = {
+  glass: { backgroundColor: 'rgba(255, 255, 255, 0.18)' },
+  ghost: { backgroundColor: 'rgba(255, 255, 255, 0.06)' },
+  primary: { backgroundColor: colors.accentHover },
+  scrim: { backgroundColor: 'rgba(28, 28, 34, 0.6)' },
 };
 
 /** The pressed state of a toggle (a watched check, a workbench tool): the
@@ -53,6 +67,9 @@ const ACTIVE: ViewStyle = {
   backgroundColor: colors.accentSoft,
   borderColor: 'rgba(242, 180, 66, 0.45)',
 };
+
+/** ...and that toggle under the cursor: still amber, one step up. */
+const ACTIVE_HOVERED: ViewStyle = { backgroundColor: colors.accentSoftHover };
 
 /** `focusFill`: while focused the control fills solid accent and the glyph
  * flips to ink - the 10-foot treatment for a bare corner control (a back
@@ -70,7 +87,7 @@ interface IconButtonProps extends Omit<FocusableProps, 'children' | 'focusScale'
   size?: number;
   /** Glyph size. Defaults to 40% of the diameter. */
   glyph?: number;
-  variant?: 'glass' | 'ghost' | 'primary' | 'scrim';
+  variant?: IconButtonVariant;
   /** Pressed state of a toggle: the accent's soft fill, accent glyph. */
   active?: boolean;
   /** Fill solid accent while focused and flip the glyph to ink. */
@@ -120,6 +137,7 @@ function IconButton({
       {...focusProps}
       focusScale={focusScale}
       pressedStyle={PRESSED[variant]}
+      hoveredStyle={active ? ACTIVE_HOVERED : HOVERED[variant]}
       focusedStyle={[focusedStyle, focusFill ? FOCUS_FILL : null]}
       style={iconButtonVariants(
         { variant },

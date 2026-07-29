@@ -2,15 +2,19 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { CastProvider, I18nProvider as KitI18nProvider } from '@kroma/ui';
 import { setImageBackend } from '@kroma/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Device from 'expo-device';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { type ReactNode, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DownloadsProvider } from '#mobile/lib/downloads';
 import { I18nProvider, useI18n } from '#mobile/lib/i18n';
 import { expoImageBackend } from '#mobile/lib/image-backend';
 import { isTablet } from '#mobile/lib/layout';
+import { useNotificationStream } from '#mobile/lib/notifications';
+import { usePushGrantRefresh, usePushLabels, usePushTaps } from '#mobile/lib/notifications/usePush';
 import { SessionProvider, useSession } from '#mobile/lib/session';
 import { colors } from '#mobile/lib/theme';
 
@@ -25,6 +29,23 @@ setImageBackend(expoImageBackend);
  * same language as the app. */
 function KitI18nBridge({ children }: Readonly<{ children: ReactNode }>) {
   return <KitI18nProvider locale={useI18n().locale}>{children}</KitI18nProvider>;
+}
+
+/** Keeps the bell live app-wide: the socket runs even while the notification
+ * screen is closed, so the badge is right the moment you look at it. Renders
+ * nothing - it is a subscription, not a piece of the interface. */
+function NotificationStream() {
+  useNotificationStream();
+  // Taps on NATIVE pushes route from here too: the socket handles the app while
+  // it is open, this handles the notification that opened it.
+  usePushTaps();
+  // And the buttons iOS/Android draw ON those pushes are registered from here,
+  // in the app's language, whenever that language changes.
+  usePushLabels();
+  // The relay grant a server holds expires, and only this app can replace one -
+  // so a launch is the only chance to do it before push goes quiet.
+  usePushGrantRefresh();
+  return null;
 }
 
 function makeQueryClient(): QueryClient {
@@ -59,7 +80,13 @@ function Shell() {
             {/* Which TV this phone is driving is app-wide: the button on a
                 detail page, the bar above the tabs and the remote screen are
                 three views of one session. */}
-            <CastProvider client={client} enabled={status === 'signedIn'}>
+            <CastProvider
+              client={client}
+              enabled={status === 'signedIn'}
+              // What the television calls this remote in its list.
+              deviceName={Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android')}
+            >
+              <NotificationStream />
               <BottomSheetModalProvider>
                 <Stack
                   screenOptions={{

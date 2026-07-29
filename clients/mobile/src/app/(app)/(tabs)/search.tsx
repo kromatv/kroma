@@ -15,6 +15,7 @@ import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
 import { EmptyState, Loading, TextField } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
+import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { colors, radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
 
@@ -30,6 +31,7 @@ function useDebounced(value: string, ms: number): string {
 function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
   const client = useClient();
   const router = useRouter();
+  const { play } = usePlay();
   const gutters = useGutters();
   return (
     <Pressable
@@ -50,7 +52,7 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
         {item.metadata?.title ?? item.title}
       </Text>
       <Pressable
-        onPress={() => router.push(`/player/${item.id}` as never)}
+        onPress={() => void play(item.id)}
         hitSlop={8}
         style={({ pressed }) => [
           styles.suggestPlay,

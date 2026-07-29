@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "469078770795",
+    "project_id": "kroma-media",
+    "storage_bucket": "kroma-media.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:469078770795:android:bf0ec81c332357495b9d2e",
+        "android_client_info": {
+          "package_name": "tv.kroma.androidtv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTHLN5p4VJAV4w3iZbWQ79yxpQOxTVE58"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:469078770795:android:d76612f9c2eebd005b9d2e",
+        "android_client_info": {
+          "package_name": "tv.kroma.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTHLN5p4VJAV4w3iZbWQ79yxpQOxTVE58"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

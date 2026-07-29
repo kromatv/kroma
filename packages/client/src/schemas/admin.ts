@@ -66,6 +66,9 @@ export const SettingRow = z.object({
   options: z.array(z.string()),
   value: z.unknown(),
   applied: z.boolean(),
+  /** `secret` rows only: whether a value is stored. The value itself is never
+   * sent, so this is the only way to tell "set" from "empty". */
+  configured: z.boolean().nullish(),
 });
 export type SettingRow = z.infer<typeof SettingRow>;
 

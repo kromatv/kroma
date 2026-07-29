@@ -17,6 +17,7 @@ import { CastProvider, useCast } from './cast';
 const events = vi.hoisted(() => ({
   connect: vi.fn(),
   close: vi.fn(),
+  send: vi.fn(),
   onEvent: undefined as ((e: unknown) => void) | undefined,
   onOpen: undefined as (() => void) | undefined,
 }));
@@ -32,6 +33,7 @@ vi.mock('@kroma/core', async (real) => {
       }
       connect = events.connect;
       close = events.close;
+      send = events.send;
     },
   };
 });
@@ -70,7 +72,7 @@ function fakeClient(over: Record<string, unknown> = {}) {
 
 function mount(client: KromaClient, enabled = true) {
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <CastProvider client={client} enabled={enabled}>
+    <CastProvider client={client} enabled={enabled} deviceName="iPhone">
       {children}
     </CastProvider>
   );
@@ -257,6 +259,42 @@ describe('the position', () => {
       vi.advanceTimersByTime(5000);
     });
     expect(result.current.positionMs).toBe(42_000);
+  });
+});
+
+describe('being one of the TV s remotes', () => {
+  it('announces itself when it takes a TV, and lets go when it stops', async () => {
+    const { result } = mount(fakeClient());
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+
+    act(() => result.current.select('tv-salon-01'));
+    expect(events.send).toHaveBeenCalledWith({
+      type: 'cast.control',
+      receiverId: 'tv-salon-01',
+      name: 'iPhone',
+    });
+
+    act(() => result.current.select(null));
+    expect(events.send).toHaveBeenCalledWith({ type: 'cast.release' });
+  });
+
+  it('stands down when the television disconnects it', async () => {
+    const { result } = mount(fakeClient());
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+    act(() => result.current.select('tv-salon-01'));
+    await waitFor(() => expect(result.current.active?.id).toBe('tv-salon-01'));
+
+    act(() => events.onEvent?.({ type: 'cast.kicked', receiverId: 'tv-salon-01' }));
+    await waitFor(() => expect(result.current.active).toBeNull());
+    expect(result.current.error).toBe('cast.kicked');
+  });
+
+  it('ignores a disconnect meant for another set', async () => {
+    const { result } = mount(fakeClient());
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+    act(() => result.current.select('tv-salon-01'));
+    act(() => events.onEvent?.({ type: 'cast.kicked', receiverId: 'tv-chambre-02' }));
+    expect(result.current.active?.id).toBe('tv-salon-01');
   });
 });
 

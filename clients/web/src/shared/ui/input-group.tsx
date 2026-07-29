@@ -1,8 +1,8 @@
 // A small shadcn-style InputGroup: an icon/button addon + an input share one
-// bordered "field", and the FOCUS state lives on the group (a subtle accent
-// border via `focus-within`), not on the raw input. This suppresses the app's
-// global amber `:focus-visible` ring (packages/ui/styles.css, meant for 10-foot
-// TV navigation) on the inner control so web inputs read clean.
+// bordered "field", and the FOCUS state lives on the group (the accent border
+// and the field ring via `focus-within`), not on the raw input. The inner
+// control opts out of the app's field ring (see clients/web/src/styles.css) so
+// the ring lands on the box the user sees rather than inside it.
 
 import type { InputHTMLAttributes, ReactNode } from 'react';
 
@@ -13,7 +13,7 @@ export function InputGroup({
 }: Readonly<{ children: ReactNode; className?: string }>) {
   return (
     <div
-      className={`flex items-center gap-2 rounded-[9px] border border-border-strong bg-surface-2 px-3 transition-colors focus-within:border-accent/60 ${className}`}
+      className={`flex items-center gap-2 rounded-[9px] border border-border-strong bg-surface-2 px-3 transition-colors ${className}`}
     >
       {children}
     </div>
@@ -25,8 +25,8 @@ export function InputGroupAddon({ children }: Readonly<{ children: ReactNode }>)
   return <span className="flex shrink-0 items-center text-muted">{children}</span>;
 }
 
-/** The input itself: transparent, borderless, and with its own focus ring removed
- *  (`focus-visible:shadow-none` overrides the global amber ring). */
+/** The input itself: transparent, borderless, and ringless - the group above
+ *  draws the focus, so this one opts out of the app's field ring. */
 export function InputGroupInput({
   className = '',
   ...rest
@@ -34,7 +34,8 @@ export function InputGroupInput({
   return (
     <input
       {...rest}
-      className={`w-full min-w-0 bg-transparent py-2 text-[13px] text-text outline-none placeholder:text-muted focus-visible:shadow-none ${className}`}
+      data-focus-ring="off"
+      className={`w-full min-w-0 bg-transparent py-2 text-[13px] text-text outline-none placeholder:text-muted ${className}`}
     />
   );
 }

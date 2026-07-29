@@ -1,4 +1,4 @@
-import { configureRemote } from '@kroma/ui/kit';
+import { configureRemote, OverlayHost, Toaster } from '@kroma/ui/kit';
 import { useEffect } from 'react';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
@@ -58,6 +58,9 @@ export interface TvAppProps {
 // browser TVs' key events both end in the same four directions.
 configureRemote();
 
+/** The top bar's own gutter (64) horizontally, and below its 144px band. */
+const TOAST_INSET = { x: 64, y: 132 } as const;
+
 export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly<TvAppProps>) {
   const { connection, client, activeServerUrl, setActiveServer, setSignedIn } =
     useCatalogue(platform);
@@ -83,7 +86,21 @@ export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly
                             castable from its home screen, which is where a phone
                             reaches for it. */}
                         <CastReceiverProvider>
-                          <TvRouterGuard />
+                          {/* Every dialog in the app renders HERE rather than
+                              where it was written: a television cannot use
+                              React Native's <Modal>, whose own view controller
+                              never receives a press from a remote (see
+                              @kroma/ui's lib/overlay-host). Wrapping the router
+                              is what puts a dialog over a whole screen without
+                              being clipped by the list or bar that opened it. */}
+                          <OverlayHost>
+                            <TvRouterGuard />
+                            {/* Notices ("iPhone connected") land under the top
+                                bar, aligned with its right gutter and clear of
+                                it. Above the router so they survive a screen
+                                change, and they never take focus. */}
+                            <Toaster placement="top-right" inset={TOAST_INSET} />
+                          </OverlayHost>
                         </CastReceiverProvider>
                       </WatchedProvider>
                     </MyListProvider>

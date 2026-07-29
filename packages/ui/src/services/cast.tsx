@@ -54,8 +54,9 @@ export interface Cast {
   playOn: (receiverId: string, itemId: ItemId, positionMs?: number) => Promise<boolean>;
   /** Send an order to the active receiver. False when it failed / went away. */
   send: (command: CastCommand) => Promise<boolean>;
-  /** The last failure, as a message key, or null. Cleared on the next success. */
-  error: 'cast.gone' | 'cast.failed' | null;
+  /** The last failure, as a message key, or null. Cleared on the next success.
+   * `cast.kicked` is not a failure exactly - the TV chose to let this remote go. */
+  error: 'cast.gone' | 'cast.failed' | 'cast.kicked' | null;
 }
 
 const CastCtx = createContext<Cast | null>(null);
@@ -82,7 +83,20 @@ export interface CastProviderProps {
   client: KromaClient | null;
   /** Gates everything on being signed in - the roster needs a session. */
   enabled: boolean;
+  /** What this device calls itself on the TV's list of remotes ("iPhone",
+   * "Chrome"). Shown across the room, so it should be a thing, not a session id. */
+  deviceName: string;
   children: ReactNode;
+}
+
+/** The state a [`applyCastEvent`] fold writes through. Grouped rather than
+ * passed positionally: four same-shaped setters in a row is an argument list
+ * nobody can read, and two of them are only touched by one event. */
+interface CastEventSetters {
+  receivers: Dispatch<SetStateAction<CastReceiver[]>>;
+  activeId: Dispatch<SetStateAction<string | null>>;
+  error: Dispatch<SetStateAction<Cast['error']>>;
+  base: Dispatch<SetStateAction<PositionBase | null>>;
 }
 
 /** Fold one bus event into the roster / position state.
@@ -91,17 +105,18 @@ export interface CastProviderProps {
  * pause on one TV costs every sender a patch instead of a refetch), and keeping
  * the fold here means the effect stays a flat wiring step.
  */
-function applyCastEvent(
-  e: ServerEvent,
-  setReceivers: Dispatch<SetStateAction<CastReceiver[]>>,
-  setBase: Dispatch<SetStateAction<PositionBase | null>>,
-): void {
+function applyCastEvent(e: ServerEvent, set: CastEventSetters): void {
   if (e.type === 'cast.receiver') {
-    setReceivers((list) => upsert(list, e.receiver));
+    set.receivers((list) => upsert(list, e.receiver));
   } else if (e.type === 'cast.receiver.gone') {
-    setReceivers((list) => list.filter((r) => r.id !== e.receiverId));
+    set.receivers((list) => list.filter((r) => r.id !== e.receiverId));
+  } else if (e.type === 'cast.kicked') {
+    // The television let this remote go. Stand down rather than keep showing a
+    // set we no longer drive.
+    set.activeId((id) => (id === e.receiverId ? null : id));
+    set.error('cast.kicked');
   } else if (e.type === 'cast.position') {
-    setBase({
+    set.base({
       id: e.receiverId,
       positionMs: e.positionMs,
       playing: e.state === 'playing',
@@ -110,7 +125,12 @@ function applyCastEvent(
   }
 }
 
-export function CastProvider({ client, enabled, children }: Readonly<CastProviderProps>) {
+export function CastProvider({
+  client,
+  enabled,
+  deviceName,
+  children,
+}: Readonly<CastProviderProps>) {
   const [receivers, setReceivers] = useState<CastReceiver[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState<Cast['error']>(null);
@@ -121,6 +141,13 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
   // position (which is computed from the clock, not from state). A reducer
   // rather than `useState`: the counter's VALUE is never read, and this says so.
   const [, rerender] = useReducer((n: number) => n + 1, 0);
+  // The live socket, kept so selecting a TV can announce this remote on it.
+  const socket = useRef<KromaEvents | null>(null);
+  // Read from the socket's `onOpen`, which is not re-created per render.
+  const drivingRef = useRef<string | null>(null);
+  drivingRef.current = activeId;
+  const name = useRef(deviceName);
+  name.current = deviceName;
 
   const refresh = useCallback(() => {
     if (!enabled || !client) return;
@@ -141,11 +168,31 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
     const events = new KromaEvents(client.baseUrl, {
       // Only on (re)connect: a gap in the stream may have swallowed a change, and
       // the roster is the one thing worth resyncing wholesale.
-      onOpen: refresh,
-      onEvent: (e) => applyCastEvent(e, setReceivers, setBase),
+      onOpen: () => {
+        refresh();
+        // ...and say again what this remote is driving. The server destroys a
+        // controller entry the moment its socket closes, so after a reconnect
+        // the television has lost this phone from its remote list - and with it
+        // any way to disconnect it - while the phone carries on commanding over
+        // HTTP, with nothing on either side to reveal the split. The receiver
+        // half re-sends `cast.hello` on every open for exactly this reason.
+        const driving = drivingRef.current;
+        if (driving) events.send({ type: 'cast.control', receiverId: driving, name: name.current });
+      },
+      onEvent: (e) =>
+        applyCastEvent(e, {
+          receivers: setReceivers,
+          activeId: setActiveId,
+          error: setError,
+          base: setBase,
+        }),
     });
     events.connect();
-    return () => events.close();
+    socket.current = events;
+    return () => {
+      socket.current = null;
+      events.close();
+    };
   }, [client, enabled, refresh]);
 
   const active = useMemo(
@@ -201,6 +248,7 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
       const ok = await sendTo(receiverId, { type: 'play', itemId, positionMs });
       if (ok) {
         setActiveId(receiverId);
+        socket.current?.send({ type: 'cast.control', receiverId, name: name.current });
         // Optimistic: the TV's own heartbeat corrects this within a beat, but the
         // remote should not sit at 0:00 while it starts.
         setBase({ id: receiverId, positionMs, playing: true, at: Date.now() });
@@ -221,6 +269,13 @@ export function CastProvider({ client, enabled, children }: Readonly<CastProvide
   const select = useCallback((receiverId: string | null) => {
     setActiveId(receiverId);
     setError(null);
+    // Tell the set it is being driven, so it can show this remote (and let it
+    // go). Presence rides the socket: closing the app releases it for us.
+    socket.current?.send(
+      receiverId
+        ? { type: 'cast.control', receiverId, name: name.current }
+        : { type: 'cast.release' },
+    );
     const next = receiverId ? receiversRef.current.find((r) => r.id === receiverId) : null;
     setBase(
       next?.nowPlaying

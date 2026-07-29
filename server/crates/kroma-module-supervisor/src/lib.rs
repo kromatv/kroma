@@ -530,6 +530,7 @@ where
         .route("/_host/setting", get(get_setting::<S>))
         .route("/_host/settings", post(set_settings::<S>))
         .route("/_host/events", post(publish_event::<S>))
+        .route("/_host/events_to", post(publish_event_to::<S>))
         .route("/_host/notify", post(notify::<S>))
         .route("/_host/job", post(trigger_job::<S>))
         .route("/_host/enabled", get(module_enabled::<S>))
@@ -575,6 +576,24 @@ struct EventBody {
 
 async fn publish_event<S: HostCtx>(State(host): State<S>, Json(body): Json<EventBody>) -> StatusCode {
     host.publish(Event { topic: body.topic, payload: body.payload });
+    StatusCode::NO_CONTENT
+}
+
+#[derive(serde::Deserialize)]
+struct AddressedEventBody {
+    #[serde(rename = "userId")]
+    user_id: String,
+    topic: String,
+    payload: Value,
+}
+
+/// A sidecar publishing an event addressed to one account. Without this route a
+/// module's `publish_to` had nowhere to go and the event vanished.
+async fn publish_event_to<S: HostCtx>(
+    State(host): State<S>,
+    Json(body): Json<AddressedEventBody>,
+) -> StatusCode {
+    host.publish_to(&body.user_id, Event { topic: body.topic, payload: body.payload });
     StatusCode::NO_CONTENT
 }
 

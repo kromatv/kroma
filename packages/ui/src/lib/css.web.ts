@@ -22,6 +22,14 @@ export function maskImage(css: string): ViewStyle {
   return { maskImage: css } as ViewStyle;
 }
 
+/** A CSS `field-sizing: content`: the engine sizes the entry to its content, so
+ *  a growing textarea costs neither a measure nor a re-render. Chromium has it;
+ *  an older TV WebKit simply ignores it and the field keeps the height `rows`
+ *  gave it. See css.ts for the native half. */
+export function fieldSizing(): ViewStyle {
+  return { fieldSizing: 'content' } as unknown as ViewStyle;
+}
+
 /** Give this view its own GPU layer, so an animation near it does not force it
  * to re-rasterize. `translateZ(0)` is the portable "own texture"; `willChange`
  * keeps the layer alive between animations instead of paying to rebuild it. See

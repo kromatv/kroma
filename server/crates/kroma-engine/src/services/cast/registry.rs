@@ -1,14 +1,14 @@
 //! The receiver store: heartbeat upsert, the per-receiver command inbox with its
 //! ack/replay bookkeeping, and the TTL reaper.
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
 use crate::infra::events::{Bus, ServerEvent};
 use crate::model::{
-    CastCommand, CastCommandEnvelope, CastNowPlaying, CastPlayback, CastReceiver, CastState,
-    MediaItem,
+    CastCommand, CastCommandEnvelope, CastController, CastNowPlaying, CastPlayback, CastReceiver,
+    CastState, MediaItem,
 };
 
 /// A receiver that stops heartbeating for this long is gone (TV switched off,
@@ -32,6 +32,9 @@ const MAX_PLATFORM: usize = 32;
 /// in a remote's pickers, so both their length and their labels are bounded.
 const MAX_TRACKS: usize = 64;
 const MAX_TRACK_LABEL: usize = 64;
+/// Hard cap on remotes driving one set. A living room has a few; the cap is what
+/// keeps a client from filling a television's status bar.
+const MAX_CONTROLLERS: usize = 8;
 /// Bounds on a relative skip, so a hostile `deltaMs` can't overflow the
 /// receiver's clock arithmetic.
 const MAX_SKIP_MS: i64 = 24 * 60 * 60 * 1000;
@@ -83,6 +86,14 @@ pub enum Announced {
     Full,
 }
 
+/// A controller as the registry holds it: what a television shows, plus the
+/// account it belongs to (kept OFF the wire type - the roster is readable by
+/// every viewer and carries no internal identifiers).
+struct ControllerEntry {
+    view: CastController,
+    user_id: String,
+}
+
 struct Receiver {
     id: String,
     name: String,
@@ -101,6 +112,17 @@ struct Receiver {
     last_seen: Instant,
     inbox: VecDeque<CastCommandEnvelope>,
     next_seq: u64,
+    /// The senders driving this set, keyed by their socket-scoped id.
+    controllers: HashMap<String, ControllerEntry>,
+    /// Accounts this set has sent away, and which may not command it again until
+    /// they deliberately pick it up.
+    ///
+    /// `kick` used to be courtesy: it removed the roster entry and told the
+    /// remote to stand down, but nothing enforced it. A client that ignored the
+    /// message - a build predating it, or a second instance - kept pausing and
+    /// seeking the television, and was no longer LISTED, so it could not even be
+    /// kicked again. Refusing by account is what makes the button mean something.
+    kicked: HashSet<String>,
 }
 
 impl Receiver {
@@ -132,6 +154,14 @@ impl Receiver {
             username: self.username.clone(),
             network: self.network.clone(),
             now_playing,
+            controllers: {
+                let mut list: Vec<CastController> =
+                    self.controllers.values().map(|c| c.view.clone()).collect();
+                // Stable order, so a television's list does not reshuffle itself
+                // every time somebody presses pause.
+                list.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.id.cmp(&b.id)));
+                list
+            },
         }
     }
 
@@ -199,6 +229,8 @@ impl Registry {
             last_seen: Instant::now(),
             inbox: VecDeque::new(),
             next_seq: 1,
+            controllers: HashMap::new(),
+            kicked: HashSet::new(),
         });
         entry.name = name;
         entry.platform = platform;
@@ -280,6 +312,110 @@ impl Registry {
                 None => StateChange::Nothing,
             }
         })
+    }
+
+    /// A sender starts driving a receiver. `controller_id` is minted by the
+    /// caller per SOCKET (never by the client), so the identity a television
+    /// shows cannot be forged by another sender.
+    ///
+    /// Returns the receiver's new row when it changed, so the caller can put it
+    /// on the bus - that is how the TV learns who just picked up its remote.
+    pub fn attach_controller(
+        &self,
+        receiver_id: &str,
+        controller_id: &str,
+        name: &str,
+        user_id: &str,
+        username: &str,
+        avatar_url: Option<&str>,
+    ) -> Option<CastReceiver> {
+        let mut map = self.inner.write().unwrap();
+        let entry = map.get_mut(receiver_id).filter(|r| r.live())?;
+        // Picking a set up again is a deliberate act by the person holding the
+        // phone, so it clears an earlier kick. The block is there to stop a
+        // client that ignored `cast.kicked` from carrying on, not to ban anyone.
+        entry.kicked.remove(user_id);
+        let view = CastController {
+            id: controller_id.to_string(),
+            name: clean(name, MAX_NAME),
+            username: username.to_string(),
+            avatar_url: avatar_url.map(|u| clean(u, MAX_NAME)),
+        };
+        // One entry per device, not per socket. A controller id belongs to a
+        // SOCKET, and a phone that reconnects - a flaky network, an app resumed,
+        // a dev reload - arrives on a new one while the server has not yet
+        // noticed the old socket die. Without this the television lists the same
+        // phone twice, under two names it cannot tell apart, and disconnecting
+        // one leaves the ghost.
+        let superseded: Vec<String> = entry
+            .controllers
+            .iter()
+            .filter(|(id, c)| {
+                id.as_str() != controller_id && c.user_id == user_id && c.view.name == view.name
+            })
+            .map(|(id, _)| id.clone())
+            .collect();
+        let replaced = !superseded.is_empty();
+        for id in superseded {
+            entry.controllers.remove(&id);
+        }
+        if entry.controllers.len() >= MAX_CONTROLLERS
+            && !entry.controllers.contains_key(controller_id)
+        {
+            return None;
+        }
+        // Unchanged and nothing was dropped: not worth a frame. (A supersede IS
+        // a change, even when this controller's own row reads the same.)
+        if !replaced && entry.controllers.get(controller_id).map(|c| &c.view) == Some(&view) {
+            return None;
+        }
+        entry
+            .controllers
+            .insert(controller_id.to_string(), ControllerEntry { view, user_id: user_id.to_string() });
+        Some(entry.view())
+    }
+
+    /// A sender stops driving (deselected it, closed its socket, or was
+    /// disconnected by the television). Returns the rows that changed.
+    pub fn detach_controller(&self, controller_id: &str) -> Vec<CastReceiver> {
+        let mut map = self.inner.write().unwrap();
+        let mut changed = Vec::new();
+        for receiver in map.values_mut() {
+            if receiver.controllers.remove(controller_id).is_some() {
+                changed.push(receiver.view());
+            }
+        }
+        changed
+    }
+
+    /// A television sends one of ITS OWN remotes away.
+    ///
+    /// Scoped to `receiver_id` on purpose, and in one lock: the roster is
+    /// readable by every viewer and carries controller ids, so a caller that
+    /// removed by controller id alone would let any set evict a remote driving
+    /// somebody else's. Returns the set's new row and the account to notify, or
+    /// `None` when that controller is not on this set.
+    pub fn kick_controller(
+        &self,
+        receiver_id: &str,
+        controller_id: &str,
+    ) -> Option<(CastReceiver, String)> {
+        let mut map = self.inner.write().unwrap();
+        let entry = map.get_mut(receiver_id)?;
+        let gone = entry.controllers.remove(controller_id)?;
+        entry.kicked.insert(gone.user_id.clone());
+        Some((entry.view(), gone.user_id))
+    }
+
+    /// Whether `user_id` may send this set an order.
+    ///
+    /// `None` when there is no such live receiver - the caller answers 404 for
+    /// that, exactly as [`Self::enqueue`] does, so this cannot be used to probe
+    /// the roster either.
+    pub fn may_command(&self, receiver_id: &str, user_id: &str) -> Option<bool> {
+        let map = self.inner.read().unwrap();
+        let entry = map.get(receiver_id).filter(|r| r.live())?;
+        Some(!entry.kicked.contains(user_id))
     }
 
     /// Drop everything the receiver has applied, by sequence number.
@@ -755,6 +891,140 @@ mod tests {
         reg.touch("tv-salon-01");
         assert!(reg.reap().is_empty());
         assert_eq!(reg.list().len(), 1);
+    }
+
+    #[test]
+    fn a_kicked_remote_stops_being_obeyed_until_it_picks_the_set_up_again() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        reg.attach_controller("tv-salon-01", "sock-b", "iPad", "u2", "bob", None).expect("attached");
+
+        // Driving it is fine until the set says otherwise.
+        assert_eq!(reg.may_command("tv-salon-01", "u2"), Some(true));
+        reg.kick_controller("tv-salon-01", "sock-b").expect("kicked");
+
+        // The point of the button: a client that ignores `cast.kicked` and keeps
+        // POSTing is refused, rather than carrying on unlisted and unkickable.
+        assert_eq!(reg.may_command("tv-salon-01", "u2"), Some(false));
+        // ...and only for the account that was sent away.
+        assert_eq!(reg.may_command("tv-salon-01", "u1"), Some(true));
+
+        // Picking the set up again is a deliberate act, so it is allowed.
+        reg.attach_controller("tv-salon-01", "sock-c", "iPad", "u2", "bob", None).expect("attached");
+        assert_eq!(reg.may_command("tv-salon-01", "u2"), Some(true));
+
+        // A set nobody has heard of is not a 403 - the caller answers 404, and
+        // this cannot be used to find out which ids exist.
+        assert_eq!(reg.may_command("tv-ghost-01", "u2"), None);
+    }
+
+    #[test]
+    fn a_television_lists_its_remotes_and_can_let_one_go() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+
+        // Two phones pick up the remote.
+        let row = reg
+            .attach_controller("tv-salon-01", "sock-a", "iPhone", "u1", "alice", None)
+            .expect("attached");
+        assert_eq!(row.controllers.len(), 1);
+        let row = reg
+            .attach_controller("tv-salon-01", "sock-b", "Chrome", "u2", "bob", None)
+            .expect("attached");
+        assert_eq!(
+            row.controllers.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
+            vec!["Chrome", "iPhone"],
+            "listed in a stable order, so the TV's list does not reshuffle"
+        );
+        // The row a viewer sees names the person, never their account id.
+        assert!(row.controllers.iter().any(|c| c.username == "bob"));
+
+        // Re-announcing the same thing is not a change worth a frame.
+        assert!(reg.attach_controller("tv-salon-01", "sock-a", "iPhone", "u1", "alice", None).is_none());
+
+        // Letting one go leaves exactly the other, and names the account to tell.
+        let (row, owner) = reg.kick_controller("tv-salon-01", "sock-b").expect("kicked");
+        assert_eq!(owner, "u2");
+        assert_eq!(row.controllers.len(), 1);
+        assert_eq!(row.controllers[0].name, "iPhone");
+        // Kicking what is already gone changes nothing.
+        assert!(reg.kick_controller("tv-salon-01", "sock-b").is_none());
+
+        // And the sender's own socket closing takes it off whatever it drove.
+        let rows = reg.detach_controller("sock-a");
+        assert_eq!(rows.len(), 1);
+        assert!(rows[0].controllers.is_empty());
+        assert!(reg.detach_controller("sock-a").is_empty());
+    }
+
+    #[test]
+    fn a_television_can_only_disconnect_its_own_remotes() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        announce_ok(&reg, beat("tv-chambre-02", 0, None), "u1", None);
+        reg.attach_controller("tv-salon-01", "sock-a", "iPhone", "u1", "alice", None).expect("attached");
+
+        // The roster is readable by every viewer and carries controller ids, so
+        // "disconnect this id" from the WRONG set has to be nothing at all -
+        // otherwise one television could evict the remote driving another.
+        assert!(reg.kick_controller("tv-chambre-02", "sock-a").is_none());
+        assert_eq!(reg.list().iter().flat_map(|r| &r.controllers).count(), 1);
+    }
+
+    #[test]
+    fn a_phone_that_reconnects_replaces_itself_instead_of_doubling() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        reg.attach_controller("tv-salon-01", "sock-old", "iPhone", "u1", "alice", None).expect("attached");
+
+        // Same phone, new socket: the old one is still on the roster because the
+        // server has not noticed it die yet.
+        let row = reg
+            .attach_controller("tv-salon-01", "sock-new", "iPhone", "u1", "alice", None)
+            .expect("attached");
+        assert_eq!(row.controllers.len(), 1, "one device, one row");
+        assert_eq!(row.controllers[0].id, "sock-new");
+
+        // Somebody else's phone of the same make is a different remote.
+        let row = reg
+            .attach_controller("tv-salon-01", "sock-bob", "iPhone", "u2", "bob", None)
+            .expect("attached");
+        assert_eq!(row.controllers.len(), 2);
+    }
+
+    #[test]
+    fn the_remote_list_is_bounded() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+        // Distinct devices: two sockets calling themselves the same phone are one
+        // remote by design (see the supersede test), so a flood has to be named.
+        for n in 0..MAX_CONTROLLERS {
+            assert!(
+                reg.attach_controller(
+                    "tv-salon-01",
+                    &format!("sock-{n}"),
+                    &format!("Phone {n}"),
+                    "u1",
+                    "alice",
+                    None
+                )
+                .is_some()
+            );
+        }
+        // Beyond the cap a newcomer is refused rather than pushing a real remote
+        // out of a television's status bar.
+        assert!(
+            reg.attach_controller("tv-salon-01", "sock-flood", "Phone flood", "u1", "alice", None)
+                .is_none()
+        );
+        assert_eq!(reg.list()[0].controllers.len(), MAX_CONTROLLERS);
+    }
+
+    #[test]
+    fn a_remote_for_a_receiver_that_is_gone_is_refused() {
+        let reg = Registry::new();
+        assert!(reg.attach_controller("tv-ghost-01", "sock-a", "iPhone", "u1", "alice", None).is_none());
+        assert!(reg.kick_controller("tv-ghost-01", "sock-a").is_none());
     }
 
     #[test]

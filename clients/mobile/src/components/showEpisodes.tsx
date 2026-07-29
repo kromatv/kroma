@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
+import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { absoluteFill, colors, radius, type } from '#mobile/lib/theme';
 import { DownloadButton } from './DownloadButton';
@@ -69,10 +70,10 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
 export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: number }>) {
   const t = useT();
   const client = useClient();
-  const router = useRouter();
+  const { play } = usePlay();
   return (
     <Pressable
-      onPress={() => router.push(`/player/${next.id}` as never)}
+      onPress={() => void play(next.id)}
       style={({ pressed }) => [styles.upNextCard, pressed && { opacity: 0.85 }]}
     >
       <View>
@@ -111,13 +112,14 @@ export function EpisodeRow({
 }>) {
   const client = useClient();
   const router = useRouter();
+  const { play } = usePlay();
   const runtime = formatRuntime(episode.durationMs);
   const total = progress?.durationMs ?? episode.durationMs ?? 0;
   const frac = progress && total > 0 ? Math.min(1, progress.positionMs / total) : 0;
   const overview = episode.metadata?.overview;
   return (
     <Pressable
-      onPress={() => router.push(`/player/${episode.id}` as never)}
+      onPress={() => void play(episode.id)}
       onLongPress={() => router.push(`/item/${episode.id}` as never)}
       style={({ pressed }) => [styles.episode, pressed && { backgroundColor: colors.surface }]}
     >

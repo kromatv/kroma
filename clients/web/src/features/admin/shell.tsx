@@ -17,6 +17,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import {
   IconApps,
   IconArchive,
+  IconBell,
   IconChevronRight,
   IconClockBolt,
   IconDatabase,
@@ -207,6 +208,12 @@ const NAV_GROUPS: { labelKey: MessageKey; section: string; items: NavItem[] }[] 
         labelKey: 'admin.navNetwork',
         cap: 'settings.manage',
         icon: IconWorld,
+      },
+      {
+        to: '/admin/notifications',
+        labelKey: 'admin.navNotifications',
+        cap: 'settings.manage',
+        icon: IconBell,
       },
     ],
   },

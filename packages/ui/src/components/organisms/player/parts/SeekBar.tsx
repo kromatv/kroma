@@ -8,6 +8,7 @@ import { fonts } from '#ui/lib/tokens';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import { useDragTrack } from '../hooks/useDragTrack';
 import { clamp01 } from '../lib/fmt';
+import { scaler } from '../lib/metrics';
 import { msAtOffset, offsetAt, SEGMENT_GAP } from '../lib/seek-track';
 import { SEEK_BAR } from '../lib/style';
 import type { Chapter } from '../types';
@@ -32,6 +33,8 @@ export interface SeekBarProps {
   /** Right labels: total runtime + real end clock ("fin à 22h38"). */
   total: string;
   endsAt: string;
+  /** The chrome's scale (see ../lib/metrics). 1 on a television stage. */
+  scale?: number;
   /** Live scrub preview (absolute seconds) while dragging. */
   onScrub: (sec: number) => void;
   onScrubCommit: () => void;
@@ -65,9 +68,16 @@ export function SeekBar({
   chapterLabel,
   total,
   endsAt,
+  scale = 1,
   onScrub,
   onScrubCommit,
 }: Readonly<SeekBarProps>) {
+  const px = scaler(scale);
+  // Every style that depends on the scale, built once per SCALE rather than per
+  // tick. This bar re-renders at the playback tick (~4 Hz) and is not memoized,
+  // so a fresh array here is a guaranteed style-cache miss on the track and the
+  // timecodes, four times a second, for a value that only moves on a resize.
+  const s = useMemo(() => styles(scale), [scale]);
   // The track measures itself rather than reading a DOM rect, so the same drag
   // maths runs on a TV. React Native's responder system (through PanResponder)
   // is the one gesture API both renderers implement; `useDragTrack` is what
@@ -155,19 +165,21 @@ export function SeekBar({
       : previewCentre(offsetAt(previewSec * 1000, segs, trackWidth), trackWidth, previewHalf);
 
   return (
-    <Box mb={20}>
-      {/* info row */}
-      <Box row align="baseline" between mb={13}>
-        <Txt style={TIME}>
+    <Box mb={px(20)}>
+      {/* info row. The left label carries the chapter title, which is the one
+          string here of unbounded length: it shrinks (and truncates) so it can
+          never grow into the runtime on its right. */}
+      <Box row align="baseline" between gap={px(12)} mb={px(13)}>
+        <Txt lines={1} style={s.timeShrink}>
           {elapsed}
           {chapterLabel ? (
-            <Txt style={[TIME, MUTED]} color="rgba(244, 243, 240, 0.5)">{` · ${chapterLabel}`}</Txt>
+            <Txt style={s.timeMuted} color="rgba(244, 243, 240, 0.5)">{` · ${chapterLabel}`}</Txt>
           ) : null}
         </Txt>
-        <Txt style={TIME} color="rgba(244, 243, 240, 0.5)">
+        <Txt lines={1} style={s.time} color="rgba(244, 243, 240, 0.5)">
           {total}
           {endsAt ? (
-            <Txt style={[TIME, MUTED]} color="rgba(244, 243, 240, 0.38)">{` · ${endsAt}`}</Txt>
+            <Txt style={s.timeMuted} color="rgba(244, 243, 240, 0.38)">{` · ${endsAt}`}</Txt>
           ) : null}
         </Txt>
       </Box>
@@ -176,9 +188,9 @@ export function SeekBar({
       <Box
         row
         align="center"
-        gap={4}
-        h={18}
-        px={2}
+        gap={px(4)}
+        h={px(18)}
+        px={px(2)}
         radius="pill"
         accessibilityRole="adjustable"
         accessibilityLabel="progress"
@@ -191,23 +203,23 @@ export function SeekBar({
         {previewSec != null ? (
           <Box
             absolute
-            bottom={36}
+            bottom={px(36)}
             left={0}
             z={6}
             align="center"
-            gap={8}
+            gap={px(8)}
             pointerEvents="none"
             style={{ transform: [{ translateX: previewX - previewHalf }] }}
           >
             {previewTile ? <StoryboardThumb tile={previewTile} /> : null}
-            <Box radius="md" bg="rgba(0, 0, 0, 0.8)" px={12} py={4}>
-              <Txt style={STAMP}>{formatTimecode(previewSec)}</Txt>
+            <Box radius="md" bg="rgba(0, 0, 0, 0.8)" px={px(12)} py={px(4)}>
+              <Txt style={s.stamp}>{formatTimecode(previewSec)}</Txt>
             </Box>
           </Box>
         ) : null}
 
         {/* segmented track */}
-        <View ref={track.ref} onLayout={track.onLayout} {...pan.panHandlers} style={TRACK}>
+        <View ref={track.ref} onLayout={track.onLayout} {...pan.panHandlers} style={s.track}>
           {segs.map((seg) => {
             const span = Math.max(1, seg.endMs - seg.startMs);
             const played = clamp01((shownMs - seg.startMs) / span);
@@ -216,10 +228,13 @@ export function SeekBar({
               // `flex={span}`: a segment is as wide as its chapter is long. Equal
               // widths would draw a 96-second cold open the size of a 53-minute
               // act, and then no playhead could agree with its own fill.
+              // `h="100%"`, not the scaled height again: the track above already
+              // sets it, and a scaled number here would mint a shared-style
+              // entry per chapter length PER SCALE (see lib/box-style's cap).
               <Box
                 key={seg.startMs}
                 flex={span}
-                h={6}
+                h="100%"
                 radius="pill"
                 overflow="hidden"
                 bg={SEEK_BAR.track}
@@ -250,12 +265,17 @@ export function SeekBar({
             absolute
             top="50%"
             left={0}
-            w={16}
-            h={16}
+            w={px(16)}
+            h={px(16)}
             radius="pill"
             bg="#FFFFFF"
             pointerEvents="none"
-            style={[PLAYHEAD, { transform: [{ translateX: playheadX - 8 }, { translateY: -8 }] }]}
+            style={[
+              PLAYHEAD,
+              {
+                transform: [{ translateX: playheadX - px(16) / 2 }, { translateY: -px(16) / 2 }],
+              },
+            ]}
           />
         </View>
       </Box>
@@ -263,20 +283,27 @@ export function SeekBar({
   );
 }
 
+/** The design's sizes, at the design's scale. The single source for each: the
+ * styles below are DERIVED from them, so there is never a second copy to keep
+ * in agreement. */
+const TIME_SIZE = 18;
+const STAMP_SIZE = 14;
+const TRACK_HEIGHT = 6;
+
 const TIME = {
   fontFamily: fonts.ui,
-  fontSize: 18,
   fontWeight: '600' as const,
   color: '#F4F3F0',
   fontVariant: ['tabular-nums' as const],
 };
 const MUTED = { fontWeight: '500' as const };
+/** The chapter label yields before the runtime on the other end does. */
+const SHRINK = { flexShrink: 1 };
 const FOCUSED_TRACK = { boxShadow: '0 0 0 4px rgba(242, 180, 66, 0.28)' };
 const TRACK = {
   position: 'relative' as const,
   flexDirection: 'row' as const,
   alignItems: 'center' as const,
-  height: 6,
   flex: 1,
   gap: SEGMENT_GAP,
 };
@@ -288,8 +315,21 @@ const PLAYHEAD = {
 };
 const STAMP = {
   fontFamily: fonts.ui,
-  fontSize: 14,
   fontWeight: '700' as const,
   color: '#FFFFFF',
   fontVariant: ['tabular-nums' as const],
 };
+
+/** The scale-dependent half of the bar's styles. The ARRAYS are what the views
+ * receive, so they are what has to keep its identity between ticks. */
+function styles(scale: number) {
+  const px = scaler(scale);
+  const time = { fontSize: px(TIME_SIZE) };
+  return {
+    time: [TIME, time],
+    timeMuted: [TIME, time, MUTED],
+    timeShrink: [TIME, time, SHRINK],
+    stamp: [STAMP, { fontSize: px(STAMP_SIZE) }],
+    track: [TRACK, { height: px(TRACK_HEIGHT) }],
+  };
+}

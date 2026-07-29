@@ -20,25 +20,13 @@ import {
 import type { SubtitleAppearance } from '@kroma/ui';
 import { AUDIO_FILTER_KEY, SUB_COLORS } from '@kroma/ui';
 import { Chip, Icon, type IconName, SwitchFace } from '@kroma/ui/kit';
-import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Easing,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useLangPrefs } from '#mobile/lib/langPrefs';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { colors, spacing, type } from '#mobile/lib/theme';
+import { PlayerPanel } from '#mobile/player/PlayerPanel';
 import type { Engine } from './engine';
 import type { Subtitles } from './useSubtitles';
 
@@ -303,9 +291,6 @@ export function TrackSheet({
 }>) {
   const t = useT();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
-  const landscape = width > height;
   const prefs = useLangPrefs();
   const [view, setView] = useState<SheetView>(initialView);
   const backToMenu = () => setView('menu');
@@ -534,46 +519,16 @@ export function TrackSheet({
     </>
   );
 
-  const panel = (
-    <View
-      style={[
-        landscape
-          ? [
-              styles.sidePanel,
-              {
-                width: Math.min(400, width * 0.46),
-                paddingTop: insets.top + spacing.sm,
-                paddingBottom: Math.max(insets.bottom, spacing.md),
-                paddingRight: Math.max(insets.right, spacing.md),
-              },
-            ]
-          : [styles.bottomPanel, { paddingBottom: Math.max(insets.bottom, spacing.md) }],
-      ]}
-    >
-      <BlurView
-        tint="dark"
-        intensity={Platform.OS === 'ios' ? 60 : 0}
-        style={[StyleSheet.absoluteFill, Platform.OS !== 'ios' && styles.androidPanelBg]}
-      />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <Animated.View style={slideStyle}>{body}</Animated.View>
-      </ScrollView>
-    </View>
-  );
-
   return (
-    <Modal
+    <PlayerPanel
       visible={visible}
-      transparent
-      animationType={landscape ? 'fade' : 'slide'}
+      onClose={onClose}
+      // Back walks to the menu first when a sub-view is open; only the menu
+      // itself closes the panel.
       onRequestClose={view === 'menu' ? onClose : backToMenu}
-      supportedOrientations={['portrait', 'landscape', 'landscape-left', 'landscape-right']}
     >
-      <View style={landscape ? styles.overlayRow : styles.overlayColumn}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        {panel}
-      </View>
-    </Modal>
+      <Animated.View style={slideStyle}>{body}</Animated.View>
+    </PlayerPanel>
   );
 }
 
@@ -597,26 +552,6 @@ function qualityBadge(item: MediaItem): string {
 }
 
 const styles = StyleSheet.create({
-  overlayRow: { flex: 1, flexDirection: 'row' },
-  overlayColumn: { flex: 1, flexDirection: 'column', justifyContent: 'flex-end' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.45)' },
-  sidePanel: {
-    height: '100%',
-    borderTopLeftRadius: radius.xl,
-    borderBottomLeftRadius: radius.xl,
-    overflow: 'hidden',
-    paddingLeft: spacing.md,
-  },
-  bottomPanel: {
-    maxHeight: '70%',
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    overflow: 'hidden',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-  },
-  androidPanelBg: { backgroundColor: 'rgba(18, 18, 22, 0.97)' },
-  scroll: { paddingBottom: spacing.md, paddingTop: spacing.xs },
   menuList: { gap: 2 },
   menuRow: {
     flexDirection: 'row',

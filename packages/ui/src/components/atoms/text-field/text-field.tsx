@@ -23,6 +23,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
 import { Caret } from '#ui/lib/caret';
+import { CONTENT_LINE as CONTENT, edgeColor, NO_OUTLINE, PLACEHOLDER } from '#ui/lib/field-shell';
 import { colors, radius as radii } from '#ui/lib/tokens';
 import { useControllable } from '#ui/lib/use-controllable';
 
@@ -174,6 +175,7 @@ function TextField({
               ring={false}
               onPress={() => setRevealed((prev) => !prev)}
               style={REVEAL}
+              hoveredStyle={REVEAL_HOVERED}
             >
               <Icon
                 name={revealed ? 'eye-off' : 'eye'}
@@ -190,22 +192,6 @@ function TextField({
   );
 }
 
-/** The field's edge. Focus wins over invalid: while you are fixing the value,
- * the field should look like the thing you are working in, not like a failure. */
-function edgeColor(focused: boolean, invalid: boolean): string {
-  if (focused) return colors.accent;
-  return invalid ? colors.danger : colors.borderStrong;
-}
-
-const PLACEHOLDER = 'rgba(244, 243, 240, 0.3)';
-
-/** The height of a field's content row, independent of what sits in it: the
- * entry never measures shorter than this and the glyph wells never measure
- * taller, so every field in a form lines up regardless of icons. A caller who
- * sets a bigger `textStyle` font still grows the field, which is intended -
- * what must not vary is a field's height against its own neighbours. */
-const CONTENT = 24;
-
 const INPUT = {
   flex: 1,
   minWidth: 0,
@@ -215,17 +201,13 @@ const INPUT = {
   padding: 0,
 } as const;
 
-/** Web only, and `none` rather than width 0: Chrome's own focus ring is
- * `outline-style: auto`, which ignores the width - the field kept its blue
- * browser ring inside the kit's amber one until the STYLE was cleared. React
- * Native's types don't know `none` (native has no outline at all), hence the
- * cast. */
-const NO_OUTLINE = { outlineStyle: 'none', outlineWidth: 0 } as unknown as TextStyle;
-
 const REVEAL_SIZE = 20;
 /** Centred on the field's right edge, inside its own padding. */
 const REVEAL_SLOT = { right: 22, top: 0, bottom: 0, justifyContent: 'center' } as const;
 const REVEAL = { padding: 4, margin: -4, borderRadius: radii.md } as const;
+/** The eye has no box of its own until the cursor gives it one: a wash inside
+ * the negative margin, so the glyph reads as a button before it is clicked. */
+const REVEAL_HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.1)' } as const;
 
 export type { TextFieldProps, TextFieldType };
 export { TextField };

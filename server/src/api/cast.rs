@@ -237,6 +237,12 @@ pub async fn command(
     if !valid_receiver_id(&id) {
         return Err(bad_id(&user));
     }
+    // A set that sent this account away stops taking its orders. `None` here is
+    // "no such receiver", which the enqueue below already answers with a 404 -
+    // keeping the two apart is what stops this being a way to probe the roster.
+    if state.cast.may_command(&id, &user.id) == Some(false) {
+        return Err(lerr(locale(&user), StatusCode::FORBIDDEN, "error.forbidden"));
+    }
     if let CastCommand::Play { item_id, .. } = &body.command {
         let wanted = item_id.clone();
         let known = query(&state.db, move |pool| db::get_item(&pool, &wanted))

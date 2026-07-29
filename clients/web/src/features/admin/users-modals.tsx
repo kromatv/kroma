@@ -5,7 +5,7 @@ import { IconMail } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
-import { Field, Modal, ModalActions } from '#web/features/admin/ui';
+import { Field, Modal, ModalActions, TextInput } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { confirmDialog } from '#web/shared/ui';
 
@@ -146,11 +146,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
   return (
     <Modal title={t('admin.editUser', { name: user.username })} onClose={() => call.end(false)}>
       <Field label={t('admin.name')}>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-border-strong bg-surface-2 px-3 py-2.5 text-[14px]"
-        />
+        <TextInput value={name} onChange={setName} className="w-full" />
       </Field>
       <div className="mb-2 text-[12px] font-bold uppercase tracking-[.12em] text-dim">
         {t('admin.permissions')}
@@ -206,11 +202,11 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
             {t('admin.inviteLink')}
           </div>
           <div className="flex items-center gap-2">
-            <input
+            <TextInput
               readOnly
               value={link}
               onFocus={(e) => e.currentTarget.select()}
-              className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-2 px-3 py-2.5 text-[13px]"
+              className="flex-1"
             />
             <button
               type="button"

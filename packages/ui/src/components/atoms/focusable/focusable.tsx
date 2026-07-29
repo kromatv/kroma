@@ -117,6 +117,13 @@ interface FocusableProps {
    *  `focusedStyle`; a brightened fill, usually). Touch targets also dip to the
    *  design's press scale automatically - see usePressScale. */
   pressedStyle?: StyleProp<ViewStyle>;
+  /** Merged on top of `style` while a POINTER rests on the control - the MOUSE
+   *  counterpart of the other two, and the one a browser most needs: a page
+   *  that mounts no navigator (every kit control on clients/web) can neither
+   *  focus nor press on the way past, so without this a cursor crosses a button
+   *  and nothing at all answers. The browser targets only - see the call site
+   *  for why the native builds are left out on purpose. */
+  hoveredStyle?: StyleProp<ViewStyle>;
   children?: ReactNode | ((state: FocusState) => ReactNode);
   /** Accessibility label; also the tvOS VoiceOver name. */
   label?: string;
@@ -142,23 +149,35 @@ function touchForm(at: {
   animated: FocusableProps['style'];
   showRing: boolean;
   pressedStyle: FocusableProps['pressedStyle'];
+  hoveredStyle: FocusableProps['hoveredStyle'];
   onPress: () => void;
   onLongPress: FocusableProps['onLongPress'];
   onHoverIn: FocusableProps['onHoverIn'];
+  onHoverOut: () => void;
   hitSlop: FocusableProps['hitSlop'];
   /** Controlled controls report the owner's `focused`; unscoped ones can never
    *  be focused, so their children are always told `false`. */
   controlled: boolean;
   focused: boolean;
+  hovered: boolean;
   children: FocusableProps['children'];
 }): ReactNode {
   // The coats are built HERE rather than at the call site: only a controlled
   // control can look focused, so the focus layers belong with the branch that
   // knows that, not in the caller's argument list.
   const lit = at.controlled && at.focused;
+  // Hover goes UNDER the focus coats: a control the cursor is over and the
+  // remote is on is a focused control, not a doubly-lit one.
+  const hover = at.hovered ? at.hoveredStyle : null;
   const base = at.controlled
-    ? [at.style, lit ? at.focusedStyle : null, lit && at.showRing ? FOCUS_RING : null, at.animated]
-    : [at.style, at.animated];
+    ? [
+        at.style,
+        hover,
+        lit ? at.focusedStyle : null,
+        lit && at.showRing ? FOCUS_RING : null,
+        at.animated,
+      ]
+    : [at.style, hover, at.animated];
   return (
     <TouchPressable
       boxRef={at.boxRef}
@@ -168,6 +187,7 @@ function touchForm(at: {
       onPress={at.onPress}
       onLongPress={at.onLongPress}
       onHoverIn={at.onHoverIn}
+      onHoverOut={at.onHoverOut}
       hitSlop={at.hitSlop}
       {...(at.controlled ? { unfocusable: true } : null)}
     >
@@ -194,6 +214,7 @@ function navigatorForm(at: {
   animated: FocusableProps['style'];
   showRing: boolean;
   focused: boolean;
+  hovered: boolean;
   press: () => void;
   pointerPress: () => void;
   handleFocus: () => void;
@@ -201,12 +222,16 @@ function navigatorForm(at: {
   setBox: (view: View | null) => void;
   label: string | undefined;
   pressedStyle: FocusableProps['pressedStyle'];
+  hoveredStyle: FocusableProps['hoveredStyle'];
+  onHoverIn: () => void;
+  onHoverOut: () => void;
   onLongPress: FocusableProps['onLongPress'];
   hitSlop: FocusableProps['hitSlop'];
   children: FocusableProps['children'];
 }): ReactNode {
   const painted = [
     at.layers ? at.layers.face : at.style,
+    at.hovered ? at.hoveredStyle : null,
     at.focused ? at.focusedStyle : null,
     at.showRing && at.focused ? FOCUS_RING : null,
     at.animated,
@@ -233,6 +258,16 @@ function navigatorForm(at: {
           accessibilityRole: 'button',
           accessibilityLabel: at.label,
           ref: at.setBox,
+          // The pointer, on the browser targets only. This view is a plain
+          // <View> rather than a Pressable (see the style comment above), so
+          // there is no hover callback here to lean on - react-native-web
+          // forwards these two straight to the element instead.
+          //
+          // Native is left out on the same reasoning as the Pressable below:
+          // the amber ring already answers the one input a television has, and
+          // the only TV with a cursor (an Android air mouse) uses it to CLICK.
+          // A row of tiles should not each carry pointer handlers for that.
+          ...(WEB ? { onPointerEnter: at.onHoverIn, onPointerLeave: at.onHoverOut } : null),
         } as NavigatorViewProps
       }
     >
@@ -272,6 +307,7 @@ function Focusable({
   style,
   focusedStyle,
   pressedStyle,
+  hoveredStyle,
   children,
   label,
   ref,
@@ -280,9 +316,26 @@ function Focusable({
   /** Controlled mode: the caller says what focused is; the navigator is out. */
   const controlled = controlledFocus !== undefined;
   const focused = controlled ? controlledFocus : selfFocused;
-  const animated = useFocusScale(focused, focusScale);
   /** Is a navigator mounted above us at all? See the unscoped return below. */
   const scoped = useInsideFocusScope();
+
+  // Is a pointer resting on this control? A constant `false` off the web: the
+  // handlers that move it are only attached in a browser, so on a television
+  // this is one dormant state slot rather than a per-control cost.
+  const [hovered, setHovered] = useState(false);
+  const hoverIn = useCallback(() => {
+    setHovered(true);
+    onHoverIn?.();
+  }, [onHoverIn]);
+  const hoverOut = useCallback(() => setHovered(false), []);
+
+  // The SCALE answers the pointer as well as the remote, and it is what carries
+  // hover on the controls that have no fill to brighten: a poster, a card, a
+  // genre tile is artwork, and `hoveredStyle` has nothing there to paint. Those
+  // grow under the cursor by exactly the amount they grow under focus, so the
+  // browser gets the design's own gesture rather than a second one invented for
+  // it. A control asking for no focus scale (the default) still gets none.
+  const animated = useFocusScale(focused || hovered, focusScale);
 
   // The control's own box, and the fallback the page scrolls to when this
   // control is in no row of its own (a settings list, a grid cell). It is the
@@ -426,12 +479,15 @@ function Focusable({
       animated,
       showRing,
       pressedStyle,
+      hoveredStyle,
       onPress: press,
       onLongPress,
-      onHoverIn,
+      onHoverIn: hoverIn,
+      onHoverOut: hoverOut,
       hitSlop,
       controlled,
       focused,
+      hovered,
       children,
     });
   }
@@ -449,6 +505,7 @@ function Focusable({
     animated,
     showRing,
     focused,
+    hovered,
     press,
     pointerPress,
     handleFocus,
@@ -456,6 +513,9 @@ function Focusable({
     setBox,
     label,
     pressedStyle,
+    hoveredStyle,
+    onHoverIn: hoverIn,
+    onHoverOut: hoverOut,
     onLongPress,
     hitSlop,
     children,
@@ -536,6 +596,7 @@ function TouchPressable({
   onPress,
   onLongPress,
   onHoverIn,
+  onHoverOut,
   hitSlop,
   unfocusable = false,
   label,
@@ -547,6 +608,7 @@ function TouchPressable({
   onPress: () => void;
   onLongPress?: () => void;
   onHoverIn?: () => void;
+  onHoverOut?: () => void;
   hitSlop?: number | Insets;
   unfocusable?: boolean;
   label?: string;
@@ -563,6 +625,7 @@ function TouchPressable({
       onPress={onPress}
       onLongPress={onLongPress}
       onHoverIn={onHoverIn}
+      onHoverOut={onHoverOut}
       hitSlop={hitSlop}
       onPressIn={dip.onPressIn}
       onPressOut={dip.onPressOut}

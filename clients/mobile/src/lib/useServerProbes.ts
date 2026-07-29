@@ -2,8 +2,8 @@
 // profile gate's offline badges plus the admin-configured server name, which
 // is persisted back onto the saved-server entry.
 
-import { KromaClient } from '@kroma/core';
 import { useEffect, useState } from 'react';
+import { makeClient } from '#mobile/lib/device';
 import { useSession } from './session';
 
 export interface ServerProbe {
@@ -24,7 +24,7 @@ export function useServerProbes(urls: string[]): Record<string, ServerProbe> {
         const abort = new AbortController();
         const timer = setTimeout(() => abort.abort(), 4000);
         try {
-          const health = await new KromaClient({ baseUrl: url }).health({ signal: abort.signal });
+          const health = await makeClient(url).health({ signal: abort.signal });
           if (cancelled) return;
           setProbes((prev) => ({ ...prev, [url]: { online: true, name: health.name } }));
           if (health.name) renameServer(url, health.name);

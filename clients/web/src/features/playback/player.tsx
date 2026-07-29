@@ -5,12 +5,18 @@ import {
   type MediaItem,
   playerSubtitle,
 } from '@kroma/core';
-import { Player as UnifiedPlayer, useSubtitleAppearance, useT, WEB_FLAGS } from '@kroma/ui';
+import {
+  Player as UnifiedPlayer,
+  useCast,
+  useSubtitleAppearance,
+  useT,
+  WEB_FLAGS,
+} from '@kroma/ui';
 import { Button } from '@kroma/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';
-import { CastHandoff } from '#web/features/playback/cast/cast-handoff';
+import { castPicker } from '#web/features/playback/cast/cast-picker';
 import { IconStopped } from '#web/features/playback/icons';
 import { Toast } from '#web/features/playback/player-toast';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
@@ -47,12 +53,16 @@ export function Player({
   onClose: () => void;
 }>) {
   const t = useT();
+  const cast = useCast();
   const wc = useWebController(item);
   const { controller, videoRef, containerRef, pb, subtitleGen } = wc;
   const [appearance, setAppearance] = useSubtitleAppearance();
   const storyboard = useStoryboard(item.id);
   const tileAt = useCallback((sec: number) => storyboard.tile(sec, PREVIEW_W), [storyboard]);
   const upNext = useWebUpNext(item, following);
+  // The cast button joins the control row only while a set is actually live -
+  // an offer to play on a TV that is not there is not an offer.
+  const flags = useMemo(() => ({ ...WEB_FLAGS, cast: cast.available }), [cast.available]);
 
   // Resume prompt (the anchor is already set to the saved position by the engine;
   // this only shows the toast + offers a restart) and the admin-stop overlay.
@@ -124,19 +134,24 @@ export function Player({
   return (
     <UnifiedPlayer
       controller={controller}
-      flags={WEB_FLAGS}
+      // The cast button joins the control row only while a set is actually
+      // live - an offer to play on a TV that is not there is not an offer.
+      flags={flags}
       title={item.title}
       subtitle={playerSubtitle(item)}
       warn={warn}
       // Hand this film to a TV: the position goes with it, and the browser
       // stops once the set has it.
-      actions={
-        <CastHandoff
-          itemId={item.id as ItemId}
-          positionMs={() => pb.getPosition() * 1000}
-          onHandedOff={onClose}
-        />
-      }
+      onCast={async () => {
+        const picked = await castPicker();
+        if (!picked) return;
+        const ok = await cast.playOn(
+          picked,
+          item.id as ItemId,
+          Math.round(pb.getPosition() * 1000),
+        );
+        if (ok) onClose();
+      }}
       markers={item.markers ?? undefined}
       tileAt={tileAt}
       appearance={appearance}

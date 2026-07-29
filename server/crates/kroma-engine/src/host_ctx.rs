@@ -148,10 +148,10 @@ mod tests {
     use super::*;
     use crate::test_support::test_state;
 
-    /// The JSON body of a bus message. `Envelope` derefs to its payload, so this
-    /// is the one line to revisit if that accessor ever changes.
+    /// The JSON body of a bus message, whoever it was addressed to - these tests
+    /// assert on what was published, not on who may read it.
     fn body(env: &crate::infra::events::Envelope) -> serde_json::Value {
-        serde_json::from_str(env).unwrap()
+        serde_json::from_str(env.payload_unrouted()).unwrap()
     }
 
     fn user(state: &crate::state::SharedState, perms: &[Permission]) -> User {

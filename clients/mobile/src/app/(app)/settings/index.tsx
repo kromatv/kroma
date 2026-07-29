@@ -38,6 +38,12 @@ export default function Settings() {
             icon="chevron-right"
             onPress={() => router.push('/settings/language' as never)}
           />
+          <Row
+            label={t('notifications.settings')}
+            value={t('notifications.title')}
+            icon="chevron-right"
+            onPress={() => router.push('/settings/notifications' as never)}
+          />
         </View>
 
         <Text style={styles.group}>{t('nav.server')}</Text>

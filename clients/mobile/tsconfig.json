@@ -17,6 +17,12 @@
       // packages/ui's package.json "imports" - this is the TypeScript half.
       "#ui/*": ["../../packages/ui/src/*"],
       "#tv/*": ["../../packages/tv/src/*"],
+      // And `#web/*`, for the one place a mobile test asserts the OTHER half of
+      // a contract it shares with the browser: the phone writes a User-Agent
+      // and the web account page reads it back, so `lib/device.test.ts` checks
+      // both ends together (the runner already resolves it from the root
+      // vitest config; this is the TypeScript half).
+      "#web/*": ["../web/src/*"],
       // ONE react-native for the whole program. This app aliases react-native
       // to the TV fork, but dependencies with their own nested copies (bun
       // links them the PLAIN package) dragged upstream's types into the same

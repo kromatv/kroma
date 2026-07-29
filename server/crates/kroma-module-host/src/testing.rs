@@ -301,92 +301,6 @@ impl HostCtx for StubHost {
     }
 }
 
-/// A host that implements only the REQUIRED methods of the seam, leaving every
-/// defaulted one at its trait default.
-///
-/// The defaults are the seam's security posture: `publish_to` must DROP personal
-/// content rather than fall back to a broadcast, and `notify` must report zero
-/// recipients rather than claim a delivery that never happened. Asserting on
-/// them needs a host that has not overridden them - which every other double
-/// here deliberately has.
-pub struct DefaultsProbe(StubHost);
-
-impl Default for DefaultsProbe {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl DefaultsProbe {
-    pub fn new() -> Self {
-        Self(StubHost::new())
-    }
-
-    /// The same probe over a real temp database, for a defaults test that has to
-    /// reach the ledger first.
-    pub fn with_db(tag: &str) -> Self {
-        Self(StubHost::with_db(tag))
-    }
-
-    /// Topics that reached `publish`. Anything an addressed send leaked into the
-    /// broadcast channel shows up here.
-    pub fn broadcasts(&self) -> Vec<String> {
-        self.0.topics()
-    }
-}
-
-// Only the required methods. `publish_to` and `notify` are intentionally absent.
-impl HostCtx for DefaultsProbe {
-    fn db(&self) -> &Pool {
-        self.0.db()
-    }
-    fn data_dir(&self) -> &Path {
-        self.0.data_dir()
-    }
-    fn require(&self, user: &User, perm: Permission) -> Result<(), Response> {
-        self.0.require(user, perm)
-    }
-    fn require_any_admin(&self, user: &User) -> Result<(), Response> {
-        self.0.require_any_admin(user)
-    }
-    fn lerr(&self, user: &User, status: StatusCode, key: &str) -> Response {
-        self.0.lerr(user, status, key)
-    }
-    fn setting_str(&self, key: &str, default: &str) -> String {
-        self.0.setting_str(key, default)
-    }
-    fn setting_bool(&self, key: &str, default: bool) -> bool {
-        self.0.setting_bool(key, default)
-    }
-    fn setting_i64(&self, key: &str, default: i64) -> i64 {
-        self.0.setting_i64(key, default)
-    }
-    fn set_settings(&self, patch: BTreeMap<String, serde_json::Value>) {
-        self.0.set_settings(patch);
-    }
-    fn publish(&self, event: Event) {
-        self.0.publish(event);
-    }
-    fn trigger_job(&self, key: &'static str, reason: &'static str) {
-        self.0.trigger_job(key, reason);
-    }
-    fn module_enabled(&self, id: &str) -> bool {
-        self.0.module_enabled(id)
-    }
-    fn library_folders(&self) -> Vec<LibraryFolders> {
-        self.0.library_folders()
-    }
-    fn tmdb_api_key(&self) -> Option<String> {
-        self.0.tmdb_api_key()
-    }
-    fn metadata_language(&self) -> String {
-        self.0.metadata_language()
-    }
-    fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
-        self.0.get_service(type_id)
-    }
-}
-
 /// A REAL host with its bus tapped: every method forwards to `inner`, except
 /// `publish` / `publish_to` / `notify`, which are recorded and go no further.
 ///
@@ -735,48 +649,54 @@ mod tests {
         host.db().get().unwrap().execute("SELECT 1 FROM users LIMIT 0", []).unwrap();
     }
 
-    // ----- the defaults probe --------------------------------------------------
+    // ----- the stub's required surface -------------------------------------------
 
     #[test]
-    fn the_probe_leaves_the_two_defaulted_methods_alone() {
-        // Its whole purpose: `publish_to` must DROP personal content rather than
-        // fall back to a broadcast, and `notify` must report nobody reached.
-        let probe = DefaultsProbe::new();
-        probe.publish_to("ana", Event::new("notification.created", json!({})));
-        assert!(probe.broadcasts().is_empty(), "an addressed event leaked into the broadcast bus");
-        assert_eq!(probe.notify(&Audience::user("ana"), &spec()), 0);
-
-        // ...while everything required still behaves like the stub.
-        probe.publish(Event::new("scan.finished", json!({})));
-        assert_eq!(probe.broadcasts(), ["scan.finished"]);
-        assert_eq!(probe.setting_str("k", "fallback"), "fallback");
-        assert!(probe.setting_bool("k", true));
-        assert_eq!(probe.setting_i64("k", 9), 9);
-        assert!(probe.require(&user(), Permission::LibraryManage).is_ok());
-        assert!(probe.require_any_admin(&user()).is_ok());
-        assert_eq!(probe.lerr(&user(), StatusCode::NOT_FOUND, "k").status(), StatusCode::NOT_FOUND);
-        assert!(probe.module_enabled("x"));
-        assert!(probe.library_folders().is_empty());
-        assert!(probe.tmdb_api_key().is_none());
-        assert_eq!(probe.metadata_language(), "en");
-        assert!(probe.get_service(TypeId::of::<u32>()).is_none());
-        assert!(probe.data_dir().is_dir());
-        probe.set_settings(BTreeMap::from([("k".to_string(), json!("v"))]));
-        assert_eq!(probe.setting_str("k", "fallback"), "v");
-        probe.trigger_job("library.scan", "test");
+    fn the_stub_answers_every_required_method_neutrally() {
+        // The seam has ~25 methods and a double is only useful if the ones a
+        // test is NOT about stay out of the way: settings hand back the caller's
+        // own default, gates allow, and the optional capabilities are absent.
+        let host = StubHost::new();
+        host.publish(Event::new("scan.finished", json!({})));
+        assert_eq!(host.topics(), ["scan.finished"]);
+        assert_eq!(host.setting_str("k", "fallback"), "fallback");
+        assert!(host.setting_bool("k", true));
+        assert_eq!(host.setting_i64("k", 9), 9);
+        assert!(host.require(&user(), Permission::LibraryManage).is_ok());
+        assert!(host.require_any_admin(&user()).is_ok());
+        assert_eq!(host.lerr(&user(), StatusCode::NOT_FOUND, "k").status(), StatusCode::NOT_FOUND);
+        assert!(host.module_enabled("x"));
+        assert!(host.library_folders().is_empty());
+        assert!(host.tmdb_api_key().is_none());
+        assert_eq!(host.metadata_language(), "en");
+        assert!(host.get_service(TypeId::of::<u32>()).is_none());
+        assert!(host.data_dir().is_dir());
+        host.set_settings(BTreeMap::from([("k".to_string(), json!("v"))]));
+        assert_eq!(host.setting_str("k", "fallback"), "v");
+        host.trigger_job("library.scan", "test");
+        assert_eq!(host.jobs(), [("library.scan", "test")]);
     }
 
     #[test]
-    fn the_probe_can_carry_a_database_like_the_stub() {
-        let probe = DefaultsProbe::with_db("probe");
-        probe.db().get().unwrap().execute("SELECT 1 FROM users LIMIT 0", []).unwrap();
+    fn an_addressed_send_does_not_leak_into_the_broadcast_channel() {
+        // `publish_to` carries personal content ("your request was denied" names
+        // its recipient), so it must never reach the channel every client reads.
+        // The trait makes implementing it mandatory; this is the other half -
+        // that an implementation keeps the two buses apart.
+        let host = StubHost::new();
+        host.publish_to("ana", Event::new("notification.created", json!({})));
+        assert_eq!(host.published(), [(Some("ana".to_string()), "notification.created".to_string())]);
+        assert!(
+            host.published().iter().all(|(to, _)| to.is_some()),
+            "an addressed event leaked into the broadcast bus"
+        );
     }
 
     #[test]
-    fn the_probe_and_the_stub_both_default_to_something_usable() {
+    fn the_stub_defaults_to_something_usable() {
         // `Default` exists so a double can be dropped into a `#[derive(Default)]`
         // harness; it must not differ from `new()`.
         assert_eq!(StubHost::default().metadata_language(), StubHost::new().metadata_language());
-        assert!(DefaultsProbe::default().broadcasts().is_empty());
+        assert!(StubHost::default().published().is_empty());
     }
 }

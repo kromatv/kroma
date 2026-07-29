@@ -1,6 +1,6 @@
 import {
   KromaApiError,
-  KromaClient,
+  type KromaClient,
   type MessageKey,
   type StoredSession,
   type User,
@@ -8,6 +8,7 @@ import {
 import { useT } from '@kroma/ui';
 import { Avatar, Box, Icon, Keypad, PinField, Spinner, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
+import { makeClient } from '#tv/app/apiClient';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
@@ -75,7 +76,7 @@ export function TvPin() {
   // For `verify`, talk to the account's own server. The bearer is minted on
   // demand by exchanging the account's access token (see `submit`).
   const verifyClient = useMemo(
-    () => (account?.serverUrl ? new KromaClient({ baseUrl: account.serverUrl }) : null),
+    () => (account?.serverUrl ? makeClient(account.serverUrl) : null),
     [account],
   );
 

@@ -20,13 +20,22 @@ export interface PlayerFlags {
   pip: boolean;
   /** Fullscreen toggle (web). A TV is already fullscreen. */
   fullscreen: boolean;
+  /** "Play this on a TV". Set by the senders (web, and the phone if it ever
+   *  adopts this chrome) and only while a receiver is actually live - a TV is
+   *  the screen a film is cast TO, never from. */
+  cast?: boolean;
   /** A fine pointer drives the chrome (reveal-on-move). Off on TVs: a Samsung /
    *  magic-remote cursor emits phantom `pointermove` events that would otherwise
    *  keep the chrome (title + controls) revealed forever instead of auto-hiding. */
   pointer: boolean;
 }
 
-export const WEB_FLAGS: PlayerFlags = { volume: true, pip: true, fullscreen: true, pointer: true };
+export const WEB_FLAGS: PlayerFlags = {
+  volume: true,
+  pip: true,
+  fullscreen: true,
+  pointer: true,
+};
 export const TV_FLAGS: PlayerFlags = {
   volume: false,
   pip: false,

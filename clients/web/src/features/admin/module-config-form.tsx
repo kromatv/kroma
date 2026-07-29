@@ -7,7 +7,7 @@ import type { ConfigField } from '@kroma/module-sdk';
 import { Button } from '@kroma/ui/kit';
 import { type ReactNode, useId, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
-import { Toggle } from '#web/features/admin/ui';
+import { FIELD, Toggle } from '#web/features/admin/ui';
 
 type ConfigValue = string | number | boolean;
 
@@ -89,7 +89,8 @@ function Field({
   onChange: (v: ConfigValue) => void;
 }>) {
   const id = useId();
-  const inputCls = 'w-40 rounded border border-border bg-transparent px-2 py-1 text-text';
+  // The console's field, at the width this two-column form gives a value.
+  const inputCls = `${FIELD} w-40`;
 
   let control: ReactNode;
   if (field.type === 'bool') {

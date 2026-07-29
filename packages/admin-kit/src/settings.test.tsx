@@ -11,7 +11,7 @@
 
 import type { SettingGroup } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';
-import { render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminKitProvider } from './context';
@@ -132,6 +132,71 @@ describe('rendering', () => {
     );
     await waitFor(() => expect(container.textContent).toContain('Row 0'));
     expect(container.textContent).not.toContain('Saved');
+  });
+});
+
+// A `secret` row holds an APNs signing key or a Firebase service account. The
+// server never sends one back, so the two things that must hold are that a
+// pasted key does not survive in the page, and that walking past the field
+// cannot erase a working one.
+describe('secret rows', () => {
+  const secret = (configured: boolean) =>
+    group([{ kind: 'secret', value: '', configured, label: 'Auth key' }]);
+
+  const field = (container: HTMLElement) =>
+    container.querySelector('textarea') as HTMLTextAreaElement;
+
+  it('says whether a key is stored, without showing it', async () => {
+    const { container } = mount([secret(true)]);
+    await waitFor(() => expect(container.textContent).toContain('Auth key'));
+    expect(container.textContent).toContain('Configured');
+    expect(field(container).value).toBe('');
+  });
+
+  it('reports an unset key rather than looking the same as a set one', async () => {
+    const { container } = mount([secret(false)]);
+    await waitFor(() => expect(container.textContent).toContain('Auth key'));
+    expect(container.textContent).toContain('Not set');
+  });
+
+  it('sends a pasted key once, then forgets it', async () => {
+    const { container, client } = mount([secret(false)]);
+    await waitFor(() => expect(container.textContent).toContain('Auth key'));
+    const input = field(container);
+    fireEvent.change(input, { target: { value: '-----BEGIN PRIVATE KEY-----' } });
+    fireEvent.blur(input);
+    await waitFor(() =>
+      expect(client.updateSettings).toHaveBeenCalledWith({ k0: '-----BEGIN PRIVATE KEY-----' }),
+    );
+    // Not left in the textarea, and not written back into the row's value by the
+    // optimistic update either.
+    expect(field(container).value).toBe('');
+    expect(container.textContent).not.toContain('BEGIN PRIVATE KEY');
+    expect(container.textContent).toContain('Configured');
+  });
+
+  // The whole reason blur does not commit blindly: tabbing through the form
+  // would otherwise silently turn iOS push off.
+  it('does not erase a stored key when the field is left empty', async () => {
+    const { container, client } = mount([secret(true)]);
+    await waitFor(() => expect(container.textContent).toContain('Auth key'));
+    fireEvent.blur(field(container));
+    fireEvent.change(field(container), { target: { value: '   ' } });
+    fireEvent.blur(field(container));
+    expect(client.updateSettings).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Configured');
+  });
+
+  // ...which means removing one has to be deliberate.
+  it('clears a stored key on an explicit request', async () => {
+    const { container, client } = mount([secret(true)]);
+    await waitFor(() => expect(container.textContent).toContain('Auth key'));
+    const clear = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Clear'),
+    );
+    fireEvent.click(clear as HTMLButtonElement);
+    await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: '' }));
+    expect(container.textContent).toContain('Not set');
   });
 });
 

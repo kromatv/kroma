@@ -11,6 +11,7 @@ import {
   type ManualReleaseView,
   Modal,
   ModalActions,
+  FIELD_GROUP,
   SegmentedControl,
   TextInput,
   type TorrentAnalysis,
@@ -444,14 +445,16 @@ function SearchPanel({
   return (
     <div className="mb-4">
       <div className="flex gap-2">
-        <div className="flex h-11 flex-1 items-center rounded-[9px] border border-border-strong bg-[#0F0F13] px-3">
+        <div className={`${FIELD_GROUP} h-11 flex-1`}>
           <IconSearch size={16} className="shrink-0 text-dim" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearch()}
             placeholder={t('manual.searchPlaceholder')}
-            className="min-w-0 flex-1 bg-transparent px-2.5 text-[13.5px] font-semibold text-text outline-none placeholder:text-dim"
+            // The box above is the field; it takes the border and the ring.
+            data-focus-ring="off"
+            className="min-w-0 flex-1 bg-transparent text-[13.5px] font-semibold text-text outline-none placeholder:text-dim"
           />
         </div>
         <Button

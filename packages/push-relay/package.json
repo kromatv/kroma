@@ -1,0 +1,20 @@
+{
+  "name": "@kroma/push-relay",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "KROMA push relay: the Cloudflare Worker at push.kroma.tv that holds the published app's Apple and Google credentials and issues per-device grants, so a self-hosted server can notify a phone without holding a credential it could never obtain.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.9.0",
+    "hono": "^4.12.32",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "wrangler": "^4.42.0"
+  }
+}

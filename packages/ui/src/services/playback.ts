@@ -30,6 +30,12 @@ export interface PlaybackHeartbeatParams {
   device: string;
   /** Base URL for the live-events stream (web: apiBase(); TV: client.baseUrl). */
   eventsBaseUrl: string;
+  /** Where the event socket reads its bearer, when the shared in-memory session
+   * is not the right source. The TV keeps its bearer on its client (it is
+   * multi-server), so it passes that; web and phone leave this unset. Without it
+   * the TV's socket handshake carries no credential and is refused - which left
+   * the admin-stop event relying entirely on its 410-on-ping fallback. */
+  eventsToken?: () => string | undefined;
   /** Session-id platform prefix, e.g. `'web'` | `'tv'`. */
   idPrefix: string;
   /** Fired the first time the session is terminated (admin stop, or a 410). */
@@ -124,6 +130,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   useEffect(() => {
     if (!params.enabled) return;
     const ev = new KromaEvents(params.eventsBaseUrl, {
+      token: ref.current.eventsToken,
       onEvent: (e) => {
         if (e.type === 'playback.terminate' && e.sessionId === sessionId.current) {
           fireTerminated.current(e.message);

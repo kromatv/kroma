@@ -10,11 +10,12 @@
 //! (`api::util::blocking`, a job thread), never inline in an async handler the
 //! same rule the requests service follows.
 
+pub mod art;
 pub mod digest;
 pub mod push;
 pub mod render;
 
-use kroma_db::notifications::NewNotification;
+use kroma_db::notifications::StoredNotification;
 use kroma_module_host::{Event, HostCtx};
 use serde_json::json;
 
@@ -28,16 +29,23 @@ use crate::services::jobs::now_ms;
 /// Returns full [`User`]s: the caller needs `language` to render for each
 /// recipient, so re-fetching per id would be a query per notification.
 fn resolve<S: HostCtx>(audience: &Audience, state: &S) -> anyhow::Result<Vec<User>> {
+    // The single-recipient case is by far the most common (a request approved,
+    // a report triaged) and has an indexed lookup; only the set-valued audiences
+    // need the whole account list.
+    if let Audience::User { id } = audience {
+        return Ok(db::user_by_id(state.db(), id)?.into_iter().collect());
+    }
     let conn = state.db().get()?;
     let all = db::notifications::recipients(&conn)?;
     Ok(match audience {
-        Audience::User { id } => all.into_iter().filter(|u| &u.id == id).collect(),
+        Audience::User { .. } => unreachable!("handled above"),
         Audience::Permission { permission } => {
             all.into_iter().filter(|u| u.can(*permission)).collect()
         }
         Audience::Everyone => all,
         Audience::Followers { show_id } => {
-            let ids = db::notifications::followers_of_show(&conn, show_id)?;
+            let ids: std::collections::HashSet<String> =
+                db::notifications::followers_of_show(&conn, show_id)?.into_iter().collect();
             all.into_iter().filter(|u| ids.contains(&u.id)).collect()
         }
     })
@@ -59,9 +67,23 @@ pub fn emit<S: HostCtx>(state: &S, audience: &Audience, spec: &NotificationSpec)
             return 0;
         }
     };
+    emit_to(state, &recipients, spec)
+}
+
+/// [`emit`] with the audience already resolved.
+///
+/// The digest announces many shows in one run; going through `emit` each time
+/// would re-read the whole user table per show, so it resolves once and calls
+/// this. The VAPID key and push subject are resolved here too, for the same
+/// reason: they are per-server, not per-recipient.
+pub fn emit_to<S: HostCtx>(state: &S, recipients: &[User], spec: &NotificationSpec) -> usize {
+    if recipients.is_empty() {
+        return 0;
+    }
+    let push = push::sender(state);
     let mut sent = 0;
     for user in recipients {
-        match deliver(state, &user, spec) {
+        match deliver(state, user, spec, &push) {
             Ok(true) => sent += 1,
             Ok(false) => {}
             Err(e) => {
@@ -80,12 +102,14 @@ fn deliver<S: HostCtx>(
     state: &S,
     user: &User,
     spec: &NotificationSpec,
+    push: &push::Sender,
 ) -> anyhow::Result<bool> {
     let category = spec.category();
-    let (in_app, push_allowed) = {
-        let conn = state.db().get()?;
-        db::notifications::allows(&conn, &user.id, category)?
-    };
+    // One connection for the whole DB half of the delivery: the checks and the
+    // insert run on it instead of taking two from the pool. It is released
+    // before the push, which is blocking network I/O with bookkeeping of its own.
+    let conn = state.db().get()?;
+    let (in_app, push_allowed) = db::notifications::allows(&conn, &user.id, category)?;
     if !in_app {
         return Ok(false);
     }
@@ -97,29 +121,27 @@ fn deliver<S: HostCtx>(
         spec.event.as_str(),
         crate::services::auth::random_token()
     ));
-    db::notifications::insert_notification(
-        state.db(),
-        &NewNotification {
-            id: id.clone(),
-            user_id: user.id.clone(),
-            event: spec.event,
-            title_key: spec.title_key.clone(),
-            body_key: spec.body_key.clone(),
-            params: spec.params.clone(),
-            link: spec.link.clone(),
-            image_url: spec.image_url.clone(),
-            actions: spec.actions.clone(),
-            push_category: spec.push_category,
-        },
-        now,
-    )?;
+    // The row we are about to write, kept in hand: rendering the push below needs
+    // exactly this, and re-SELECTing it would be a query plus two JSON parses for
+    // data already sitting here.
+    let stored = StoredNotification {
+        id: id.clone(),
+        category,
+        event: spec.event,
+        title_key: spec.title_key.clone(),
+        body_key: spec.body_key.clone(),
+        params: spec.params.clone(),
+        link: spec.link.clone(),
+        image_url: spec.image_url.clone(),
+        actions: spec.actions.clone(),
+        push_category: spec.push_category,
+        read: false,
+        created_at: now,
+    };
+    let unread = db::notifications::insert_notification(&conn, user.id.as_str(), &stored)?;
 
     // Wake this user's open clients. Addressed, so the bell on someone else's
     // browser does not tick for a notification that isn't theirs.
-    let unread = {
-        let conn = state.db().get()?;
-        db::notifications::unread_count(&conn, &user.id)?
-    };
     state.publish_to(
         &user.id,
         Event::new("notification.created", json!({ "id": id, "unread": unread })),
@@ -130,14 +152,12 @@ fn deliver<S: HostCtx>(
     // already written, so a push service being down costs a push, not the
     // notification.
     if push_allowed {
-        let stored = {
-            let conn = state.db().get()?;
-            db::notifications::list_notifications(&conn, &user.id, 1, false)?
-        };
-        if let Some(stored) = stored.iter().find(|n| n.id == id) {
-            let rendered = render::render(stored, render::locale_of(user));
-            push::deliver(state, &user.id, &rendered);
-        }
+        // Sized on the way out: the device fetches this URL itself, over its own
+        // network, and a lock-screen thumbnail has no use for the master (see
+        // `art`).
+        let rendered = art::sized_for_push(render::render(&stored, render::locale_of(user)));
+        drop(conn);
+        push::deliver(state, push, &user.id, &rendered);
     }
     Ok(true)
 }

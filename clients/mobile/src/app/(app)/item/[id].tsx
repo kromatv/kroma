@@ -9,6 +9,7 @@ import {
   type ProgressEntry,
   qualityBadge,
   sizedImageUrl,
+  type Translate,
 } from '@kroma/core';
 import { Chip } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ import { CastRail, DetailActions, DetailHero, MetaBadge } from '#mobile/componen
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { SplitColumns, useGutters } from '#mobile/lib/layout';
+import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { colors, posterWidth, spacing, type } from '#mobile/lib/theme';
 
@@ -33,6 +35,14 @@ function episodeContext(media: MediaItem): string | undefined {
 /** Saved position worth resuming from (anything under 30s starts over). */
 function resumeSeconds(progress: ProgressEntry | null | undefined): number {
   return progress && progress.positionMs > 30_000 ? progress.positionMs / 1000 : 0;
+}
+
+/** What the big button promises. With a TV connected it says where it will
+ * land, because Play stops meaning "here" the moment one is. */
+function playLabel(t: Translate, device: string | undefined, resumeSec: number): string {
+  if (device) return t('cast.playOn', { device });
+  if (resumeSec > 0) return t('player.resumeAt', { time: formatTimecode(resumeSec) });
+  return t('player.play');
 }
 
 function reportPath(media: MediaItem, title: string): string {
@@ -61,6 +71,7 @@ export default function ItemDetail() {
   const t = useT();
   const client = useClient();
   const router = useRouter();
+  const { play, device } = usePlay();
   const { width } = useWindowDimensions();
   const gutters = useGutters();
   const queryClient = useQueryClient();
@@ -135,12 +146,8 @@ export default function ItemDetail() {
         style={[styles.body, gutters.style]}
         left={
           <DetailActions
-            playLabel={
-              resumeSec > 0
-                ? t('player.resumeAt', { time: formatTimecode(resumeSec) })
-                : t('player.play')
-            }
-            onPlay={() => router.push(`/player/${media.id}` as never)}
+            playLabel={playLabel(t, device?.name, resumeSec)}
+            onPlay={() => void play(media.id, resumeSec * 1000)}
             inList={inList}
             onToggleList={() => toggleList.mutate()}
             watched={isWatched}

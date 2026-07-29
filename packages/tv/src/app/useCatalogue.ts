@@ -2,7 +2,7 @@ import {
   type Activity,
   discoverServer,
   forgetServer as forgetServerStore,
-  KromaClient,
+  type KromaClient,
   KromaEvents,
   loadSession,
   type MediaItem,
@@ -12,6 +12,7 @@ import {
   saveServer as saveServerStore,
 } from '@kroma/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { makeClient } from '#tv/app/apiClient';
 import type { Connection } from '#tv/app/providers/connection';
 import { serverBrowse } from '#tv/app/serverBrowse';
 import { useServerHealth } from '#tv/app/useServerHealth';
@@ -76,7 +77,7 @@ export function useCatalogue(platform: string): Catalogue {
     // No initial bearer: the auth provider exchanges the active account's access
     // token for a session token and calls `setAuthToken` (+ installs the refresh
     // handler) once the session belongs to this server.
-    return new KromaClient({ baseUrl: activeServerUrl });
+    return makeClient(activeServerUrl);
   }, [activeServerUrl]);
 
   // Reported up by the auth provider; gates the catalogue + event stream so the

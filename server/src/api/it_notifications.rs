@@ -470,3 +470,180 @@ async fn a_moderator_audience_reaches_the_capability_holder_only() {
     let (_, plain_inbox) = get(&t.app, "/api/notifications", Some(&plain)).await;
     assert_eq!(plain_inbox["unread"], json!(0));
 }
+
+// ----- the console's sender ---------------------------------------------------
+
+#[tokio::test]
+async fn the_bench_sends_a_real_notification_to_the_admin_who_asked() {
+    let t = test_app();
+    let (_id, member) = member(&t, "watcher");
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({ "event": "request.available", "target": "me" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["delivered"], json!(1));
+
+    // It is a REAL notification: rendered, categorised, in the sender's own inbox.
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&t.token)).await;
+    assert_eq!(inbox["unread"], json!(1));
+    let row = &inbox["notifications"][0];
+    assert_eq!(row["event"], json!("request.available"));
+    assert_eq!(row["category"], json!("requests"));
+    assert!(!row["title"].as_str().unwrap().starts_with("notifications."));
+    // A test button must never leave a live "Approve" behind: actions only link.
+    for action in row["actions"].as_array().unwrap() {
+        assert_eq!(action["kind"], json!("link"), "action: {action}");
+    }
+
+    // "Me" means me. Nobody else's inbox was touched.
+    let (_, other) = get(&t.app, "/api/notifications", Some(&member)).await;
+    assert_eq!(other["unread"], json!(0));
+}
+
+#[tokio::test]
+async fn the_bench_refuses_a_notification_the_relay_would_reject() {
+    // The relay caps a push title at 256 and a body at 1024 and answers 400 to
+    // anything longer. A 400 is not `gone`, so before this check an over-long
+    // announcement cost every phone on the server a delivery failure - while the
+    // endpoint still answered `delivered`, because that counts in-app rows.
+    let t = test_app();
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({ "title": "x".repeat(257), "target": "me" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body["error"].as_str().unwrap_or_default().contains("title"), "{body}");
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({ "title": "Fine", "body": "y".repeat(1025), "target": "me" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    // Nothing was written for either attempt.
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&t.token)).await;
+    assert_eq!(inbox["unread"], json!(0));
+
+    // ...and one right at the limit still goes out.
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({ "title": "z".repeat(256), "target": "me" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn the_bench_can_reach_everyone_and_refuses_an_unknown_event() {
+    let t = test_app();
+    let (_id, member) = member(&t, "everybody");
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({ "event": "media.added", "target": "everyone" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    // The owner and the member: a row each.
+    assert_eq!(body["delivered"], json!(2));
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&member)).await;
+    assert_eq!(inbox["unread"], json!(1));
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({ "event": "not.an.event" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn a_written_notification_reaches_people_with_its_own_words() {
+    let t = test_app();
+    let (_id, member) = member(&t, "reader");
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({
+            "title": "Maintenance tonight",
+            "body": "The server reboots at nine.",
+            "category": "system",
+            "link": "/",
+            "target": "everyone",
+        })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["delivered"], json!(2));
+
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&member)).await;
+    let row = &inbox["notifications"][0];
+    // The words the admin typed, not a key - the core has no catalog entry for
+    // "Maintenance tonight" and never will.
+    assert_eq!(row["title"], json!("Maintenance tonight"));
+    assert_eq!(row["body"], json!("The server reboots at nine."));
+    // It belongs to a bucket a reader can mute, and says which.
+    assert_eq!(row["category"], json!("system"));
+    assert_eq!(row["event"], json!("custom"));
+    assert_eq!(row["link"], json!("/"));
+}
+
+#[tokio::test]
+async fn a_written_notification_refuses_a_category_nobody_can_mute() {
+    let t = test_app();
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({ "title": "Hello", "body": "there", "category": "not-a-bucket" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn the_bench_is_closed_to_anyone_who_cannot_manage_the_server() {
+    let t = test_app();
+    let (_id, plain) = member(&t, "plain-bench");
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&plain),
+        Some(json!({ "event": "system.disk.low", "target": "everyone" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    // And it delivered nothing on its way out.
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&plain)).await;
+    assert_eq!(inbox["unread"], json!(0));
+}

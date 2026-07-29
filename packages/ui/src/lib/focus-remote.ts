@@ -87,10 +87,18 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
   ? useTVEventHandler
   : () => {};
 
-/** Posts the TV remote into the navigator. Mounted by <FocusScope>, so it lives
- * exactly as long as a screen does. */
-export function useRemoteBridge(): void {
+/**
+ * Posts the TV remote into the navigator. Mounted by <FocusScope>, so it lives
+ * exactly as long as a screen does.
+ *
+ * `on` is how a scope drawn INSIDE another one opts out: this posts to EVERY
+ * registered navigator (the handler set below), so a second live bridge would
+ * deliver each press twice and the ring would jump two controls. See
+ * <FocusScope>'s `bridge` prop for who says no and why.
+ */
+export function useRemoteBridge(on = true): void {
   useRemoteEvents((event: HWEvent) => {
+    if (!on) return;
     if (isRemoteKeyUp(event)) return;
     // Something full-screen is over the app (the brand intro): it owns the
     // remote, and moving focus on a screen nobody can see is worse than inert.

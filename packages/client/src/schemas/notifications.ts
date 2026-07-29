@@ -12,13 +12,17 @@ import { NotificationId } from './ids';
 export const NotificationCategory = z.enum(['requests', 'media', 'reports', 'downloads', 'system']);
 export type NotificationCategory = z.infer<typeof NotificationCategory>;
 
-/** Every category, in the order the settings matrix renders them. */
-export const NOTIFICATION_CATEGORIES = NotificationCategory.options;
-
-/** The specific thing that happened. Kept as an enum (not an open union) because
- * the server owns every producer; a client built before a new event simply fails
- * the parse rather than rendering a half-known row. */
-export const NotificationEvent = z.enum([
+/**
+ * The specific thing that happened.
+ *
+ * An OPEN union, like the `codec` aliases in `../types`: the server owns this
+ * vocabulary and grows it (a module raising `custom`, a new system event), and a
+ * client built before the addition must still render the row. It can afford to —
+ * the title and body arrive already rendered, so an unrecognised event costs a
+ * client nothing. A closed enum here meant the server adding one variant made
+ * every older client reject the whole notification.
+ */
+export const KNOWN_NOTIFICATION_EVENTS = [
   'request.submitted',
   'request.approved',
   'request.denied',
@@ -33,8 +37,16 @@ export const NotificationEvent = z.enum([
   'system.job.failed',
   'system.vpn.down',
   'system.disk.low',
-]);
-export type NotificationEvent = z.infer<typeof NotificationEvent>;
+  /** A "push is working" test the user triggered from settings. */
+  'system.test',
+  /** Anything a module raised; it carries its own category. */
+  'custom',
+] as const;
+
+/** A known event, or any string a newer server sends. */
+export type NotificationEvent = (typeof KNOWN_NOTIFICATION_EVENTS)[number] | (string & {});
+
+export const NotificationEvent: z.ZodType<NotificationEvent> = z.string();
 
 /** `link` navigates to an in-app route; `api` calls the server straight from the
  * row (approve a request without opening the console). */
@@ -98,14 +110,24 @@ export const NotificationPrefs = z.object({
 });
 export type NotificationPrefs = z.infer<typeof NotificationPrefs>;
 
-/** How a push subscription reaches its device. `webpush` is the self-hosted
- * path (the server signs with its own VAPID key); `apns`/`fcm` carry a raw
- * device token. */
-export const PushTransport = z.enum(['webpush', 'apns', 'fcm']);
+/**
+ * How a push subscription reaches its device.
+ *
+ * - `webpush` — the self-hosted path: the server signs with its own VAPID key.
+ * - `relay` — the normal path for phones. The endpoint is a GRANT from
+ *   push.kroma.tv, not a device token: Apple and Google only accept credentials
+ *   issued to whoever publishes the app, so a self-hosted server has nothing
+ *   they would take and asks the relay to sign instead. The server never learns
+ *   which device the grant reaches.
+ * - `apns` / `fcm` — a raw device token, usable only by a server that holds the
+ *   published app's own credentials. Not the self-hosted case.
+ */
+export const PushTransport = z.enum(['webpush', 'relay', 'apns', 'fcm']);
 export type PushTransport = z.infer<typeof PushTransport>;
 
 /** `POST /api/push/subscribe`. Web Push sends `endpoint` plus both keys; the
- * native transports send the device token as `endpoint` and omit the keys. */
+ * native transports send the device token (or relay grant) as `endpoint` and
+ * omit the keys. */
 export const SubscribeBody = z.object({
   transport: PushTransport,
   endpoint: z.string(),

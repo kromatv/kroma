@@ -266,11 +266,22 @@ fn cache(data_dir: &Path, remote_url: &str) -> Option<String> {
 /// (`/api/images/<hash>.webp`). Reuses the same WebP encoder as TMDB art.
 /// Returns `None` if the bytes can't be decoded/encoded (no `cwebp`/ffmpeg or
 /// not an image). Served by the existing `GET /api/images/:name`.
-pub fn store_upload(data_dir: &Path, bytes: &[u8]) -> Option<String> {
+///
+/// `max_width` caps the stored master in pixels, shrinking only - a phone
+/// photograph is 4000 px wide and nothing here is ever drawn above a thousand,
+/// so without a cap the cache fills with megabytes nobody will ever see at that
+/// size. `None` stores whatever came in.
+pub fn store_upload(data_dir: &Path, bytes: &[u8], max_width: Option<u32>) -> Option<String> {
     let dir = images_dir(data_dir);
     std::fs::create_dir_all(&dir).ok()?;
 
-    let name = format!("{}.webp", content_hash(bytes));
+    // The address covers the CAP as well as the bytes: the same photograph
+    // stored for two different purposes is two different images, and reusing one
+    // hash would serve the first caller's cap to the second.
+    let name = match max_width {
+        Some(w) => format!("{}-w{w}.webp", content_hash(bytes)),
+        None => format!("{}.webp", content_hash(bytes)),
+    };
     let out = dir.join(&name);
     if !out.exists() {
         // Transcode goes through files (cwebp/ffmpeg read from disk): write the
@@ -282,7 +293,10 @@ pub fn store_upload(data_dir: &Path, bytes: &[u8]) -> Option<String> {
             return None;
         }
         let out_tmp = unique_tmp(&out);
-        let ok = encode_webp(&src_tmp, &out_tmp) && out_tmp.exists();
+        let ok = match max_width {
+            Some(w) => encode_webp_capped(&src_tmp, &out_tmp, w),
+            None => encode_webp(&src_tmp, &out_tmp),
+        } && out_tmp.exists();
         let _ = std::fs::remove_file(&src_tmp);
         if !ok {
             let _ = std::fs::remove_file(&out_tmp); // drop any partial output
@@ -291,6 +305,76 @@ pub fn store_upload(data_dir: &Path, bytes: &[u8]) -> Option<String> {
         finalize(&out_tmp, &out)?;
     }
     Some(format!("{PUBLIC_PREFIX}{name}"))
+}
+
+/// Encode `src` → WebP, shrinking to `max_width` if it is wider.
+///
+/// cwebp cannot say "shrink only" - `-resize 1280 0` blows a 320 px logo up to a
+/// blurry 1280 - so the source is measured first and the flag only added when it
+/// would actually shrink. ffmpeg is the fallback, where its own `min(iw,W)`
+/// expresses the same rule; it is second because plenty of ffmpeg builds ship
+/// without the libwebp encoder (this one does), which would silently leave the
+/// master uncapped if it went first.
+fn encode_webp_capped(src: &Path, out: &Path, max_width: u32) -> bool {
+    // `is_some_and`, not `is_none_or`: when the width cannot be read - no ffprobe
+    // in a slim container, or a format it does not know - the answer is "do not
+    // resize", never "resize anyway". The latter is the exact upscale the doc
+    // above says this measurement exists to prevent.
+    let too_wide = probe_width(src).is_some_and(|w| w > max_width);
+    let mut cwebp = Command::new("cwebp");
+    cwebp.args(["-quiet", "-q", WEBP_QUALITY, "-m", WEBP_EFFORT]);
+    if too_wide {
+        cwebp.args(["-resize", &max_width.to_string(), "0"]);
+    }
+    let status = cwebp.arg(src).arg("-o").arg(out).status();
+    if matches!(status, Ok(s) if s.success()) && out.exists() {
+        return true;
+    }
+    let _ = std::fs::remove_file(out);
+
+    let scaled = Command::new("ffmpeg")
+        .args(["-y", "-loglevel", "error", "-threads", "1", "-i"])
+        .arg(src)
+        .args([
+            "-vf",
+            &format!("scale='min(iw,{max_width})':-2:flags=lanczos"),
+            "-frames:v",
+            "1",
+            "-c:v",
+            "libwebp",
+            "-quality",
+            WEBP_QUALITY,
+            "-compression_level",
+            WEBP_EFFORT,
+        ])
+        .arg(out)
+        .status();
+    if matches!(scaled, Ok(s) if s.success()) && out.exists() {
+        return true;
+    }
+    let _ = std::fs::remove_file(out);
+    false
+}
+
+/// Pixel width of an image file, via ffprobe (already a dependency). `None` when
+/// it cannot be read - the caller then assumes "wide", because capping something
+/// small costs nothing and leaving a photograph uncapped costs megabytes.
+fn probe_width(src: &Path) -> Option<u32> {
+    let out = Command::new("ffprobe")
+        .args([
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width",
+            "-of",
+            "csv=p=0",
+        ])
+        .arg(src)
+        .output()
+        .ok()?;
+    String::from_utf8_lossy(&out.stdout).trim().split(',').next()?.parse().ok()
 }
 
 /// `hex(sha256(bytes))[..16]` content address for an uploaded image, so

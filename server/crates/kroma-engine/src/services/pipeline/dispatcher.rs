@@ -493,7 +493,8 @@ mod tests {
         // Subscribe first: publish is a no-op with zero subscribers.
         let mut rx = state.events.subscribe();
         emit_stats(&test_stage(process_ok), &ctx);
-        let msg = rx.try_recv().expect("pipeline.stats event published");
+        let env = rx.try_recv().expect("pipeline.stats event published");
+        let msg = env.payload_unrouted();
         assert!(msg.contains("pipeline.stats"), "event type: {msg}");
         assert!(msg.contains("teststage"));
         // The event carries the ledger's counts (camelCase single words unchanged).

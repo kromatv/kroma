@@ -1,0 +1,46 @@
+{
+  // KROMA push relay. Deploy from this directory:
+  //   bunx wrangler deploy
+  // Then load the credentials, none of which may ever be committed — the whole
+  // point of the relay is that they exist in exactly one place:
+  //   bunx wrangler secret put GRANT_SECRET         # openssl rand -base64 48
+  //   bunx wrangler secret put APNS_KEY_P8          # AuthKey_XXXXXXXXXX.p8 contents
+  //   bunx wrangler secret put APNS_KEY_ID          # the ten chars in that filename
+  //   bunx wrangler secret put APNS_TEAM_ID
+  //   bunx wrangler secret put FCM_SERVICE_ACCOUNT  # the whole service-account JSON
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kroma-push",
+  "main": "index.ts",
+  "compatibility_date": "2026-07-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Keep a <name>.workers.dev URL alongside the custom domain (fallback + while
+  // the push.kroma.tv cert provisions).
+  "workers_dev": true,
+  "vars": {
+    // The published app's bundle id, sent as `apns-topic`. Mirrors
+    // `bundleIdentifier` in clients/mobile/app.json.
+    "APNS_TOPIC": "tv.kroma.mobile"
+  },
+  // Two different questions, so two different limiters.
+  "ratelimits": [
+    {
+      // Minting: an app does this once per install and again on refresh, so a
+      // real device is nowhere near this. It exists to make bulk grant
+      // harvesting from one address expensive.
+      "name": "MINT_LIMIT",
+      "namespace_id": "2001",
+      "simple": { "limit": 20, "period": 60 }
+    },
+    {
+      // Sending: keyed on the DEVICE, so this is the ceiling on how loud any
+      // server — including a compromised one — can be to one phone.
+      "name": "PUSH_LIMIT",
+      "namespace_id": "2002",
+      "simple": { "limit": 30, "period": 60 }
+    }
+  ],
+  // Served at https://push.kroma.tv/. Requires the kroma.tv zone on this
+  // Cloudflare account.
+  "routes": [{ "pattern": "push.kroma.tv", "custom_domain": true }]
+}

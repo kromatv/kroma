@@ -414,6 +414,8 @@ export function useDirectPlayback(
   usePlaybackHeartbeat({
     client,
     enabled: client.hasAuth,
+    // The TV's bearer lives on the client, not in the shared session module.
+    eventsToken: () => client.sessionToken,
     itemId: item.id,
     durationMs: item.durationMs ?? null,
     getPosition,

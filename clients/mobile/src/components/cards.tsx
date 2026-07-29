@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useGutters } from '#mobile/lib/layout';
+import { usePlay } from '#mobile/lib/play';
 import { colors, posterWidth, radius, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
@@ -111,7 +112,7 @@ export function ContinueCard({
   width: number | '100%';
   artWidth: number;
 }>) {
-  const router = useRouter();
+  const { play } = usePlay();
   const { item, positionMs, durationMs } = entry;
   const total = durationMs ?? item.durationMs ?? 0;
   const frac = total > 0 ? Math.min(1, positionMs / total) : 0;
@@ -119,7 +120,7 @@ export function ContinueCard({
   const tag = episodeTag(item) || undefined;
   return (
     <Pressable
-      onPress={() => router.push(`/player/${item.id}` as never)}
+      onPress={() => void play(item.id)}
       style={({ pressed }) => [{ width, opacity: pressed ? 0.75 : 1 }]}
     >
       <View>

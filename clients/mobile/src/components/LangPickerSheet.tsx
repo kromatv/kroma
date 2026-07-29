@@ -26,8 +26,6 @@
 // the tag that works.
 
 import {
-  BottomSheetBackdrop,
-  type BottomSheetBackdropProps,
   BottomSheetFlatList,
   type BottomSheetFlatListMethods,
   BottomSheetModal,
@@ -38,6 +36,7 @@ import { Icon } from '@kroma/ui/kit';
 import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SheetTitle, sheetChrome } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
@@ -148,24 +147,15 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
       [shown, isActive],
     );
 
-    const renderBackdrop = useCallback(
-      (props: BottomSheetBackdropProps) => (
-        <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.6} />
-      ),
-      [],
-    );
-
     return (
       <BottomSheetModal
         ref={ref}
+        {...sheetChrome}
         snapPoints={SNAP_POINTS}
         // See the note at the top: with snap points AND a scrollable, dynamic
         // sizing measures the sheet against its header and the list covers it.
         enableDynamicSizing={false}
         onChange={onChange}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={styles.background}
-        handleIndicatorStyle={styles.handle}
         // `extend` rather than `interactive`: the search field sits at the TOP of
         // the sheet, so there is nothing to lift it above the keyboard for - and
         // a sheet that slides up on every keystroke is a sheet that never sits
@@ -177,7 +167,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
         onDismiss={() => setQuery('')}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
+          <SheetTitle>{title}</SheetTitle>
           <View style={styles.searchBox}>
             <Icon name="search" size={17} stroke={2} color={colors.textFaint} />
             <BottomSheetTextInput
@@ -285,19 +275,13 @@ function fold(text: string): string {
 }
 
 const styles = StyleSheet.create({
-  background: {
-    backgroundColor: colors.surfaceRaised,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-  },
-  handle: { backgroundColor: colors.textFaint, width: 40 },
+  /** The gap under the title is <SheetTitle>'s own, which is why this header
+   *  sets none of its own between the two. */
   header: {
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
-    gap: spacing.sm,
   },
-  title: { ...type.small, textTransform: 'uppercase', letterSpacing: 1 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',

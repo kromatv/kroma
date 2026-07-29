@@ -17,7 +17,7 @@
 //               where a 44pt hit target is 44pt.
 
 import { KIT_FONTS } from '@kroma/ui/fonts';
-import { TvStage } from '@kroma/ui/kit';
+import { OverlayHost, TvStage } from '@kroma/ui/kit';
 import { colors } from '@kroma/ui/tokens';
 import { useFonts } from 'expo-font';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -29,7 +29,18 @@ import { Kit } from './config';
 LogBox.ignoreAllLogs(true);
 
 function Stage({ children }: Readonly<{ children: ReactNode }>) {
-  return Platform.isTV ? <TvStage>{children}</TvStage> : <SafeFrame>{children}</SafeFrame>;
+  // <OverlayHost> for the same reason the TV client mounts one: a dialog cannot
+  // use React Native's <Modal> on a television, whose own view controller never
+  // receives a press from the remote (see @kroma/ui's lib/overlay-host). It also
+  // means the workbench shows dialogs the way the product actually ships them
+  // rather than through a path no TV takes.
+  //
+  // INSIDE the stage, exactly where the TV client puts it (its host wraps the
+  // router, and the router is inside <TvStage>). A dialog is authored in the
+  // same 1920 canvas as the screen it covers, so a host outside the stage would
+  // draw a 720-wide panel in raw screen pixels - a stamp on a 4K set.
+  const hosted = <OverlayHost>{children}</OverlayHost>;
+  return Platform.isTV ? <TvStage>{hosted}</TvStage> : <SafeFrame>{hosted}</SafeFrame>;
 }
 
 /** The phone's own bezel, kept out of the workbench.

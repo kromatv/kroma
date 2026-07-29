@@ -15,6 +15,11 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+// The push half of this domain (transports, subscriptions, the registered mobile
+// action sets) lives next door in `push.rs` and is re-exported by the crate root
+// the same seam `kroma-db` and `services/notify` already cut.
+use crate::push::PushCategory;
+
 /// What a notification is about. Users switch delivery on and off per category
 /// (`notification_prefs`), so these are the knobs in the settings UI and must
 /// stay coarse enough to be meaningful choices.
@@ -65,9 +70,14 @@ impl NotificationCategory {
     ];
 }
 
-/// The specific thing that happened. Producers name one of these instead of a
-/// free string, so the category mapping below is exhaustive and a new event
-/// can't silently land in the wrong preference bucket.
+/// The specific thing that happened.
+///
+/// The core's own events are named here, so the category mapping below is
+/// exhaustive and a new one can't silently land in the wrong preference bucket.
+/// Anything a MODULE raises is [`NotificationEvent::Custom`]: the VPN dropping
+/// is the VPN module's business, and a core that enumerated it would be naming a
+/// feature it does not ship and cannot translate (module catalogs are the
+/// module's own). A custom event states its category on the spec instead.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NotificationEvent {
     #[serde(rename = "request.submitted")]
@@ -94,10 +104,20 @@ pub enum NotificationEvent {
     DownloadFailed,
     #[serde(rename = "system.job.failed")]
     SystemJobFailed,
-    #[serde(rename = "system.vpn.down")]
-    SystemVpnDown,
     #[serde(rename = "system.disk.low")]
     SystemDiskLow,
+    /// A "push is working" message the user asked for from settings. Never
+    /// persisted; it exists so the test push isn't forced to impersonate a real
+    /// event (it used to borrow `system.job.failed`, which then showed up in the
+    /// category preferences and the urgency mapping as a phantom failure).
+    #[serde(rename = "system.test")]
+    SystemTest,
+    /// Raised by something the core has no name for - a module, or an admin
+    /// composing one by hand. The category comes from the spec
+    /// ([`NotificationSpec::in_category`]), and the text is carried as params so
+    /// it survives a core that knows nothing about it.
+    #[serde(rename = "custom")]
+    Custom,
 }
 
 impl NotificationEvent {
@@ -115,8 +135,9 @@ impl NotificationEvent {
             NotificationEvent::DownloadImported => "download.imported",
             NotificationEvent::DownloadFailed => "download.failed",
             NotificationEvent::SystemJobFailed => "system.job.failed",
-            NotificationEvent::SystemVpnDown => "system.vpn.down",
             NotificationEvent::SystemDiskLow => "system.disk.low",
+            NotificationEvent::SystemTest => "system.test",
+            NotificationEvent::Custom => "custom",
         }
     }
 
@@ -134,11 +155,32 @@ impl NotificationEvent {
             "download.imported" => Some(NotificationEvent::DownloadImported),
             "download.failed" => Some(NotificationEvent::DownloadFailed),
             "system.job.failed" => Some(NotificationEvent::SystemJobFailed),
-            "system.vpn.down" => Some(NotificationEvent::SystemVpnDown),
             "system.disk.low" => Some(NotificationEvent::SystemDiskLow),
+            "system.test" => Some(NotificationEvent::SystemTest),
+            "custom" => Some(NotificationEvent::Custom),
             _ => None,
         }
     }
+
+    /// Every event this server can raise, in the order a person reads them:
+    /// grouped by category, oldest concept first. The admin console's test bench
+    /// walks this, so an event missing here is an event nobody can preview.
+    pub const ALL: [NotificationEvent; 14] = [
+        NotificationEvent::RequestSubmitted,
+        NotificationEvent::RequestApproved,
+        NotificationEvent::RequestDenied,
+        NotificationEvent::RequestAvailable,
+        NotificationEvent::MediaAdded,
+        NotificationEvent::MediaEpisode,
+        NotificationEvent::ReportSubmitted,
+        NotificationEvent::ReportResolved,
+        NotificationEvent::ReportDismissed,
+        NotificationEvent::DownloadImported,
+        NotificationEvent::DownloadFailed,
+        NotificationEvent::SystemJobFailed,
+        NotificationEvent::SystemDiskLow,
+        NotificationEvent::SystemTest,
+    ];
 
     /// Which preference bucket this event answers to.
     pub fn category(self) -> NotificationCategory {
@@ -157,8 +199,11 @@ impl NotificationEvent {
                 NotificationCategory::Downloads
             }
             NotificationEvent::SystemJobFailed
-            | NotificationEvent::SystemVpnDown
-            | NotificationEvent::SystemDiskLow => NotificationCategory::System,
+            | NotificationEvent::SystemDiskLow
+            | NotificationEvent::SystemTest
+            // The fallback bucket for an event the core does not know. A spec
+            // that means otherwise says so with `in_category`.
+            | NotificationEvent::Custom => NotificationCategory::System,
         }
     }
 }
@@ -218,69 +263,72 @@ pub struct ActionSpec {
     pub style: ActionStyle,
 }
 
-/// A set of action buttons the MOBILE app registers at launch.
+/// One interpolation variable on a notification.
 ///
-/// Unlike Web Push (which takes arbitrary buttons per message), APNs can only
-/// show actions belonging to a `UNNotificationCategory` the app registered up
-/// front so the push payload names one of these instead of carrying buttons.
-/// Adding a variant here means adding the matching category in the client.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PushCategory {
-    /// Approve / Deny, for a moderator.
-    RequestReview,
-    /// Watch now.
-    MediaAvailable,
+/// Producers say which kind they mean rather than leaving it to be guessed. The
+/// guess used to be "translate this value if it happens to be a catalog key",
+/// which quietly replaced any user-controlled text that collided with one — a
+/// username, or a moderator's free-text denial note — and that collision surface
+/// grew with every key added to the catalogs.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "lowercase")]
+pub enum ParamValue {
+    /// Literal text, interpolated as-is: a film title, a username, a note.
+    Text(String),
+    /// An i18n key, resolved in the reader's locale first (a job's
+    /// `jobs.{key}.name`, so a failed-task notification names the task in the
+    /// language the reader is actually using).
+    Key(String),
+    /// A bare string from a row written BEFORE params were typed, where a key
+    /// and a literal were the same thing on the wire.
+    ///
+    /// It has to stay ambiguous. Calling it `Text` renders a stored
+    /// `system.job.failed` as "Job jobs.library.scan.name failed" - those rows
+    /// live until the 200-per-user retention pushes them out, and nothing
+    /// migrates them. Calling it `Key` re-introduces the collision this enum was
+    /// added to end, where a username or a moderator's free-text note that
+    /// happened to name a catalog entry was silently replaced by it.
+    ///
+    /// So it is resolved only when it names a REAL entry, and only for these old
+    /// rows: anything written since is tagged, and a tagged `Text` is never
+    /// looked up. See `services::notify::render`.
+    Legacy(String),
 }
 
-impl PushCategory {
-    pub fn as_str(self) -> &'static str {
+impl ParamValue {
+    /// The text to interpolate.
+    ///
+    /// `translate` answers `None` for a string the catalogs do not know, which is
+    /// what lets [`ParamValue::Legacy`] fall back to its own literal text while
+    /// [`ParamValue::Key`] keeps the key visible rather than rendering blank.
+    pub fn resolve(&self, translate: impl FnOnce(&str) -> Option<String>) -> String {
         match self {
-            PushCategory::RequestReview => "request_review",
-            PushCategory::MediaAvailable => "media_available",
-        }
-    }
-
-    pub fn parse(s: &str) -> Option<PushCategory> {
-        match s {
-            "request_review" => Some(PushCategory::RequestReview),
-            "media_available" => Some(PushCategory::MediaAvailable),
-            _ => None,
+            ParamValue::Text(text) => text.clone(),
+            ParamValue::Key(key) => translate(key).unwrap_or_else(|| key.clone()),
+            ParamValue::Legacy(text) => translate(text).unwrap_or_else(|| text.clone()),
         }
     }
 }
 
-/// Who should be told about something.
-///
-/// Serializable because it crosses the module boundary: an out-of-process
-/// `.kmod` names an audience and the core resolves it (a module has no business
-/// enumerating accounts itself).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase")]
-pub enum Audience {
-    /// One account, by id (the requester whose film arrived).
-    User { id: String },
-    /// Everyone holding a capability (the moderators who must review a request).
-    Permission { permission: crate::accounts::Permission },
-    /// Everyone with an account (a new film in the library).
-    Everyone,
-    /// Everyone who follows a show it is in their list, they marked it
-    /// watched, or they have progress on an episode (a new episode aired).
-    Followers { show_id: String },
-}
-
-impl Audience {
-    /// `Audience::User` from anything string-ish, so call sites read as prose.
-    pub fn user(id: impl Into<String>) -> Self {
-        Audience::User { id: id.into() }
-    }
-
-    pub fn permission(permission: crate::accounts::Permission) -> Self {
-        Audience::Permission { permission }
-    }
-
-    pub fn followers(show_id: impl Into<String>) -> Self {
-        Audience::Followers { show_id: show_id.into() }
+impl<'de> Deserialize<'de> for ParamValue {
+    /// Accepts the tagged form AND a bare string.
+    ///
+    /// Rows written before params were typed stored plain strings, and every one
+    /// of them was literal text so that is what a bare string means. Without
+    /// this an existing notification's whole `params` map would fail to parse and
+    /// the row would render with its placeholders unsubstituted.
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Raw {
+            Tagged { kind: String, value: String },
+            Legacy(String),
+        }
+        Ok(match Raw::deserialize(deserializer)? {
+            Raw::Tagged { kind, value } if kind == "key" => ParamValue::Key(value),
+            Raw::Tagged { value, .. } => ParamValue::Text(value),
+            Raw::Legacy(text) => ParamValue::Legacy(text),
+        })
     }
 }
 
@@ -296,7 +344,7 @@ pub struct NotificationSpec {
     pub body_key: String,
     /// Interpolation vars for both keys (`{title}`, `{count}`, …).
     #[serde(default)]
-    pub params: BTreeMap<String, String>,
+    pub params: BTreeMap<String, ParamValue>,
     /// In-app route a tap opens.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
@@ -308,6 +356,11 @@ pub struct NotificationSpec {
     /// Which registered action set a native push should use.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub push_category: Option<PushCategory>,
+    /// Which preference bucket this belongs to, when the event does not say.
+    /// Only a [`NotificationEvent::Custom`] needs it - a core event's category
+    /// is part of what the event MEANS and is not the producer's to override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category: Option<NotificationCategory>,
 }
 
 impl NotificationSpec {
@@ -323,11 +376,34 @@ impl NotificationSpec {
             image_url: None,
             actions: Vec::new(),
             push_category: None,
+            category: None,
         }
     }
 
+    /// Text a module supplies itself, rather than a key the core can translate.
+    ///
+    /// The core's catalogs are the core's; a module ships its own, which the
+    /// server-side renderer does not load. So a module's own wording rides in as
+    /// interpolation params through a passthrough key, which is how it survives
+    /// storage, rendering and push without the core knowing the words.
+    pub fn custom(category: NotificationCategory, title: impl Into<String>, body: impl Into<String>) -> Self {
+        Self::new(NotificationEvent::Custom, "notifications.custom.title", "notifications.custom.body")
+            .param("title", title)
+            .param("body", body)
+            .in_category(category)
+    }
+
+    /// A literal interpolation var: a title, a username, a count. Never
+    /// translated, however much it may look like a catalog key.
     pub fn param(mut self, key: &str, value: impl Into<String>) -> Self {
-        self.params.insert(key.to_string(), value.into());
+        self.params.insert(key.to_string(), ParamValue::Text(value.into()));
+        self
+    }
+
+    /// An interpolation var that is itself an i18n key, resolved in the reader's
+    /// locale (a job's `jobs.{key}.name`).
+    pub fn param_key(mut self, key: &str, message_key: impl Into<String>) -> Self {
+        self.params.insert(key.to_string(), ParamValue::Key(message_key.into()));
         self
     }
 
@@ -351,8 +427,18 @@ impl NotificationSpec {
         self
     }
 
+    /// State the preference bucket for a [`NotificationEvent::Custom`]. Ignored
+    /// - deliberately - for the core's own events: see the field.
+    pub fn in_category(mut self, category: NotificationCategory) -> Self {
+        self.category = Some(category);
+        self
+    }
+
     pub fn category(&self) -> NotificationCategory {
-        self.event.category()
+        match self.event {
+            NotificationEvent::Custom => self.category.unwrap_or(NotificationCategory::System),
+            core => core.category(),
+        }
     }
 }
 
@@ -370,6 +456,12 @@ pub struct Notification {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
     pub actions: Vec<NotificationAction>,
+    /// The registered action set a NATIVE push should use. Absent for most
+    /// notifications, and ignored by the web client (which carries its buttons
+    /// in `actions`); APNs and Android can only show buttons from a set the app
+    /// registered at launch, so this names one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub push_category: Option<PushCategory>,
     pub read: bool,
     pub created_at: i64,
 }
@@ -398,54 +490,6 @@ pub struct CategoryPref {
 #[serde(rename_all = "camelCase")]
 pub struct NotificationPrefs {
     pub categories: Vec<CategoryPref>,
-}
-
-/// How a push subscription reaches its device.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum PushTransport {
-    /// Browser / installed PWA, RFC 8291. Fully self-hosted: the server signs
-    /// with its own VAPID key and posts straight to the browser's push endpoint.
-    WebPush,
-    /// Raw APNs device token (iOS).
-    Apns,
-    /// Raw FCM registration token (Android).
-    Fcm,
-}
-
-impl PushTransport {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            PushTransport::WebPush => "webpush",
-            PushTransport::Apns => "apns",
-            PushTransport::Fcm => "fcm",
-        }
-    }
-
-    pub fn parse(s: &str) -> Option<PushTransport> {
-        match s {
-            "webpush" => Some(PushTransport::WebPush),
-            "apns" => Some(PushTransport::Apns),
-            "fcm" => Some(PushTransport::Fcm),
-            _ => None,
-        }
-    }
-}
-
-/// `POST /api/push/subscribe`. Web Push sends `endpoint` + both keys; the native
-/// clients send the device token as `endpoint` and omit the keys.
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SubscribeBody {
-    pub transport: PushTransport,
-    pub endpoint: String,
-    #[serde(default)]
-    pub p256dh: Option<String>,
-    #[serde(default)]
-    pub auth: Option<String>,
-    /// Human label for the "your devices" list (e.g. "iPhone", "Firefox on Mac").
-    #[serde(default)]
-    pub device: Option<String>,
 }
 
 #[cfg(test)]
@@ -477,8 +521,8 @@ mod tests {
             NotificationEvent::DownloadImported,
             NotificationEvent::DownloadFailed,
             NotificationEvent::SystemJobFailed,
-            NotificationEvent::SystemVpnDown,
-            NotificationEvent::SystemDiskLow,
+                NotificationEvent::SystemDiskLow,
+            NotificationEvent::SystemTest,
         ];
         for e in all {
             assert_eq!(NotificationEvent::parse(e.as_str()), Some(e), "{}", e.as_str());
@@ -493,14 +537,50 @@ mod tests {
     }
 
     #[test]
-    fn transports_and_push_categories_round_trip() {
-        for t in [PushTransport::WebPush, PushTransport::Apns, PushTransport::Fcm] {
-            assert_eq!(PushTransport::parse(t.as_str()), Some(t));
-        }
-        for c in [PushCategory::RequestReview, PushCategory::MediaAvailable] {
-            assert_eq!(PushCategory::parse(c.as_str()), Some(c));
-        }
-        assert_eq!(PushTransport::parse("expo"), None);
+    fn param_marks_text_and_param_key_marks_a_key() {
+        let spec = NotificationSpec::new(
+            NotificationEvent::SystemJobFailed,
+            "notifications.system.job.failed.title",
+            "notifications.system.job.failed.body",
+        )
+        .param("who", "library.scan")
+        .param_key("job", "jobs.library.scan.name");
+
+        // Two similar-looking strings, opposite intent and the type records it,
+        // rather than the renderer guessing from how the value happens to read.
+        assert_eq!(spec.params.get("who"), Some(&ParamValue::Text("library.scan".into())));
+        assert_eq!(spec.params.get("job"), Some(&ParamValue::Key("jobs.library.scan.name".into())));
+    }
+
+    #[test]
+    fn a_param_round_trips_and_still_reads_the_legacy_bare_string() {
+        let typed = serde_json::to_string(&ParamValue::Key("jobs.x.name".into())).unwrap();
+        assert_eq!(typed, r#"{"kind":"key","value":"jobs.x.name"}"#);
+        assert_eq!(
+            serde_json::from_str::<ParamValue>(&typed).unwrap(),
+            ParamValue::Key("jobs.x.name".into())
+        );
+
+        // Rows written before params were typed stored a bare string, and it is
+        // impossible to tell from the value alone whether it was a key or a
+        // literal - so they read back as `Legacy`, which `render` resolves only
+        // when the catalogs actually know it. Calling them Text here rendered a
+        // stored `system.job.failed` as "Job jobs.library.scan.name failed".
+        assert_eq!(
+            serde_json::from_str::<ParamValue>(r#""Dune""#).unwrap(),
+            ParamValue::Legacy("Dune".into())
+        );
+        let legacy: BTreeMap<String, ParamValue> =
+            serde_json::from_str(r#"{"title":"Dune","job":"jobs.library.scan.name"}"#).unwrap();
+        assert_eq!(legacy.get("title"), Some(&ParamValue::Legacy("Dune".into())));
+        assert_eq!(legacy.get("job"), Some(&ParamValue::Legacy("jobs.library.scan.name".into())));
+
+        // A tagged value is never ambiguous, whatever it spells.
+        assert_eq!(
+            serde_json::from_str::<ParamValue>(r#"{"kind":"text","value":"jobs.library.scan.name"}"#)
+                .unwrap(),
+            ParamValue::Text("jobs.library.scan.name".into())
+        );
     }
 
     #[test]
@@ -524,8 +604,8 @@ mod tests {
             style: ActionStyle::Primary,
         });
 
-        assert_eq!(spec.params.get("title").map(String::as_str), Some("Dune"));
-        assert_eq!(spec.params.get("year").map(String::as_str), Some("2021"));
+        assert_eq!(spec.params.get("title"), Some(&ParamValue::Text("Dune".into())));
+        assert_eq!(spec.params.get("year"), Some(&ParamValue::Text("2021".into())));
         assert_eq!(spec.category(), NotificationCategory::Requests);
         assert_eq!(spec.actions.len(), 1);
         assert_eq!(spec.push_category, Some(PushCategory::MediaAvailable));

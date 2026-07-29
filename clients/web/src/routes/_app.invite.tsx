@@ -1,3 +1,4 @@
+import { TextInput } from '@kroma/admin-kit';
 import { hasPermission, type Invite, PERMISSIONS, type Permission } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, EmptyState, Txt } from '@kroma/ui/kit';
@@ -126,11 +127,11 @@ function InvitePage() {
               {t('admin.inviteLink')}
             </div>
             <div className="flex items-center gap-2">
-              <input
+              <TextInput
                 readOnly
                 value={link}
                 onFocus={(e) => e.currentTarget.select()}
-                className="min-w-0 flex-1 rounded-lg border border-border-strong bg-surface-2 px-3 py-2.5 text-[13px] text-text"
+                className="flex-1"
               />
               <Button
                 variant="glass"

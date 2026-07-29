@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { FolderPicker } from '#web/features/admin/folder-picker';
 import { useAsyncAction } from '#web/features/admin/shell';
-import { Field, Modal, ModalActions, SegmentedControl } from '#web/features/admin/ui';
+import { Field, Modal, ModalActions, SegmentedControl, TextInput } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { confirmDialog } from '#web/shared/ui';
 
@@ -64,11 +64,11 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   return (
     <Modal title={t('admin.addLibrary')} onClose={() => call.end(false)}>
       <Field label={t('admin.name')}>
-        <input
+        <TextInput
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={setName}
           placeholder={t('admin.kindMovies')}
-          className="w-full rounded-lg border border-border-strong bg-surface-2 px-3 py-2.5 text-[14px]"
+          className="w-full"
         />
       </Field>
       <Field label={t('admin.libraryType')}>
@@ -122,11 +122,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
     return (
       <Modal title={t('admin.manageLibrary', { name: lib.name })} onClose={() => call.end(false)}>
         <Field label={t('admin.name')}>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-border-strong bg-surface-2 px-3 py-2.5 text-[14px]"
-          />
+          <TextInput value={name} onChange={setName} className="w-full" />
         </Field>
         <label className="mb-4 flex cursor-pointer items-center gap-3">
           <input

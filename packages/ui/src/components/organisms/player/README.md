@@ -49,6 +49,33 @@ reports a plausible 4K direct-play session and ignores every command. Pressing
 Play in a story shows the pressed state rather than starting a film that is not
 there.
 
+## One chrome, two very different stages
+
+The design is drawn for a 1920 television. A browser window is whatever the user
+made it, and at 1280 the right-hand cluster used to reach back into the centred
+transport and draw straight through it — the circles do not shrink, so nothing
+gave way.
+
+`lib/metrics.ts` is what decides instead. It weighs the controls that are
+actually present (a film with no next episode and no live receiver is two
+circles narrower) against the width there is, and returns one `scale` the whole
+chrome is drawn at, in three stages:
+
+1. **it fits** — the design, transport dead centre;
+2. **tight** — everything shrinks together, and the cluster claims its width from
+   the centring spacer, so the transport drifts left rather than being overdrawn;
+3. **compact** — below the point where a circle would stop being tappable
+   (56 × 0.78 ≈ 44px), the cluster moves under the transport and wraps.
+
+Nothing is ever dropped to make room: a control removed from the row keeps its
+D-pad stop (see `lib/nav.ts`), so a hidden one would be a trap rather than a
+tidy-up. The same file places the settings panel — its 44% share, a floor below
+which its rows stop being readable, and the point where it covers the stage
+instead of shrinking the picture into a card beside it.
+
+`Player` measures its own root rather than the window, so a story frame, a split
+view and a browser window all get the layout they deserve.
+
 ## Platform splits
 
 `usePlayerKeys`, `subtitle-edge` and `virtual-focus` each have a `.web` sibling:

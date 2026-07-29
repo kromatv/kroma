@@ -5,10 +5,10 @@ import { apiErrorText, type NamingTemplatesView, type OrganizePlan } from '@krom
 import { useT } from '@kroma/ui';
 import { Button } from '@kroma/ui/kit';
 import { IconArrowRight } from '@tabler/icons-react';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { NamingTokenModal } from '#web/features/admin/naming-tokens';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
-import { Card, Section } from '#web/features/admin/ui';
+import { Card, Section, TextInput } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { confirmDialog, Select } from '#web/shared/ui';
 
@@ -30,6 +30,9 @@ const CASES: { value: string; labelKey: string }[] = [
 
 export function NamingPage() {
   const t = useT();
+  // One prefix for the five template fields, so each caption is a real <label>
+  // for its own entry rather than a span that happens to sit above it.
+  const fieldIds = useId();
   const { client } = useAuth();
   const canManage = useCap('library.manage');
 
@@ -109,15 +112,17 @@ export function NamingPage() {
         {tpl ? (
           <div className="flex flex-col gap-4">
             {FIELDS.map((f) => (
-              <label key={f.key} className="block">
+              <label key={f.key} htmlFor={`${fieldIds}-${f.key}`} className="block">
                 <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.12em] text-dim">
                   {t(f.labelKey as Parameters<typeof t>[0])}
                 </span>
                 <div className="flex gap-2">
-                  <input
+                  <TextInput
+                    id={`${fieldIds}-${f.key}`}
+                    mono
                     value={tpl[f.key]}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    className="w-full rounded-[9px] border border-border-strong bg-[#0F0F13] px-3.5 py-2.5 font-mono text-[13px] text-text outline-none focus:border-accent/60"
+                    onChange={(v) => set(f.key, v)}
+                    className="w-full"
                   />
                   <Button
                     variant="glass"

@@ -41,11 +41,13 @@ const CSS_COLOR: Record<keyof typeof colors, string> = {
   accentBright: 'accent-bright',
   accentInk: 'accent-ink',
   accentSoft: 'accent-soft',
+  accentSoftHover: 'accent-soft-hover',
   success: 'success',
   info: 'info',
   hdr: 'hdr',
   h265: 'h265',
   danger: 'danger',
+  dangerHover: 'danger-hover',
   wash: 'wash',
 };
 
@@ -93,15 +95,23 @@ function colorsCss(): string {
     ...section('Text on dark'),
     ...(['text', 'textMuted', 'textDim'] as const).map((k) => color(k)),
     ...section('Brand accent: warm amber'),
-    ...(['accent', 'accentHover', 'accentBright', 'accentInk', 'accentSoft'] as const).map((k) =>
-      color(k),
-    ),
+    ...(
+      [
+        'accent',
+        'accentHover',
+        'accentBright',
+        'accentInk',
+        'accentSoft',
+        'accentSoftHover',
+      ] as const
+    ).map((k) => color(k)),
     ...section('Semantic + quality badges'),
     color('success', 'Disponible / Vu'),
     color('info', 'Recherche / reseau'),
     color('hdr', 'badge HDR'),
     color('h265', 'badge H.265'),
     color('danger'),
+    color('dangerHover', 'pointer resting on a destructive action'),
     ...section('Semantic aliases'),
     '  --surface-page: var(--kroma-bg);',
     '  --surface-card: var(--kroma-surface-1);',

@@ -7,6 +7,7 @@ import { Txt } from '#ui/components/atoms/text';
 import { gradient } from '#ui/lib/css';
 import { colors, fonts } from '#ui/lib/tokens';
 import { useT } from '#ui/services/i18n';
+import { scaler } from '../lib/metrics';
 
 /**
  * Minimal shape the credits card needs from the up-next item. Declared locally
@@ -28,9 +29,17 @@ export interface CreditsCardProps {
   total: number;
   playFocused: boolean;
   cancelFocused: boolean;
+  /** The chrome's scale (see ../lib/metrics). 1 on a television stage. */
+  scale?: number;
   onPlay: () => void;
   onCancel: () => void;
 }
+
+/** The card's own width, at the design's scale. `maxW` keeps it on screen even
+ * where the scale has bottomed out: 392 + its margin does not fit a phone-width
+ * browser window, and a card that starts off the left edge takes its Play
+ * button with it. */
+const CARD_WIDTH = 392;
 
 const ART_FILL = 'linear-gradient(135deg, rgba(244,182,66,0.16), rgba(20,18,22,0.96))';
 const VIGNETTE = 'radial-gradient(120% 120% at 50% 25%, transparent, rgba(0,0,0,0.5))';
@@ -50,40 +59,44 @@ export function CreditsCard({
   total,
   playFocused,
   cancelFocused,
+  scale = 1,
   onPlay,
   onCancel,
 }: Readonly<CreditsCardProps>) {
   const t = useT();
+  const px = scaler(scale);
   const progress = total > 0 ? clamp01(secondsLeft / total) : 0;
+  const ring = px(54);
   return (
     <Box
       absolute
-      right={40}
-      bottom={56}
+      right={px(40)}
+      bottom={px(56)}
       z={38}
-      w={392}
-      radius={20}
+      w={px(CARD_WIDTH)}
+      maxW="100%"
+      radius={px(20)}
       borderWidth={1}
       border="rgba(255, 255, 255, 0.12)"
       bg="rgba(16, 16, 20, 0.9)"
-      p={20}
+      p={px(20)}
       style={CARD_SHADOW}
     >
-      <Box h={150} mb={16} radius={14} overflow="hidden">
+      <Box h={px(150)} mb={px(16)} radius={px(14)} overflow="hidden">
         <Img src={item.posterUrl ?? null} background={ART_FILL} fill />
         <Box fill pointerEvents="none" style={gradient(VIGNETTE)} />
-        <Box absolute left={14} bottom={14} w={54} h={54} center>
+        <Box absolute left={px(14)} bottom={px(14)} w={ring} h={ring} center>
           <Box absolute>
             <ProgressRing
               value={progress}
-              size={54}
-              stroke={6}
+              size={ring}
+              stroke={px(6)}
               track="rgba(255, 255, 255, 0.14)"
               fill={colors.accent}
             />
           </Box>
-          <Box w={42} h={42} center radius="pill" bg="#101014">
-            <Txt style={COUNTDOWN}>{String(secondsLeft)}</Txt>
+          <Box w={px(42)} h={px(42)} center radius="pill" bg="#101014">
+            <Txt style={[COUNTDOWN, { fontSize: px(COUNTDOWN_SIZE) }]}>{String(secondsLeft)}</Txt>
           </Box>
         </Box>
       </Box>
@@ -102,7 +115,7 @@ export function CreditsCard({
           become a platform / navigator focus target - see ../lib/virtual-focus.ts.
           `playFocused` / `cancelFocused` drive the highlight; there is no hover
           handler here, exactly as before (the nav machine owns this card). */}
-      <Box row gap={12} mt={16}>
+      <Box row gap={px(12)} mt={px(16)}>
         <Button
           variant="ghost"
           size="sm"
@@ -133,9 +146,11 @@ const PLAY_FOCUS = { backgroundColor: colors.accentHover } as const;
 
 const CARD_SHADOW = { boxShadow: '0 26px 64px rgba(0, 0, 0, 0.62)' };
 
+/** The countdown's size at the design's scale; the style carries the rest, so
+ * the number is not written twice. */
+const COUNTDOWN_SIZE = 19;
 const COUNTDOWN = {
   fontFamily: fonts.ui,
-  fontSize: 19,
   fontWeight: '700' as const,
   color: '#FFFFFF',
   fontVariant: ['tabular-nums' as const],

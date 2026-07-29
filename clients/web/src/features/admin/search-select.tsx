@@ -2,6 +2,7 @@
 // design's chevron value-chip; opening reveals a sticky search box that filters
 // the options (model lists from Ollama/OpenRouter get long). The current value
 // is always selectable even if it isn't in the loaded list.
+import { FIELD } from '@kroma/admin-kit';
 import * as Select from '@radix-ui/react-select';
 import { IconCheck, IconChevronDown, IconSearch } from '@tabler/icons-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -54,7 +55,7 @@ export function SearchSelect({
       }}
     >
       <Select.Trigger
-        className={`inline-flex items-center gap-2 rounded-[9px] border border-border-strong bg-surface-2 py-2.25 pl-3.25 pr-3 text-[13.5px] font-semibold text-text outline-none focus:border-accent/60 data-placeholder:text-dim ${className}`}
+        className={`${FIELD} inline-flex items-center gap-2 data-placeholder:text-dim ${className}`}
       >
         <span className="truncate">
           <Select.Value placeholder={placeholder} />
@@ -70,7 +71,12 @@ export function SearchSelect({
           sideOffset={6}
           className="z-50 w-(--radix-select-trigger-width) min-w-60 overflow-hidden rounded-[11px] border border-border-strong bg-[#121216] shadow-pop"
         >
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
+          {/* The popup IS the box here, so neither this row nor the input in
+              it takes a field ring - see clients/web/src/styles.css. */}
+          <div
+            data-focus-ring="off"
+            className="flex items-center gap-2 border-b border-border px-3 py-2.5"
+          >
             <IconSearch size={14} className="shrink-0 text-dim" />
             <input
               ref={inputRef}
@@ -84,6 +90,8 @@ export function SearchSelect({
                 }
               }}
               placeholder={searchPlaceholder}
+              // The popup's own border is this box; no ring inside it.
+              data-focus-ring="off"
               className="w-full bg-transparent text-[13px] font-medium text-text outline-none placeholder:text-dim"
             />
           </div>

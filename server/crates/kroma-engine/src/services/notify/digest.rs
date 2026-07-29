@@ -148,37 +148,22 @@ fn announce_episodes<S: HostCtx>(state: &S, show_id: &str, eps: &[AddedTitle]) -
         return 0;
     };
     let show_title = newest.show_title.clone().unwrap_or_else(|| newest.title.clone());
-    // "S01E04" for a single episode, "4 new episodes" for a batch a season
-    // drop should read as one arrival, not four.
-    let episode = match (eps.len(), newest.season, newest.episode) {
-        (1, Some(s), Some(e)) => format!("S{s:02}E{e:02}"),
-        (n, _, _) => return emit_episode_batch(state, show_id, &show_title, n),
+    // "S01E04" for a single episode, "4 new episodes" for a batch a season drop
+    // should read as one arrival, not four. Only the body key and its one var
+    // differ; title key, link, push category and audience are the same either way.
+    let (body_key, (var, value)) = match (eps.len(), newest.season, newest.episode) {
+        (1, Some(s), Some(e)) => {
+            ("notifications.media.episode.body", ("episode", format!("S{s:02}E{e:02}")))
+        }
+        (n, ..) => ("notifications.media.episodeMany.body", ("count", n.to_string())),
     };
     let spec = NotificationSpec::new(
         NotificationEvent::MediaEpisode,
         "notifications.media.episode.title",
-        "notifications.media.episode.body",
+        body_key,
     )
     .param("title", show_title)
-    .param("episode", episode)
-    .link(format!("/show/{show_id}"))
-    .push_category(PushCategory::MediaAvailable);
-    super::emit(state, &Audience::followers(show_id), &spec)
-}
-
-fn emit_episode_batch<S: HostCtx>(
-    state: &S,
-    show_id: &str,
-    show_title: &str,
-    count: usize,
-) -> usize {
-    let spec = NotificationSpec::new(
-        NotificationEvent::MediaEpisode,
-        "notifications.media.episode.title",
-        "notifications.media.episodeMany.body",
-    )
-    .param("title", show_title.to_string())
-    .param("count", count.to_string())
+    .param(var, value)
     .link(format!("/show/{show_id}"))
     .push_category(PushCategory::MediaAvailable);
     super::emit(state, &Audience::followers(show_id), &spec)
@@ -188,6 +173,7 @@ fn emit_episode_batch<S: HostCtx>(
 mod tests {
     use super::*;
     use crate::test_support;
+    use kroma_domain::ParamValue;
 
     /// A state with one account and one library, so digest runs have somewhere to
     /// read from and someone to tell.
@@ -269,7 +255,7 @@ mod tests {
         let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].link.as_deref(), Some("/movie/m2"));
-        assert_eq!(rows[0].params.get("title").map(String::as_str), Some("Arrival"));
+        assert_eq!(rows[0].params.get("title"), Some(&ParamValue::Text("Arrival".into())));
         // A lone arrival is worth a Watch button.
         assert_eq!(rows[0].actions.len(), 1);
     }
@@ -291,7 +277,7 @@ mod tests {
 
         let conn = state.db.get().unwrap();
         let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
-        assert_eq!(rows[0].params.get("count").map(String::as_str), Some("3"));
+        assert_eq!(rows[0].params.get("count"), Some(&ParamValue::Text("3".into())));
         assert_eq!(rows[0].link.as_deref(), Some("/films"));
     }
 

@@ -76,9 +76,10 @@ export function DetailActions({
   const downloads = useDownloads();
   const state = downloads.stateFor(item.id);
   const bar = downloadBarLabel(state, t);
-  // "Play on TV" appears only when there IS a TV: an action that can't do
-  // anything is worse than no action at all.
-  const { available, playOn } = useCast();
+  // Always offered, like the cast control in the app's chrome: a button that
+  // shows up only when a set happens to be awake is one nobody learns exists.
+  // With no TV the picker says so in a line.
+  const { playOn } = useCast();
   const devices = useRef<BottomSheetModal>(null);
   return (
     <View style={styles.actions}>
@@ -155,17 +156,15 @@ export function DetailActions({
             </Text>
           </Pressable>
         ) : null}
-        {available ? (
-          <Pressable
-            onPress={() => devices.current?.present()}
-            style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
-          >
-            <Icon name="cast" size={24} stroke={1.8} />
-            <Text numberOfLines={1} style={styles.secondaryLabel}>
-              {t('cast.title')}
-            </Text>
-          </Pressable>
-        ) : null}
+        <Pressable
+          onPress={() => devices.current?.present()}
+          style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
+        >
+          <Icon name="cast" size={24} stroke={1.8} />
+          <Text numberOfLines={1} style={styles.secondaryLabel}>
+            {t('cast.title')}
+          </Text>
+        </Pressable>
         {onReport ? (
           <Pressable
             onPress={onReport}

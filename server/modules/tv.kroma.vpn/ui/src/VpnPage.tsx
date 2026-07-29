@@ -14,6 +14,7 @@ import {
   PageHeader,
   Pill,
   SettingsView,
+  TextArea,
   useAdminKit,
   useAsyncAction,
   useCap,
@@ -182,14 +183,16 @@ function VpnConfigModal({
   return (
     <Modal title={t('vpn.modalTitle')} onClose={onClose}>
       <p className="mb-3 text-[13px] leading-relaxed text-dim">{t('vpn.modalHelp')}</p>
-      <textarea
+      <TextArea
         value={config}
-        onChange={(e) => setConfig(e.target.value)}
+        onChange={setConfig}
         placeholder={
           '[Interface]\nPrivateKey = ...\nAddress = 10.2.0.2/32\n\n[Peer]\nPublicKey = ...\nEndpoint = ...:51820\nAllowedIPs = 0.0.0.0/0'
         }
         rows={9}
-        className="w-full rounded-[9px] border border-border-strong bg-[#0F0F13] px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-text outline-none placeholder:text-white/25 focus:border-accent/60"
+        mono
+        spellCheck={false}
+        className="w-full leading-relaxed placeholder:text-white/25"
       />
       {configured ? <p className="mt-2 text-[12px] text-dim">{t('vpn.configKept')}</p> : null}
       {error ? <p className="mt-2 text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}

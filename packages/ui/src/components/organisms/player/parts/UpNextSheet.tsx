@@ -42,8 +42,10 @@ export interface UpNextSheetProps {
   onPlay: (item: UpNextItem) => void;
 }
 
-/** Pixels of the sheet that peek above the bottom edge while parked (§10). */
-const PEEK_HEIGHT = 150;
+/** Pixels of the sheet that peek above the bottom edge while parked (§10).
+ * Exported because the bottom chrome has to clear exactly this much - see
+ * Player.tsx, which used to carry its own nearly-equal copy of the number. */
+export const PEEK_HEIGHT = 150;
 /** Sheet height as a fraction of the player surface. */
 const SHEET_FRACTION = 0.82;
 

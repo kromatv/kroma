@@ -237,6 +237,13 @@ impl HostCtx for RemoteHost {
         );
     }
 
+    fn publish_to(&self, user_id: &str, event: Event) {
+        let _ = self.callback().post_json(
+            &self.host_url("events_to"),
+            &serde_json::json!({ "userId": user_id, "topic": event.topic, "payload": event.payload }),
+        );
+    }
+
     fn notify(
         &self,
         audience: &kroma_module_host::Audience,

@@ -20,11 +20,16 @@
           "NSAllowsArbitraryLoads": true
         },
         "NSLocalNetworkUsageDescription": "KROMA searches your local network to find your media server.",
-        "NSBonjourServices": ["_http._tcp", "_kroma._tcp"]
+        "NSBonjourServices": ["_http._tcp", "_kroma._tcp"],
+        "UIBackgroundModes": ["remote-notification"]
+      },
+      "entitlements": {
+        "aps-environment": "production"
       }
     },
     "android": {
       "package": "tv.kroma.mobile",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -74,6 +79,13 @@
         "expo-camera",
         {
           "cameraPermission": "KROMA scans your TV's QR code to sign it in."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#0A0A0C"
         }
       ]
     ],

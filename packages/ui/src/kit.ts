@@ -70,6 +70,7 @@ export { PageMain } from './lib/landmark';
 // ---- hooks ----
 export type { LoopKind } from './lib/loop';
 export { useLoop } from './lib/loop';
+export { OverlayHost } from './lib/overlay-host';
 export type { PerfReport } from './lib/perf';
 export { perfReport, perfRunning, resetPerf, startPerf, stopPerf } from './lib/perf';
 export {

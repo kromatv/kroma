@@ -3,6 +3,7 @@
 import type { RemoteKey } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { controlOrder } from '../lib/nav';
 import { TV_FLAGS, WEB_FLAGS } from '../types';
 import { type PlayerNavActions, usePlayerNav } from './usePlayerNav';
 
@@ -16,14 +17,21 @@ function makeActions(over: Partial<PlayerNavActions> = {}): PlayerNavActions {
     toggleMute: vi.fn(),
     togglePip: vi.fn(),
     toggleFullscreen: vi.fn(),
+    onCast: vi.fn(),
     onExit: vi.fn(),
     ...over,
   };
 }
 
-/** Render the nav machine; `key` presses a logical remote key inside `act`. */
+/** Render the nav machine; `key` presses a logical remote key inside `act`.
+ *
+ * The control row is passed in the way `<Player>` passes it - through
+ * `controlOrder` - because the hook now takes the row as drawn rather than
+ * deriving a second one from the flags. */
 function nav(flags = WEB_FLAGS, playing = false, actions: PlayerNavActions = makeActions()) {
-  const view = renderHook(() => usePlayerNav(flags, playing, actions));
+  const view = renderHook(() =>
+    usePlayerNav(playing, actions, controlOrder(flags, actions.hasNext)),
+  );
   const key = (k: RemoteKey) => act(() => view.result.current.handleKey(k));
   return { ...view, actions, key };
 }
@@ -40,9 +48,10 @@ describe('usePlayerNav initial state', () => {
     expect(result.current.focusedControl).toBe('play');
   });
 
-  it('exposes the flag-computed control row and recomputes on hasNext', () => {
+  it('exposes the control row it was given and follows it when hasNext appears', () => {
     const { result, rerender } = renderHook(
-      ({ hasNext }) => usePlayerNav(WEB_FLAGS, false, makeActions({ hasNext })),
+      ({ hasNext }) =>
+        usePlayerNav(false, makeActions({ hasNext }), controlOrder(WEB_FLAGS, hasNext)),
       { initialProps: { hasNext: false } },
     );
     expect(result.current.controls).not.toContain('next');
@@ -185,6 +194,21 @@ describe('usePlayerNav activate() maps every control', () => {
     expect(actions.toggleFullscreen).toHaveBeenCalled();
     act(() => result.current.activate('audio'));
     expect(result.current.overlay).toBe('audio');
+  });
+
+  it('offers the cast control only while a set is live, and hands the film over', () => {
+    const actions = makeActions();
+    const { result } = nav({ ...WEB_FLAGS, cast: true }, false, actions);
+    // Beside the gear, ahead of the window controls (pip / fullscreen).
+    expect(result.current.controls.indexOf('cast')).toBe(
+      result.current.controls.indexOf('settings') + 1,
+    );
+    act(() => result.current.activate('cast'));
+    expect(actions.onCast).toHaveBeenCalled();
+
+    // No receiver on the network: no button, and no focus stop to walk into.
+    const { result: none } = nav(WEB_FLAGS, false);
+    expect(none.current.controls).not.toContain('cast');
   });
 });
 

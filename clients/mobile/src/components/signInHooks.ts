@@ -2,8 +2,14 @@
 // continuous LAN discovery sweep while the server picker is open, and the
 // selected server's public profile roster.
 
-import { type DiscoveredServer, discoverServers, KromaClient, type PublicUser } from '@kroma/core';
+import {
+  type DiscoveredServer,
+  discoverServers,
+  type KromaClient,
+  type PublicUser,
+} from '@kroma/core';
 import { useEffect, useRef, useState } from 'react';
+import { makeClient } from '#mobile/lib/device';
 import { getDeviceLocalIp } from '#mobile/lib/localIp';
 import { isBiometricLockEnabled, type MobileAccount } from '#mobile/lib/storage';
 
@@ -18,7 +24,7 @@ export function useClientCache(): (url: string) => KromaClient {
   return (url: string) => {
     const cached = clientsRef.current.get(url);
     if (cached) return cached;
-    const fresh = new KromaClient({ baseUrl: url });
+    const fresh = makeClient(url);
     clientsRef.current.set(url, fresh);
     return fresh;
   };
@@ -81,7 +87,7 @@ export function useServerRoster(serverUrl: string | null): PublicUser[] {
     setRoster([]);
     void (async () => {
       try {
-        const probe = new KromaClient({ baseUrl: serverUrl });
+        const probe = makeClient(serverUrl);
         const config = await probe.authConfig();
         if (cancelled || !config.publicUserList || !config.hasAccounts) return;
         const users = await probe.users();

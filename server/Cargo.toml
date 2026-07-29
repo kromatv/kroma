@@ -118,8 +118,8 @@ kroma-module-runtime = { path = "crates/kroma-module-runtime" }
 # The core side: spawn/supervise module processes + reverse-proxy + callback API.
 kroma-module-supervisor = { path = "crates/kroma-module-supervisor" }
 kroma-port-bridge = { path = "crates/kroma-port-bridge" }
-# Web Push (RFC 8291 encryption + RFC 8292 VAPID) for the self-hosted push transport.
-kroma-webpush = { path = "crates/kroma-webpush" }
+# Push transports: Web Push (self-hosted), APNs and FCM.
+kroma-push = { path = "crates/kroma-push" }
 # The module SDK facade (ABOVE engine): the single crate every module depends on.
 # Re-exports the manifest layer + the engine/host/domain/http surface modules use.
 kroma-module-sdk = { path = "crates/kroma-module-sdk" }

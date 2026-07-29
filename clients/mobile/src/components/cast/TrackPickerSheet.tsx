@@ -5,17 +5,12 @@
 // what the set across the room can actually switch to - never a track derived
 // from the file that its player would refuse.
 
-import {
-  BottomSheetBackdrop,
-  type BottomSheetBackdropProps,
-  BottomSheetModal,
-  BottomSheetView,
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { CastTrack } from '@kroma/core';
 import { Icon } from '@kroma/ui/kit';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SheetBody, SheetTitle, sheetChrome } from '#mobile/components/ui';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 interface TrackPickerSheetProps {
@@ -31,25 +26,14 @@ interface TrackPickerSheetProps {
 
 export const TrackPickerSheet = forwardRef<BottomSheetModal, TrackPickerSheetProps>(
   function TrackPickerSheet({ title, tracks, activeIndex, offLabel, onPick }, ref) {
-    const insets = useSafeAreaInsets();
-    const backdrop = useCallback(
-      (props: BottomSheetBackdropProps) => (
-        <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.6} />
-      ),
-      [],
-    );
-
     return (
-      <BottomSheetModal
-        ref={ref}
-        backdropComponent={backdrop}
-        handleIndicatorStyle={styles.handle}
-        backgroundStyle={styles.sheet}
-      >
-        <BottomSheetView style={[styles.body, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Text style={styles.title}>{title}</Text>
+      <BottomSheetModal ref={ref} {...sheetChrome}>
+        <SheetBody>
+          <SheetTitle>{title}</SheetTitle>
           {/* Bounded: a long-dubbed film can carry a dozen tracks, and the sheet
-              still has to stop somewhere short of the whole screen. */}
+              still has to stop somewhere short of the whole screen. A film with
+              one audio track is the other end of it - that is what the drawer
+              floor in <SheetBody> is for. */}
           <ScrollView style={styles.list} bounces={false}>
             {offLabel ? (
               <Row label={offLabel} selected={activeIndex == null} onPress={() => onPick(null)} />
@@ -63,7 +47,7 @@ export const TrackPickerSheet = forwardRef<BottomSheetModal, TrackPickerSheetPro
               />
             ))}
           </ScrollView>
-        </BottomSheetView>
+        </SheetBody>
       </BottomSheetModal>
     );
   },
@@ -90,10 +74,6 @@ function Row({
 }
 
 const styles = StyleSheet.create({
-  sheet: { backgroundColor: colors.surfaceRaised },
-  handle: { backgroundColor: colors.textFaint },
-  body: { paddingHorizontal: spacing.md, paddingTop: spacing.xs },
-  title: { ...type.title, color: colors.text, marginBottom: spacing.sm },
   list: { maxHeight: 380 },
   row: {
     flexDirection: 'row',

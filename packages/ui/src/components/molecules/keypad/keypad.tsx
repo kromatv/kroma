@@ -59,6 +59,7 @@ function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<Keyp
       ring={false}
       style={KEY}
       focusedStyle={FOCUSED}
+      hoveredStyle={HOVERED}
     >
       {({ focused }) => (
         <Txt style={{ fontSize, fontWeight: '700' }} color={focused ? 'accent' : 'text'}>
@@ -101,6 +102,11 @@ const KEY = {
 };
 
 const FOCUSED = { backgroundColor: colors.accentSoft };
+
+/** A key under the cursor lifts its own wash rather than borrowing the amber:
+ * on a PIN pad the amber says "this is where Enter goes", and a mouse crossing
+ * the pad on its way to the 7 must not keep claiming that. */
+const HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.12)' };
 
 export type { KeypadProps };
 export { Keypad };

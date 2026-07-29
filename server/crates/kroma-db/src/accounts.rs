@@ -517,6 +517,21 @@ pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)
     }
 }
 
+/// Stamp a device credential as seen now, re-labelling it with `user_agent` when
+/// the caller sent one (an absent header keeps the stored label rather than
+/// blanking it). Called on every token exchange, so a device that has been
+/// renamed, updated, or - as the phone app was - taught to name itself at all
+/// stops reading as the device it was when it first signed in.
+pub fn touch_access_token(pool: &Pool, token: &str, user_agent: Option<&str>) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "UPDATE access_tokens SET last_seen = ?2, user_agent = COALESCE(?3, user_agent) \
+         WHERE token = ?1",
+        params![token, now_or_blank(), user_agent],
+    )?;
+    Ok(())
+}
+
 /// Mark an access token PIN-verified (after a correct PIN on exchange), so later
 /// silent refreshes for a PIN-locked account skip the prompt.
 pub fn set_access_pin_verified(pool: &Pool, token: &str, verified: bool) -> Result<()> {
@@ -748,6 +763,14 @@ mod tests {
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id, kroma_primitives::short_hash("at1"));
         assert_eq!(rows[0].user_agent.as_deref(), Some("Firefox"));
+
+        // A later exchange re-labels the device; a request with no User-Agent
+        // keeps the label it had rather than blanking it.
+        touch_access_token(&p, "at1", Some("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)")).unwrap();
+        touch_access_token(&p, "at1", None).unwrap();
+        let rows = list_access_tokens(&p, &u.id).unwrap();
+        assert_eq!(rows[0].user_agent.as_deref(), Some("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)"));
+        assert!(rows[0].last_seen.is_some());
 
         // Expired tokens neither resolve nor list.
         create_access_token(&p, "old-at", &u.id, 1, false, None).unwrap();

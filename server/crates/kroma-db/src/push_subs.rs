@@ -58,7 +58,6 @@ pub struct NewSubscription {
     pub p256dh: Option<String>,
     pub auth: Option<String>,
     pub device: Option<String>,
-    pub locale: Option<String>,
 }
 
 /// Register (or re-register) an endpoint.
@@ -69,10 +68,10 @@ pub fn upsert_subscription(pool: &Pool, sub: &NewSubscription, now_ms: i64) -> R
     let conn = pool.get()?;
     conn.execute(
         "INSERT INTO push_subscriptions \
-         (id, user_id, transport, endpoint, p256dh, auth, device, locale, failures, created_at, last_ok_at) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0, ?9, NULL) \
+         (id, user_id, transport, endpoint, p256dh, auth, device, failures, created_at, last_ok_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8, NULL) \
          ON CONFLICT(transport, endpoint) DO UPDATE SET \
-           user_id = ?2, p256dh = ?5, auth = ?6, device = ?7, locale = ?8, failures = 0",
+           user_id = ?2, p256dh = ?5, auth = ?6, device = ?7, failures = 0",
         params![
             sub.id,
             sub.user_id,
@@ -81,7 +80,6 @@ pub fn upsert_subscription(pool: &Pool, sub: &NewSubscription, now_ms: i64) -> R
             sub.p256dh,
             sub.auth,
             sub.device,
-            sub.locale,
             now_ms
         ],
     )?;
@@ -179,7 +177,6 @@ mod tests {
             p256dh: Some("BCVxsr7N".into()),
             auth: Some("BTBZMqHH".into()),
             device: Some("Firefox on Mac".into()),
-            locale: Some("fr".into()),
         }
     }
 

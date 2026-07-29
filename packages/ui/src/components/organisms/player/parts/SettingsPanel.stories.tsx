@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
+import type { ControlId } from '../lib/nav';
 import { DEFAULT_SUB_APPEARANCE } from '../lib/subtitle-appearance';
 import { fakeController } from '../player.fixture';
 import { SettingsPanel } from './SettingsPanel';
@@ -16,6 +17,11 @@ const NO_GEN: SubtitleGenBundle = {
   onDelete: () => {},
   onStart: () => {},
 };
+
+/** What `chromeMetrics` hands over at phone width (see ../lib/metrics): the
+ *  controls the transport row had no room for. `audio` and `subtitles` are in it
+ *  too - the panel ignores those two, because the menu already lists them. */
+const NARROW_OVERFLOW: ControlId[] = ['next', 'volume', 'subtitles', 'audio', 'cast', 'pip'];
 
 export default story({
   name: 'PlayerSettings',
@@ -49,8 +55,8 @@ export default story({
   // canvas, so the story opens in the TV frame - seen whole, like the player's
   // other overlays - and `Fit` remains one press away.
   viewport: 'tv',
-  args: { statsOn: false as boolean, canReport: true },
-  render: ({ statsOn, canReport }) => (
+  args: { statsOn: false as boolean, canReport: true, narrow: false as boolean },
+  render: ({ statsOn, canReport, narrow }) => (
     // The drawer is inset to the full height of the surface it slides over, so
     // the frame is the picture's shape with a floor under it - a menu shown 300pt
     // tall would be scrolling for a reason no surface has.
@@ -63,6 +69,8 @@ export default story({
         onToggleStats={() => {}}
         subtitleGen={NO_GEN}
         onReport={canReport ? async () => {} : undefined}
+        overflow={narrow ? NARROW_OVERFLOW : undefined}
+        onControl={() => {}}
         onClose={() => {}}
       />
     </Box>
@@ -77,6 +85,11 @@ export default story({
       name: 'Stats on',
       docs: 'The toggle that puts the playback read-out over the film.',
       args: { statsOn: true },
+    },
+    {
+      name: 'Holding a narrow row',
+      docs: 'What a phone-width window looks like: the transport could not fit these, so they are here instead, above the settings and under their own eyebrow. `audio` and `subtitles` are shed too but gain no row — the menu already lists them.',
+      args: { narrow: true },
     },
   ],
 });

@@ -1,4 +1,4 @@
-import { Image } from '@kroma/admin-kit';
+import { Image, TextArea } from '@kroma/admin-kit';
 import type { PlaybackSession } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, Icon, IconButton } from '@kroma/ui/kit';
@@ -240,13 +240,14 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
         >
           {t('admin.stopMessageLabel')}
         </label>
-        <textarea
+        <TextArea
           id={messageId}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={setMessage}
           rows={2}
+          resize="none"
           placeholder={t('admin.stopMessagePlaceholder')}
-          className="mb-5 w-full resize-none rounded-lg border border-border-strong bg-surface-2 px-3 py-2.5 text-[14px] outline-none focus:border-accent/60"
+          className="mb-5 w-full"
         />
         <div className="flex justify-end gap-2.5">
           <Button

@@ -486,8 +486,9 @@ fn run_job(
             "notifications.system.job.failed.title",
             "notifications.system.job.failed.body",
         )
-        // The job's own display name is an i18n key the client already knows.
-        .param("job", format!("jobs.{key}.name"))
+        // The job's own display name is an i18n key, so it is resolved in the
+        // reader's language rather than interpolated raw.
+        .param_key("job", format!("jobs.{key}.name"))
         .link("/admin/jobs");
         crate::services::notify::emit(
             &state,

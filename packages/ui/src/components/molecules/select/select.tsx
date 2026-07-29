@@ -92,6 +92,7 @@ function Select({
         disabled={disabled}
         onPress={() => setOpen(true)}
         style={[TRIGGER, { borderColor: invalid ? colors.danger : colors.borderStrong }, style]}
+        hoveredStyle={TRIGGER_HOVERED}
       >
         {current?.icon ? <Icon name={current.icon} size={18} color="textMuted" /> : null}
         <Txt variant="body" color={current ? 'text' : 'textDim'} lines={1} style={TRIGGER_INK}>
@@ -126,7 +127,7 @@ function Option({
   onPress,
 }: Readonly<{ option: SelectOption; chosen: boolean; onPress: () => void }>) {
   return (
-    <Focusable label={option.label} onPress={onPress} style={ROW}>
+    <Focusable label={option.label} onPress={onPress} style={ROW} hoveredStyle={ROW_HOVERED}>
       {option.icon ? <Icon name={option.icon} size={18} color="textMuted" /> : null}
       <Txt variant="body" color={chosen ? 'text' : 'textMuted'} lines={1} style={ROW_INK}>
         {option.label}
@@ -155,6 +156,10 @@ const TRIGGER = {
   borderWidth: 1,
 } as const;
 const TRIGGER_INK = { flexShrink: 1 } as const;
+/** The well fills faintly under the cursor. It carries no focus scale and its
+ * border is already spoken for (invalid paints it red), so the fill is the one
+ * channel left to answer a pointer with. */
+const TRIGGER_HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.06)' } as const;
 const ROW = {
   flexDirection: 'row',
   alignItems: 'center',
@@ -164,6 +169,8 @@ const ROW = {
   borderRadius: radius.md,
 } as const;
 const ROW_INK = { flexShrink: 1 } as const;
+/** An option row has no resting fill at all, so hover IS its box. */
+const ROW_HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.08)' } as const;
 
 export type { SelectOption, SelectProps };
 export { Select };

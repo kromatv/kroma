@@ -19,6 +19,7 @@ pub mod matching;
 pub mod requests;
 pub mod reports;
 pub mod notifications;
+pub mod push;
 pub mod section;
 
 // Flat re-export (mirrors the server's former `model.rs`). `naming` / `matching`
@@ -35,4 +36,5 @@ pub use playback::*;
 pub use requests::*;
 pub use reports::*;
 pub use notifications::*;
+pub use push::*;
 pub use section::*;

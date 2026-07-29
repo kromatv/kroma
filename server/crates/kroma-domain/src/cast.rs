@@ -81,6 +81,27 @@ pub struct CastNowPlaying {
     pub subtitle_index: Option<i64>,
 }
 
+/// A sender currently driving a receiver: the phone or browser holding its
+/// remote. Presence is that sender's socket, so a device that walks out of the
+/// room leaves the list on its own.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CastController {
+    /// Server-minted, socket-scoped. The TV names it to disconnect a remote, and
+    /// it is NOT client-supplied precisely so one sender cannot impersonate
+    /// another in the list a television shows.
+    pub id: String,
+    /// What the device calls itself ("iPhone", "Chrome").
+    pub name: String,
+    /// Whose account is driving. A household TV shows both.
+    pub username: String,
+    /// That person's avatar, as a catalog art path the client resolves. Carried
+    /// so a television can show WHO just picked up its remote rather than only
+    /// what they are holding; it is no more than the profile pictures every
+    /// account on this server already sees on the sign-in screen.
+    #[serde(rename = "avatarUrl", skip_serializing_if = "Option::is_none")]
+    pub avatar_url: Option<String>,
+}
+
 /// One live receiver in the picker.
 #[derive(Debug, Clone, Serialize)]
 pub struct CastReceiver {
@@ -98,6 +119,9 @@ pub struct CastReceiver {
     pub network: String,
     #[serde(rename = "nowPlaying", skip_serializing_if = "Option::is_none")]
     pub now_playing: Option<CastNowPlaying>,
+    /// Who is driving this set right now. The TV renders them next to its own
+    /// status, and can disconnect one; senders can see they are not alone.
+    pub controllers: Vec<CastController>,
 }
 
 /// An order from a sender to a receiver.

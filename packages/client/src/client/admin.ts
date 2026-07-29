@@ -12,6 +12,7 @@ import type {
   LlmAdminConfig,
   LogsView,
   MetricsSnapshot,
+  Notification,
   Permission,
   PipelineElements,
   PipelineTaskView,
@@ -222,6 +223,71 @@ export function adminLogs(
   const query = params.toString();
   const suffix = query ? `?${query}` : '';
   return ctx.json<LogsView>(`/admin/logs${suffix}`);
+}
+
+// ----- notifications from the console -----------------------------------------
+
+/** Who a notification goes to. `me` is the safe default; `everyone` writes a row
+ * into every account on the server. */
+export type NotificationTarget = 'me' | 'admins' | 'everyone';
+
+/** What the console sends: either one of the core's own events, sampled, or a
+ * notification written by hand. Title present = written wins. */
+export interface SendNotificationBody {
+  /** A core event to sample, e.g. `request.available`. */
+  event?: string;
+  /** Literal text, in whatever language it was typed. */
+  title?: string;
+  body?: string;
+  /** Preference bucket for a written one (defaults to `system`). */
+  category?: Notification['category'];
+  /** In-app route a tap opens, and the art on the row. */
+  link?: string;
+  imageUrl?: string;
+  target?: NotificationTarget;
+}
+
+/**
+ * Every kind of notification this server can send, already rendered in the
+ * caller's language - the samples the console picks from.
+ *
+ * Rendered server-side on purpose: the sample text and the message keys live
+ * with the sender, so a preview cannot drift from what pressing Send delivers.
+ */
+export function notificationSamples(ctx: RequestContext): Promise<{ events: Notification[] }> {
+  return ctx.json<{ events: Notification[] }>('/admin/notifications/samples');
+}
+
+/**
+ * Send one REAL notification - for checking a layout, a translation, whether
+ * push reaches a device, or to tell the household something.
+ *
+ * It goes through the same pipeline a producer's does (category preferences,
+ * per-recipient rendering, the stored row, the live bell, the push fan-out), so
+ * `delivered` is people actually reached - a muted category is not counted.
+ */
+export function sendNotification(
+  ctx: RequestContext,
+  body: SendNotificationBody,
+): Promise<{ delivered: number }> {
+  return ctx.json<{ delivered: number }>('/admin/notifications', {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ target: 'me', ...body }),
+  });
+}
+
+/** Attach an image to a notification: raw bytes in, the cached WebP's path out
+ * (the same store avatars use, so every client already resolves it). */
+export function uploadNotificationImage(
+  ctx: RequestContext,
+  file: Blob,
+): Promise<{ imageUrl: string }> {
+  return ctx.json<{ imageUrl: string }>('/admin/notifications/image', {
+    method: 'POST',
+    headers: { 'content-type': file.type || 'application/octet-stream' },
+    body: file,
+  });
 }
 
 // ----- background jobs / scheduler --------------------------------------------

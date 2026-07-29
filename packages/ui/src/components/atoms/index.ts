@@ -51,11 +51,13 @@ export type { SwitchProps, SwitchSize } from './switch';
 export { Switch, SwitchFace, switchVariants } from './switch';
 export type { TxtProps } from './text';
 export { Txt } from './text';
-// <TextField> is deliberately NOT exported. It is the control <Field> renders,
-// not a component to choose: every text entry in the app goes through <Field>,
-// which is what keeps the label, the hint and the error-replaces-hint rule
-// attached to it. The types come out because Field's own props are spelled in
-// them (`type`, and `entry` for the entry's presentation).
+// <TextArea> and <TextField> are deliberately NOT exported. They are the two
+// controls <Field> renders (`multiline` picks the taller one), not components
+// to choose: every text entry in the app goes through <Field>, which is what
+// keeps the label, the hint and the error-replaces-hint rule attached to it.
+// The types come out because Field's own props are spelled in them (`type`,
+// `rows`, and `entry` for the entry's presentation).
+export type { TextAreaProps } from './text-area';
 export type { TextFieldProps, TextFieldType } from './text-field';
 export type { WatchedBadgeProps } from './watched-badge';
 export { WatchedBadge } from './watched-badge';

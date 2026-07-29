@@ -51,6 +51,11 @@ pub struct SettingRow {
     pub value: Value,
     /// Whether the server actually enforces this setting (vs. stored-only).
     pub applied: bool,
+    /// `secret` rows only: whether a value is stored. The value itself never
+    /// leaves the server, so this is the console's only way to tell "set" from
+    /// "empty".
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub configured: Option<bool>,
 }
 
 /// A titled group of rows.
@@ -177,6 +182,16 @@ pub fn groups(
             ),
         ]
         }
+        // NB: there is deliberately no "notifications" view.
+        //
+        // It once held seven credential inputs, then three read-only status
+        // lines, and now nothing — because push has no per-server configuration
+        // left. Browsers work off a VAPID keypair the server mints on first use;
+        // phones are reached through the relay, which needs nothing from the
+        // operator because the app's Apple and Google credentials belong to
+        // whoever publishes the app, not to whoever hosts a server. An unknown
+        // view falls through to `_ => Vec::new()`, which is the honest answer.
+        //
         // The VPN is global to several flows (torrent downloads + optional
         // indexer routing), so its toggles live in their own section (the
         // WireGuard config itself is the dedicated `/admin/vpn` API).
@@ -212,6 +227,7 @@ fn row(
         options: options.iter().map(|s| s.to_string()).collect(),
         value,
         applied,
+        configured: None,
     }
 }
 
@@ -273,6 +289,39 @@ mod tests {
         let intro = find_row(&groups, "introDetection").unwrap();
         assert_eq!(intro.kind, "select");
         assert_eq!(intro.options, vec!["off", "chapters", "fingerprint"]);
+    }
+
+    #[test]
+    fn no_view_offers_push_configuration_or_leaks_a_stored_credential() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+        let p8 = "-----BEGIN PRIVATE KEY-----\nMIGTAgEAMBMGByqGSM49\n-----END PRIVATE KEY-----";
+        s.set_patch(
+            &pool,
+            std::collections::BTreeMap::from([
+                ("notifications.apns.keyP8".to_string(), json!(p8)),
+                ("notifications.apns.keyId".to_string(), json!("CC53HSPJDR")),
+                ("notifications.apns.teamId".to_string(), json!("TEAM123456")),
+                ("notifications.fcm.serviceAccount".to_string(), json!("{\"private_key\":\"x\"}")),
+            ]),
+        );
+
+        // The notifications view is GONE, not merely empty of inputs: push has
+        // no per-server configuration left. Browsers run off a VAPID keypair the
+        // server mints itself, and phones go through the relay, which needs
+        // nothing from whoever is hosting.
+        assert!(groups("notifications", &s, &test_config(), "en").is_empty());
+
+        // And a credential a fork stored via the API must never come back out of
+        // ANY view — not just the one that used to display them.
+        for view in ["notifications", "general", "network", "transcoder", "acquisition", "vpn"] {
+            let wire =
+                serde_json::to_string(&groups(view, &s, &test_config(), "en")).unwrap();
+            for secret in ["BEGIN PRIVATE KEY", "MIGTAgEAMBMGByqGSM49", "CC53HSPJDR", "TEAM123456"]
+            {
+                assert!(!wire.contains(secret), "{view} view leaked {secret}");
+            }
+        }
     }
 
     #[test]

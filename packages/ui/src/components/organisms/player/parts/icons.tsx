@@ -36,6 +36,7 @@ export const IconSubtitles = glyph('badge-cc', 22, 1.8);
 export const IconAudioTrack = glyph('wave-sine', 22, 1.8);
 export const IconGear = glyph('settings', 22, 1.8);
 export const IconPip = glyph('picture-in-picture', 22, 1.8);
+export const IconCast = glyph('cast', 22, 1.8);
 export const IconFullscreen = glyph('maximize', 22, 1.8);
 export const IconFullscreenExit = glyph('minimize', 22, 1.8);
 export const IconBack = glyph('chevron-left', 20, 2);

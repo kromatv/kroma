@@ -2,6 +2,7 @@
 // show / episode (wrong metadata, audio, video, subtitles, other) with an
 // optional note. Posts to /api/reports; the server resolves the title itself.
 
+import { TextArea } from '@kroma/admin-kit';
 import {
   apiErrorText,
   type MessageKey,
@@ -172,14 +173,14 @@ export const ReportDialog = createCallable<
                 >
                   {t('report.message')}
                 </label>
-                <textarea
+                <TextArea
                   id="report-message"
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={setMessage}
                   rows={3}
                   maxLength={2000}
                   placeholder={t('report.messagePlaceholder')}
-                  className="w-full resize-none rounded-xl border border-white/12 bg-[#15151A] px-3.5 py-3 text-[13.5px] font-medium text-white outline-none placeholder:text-white/35 focus:border-white/25"
+                  className="w-full"
                 />
               </div>
 

@@ -11,6 +11,7 @@ import {
   type IndexerDefinitionView,
   type IndexerView,
   Modal,
+  FIELD_GROUP,
   ModalActions,
   type SaveIndexerBody,
   TextInput,
@@ -184,13 +185,15 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
   return (
     <Modal title={t('indexers.pickTitle')} onClose={() => call.end(null)}>
       <div className="mb-3 flex items-center gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-[9px] border border-border-strong bg-[#0F0F13] px-3">
+        <div className={`${FIELD_GROUP} flex-1`}>
           <IconSearch size={15} className="text-dim" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={t('indexers.searchDefs')}
-            className="min-w-0 flex-1 bg-transparent py-2.25 text-[13.5px] font-semibold text-text outline-none"
+            // The box above is the field; it takes the border and the ring.
+            data-focus-ring="off"
+            className="min-w-0 flex-1 bg-transparent py-2.25 text-[13.5px] font-semibold text-text outline-none placeholder:text-dim"
           />
         </div>
         <Button

@@ -5,8 +5,30 @@
 
 import * as RSelect from '@radix-ui/react-select';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
-import type { ReactNode } from 'react';
+import {
+  type InputHTMLAttributes,
+  type ReactNode,
+  type Ref,
+  type TextareaHTMLAttributes,
+  useEffect,
+  useRef,
+} from 'react';
 import { Button } from './controls';
+import {
+  FIELD,
+  FIELD_BOX,
+  FIELD_BOX_LG,
+  FIELD_MONO,
+  FIELD_PAD_Y,
+  FIELD_TYPE,
+  FIELD_TYPE_LG,
+} from './field';
+
+/** The two steps a field comes in: the one a form full of them uses, and the
+ * roomier one for a screen whose form IS the screen (sign-in, register). */
+type FieldSize = 'md' | 'lg';
+const BOX: Record<FieldSize, string> = { md: FIELD_BOX, lg: FIELD_BOX_LG };
+const TYPE: Record<FieldSize, string> = { md: FIELD_TYPE, lg: FIELD_TYPE_LG };
 
 export interface SelectOption {
   value: string;
@@ -48,7 +70,7 @@ export function OptionSelect({
     <RSelect.Root value={value || undefined} onValueChange={onChange} disabled={disabled}>
       <RSelect.Trigger
         aria-label={ariaLabel}
-        className={`inline-flex items-center justify-between gap-2 rounded-md border border-border-strong bg-surface-2 px-3.5 py-2.5 text-[14px] font-medium text-text outline-none transition-colors focus:border-accent data-placeholder:text-dim disabled:cursor-not-allowed disabled:opacity-60 ${block ? 'w-full' : ''} ${className}`}
+        className={`${FIELD} inline-flex items-center justify-between gap-2 data-placeholder:text-dim disabled:cursor-not-allowed disabled:opacity-60 ${block ? 'w-full' : ''} ${className}`}
       >
         <span className="truncate">
           <RSelect.Value placeholder={placeholder} />
@@ -109,30 +131,135 @@ export function Select({
   );
 }
 
+/**
+ * The console's single-line entry.
+ *
+ * A controlled `value` plus a plain-string `onChange`, and every other input
+ * attribute (`readOnly`, `disabled`, `maxLength`, `autoComplete`, `onFocus`,
+ * `ref`, `aria-*`) passes through - a field that needs one of them stays a
+ * TextInput instead of becoming another hand-rolled `<input>` with its own copy
+ * of the box.
+ */
 export function TextInput({
   value,
   onChange,
-  onBlur,
-  placeholder,
   className = '',
   type = 'text',
-}: Readonly<{
-  value: string;
-  onChange?: (v: string) => void;
-  onBlur?: () => void;
-  placeholder?: string;
-  className?: string;
-  /** Input type, e.g. `password` for secrets. Defaults to `text`. */
-  type?: string;
-}>) {
+  size = 'md',
+  mono = false,
+  ...rest
+}: Readonly<
+  Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'size'> & {
+    value: string;
+    onChange?: (v: string) => void;
+    /** React 19 carries a ref through as a plain prop. */
+    ref?: Ref<HTMLInputElement>;
+    /** `lg` for a screen whose form IS the screen. See FieldSize. */
+    size?: FieldSize;
+    /** Monospace, for a value that is data rather than prose. See FIELD_MONO. */
+    mono?: boolean;
+  }
+>) {
   return (
     <input
+      {...rest}
       type={type}
       value={value}
-      placeholder={placeholder}
       onChange={(e) => onChange?.(e.target.value)}
-      onBlur={onBlur}
-      className={`min-w-0 rounded-[9px] border border-border-strong bg-[#0F0F13] px-3.5 py-2.25 text-[13.5px] font-semibold text-text outline-none focus:border-accent/60 ${className}`}
+      className={`${BOX[size]} ${mono ? FIELD_MONO : TYPE[size]} ${className}`}
+    />
+  );
+}
+
+/** Does this browser size a textarea to its content on its own? Chromium does
+ * (`field-sizing`); the others still need the measure below. Read once, and
+ * guarded for the server render, where there is no CSS object at all. */
+const FIELD_SIZING =
+  typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
+    ? CSS.supports('field-sizing', 'content')
+    : false;
+
+/**
+ * The multi-line entry: {@link TextInput}'s field, `rows` tall, GROWING with
+ * what is typed into it (shadcn's `field-sizing-content` behaviour) so a
+ * three-line note is never written through a two-line slot with the top of it
+ * scrolled out of sight. `rows` is the floor it opens at; `autoSize={false}`
+ * pins it there.
+ *
+ * Same shape as the input - a controlled `value` plus a plain-string `onChange`
+ * - and every other textarea attribute (`disabled`, `maxLength`, `spellCheck`,
+ * `onBlur`, `aria-*`) passes straight through, so a screen never has to drop
+ * back to a raw element for one of them and hand-roll the box again.
+ */
+export function TextArea({
+  value,
+  onChange,
+  className = '',
+  rows = 3,
+  autoSize = true,
+  resize,
+  size = 'md',
+  mono = false,
+  ...rest
+}: Readonly<
+  Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange' | 'rows'> & {
+    value: string;
+    onChange?: (v: string) => void;
+    /** The floor, in lines: the height an empty field opens at. */
+    rows?: number;
+    /** Grow with the content. On by default - turn it off for a field whose
+     *  height is part of a fixed layout. */
+    autoSize?: boolean;
+    /** The corner grip. Defaults to off while the field sizes itself (dragging
+     *  a box that is about to resize itself reads as a bug) and to `y`
+     *  otherwise. */
+    resize?: 'y' | 'none';
+    /** `lg` for a screen whose form IS the screen. See FieldSize. */
+    size?: FieldSize;
+    /** Monospace, a size down: for a value that is data rather than prose (an
+     *  API key, a JSON blob), where the character grid is what makes it
+     *  readable. */
+    mono?: boolean;
+  }
+>) {
+  const box = useRef<HTMLTextAreaElement>(null);
+
+  // The browsers without `field-sizing`. Height back to `auto` FIRST, so the
+  // element reports the height of its content rather than the height we last
+  // gave it - that is the difference between a field that grows and one that
+  // grows and never shrinks again. `rows` still bounds it from below, because
+  // `auto` IS the intrinsic height `rows` asks for.
+  //
+  // `value` is the effect's TRIGGER rather than something it reads: the measure
+  // has to run after the text that changed has rendered.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  useEffect(() => {
+    const el = box.current;
+    if (!el || !autoSize || FIELD_SIZING) return;
+    el.style.height = 'auto';
+    if (el.scrollHeight > el.clientHeight) el.style.height = `${el.scrollHeight}px`;
+  }, [value, autoSize]);
+
+  // An auto-sizing box manages its own height, so it defaults to no grip; the
+  // caller can still ask for one. Spelled out rather than nested, so the default
+  // and the choice read as two decisions instead of one expression.
+  const defaultResize = autoSize ? 'none' : 'y';
+  const grip = (resize ?? defaultResize) === 'none' ? 'resize-none' : 'resize-y';
+  return (
+    <textarea
+      {...rest}
+      ref={box}
+      value={value}
+      rows={rows}
+      onChange={(e) => onChange?.(e.target.value)}
+      // A field sizing itself to its content ignores `rows`, so the floor is
+      // said again as a height. The caller's own style still wins.
+      style={
+        autoSize ? { minHeight: `calc(${rows}lh + ${FIELD_PAD_Y})`, ...rest.style } : rest.style
+      }
+      className={`${BOX[size]} ${mono ? FIELD_MONO : TYPE[size]} ${grip} ${
+        autoSize ? 'field-sizing-content' : ''
+      } ${className}`}
     />
   );
 }

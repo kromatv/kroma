@@ -2,12 +2,13 @@
 // `AuthGate.tsx`, which owns the gate/routing + profile picker and composes
 // these two screens.
 
+import { TextInput } from '@kroma/admin-kit';
 import { isEmail, isPassword, isUsername, type PublicUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button } from '@kroma/ui/kit';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { useState } from 'react';
-import { INPUT, RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
+import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { UserAvatar } from '#web/features/accounts/user-avatar';
 
 export function LoginForm({
@@ -68,24 +69,27 @@ export function LoginForm({
       ) : null}
 
       {profile ? null : (
-        <input
-          className={INPUT}
+        <TextInput
+          size="lg"
+          className="w-full"
           placeholder={t('auth.emailOrUsername')}
           autoComplete="username"
           value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-          // biome-ignore lint/a11y/noAutofocus: deliberate initial focus on the sign-in field
+          onChange={setIdentifier}
+          // Deliberate: the sign-in field is what this screen is for.
           autoFocus
         />
       )}
-      <input
-        className={INPUT}
+      <TextInput
+        size="lg"
+        className="w-full"
         type="password"
         placeholder={t('auth.password')}
         autoComplete="current-password"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        // biome-ignore lint/a11y/noAutofocus: deliberate initial focus on the password when a profile is preselected
+        onChange={setPassword}
+        // Deliberate: with a profile already picked, the password is the only
+        // thing left to type.
         autoFocus={Boolean(profile)}
       />
 

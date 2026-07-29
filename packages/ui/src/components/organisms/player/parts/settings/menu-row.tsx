@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { SwitchFace } from '#ui/components/atoms/switch';
@@ -25,6 +25,7 @@ export function MenuRow({
   toggle,
   on,
   focused,
+  style,
   onActivate,
   onFocus,
 }: Readonly<{
@@ -34,6 +35,9 @@ export function MenuRow({
   toggle?: boolean;
   on?: boolean;
   focused: boolean;
+  /** Placement only (the menu uses it to open a gap between two groups of
+   *  rows). The row's own look stays here. */
+  style?: ViewStyle;
   onActivate: () => void;
   onFocus: () => void;
 }>) {
@@ -45,7 +49,7 @@ export function MenuRow({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={toggle ? { checked: Boolean(on) } : undefined}
-      style={rowStyle(menuRow, rowOn, focused)}
+      style={[...rowStyle(menuRow, rowOn, focused), style]}
     >
       {icon}
       <Box flex style={{ minWidth: 0 }}>

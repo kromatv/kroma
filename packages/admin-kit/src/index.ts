@@ -15,6 +15,16 @@ export {
 export { AddEngineModal, FieldForm, useEnabledEngines, useModuleEnabled } from './engines';
 export { CardSkeleton, Skeleton, TableSkeleton } from './feedback';
 export {
+  FIELD,
+  FIELD_BOX,
+  FIELD_BOX_LG,
+  FIELD_GROUP,
+  FIELD_LG,
+  FIELD_MONO,
+  FIELD_TYPE,
+  FIELD_TYPE_LG,
+} from './field';
+export {
   avatarGradient,
   decimal,
   formatBytes,
@@ -29,6 +39,7 @@ export {
   type OptionSelectProps,
   Select,
   type SelectOption,
+  TextArea,
   TextInput,
 } from './forms';
 export { HeaderAction, PAGE_SUBTITLE, PAGE_TITLE, PageHeader } from './header';

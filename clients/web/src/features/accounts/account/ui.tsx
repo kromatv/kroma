@@ -3,6 +3,7 @@
 // dark panels, uppercase field labels with amber focus, and icon-led preference
 // rows. Also exports the small async-save state machine every section reuses.
 
+import { FIELD_GROUP } from '@kroma/admin-kit';
 import { apiErrorText, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import type { InputHTMLAttributes, ReactNode } from 'react';
@@ -42,9 +43,11 @@ export function LabeledInput({
   return (
     <label className={`flex flex-col gap-2 ${className}`}>
       <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-dim">{label}</span>
-      <div className="flex items-center gap-2.5 rounded-md border border-border-strong bg-bg px-3.5 transition-colors focus-within:border-accent">
+      <div className={FIELD_GROUP}>
         {leading}
         <input
+          // The bordered box above is the field; it takes the border and ring.
+          data-focus-ring="off"
           className="min-w-0 flex-1 bg-transparent py-3 text-[14.5px] font-semibold text-text outline-none placeholder:text-dim"
           {...rest}
         />

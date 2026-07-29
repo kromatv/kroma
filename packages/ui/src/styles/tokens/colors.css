@@ -21,6 +21,7 @@
   --kroma-accent-bright: #ffd262;
   --kroma-accent-ink: #0a0a0c;
   --kroma-accent-soft: rgba(242, 180, 66, 0.16);
+  --kroma-accent-soft-hover: rgba(242, 180, 66, 0.26);
 
   /* Semantic + quality badges */
   --kroma-success: #46d08d; /* Disponible / Vu */
@@ -28,6 +29,7 @@
   --kroma-hdr: #c792ea; /* badge HDR */
   --kroma-h265: #5fd3c4; /* badge H.265 */
   --kroma-danger: #e53935;
+  --kroma-danger-hover: #ef5350; /* pointer resting on a destructive action */
 
   /* Semantic aliases */
   --surface-page: var(--kroma-bg);

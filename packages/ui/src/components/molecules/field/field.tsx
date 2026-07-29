@@ -16,6 +16,11 @@
 //
 //   <Field label="Email" type="email" icon="mail" onChange={setEmail} />
 //
+// A paragraph is the same field, told how many lines to open at. It grows with
+// what is typed into it, so nobody writes a note through a slot:
+//
+//   <Field label="Message" multiline rows={3} onChange={setBody} />
+//
 // A control that is not a text entry goes in as children, and the label, hint
 // and error still apply:
 //
@@ -32,6 +37,7 @@ import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import type { IconName } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
+import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import {
   TextField,
   type TextFieldProps,
@@ -54,6 +60,14 @@ interface FieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   children?: ReactNode;
 
   // ---- the entry, rendered when no children are passed ----
+  /** A paragraph rather than a line: renders the multi-line entry, which opens
+   *  `rows` tall and grows with what is typed into it. `type` and `icon` do not
+   *  apply to it (there is no keyboard to derive and no glyph slot). */
+  multiline?: boolean;
+  /** The multi-line entry's floor, in lines. */
+  rows?: number;
+  /** The multi-line entry's ceiling, in lines; past it the entry scrolls. */
+  maxRows?: number;
   /** What the entry holds. `password` masks and grows the reveal eye. */
   type?: TextFieldType;
   /** Leading glyph inside the entry. */
@@ -80,7 +94,7 @@ interface FieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
    * lets the 10-foot screens size a 68px search box without also inflating the
    * label above it - the thing they used to bypass Field entirely to do.
    */
-  entry?: Partial<TextFieldProps>;
+  entry?: Partial<TextFieldProps & TextAreaProps>;
 }
 
 function Field({
@@ -89,6 +103,9 @@ function Field({
   hint,
   error,
   children,
+  multiline = false,
+  rows,
+  maxRows,
   type,
   icon,
   value,
@@ -113,25 +130,41 @@ function Field({
           {label}
         </Txt>
       )}
-      {children ?? (
-        <TextField
-          type={type}
-          icon={icon}
-          value={value}
-          defaultValue={defaultValue}
-          onChange={onChange}
-          onSubmit={onSubmit}
-          placeholder={placeholder}
-          physicalKeyboard={physicalKeyboard}
-          keyboardType={keyboardType}
-          autoFocus={autoFocus}
-          trailing={trailing}
-          invalid={Boolean(error)}
-          label={label}
-          py={12}
-          {...entry}
-        />
-      )}
+      {children ??
+        (multiline ? (
+          <TextArea
+            value={value}
+            defaultValue={defaultValue}
+            onChange={onChange}
+            placeholder={placeholder}
+            rows={rows}
+            maxRows={maxRows}
+            physicalKeyboard={physicalKeyboard}
+            autoFocus={autoFocus}
+            invalid={Boolean(error)}
+            label={label}
+            py={12}
+            {...entry}
+          />
+        ) : (
+          <TextField
+            type={type}
+            icon={icon}
+            value={value}
+            defaultValue={defaultValue}
+            onChange={onChange}
+            onSubmit={onSubmit}
+            placeholder={placeholder}
+            physicalKeyboard={physicalKeyboard}
+            keyboardType={keyboardType}
+            autoFocus={autoFocus}
+            trailing={trailing}
+            invalid={Boolean(error)}
+            label={label}
+            py={12}
+            {...entry}
+          />
+        ))}
       {note ? (
         <Txt variant="meta" color={error ? 'danger' : 'textDim'}>
           {note}

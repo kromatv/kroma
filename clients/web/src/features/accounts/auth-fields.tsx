@@ -3,14 +3,11 @@
 // render the exact same avatar tile + email/username/password inputs, so that
 // block lives here once and is driven by controlled props.
 
-import { Image } from '@kroma/admin-kit';
+import { Image, TextInput } from '@kroma/admin-kit';
 import { useT } from '@kroma/ui';
 import { IconPlus } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { avatarGradient, initials } from '#web/features/accounts/user-avatar';
-
-export const INPUT =
-  'w-full rounded-md border border-border-strong bg-surface-2 px-4 py-3.5 text-[15px] text-text outline-none transition-colors placeholder:text-dim focus:border-accent';
 
 export type RegisterValues = Readonly<{ email: string; username: string; password: string }>;
 
@@ -79,28 +76,31 @@ export function RegisterFields({
         onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
       />
 
-      <input
-        className={INPUT}
+      <TextInput
+        size="lg"
+        className="w-full"
         type="email"
         placeholder={t('auth.email')}
         autoComplete="email"
         value={email}
-        onChange={(e) => onChange({ ...values, email: e.target.value })}
+        onChange={(v) => onChange({ ...values, email: v })}
       />
-      <input
-        className={INPUT}
+      <TextInput
+        size="lg"
+        className="w-full"
         placeholder={t('auth.username')}
         autoComplete="nickname"
         value={username}
-        onChange={(e) => onChange({ ...values, username: e.target.value })}
+        onChange={(v) => onChange({ ...values, username: v })}
       />
-      <input
-        className={INPUT}
+      <TextInput
+        size="lg"
+        className="w-full"
         type="password"
         placeholder={t('auth.passwordHint')}
         autoComplete="new-password"
         value={password}
-        onChange={(e) => onChange({ ...values, password: e.target.value })}
+        onChange={(v) => onChange({ ...values, password: v })}
       />
     </>
   );

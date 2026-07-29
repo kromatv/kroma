@@ -7,36 +7,25 @@
 // mystery. When push can't work here at all, the row says which reason applies
 // instead of offering a switch that would silently do nothing.
 
-import type { CategoryPref, MessageKey, NotificationCategory } from '@kroma/core';
+import {
+  blockerOf,
+  type CategoryPref,
+  disablePush,
+  enablePush,
+  NOTIFICATION_CATEGORY_LABEL,
+  type NotificationCategory,
+  PUSH_BLOCKER_LABEL,
+  type PushBlocker,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { IconBell, IconBellOff } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Panel } from '#web/features/accounts/account/ui';
-import {
-  disablePush,
-  enablePush,
-  type PushBlocker,
-  pushBlocker,
-} from '#web/features/notifications/push';
 import { kromaClient } from '#web/shared/lib/api';
+import { pushBlocker, webPush } from '#web/shared/lib/push';
 import { userQueries } from '#web/shared/lib/queries';
 import { Button } from '#web/shared/ui';
-
-const CATEGORY_LABEL: Record<NotificationCategory, MessageKey> = {
-  requests: 'notifications.category.requests',
-  media: 'notifications.category.media',
-  reports: 'notifications.category.reports',
-  downloads: 'notifications.category.downloads',
-  system: 'notifications.category.system',
-};
-
-const BLOCKER_LABEL: Record<PushBlocker, MessageKey> = {
-  unsupported: 'push.blocked.unsupported',
-  insecure: 'push.blocked.insecure',
-  'needs-install': 'push.blocked.needsInstall',
-  denied: 'push.blocked.denied',
-};
 
 export function NotificationsCard() {
   return (
@@ -60,10 +49,7 @@ function PushPanel() {
   // be part of the initial render on the prerendered shell.
   useEffect(() => setBlocker(pushBlocker()), []);
 
-  const { data } = useQuery({
-    queryKey: ['push', 'key'] as const,
-    queryFn: () => kromaClient().pushKey(),
-  });
+  const { data } = useQuery(userQueries.pushKey());
   const subscribed = data?.subscribed ?? false;
 
   const toggle = async () => {
@@ -71,14 +57,12 @@ function PushPanel() {
     setError(null);
     setTested(null);
     try {
-      if (subscribed) await disablePush();
-      else await enablePush();
-      await qc.invalidateQueries({ queryKey: ['push', 'key'] });
+      if (subscribed) await disablePush(webPush, kromaClient());
+      else await enablePush(webPush, kromaClient());
+      await qc.invalidateQueries({ queryKey: userQueries.pushKey().queryKey });
     } catch (e) {
-      const reason = e instanceof Error ? e.message : '';
-      setError(
-        reason in BLOCKER_LABEL ? t(BLOCKER_LABEL[reason as PushBlocker]) : t('push.failed'),
-      );
+      const reason = blockerOf(e);
+      setError(reason ? t(PUSH_BLOCKER_LABEL[reason]) : t('push.failed'));
     } finally {
       setBusy(false);
     }
@@ -117,7 +101,7 @@ function PushPanel() {
 
       {blocker && (
         <p className="rounded-lg bg-white/4 px-3 py-2 text-[12.5px] text-muted">
-          {t(BLOCKER_LABEL[blocker])}
+          {t(PUSH_BLOCKER_LABEL[blocker])}
         </p>
       )}
       {error && <p className="text-[12.5px] text-red-300">{error}</p>}
@@ -156,8 +140,10 @@ function CategoryMatrix() {
       const categories = data.categories.map((c) =>
         c.category === category ? { ...c, ...patch } : c,
       );
-      await kromaClient().setNotificationPrefs({ categories });
-      await qc.invalidateQueries({ queryKey: userQueries.notificationPrefs().queryKey });
+      // The PUT returns the saved matrix, so seed the cache with it rather than
+      // throwing it away and refetching the same rows.
+      const saved = await kromaClient().setNotificationPrefs({ categories });
+      qc.setQueryData(userQueries.notificationPrefs().queryKey, saved);
     } finally {
       setSaving(null);
     }
@@ -184,7 +170,7 @@ function CategoryMatrix() {
         {data.categories.map((pref) => (
           <div key={pref.category} className="flex items-center justify-between gap-4 py-2.5">
             <span className="min-w-0 truncate text-[13.5px] text-text">
-              {t(CATEGORY_LABEL[pref.category])}
+              {t(NOTIFICATION_CATEGORY_LABEL[pref.category])}
             </span>
             <div className="flex shrink-0 gap-4">
               <Toggle

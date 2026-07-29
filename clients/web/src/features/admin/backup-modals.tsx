@@ -5,7 +5,7 @@
 import { useT } from '@kroma/ui';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
-import { Field, Modal, ModalActions, TextInput, Toggle } from '#web/features/admin/ui';
+import { FIELD, Field, Modal, ModalActions, TextInput, Toggle } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 
 /** "KROMABK1\n" the encrypted-backup envelope magic (see services/backup/crypto). */
@@ -140,9 +140,7 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
     return (
       <Modal title={t('admin.backupImportTitle')} onClose={busy ? () => {} : () => call.end(null)}>
         <Field label={t('admin.backupFile')}>
-          <div className="truncate rounded-[9px] border border-border-strong bg-[#0F0F13] px-3.5 py-2.25 text-[13.5px] font-semibold text-text">
-            {file.name}
-          </div>
+          <div className={`${FIELD} truncate`}>{file.name}</div>
         </Field>
         {encrypted ? (
           <Field label={t('admin.backupPassword')} hint={t('admin.backupEncryptedFile')}>

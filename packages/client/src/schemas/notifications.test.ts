@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  NOTIFICATION_CATEGORIES,
   Notification,
+  NotificationCategory,
   NotificationPrefs,
   NotificationsView,
 } from './notifications';
@@ -72,8 +72,21 @@ describe('Notification', () => {
     expect(n.actions[0]?.method).toBe('POST');
   });
 
-  it('rejects an unknown event rather than half-rendering it', () => {
-    expect(() => Notification.parse({ ...wire, event: 'request.teleported' })).toThrow();
+  it('accepts an event this client has never heard of', () => {
+    // The server owns this vocabulary and grows it (`custom` for module-raised
+    // notifications arrived exactly this way). Title and body are already
+    // rendered, so an older client can show the row perfectly well — rejecting
+    // it would blank the notification centre against a newer server.
+    expect(Notification.parse({ ...wire, event: 'custom' }).event).toBe('custom');
+    expect(Notification.parse({ ...wire, event: 'request.teleported' }).event).toBe(
+      'request.teleported',
+    );
+  });
+
+  it('still rejects an unknown category, which the UI does switch on', () => {
+    // Unlike `event`, category drives the preferences matrix and the grouping,
+    // so an unknown one is not renderable and must not slip through.
+    expect(() => Notification.parse({ ...wire, category: 'gossip' })).toThrow();
   });
 
   it('rejects an unknown category', () => {
@@ -96,7 +109,7 @@ describe('NotificationsView', () => {
 describe('NotificationPrefs', () => {
   it('round-trips the full matrix', () => {
     const prefs = NotificationPrefs.parse({
-      categories: NOTIFICATION_CATEGORIES.map((category) => ({
+      categories: NotificationCategory.options.map((category) => ({
         category,
         inApp: true,
         push: category !== 'system',
@@ -109,7 +122,7 @@ describe('NotificationPrefs', () => {
   it('exposes every category the server knows about', () => {
     // Guards the settings matrix against drifting from the Rust
     // `NotificationCategory::ALL`.
-    expect(NOTIFICATION_CATEGORIES).toEqual([
+    expect(NotificationCategory.options).toEqual([
       'requests',
       'media',
       'reports',

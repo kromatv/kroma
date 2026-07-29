@@ -1006,6 +1006,15 @@ mod tests {
     /// straight to a downloader.
     type TestHost = kroma_module_host::testing::StubHost;
 
+    use kroma_domain::ParamValue;
+
+    /// A notification param's literal text. Params are typed now (a `Key` is
+    /// resolved in the reader's own locale); every one asserted on here is
+    /// `Text`, and resolving a key to itself keeps that visible if one changes.
+    fn param(params: &std::collections::BTreeMap<String, ParamValue>, key: &str) -> Option<String> {
+        params.get(key).map(|v| v.resolve(|k| Some(k.to_string())))
+    }
+
     fn test_host() -> TestHost {
         host_with_tmdb(Some("test-key"))
     }
@@ -1582,11 +1591,11 @@ mod tests {
         notify_requester(&host, &approved, RequestStatus::Approved, "/requests");
 
         let sent = host.notifications();
-        assert_eq!(sent[0].1.params.get("note").map(String::as_str), Some("we already have this in 4K"));
-        assert_eq!(sent[1].1.params.get("note"), None);
+        assert_eq!(param(&sent[0].1.params, "note").as_deref(), Some("we already have this in 4K"));
+        assert_eq!(param(&sent[1].1.params, "note"), None);
         // The title is always interpolated, whatever the outcome.
-        assert_eq!(sent[0].1.params.get("title").map(String::as_str), Some("Title"));
-        assert_eq!(sent[1].1.params.get("title").map(String::as_str), Some("Title"));
+        assert_eq!(param(&sent[0].1.params, "title").as_deref(), Some("Title"));
+        assert_eq!(param(&sent[1].1.params, "title").as_deref(), Some("Title"));
     }
 
     #[test]
@@ -1635,7 +1644,7 @@ mod tests {
         // permission is a moderator.
         assert_eq!(audience, &Audience::permission(Permission::RequestsManage));
         assert_eq!(spec.event, NotificationEvent::RequestSubmitted);
-        assert_eq!(spec.params.get("user").map(String::as_str), Some("alice"));
+        assert_eq!(param(&spec.params, "user").as_deref(), Some("alice"));
         assert_eq!(spec.link.as_deref(), Some("/admin/requests"));
         assert_eq!(spec.push_category, Some(PushCategory::RequestReview));
 
@@ -1686,7 +1695,7 @@ mod tests {
         assert_eq!(sent.len(), 1);
         assert_eq!(sent[0].0, Audience::user("u1"));
         assert_eq!(sent[0].1.event, NotificationEvent::RequestDenied);
-        assert_eq!(sent[0].1.params.get("note").map(String::as_str), Some("duplicate"));
+        assert_eq!(param(&sent[0].1.params, "note").as_deref(), Some("duplicate"));
         // The title happens to be in the library already, so the link points at it.
         assert_eq!(sent[0].1.link.as_deref(), Some("/movie/item-42"));
     }

@@ -100,6 +100,13 @@ pub enum ServerEvent {
         seq: u64,
         command: crate::model::CastCommand,
     },
+    /// A television disconnected a remote. Addressed to that remote's account,
+    /// carrying the set it was driving so only the right session stands down.
+    #[serde(rename = "cast.kicked")]
+    CastKicked {
+        #[serde(rename = "receiverId")]
+        receiver_id: String,
+    },
     /// Server settings changed via the admin console.
     #[serde(rename = "settings.updated")]
     SettingsUpdated,
@@ -174,15 +181,24 @@ pub enum Audience {
 
 /// One bus message: the pre-serialized event plus who may see it.
 ///
-/// `Deref`s to the JSON payload, so subscribers that only care about the bytes
-/// (and the tests that assert on them) read it as a `&str`.
+/// The payload is deliberately NOT reachable without naming a viewer. This type
+/// exists to stop one user's notifications reaching another's socket, and a
+/// `Deref<Target = str>` (or a public field) would make `socket.send(&*env)`
+/// compile and silently do exactly that. [`Self::payload_for`] is the only way
+/// in, so the routing decision cannot be skipped by accident.
 #[derive(Clone, Debug)]
 pub struct Envelope {
-    pub audience: Audience,
-    pub json: std::sync::Arc<str>,
+    audience: Audience,
+    json: std::sync::Arc<str>,
 }
 
 impl Envelope {
+    /// The JSON to forward to a socket authenticated as `viewer`, or `None` when
+    /// this event is addressed to somebody else.
+    pub fn payload_for(&self, viewer: &str) -> Option<&str> {
+        self.visible_to(viewer).then(|| &*self.json)
+    }
+
     /// Whether a socket authenticated as `viewer` may receive this event.
     pub fn visible_to(&self, viewer: &str) -> bool {
         match &self.audience {
@@ -190,21 +206,12 @@ impl Envelope {
             Audience::User(id) => &**id == viewer,
         }
     }
-}
 
-impl std::ops::Deref for Envelope {
-    type Target = str;
-
-    fn deref(&self) -> &str {
+    /// The raw payload, for subscribers that are not sockets (the pipeline
+    /// dispatcher) and for tests. Named so that reaching past the audience check
+    /// is a deliberate act rather than a slip.
+    pub fn payload_unrouted(&self) -> &str {
         &self.json
-    }
-}
-
-/// An envelope prints as its payload the address is routing metadata, not
-/// something a log line or an assertion message wants to see.
-impl std::fmt::Display for Envelope {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.json)
     }
 }
 
@@ -256,10 +263,7 @@ impl Bus {
             return;
         }
         if let Ok(json) = serde_json::to_string(payload) {
-            let _ = self.tx.send(Envelope {
-                audience,
-                json: json.into(),
-            });
+            let _ = self.tx.send(Envelope { audience, json: json.into() });
         }
     }
 
@@ -310,13 +314,13 @@ mod tests {
     }
 
     #[test]
-    fn envelope_derefs_to_the_serialized_payload() {
+    fn the_payload_is_reachable_for_its_viewer_only() {
         let bus = Bus::new();
         let mut rx = bus.subscribe();
         bus.publish(item("abc"));
         let env = rx.try_recv().expect("published");
-        assert!(env.contains("item.updated"), "payload: {}", &*env);
-        assert!(env.contains("abc"));
+        assert!(env.payload_unrouted().contains("item.updated"), "{}", env.payload_unrouted());
+        assert!(env.payload_unrouted().contains("abc"));
     }
 
     #[test]

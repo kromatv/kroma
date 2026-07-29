@@ -209,12 +209,18 @@ export const userQueries = {
       queryFn: () => kromaClient().listNotifications(),
     }),
 
-  /** The per-category delivery matrix (for the /account settings section). */
+  /** The per-category delivery matrix (for the /account settings section).
+   * Its own key prefix, not `['notifications', …]`: a notification arriving must
+   * not invalidate the settings matrix. */
   notificationPrefs: () =>
     queryOptions({
-      queryKey: ['notifications', 'prefs'] as const,
+      queryKey: ['notification-prefs'] as const,
       queryFn: () => kromaClient().getNotificationPrefs(),
     }),
+
+  /** The server's VAPID key + whether this account has a push endpoint. */
+  pushKey: () =>
+    queryOptions({ queryKey: ['push-key'] as const, queryFn: () => kromaClient().pushKey() }),
 } as const;
 
 // ---- Server ---------------------------------------------------------------

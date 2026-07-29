@@ -5,6 +5,7 @@ import { BackButton } from '#ui/components/molecules/back-button';
 import { gradient } from '#ui/lib/css';
 import { fonts } from '#ui/lib/tokens';
 import { useT } from '#ui/services/i18n';
+import { GUTTER, scaler } from '../lib/metrics';
 
 /**
  * Player top chrome (§ top chrome): a gradient bar holding the round back
@@ -23,6 +24,8 @@ export interface TopBarProps {
   /** Host-supplied controls for the right edge (the web's "play on TV"). The
    * TV passes none: it is the screen things are cast TO. */
   actions?: ReactNode;
+  /** The chrome's scale (see ../lib/metrics). 1 on a television stage. */
+  scale?: number;
 }
 
 const SCRIM = 'linear-gradient(180deg, rgba(0,0,0,0.65), transparent)';
@@ -36,8 +39,10 @@ export const TopBar = memo(function TopBar({
   onBack,
   backFocused,
   actions,
+  scale = 1,
 }: Readonly<TopBarProps>) {
   const t = useT();
+  const px = scaler(scale);
   return (
     <Box
       absolute
@@ -46,9 +51,9 @@ export const TopBar = memo(function TopBar({
       top={0}
       row
       align="center"
-      gap={18}
-      px={34}
-      py={26}
+      gap={px(18)}
+      px={px(GUTTER)}
+      py={px(26)}
       pointerEvents="box-none"
       style={gradient(SCRIM)}
     >
@@ -57,26 +62,40 @@ export const TopBar = memo(function TopBar({
           ../lib/virtual-focus.ts. */}
       <BackButton
         variant="glass"
-        size={42}
+        size={px(42)}
         focused={backFocused ?? false}
         onPress={onBack}
         label={t('player.back')}
       />
-      <Box style={{ minWidth: 0 }}>
-        <Txt lines={1} style={TITLE}>
+      {/* `shrink`: a long film title truncates (it is already clamped to one
+          line) rather than pushing the warning pill and the host's own actions
+          off the right edge of a narrow window. */}
+      <Box shrink={1} minW={0}>
+        <Txt lines={1} style={[TITLE, { fontSize: px(TITLE_SIZE) }]}>
           {title}
         </Txt>
         {subtitle ? (
-          <Txt lines={1} style={SUBTITLE} color="rgba(244, 243, 240, 0.6)">
+          <Txt
+            lines={1}
+            style={[SUBTITLE, { fontSize: px(SUBTITLE_SIZE) }]}
+            color="rgba(244, 243, 240, 0.6)"
+          >
             {subtitle}
           </Txt>
         ) : null}
       </Box>
       {warn || actions ? (
-        <Box shrink={0} ml="auto" row align="center" gap={12}>
+        <Box shrink={1} ml="auto" row align="center" gap={px(12)}>
           {warn ? (
-            <Box radius="pill" bg="accentSoft" px={14} py={8}>
-              <Txt style={{ fontFamily: fonts.ui, fontSize: 13, fontWeight: '600' }} color="accent">
+            // The pill is the one thing here that may lose width before the
+            // title does: a codec notice is a sentence, and it wraps to two
+            // lines sooner than it crowds out what is playing.
+            <Box shrink={1} radius="pill" bg="accentSoft" px={px(14)} py={px(8)}>
+              <Txt
+                lines={2}
+                style={{ fontFamily: fonts.ui, fontSize: px(WARN_SIZE), fontWeight: '600' }}
+                color="accent"
+              >
                 {warn}
               </Txt>
             </Box>
@@ -88,10 +107,15 @@ export const TopBar = memo(function TopBar({
   );
 });
 
+/** The design's sizes, at the design's scale; the styles below carry everything
+ * that does NOT vary with it, so neither number is written twice. */
+const TITLE_SIZE = 19;
+const SUBTITLE_SIZE = 13;
+const WARN_SIZE = 13;
+
 const TITLE = {
   fontFamily: fonts.display,
-  fontSize: 19,
   fontWeight: '700' as const,
   color: '#FFFFFF',
 };
-const SUBTITLE = { fontFamily: fonts.ui, fontSize: 13, fontWeight: '500' as const };
+const SUBTITLE = { fontFamily: fonts.ui, fontWeight: '500' as const };

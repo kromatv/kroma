@@ -13,9 +13,9 @@
 // silently gave the browser TVs different focus behaviour from the native ones,
 // which is the class of bug the shared navigator was adopted to eliminate.
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { SpatialNavigationView } from 'react-tv-space-navigation';
+import { SpatialNavigationView, useLockSpatialNavigation } from 'react-tv-space-navigation';
 import { useFocusEntryScope } from './focus-entry';
 import { FocusPresenceProvider } from './focus-presence';
 import { useRemoteBridge } from './focus-remote';
@@ -36,6 +36,19 @@ interface ScreenScopeProps extends FocusScopeProps {
    *  does not remount; changing this key is how it hears about the arrival.
    *  Omit it for the usual case - one scope per screen, keyed by the router. */
   entryKey?: string | number;
+  /**
+   * Mount a remote bridge for this scope. Default true, and only a scope drawn
+   * INSIDE another one ever says otherwise.
+   *
+   * The bridge is the SOURCE of remote events on the native targets, and it fans
+   * out to every registered navigator (see focus-remote's handler set) - so a
+   * second one inside the first would post every press twice and the ring would
+   * jump two controls. A dialog rendered through <OverlayHost> is inside the
+   * app's own view hierarchy and the screen's bridge already reaches it, so it
+   * passes `false`; one that falls back to a <Modal> is in a view controller of
+   * its own, where that bridge can go quiet, and needs its own.
+   */
+  bridge?: boolean;
 }
 
 interface FocusColumnProps extends FocusScopeProps {
@@ -44,8 +57,30 @@ interface FocusColumnProps extends FocusScopeProps {
   grid?: boolean;
 }
 
-function FocusScope({ children, style, entryKey }: Readonly<ScreenScopeProps>) {
-  useRemoteBridge();
+/**
+ * A scope is also what a DIALOG mounts, over the screen that opened it, paired
+ * with {@link useLockFocusBehind} there. Together those two are what "the dialog
+ * takes the remote" actually means:
+ *
+ *  - the screen behind is LOCKED, so its navigator stops answering the remote
+ *    and none of its controls can be focused - a press of OK can no longer land
+ *    on the button a dialog is covering;
+ *  - this root is the only one left listening, and it holds nothing but the
+ *    dialog, so the remote reaches its buttons and nothing else;
+ *  - `useFocusEntryScope` runs while this RENDERS, which is what lets the
+ *    dialog's `autoFocus` action claim the ring. From an effect it would arrive
+ *    after the children had already decided (see lib/focus-entry), and the ring
+ *    would stay on the screen underneath;
+ *  - on the browser targets <FocusRoot> also mounts a fresh device-type
+ *    provider, so the dialog opens in REMOTE-KEYS mode however the pointer was
+ *    left. A webOS magic remote parked over the screen behind no longer decides
+ *    where a dialog opens, and a genuine move of that pointer inside the dialog
+ *    still turns hover-focus back on - for the dialog's own buttons.
+ */
+function FocusScope({ children, style, entryKey, bridge = true }: Readonly<ScreenScopeProps>) {
+  // Hooks cannot be conditional, so the flag is read INSIDE the bridge rather
+  // than around it.
+  useRemoteBridge(bridge);
   // A fresh scope - or a new screen inside one that persists - decides where
   // focus opens again: see lib/focus-entry.
   useFocusEntryScope(entryKey);
@@ -57,6 +92,25 @@ function FocusScope({ children, style, entryKey }: Readonly<ScreenScopeProps>) {
       <FocusRoot style={style}>{children}</FocusRoot>
     </FocusPresenceProvider>
   );
+}
+
+/**
+ * Take the remote away from the navigator this component sits in, while
+ * `active`. Called from OUTSIDE the scope it protects - the component that opens
+ * the dialog - so it locks the screen rather than the dialog.
+ *
+ * Outside any navigator - the web app, a phone - the navigator's context
+ * defaults to a pair of no-ops, so this is inert rather than conditional.
+ */
+function useLockFocusBehind(active: boolean): void {
+  const { lock, unlock } = useLockSpatialNavigation();
+  useEffect(() => {
+    if (!active) return;
+    lock();
+    // The navigator counts locks rather than holding a flag, so overlapping
+    // surfaces (a picker opened from a dialog) unlock in any order.
+    return unlock;
+  }, [active, lock, unlock]);
 }
 
 /**
@@ -98,4 +152,4 @@ function FocusColumn({ children, style, grid = false }: Readonly<FocusColumnProp
 }
 
 export type { FocusColumnProps, FocusScopeProps, ScreenScopeProps };
-export { FocusColumn, FocusRegion, FocusScope };
+export { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind };

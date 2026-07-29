@@ -181,7 +181,7 @@ mod tests {
     ) -> Vec<serde_json::Value> {
         let mut out = Vec::new();
         while let Ok(env) = rx.try_recv() {
-            out.push(serde_json::from_str(&env).unwrap());
+            out.push(serde_json::from_str(env.payload_unrouted()).unwrap());
         }
         out
     }

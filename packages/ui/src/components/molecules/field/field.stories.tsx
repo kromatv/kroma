@@ -85,6 +85,30 @@ export default story({
       },
     },
     {
+      name: 'Multi-line',
+      docs: 'A paragraph is the same field with `multiline`: it opens `rows` tall and GROWS with what is typed into it, up to `maxRows`, past which it scrolls rather than pushing the rest of the form off the screen. One line of it is one line of a single-line field, so the two align in a form. On a television it is the same display-plus-caret the single-line entry uses.',
+      render: () => (
+        <Box gap={18}>
+          <Field
+            label="Message"
+            multiline
+            rows={3}
+            hint="Grows as you type, up to ten lines."
+            placeholder="The server restarts at nine."
+            physicalKeyboard
+          />
+          <Field
+            label="Reason"
+            multiline
+            rows={2}
+            error="Say why the request was refused."
+            defaultValue=""
+            physicalKeyboard
+          />
+        </Box>
+      ),
+    },
+    {
       name: 'Every type',
       docs: 'One prop decides the keyboard, the autofill hint and the masking. Flip `type` in the panel to compare; these are the six a client actually needs.',
       render: () => (

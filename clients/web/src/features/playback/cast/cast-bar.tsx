@@ -34,7 +34,9 @@ export function CastBar() {
   const poster = item ? kromaClient().posterFor(item, 96) : null;
   const durationMs = playing?.durationMs ?? 0;
   const shownMs = dragMs ?? positionMs;
-  const isPlaying = playing?.state === 'playing';
+  // Buffering IS playing, stalled: the button a viewer needs is still Pause, the
+  // same reading the phone's remote uses.
+  const isPlaying = playing?.state === 'playing' || playing?.state === 'buffering';
 
   return (
     <aside

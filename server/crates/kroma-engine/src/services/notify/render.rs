@@ -15,18 +15,17 @@ pub use crate::i18n::user_locale as locale_of;
 
 /// Resolve the interpolation vars for `locale`.
 ///
-/// A param value that is itself a catalog key is translated first, so a producer
-/// can pass a localizable value (a job's `jobs.{key}.name`) the same way it
-/// passes a literal one (a film title). Ordinary text never collides with this:
-/// a real title is not a message key.
+/// Which vars are translatable is stated by the producer ([`ParamValue`]), not
+/// inferred from the text. A title or a username is interpolated exactly as
+/// given, even if it happens to spell a catalog key.
 fn vars_for(stored: &StoredNotification, locale: &str) -> Vec<(String, String)> {
     stored
         .params
         .iter()
         .map(|(k, v)| {
-            let value =
-                if i18n::is_message_key(v) { i18n::t(locale, v, &[]) } else { v.clone() };
-            (k.clone(), value)
+            // `None` for anything the catalogs do not know, which is what keeps a
+            // legacy bare string literal unless it really was a key.
+            (k.clone(), v.resolve(|key| i18n::is_message_key(key).then(|| i18n::t(locale, key, &[]))))
         })
         .collect()
 }
@@ -58,6 +57,7 @@ pub fn render(stored: &StoredNotification, locale: &str) -> Notification {
                 style: a.style,
             })
             .collect(),
+        push_category: stored.push_category,
         read: stored.read,
         created_at: stored.created_at,
     }
@@ -67,7 +67,9 @@ pub fn render(stored: &StoredNotification, locale: &str) -> Notification {
 mod tests {
     use std::collections::BTreeMap;
 
-    use kroma_domain::{ActionKind, ActionSpec, ActionStyle, NotificationCategory, NotificationEvent};
+    use kroma_domain::{
+        ActionKind, ActionSpec, ActionStyle, NotificationCategory, NotificationEvent, ParamValue,
+    };
 
     use super::*;
 
@@ -78,7 +80,7 @@ mod tests {
             event: NotificationEvent::RequestAvailable,
             title_key: "notifications.request.available.title".into(),
             body_key: "notifications.request.available.body".into(),
-            params: BTreeMap::from([("title".to_string(), "Dune".to_string())]),
+            params: BTreeMap::from([("title".to_string(), ParamValue::Text("Dune".into()))]),
             link: Some("/movie/ab12".into()),
             image_url: Some("https://img/p.jpg".into()),
             actions: vec![ActionSpec {
@@ -127,13 +129,13 @@ mod tests {
     }
 
     #[test]
-    fn a_param_that_is_itself_a_catalog_key_gets_translated() {
+    fn a_key_param_is_translated_into_the_readers_locale() {
         let mut s = stored();
         s.title_key = "notifications.system.job.failed.title".into();
         s.body_key = "notifications.system.job.failed.body".into();
-        // The jobs domain names its display strings by key; a notification about
-        // a failed job passes that key through as a param.
-        s.params = BTreeMap::from([("job".to_string(), "jobs.library.scan.name".to_string())]);
+        // The jobs domain names its display strings by key, and says so.
+        s.params =
+            BTreeMap::from([("job".to_string(), ParamValue::Key("jobs.library.scan.name".into()))]);
         let out = render(&s, "en");
         assert!(!out.body.contains("jobs.library.scan.name"), "raw key leaked: {}", out.body);
     }
@@ -142,6 +144,50 @@ mod tests {
     fn ordinary_param_text_is_left_alone() {
         // A film title must never be mistaken for a key and rewritten.
         let out = render(&stored(), "en");
+        assert!(out.body.contains("Dune"), "{}", out.body);
+    }
+
+    #[test]
+    fn text_that_happens_to_spell_a_catalog_key_is_still_interpolated_verbatim() {
+        // The whole point of the typed param. A username or a moderator's note
+        // that collides with a real catalog key used to be silently replaced by
+        // that key's UI string; declared as Text, it survives untouched.
+        let mut s = stored();
+        s.body_key = "notifications.report.submitted.body".into();
+        s.params = BTreeMap::from([
+            ("user".to_string(), ParamValue::Text("reports.sheet".into())),
+            ("title".to_string(), ParamValue::Text("Dune".into())),
+        ]);
+        let out = render(&s, "en");
+        assert!(out.body.contains("reports.sheet"), "collided param was rewritten: {}", out.body);
+        // Sanity: that key really does resolve to something else, so the test
+        // would fail under the old value-shape heuristic.
+        assert_ne!(crate::i18n::t("en", "reports.sheet", &[]), "reports.sheet");
+    }
+
+    #[test]
+    fn a_row_written_before_params_were_typed_still_resolves_its_key() {
+        // Rows from before the upgrade stored a key as a bare string, and there
+        // are up to 200 of them per user with nothing to migrate them. Read back
+        // as plain Text they rendered "Job jobs.library.scan.name failed".
+        let mut s = stored();
+        s.body_key = "notifications.report.submitted.body".into();
+        s.params = BTreeMap::from([
+            ("user".to_string(), ParamValue::Legacy("reports.sheet".into())),
+            ("title".to_string(), ParamValue::Text("Dune".into())),
+        ]);
+        let out = render(&s, "en");
+        let resolved = crate::i18n::t("en", "reports.sheet", &[]);
+        assert!(out.body.contains(&resolved), "legacy key left raw: {}", out.body);
+    }
+
+    #[test]
+    fn a_legacy_param_that_is_not_a_key_is_left_exactly_as_it_was() {
+        // The other half: most of those bare strings were ordinary text (a film
+        // title, a note), and resolving is only ever a lookup, never a guess.
+        let mut s = stored();
+        s.params = BTreeMap::from([("title".to_string(), ParamValue::Legacy("Dune".into()))]);
+        let out = render(&s, "en");
         assert!(out.body.contains("Dune"), "{}", out.body);
     }
 

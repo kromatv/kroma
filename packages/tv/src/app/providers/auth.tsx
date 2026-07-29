@@ -18,6 +18,7 @@ import {
   normalizeServerUrl as norm,
   type StoredSession,
   saveSession,
+  setSessionToken,
   type User,
 } from '@kroma/core';
 import {
@@ -32,6 +33,23 @@ import {
 } from 'react';
 
 const keyOf = (a: Pick<StoredSession, 'serverUrl' | 'user'>) => `${norm(a.serverUrl)}|${a.user.id}`;
+
+/**
+ * Set (or clear) the active bearer in BOTH places it has to live: on the client
+ * that makes the requests, and in the shared session module.
+ *
+ * The second one is not optional. `KromaEvents` authenticates its WebSocket by
+ * reading `sessionToken()` - a browser cannot set a header on a handshake, so
+ * the bearer rides as a subprotocol - and this provider (the TV's own
+ * multi-server one) used to set only the client's. Every socket the TV opened
+ * was therefore refused: the player's admin-stop listener quietly fell back to
+ * its 410-on-ping path, and the cast receiver, which has no such fallback, could
+ * not attach at all.
+ */
+function applyBearer(client: KromaClient | null, token?: string): void {
+  client?.setAuthToken(token);
+  setSessionToken(token);
+}
 
 interface Auth {
   /** The active session, or null when signed out. */
@@ -97,7 +115,7 @@ export function AuthProvider({
     if (!client) return;
     const match = session && norm(session.serverUrl) === norm(activeServerUrl);
     if (!match || !session) {
-      client.setAuthToken();
+      applyBearer(client);
       client.setRefreshHandler();
       exchangedRef.current = null;
       return;
@@ -128,7 +146,7 @@ export function AuthProvider({
       .exchangeToken(session.accessToken)
       .then((res) => {
         if (cancelled) return;
-        client.setAuthToken(res.token);
+        applyBearer(client, res.token);
         setSession((cur) => (cur?.user.id === res.user.id ? { ...cur, user: res.user } : cur));
         saveSession({ ...session, user: res.user });
       })
@@ -136,7 +154,7 @@ export function AuthProvider({
         if (cancelled) return;
         // Can't resume (revoked/expired token, or PIN required after a reset):
         // drop to the picker instead of a zombie 'signed-in' state with no bearer.
-        client.setAuthToken();
+        applyBearer(client);
         exchangedRef.current = null;
         unlocked.current.clear();
         clearSession();
@@ -171,7 +189,7 @@ export function AuthProvider({
     (res: AuthResult, serverUrl: string) => {
       // Set the just-minted bearer immediately, and mark this access token as
       // already-exchanged so the effect doesn't redundantly re-exchange it.
-      client?.setAuthToken(res.token);
+      applyBearer(client, res.token);
       exchangedRef.current = res.accessToken;
       enter({ serverUrl: norm(serverUrl), accessToken: res.accessToken, user: res.user });
     },
@@ -186,7 +204,7 @@ export function AuthProvider({
   );
 
   const switchProfile = useCallback(() => {
-    client?.setAuthToken();
+    applyBearer(client);
     clearSession();
     unlocked.current.clear(); // re-arm every PIN lock
     setSession(null);
@@ -198,7 +216,7 @@ export function AuthProvider({
       setAccounts(loadAccounts());
       setSession((s) => {
         if (s?.user.id === userId && norm(s?.serverUrl) === norm(serverUrl)) {
-          client?.setAuthToken();
+          applyBearer(client);
           return null;
         }
         return s;
@@ -214,7 +232,7 @@ export function AuthProvider({
     } catch {
       /* best-effort server-side revocation */
     }
-    client?.setAuthToken();
+    applyBearer(client);
     if (active?.serverUrl) forgetAccountStore(active.user.id, active.serverUrl);
     else clearSession();
     unlocked.current.clear();

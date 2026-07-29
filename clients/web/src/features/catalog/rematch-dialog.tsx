@@ -8,7 +8,7 @@
 // rather than waiting for the new art (the fiche live-refreshes on the update
 // event).
 
-import { Image } from '@kroma/admin-kit';
+import { Image, TextInput } from '@kroma/admin-kit';
 import { apiErrorText, type MatchCandidate } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, IconButton } from '@kroma/ui/kit';
@@ -91,12 +91,12 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                   setSubmitted(query.trim() || undefined);
                 }}
               >
-                <input
+                <TextInput
                   value={query}
-                  onChange={(e) => setTyped(e.target.value)}
+                  onChange={setTyped}
                   placeholder={t('rematch.searchPlaceholder')}
                   aria-label={t('rematch.searchPlaceholder')}
-                  className="w-[220px] max-w-[42vw] rounded-xl border border-white/9 bg-[#15151A] px-3.5 py-2.5 text-[14px] outline-none placeholder:text-white/30 focus:border-white/20"
+                  className="w-[220px] max-w-[42vw]"
                 />
                 {/* The form's Enter-key submit still works: a single-field form
                     implicitly submits, so the kit button only mirrors it. */}

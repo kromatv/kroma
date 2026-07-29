@@ -2,6 +2,7 @@
 // icon button, and a collapsible disclosure.
 import { IconChevronDown, IconLoader2, type TablerIcon } from '@tabler/icons-react';
 import { type ComponentPropsWithoutRef, forwardRef, type ReactNode, useState } from 'react';
+import { FIELD } from './field';
 
 /** A pill segmented control: one selected option among a few, each with an
  * optional sub-label. Generic over the value union. */
@@ -69,7 +70,7 @@ export function NumberField({
         const n = Number(raw);
         if (!Number.isNaN(n)) onChange(n);
       }}
-      className="w-32 rounded-[9px] border border-border-strong bg-[#0F0F13] px-3.5 py-2.25 text-[13.5px] font-semibold text-text outline-none focus:border-accent/60"
+      className={`${FIELD} w-32`}
     />
   );
 }

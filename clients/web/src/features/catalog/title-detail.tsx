@@ -5,7 +5,7 @@
 // movie/show fiche vs discover fiche.
 
 import { apiErrorText, type EpisodeRef, formatRuntime, type ItemId } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { useCast, useT } from '@kroma/ui';
 import { Button } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
@@ -269,7 +269,16 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
     select: (entries) => progressMap(entries),
   });
 
-  const play = (id: string) => navigate({ to: '/watch/$id', params: { id } });
+  // With a TV connected, Play means play THERE - the same rule the phone uses.
+  // Otherwise it opens this browser's player.
+  const { active: castDevice, playOn } = useCast();
+  const play = (id: string) => {
+    if (castDevice) {
+      void playOn(castDevice.id, id as ItemId);
+      return;
+    }
+    navigate({ to: '/watch/$id', params: { id } });
+  };
 
   const doRequest = (seasons: number[] | null, episodes?: EpisodeRef[]) => {
     if (view.tmdbId == null) return;

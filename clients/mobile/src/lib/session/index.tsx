@@ -4,8 +4,9 @@
 // the long-lived accessToken is stored and exchanged on demand for a
 // short-lived bearer kept in memory; a 401 mid-flight silently re-exchanges.
 
-import { KromaClient, normalizeServerUrl, setSessionToken, type User } from '@kroma/core';
+import { type KromaClient, normalizeServerUrl, setSessionToken, type User } from '@kroma/core';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import { makeClient } from '#mobile/lib/device';
 import {
   deletePinBehindBiometrics,
   type MobileAccount,
@@ -57,10 +58,6 @@ export function useClient(): KromaClient {
   const { client } = useSession();
   if (!client) throw new Error('useClient before sign-in');
   return client;
-}
-
-function makeClient(serverUrl: string): KromaClient {
-  return new KromaClient({ baseUrl: serverUrl });
 }
 
 export function SessionProvider({ children }: Readonly<{ children: ReactNode }>) {

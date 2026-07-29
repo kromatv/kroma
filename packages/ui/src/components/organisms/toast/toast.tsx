@@ -1,0 +1,210 @@
+// <Toaster>: transient notices, the shadcn/sonner shape.
+//
+// One <Toaster/> is mounted by the shell; anything, anywhere, calls `toast(...)`.
+// That split is the whole point of the pattern: the thing with something to say
+// (a cast receiver learning a phone just picked up its remote) has no business
+// knowing where notices are drawn, and the screen drawing them has no business
+// knowing what might speak.
+//
+// Written for the ten-foot case first, because that is the hard one: a notice on
+// a television is read from the sofa, is never dismissed by hand, and must never
+// take the remote - so it is `pointerEvents="none"`, sized at 10-foot metrics,
+// and leaves on a timer. It is deliberately NOT a dialog: nothing here is a
+// question.
+
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Platform } from 'react-native';
+import { Box } from '#ui/components/atoms/box';
+import { Icon, type IconName } from '#ui/components/atoms/icon';
+import { Txt } from '#ui/components/atoms/text';
+import { hasGlyph } from '#ui/lib/icons/glyphs';
+import { colors, fonts, radius } from '#ui/lib/tokens';
+
+/** How long a notice stays up when it doesn't say otherwise. */
+const DEFAULT_MS = 4500;
+/** Never stack more than this: a column of notices is a wall, not a message. */
+const MAX_VISIBLE = 3;
+
+export interface ToastOptions {
+  /** The line to read. Already translated - the kit does not know your catalog. */
+  message: string;
+  /** A quieter second line: who, or what for. */
+  detail?: string;
+  /** What sits in the leading well: a glyph by name, or a node - an <Avatar>,
+   *  say, when the notice is about a PERSON rather than an event.
+   *
+   *  The node half excludes bare strings on purpose. `ReactNode` admits them,
+   *  which swallowed `IconName` into it (every glyph name IS a string) and left
+   *  the union meaning nothing more than `ReactNode` - no autocomplete, and a
+   *  typo'd glyph name rendered as literal text in the well instead of failing
+   *  to compile. */
+  icon?: IconName | Exclude<ReactNode, string>;
+  /** Milliseconds on screen. Defaults to {@link DEFAULT_MS}. */
+  duration?: number;
+  /** `success` tints the well; `plain` is the default neutral. */
+  tone?: 'plain' | 'success' | 'accent';
+}
+
+interface Entry extends ToastOptions {
+  id: number;
+}
+
+type Listener = (entry: Entry) => void;
+
+const listeners = new Set<Listener>();
+let nextId = 1;
+
+/**
+ * Say something. No-op when no <Toaster/> is mounted, so a shell that has not
+ * opted in simply stays quiet instead of throwing at the call site.
+ */
+export function toast(options: ToastOptions): void {
+  const entry: Entry = { id: nextId++, ...options };
+  for (const listener of listeners) listener(entry);
+}
+
+export interface ToasterProps {
+  /** Where notices sit. TVs read top-right, next to the status cluster they are
+   * usually about; phones and browsers expect the bottom. */
+  placement?: 'top-right' | 'bottom-center';
+  /** Inset from the screen edge, in px. The two axes can differ, which a
+   * television needs: notices line up with the top bar's gutter but must clear
+   * the bar itself. */
+  inset?: number | { x?: number; y?: number };
+}
+
+/** Mount once, near the root. Draws whatever `toast()` says. */
+export function Toaster({ placement = 'top-right', inset = 32 }: Readonly<ToasterProps>) {
+  const x = typeof inset === 'number' ? inset : (inset.x ?? 32);
+  const y = typeof inset === 'number' ? inset : (inset.y ?? 32);
+  const [entries, setEntries] = useState<Entry[]>([]);
+
+  const dismiss = useCallback((id: number) => {
+    setEntries((list) => list.filter((e) => e.id !== id));
+  }, []);
+
+  useEffect(() => {
+    const listener: Listener = (entry) => {
+      setEntries((list) => [...list, entry].slice(-MAX_VISIBLE));
+    };
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+
+  if (entries.length === 0) return null;
+
+  const top = placement === 'top-right';
+  return (
+    <Box
+      absolute
+      top={top ? y : undefined}
+      bottom={top ? undefined : y}
+      right={top ? x : undefined}
+      left={top ? undefined : 0}
+      z={90}
+      gap={10}
+      align={top ? 'flex-end' : 'center'}
+      // A notice never takes the remote, and never eats a tap meant for what is
+      // underneath it.
+      pointerEvents="none"
+      style={top ? undefined : FULL_WIDTH}
+    >
+      {entries.map((entry) => (
+        <ToastCard key={entry.id} entry={entry} onDone={() => dismiss(entry.id)} />
+      ))}
+    </Box>
+  );
+}
+
+const FULL_WIDTH = { width: '100%' } as const;
+
+/** One notice: fades and rises in, holds, then leaves on its own. */
+function ToastCard({ entry, onDone }: Readonly<{ entry: Entry; onDone: () => void }>) {
+  const appear = useRef(new Animated.Value(0)).current;
+  const done = useRef(onDone);
+  done.current = onDone;
+
+  useEffect(() => {
+    Animated.timing(appear, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+    const stay = setTimeout(() => {
+      Animated.timing(appear, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => done.current());
+    }, entry.duration ?? DEFAULT_MS);
+    return () => clearTimeout(stay);
+  }, [appear, entry.duration]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: appear,
+        transform: [
+          {
+            translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }),
+          },
+        ],
+      }}
+    >
+      <Box row align="center" gap={14} px={20} py={16} radius="xl" style={CARD}>
+        {entry.icon ? (
+          // A NAMED glyph gets the kit's well; anything else (an avatar) is
+          // already a finished round thing and is drawn as it comes.
+          <Box
+            w={40}
+            h={40}
+            center
+            radius="pill"
+            style={typeof entry.icon === 'string' ? WELL : undefined}
+          >
+            {typeof entry.icon === 'string' && hasGlyph(entry.icon) ? (
+              <Icon name={entry.icon} size={22} stroke={1.9} color={wellTone(entry.tone)} />
+            ) : (
+              entry.icon
+            )}
+          </Box>
+        ) : null}
+        <Box style={TEXT}>
+          <Txt lines={1} style={MESSAGE}>
+            {entry.message}
+          </Txt>
+          {entry.detail ? (
+            <Txt lines={1} style={DETAIL} color="textMuted">
+              {entry.detail}
+            </Txt>
+          ) : null}
+        </Box>
+      </Box>
+    </Animated.View>
+  );
+}
+
+const CARD = {
+  backgroundColor: colors.overlay,
+  borderWidth: 1,
+  borderColor: colors.border,
+  borderRadius: radius.xl,
+  maxWidth: 520,
+  // The lift that separates a notice from the picture behind it. Web-only: the
+  // native shadow props cost a rasterisation pass a TV does not need to spend.
+  ...(Platform.OS === 'web' ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
+} as const;
+
+/** The glyph's ink, by tone. */
+function wellTone(tone: ToastOptions['tone']): string {
+  if (tone === 'success') return colors.success;
+  if (tone === 'accent') return colors.accent;
+  return colors.text;
+}
+
+const WELL = { backgroundColor: 'rgba(255, 255, 255, 0.08)' } as const;
+const TEXT = { minWidth: 0, flexShrink: 1 } as const;
+const MESSAGE = { fontFamily: fonts.ui, fontSize: 17, fontWeight: '600' as const };
+const DETAIL = { fontFamily: fonts.ui, fontSize: 14, marginTop: 2 };

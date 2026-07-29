@@ -7,7 +7,7 @@ import type { MessageKey, SettingGroup, SettingRow } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { useEffect, useState } from 'react';
 import { useAdminKit } from './context';
-import { Select, TextInput } from './forms';
+import { Select, TextArea, TextInput } from './forms';
 import { PageHeader } from './header';
 import { Denied, useCap } from './hooks';
 import { Card, Toggle } from './primitives';
@@ -23,11 +23,18 @@ interface SettingsViewProps {
 
 /** Return a copy of `groups` with the row keyed by `key` set to `value` (the rest
  * shared by reference). Hoisted out of the component so the map chain doesn't nest
- * callbacks too deeply. */
+ * callbacks too deeply.
+ *
+ * A `secret` row records only WHETHER it now holds a value: the server never
+ * sends one back, and keeping the pasted key in component state would put a
+ * signing key in the React tree for the rest of the session — and back into the
+ * textarea it was typed into. */
 function applySetting(groups: SettingGroup[], key: string, value: unknown): SettingGroup[] {
+  const applied = (r: SettingRow): SettingRow =>
+    r.kind === 'secret' ? { ...r, value: '', configured: Boolean(value) } : { ...r, value };
   return groups.map((g) => ({
     ...g,
-    rows: g.rows.map((r) => (r.key === key ? { ...r, value } : r)),
+    rows: g.rows.map((r) => (r.key === key ? applied(r) : r)),
   }));
 }
 
@@ -135,11 +142,73 @@ function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: un
   if (row.kind === 'text') {
     return <EditableText value={asText(row.value)} onCommit={onChange} />;
   }
+  if (row.kind === 'secret') {
+    return <SecretInput configured={Boolean(row.configured)} onCommit={onChange} />;
+  }
   // value (read-only)
   return (
     <span className="text-[13.5px] font-semibold tabular-nums text-text/60">
       {asText(row.value)}
     </span>
+  );
+}
+
+/**
+ * A write-only credential: a PEM key or a service-account JSON.
+ *
+ * Multi-line, because both are. It starts empty every time — the server does not
+ * send stored secrets back — so the only states are "there is one" and "there
+ * isn't", and typing replaces rather than edits.
+ *
+ * Blur commits only a NON-EMPTY value, so leaving the field alone can never wipe
+ * a working key by accident. Removing one is therefore deliberate: that is what
+ * the Clear button is for.
+ */
+function SecretInput({
+  configured,
+  onCommit,
+}: Readonly<{ configured: boolean; onCommit: (v: string) => void }>) {
+  const t = useT();
+  const [v, setV] = useState('');
+  return (
+    <div className="flex flex-col items-end gap-1.5">
+      <TextArea
+        value={v}
+        rows={3}
+        mono
+        spellCheck={false}
+        autoComplete="off"
+        placeholder={configured ? t('admin.secretReplace') : undefined}
+        onChange={setV}
+        onBlur={() => {
+          if (!v.trim()) return;
+          onCommit(v);
+          setV('');
+        }}
+        className="min-w-70"
+      />
+      <div className="flex items-center gap-2.5">
+        <span
+          className={`text-[11px] font-semibold uppercase tracking-widest ${
+            configured ? 'text-success' : 'text-text/30'
+          }`}
+        >
+          {configured ? t('admin.secretSet') : t('admin.secretUnset')}
+        </span>
+        {configured ? (
+          <button
+            type="button"
+            onClick={() => {
+              setV('');
+              onCommit('');
+            }}
+            className="text-[11px] font-semibold uppercase tracking-widest text-text/40 underline-offset-2 hover:text-danger hover:underline"
+          >
+            {t('admin.secretClear')}
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

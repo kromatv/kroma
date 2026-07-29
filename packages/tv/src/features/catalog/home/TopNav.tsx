@@ -15,6 +15,7 @@ import {
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
+import { CastRemotes } from '#tv/features/cast/CastRemotes';
 import { type NavItem, NavPill } from '#tv/features/catalog/home/NavPill';
 import { KromaMark, useClock } from '#tv/shared/ui';
 
@@ -92,6 +93,9 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
         </Box>
         <NavPill items={items} active={active} />
         <Box row align="center" gap={18}>
+          {/* Only visible while a phone or browser is driving this set, which is
+              also the only time it has anything to say. */}
+          <CastRemotes />
           <ConnectionStatus online={online} label={t('connection.reconnecting')} />
           <Txt style={CLOCK}>{clock}</Txt>
           {user ? (

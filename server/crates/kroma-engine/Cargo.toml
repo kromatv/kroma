@@ -17,7 +17,7 @@ kroma-i18n = { workspace = true }
 kroma-module-manifest = { workspace = true }
 kroma-module-host = { workspace = true }
 kroma-http = { workspace = true }
-kroma-webpush = { workspace = true }
+kroma-push = { workspace = true }
 # The heavy/optional adapters (embeddings, whisper transcription, mDNS) are no
 # longer named here: the engine consumes them through the port traits in
 # `crate::ports`, and the binary (composition root) wraps the concrete module

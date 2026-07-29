@@ -27,11 +27,19 @@ pub struct Fetch {
     socks5: Option<String>,
     cookie_jar: Option<PathBuf>,
     max_time_secs: u32,
+    http2: bool,
 }
 
 impl Default for Fetch {
     fn default() -> Self {
-        Self { headers: Vec::new(), query: Vec::new(), socks5: None, cookie_jar: None, max_time_secs: 30 }
+        Self {
+            headers: Vec::new(),
+            query: Vec::new(),
+            socks5: None,
+            cookie_jar: None,
+            max_time_secs: 30,
+            http2: false,
+        }
     }
 }
 
@@ -65,6 +73,16 @@ impl Fetch {
     /// Read + write cookies at `jar` across calls (qBittorrent's SID auth).
     pub fn cookie_jar(mut self, jar: impl Into<PathBuf>) -> Self {
         self.cookie_jar = Some(jar.into());
+        self
+    }
+
+    /// Require HTTP/2 for this request.
+    ///
+    /// Not a preference: APNs serves HTTP/2 only and refuses an HTTP/1.1
+    /// request, so a caller that needs it must be able to say so. Needs a curl
+    /// built with nghttp2 (`curl --version` lists `HTTP2`).
+    pub fn http2(mut self) -> Self {
+        self.http2 = true;
         self
     }
 
@@ -127,6 +145,9 @@ impl Fetch {
         // -L: indexer download links commonly redirect. No -f: we surface the
         // status ourselves so error bodies (and 409 handshakes) stay readable.
         cmd.args(["-s", "-S", "-L", "--max-time", &self.max_time_secs.to_string()]);
+        if self.http2 {
+            cmd.arg("--http2");
+        }
         if let Some(proxy) = &self.socks5 {
             // Force IPv4. Our only SOCKS proxy is the WireGuard-to-SOCKS bridge,
             // which is IPv4-only (wireproxy can't carry IPv6 traffic). With
@@ -392,6 +413,16 @@ mod tests {
     }
 
     #[test]
+    fn http2_is_requested_only_when_asked_for() {
+        let args = |f: Fetch| -> Vec<String> {
+            f.base_cmd().get_args().map(|a| a.to_string_lossy().into_owned()).collect()
+        };
+        assert!(args(Fetch::new().http2()).contains(&"--http2".to_string()));
+        // Everything else keeps curl's default negotiation.
+        assert!(!args(Fetch::new()).contains(&"--http2".to_string()));
+    }
+
+    #[test]
     fn post_bytes_sends_the_body_over_stdin_not_argv() {
         // `--data-binary @-` (a literal, not the payload) is what keeps an
         // encrypted push body intact: as an argv entry it would be truncated at
@@ -442,7 +473,9 @@ mod tests {
         assert_eq!(f.query, vec![("q".to_string(), "hello world".to_string())]);
         assert_eq!(f.headers, vec![("A".to_string(), "b".to_string())]);
         assert_eq!(f.max_time_secs, 5);
-        // The default network budget is 30 seconds.
+        // The default network budget is 30 seconds, and HTTP/2 is opt-in.
         assert_eq!(Fetch::new().max_time_secs, 30);
+        assert!(!Fetch::new().http2);
+        assert!(Fetch::new().http2().http2);
     }
 }

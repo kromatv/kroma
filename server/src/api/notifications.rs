@@ -19,10 +19,7 @@ use serde::Deserialize;
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::model::{
-    Notification, NotificationCategory, NotificationEvent, NotificationPrefs, NotificationsView,
-    SubscribeBody,
-};
+use crate::model::{NotificationPrefs, NotificationsView, SubscribeBody};
 use crate::services::auth::random_token;
 use crate::services::scan::short_hash;
 use crate::services::notify;
@@ -174,7 +171,6 @@ pub async fn subscribe(
     AuthUser(user): AuthUser,
     Json(body): Json<SubscribeBody>,
 ) -> Result<Response, Response> {
-    let loc = notify::render::locale_of(&user).to_string();
     let uid = user.id.clone();
     query(&state.db, move |pool| {
         let id = short_hash(&format!("push|{uid}|{}|{}", body.endpoint, random_token()));
@@ -188,7 +184,6 @@ pub async fn subscribe(
                 p256dh: body.p256dh,
                 auth: body.auth,
                 device: body.device,
-                locale: Some(loc),
             },
             now_ms(),
         )
@@ -226,23 +221,7 @@ pub async fn push_test(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     let bg = state.clone();
-    let locale = notify::render::locale_of(&user).to_string();
-    let uid = user.id.clone();
-    let delivered = blocking(move || {
-        let notification = Notification {
-            id: "test".into(),
-            category: NotificationCategory::System,
-            event: NotificationEvent::SystemJobFailed,
-            title: kroma_engine::i18n::t(&locale, "notifications.test.title", &[]),
-            body: kroma_engine::i18n::t(&locale, "notifications.test.body", &[]),
-            link: Some("/".into()),
-            image_url: None,
-            actions: Vec::new(),
-            read: false,
-            created_at: now_ms(),
-        };
-        Ok(kroma_engine::services::notify::push::deliver(&bg, &uid, &notification))
-    })
-    .await?;
+    let delivered =
+        blocking(move || kroma_engine::services::notify::push::send_test(&bg, &user)).await?;
     Ok(Json(serde_json::json!({ "delivered": delivered })).into_response())
 }

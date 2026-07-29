@@ -18,7 +18,7 @@ import { createCallable } from 'react-call';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
 import { ReleaseList } from '#web/features/admin/release-list';
 import { useAsyncAction, usePoll } from '#web/features/admin/shell';
-import { Avatar } from '#web/features/admin/ui';
+import { Avatar, TextInput } from '#web/features/admin/ui';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import { seasonsSummary } from '#web/features/requests/status';
 import { useAuth } from '#web/shared/lib/auth';
@@ -193,11 +193,11 @@ function DenyForm({
   const t = useT();
   return (
     <div className="flex flex-col gap-2.5">
-      <input
+      <TextInput
         value={note}
-        onChange={(e) => onNote(e.target.value)}
+        onChange={onNote}
         placeholder={t('requests.denyNote')}
-        className="w-full rounded-xl border border-white/12 bg-[#15151A] px-3.5 py-3 text-[13.5px] font-medium text-white outline-none placeholder:text-white/35 focus:border-white/25"
+        className="w-full"
       />
       <div className="flex gap-2.5">
         <Button

@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
+import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { colors, radius, SHADE, spacing, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
@@ -18,6 +19,7 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   const t = useT();
   const client = useClient();
   const router = useRouter();
+  const { play: playNow } = usePlay();
   const { width, height } = useWindowDimensions();
   const gutters = useGutters();
   const queryClient = useQueryClient();
@@ -46,7 +48,9 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   });
 
   const play = () => {
-    if (entry.type === 'movie') router.push(`/player/${entry.item.id}` as never);
+    // A movie plays (here or on the TV being driven); a show has no single file,
+    // so it opens its page and the viewer picks the episode.
+    if (entry.type === 'movie') void playNow(entry.item.id);
     else router.push(detailRoute as never);
   };
 

@@ -4,7 +4,7 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{get, seed_session, send, test_app};
+use crate::api::test_support::{get, raw, seed_access_token, seed_session, send, test_app};
 use crate::model::Permission;
 
 #[tokio::test]
@@ -65,6 +65,35 @@ async fn sessions_list_flags_the_current_device() {
     assert_eq!(sessions.len(), 1);
     assert_eq!(sessions[0]["current"], json!(true));
     assert_eq!(sessions[0]["userAgent"], json!("integration-test"));
+}
+
+#[tokio::test]
+async fn exchanging_a_token_relabels_the_device() {
+    let t = test_app();
+    let access = seed_access_token(&t.state, &t.user_id, true);
+
+    // The phone app now names itself; the device row was written before it did.
+    let ua = "Kroma/1.0 (iPhone 17 Pro; iOS 26.0)";
+    let (status, _, body) = raw(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access })),
+        &[("user-agent", ua)],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (_, sessions) = get(&t.app, "/api/auth/me/sessions", Some(&t.token)).await;
+    let rows = sessions.as_array().expect("sessions array");
+    // Two devices now (the seeded session's, and the one just exchanged); only
+    // the exchanged one was re-labelled.
+    let labels: Vec<_> = rows.iter().map(|s| s["userAgent"].clone()).collect();
+    assert!(labels.contains(&json!(ua)), "device re-labelled, got {labels:?}");
+    assert!(labels.contains(&json!("integration-test")), "other devices untouched");
+    // The session it minted works.
+    assert!(body["token"].as_str().is_some_and(|s| !s.is_empty()));
 }
 
 #[tokio::test]

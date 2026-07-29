@@ -171,38 +171,44 @@ pub trait HostCtx: Send + Sync + 'static {
     /// Publish an event addressed to ONE user, for content that is personal
     /// (notifications: "your request was denied" names its recipient).
     ///
-    /// The default DROPS the event rather than falling back to [`Self::publish`]:
-    /// a host that cannot address its bus must not quietly broadcast personal
-    /// content to every connected client. The real app state overrides it.
-    fn publish_to(&self, user_id: &str, event: Event) {
-        let _ = (user_id, event);
-    }
+    /// Required, deliberately. This started out defaulted-to-drop, which meant a
+    /// host that forgot it still compiled and then silently swallowed every
+    /// addressed event including the `Arc` blanket impl below, and the
+    /// out-of-process `RemoteHost`. Keeping every method required is what makes
+    /// a missing forward a compile error instead of a silent hole.
+    fn publish_to(&self, user_id: &str, event: Event);
 
     /// Raise a durable notification: it lands in the recipients' notification
     /// centre and (once they've subscribed a device) is pushed to them.
     ///
     /// This is the module-facing half of the notifications domain. A module says
     /// WHAT happened and WHO cares the core resolves the audience, honours each
-    /// recipient's per-category preferences, and renders the i18n keys in their
-    /// language. A module never enumerates accounts or formats text itself.
+    /// recipient's per-category preferences, and delivers it.
     ///
-    /// Returns how many accounts were notified. The default is a no-op for hosts
-    /// without a notification store (mocks, bare test harnesses).
+    /// A module supplies its own WORDS. The core's catalogs hold the core's
+    /// events; "the VPN dropped" is the VPN module's concern, and a core that
+    /// spelled it would be shipping strings for a feature it does not have.
+    /// `NotificationSpec::custom` carries a module's own text through the same
+    /// pipeline - stored, rendered, pushed - and names the preference bucket it
+    /// answers to.
+    ///
+    /// Returns how many accounts were notified. Required for the same reason as
+    /// [`Self::publish_to`]: a silently-defaulted no-op is indistinguishable
+    /// from a working notifier until someone wonders why nothing arrives.
     ///
     /// ```ignore
     /// ctx.notify(
     ///     &Audience::permission(Permission::SettingsManage),
-    ///     &NotificationSpec::new(
-    ///         NotificationEvent::SystemVpnDown,
-    ///         "notifications.system.vpn.down.title",
-    ///         "notifications.system.vpn.down.body",
-    ///     ),
+    ///     &NotificationSpec::custom(
+    ///         NotificationCategory::System,
+    ///         // Translated by the module, in the module's own catalog.
+    ///         t("notifications.vpn.down.title"),
+    ///         t("notifications.vpn.down.body"),
+    ///     )
+    ///     .link("/admin/network"),
     /// );
     /// ```
-    fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize {
-        let _ = (audience, spec);
-        0
-    }
+    fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize;
     /// Trigger a background job by its key (e.g. `"acquisition.import"`), running
     /// against the app state. No-op if the key is unknown or already running.
     fn trigger_job(&self, key: &'static str, reason: &'static str);
@@ -351,10 +357,6 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     fn publish(&self, event: Event) {
         (**self).publish(event)
     }
-    // MUST be forwarded like everything else: both have a deliberately inert
-    // default (drop / no-op), so omitting them here would not fail to compile,
-    // it would silently swallow every addressed event and every notification the
-    // moment a call goes through `Arc<AppState>` (which is how the app calls it).
     fn publish_to(&self, user_id: &str, event: Event) {
         (**self).publish_to(user_id, event)
     }
@@ -463,13 +465,15 @@ mod tests {
     // The HostCtx doubles live in `crate::testing`, shared with every other
     // crate that tests against this seam.
 
-    /// Regression guard. `publish_to` and `notify` have inert defaults (drop /
-    /// no-op), so leaving them out of the `Arc` blanket impl COMPILES FINE and
-    /// then silently swallows every notification the app raises — the app calls
-    /// through `Arc<AppState>`, never `AppState` directly. This asserts the
-    /// forwarding is real; any future defaulted method needs the same treatment.
+    /// Regression guard on the `Arc` blanket impl. `publish_to` and `notify`
+    /// are required methods precisely so that a host which forgets one fails to
+    /// compile - but "implemented" and "forwarded to the inner host" are not the
+    /// same claim, and the app calls through `Arc<AppState>`, never `AppState`
+    /// directly. A blanket impl that answered from its own body rather than
+    /// delegating would still build and then silently swallow every addressed
+    /// event. This asserts the delegation is real.
     #[test]
-    fn the_arc_blanket_impl_forwards_the_defaulted_methods() {
+    fn the_arc_blanket_impl_forwards_the_addressed_methods() {
         let host = Arc::new(testing::StubHost::new());
         let via_arc: &dyn HostCtx = &host;
 
@@ -587,35 +591,6 @@ mod tests {
         let _ = std::fs::remove_file(&path);
     }
     use serde_json::json;
-
-    // ----- the trait defaults, which are the whole point of a seam ----------------
-
-
-    #[test]
-    fn an_addressed_event_is_dropped_rather_than_broadcast() {
-        // The security-relevant default: `publish_to` carries personal content
-        // ("your request was denied" names its recipient). A host that cannot
-        // address its bus must DROP it, never fall back to publish.
-        let host = testing::DefaultsProbe::new();
-        host.publish_to("user-1", Event::new("notification.created", json!({ "id": "n1" })));
-        assert!(
-            host.broadcasts().is_empty(),
-            "a host that cannot address its bus must NOT fall back to broadcast"
-        );
-    }
-
-    #[test]
-    fn a_host_with_no_notification_store_notifies_nobody() {
-        // Returning a non-zero count would tell a module its notification landed
-        // when nothing was written.
-        let spec = NotificationSpec::new(
-            NotificationEvent::RequestApproved,
-            "notifications.request.approved.title",
-            "notifications.request.approved.body",
-        );
-        assert_eq!(testing::DefaultsProbe::new().notify(&Audience::user("u1"), &spec), 0);
-        assert_eq!(testing::DefaultsProbe::new().notify(&Audience::Everyone, &spec), 0);
-    }
 
     #[test]
     fn a_module_that_declares_nothing_gets_empty_defaults() {

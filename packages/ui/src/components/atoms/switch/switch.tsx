@@ -89,6 +89,7 @@ function Switch({
       disabled={disabled}
       onPress={() => setChecked(!checked)}
       style={switchVariants({ size }, disabled ? DISABLED : null, style)}
+      hoveredStyle={HOVERED}
     >
       <Flip on={checked} travel={TRAVEL[size]} thumb={THUMB[size]} />
     </Focusable>
@@ -171,6 +172,16 @@ function FlipNative({
 }
 
 const DISABLED = { opacity: 0.5 } as const;
+
+/** The track under a POINTER: both the OFF wash and the hairline come up.
+ * Brightening the wash cannot be mistaken for the state, because the state is a
+ * LAYER - the amber ON fill covers the track entirely (see `styles.fill`), so
+ * what this lifts is only ever the off colour, and the border carries the hover
+ * on its own once the switch is on. */
+const HOVERED = {
+  backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  borderColor: 'rgba(255, 255, 255, 0.32)',
+} as const;
 
 /** react-native-web understands these CSS-only props; React Native's types do
  * not, hence the casts at the use sites. */

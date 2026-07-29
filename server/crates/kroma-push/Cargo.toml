@@ -1,0 +1,29 @@
+[package]
+name = "kroma-push"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Push transports (Web Push, APNs, FCM): builds signed/encrypted requests, never sends them."
+license.workspace = true
+
+# Pure-Rust RustCrypto primitives, in keeping with the musl single-binary build.
+# This crate does NO I/O: it hands back a URL + headers + body, and the caller
+# sends it with `kroma-http` (curl). That keeps the crypto unit-testable against
+# the RFC vectors without a network or a subprocess.
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+time = { workspace = true }
+sha2 = { workspace = true }
+base64 = "0.22"
+hkdf = "0.12"
+aes-gcm = "0.10"
+# `ecdh` for the message key agreement (RFC 8291), `ecdsa` for the VAPID JWT
+# signature (RFC 8292). Both halves of Web Push are P-256.
+# `pkcs8`/`pem` parse Apple's .p8 auth key; `ecdh` is Web Push key agreement,
+# `ecdsa` signs both the VAPID and the APNs JWTs.
+p256 = { version = "0.13", features = ["ecdh", "ecdsa", "pkcs8", "pem"] }
+# RS256 for Google service-account assertions (FCM v1 has no ES256 option).
+rsa = { version = "0.9", features = ["sha2"] }
+rand_core = { version = "0.6", features = ["getrandom"] }

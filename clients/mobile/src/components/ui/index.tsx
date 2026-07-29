@@ -11,6 +11,13 @@ import { useGutters } from '#mobile/lib/layout';
 import { colors, spacing, type } from '#mobile/lib/theme';
 
 export { TextField } from './controls';
+export {
+  SheetBackdrop,
+  SheetBody,
+  SheetTitle,
+  sheetChrome,
+  useSheetMinHeight,
+} from './sheet';
 export { EmptyState, ErrorBanner, ErrorView, Loading } from './states';
 
 export function Screen({

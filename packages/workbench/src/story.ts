@@ -179,11 +179,12 @@ interface StoryDef<A extends Args> {
    * The frame this component was AUTHORED for, when `fit` is wrong.
    *
    * Most components are sized by their content and a device frame would just add
-   * letterbox. The player chrome is the opposite: it lays out against the full
-   * 1920x1080 stage - a flex spacer, the centred transport, the cluster pinned
-   * right - so in a narrow canvas its fixed-size circles collide or run off the
-   * edge. Declaring `'tv'` opens the story in the scaled stage instead, which is
-   * the only place it is honest.
+   * letterbox. A 10-foot surface is the opposite: it lays out against the full
+   * 1920x1080 stage, and a narrow canvas shows it at a size nobody ships.
+   * Declaring `'tv'` opens the story in the scaled stage instead. It is the
+   * frame the story OPENS in, not one it is stuck in - a component that also
+   * has to survive a browser window (the player chrome does) should still be
+   * checked in the phone and tablet frames.
    */
   viewport?: 'fit' | 'tv' | 'phone' | 'tablet';
   /** How to call it, verbatim TSX, shown as a code block beside the canvas.

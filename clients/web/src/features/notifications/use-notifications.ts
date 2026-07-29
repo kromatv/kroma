@@ -21,11 +21,17 @@ export function useNotificationStream(): void {
         if (e.type !== 'notification.created' && e.type !== 'notification.read') return;
         // Patch the badge straight from the event's own count first, so it is
         // right even when the panel is closed and the list is never refetched.
+        // The event carries the authoritative count, so the badge updates from
+        // it directly. The list itself is marked stale rather than refetched:
+        // an open panel refetches on mount, a closed one costs nothing.
         queryClient.setQueryData(
           userQueries.notifications().queryKey,
           (prev: NotificationsView | undefined) => (prev ? { ...prev, unread: e.unread } : prev),
         );
-        void queryClient.invalidateQueries({ queryKey: userQueries.notifications().queryKey });
+        void queryClient.invalidateQueries({
+          queryKey: userQueries.notifications().queryKey,
+          refetchType: 'active',
+        });
       },
     });
     ev.connect();

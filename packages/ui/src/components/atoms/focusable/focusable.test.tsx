@@ -10,7 +10,7 @@
 // - rather than by poking React state, so what is tested is the whole path a
 // press actually takes.
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { configureRemote } from '#ui/lib/focus-remote';
@@ -176,5 +176,61 @@ describe('Focusable on react-native-web', () => {
       <Focusable label="Chip" autoFocus focusedStyle={{ backgroundColor: colors.accentSoft }} />,
     );
     expect(painted('Chip').style.backgroundColor.replace(/\s+/g, ' ')).toBe(colors.accentSoft);
+  });
+
+  // The pointer's own state, which only these browser targets have at all. Two
+  // tests because a control renders through two entirely different elements
+  // depending on whether a navigator is mounted above it, and the mouse has to
+  // be heard through both - the second is the one clients/web actually renders.
+  it('applies hoveredStyle while a pointer rests on a navigator node', () => {
+    // The navigator's own view is a plain <View>, so the hover arrives as
+    // React's enter/leave pair - derived from `pointerover`/`pointerout`, which
+    // is what the events below dispatch.
+    screenWith(<Focusable label="Survol" hoveredStyle={{ backgroundColor: colors.accentSoft }} />);
+    expect(painted('Survol').style.backgroundColor).toBe('');
+
+    fireEvent.pointerOver(host('Survol'));
+    expect(painted('Survol').style.backgroundColor.replace(/\s+/g, ' ')).toBe(colors.accentSoft);
+
+    fireEvent.pointerOut(host('Survol'));
+    expect(painted('Survol').style.backgroundColor).toBe('');
+  });
+
+  it('grows under the pointer by the amount it grows on focus', () => {
+    // The controls with no fill to brighten - a poster, a card, a genre tile -
+    // carry their hover on the scale alone, so it answers the cursor as well as
+    // the remote. A control that asked for no focus scale still gets none.
+    screenWith(
+      <>
+        <Focusable label="Tuile" focusScale={1.06} />
+        <Focusable label="Plate" />
+      </>,
+    );
+    expect(painted('Tuile').style.transform).toBe('scale(1)');
+
+    fireEvent.pointerOver(host('Tuile'));
+    expect(painted('Tuile').style.transform).toContain('scale(1.06)');
+
+    fireEvent.pointerOver(host('Plate'));
+    expect(painted('Plate').style.transform).toBe('');
+
+    fireEvent.pointerOut(host('Tuile'));
+    expect(painted('Tuile').style.transform).toBe('scale(1)');
+  });
+
+  it('applies hoveredStyle on a page with no navigator at all', () => {
+    // No <FocusScope>: the plain pressable form, which is every kit control on
+    // clients/web. Nothing can focus it and no finger will press it, so the
+    // hover is the ONLY answer a cursor gets there.
+    render(<Focusable label="Nu" hoveredStyle={{ backgroundColor: colors.accentSoft }} />);
+    expect(painted('Nu').style.backgroundColor).toBe('');
+
+    // A Pressable listens for the hover itself (react-native-web's useHover),
+    // straight on the element rather than through React's delegation.
+    fireEvent.pointerEnter(host('Nu'));
+    expect(painted('Nu').style.backgroundColor.replace(/\s+/g, ' ')).toBe(colors.accentSoft);
+
+    fireEvent.pointerLeave(host('Nu'));
+    expect(painted('Nu').style.backgroundColor).toBe('');
   });
 });

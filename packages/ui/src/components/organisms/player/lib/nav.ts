@@ -30,6 +30,7 @@ export type ControlId =
   | 'subtitles'
   | 'audio'
   | 'settings'
+  | 'cast'
   | 'pip'
   | 'fullscreen';
 
@@ -40,6 +41,10 @@ export function controlOrder(flags: PlayerFlags, hasNext: boolean): ControlId[] 
   if (hasNext) row.push('next');
   if (flags.volume) row.push('volume');
   row.push('subtitles', 'audio', 'settings');
+  // Next to the gear, where every other player puts it - and to the LEFT of the
+  // window controls, because casting is about the film, pip and fullscreen are
+  // about this window.
+  if (flags.cast) row.push('cast');
   if (flags.pip) row.push('pip');
   if (flags.fullscreen) row.push('fullscreen');
   return row;

@@ -21,8 +21,10 @@ import {
   sectionCard,
   showCard,
 } from '#mobile/components/cards';
+import { CastIconButton } from '#mobile/components/cast/CastIconButton';
 import { HeroBillboard } from '#mobile/components/HeroBillboard';
 import { KromaLockup } from '#mobile/components/KromaLockup';
+import { NotificationBell } from '#mobile/components/NotificationBell';
 import { ProgressRing } from '#mobile/components/ProgressRing';
 import { ErrorView, Loading, SectionTitle } from '#mobile/components/ui';
 import { useDownloads } from '#mobile/lib/downloads';
@@ -69,6 +71,7 @@ function HomeHeader() {
         <KromaLockup height={20} />
       </View>
       <View style={styles.headerActions}>
+        <CastIconButton />
         <IconButton
           variant="ghost"
           size={40}
@@ -78,6 +81,9 @@ function HomeHeader() {
         >
           <DownloadsGlyph />
         </IconButton>
+        {/* Beside the avatar, not past it: the account stays the row's anchor
+            at the right edge, where it has always been. */}
+        <NotificationBell />
         <IconButton
           variant="ghost"
           size={40}
@@ -229,7 +235,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center' },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  // The buttons carry their own 40pt targets, so the gap is breathing room
+  // between GLYPHS, not touch spacing - 18 read as four scattered controls
+  // instead of one cluster.
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dlGlyph: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
   dlArrow: {
     position: 'absolute',

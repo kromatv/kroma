@@ -36,7 +36,13 @@ const api = vi.hoisted(() => ({
   authConfig: async (_url: string) => ({ publicUserList: true, hasAccounts: true }),
   users: async (_url: string) => [{ id: 'u1', username: 'max' }],
 }));
-vi.mock('@kroma/core', () => ({ KromaClient, discoverServers }));
+// `clientUserAgent` too: these hooks build their client through
+// `#mobile/lib/device`, which stamps the phone's own User-Agent onto it.
+vi.mock('@kroma/core', () => ({
+  KromaClient,
+  discoverServers,
+  clientUserAgent: () => 'Kroma/test',
+}));
 
 const getDeviceLocalIp = vi.hoisted(() => vi.fn(async () => '192.168.1.20' as string | null));
 vi.mock('#mobile/lib/localIp', () => ({ getDeviceLocalIp }));

@@ -43,7 +43,9 @@ const KromaClient = vi.hoisted(() =>
   }),
 );
 
-vi.mock('@kroma/core', () => ({ KromaClient }));
+// `clientUserAgent` too: these hooks build their client through
+// `#mobile/lib/device`, which stamps the phone's own User-Agent onto it.
+vi.mock('@kroma/core', () => ({ KromaClient, clientUserAgent: () => 'Kroma/test' }));
 
 const renameServer = vi.hoisted(() => vi.fn());
 vi.mock('./session', () => ({ useSession: () => ({ renameServer }) }));

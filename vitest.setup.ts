@@ -15,6 +15,16 @@
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
+// `__DEV__` is a React Native global that Metro's transform defines. Anything
+// reaching `expo-modules-core` under this runner - a mobile module that imports
+// `expo-device`, and so every test that transitively imports one - hits a bare
+// reference to it and dies at IMPORT time, before a single test runs.
+//
+// `false`, because the one thing it guards is a warning about
+// `process.env.EXPO_OS` not being inlined by `babel-preset-expo` - which the
+// runner does not use, and which no test wants to hear about.
+(globalThis as { __DEV__?: boolean }).__DEV__ ??= false;
+
 afterEach(() => {
   cleanup();
 });

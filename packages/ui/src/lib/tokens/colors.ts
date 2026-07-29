@@ -31,6 +31,12 @@ export const colors = {
   accentBright: '#FFD262',
   accentInk: '#0A0A0C',
   accentSoft: 'rgba(242, 180, 66, 0.16)',
+  /** The lit step of `accentSoft`: a pointer resting on a toggle that is already
+   *  ON. It has to stay AMBER - the white wash the idle controls hover with
+   *  would wipe the accent off and read as the toggle switching itself back
+   *  off - so the ladder is soft → softHover, the same shape as accent →
+   *  accentHover. */
+  accentSoftHover: 'rgba(242, 180, 66, 0.26)',
 
   /* Semantic + quality badges */
   success: '#46D08D',
@@ -38,6 +44,11 @@ export const colors = {
   hdr: '#C792EA',
   h265: '#5FD3C4',
   danger: '#E53935',
+  /** The lit step of `danger`, for the same job `accentHover` does for the
+   *  accent: a pointer resting on a destructive button. A LIGHTER red rather
+   *  than a darker one - a hover has to read as the control coming forward, and
+   *  every other variant's hover brightens too. */
+  dangerHover: '#EF5350',
 } as const;
 
 export type ColorToken = keyof typeof colors;

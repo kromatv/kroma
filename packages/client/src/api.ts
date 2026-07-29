@@ -8,6 +8,7 @@ import {
   type RequestContext,
   requestBlob,
   requestJson,
+  withUserAgent,
 } from './client/base';
 import * as cast from './client/cast';
 import type { DiscoverType } from './client/discovery';
@@ -60,6 +61,7 @@ import type {
   JobDetail,
   JobLog,
   JobsView,
+  Notification as KromaNotification,
   Library,
   LlmAdminConfig,
   LogsView,
@@ -173,7 +175,10 @@ export class KromaClient {
 
   constructor(options: KromaClientOptions) {
     this.baseUrl = options.baseUrl.replace(/(^|[^/])\/+$/, '$1');
-    this.fetchFn = options.fetch ?? globalThis.fetch.bind(globalThis);
+    const fetchFn = options.fetch ?? globalThis.fetch.bind(globalThis);
+    // Wrapped once here rather than per request, so EVERY route carries the
+    // device's name - including the ones that bypass `json`/`blob`.
+    this.fetchFn = options.userAgent ? withUserAgent(fetchFn, options.userAgent) : fetchFn;
     this.authToken = options.authToken;
     this.locale = options.locale;
     this.ctx = {
@@ -206,6 +211,12 @@ export class KromaClient {
   /** Whether a bearer token is currently set (does not validate it). */
   get hasAuth(): boolean {
     return Boolean(this.authToken);
+  }
+
+  /** The bearer this client authenticates with, for the one caller that cannot
+   * send a header: the event socket, which carries it as a subprotocol. */
+  get sessionToken(): string | undefined {
+    return this.authToken;
   }
 
   /** Headers a RAW request must carry to authenticate as this session: for
@@ -912,6 +923,21 @@ export class KromaClient {
   }
 
   // ----- admin: background jobs / scheduler -----------------------------------
+
+  /** Every notification kind this server can send, rendered for the console. */
+  notificationSamples(): Promise<{ events: KromaNotification[] }> {
+    return admin.notificationSamples(this.ctx);
+  }
+
+  /** Send one real notification: a sampled core event, or one written by hand. */
+  sendNotification(body: admin.SendNotificationBody): Promise<{ delivered: number }> {
+    return admin.sendNotification(this.ctx, body);
+  }
+
+  /** Store an image for a notification, returning its cached path. */
+  uploadNotificationImage(file: Blob): Promise<{ imageUrl: string }> {
+    return admin.uploadNotificationImage(this.ctx, file);
+  }
 
   adminJobs(): Promise<JobsView> {
     return admin.adminJobs(this.ctx);

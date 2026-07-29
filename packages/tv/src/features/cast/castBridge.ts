@@ -63,13 +63,36 @@ function materialSignature(): string {
   ].join('|');
 }
 
+/** Whether a change notification is already queued for this tick. */
+let notifyQueued = false;
+
+/**
+ * Tell subscribers, but only once the dust settles.
+ *
+ * The player re-registers on EVERY render, and React runs the previous effect's
+ * cleanup first - so each playback tick is `setCastTarget(null)` immediately
+ * followed by `setCastTarget(player)`. Notifying on both would report the TV as
+ * idle and then playing again several times a second: the receiver would push
+ * that flapping to the server, and a phone's remote would blink between "Ready"
+ * and the film. Deferring to a microtask collapses the pair into the one state
+ * that is actually true at the end of the tick.
+ */
+function notifyChange(): void {
+  if (notifyQueued) return;
+  notifyQueued = true;
+  queueMicrotask(() => {
+    notifyQueued = false;
+    const now = materialSignature();
+    if (now === signature) return;
+    signature = now;
+    for (const listener of listeners) listener();
+  });
+}
+
 /** Register the running player as the cast target (called by the player). */
 export function setCastTarget(next: Target | null): void {
   target = next;
-  const now = materialSignature();
-  if (now === signature) return;
-  signature = now;
-  for (const listener of listeners) listener();
+  notifyChange();
 }
 
 /** The running player, or null when the TV is not on the player screen. */

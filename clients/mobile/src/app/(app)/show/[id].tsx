@@ -16,6 +16,7 @@ import { EpisodeRow, SeasonDownload, UpNextCard } from '#mobile/components/showE
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
+import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { colors, spacing, type } from '#mobile/lib/theme';
 
@@ -24,6 +25,7 @@ export default function ShowDetail() {
   const t = useT();
   const client = useClient();
   const router = useRouter();
+  const { play } = usePlay();
   const { width } = useWindowDimensions();
   const wide = useIsWide();
   // Landscape-safe page gutters (grow past spacing.md to clear the notch).
@@ -117,7 +119,7 @@ export default function ShowDetail() {
               <Button
                 icon="player-play-filled"
                 label={playLabel}
-                onPress={() => router.push(`/player/${next.id}` as never)}
+                onPress={() => void play(next.id)}
               />
             ) : null}
 
