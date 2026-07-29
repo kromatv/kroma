@@ -293,11 +293,51 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build" "$plist"
           echo "re-stamped $plist -> $ver ($build)"
 
+      # Mint the profile HERE rather than read a stored one.
+      #
+      # A provisioning profile is a DERIVED artifact - App ID, plus that App ID's
+      # capabilities, plus the distribution certificate - so freezing one into a
+      # secret guarantees it goes stale the moment any of those changes, and the
+      # staleness surfaces days later as an archive error blaming the profile.
+      # That is exactly what adding push did: the app declared `aps-environment`,
+      # and the stored profile had been minted before push existed.
+      #
+      # Minting per run also enables any capability the App ID is missing, so the
+      # two halves can never disagree. The stored secret stays as the fallback
+      # for a run without API credentials (a fork, a key rotation) - it is no
+      # longer the normal path.
+      - name: Mint provisioning profiles
+        id: profiles
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${ASC_KEY_ID:-}" || -z "${ASC_ISSUER_ID:-}" || -z "${ASC_PRIVATE_KEY:-}" ]]; then
+            echo "No App Store Connect key; falling back to the stored profile secret."
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+          # Not fatal: a mint failure should fall back to the stored secret
+          # rather than fail a release outright.
+          if ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
+             python3 .github/scripts/asc-mint-profiles.py --out "$RUNNER_TEMP/profiles"; then
+            echo "minted=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::minting failed; falling back to the stored profile secret"
+          fi
+          rm -f "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+
       - name: Import certificate + provisioning profile
         if: steps.signing.outputs.ready == 'true'
         env:
           IOS_CERTIFICATE: ${{ secrets.MOBILE_IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.MOBILE_IOS_CERTIFICATE_PASSWORD }}
+          # The freshly minted profile when there is one, else the stored secret.
+          IOS_PROFILE_FILE: ${{ steps.profiles.outputs.minted == 'true' && format('{0}/profiles/ios.b64', runner.temp) || '' }}
           IOS_PROFILE: ${{ secrets.MOBILE_IOS_PROVISIONING_PROFILE }}
         run: .github/scripts/ios-import-signing-assets.sh
 

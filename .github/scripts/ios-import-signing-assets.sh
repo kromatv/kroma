@@ -7,6 +7,12 @@
 # extension. The Apple TV app builds two targets (KROMA and KromaTopShelf) whose
 # bundle ids differ, and Apple issues a profile per bundle id, so one profile can
 # never cover both.
+#
+# IOS_PROFILE_FILE / IOS_PROFILE_EXTRA_FILE name a base64 file minted earlier in
+# the job and TAKE PRECEDENCE over the matching secret. A stored profile is a
+# derived artifact that goes stale whenever the App ID's capabilities change, so
+# the freshly minted one is the answer whenever there is one; the secret remains
+# the fallback for a run with no App Store Connect key.
 set -euo pipefail
 
 kc="$RUNNER_TEMP/kroma-ios.keychain-db"
@@ -40,6 +46,16 @@ install_profile() {
   rm -f "$tmp" "$tmp.plist"
 }
 
-install_profile "${IOS_PROFILE:-}"
-install_profile "${IOS_PROFILE_EXTRA:-}"
+# A minted file wins over the secret of the same name.
+profile_or_secret() {
+  local file="$1" secret="$2"
+  if [[ -n "$file" && -s "$file" ]]; then
+    printf '%s' "$(cat "$file")"
+  else
+    printf '%s' "$secret"
+  fi
+}
+
+install_profile "$(profile_or_secret "${IOS_PROFILE_FILE:-}" "${IOS_PROFILE:-}")"
+install_profile "$(profile_or_secret "${IOS_PROFILE_EXTRA_FILE:-}" "${IOS_PROFILE_EXTRA:-}")"
 rm -f "$RUNNER_TEMP/ios-cert.p12"

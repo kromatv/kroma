@@ -26,6 +26,7 @@ Then:
 
 import argparse
 import datetime
+import os
 import sys
 
 import asc_api as asc
@@ -47,11 +48,67 @@ WANTED = [
     (f"{BUNDLE}.TopShelf", "TVOS_APP_STORE", "tvos-topshelf"),
 ]
 
+# Capabilities the App ID must carry for a minted profile to be usable.
+#
+# A profile only ever contains what the App ID had AT MINT TIME, so this is the
+# other half of the job: minting against an App ID that is missing a capability
+# produces a profile that installs cleanly and then fails the archive with
+# "doesn't include the ... entitlement". That is exactly how push shipped - the
+# app declared `aps-environment`, the App ID did not have Push Notifications,
+# and the stored profile predated both.
+#
+# Listed here rather than read from the entitlements because enabling one is a
+# change to the Apple ACCOUNT: it should be a deliberate line in a diff, not
+# something a build infers and does silently.
+#
+# Only ones that need no configuration of their own. APP_GROUPS is deliberately
+# absent: it has to be pointed at a specific group, so it stays a manual step.
+REQUIRED_CAPABILITIES = {
+    BUNDLE: ["PUSH_NOTIFICATIONS"],
+}
+
+
+def ensure_capabilities(bundle: str, bundle_id: str, jwt: str) -> bool:
+    """Turn on anything the App ID is missing. True when something changed."""
+    wanted = REQUIRED_CAPABILITIES.get(bundle, [])
+    if not wanted:
+        return False
+    have = {
+        c["attributes"]["capabilityType"]
+        for c in asc.get(f"bundleIds/{bundle_id}/bundleIdCapabilities?limit=200", jwt).get(
+            "data", []
+        )
+        if c.get("attributes", {}).get("capabilityType")
+    }
+    changed = False
+    for capability in wanted:
+        if capability in have:
+            continue
+        asc.post(
+            "bundleIdCapabilities",
+            jwt,
+            {
+                "data": {
+                    "type": "bundleIdCapabilities",
+                    "attributes": {"capabilityType": capability},
+                    "relationships": {
+                        "bundleId": {"data": {"type": "bundleIds", "id": bundle_id}}
+                    },
+                }
+            },
+        )
+        print(f"  enabled {capability} on {bundle}")
+        changed = True
+    return changed
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=".", help="where to write the .b64 files")
     args = ap.parse_args()
+    # The workflow points --out at a fresh path under RUNNER_TEMP, so this has to
+    # create it; writing was previously only ever done into an existing cwd.
+    os.makedirs(args.out, exist_ok=True)
 
     jwt = asc.token()
 
@@ -80,6 +137,15 @@ def main() -> int:
     certs.sort(key=lambda c: c["attributes"].get("expirationDate", ""), reverse=True)
     cert_id = certs[0]["id"]
     print(f"using certificate {certs[0]['attributes'].get('displayName','?')}")
+
+    # Capabilities FIRST, for every App ID, before a single profile is minted.
+    # Enabling one invalidates every existing profile for that App ID - including
+    # any this loop had already created - so doing it per-bundle inside the mint
+    # loop would invalidate the profiles minted on earlier iterations.
+    for bundle in {b for b, _, _ in WANTED}:
+        bundle_id = found.get(bundle)
+        if bundle_id:
+            ensure_capabilities(bundle, bundle_id, jwt)
 
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
     for bundle, profile_type, basename in WANTED:

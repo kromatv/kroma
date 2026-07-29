@@ -77,7 +77,18 @@ TARGET="x86_64-unknown-linux-musl"
 # cached build artifact (CI caches server/target across runs). Bump the digest
 # deliberately when a newer toolchain is wanted.
 RUST_IMAGE="${RUST_IMAGE:-messense/rust-musl-cross:x86_64-musl@sha256:ce75e9174325d4fbb3de85c309e2d7ca29f7500169bc4b5d2c611ff7e86d549a}"
-FFMPEG_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+# Static ffmpeg/ffprobe. Two sources, tried in order.
+#
+# The primary is what has always shipped. It is one person's web server with no
+# CDN behind it, and when it is down - which it has been, for the whole of a
+# 24-minute build - there is nothing to fall back to and the package cannot be
+# built at all. The secondary is BtbN's, hosted on GitHub releases: same GPL
+# static build, a different machine and a different network.
+#
+# Order matters: the primary stays first so a normal build ships exactly what it
+# always has, and the fallback only decides whether an OUTAGE costs a release.
+FFMPEG_URL="${FFMPEG_URL:-https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz}"
+FFMPEG_FALLBACK_URL="${FFMPEG_FALLBACK_URL:-https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz}"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SKEL="$ROOT/clients/synology/spk"
@@ -134,13 +145,46 @@ fi
 
 # 3) Static ffmpeg + ffprobe (x86_64) ----------------------------------------
 FF="$CACHE/ffmpeg-amd64-static"
+
+# Download `$1` to `$2`, or return non-zero.
+#
+# `--connect-timeout` is the point of this. Without it a host that accepts no
+# connections is retried five times at ~135 s each, so an outage cost 24 minutes
+# and then failed anyway - the worst of both. A dead host should be established
+# in seconds so the fallback gets its turn while the build still has a chance.
+#
+# --retry-all-errors is kept: the primary intermittently answers a spurious 4xx
+# that a plain retry would not cover.
+fetch_ffmpeg() {
+  curl -fSL --connect-timeout 20 --retry 3 --retry-delay 4 --retry-all-errors \
+    --proto '=https' --proto-redir '=https' "$1" -o "$2"
+}
+
 if [ ! -x "$FF/ffmpeg" ]; then
   say "Fetching static ffmpeg/ffprobe"
-  # --retry-all-errors: johnvansickle.com intermittently 4xx/5xxs, so retry even
-  # an HTTP error (e.g. a spurious 415), not just connection failures.
-  curl -fSL --retry 5 --retry-delay 4 --retry-all-errors \
-    --proto '=https' --proto-redir '=https' "$FFMPEG_URL" -o "$WORK/ff.tar.xz"
-  mkdir -p "$FF" && tar xJf "$WORK/ff.tar.xz" -C "$FF" --strip-components=1
+  if ! fetch_ffmpeg "$FFMPEG_URL" "$WORK/ff.tar.xz"; then
+    say "Primary ffmpeg source unreachable, trying the fallback"
+    fetch_ffmpeg "$FFMPEG_FALLBACK_URL" "$WORK/ff.tar.xz" \
+      || { echo "both ffmpeg sources failed"; exit 1; }
+  fi
+
+  # Extracted whole rather than with --strip-components, because the two sources
+  # do not agree on the layout: the primary puts the binaries at the root of its
+  # directory, BtbN puts them under `bin/`. Find them instead of assuming.
+  mkdir -p "$WORK/ffx" && tar xJf "$WORK/ff.tar.xz" -C "$WORK/ffx"
+  mkdir -p "$FF"
+  for tool in ffmpeg ffprobe; do
+    found="$(find "$WORK/ffx" -type f -name "$tool" -perm -u+x -print -quit)"
+    [ -n "$found" ] || { echo "$tool missing from the ffmpeg archive"; exit 1; }
+    install -m755 "$found" "$FF/$tool"
+  done
+
+  # The tarball URL is a MOVING "latest release" pointer, so there is no checksum
+  # to pin against. Running the thing is the check that is actually available: it
+  # catches a truncated download, an HTML error page saved as a tarball, and an
+  # archive for the wrong architecture.
+  "$FF/ffmpeg" -version >/dev/null 2>&1 \
+    || { echo "downloaded ffmpeg does not run"; exit 1; }
 fi
 
 # 4) Stage the payload (→ /var/packages/kroma/target) -------------------------

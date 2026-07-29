@@ -195,15 +195,43 @@ jobs:
           cd clients/tv-native/ios
           REACT_NATIVE_NODE_MODULES_DIR="$PWD/../node_modules" pod install
 
+      # Same reasoning as the phone job: a profile is derived from the App ID's
+      # current capabilities, so it is minted per run rather than stored. One
+      # call covers both bundle ids - the app and its Top Shelf extension.
+      - name: Mint provisioning profiles
+        id: profiles
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${ASC_KEY_ID:-}" || -z "${ASC_ISSUER_ID:-}" || -z "${ASC_PRIVATE_KEY:-}" ]]; then
+            echo "No App Store Connect key; falling back to the stored profile secrets."
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+          if ASC_PRIVATE_KEY_PATH="$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
+             python3 .github/scripts/asc-mint-profiles.py --out "$RUNNER_TEMP/profiles"; then
+            echo "minted=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::minting failed; falling back to the stored profile secrets"
+          fi
+          rm -f "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+
       - name: Import certificate + provisioning profile
         if: steps.signing.outputs.ready == 'true'
         env:
           IOS_CERTIFICATE: ${{ secrets.MOBILE_IOS_CERTIFICATE }}
           IOS_CERTIFICATE_PASSWORD: ${{ secrets.MOBILE_IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROFILE_FILE: ${{ steps.profiles.outputs.minted == 'true' && format('{0}/profiles/tvos.b64', runner.temp) || '' }}
           IOS_PROFILE: ${{ secrets.TVOS_PROVISIONING_PROFILE }}
           # The Top Shelf extension is a separate bundle id and so a separate
           # profile; without it that target goes unsigned and the export fails
           # with "No profiles for 'tv.kroma.mobile.TopShelf' were found".
+          IOS_PROFILE_EXTRA_FILE: ${{ steps.profiles.outputs.minted == 'true' && format('{0}/profiles/tvos-topshelf.b64', runner.temp) || '' }}
           IOS_PROFILE_EXTRA: ${{ secrets.TVOS_TOPSHELF_PROVISIONING_PROFILE }}
         run: .github/scripts/ios-import-signing-assets.sh
 
