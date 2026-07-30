@@ -9,7 +9,7 @@ Find it, download it, organize it, stream it. One blazing-fast Rust binary:
 indexers · torrent engine · VPN + kill switch · AI · player · web & TV clients.
 No Sonarr, no Radarr, no Jackett, no qBittorrent, no Gluetun — **just KROMA.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-F4B642.svg?style=flat-square)](LICENSE)
+[![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-F4B642.svg?style=flat-square)](LICENSE)
 [![Bun ≥ 1.3](https://img.shields.io/badge/Bun-%E2%89%A5%201.3-0A0A0C.svg?style=flat-square&logo=bun&logoColor=F4B642)](https://bun.sh)
 [![Rust ≥ 1.86](https://img.shields.io/badge/Rust-%E2%89%A5%201.86-0A0A0C.svg?style=flat-square&logo=rust&logoColor=F4B642)](https://www.rust-lang.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-0A0A0C.svg?style=flat-square&logo=typescript&logoColor=3178C6)](https://www.typescriptlang.org)
@@ -332,4 +332,4 @@ conventions (keep clients thin), and how to report playback bugs.
 
 ## License
 
-[MIT](LICENSE) © 2026 [Maxime Scharwath](https://github.com/maxscharwath)
+[GPL-2.0](LICENSE) © 2026 [Maxime Scharwath](https://github.com/maxscharwath)

@@ -13,6 +13,7 @@
     "./testing": "./src/testing.tsx",
     "./workbench-config": "./src/workbench-config.tsx",
     "./tokens": "./src/lib/tokens/index.ts",
+    "./tokens/colors": "./src/lib/tokens/colors.ts",
     "./fonts": "./src/assets/fonts.ts",
     "./styles.css": "./src/styles/styles.css",
     "./tailwind.css": "./src/styles/tailwind.css",

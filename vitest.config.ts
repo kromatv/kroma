@@ -29,6 +29,12 @@ const alias = [
   { find: /^#tv\//, replacement: dir('./packages/tv/src/') },
   { find: /^#ui\//, replacement: dir('./packages/ui/src/') },
   { find: /^#web\//, replacement: dir('./clients/web/src/') },
+  // The showcase site. Only its generated-code-free modules are tested (the rich-text
+  // parser, the content-locale convention, the blog and legal loaders), which is why
+  // this alias never has to resolve `#site/paraglide/*`: that directory is written by
+  // the vite plugin at build time and is not in the repo, so a test that needed it
+  // would pass or fail depending on whether someone had built the site first.
+  { find: /^#site\//, replacement: dir('./clients/site/src/') },
   // @kroma/ui is written against React Native. Under the test runner (as in
   // every browser target) that resolves to react-native-web, exactly the way the
   // Tizen / webOS / desktop bundles wire it. This holds for the native project
@@ -94,6 +100,11 @@ const include = [
   // runs here the same way; without this line its tests are collected by nothing
   // and its files can never be covered.
   'clients/tv-web/src/**/*.test.ts',
+  // The showcase site (kroma.tv). Its pages are prose and layout, so what is worth
+  // testing is the pure logic underneath: the rich-text parser that carries markup
+  // through a translated string, and the resolver that turns content/blog into
+  // typed posts.
+  'clients/site/src/**/*.test.ts',
   // The phone client's pure logic - device storage and the session, the player's
   // capability model, the sign-in flow. Its React Native SCREENS are not
   // testable here, and they do not need excluding by path: a screen's test would

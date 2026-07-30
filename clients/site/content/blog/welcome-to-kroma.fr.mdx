@@ -1,0 +1,53 @@
+---
+title: "Bienvenue sur KROMA"
+date: "2026-01-14"
+excerpt: "Pourquoi nous avons collapsé six conteneurs en un seul binaire Rust, et ce que ça change pour votre médiathèque."
+author: "Maxime Scharwath"
+tags: ["Annonce", "Coulisses"]
+---
+
+Monter une médiathèque auto-hébergée aujourd'hui, c'est assembler une demi-douzaine
+de services : un indexeur, un agrégateur de trackers, un client BitTorrent, un
+wrapper VPN, un serveur média, une interface de requêtes. Six conteneurs, six
+fichiers de configuration, six choses qui cassent, chacune à sa manière, et
+jamais au même moment.
+
+KROMA part d'un refus simple : **rien de tout ça ne devrait être votre problème.**
+
+## Un seul serveur, écrit en Rust
+
+Là où une installation classique boulonne ensemble Sonarr, Radarr, Prowlarr,
+qBittorrent, Gluetun et Jellyfin, KROMA est **un seul serveur** qui démarre en
+quelques millisecondes et reste sobre en mémoire. L'indexeur, le moteur de
+téléchargement, le pont VPN avec kill-switch et le lecteur sont orchestrés par ce
+serveur, que vous installez une seule fois : les capacités s'ajoutent comme des
+modules, sans un empilement de conteneurs à câbler entre eux.
+
+Pas de ferme de transcodage à garder au chaud non plus : la vidéo n'est jamais
+ré-encodée. Le serveur **diffuse les fichiers originaux** par plages d'octets, et
+chaque client décode le HEVC/H.265 nativement, en matériel sur les téléviseurs
+Samsung et LG. Votre NAS reste au repos.
+
+## Le même design, partout
+
+L'autre parti-pris est visuel. KROMA parle un seul langage de design, charbon
+profond et ambre chaud, deux familles typographiques, aucun emoji, et le tient
+sur chaque écran : le web, le mobile, et l'expérience « 10 pieds » pilotée à la
+télécommande sur le téléviseur du salon.
+
+Ce n'est pas une coïncidence : les composants et les jetons de design existent
+**une seule fois**, dans un kit partagé, et se rendent nativement sur React Native
+comme dans le navigateur via react-native-web. Une tuile a la même allure sur un
+Apple TV et sur un panneau Samsung parce que c'est *la même* tuile.
+
+## Libre, et pensé pour être possédé
+
+KROMA est open source, sous licence GPL-2.0. Votre bibliothèque et votre activité ne
+quittent jamais votre réseau. Il n'y a pas de compte à créer, pas d'abonnement,
+pas de service central qui pourrait fermer.
+
+> Conçu pour être possédé, pas loué.
+
+La suite de ce blog racontera les choix techniques derrière tout ça : le moteur de
+focus spatial pour la télécommande, le décodage direct-play, le pont WireGuard, et
+la manière dont un même kit d'UI sert six plateformes. Restez dans le coin.

@@ -76,6 +76,12 @@ jobs:
           - name: web
             build: bun run build:web
             dist: clients/web/dist
+          # The showcase site (kroma.tv). Its build IS the prerender, so a broken
+          # page, a bad link in the crawl or an .mdx that will not compile fails
+          # here rather than at deploy time.
+          - name: site
+            build: bun run build:site
+            dist: clients/site/dist/client
           - name: tizen
             build: bun run build:tizen
             dist: clients/tizen/dist

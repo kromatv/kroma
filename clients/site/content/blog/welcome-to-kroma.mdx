@@ -1,0 +1,51 @@
+---
+title: "Welcome to KROMA"
+date: "2026-01-14"
+excerpt: "Why we collapsed six containers into a single Rust binary, and what that changes for your media library."
+author: "Maxime Scharwath"
+tags: ["Announcement", "Behind the scenes"]
+---
+
+Standing up a self-hosted media library today means wiring together half a dozen
+services: an indexer, a tracker aggregator, a BitTorrent client, a VPN wrapper, a
+media server, a request interface. Six containers, six configuration files, six
+things that break, each in its own way, and never at the same time.
+
+KROMA starts from a simple refusal: **none of that should be your problem.**
+
+## One server, written in Rust
+
+Where a classic setup bolts together Sonarr, Radarr, Prowlarr, qBittorrent,
+Gluetun and Jellyfin, KROMA is **a single server** that starts in a few
+milliseconds and stays light on memory. The indexer, the download engine, the VPN
+bridge with a kill-switch and the player are orchestrated by that server, which
+you install once: capabilities are added as modules, without a stack of
+containers to cable together.
+
+No transcoding farm to keep warm either: the video is never re-encoded. The server
+**streams the original files** by byte range, and each client decodes HEVC/H.265
+natively, in hardware on Samsung and LG televisions. Your NAS stays at rest.
+
+## The same design, everywhere
+
+The other stance is visual. KROMA speaks a single design language, deep charcoal
+and warm amber, two type families, no emoji, and holds it on every screen: the
+web, mobile, and the "10-foot" experience driven by remote control on the living
+room television.
+
+This is no coincidence: the components and the design tokens exist **once**, in a
+shared kit, and render natively on React Native as well as in the browser through
+react-native-web. A tile looks the same on an Apple TV and on a Samsung panel
+because it is *the same* tile.
+
+## Free, and built to be owned
+
+KROMA is open source, under the GPL-2.0 license. Your library and your activity
+never leave your network. There is no account to create, no subscription, no
+central service that could shut down.
+
+> Built to be owned, not rented.
+
+The rest of this blog will tell the technical choices behind all of it: the
+spatial focus engine for the remote, direct-play decoding, the WireGuard bridge,
+and how a single UI kit serves six platforms. Stick around.

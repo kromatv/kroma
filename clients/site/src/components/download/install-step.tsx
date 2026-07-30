@@ -1,0 +1,45 @@
+import type { ReactNode } from 'react';
+import { Container } from '#site/components/container';
+
+export interface InstallStepProps {
+  /** Two-digit ordinal, e.g. "01", set as the oversized display glyph. */
+  step: string;
+  title: ReactNode;
+  /** One lead line under the title. */
+  intro?: ReactNode;
+  /** Anchor for in-page links (#serveur, #apps). */
+  id?: string;
+  children: ReactNode;
+}
+
+/**
+ * One numbered chapter of the install flow. The header is left-aligned and
+ * editorial, a big amber ordinal set against the display face, the title, one
+ * lead line, the opposite of a centred, badge-stacked template intro. The route
+ * stacks two of these (server, then apps).
+ */
+export function InstallStep({ step, title, intro, id, children }: Readonly<InstallStepProps>) {
+  return (
+    <section id={id} className="scroll-mt-24 border-t border-border/60 py-16 sm:py-20">
+      <Container>
+        <header className="flex items-baseline gap-4 sm:gap-6">
+          <span
+            aria-hidden
+            className="font-display text-5xl font-extrabold leading-none text-accent/25 sm:text-6xl"
+          >
+            {step}
+          </span>
+          <div>
+            <h2 className="font-display text-2xl font-extrabold leading-tight text-text sm:text-3xl">
+              {title}
+            </h2>
+            {intro && (
+              <p className="mt-2 max-w-2xl text-pretty leading-relaxed text-muted">{intro}</p>
+            )}
+          </div>
+        </header>
+        <div className="mt-10">{children}</div>
+      </Container>
+    </section>
+  );
+}

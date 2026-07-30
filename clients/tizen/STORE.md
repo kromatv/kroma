@@ -171,8 +171,8 @@ your ad inventory gratis. Payouts remit above USD 500/month, carried forward
 below that.
 
 The agreement also requires that nothing you ship would oblige Samsung software
-or its derivatives to be licensed under open-source terms. KROMA is MIT, so this
-is satisfied.
+or its derivatives to be licensed under open-source terms. KROMA is GPL-2.0, so
+this is satisfied.
 
 ## 10. Content review — know the exposure
 

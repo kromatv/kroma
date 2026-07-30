@@ -1,0 +1,73 @@
+## In short
+
+- No account, no advertising tracker, no analytics cookie on this site.
+- The app runs on your own hardware: your library, your accounts and your playback
+  history never leave your network. There is no "KROMA cloud".
+- One exception, openly stated: push notifications pass through a relay we operate
+  on Cloudflare, it forwards notifications, never your media or your library.
+
+## What this site collects
+
+kroma.tv is a static site, hosted on Cloudflare's network. It has no user accounts,
+no sign-up form, no analytics tool and no ad network. We set no tracking cookies and
+run no tracking scripts.
+
+Like any website, it produces ordinary **technical logs** on the server and CDN side
+(IP address, user agent, page requested, timestamp). Cloudflare processes them to
+deliver the pages, absorb attacks and keep the service secure. These logs are
+short-lived, and serve neither to profile you nor to contact you.
+
+## What the app collects (nothing that leaves your network)
+
+The KROMA app runs on hardware you own, your NAS, a Docker host, a Raspberry Pi.
+Your library, your files, your accounts and profiles, your playback history and your
+statistics are stored there **locally** and do not leave it. We have no access to any
+of it, and no telemetry is sent back to us: there is no central service for anything
+to report to.
+
+For that data, it is you, the server's operator, who is in complete control. You
+decide who reaches it, where it lives and when to erase it.
+
+## Push notifications via the Cloudflare relay
+
+This is the only component that touches a service we operate, and we would rather
+say so plainly. The mobile and TV apps can receive **push notifications** (for
+example, "your download is ready"). Apple and Google require confidential
+credentials for this, and those cannot live in public, self-hosted source code. They
+are therefore held by a small **relay** (a "push relay") that we run on Cloudflare.
+
+This relay receives your device's notification token (issued by Apple or Google) and
+the message to display, then forwards them to the vendor's push service. It **does
+not see**, and does not carry, your media, your library or your history. If you do
+not turn notifications on, nothing passes through it.
+
+## Cookies
+
+This site uses no analytics or advertising cookies, so there is no consent banner,
+because there is nothing to consent to. Cloudflare may set a cookie strictly
+necessary for security (abuse protection); it is not used to follow you from one site
+to another.
+
+## Third-party services
+
+**Cloudflare** hosts this site and the notification relay; on that basis it processes
+the technical logs mentioned above. Metadata for films and series comes from
+**TMDB**, but it is *your* server that queries it, on your network, not us.
+
+## Your rights
+
+We hold almost no personal data about you: there is therefore very little on which to
+exercise a right of access, rectification or erasure on the kroma.tv side. If you
+nonetheless believe we hold some information about you, write to us and we will act
+on it.
+
+As for the app's data, it lives on your own installation: you view it, correct it and
+delete it directly, without going through us.
+
+## Contact
+
+A question about this policy or about your data? Write to
+[privacy@kroma.tv](mailto:privacy@kroma.tv).
+
+This policy may change if the site changes; the last-updated date at the top of the
+page is authoritative.

@@ -1,0 +1,43 @@
+// KROMA on the web — the showcase site (kroma.tv), served static from the edge.
+//
+// Like clients/tv-web this is an assets-only Worker (no `main`): TanStack Start
+// prerenders every page to HTML at build time, so Cloudflare serves the built
+// files straight from the edge with no script to run and nothing to keep warm.
+// Deploy from this directory:
+//   bun run deploy          (builds dist/ first, then wrangler deploy)
+//   bunx wrangler@4 deploy  (assumes dist/ is already built)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kroma-site",
+  "compatibility_date": "2026-07-01",
+  "observability": { "enabled": true },
+  // Keep the <name>.workers.dev URL alongside the custom domain (fallback +
+  // while the kroma.tv cert provisions).
+  "workers_dev": true,
+  "assets": {
+    // TanStack Start's client build output. The prerendered page HTML and the
+    // hashed JS/CSS assets both land here.
+    "directory": "./dist/client",
+    // A stray path gets the prerendered 404 document with a real 404 status, not the app
+    // shell with a 200. Cloudflare serves the NEAREST 404.html walking up the path, so
+    // /fr/anything gets the French one (see src/routes/404.tsx for why that document has
+    // to be a route). The SPA fallback was a soft 404: it answered every unknown URL with
+    // the home page's HTML and a 200, which is duplicate content at unlimited addresses.
+    "not_found_handling": "404-page",
+    // Serve `/download` itself rather than redirecting it to `/download/`.
+    //
+    // The default (`auto-trailing-slash`) picks the slashed spelling for a page stored
+    // as `download/index.html`, which is every page here - so every internal link and
+    // every URL in the sitemap took a 307 to a URL the page's own `<link
+    // rel="canonical">` disowns. `seo()` builds canonicals from `localizePath`, which is
+    // slashless, so this is the mode that agrees with what the HTML advertises.
+    "html_handling": "drop-trailing-slash"
+  },
+  // Served at https://kroma.tv/ and https://www.kroma.tv/. Requires the kroma.tv
+  // zone on this Cloudflare account; wrangler provisions the custom domains + DNS
+  // records on deploy. (tv.kroma.tv is the 10-foot app — see clients/tv-web.)
+  "routes": [
+    { "pattern": "kroma.tv", "custom_domain": true },
+    { "pattern": "www.kroma.tv", "custom_domain": true }
+  ]
+}
