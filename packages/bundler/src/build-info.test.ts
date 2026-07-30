@@ -15,15 +15,21 @@
 // The stamp itself degrades to 'unknown' rather than throwing, because a build
 // from a source tarball still has to produce a site.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildInfoPlugin } from './build-info';
+
+/** This package itself: it has a package.json and sits in the checkout. */
+const PROJECT_ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const VIRTUAL = 'virtual:build-info';
 const RESOLVED = `\0${VIRTUAL}`;
 
 /** The plugin's hooks, as Rollup will call them. */
 function hooks() {
-  const plugin = buildInfoPlugin() as {
+  const plugin = buildInfoPlugin({ projectRoot: PROJECT_ROOT }) as {
     name: string;
     resolveId: (source: string) => string | null;
     load: (id: string) => string | null;
@@ -103,14 +109,16 @@ describe('the stamp it serves', () => {
 
   it('carries every field the app reads', () => {
     expect(Object.keys(stamp()).sort()).toEqual(
-      ['branch', 'buildDate', 'commit', 'commitFull', 'dirty', 'version'].sort(),
+      ['branch', 'buildDate', 'commit', 'commitFull', 'dirty', 'repository', 'version'].sort(),
     );
   });
 
-  it('names a version', () => {
-    // From the client's own package.json, so the settings panel always has one.
-    expect(stamp().version).toBeTypeOf('string');
-    expect(stamp().version).not.toBe('');
+  it('stamps the version of the client it was pointed at', () => {
+    // The plugin is shared, so the root it is given decides whose version this
+    // is - not the directory the build was launched from.
+    expect(stamp().version).toBe(
+      JSON.parse(readFileSync(join(PROJECT_ROOT, 'package.json'), 'utf8')).version,
+    );
   });
 
   it('carries a real ISO build date', () => {
@@ -130,7 +138,10 @@ describe('the stamp it serves', () => {
 
   it('is the same object on every load, collected ONCE', () => {
     // Per build, not per request: a dev server serving a new buildDate on each
-    // reload would invalidate the module for every page that imports it.
-    expect(hooks().load(RESOLVED)).toBe(hooks().load(RESOLVED));
+    // reload would invalidate the module for every page that imports it. One
+    // plugin instance deliberately - a second one is a second build, and is
+    // entitled to its own stamp.
+    const plugin = hooks();
+    expect(plugin.load(RESOLVED)).toBe(plugin.load(RESOLVED));
   });
 });

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
+import { propDocs } from '@kroma/bundler/props-docs';
+import { WEB_EXTENSIONS } from '@kroma/bundler/rnw';
 import { configDefaults, defineConfig } from 'vitest/config';
-import { propDocs } from './clients/tv-build/props-docs';
-import { WEB_EXTENSIONS } from './clients/tv-build/rnw';
 // By relative path, like propDocs above: the root workspace does not depend on
 // @kroma/module-sdk, so its published specifier is not resolvable from here.
 import { kromaModule } from './packages/module-sdk/vite';
@@ -44,7 +44,7 @@ const alias = [
   { find: /^react-native$/, replacement: 'react-native-web' },
   // The icons resolve the way they do in every browser target: the kit imports
   // @tabler/icons-react-native, and the web half of that pair is
-  // @tabler/icons-react (DOM svg). Mirrors clients/tv-build/rnw.ts.
+  // @tabler/icons-react (DOM svg). Mirrors packages/bundler/src/rnw.ts.
   { find: /^@tabler\/icons-react-native$/, replacement: '@tabler/icons-react' },
   // The spatial navigator ships a webpack UMD bundle whose `require`s Node
   // resolves itself, which walks straight past the alias above and lands on
@@ -93,6 +93,10 @@ const include = [
   'packages/*/src/**/*.test.ts',
   'packages/*/src/**/*.test.tsx',
   'packages/*/worker/**/*.test.ts',
+  // @kroma/ui's bundler plugin sits beside src/ rather than in it, and was
+  // therefore collected by nothing - which is how it reached five clients'
+  // builds without a test.
+  'packages/*/bundler/**/*.test.ts',
   'clients/web/src/**/*.test.ts',
   'clients/web/src/**/*.test.tsx',
   'clients/desktop/src/**/*.test.ts',
@@ -117,12 +121,9 @@ const include = [
   // The build-identity collector. Not a client: it runs in Node at build time
   // and is required by an Expo app.config.js, which is why it has no src/.
   'clients/build-info/**/*.test.ts',
-  // The web client's own build-time plugin, which sits beside its vite config
-  // rather than under src/.
-  'clients/web/*.test.ts',
-  // The Samsung TV client. Its background preview service is a Tizen JS service
-  // that ships verbatim from public/, so its test lives under src/ and loads the
-  // file - without this line nothing collects it and it can never be covered.
+  // The Samsung TV client. Its background preview service is not part of the
+  // app bundle - the platform launches it on its own - so its test lives under
+  // src/ and compiles the source; without this line nothing collects it.
   'clients/tizen/src/**/*.test.ts',
   // The kit site is where the workbench is COMPOSED - the tool, the design
   // system's stories, and the config that joins them - so the integration test

@@ -3234,6 +3234,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sysinfo",
+ "tempfile",
  "time",
  "tiny-skia",
  "tokio",

@@ -7,16 +7,16 @@
 // wiring is the same one every browser target shares.
 
 import { fileURLToPath } from 'node:url';
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
-import { collectBuildInfo } from '../build-info';
-import { propDocs } from '../tv-build/props-docs';
+import { propDocs } from '@kroma/bundler/props-docs';
 import {
   KROMA_SOURCE_PACKAGES,
   RNW_DEFINE,
   RNW_OPTIMIZE_INCLUDE,
   webResolve,
-} from '../tv-build/rnw';
+} from '@kroma/bundler/rnw';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import { collectBuildInfo } from '../build-info';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const kitDir = fileURLToPath(new URL('.', import.meta.url));

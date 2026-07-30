@@ -20,6 +20,7 @@ use axum::extract::ConnectInfo;
 use axum::http::{Request, StatusCode};
 use axum::Router;
 use serde_json::Value;
+use tempfile::TempDir;
 use tower::ServiceExt;
 
 use crate::config::Config;
@@ -45,14 +46,25 @@ pub struct TestApp {
     pub token: String,
     /// Id of the seeded owner account.
     pub user_id: String,
+    /// Owns the temp `data_dir`: dropping the harness removes it. Keep this last
+    /// so the DB pool and the router let go of the files before the dir goes.
+    _data_dir: TempDir,
 }
 
-fn unique_data_dir() -> PathBuf {
+/// A unique, self-deleting temp data dir for one test.
+///
+/// The dir is removed when the returned [`TempDir`] drops, i.e. when the owning
+/// [`TestApp`] goes out of scope at the end of the test. The previous
+/// `temp_dir().join(format!("kroma-apitest-{pid}-{n}"))` never cleaned up: the
+/// `remove_dir_all` it did first only cleared a *same-pid* name collision, and
+/// since every `cargo test` run gets a fresh pid, each run left its whole set
+/// behind for macOS to (never) purge.
+fn unique_data_dir() -> TempDir {
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
-    let dir = std::env::temp_dir().join(format!("kroma-apitest-{}-{n}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("create temp data dir");
-    dir
+    tempfile::Builder::new()
+        .prefix(&format!("kroma-apitest-{n}-"))
+        .tempdir()
+        .expect("create temp data dir")
 }
 
 /// A minimal config: a temp `data_dir`, no media dirs (so nothing is scanned),
@@ -98,7 +110,8 @@ pub fn test_app_with_tmdb() -> TestApp {
 }
 
 fn build_app(tmdb_api_key: Option<&str>) -> TestApp {
-    let data_dir = unique_data_dir();
+    let tmp = unique_data_dir();
+    let data_dir = tmp.path().to_path_buf();
     let db = db::init(&data_dir.join("kroma.db")).expect("init db");
 
     // Mirror `main::apply_module_schema` so any module-owned tables a read path
@@ -127,7 +140,7 @@ fn build_app(tmdb_api_key: Option<&str>) -> TestApp {
     let app = crate::api::router(state.clone(), supervisor);
 
     let (user_id, token) = seed_session(&state, "owner@test.dev", "owner", &Permission::all());
-    TestApp { app, state, token, user_id }
+    TestApp { app, state, token, user_id, _data_dir: tmp }
 }
 
 /// Create a user with `perms`, an access token, and a live session bound to it

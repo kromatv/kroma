@@ -422,11 +422,18 @@ mod tests {
         user_with(vec![Permission::LibraryManage])
     }
 
-    /// A real app state, from the crate's own API harness. The CRUD handlers
+    /// A real app harness, from the crate's own API support. The CRUD handlers
     /// read and write the persisted `libraries` setting, so nothing short of one
     /// exercises them.
-    fn state() -> SharedState {
-        crate::api::test_support::test_app().state
+    ///
+    /// Returns the WHOLE `TestApp`, not just its `state`: the harness owns a
+    /// `TempDir` for the data directory, and moving one field out of a temporary
+    /// drops the rest at the end of that statement - deleting the SQLite
+    /// directory out from under the state the caller is about to use. It shows up
+    /// as an occasional 500 from `list_libraries` under parallel test threads,
+    /// never on its own.
+    fn app() -> crate::api::test_support::TestApp {
+        crate::api::test_support::test_app()
     }
 
     /// The libraries as they are actually persisted, read back the way the
@@ -686,7 +693,8 @@ mod tests {
 
     #[tokio::test]
     async fn a_created_library_persists_with_its_folders_cleaned() {
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let id = create(&state, "  Films  ", vec![" /media/films ", "", "/media/films"])
             .await
             .unwrap();
@@ -708,7 +716,8 @@ mod tests {
         // The id is hashed from the name plus a random token. Two libraries that
         // happen to share a name must still be two libraries, or editing one
         // would silently edit the other.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let a = create(&state, "Films", vec!["/a"]).await.unwrap();
         let b = create(&state, "Films", vec!["/b"]).await.unwrap();
         assert_ne!(a, b);
@@ -718,7 +727,8 @@ mod tests {
     #[tokio::test]
     async fn a_library_needs_a_name() {
         // A blank name renders as an unlabelled card nobody can identify.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         for blank in ["", "   "] {
             let body = CreateLibraryBody { name: blank.into(), kind: None, folders: Vec::new() };
             let err = create_library(State(state.clone()), AuthUser(admin()), Json(body))
@@ -731,7 +741,8 @@ mod tests {
 
     #[tokio::test]
     async fn creating_a_library_needs_the_permission() {
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let body = CreateLibraryBody { name: "Films".into(), kind: None, folders: Vec::new() };
         let err = create_library(
             State(state.clone()),
@@ -748,7 +759,8 @@ mod tests {
     async fn an_update_touches_only_the_fields_it_names() {
         // The admin form PATCHes; an omitted field must keep its value rather
         // than reset to a default.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
 
         let body = UpdateLibraryBody {
@@ -774,7 +786,8 @@ mod tests {
     async fn an_update_can_turn_auto_scan_off_without_touching_anything_else() {
         // `Some(false)` has to survive: an `Option<bool>` that treated false as
         // "not supplied" would make the toggle impossible to turn off.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
 
         let body = UpdateLibraryBody {
@@ -795,7 +808,8 @@ mod tests {
     #[tokio::test]
     async fn a_blank_new_name_is_ignored_rather_than_applied() {
         // The form sends every field; a cleared name must not wipe the label.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
 
         let body = UpdateLibraryBody {
@@ -813,7 +827,8 @@ mod tests {
 
     #[tokio::test]
     async fn replacing_the_folders_cleans_them_too() {
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
 
         let body = UpdateLibraryBody {
@@ -834,7 +849,8 @@ mod tests {
     #[tokio::test]
     async fn editing_a_library_that_is_not_there_is_a_404() {
         // A stale admin tab must not create a library by PATCHing a dead id.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         create(&state, "Films", vec!["/media/films"]).await.unwrap();
 
         let body = UpdateLibraryBody {
@@ -860,7 +876,8 @@ mod tests {
 
     #[tokio::test]
     async fn deleting_removes_that_library_and_leaves_the_others() {
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let films = create(&state, "Films", vec!["/media/films"]).await.unwrap();
         let shows = create(&state, "Séries", vec!["/media/shows"]).await.unwrap();
 
@@ -878,7 +895,8 @@ mod tests {
     async fn deleting_a_library_that_is_not_there_is_a_404() {
         // Not a silent success: a delete that "worked" on a dead id would hide
         // that the admin's list is stale.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         create(&state, "Films", vec!["/media/films"]).await.unwrap();
         let err =
             delete_library(State(state.clone()), AuthUser(admin()), AxPath("ghost".into()))
@@ -890,7 +908,8 @@ mod tests {
 
     #[tokio::test]
     async fn deleting_needs_the_permission() {
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
         let err = delete_library(
             State(state.clone()),
@@ -905,7 +924,8 @@ mod tests {
 
     #[tokio::test]
     async fn a_scan_can_be_kicked_by_hand_and_is_gated() {
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let res = scan_library(State(state.clone()), AuthUser(admin()), AxPath("any".into()))
             .await
             .unwrap();
@@ -928,7 +948,8 @@ mod tests {
         // A library with nothing scanned yet still has to render: the counts come
         // from a stats query that has no row for it, and `None` there must read
         // as zero rather than drop the card.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         create(&state, "Films", vec!["/media/films"]).await.unwrap();
 
         let res = list_libraries(State(state.clone()), AuthUser(admin())).await.unwrap();
@@ -949,7 +970,8 @@ mod tests {
     async fn the_list_is_open_to_any_admin_not_just_a_library_manager() {
         // It is a read for the console shell; a requests moderator needs to see
         // the libraries page without holding library.manage.
-        let state = state();
+        let harness = app();
+        let state = harness.state.clone();
         let res =
             list_libraries(State(state.clone()), AuthUser(user_with(vec![Permission::UsersManage])))
                 .await

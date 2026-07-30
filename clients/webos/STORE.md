@@ -32,11 +32,16 @@ select service countries from day one.
 
 ```bash
 bun run build:webos                       # → clients/webos/dist
-ares-package clients/webos/dist           # → tv.kroma.webos_<version>_all.ipk
+ares-package clients/webos/dist --no-minify   # → tv.kroma.webos_<version>_all.ipk
 ```
 
 `ares-*` comes from the webOS TV CLI (`@webos-tools/cli`), which is not bundled
 here.
+
+`--no-minify` is not optional: `ares-package` otherwise re-minifies the bundle
+with a terser from 2020 that cannot parse `?.` or `??`, and fails with "Failed to
+minify code". The flag is missing from `--help` but it is real (and CI has been
+passing it since `_release-tv.yml`). Vite has already minified the output.
 
 The package version is **stamped at build time** from the product version
 (`server/Cargo.toml`, or CI's `KROMA_VERSION`) — see
@@ -60,7 +65,7 @@ Upload limits: IPK up to 2 GB. With no standing LGE contract, set **Chipset =
 | In-package large icon | `public/icon-large.png` | 130×130, submission/testing only |
 | Splash background | `public/splash.png` | 1920×1080, referenced by `appinfo.splashBackground` |
 | Store icon | `store/icon-512.png` | 512×512 (LG minimum is 400×400) |
-| Screenshots | `store/shots/` | up to 6, 1920×1080 — **not yet captured, see §6** |
+| Screenshots | `store/shots/` | up to 6, 1920×1080 — **not yet captured, see §7** |
 
 Regenerate the derived art with `bun run store:art`.
 
@@ -89,6 +94,30 @@ Two rules the art is built to satisfy:
 | Remote controller | **Both Magic and general remote** |
 | DIAL | not supported |
 
+The text for every free-form field — titles, both descriptions, keywords — is in
+[clients/LISTING.md](../LISTING.md), written once and shared with the Samsung
+listing so the two cannot drift.
+
+**None of it can be entered until the package is uploaded.** `CREATE APP` opens
+straight onto **File Upload** — that step *is* the creation step — and until a
+file is attached there, every other sub-menu (Images, Service Country Info.,
+Display Info., Service Info., Feature Info., Test Info., Self-check list, App
+CTS, Alpha Test, Cloud Test Lab, Defect Info., SUBMIT) stays disabled, no app row
+is persisted, and the fields do not exist in the page at all. So the running
+order is: build → package → upload → *then* the listing.
+
+Two more things the wizard does that this doc used to get wrong:
+
+- **The privacy policy is pasted as TEXT, not linked.** Service Country Info.
+  states it plainly: "The privacy policy will be provided as text only, not as a
+  link." So [PRIVACY.md](../../PRIVACY.md)'s body goes in the box; the
+  `kroma.tv/privacy` URL is still worth publishing for the Samsung listing and
+  for the in-app reference, but LG will not follow it.
+- **SDK Ver. is derived, not chosen**, and it is expressed in MODEL YEARS
+  ("2018 and later", …) rather than webOS versions — the page says it is
+  "automatically configured according to the selected platform". webOS 4.0, this
+  app's floor, is the 2018 line.
+
 Declaring "Not applicable" for billing or ads while actually shipping them is
 itself grounds for rejection, so keep these honest if that ever changes.
 
@@ -108,14 +137,66 @@ fails immediately. Before submitting you must provide:
 - optionally a **test IPK** (up to 3) built with `VITE_KROMA_SERVER` pointed at
   that demo server, so the reviewer never sees the "add a server" screen
 
+Two Test Info. items have no answer in this repo and both are hard gates:
+
+- **UX Scenario file** — mandatory, from a template on the Test Info. page. "UX
+  scenario is not submitted, or every necessary information is not inputted" is
+  an explicit *preliminary-documents* rejection, i.e. you are rejected before a
+  TV is ever switched on.
+- **Player Specification** — the codecs, containers and streaming engine you
+  claim, plus a named principal title. QA runs its playback test against exactly
+  what you declare, so whatever you name must exist on the demo server.
+
 If you geo-restrict anything, declare **Geo IP Block = Yes** and allowlist LG's
-tester IPs. The webOS Cloud Test Lab egress IP is **`1.222.94.84`**.
+tester IPs. `1.222.94.84` is only the **webOS Cloud Test Lab** egress; the QA
+team itself comes from a much larger published allowlist (roughly 25 addresses
+and ranges). Take the authoritative list from the Seller Lounge FAQ/notifications
+at submission time and allowlist **all** of it — allowlisting the Cloud Test Lab
+IP alone will fail the functional test.
 
 Use the **webOS Cloud Test Lab** (Applications menu) before submitting: real
 retail TVs on production firmware, 5 device reservations/day, up to 3 hours
 each, free. It needs the English title and description filled in first.
 
-## 6. Screenshots
+## 6. Getting it onto real TVs before launch
+
+**There is no TestFlight for webOS.** Three routes, in increasing order of reach:
+
+**Developer Mode — any set you can touch.** Install the *Developer Mode* app from
+the Content Store, sign in with the LG developer account, enable it, then
+`ares-setup-device` + `ares-install` the IPK over the LAN (see the client
+[README](./README.md)). Free and instant, and it is the whole of what a
+self-hoster needs to run their own build. The catch is the **session**: it
+expires unless extended from the Developer Mode app, and when it lapses — or
+after the TV reboots ten times with no network — Developer Mode switches off and
+**every app installed under it is uninstalled**.
+
+**webOS Cloud Test Lab (§5).** Real retail TVs in LG's lab, driven from a
+browser. That is for *your* testing; it is not a way to hand a build to somebody
+else.
+
+**Alpha Test** (Seller Lounge → `Applications > Alpha Test`) — the closest thing
+LG has to a beta channel. It publishes a version of the app to named TVs only,
+where it shows up under *Newly Updated Apps* some 10–40 minutes after publish.
+
+| | |
+| --- | --- |
+| Platform | webOS 3.0 (2016 models) and later |
+| Devices | up to **100 TVs**, addressed by **wired MAC address** — StanbyME / StanbyME 2 / StanbyME GO are wireless-only and cannot take part |
+| Duration | **30 days** maximum; can be shortened or prolonged within that ceiling |
+| Concurrency | one alpha test per app at a time |
+| Version | must be higher than any previously submitted version, and the test must be set to *Terminate* before that app can be submitted for review |
+
+**The catch, in LG's own words:** the feature "will only be opened to sellers that
+have entered a separate commercial contract for the time being for
+stabilization". A plain new seller account does not have it — ask through the
+Seller Lounge 1:1 Q&A whether it can be enabled before planning a beta around it.
+
+So the realistic beta plan is: Developer Mode sideloading for the handful of
+testers who own an LG set and will re-arm the session, and the store for everyone
+else — remembering that **every update is a fresh approval round** (§9).
+
+## 7. Screenshots
 
 `bun clients/tv-build/store-shots.ts` drives the built app with arrow keys and
 captures 1920×1080 frames. It is verified working against the signed-out screens;
@@ -131,11 +212,15 @@ bun clients/tv-build/store-shots.ts 4173 clients/webos/store/shots
 The first screenshot is what webOS 6.0+ shows on the Apps main screen, so lead
 with the strongest frame.
 
-## 7. Self-checklist
+## 8. Self-checklist
 
 Mandatory, and **initialised on every version bump** — refill it each release.
 Every item must be `Pass` or `N/A`; marking an item `Pass` that should be `N/A`
 (or the reverse) is itself a rejection reason.
+
+**All 53 items are pre-answered in [SELFCHECK.md](./SELFCHECK.md)**, with the
+evidence for each: 13 are `N/A` and fillable immediately, 10 are `Pass` from the
+code and the simulator, and 30 need one session with a real set.
 
 Items that need real attention for this app:
 
@@ -150,13 +235,13 @@ Items that need real attention for this app:
 At submission you may opt in to **release with known minor defects** (you accept
 liability). It is the practical escape hatch from repeated QA rounds.
 
-## 8. Timeline
+## 9. Timeline
 
 Pretest → function test → content test. Roughly 5–10 business days per cycle and
 commonly 2–3 cycles; budget weeks, not days. Every update needs a fresh
 approval, and changing a live app without one can get it pulled without notice.
 
-## 9. Content test — know the exposure
+## 10. Content test — know the exposure
 
 LG's content test screens for infringement facilitation. Be accurate about what
 the server does, because it is checkable.

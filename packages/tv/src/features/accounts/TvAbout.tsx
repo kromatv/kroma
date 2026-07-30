@@ -50,6 +50,23 @@ export function TvAbout() {
         <Fact label={t('about.branch')} value={build.branch} mono />
         <Fact label={t('about.buildDate')} value={formatBuildDate(build.buildDate, locale)} />
         <Fact label={t('about.repository')} value={repoLabel(build.repository)} />
+        {/* Both TV stores require the privacy policy to be readable IN the app,
+            not only on the listing - and a television cannot open a browser to
+            go and read it. So the substance is stated here (it is short, because
+            the app genuinely collects nothing) with the address of the full text
+            for anyone who wants it. Not a focus target: there is nothing to
+            activate, exactly like the fact rows above. */}
+        <Box mt={20}>
+          <Txt variant="label" color="textMuted" style={{ marginBottom: 6 }}>
+            {t('about.privacyTitle')}
+          </Txt>
+          <Txt color="textMuted" style={{ fontSize: 16, lineHeight: 24 }}>
+            {t('about.privacyBody')}
+          </Txt>
+          <Txt color="textDim" style={{ fontSize: 16, lineHeight: 24, marginTop: 6 }}>
+            {t('about.privacyUrl')}
+          </Txt>
+        </Box>
         <ListRow icon="arrow-left" label={t('common.back')} autoFocus onPress={nav.back} />
       </Box>
 

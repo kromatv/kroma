@@ -3,7 +3,7 @@
 // @kroma/tv uses internally (it mirrors tsconfig.base paths).
 
 const path = require('node:path');
-const { expoWorkspaceConfig } = require('../expo-build/metro-workspace');
+const { expoWorkspaceConfig } = require('../expo-build/metro-workspace.ts');
 
 module.exports = expoWorkspaceConfig(__dirname, {
   '#tv': path.resolve(__dirname, '../../packages/tv/src'),

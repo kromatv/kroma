@@ -98,6 +98,37 @@ impl AppState {
     }
 }
 
+/// Remove the harness's temp `data_dir` once the last [`SharedState`] handle goes.
+///
+/// [`crate::test_support`] hands every test a `data_dir` under `$TMPDIR`, but the
+/// path was only ever created, never removed: the `remove_dir_all` it does first
+/// clears a *same-pid* name collision, and `cargo test` gets a fresh pid every
+/// run, so each run left its full set behind. macOS only purges `/var/folders/…/T`
+/// at boot for files untouched 3+ days, so on a dev box this grew without bound
+/// (~95 GB / 219k entries in one month before this landed).
+///
+/// This hangs the cleanup off the state's own lifetime instead of the 157 call
+/// sites, which take `SharedState = Arc<AppState>` by value and clone it freely.
+/// `me` is a [`std::sync::Weak`], so the `Arc` really does reach zero and this
+/// runs; any thread still holding a clone keeps the dir alive until it is done.
+///
+/// Guarded on "under `$TMPDIR` and named `kroma-*`" so a test that points a state
+/// at a real directory never has it deleted underneath.
+#[cfg(test)]
+impl Drop for AppState {
+    fn drop(&mut self) {
+        let dir = &self.config.data_dir;
+        let is_temp_harness_dir = dir.starts_with(std::env::temp_dir())
+            && dir
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with("kroma-"));
+        if is_temp_harness_dir {
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    }
+}
+
 impl AppState {
     pub fn new(
         config: Config,

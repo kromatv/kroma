@@ -1,9 +1,10 @@
 import { fileURLToPath } from 'node:url';
+import { RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, webResolve } from '@kroma/bundler/rnw';
+import { buildDefine } from '@kroma/bundler/shell';
+import { kromaUi } from '@kroma/ui/bundler';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type UserConfig } from 'vite';
-import { RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, webResolve } from '../tv-build/rnw';
-import { buildDefine } from '../tv-build/shell';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const shellDir = fileURLToPath(new URL('.', import.meta.url));
@@ -17,7 +18,9 @@ const shellDir = fileURLToPath(new URL('.', import.meta.url));
 // "no overload matches" on the function form across platforms).
 export default defineConfig(
   ({ command }): UserConfig => ({
-    plugins: [tailwindcss(), react()],
+    // Same icon subset the TV shells get: the desktop app is packaged too, and
+    // it renders no module UI, so it has no reason to carry all 6232 glyphs.
+    plugins: [tailwindcss(), react(), kromaUi.vite({ repoRoot })],
     // This build's identity: its version for the server-compatibility banner (see
     // @kroma/tv CompatBanner / @kroma/core checkServerCompat), and the commit /
     // date / repository the About screen shows.

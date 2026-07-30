@@ -1,4 +1,4 @@
-import type { TvTarget } from '../tv-build/shell';
+import type { TvTarget } from '@kroma/bundler/shell';
 
 // LG webOS. Modern tier: webOS 24+ (Chromium 108). Legacy tier: webOS 4.x-23
 // (Chromium 53-94, 2018-2023 models) - LG freezes Chromium per webOS major.

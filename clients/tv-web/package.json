@@ -21,6 +21,7 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@kroma/bundler": "workspace:*",
     "@tailwindcss/vite": "^4",
     "@types/node": "^22.10.2",
     "@types/react": "^19",

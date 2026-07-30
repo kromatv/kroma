@@ -41,7 +41,7 @@ export const WEB_EXTENSIONS = [
  * the kit refers to itself as `#ui`. The Metro half lives in
  * clients/expo-build/metro-workspace.js, and tsconfig.base.json carries the
  * types. */
-const KIT_SRC = fileURLToPath(new URL('../../packages/ui/src', import.meta.url));
+const KIT_SRC = fileURLToPath(new URL('../../ui/src', import.meta.url));
 
 export function webResolve(
   alias: Record<string, string> = {},

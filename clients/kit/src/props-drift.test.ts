@@ -13,8 +13,8 @@
 // eighteen.
 
 import { fileURLToPath } from 'node:url';
+import { readPropDocs } from '@kroma/bundler/props-docs';
 import { describe, expect, it } from 'vitest';
-import { readPropDocs } from '../../tv-build/props-docs';
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
 

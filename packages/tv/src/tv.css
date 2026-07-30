@@ -7,14 +7,21 @@
    @layer and shims flex-gap / aspect-ratio / scale at build time. Keep this file
    inside what that pipeline handles: flex (never grid), no `/opacity` modifiers.
 
-   We import the raw `--kroma-*` token files by relative path rather than
-   `@kroma/ui/styles.css`: that entry pulls a remote Google-Fonts `@import` which the
-   Lightning CSS transformer can't inline. The TV shells load the fonts via a
-   <link> in index.html instead. */
-@import "../../ui/src/styles/tokens/colors.css";
-@import "../../ui/src/styles/tokens/typography.css";
-@import "../../ui/src/styles/tokens/spacing.css";
-@import "../../ui/src/styles/tokens/effects.css";
+   We import the tokens individually rather than through `@kroma/ui/styles.css`:
+   that aggregate also carries the web's reset, body and focus rules, which the
+   TV supplies itself below. (It used to be avoided for a second reason too - a
+   remote Google-Fonts `@import` Lightning CSS could not inline - but the faces
+   are self-hosted now, so that one is gone.) Each file arrives by its package
+   export, not by climbing out of this package with `../..`.
+
+   `@kroma/ui/fonts.css` is woff2 the bundler emits into the package rather than
+   a CDN <link>: a TV with no route to the internet is a normal deployment for a
+   self-hosted server, and there a <link> can only block first paint. */
+@import "@kroma/ui/fonts.css";
+@import "@kroma/ui/tokens/colors.css";
+@import "@kroma/ui/tokens/typography.css";
+@import "@kroma/ui/tokens/spacing.css";
+@import "@kroma/ui/tokens/effects.css";
 @import "tailwindcss";
 
 /* Tailwind ignores node_modules; the TV components live in this workspace

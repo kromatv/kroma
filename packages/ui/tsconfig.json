@@ -4,5 +4,5 @@
     "noEmit": true,
     "types": ["react", "react-dom", "node"]
   },
-  "include": ["src", "scripts"]
+  "include": ["bundler", "scripts", "src"]
 }

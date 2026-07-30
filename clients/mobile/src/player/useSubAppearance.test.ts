@@ -79,6 +79,30 @@ describe('hydrating', () => {
     );
   });
 
+  // A phone that was used before the renderer took on CEA-708 has `box` or
+  // `outline` on disk - both offered by the shipped sheet, both since retired.
+  // Spread raw, they reach the cue's edge table as `undefined` and throw inside
+  // render, and clients/mobile has no ErrorBoundary: the player unmounts, and it
+  // does it again on every re-entry because the preference persists.
+  it('migrates a preference written before CEA-708 instead of crashing on it', async () => {
+    loadPref.mockResolvedValue(JSON.stringify({ edge: 'outline', font: 'serif', size: 'lg' }));
+    const { result } = renderHook(() => useSubAppearance());
+    await waitFor(() =>
+      expect(result.current[0]).toMatchObject({ edge: 'uniform', font: 'propSerif', size: 'lg' }),
+    );
+  });
+
+  // The old `box` edge WAS the background. Dropping it would silently take away
+  // a background the viewer chose; keeping it raw would paint one behind every
+  // cue that the phone's sheet offers no control to remove.
+  it('carries the retired box edge over to the background layer', async () => {
+    loadPref.mockResolvedValue(JSON.stringify({ edge: 'box', bgOpacity: 60 }));
+    const { result } = renderHook(() => useSubAppearance());
+    await waitFor(() =>
+      expect(result.current[0]).toMatchObject({ edge: 'none', bgOpacity: 60, bgColor: '#000000' }),
+    );
+  });
+
   it('keeps the defaults when nothing is stored', async () => {
     loadPref.mockResolvedValue(null);
     const { result } = renderHook(() => useSubAppearance());
@@ -159,10 +183,10 @@ describe('changing a setting', () => {
   it('accumulates across changes', async () => {
     const { result } = renderHook(() => useSubAppearance());
     act(() => result.current[1]({ size: 'lg' }));
-    act(() => result.current[1]({ edge: 'outline' }));
+    act(() => result.current[1]({ edge: 'uniform' }));
     // Two settings changed in one visit to the panel.
-    expect(result.current[0]).toMatchObject({ size: 'lg', edge: 'outline' });
-    await waitFor(() => expect(written()).toMatchObject({ size: 'lg', edge: 'outline' }));
+    expect(result.current[0]).toMatchObject({ size: 'lg', edge: 'uniform' });
+    await waitFor(() => expect(written()).toMatchObject({ size: 'lg', edge: 'uniform' }));
   });
 
   it('keeps a stable setter, so the panel does not re-render on every change', () => {

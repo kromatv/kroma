@@ -31,8 +31,10 @@ const path = require('node:path');
 /**
  * @param {string} projectRoot  the client's own directory (`__dirname`)
  * @param {Record<string, string>} [aliases]  extra module prefix -> directory
+ * @param {{ icons?: 'subset' | 'full' }} [ui]  what @kroma/ui ships; `full` is
+ *   for an app that REFLECTS over the icon catalogue rather than naming glyphs.
  */
-function expoWorkspaceConfig(projectRoot, aliases = {}) {
+function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   const workspaceRoot = path.resolve(projectRoot, '../..');
   // Resolved FROM THE CLIENT, not from this file: this factory lives outside any
   // client and therefore has no node_modules of its own to resolve expo from.
@@ -67,7 +69,7 @@ function expoWorkspaceConfig(projectRoot, aliases = {}) {
     // `imports` and mirrored here because Metro does not read that field. Every
     // native client gets it for free: a shell should not have to know that the
     // kit refers to itself as `#ui`. The Vite half is `webResolve` in
-    // clients/tv-build/rnw.ts, and tsconfig.base.json carries the types.
+    // packages/bundler/src/rnw.ts, and tsconfig.base.json carries the types.
     '#ui': path.join(workspaceRoot, 'packages', 'ui', 'src'),
     ...aliases,
     'react-native': reactNative,
@@ -84,7 +86,12 @@ function expoWorkspaceConfig(projectRoot, aliases = {}) {
     return (previous ?? context.resolveRequest)(context, moduleName, platform);
   };
 
-  return config;
+  // What the kit needs a bundler to know, shared with the Vite shells so it is
+  // stated once: today, the icon subset (@kroma/ui ships all 6167 of Tabler
+  // otherwise, because its glyphs resolve by name). Resolved FROM THE CLIENT for
+  // the same reason expo/metro-config is - this file has no node_modules.
+  const { kromaUi } = require(require.resolve('@kroma/ui/bundler', { paths: [projectRoot] }));
+  return kromaUi.metro(config, { repoRoot: workspaceRoot, icons: ui.icons });
 }
 
 /**

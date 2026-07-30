@@ -5,5 +5,5 @@
     "types": ["node", "react", "react-dom", "vite/client"]
   },
   "include": ["src", "vite.config.ts"],
-  "exclude": ["dist", ".output", ".nitro", ".tanstack"]
+  "exclude": [".nitro", ".output", ".tanstack", "dist", "src/sw.ts"]
 }

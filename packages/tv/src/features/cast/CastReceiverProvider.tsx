@@ -16,13 +16,13 @@
 // The HTTP path stays as the fallback for a socket that will not come up, and
 // orders arriving twice (live push AND fallback reply) are deduped by seq.
 
-import { type CastCommand, type CastController, KromaEvents } from '@kroma/core';
+import { type CastCommand, type CastController, type KromaClient, KromaEvents } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Avatar, toast } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useEnv } from '#tv/app/providers/env';
-import { useClient, useNav } from '#tv/app/router';
+import { useNav } from '#tv/app/router';
 import { useStoredPref } from '#tv/app/settings/store';
 import { applyCastCommand } from '#tv/features/cast/applyCommand';
 import { castReport, onCastReportChange } from '#tv/features/cast/castBridge';
@@ -39,8 +39,33 @@ const FALLBACK_BEAT_MS = 10_000;
 const AUTH_TICK_MS = 100;
 const AUTH_WAIT_TICKS = 50;
 
-export function CastReceiverProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const client = useClient();
+/**
+ * Mounts the receiver once there is a server to talk to, and is otherwise out of
+ * the way.
+ *
+ * It sits ABOVE the router, so it renders on the signed-out picker too - and a
+ * fresh install (no server saved yet) has no client there at all. Asking for one
+ * with `useClient()` threw, and a throw this high in the tree is not one screen
+ * failing: React unmounts everything, so first launch was a black screen instead
+ * of the profile picker.
+ *
+ * So the client arrives as a PROP, the way `AuthProvider` and `LocaleProvider`
+ * beside it already take it. Above the router, "there may be no client yet" is
+ * the normal case, and a prop says so at the call site.
+ */
+export function CastReceiverProvider({
+  client,
+  children,
+}: Readonly<{ client: KromaClient | null; children: ReactNode }>) {
+  return (
+    <>
+      {client ? <CastReceiver client={client} /> : null}
+      {children}
+    </>
+  );
+}
+
+function CastReceiver({ client }: Readonly<{ client: KromaClient }>) {
   const nav = useNav();
   const t = useT();
   const { user } = useAuth();
@@ -204,7 +229,7 @@ export function CastReceiverProvider({ children }: Readonly<{ children: ReactNod
     };
   }, [signedIn, castable, client]);
 
-  return <>{children}</>;
+  return null;
 }
 
 /** What this TV calls itself in a picker. The platform label is the honest

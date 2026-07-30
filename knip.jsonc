@@ -1,0 +1,107 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+
+  // What knip adds over `noUnusedLocals` and Biome's `noUnusedImports`: those
+  // see one file at a time, so they catch an unused local but never an export
+  // nothing imports, or a whole file nothing references. This finds those.
+  //
+  // Run it with `bun run deadcode`. It is deliberately NOT in CI: a repo this
+  // wide has real entry points no static tool can see (a `bun path/to.ts` in a
+  // script, a service worker the browser loads, a story picked up by
+  // `import.meta.glob`), so the config below has to keep pace with them. A
+  // false positive that fails a build teaches people to ignore the tool.
+  //
+  // The script runs knip through `bun x` rather than as a devDependency ON
+  // PURPOSE: knip 5 declares `typescript: ">=5.0.4 <7"` and this repo is on TS
+  // 7, so a local install resolves our compiler and dies calling an API that
+  // moved. `bun x` gives it an isolated tree with a TS it supports. Revisit
+  // when knip ships TS 7 support.
+
+  "ignore": [
+    // Vendored Rust crate sources, some carrying their own bundled web UIs
+    // (librqbit's, petgraph's docs CSS). Not ours; Biome excludes them too.
+    "clients/synology/**",
+    // Written by `bun run modules:gen` from the module manifests.
+    "packages/modules-generated/**",
+    "**/*.gen.ts",
+    "**/routeTree.gen.ts"
+  ],
+
+  // Each of these is imported somewhere - knip cannot attribute it to the
+  // package that declares it. Verified one by one; anything not listed here and
+  // still reported is worth looking at.
+  "ignoreDependencies": [
+    // Aliased, never imported by name: the Vite/Metro configs map
+    // `react-native` onto it (see `clients/tv-build/rnw.ts`), so every RNW
+    // component arrives under the `react-native` specifier instead.
+    "react-native-web",
+    "react-native",
+    // Imported by `clients/tv-build/shell.ts`, which the TV clients' vite
+    // configs share. Each client rightly declares what its own build needs;
+    // the import just lives in a directory that is not a workspace.
+    "@tailwindcss/vite",
+    "@vitejs/plugin-react",
+    "tailwindcss",
+    "lightningcss",
+    // React Native peers: the app has to install them, the component library
+    // does the importing (`react-native-svg` in packages/ui/src/lib/svg.tsx).
+    "react-native-svg",
+    // Required by Metro/Expo at build time, never imported.
+    "@babel/core",
+    "expo-atlas"
+  ],
+
+  "workspaces": {
+    ".": {
+      // `clients/tv-build` and `clients/expo-build` hold no package.json, so
+      // they belong to the root's scope rather than a workspace of their own.
+      // They are build tooling reached two ways knip cannot follow: imported by
+      // sibling `vite.config.ts` files, and invoked as `bun ../tv-build/x.ts`
+      // from package scripts and from the store/perf docs.
+      "entry": [
+        "scripts/**/*.ts",
+        "clients/tv-build/**/*.{ts,tsx}",
+        "clients/expo-build/**/*.{ts,js}",
+        "clients/tv-frame.vite.ts"
+      ]
+    },
+
+    "packages/*": {
+      "entry": [
+        "src/index.{ts,tsx}",
+        // Discovered at build time by `import.meta.glob` (Vite) and
+        // `require.context` (Metro) - see packages/workbench/README.md. Neither
+        // is a real import, so every story and demo is an entry point.
+        "src/**/*.stories.tsx",
+        "src/**/*.demo.tsx",
+        // Platform variants the bundler picks by extension, never by import.
+        "src/**/*.web.{ts,tsx}",
+        "src/**/*.native.{ts,tsx}",
+        // CLI helpers run by name (`bun packages/<pkg>/src/gen-spk-info.ts`).
+        "src/{backfill-info,gen-spk-info}.ts",
+        "scripts/*.ts"
+      ]
+    },
+
+    "clients/*": {
+      "entry": [
+        "src/main.{ts,tsx}",
+        // The ES5 bundle for 2018-era TV browsers, built by its own vite config.
+        "src/main.legacy.ts",
+        "*.config.{ts,js,cjs}",
+        "tv.target.ts",
+        // Expo config plugins, named as strings in app.config - never imported.
+        "plugins/with-*.{js,ts}",
+        "scripts/*.ts",
+        // Loaded by the platform rather than by the bundle. Both sources are
+        // TypeScript now and their build output is git-ignored, so this only
+        // still covers anything a client drops into public/ by hand.
+        "public/**/*.js"
+      ]
+    },
+
+    "server/modules/*/ui": {
+      "entry": ["src/index.{ts,tsx}"]
+    }
+  }
+}

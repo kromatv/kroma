@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
-import { type SubtitleAppearance, subtitleStyle } from '../lib/subtitle-appearance';
+import {
+  type SubtitleAppearance,
+  subtitleStyle,
+  subtitleWindowStyle,
+} from '../lib/subtitle-appearance';
 import type { PlayerSub } from '../types';
 
 /** A parsed WebVTT cue at absolute playback seconds. */
@@ -209,7 +213,18 @@ export function SubtitleRenderer({
       px="8%"
       pointerEvents="none"
     >
-      <Txt style={subtitleStyle(appearance)}>{text}</Txt>
+      {/* CEA-708 has three layers, not one: the text, the box immediately behind
+          it, and the WINDOW the cue block sits in. The first two are text style;
+          the window is a container, so it only exists when it is visible - the
+          default appearance has none, and an always-present wrapper would be a
+          node and a style array per cue for nothing. */}
+      {appearance.windowOpacity > 0 ? (
+        <Box style={subtitleWindowStyle(appearance)}>
+          <Txt style={subtitleStyle(appearance)}>{text}</Txt>
+        </Box>
+      ) : (
+        <Txt style={subtitleStyle(appearance)}>{text}</Txt>
+      )}
     </Box>
   );
 }

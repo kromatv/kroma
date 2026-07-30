@@ -1,4 +1,4 @@
-import type { TvTarget } from '../tv-build/shell';
+import type { TvTarget } from '@kroma/bundler/shell';
 
 /** The bench runs on the modern tier: it measures the components, not the
  * legacy shims. */

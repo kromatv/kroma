@@ -7,6 +7,7 @@
 // must gate their UI on `passkeysSupported()` first.
 
 import type { WebAuthnCredential, WebAuthnOptions } from '@kroma/core';
+import { bytesToBase64Url } from '#web/shared/lib/base64url';
 
 /** Whether the browser can run a WebAuthn ceremony here. */
 export function passkeysSupported(): boolean {
@@ -25,16 +26,6 @@ function decode(s: string): Uint8Array {
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i += 1) out[i] = bin.codePointAt(i) ?? 0;
   return out;
-}
-
-/** bytes → base64url string (no padding). */
-function encode(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let bin = '';
-  for (const b of bytes) bin += String.fromCodePoint(b);
-  const b64 = btoa(bin).replaceAll('+', '-').replaceAll('/', '_');
-  const padAt = b64.indexOf('=');
-  return padAt === -1 ? b64 : b64.slice(0, padAt);
 }
 
 /** Convert the server's `publicKey` options (base64url binary fields) into the
@@ -65,11 +56,11 @@ export async function createPasskey(options: WebAuthnOptions): Promise<WebAuthnC
   const res = cred.response as AuthenticatorAttestationResponse;
   return {
     id: cred.id,
-    rawId: encode(cred.rawId),
+    rawId: bytesToBase64Url(cred.rawId),
     type: cred.type,
     response: {
-      attestationObject: encode(res.attestationObject),
-      clientDataJSON: encode(res.clientDataJSON),
+      attestationObject: bytesToBase64Url(res.attestationObject),
+      clientDataJSON: bytesToBase64Url(res.clientDataJSON),
       transports: res.getTransports?.() ?? [],
     },
     clientExtensionResults: cred.getClientExtensionResults(),
@@ -84,13 +75,13 @@ export async function getPasskey(options: WebAuthnOptions): Promise<WebAuthnCred
   const res = cred.response as AuthenticatorAssertionResponse;
   return {
     id: cred.id,
-    rawId: encode(cred.rawId),
+    rawId: bytesToBase64Url(cred.rawId),
     type: cred.type,
     response: {
-      authenticatorData: encode(res.authenticatorData),
-      clientDataJSON: encode(res.clientDataJSON),
-      signature: encode(res.signature),
-      userHandle: res.userHandle ? encode(res.userHandle) : null,
+      authenticatorData: bytesToBase64Url(res.authenticatorData),
+      clientDataJSON: bytesToBase64Url(res.clientDataJSON),
+      signature: bytesToBase64Url(res.signature),
+      userHandle: res.userHandle ? bytesToBase64Url(res.userHandle) : null,
     },
     clientExtensionResults: cred.getClientExtensionResults(),
   };

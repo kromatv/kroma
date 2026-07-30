@@ -9,7 +9,8 @@ vi.mock('#web/shared/lib/api', () => ({
 }));
 
 const { disablePush: disable, enablePush: enable } = await import('@kroma/core');
-const { base64UrlToBytes, bytesToBase64Url, pushBlocker, webPush } = await import('./push');
+const { pushBlocker, webPush } = await import('./push');
+const { base64UrlToBytes, bytesToBase64Url } = await import('./base64url');
 const { kromaClient } = await import('#web/shared/lib/api');
 
 // `enablePush`/`disablePush` moved into `@kroma/core` when push grew a second

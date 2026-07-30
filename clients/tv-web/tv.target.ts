@@ -1,4 +1,4 @@
-import type { TvTarget } from '../tv-build/shell';
+import type { TvTarget } from '@kroma/bundler/shell';
 
 // The 10-foot experience served from an origin (tv.kroma.tv) instead of packaged
 // into a .wgt/.ipk. No platform SDK, no legacy tier: a browser new enough to be

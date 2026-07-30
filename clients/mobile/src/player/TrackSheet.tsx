@@ -484,8 +484,9 @@ export function TrackSheet({
             {(
               [
                 ['shadow', t('subtitle.shadow')],
-                ['box', t('subtitle.box')],
-                ['outline', t('subtitle.outline')],
+                ['uniform', t('subtitle.uniform')],
+                ['raised', t('subtitle.raised')],
+                ['depressed', t('subtitle.depressed')],
                 ['none', t('subtitle.none')],
               ] as const
             ).map(([edge, label]) => (

@@ -9,6 +9,9 @@
 // nothing else - and `unstable_allowRequireContext`, which src/stories.ts needs
 // to find the stories, is already turned on by the factory.
 
-const { expoWorkspaceConfig } = require('../expo-build/metro-workspace');
+const { expoWorkspaceConfig } = require('../expo-build/metro-workspace.ts');
 
-module.exports = expoWorkspaceConfig(__dirname);
+// `icons: 'full'`: the kit IS the icon gallery. It renders `iconNames()`, which
+// answers from whatever set shipped, so the subset every product client gets
+// would cut the gallery to 243 of Tabler's 6167.
+module.exports = expoWorkspaceConfig(__dirname, {}, { icons: 'full' });

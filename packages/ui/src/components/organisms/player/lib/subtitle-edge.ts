@@ -1,14 +1,26 @@
 // The subtitle edge treatment, native (Apple TV / Android TV).
 //
 // React Native supports ONE text shadow (offset + radius + colour), so the
-// design's four-way outline is approximated by a tight dark halo. The other
-// three treatments map exactly. See subtitle-edge.web.ts for the browser half,
-// which can spell the outline out as four shadows.
+// treatments CEA-708 describes as stacked strokes get one each: `uniform`
+// becomes a tight dark halo, and `raised` / `depressed` a hard offset with no
+// blur, which is what gives them their direction. See subtitle-edge.web.ts for
+// the browser half, which can spell each one out.
+//
+// The background is NOT an edge treatment - it is its own CEA-708 layer, with
+// its own colour and opacity, and lives in subtitle-appearance.ts.
 
 import type { TextStyle } from 'react-native';
 import type { SubEdge } from './subtitle-appearance';
 
-export function edgeStyle(edge: SubEdge, bgOpacity: number): TextStyle {
+const HARD = '#000000';
+/** Not 0: Android's Paint documents "if radius is 0, then the shadow layer is
+ * removed", so a hard-offset treatment would render identically to `none` -
+ * losing two of CEA-708's five edges on the platform whose captioning rules this
+ * file exists for. The smallest non-zero radius keeps the layer and still reads
+ * as a hard edge. */
+const HARD_EDGE = 0.01;
+
+export function edgeStyle(edge: SubEdge): TextStyle {
   if (edge === 'shadow') {
     return {
       textShadowColor: 'rgba(0, 0, 0, 0.92)',
@@ -16,17 +28,26 @@ export function edgeStyle(edge: SubEdge, bgOpacity: number): TextStyle {
       textShadowRadius: 10,
     };
   }
-  if (edge === 'outline') {
+  if (edge === 'uniform') {
     return {
-      textShadowColor: '#000000',
+      textShadowColor: HARD,
       textShadowOffset: { width: 0, height: 0 },
       textShadowRadius: 3,
     };
   }
-  if (edge === 'box') {
-    return { backgroundColor: `rgba(0, 0, 0, ${clampPct(bgOpacity) / 100})` };
+  if (edge === 'raised') {
+    return {
+      textShadowColor: HARD,
+      textShadowOffset: { width: 2, height: 2 },
+      textShadowRadius: HARD_EDGE,
+    };
+  }
+  if (edge === 'depressed') {
+    return {
+      textShadowColor: HARD,
+      textShadowOffset: { width: -2, height: -2 },
+      textShadowRadius: HARD_EDGE,
+    };
   }
   return {};
 }
-
-export const clampPct = (n: number): number => Math.max(0, Math.min(100, n));

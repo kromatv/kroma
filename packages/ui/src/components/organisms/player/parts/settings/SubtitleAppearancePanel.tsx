@@ -7,17 +7,20 @@ import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import {
   SUB_COLORS,
+  SUB_EDGES,
+  SUB_FONTS,
   type SubEdge,
   type SubFont,
   type SubSize,
   type SubtitleAppearance,
   subtitleStyle,
+  subtitleWindowStyle,
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { gradient } from '#ui/lib/css';
 import { colors, fonts } from '#ui/lib/tokens';
 import { useT } from '#ui/services/i18n';
-import { rowStyle, valueLabel, valueRow, valueRowOn } from './panelStyle';
+import { pill, pillLabel, rowStyle, valueLabel, valueRow, valueRowOn } from './panelStyle';
 
 interface SubtitleAppearancePanelProps {
   appearance: SubtitleAppearance;
@@ -34,8 +37,30 @@ function step<V>(options: readonly V[], current: V, dir: -1 | 1): V {
 }
 
 const SIZES: SubSize[] = ['sm', 'md', 'lg', 'xl'];
-const EDGES: SubEdge[] = ['shadow', 'box', 'outline', 'none'];
-const FONTS: SubFont[] = ['sans', 'serif', 'mono'];
+// The edge and font lists come from the model (SUB_EDGES / SUB_FONTS) rather than
+// being retyped here: a treatment missing from a local copy compiles fine and is
+// simply unreachable by the remote. Both are shown as a named current value
+// rather than a segmented control - eight buttons across a settings panel are
+// unreadable at three metres, and the row's own ◀▶ is how a remote moves anyway.
+
+const EDGE_LABEL = {
+  none: 'subtitle.none',
+  raised: 'subtitle.raised',
+  depressed: 'subtitle.depressed',
+  uniform: 'subtitle.uniform',
+  shadow: 'subtitle.shadow',
+} as const satisfies Record<SubEdge, string>;
+
+const FONT_LABEL = {
+  default: 'player.subFontDefault',
+  monoSerif: 'player.subFontMonoSerif',
+  propSerif: 'player.subFontPropSerif',
+  monoSans: 'player.subFontMonoSans',
+  propSans: 'player.subFontPropSans',
+  casual: 'player.subFontCasual',
+  cursive: 'player.subFontCursive',
+  smallCaps: 'player.subFontSmallCaps',
+} as const satisfies Record<SubFont, string>;
 
 interface AppRow {
   key: string;
@@ -45,9 +70,10 @@ interface AppRow {
 }
 
 /**
- * Subtitle appearance (§8): a live preview above value rows for size, colour,
- * edge, font and opacity (plus box background opacity when the edge is a box).
- * ▲▼ move between rows, ◀▶ change the focused row's value.
+ * Subtitle appearance (§8): a live preview above value rows for CEA-708's three
+ * layers - the text (size, colour, edge, font, opacity), the box behind it, and
+ * the window the block sits in. Each layer's colour row appears once that layer
+ * is actually visible. ▲▼ move between rows, ◀▶ change the focused row's value.
  */
 export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearancePanelProps>(
   function SubtitleAppearancePanel({ appearance, onAppearance, onBack }, ref) {
@@ -81,35 +107,14 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
       {
         key: 'edge',
         label: t('player.subEdge'),
-        nudge: (d) => set({ edge: step(EDGES, appearance.edge, d) }),
-        control: (
-          <Seg<SubEdge>
-            value={appearance.edge}
-            options={[
-              { v: 'shadow', label: t('subtitle.shadow') },
-              { v: 'box', label: t('subtitle.box') },
-              { v: 'outline', label: t('subtitle.outline') },
-              { v: 'none', label: t('subtitle.none') },
-            ]}
-            onPick={(v) => set({ edge: v })}
-          />
-        ),
+        nudge: (d) => set({ edge: step(SUB_EDGES, appearance.edge, d) }),
+        control: <Choice label={t(EDGE_LABEL[appearance.edge])} />,
       },
       {
         key: 'font',
         label: t('player.subFont'),
-        nudge: (d) => set({ font: step(FONTS, appearance.font, d) }),
-        control: (
-          <Seg<SubFont>
-            value={appearance.font}
-            options={[
-              { v: 'sans', label: t('player.subFontSans') },
-              { v: 'serif', label: t('player.subFontSerif') },
-              { v: 'mono', label: t('player.subFontMono') },
-            ]}
-            onPick={(v) => set({ font: v })}
-          />
-        ),
+        nudge: (d) => set({ font: step(SUB_FONTS, appearance.font, d) }),
+        control: <Choice label={t(FONT_LABEL[appearance.font])} />,
       },
       {
         key: 'opacity',
@@ -117,15 +122,45 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
         nudge: (d) => set({ opacity: clamp(appearance.opacity + d * 10, 20, 100) }),
         control: <Meter value={appearance.opacity} />,
       },
-    ];
-    if (appearance.edge === 'box') {
-      rows.push({
+      {
         key: 'bgOpacity',
         label: t('player.subBgOpacity'),
         nudge: (d) => set({ bgOpacity: clamp(appearance.bgOpacity + d * 5, 0, 100) }),
         control: <Meter value={appearance.bgOpacity} />,
-      });
-    }
+      },
+      // A layer's colour is only worth a row once that layer is visible -
+      // otherwise the panel opens on two swatch rows that change nothing anyone
+      // can see.
+      ...(appearance.bgOpacity > 0
+        ? [
+            {
+              key: 'bgColor',
+              label: t('player.subBgColor'),
+              nudge: (d: -1 | 1) => set({ bgColor: step(SUB_COLORS, appearance.bgColor, d) }),
+              control: <Swatches value={appearance.bgColor} onPick={(c) => set({ bgColor: c })} />,
+            },
+          ]
+        : []),
+      {
+        key: 'windowOpacity',
+        label: t('player.subWindowOpacity'),
+        nudge: (d) => set({ windowOpacity: clamp(appearance.windowOpacity + d * 5, 0, 100) }),
+        control: <Meter value={appearance.windowOpacity} />,
+      },
+      ...(appearance.windowOpacity > 0
+        ? [
+            {
+              key: 'windowColor',
+              label: t('player.subWindowColor'),
+              nudge: (d: -1 | 1) =>
+                set({ windowColor: step(SUB_COLORS, appearance.windowColor, d) }),
+              control: (
+                <Swatches value={appearance.windowColor} onPick={(c) => set({ windowColor: c })} />
+              ),
+            },
+          ]
+        : []),
+    ];
 
     const focus = useListFocus({
       count: rows.length,
@@ -147,7 +182,11 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
           mb={18}
           style={gradient('linear-gradient(135deg, #1c1c24, #0d0d11)')}
         >
-          <Txt style={subtitleStyle(appearance)}>{t('player.subPreview')}</Txt>
+          {/* The preview carries the window too, or the two rows that set it
+              would be the only settings here you cannot see the effect of. */}
+          <Box style={subtitleWindowStyle(appearance)}>
+            <Txt style={subtitleStyle(appearance)}>{t('player.subPreview')}</Txt>
+          </Box>
         </Box>
         <Box gap={10}>
           {rows.map((r, i) => (
@@ -223,7 +262,20 @@ function Arrow({
   );
 }
 
-/** Full-width segmented control (size / edge / font). */
+/** The current option, named. Where a segmented control cannot fit - the five
+ * edge treatments, the eight font styles - the row shows what is selected and
+ * its own ◀▶ moves through the rest. */
+function Choice({ label }: Readonly<{ label: string }>) {
+  return (
+    <Box row align="center" center px={14} style={pill} accessibilityRole="text">
+      <Txt style={pillLabel} color="rgba(244, 243, 240, 0.92)">
+        {label}
+      </Txt>
+    </Box>
+  );
+}
+
+/** Full-width segmented control (size). */
 function Seg<V extends string>({
   value,
   options,
@@ -241,17 +293,13 @@ function Seg<V extends string>({
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             style={{
+              ...pill,
               flex: 1,
-              borderRadius: 9,
-              paddingVertical: 9,
               alignItems: 'center',
-              backgroundColor: on ? colors.accent : 'rgba(255, 255, 255, 0.06)',
+              ...(on ? { backgroundColor: colors.accent } : null),
             }}
           >
-            <Txt
-              style={{ fontFamily: fonts.ui, fontWeight: '700', fontSize: 13 }}
-              color={on ? 'accentInk' : 'rgba(244, 243, 240, 0.7)'}
-            >
+            <Txt style={pillLabel} color={on ? 'accentInk' : 'rgba(244, 243, 240, 0.7)'}>
               {o.label}
             </Txt>
           </Pressable>

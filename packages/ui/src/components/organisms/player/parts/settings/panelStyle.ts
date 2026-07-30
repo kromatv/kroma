@@ -109,3 +109,14 @@ export const rowStyle = (base: ViewStyle, on: ViewStyle, focused: boolean): View
   base,
   focused ? on : rowOff,
 ];
+
+/** The unselected pill of the settings surface: the segmented control's options
+ * and the named-value row wear the same one, so retuning it is one edit. */
+export const pill = {
+  borderRadius: 9,
+  paddingVertical: 9,
+  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+} as const;
+
+/** The label inside a `pill`. */
+export const pillLabel = { fontFamily: fonts.ui, fontWeight: '700' as const, fontSize: 13 };

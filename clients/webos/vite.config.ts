@@ -1,4 +1,4 @@
-import { tvShellConfig } from '../tv-build/shell';
+import { tvShellConfig } from '@kroma/bundler/shell';
 import { target } from './tv.target';
 
 // The shared TV-shell pipeline, parameterized by ./tv.target.ts. This is the

@@ -85,7 +85,7 @@ export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly
                         {/* Above the router, not inside the player: a TV must be
                             castable from its home screen, which is where a phone
                             reaches for it. */}
-                        <CastReceiverProvider>
+                        <CastReceiverProvider client={client}>
                           {/* Every dialog in the app renders HERE rather than
                               where it was written: a television cannot use
                               React Native's <Modal>, whose own view controller

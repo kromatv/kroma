@@ -14,13 +14,19 @@
 
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { collectBuildInfo, productVersion } from '@kroma/build-info';
+import { legacyFinalize } from '@kroma/bundler/legacy-finalize';
+import {
+  KROMA_SOURCE_PACKAGES,
+  RNW_DEFINE,
+  RNW_OPTIMIZE_INCLUDE,
+  webResolve,
+} from '@kroma/bundler/rnw';
+import { tvFrame } from '@kroma/bundler/tv-frame';
+import { kromaUi } from '@kroma/ui/bundler';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { ConfigEnv, UserConfig } from 'vite';
-import { collectBuildInfo, productVersion } from '../build-info/index.js';
-import { tvFrame } from '../tv-frame.vite';
-import { legacyFinalize } from './legacy-finalize';
-import { KROMA_SOURCE_PACKAGES, RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, webResolve } from './rnw';
 
 export interface TvTarget {
   /** Which TV this shell is for (diagnostics label; playback wiring is runtime-detected).
@@ -68,7 +74,7 @@ function lanIp(): string | undefined {
  *                      check treats as always-compatible.
  *   __KROMA_BUILD__    the whole identity (commit, branch, date, repository) the
  *                      About screen shows. The native TV app gets the same object
- *                      by the other road; see clients/build-info/index.js.
+ *                      by the other road; see @kroma/build-info.
  *
  * `shellDir` is the shell's own directory, which is where git is asked.
  */
@@ -90,7 +96,7 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
     // `tvFrame()` is dev-only (apply: 'serve'): letterboxes the app into a
     // 1920x1080 stage in a desktop browser; on a real TV the panel already is
     // that canvas, so device mode turns it off.
-    plugins: [tailwindcss(), react(), tvFrame({ enabled: !deviceDev })],
+    plugins: [tailwindcss(), react(), tvFrame({ enabled: !deviceDev }), kromaUi.vite({ repoRoot })],
     // `#tv/*` -> the @kroma/tv package src (mirrors tsconfig.base paths), plus
     // the react-native -> react-native-web redirect every browser target needs.
     resolve: webResolve({ '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)) }),
@@ -107,8 +113,8 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
       include: RNW_OPTIMIZE_INCLUDE,
     },
     // Down-level the modern CSS Tailwind emits (color-mix, oklch) to plain
-    // fallbacks. Fonts load via <link> in index.html so no remote @import
-    // reaches the transformer. Version encoding: major << 16.
+    // fallbacks. The typefaces are self-hosted woff2 (@kroma/ui/fonts.css), so no
+    // remote @import reaches the transformer. Version encoding: major << 16.
     css: {
       transformer: 'lightningcss',
       lightningcss: { targets: { chrome: floor << 16 } },
@@ -156,8 +162,18 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
       tailwindcss(),
       react(),
       legacyFinalize({ distDir: fileURLToPath(new URL('dist', shellUrl)), chrome }),
+      // The legacy tier inlines every chunk into one IIFE, so without this it
+      // would carry a second full copy of Tabler.
+      kromaUi.vite({ repoRoot }),
     ],
-    define: RNW_DEFINE,
+    // `import.meta` does not exist in a classic script, and the IIFE output
+    // substitutes `{}` for it - so `new URL(asset, '' + import.meta.url)` (how
+    // Vite emits every `new URL(…, import.meta.url)` asset reference, e.g. the
+    // brand intro's film and sting) became `new URL(asset, 'undefined')`, which
+    // THROWS at module init and takes the whole legacy bundle down with it.
+    // `document.baseURI` is the same thing the modern tier resolves against -
+    // the document - and it exists on every engine this tier targets.
+    define: { ...RNW_DEFINE, 'import.meta.url': 'document.baseURI' },
     // `#tv/workbench` FIRST: Vite matches string aliases by prefix in order, so
     // a bare `#tv` listed first would swallow it. See workbench-stub.tsx for why
     // the legacy tier drops the workbench entirely.
@@ -169,10 +185,18 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
     // appinfo/manifest + icons are already copied into dist/ by the modern build.
     publicDir: false,
     server: { fs: { allow: [repoRoot] } },
-    // Assets emitted by this build live under dist/legacy/, but URLs resolve
-    // against the document (dist/index.html) - prefix them with the subdirectory.
+    // Assets emitted by this build live under dist/legacy/, and where a URL
+    // RESOLVES FROM decides the prefix:
+    //  - from JS / HTML: against the document, dist/index.html, so the path
+    //    needs the subdirectory.
+    //  - from the stylesheet: against dist/legacy/style.css, which is already
+    //    inside it, so the same prefix would ask for dist/legacy/legacy/… .
+    // Nothing in the legacy CSS referenced a file until the typefaces were
+    // self-hosted; the first thing that did got a 404 and fell back to
+    // system-ui on every pre-2024 TV, while the build stayed green.
     experimental: {
-      renderBuiltUrl: (filename: string) => `./legacy/${filename}`,
+      renderBuiltUrl: (filename: string, { hostType }: { hostType: 'js' | 'css' | 'html' }) =>
+        hostType === 'css' ? `./${filename}` : `./legacy/${filename}`,
     },
     build: {
       target: 'es2015',

@@ -23,6 +23,16 @@ const JS_CHECKS: Check[] = [
   [/[\w$)\]"']\?\?[^?=/]/, 'nullish coalescing (??) is ES2020 - Chromium 53 fails to parse'],
   [/\?\?=/, 'logical assignment (??=) is ES2021 - Chromium 53 fails to parse'],
   [/\basync function(?!\*)|\basync\s+\w+\s*=>/, 'async (ES2017) must be lowered to generators'],
+  // A classic script has no `import.meta`, so the IIFE build substitutes `{}`
+  // for it - and every `new URL(asset, import.meta.url)` Vite emits (the brand
+  // intro's film and sting, today) becomes `new URL(asset, 'undefined')`, which
+  // THROWS at module init. Nothing renders: the tier is dead on every TV it
+  // exists for, while the build says "built in 1.10s". shell.ts defines
+  // `import.meta.url` as `document.baseURI` to prevent it; this is the tripwire.
+  [
+    /\{\s*\}\s*\.url/,
+    '`import.meta.url` was substituted with `{}` - asset URLs throw at module init',
+  ],
 ];
 
 const CSS_CHECKS: Check[] = [

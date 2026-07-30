@@ -3,7 +3,7 @@
   "version": "0.1.3",
   "private": true,
   "type": "module",
-  "main": "index.js",
+  "main": "index.ts",
   "description": "KROMA design-system showcase: the @kroma/ui workbench as a deployable website AND as an app you can launch at a phone or a television simulator.",
   "scripts": {
     "dev": "vite",
@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.28.0",
+    "@kroma/bundler": "workspace:*",
     "@react-native-tvos/config-tv": "^0.1.6",
     "@types/node": "^22.10.2",
     "@types/react": "~19.2.2",

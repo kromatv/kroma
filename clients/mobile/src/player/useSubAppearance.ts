@@ -5,7 +5,7 @@
 // the same contract hydrated through the app's async pref store instead.
 
 import type { SubtitleAppearance } from '@kroma/ui';
-import { DEFAULT_SUB_APPEARANCE } from '@kroma/ui';
+import { DEFAULT_SUB_APPEARANCE, migrateAppearance } from '@kroma/ui';
 import { useCallback, useEffect, useState } from 'react';
 import { loadPref, savePref } from '#mobile/lib/storage';
 
@@ -23,7 +23,12 @@ export function useSubAppearance(): [
       .then((raw) => {
         if (cancelled || !raw) return;
         try {
-          setStyle({ ...DEFAULT_SUB_APPEARANCE, ...JSON.parse(raw) });
+          // Through the shared migration, NOT a raw spread: a pref written
+          // before the renderer took on CEA-708 still names `box` or `outline`,
+          // and those reach `CUE_EDGE[a.edge]` as undefined - a TypeError inside
+          // the cue's render, which unmounts the player with no boundary to
+          // catch it. It also rescues the background the old `box` edge drew.
+          setStyle(migrateAppearance(JSON.parse(raw)));
         } catch {
           // A corrupt pref falls back to the defaults it was seeded from.
         }

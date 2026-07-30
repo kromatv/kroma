@@ -2,7 +2,7 @@
 // cue line, the buffering spinner, skip-intro, and the up-next card.
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
-import type { SubtitleAppearance } from '@kroma/ui';
+import { type SubtitleAppearance, withOpacity } from '@kroma/ui';
 import { Button, Icon, Spinner } from '@kroma/ui/kit';
 import { Platform, Pressable, StyleSheet, Text, type TextStyle, View } from 'react-native';
 import { FadeImage } from '#mobile/components/FadeImage';
@@ -14,28 +14,50 @@ import { absoluteFill, colors, radius } from '#mobile/lib/theme';
  * 10-foot numbers). */
 const CUE_SIZE: Record<SubtitleAppearance['size'], number> = { sm: 13, md: 17, lg: 21, xl: 26 };
 
+/** CEA-708's eight font styles on a phone. `undefined` means the system face,
+ * which is what "default", the proportional sans and small capitals all want -
+ * small caps is a variant rather than a family, applied below. */
 const CUE_FONT: Record<SubtitleAppearance['font'], string | undefined> = {
-  sans: undefined,
-  serif: Platform.select({ ios: 'Georgia', default: 'serif' }),
-  mono: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+  default: undefined,
+  propSans: undefined,
+  smallCaps: undefined,
+  propSerif: Platform.select({ ios: 'Georgia', default: 'serif' }),
+  monoSerif: Platform.select({ ios: 'Courier', default: 'monospace' }),
+  monoSans: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+  casual: Platform.select({ ios: 'Chalkboard SE', default: 'casual' }),
+  cursive: Platform.select({ ios: 'Snell Roundhand', default: 'cursive' }),
+};
+
+/** The edge treatments, as the one text shadow React Native gives us: a blur for
+ * the drop shadow, a tight halo for the uniform stroke, and a hard offset for the
+ * directional pair (see @kroma/ui's subtitle-edge). */
+const CUE_EDGE: Record<
+  SubtitleAppearance['edge'],
+  { radius: number; offset: { width: number; height: number } }
+> = {
+  none: { radius: 0, offset: { width: 0, height: 0 } },
+  shadow: { radius: 4, offset: { width: 0, height: 1 } },
+  uniform: { radius: 1.5, offset: { width: 0, height: 0 } },
+  // Not 0: Android removes the shadow layer entirely at radius 0, which would
+  // make both of these identical to `none`.
+  raised: { radius: 0.01, offset: { width: 1, height: 1 } },
+  depressed: { radius: 0.01, offset: { width: -1, height: -1 } },
 };
 
 /** The viewer's appearance choice, as the cue Text's style. Mirrors the shared
- * renderer's treatment: `box` carries the background at its own opacity, the
- * other edges drop the box and draw a shadow (or nothing). */
+ * renderer: the background is its own layer with its own colour and opacity, so
+ * it no longer rides on the edge treatment. */
 function cueStyle(a: SubtitleAppearance): TextStyle {
-  const alpha = Math.round((a.opacity / 100) * 255)
-    .toString(16)
-    .padStart(2, '0');
-  const shadowRadius = { none: 0, box: 0, shadow: 4, outline: 1.5 }[a.edge];
+  const edge = CUE_EDGE[a.edge];
   return {
-    color: `${a.color}${alpha}`,
+    color: withOpacity(a.color, a.opacity),
     fontSize: CUE_SIZE[a.size],
     fontFamily: CUE_FONT[a.font],
-    backgroundColor: a.edge === 'box' ? `rgba(10, 10, 12, ${a.bgOpacity / 100})` : 'transparent',
-    textShadowColor: a.edge === 'shadow' || a.edge === 'outline' ? 'rgba(0, 0, 0, 0.9)' : undefined,
-    textShadowRadius: shadowRadius,
-    textShadowOffset: a.edge === 'shadow' ? { width: 0, height: 1 } : { width: 0, height: 0 },
+    ...(a.font === 'smallCaps' ? ({ fontVariant: ['small-caps'] } as TextStyle) : null),
+    backgroundColor: a.bgOpacity > 0 ? withOpacity(a.bgColor, a.bgOpacity) : 'transparent',
+    textShadowColor: a.edge === 'none' ? undefined : 'rgba(0, 0, 0, 0.9)',
+    textShadowRadius: edge.radius,
+    textShadowOffset: edge.offset,
   };
 }
 

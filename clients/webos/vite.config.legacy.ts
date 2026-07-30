@@ -1,4 +1,4 @@
-import { tvShellLegacyConfig } from '../tv-build/shell';
+import { tvShellLegacyConfig } from '@kroma/bundler/shell';
 import { target } from './tv.target';
 
 // LEGACY tier (Chromium 53-94): built AFTER the modern tier; emits dist/legacy/

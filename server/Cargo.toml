@@ -37,6 +37,10 @@ license = "MIT"
 # `{ workspace = true }`.
 [workspace.dependencies]
 anyhow = "1"
+# Self-deleting temp dirs for the test harnesses. Hand-rolled `temp_dir().join(pid)`
+# paths never clean up (a new pid every run), which quietly leaked ~95 GB into
+# $TMPDIR; a `TempDir` guard removes the dir when the harness drops.
+tempfile = "3"
 # axum 0.8 dropped its `async_trait` re-export (traits can use native async fn),
 # but our object-safe host/port traits (dyn HostCtx, dyn *Port) still need the
 # macro for dyn-compatibility, so depend on the crate directly.
@@ -274,6 +278,7 @@ uuid = { workspace = true, features = ["v5"] }
 # (the binary itself only needs `tower-http`).
 [dev-dependencies]
 tower = { workspace = true }
+tempfile = { workspace = true }
 
 # musl's malloc serializes under our thread mix (tokio + rayon + candle + tantivy);
 # mimalloc removes that contention. Linux-only; macOS dev keeps the system

@@ -1,8 +1,12 @@
 /**
  * The Smart Hub preview service runs on the TV, in a Tizen JS context, even
- * while KROMA is closed — so nothing in the app can exercise it. It ships
- * verbatim from `public/` as plain CommonJS, which means a test can evaluate it
- * against fake `tizen` / `webapis` globals and drive its lifecycle hooks.
+ * while KROMA is closed — so nothing in the app can exercise it. It is plain
+ * CommonJS, which means a test can evaluate it against fake `tizen` / `webapis`
+ * globals and drive its lifecycle hooks.
+ *
+ * The SOURCE is transpiled here rather than read from `dist/`: the service is
+ * emitted by its own build step, and a test that reads the artefact would pass
+ * or fail on whether somebody had run a build.
  *
  * The behaviour that matters is not the happy path: it is that the service
  * always exits and always closes its stream. A background service that hangs
@@ -10,12 +14,15 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { transformSync } from 'esbuild';
 import { describe, expect, it } from 'vitest';
 
-const SOURCE = readFileSync(
-  join(import.meta.dirname, '../public/service/preview-service.js'),
-  'utf8',
-);
+const SOURCE = transformSync(
+  readFileSync(join(import.meta.dirname, 'preview-service.cts'), 'utf8'),
+  // The same engine floor the emitter targets, so what is exercised here is what
+  // a Tizen 6.0 set would actually parse.
+  { loader: 'ts', format: 'cjs', target: 'chrome76' },
+).code;
 
 interface Service {
   onStart: () => void;

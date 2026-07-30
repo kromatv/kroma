@@ -16,6 +16,13 @@ export function LocaleProvider({
       client={client}
       accountLanguage={user?.language}
       onAccountChange={user ? (next: Locale) => updateUser({ language: next }) : undefined}
+      // The browser TVs (webOS, Tizen) do have an <html> - each shell ships one -
+      // and its `lang` is what the set's screen reader consults to decide how to
+      // pronounce what it is reading. Shipped hardcoded to `fr`, it made an
+      // English UI be read with French phonetics, which is a real finding in
+      // Samsung's accessibility review. The shared provider no-ops where there
+      // is no document, so the native TVs are unaffected.
+      syncHtmlLang
     >
       {children}
     </UiLocaleProvider>

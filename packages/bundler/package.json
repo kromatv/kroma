@@ -1,0 +1,42 @@
+{
+  "name": "@kroma/bundler",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "KROMA shared Vite plugins: build-info stamping, post-build process exit, and bundling for scripts that live outside a client's module graph.",
+  "exports": {
+    "./build-info": "./src/build-info.ts",
+    "./exit-after-build": "./src/exit-after-build.ts",
+    "./legacy-css": "./src/legacy-css.ts",
+    "./legacy-finalize": "./src/legacy-finalize.ts",
+    "./polyfills-legacy": "./src/polyfills-legacy.ts",
+    "./props-docs": "./src/props-docs.ts",
+    "./rnw": "./src/rnw.ts",
+    "./shell": "./src/shell.ts",
+    "./standalone-script": "./src/standalone-script.ts",
+    "./tv-frame": "./src/tv-frame.ts",
+    "./workbench-stub": "./src/workbench-stub.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@csstools/postcss-cascade-layers": "^6.0.0",
+    "@kroma/build-info": "workspace:*",
+    "@kroma/ui": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "esbuild": "^0.28.1",
+    "lightningcss": "^1.33.0",
+    "postcss": "^8.5.23",
+    "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "vite": ">=6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  }
+}

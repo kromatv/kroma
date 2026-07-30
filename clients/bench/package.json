@@ -17,6 +17,7 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@kroma/bundler": "workspace:*",
     "@types/node": "^22.10.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",

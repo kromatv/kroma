@@ -11,30 +11,36 @@
 // Tabler ships the same icons twice, with the same export names: `@tabler/
 // icons-react` draws DOM <svg>, `@tabler/icons-react-native` draws through
 // react-native-svg. This file imports the React Native one; every web bundler
-// aliases that specifier to the DOM one (clients/tv-build/rnw.ts, the same trick
+// aliases that specifier to the DOM one (packages/bundler/src/rnw.ts, the same trick
 // as `react-native` -> `react-native-web`). So a browser gets native SVG and
 // never loads react-native-svg's runtime, and native gets react-native-svg,
 // where it is the only way to draw at all. The one prop they spell differently
 // is the outline weight; see stroke-prop.ts.
 //
-// What this costs, measured
-// -------------------------
-// A namespace import cannot be tree-shaken, so the whole set ships: the kit site
-// went from 258 KB to 740 KB gzipped (850 KB -> 3.4 MB raw). Lazy loading does
-// not recover it on the targets that care - Metro has no dynamic import with a
-// computed specifier, and the webOS legacy tier inlines every chunk back into
-// one IIFE - so it would only help the modern web tier, at the price of ~5800
-// chunks and glyphs arriving over the network mid-render. The trade accepted
-// here is bytes for the guarantee that any name resolves; going back to a
-// hand-written map is a small, local change to this file alone.
+// What this costs, and who still pays it
+// --------------------------------------
+// Resolving BY NAME is what lets a name come from data - and it is why a bundler
+// cannot shake the set: it cannot prove which of Tabler's 6167 icons a computed
+// lookup will ask for, so all of them ship. On the kit site that was 258 KB ->
+// 740 KB gzipped; in the webOS package it was 1.04 MB of 10.27 MB.
+//
+// The TV packages no longer pay it. The runtime set comes from
+// `#ui/lib/icons/glyph-source`, which the TV shells alias to a subset GENERATED
+// from the source at build time (packages/ui/bundler) - no list to
+// maintain, and over-collecting by construction so a used name cannot go
+// missing. The web and admin clients keep the full namespace, because they are
+// the ones rendering module UIs whose manifests may name any glyph at all.
+//
+// The Tabler import below stays TYPE-only either way, so `IconName` is still the
+// whole set and any name typechecks wherever it is written.
 
-import * as Tabler from '@tabler/icons-react-native';
+// TYPE-ONLY, and that is the point: this import is erased, so `IconName` stays
+// every name Tabler can draw - any of them typechecks and autocompletes - while
+// nothing is pulled into the bundle by it. The runtime set arrives from
+// ./glyph-source, which a TV shell swaps for a scanned subset.
+import type * as Tabler from '@tabler/icons-react-native';
 import type { ComponentType } from 'react';
-
-/** The two props both Tabler packages spell the same way. The outline weight is
- * the third the kit passes, but the packages disagree on its NAME, so it rides
- * in through `STROKE_PROP` rather than being declared here. */
-type Glyph = ComponentType<{ size?: number; color?: string }>;
+import { FALLBACK, EXPORTS as RAW } from './glyph-source';
 
 // ---- the name, derived from the package rather than declared ----
 //
@@ -85,6 +91,14 @@ type Kebab<
 /** The package's icon exports, which is every key shaped `Icon*` bar its types. */
 type IconExport = Extract<keyof typeof Tabler, `Icon${string}`>;
 
+/** The two props both Tabler packages spell the same way. The outline weight is
+ * the third the kit passes, but the packages disagree on its NAME, so it rides
+ * in through `STROKE_PROP` rather than being declared here. */
+type Glyph = ComponentType<{ size?: number; color?: string }>;
+
+/** The runtime set, however much of it this build carries. */
+const EXPORTS = RAW as unknown as Record<string, Glyph | undefined>;
+
 /**
  * Every glyph name the kit can draw, in the design's own spelling.
  *
@@ -102,8 +116,6 @@ type IconExport = Extract<keyof typeof Tabler, `Icon${string}`>;
  */
 type IconName = IconExport extends `Icon${infer Rest}` ? Kebab<Rest> : never;
 
-const EXPORTS = Tabler as unknown as Record<string, Glyph | undefined>;
-
 /** `wave-sine` -> `IconWaveSine`, which is how Tabler names its exports. */
 function exportName(slug: string): string {
   let out = 'Icon';
@@ -112,11 +124,6 @@ function exportName(slug: string): string {
   }
   return out;
 }
-
-/** Drawn in place of a name the package does not have. A missing glyph should
- * look missing, not take the screen down: `EXPORTS[unknown]` is `undefined`, and
- * rendering that as a component throws. */
-const FALLBACK: Glyph = Tabler.IconHelpCircle;
 
 /** Resolution is a string transform plus a property read, and icons re-render on
  * every focus move in a 10-foot grid, so the answer is remembered. Bounded by

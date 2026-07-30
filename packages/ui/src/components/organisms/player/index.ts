@@ -22,13 +22,18 @@ export {
 export { SEEK_BAR } from './lib/style';
 export {
   DEFAULT_SUB_APPEARANCE,
+  migrateAppearance,
   SUB_COLORS,
+  SUB_EDGES,
+  SUB_FONTS,
   type SubEdge,
   type SubFont,
   type SubSize,
   type SubtitleAppearance,
   subtitleStyle,
+  subtitleWindowStyle,
   useSubtitleAppearance,
+  withOpacity,
 } from './lib/subtitle-appearance';
 export type { PlayerProps } from './Player';
 export { Player } from './Player';

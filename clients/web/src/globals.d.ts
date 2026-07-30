@@ -14,6 +14,8 @@ declare module 'virtual:build-info' {
     dirty: boolean;
     /** ISO timestamp of the build (or dev-server start). */
     buildDate: string;
+    /** Browsable https URL of the origin remote, or null. */
+    repository: string | null;
   }
   const buildInfo: BuildInfo;
   export default buildInfo;
@@ -23,4 +25,5 @@ declare module 'virtual:build-info' {
   export const branch: string;
   export const dirty: boolean;
   export const buildDate: string;
+  export const repository: string | null;
 }

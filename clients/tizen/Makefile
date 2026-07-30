@@ -94,7 +94,10 @@ dev-shell: connect ## One-time: install a live-dev shell (redirects the TV to th
 	cd $(REPO_ROOT) && bun run --filter '@kroma/tizen' build:fast
 	@rm -rf $(DEV_STAGE) && cp -R $(DIST) $(DEV_STAGE)
 	@rm -f $(DEV_STAGE)/*.wgt $(DEV_STAGE)/author-signature.xml $(DEV_STAGE)/signature1.xml
-	@sed -e 's|__HOST_IP__|$(HOST_IP)|g' -e 's|__DEV_PORT__|$(DEV_PORT)|g' public/index.dev.html > $(DEV_STAGE)/index.html
+	# Lives in scripts/, NOT public/: everything in public/ is copied verbatim into
+	# dist/ and therefore into the signed .wgt, so a dev loader kept there shipped
+	# to the store inside every submission.
+	@sed -e 's|__HOST_IP__|$(HOST_IP)|g' -e 's|__DEV_PORT__|$(DEV_PORT)|g' scripts/index.dev.html > $(DEV_STAGE)/index.html
 	$(TIZEN) package -t wgt -s $(PROFILE) -- $(DEV_STAGE)
 	@WGT="$$(ls -t "$(DEV_STAGE)"/*.wgt | head -1)"; $(TIZEN) install -n "$$(basename "$$WGT")" -- $(DEV_STAGE)
 	$(TIZEN) run -p $(APP_ID) || $(SDB) shell 0 was_execute $(APP_ID)

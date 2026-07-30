@@ -236,7 +236,7 @@ bun run dev:webos      # :5175   LG
 | -------- | --- | ----------------- |
 | **Web** (desktop browser) | `bun run dev:web` | `bun run build:web` → static/SSR bundle ([web README](clients/web/README.md)) |
 | **Samsung TV** (Tizen) | `bun run dev:tizen` | `make -C clients/tizen deploy TV_IP=…` → `.wgt` ([tizen README](clients/tizen/README.md) · [SETUP](clients/tizen/SETUP.md)) |
-| **LG TV** (webOS) | `bun run dev:webos` | `ares-package clients/webos/dist` → `.ipk` ([webos README](clients/webos/README.md)) |
+| **LG TV** (webOS) | `bun run dev:webos` | `ares-package clients/webos/dist --no-minify` → `.ipk` ([webos README](clients/webos/README.md)) |
 | **Apple TV / Android TV / Google TV** | `bun run run:tv-native:appletv` · `run:tv-native:androidtv` | Expo prebuild + native build; `bun run bundle:tv-native` is the JS-only gate ([tv-native](clients/tv-native)) |
 | **iPhone / iPad / Android** | `bun run run:mobile:ios` · `run:mobile:android` | Expo prebuild + native build; `bun run bundle:mobile` is the JS-only gate ([mobile README](clients/mobile/README.md)) |
 | **Design system workbench** | `bun run dev:kit` · `run:kit:appletv` · `run:kit:ios` | `bun run deploy:kit` → ui.kroma.tv ([kit README](clients/kit/README.md)) |
@@ -271,7 +271,7 @@ bun run typecheck      # typecheck only
 bun run server:build   # cargo release build
 
 bun run build:tizen && cd clients/tizen && tizen package -t wgt -s <profile> -- dist
-bun run build:webos && ares-package clients/webos/dist
+bun run build:webos && ares-package clients/webos/dist --no-minify
 ```
 
 See each client's README for full device install steps.

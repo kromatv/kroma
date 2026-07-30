@@ -29,7 +29,10 @@ export interface LocaleProviderProps {
   accountLanguage?: string | null;
   /** Persist a manual change to the signed-in account. Omit when signed out. */
   onAccountChange?: (locale: Locale) => void;
-  /** Mirror the locale onto `<html lang>` (web only; TVs have no document chrome). */
+  /** Mirror the locale onto `<html lang>`. Every DOM target wants this, the
+   * browser TVs included: `lang` is what a set's screen reader reads to decide
+   * how to PRONOUNCE the interface. No-ops where there is no document, so a
+   * native target may pass it harmlessly. */
   syncHtmlLang?: boolean;
   children: ReactNode;
 }

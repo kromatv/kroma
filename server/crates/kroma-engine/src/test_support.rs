@@ -26,6 +26,12 @@ use crate::state::{AppState, SharedState};
 static SEQ: AtomicU32 = AtomicU32::new(0);
 
 /// A unique temp data dir for one test (removed + recreated so a rerun is clean).
+///
+/// Cleanup is *not* here: the dir is removed by the `#[cfg(test)]`
+/// [`Drop for AppState`](crate::state::AppState) once the last [`SharedState`]
+/// clone goes, which is the only point that outlives every thread the test hands
+/// the state to. The `remove_dir_all` below stays as the belt-and-braces case for
+/// a dir left by a *previous* run that crashed before its state dropped.
 fn unique_data_dir() -> PathBuf {
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!("kroma-engine-test-{}-{n}", std::process::id()));

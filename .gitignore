@@ -86,3 +86,14 @@ scripts/brand/tauri-source-1024.png
 # Python source and reports it as a file-encoding problem.
 __pycache__/
 *.pyc
+
+# Claude Code's per-machine half (the tool writes it; `settings.json` beside it
+# is the shareable half and stays tracked if we ever add one). Listed here and
+# not only in a personal ~/.config/git/ignore because Biome reads THIS file
+# (vcs.useIgnoreFile) and knows nothing about global excludes - without the
+# line, `bun run check` fails on a file nobody wrote and nobody can commit.
+.claude/settings.local.json
+
+# Emitted from clients/web/src/sw.ts by the Vite plugin in
+# clients/web/service-worker.ts, on both `dev` and `build`.
+clients/web/public/sw.js

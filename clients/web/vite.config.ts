@@ -1,32 +1,20 @@
 import { fileURLToPath } from 'node:url';
+import { buildInfoPlugin } from '@kroma/bundler/build-info';
+import { exitAfterBuild } from '@kroma/bundler/exit-after-build';
+import {
+  RNW_DEFINE,
+  RNW_OPTIMIZE_INCLUDE,
+  RNW_SSR_NO_EXTERNAL,
+  webResolve,
+} from '@kroma/bundler/rnw';
+import { standaloneScript } from '@kroma/bundler/standalone-script';
 import { kromaModule } from '@kroma/module-sdk/vite';
 import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
-import { defineConfig, type Plugin } from 'vite';
-import { RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, RNW_SSR_NO_EXTERNAL, webResolve } from '../tv-build/rnw';
-import { buildInfoPlugin } from './build-info';
-
-// `vite build` used to sit idle for exactly 5 minutes after the prerender: the
-// TanStack Start shell-prerender's render server leaks a handle that only Node's
-// default 300s http requestTimeout releases. Everything is on disk once the
-// start plugin's own buildApp hook (build + prerender) resolves, so this hook -
-// which vite runs sequentially AFTER it - can end the process. Exit code 0 keeps
-// the `vite build && precompress` chain working; a failed build never gets here.
-const exitAfterBuild = (): Plugin => ({
-  name: 'kroma:exit-after-build',
-  // Must sort AFTER "tanstack-start-core:post-build" (enforce post + hook order
-  // post), which is what runs the prerender; without `enforce` this hook fired
-  // first and the build skipped the shell prerender entirely.
-  enforce: 'post',
-  buildApp: {
-    order: 'post',
-    async handler() {
-      setImmediate(() => process.exit(0));
-    },
-  },
-});
+import { defineConfig } from 'vite';
+import { swScript } from './sw.build';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
@@ -47,7 +35,11 @@ export default defineConfig({
     // convention (must precede the transforms that expand import.meta.glob).
     kromaModule(),
     // Exposes `virtual:build-info` (version, commit, branch, build date).
-    buildInfoPlugin(),
+    buildInfoPlugin({ projectRoot: fileURLToPath(new URL('.', import.meta.url)) }),
+    // The Web Push service worker: fetched by the browser at /sw.js, so nothing
+    // imports it and Vite has to be told it exists. Emitted into public/, which
+    // the dev server serves and the build copies.
+    standaloneScript(swScript),
     tailwindcss(),
     tanstackStart({ spa: { enabled: true } }),
     react(),
@@ -62,7 +54,7 @@ export default defineConfig({
   // `#web/*` → this app's src (mirrors tsconfig.base paths; Vite needs it
   // explicitly), plus the react-native → react-native-web redirect, the `.web.*`
   // precedence and the single-React dedupe every browser target shares
-  // (clients/tv-build/rnw.ts). This app is DOM React, but the shared player
+  // (packages/bundler/src/rnw.ts). This app is DOM React, but the shared player
   // chrome it mounts comes from @kroma/ui, which is written once against React
   // Native so it can also run on a TV.
   //

@@ -54,6 +54,18 @@ are chosen at distribution time and all Tizen versions inside a group are
 included automatically; `jellyfin-tizen` was approved for only *some* models on
 its first pass, so choose deliberately and expect to widen later.
 
+That floor is only honest because the build ships a **legacy tier** (see the
+[README](./README.md)). Chromium is frozen per Tizen major — 6.0 = 76, 6.5 = 85,
+7.0 = 94, 8.0 = 108 — and the modern bundle needs 99, so a modern-only build
+offered to 2021+ hands 2021 something its engine cannot parse and 2022–2023 an
+app with every `@layer` block dropped. If the legacy tier is ever removed,
+`required_version` has to go to **8.0** in the same commit.
+
+The QA consequence: Samsung tests the model groups you select, so selecting a
+2021–2023 group means the verification test runs against the legacy bundle. It
+is checked statically on every build (`check:legacy`), but nobody has yet watched
+it paint on a real 2021 set — do that before submitting those groups.
+
 ## 3. Assets
 
 | Slot | File | Spec |
@@ -71,6 +83,10 @@ is transparent and the background carries no text.
 The app icon **cannot be changed while certification is in progress**.
 
 ## 4. Listing fields
+
+The text for every free-form field — title, summary, both descriptions, tags — is
+in [clients/LISTING.md](../LISTING.md), written once and shared with the LG
+listing so the two cannot drift.
 
 | Field | Value |
 | --- | --- |
@@ -99,12 +115,44 @@ Samsung: *"Caption and TTS functions must be implemented in order to release an
 application to a model group subject to FCC regulations."* The US is the **only**
 country a Public Seller can ship to, so this is not optional for a first release.
 
-- **Captions — covered.** Declare the solution as **Application UI**: KROMA
-  renders its own cues (`@kroma/core` WebVTT parser + `use-tv-subtitles`), because
-  cross-origin `<track>` cues never load. You must also supply a video title and
-  a playback URL whose content actually has captions.
-- **TTS — not implemented.** This is the open gap. Decide whether to add it or to
-  restrict the launch to model groups outside FCC scope.
+- **Captions — covered, and now actually.** Declare the solution as
+  **Application UI**: KROMA renders its own cues (parsed in `@kroma/core`, drawn
+  by `@kroma/ui`'s `SubtitleRenderer`), because cross-origin `<track>` cues never
+  load. Declaring App UI means owning CEA-708's attribute matrix in your own
+  settings, and the app now offers all of it — the **eight** colours, for text,
+  background **and** caption window alike; the **eight** font styles; the
+  **five** edge treatments (none / raised / depressed / uniform / drop shadow);
+  and an opacity per layer. It was 5 colours, 3 fonts, 3 edges and no background
+  or window colour at all when this section first claimed "covered", which would
+  have been graded as defects. See
+  `packages/ui/src/components/organisms/player/lib/subtitle-appearance.ts` —
+  trimming a set there is a certification defect, not a tidy-up.
+
+  You must also supply a video title and a playback URL whose content actually
+  has captions. Samsung's checklist posts a defect for **fewer than three**
+  captioned test contents, so line up three.
+- **TTS — half there, and the missing half is one specific thing.** Measured on
+  the built app rather than assumed:
+  - *Accessible names: present.* Every focusable control renders
+    `role="button"` + `aria-label` (`Focusable` sets `accessibilityRole` /
+    `accessibilityLabel`, which react-native-web maps to both). The audit found
+    0 unnamed controls on the picker and on device settings.
+  - *`<html lang>`: fixed.* It was hardcoded `fr` in every shell's index.html,
+    so an English interface was announced with French phonetics. The locale
+    provider now mirrors the UI language onto it.
+  - *Platform focus: never moves.* This is the gap. Spatial navigation is
+    virtual — the navigator tracks the focused node in JS and draws the ring
+    itself — so `document.activeElement` stays on `<body>` for the whole
+    session. A screen reader announces the element that holds PLATFORM focus,
+    so Voice Guide has nothing to follow as the D-pad moves.
+
+  Closing it means mirroring the virtual focus onto the DOM (`el.focus({
+  preventScroll: true })` when a `Focusable` becomes focused). That is a small
+  change in one component and a real risk to the navigator's behaviour, so it
+  needs verifying with Voice Guide on an actual set before it is claimed in a
+  submission. Until then the options are unchanged: implement it, or restrict
+  the launch to model groups outside FCC scope — which, on a Public Seller
+  account limited to the US, means not launching on Samsung at all.
 
 Also declare **Player Specification** (video codec, audio codec, container,
 streaming engine, subtitle) and name the principal content — QA runs a playback
@@ -158,8 +206,29 @@ Create app → upload `.wgt` (automated pre-test runs) → enter app information
 defects → launch.
 
 Updates support phased rollout: 3% of TVs, 10% after two weeks, 100% a week
-later. Beta testing via activation codes exists but needs Content Manager
-approval; alpha testing is Partner-only.
+later.
+
+### Beta test — the one real TestFlight on television
+
+Samsung is the only TV platform with a proper closed-beta channel, and unlike
+LG's Alpha Test it is open to ordinary sellers and does **not** need the app to
+be published first. `Applications > Beta Test > Create Beta Test`, on a version
+sitting at *Ready to Submit*:
+
+| | |
+| --- | --- |
+| Devices | Smart TVs from **2021** and later, by model group — several groups can run different versions at once |
+| Countries | only the app's declared service countries, so **US-only on a Public Seller account** (§1) |
+| Duration | **90 days** per test, extendable to **180** in total |
+| Testers | a 5-character prefix + activation codes issued as CSV (up to 1,000 per test; more on request) — one code, one TV, single use |
+| Approval | a Samsung **Content Manager must approve** the test; Samsung then does **not** run its verification test on the beta, so the build is yours to vouch for |
+
+A tester redeems a code on the set itself: Settings → type the hidden key
+**`134678`** on the remote → enter the code. Version upgrades mid-test are
+allowed once approved; downgrades are not.
+
+Alpha testing on your own dev TVs is Partner-only. For anything smaller than a
+beta, sideload with `tizen install` against a TV in developer mode.
 
 ## 9. Commercial terms
 
