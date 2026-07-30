@@ -1,6 +1,4 @@
-// Admin console data hooks (polling, busy-tracked async actions) and the
-// capability/access helpers. `useCap` reads the current user from the kit's
-// host context (the admin shell provides it) instead of an app import.
+// Admin console data hooks and the capability/access helpers.
 
 import { hasPermission, type Permission, type User } from '@kroma/core';
 import { useT } from '@kroma/ui';
@@ -8,11 +6,8 @@ import { type QueryKey, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { useAdminKit } from './context';
 
-/** Poll `fn` every `intervalMs` (and immediately), backed by TanStack Query so
- * results are cached/deduped and the admin shell can invalidate them en masse on
- * a server event. `key` identifies the cache entry - prefix admin keys with
- * `'admin'` so the shell's `invalidateQueries(['admin'])` refreshes them all.
- * Include any varying inputs (page/status/id) in `key` so it refetches on change. */
+/** Polls `fn` every `intervalMs` through TanStack Query. Prefix `key` with `'admin'`
+ * so `invalidateQueries(['admin'])` refreshes it, and put varying inputs in `key`. */
 export function usePoll<T>(
   key: QueryKey,
   fn: () => Promise<T>,
@@ -23,11 +18,10 @@ export function usePoll<T>(
     queryKey: key,
     queryFn: fn,
     refetchInterval: intervalMs,
-    // Admin data is "live": treat it as always stale so a mount/reload refetches.
+    // Admin data is live: always stale, so a mount/reload refetches.
     staleTime: 0,
   });
-  // Stable `reload` identity (some callers put it in effect deps): read the latest
-  // key from a ref so the callback never has to change.
+  // Callers put `reload` in effect deps, so its identity must stay stable.
   const keyRef = useRef(key);
   keyRef.current = key;
   const reload = useCallback(
@@ -37,9 +31,7 @@ export function usePoll<T>(
   return { data: data ?? null, reload };
 }
 
-/** A busy-tracked async action for modal save/delete handlers. `run(fn, onError?)`
- * flips `busy` while `fn` runs and, on failure, sets `error` to `onError(e)` (when
- * provided) collapsing the repeated setBusy/try/catch/finally boilerplate. */
+/** `run(fn, onError?)` flips `busy` while `fn` runs and, on failure, sets `error` to `onError(e)`. */
 export function useAsyncAction(): {
   busy: boolean;
   error: string | null;
@@ -61,9 +53,8 @@ export function useAsyncAction(): {
   return { busy, error, run };
 }
 
-/** True if the user holds any management capability (unlocks the console).
- * `requests.manage` counts: a requests moderator needs the console shell for
- * the Demandes queue even without user/library/settings rights. */
+/** True if the user holds any management capability, which unlocks the console.
+ * `requests.manage` counts: a moderator needs the shell for the requests queue. */
 export function isAnyAdmin(user: Pick<User, 'permissions'> | null | undefined): boolean {
   return (
     !!user &&
@@ -81,7 +72,6 @@ export function useCap(cap?: Permission | null): boolean {
   return cap ? hasPermission(user, cap) : isAnyAdmin(user);
 }
 
-/** Full-section "access denied" panel for pages the user can't reach. */
 export function Denied() {
   const t = useT();
   return (

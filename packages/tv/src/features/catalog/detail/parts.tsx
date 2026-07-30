@@ -37,10 +37,8 @@ const SECTION_LABEL = {
   textTransform: 'uppercase' as const,
 };
 
-/** "Distribution": top-billed cast. Shows the real TMDB headshot when present,
- * else a per-position gradient with initials (varied by index so neighbours never
- * collide). Each face is the kit's <PersonCard>, focusable, and opens that
- * person's titles. */
+/** Top-billed cast. Shows the real TMDB headshot when present, else a
+ * per-position gradient with initials. Each face opens that person's titles. */
 export function CastRow({ cast }: Readonly<{ cast?: CastMember[] | null }>) {
   const t = useT();
   const client = useClient();
@@ -104,9 +102,9 @@ export function WatchedButton({
   );
 }
 
-/** "Signaler un problème": opens the report screen for this title. Deliberately
- * the quiet, icon-only control of the action row it must be reachable, never
- * the thing the remote lands on next to Lecture. */
+/** Opens the report screen for this title. Deliberately the quiet, icon-only
+ * control of the action row — reachable, but never what the remote lands on
+ * next to Play. */
 export function ReportButton({ onPress }: Readonly<{ onPress: () => void }>) {
   const t = useT();
   return (
@@ -135,5 +133,4 @@ export function ThemeButton({
 // Cast-circle gradients, cycled by position so adjacent faces never share a colour.
 const CAST_GRADIENTS = [...AVATAR_GRADIENTS, 'linear-gradient(135deg, #FBBF24, #F97316)'];
 
-/** A cast face is a 96pt circle. */
 const FACE_W = 96;

@@ -4,12 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from './engine';
 import { HtmlEngine } from './htmlEngine';
 
-// The HTML `<video>` (+ hls.js) backend, driven against a hand-rolled fake media
-// element so buffered-range seek logic, the anchor math, and the native-event ->
-// listener mapping are all exercised without a real browser. The master path is
-// forced onto the NATIVE-HLS branch (`forceNativeHls`) so no hls.js dynamic
-// import is needed; the anchor correction (`resolveMasterStart`) is driven with a
-// stubbed `fetch`.
+// Driven against a hand-rolled fake media element. The master path is forced onto
+// the native-HLS branch so no hls.js dynamic import is needed.
 
 interface FakeVideo {
   el: HTMLVideoElement;
@@ -148,7 +144,7 @@ describe('HtmlEngine master construction', () => {
     const fv = fakeVideo();
     const { hlsMasterUrl } = makeEngine({ fv, direct: false, rendition: 2, masterAac: true });
     expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', true, 0, 2);
-    await tick(); // resolveMasterStart(0) short-circuits, then the native src is set
+    await tick();
     expect(fv.get('src')).toBe('master:vid1:true:0:2');
     expect(fv.get('preload')).toBe('auto');
   });
@@ -158,7 +154,7 @@ describe('HtmlEngine master construction', () => {
     const { engine } = makeEngine({ fv, direct: false, startSec: 30 });
     await tick();
     fv.set('currentTime', 0);
-    expect(engine.position()).toBe(7.5); // baseSec re-anchored to the reported keyframe
+    expect(engine.position()).toBe(7.5);
   });
 });
 
@@ -168,7 +164,7 @@ describe('HtmlEngine native-event mapping (master)', () => {
     const { listeners } = makeEngine({ fv, direct: false, durationSec: 500 });
     fv.set('currentTime', 12);
     fv.fire('timeupdate');
-    expect(listeners.onTime).toHaveBeenCalledWith(12); // baseSec 0 + 12
+    expect(listeners.onTime).toHaveBeenCalledWith(12);
 
     fv.fire('durationchange');
     expect(listeners.onDuration).toHaveBeenCalledWith(500);
@@ -190,7 +186,7 @@ describe('HtmlEngine native-event mapping (master)', () => {
     expect(listeners.onPlaying).toHaveBeenCalledTimes(1);
     expect(listeners.onEnded).toHaveBeenCalledTimes(1);
     expect(listeners.onError).toHaveBeenCalledTimes(1);
-    expect(listeners.onReady).toHaveBeenCalled(); // canplay + loadedmetadata/loadeddata
+    expect(listeners.onReady).toHaveBeenCalled();
   });
 
   it('durationchange falls back to the element duration when no catalogue runtime', () => {
@@ -249,8 +245,8 @@ describe('HtmlEngine seek (master)', () => {
     hlsMasterUrl.mockClear();
     fv.setBuffered([[0, 100]]);
     engine.seekTo(30);
-    expect(fv.get('currentTime')).toBe(30); // rel = 30 - baseSec(0)
-    expect(hlsMasterUrl).not.toHaveBeenCalled(); // no reload
+    expect(fv.get('currentTime')).toBe(30);
+    expect(hlsMasterUrl).not.toHaveBeenCalled();
   });
 
   it('re-anchors when the target is outside the buffered range', async () => {
@@ -260,7 +256,6 @@ describe('HtmlEngine seek (master)', () => {
     hlsMasterUrl.mockClear();
     fv.setBuffered([[0, 10]]);
     engine.seekTo(600);
-    // reanchor -> attachMaster rebuilds the URL synchronously at the new anchor.
     expect(hlsMasterUrl).toHaveBeenCalledTimes(1);
     expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 600, 0);
   });
@@ -269,12 +264,12 @@ describe('HtmlEngine seek (master)', () => {
     const fv = fakeVideo();
     const { engine, hlsMasterUrl } = makeEngine({ fv, direct: false, startSec: 0 });
     await tick();
-    // put the anchor forward so a small target is "before" it
+    // Put the anchor forward so a small target is "before" it.
     fv.setBuffered([[0, 30]]);
-    engine.seekTo(600); // moves the anchor to 600
+    engine.seekTo(600);
     await tick();
     hlsMasterUrl.mockClear();
-    engine.seekTo(5); // rel < 0 -> re-anchor
+    engine.seekTo(5);
     expect(hlsMasterUrl).toHaveBeenCalledTimes(1);
     expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 5, 0);
   });
@@ -289,7 +284,6 @@ describe('HtmlEngine audio rendition (master)', () => {
     hlsMasterUrl.mockClear();
     engine.setAudioRendition(1);
     expect(hlsMasterUrl).toHaveBeenCalledTimes(1);
-    // reload at the CURRENT position (baseSec 0 + 42) with audio index 1
     expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 42, 1);
   });
 
@@ -310,7 +304,7 @@ describe('HtmlEngine direct mode', () => {
     expect(streamUrl).toHaveBeenCalledWith('vid1');
     expect(fv.get('src')).toBe('stream:vid1');
     expect(fv.get('currentTime')).toBe(0);
-    fv.fire('loadedmetadata'); // seekOnce lands on the resume offset
+    fv.fire('loadedmetadata');
     expect(fv.get('currentTime')).toBe(20);
     expect(listeners.onReady).toHaveBeenCalled();
   });
@@ -320,7 +314,7 @@ describe('HtmlEngine direct mode', () => {
     const { engine, hlsMasterUrl } = makeEngine({ fv, direct: true, startSec: 0 });
     engine.seekTo(75);
     expect(fv.get('currentTime')).toBe(75);
-    engine.setAudioRendition(3); // muxing not applicable to a direct file
+    engine.setAudioRendition(3);
     expect(hlsMasterUrl).not.toHaveBeenCalled();
   });
 });
@@ -333,7 +327,7 @@ describe('HtmlEngine destroy', () => {
     engine.destroy();
     expect(fv.listenerCount('timeupdate')).toBe(0);
     expect(fv.get('src')).toBe('');
-    fv.fire('timeupdate'); // no listeners left
+    fv.fire('timeupdate');
     expect(listeners.onTime).not.toHaveBeenCalled();
   });
 });

@@ -1,23 +1,9 @@
 // @vitest-environment jsdom
 //
-// Subtitle appearance on the phone.
-//
-// Same contract as the web and TV (`useSubtitleAppearance`), different
-// plumbing: those persist through localStorage synchronously, and React Native
-// has no synchronous storage - so this one starts from the defaults and
-// hydrates.
-//
-// That gap is where the behaviour lives. The player renders subtitles on the
-// first frame, before the stored preference has arrived, so the defaults have to
-// be a usable style rather than an empty object. And what comes back has to be
-// MERGED over them rather than replacing them: a preference written by an older
-// build knows nothing about a field added since, and replacing wholesale would
-// leave that field undefined - which on a subtitle style is an invisible or
-// unstyled caption rather than an error.
-//
-// A corrupt value falls back to the defaults for the same reason. There is no
-// screen on which to report it, and a player that refuses to start because a
-// preference will not parse is a worse outcome than one with default subtitles.
+// Subtitle appearance on the phone: same contract as web/TV, but hydrated
+// async (React Native has no synchronous storage) — starts from defaults,
+// then a stored preference is MERGED over them rather than replacing them,
+// and a value that will not parse falls back to defaults quietly.
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { act } from 'react';
@@ -32,7 +18,6 @@ import { useSubAppearance } from './useSubAppearance';
 
 const KEY = 'subtitleStyle';
 
-/** What was last written to the device, parsed. */
 function written() {
   const call = savePref.mock.calls.at(-1);
   if (!call) throw new Error('nothing was persisted');
@@ -79,11 +64,10 @@ describe('hydrating', () => {
     );
   });
 
-  // A phone that was used before the renderer took on CEA-708 has `box` or
-  // `outline` on disk - both offered by the shipped sheet, both since retired.
-  // Spread raw, they reach the cue's edge table as `undefined` and throw inside
-  // render, and clients/mobile has no ErrorBoundary: the player unmounts, and it
-  // does it again on every re-entry because the preference persists.
+  // A phone used before the renderer took on CEA-708 may have `box` or
+  // `outline` on disk; spread raw, those reach the cue's edge table as
+  // `undefined` and throw inside render — with no ErrorBoundary here, the
+  // player unmounts and repeats the crash on every re-entry.
   it('migrates a preference written before CEA-708 instead of crashing on it', async () => {
     loadPref.mockResolvedValue(JSON.stringify({ edge: 'outline', font: 'serif', size: 'lg' }));
     const { result } = renderHook(() => useSubAppearance());
@@ -184,7 +168,6 @@ describe('changing a setting', () => {
     const { result } = renderHook(() => useSubAppearance());
     act(() => result.current[1]({ size: 'lg' }));
     act(() => result.current[1]({ edge: 'uniform' }));
-    // Two settings changed in one visit to the panel.
     expect(result.current[0]).toMatchObject({ size: 'lg', edge: 'uniform' });
     await waitFor(() => expect(written()).toMatchObject({ size: 'lg', edge: 'uniform' }));
   });

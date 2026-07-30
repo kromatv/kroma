@@ -1,29 +1,23 @@
 //! The KROMA push relay: how a self-hosted server reaches a phone.
 //!
-//! The other native transports in this crate assume the sender holds Apple's or
-//! Google's credentials. A self-hosted KROMA server does not and cannot: those
-//! belong to the account that publishes the app, and neither service will accept
-//! a key issued to anybody else. Without a relay, `apns` and `fcm` are code that
-//! only the publisher can run.
+//! The native transports in this crate need Apple's or Google's credentials,
+//! which belong to whoever publishes the app — not a self-hosted server. So the
+//! server sends a GRANT instead: an opaque capability the app registered here,
+//! permission to notify one device and nothing else, unreadable even to the
+//! server storing it. The relay holds the real credentials and does the signing.
 //!
-//! So the server sends nothing to Apple or Google. It sends a GRANT — an opaque
-//! capability the app obtained from the relay and registered here — plus the
-//! notification, and the relay does the signing. What the server holds is not a
-//! credential and not a device token; it is permission to notify one device,
-//! useless for anything else and unreadable even to the server storing it.
-//!
-//! There is deliberately NO authentication on this request. The server's source
-//! is public, so any shared secret shipped with it would be public too; the
-//! grant is the whole authorisation. See `packages/push-relay/worker/grant.ts`.
+//! There is deliberately no authentication on this request: the server's source
+//! is public, so any shipped secret would be too — the grant is the whole
+//! authorisation. See `packages/push-relay/worker/grant.ts`.
 
 use anyhow::Result;
 use serde_json::json;
 
 use crate::{PushRequest, Urgency};
 
-/// Where grants are minted and spent. A constant rather than a setting: it is
-/// the same address for every KROMA server, and an operator pointing their
-/// notifications at an arbitrary host is a phishing route, not a feature.
+// A constant rather than a setting: it is the same address for every KROMA
+// server, and letting an operator point notifications at an arbitrary host
+// would be a phishing route, not a feature.
 pub const RELAY_URL: &str = "https://push.kroma.tv";
 
 pub use crate::Alert;

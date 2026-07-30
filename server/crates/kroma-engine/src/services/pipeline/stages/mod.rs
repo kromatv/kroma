@@ -1,13 +1,6 @@
-//! The concrete pipeline stages. Each owns its `Stage` descriptor + drain
-//! `Builtin` (`SPEC`) next to its `enumerate`/`process`, mirroring the job roster
-//! pattern. The stages wrap existing processing code (`infra::storyboard`,
-//! `services::markers`) so the ffmpeg/chromaprint logic stays put; only the
-//! iteration/skip/retry moves onto the ledger.
-//!
-//! v1 ships the two heaviest jobs (storyboard, markers). Adding another stage
-//! (probe, metadata, embed) is just another file here + one roster entry: give it
-//! an `enumerate` (the incremental scope) and a `process` (wrap the existing
-//! per-subject code).
+//! The concrete pipeline stages: each owns a `Stage` descriptor plus its
+//! `enumerate`/`process`, wrapping the existing processing code (ffmpeg,
+//! chromaprint) so only iteration/skip/retry moves onto the ledger.
 
 mod common;
 

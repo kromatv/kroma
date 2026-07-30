@@ -1,7 +1,3 @@
-// Netflix-style action block for the detail pages: full-width accent play,
-// full-width quiet download bar, then a centered row of equal-width icon-label
-// actions (my list / watched / report) with an amber icon + label active state.
-
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem } from '@kroma/core';
 import { useCast } from '@kroma/ui';
@@ -76,9 +72,8 @@ export function DetailActions({
   const downloads = useDownloads();
   const state = downloads.stateFor(item.id);
   const bar = downloadBarLabel(state, t);
-  // Always offered, like the cast control in the app's chrome: a button that
-  // shows up only when a set happens to be awake is one nobody learns exists.
-  // With no TV the picker says so in a line.
+  // Always offered: a cast button that appears only when a receiver happens to be
+  // awake is one nobody learns exists. With no TV the picker says so.
   const { playOn } = useCast();
   const devices = useRef<BottomSheetModal>(null);
   return (
@@ -177,8 +172,8 @@ export function DetailActions({
           </Pressable>
         ) : null}
       </View>
-      {/* Picking a TV here STARTS the title on it - the position is the account's
-          own resume point, which the receiver already knows. */}
+      {/* Picking a TV starts the title on it, from the account's own resume
+          point, which the receiver already knows. */}
       <CastSheet
         ref={devices}
         offerLocal={false}

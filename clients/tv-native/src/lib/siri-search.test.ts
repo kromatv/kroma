@@ -43,7 +43,6 @@ vi.mock('react-native', () => ({
 }));
 
 const siri = vi.hoisted(() => ({
-  /** Whether this build has the native module at all. */
   present: true,
   pending: null as string | null,
   handler: null as ((event: { text: string }) => void) | null,

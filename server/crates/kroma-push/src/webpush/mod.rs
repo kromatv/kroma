@@ -15,20 +15,15 @@ use anyhow::{Context, Result};
 pub use encrypt::MAX_PAYLOAD;
 pub use vapid::VapidKey;
 
-/// How long a push service should hold an undelivered message. Four weeks: a
-/// phone that was off all weekend should still learn its film arrived, and the
-/// notification is deduplicated by the in-app centre anyway.
+// Four weeks: a phone that was off all weekend should still learn its film
+// arrived, and the notification is deduplicated by the in-app centre anyway.
 const DEFAULT_TTL_SECS: u32 = 2_419_200;
 
 /// One browser's push subscription, as the `PushSubscription` JSON gives it.
 #[derive(Debug, Clone)]
 pub struct Subscription {
-    /// The push service URL this browser was assigned. Also identifies the
-    /// service we audience the VAPID token to.
     pub endpoint: String,
-    /// The subscriber's P-256 public key, base64url (`keys.p256dh`).
     pub p256dh: String,
-    /// The subscriber's auth secret, base64url (`keys.auth`).
     pub auth: String,
 }
 

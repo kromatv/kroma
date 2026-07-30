@@ -1,8 +1,3 @@
-// One row of the downloads queue: release name + target pill, live progress
-// bar (WS-fed), speed, seeders-side stats, client pill, status, and a kebab
-// (⋮) menu with the row's state-dependent actions (pause/resume, ask more
-// peers, retry, tracker link, remove).
-
 import {
   type DownloadView,
   formatBytes,
@@ -51,7 +46,6 @@ const STATUS_COLOR: Record<string, string> = {
 const MENU =
   'z-50 min-w-[184px] rounded-xl border border-white/10 bg-[#16161C] p-1.5 shadow-[0_12px_32px_rgba(0,0,0,.45)]';
 
-/** The season/episode pill for the release title (movies get none). */
 function targetPill(dl: DownloadView): string | null {
   const s = String(dl.season ?? 0).padStart(2, '0');
   if (dl.kind === 'season') return `S${s}`;
@@ -80,8 +74,8 @@ export function DownloadRowView({
 }>) {
   const status = live?.state && dl.status !== 'imported' ? live.state : dl.status;
   const progress = live?.progress ?? dl.progress;
-  // Prefer the live WS event when present, else the polled row (so speed + peers
-  // still show when the WebSocket can't reach the client, e.g. through a tunnel).
+  // Fall back to the polled row so speed + peers still show when the WebSocket
+  // can't reach the client, e.g. through a tunnel.
   const stat = live ?? {
     downBps: dl.downBps,
     upBps: dl.upBps,
@@ -112,7 +106,6 @@ export function DownloadRowView({
   );
 }
 
-/** Release title cell: poster, title + target pill, release/indexer/tracker line. */
 function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
   const t = useT();
   const targetLabel = targetPill(dl);
@@ -168,7 +161,6 @@ function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
   );
 }
 
-/** Progress cell: bar + percent and (when known) total size. */
 function RowProgressCell({
   dl,
   progress,
@@ -185,7 +177,6 @@ function RowProgressCell({
   );
 }
 
-/** Speed + peers cell (only while the download is active). */
 function RowSpeedCell({
   active,
   stat,
@@ -220,7 +211,6 @@ function RowSpeedCell({
   );
 }
 
-/** Status pill cell + client name. */
 function RowStatusCell({
   dl,
   status,
@@ -245,7 +235,6 @@ function RowStatusCell({
   );
 }
 
-/** Kebab (⋮) menu with the row's state-dependent actions. */
 function RowActionsMenu({
   dl,
   status,
@@ -271,14 +260,12 @@ function RowActionsMenu({
   const navigate = useNavigate();
   const pausable = active;
   const resumable = status === 'paused';
-  // "Ask more peers" only makes sense while the torrent is live in the engine.
+  // Only meaningful while the torrent is live in the engine.
   const canAskPeers = active || status === 'seeding';
-  // Retry is offered in every state: the backend does the right thing per status
-  // (completed/imported -> re-import; anything else -> reset + re-add). Useful to
-  // force-restart a stuck download or re-run an import, not just failed grabs.
+  // Offered in every state: the backend re-imports a completed download and
+  // resets + re-adds anything else.
   const retryable = true;
 
-  // "Open in KROMA" jumps to the library fiche, once the title has been imported.
   const localId = dl.localId;
   const openInKroma = localId
     ? () =>

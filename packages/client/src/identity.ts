@@ -1,23 +1,11 @@
-// Who a client says it is, on the wire.
-//
-// The account page lists a signed-in device by the User-Agent captured when it
-// signed in. A browser has one already, and owns it: the header is forbidden to
-// scripts, so a browser shell sets nothing here. A native client has one that
-// says nothing - iOS sends `KROMA/1 CFNetwork/… Darwin/…` and Android
-// `okhttp/4.12.0`, neither of which names a device or a platform, which is why
-// every signed-in phone and television listed itself as an unknown desktop.
-//
-// So the native shells (phone, TV) build their own, here rather than each in its
-// own corner: this is one half of a contract whose other half is the parser on
-// the account page (`deviceInfo`), and a format agreed in two places drifts.
+// Who a client says it is, on the wire. Native shells build their own
+// User-Agent (a browser's is already meaningful and forbidden to scripts,
+// so it sets nothing here); the format is a contract shared with the account
+// page's `deviceInfo` parser, so it cannot change on one side alone.
 
-/** What a device needs to say about itself to be listed as itself. */
 export interface DeviceIdentity {
-  /** This client build's version. */
   version: string;
-  /** The hardware, as a person would name it: "iPhone 17 Pro", "Apple TV". */
   model: string;
-  /** The platform with its version: "iOS 26.0", "tvOS 26.0", "Android TV 14". */
   os: string;
 }
 

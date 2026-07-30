@@ -1,9 +1,9 @@
 //! Title cleaning and the release-junk tokenizer: turn a raw filename/folder
 //! fragment into a clean movie/show/episode title and pull out the year.
 
-/// "Hard" release tokens (lowercase): unambiguous scene/source/codec markers.
-/// Nobody titles a film `BluRay` or `x265`, so the first one reliably ends the
-/// real title.
+// "Hard" release tokens (lowercase): unambiguous scene/source/codec markers.
+// Nobody titles a film `BluRay` or `x265`, so the first one reliably ends the
+// real title.
 const HARD_TOKENS: &[&str] = &[
     "4k", "uhd", "bluray", "blu", "brrip", "bdrip", "bdremux", "webrip", "webdl", "hdtv", "sdtv",
     "pdtv", "dvdrip", "dvdscr", "dvd", "remux", "hdrip", "x264", "x265", "h264", "h265", "hevc",
@@ -12,11 +12,11 @@ const HARD_TOKENS: &[&str] = &[
     "vostfr",
 ];
 
-/// "Soft" tokens: real dictionary words that also appear as release tags
-/// (`FRENCH` dub, `EXTENDED`/`UNCUT` cut, `IMAX`…). They end the title **only**
-/// when they sit directly inside the trailing release run (adjacent to a hard
-/// marker), so legitimate titles like "The French Dispatch" and "Uncut Gems"
-/// survive intact.
+// "Soft" tokens: real dictionary words that also appear as release tags
+// (`FRENCH` dub, `EXTENDED`/`UNCUT` cut, `IMAX`…). They end the title **only**
+// when they sit directly inside the trailing release run (adjacent to a hard
+// marker), so legitimate titles like "The French Dispatch" and "Uncut Gems"
+// survive intact.
 const SOFT_TOKENS: &[&str] = &[
     "french", "truefrench", "subfrench", "vff", "vof", "vfq", "multi", "extended", "unrated",
     "uncut", "imax", "proper", "repack", "remastered", "remaster", "theatrical", "integrale",
@@ -64,7 +64,7 @@ pub fn clean_title(raw: &str) -> String {
     title
 }
 
-/// A parenthesised year `(YYYY)`; returns the index of the `(` and the year.
+// A parenthesised year `(YYYY)`; returns the index of the `(` and the year.
 fn paren_year(raw: &str) -> Option<(usize, u32)> {
     let b = raw.as_bytes();
     let mut i = 0;
@@ -108,12 +108,12 @@ fn finalize(s: &str) -> String {
         .to_string()
 }
 
-/// Byte index where the trailing release run begins, or `None`.
-///
-/// A hard marker (`1080p`, `BluRay`, `x265`, …) opens the run; soft dictionary
-/// words (`FRENCH`, `EXTENDED`, `UNCUT`, …) are absorbed only when they sit
-/// directly before it. So "Movie FRENCH 1080p" drops both words, while "The
-/// French Dispatch" and "Uncut Gems" (no adjacent hard marker) keep theirs.
+// Byte index where the trailing release run begins, or `None`.
+//
+// A hard marker (`1080p`, `BluRay`, `x265`, …) opens the run; soft dictionary
+// words (`FRENCH`, `EXTENDED`, `UNCUT`, …) are absorbed only when they sit
+// directly before it. So "Movie FRENCH 1080p" drops both words, while "The
+// French Dispatch" and "Uncut Gems" (no adjacent hard marker) keep theirs.
 fn release_cut_index(s: &str) -> Option<usize> {
     let mut off = 0usize;
     let words: Vec<(usize, &str)> = s
@@ -133,8 +133,8 @@ fn release_cut_index(s: &str) -> Option<usize> {
     Some(words[start].0)
 }
 
-/// Strip surrounding punctuation and keep the part before a `-` (so `BluRay-1080p`
-/// and `AAC-trailer` reduce to their leading token), lowercased.
+// Strip surrounding punctuation and keep the part before a `-` (so `BluRay-1080p`
+// and `AAC-trailer` reduce to their leading token), lowercased.
 fn token_head(word: &str) -> String {
     let w = word
         .trim_matches(|c: char| !c.is_ascii_alphanumeric())
@@ -142,7 +142,7 @@ fn token_head(word: &str) -> String {
     w.split('-').next().unwrap_or(&w).to_string()
 }
 
-/// A resolution token like `720p` / `1080p` / `2160p` / `1080i`.
+// A resolution token like `720p` / `1080p` / `2160p` / `1080i`.
 fn is_resolution(head: &str) -> bool {
     head.strip_suffix(|c| c == 'p' || c == 'i')
         .map(|rest| !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_digit()))

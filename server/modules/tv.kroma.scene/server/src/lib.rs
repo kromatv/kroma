@@ -3,9 +3,6 @@
 //! and score candidate releases against a quality profile. Pure computation,
 //! zero I/O, fully self-contained (owns its own token vocabulary; the server's
 //! filename-oriented `domain/naming` is a separate concern and stays as is).
-//!
-//! The public surface is stable from day one; [`parse_release_name`] and
-//! [`score`] gain their real implementations with the indexer milestone.
 
 use serde::{Deserialize, Serialize};
 
@@ -45,13 +42,10 @@ pub struct ParsedRelease {
     pub resolution: Option<Res>,
     pub codec: Option<Codec>,
     pub source: Option<Source>,
-    /// Trailing `-GROUP` tag, when present.
     pub group: Option<String>,
     pub season: Option<u32>,
     pub episode: Option<u32>,
-    /// Last episode of a multi-episode span (`S01E01-E03`).
     pub episode_end: Option<u32>,
-    /// A whole-season pack (`S01` with no episode, "Season 1", "COMPLETE").
     pub full_season: bool,
     pub proper: bool,
     pub repack: bool,
@@ -65,7 +59,6 @@ pub struct ParsedRelease {
 pub enum Target {
     Movie { year: Option<u32> },
     Episode { season: u32, episode: u32 },
-    /// A whole-season grab covering `episodes` aired episodes.
     Season { season: u32, episodes: u32 },
 }
 
@@ -111,7 +104,6 @@ pub struct Reject {
 pub struct Candidate {
     pub size_bytes: Option<u64>,
     pub seeders: Option<u32>,
-    /// The indexer's configured priority, applied as a flat tiebreak bonus.
     pub indexer_priority: i32,
 }
 

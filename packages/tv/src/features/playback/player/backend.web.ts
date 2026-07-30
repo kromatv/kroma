@@ -1,11 +1,7 @@
-// The WEB playback backend: which engine to build for an item on a browser
-// target, and how to build it.
-//
-// Everything platform-specific about playback lives behind this module and its
-// native sibling (backend.ts). The hook that drives playback (useDirectPlayback)
-// imports `planEngine` and `createTvEngine` from './backend' and never learns
-// which one it got: a bare <video> plus hls.js, Samsung's AVPlay plane, mpv on
-// the desktop shell, or expo-video natively.
+// The web playback backend: which engine to build for an item on a browser
+// target, and how to build it — a bare <video> plus hls.js, Samsung's AVPlay
+// plane, or mpv on the desktop shell. The hook that drives playback never
+// learns which one it got.
 
 import {
   audioTracksOf,
@@ -37,9 +33,8 @@ export type { Surface };
 /** The concrete backend to build for this item. */
 export type Engine = 'mpv' | 'avplay' | 'video-direct' | 'video-remux';
 
-/** The backend the user explicitly asked for, or `null` when the pref is `auto` or
- * names an engine this platform can't run (e.g. `mpv` off the Linux shell,
- * `avplay` off Tizen) - both fall through to the automatic decision. */
+// The backend the user explicitly asked for, or null when the pref is `auto`
+// or names an engine this platform can't run — both fall through to automatic.
 function manualEngine(pref: EnginePref, tizenNative: boolean): Engine | null {
   if (pref === 'avplay' && tizenNative) return 'avplay';
   if (pref === 'webview') return 'video-direct';
@@ -48,22 +43,17 @@ function manualEngine(pref: EnginePref, tizenNative: boolean): Engine | null {
   return null;
 }
 
-/** The automatic backend for this platform: native planes where they exist
- * (AVPlay on Tizen for hardware surround, mpv on the desktop shell), else
- * `<video>` direct-play or the server remux. */
+// Native planes where they exist (AVPlay on Tizen for hardware surround, mpv
+// on the desktop shell), else `<video>` direct-play or the server remux.
 function autoEngine(env: PlayEnv, tizenNative: boolean, autoDirect: boolean): Engine {
   if (tizenNative) return 'avplay';
   if (env.platform === 'desktop' && mpvAvailable()) return 'mpv';
   return autoDirect ? 'video-direct' : 'video-remux';
 }
 
-/** Resolve the backend from the user's engine preference, falling back to the
- * automatic decision. `auto` on Tizen keeps AVPlay (hardware surround), but the user
- * can force the HTML5 (`<video>` + hls.js) remux path instead. */
 function resolveEngine(pref: EnginePref, env: PlayEnv, autoDirect: boolean): Engine {
-  // A stored engine no longer offered on this platform (e.g. a device left on
-  // `remux` after it was retired on Android TV, where the WebView cannot decode
-  // HEVC) must not strand playback on a dead engine - degrade it to `auto`.
+  // A stored engine no longer offered on this platform must not strand
+  // playback on a dead engine — degrade it to `auto`.
   const wanted = pref !== 'auto' && availableEngines().includes(pref) ? pref : 'auto';
   const tizenNative = env.platform === 'tizen' && avplayAvailable();
   return manualEngine(wanted, tizenNative) ?? autoEngine(env, tizenNative, autoDirect);
@@ -77,7 +67,6 @@ function tvDirectPlay(item: MediaItem): boolean {
   return audioTracksOf(item).length <= 1;
 }
 
-/** Container MIME the webview needs to demux a bare `<video src>`. */
 const CONTAINER_MIME: Record<string, string> = {
   mp4: 'video/mp4',
   mov: 'video/mp4',
@@ -85,10 +74,9 @@ const CONTAINER_MIME: Record<string, string> = {
   webm: 'video/webm',
 };
 
-/** Whether the webview can demux this item's container for a direct `<video src>`.
- * Safari / WKWebView has no Matroska (MKV) or AVI demuxer, so a forced direct-play
- * on one loads forever at HAVE_NOTHING with no error - callers fall back to the
- * server remux (which repackages it into a webview-playable stream) instead. */
+// Safari / WKWebView has no Matroska or AVI demuxer, so a forced direct-play
+// on one loads forever at HAVE_NOTHING with no error — callers fall back to
+// the server remux instead.
 function webviewCanDirectPlay(item: MediaItem): boolean {
   if (typeof document === 'undefined') return true;
   const mime = CONTAINER_MIME[(item.container ?? '').toLowerCase()];
@@ -96,9 +84,8 @@ function webviewCanDirectPlay(item: MediaItem): boolean {
   return document.createElement('video').canPlayType(mime) !== '';
 }
 
-/** The resolved backend plan for an item: which engine + surface, the direct-play
- * flags, and the heartbeat playback mode. Pure (no React) so it stays out of the
- * hook body. */
+/** The resolved backend plan for an item. Pure (no React) so it stays out of
+ * the hook body. */
 export interface EnginePlan {
   eng: Engine;
   surface: Surface;
@@ -108,17 +95,12 @@ export interface EnginePlan {
   direct: boolean;
   masterAac: boolean;
   playbackMode: 'direct' | 'remux' | 'transcode';
-  /** Human label for the admin dashboard. */
   deviceLabel: string;
-  /** Changes whenever any decision above changes, so the hook can rebuild the
-   * engine on exactly that and nothing else. The flags above are this backend's
-   * own business (the native half has no counterpart for any of them), so this
-   * is what the SHARED hook depends on instead of listing them. */
   rebuildKey: string;
 }
 
-/** A human label for the current TV device (admin dashboard). Browser targets
- * have to sniff, because Tizen / webOS / a desktop shell are all "a Chromium". */
+// Browser targets have to sniff the user agent, because Tizen / webOS / a
+// desktop shell are all "a Chromium".
 function deviceLabelFor(useMpv: boolean): string {
   if (useMpv) return 'Desktop';
   const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent || '';
@@ -201,8 +183,6 @@ export function createTvEngine(args: {
   rendition: number;
   startSec: number;
   audioFilter: AudioFilterMode;
-  /** The in-page surface handle + this runtime's native-HLS capability; only the
-   * `<video>` engine reads either (the plane engines render behind the page). */
   dom: { video: HTMLVideoElement | null; nativeHls: boolean | undefined };
   listeners: EngineListeners;
 }): TvEngine | null {

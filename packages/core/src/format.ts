@@ -4,50 +4,29 @@ import { langKey } from './lang';
 import { match } from './match';
 import { formatRuntime } from './player';
 
-/**
- * How many image pixels to ask for per CSS pixel.
- *
- * This used to be a flat 2, "for crisp hidpi/TV rendering", and the second half
- * of that is wrong: a 1920x1080 television reports a devicePixelRatio of 1, so
- * every request was for four times the pixels the panel can show. Measured on a
- * Samsung LS03D, the ambient backdrop behind the browse grids was being fetched
- * at `?w=2560` and decoded for a 1920-wide screen - and it is re-decoded every
- * time the focus settles on a new tile. A retina browser really does have two
- * device pixels per CSS pixel and still gets its 2x.
- *
- * Rounded and capped: a 3x phone gains nothing visible over 2x and pays for it
- * in decode, and a fractional ratio would defeat the server's bucketing.
- */
+// devicePixelRatio, rounded and capped at 2: a 3x phone gains nothing visible
+// and a fractional ratio would defeat the server's bucketing.
 function artworkRatio(): number {
   const dpr = (globalThis as { devicePixelRatio?: number }).devicePixelRatio;
   return Math.min(2, Math.max(1, Math.round(dpr ?? 1)));
 }
 
-/** Request a downscaled rendition of LOCALLY-CACHED artwork (`?w=`, snapped to
- * a server-side bucket): a 200px card must not download the full 780px poster.
- * Pass the DISPLAY width; this scales it by the device's real pixel ratio (see
- * {@link artworkRatio}). Remote (TMDB fallback) URLs and non-image URLs pass
- * through untouched. */
+/** Requests a downscaled rendition of locally-cached artwork (`?w=`, snapped to
+ * a server-side bucket), scaling the given DISPLAY width by the device pixel
+ * ratio. Remote (TMDB fallback) and non-image URLs pass through untouched. */
 export function sizedImageUrl(url: string | null | undefined, displayWidth: number): string | null {
   if (!url) return null;
   if (!url.includes('/api/images/') || url.includes('?')) return url;
   return `${url}?w=${Math.max(1, Math.round(displayWidth * artworkRatio()))}`;
 }
 
-/** Schemes an <img> may load. `data:` is narrowed to images: a bare `data:`
- * allow-list would also admit `data:text/html`, which is a navigation payload
- * rather than artwork. */
+// Schemes an <img> may load. `data:` is narrowed to images: a bare `data:` allow-list would
+// also admit `data:text/html`, which is a navigation payload rather than artwork.
 const IMAGE_SCHEME = /^(?:https?:|blob:|data:image\/)/i;
 
-/**
- * An artwork URL that is safe to hand to an `<img src>`, or null.
- *
- * Poster and backdrop URLs arrive from whichever server the client is signed
- * into, so they are third-party input on every surface. A scheme-relative or
- * relative path is ours and passes; anything with a scheme must be one that only
- * ever paints (`javascript:` is the one that does not, and it is a DOM-sink
- * finding on every <img> the taint reaches).
- */
+/** An artwork URL safe to hand to an `<img src>`, or null. Server-supplied poster
+ * and backdrop URLs are third-party input; anything with a scheme must be one
+ * that only ever paints (blocks `javascript:` and other DOM-sink schemes). */
 export function safeImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   const trimmed = url.trim();
@@ -57,10 +36,8 @@ export function safeImageUrl(url: string | null | undefined): string | null {
   return IMAGE_SCHEME.test(trimmed) ? trimmed : null;
 }
 
-/** The ONE hash behind every generated colour: a rolling 31x hash, unsigned.
- * Exposed raw for the pickers that need a modulus other than 360 (avatar
- * gradients, placeholder tilts), so every derived colour keys off the same
- * value for the same string. */
+/** Rolling 31x unsigned hash, exposed raw so every derived colour (hue, avatar
+ * gradients, placeholder tilts) keys off the same value for the same string. */
 export function hashString(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + (s.codePointAt(i) ?? 0)) >>> 0;
@@ -172,20 +149,18 @@ export function channelLabel(ch: number | null | undefined): string | null {
   return `${ch}.0`;
 }
 
-/** Localized language name for an ISO code, the upper-cased code if unknown, or
- * null when there is no code at all. Shared by every client (audio/subtitle track
- * labels localize identically). Any spelling `langBase` knows resolves to the
- * same name, so "fre", "fra" and "fr-FR" all read "Français". */
+/** Localized language name for an ISO code (any spelling `langBase` knows, so
+ * "fre"/"fra"/"fr-FR" all read "Français"), the upper-cased code if unknown, or
+ * null when there is no code at all. */
 export function langName(t: Translate, code: string | null | undefined): string | null {
   if (!code) return null;
   const key = langKey(code);
   return key ? t(key) : code.toUpperCase();
 }
 
-/** Concise label for the audio track a viewer has selected, language first:
- * "Français · 5.1 · EAC3" (a stream `title` tag wins over the language name).
- * Fed to the playback heartbeat so the admin dashboard reflects the chosen
- * track, not the file's default. Returns undefined when there is no track. */
+/** Concise label for a selected audio track, language first: "Français · 5.1 ·
+ * EAC3" (a stream `title` tag wins over the language name). Undefined when
+ * there is no track. */
 export function audioTrackLabel(
   t: Translate,
   track: AudioTrack | null | undefined,
@@ -197,13 +172,8 @@ export function audioTrackLabel(
   return label || undefined;
 }
 
-// ----- build identity -------------------------------------------------------
-//
-// Every shell shows what it was built from - the TV's About screen, the phone's
-// settings, the kit's stamp - and each had grown its own copy of these three,
-// two of them byte-identical down to the doc comment. They take primitives
-// rather than a BuildInfo, because each shell reads that record from its own
-// bundler (Expo's manifest, a Vite define) and only the fields matter here.
+// Build-identity helpers take primitives rather than a BuildInfo, since each
+// shell reads that record from its own bundler (Expo's manifest, a Vite define).
 
 /** The commit as it should be READ - flagged when the tree it was built from had
  * uncommitted changes, since that hash alone no longer describes the binary. */

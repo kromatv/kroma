@@ -1,9 +1,4 @@
-/**
- * Generic i18n engine.
- *
- * Knows nothing about actual languages. Wire them up in one setup file via
- * `createI18n(catalogs, defaultLocale)`.
- */
+// Generic i18n engine; actual languages are wired up via `createI18n`.
 
 export type TVars = Record<string, string | number>;
 export type Translate<K extends string> = (key: K, vars?: TVars) => string;
@@ -25,14 +20,8 @@ export interface I18nInstance<L extends string, K extends string> {
   readonly normalizeLocale: (tag?: string | null) => L | null;
   readonly DEFAULT_LOCALE: L;
   readonly SUPPORTED_LOCALES: ReadonlySet<L>;
-  /** `labelKey` is typed as `K`; the cast `lang.${code}` will fail at
-   *  compile-time if that key is missing from the default catalog. */
   readonly LOCALES: ReadonlyArray<{ readonly code: L; readonly labelKey: K }>;
 }
-
-// ---------------------------------------------------------------------------
-// Low-level helpers (locale-agnostic)
-// ---------------------------------------------------------------------------
 
 export function interpolate(template: string, vars?: TVars): string {
   if (!vars) return template;
@@ -70,7 +59,6 @@ function pluralKeyIn<L extends string>(
   return key;
 }
 
-/** Translate against an explicit catalog set (e.g. a module's own catalogs). */
 export function translateIn<L extends string>(
   catalogs: Catalogs<L>,
   locale: L,
@@ -87,23 +75,10 @@ export function translateIn<L extends string>(
   return template != null ? interpolate(template, vars) : undefined;
 }
 
-// ---------------------------------------------------------------------------
-// Type extractors (so the setup file can export clean type aliases)
-// ---------------------------------------------------------------------------
-
 export type LocaleOf<I> = I extends I18nInstance<infer L, infer _K> ? L : never;
 export type MessageKeyOf<I> = I extends I18nInstance<infer _L, infer K> ? K : never;
 
-// ---------------------------------------------------------------------------
-// Factory
-// ---------------------------------------------------------------------------
-
-/**
- * Create a fully-typed i18n instance from your JSON catalogs.
- *
- * @example
- *   const i18n = createI18n({ fr, en }, 'fr');
- */
+/** Create a fully-typed i18n instance from JSON catalogs: `createI18n({ fr, en }, 'fr')`. */
 export function createI18n<
   const C extends Record<string, Record<string, string>>,
   const D extends keyof C & string,

@@ -1,27 +1,9 @@
 // @vitest-environment jsdom
 //
-// The Apple TV / Android TV remote, routed into the player.
-//
-// The player is the one screen that does NOT use the OS focus engine - its
-// chrome is virtually focused, because the transport has to stay reachable while
-// the chrome fades, the progress bar scrubs by HELD direction, and a panel
-// slides in over the top. So directional presses cannot arrive as focus moves
-// the way they do everywhere else; they are read off the remote here.
-//
-// Two things this file has already been the wrong shape for:
-//
-//   - The web half calls `window.addEventListener`. React Native defines
-//     `window` as `global`, so that call is not missing, it is UNDEFINED - the
-//     player took the whole app down with "undefined is not a function" the
-//     moment it mounted.
-//   - Unclaimed, tvOS treats Menu as "leave the app". Back in the player did not
-//     close the settings panel or return to the detail screen; it quit KROMA
-//     outright, mid-film. The claim goes through the shared counter, because the
-//     screen underneath holds one too and whichever unmounts first would
-//     otherwise drop it for both.
-//
-// Routing itself belongs to lib/player-keys and is covered there; what is pinned
-// here is the vocabulary, the key-up filter and the claim.
+// The Apple TV / Android TV remote, routed into the player (see usePlayerKeys.ts
+// for why the player reads the remote directly instead of the OS focus engine).
+// Routing itself belongs to lib/player-keys; what is pinned here is the
+// vocabulary, the key-up filter and the Menu claim.
 
 import type { RemoteKey } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
@@ -55,8 +37,6 @@ vi.mock('../lib/player-keys', () => ({ routeRemoteKey }));
 
 import { usePlayerKeys } from './usePlayerKeys';
 
-/** The params object is opaque here - it belongs to the router - so a plain tag
- *  is enough to tell one screen's params from another's. */
 const params = (tag: string) => ({ tag }) as never;
 
 function press(eventType: string, eventKeyAction = 0) {
@@ -65,7 +45,6 @@ function press(eventType: string, eventKeyAction = 0) {
   });
 }
 
-/** The logical keys the router was handed, in order. */
 const routed = (): RemoteKey[] => routeRemoteKey.mock.calls.map(([, key]) => key as RemoteKey);
 
 beforeEach(() => {

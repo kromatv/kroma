@@ -103,8 +103,8 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
             </Box>
           );
           // A generated track pairs its row with a delete control; everything
-          // else is the row on its own. Either way the key belongs to whatever
-          // this branch returns, which is the element the list actually holds.
+          // else is the row alone. The key belongs to whichever element this
+          // branch returns.
           if (s.ai && s.subId) {
             return (
               <Box key={s.index} row align="center" gap={8}>
@@ -147,7 +147,6 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
   );
 });
 
-/** Violet "IA" pill shown on generated tracks / generation rows. */
 function AiBadge() {
   return (
     <Box
@@ -168,9 +167,8 @@ function AiBadge() {
   );
 }
 
-/** Small trash control beside a deletable AI track / generation row.
- * Pointer-only, controlled at `false`: never a platform / navigator focus
- * target (see ../../lib/virtual-focus.ts). */
+// Pointer-only, controlled at `false`: never a platform focus target (see
+// ../../lib/virtual-focus.ts).
 function TrashButton({ label, onPress }: Readonly<{ label: string; onPress: () => void }>) {
   return (
     <IconButton
@@ -186,8 +184,6 @@ function TrashButton({ label, onPress }: Readonly<{ label: string; onPress: () =
   );
 }
 
-/** A live generation row (violet "IA" treatment): engine + stage + percent, a
- * violet progress bar + ETA, and a trash control that cancels / discards it. */
 function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel: () => void }>) {
   const t = useT();
   const pct = Math.round(gen.progress * 100);

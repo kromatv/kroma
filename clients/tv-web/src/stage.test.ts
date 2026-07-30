@@ -7,16 +7,12 @@
 // 7 x 24px gaps, which with its 2 x 64px padding is exactly 1920. Every packaged
 // shell IS that panel; a browser window is not.
 //
-// So the canvas is what gets fitted, by the smaller of the two ratios. The two
-// ways to get that wrong are both real regressions this file guards:
-//
-//   - Fitting WIDTH only (fill, no surround) was tried. At any window shorter
-//     than 16:9 the browse screen no longer has 1080 logical px of height, and
-//     the grid's clip box - which bleeds 32px for focus rings - rides up over
-//     the filter chips.
-//   - Taking the larger ratio overflows the canvas: a rail's last poster is
-//     clipped, the right gutter is gone, and the grid's 8th column is off the
-//     edge.
+// So the canvas is what gets fitted, by the smaller of the two ratios - fitting
+// WIDTH only would starve the height (below 1080 logical px, the grid's clip box,
+// which bleeds 32px for focus rings, rides up over the filter chips), and taking
+// the larger ratio overflows the canvas (a rail's last poster clipped, the right
+// gutter gone, the grid's 8th column off the edge). Both are real regressions
+// this file guards.
 //
 // The surround it costs is painted in the app background, so it reads as the
 // frame of the picture rather than as a bug. (The desktop shell's stage makes

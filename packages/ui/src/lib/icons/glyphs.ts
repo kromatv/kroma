@@ -1,66 +1,20 @@
-// The icon set: all of Tabler, resolved by name, with a fallback.
-//
-// There is no list here and no generator. `<Icon name="wave-sine" />` finds
-// `IconWaveSine` in the package, and a name the package does not have draws the
-// fallback instead of crashing - which is what makes icon names safe to take
-// from DATA (a server-installed module names its glyph in a manifest, a
-// catalogue row can carry one), where no list could ever be complete.
-//
-// How one namespace serves a television and a browser
-// ---------------------------------------------------
-// Tabler ships the same icons twice, with the same export names: `@tabler/
-// icons-react` draws DOM <svg>, `@tabler/icons-react-native` draws through
-// react-native-svg. This file imports the React Native one; every web bundler
-// aliases that specifier to the DOM one (packages/bundler/src/rnw.ts, the same trick
-// as `react-native` -> `react-native-web`). So a browser gets native SVG and
-// never loads react-native-svg's runtime, and native gets react-native-svg,
-// where it is the only way to draw at all. The one prop they spell differently
-// is the outline weight; see stroke-prop.ts.
-//
-// What this costs, and who still pays it
-// --------------------------------------
-// Resolving BY NAME is what lets a name come from data - and it is why a bundler
-// cannot shake the set: it cannot prove which of Tabler's 6167 icons a computed
-// lookup will ask for, so all of them ship. On the kit site that was 258 KB ->
-// 740 KB gzipped; in the webOS package it was 1.04 MB of 10.27 MB.
-//
-// The TV packages no longer pay it. The runtime set comes from
-// `#ui/lib/icons/glyph-source`, which the TV shells alias to a subset GENERATED
-// from the source at build time (packages/ui/bundler) - no list to
-// maintain, and over-collecting by construction so a used name cannot go
-// missing. The web and admin clients keep the full namespace, because they are
-// the ones rendering module UIs whose manifests may name any glyph at all.
-//
-// The Tabler import below stays TYPE-only either way, so `IconName` is still the
-// whole set and any name typechecks wherever it is written.
+// The icon set: all of Tabler, resolved by name at runtime, with a fallback, so
+// an icon name can safely come from data (a module manifest, a catalogue row).
 
-// TYPE-ONLY, and that is the point: this import is erased, so `IconName` stays
-// every name Tabler can draw - any of them typechecks and autocompletes - while
-// nothing is pulled into the bundle by it. The runtime set arrives from
+// Type-only import: erased at build time, so `IconName` covers every Tabler name
+// without pulling any of them into the bundle. The runtime set comes from
 // ./glyph-source, which a TV shell swaps for a scanned subset.
 import type * as Tabler from '@tabler/icons-react-native';
 import type { ComponentType } from 'react';
 import { FALLBACK, EXPORTS as RAW } from './glyph-source';
 
-// ---- the name, derived from the package rather than declared ----
-//
-// `slugOf` below turns `IconWaveSine` into `wave-sine` at runtime. The types
-// that follow do the SAME transform at compile time, over every name the
-// package exports, so `IconName` is the real set of glyphs and a typo is a
-// build error - without a list anywhere.
-
-/** Digits, needed because a digit is neither upper nor lower case. */
 type Digit = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
 
-/** `A` differs from its own lowercase; `a` and `2` do not. */
 type IsUpper<C extends string> = C extends Lowercase<C> ? false : true;
 
-/**
- * Where a hyphen goes, mirroring `slugOf`'s two boundaries exactly: before an
- * uppercase letter that follows a lowercase one or a digit (`WaveSine`), and
- * before a digit that follows a letter (`Volume2` -> `volume-2`). A digit
- * followed by a letter stays joined, because `Badge4k` is `badge-4k`.
- */
+// Mirrors `slugOf`'s two boundaries: before an uppercase letter following a
+// lowercase one or a digit, and before a digit following a letter. A digit
+// followed by a letter stays joined (`Badge4k` -> `badge-4k`).
 type NeedsDash<Prev extends string, C extends string> = Prev extends ''
   ? false
   : IsUpper<C> extends true
@@ -73,13 +27,8 @@ type NeedsDash<Prev extends string, C extends string> = Prev extends ''
         : true
       : false;
 
-/**
- * PascalCase to kebab-case, one character at a time.
- *
- * Tail-recursive on purpose: the accumulator keeps this inside TypeScript's
- * generous limit for tail calls (~1000) rather than the shallow one for nested
- * instantiation, which a 30-character icon name would otherwise threaten.
- */
+// Tail-recursive: stays under TypeScript's tail-call limit (~1000) rather than
+// the much shallower nested-instantiation one.
 type Kebab<
   S extends string,
   Prev extends string = '',
@@ -88,35 +37,18 @@ type Kebab<
   ? Kebab<Rest, C, `${Acc}${NeedsDash<Prev, C> extends true ? '-' : ''}${Lowercase<C>}`>
   : Acc;
 
-/** The package's icon exports, which is every key shaped `Icon*` bar its types. */
 type IconExport = Extract<keyof typeof Tabler, `Icon${string}`>;
 
-/** The two props both Tabler packages spell the same way. The outline weight is
- * the third the kit passes, but the packages disagree on its NAME, so it rides
- * in through `STROKE_PROP` rather than being declared here. */
+// The outline weight is the third prop the kit passes, but the two Tabler
+// packages disagree on its name, so it rides in through `STROKE_PROP` instead.
 type Glyph = ComponentType<{ size?: number; color?: string }>;
 
-/** The runtime set, however much of it this build carries. */
 const EXPORTS = RAW as unknown as Record<string, Glyph | undefined>;
 
-/**
- * Every glyph name the kit can draw, in the design's own spelling.
- *
- * Distributive: each of the package's export names is converted on its own, so
- * this is the union of every Tabler slug. It gives editor completion for
- * thousands of glyphs and makes `<Icon name="chevron-rihgt" />` fail to compile,
- * which is the safety the old hand-written list used to provide and the reason it
- * existed at all.
- *
- * It is STRICT - no `| (string & {})` - because the whole app compiles against
- * it: nothing passes `<Icon name>` a value it cannot prove. A name that really
- * does arrive at runtime (a server-installed module naming its glyph in a
- * manifest) crosses into the type through `hasGlyph`, which narrows it, and
- * `glyphFor` still falls back if it is wrong.
- */
+/** Every glyph name the kit can draw, in the design's own spelling. Strict —
+ * a typo fails to compile; a name from data crosses in through `hasGlyph`. */
 type IconName = IconExport extends `Icon${infer Rest}` ? Kebab<Rest> : never;
 
-/** `wave-sine` -> `IconWaveSine`, which is how Tabler names its exports. */
 function exportName(slug: string): string {
   let out = 'Icon';
   for (const word of slug.split('-')) {
@@ -125,14 +57,11 @@ function exportName(slug: string): string {
   return out;
 }
 
-/** Resolution is a string transform plus a property read, and icons re-render on
- * every focus move in a 10-foot grid, so the answer is remembered. Bounded by
- * the number of distinct names an app uses, which is dozens. */
+// Icons re-render on every focus move in a 10-foot grid, so resolution is
+// memoized; bounded by the distinct names an app uses.
 const RESOLVED = new Map<string, Glyph>();
 
-/** Takes a plain `string`, deliberately: this is the boundary where a name that
- * came from data stops being untyped, and it must be callable with whatever
- * arrived. An unknown name gets the fallback rather than an exception. */
+/** Takes a plain `string`: an unknown name gets the fallback rather than an exception. */
 function glyphFor(name: string): Glyph {
   const hit = RESOLVED.get(name);
   if (hit) return hit;
@@ -142,26 +71,12 @@ function glyphFor(name: string): Glyph {
   return glyph;
 }
 
-/**
- * True when the package really has this name — and a type guard, which is how a
- * runtime string becomes an `IconName` without a cast:
- *
- *   const raw = module.manifest.icon;
- *   if (hasGlyph(raw)) return <Icon name={raw} />;
- */
 function hasGlyph(name: string): name is IconName {
   return Boolean(EXPORTS[exportName(name)]);
 }
 
-/**
- * `IconWaveSine` -> `wave-sine`, the design's spelling of the same glyph, and
- * the exact inverse of `exportName` (there is a test that round-trips them).
- *
- * Two boundaries, not one. The obvious one is lower-to-upper (`WaveSine`). The
- * other is letter-to-DIGIT: Tabler's slug for `IconVolume2` is `volume-2`, so
- * without it the gallery would list names that resolve to the fallback. A digit
- * followed by a letter stays joined, because `IconBadge4k` is `badge-4k`.
- */
+/** Two boundaries: lower-to-upper, and letter-to-digit (`IconVolume2` -> `volume-2`).
+ * A digit followed by a letter stays joined (`IconBadge4k`). */
 function slugOf(name: string): string {
   return name
     .slice('Icon'.length)
@@ -170,18 +85,11 @@ function slugOf(name: string): string {
     .toLowerCase();
 }
 
-/**
- * Every name the package can draw, kebab-cased, sorted.
- *
- * This is thousands of entries, so it is computed once, lazily: the icon gallery
- * and the workbench's icon control are the only callers, and an app that never
- * opens the workbench should not walk the namespace at startup.
- */
+/** Every name the package can draw, kebab-cased, sorted. Thousands of entries,
+ * so it's computed once, lazily. */
 let names: IconName[] | undefined;
 function iconNames(): IconName[] {
-  // The cast is the one place the runtime transform is trusted to agree with
-  // the compile-time one. It is not taken on faith: `slugOf` and the `Kebab`
-  // type are asserted against each other in glyphs.test.tsx.
+  // `slugOf` and the `Kebab` type are asserted against each other in glyphs.test.tsx.
   names ??= Object.keys(EXPORTS)
     .filter((key) => key.startsWith('Icon') && key !== 'IconProps')
     .map(slugOf)

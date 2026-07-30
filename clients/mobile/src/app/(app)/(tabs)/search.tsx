@@ -1,6 +1,5 @@
-// Search: big title, rounded field, Netflix-style suggested list while the
-// query is empty (personalized picks as landscape rows with a play affordance),
-// debounced results as a poster grid.
+// Shows a suggested list while the query is empty; debounced results render
+// as a poster grid.
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
 import { Icon } from '@kroma/ui/kit';

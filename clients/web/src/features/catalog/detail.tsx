@@ -86,50 +86,30 @@ function Field({ label, value }: Readonly<{ label: string; value: string }>) {
 }
 
 export interface DetailHeroProps {
-  /** Identity + artwork for the key-art backdrop and poster. */
   art: { id: string; backdrop: string | null; poster: string };
-  /** Amber overline above the title (e.g. genres, or "Série · 2 saisons"). */
   overline: string;
   title: string;
   rating?: number | null;
-  /** Terse meta line, e.g. "2024 · 2h08 · Français". */
   meta: string;
   badges: QualityTone[];
-  /** Loudness warning pill ("Dialogues faibles", …); null/omitted hides it. */
   audioFlag?: string | null;
-  /** Director(s) / creator(s), shown as a "Réalisation" line. */
   directors?: string[];
   tagline?: string | null;
   overview?: string | null;
-  /** Primary audio line; omit to hide the audio/subtitle fields (not-owned titles). */
   audio?: string;
   subtitles?: string;
   playLabel?: string;
-  /** Replaces the default Play button (e.g. a Request CTA / status chip for a
-   * title that isn't in the library). When set, `onPlay` is ignored. */
   primaryAction?: ReactNode;
   onBack: () => void;
   onPlay?: () => void;
-  /** Local catalog id, so the hero can offer "Play on TV" beside Play. Omitted
-   * for titles that aren't in the library (nothing to cast). */
   castItemId?: ItemId;
-  /** Watched state for the title; omit (undefined) to hide the watched toggle. */
   watched?: boolean;
-  /** Flip the watched flag. Required for the watched toggle to render. */
   onToggleWatched?: () => void;
-  /** Whether the title is in "Ma liste" (drives the + / ✓ button). */
   inList?: boolean;
-  /** Flip "Ma liste" membership. Required for the list button to be interactive. */
   onToggleList?: () => void;
-  /** Item whose codecs gate direct-play; the warning is computed client-side. */
   playable?: MediaItem | null;
-  /** Plex-style theme song to loop under the hero (TV shows only); `null` plays
-   * nothing and hides the mute toggle. */
   themeUrl?: string | null;
-  /** Optional trailing action in the button row (e.g. an admin "Reprocess"). */
   adminAction?: ReactNode;
-  /** Open the "signaler un probleme" dialog. Omit to hide the report button
-   * (e.g. a not-owned discover title, which has no library file to report). */
   onReport?: () => void;
 }
 
@@ -168,7 +148,7 @@ export function DetailHero({
   const theme = useThemeAudio(themeUrl);
 
   // Direct-play depends on the runtime's codecs (navigator/MediaSource), so it
-  // must stay client-only computing it during SSR would mismatch on hydration.
+  // must stay client-only, or SSR would compute a mismatched hydration value.
   const [unsupported, setUnsupported] = useState<string | null>(null);
   useEffect(() => {
     if (!playable) return setUnsupported(null);
@@ -187,8 +167,7 @@ export function DetailHero({
       <ThemeToggle theme={theme} />
 
       <div className="relative flex flex-wrap items-end gap-6 px-(--gutter-web) pb-9 pt-12 sm:gap-10 sm:pt-22.5">
-        {/* Flanking poster: hidden on phones (the backdrop already carries the
-            artwork; a side column would crush the text into a sliver). */}
+        {/* Hidden on phones: a side column would crush the text into a sliver. */}
         <div
           className="relative hidden aspect-2/3 shrink-0 overflow-hidden rounded-[14px] shadow-hero sm:block sm:w-48 md:w-60"
           style={{ background: `linear-gradient(158deg, ${c1}, ${c2})` }}
@@ -255,7 +234,6 @@ export function DetailHero({
   );
 }
 
-/** Loop-theme mute toggle in the hero corner (TV shows with a theme song). */
 function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudio> }>) {
   const t = useT();
   if (!theme.active) return null;
@@ -273,7 +251,6 @@ function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudi
   );
 }
 
-/** "Réalisation" line linking each director to their filmography. */
 function DirectorsLine({ directors }: Readonly<{ directors?: string[] }>) {
   const t = useT();
   const navigate = useNavigate();
@@ -298,7 +275,6 @@ function DirectorsLine({ directors }: Readonly<{ directors?: string[] }>) {
   );
 }
 
-/** Watched toggle button; renders nothing without an `onToggle` handler. */
 function WatchedButton({
   watched,
   onToggle,
@@ -316,7 +292,6 @@ function WatchedButton({
   );
 }
 
-/** "Ma liste" add/remove button; renders nothing without an `onToggle` handler. */
 function ListButton({ inList, onToggle }: Readonly<{ inList?: boolean; onToggle?: () => void }>) {
   const t = useT();
   if (!onToggle) return null;
@@ -333,7 +308,6 @@ function ListButton({ inList, onToggle }: Readonly<{ inList?: boolean; onToggle?
   );
 }
 
-/** "Signaler un probleme" button; renders nothing without an `onReport` handler. */
 function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
   const t = useT();
   if (!onReport) return null;
@@ -349,7 +323,6 @@ function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
   );
 }
 
-/** Audio / subtitle summary fields under the hero actions (owned titles). */
 function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subtitles?: string }>) {
   const t = useT();
   if (audio == null && subtitles == null) return null;
@@ -365,7 +338,6 @@ export interface SimilarItem {
   id: string;
   title: string;
   genre: string;
-  /** When set, the show's season count the genre line is localized at render. */
   seasonCount?: number;
   badge: string | null;
   poster: string;
@@ -391,7 +363,7 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
       <h2 className="mb-4.5 px-(--gutter-web) font-display text-[22px] font-bold tracking-[-.02em]">
         {t('content.cast')}
       </h2>
-      {/* A named <section> for assistive tech, same as the old shared Rail. */}
+      {/* A named <section> for assistive tech. */}
       <section
         aria-label={t('content.cast')}
         className="flex gap-5.5 overflow-x-auto px-(--gutter-web) py-4 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"

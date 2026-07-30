@@ -24,7 +24,7 @@ afterAll(() => rmSync(work, { recursive: true, force: true }));
 
 let made = 0;
 
-/** Build a real .spk (a ustar tar) holding the given members. */
+// Build a real .spk (a ustar tar) holding the given members.
 function spk(members: Record<string, string | Buffer>): string {
   made += 1;
   const dir = join(work, `pkg-${made}`);

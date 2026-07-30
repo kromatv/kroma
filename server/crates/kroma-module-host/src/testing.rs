@@ -36,12 +36,12 @@ use crate::{Event, HostCtx, LibraryFolders};
 /// broadcast) and the event's topic.
 pub type Published = (Option<String>, String);
 
-/// A host service, as the registry stores it: keyed by the `TypeId` the caller
-/// will look it up with.
+// A host service, as the registry stores it: keyed by the `TypeId` the caller
+// will look it up with.
 type Service = (TypeId, Arc<dyn Any + Send + Sync>);
 
-/// A stand-in for the app's real settings store: `(key, caller's default) ->
-/// value`, the exact shape of [`HostCtx::setting_str`].
+// A stand-in for the app's real settings store: `(key, caller's default) ->
+// value`, the exact shape of [`HostCtx::setting_str`].
 type StringSettings = Arc<dyn Fn(&str, &str) -> String + Send + Sync>;
 
 /// What a [`StubHost`] or [`Recording`] saw. Shared behind an `Arc` so a clone
@@ -72,8 +72,8 @@ impl Log {
     }
 }
 
-/// A unique temp path, so two tests running in parallel threads of one process
-/// never share a database. The pid alone is not enough for that.
+// A unique temp path, so two tests running in parallel threads of one process
+// never share a database. The pid alone is not enough for that.
 fn temp_db_path(tag: &str) -> PathBuf {
     static SEQ: AtomicU32 = AtomicU32::new(0);
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
@@ -598,8 +598,6 @@ mod tests {
         assert_eq!(host.lerr(&user(), StatusCode::NOT_FOUND, "k").status(), StatusCode::NOT_FOUND);
     }
 
-    // ----- the decorator -------------------------------------------------------
-
     #[test]
     fn recording_forwards_everything_but_the_bus() {
         let inner = StubHost::new().with_tmdb_key("k").with_metadata_language("fr-FR");
@@ -648,8 +646,6 @@ mod tests {
         let host = Recording::new(StubHost::with_db("recording"));
         host.db().get().unwrap().execute("SELECT 1 FROM users LIMIT 0", []).unwrap();
     }
-
-    // ----- the stub's required surface -------------------------------------------
 
     #[test]
     fn the_stub_answers_every_required_method_neutrally() {

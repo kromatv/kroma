@@ -1,14 +1,4 @@
 // @vitest-environment jsdom
-//
-// Wheel scrolling over the virtualised grid.
-//
-// The whole design is "free pixels while the wheel turns, snap when it stops",
-// and both halves are easy to break in ways that feel wrong rather than look
-// broken. The strip must move 1:1 with the input - anything that banks travel
-// means turning the wheel with nothing happening - and `focus()` must keep
-// following the viewport even though it is invisible during the gesture,
-// because it is what keeps the render window and the next D-pad press attached
-// to what is actually on screen.
 
 import { renderHook } from '@testing-library/react';
 import type { RefObject } from 'react';
@@ -17,7 +7,6 @@ import type { SpatialNavigationVirtualizedListRef } from 'react-tv-space-navigat
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWheelScroll } from './use-wheel-rows';
 
-/** The pan handler the hook registers, captured instead of a real wheel. */
 let pan: ((delta: number) => void) | null = null;
 vi.mock('#ui/lib/wheel-pan', () => ({
   useWheelPan: (_viewport: unknown, handler: (delta: number) => void) => {
@@ -38,9 +27,8 @@ function listRef(focused = 0) {
 
 const viewport = { current: null } as RefObject<View | null>;
 
-/** Drive the wheel by `delta` px. Not wrapped in act(): the hook writes state
- *  from the handler, and the assertions read the ref-driven maths through the
- *  returned fraction after a render. */
+// Not wrapped in act(): the hook writes from the handler, and the assertions
+// read the ref-driven maths through the returned fraction after a render.
 function wheel(delta: number) {
   if (!pan) throw new Error('the hook never registered a wheel handler');
   pan(delta);
@@ -59,8 +47,6 @@ describe('useWheelScroll', () => {
   it('reports no fraction until a wheel actually turns', () => {
     const { ref } = listRef();
     const { result } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
-    // null means "behave exactly as without the wheel": rows and transitions
-    // untouched.
     expect(result.current).toBeNull();
   });
 
@@ -68,7 +54,6 @@ describe('useWheelScroll', () => {
     const { ref } = listRef();
     const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
 
-    // Half a row of travel is half a row of movement - not zero, and not a row.
     wheel(PITCH / 2);
     rerender();
     expect(result.current).toBeCloseTo(0.5, 5);
@@ -88,7 +73,6 @@ describe('useWheelScroll', () => {
     const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
     wheel(PITCH);
     rerender();
-    // Started at row 4, moved one row: 5, not 1.
     expect(result.current).toBeCloseTo(5, 5);
   });
 
@@ -102,7 +86,6 @@ describe('useWheelScroll', () => {
 
     wheel(PITCH * 100);
     rerender();
-    // lastRow 3 + no header = index 3.
     expect(result.current).toBe(3);
   });
 
@@ -111,7 +94,7 @@ describe('useWheelScroll', () => {
     const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 3, 1, PITCH));
     wheel(PITCH * 100);
     rerender();
-    // The header occupies list row 0, so the content's last row is index 4.
+    // The header occupies list row 0, so the last content row is index 4.
     expect(result.current).toBe(4);
   });
 
@@ -123,9 +106,6 @@ describe('useWheelScroll', () => {
     wheel(PITCH * 0.4);
     expect(focus).not.toHaveBeenCalled();
 
-    // Past the halfway point the nearest row changes, and focus has to follow
-    // even though it is invisible - it is what keeps the render window and the
-    // next D-pad press attached to what is on screen.
     wheel(PITCH * 0.3);
     expect(focus).toHaveBeenCalledWith(1);
   });
@@ -135,7 +115,6 @@ describe('useWheelScroll', () => {
     renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
     wheel(PITCH);
     expect(focus).toHaveBeenCalledTimes(1);
-    // Still nearest to row 1: no second call.
     wheel(PITCH * 0.1);
     expect(focus).toHaveBeenCalledTimes(1);
   });
@@ -150,7 +129,7 @@ describe('useWheelScroll', () => {
 
     vi.advanceTimersByTime(SNAP_AFTER_MS);
     rerender();
-    // null re-enables the row transition, and THAT glide is the snap.
+    // null re-enables the row transition, and that glide is the snap.
     expect(result.current).toBeNull();
     expect(focus).toHaveBeenLastCalledWith(1);
   });
@@ -176,8 +155,7 @@ describe('useWheelScroll', () => {
     const { ref, focus } = listRef();
     renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
 
-    // 2.6 rows: nearest is 3, and the snap must land there rather than on the
-    // last row it happened to cross.
+    // 2.6 rows: nearest is 3, not the last row crossed.
     wheel(PITCH * 2.6);
     vi.advanceTimersByTime(SNAP_AFTER_MS);
     expect(focus).toHaveBeenLastCalledWith(3);

@@ -5,9 +5,6 @@ import { WheelMark } from '#site/components/wheel-mark';
 import { site } from '#site/lib/site';
 import { m } from '#site/paraglide/messages';
 
-// The close. It echoes the hero's centred mark on purpose, the page opens and
-// shuts on the same chromatic wheel, but keeps the copy short and points every
-// path at the install. A hairline above sets it apart from the blog band.
 export function FinalCta() {
   return (
     <section className="relative overflow-hidden border-t border-border/70">

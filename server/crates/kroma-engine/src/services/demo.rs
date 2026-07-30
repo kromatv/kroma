@@ -7,8 +7,6 @@ use crate::model::{
 };
 use crate::services::scan::{now_iso8601, short_hash, ScanData};
 
-/// Build a single synthetic (already-probed) file mirroring a demo item, so the
-/// new multi-file schema is consistent for demo content too.
 fn demo_file(item: &MediaItem) -> MediaFile {
     let fid = short_hash(&format!("{}|file", item.id));
     MediaFile {
@@ -23,14 +21,12 @@ fn demo_file(item: &MediaItem) -> MediaFile {
         size: None,
         edition: None,
         probed: true,
-        // Demo files have no real path on disk; use a synthetic URI so the DB
-        // `files` row (abs_path NOT NULL UNIQUE) is satisfied. It can't be
-        // streamed, which matches demo behaviour.
+        // No real path on disk; a synthetic URI satisfies the DB's NOT NULL
+        // UNIQUE `abs_path` column. Can't be streamed, matching demo behaviour.
         abs_path: Some(format!("demo://{fid}")),
     }
 }
 
-/// Attach a single representative file + defaultFileId to a demo item.
 fn with_demo_file(mut item: MediaItem) -> MediaItem {
     let file = demo_file(&item);
     item.default_file_id = Some(file.id.clone());
@@ -159,7 +155,6 @@ fn audio(codec: &str, channels: u32, language: Option<&str>) -> AudioStream {
     }
 }
 
-/// Assign sequential audio-relative indices and mark the first track default.
 fn tracks(list: Vec<AudioStream>) -> Vec<AudioStream> {
     list.into_iter()
         .enumerate()
@@ -184,7 +179,7 @@ mod tests {
         let data = demo_data();
         assert_eq!(data.libraries.len(), 2);
         assert_eq!(data.shows.len(), 2);
-        assert_eq!(data.items.len(), 10); // 6 movies + 4 episodes
+        assert_eq!(data.items.len(), 10);
         let movies = data.items.iter().filter(|i| i.kind == Kind::Movie).count();
         let episodes = data.items.iter().filter(|i| i.kind == Kind::Episode).count();
         assert_eq!(movies, 6);

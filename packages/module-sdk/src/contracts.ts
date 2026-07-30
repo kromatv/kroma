@@ -1,15 +1,5 @@
-// The two augmentation points that give the module system end-to-end types.
-//
-// A module publishes its cross-module API and its events by *merging* into
-// these interfaces from its own package, e.g. in `@kroma/module-torrents`:
-//
-//   declare module '@kroma/module-sdk' {
-//     interface ModuleApiRegistry { torrents: TorrentsApi }
-//     interface KromaEvents { 'torrents:done': { infoHash: string } }
-//   }
-//
-// After that, `host.getModuleApi('torrents')` is typed as `TorrentsApi` and
-// `bus.emit('torrents:done', ...)` is checked. They start empty on purpose.
+// The two augmentation points that give the module system end-to-end types: a
+// module merges into these from its own package via `declare module`.
 
 /** Maps a module id to the API it exports for other modules to consume. */
 // biome-ignore lint/suspicious/noEmptyInterface: augmentation target.

@@ -8,12 +8,12 @@ import { Rich } from '#site/components/rich';
 import { site } from '#site/lib/site';
 import { m } from '#site/paraglide/messages';
 
-/** The published multi-arch image. Kept in step with the repo's docker-compose.yml. */
+// Kept in step with the repo's docker-compose.yml.
 const IMAGE = 'ghcr.io/maxscharwath/kroma:latest';
 
-// A trimmed but runnable copy of the repo's compose file, the same image, port,
-// volume layout and KROMA_MEDIA_DIRS, without the optional HTTPS block so the
-// snippet stays scannable. The full commented version ships in the repo.
+// Trimmed but runnable: the same image, port, volume layout and
+// KROMA_MEDIA_DIRS, without the optional HTTPS block. The full version ships
+// in the repo.
 const COMPOSE = `services:
   kroma:
     image: ${IMAGE}
@@ -33,7 +33,6 @@ const CARGO = `# Rust ≥ 1.86 + ffprobe. From the repo:
 cd server
 KROMA_MEDIA_DIRS=/mnt/media cargo run --release`;
 
-/** Shared chrome for one server option: an icon tile, a title, an optional tag. */
 function OptionHead({
   icon: Icon,
   title,
@@ -58,11 +57,8 @@ function OptionHead({
   );
 }
 
-/**
- * Step 1's body: the three real ways to stand the server up. Docker leads
- * (featured, full width, with the actual compose file); Synology and cargo sit
- * beneath as a pair, an editorial hierarchy rather than three equal cards.
- */
+/** Step 1's body: the three ways to stand the server up. Docker leads, full
+ *  width; Synology and cargo sit beneath as a pair. */
 export function ServerOptions() {
   return (
     <div className="space-y-5">

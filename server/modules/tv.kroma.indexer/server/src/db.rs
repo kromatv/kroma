@@ -1,20 +1,13 @@
-//! The Indexers module's own persistence: the `indexers` table (schema + typed
-//! row + queries), relocated out of the core `kroma-db` crate so the module owns
-//! its vertical end to end. [`MIGRATIONS`] is registered by the module's
-//! `ServerModule::migrations` and applied at DB init, right after the core schema.
-//!
-//! Secrets (`api_key`, per-indexer passwords in `settings`) never leave this
-//! layer as part of a view; the routes map rows to `IndexerView` with only a
-//! has-secret flag.
+//! The Indexers module's own persistence: the `indexers` table, registered via
+//! `ServerModule::migrations`. Secrets (`api_key`, per-indexer passwords in
+//! `settings`) never leave this layer: the routes expose only a has-secret flag.
 
 use anyhow::Result;
 use rusqlite::{params, Connection, Row};
 
 use kroma_module_sdk::db::Pool;
 
-/// The `indexers` table schema, applied after the core schema at DB init.
-/// `IF NOT EXISTS` DDL only, so it runs harmlessly on every boot. Copied verbatim
-/// out of the old core schema so existing databases keep working unchanged.
+// `IF NOT EXISTS` DDL only: it runs on every boot.
 pub const MIGRATIONS: &str = "
     -- Torznab indexers (Jackett / Prowlarr endpoints). `categories` is a comma
     -- list; `priority` is a flat score tiebreak in the decision engine.
@@ -39,8 +32,6 @@ pub const MIGRATIONS: &str = "
     );
 ";
 
-// The stored indexer row is the shared IndexerRow contract now, so the downloads
-// queue view + acquisition name it without depending on this crate.
 pub use kroma_module_sdk::ports::IndexerRow;
 
 const INDEXER_COLS: &str = "id, name, url, api_key, categories, enabled, priority, \
@@ -139,8 +130,6 @@ pub fn delete_indexer(pool: &Pool, id: &str) -> Result<bool> {
     Ok(conn.execute("DELETE FROM indexers WHERE id = ?1", params![id])? > 0)
 }
 
-/// Record a test / search outcome on the row (drives the admin card's
-/// last-test line).
 pub fn note_indexer_result(pool: &Pool, id: &str, ok: bool, error: Option<&str>, now_ms: i64) -> Result<()> {
     let conn = pool.get()?;
     if ok {
@@ -159,7 +148,6 @@ mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    /// A fresh temp-file pool with the core schema + the indexers table applied.
     fn test_pool() -> Pool {
         static SEQ: AtomicU32 = AtomicU32::new(0);
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
@@ -213,7 +201,6 @@ mod tests {
         assert_eq!(got.kind, "builtin");
         assert_eq!(got.definition_id.as_deref(), Some("thepiratebay"));
         assert_eq!(got.settings, r#"{"user":"bob"}"#);
-        // insert does not set the test-outcome columns.
         assert!(got.last_ok_at.is_none() && got.last_error.is_none());
     }
 
@@ -252,7 +239,6 @@ mod tests {
         let conn = pool.get().unwrap();
         let ids: Vec<String> =
             enabled_indexers(&conn).unwrap().into_iter().map(|r| r.id).collect();
-        // disabled row excluded; higher priority first.
         assert_eq!(ids, vec!["hi", "lo"]);
     }
 
@@ -261,7 +247,6 @@ mod tests {
         let pool = test_pool();
         insert_indexer(&pool, &row("a", 100)).unwrap();
 
-        // Update only the name; api_key (None) and the rest stay put.
         let changed = update_indexer(
             &pool,
             "a",
@@ -283,7 +268,6 @@ mod tests {
         assert_eq!(got.categories, vec![2000, 5000]);
         drop(conn);
 
-        // Now change several fields at once.
         update_indexer(
             &pool,
             "a",
@@ -319,7 +303,7 @@ mod tests {
         let pool = test_pool();
         insert_indexer(&pool, &row("a", 100)).unwrap();
         assert!(delete_indexer(&pool, "a").unwrap());
-        assert!(!delete_indexer(&pool, "a").unwrap()); // already gone
+        assert!(!delete_indexer(&pool, "a").unwrap());
         let conn = pool.get().unwrap();
         assert!(get_indexer(&conn, "a").unwrap().is_none());
     }
@@ -337,7 +321,6 @@ mod tests {
             assert!(got.last_error.is_none());
         }
 
-        // A failure records the error but leaves the last-ok timestamp intact.
         note_indexer_result(&pool, "a", false, Some("timeout"), 9999).unwrap();
         let conn = pool.get().unwrap();
         let got = get_indexer(&conn, "a").unwrap().unwrap();
@@ -349,7 +332,6 @@ mod tests {
     fn categories_parsing_drops_blank_and_unparseable_entries() {
         let pool = test_pool();
         insert_indexer(&pool, &row("a", 100)).unwrap();
-        // Simulate a stored value with whitespace, a junk token and a trailing sep.
         {
             let conn = pool.get().unwrap();
             conn.execute(

@@ -26,7 +26,6 @@ export type Phase =
 export interface EnterSavedDeps {
   session: AuthSession;
   t: Translate;
-  /** Leave the gate for the app (the screen owns the route). */
   enterApp(): void;
   setBusy(busy: string | null): void;
   setError(error: string | null): void;
@@ -34,16 +33,13 @@ export interface EnterSavedDeps {
   setPhase(phase: Phase): void;
 }
 
-/** The PIN kept behind Face ID for this profile, when the vault is enabled. */
 async function vaultedPin(deps: EnterSavedDeps, account: MobileAccount): Promise<string | null> {
   const { serverUrl, user } = account;
   if (!(await isBiometricUnlockEnabled(serverUrl, user.id))) return null;
   return readPinBehindBiometrics(serverUrl, user.id, deps.t('auth.faceUnlock'));
 }
 
-/** The server asked for a PIN: try the vault silently, else open the pad. */
 async function askForPin(deps: EnterSavedDeps, account: MobileAccount): Promise<void> {
-  // Face ID first: a stored PIN unlocks without showing the pad.
   const stored = await vaultedPin(deps, account);
   if (stored) {
     try {
@@ -60,7 +56,6 @@ async function askForPin(deps: EnterSavedDeps, account: MobileAccount): Promise<
   deps.setPhase({ kind: 'pin', account });
 }
 
-/** Revoked device token: forget it, fall back to that profile's password. */
 function fallBackToPassword(deps: EnterSavedDeps, account: MobileAccount): void {
   deps.session.forgetAccount(account);
   deps.session.selectServer(account.serverUrl);

@@ -146,22 +146,11 @@ export function streamUrl(ctx: RequestContext, id: string): string {
   return `${ctx.baseUrl}/api/items/${encodeURIComponent(id)}/stream`;
 }
 
-/** One-file offline download: the title remuxed on the fly to fragmented MP4
- * (video stream-copied; EVERY audio track kept, each copied or AAC-transcoded
- * server-side so the file plays on any phone with all languages switchable
- * offline). `copyCodecs` narrows which codecs the server may stream-copy to
- * the ones THIS device decodes natively (e.g. `['aac']` on Android phones,
- * which usually lack Dolby decoders). Chunked, no Content-Length.
- *
- * The three states are distinct on the wire: omitting `copyCodecs` sends no
- * `copy` param at all ("no preference" = the server's full copy set), while an
- * EMPTY array sends an empty one ("this device decodes none of them, transcode
- * everything"). Collapsing the two would turn "copy nothing" into "copy all"
- * and hand a phone Dolby tracks it can't decode, offline, where the player has
- * no fallback left. `videoCodecs` follows the same three states for the video
- * track: omitted = stream-copy always; listed = the server transcodes to H.264
- * when the source codec is not in the set (AV1 on a pre-A17 iPhone downloaded
- * as audio under a black frame otherwise). */
+/** One-file offline download: video stream-copied, every audio track copied or
+ * AAC-transcoded server-side. `copyCodecs`/`videoCodecs` must distinguish
+ * omitted (no preference, full copy set) from an empty array (decode none,
+ * transcode everything) - collapsing the two would hand a device Dolby/AV1
+ * tracks it can't decode with no fallback once offline. */
 export function downloadUrl(
   ctx: RequestContext,
   id: string,
@@ -182,15 +171,9 @@ export function downloadUrl(
 export type HlsAudioFilter = 'standard' | 'night';
 
 /** HLS *master* playlist for one continuous remux: the video once plus EVERY
- * audio track as an alternate rendition (one per `item.audioTracks` entry, so
- * rendition T maps to audio-relative index T), so language switches happen IN
- * PLACE (no reload, the picture never moves). `startSec` (input `-ss`) anchors
- * the remux at a resume / far seek so it is available in ~1s even over a network
- * mount; hls.js reports time relative to that anchor, so the client adds it back
- * for the absolute position. `aac=true` transcodes every rendition to stereo AAC
- * for runtimes that can't decode the source codec via MSE (AC3/EAC3/DTS on
- * Chrome/webOS); `aac=false` stream-copies them (surround preserved, for
- * native-decode clients). Needs hls.js outside Safari/TV. */
+ * audio track as an alternate rendition, so language switches happen in place
+ * (no reload). `aac=true` transcodes every rendition to stereo AAC for runtimes
+ * that can't decode the source codec via MSE; `aac=false` stream-copies them. */
 export function hlsMasterUrl(
   ctx: RequestContext,
   id: string,
@@ -199,15 +182,11 @@ export function hlsMasterUrl(
   audio = 0,
   filter?: HlsAudioFilter,
 ): string {
-  // One muxed program per (item, MODE, ANCHOR, AUDIO). The anchor (input `-ss`)
-  // and the audio-relative track index are both in the PATH, so each seek
-  // position and each language gets its own session with its own child URLs - no
-  // collision, no stale-cache replay. The chosen audio is MUXED into the stream
-  // (hls.js alternate-audio switching was unreliable), so language switch reloads
-  // with a different `audio`. The loudness filter is part of the mode segment for
-  // the same reason (filtered and clean segments must never share URLs). hls.js
-  // reports time relative to the anchor; the client adds it back via the
-  // X-Hls-Start header.
+  // The anchor, audio index and filter mode are all in the path, so each seek
+  // position and language gets its own session with its own child URLs - no
+  // collision, no stale-cache replay. Filtered and clean segments must never
+  // share a URL. The chosen audio is MUXED into the stream (hls.js
+  // alternate-audio switching was unreliable).
   const anchor = Math.max(0, Math.round(startSec));
   const a = Math.max(0, Math.round(audio));
   const clean = aac ? 'aac' : 'copy';
@@ -225,21 +204,11 @@ export function showPosterUrl(ctx: RequestContext, id: string): string {
   return `${ctx.baseUrl}/api/shows/${encodeURIComponent(id)}/poster`;
 }
 
-/**
- * Resolve a metadata image URL against the server origin, at the size it will
- * actually be shown.
- *
- * Cached WebP art is stored as a relative path (`/api/images/…`); TMDB
- * fallbacks are absolute and are handed back untouched.
- *
- * `width` matters more than it looks on a television. The cached artwork is
- * full-size, and a browse grid decodes a hundred of them: asking for the
- * displayed width instead lets the server hand over a rendition it has already
- * made (`?w=`, snapped to a fixed bucket and cached on disk), which is the
- * difference between a Samsung TV that scrolls and one that stutters. Leave it
- * out for artwork shown large - a hero backdrop is wider than the largest
- * bucket, so a rendition would only make it worse.
- */
+/** Resolve a metadata image URL against the server origin, at the size it will
+ * actually be shown. Cached WebP art is a relative path (`/api/images/…`, sized
+ * via `?w=`); TMDB fallbacks are absolute and handed back untouched. Pass
+ * `width` for grids (a Samsung TV decoding a hundred full-size images stutters);
+ * leave it out for a hero backdrop already wider than the largest bucket. */
 export function resolveArt(
   ctx: RequestContext,
   url?: string | null,
@@ -296,17 +265,13 @@ export function subtitleUrl(ctx: RequestContext, id: string, index: number): str
  * plus the geometry needed to map a cursor time → a tile (YouTube-style hover
  * preview). Generated once per file by the server and cached on disk. */
 export interface StoryboardManifest {
-  /** Sprite-sheet URL (server-relative, `?v=` cache-busts on source change). */
   url: string;
-  /** Seconds of video between consecutive tiles. */
   interval: number;
   tileW: number;
   tileH: number;
   cols: number;
   rows: number;
-  /** Number of real tiles (trailing grid cells may be blank padding). */
   count: number;
-  /** Total media duration (s). */
   duration: number;
 }
 

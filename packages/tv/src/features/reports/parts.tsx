@@ -3,7 +3,6 @@ import { useT } from '@kroma/ui';
 import { Box, Chip, Icon, ListRow, Rail, REPORT_CATEGORIES, Txt } from '@kroma/ui/kit';
 import type { ReportEpisode } from '#tv/app/router';
 
-/** A small uppercase heading above one group of the form. */
 export function GroupLabel({ text }: Readonly<{ text: string }>) {
   return (
     <Txt variant="overlineTv" color="rgba(244, 243, 240, 0.45)">
@@ -13,12 +12,8 @@ export function GroupLabel({ text }: Readonly<{ text: string }>) {
 }
 
 /**
- * What the report is about: the title itself, or one of its episodes.
- *
- * Only a series gets this row (a film is its own subject), and it is what makes
- * per-episode reporting possible from a 10-foot UI at all: hanging a second
- * control off every episode tile would double what the remote has to walk
- * through on the detail page to reach the next season.
+ * What the report is about: the title itself, or one of its episodes. Only a
+ * series gets this row a film is its own subject.
  */
 export function SubjectRow({
   episodes,
@@ -28,7 +23,6 @@ export function SubjectRow({
 }: Readonly<{
   episodes: ReportEpisode[];
   selectedId: string;
-  /** The id that means "the whole series", i.e. the show itself. */
   wholeId: string;
   onSelect: (id: string) => void;
 }>) {
@@ -59,8 +53,8 @@ export function SubjectRow({
   );
 }
 
-/** The five categories, one focusable row each. The chosen one keeps an amber
- * check, so the choice survives moving focus away to the send button. */
+/** The categories, one focusable row each; the chosen one keeps a check so the
+ * choice survives moving focus away to the send button. */
 export function CategoryRows({
   selected,
   onSelect,
@@ -76,8 +70,6 @@ export function CategoryRows({
         {REPORT_CATEGORIES.map((c, index) => (
           <ListRow
             key={c.key}
-            // The screen's entry point: the first thing to decide is the kind of
-            // problem, and every other control follows from it.
             autoFocus={index === 0}
             icon={c.icon}
             label={t(c.labelKey)}
@@ -93,8 +85,7 @@ export function CategoryRows({
   );
 }
 
-/** The confirmation that replaces the form once the report is in: a green tick
- * and a thank-you, held on screen just long enough to be read. */
+/** The confirmation that replaces the form once the report is in. */
 export function ReportSent() {
   const t = useT();
   return (

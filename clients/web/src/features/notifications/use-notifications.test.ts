@@ -1,11 +1,8 @@
 // @vitest-environment jsdom
 //
 // The bell is driven by two halves that never call each other: a stream writes
-// the react-query cache, and a badge reads it. Nothing in the type system ties
-// the two to the same cache key, so a rename on one side would leave a bell that
-// simply never moves - silently, with no error anywhere. These tests run both
-// halves against the REAL `userQueries.notifications()` so that key is shared
-// for the same reason it is in production.
+// the react-query cache, and a badge reads it. Nothing ties them to the same
+// cache key, so these tests run both against the REAL `userQueries.notifications()`.
 import type { NotificationsView } from '@kroma/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
@@ -51,7 +48,7 @@ const { userQueries } = await import('#web/shared/lib/queries');
 
 let client: QueryClient;
 
-/** Render `hook` against a fresh cache; retries off so a rejected fetch settles. */
+// Retries off so a rejected fetch settles.
 function render<T>(hook: () => T) {
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client }, children);
@@ -62,23 +59,20 @@ function view(unread: number): NotificationsView {
   return { notifications: [], unread } as unknown as NotificationsView;
 }
 
-/** Wait for the badge to read `n`. A fixed number of turns is not enough: the
- *  fetch and react-query's batched observer notifications settle on their own
- *  schedule, and an instrumented CI run is slower than a local one. */
+// A fixed number of turns is not enough: react-query's batched observer
+// notifications settle on their own schedule, slower under an instrumented CI run.
 async function expectBadge(read: () => number, n: number) {
   await waitFor(() => expect(read()).toBe(n));
 }
 
-/** Push an event down the stream. The write has to happen INSIDE the `act`:
- *  react-query batches its observer notifications, so an `act` that returns
- *  first leaves the badge unmoved. */
+// The write has to happen INSIDE the `act`: react-query batches its observer
+// notifications, so an `act` that returns first leaves the badge unmoved.
 async function push(e: { type: string; unread: number }) {
   await act(async () => {
     stream().emit(e);
   });
 }
 
-/** The stream this render opened. */
 function stream() {
   const s = H.streams.at(-1);
   if (!s) throw new Error('no stream was connected');

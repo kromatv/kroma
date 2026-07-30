@@ -30,18 +30,12 @@ interface SubtitleAppearancePanelProps {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-/** Move `dir` steps through `options` from `current`, clamped (no wrap). */
 function step<V>(options: readonly V[], current: V, dir: -1 | 1): V {
   const i = options.indexOf(current);
   return options[clamp(Math.max(0, i) + dir, 0, options.length - 1)] ?? current;
 }
 
 const SIZES: SubSize[] = ['sm', 'md', 'lg', 'xl'];
-// The edge and font lists come from the model (SUB_EDGES / SUB_FONTS) rather than
-// being retyped here: a treatment missing from a local copy compiles fine and is
-// simply unreachable by the remote. Both are shown as a named current value
-// rather than a segmented control - eight buttons across a settings panel are
-// unreadable at three metres, and the row's own ◀▶ is how a remote moves anyway.
 
 const EDGE_LABEL = {
   none: 'subtitle.none',
@@ -70,10 +64,9 @@ interface AppRow {
 }
 
 /**
- * Subtitle appearance (§8): a live preview above value rows for CEA-708's three
- * layers - the text (size, colour, edge, font, opacity), the box behind it, and
- * the window the block sits in. Each layer's colour row appears once that layer
- * is actually visible. ▲▼ move between rows, ◀▶ change the focused row's value.
+ * A live preview above value rows for CEA-708's three layers: the text, the box
+ * behind it, and the window the block sits in. ▲▼ move between rows, ◀▶ change
+ * the focused row's value.
  */
 export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearancePanelProps>(
   function SubtitleAppearancePanel({ appearance, onAppearance, onBack }, ref) {
@@ -128,9 +121,7 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
         nudge: (d) => set({ bgOpacity: clamp(appearance.bgOpacity + d * 5, 0, 100) }),
         control: <Meter value={appearance.bgOpacity} />,
       },
-      // A layer's colour is only worth a row once that layer is visible -
-      // otherwise the panel opens on two swatch rows that change nothing anyone
-      // can see.
+      // A layer's colour is only worth a row once that layer is visible.
       ...(appearance.bgOpacity > 0
         ? [
             {
@@ -182,8 +173,6 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
           mb={18}
           style={gradient('linear-gradient(135deg, #1c1c24, #0d0d11)')}
         >
-          {/* The preview carries the window too, or the two rows that set it
-              would be the only settings here you cannot see the effect of. */}
           <Box style={subtitleWindowStyle(appearance)}>
             <Txt style={subtitleStyle(appearance)}>{t('player.subPreview')}</Txt>
           </Box>
@@ -207,7 +196,6 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
   },
 );
 
-/** A value row: a label + ◀▶ header, then the control beneath it. */
 function AppearanceRow({
   label,
   focused,
@@ -237,8 +225,6 @@ function AppearanceRow({
   );
 }
 
-/** One ◀ / ▶ nudge control. Dimmed until its row holds focus, so the row that
- * the D-pad will act on is unambiguous. */
 function Arrow({
   glyph,
   label,
@@ -262,9 +248,6 @@ function Arrow({
   );
 }
 
-/** The current option, named. Where a segmented control cannot fit - the five
- * edge treatments, the eight font styles - the row shows what is selected and
- * its own ◀▶ moves through the rest. */
 function Choice({ label }: Readonly<{ label: string }>) {
   return (
     <Box row align="center" center px={14} style={pill} accessibilityRole="text">
@@ -275,7 +258,6 @@ function Choice({ label }: Readonly<{ label: string }>) {
   );
 }
 
-/** Full-width segmented control (size). */
 function Seg<V extends string>({
   value,
   options,
@@ -309,7 +291,6 @@ function Seg<V extends string>({
   );
 }
 
-/** Row of 32px colour swatches (subtitle colour). */
 function Swatches({ value, onPick }: Readonly<{ value: string; onPick: (color: string) => void }>) {
   return (
     <Box row gap={14}>
@@ -336,7 +317,6 @@ function Swatches({ value, onPick }: Readonly<{ value: string; onPick: (color: s
   );
 }
 
-/** A read-only amber meter with a trailing percent (opacity rows). */
 function Meter({ value }: Readonly<{ value: number }>) {
   return (
     <Box row align="center" gap={14}>

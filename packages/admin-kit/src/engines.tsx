@@ -1,11 +1,9 @@
-// Data-driven engine add-flows for the admin console. `GET /api/modules` reports
-// every module's enabled flag and the capabilities it provides; each engine
-// capability (`download-client`, `indexer-engine`, ...) carries an add-form schema
-// (`fields`) or a custom `flow` (e.g. the native Cardigann definition picker).
-// These helpers turn that into UI: a host page lists one add-flow per enabled
-// engine and renders <AddEngineModal> (a generic form over the engine's fields),
-// so disabling a module hides its add-UI and adding an engine needs no frontend
-// change.
+// Data-driven engine add-flows for the admin console. `GET /api/modules`
+// reports each module's enabled flag and the capabilities it provides; each
+// capability carries an add-form schema (`fields`) or a custom `flow` (e.g.
+// the Cardigann definition picker). A host page lists one add-flow per
+// enabled engine and renders <AddEngineModal>, so adding an engine needs no
+// frontend change.
 
 import {
   apiErrorText,
@@ -23,17 +21,13 @@ import { SegmentedControl } from './controls';
 import { Field, Modal, ModalActions, Select, TextInput } from './forms';
 import { useAsyncAction } from './hooks';
 
-/** True when a capability actually has an add-flow to render (a plain field form
- * or a custom `flow`). Engines without one (e.g. the always-on embedded `rqbit`)
- * are not offered in the add-picker. */
 function hasAddFlow(cap: EngineCapability): boolean {
   return cap.flow != null || (cap.fields?.length ?? 0) > 0;
 }
 
-/** Shared read of the module list. Keyed on `['modules']` so it reuses the module
- * host's existing `GET /api/modules` query (same payload) instead of opening a
- * second cache entry + a background poll; the host's enable/disable invalidation
- * keeps it live. */
+// Keyed on `['modules']` so this reuses the module host's existing
+// `GET /api/modules` query instead of opening a second cache entry; the
+// host's enable/disable invalidation keeps it live.
 function useModules(): ModuleInfo[] {
   const { client } = useAdminKit();
   const { data } = useQuery({
@@ -105,13 +99,10 @@ export function FieldForm({
   );
 }
 
-/** The generic "add an engine" modal, as an imperative callable: pick an engine
- * (when there is more than one), name it, fill its declared fields, submit.
- * Rendered entirely from what the backend reports, so a new engine needs no
- * bespoke modal. `onSubmit` (a prop of `.call(...)`) receives the chosen engine
- * id and the collected values (`name` plus every field key); the modal resolves
- * `true` once a submit succeeds, `false` on dismiss. Its single root is mounted
- * once in the admin shell. */
+/** The generic "add an engine" modal, as an imperative callable: pick an
+ * engine, name it, fill its declared fields, submit. `onSubmit` receives the
+ * chosen engine id and the collected values (`name` plus every field key);
+ * the modal resolves `true` on submit, `false` on dismiss. */
 export const AddEngineModal = createCallable<
   {
     engines: EngineCapability[];

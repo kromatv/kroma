@@ -42,8 +42,7 @@ const iconButtonVariants = sv({
  * has to cover exactly these and a second spelling could drift from it. */
 export type IconButtonVariant = 'glass' | 'ghost' | 'primary' | 'scrim';
 
-/** The brightened fill a finger gets: the touch reading of the focus state
- * (the player cluster's CTRL_ON for glass, the hover amber for primary). */
+// The brightened fill a finger gets: the touch reading of the focus state.
 const PRESSED: Record<IconButtonVariant, ViewStyle> = {
   glass: { backgroundColor: 'rgba(255, 255, 255, 0.22)' },
   ghost: { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
@@ -51,9 +50,8 @@ const PRESSED: Record<IconButtonVariant, ViewStyle> = {
   scrim: { backgroundColor: 'rgba(40, 40, 48, 0.65)' },
 };
 
-/** The fill under a POINTER, one step short of `PRESSED` so hover → press reads
- * as a single escalation. The web's own answer, and on a page that mounts no
- * focus scope the only one a cursor gets - see <Focusable>'s `hoveredStyle`. */
+// One step short of `PRESSED` so hover → press reads as a single escalation;
+// on a page with no focus scope, this is the only feedback a cursor gets.
 const HOVERED: Record<'glass' | 'ghost' | 'primary' | 'scrim', ViewStyle> = {
   glass: { backgroundColor: 'rgba(255, 255, 255, 0.18)' },
   ghost: { backgroundColor: 'rgba(255, 255, 255, 0.06)' },
@@ -61,19 +59,16 @@ const HOVERED: Record<'glass' | 'ghost' | 'primary' | 'scrim', ViewStyle> = {
   scrim: { backgroundColor: 'rgba(28, 28, 34, 0.6)' },
 };
 
-/** The pressed state of a toggle (a watched check, a workbench tool): the
- * accent's soft wash, same recipe as <Button variant="outline" active>. */
+// The pressed state of a toggle: the same recipe as <Button variant="outline" active>.
 const ACTIVE: ViewStyle = {
   backgroundColor: colors.accentSoft,
   borderColor: 'rgba(242, 180, 66, 0.45)',
 };
 
-/** ...and that toggle under the cursor: still amber, one step up. */
 const ACTIVE_HOVERED: ViewStyle = { backgroundColor: colors.accentSoftHover };
 
-/** `focusFill`: while focused the control fills solid accent and the glyph
- * flips to ink - the 10-foot treatment for a bare corner control (a back
- * button) whose focus has to read from three metres away. */
+// The 10-foot treatment for a bare corner control (a back button) whose focus
+// has to read from three metres: fills solid accent and flips the glyph to ink.
 const FOCUS_FILL: ViewStyle = {
   backgroundColor: colors.accent,
   borderColor: colors.accent,
@@ -114,8 +109,8 @@ function IconButton({
   ...focusProps
 }: Readonly<IconButtonProps>) {
   const glyphSize = glyph ?? Math.round(size * 0.4);
-  /** Glyph colour by state, most specific first: a focus fill flips to ink, an
-   * active toggle tints accent, a primary fill is always ink. */
+  // Most specific first: a focus fill flips to ink, an active toggle tints
+  // accent, a primary fill is always ink.
   const ink = (focused: boolean) => {
     if (focusFill && focused) return 'accentInk';
     if (active) return 'accent';

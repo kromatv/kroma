@@ -31,11 +31,11 @@ pub struct ScanData {
     pub libraries: Vec<Library>,
     pub shows: Vec<Show>,
     pub items: Vec<MediaItem>,
-    /// `file_id -> mtime-secs` for every scanned file. Carried here (rather than
-    /// on `MediaFile`, which is the client JSON contract) so the DB sync can
-    /// detect changed files. Owned by this scan no shared global, so two
-    /// overlapping scans (watcher rescan + `POST /api/scan`) can't steal each
-    /// other's entries.
+    // `file_id -> mtime-secs` for every scanned file. Carried here (rather than
+    // on `MediaFile`, which is the client JSON contract) so the DB sync can
+    // detect changed files. Owned by this scan no shared global, so two
+    // overlapping scans (watcher rescan + `POST /api/scan`) can't steal each
+    // other's entries.
     pub mtimes: HashMap<String, Option<i64>>,
 }
 
@@ -159,7 +159,7 @@ mod tests {
     use crate::model::Kind;
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    /// A fresh, empty temp directory for one test.
+    // A fresh, empty temp directory for one test.
     fn tmp_root(tag: &str) -> std::path::PathBuf {
         static SEQ: AtomicU32 = AtomicU32::new(0);
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
@@ -289,7 +289,6 @@ mod tests {
         let _ = std::fs::remove_dir_all(&a);
         let _ = std::fs::remove_dir_all(&b);
     }
-    // ----- rescan_sync: the demo-seeding guard ------------------------------------
 
     use crate::services::settings::{set_library_defs, LibraryDef};
     use crate::test_support::test_state;

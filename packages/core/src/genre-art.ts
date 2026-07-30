@@ -7,11 +7,9 @@ import { hueFromString } from './format';
 
 const byRating = compareTitles('rating');
 
-/** The best-rated title in `list` that no other genre has claimed, falling back
- * to the best one overall when they are all taken. A linear scan, NOT a sort:
- * only ONE title per genre is ever read, and the Genres screen buckets several
- * times the catalogue. Ties keep the earliest candidate, so the pick stays
- * deterministic even on engines with an unstable Array.sort (legacy webOS). */
+// A linear scan, not a sort: only one title per genre is ever read. Ties keep
+// the earliest candidate, so the pick stays deterministic on engines with an
+// unstable Array.sort (legacy webOS).
 function bestUnused<T extends Sortable>(list: readonly T[], used: ReadonlySet<T>): T | undefined {
   let best: T | undefined;
   let free: T | undefined;

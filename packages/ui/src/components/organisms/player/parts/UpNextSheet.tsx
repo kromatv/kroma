@@ -23,8 +23,6 @@ import { UP_NEXT_COLUMNS, UP_NEXT_GAP, UpNextCard, type UpNextItem } from './UpN
 
 export type { UpNextItem };
 
-/** The two contextual buckets feeding the sheet (§10). For a film,
- * `nextEpisodes` is empty so only recommendations show. */
 export interface UpNextData {
   nextEpisodes: UpNextItem[];
   recommendations: UpNextItem[];
@@ -32,30 +30,20 @@ export interface UpNextData {
 
 export interface UpNextSheetProps {
   data: UpNextData;
-  /** overlay === 'sheet': the sheet rises and captures the D-pad. */
   open: boolean;
-  /** Chrome visible; the peek shows ONLY when revealed AND there is data. */
   revealed: boolean;
-  /** Header press / ▼ from the controls: the shell opens the sheet. */
   onOpen: () => void;
   onClose: () => void;
   onPlay: (item: UpNextItem) => void;
 }
 
-/** Pixels of the sheet that peek above the bottom edge while parked (§10).
- * Exported because the bottom chrome has to clear exactly this much - see
- * Player.tsx, which used to carry its own nearly-equal copy of the number. */
+// The player's bottom chrome has to clear exactly this much (see Player.tsx).
 export const PEEK_HEIGHT = 150;
-/** Sheet height as a fraction of the player surface. */
 const SHEET_FRACTION = 0.82;
 
-/** How far down the sheet sits when parked: everything but the peek.
- *
- * In PIXELS, measured. It used to be a percentage string, which react-native-web
- * hands to CSS (where a percentage transform resolves against the element's own
- * box) but which native React Native cannot interpret at all - so on Apple TV the
- * sheet never parked and the "À suivre" grid covered the film the instant
- * playback started, transport controls and all. */
+// In pixels, never a percentage string: react-native-web resolves a percentage
+// transform against the element's own box and native React Native cannot
+// interpret one at all, so the sheet would never park on Apple TV.
 function parkOffset(sheetHeight: number): number {
   return Math.max(0, sheetHeight - PEEK_HEIGHT);
 }
@@ -72,8 +60,6 @@ interface Section {
   offset: number;
 }
 
-/** Split the data into "Épisodes suivants" then "Recommandations", tracking the
- * flat offset each section starts at so one focus index spans every card. */
 function buildSections(data: UpNextData, t: Translate): Section[] {
   const sections: Section[] = [];
   if (data.nextEpisodes.length) {
@@ -95,22 +81,14 @@ function buildSections(data: UpNextData, t: Translate): Section[] {
   return sections;
 }
 
-/** While parked only the peek's first row is visible, so only it mounts (and
- * only its art is fetched); the rest of the grid mounts when the sheet opens. */
 function peekSections(sections: Section[]): Section[] {
   const first = sections[0];
   if (!first) return [];
   return [{ ...first, items: first.items.slice(0, UP_NEXT_COLUMNS) }];
 }
 
-/**
- * The YouTube-TV-style "À suivre" surface (§10): ONE sliding sheet with two
- * positions. Parked (peek) it sits low so only the header + a clipped card row
- * show, and the cards are not focusable (the shell owns ▼). Open, it rises over
- * a scrim into a scrollable grid grouped into "Épisodes suivants" then
- * "Recommandations". D-pad focus runs across the FLAT list of every card via
- * `useGridFocus` (cols=3); ▲ off the top (or Back) closes, Enter plays.
- */
+/** One sliding sheet with two positions: parked as a non-focusable peek, or
+ * risen over a scrim into a scrollable grid the D-pad walks as one flat list. */
 const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNextSheet(
   { data, open, revealed, onOpen, onClose, onPlay },
   ref,
@@ -132,22 +110,17 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
     onBack: onClose,
   });
 
-  // The sheet only owns the D-pad while open; otherwise the shell handles ▼.
   useImperativeHandle(
     ref,
     () => ({ onKey: (key: RemoteKey) => (open ? grid.onKey(key) : false) }),
     [open, grid.onKey],
   );
 
-  // The sheet's own height, which is what "parked" is measured against. Seeded
-  // from the stage so the very first frame is already parked (a sheet that starts
-  // at 0 and corrects on layout is a full-screen flash over the film), then kept
-  // honest by onLayout.
+  // Seeded from the stage so the first frame is already parked: a height that
+  // starts at 0 and corrects on layout flashes full-screen over the film.
   const { height: stageHeight } = useWindowDimensions();
   const [sheetHeight, setSheetHeight] = useState(() => Math.round(stageHeight * SHEET_FRACTION));
 
-  // Rise / park. Animated rather than a CSS transition so the one sheet slides
-  // the same way on every target.
   const slide = useRef(new Animated.Value(open ? 0 : 1)).current;
   useEffect(() => {
     const anim = Animated.timing(slide, {
@@ -160,15 +133,12 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
     return () => anim.stop();
   }, [open, slide]);
 
-  // Scroll the focused card into view on D-pad nav ONLY (keyNonce bumps on arrow
-  // keys, not on hover), so the ring never leaves the viewport on a TV while a
-  // pointer hover leaves the scroll position, and the layout under it, untouched.
-  // Row offsets come from onLayout rather than from the DOM, so this works on a
-  // TV where there is no scrollIntoView.
+  // Scroll on D-pad nav only, and from onLayout offsets rather than the DOM:
+  // a TV has no scrollIntoView, and a pointer hover must not move the scroll.
   const scroller = useRef<ScrollView>(null);
   const rowTop = useRef(new Map<number, number>());
-  // React Native has no calc(), so the three-across card width is computed from
-  // the measured row width instead of expressed as calc((100% - 52px) / 3).
+  // React Native has no calc(): the three-across width comes from the measured
+  // row instead of calc((100% - 52px) / 3).
   const [rowWidth, setRowWidth] = useState(0);
   const card = rowWidth > 0 ? cellWidth(rowWidth, UP_NEXT_COLUMNS, UP_NEXT_GAP) : undefined;
   // biome-ignore lint/correctness/useExhaustiveDependencies: grid.keyNonce is a change-trigger (re-run on D-pad moves only), intentionally not read in the body.
@@ -206,7 +176,6 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
               {
                 translateY: slide.interpolate({
                   inputRange: [0, 1],
-                  // Parked, all but PEEK_HEIGHT of the sheet sits below the edge.
                   outputRange: [0, parkOffset(sheetHeight)],
                 }),
               },
@@ -223,10 +192,8 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
           ref={scroller}
           scrollEnabled={open}
           showsVerticalScrollIndicator={false}
-          // Top padding is the focused still's headroom: at 4px the first row's
-          // ring was shaved off by the sheet's own overflow clip. The bottom
-          // matches, so the last row clears the screen edge instead of dying
-          // against it.
+          // Headroom for the focused still's ring, which the sheet's own
+          // overflow clip would otherwise shave off the first row.
           contentContainerStyle={{ paddingHorizontal: 56, paddingTop: 16, paddingBottom: 72 }}
         >
           {shown.map((sec) => (
@@ -266,12 +233,9 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
   );
 });
 
-/** Memoized: between playback ticks every prop is stable (the shell hoists its
- * handlers), so the parked sheet skips the chrome's ~4 Hz re-renders. */
+// Memoized so the parked sheet skips the chrome's ~4 Hz playback re-renders.
 export const UpNextSheet = memo(UpNextSheetBase);
 
-/** Reports where its row starts, so the sheet can scroll a D-pad move into view
- * without reaching for the DOM. */
 function CardCell({
   row,
   width,
@@ -310,7 +274,6 @@ const SHEET_BOX = {
   overflow: 'hidden' as const,
 };
 
-/** The pressable header: title + a chevron that flips between the two states. */
 function SheetHeader({
   open,
   title,

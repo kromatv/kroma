@@ -1,19 +1,9 @@
-//! Smart Hub preview "cards": a 640×360 (16:9) landscape tile composited from a
-//! backdrop + dark scrims + a category **badge** (NOUVEAUTÉ / REPRENDRE), the
-//! **KROMA** brand lockup (top-right), and the title's **logo** artwork
-//! (transparent PNG, drawn only when one exists no text fallback), plus an
-//! optional resume progress bar. Encoded as JPEG.
+//! Smart Hub preview "cards": a 640×360 landscape tile composited from a backdrop
+//! + scrims + a category badge + the KROMA brand lockup + the title's logo
+//! artwork, plus an optional resume progress bar. Encoded as JPEG.
 //!
-//! The film/series title and meta line are shown by the carousel itself (the
-//! tile's `title`/`subtitle`), so they are deliberately NOT baked in here.
-//!
-//! Dependency-light (no resvg / system fonts): tiny-skia rasterises shapes,
-//! gradients and the pre-scaled PNG layers; fontdue draws the (Latin) badge +
-//! brand wordmark; jpeg-encoder writes the output. Both fonts are embedded
-//! (Hanken Grotesk for the badge, Bricolage Grotesque for the wordmark).
-//!
-//! This file owns the poster compositing; the brand lockup (wordmark + chromatic
-//! wheel) is drawn by the [`brand`] submodule on top of the same primitives.
+//! The title/meta line are shown by the carousel itself and deliberately not
+//! baked in here. Brand lockup drawing lives in the [`brand`] submodule.
 
 mod brand;
 
@@ -47,15 +37,11 @@ fn font() -> &'static Font {
     })
 }
 
-/// What to render onto a card.
 pub struct Card<'a> {
     pub base_png: &'a [u8],
-    /// Category badge text, e.g. "Nouveauté" / "Reprendre".
     pub label: &'a str,
-    /// Title-treatment logo PNG (alpha), pre-scaled to fit. Drawn only when
-    /// present there is deliberately no text fallback.
+    // Drawn only when present - deliberately no text fallback.
     pub logo_png: Option<&'a [u8]>,
-    /// Resume fraction 0.0–1.0 → draws a progress bar.
     pub progress: Option<f32>,
 }
 
@@ -68,8 +54,6 @@ pub fn render(card: &Card) -> Option<Vec<u8>> {
 
     paint_scrims(&mut pm);
 
-    // Title-treatment artwork (bottom-left). Drawn only when present no text
-    // fallback, by design: a card with no logo simply shows the bare backdrop.
     if let Some(logo) = card.logo_png.and_then(|b| Pixmap::decode_png(b).ok()) {
         let y = pm.height() as f32 - MARGIN * s - logo.height() as f32;
         pm.draw_pixmap(
@@ -96,11 +80,6 @@ pub fn render(card: &Card) -> Option<Vec<u8>> {
     Some(encode_jpeg(&pm))
 }
 
-// ---- layers ----------------------------------------------------------------
-
-/// Fill the whole card with a vertical (top -> bottom) two-stop linear gradient
-/// running from `top` at `y0` to `bottom` at `y1`. No-op if the shader can't be
-/// built (degenerate stops).
 fn fill_vgradient(pm: &mut Pixmap, y0: f32, y1: f32, top: Color, bottom: Color) {
     if let Some(shader) = LinearGradient::new(
         Point::from_xy(0.0, y0),
@@ -139,7 +118,6 @@ fn paint_scrims(pm: &mut Pixmap) {
     );
 }
 
-/// Top-left category pill: translucent dark rounded rect + amber uppercase label.
 fn paint_badge(pm: &mut Pixmap, text: &str, s: f32) {
     let f = font();
     let (size, tracking) = (BADGE_SIZE * s, BADGE_TRACKING * s);
@@ -179,8 +157,6 @@ fn paint_progress(pm: &mut Pixmap, frac: f32, s: f32) {
     }
 }
 
-// ---- primitives ------------------------------------------------------------
-
 fn rounded_rect(x: f32, y: f32, w: f32, h: f32, r: f32) -> Option<tiny_skia::Path> {
     let mut pb = PathBuilder::new();
     pb.move_to(x + r, y);
@@ -196,7 +172,6 @@ fn rounded_rect(x: f32, y: f32, w: f32, h: f32, r: f32) -> Option<tiny_skia::Pat
     pb.finish()
 }
 
-/// Glyph rendering style: size, RGB colour, and inter-letter tracking.
 #[derive(Clone, Copy)]
 struct TextStyle {
     size: f32,
@@ -214,9 +189,6 @@ fn draw_text(pm: &mut Pixmap, font: &Font, text: &str, x: f32, baseline: f32, st
     }
 }
 
-/// Tint one rasterised glyph coverage `bitmap` by `color` and blit it at the pen
-/// position. No-op for empty glyphs (e.g. spaces) or when the scratch pixmap can't
-/// be allocated.
 fn blit_glyph(
     pm: &mut Pixmap,
     m: &fontdue::Metrics,
@@ -252,8 +224,6 @@ fn text_width(font: &Font, text: &str, size: f32, tracking: f32) -> f32 {
     }
     (w - tracking).max(0.0)
 }
-
-// ---- output ----------------------------------------------------------------
 
 fn encode_jpeg(pm: &Pixmap) -> Vec<u8> {
     let data = pm.data();

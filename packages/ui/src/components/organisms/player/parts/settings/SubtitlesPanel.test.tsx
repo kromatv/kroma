@@ -1,13 +1,10 @@
 // @vitest-environment jsdom
 //
-// The subtitle picker inside the player.
-//
-// Two things here are easy to get wrong in a way nobody notices until a viewer
-// is stuck. A PICTURE sub (PGS/VobSub) cannot be rendered as text, so its row
-// exists but must not be selectable - hiding it would be worse, because the
-// track really is in the file and its absence would read as a bug. And the row
-// INDEX is not the track index: the list is [Off, ...subs, (create?)], so an
-// off-by-one hands the viewer a different language than the one they pressed.
+// The subtitle picker inside the player. Two things are easy to get wrong
+// silently: a PICTURE sub (PGS/VobSub) can't render as text, so its row exists
+// but is inert rather than hidden; and the row INDEX is not the track index —
+// the list is [Off, ...subs, (create?)], so an off-by-one would hand the
+// viewer the wrong language.
 
 import type { SubtitleGeneration } from '@kroma/core';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -20,8 +17,8 @@ import { SubtitlesPanel } from './SubtitlesPanel';
 
 afterEach(cleanup);
 
-/** The last control rendered in the tree - the trash beside a generated track
- *  or generation row. Asserted rather than indexed, for the reason above. */
+// The last control in the tree — the trash beside a generated track or
+// generation row. Asserted rather than indexed (see file header).
 function lastButton(container: HTMLElement): Element {
   const buttons = container.querySelectorAll('[role="button"]');
   const last = buttons[buttons.length - 1];

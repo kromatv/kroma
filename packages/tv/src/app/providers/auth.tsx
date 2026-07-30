@@ -1,12 +1,5 @@
-// Multi-server per-user session for the TV. Unlike the web (single origin), the
-// TV remembers profiles from several KROMA servers at once, so this owns:
-//   • the active session (token + user + which server),
-//   • every remembered account across all servers,
-//   • each saved server's public profile list (for the picker), with liveness,
-//   • a per-session "unlocked" set so a PIN-protected profile is gated once on
-//     switch-in, not on every render.
-// It reads the active client + server list from <ConnectionProvider> and feeds
-// the chosen server back via `setActiveServer` when a profile is activated.
+// Multi-server per-user session for the TV: unlike the web (single origin), the
+// TV remembers profiles from several KROMA servers at once.
 
 import {
   type AuthResult,
@@ -34,43 +27,24 @@ import {
 
 const keyOf = (a: Pick<StoredSession, 'serverUrl' | 'user'>) => `${norm(a.serverUrl)}|${a.user.id}`;
 
-/**
- * Set (or clear) the active bearer in BOTH places it has to live: on the client
- * that makes the requests, and in the shared session module.
- *
- * The second one is not optional. `KromaEvents` authenticates its WebSocket by
- * reading `sessionToken()` - a browser cannot set a header on a handshake, so
- * the bearer rides as a subprotocol - and this provider (the TV's own
- * multi-server one) used to set only the client's. Every socket the TV opened
- * was therefore refused: the player's admin-stop listener quietly fell back to
- * its 410-on-ping path, and the cast receiver, which has no such fallback, could
- * not attach at all.
- */
+// The bearer has to reach both places: `KromaEvents` authenticates its WebSocket
+// from the shared session module (a browser cannot set a header on a handshake,
+// so the bearer rides as a subprotocol), not from the client.
 function applyBearer(client: KromaClient | null, token?: string): void {
   client?.setAuthToken(token);
   setSessionToken(token);
 }
 
 interface Auth {
-  /** The active session, or null when signed out. */
   session: StoredSession | null;
-  /** The signed-in user (null when signed out). */
   user: User | null;
-  /** Every remembered account, across all servers (the picker's only source). */
   accounts: StoredSession[];
-  /** Pair a freshly Quick-Connected account on `serverUrl` and sign in. */
   login: (res: AuthResult, serverUrl: string) => void;
-  /** Switch to a remembered account instantly (no password). */
   activate: (account: StoredSession) => void;
-  /** Back to the picker WITHOUT signing out (re-arms every PIN lock). */
   switchProfile: () => void;
-  /** Forget a remembered (serverUrl, user) profile on this device. */
   forget: (userId: string, serverUrl: string) => void;
-  /** Fully sign out the active account (invalidate + forget on this device). */
   logout: () => Promise<void>;
-  /** Merge a patch into the active user, persisting it. */
   updateUser: (patch: Partial<User>) => void;
-  /** Has this account already cleared its PIN gate this session? */
   isUnlocked: (account: Pick<StoredSession, 'serverUrl' | 'user'>) => boolean;
 }
 
@@ -86,31 +60,21 @@ export function AuthProvider({
   client: KromaClient | null;
   activeServerUrl: string | null;
   setActiveServer: (url: string) => void;
-  /** Reports whether a session is active, so the host can gate the catalogue +
-   * event stream (the signed-out picker makes no requests). */
   onSignedInChange: (signedIn: boolean) => void;
   children: ReactNode;
 }>) {
   const [session, setSession] = useState<StoredSession | null>(() => loadSession());
   const [accounts, setAccounts] = useState<StoredSession[]>(() => loadAccounts());
-  // Profiles that have already cleared their PIN this session (ref gating reads
-  // it at switch-in time, it doesn't drive rendering).
   const unlocked = useRef<Set<string>>(new Set(session ? [keyOf(session)] : []));
-  // The access token we've already exchanged for a bearer. The success path below
-  // mints a new `session` object (re-running the effect); this ref stops it from
-  // re-exchanging in an infinite loop.
+  // The access token already exchanged for a bearer: the success path mints a
+  // new `session`, which would otherwise re-run the effect forever.
   const exchangedRef = useRef<string | null>(null);
-  // Coalesce concurrent silent refreshes (a poster grid full of 401s → one
-  // exchange, not N, which would trip the brute-force guard and bounce to the
-  // picker).
+  // Coalesce concurrent silent refreshes: a poster grid full of 401s must cause
+  // one exchange, not N, which would trip the brute-force guard.
   const refreshingRef = useRef<Promise<string | undefined> | null>(null);
 
-  // Exchange the active account's access token for a short-lived session bearer
-  // and keep it on the client but only when the session belongs to the server
-  // the client points at (a token for server A must never ride a request to
-  // server B). Also installs the 401 silent-refresh handler. The exchange
-  // returns the fresh user, so a change made elsewhere (language, hasPin) reaches
-  // the TV without a separate `me()` call.
+  // The bearer is only applied when the session belongs to the server the client
+  // points at: a token for server A must never ride a request to server B.
   useEffect(() => {
     if (!client) return;
     const match = session && norm(session.serverUrl) === norm(activeServerUrl);
@@ -135,7 +99,6 @@ export function AuthProvider({
       return p;
     });
 
-    // Exchange once per access token (the setSession below would otherwise loop).
     if (exchangedRef.current === session.accessToken) {
       return () => client.setRefreshHandler();
     }
@@ -152,8 +115,8 @@ export function AuthProvider({
       })
       .catch(() => {
         if (cancelled) return;
-        // Can't resume (revoked/expired token, or PIN required after a reset):
-        // drop to the picker instead of a zombie 'signed-in' state with no bearer.
+        // Unresumable (revoked/expired token, or PIN required after a reset):
+        // drop to the picker rather than a signed-in state with no bearer.
         applyBearer(client);
         exchangedRef.current = null;
         unlocked.current.clear();
@@ -166,14 +129,10 @@ export function AuthProvider({
     };
   }, [client, session, activeServerUrl]);
 
-  // Surface sign-in state to the host (gates catalogue + events).
   useEffect(() => {
     onSignedInChange(Boolean(session));
   }, [session, onSignedInChange]);
 
-  // Persist a (normalized) session, clear its PIN gate for this session, point the
-  // client at its server, and sign in. Shared by login (fresh pair) and activate
-  // (switch to a remembered profile).
   const enter = useCallback(
     (s: StoredSession) => {
       saveSession(s);
@@ -187,8 +146,7 @@ export function AuthProvider({
 
   const login = useCallback(
     (res: AuthResult, serverUrl: string) => {
-      // Set the just-minted bearer immediately, and mark this access token as
-      // already-exchanged so the effect doesn't redundantly re-exchange it.
+      // Marked as already-exchanged so the effect does not re-exchange it.
       applyBearer(client, res.token);
       exchangedRef.current = res.accessToken;
       enter({ serverUrl: norm(serverUrl), accessToken: res.accessToken, user: res.user });
@@ -206,7 +164,7 @@ export function AuthProvider({
   const switchProfile = useCallback(() => {
     applyBearer(client);
     clearSession();
-    unlocked.current.clear(); // re-arm every PIN lock
+    unlocked.current.clear();
     setSession(null);
   }, [client]);
 
@@ -244,10 +202,8 @@ export function AuthProvider({
     (patch: Partial<User>) => {
       if (!session) return;
       const next: StoredSession = { ...session, user: { ...session.user, ...patch } };
-      // `saveSession` rewrites BOTH the active session and this profile's entry in
-      // the remembered-accounts store, so re-reading it keeps the picker's lock
-      // state (hasPin) in sync. Without refreshing `accounts`, disabling a PIN
-      // left the profile still showing its lock and re-prompting on switch-in.
+      // `saveSession` rewrites the remembered-accounts entry too, so `accounts`
+      // must be re-read or the picker keeps showing a lock for a disabled PIN.
       saveSession(next);
       setSession(next);
       setAccounts(loadAccounts());

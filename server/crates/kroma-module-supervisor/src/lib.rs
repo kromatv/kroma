@@ -1,11 +1,5 @@
-//! The core side of the out-of-process module system.
-//!
-//! [`Supervisor`] spawns each installed module's native binary (from
-//! `<data>/modules/<id>/`), assigns it a local port, keeps a live `id -> port`
-//! map, and restarts it if it dies. [`proxy_to`] reverse-proxies an inbound
-//! request to a module process. [`host_router`] serves the `/api/_host/*`
-//! callback API (settings / events / jobs / enabled) the module runtime calls
-//! back into, authenticated by a shared per-process token.
+//! The core side of the out-of-process module system: spawns each installed
+//! module's binary, reverse-proxies to it, and serves the `/api/_host/*` callback API.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -23,48 +17,28 @@ use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::{Event, HostCtx};
 use serde_json::{json, Value};
 
-/// The name the packed module binary is stored under inside `<id>/`.
 pub const MODULE_BIN: &str = "module";
 
-/// A running module process + the port it listens on.
 struct Proc {
     port: u16,
     child: Child,
 }
 
-/// Everything the supervisor needs to spawn a module process.
 #[derive(Clone)]
 pub struct SupervisorConfig {
-    /// `<data>/modules`: one subdir per installed module.
     pub modules_dir: PathBuf,
-    /// The core's own base URL, for the module's callbacks.
     pub core_url: String,
-    /// Shared secret authenticating module -> core callbacks.
     pub host_token: String,
-    /// The shared SQLite path each module opens directly.
     pub db_path: PathBuf,
-    /// The data dir handed to modules.
     pub data_dir: PathBuf,
-    /// Ids that are compiled into this server (the roster). Installing a `.kmod`
-    /// that reuses one is rejected, since it would collide with the in-core copy.
     pub reserved_ids: Vec<String>,
-    /// This server's own version (CARGO_PKG_VERSION), checked against a
-    /// module manifest's `minServer` at install and spawn.
     pub server_version: String,
-    /// Receives every line a module process writes to stdout/stderr, as
-    /// `(module_id, line)`. `None` = children inherit the core's stdio (the
-    /// old behavior); `Some` = stdio is piped and drained by reader threads,
-    /// so the core can mirror module logs into its own sinks.
     pub log_line: Option<Arc<dyn Fn(&str, &str) + Send + Sync>>,
 }
 
 pub struct Supervisor {
     cfg: SupervisorConfig,
     procs: RwLock<HashMap<String, Proc>>,
-    /// Cached `installed_manifests` snapshot. The set only changes on install /
-    /// uninstall, yet it is read on every proxied `/api/admin/<seg>/*` request
-    /// (`admin_route_port`) + the module-list endpoints, so caching it avoids a
-    /// directory scan + JSON parse per request. Invalidated on install/uninstall.
     manifests_cache: RwLock<Option<Vec<Value>>>,
 }
 
@@ -77,19 +51,16 @@ impl Supervisor {
         })
     }
 
-    /// The install dir of a module (`<data>/modules/<id>`).
     fn dir(&self, id: &str) -> PathBuf {
         self.cfg.modules_dir.join(id)
     }
 
-    /// Whether a module ships a native binary (a sidecar). Its absence means a
-    /// library module: nothing to spawn or reverse-proxy.
     fn has_binary(&self, id: &str) -> bool {
         self.dir(id).join(MODULE_BIN).exists()
     }
 
-    /// Every installed module's `module.json` (best-effort), cached; the disk is
-    /// scanned once and re-scanned only after an install / uninstall.
+    /// Every installed module's `module.json` (best-effort), cached until the
+    /// next install or uninstall.
     pub fn installed_manifests(&self) -> Vec<Value> {
         if let Some(cached) = self.manifests_cache.read().unwrap().clone() {
             return cached;
@@ -111,14 +82,12 @@ impl Supervisor {
             .collect()
     }
 
-    /// Drop the manifest cache so the next read re-scans (after install/uninstall).
     fn invalidate_manifests(&self) {
         *self.manifests_cache.write().unwrap() = None;
     }
 
-    /// The ids of every installed module (one dir per id under `<data>/modules`).
-    /// These are the runtime-installed `.kmod` modules, which (unlike compile-time
-    /// ones) can be uninstalled.
+    /// The ids of every runtime-installed (`.kmod`) module — not the ones
+    /// compiled into this server.
     pub fn installed_ids(&self) -> Vec<String> {
         self.installed_manifests()
             .into_iter()
@@ -126,9 +95,7 @@ impl Supervisor {
             .collect()
     }
 
-    /// A runtime-installed module's packaged icon bytes (svg preferred, then png),
-    /// for the listing endpoints. `None` when the module isn't installed or ships
-    /// no icon.
+    /// A runtime-installed module's packaged icon bytes, svg preferred over png.
     pub fn icon(&self, id: &str) -> Option<(&'static str, Vec<u8>)> {
         let dir = self.dir(id);
         if let Ok(bytes) = std::fs::read(dir.join("icon.svg")) {
@@ -140,20 +107,16 @@ impl Supervisor {
         None
     }
 
-    /// The local port a running module listens on, if any.
     pub fn port_of(&self, id: &str) -> Option<u16> {
         self.procs.read().unwrap().get(id).map(|p| p.port)
     }
 
-    /// The shared secret the callback API authenticates module -> core with.
     pub fn host_token(&self) -> &str {
         &self.cfg.host_token
     }
 
-    /// The local port of the running module that owns the admin-route first
-    /// segment `seg` (from its manifest's `adminPrefixes`), for reverse-proxying
-    /// `/api/admin/<seg>/*` to its sidecar. `None` if no installed+running module
-    /// claims it.
+    /// The port of the running module claiming the admin-route segment `seg`
+    /// (via its manifest's `adminPrefixes`).
     pub fn admin_route_port(&self, seg: &str) -> Option<u16> {
         for m in self.installed_manifests() {
             let owns = m
@@ -169,9 +132,8 @@ impl Supervisor {
         None
     }
 
-    /// Spawn a module process (idempotent: a no-op if already running). Picks a
-    /// free localhost port, launches `<id>/module` with the runtime env, and
-    /// tracks the child. Errors if the binary is missing.
+    /// Spawn a module process on a free localhost port; a no-op if already
+    /// running, an error if the module ships no binary.
     pub fn spawn(&self, id: &str) -> anyhow::Result<u16> {
         if let Some(p) = self.procs.read().unwrap().get(id) {
             return Ok(p.port);
@@ -201,8 +163,6 @@ impl Supervisor {
         Ok(port)
     }
 
-    /// Fan the child's stdout+stderr out to one drainer thread each: every line is
-    /// forwarded to `log_line` until EOF (when the child dies).
     fn drain_logs(child: &mut Child, id: &str, log_line: &Arc<dyn Fn(&str, &str) + Send + Sync>) {
         for pipe in [
             child.stdout.take().map(|p| Box::new(p) as Box<dyn std::io::Read + Send>),
@@ -213,7 +173,6 @@ impl Supervisor {
         {
             let log_line = log_line.clone();
             let id = id.to_string();
-            // One drainer per pipe; exits on EOF when the child dies.
             std::thread::spawn(move || {
                 use std::io::BufRead;
                 for line in std::io::BufReader::new(pipe).lines() {
@@ -235,12 +194,11 @@ impl Supervisor {
         }
     }
 
-    /// Install a `.kmod` bundle: unpack it under `<modules_dir>/<id>/` (path-safe,
-    /// allow-listed), make the binary executable, and spawn it. Returns the
-    /// module's manifest JSON.
+    /// Unpack a `.kmod` bundle under `<modules_dir>/<id>/` and spawn it,
+    /// returning the module's manifest JSON.
     pub fn install(&self, bytes: &[u8]) -> anyhow::Result<Value> {
-        // `.kmod` is a zstd tar (smaller); gzip (legacy) + a raw tar are also
-        // accepted, dispatched by magic bytes.
+        // `.kmod` is a zstd tar; gzip (legacy) and raw tar are also accepted,
+        // dispatched by magic bytes.
         let mut decompressed = Vec::new();
         let tar_bytes: &[u8] = if bytes.starts_with(&[0x28, 0xb5, 0x2f, 0xfd]) {
             let mut dec = ruzstd::StreamingDecoder::new(bytes)?;
@@ -273,9 +231,6 @@ impl Supervisor {
                     "'{id}' is built into this server and can't be installed as a module (this build compiles it in)"
                 );
             }
-            // Compatibility gate: a module declaring `minServer` must not be
-            // installed on an older server (it would fail at runtime with
-            // opaque proxy/serde errors instead of a clear message here).
             let min_server = manifest.get("minServer").and_then(Value::as_str);
             if !kroma_module_manifest::server_satisfies(min_server, &self.cfg.server_version) {
                 anyhow::bail!(
@@ -284,7 +239,6 @@ impl Supervisor {
                     self.cfg.server_version,
                 );
             }
-            // Swap the install dir atomically-ish: stop the old, replace, spawn.
             self.stop(&id);
             let dest = self.dir(&id);
             let _ = std::fs::remove_dir_all(&dest);
@@ -297,10 +251,8 @@ impl Supervisor {
                     std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755))?;
                 }
             }
-            // A "library" module (e.g. the release-name parser) ships no binary:
-            // its code is a leaf crate co-linked into the processes that need it,
-            // so there is nothing to spawn or reverse-proxy. Its `.kmod` is the
-            // manifest (+ any FE), installable/removable like the rest.
+            // A "library" module ships no binary: its code is a leaf crate
+            // co-linked into the processes that need it, so nothing to spawn.
             if self.has_binary(&id) {
                 self.spawn(&id)?;
             } else {
@@ -309,15 +261,13 @@ impl Supervisor {
             Ok::<Value, anyhow::Error>(manifest)
         })();
         let _ = std::fs::remove_dir_all(&staging);
-        self.invalidate_manifests(); // the modules dir changed (or attempted to)
+        self.invalidate_manifests();
         result
     }
 
-    /// Download a `.kmod` from a registry URL and install it, verifying the
-    /// bytes against `expected_sha256` when the registry published one. An
-    /// unverifiable direct URL (no known checksum) still installs: uploading
-    /// arbitrary bytes is already an admin-trust action, but whenever a
-    /// checksum IS known it must match.
+    /// Download a `.kmod` and install it. A direct URL with no published
+    /// checksum still installs, but whenever `expected_sha256` is known the
+    /// bytes must match it.
     pub async fn install_from_url(
         &self,
         url: &str,
@@ -330,14 +280,12 @@ impl Supervisor {
         self.install(&bytes)
     }
 
-    /// Fetch a module registry's `catalog.json` (the index the Store browses).
     pub async fn fetch_catalog(&self, url: &str) -> anyhow::Result<Value> {
         Ok(reqwest::get(url).await?.error_for_status()?.json().await?)
     }
 
-    /// Stop every running module process (graceful shutdown). Sidecars are
-    /// plain child processes: they survive their parent, so a server shutdown
-    /// that skips this leaves orphaned module processes holding their ports.
+    /// Sidecars are plain child processes that survive their parent, so a
+    /// shutdown skipping this leaves orphans holding their ports.
     pub fn stop_all(&self) {
         let ids: Vec<String> = self.procs.read().unwrap().keys().cloned().collect();
         for id in ids {
@@ -345,7 +293,6 @@ impl Supervisor {
         }
     }
 
-    /// Uninstall a module: stop its process and delete its install dir.
     pub fn uninstall(&self, id: &str) -> anyhow::Result<()> {
         validate_id(id)?;
         self.stop(id);
@@ -354,19 +301,15 @@ impl Supervisor {
         Ok(())
     }
 
-    /// Spawn every installed module whose enabled flag (checked via `host`) is on.
     pub fn spawn_enabled(&self, host: &dyn HostCtx) {
         for manifest in self.installed_manifests() {
             let Some(id) = manifest.get("id").and_then(Value::as_str) else { continue };
-            // A stray `.kmod` for a built-in id (installed before the reject guard)
-            // must never spawn a process that duplicates the in-core module.
+            // A stray `.kmod` for a built-in id must never spawn a process that
+            // duplicates the in-core module.
             if self.cfg.reserved_ids.iter().any(|r| r == id) {
                 tracing::warn!(module = %id, "installed module shadows a built-in; not spawning");
                 continue;
             }
-            // A module installed before a server downgrade (or with a manifest
-            // requiring a newer server) must not spawn against an incompatible
-            // core: skip it with a clear log instead of failing at runtime.
             let min_server = manifest.get("minServer").and_then(Value::as_str);
             if !kroma_module_manifest::server_satisfies(min_server, &self.cfg.server_version) {
                 tracing::warn!(
@@ -377,7 +320,6 @@ impl Supervisor {
                 );
                 continue;
             }
-            // Library modules (no binary) have nothing to spawn.
             if !self.has_binary(id) {
                 continue;
             }
@@ -390,10 +332,8 @@ impl Supervisor {
     }
 }
 
-/// Verify `bytes` against a lowercase/uppercase hex SHA-256. Refusing on
-/// mismatch is what makes a registry install trustworthy end-to-end: the
-/// catalog pins the hash, so a tampered or truncated download can't reach
-/// `install()`.
+/// Verify `bytes` against a hex SHA-256. Refusing on mismatch is what keeps a
+/// tampered or truncated registry download out of `install()`.
 pub fn verify_sha256(bytes: &[u8], expected: &str) -> anyhow::Result<()> {
     use sha2::Digest;
     let actual = hex::encode(sha2::Sha256::digest(bytes));
@@ -404,13 +344,12 @@ pub fn verify_sha256(bytes: &[u8], expected: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// A free localhost TCP port (bind :0, read it back, release).
 fn free_port() -> anyhow::Result<u16> {
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     Ok(listener.local_addr()?.port())
 }
 
-/// A module id must be a safe directory name (it becomes `<modules>/<id>/`).
+// A module id must be a safe directory name: it becomes `<modules>/<id>/`.
 fn validate_id(id: &str) -> anyhow::Result<()> {
     let ok = !id.is_empty()
         && id.len() <= 128
@@ -421,10 +360,8 @@ fn validate_id(id: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Rebuild an archive entry path from its `Normal` components only (dropping
-/// `..`, absolute + drive prefixes) and keep it only if it is an allow-listed
-/// bundle file. An admin uploads arbitrary bytes, so the path can never escape
-/// the install dir.
+// Keeps only `Normal` path components (dropping `..` and absolute prefixes) and
+// only allow-listed bundle files: an entry path must never escape the install dir.
 fn sanitized_entry(raw: &std::path::Path) -> Option<PathBuf> {
     use std::path::Component;
     let safe: PathBuf = raw
@@ -443,17 +380,13 @@ fn sanitized_entry(raw: &std::path::Path) -> Option<PathBuf> {
     allowed.then_some(safe)
 }
 
-/// Unpack an installed-module tar into `dest`, keeping only allow-listed entries.
 fn unpack_validated(tar_bytes: &[u8], dest: &std::path::Path) -> anyhow::Result<()> {
     let mut archive = tar::Archive::new(tar_bytes);
     for entry in archive.entries()? {
         let mut entry = entry?;
-        // Only ever write regular files. A symlink/hardlink entry's target is not
-        // sanitized by `sanitized_entry` (which only rewrites the entry's own
-        // path), so a symlink whose name passes the allow-list (e.g. `fe/x` → an
-        // outside dir) followed by a regular file under it would let a later
-        // `create_dir_all(parent)` + `unpack` write outside `dest`. Reject any
-        // non-regular entry outright.
+        // Only ever write regular files: `sanitized_entry` rewrites an entry's
+        // own path but not a link target, so a symlink passing the allow-list
+        // would redirect a later write outside `dest`.
         if !entry.header().entry_type().is_file() {
             continue;
         }
@@ -468,19 +401,16 @@ fn unpack_validated(tar_bytes: &[u8], dest: &std::path::Path) -> anyhow::Result<
     Ok(())
 }
 
-/// Upper bound on a body forwarded through the module reverse proxy (256 MiB):
-/// generous for any legitimate module payload, but a hard stop on a hostile
-/// unbounded upload that would otherwise be buffered before the module authenticates.
 const MAX_PROXY_BODY_BYTES: usize = 256 * 1024 * 1024;
 
-/// Reverse-proxy `req` (its path already rewritten to the module-local path) to a
-/// module process on `port`. Streams the body both ways.
+/// Reverse-proxy `req` (its path already rewritten to the module-local path) to
+/// a module process on `port`.
 pub async fn proxy_to(port: u16, path_and_query: &str, req: Request) -> Response {
     let url = format!("http://127.0.0.1:{port}{path_and_query}");
     let (parts, body) = req.into_parts();
-    // This route is mounted outside the core session gate and buffers the whole
-    // body before the target module authenticates it, so an unbounded read is a
-    // pre-auth memory-exhaustion DoS. Cap it (well above any real module payload).
+    // Mounted outside the core session gate and buffered before the target
+    // module authenticates it, so an unbounded read is a pre-auth
+    // memory-exhaustion DoS.
     let bytes = match axum::body::to_bytes(body, MAX_PROXY_BODY_BYTES).await {
         Ok(b) => b,
         Err(_) => return (StatusCode::PAYLOAD_TOO_LARGE, "body too large").into_response(),
@@ -517,11 +447,8 @@ pub async fn proxy_to(port: u16, path_and_query: &str, req: Request) -> Response
     }
 }
 
-// --- The /api/_host/* callback API modules call back into --------------------
-
-/// Build the `/_host/*` callback router (mount under `/api`). Generic over the
-/// core's [`HostCtx`] state so the handlers resolve settings / events / jobs
-/// against the real app. Guarded by the shared `token`.
+/// The `/_host/*` callback router modules call back into (mount under `/api`),
+/// guarded by the shared `token`.
 pub fn host_router<S>(token: String) -> Router<S>
 where
     S: HostCtx + Clone + Send + Sync + 'static,
@@ -587,8 +514,6 @@ struct AddressedEventBody {
     payload: Value,
 }
 
-/// A sidecar publishing an event addressed to one account. Without this route a
-/// module's `publish_to` had nowhere to go and the event vanished.
 async fn publish_event_to<S: HostCtx>(
     State(host): State<S>,
     Json(body): Json<AddressedEventBody>,
@@ -603,8 +528,8 @@ struct NotifyBody {
     spec: kroma_module_host::NotificationSpec,
 }
 
-/// A sidecar module raising a notification. The core owns audience resolution
-/// and preference filtering, so a module can't reach past a user's settings.
+// The core owns audience resolution and preference filtering, so a module can't
+// reach past a user's settings.
 async fn notify<S: HostCtx>(State(host): State<S>, Json(body): Json<NotifyBody>) -> Json<Value> {
     let sent = host.notify(&body.audience, &body.spec);
     Json(json!({ "sent": sent }))
@@ -617,8 +542,8 @@ struct JobBody {
 }
 
 async fn trigger_job<S: HostCtx>(State(host): State<S>, Json(body): Json<JobBody>) -> StatusCode {
-    // The trait wants &'static str; module job keys are a small fixed set, so
-    // leaking them over the process lifetime is bounded and acceptable.
+    // The trait wants &'static str; job keys are a small fixed set, so the leak
+    // is bounded.
     let key: &'static str = Box::leak(body.key.into_boxed_str());
     let reason: &'static str = Box::leak(body.reason.into_boxed_str());
     host.trigger_job(key, reason);
@@ -637,14 +562,10 @@ async fn module_enabled<S: HostCtx>(
     Json(json!({ "enabled": host.module_enabled(&q.id) }))
 }
 
-/// The configured libraries, so an out-of-process import / organize module can
-/// place files under the right root without linking the engine's Settings/Config.
 async fn library_folders<S: HostCtx>(State(host): State<S>) -> Json<Value> {
     Json(json!(host.library_folders()))
 }
 
-/// The app's TMDB key + resolved metadata language, for a module doing metadata
-/// lookups out-of-process (acquisition's wanted materialization).
 async fn tmdb_config<S: HostCtx>(State(host): State<S>) -> Json<Value> {
     Json(json!({ "key": host.tmdb_api_key(), "language": host.metadata_language() }))
 }

@@ -60,9 +60,7 @@ describe('while driving a TV', () => {
   });
 
   it('plays here when the set refuses, rather than doing nothing at all', async () => {
-    // Switched off since the roster was drawn, or it let this remote go. The tap
-    // used to be inert: no navigation, no message, and no screen on the phone
-    // that reads `Cast.error`.
+    // Switched off since the roster was drawn, or it let this remote go.
     cast.playOn.mockResolvedValue(false);
     const { result } = renderHook(() => usePlay());
 

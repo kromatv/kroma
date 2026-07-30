@@ -1,13 +1,10 @@
 // The request status chip, one component for every surface: poster-card
-// overlay (`card`), table/list rows (`row`) and the discover-detail hero
-// (`hero`). While downloading it shows a circular progress ring instead of the
-// status dot, so the percentage reads at a glance on a poster.
+// overlay, table rows and the discover-detail hero.
 
 import type { RequestStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { requestStatusMeta } from '#web/features/requests/status';
 
-/** A thin circular progress ring (0..1). Starts at 12 o'clock, fills clockwise. */
 function Ring({ value, size, color }: Readonly<{ value: number; size: number; color: string }>) {
   const sw = size <= 12 ? 2 : 2.5;
   const r = (size - sw) / 2;
@@ -54,7 +51,6 @@ export function RequestStatusChip({
 }: Readonly<{
   status: RequestStatus;
   size?: 'card' | 'row' | 'hero';
-  /** 0..1 while downloading (page-scoped live events / detail snapshot). */
   progress?: number | null;
 }>) {
   const t = useT();
@@ -62,8 +58,6 @@ export function RequestStatusChip({
   const downloading = status === 'downloading' && progress != null;
   const pct = downloading ? `${Math.round((progress ?? 0) * 100)}%` : null;
 
-  // The leading glyph: a progress ring while downloading, else the status dot.
-  // Sizes vary by surface (card / hero / row-default).
   let dotSize = 'h-1.5 w-1.5';
   let ringSize = 13;
   if (size === 'card') {

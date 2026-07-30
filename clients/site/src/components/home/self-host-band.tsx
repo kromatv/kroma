@@ -43,10 +43,8 @@ const POINTS: readonly {
   },
 ];
 
-// The ownership argument, given the weight of a full-width panel. The four points
-// are the promise in plain terms; the terminal shows there is nothing more to it
-// than one command. Kept on-palette: the "window controls" are neutral, not the
-// decorative traffic lights that would drag a second colour in.
+// Kept on-palette: the "window controls" are neutral, not the decorative
+// traffic lights that would drag a second colour in.
 export function SelfHostBand() {
   return (
     <section className="py-20 sm:py-28">
@@ -87,7 +85,6 @@ export function SelfHostBand() {
               </div>
             </div>
 
-            {/* One command, and it is running. A real self-host line, not a mockup. */}
             <div className="overflow-hidden rounded-2xl border border-border bg-bg/80 shadow-card">
               <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
                 <span className="size-2.5 rounded-full border border-border-strong" aria-hidden />

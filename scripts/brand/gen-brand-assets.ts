@@ -1,22 +1,10 @@
 // Regenerates every Kroma brand asset from the official lockup export
-// (.github/assets/kroma-lockup-source.svg): outlined KR / MA letters + the
-// chromatic wheel O (rebuilt mask-free as annular sectors, hub/outer ratio
-// identical to the export: 17.045/50 = 15/44).
-//
-// Run:  bunx --yes sharp@latest >/dev/null 2>&1 || bun add -D sharp
-//       bun scripts/brand/gen-brand-assets.ts
-// Then regenerate the desktop set:
-//       cd clients/desktop && bunx tauri icon <emitted tauri-source-1024.png>
-//
-// The in-app lockup is NOT generated from here: @kroma/ui <Logo>/<KromaMark>
-// render it live (webfont + inline SVG) with the same metrics.
+// (.github/assets/kroma-lockup-source.svg). Run: bun scripts/brand/gen-brand-assets.ts
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 // Relative, not '@kroma/core': the repo root declares no workspace dependency,
-// so bun does not link the packages into the root node_modules. The wheel
-// geometry lives there so the generated icons and the in-app logo are provably
-// the same shape.
+// so bun does not link the packages into the root node_modules.
 import { wheelSectors } from '../../packages/core/src/brand';
 
 const REPO = fileURLToPath(new URL('../..', import.meta.url)).replace(/\/$/, '');
@@ -35,7 +23,6 @@ const MA_D =
 const LOCKUP_W = 457.4;
 const LOCKUP_H = 100;
 
-/** Two decimals, so regenerating an asset never produces a spurious diff. */
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 function wheelSvgPaths(cx?: number, cy?: number, R?: number, r?: number): string {
@@ -44,14 +31,11 @@ function wheelSvgPaths(cx?: number, cy?: number, R?: number, r?: number): string
     .join('\n');
 }
 
-// Full lockup fragment (letters + wheel) in Frame 2 coordinates.
 function lockupPaths(textFill: string): string {
   return `  <path d="${KR_D}" fill="${textFill}"/>
 ${wheelSvgPaths()}
   <path d="${MA_D}" fill="${textFill}"/>`;
 }
-
-// ---- 1. canonical lockup SVGs (.github/assets) -------------------------------
 
 function lockupSvg(textFill: string): string {
   return `<svg width="458" height="100" viewBox="0 0 458 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KROMA">
@@ -62,8 +46,6 @@ ${lockupPaths(textFill)}
 await Bun.write(`${REPO}/.github/assets/kroma-lockup-ink.svg`, lockupSvg(INK));
 await Bun.write(`${REPO}/.github/assets/kroma-lockup-ivory.svg`, lockupSvg(IVORY));
 console.log('wrote canonical lockups (ink + ivory)');
-
-// ---- 2. .github/assets/logo.svg ----------------------------------------------
 
 {
   const w = 232;
@@ -81,8 +63,6 @@ ${lockupPaths(IVORY)}
   await Bun.write(`${REPO}/.github/assets/logo.svg`, svg);
   console.log('wrote logo.svg');
 }
-
-// ---- 3. .github/assets/banner.svg --------------------------------------------
 
 {
   const w = 660;
@@ -126,9 +106,7 @@ ${lockupPaths(IVORY)}
   console.log('wrote banner.svg');
 }
 
-// ---- 4. raster icons (wheel full-bleed in its own box) ------------------------
-
-// Icon SVG: wheel centred, `symbolFrac` = true wheel diameter / icon size.
+// `symbolFrac` = true wheel diameter / icon size.
 function iconSvg(size: number, bg: string, radiusFrac: number, symbolFrac: number): string {
   const shapes: string[] = [];
   if (bg !== 'none') {
@@ -175,10 +153,8 @@ await png(`${REPO}/clients/synology/spk/PACKAGE_ICON.PNG`, 72, INK, {
 await png(`${REPO}/clients/synology/spk/PACKAGE_ICON_256.PNG`, 256, INK, { alpha: false });
 await png(`${DIR}/tauri-source-1024.png`, 1024, INK, { radiusFrac: 0.225 });
 
-// Mobile (Expo) app icons. iOS masks its own corners (opaque, square). The
-// Android adaptive foreground keeps the wheel inside the 66/108 safe zone; the
-// monochrome layer is the wheel silhouette Android tints itself. The splash
-// icon is the bare wheel on the ink splash background.
+// iOS masks its own corners (opaque, square); the Android adaptive foreground
+// must keep the wheel inside the 66/108 safe zone.
 await png(`${REPO}/clients/mobile/assets/images/icon.png`, 1024, INK, { alpha: false });
 await png(`${REPO}/clients/mobile/assets/images/android-icon-foreground.png`, 1024, 'none', {
   symbolFrac: 0.5,
@@ -201,13 +177,8 @@ await png(`${REPO}/clients/mobile/assets/images/splash-icon.png`, 512, 'none', {
   console.log('wrote', `${REPO}/clients/mobile/assets/images/android-icon-monochrome.png`);
 }
 
-// ---- 5. native TV client (Apple TV + Android TV) ------------------------------
-
-// TV brand surfaces are landscape plates, not square icons: the tvOS app icon
-// is 400x240, the top shelf is a 1920x720 banner and the Android TV banner is
-// 320x180. All of them carry the horizontal lockup centred on flat ink. Flat,
-// not the repo banner's amber halo: an 8-bit PNG gradient stretched over 1440
-// TV pixels bands into visible concentric rings.
+// Flat ink, not a gradient: an 8-bit PNG gradient stretched over 1440 TV
+// pixels bands into visible concentric rings.
 function platePng(outPath: string, w: number, h: number, lockupFrac: number): Promise<void> {
   const s = (w * lockupFrac) / LOCKUP_W;
   const x = round2((w - LOCKUP_W * s) / 2);
@@ -229,14 +200,12 @@ ${lockupPaths(IVORY)}
   const TVN = `${REPO}/clients/tv-native/assets`;
   await mkdir(`${TVN}/tv`, { recursive: true });
 
-  // Square icon expo prebuild still needs for the non-TV fallback targets.
+  // Square icons expo prebuild still needs for the non-TV fallback targets.
   await png(`${TVN}/icon.png`, 1024, INK, { alpha: false });
   await png(`${TVN}/splash-icon.png`, 512, 'none', { symbolFrac: 1.0 });
 
-  // Apple TV brand assets. The sizes are exact: @react-native-tvos/config-tv
-  // copies them verbatim into the TVAppIcon brand asset catalog, and Xcode (and
-  // App Store submission) rejects anything off by a pixel or carrying alpha.
-  // The layered icon repeats one plate on all three parallax layers.
+  // Sizes are exact: @react-native-tvos/config-tv copies them verbatim, and
+  // Xcode/App Store submission rejects anything off by a pixel or with alpha.
   await platePng(`${TVN}/tv/apple-icon-small.png`, 400, 240, 0.66);
   await platePng(`${TVN}/tv/apple-icon-small-2x.png`, 800, 480, 0.66);
   await platePng(`${TVN}/tv/apple-icon.png`, 1280, 768, 0.66);
@@ -245,14 +214,11 @@ ${lockupPaths(IVORY)}
   await platePng(`${TVN}/tv/apple-top-shelf-wide.png`, 2320, 720, 0.24);
   await platePng(`${TVN}/tv/apple-top-shelf-wide-2x.png`, 4640, 1440, 0.24);
 
-  // Android TV. The banner is the leanback launcher tile (320x180, lockup); the
-  // icon is copied unresized into every mipmap bucket, so it ships at xhdpi.
+  // The Android TV icon is copied unresized into every mipmap bucket, so it ships at xhdpi.
   await platePng(`${TVN}/tv/android-tv-banner.png`, 320, 180, 0.75);
   await png(`${TVN}/tv/android-tv-icon.png`, 320, INK, { symbolFrac: 0.64, alpha: false });
 }
 
-// ----- vector mark (no letters): the favicon every surface shares -----------
-/** The bare chromatic wheel, same hub/outer ratio as the lockup's O. */
 function markSvg(): string {
   const paths = wheelSectors(50, 50, 44, 15)
     .map((p, i) => `<path d="${p}" fill="${WHEEL_COLORS[i]}"/>`)
@@ -264,13 +230,9 @@ const MARK = markSvg();
 await Bun.write(`${REPO}/clients/web/public/favicon.svg`, `${MARK}\n`);
 console.log('wrote', `${REPO}/clients/web/public/favicon.svg`);
 
-// The two Cloudflare workers each deploy standalone from their own directory,
-// so they cannot share an import. The mark is generated INTO each instead, and
-// inlined as a data URI rather than fetched: a network-fetched icon behind a
-// 24h edge cache is exactly what kept the pre-rebrand logo live on
-// packages.kroma.tv long after the assets changed.
-// Single-quoted so the SVG's own double quotes need no escaping, and pre-wrapped
-// the way Biome formats it, so the emitted file is lint-clean as written.
+// Workers deploy standalone, so they can't share an import. Inlined as a data
+// URI, not fetched: a fetched icon behind an edge cache once kept a stale
+// logo live long after the source assets changed.
 const workerBrand = `// GENERATED by scripts/brand/gen-brand-assets.ts - do not edit by hand.
 export const KROMA_MARK_SVG =
   '${MARK}';

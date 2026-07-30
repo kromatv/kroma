@@ -1,16 +1,5 @@
-// The inspector: what a story says about itself, and what you can change.
-//
-// It is TABBED, the way Storybook's addons panel is, and that is a correction
-// rather than a decoration. Everything used to be stacked into one scroll -
-// prose, then usage, then guidelines, then the controls, then a prop table - so
-// the controls, which are the only part anyone interacts with, were four sections
-// down. Tabs put each answer one press away and let the count on the tab say how
-// much is behind it before it is opened.
-//
-// The panel has two shapes, because the content is the same either way and only
-// the room differs. Beside the canvas it is a column. Under the canvas it is a
-// dock, and the docked one collapses to its tab row on a phone, where the canvas
-// and the panel are otherwise fighting over one short column.
+// The inspector: what a story says about itself, and what you can change. It is a
+// column beside the canvas, or a dock under it that collapses to its tab row.
 
 import { Box, Focusable, Icon, IconButton, type IconName, Txt } from '@kroma/ui/kit';
 import { colors } from '@kroma/ui/tokens';
@@ -29,27 +18,20 @@ interface PanelProps {
   args: Record<string, unknown>;
   onChange: (key: string, value: unknown) => void;
   onReset: () => void;
-  /** A demo takes no args, so the controls would edit nothing and the prose
-   *  gets the whole panel. */
   showControls: boolean;
   layout: WorkbenchLayout;
 }
 
-/** The panel's three answers. `adjust` is what you can change, `about` is what
- * the design intends, `props` is the whole surface the component declares. */
 type TabId = 'adjust' | 'about' | 'props';
 
 interface Tab {
   id: TabId;
   name: string;
   glyph: IconName;
-  /** Shown beside the name when there is something to count. A tab that says
-   *  `Props 14` is answering the question before it is opened. */
   count?: number;
   body: ReactNode;
 }
 
-/** A titled block inside a tab. */
 function Section({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
     <Box gap={10}>
@@ -61,10 +43,6 @@ function Section({ title, children }: Readonly<{ title: string; children: ReactN
   );
 }
 
-/** The props table: name, whether it is required, its type, and what it is FOR.
- * Read out of the component source rather than declared anywhere; see props.ts.
- * Ruled between rows, because a table of fourteen props with no rules is a wall
- * of monospace and the eye loses which sentence belongs to which name. */
 function PropTable({ props }: Readonly<{ props: readonly PropDoc[] }>) {
   return (
     <Box>
@@ -100,8 +78,7 @@ function PropTable({ props }: Readonly<{ props: readonly PropDoc[] }>) {
   );
 }
 
-/** Which tabs this story has anything to put in. A tab with an empty body is
- * worse than a missing one: it promises an answer and then has none. */
+/** Only the tabs this story has something to put in; an empty tab is omitted. */
 function tabsFor(story: Story, showControls: boolean): Tab[] {
   const tabs: Tab[] = [];
   const guided = story.guidelines.do.length > 0 || story.guidelines.dont.length > 0;
@@ -158,16 +135,11 @@ function tabsFor(story: Story, showControls: boolean): Tab[] {
 function Panel({ story, args, onChange, onReset, showControls, layout }: Readonly<PanelProps>) {
   const docked = layout.panel === 'below';
   const tabs = tabsFor(story, showControls);
-  // The tab you were reading, kept across stories: someone comparing two
-  // components' props tables should not be sent back to the controls between
-  // them. A story without that tab falls back to its first, which is why this is
-  // a preference rather than the truth.
+  // A preference, not the truth: the tab persists across stories, and a story
+  // without it falls back to its first.
   const [wanted, setWanted] = useState<TabId>('adjust');
   const active = tabs.find((tab) => tab.id === wanted) ?? tabs[0];
 
-  // On a phone the dock and the canvas are fighting over one short column, and
-  // the component is what you came for: the dock collapses to its tab row until
-  // asked. Wider than that, there is room for both and it simply stays open.
   const collapsible = docked && layout.mode === 'compact';
   const [open, setOpen] = useState(false);
   const shown = !collapsible || open;
@@ -181,14 +153,6 @@ function Panel({ story, args, onChange, onReset, showControls, layout }: Readonl
       h={docked && shown ? layout.panelHeight : undefined}
       style={docked ? RULE_TOP : SIDE}
     >
-      {/* The tab row is also the panel's titlebar: it is what says the panel is a
-          tool rather than leftover page. It holds TABS and nothing else. `Reset`
-          used to sit at its right end, which was wrong twice over: the inspector
-          column is 320pt at its narrowest and three tabs plus a labelled button
-          do not fit in it, so the button was drawn over the last tab - and the
-          button was on screen while the props table was open, where it acts on
-          something that is not being looked at. It now lives at the head of the
-          controls themselves, which is the only tab it means anything in. */}
       <Box row align="center" style={RULE}>
         {collapsible ? <Handle open={shown} onPress={() => setOpen((prev) => !prev)} /> : null}
         {tabs.map((tab) => (
@@ -206,9 +170,8 @@ function Panel({ story, args, onChange, onReset, showControls, layout }: Readonl
       {shown ? (
         <ScrollView style={SCROLL} contentContainerStyle={docked ? DOCK_BODY : SIDE_BODY}>
           {active?.id === 'adjust' ? (
-            // Rendered here rather than inside `tabsFor` so the controls read the
-            // CURRENT args: building them with the tab list would capture the args
-            // of whichever render first opened the panel.
+            // Rendered here rather than inside `tabsFor`, which would capture the
+            // args of whichever render first opened the panel.
             <Controls
               controls={story.controls}
               args={args}
@@ -228,8 +191,6 @@ function Panel({ story, args, onChange, onReset, showControls, layout }: Readonl
   );
 }
 
-/** One tab. Underlined when active, the way a document's tabs are: exactly one
- * is ever the one being read. */
 function TabButton({
   tab,
   active,
@@ -244,11 +205,6 @@ function TabButton({
       focusedStyle={FOCUS_WASH}
     >
       <Icon name={tab.glyph} size={14} color={active ? 'accent' : 'textDim'} />
-      {/* Truncates rather than pushing the tab beside it off the row: the panel
-          is 320pt wide at its narrowest and the dock is as narrow as the phone
-          it is on, and a clipped name still reads where an overlapped one does
-          not. The glyph and the count never shrink - they are the two parts that
-          answer at a glance. */}
       <Txt variant="meta" color={active ? 'text' : 'textDim'} lines={1} style={TAB_INK}>
         {tab.name}
       </Txt>
@@ -263,8 +219,6 @@ function TabButton({
   );
 }
 
-/** The grip that opens the dock where it collapses. A chevron and nothing else:
- * the tabs beside it already name what is inside. */
 function Handle({ open, onPress }: Readonly<{ open: boolean; onPress: () => void }>) {
   return (
     <IconButton
@@ -287,13 +241,10 @@ const SCROLL = { flex: 1 } as const;
 const SIDE = { borderLeftWidth: 1, borderLeftColor: colors.border } as const;
 const SIDE_BODY = { padding: 16, paddingBottom: 56 } as const;
 const DOCK_BODY = { paddingHorizontal: 20, paddingVertical: 18, paddingBottom: 32 } as const;
-// Two points taller than the kit button's square, which is the box the old
-// padded grip came to: the tab row beside it sets the height being filled.
+// Fills the height of the tab row beside it.
 const HANDLE = { height: 37 } as const;
-// The shared tab shape plus this row's own layout: an icon, a label and a count
-// side by side. `minWidth: 0` is what lets the label inside actually truncate -
-// without it a flex item refuses to shrink below its content and the row spills
-// instead.
+// `minWidth: 0` is what lets the label truncate; without it a flex item refuses to
+// shrink below its content and the row spills.
 const TAB_ROW = {
   flexDirection: 'row',
   alignItems: 'center',

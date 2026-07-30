@@ -9,9 +9,8 @@ import { actionItem, choiceItem, type SettingsEntry, toggleItem } from '#tv/app/
 import { reactivePref, useStoredPref } from '#tv/app/settings/store';
 import { SettingsRows } from './SettingsRows';
 
-/** Every kit control is a node of the spatial navigator, and a node needs a
- * navigator - the router gives every screen one. A test renders inside the same
- * scope so the tree it mounts is the tree the app mounts. */
+// Every kit control is a node of the spatial navigator; render inside the
+// same scope the router gives a real screen.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 function show(items: readonly SettingsEntry[]) {
@@ -23,9 +22,8 @@ function show(items: readonly SettingsEntry[]) {
 }
 
 afterEach(cleanup);
-// Opening a dialog arms the OK guard (see press-guard: one physical press must
-// not carry into the screen it opened). It lives at module scope so it survives
-// unmounting - which means it survives a TEST too unless it is dropped here.
+// The press guard lives at module scope, so it survives unmounting — and a
+// test — unless dropped here.
 afterEach(clearPressGuard);
 
 describe('SettingsRows', () => {
@@ -45,7 +43,7 @@ describe('SettingsRows', () => {
     const row = screen.getByRole('button');
     fireEvent.click(row);
     expect(pref.get()).toBe('azerty');
-    fireEvent.click(row); // wraps back around
+    fireEvent.click(row);
     expect(pref.get()).toBe('abc');
   });
 
@@ -84,13 +82,13 @@ describe('SettingsRows', () => {
     fireEvent.click(screen.getByRole('button', { name: /audio/i }));
     expect(set).not.toHaveBeenCalled();
 
-    // getByText, not just the accessible name: the name comes from the row's
-    // `label` prop and survives even when the visible label has collapsed, which
-    // is exactly the failure this picker shipped with.
+    // getByText, not just the accessible name: the accessible name comes from
+    // `label` and survives even when the visible label has collapsed, which is
+    // the failure this picker shipped with.
     expect(screen.getByText('Swedish')).toBeTruthy();
 
-    // The dialog armed the OK guard on mount; the pick is the viewer's NEXT,
-    // deliberate press, which in a test arrives before the window elapses.
+    // The dialog's OK guard arms on mount and would otherwise swallow this
+    // press in a real test-clock window.
     clearPressGuard();
     fireEvent.click(screen.getByRole('button', { name: 'Swedish' }));
     expect(set).toHaveBeenCalledWith('sv');

@@ -1,6 +1,5 @@
-/** Browser-facing landing page: every published version, both channels, plus
- * the copy-paste package-source URL. Styled to match the static Pages landing
- * (packages/synology-repo/src/landing.template.html). */
+// Browser-facing landing page, styled to match the static Pages landing
+// (packages/synology-repo/src/landing.template.html).
 import { KROMA_MARK_DATA_URI, KROMA_MARK_SVG } from './brand';
 import { type Catalog, type Entry, entryVersion } from './catalog';
 

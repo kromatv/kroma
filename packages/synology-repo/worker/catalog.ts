@@ -1,20 +1,12 @@
-/** Live catalog assembly for the dynamic Synology package source.
- *
- * Reads the GitHub Releases list (+ the `<spk>.info.json` sidecars CI attaches
- * next to every .spk) and turns it into channel-aware catalog entries. Nothing
- * is rebuilt or redeployed per release: publishing a release IS the deploy.
- * Results are edge-cached for 5 minutes, with a week-long stale copy served if
- * the GitHub API is unreachable.
- */
+// Live catalog assembly for the dynamic Synology package source: the GitHub Releases list plus
+// the `<spk>.info.json` sidecars CI attaches to every .spk, turned into channel-aware catalog
+// entries. Publishing a release IS the deploy.
 
 export type Env = {
-  /** owner/repo to read releases from. */
   GITHUB_REPO?: string;
-  /** Optional fine-grained token (public repo read) to dodge anonymous API rate limits. */
   GITHUB_TOKEN?: string;
 };
 
-/** Fields of the `<spk>.info.json` sidecar (packages/synology-repo/src/gen-spk-info.ts). */
 export type SpkInfo = {
   package: string;
   version: string;
@@ -57,9 +49,9 @@ type GhRelease = {
 };
 
 export const DEFAULT_REPO = 'maxscharwath/kroma';
-const CACHE_FRESH = 'https://kroma-packages.cache/catalog-fresh'; // 5 min
-const CACHE_STALE = 'https://kroma-packages.cache/catalog-stale'; // 7 days, disaster fallback
-const MAX_SIDECARS = 60; // newest releases whose sidecar we bother fetching
+const CACHE_FRESH = 'https://kroma-packages.cache/catalog-fresh';
+const CACHE_STALE = 'https://kroma-packages.cache/catalog-stale';
+const MAX_SIDECARS = 60;
 
 const edgeCache = (): Cache | undefined =>
   (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default;
@@ -103,8 +95,6 @@ async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
     });
   }
 
-  // Sidecars in parallel; entries without one (pre-sidecar releases) stay usable
-  // on the landing page via the filename-derived version.
   await Promise.all(
     entries.slice(0, MAX_SIDECARS).map(async (e) => {
       const rel = releases.find((r) => r.tag_name === e.tag);
@@ -121,7 +111,6 @@ async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
     }),
   );
 
-  // Newest first: nightly entry (if any) leads, then stable by publish date.
   entries.sort((a, b) => {
     if (a.channel !== b.channel) return a.channel === 'nightly' ? -1 : 1;
     return b.publishedAt.localeCompare(a.publishedAt);
@@ -129,8 +118,8 @@ async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
   return { fetchedAt: new Date().toISOString(), repo, entries };
 }
 
-/** Cached catalog: 5-minute edge cache, refreshed inline on miss; a week-long
- * stale copy answers if GitHub is down or rate-limits the anonymous fetch. */
+/** 5-minute edge cache, refreshed inline on miss; a week-long stale copy answers
+ * if GitHub is down or rate-limits the anonymous fetch. */
 export async function loadCatalog(
   env: Env,
   waitUntil: (p: Promise<unknown>) => void,
@@ -159,9 +148,8 @@ function jsonResponse(body: string, maxAge: number): Response {
   });
 }
 
-/** `kroma-0.1.25-3439372-x86_64.spk` -> `0.1.25-3439372` (fallback when a
- * release predates the .info.json sidecars). Prefix-agnostic so pre-rebrand
- * `luma-*.spk` releases still parse their version. */
+/** `kroma-0.1.25-3439372-x86_64.spk` -> `0.1.25-3439372`. Prefix-agnostic so
+ * pre-rebrand `luma-*.spk` releases still parse their version. */
 export function versionFromSpkName(name: string): string {
   const m = /^[a-z]+-(.+)-[a-z0-9_]+\.spk$/.exec(name);
   return m?.[1] ?? name.replace(/\.spk$/, '');
@@ -171,24 +159,18 @@ export function entryVersion(e: Entry): string {
   return e.info?.version ?? versionFromSpkName(e.spkName);
 }
 
-/** The version string DSM's Package Center will DISPLAY. build.sh stamps
- * nightlies `X.Y.Z.BUILD-BUILD` (a 4th feature segment carrying the build, for
- * manual-install ordering), which renders as e.g. `0.1.31.3447024-3447024`.
- * DSM's package-center list hides a package whose feature version has a 4th
- * segment that large (SynoCommunity only ever ships small 4th segments), so the
- * row silently vanished for beta users while the plain 3-segment stable
- * (`0.1.31-3447024`) showed fine. Collapse to the conventional `major.minor.
- * micro-build`; the build stays in the suffix, so ordering is preserved and the
- * nightly .spk is still what gets served. Comparison logic keeps using the raw
- * entryVersion, so beta still correctly prefers the newer nightly. */
+/** The version string DSM's Package Center will DISPLAY. DSM's package-center
+ * list hides a package whose feature version carries a large 4th segment (as
+ * build.sh's nightly `X.Y.Z.BUILD-BUILD` does), so this collapses to
+ * `major.minor.micro-build`. Comparisons keep using the raw entryVersion. */
 export function dsmVersion(raw: string): string {
   const [feat = '', build] = raw.split('-');
   const seg = feat.split('.').slice(0, 3).join('.');
   return build ? `${seg}-${build}` : seg;
 }
 
-/** DSM's version ordering: compare the dotted feature version numerically
- * segment by segment, then the -build suffix. */
+/** DSM's version ordering: the dotted feature version numerically, segment by
+ * segment, then the -build suffix. */
 export function cmpDsmVersion(a: string, b: string): number {
   const parse = (v: string) => {
     const [feat = '', build = '0'] = v.split('-');
@@ -206,7 +188,6 @@ export function cmpDsmVersion(a: string, b: string): number {
   return pa.build - pb.build;
 }
 
-/** DSM arch codenames covered by our single x86_64 build (spksrc x64 families). */
 const X86_64_ARCHES = new Set([
   'x86_64',
   'x64',
@@ -235,14 +216,10 @@ export function archSupported(arch: string | null): boolean {
   return X86_64_ARCHES.has(arch.toLowerCase()) || arch.toLowerCase() === 'noarch';
 }
 
-/** One catalog entry -> the JSON object DSM's Package Center expects (same
- * shape as gen-catalog.ts / SynoCommunity's spkrepo).
- *
- * Field set is kept in lockstep with a live SynoCommunity feed (verified 144
- * packages, none carry `model`/`type`/`price`). An earlier cut emitted
- * `model: []`, which DSM reads as an EMPTY supported-model whitelist and so
- * hides the row on every NAS - the "source added but nothing shows" bug on
- * x86_64 boxes. `startable`/`snapshot` mirror SynoCommunity's daemon packages. */
+/** One catalog entry -> the JSON object DSM's Package Center expects (same shape
+ * as SynoCommunity's spkrepo). Must not emit `model`/`type`/`price`: DSM reads
+ * `model: []` as an EMPTY supported-model whitelist and hides the row on every
+ * NAS. */
 export function toDsmPackage(e: Entry, origin: string, repo: string) {
   const info = e.info;
   return {
@@ -265,10 +242,8 @@ export function toDsmPackage(e: Entry, origin: string, repo: string) {
     changelog: e.releaseUrl,
     firmware: info?.firmware ?? '7.0-40000',
     // No `beta` field: DSM's package-center list silently HIDES a `beta:true`
-    // package served from a dynamic source (verified against a real NAS - the
-    // nightly vanished while the identical stable showed). SynoCommunity never
-    // sets it either; the channel is gated server-side by WHICH entry we serve
-    // (see dsmPackages), not by a per-package flag.
+    // package served from a dynamic source. The channel is gated server-side by
+    // WHICH entry we serve (see dsmPackages), not by a per-package flag.
     qinst: true,
     qstart: true,
     qupgrade: true,

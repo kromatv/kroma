@@ -31,7 +31,7 @@ pub fn routes() -> Router<SharedState> {
         .route("/jobs/{key}/cancel", post(cancel_job))
 }
 
-/// Max log lines returned for one run.
+// Max log lines returned for one run.
 const LOG_LIMIT: usize = 500;
 
 /// `GET /api/admin/jobs` → every job with its schedule + latest run + next fire.
@@ -134,8 +134,8 @@ pub async fn run_logs(
     Ok(Json(json!({ "logs": logs })).into_response())
 }
 
-/// Distinguish an absent JSON field from an explicit `null` (→ `Some(None)`),
-/// so PATCH can clear a schedule vs. leave it unchanged.
+// Distinguishes an absent JSON field from an explicit `null` (-> `Some(None)`),
+// so PATCH can clear a schedule vs. leave it unchanged.
 fn double_option<'de, D, T>(de: D) -> Result<Option<Option<T>>, D::Error>
 where
     D: Deserializer<'de>,

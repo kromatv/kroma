@@ -1,39 +1,28 @@
-// `@kroma/ui/tokens/colors`, not `@kroma/ui/tokens`: this module is loaded by the Vite
-// config's own loader, which externalizes bare specifiers and hands them to Node, and Node
-// cannot resolve the extensionless re-exports inside that barrel. The kit exports the token
-// leaf as its own subpath for exactly this, so the card still reaches the real tokens by
-// package NAME and stays renderable in-process by the build.
+// `@kroma/ui/tokens/colors`, not `@kroma/ui/tokens`: this module is loaded by
+// Vite config's own loader, which externalizes bare specifiers to Node, and
+// Node cannot resolve the extensionless re-exports inside that barrel. The
+// kit exports the token leaf as its own subpath for exactly this.
 //
-// `rich.ts` keeps its extension because Node needs one and it is inside this package (see
-// `allowImportingTsExtensions` in tsconfig.json). Both files are dependency-free, so nothing
-// else comes along with them.
+// `rich.ts` keeps its extension because Node needs one inside this package
+// (see `allowImportingTsExtensions` in tsconfig.json).
 import { colors, WHEEL_COLORS } from '@kroma/ui/tokens/colors';
 import { parseRich } from '../src/lib/rich.ts';
 
-// The social card, as a component.
+// Rendered by Satori (JSX -> SVG) rather than a headless browser, so this is
+// a real .tsx instead of an HTML string, and needs no Chromium and no network.
 //
-// Rendered by Satori (JSX -> SVG) rather than by a headless browser, which is why
-// this is a real .tsx instead of an HTML string: the card is composed, typed and
-// reviewable like the rest of the site, and generating it needs no Chromium and no
-// network. Colours come from the same @kroma/ui tokens the pages use, so the card
-// cannot drift from the brand.
+// Satori implements a SUBSET of CSS: flexbox only (no grid, no float), and
+// every element with more than one child needs an explicit `display: flex`.
+// Also worth knowing before editing:
 //
-// Satori implements a SUBSET of CSS - flexbox only (no grid, no float), and every
-// element that has more than one child needs an explicit `display: flex`. Two
-// consequences worth knowing before editing:
-//
-//   * `background-clip: text` is not supported, so the accent words are painted in
-//     solid `colors.accent` rather than the page's amber gradient. At card size the
-//     difference is invisible; a gradient would silently render as flat black.
-//   * There is no `text-wrap: balance`, so the headline's line break is authored
-//     (see `title`), not negotiated by the layout engine.
+//   * `background-clip: text` is not supported, so the accent words are
+//     painted in solid `colors.accent` rather than the page's amber gradient.
+//   * There is no `text-wrap: balance`, so the headline's line break is
+//     authored (see `title`), not negotiated by the layout engine.
 
-/** A `[bracketed]` run is the amber emphasis; everything else is plain.
- *
- *  Parsed by the site's OWN marker parser rather than a regex here, so the card and the
- *  pages cannot disagree about what `[…]` means - and so the copy in ./og-cards.ts is
- *  literally the convention its comment claims. `lib/rich` is dependency-free, which is
- *  what makes it safe to pull into a renderer that runs outside the app. */
+// Parsed by the site's own marker parser rather than a regex here, so the
+// card and the pages cannot disagree about what `[…]` means. `lib/rich` is
+// dependency-free, which is what makes it safe to pull into this renderer.
 function Headline({ text }: Readonly<{ text: string }>) {
   const runs = parseRich(text);
   return (
@@ -65,7 +54,6 @@ function Headline({ text }: Readonly<{ text: string }>) {
   );
 }
 
-/** The chromatic wheel, from the official lockup's geometry, coloured by token. */
 function Wheel({ size }: Readonly<{ size: number }>) {
   const paths = [
     'M209 32.96 L209 0 A50 50 0 0 1 252.3 25 L223.76 41.48 A17.045 17.045 0 0 0 209 32.96 Z',
@@ -91,9 +79,7 @@ function Wheel({ size }: Readonly<{ size: number }>) {
 }
 
 export interface OgCardProps {
-  /** The headline, with the amber words in `[brackets]` and `\n` for the break. */
   title: string;
-  /** One supporting line under the headline. */
   sub: string;
 }
 
@@ -109,8 +95,7 @@ export function OgCard({ title, sub }: Readonly<OgCardProps>) {
         fontFamily: 'Hanken Grotesk',
       }}
     >
-      {/* The single warm light source, top-left. A radial gradient is one of the
-          few gradients Satori does support. */}
+      {/* A radial gradient is one of the few gradients Satori supports. */}
       <div
         style={{
           position: 'absolute',
@@ -121,7 +106,6 @@ export function OgCard({ title, sub }: Readonly<OgCardProps>) {
           backgroundImage: `radial-gradient(circle at 30% 30%, rgba(242,180,66,0.20), rgba(242,180,66,0) 70%)`,
         }}
       />
-      {/* The hairline frame, the same amber-at-low-alpha the lockup card uses. */}
       <div
         style={{
           position: 'absolute',

@@ -11,8 +11,6 @@ import { EpStats } from './admin';
 import { JobRunId } from './ids';
 import { Category, Treatment } from './media';
 
-// ── Jobs ────────────────────────────────────────────────────────────────────
-
 /** One recorded execution of a job. */
 export const JobRun = z.object({
   id: JobRunId,
@@ -67,8 +65,6 @@ export const JobsView = z.object({
   jobs: z.array(JobInfo),
 });
 export type JobsView = z.infer<typeof JobsView>;
-
-// ── Pipeline ──────────────────────────────────────────────────────────────
 
 /** Health counters for one pipeline stage, aggregated from the ledger. */
 export const StageStat = z.object({
@@ -148,8 +144,6 @@ export const PipelineView = z.object({
 });
 export type PipelineView = z.infer<typeof PipelineView>;
 
-// ── Naming / organize ───────────────────────────────────────────────────────
-
 /** Example rendered names for the live preview. */
 export const SampleNames = z.object({
   movie: z.string(),
@@ -206,8 +200,6 @@ export const AnalyzeBody = z.object({
 });
 export type AnalyzeBody = z.infer<typeof AnalyzeBody>;
 
-// ── VPN ───────────────────────────────────────────────────────────────────
-
 /** The kill switch's view of the tunnel. */
 export const VpnStatusView = z.object({
   connected: z.boolean(),
@@ -240,8 +232,6 @@ export const SaveVpnBody = z.object({
   localPort: z.number().nullable(),
 });
 export type SaveVpnBody = z.infer<typeof SaveVpnBody>;
-
-// ── LLM ───────────────────────────────────────────────────────────────────
 
 /** One configured provider as shown to the admin (API key never returned). */
 export const LlmProviderView = z.object({

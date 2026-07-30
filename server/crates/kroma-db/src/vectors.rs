@@ -1,13 +1,8 @@
 //! Content-embedding storage + brute-force vector search.
 //!
-//! One row per title (movie OR show) in `item_vectors`, the embedding stored as a
-//! little-endian `f32` BLOB. Vectors are L2-normalized at write time, so cosine
-//! similarity is a plain dot product. At a few thousand titles a full in-memory
-//! scan per query is microseconds no vector index needed. If a library ever
-//! grows past ~50k items, swap [`load_vectors`] for an ANN index (sqlite-vec /
-//! HNSW); the public functions here stay the same.
-//!
-//! Vectors are produced by the embedder port (the vector module) during enrichment.
+//! One row per title (movie OR show) in `item_vectors`, stored L2-normalized so
+//! cosine similarity is a plain dot product. Past ~50k items, swap
+//! [`load_vectors`] for an ANN index; the public functions stay the same.
 
 use std::collections::HashSet;
 
@@ -26,7 +21,7 @@ pub fn set_item_vector(pool: &Pool, id: &str, vec: &[f32]) -> Result<()> {
     Ok(())
 }
 
-/// Ids that have a stored embedding. Bulk signal for the pipeline elements list.
+/// Ids that have a stored embedding.
 pub fn item_ids_with_vector(pool: &Pool) -> Result<HashSet<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT id FROM item_vectors")?;
@@ -34,7 +29,7 @@ pub fn item_ids_with_vector(pool: &Pool) -> Result<HashSet<String>> {
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
-/// Whether a title has a stored embedding (for the per-element treatments view).
+/// Whether a title has a stored embedding.
 pub fn has_vector(pool: &Pool, id: &str) -> Result<bool> {
     let conn = pool.get()?;
     let n: i64 =
@@ -49,9 +44,8 @@ pub fn clear_item_vector(pool: &Pool, id: &str) -> Result<()> {
     Ok(())
 }
 
-/// The stored embedding dimension for ONE id, or `None` if it has no vector yet.
-/// Single-row indexed lookup so the embed stage can skip a vector already at the
-/// active dim without loading the whole `item_vectors` table per subject.
+/// The stored embedding dimension for one id, or `None` if unset. Cheaper than
+/// [`vector_dims`] when checking a single id.
 pub fn vector_dim(pool: &Pool, id: &str) -> Result<Option<usize>> {
     let conn = pool.get()?;
     let dim: Option<i64> = conn
@@ -60,9 +54,8 @@ pub fn vector_dim(pool: &Pool, id: &str) -> Result<Option<usize>> {
     Ok(dim.map(|d| d as usize))
 }
 
-/// Current stored embedding dimension per id. Lets an idempotent re-embed skip
-/// vectors already at the active embedder's dim (so switching embedders only
-/// touches what's stale, instead of re-encoding the whole library each run).
+/// Current stored embedding dimension per id, so a re-embed can skip vectors
+/// already at the active embedder's dim.
 pub fn vector_dims(pool: &Pool) -> Result<std::collections::HashMap<String, usize>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT id, dim FROM item_vectors")?;
@@ -111,9 +104,7 @@ pub fn themed(pool: &Pool, query: &[f32], n: usize) -> Result<Vec<(String, f32)>
 }
 
 /// Personalized "For You": average the vectors of what `user_id` recently watched
-/// into a taste centroid, then return the `n` nearest *unwatched* titles. Pure
-/// content-based no other users, no training, no cold-start beyond "watched
-/// nothing yet" (which returns empty).
+/// into a taste centroid, then return the `n` nearest *unwatched* titles.
 pub fn for_you(pool: &Pool, user_id: &str, n: usize) -> Result<Vec<(String, f32)>> {
     let watched = recent_watched_ids(pool, user_id)?;
     if watched.is_empty() {
@@ -127,9 +118,7 @@ pub fn for_you(pool: &Pool, user_id: &str, n: usize) -> Result<Vec<(String, f32)
     Ok(rank(&vectors, &centroid, &exclude, n))
 }
 
-// ----- internals --------------------------------------------------------------
-
-/// Most-recently-watched distinct item ids for one user (newest first, capped)
+/// Most-recently-watched distinct item ids for one user (newest first, capped) —
 /// the taste window for [`for_you`] and the section generator.
 pub fn recent_watched_ids(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
     let conn = pool.get()?;
@@ -142,7 +131,6 @@ pub fn recent_watched_ids(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Mean of the vectors whose id is in `ids`, re-normalized. `None` if none match.
 fn centroid_of(vectors: &[(String, Vec<f32>)], ids: &[String]) -> Option<Vec<f32>> {
     let want: HashSet<&str> = ids.iter().map(String::as_str).collect();
     let mut sum: Vec<f32> = Vec::new();
@@ -168,7 +156,6 @@ fn centroid_of(vectors: &[(String, Vec<f32>)], ids: &[String]) -> Option<Vec<f32
     Some(sum)
 }
 
-/// Top-`n` `(id, score)` by descending dot product, skipping `exclude`.
 fn rank(
     vectors: &[(String, Vec<f32>)],
     query: &[f32],
@@ -213,19 +200,14 @@ fn blob_to_vec(bytes: &[u8]) -> Vec<f32> {
         .collect()
 }
 
-// ----- render-ready rows ------------------------------------------------------
-
-/// Hydrate ranked `(id, score)` pairs into full [`MediaItem`]s, preserving rank
-/// order and dropping ids without a backing `items` row (show vectors live in the
-/// same table, so this naturally yields a movies row).
 fn hydrate(pool: &Pool, ranked: &[(String, f32)]) -> Result<Vec<MediaItem>> {
     let conn = pool.get()?;
     let ids: Vec<&str> = ranked.iter().map(|(id, _)| id.as_str()).collect();
     Ok(items_by_ids_ordered(&conn, &ids)?)
 }
 
-/// "For You" as render-ready movies: [`for_you`] + hydration. Over-fetches a
-/// little since show ids drop during hydration, then trims to `n`.
+/// "For You" as render-ready movies. Over-fetches since show ids drop during
+/// hydration, then trims to `n`.
 pub fn recommended_for(pool: &Pool, user_id: &str, n: usize) -> Result<Vec<MediaItem>> {
     let ranked = for_you(pool, user_id, n + 8)?;
     let mut items = hydrate(pool, &ranked)?;
@@ -233,15 +215,13 @@ pub fn recommended_for(pool: &Pool, user_id: &str, n: usize) -> Result<Vec<Media
     Ok(items)
 }
 
-/// "More like this" as render-ready movies: [`similar`] + a genre-overlap guard
-/// (the lexical embedder is weakly discriminative item↔item) + hydration.
-/// Over-fetches generously since the guard prunes before the truncate to `n`.
+/// "More like this": [`similar`] + a genre-overlap guard (the lexical embedder is
+/// weakly discriminative item↔item) + hydration.
 pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> {
     let raw = similar(pool, id, (n + 8).max(48))?;
     let guarded = super::genre_guard(pool, id, raw.clone());
-    // The guard can prune below `n` with a weakly-discriminative embedder (few
-    // neighbours share a TMDB genre), which would shrink or empty the rail. Top up
-    // from the unguarded neighbours so it always fills when candidates exist.
+    // The guard can prune below `n` (few neighbours share a genre); top up from
+    // the unguarded neighbours so it still fills when candidates exist.
     let ranked = if guarded.len() >= n {
         guarded
     } else {
@@ -297,8 +277,8 @@ mod tests {
 
     static SEQ: AtomicU32 = AtomicU32::new(0);
 
-    /// Seed three movies a/b/c (with genres for the guard) + their unit vectors.
-    /// a=[1,0], b=[0.8,0.6], c=[0,1]: a is nearest b, orthogonal to c.
+    // Seed three movies a/b/c (with genres for the guard) + their unit vectors.
+    // a=[1,0], b=[0.8,0.6], c=[0,1]: a is nearest b, orthogonal to c.
     fn seeded() -> Pool {
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
         let path = std::env::temp_dir().join(format!("kroma-vec-{}-{n}.db", std::process::id()));

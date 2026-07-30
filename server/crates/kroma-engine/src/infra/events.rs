@@ -1,11 +1,6 @@
 //! Real-time event bus.
 //!
-//! A [`tokio::sync::broadcast`] channel fans server events out to every
-//! connected WebSocket client (`GET /api/events`). The server publishes when the
-//! library changes a scan starts/finishes, or background TMDB enrichment
-//! resolves art for a title so clients update live instead of needing a
-//! refresh/relaunch. Publishing is cheap and non-blocking; with no subscribers
-//! it's a no-op.
+//! Fans server events out to every WebSocket client (`GET /api/events`); a no-op with no subscribers.
 
 use serde::Serialize;
 use tokio::sync::broadcast;
@@ -14,7 +9,6 @@ use tokio::sync::broadcast;
 #[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum ServerEvent {
-    /// Sent once on connect so the client knows the stream is live.
     #[serde(rename = "hello")]
     Hello { version: &'static str },
     #[serde(rename = "scan.started")]
@@ -25,60 +19,41 @@ pub enum ServerEvent {
         shows: usize,
         libraries: usize,
     },
-    /// The catalog changed wholesale clients should refetch lists.
     #[serde(rename = "library.updated")]
     LibraryUpdated,
-    /// One movie/episode gained metadata (e.g. poster resolved).
     #[serde(rename = "item.updated")]
     ItemUpdated { id: String },
-    /// One show gained metadata.
     #[serde(rename = "show.updated")]
     ShowUpdated { id: String },
-    /// Background enrichment progress.
     #[serde(rename = "enrich.progress")]
     EnrichProgress { done: usize, total: usize },
     #[serde(rename = "enrich.completed")]
     EnrichCompleted { resolved: usize, total: usize },
-    /// Background per-file probing (phase 2) progress.
     #[serde(rename = "probe.progress")]
     ProbeProgress { done: usize, total: usize },
     #[serde(rename = "probe.completed")]
     ProbeCompleted { total: usize },
-    /// A playback session started `count` is the new active-session total.
     #[serde(rename = "playback.started")]
     PlaybackStarted { count: usize },
-    /// A live playback session updated (state/position changed).
     #[serde(rename = "playback.updated")]
     PlaybackUpdated { count: usize },
-    /// One or more playback sessions ended (stopped or reaped).
     #[serde(rename = "playback.stopped")]
     PlaybackStopped { count: usize },
-    /// An admin terminated a playback session: the owning client must stop and
-    /// show `message` (empty → the client shows a localized default).
     #[serde(rename = "playback.terminate")]
     PlaybackTerminate {
         #[serde(rename = "sessionId")]
         session_id: String,
         message: String,
     },
-    /// A receiver appeared, or something a picker draws about it changed (title,
-    /// transport, tracks, name). Carries the whole row so every sender patches
-    /// its list in place: the roster used to be refetched over HTTP by every
-    /// connected client on every change, which is N round-trips for one pause.
     #[serde(rename = "cast.receiver")]
     CastReceiverChanged {
         receiver: Box<crate::model::CastReceiver>,
     },
-    /// A receiver left: its socket closed, or it stopped announcing and was
-    /// reaped. Senders drop it from the picker.
     #[serde(rename = "cast.receiver.gone")]
     CastReceiverGone {
         #[serde(rename = "receiverId")]
         receiver_id: String,
     },
-    /// A receiver's scrub position advanced. Deliberately tiny and separate from
-    /// `cast.receivers`: it fires on every heartbeat of a playing TV, and a
-    /// sender only needs it to move a progress bar.
     #[serde(rename = "cast.position")]
     CastPosition {
         #[serde(rename = "receiverId")]
@@ -89,10 +64,6 @@ pub enum ServerEvent {
         duration_ms: Option<i64>,
         state: crate::model::CastState,
     },
-    /// An order for one receiver. Addressed to the account the receiver is signed
-    /// into ([`Audience::User`]), so a command for the living-room TV is never
-    /// fanned out to other households' sockets; the `receiverId` then picks the
-    /// one device among that account's own.
     #[serde(rename = "cast.command")]
     CastCommandIssued {
         #[serde(rename = "receiverId")]
@@ -100,24 +71,19 @@ pub enum ServerEvent {
         seq: u64,
         command: crate::model::CastCommand,
     },
-    /// A television disconnected a remote. Addressed to that remote's account,
-    /// carrying the set it was driving so only the right session stands down.
     #[serde(rename = "cast.kicked")]
     CastKicked {
         #[serde(rename = "receiverId")]
         receiver_id: String,
     },
-    /// Server settings changed via the admin console.
     #[serde(rename = "settings.updated")]
     SettingsUpdated,
-    /// A background job run started.
     #[serde(rename = "job.started")]
     JobStarted {
         key: String,
         #[serde(rename = "runId")]
         run_id: String,
     },
-    /// A running job reported progress (`total == 0` → indeterminate).
     #[serde(rename = "job.progress")]
     JobProgress {
         key: String,
@@ -126,7 +92,6 @@ pub enum ServerEvent {
         done: usize,
         total: usize,
     },
-    /// A running job appended a log line.
     #[serde(rename = "job.log")]
     JobLog {
         #[serde(rename = "runId")]
@@ -134,7 +99,6 @@ pub enum ServerEvent {
         level: &'static str,
         message: String,
     },
-    /// A job run finished (`status`: success | failed | cancelled).
     #[serde(rename = "job.finished")]
     JobFinished {
         key: String,
@@ -142,50 +106,31 @@ pub enum ServerEvent {
         run_id: String,
         status: String,
     },
-    /// Per-element pipeline health changed (a stage drained a batch). Throttled
-    /// and carries only the aggregate per-stage counts, so the admin Pipeline
-    /// dashboard updates live without polling the ledger.
     #[serde(rename = "pipeline.stats")]
     PipelineStats {
         stages: Vec<crate::model::StageStat>,
     },
-    /// A media request changed state (created / approved / denied / became
-    /// available...). Low-frequency: clients refetch their request lists on it.
     #[serde(rename = "request.updated")]
     RequestUpdated { id: String, status: String },
-    /// A problem report was filed or triaged (created / resolved / dismissed /
-    /// reopened / deleted). Low-frequency: the admin "Signalements" queue refetches
-    /// on it.
     #[serde(rename = "report.updated")]
     ReportUpdated { id: String, status: String },
-    // Module events (download.progress / download.completed / vpn.status, ...) are
-    // NOT here: modules publish them generically via `HostCtx::publish(Event)` and
-    // the bus fans out the raw JSON (see `Bus::publish_value`), so the core owns no
-    // module event type.
+    // Module events (download.progress, vpn.status, ...) publish generically via
+    // `HostCtx::publish(Event)`; the bus fans out the raw JSON, so the core owns
+    // no module event type.
 }
 
-/// Who an event is for.
-///
-/// Most of the bus is server-wide activity every signed-in client may see (scans,
-/// jobs, playback counts). Notifications are not: "your request was denied" names
-/// its recipient, so it is addressed and the socket pump drops it for everyone
-/// else. Without this the bus would leak one user's notifications to every other
-/// connected client.
+/// Who an event is for. Most of the bus is server-wide activity every
+/// signed-in client may see; a notification names its recipient instead, so it
+/// is addressed and the socket pump drops it for everyone else.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Audience {
-    /// Any authenticated socket.
     Everyone,
-    /// Only sockets authenticated as this user id.
     User(std::sync::Arc<str>),
 }
 
-/// One bus message: the pre-serialized event plus who may see it.
-///
-/// The payload is deliberately NOT reachable without naming a viewer. This type
-/// exists to stop one user's notifications reaching another's socket, and a
-/// `Deref<Target = str>` (or a public field) would make `socket.send(&*env)`
-/// compile and silently do exactly that. [`Self::payload_for`] is the only way
-/// in, so the routing decision cannot be skipped by accident.
+/// One bus message: the pre-serialized event plus who may see it. The payload
+/// is deliberately unreachable without naming a viewer via [`Self::payload_for`],
+/// so the routing decision can't be skipped by accident.
 #[derive(Clone, Debug)]
 pub struct Envelope {
     audience: Audience,
@@ -255,9 +200,6 @@ impl Bus {
         self.send(Audience::User(user_id.into()), &value);
     }
 
-    /// Serialize once and hand the envelope to the channel. Skipped entirely
-    /// while nobody is subscribed, so publishing costs nothing on a headless
-    /// server.
     fn send<T: Serialize>(&self, audience: Audience, payload: &T) {
         if self.tx.receiver_count() == 0 {
             return;
@@ -292,7 +234,6 @@ mod tests {
         let mut a = bus.subscribe();
         let mut b = bus.subscribe();
         bus.publish(item("x"));
-        // Server-wide activity: both sockets see it, whoever they are.
         for rx in [&mut a, &mut b] {
             let env = rx.try_recv().expect("published to all subscribers");
             assert!(env.visible_to("alice"));

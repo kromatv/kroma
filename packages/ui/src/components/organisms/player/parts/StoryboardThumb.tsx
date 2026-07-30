@@ -1,14 +1,9 @@
-// The scrub-bar preview thumbnail.
-//
-// A storyboard is ONE sprite sheet of evenly spaced frames, so a thumbnail is a
-// window onto it: draw the sheet, slide it so the frame you want lands in the
-// window, and clip everything else.
-//
-// A browser writes that as `background-position` on a fixed-size box, which is
-// what this used to be, and it drew nothing on Apple TV: React Native's
-// `experimental_backgroundImage` takes gradients, not `url()`. An offset child
-// inside an `overflow: hidden` parent is the same picture and both platforms
-// draw it, so there is one component here instead of a `.web` pair.
+// The scrub-bar preview thumbnail: a storyboard is ONE sprite sheet, and a
+// thumbnail is a window onto it (position + clip). `background-position`, the
+// obvious approach, draws nothing on Apple TV — RN's
+// `experimental_backgroundImage` only takes gradients, not `url()` — so this
+// uses an offset child in an `overflow: hidden` parent instead, which works on
+// both platforms.
 
 import { Image } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -39,11 +34,9 @@ export function StoryboardThumb({ tile }: Readonly<{ tile: StoryboardTile }>) {
           position: 'absolute',
           left: tile.offsetX,
           top: tile.offsetY,
-          // The sheet's OWN size, then scaled as a layer. Asking the image view
-          // for `sheetWidth * scale` instead makes the decoder produce that many
-          // points, which at 2x on a television is a texture past the GPU's
-          // limit: nothing is drawn, and the preview is a black rectangle with
-          // no error anywhere. Scaling the layer costs the GPU nothing.
+          // The sheet's OWN size, scaled as a layer: asking the image view for
+          // `sheetWidth * scale` pixels instead can exceed the GPU's texture
+          // limit on a television, drawing nothing with no error.
           width: tile.sheetWidth,
           height: tile.sheetHeight,
           transformOrigin: '0 0',

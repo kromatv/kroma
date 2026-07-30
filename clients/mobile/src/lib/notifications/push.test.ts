@@ -1,11 +1,3 @@
-// The phone's half of the push capability: why it may be unavailable, what a
-// successful enable actually registers, and what disabling names.
-//
-// The claim worth pinning is that the raw APNs/FCM token stops here. A
-// self-hosted server holds no credential Apple or Google would accept, so
-// registering the token would be pointless as well as careless - what goes out
-// is the relay grant.
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const platform = vi.hoisted(() => ({ OS: 'ios' as string }));
@@ -53,8 +45,6 @@ describe('why push might be unavailable', () => {
   });
 
   it('reports a build whose native module is missing', async () => {
-    // The JS is here but the native side is not: this build predates the
-    // dependency and needs a prebuild, which is a different fix from "denied".
     loadPush.mockReturnValue(null);
     expect(await nativePush.blocker()).toBe('needs-rebuild');
   });

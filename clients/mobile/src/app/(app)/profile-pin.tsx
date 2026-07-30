@@ -1,8 +1,5 @@
 // Profile lock: set / change / remove the 4-digit profile PIN and toggle
-// Face ID / Touch ID. On PIN profiles the toggle keeps the PIN in the
-// biometric vault (Face ID instead of the pad); on PIN-less profiles it arms
-// a standalone device lock enforced at the gate and on app launch. PIN entry
-// is a one-step-at-a-time wizard; the server verifies the current PIN.
+// Face ID / Touch ID.
 
 import { apiErrorText } from '@kroma/core';
 import { Button } from '@kroma/ui/kit';
@@ -26,7 +23,6 @@ import {
 } from '#mobile/lib/storage';
 import { colors, spacing, type } from '#mobile/lib/theme';
 
-/** Where a completed "enter your current PIN" step goes next. */
 type After = 'new' | 'remove' | 'bio';
 
 type Step =
@@ -49,8 +45,8 @@ export default function ProfilePin() {
   const [bioEnabled, setBioEnabled] = useState(false);
   const bioSupported = canStoreBiometricPin();
 
-  // The switch means "Face ID instead of the pad" on PIN profiles (vault) and
-  // "Face ID required to open this profile" on PIN-less ones (standalone lock).
+  // The switch means "Face ID instead of the pad" with a PIN, and "Face ID
+  // required to open this profile" without one.
   useEffect(() => {
     if (!serverUrl || !user) return;
     const load = user.hasPin ? isBiometricUnlockEnabled : isBiometricLockEnabled;
@@ -71,7 +67,6 @@ export default function ProfilePin() {
     setSaved(didSave);
   };
 
-  /** Refresh the biometric vault so Face ID keeps working after a change. */
   const syncVault = async (newPin: string | null) => {
     if (!serverUrl || !user) return;
     if (newPin && bioEnabled && bioSupported)
@@ -85,8 +80,7 @@ export default function ProfilePin() {
       const { user: updated } = await client.setPin(code, current);
       setUser(updated);
       if (!hasPin && serverUrl && user) {
-        // First PIN on this profile: an active standalone lock folds into the
-        // PIN vault (same switch position, Face ID now supplies the PIN).
+        // First PIN here: an active standalone lock folds into the PIN vault.
         if (bioEnabled) await setBiometricUnlockEnabled(serverUrl, user.id, true);
         await setBiometricLockEnabled(serverUrl, user.id, false);
       }
@@ -146,8 +140,8 @@ export default function ProfilePin() {
     }
   };
 
-  /** PIN-less profile: arm the standalone lock, confirming with a biometric
-   * prompt so a device that can't actually pass never ends up locked out. */
+  // Confirm with a real prompt: a device that cannot pass must not end up
+  // locked out.
   const enableBioLock = async () => {
     if (!serverUrl || !user) return;
     setBusy(true);
@@ -169,7 +163,6 @@ export default function ProfilePin() {
     }
   };
 
-  /** Four digits are in: advance the wizard (or fire the matching call). */
   const complete = (code: string) => {
     if (step.kind === 'current') {
       if (step.after === 'remove') void removePin(code);

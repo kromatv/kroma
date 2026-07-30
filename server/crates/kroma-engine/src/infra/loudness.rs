@@ -11,19 +11,16 @@ use std::process::{Command, Stdio};
 use anyhow::{bail, Context, Result};
 use kroma_domain::{AudioAnalysis, AudioVerdict};
 
-/// LRA above this (LU) = the "quiet dialogue, loud explosions" mix.
+// LRA above this (LU) = the "quiet dialogue, loud explosions" mix.
 const LRA_HIGH: f64 = 15.0;
-/// Centre channel this far below the full mix (LU) = dialogue is buried.
+// Centre channel this far below the full mix (LU) = dialogue is buried.
 const DIALOG_GAP: f64 = 8.0;
 
 /// One `loudnorm` measurement (the filter's `input_*` fields).
 #[derive(Debug, Clone, Copy)]
 pub struct LoudnessStats {
-    /// Integrated loudness (LUFS).
     pub input_i: f64,
-    /// Loudness range (LU).
     pub input_lra: f64,
-    /// True peak (dBTP).
     pub input_tp: f64,
 }
 
@@ -34,8 +31,7 @@ pub struct LoudnessResult {
     pub dialog: Option<LoudnessStats>,
 }
 
-/// Loudnorm's shared filter parameters. Only the measurement (`input_*`) side
-/// is read; the targets just have to be valid.
+// Only the measurement (`input_*`) side is read; the targets just have to be valid.
 const LOUDNORM: &str = "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json";
 
 /// Measure the loudness of audio track `audio_rel` (audio-relative index) of
@@ -81,9 +77,9 @@ pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<Lou
     Ok(LoudnessResult { mix, dialog })
 }
 
-/// Extract every `[Parsed_loudnorm_N @ …] { … }` JSON block from ffmpeg's
-/// stderr as `(filter_index, stats)`. Blocks print in nondeterministic order;
-/// the caller sorts by index.
+// Extracts every `[Parsed_loudnorm_N @ …] { … }` JSON block from ffmpeg's
+// stderr as `(filter_index, stats)`. Blocks print in nondeterministic order;
+// the caller sorts by index.
 fn parse_loudnorm_blocks(stderr: &str) -> Vec<(u32, LoudnessStats)> {
     let mut out = Vec::new();
     for (pos, _) in stderr.match_indices("Parsed_loudnorm_") {
@@ -133,8 +129,8 @@ pub fn to_analysis(res: &LoudnessResult) -> AudioAnalysis {
     }
 }
 
-/// Pure verdict policy. Buried dialogue outranks plain wide dynamics: it is the
-/// more actionable finding (the boost suggestion names dialogue explicitly).
+// Buried dialogue outranks plain wide dynamics: it is the more actionable
+// finding (the boost suggestion names dialogue explicitly).
 fn verdict(mix_i: f64, lra: f64, dialog_i: Option<f64>) -> AudioVerdict {
     if let Some(d) = dialog_i {
         // A fully silent centre (-70 floor) means the "5.1" carries no real

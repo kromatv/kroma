@@ -1,28 +1,16 @@
-// Runtime schemas for the media / catalogue domain mirrors of the ts-rs
+// Runtime schemas for the media / catalogue domain, mirroring the ts-rs
 // generated wire types (see `../generated`, the single source of truth).
-//
-// Same conventions as `./accounts.ts`: each schema mirrors a Rust struct, adds
-// runtime validation + branded ids, and carries a compile-time drift guard.
-// `true satisfies SameKeys<…>` breaks the build if a field is added/removed in
-// Rust and `gen:types` is rerun without updating the schema. Tagged unions use
-// `z.discriminatedUnion` and skip the drift line (it yields false failures).
-//
-// Schemas are defined in dependency order: a type used as a nested field appears
-// above the schema that references it.
+// Same conventions as `./accounts.ts`; `./drift` explains the guards.
 
 import { z } from 'zod';
 import { ItemId, LibraryId, ShowId } from './ids';
 
-/** What sort of thing a media item is. */
 export const MediaKind = z.enum(['movie', 'episode', 'video']);
 
-/** What a [`Marker`] segment is (serialized lowercase). */
 export const MarkerKind = z.enum(['intro', 'credits']);
 
-/** Library classification, derived from the kinds of items it holds. */
 export const LibraryKind = z.enum(['movies', 'shows', 'mixed']);
 
-/** UI grouping bucket for a job (serializes lowercase). */
 export const Category = z.enum([
   'maintenance',
   'library',
@@ -31,7 +19,6 @@ export const Category = z.enum([
   'acquisition',
 ]);
 
-/** Video stream description (fields may be null when unknown). */
 export const VideoTrack = z.object({
   codec: z.string(),
   width: z.number().nullable(),
@@ -41,7 +28,6 @@ export const VideoTrack = z.object({
 });
 export type VideoTrack = z.infer<typeof VideoTrack>;
 
-/** One audio stream/track. */
 export const AudioTrack = z.object({
   index: z.number(),
   codec: z.string(),
@@ -52,26 +38,19 @@ export const AudioTrack = z.object({
 });
 export type AudioTrack = z.infer<typeof AudioTrack>;
 
-/** Outcome of the EBU R128 loudness analysis of an audio track. */
 export const AudioVerdict = z.enum(['ok', 'highDynamics', 'quietDialog']);
 
-/** EBU R128 loudness measurement of an item's default audio track, produced by
- * the server's `pipeline.loudness` stage. Raw values are kept alongside the
- * verdict so remediation (volume boost, loudnorm) can use them directly. */
+/** EBU R128 loudness measurement of an item's default audio track: `lufsI` and
+ * `dialogLufs` in LUFS, `lra` in LU, `truePeak` in dBTP. */
 export const AudioAnalysis = z.object({
-  /** Integrated loudness of the full mix (LUFS). */
   lufsI: z.number(),
-  /** Loudness range (LU); > ~15 = quiet dialogue vs loud effects. */
   lra: z.number(),
-  /** True peak (dBTP). */
   truePeak: z.number(),
-  /** Integrated loudness of the centre (dialogue) channel alone (5.1+ only). */
   dialogLufs: z.number().nullish(),
   verdict: AudioVerdict,
 });
 export type AudioAnalysis = z.infer<typeof AudioAnalysis>;
 
-/** A subtitle track. */
 export const SubtitleTrack = z.object({
   language: z.string().nullable(),
   codec: z.string(),
@@ -79,7 +58,7 @@ export const SubtitleTrack = z.object({
 export type SubtitleTrack = z.infer<typeof SubtitleTrack>;
 
 /** One physical file backing a logical [`MediaItem`]. `id` is a `short_hash` of
- * the absolute path (opaque, per-file) not a media-item id. */
+ * the absolute path, not a media-item id. */
 export const MediaFile = z.object({
   id: z.string(),
   relPath: z.string().nullable(),
@@ -95,7 +74,6 @@ export const MediaFile = z.object({
 });
 export type MediaFile = z.infer<typeof MediaFile>;
 
-/** One timed segment of an episode (intro / credits), in milliseconds. */
 export const Marker = z.object({
   kind: MarkerKind,
   startMs: z.number(),
@@ -103,7 +81,6 @@ export const Marker = z.object({
 });
 export type Marker = z.infer<typeof Marker>;
 
-/** One top-billed cast member. */
 export const CastMember = z.object({
   name: z.string(),
   character: z.string().nullish(),
@@ -111,7 +88,6 @@ export const CastMember = z.object({
 });
 export type CastMember = z.infer<typeof CastMember>;
 
-/** One key crew member (director, writer, creator). */
 export const CrewMember = z.object({
   name: z.string(),
   job: z.string(),
@@ -119,8 +95,6 @@ export const CrewMember = z.object({
 });
 export type CrewMember = z.infer<typeof CrewMember>;
 
-/** Resolved provider metadata for one movie or show. `imdbId` is an opaque
- * external id (plain string); `tmdbId` is numeric. */
 export const Metadata = z.object({
   provider: z.string(),
   tmdbId: z.number(),
@@ -141,8 +115,8 @@ export const Metadata = z.object({
 });
 export type Metadata = z.infer<typeof Metadata>;
 
-/** One TMDB title offered by the "fix the match" picker, with the confidence
- * the server's matcher gives it against what the filename parsed to. */
+/** One TMDB title offered by the "fix the match" picker. `score` is the
+ * matcher's 0..1 confidence against what the filename parsed to. */
 export const MatchCandidate = z.object({
   tmdbId: z.number(),
   title: z.string(),
@@ -151,29 +125,22 @@ export const MatchCandidate = z.object({
   posterUrl: z.string().nullish(),
   overview: z.string().nullish(),
   rating: z.number().nullish(),
-  /** Confidence in 0..1 that this is the title on disk. */
   score: z.number(),
-  /** Already the stored match for this element. */
   current: z.boolean(),
 });
 export type MatchCandidate = z.infer<typeof MatchCandidate>;
 
-/** `GET /api/rematch/{kind}/{id}/candidates`: what we matched against, and the
- * ranked candidates to choose from. */
+/** `GET /api/rematch/{kind}/{id}/candidates`. `pinned` means an operator chose
+ * the current match, so there is a pin to reset. */
 export const MatchCandidates = z.object({
-  /** The text searched for: the operator's query, else the parsed title. */
   query: z.string(),
-  /** The year parsed from the filename, which is what scoring compares against. */
   year: z.number().nullish(),
   currentTmdbId: z.number().nullish(),
-  /** Whether an operator chose the current match (i.e. there is a pin to reset). */
   pinned: z.boolean(),
   results: z.array(MatchCandidate),
 });
 export type MatchCandidates = z.infer<typeof MatchCandidates>;
 
-/** A single playable media item. `defaultFileId` is an opaque file id (plain
- * string); `id`/`showId` are branded. */
 export const MediaItem = z.object({
   id: ItemId,
   title: z.string(),
@@ -202,7 +169,7 @@ export const MediaItem = z.object({
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 
-/** One season's worth of episodes, sorted by episode number. */
+/** Episodes are sorted by episode number. */
 export const Season = z.object({
   number: z.number(),
   episodes: z.array(MediaItem),
@@ -225,14 +192,13 @@ export const Show = z.object({
 });
 export type Show = z.infer<typeof Show>;
 
-/** `GET /api/shows/:id` payload: a show plus its seasons. */
+/** `GET /api/shows/:id`. */
 export const ShowDetail = z.object({
   show: Show,
   seasons: z.array(Season),
 });
 export type ShowDetail = z.infer<typeof ShowDetail>;
 
-/** A scanned library root. `id` is an opaque library id (plain string). */
 export const Library = z.object({
   id: LibraryId,
   name: z.string(),
@@ -242,7 +208,6 @@ export const Library = z.object({
 });
 export type Library = z.infer<typeof Library>;
 
-/** One row of a user's playback progress. */
 export const ProgressEntry = z.object({
   itemId: ItemId,
   positionMs: z.number(),
@@ -251,7 +216,6 @@ export const ProgressEntry = z.object({
 });
 export type ProgressEntry = z.infer<typeof ProgressEntry>;
 
-/** A "continue watching" entry: the resumable item plus where to resume from. */
 export const ContinueItem = z.object({
   item: MediaItem,
   positionMs: z.number(),
@@ -260,15 +224,13 @@ export const ContinueItem = z.object({
 });
 export type ContinueItem = z.infer<typeof ContinueItem>;
 
-/** The episode to play to continue a show (`GET /api/shows/:id/up-next`). */
+/** `GET /api/shows/:id/up-next`. */
 export const UpNext = z.object({
   item: MediaItem,
   resume: z.boolean(),
 });
 export type UpNext = z.infer<typeof UpNext>;
 
-/** One rail entry: a movie/video (a [`MediaItem`]) or a whole show (a [`Show`]),
- * distinguished by the `type` tag. */
 // drift: runtime-checked (tagged union)
 export const SectionItem = z.discriminatedUnion('type', [
   z.object({ type: z.literal('movie'), item: MediaItem }),
@@ -276,7 +238,6 @@ export const SectionItem = z.discriminatedUnion('type', [
 ]);
 export type SectionItem = z.infer<typeof SectionItem>;
 
-/** One catalogue rail: a titled row of [`SectionItem`]s. */
 export const Section = z.object({
   id: z.string(),
   title: z.string(),
@@ -285,7 +246,6 @@ export const Section = z.object({
 });
 export type Section = z.infer<typeof Section>;
 
-/** The status of one treatment (stage) applied to a single catalog element. */
 export const Treatment = z.object({
   key: z.string(),
   status: z.string(),
@@ -296,11 +256,7 @@ export type Treatment = z.infer<typeof Treatment>;
 /** `GET /api/health`. */
 export const Health = z.object({
   status: z.string(),
-  /** Admin-configured server name. Absent on servers predating it, and on any
-   * server that classifies the caller as WAN (the name is LAN-only). */
   name: z.string().optional(),
-  /** Stable per-install id, for telling "one server, two origins" from "two
-   * servers". Absent on servers predating it. */
   instanceId: z.string().optional(),
   version: z.string(),
   ffprobe: z.boolean(),
@@ -310,7 +266,6 @@ export const Health = z.object({
 });
 export type Health = z.infer<typeof Health>;
 
-/** Server identity + uptime for the admin sidebar status card. */
 export const ServerInfo = z.object({
   name: z.string(),
   hostname: z.string(),

@@ -1,5 +1,4 @@
-// The inner sign-in phases: the PIN pad unlock and the password / credentials
-// form. Presentation only; auth calls and phase switching stay in sign-in.
+// Presentation only; auth calls and phase switching stay in sign-in.
 
 import { Button, Spinner } from '@kroma/ui/kit';
 import { StyleSheet, Text, View } from 'react-native';
@@ -12,7 +11,6 @@ import { ErrorBanner, TextField } from './ui';
 
 export type Identity = { name: string; avatarUri: string | null };
 
-/** Centered avatar + name header used by the PIN and password phases. */
 function IdentityHeader({
   identity,
   subtitle,
@@ -38,7 +36,6 @@ export function PinPhase({
   identity: Identity;
   pin: string;
   disabled: boolean;
-  /** The typed PIN is being verified: shows the small spinner. */
   checking: boolean;
   error: string | null;
   onChange(next: string): void;
@@ -68,8 +65,6 @@ export function CredentialsPhase({
   onSubmit,
   onBack,
 }: Readonly<{
-  /** Known profile (stale-token fallback): avatar header + password only.
-   * Null = the full credentials form on the selected server. */
   identity: Identity | null;
   serverLabel: string | null;
   identifier: string;

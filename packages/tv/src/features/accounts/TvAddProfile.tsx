@@ -10,16 +10,12 @@ import { AuthScreen, hostOf } from '#tv/shared/ui';
 
 interface Entry {
   url: string;
-  /** Name to show until the server states its own (saved label, else host). */
   fallbackName: string;
-  /** The label this server was saved under, if it is saved at all. */
   savedName?: string | null;
   address: string;
-  /** Discovered on the LAN but not saved yet. */
   isNew: boolean;
 }
 
-/** "host" or "host · port N" for a server URL. */
 function addrOf(url: string): string {
   try {
     const u = new URL(url);
@@ -30,12 +26,9 @@ function addrOf(url: string): string {
 }
 
 /**
- * Add-profile wizard, step 1 choose a server. One "Serveurs disponibles" list
- * (LAN-discovered + saved, with a discovery spinner) followed by "Ajouter
- * manuellement". Every listed server is polled on its public `/api/health`, so a
- * row states what it is (name, version, catalogue size) and whether it answers
- * before you commit to it. Picking one points the client at it and advances to
- * Quick Connect. The wizard never offers a password or registration.
+ * Add-profile wizard, step 1: choose a server. Every listed server is polled
+ * on its public `/api/health` so a row states what it is and whether it
+ * answers before you commit to it. Picking one advances to Quick Connect.
  */
 export function TvAddProfile() {
   const nav = useNav();
@@ -47,8 +40,6 @@ export function TvAddProfile() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on open.
   useEffect(() => discover(), []);
 
-  // A single "Serveurs disponibles" section: discovered servers first (tagged
-  // "nouveau" when not yet saved), then any saved-but-not-discovered.
   const entries = useMemo<Entry[]>(() => {
     const localUrls = discovered.map((u) => norm(u));
     const of = (url: string, saved?: { name?: string | null }, isNew = false): Entry => ({
@@ -66,9 +57,6 @@ export function TvAddProfile() {
     return out;
   }, [discovered, servers]);
 
-  // Probe each listed server so a row shows whether it actually answers (a saved
-  // server can be offline; a freshly discovered one is reachable but confirmed
-  // here) and what it is. Public endpoint: no session needed.
   const health = useServersHealth(entries.map((e) => e.url));
 
   const pick = (url: string, name?: string | null) => {
@@ -99,13 +87,9 @@ export function TvAddProfile() {
           {discovering ? <Spinner size={13} thickness={2} /> : null}
         </Box>
         <Box gap={12}>
-          {/* The servers get a group of their own, mounted whether or not any
-              server is known yet. The navigator orders a group's children by the
-              order they REGISTERED, not by where they sit, so a server found by
-              discovery a second later would otherwise register behind "Ajouter
-              manuellement" and Down would walk past that row forever. This group
-              holds their place above it; the keys are POSITIONS for the same
-              reason (a server prepended to the list must not register last). */}
+          {/* The navigator orders a group's children by registration order, not
+              position, so this group holds the servers' place above "Ajouter
+              manuellement" — keys are list positions for the same reason. */}
           <FocusColumn style={LIST}>
             {entries.map((e, index) => {
               const probe = health[e.url];
@@ -118,13 +102,10 @@ export function TvAddProfile() {
                   isNew={e.isNew}
                   probe={probe}
                   autoFocus={index === 0}
-                  // The health answer is the freshest name the server has, so a
-                  // renamed server is saved under its new label, not the old one.
                   onPress={() => pick(e.url, probe?.name ?? e.savedName)}
                 />
               );
             })}
-            {/* Nothing found YET: show the shape of a row rather than a gap. */}
             {entries.length === 0 && discovering ? <ServerRowSkeleton /> : null}
           </FocusColumn>
           <ActionRow
@@ -151,6 +132,4 @@ export function TvAddProfile() {
 }
 
 const LIST = { gap: 12 };
-
-/** A size down from the kit role: this list sits inside a dialog-width column. */
 const SECTION = { fontSize: 12 };

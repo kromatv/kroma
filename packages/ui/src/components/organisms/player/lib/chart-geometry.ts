@@ -1,18 +1,7 @@
-// Geometry for the stats panel's live charts.
-//
-// Pure maths, no React and no SVG element, because the mapping is the part worth
-// testing: these charts are the only thing in the player that redraws on a timer,
-// and the bug they shipped with lived here rather than in the drawing.
-//
-// The window is RIGHT-ANCHORED and its step is fixed. The previous version spread
-// whatever samples it happened to have across the full width (`step = W / (n-1)`),
-// so for the first 40 s of a stream the trace stretched horizontally as history
-// accumulated: the line appeared to move because the axis was moving under it,
-// which is the one thing a trend chart must never do. Here the newest sample is
-// always at the right edge, one sample is always the same number of pixels, and a
-// short history simply has not reached the left edge yet.
+// Geometry for the stats panel's live charts: pure maths, no React/SVG. The
+// window is RIGHT-ANCHORED with a fixed step, so the newest sample always sits
+// at the right edge instead of the axis drifting as history accumulates.
 
-/** Samples one chart window holds (~40 s at the panel's 2 Hz poll). */
 export const CHART_WINDOW = 80;
 
 export interface ChartBox {
@@ -31,16 +20,11 @@ export interface Extent {
 }
 
 /**
- * The value range every series in one chart shares.
- *
- * Shared deliberately: two series on one axis is the whole reason the bandwidth
- * and bitrate meters can be read against each other, and scaling them
- * independently would invent a crossover that is not in the data. `reference`
- * widens the range so a floor line is never drawn outside the box.
- *
- * A flat series (a stream holding a steady bitrate is the NORMAL case) has no
- * span of its own; it gets a symmetric ±1 so it draws as the level line it is
- * rather than dividing by zero or slamming to an edge.
+ * The value range every series in one chart shares, so two series (e.g.
+ * bandwidth and bitrate) can be read against each other without inventing a
+ * crossover that isn't in the data. `reference` widens the range so a floor
+ * line is never drawn outside the box; a flat series gets a symmetric ±1
+ * instead of dividing by zero.
  */
 export function extentOf(series: readonly (readonly number[])[], reference?: number): Extent {
   let { min, max } = spanOf(series);
@@ -55,9 +39,6 @@ export function extentOf(series: readonly (readonly number[])[], reference?: num
   return { min, max };
 }
 
-/** Min and max over every FINITE sample in every series; the infinities survive
- * when there is nothing finite at all, which is what tells the caller apart from
- * a genuine span of zero. */
 function spanOf(series: readonly (readonly number[])[]): { min: number; max: number } {
   let min = Number.POSITIVE_INFINITY;
   let max = Number.NEGATIVE_INFINITY;
@@ -86,9 +67,8 @@ export function yAt(value: number, extent: Extent, box: ChartBox): number {
   return box.padY + (1 - t) * usable;
 }
 
-/** Quantise to 0.1px: a chart this size cannot show finer, and the shorter
- * numbers keep the `d` string small - which is the thing that actually crosses
- * into the renderer on every tick. */
+/** Quantise to 0.1px: finer precision is invisible at this size, and the shorter
+ * `d` string is what actually crosses into the renderer on every tick. */
 export function px(n: number): number {
   return Math.round(n * 10) / 10;
 }
@@ -108,12 +88,9 @@ export function seriesPath(data: readonly number[], extent: Extent, box: ChartBo
 }
 
 /**
- * `d` for the closed band between two traces - the headroom between the
- * bandwidth a connection is delivering and the bitrate the stream is asking for.
- *
- * The band is the diagnostic: while it is open there is slack, and when it
- * closes the stream is about to stall. Drawing it as a filled region says that
- * in one glance, where two separate auto-scaled sparklines said nothing at all.
+ * `d` for the closed band between two traces — the headroom between the
+ * bandwidth a connection is delivering and the bitrate it's asking for. Drawn
+ * filled so a closing gap (an impending stall) reads at a glance.
  */
 export function bandPath(
   upper: readonly number[],

@@ -1,18 +1,9 @@
 // @vitest-environment jsdom
-//
-// Which engine add-flows the admin console offers.
-//
-// These two hooks decide what a host page renders, from data the server sends,
-// so a wrong answer is a feature that silently vanishes or one that is offered
-// and cannot work. Two rules carry that weight:
-//
-//   A module with no add-flow is not an option. The always-on embedded engines
-//   (rqbit) provide a capability but have nothing to add, so offering them puts
-//   an empty form in front of someone.
-//
-//   `enabled` defaults to TRUE while the module list is still loading. The
-//   opposite default would blink every add-flow off on each page load, which
-//   reads as the feature having been removed.
+
+// Which engine add-flows the admin console offers. A module with no add-flow
+// (the always-on embedded `rqbit` provides a capability but has nothing to
+// add) is not offered, and `enabled` defaults to true while the module list
+// is still loading, so add-flows don't blink off on every page load.
 
 import type { ModuleInfo } from '@kroma/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -22,8 +13,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { AdminKitProvider } from './context';
 import { useEnabledEngines, useModuleEnabled } from './engines';
 
-/** A provider whose `client.modules()` answers `modules`. Retries off so a
- *  rejected fetch settles once rather than backing off through the test. */
+// A provider whose `client.modules()` answers `modules`; retries off so a
+// rejected fetch settles once instead of backing off through the test.
 function wrapper(modules: ModuleInfo[] | (() => Promise<ModuleInfo[]>)) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },

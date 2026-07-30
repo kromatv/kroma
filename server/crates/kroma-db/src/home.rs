@@ -253,9 +253,6 @@ mod tests {
         let idx = |id: &str| recent.iter().position(|x| x == id).unwrap();
         assert!(idx("nogen") < idx("c2") && idx("c2") < idx("c1"));
 
-        // (trending_ids has its own ranking test below.)
-
-        // last_played = most recent by ended_at for the user.
         assert!(last_played(&p, "u1").unwrap().is_some());
         assert!(last_played(&p, "nobody").unwrap().is_none());
     }

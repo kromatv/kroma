@@ -23,7 +23,6 @@ export interface WebSubtitles {
   activeIndex: number | null;
   setActive: (index: number | null) => void;
   subtitleGen: SubtitleGenBundle;
-  /** Human label of the active track (for the admin-session heartbeat). */
   label: string;
 }
 
@@ -180,10 +179,8 @@ export function useWebSubtitles(item: MovieView, t: Translate): WebSubtitles {
     onStart,
   };
 
-  // A pick is also a preference, the same rule the TV follows: turning subtitles
-  // OFF is a real choice and is remembered as such, while picking a track whose
-  // language the file never declared leaves the stored preference alone - there
-  // is nothing to learn from it.
+  // Turning subtitles off is a real choice and is remembered as such; picking a
+  // track whose language the file never declared leaves the preference alone.
   const { setSubtitle } = useLangPrefs();
   const setActive = useCallback(
     (index: number | null) => {

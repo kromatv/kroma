@@ -1,17 +1,7 @@
-// The player chrome's opt-out from platform focus, on each platform.
-//
-// This one constant is what stops the film starting and stopping. On tvOS every
-// Pressable is focusable by default, so the OS engine adopted the player chrome
-// in parallel with the player's own virtual focus: it moved a second, invisible
-// focus around, and the Select that ENTERED the player landed on whichever
-// control it had adopted - the top bar's back button - which closed the player
-// again about a frame later.
-//
-// react-native-tvos gates a Pressable on exactly `focusable !== false &&
-// isTVSelectable !== false`, so BOTH keys must be present and both must be
-// `false`. The web half is empty on purpose: there is no OS focus engine to opt
-// out of, and adding the props would strip the controls out of the tab order and
-// leak an `isTVSelectable` attribute onto DOM elements that never heard of it.
+// The player chrome's opt-out from platform focus, on each platform (see
+// virtual-focus.ts for why it exists). react-native-tvos gates a Pressable on
+// exactly `focusable !== false && isTVSelectable !== false`, so BOTH keys must
+// be false. The web half is empty — there's no OS focus engine to opt out of.
 
 import { describe, expect, it } from 'vitest';
 import { UNFOCUSABLE } from '#ui/lib/focus-types';

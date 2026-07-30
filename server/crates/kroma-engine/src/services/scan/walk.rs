@@ -120,8 +120,8 @@ pub(super) fn scan_root(
     }
 }
 
-/// jwalk `process_read_dir` body: prune Synology/hidden dirs from the descent and
-/// stat each file *in the walk's thread pool* (so the SMB round-trips overlap).
+// jwalk `process_read_dir` body: prune Synology/hidden dirs from the descent and
+// stat each file *in the walk's thread pool* (so the SMB round-trips overlap).
 fn prepare_children(children: &mut Vec<jwalk::Result<jwalk::DirEntry<((), FileMeta)>>>) {
     children.retain(|res| match res {
         Ok(e) => !(e.file_type().is_dir() && is_pruned_dir(&e.file_name)),
@@ -255,14 +255,14 @@ fn index_parsed(
     }
 }
 
-/// Per-file metadata carried through the parallel jwalk: (size, mtime-secs).
+// Per-file metadata carried through the parallel jwalk: (size, mtime-secs).
 type FileMeta = Option<(u64, i64)>;
 
-/// Concurrency for the directory walk. Metadata ops are latency-bound (not CPU),
-/// so more threads than cores overlap the round-trips but a NAS serving its
-/// own local disks gains nothing past a handful, and 64 idle-blocked threads
-/// still cost stacks + scheduler churn on a 2-4 core box. `KROMA_WALK_THREADS`
-/// overrides for genuinely remote mounts.
+// Concurrency for the directory walk. Metadata ops are latency-bound (not CPU),
+// so more threads than cores overlap the round-trips but a NAS serving its
+// own local disks gains nothing past a handful, and 64 idle-blocked threads
+// still cost stacks + scheduler churn on a 2-4 core box. `KROMA_WALK_THREADS`
+// overrides for genuinely remote mounts.
 fn walk_threads() -> usize {
     if let Some(n) = std::env::var("KROMA_WALK_THREADS").ok().and_then(|s| s.parse().ok()) {
         return n;
@@ -271,13 +271,13 @@ fn walk_threads() -> usize {
     (cores * 4).clamp(8, 32)
 }
 
-/// Directories pruned from the walk: Synology metadata (`@eaDir`) and hidden.
+// Directories pruned from the walk: Synology metadata (`@eaDir`) and hidden.
 fn is_pruned_dir(name: &std::ffi::OsStr) -> bool {
     let n = name.to_string_lossy();
     n == "@eaDir" || n.starts_with('.')
 }
 
-/// `stat` one file (run inside the parallel walk pool): (size, mtime-as-unix-secs).
+// `stat` one file (run inside the parallel walk pool): (size, mtime-as-unix-secs).
 fn file_meta(path: &Path) -> FileMeta {
     let md = std::fs::metadata(path).ok()?;
     let mtime = md

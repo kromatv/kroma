@@ -3,34 +3,22 @@
 // coalescing) is unit-testable with fake timers see healthMonitor.test.ts.
 
 export interface HealthMonitorOptions {
-  /** One reachability check: resolves `true` if the server answered, `false`
-   * otherwise. Must not reject (the caller wraps failures into `false`). */
   probe: () => Promise<boolean>;
-  /** Fired whenever reachability flips (never on an unchanged probe). */
   onChange: (online: boolean) => void;
-  /** Fired on each offline→online edge, after `onChange(true)`. */
   onReconnect?: () => void;
-  /** Cadence while the server answers. Default 8000ms. */
   onlineMs?: number;
-  /** Cadence while it doesn't (faster, for a snappy reconnect). Default 3000ms. */
   offlineMs?: number;
-  /** Assumed reachability before the first probe resolves. Default `true`. */
   initialOnline?: boolean;
 }
 
 export interface HealthMonitor {
-  /** Probe now instead of waiting for the next tick (no-op while one is running). */
   recheck: () => void;
-  /** Stop the loop; no further probes, callbacks or timers. */
   stop: () => void;
 }
 
-/**
- * Poll `probe()` on a self-adjusting timer: slowly while online, quickly while
- * offline. Reports flips via `onChange` and offline→online recoveries via
- * `onReconnect`. A single in-flight guard keeps `recheck()` from spawning a
- * second parallel loop. Probes immediately on start.
- */
+/** Polls `probe()` on a self-adjusting timer: slowly while online, quickly
+ * while offline. Probes immediately on start; `recheck()` cannot spawn a
+ * second parallel loop while one is in flight. */
 export function startHealthMonitor(opts: HealthMonitorOptions): HealthMonitor {
   const onlineMs = opts.onlineMs ?? 8000;
   const offlineMs = opts.offlineMs ?? 3000;

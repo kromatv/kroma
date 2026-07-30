@@ -48,12 +48,10 @@ describe('createEventBus', () => {
     const bus = loose(createEventBus());
     const second = vi.fn();
     let off2: () => void = () => undefined;
-    bus.on('evt', () => off2()); // first handler removes the second mid-dispatch
+    bus.on('evt', () => off2()); // removes the second handler mid-dispatch
     off2 = bus.on('evt', second);
     bus.emit('evt', 1);
-    // second was subscribed when emit began, so it fires exactly once this round...
     expect(second).toHaveBeenCalledTimes(1);
-    // ...but not on the next emit (it was unsubscribed).
     bus.emit('evt', 2);
     expect(second).toHaveBeenCalledTimes(1);
   });

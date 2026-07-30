@@ -1,17 +1,7 @@
 // <FocusScope>: the navigator for one screen, and the groups inside it.
-//
-// Every screen is wrapped in one by the router, and it does two things: it holds
-// the spatial tree for that screen, and it makes sure exactly ONE navigator is
-// listening to the remote at a time. A screen that is pushed over another stays
-// mounted underneath, and two live navigators would both act on the same press.
-//
-// SHARED, on purpose. Only the screen root differs between the targets - the web
-// must contribute no box, native needs a focusable key host and a `flex: 1` view
-// - so only the root is forked, into focus-root.tsx / focus-root.web.tsx. This
-// file used to be forked whole, which meant <FocusRegion> and <FocusColumn> had
-// two homes with nothing linking them: a prop added to one compiled fine and
-// silently gave the browser TVs different focus behaviour from the native ones,
-// which is the class of bug the shared navigator was adopted to eliminate.
+// Exactly one navigator answers the remote at a time; shared between web and
+// native on purpose so behaviour can't drift between them (only the screen
+// root is forked, into focus-root.tsx / focus-root.web.tsx).
 
 import { type ReactNode, useEffect } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
@@ -24,70 +14,46 @@ import { flat } from './nav-style';
 
 interface FocusScopeProps {
   children: ReactNode;
-  /** Applied to the screen's own box - which exists on native and not on the
-   *  web, where the root deliberately renders no element. See focus-root. */
+  /** Applied to the screen's own box; the web root renders no element (see focus-root). */
   style?: StyleProp<ViewStyle>;
 }
 
 interface ScreenScopeProps extends FocusScopeProps {
-  /** Names the SCREEN inside a scope that outlives it. A scope holding
-   *  persistent chrome (a nav bar that must keep its instance across a section
-   *  change) cannot re-decide where focus opens from its own mount, because it
-   *  does not remount; changing this key is how it hears about the arrival.
-   *  Omit it for the usual case - one scope per screen, keyed by the router. */
+  /** Names the SCREEN inside a scope that outlives it (e.g. persistent nav
+   *  chrome), so it re-decides where focus opens on each arrival instead of on
+   *  its own mount. Omit for the usual case: one scope per screen. */
   entryKey?: string | number;
   /**
-   * Mount a remote bridge for this scope. Default true, and only a scope drawn
-   * INSIDE another one ever says otherwise.
-   *
-   * The bridge is the SOURCE of remote events on the native targets, and it fans
-   * out to every registered navigator (see focus-remote's handler set) - so a
-   * second one inside the first would post every press twice and the ring would
-   * jump two controls. A dialog rendered through <OverlayHost> is inside the
-   * app's own view hierarchy and the screen's bridge already reaches it, so it
-   * passes `false`; one that falls back to a <Modal> is in a view controller of
-   * its own, where that bridge can go quiet, and needs its own.
+   * Mount a remote bridge for this scope. Default true; only a scope drawn
+   * INSIDE another one passes `false` — the bridge fans events to every
+   * registered navigator, so a nested one would double-fire each press. An
+   * `<OverlayHost>` dialog reuses the screen's bridge; a `<Modal>`-backed one
+   * is in its own view controller and needs its own.
    */
   bridge?: boolean;
 }
 
 interface FocusColumnProps extends FocusScopeProps {
-  /** Treat the rows inside as a grid: keep the column when moving between them.
-   *  See <FocusColumn>. */
   grid?: boolean;
 }
 
 /**
- * A scope is also what a DIALOG mounts, over the screen that opened it, paired
- * with {@link useLockFocusBehind} there. Together those two are what "the dialog
- * takes the remote" actually means:
- *
- *  - the screen behind is LOCKED, so its navigator stops answering the remote
- *    and none of its controls can be focused - a press of OK can no longer land
- *    on the button a dialog is covering;
- *  - this root is the only one left listening, and it holds nothing but the
- *    dialog, so the remote reaches its buttons and nothing else;
- *  - `useFocusEntryScope` runs while this RENDERS, which is what lets the
- *    dialog's `autoFocus` action claim the ring. From an effect it would arrive
- *    after the children had already decided (see lib/focus-entry), and the ring
- *    would stay on the screen underneath;
- *  - on the browser targets <FocusRoot> also mounts a fresh device-type
- *    provider, so the dialog opens in REMOTE-KEYS mode however the pointer was
- *    left. A webOS magic remote parked over the screen behind no longer decides
- *    where a dialog opens, and a genuine move of that pointer inside the dialog
- *    still turns hover-focus back on - for the dialog's own buttons.
+ * Also what a DIALOG mounts, over the screen that opened it, paired with
+ * {@link useLockFocusBehind} on the screen: that locks the screen's navigator
+ * out of the remote, leaving this root the only one listening. Its
+ * `useFocusEntryScope` runs during render (not an effect) so the dialog's
+ * `autoFocus` claims the ring before the screen underneath decides; on the
+ * browser targets it also resets device-type to remote-keys mode regardless
+ * of where the pointer was left.
  */
 function FocusScope({ children, style, entryKey, bridge = true }: Readonly<ScreenScopeProps>) {
   // Hooks cannot be conditional, so the flag is read INSIDE the bridge rather
   // than around it.
   useRemoteBridge(bridge);
-  // A fresh scope - or a new screen inside one that persists - decides where
-  // focus opens again: see lib/focus-entry.
   useFocusEntryScope(entryKey);
   return (
-    // The presence flag is what lets a kit control exist OUTSIDE any scope (a
-    // phone screen, a plain web page) without registering with a navigator
-    // that was never mounted. See lib/focus-presence.
+    // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web
+    // page) without registering with a navigator that was never mounted.
     <FocusPresenceProvider value={true}>
       <FocusRoot style={style}>{children}</FocusRoot>
     </FocusPresenceProvider>
@@ -95,12 +61,9 @@ function FocusScope({ children, style, entryKey, bridge = true }: Readonly<Scree
 }
 
 /**
- * Take the remote away from the navigator this component sits in, while
- * `active`. Called from OUTSIDE the scope it protects - the component that opens
- * the dialog - so it locks the screen rather than the dialog.
- *
- * Outside any navigator - the web app, a phone - the navigator's context
- * defaults to a pair of no-ops, so this is inert rather than conditional.
+ * Locks the navigator this component sits in out of the remote while `active`.
+ * Called from OUTSIDE the scope it protects, so it locks the screen rather
+ * than the dialog opened over it.
  */
 function useLockFocusBehind(active: boolean): void {
   const { lock, unlock } = useLockSpatialNavigation();
@@ -114,13 +77,10 @@ function useLockFocusBehind(active: boolean): void {
 }
 
 /**
- * <FocusRegion>: a group of controls that belong together on one line.
- *
- * The navigator moves between GROUPS vertically and inside a group
- * horizontally, so this is how a row says it is a row: the nav bar, a hero's
- * buttons, a rail. Nothing measures anything - the shape comes from the tree,
- * which is why it cannot drift when a scroll view animates or when a control
- * mounts late.
+ * A group of controls that belong together on one line — the nav bar, a
+ * hero's buttons, a rail. The navigator moves between groups vertically and
+ * inside a group horizontally; nothing measures anything, the shape comes
+ * from the tree.
  */
 function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
   return (
@@ -131,17 +91,10 @@ function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
 }
 
 /**
- * <FocusColumn>: a group of controls stacked one above the other.
- *
- * The mirror of <FocusRegion>, for a block that owns its own vertical order
- * inside a screen: a list of servers, an on-screen keyboard.
- *
- * `grid` is what makes a stack of <FocusRegion> rows behave like a GRID, and it
- * is the difference between an on-screen keyboard that works and one that does
- * not. Moving between rows, the navigator lands on the row's last-focused key -
- * so Down from T went to A, and every vertical press read as a diagonal. With
- * `grid` the navigator keeps the POSITION instead: Down from the fifth key of a
- * row lands on the fifth key of the next one.
+ * A group of controls stacked one above the other — a list of servers, an
+ * on-screen keyboard. `grid` makes a stack of `<FocusRegion>` rows behave as a
+ * grid: without it, moving down lands on each row's last-focused key (Down
+ * from T lands on A); with it, the navigator keeps the column position.
  */
 function FocusColumn({ children, style, grid = false }: Readonly<FocusColumnProps>) {
   return (

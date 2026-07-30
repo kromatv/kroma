@@ -1,10 +1,7 @@
 import { getTauri } from '#tv/features/playback/player/engine';
 
-/** Whether the hosting shell can terminate the whole app. Only the desktop
- * (Tauri) shell qualifies: it runs fullscreen without window chrome, so the UI
- * must offer the way out itself. Real TVs (Tizen/webOS) quit through their own
- * system UI, and the native TV app through the platform's Home button, so the
- * row stays hidden on both. */
+/** Only the desktop (Tauri) shell runs fullscreen without window chrome, so
+ * only it needs the app to offer its own way out. */
 export function canQuitApp(): boolean {
   return getTauri() != null;
 }

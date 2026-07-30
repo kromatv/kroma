@@ -16,14 +16,13 @@ pub struct IndexerView {
     pub has_api_key: bool,
     pub categories: Vec<u32>,
     pub enabled: bool,
-    /// Flat score bonus in the decision engine (tiebreak between indexers).
     pub priority: i32,
-    /// `torznab` (external Jackett/Prowlarr) or `builtin` (native Cardigann).
+    // `torznab` (external Jackett/Prowlarr) or `builtin` (native Cardigann).
     pub kind: String,
-    /// The Cardigann definition id (built-in indexers only).
+    // The Cardigann definition id (built-in indexers only).
     pub definition_id: Option<String>,
-    /// Names of the settings that currently have a value (secrets never leave
-    /// the server; the edit form re-renders the schema and blanks secrets).
+    // Names of the settings that currently have a value (secrets never leave
+    // the server; the edit form re-renders the schema and blanks secrets).
     pub configured_settings: Vec<String>,
     pub last_ok_at: Option<i64>,
     pub last_error: Option<String>,
@@ -48,19 +47,17 @@ pub struct SaveIndexerBody {
     pub categories: Option<Vec<u32>>,
     pub enabled: Option<bool>,
     pub priority: Option<i32>,
-    /// `builtin` to create a native-Cardigann indexer (default `torznab`).
+    // `builtin` to create a native-Cardigann indexer (default `torznab`).
     #[serde(default)]
     pub kind: Option<String>,
-    /// The Cardigann definition id (built-in create).
+    // The Cardigann definition id (built-in create).
     #[serde(default)]
     pub definition_id: Option<String>,
-    /// Per-indexer settings (credentials + toggles). Merged into the stored
-    /// map on update; an omitted secret keeps its stored value.
+    // Per-indexer settings (credentials + toggles). Merged into the stored
+    // map on update; an omitted secret keeps its stored value.
     #[serde(default)]
     pub settings: Option<std::collections::HashMap<String, String>>,
 }
-
-// ----- built-in definition catalog ------------------------------------------------
 
 /// One Cardigann definition in the admin's browse list.
 #[derive(Debug, Clone, Serialize)]
@@ -68,7 +65,7 @@ pub struct SaveIndexerBody {
 pub struct IndexerDefinitionView {
     pub id: String,
     pub name: String,
-    /// `public` | `private` | `semi-private`.
+    // `public` | `private` | `semi-private`.
     pub kind: String,
     pub description: String,
     pub links: Vec<String>,
@@ -79,7 +76,6 @@ pub struct IndexerDefinitionView {
 #[serde(rename_all = "camelCase")]
 pub struct IndexerDefinitionsView {
     pub definitions: Vec<IndexerDefinitionView>,
-    /// Whether the definition set has been fetched yet.
     pub synced: bool,
 }
 
@@ -88,11 +84,10 @@ pub struct IndexerDefinitionsView {
 #[serde(rename_all = "camelCase")]
 pub struct IndexerDefinitionSettingView {
     pub name: String,
-    /// `text` | `password` | `checkbox` | `select` | `info`.
+    // `text` | `password` | `checkbox` | `select` | `info`.
     pub kind: String,
     pub label: String,
     pub default: Option<String>,
-    /// For `select`: ordered (value, label) pairs.
     pub options: Vec<(String, String)>,
 }
 
@@ -123,7 +118,6 @@ pub struct IndexerTestResult {
     pub ok: bool,
     pub latency_ms: u64,
     pub server_title: Option<String>,
-    /// Whether the indexer resolves TMDB ids (movie / tv search).
     pub supports_tmdb: bool,
     pub error: Option<String>,
 }

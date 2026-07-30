@@ -1,16 +1,7 @@
 //! The built-in jobs shipped with KROMA one self-contained handler file per job
-//! in this directory, gathered into the ordered [`JOBS`] roster below.
-//!
-//! Each handler file owns its whole [`Builtin`] descriptor next to its `run` (its
-//! `pub(super) const SPEC` the [`JobKey`] that identifies it, plus schedule,
-//! category, triggers + handler), so everything about a job lives with the code
-//! that drives it rather than in a central table. This file just declares the
-//! modules and lists their `SPEC`s in admin-listing order.
-//!
-//! Because each key is declared per-job in its own file, two could collide so the
-//! [`NO_DUPLICATE_KEYS`] block below rejects a duplicate **at compile time**.
-//! Adding a job: drop a handler file (with its `SPEC`) and add its `mod` line +
-//! one roster entry.
+//! in this directory, gathered into the ordered [`JOBS`] roster below. Each
+//! handler owns its own [`Builtin`] descriptor next to its `run`; a duplicate
+//! key across handlers is rejected at compile time by [`NO_DUPLICATE_KEYS`].
 
 use crate::model::Category;
 
@@ -31,21 +22,20 @@ mod sections_personalize;
 /// Constructed as a `const SPEC` in the handler's own file; this is just the
 /// registry entry type.
 pub struct Builtin {
-    /// This job's identity the stable dotted key that is also the DB key,
-    /// `/api/admin/jobs/:key` URL segment and i18n base (`jobs.{key}.name`). Unique
-    /// across the roster (enforced by [`NO_DUPLICATE_KEYS`]).
+    // This job's identity the stable dotted key that is also the DB key,
+    // `/api/admin/jobs/:key` URL segment and i18n base (`jobs.{key}.name`).
+    // Unique across the roster (enforced by `NO_DUPLICATE_KEYS`).
     pub key: JobKey,
     pub category: Category,
-    /// Default cron schedule (user-overridable), or `None` for manual-only.
+    // Default cron schedule (user-overridable), or `None` for manual-only.
     pub schedule: Option<&'static str>,
-    /// Extra trigger sources beyond manual + cron (file-watch, chaining).
+    // Extra trigger sources beyond manual + cron (file-watch, chaining).
     pub triggers: &'static [Trigger],
     pub run: fn(&JobContext) -> anyhow::Result<()>,
 }
 
-/// Every built-in job, in admin-listing order. Each entry's metadata lives next
-/// to its handler (the module's `SPEC`); this is the roster of what ships. A
-/// `const` (not a `static`) so the compile-time guards below can read it.
+// Every built-in job, in admin-listing order. A `const` (not `static`) so the
+// compile-time duplicate-key guard below can read it.
 const JOBS: &[Builtin] = &[
     cache_cleanup::SPEC,
     reco_refresh::SPEC,
@@ -57,14 +47,10 @@ const JOBS: &[Builtin] = &[
     metadata_enrich::SPEC,
     search_reindex::SPEC,
     notifications_digest::SPEC,
-    // The acquisition jobs (search / import / match) moved out to the
-    // tv.kroma.torrents module crate; the binary registers them via the module's
-    // exported job roster passed to `AppState::new`, so the core roster below
-    // names no module.
-    // Per-element pipeline stages: each drains its `pipeline_tasks` queue via the
-    // shared dispatcher. Marker detection + storyboard pre-generation used to be
-    // whole-library jobs that reprocessed everything on each run; the pipeline
-    // makes them incremental, resumable and per-item observable.
+    // Acquisition jobs (search/import/match) moved to the tv.kroma.torrents
+    // crate; the binary registers them separately via `AppState::new`.
+    // Per-element pipeline stages: each drains its `pipeline_tasks` queue via
+    // the shared dispatcher, incrementally and per-item.
     crate::services::pipeline::stages::probe::SPEC,
     crate::services::pipeline::stages::loudness::SPEC,
     crate::services::pipeline::stages::metadata::SPEC,
@@ -74,10 +60,9 @@ const JOBS: &[Builtin] = &[
     crate::services::pipeline::stages::embed::SPEC,
 ];
 
-/// Compile-time guard: a job's key is its identity it indexes the DB, the URL and
-/// i18n, and keys the live run maps so two jobs sharing one would silently
-/// collide. Since each is declared per-job in its own scattered `SPEC`, we reject a
-/// duplicate here as a hard build error rather than a runtime surprise.
+// Compile-time guard: a job's key indexes the DB, the URL and i18n, so two
+// jobs sharing one would silently collide. Rejected here as a hard build
+// error rather than a runtime surprise.
 const NO_DUPLICATE_KEYS: () = {
     let mut i = 0;
     while i < JOBS.len() {
@@ -90,7 +75,7 @@ const NO_DUPLICATE_KEYS: () = {
     }
 };
 
-/// `const`-evaluable string equality (there is no `==` for `&str` in const yet).
+// `const`-evaluable string equality (there is no `==` for `&str` in const yet).
 const fn str_eq(a: &str, b: &str) -> bool {
     let (a, b) = (a.as_bytes(), b.as_bytes());
     if a.len() != b.len() {
@@ -149,7 +134,7 @@ mod tests {
         assert_eq!(snippet(""), "");
         assert_eq!(snippet("   \t\n  "), "");
         // A very long reply is capped at 500 chars plus a single ellipsis.
-        let long = "word ".repeat(600); // 600 words -> well over 500 chars
+        let long = "word ".repeat(600);
         let s = snippet(&long);
         assert_eq!(s.chars().count(), 501);
         assert!(s.ends_with('…'));
@@ -159,10 +144,8 @@ mod tests {
         assert!(!short.ends_with('…'));
     }
 
-    /// Keys are unique (also a compile-time guard, see [`super::NO_DUPLICATE_KEYS`])
-    /// and shaped like the dotted `group.action` the DB / URL / i18n expect. A
-    /// runtime test too so a regression names the offender instead of only failing
-    /// the build.
+    // Keys are unique (also a compile-time guard, see NO_DUPLICATE_KEYS) and
+    // shaped like the dotted `group.action` the DB/URL/i18n expect.
     #[test]
     fn job_keys_are_unique_and_well_formed() {
         let mut seen = HashSet::new();

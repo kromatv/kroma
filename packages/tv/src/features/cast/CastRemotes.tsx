@@ -1,15 +1,3 @@
-// The remotes driving this television, in the top bar's status cluster.
-//
-// A set that can be driven from a phone should say so on the screen everyone in
-// the room is looking at - and whoever holds the actual remote has to be able to
-// take it back. So: a chip next to the connection dot while at least one phone
-// or browser is attached, and a list behind it that hangs up on any of them.
-//
-// It is deliberately not a settings screen. Disconnecting is one press on a row,
-// with no confirmation, because it is not destructive - the phone can simply
-// connect again - and because the case for pressing it is somebody standing up
-// mid-film to make the meddling stop.
-
 import { useT } from '@kroma/ui';
 import {
   Avatar,
@@ -28,7 +16,6 @@ import { useEffect, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { kickCastController, useCastControllers } from '#tv/features/cast/controllers';
 
-/** Matches <Dialog>'s own padding, so the rows sit on the panel's measure. */
 const PANEL_WIDTH = 620;
 
 export function CastRemotes() {
@@ -38,9 +25,8 @@ export function CastRemotes() {
   const [open, setOpen] = useState(false);
   const count = controllers.length;
 
-  // Disconnecting the last one leaves an empty list under a title about a thing
-  // that is no longer happening - and the chip that opened it is gone too, so
-  // there is nothing to return focus to. Close it ourselves.
+  // With the last remote gone the chip that opened this dialog is gone too, so
+  // there would be nothing left to return focus to.
   useEffect(() => {
     if (count === 0) setOpen(false);
   }, [count]);
@@ -73,15 +59,12 @@ export function CastRemotes() {
           </DialogFooter>
         }
       >
-        {/* A COLUMN: <FocusRegion> is the horizontal one, and with more than a
-            single remote attached it laid the rows out side by side - the
-            second one landing outside the panel entirely. */}
+        {/* A column: <FocusRegion> is horizontal and lays several rows out side
+            by side, the second landing outside the panel. */}
         <FocusColumn style={LIST}>
           {controllers.map((remote, i) => (
             <ListRow
               key={remote.id}
-              // The person first, the device under it - the same reading as the
-              // notice that announced them.
               leading={
                 <Avatar
                   name={remote.username}
@@ -95,8 +78,6 @@ export function CastRemotes() {
               hint={remote.name}
               autoFocus={i === 0}
               onPress={() => kickCastController(remote.id)}
-              // The row IS the disconnect, so it says so: a chevron here would
-              // promise a screen behind it that does not exist.
               trailing={
                 <Box row align="center" gap={8}>
                   <Icon name="plug-off" size={20} stroke={2} color="textMuted" />

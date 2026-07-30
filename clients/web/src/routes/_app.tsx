@@ -17,29 +17,23 @@ import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth';
 
 export const Route = createFileRoute('/_app')({
-  // Runs before any child loader (beforeLoad resolves top-down ahead of loaders):
-  // exchange the stored access token for a session bearer up front so the
-  // catalogue prefetch is authorised on its first try. Without this the loaders
-  // race the boot exchange and 401-then-retry every request on each reload.
+  // Exchange the stored access token for a session bearer before any child
+  // loader runs, so the catalogue prefetch is authorised on its first try.
+  // Without this the loaders race the boot exchange and 401-then-retry every
+  // request on each reload.
   beforeLoad: async () => {
     if (isAuthed()) await ensureSession();
   },
   component: AppLayout,
 });
 
-/**
- * What the television calls this browser in its list of remotes.
- *
- * The same answer the sessions list, the passkey list and the push registration
- * give, from the one table that knows a UA (shared/lib/device) - which matters
- * here rather than being tidiness: `CriOS` and `FxiOS` are Chrome and Firefox on
- * an iPhone, and a fourth hand-rolled copy called them both Safari, so two
- * different phones drove a set under one name.
- *
- * Read once, at module scope: a User-Agent cannot change, and this is `null` on
- * the server (the client re-evaluates it on hydration, which is where the value
- * is actually sent from).
- */
+// What the television calls this browser in its list of remotes, from the one
+// UA table (shared/lib/device) also used by the sessions list, the passkey
+// list and push registration: `CriOS`/`FxiOS` are Chrome/Firefox on an iPhone,
+// and treating them as Safari merges two different phones into one name.
+//
+// Read once at module scope: a User-Agent cannot change; this is `null` on the
+// server and the client re-evaluates it on hydration.
 const BROWSER_LABEL =
   typeof navigator === 'undefined' ? 'Web' : deviceInfo(navigator.userAgent, 'Web').label;
 
@@ -66,12 +60,9 @@ function AppLayout() {
         <CatalogModalHosts />
         <CastBar />
       </div>
-      {/* Outside the grid, and above the player: the player is a z-60
-          full-screen surface of its own, and the picker is the one modal that
-          opens from INSIDE it ("play this on a TV") - at the shared modal level
-          (z-50) it mounted behind an opaque black player, which read as a cast
-          button that did nothing at all. A sibling of the grid rather than a
-          cell of it, so an empty wrapper is never a column. */}
+      {/* Above the player (z-60): the picker opens from INSIDE it ("play this on
+          a TV"), and at the shared modal z-index it mounted behind the opaque
+          player, reading as a cast button that did nothing. */}
       <div className="relative z-[70]">
         <CastPicker />
       </div>

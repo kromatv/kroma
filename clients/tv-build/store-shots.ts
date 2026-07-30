@@ -24,15 +24,10 @@ const REPO = new URL('../..', import.meta.url).pathname;
 const port = process.argv[2];
 if (!port) throw new Error('usage: store-shots.ts <preview-port> <out-dir>');
 
-/** The output directory, proven to be inside the repo before anything is
- * created in it.
- *
- * `resolve()` canonicalizes the CLI argument but validates nothing - it will
- * hand back `/etc` just as readily as `.store-art`, and the next line is an
- * `mkdirSync`. Every documented invocation writes inside the checkout
- * (`.store-art`, `clients/tizen/store/shots`, `clients/webos/store/shots`), so
- * that is the boundary: a build script has no business creating directories
- * anywhere else on the machine that runs it. */
+// `resolve()` canonicalizes the CLI argument but validates nothing - it will hand
+// back `/etc` just as readily as `.store-art`, and the next line is an `mkdirSync`.
+// A build script has no business creating directories outside the checkout, so
+// that is the boundary enforced here.
 function outDirIn(repo, arg, usage) {
   if (!arg) throw new Error(usage);
   const root = resolve(repo);
@@ -46,12 +41,9 @@ function outDirIn(repo, arg, usage) {
 const OUT_DIR = outDirIn(REPO, process.argv[3], 'usage: store-shots.ts <preview-port> <out-dir>');
 mkdirSync(OUT_DIR, { recursive: true });
 
-/** Resolve a file INTO the output directory, refusing anything that climbs out.
- *
- * The directory is a CLI argument and the file names are literals below, so this
- * is a guard on future edits as much as on today's input: `join()` will happily
- * walk out of the directory it was handed, and a build script writing outside
- * the place it was pointed at is the failure worth making impossible. */
+// Refuses anything that climbs out of the output directory: `join()` will happily
+// walk out of the directory it was handed, and a build script writing outside the
+// place it was pointed at is the failure worth making impossible.
 function outPath(name) {
   const full = resolve(OUT_DIR, name);
   if (full !== OUT_DIR && !full.startsWith(`${OUT_DIR}${sep}`)) {
@@ -60,39 +52,34 @@ function outPath(name) {
   return full;
 }
 
-/** The brand intro plays on a cold launch and cannot be skipped from outside the
- * app, so the first capture waits it out. */
+// The brand intro plays on a cold launch and cannot be skipped from outside the
+// app, so the first capture waits it out.
 const INTRO_MS = 10_000;
 
-/** Samsung's per-screenshot ceiling. LG has none worth worrying about. */
+// Samsung's per-screenshot ceiling. LG has none worth worrying about.
 const SAMSUNG_MAX_BYTES = 500 * 1024;
 
-/**
- * A signed-in session to seed into localStorage before the app boots, as a JSON
- * file of `{ "kroma.session": "…", "kroma.accounts": "…", … }`.
- *
- * The screens worth showing a buyer are all behind a profile, and a TV cannot be
- * signed in from the outside: its router is in-memory (no URL to deep-link) and
- * its session lives in localStorage. So without a seed this run can only ever
- * photograph the picker. Lift the values off a device that IS signed in - the
- * webOS simulator's DevTools, say - and point this at them:
- *
- *   KROMA_SHOT_SEED=~/kroma-shot-session.json bun clients/tv-build/store-shots.ts …
- *
- * The file holds a real session token. Keep it out of the repo.
- */
+// A signed-in session to seed into localStorage before the app boots, as a JSON
+// file of `{ "kroma.session": "…", "kroma.accounts": "…", … }`.
+//
+// The screens worth showing a buyer are all behind a profile, and a TV cannot be
+// signed in from the outside: its router is in-memory (no URL to deep-link) and
+// its session lives in localStorage. Without a seed this run can only ever
+// photograph the picker. Lift the values off a device that IS signed in - the
+// webOS simulator's DevTools, say - and point this at them:
+//
+//   KROMA_SHOT_SEED=~/kroma-shot-session.json bun clients/tv-build/store-shots.ts …
+//
+// The file holds a real session token. Keep it out of the repo.
 const SEED = process.env.KROMA_SHOT_SEED;
 
-/**
- * The story the listing tells, in order. `keys` are pressed BEFORE the capture,
- * starting from wherever the previous screen left focus.
- *
- * Two sets, because the app opens on a different screen depending on whether a
- * session was seeded. The signed-out pair is the same on every install; the
- * signed-in sequence depends on the SHAPE of the catalogue behind it (how many
- * rails home has, how many tiles precede the one worth photographing), so tune
- * it against your own server using the on-screen text printed after every step.
- */
+// The story the listing tells, in order. `keys` are pressed BEFORE the capture,
+// starting from wherever the previous screen left focus.
+//
+// Two sets, because the app opens on a different screen depending on whether a
+// session was seeded. The signed-out pair is the same on every install; the
+// signed-in sequence depends on the SHAPE of the catalogue behind it, so tune it
+// against your own server using the on-screen text printed after every step.
 const SIGNED_OUT = [
   { name: '00-profiles', keys: [] },
   { name: '01-settings', keys: ['ArrowDown', 'Enter'] },
@@ -120,7 +107,7 @@ if (SEED) {
   }, entries);
 }
 
-/** Press a remote key, letting the focus animation settle afterwards. */
+// Press a remote key, letting the focus animation settle afterwards.
 async function press(key) {
   await page.keyboard.press(key);
   await page.waitForTimeout(340);

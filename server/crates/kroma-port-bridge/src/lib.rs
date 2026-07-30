@@ -71,8 +71,6 @@ pub use vpn::{downloadvpn_routes, vpnproxy_routes, DownloadVpnClient, VpnProxyCl
 mod tests {
     use super::*;
 
-    /// A resolver that reports the provider as not running, so `call` / `call_raw`
-    /// short-circuit before any network I/O.
     fn offline() -> Resolver {
         Arc::new(|| None)
     }

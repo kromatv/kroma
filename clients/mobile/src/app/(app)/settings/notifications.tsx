@@ -1,9 +1,6 @@
 // Notification settings: push on THIS device, and the per-category matrix for
-// the account.
-//
-// The split is worth being explicit about in the copy, because "why is my phone
-// quiet but my laptop isn't" is otherwise a mystery: a push subscription belongs
-// to one device, while the categories below travel with the account.
+// the account. A push subscription belongs to one device; the categories
+// travel with the account.
 
 import type { CategoryPref, NotificationCategory, PushBlocker } from '@kroma/core';
 import {

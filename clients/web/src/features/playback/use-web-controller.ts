@@ -19,7 +19,6 @@ export interface WebController {
   controller: PlayerController;
   videoRef: RefObject<HTMLVideoElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
-  /** Underlying engine hook (resume / heartbeat / warn live in the wrapper). */
   pb: ReturnType<typeof useVideoPlayback>;
   subtitleGen: SubtitleGenBundle;
   subtitleLabel: string;
@@ -39,13 +38,9 @@ export function useWebController(item: MovieView): WebController {
   const subs = useWebSubtitles(item, t);
   const filter = useAudioFilter(pb.videoRef, `${pb.anchor}:${pb.audioIndex}`);
 
-  // Switching audio track is also how a viewer says "I watch in French": store
-  // the track's language as the preference - REFINED by the dub variant its
-  // title betrays ('fre' + "VFF …" → 'fr-FR'), so choosing the France dub can
-  // never auto-pick the Quebec one on the next title. A track with no declared
-  // language leaves the stored preference alone - nothing to learn from it.
-  // The same three lines the TV controller runs; this client simply went
-  // without them, and so read a preference it could never write.
+  // Switching audio track also stores the language as the preference, refined
+  // by the dub variant its title betrays ('fre' + "VFF …" → 'fr-FR'). A track
+  // with no declared language leaves the stored preference alone.
   const { setAudio: rememberAudio } = useLangPrefs();
   const { setAudio: pickAudio, audioTracks } = pb;
   const setAudio = useCallback(
@@ -156,11 +151,9 @@ export function useWebController(item: MovieView): WebController {
     return [{ id: 'auto', label: `${t('player.qualityAuto')}${badgeSuffix}` }];
   }, [item.video, t]);
 
-  // Manual engine override. Web has a bare <video> direct-play path plus the
-  // server HLS remux; the remux plays through Shaka Player BY DEFAULT (`shaka`
-  // forces it even for direct-play-able files), with hls.js kept as the `remux`
-  // escape hatch. `auto` defers to the runtime-cap decision (direct when it can,
-  // else the Shaka-driven master).
+  // The remux plays through Shaka Player by default (`shaka` forces it even for
+  // direct-play-able files); hls.js is the `remux` escape hatch; `auto` defers
+  // to the runtime-cap decision.
   const engines = useMemo(
     () => [
       { id: 'auto', label: t('playbackEngine.auto') },

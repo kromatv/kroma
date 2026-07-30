@@ -1,19 +1,7 @@
-//! The out-of-process module runtime.
-//!
-//! Each module ships as its own native binary. Its `main()` is essentially one
-//! call to [`serve`]: the runtime reads the environment the core supervisor set
-//! (module id, the local port to bind, the core's URL + a shared secret, and the
-//! shared SQLite path), opens the shared database directly (WAL = multi-process),
-//! builds a [`RemoteHost`] that implements the same [`HostCtx`] contract the
-//! module code is written against, mounts the module's `admin_routes`, and serves
-//! them on the local port. The core reverse-proxies the module's HTTP and fans
-//! its events; the module opens the DB itself, so `db()`, auth, and session
-//! lookups are direct with no IPC.
-//!
-//! The only things that cross to the core are the genuinely in-process host
-//! services: settings resolution (so built-in defaults stay correct), event
-//! publish, and job triggers. Those go over a tiny authenticated callback API
-//! (`/api/_host/*`).
+//! The out-of-process module runtime: each module is its own binary. `main()`
+//! calls [`serve`], which opens the shared SQLite directly and builds a
+//! [`RemoteHost`] ([`HostCtx`]) proxying settings, events and jobs to the core
+//! over `/api/_host/*`.
 
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
@@ -27,7 +15,6 @@ use kroma_domain::{Permission, User};
 use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::{json_error, Event, HostCtx, ServerModule};
 
-/// The environment the core supervisor hands each module process.
 struct Env {
     module_id: String,
     port: u16,
@@ -51,10 +38,8 @@ impl Env {
     }
 }
 
-/// The out-of-process [`HostCtx`]: the module's own view of the app. `db()` is a
-/// direct pool on the shared SQLite; settings / events / jobs go to the core over
-/// the callback API; module-owned services (built here, not injected by the core)
-/// live in a local registry.
+/// The out-of-process [`HostCtx`]: `db()` is direct on the shared SQLite;
+/// settings, events and jobs go to the core over the callback API.
 #[derive(Clone)]
 pub struct RemoteHost {
     inner: Arc<Inner>,
@@ -67,16 +52,12 @@ struct Inner {
     core_url: String,
     host_token: String,
     services: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
-    /// Memoized `/_host/tmdb` response (key + language). Effectively constant for
-    /// the process, and read on every request-create/approve path, so cache the
-    /// first real answer rather than round-trip twice per call.
     tmdb: RwLock<Option<serde_json::Value>>,
 }
 
 impl RemoteHost {
     fn new(env: &Env) -> anyhow::Result<Self> {
-        // Open the shared DB the core owns. `init` is idempotent (CREATE TABLE IF
-        // NOT EXISTS); the core has already migrated by the time we spawn.
+        // `init` is idempotent; the core has already migrated by the time we spawn.
         let db = kroma_db::init(&env.db_path)?;
         Ok(Self {
             inner: Arc::new(Inner {
@@ -92,11 +73,8 @@ impl RemoteHost {
     }
 
     /// A resolver to a sibling module's port bridge, reached through the core
-    /// reverse-proxy (`{core}/api/module/{id}/_port/...`). The runtime already
-    /// holds `core_url` + `host_token`, so a sidecar's setup doesn't re-read the
-    /// env or rebuild this closure per consumed port. The return type IS
-    /// `kroma_port_bridge::Resolver` structurally, so it drops straight into the
-    /// bridge clients without this crate depending on port-bridge.
+    /// reverse-proxy. Structurally matches `kroma_port_bridge::Resolver` without
+    /// this crate depending on port-bridge.
     pub fn sibling_resolver(
         &self,
         id: &str,
@@ -106,8 +84,6 @@ impl RemoteHost {
         Arc::new(move || Some((base.clone(), token.clone())))
     }
 
-    /// The memoized `/_host/tmdb` config (`{ key, language }`); fetches once, then
-    /// serves both `tmdb_api_key` + `metadata_language` from cache.
     fn tmdb_config(&self) -> serde_json::Value {
         if let Some(v) = self.inner.tmdb.read().unwrap().clone() {
             return v;
@@ -123,16 +99,13 @@ impl RemoteHost {
         v
     }
 
-    /// This module's id (as the core supervisor assigned it).
     pub fn module_id(&self) -> &str {
         &self.inner.module_id
     }
 
-    /// Register a module-owned concrete service (e.g. the module's engine /
-    /// bridge) so its own code can resolve it by type through `service::<T>(host)`.
-    /// Keyed exactly like the in-process registry (concrete `TypeId::of::<T>()`,
-    /// single `Arc`). This is the wiring that used to live in the core binary's
-    /// `main.rs`; it now belongs to the module process.
+    /// Register a module-owned concrete service so its own code can resolve it by
+    /// type through `service::<T>(host)`. Keyed like the in-process registry:
+    /// concrete `TypeId::of::<T>()`, single `Arc`.
     pub fn register_service<T: Any + Send + Sync>(&self, service: Arc<T>) {
         self.inner
             .services
@@ -143,14 +116,12 @@ impl RemoteHost {
 
     /// Register a cross-module PORT provider (a `dyn Trait` object), keyed like
     /// [`kroma_module_host::port_service`] so consumers resolve it via
-    /// `resolve_port::<dyn Trait>(host)`. Used when a module both provides a port
-    /// and serves it in-process to its own code.
+    /// `resolve_port::<dyn Trait>(host)`.
     pub fn register_port<P: ?Sized + Any + Send + Sync>(&self, port: Arc<P>) {
         let (tid, val) = kroma_module_host::port_service(port);
         self.inner.services.write().unwrap().insert(tid, val);
     }
 
-    /// An authenticated curl client to the core callback API.
     fn callback(&self) -> kroma_http::Fetch {
         kroma_http::Fetch::new().header("authorization", format!("Bearer {}", self.inner.host_token))
     }
@@ -186,8 +157,7 @@ impl HostCtx for RemoteHost {
     }
 
     fn lerr(&self, _user: &User, status: StatusCode, key: &str) -> Response {
-        // Out-of-process modules don't carry the core's i18n catalogs; return the
-        // key. The frontend already localizes known error keys.
+        // No i18n catalogs out-of-process; the frontend localizes known error keys.
         json_error(status, key)
     }
 
@@ -249,8 +219,7 @@ impl HostCtx for RemoteHost {
         audience: &kroma_module_host::Audience,
         spec: &kroma_module_host::NotificationSpec,
     ) -> usize {
-        // The core does the work (resolve, filter by prefs, persist, push); this
-        // side only ships the intent across and reports how many were reached.
+        // The core resolves, filters, persists and pushes; this only ships the intent.
         let Ok(body) = serde_json::to_value(serde_json::json!({
             "audience": audience,
             "spec": spec,
@@ -282,8 +251,7 @@ impl HostCtx for RemoteHost {
     }
 
     fn library_folders(&self) -> Vec<kroma_module_host::LibraryFolders> {
-        // The core owns Settings + Config; ask it to resolve the libraries so this
-        // process never links the engine.
+        // The core owns Settings + Config; this process never links the engine.
         self.callback().get_json(&self.host_url("libraries")).unwrap_or_default()
     }
 
@@ -311,12 +279,10 @@ pub async fn serve_one(
     serve(setup, vec![module], axum::Router::new()).await
 }
 
-/// Run a module process. `setup` builds the process's own services + port
-/// providers into the host (the wiring the core binary used to do); each module's
-/// `admin_routes` + any `extra` routes (e.g. cross-module port endpoints) are
-/// served on the assigned local port, and every module's `on_enable` runs. A
-/// process may host several modules (an in-process cluster) or none (a
-/// port-provider-only process); `extra` carries their `/_port/*` routes.
+/// Run a module process: `setup` wires the process's own services and port
+/// providers into the host, each module's `admin_routes` plus `extra` routes are
+/// served on the assigned port, and every module's `on_enable` runs. A process may
+/// host several modules or none (a port-provider-only process).
 pub async fn serve(
     setup: impl FnOnce(&RemoteHost),
     modules: Vec<Box<dyn ServerModule<RemoteHost>>>,
@@ -327,7 +293,6 @@ pub async fn serve(
     let host = RemoteHost::new(&env)?;
     tracing::info!(module = %env.module_id, port = env.port, "module process starting");
 
-    // Apply each module's schema (idempotent), then let the process wire services.
     for module in &modules {
         let migrations = module.migrations();
         if !migrations.is_empty() {
@@ -337,13 +302,11 @@ pub async fn serve(
     }
     setup(&host);
 
-    // Bring every module's live services up (the process only spawns while enabled).
     for module in &modules {
         module.on_enable(Arc::new(host.clone()) as Arc<dyn HostCtx>).await;
     }
 
-    // Collect every module's contributed jobs: a run-fn map the /_job/run/{key}
-    // endpoint dispatches on, and the specs we register with the core scheduler.
+    // job_fns backs /_job/run/{key}; job_specs registers with the core scheduler.
     let mut job_fns: HashMap<&'static str, JobFn> = HashMap::new();
     let mut job_specs: Vec<JobSpec> = Vec::new();
     for module in &modules {
@@ -357,22 +320,15 @@ pub async fn serve(
         }
     }
 
-    // The cross-module port routes (`/_port/*`) carried in `extra` are internal:
-    // a consumer module calls them directly over localhost with the shared host
-    // token (see kroma-port-bridge). They are ALSO reachable through the core
-    // reverse proxy (`/api/module/<id>/*`), which sits OUTSIDE the session gate,
-    // so without this guard an unauthenticated client could invoke privileged
-    // port actions (start downloads, transcribe arbitrary paths, read the VPN
-    // proxy URL, tamper with the download ledger). Require the host token, the
-    // same guard the job-run and `/_host/*` callback APIs already use. Applied
-    // before `_health` is added so the liveness probe stays unauthenticated.
+    // `extra`'s `/_port/*` routes are ALSO reachable through the core reverse
+    // proxy, which sits outside the session gate — without this guard an
+    // unauthenticated client could invoke privileged port actions. Applied before
+    // `_health` so the liveness probe stays unauthenticated.
     let extra = extra.route_layer(axum::middleware::from_fn_with_state(
         HostToken(env.host_token.clone()),
         require_host_token,
     ));
 
-    // Serve every module's routes + any extra port routes + a health probe, plus
-    // the job-run endpoint (mounted only when a module contributes jobs).
     let mut app = extra.route("/_health", axum::routing::get(|| async { "ok" }));
     for module in &modules {
         if let Some(routes) = module.admin_routes(&host) {
@@ -388,10 +344,9 @@ pub async fn serve(
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!(%addr, "module listening");
 
-    // Register each contributed job with the core JobManager now that the listener
-    // is bound (so a run the core fires immediately queues on the accept backlog
-    // and is served once axum::serve below starts accepting). Best-effort: a failed
-    // registration just leaves the job absent from admin until the next respawn.
+    // Registered only after the listener is bound, so a run the core fires
+    // immediately queues on the accept backlog rather than failing to connect.
+    // Best-effort: a failed registration just leaves the job absent until respawn.
     if !job_specs.is_empty() {
         let register_url = format!("{}/api/_host/register-job", env.core_url.trim_end_matches('/'));
         let module_id = env.module_id.clone();
@@ -405,20 +360,14 @@ pub async fn serve(
     Ok(())
 }
 
-/// A contributed job's run pass, dispatched by the `/_job/run/{key}` endpoint.
 type JobFn = fn(&RemoteHost) -> anyhow::Result<()>;
 
-/// One job's registration spec, POSTed to the core's `/_host/register-job`.
 struct JobSpec {
     key: String,
     category: String,
     schedule: Option<String>,
 }
 
-/// Build the `/_job/run/{key}` sub-router the core scheduler POSTs to in order to
-/// run a contributed job's pass in this process. Guarded by the shared host token
-/// (the same token the module authenticates its own core callbacks with); the
-/// run-fn map rides as a request extension.
 fn job_router(job_fns: HashMap<&'static str, JobFn>, token: String) -> axum::Router<RemoteHost> {
     axum::Router::new()
         .route("/_job/run/{key}", axum::routing::post(run_job))
@@ -426,8 +375,6 @@ fn job_router(job_fns: HashMap<&'static str, JobFn>, token: String) -> axum::Rou
         .layer(axum::Extension(Arc::new(job_fns)))
 }
 
-/// Run a contributed job's pass on the blocking pool (DB + network): 200 on
-/// success, 500 + message on failure, 404 for an unknown key.
 async fn run_job(
     axum::extract::State(host): axum::extract::State<RemoteHost>,
     axum::Extension(job_fns): axum::Extension<Arc<HashMap<&'static str, JobFn>>>,
@@ -443,8 +390,6 @@ async fn run_job(
     }
 }
 
-/// POST each contributed job's spec to the core's `/_host/register-job` (bearer
-/// host token). Blocking (curl), so the caller runs it on the blocking pool.
 fn register_jobs(url: &str, module_id: &str, host_token: &str, specs: &[JobSpec]) {
     for spec in specs {
         let body = serde_json::json!({

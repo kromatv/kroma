@@ -1,26 +1,9 @@
-// Measuring how the app actually feels, on the device it actually runs on.
-//
-// Every performance guess made about this app so far has been wrong at least
-// once, and the reason is always the same: a television is not a laptop, and the
-// only honest number comes from the television. So this records two things, both
-// cheap enough to leave running:
-//
-//   FRAME TIME  - the gap between painted frames. A 60Hz TV has 16.7ms to spend;
-//                 what matters is not the average but the WORST frame, because
-//                 that is the one the eye sees as a stutter.
-//   RESPONSE    - the gap between a press on the remote and the focus actually
-//                 moving. This is what "laggy" means to a viewer, and it is not
-//                 the same as frame rate: a screen can hold 60fps and still take
-//                 200ms to answer a button.
-//
-// Off by default and free when off. Turned on by the device setting (or
-// `KROMA_PERF=1` before the app boots), read by the on-screen HUD and by the
-// benchmark script, which drives the app and prints these numbers.
+// Frame time and remote-press-to-focus latency, sampled on the device itself.
+// Off by default and free when off; turned on by the device setting or by
+// `KROMA_PERF=1` before the app boots.
 
 interface Sample {
-  /** Milliseconds between the last two painted frames. */
   frames: number[];
-  /** Milliseconds from a remote press to the focus landing. */
   responses: number[];
 }
 
@@ -37,7 +20,6 @@ function push(into: number[], value: number): void {
   if (into.length > CAPACITY) into.shift();
 }
 
-/** One animation frame: record the gap and ask for the next. */
 function tick(now: number): void {
   if (!running) return;
   if (lastFrame) push(sample.frames, now - lastFrame);
@@ -45,7 +27,7 @@ function tick(now: number): void {
   handle = requestAnimationFrame(tick);
 }
 
-/** Start recording. Idempotent. */
+/** Idempotent. */
 export function startPerf(): void {
   if (running) return;
   running = true;
@@ -63,13 +45,12 @@ export function perfRunning(): boolean {
   return running;
 }
 
-/** A direction arrived from the remote. Called by the remote bridge. */
 export function markPress(): void {
   if (running) pressedAt = performance.now();
 }
 
-/** Focus landed somewhere. Called by every focusable, and only the first one
- * after a press counts - the rest of the render is not the viewer's wait. */
+/** Called by every focusable; only the first one after a press counts, the rest
+ * of the render is not the viewer's wait. */
 export function markFocus(): void {
   if (!running || !pressedAt) return;
   push(sample.responses, performance.now() - pressedAt);
@@ -78,12 +59,9 @@ export function markFocus(): void {
 
 export interface PerfReport {
   fps: number;
-  /** The worst frame in the window, in ms. The stutter you can see. */
   worstFrame: number;
-  /** Frames that took longer than two 60Hz budgets. */
   jankyFrames: number;
   frameCount: number;
-  /** Median and worst press-to-focus, in ms. */
   responseP50: number;
   responseWorst: number;
   responseCount: number;
@@ -112,7 +90,6 @@ export function perfReport(): PerfReport {
   };
 }
 
-/** Forget everything measured so far, so a run measures one thing. */
 export function resetPerf(): void {
   sample.frames.length = 0;
   sample.responses.length = 0;
@@ -120,14 +97,8 @@ export function resetPerf(): void {
   pressedAt = 0;
 }
 
-/**
- * The same numbers, reachable from outside React.
- *
- * The benchmark script drives a real browser and reads this; on a TV the same
- * handle is what a browser console would use. Attached unconditionally: it is
- * four functions on a global, and having to rebuild to measure is exactly how a
- * performance problem survives.
- */
+// Reachable from outside React: the benchmark script and a browser console read
+// this. Attached unconditionally so measuring never needs a rebuild.
 (globalThis as { KROMA_PERF?: unknown }).KROMA_PERF = {
   start: startPerf,
   stop: stopPerf,

@@ -20,8 +20,7 @@ function mov(
   } as unknown as MediaItem;
 }
 
-/** The shape the Smart Hub preview JSON is asserted against. Written out rather
- * than `any`, so a change to the card payload shows up here as a type error. */
+/** Written out rather than `any`, so a card-payload change is a type error here. */
 interface Tile {
   title: string;
   subtitle?: string;

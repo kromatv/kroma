@@ -33,7 +33,6 @@ export interface ListFocus {
   hover: (i: number) => () => void;
 }
 
-/** -1 / +1 for the two keys that move along an axis, 0 for anything else. */
 function axisDelta(key: RemoteKey, neg: RemoteKey, pos: RemoteKey): -1 | 0 | 1 {
   if (key === neg) return -1;
   if (key === pos) return 1;

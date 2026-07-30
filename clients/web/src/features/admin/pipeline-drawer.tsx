@@ -1,7 +1,3 @@
-// Slide-in element drawer: poster + identity, the list of treatments with their
-// status (and, on failure, the error + a per-stage retry), a series episode
-// aggregate, and the "reprocess this element" action.
-
 import { Image } from '@kroma/admin-kit';
 import type { ElementRow, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
@@ -46,8 +42,8 @@ export const PipelineDrawer = createCallable<
   void
 >(({ call, el, busy, onReprocess, onRetryStage }) => {
   const t = useT();
-  // Slide in on mount, and slide out during react-call's unmounting delay
-  // (call.ended flips true for `unmountingDelay` ms before the instance unmounts).
+  // react-call flips `call.ended` for `unmountingDelay` ms before unmounting,
+  // which is the window the slide-out animates in.
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setEntered(true));

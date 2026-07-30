@@ -2,8 +2,8 @@
 
 import { isTizenRuntime, isWebOsRuntime } from '../platform';
 
-// Codec probe strings (ISO BMFF style). `hvc1`/`hev1` are the two HEVC sample
-// entry fourCCs; we test both because platforms disagree on which they accept.
+// `hvc1`/`hev1` are the two HEVC sample entry fourCCs; both are probed because
+// platforms disagree on which they accept.
 const PROBE = {
   hevcMain: 'video/mp4; codecs="hvc1.1.6.L93.B0"',
   hevcMainAlt: 'video/mp4; codecs="hev1.1.6.L93.B0"',
@@ -13,9 +13,8 @@ const PROBE = {
   vp9: 'video/webm; codecs="vp09.00.10.08"',
 } as const;
 
-// Audio probe strings. AC3/EAC3/DTS/TrueHD are NOT decodable by Chrome/Firefox
-// (licensing) only Safari (macOS) and TVs handle AC3/EAC3 so direct-play of
-// those gives video-but-no-sound on most browsers.
+// AC3/EAC3/DTS/TrueHD are not decodable by Chrome/Firefox (licensing); only
+// Safari (macOS) and TVs handle AC3/EAC3.
 const AUDIO_PROBE = {
   aac: 'audio/mp4; codecs="mp4a.40.2"',
   ac3: 'audio/mp4; codecs="ac-3"',
@@ -44,16 +43,12 @@ export interface PlaybackCapabilities {
   h264: boolean;
   av1: boolean;
   vp9: boolean;
-  /** Display can present HDR (HDR10/Dolby Vision dynamic range). */
   hdr: boolean;
-  /** Which audio codecs this runtime can decode (no sound otherwise). */
   audio: AudioCapabilities;
-  /** How the verdict was reached useful for diagnostics overlays. */
   source: 'mediaSource' | 'videoElement' | 'platform-tv' | 'unknown';
 }
 
 function supportsType(type: string): boolean {
-  // MediaSource is the stricter, more reliable signal where available (MSE).
   const MS = (globalThis as { MediaSource?: { isTypeSupported(t: string): boolean } }).MediaSource;
   if (MS && typeof MS.isTypeSupported === 'function' && MS.isTypeSupported(type)) return true;
 
@@ -73,26 +68,11 @@ function detectHdr(): boolean {
   );
 }
 
-/**
- * Detect what the *current runtime* can decode. On Tizen (Samsung) and webOS
- * (LG) TVs, HEVC (incl. 10-bit / HDR) is hardware-decoded and reliable even
- * when `canPlayType` is conservative so we treat those platforms as HEVC-capable.
- * The Android TV shell is the same shape: its media3/ExoPlayer bridge (which
- * decodes through the platform, not the webview.
- */
-/**
- * The native clients (Apple TV, Android TV, the phone app), which have a
- * platform decoder rather than a `<video>` element.
- *
- * Everything below this point probes a browser - `canPlayType`, `MediaSource` -
- * and React Native has neither, so the probe answered "no" to every codec. An
- * Apple TV that hardware-decodes HEVC was told it could not, and every HEVC
- * title played under a "this device cannot decode H.265" warning.
- *
- * `navigator.product`, not `typeof document`: React Native sets it to
- * 'ReactNative', while a server-side render has no document EITHER and must keep
- * falling through to the browser answer it will hydrate into.
- */
+// The native clients decode through the platform, not a `<video>` element:
+// React Native has neither `canPlayType` nor `MediaSource`, so every probe
+// below answers "no". `navigator.product`, not `typeof document`: a server-side
+// render has no document either and must fall through to the browser answer it
+// will hydrate into.
 function isReactNative(): boolean {
   return (
     typeof navigator !== 'undefined' &&
@@ -105,7 +85,6 @@ export function detectCapabilities(): PlaybackCapabilities {
   const isTizen = isTizenRuntime(ua);
   const isWebOS = isWebOsRuntime(ua);
   if (isTizen || isWebOS || isReactNative()) {
-    // TVs hardware-decode the common surround codecs (AC3/EAC3/DTS) too.
     const tvAudio: AudioCapabilities = {
       aac: true,
       ac3: true,
@@ -155,7 +134,7 @@ export function detectCapabilities(): PlaybackCapabilities {
 }
 
 let cached: PlaybackCapabilities | null = null;
-/** Cached variant capabilities don't change within a session. */
+/** Cached: capabilities cannot change within a session. */
 export function capabilities(): PlaybackCapabilities {
   cached ??= detectCapabilities();
   return cached;

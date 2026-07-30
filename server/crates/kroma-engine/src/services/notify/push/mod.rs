@@ -1,20 +1,6 @@
 //! Push delivery: getting a notification onto a device whose app is closed.
-//!
-//! Three transports, one delivery loop. Each [`transports`] module answers two
-//! questions the shared code cannot ask itself how to build this device's
-//! request, and which failures mean the device is gone while the loop below
-//! owns everything else: preferences, the success/failure streak, and evicting
-//! dead endpoints.
-//!
-//! Web Push is the one that needs nothing from anyone: the server mints its own
-//! VAPID keypair, so a NAS on a home LAN can push to a browser with no account
-//! anywhere. APNs and FCM cannot work that way an Apple auth key and a
-//! Firebase service account are per-developer secrets so those are configured
-//! by the operator (see the admin settings) and simply stay inactive until they
-//! are. A server with none of them configured does no push work at all.
-//!
-//! Delivery is best-effort and never blocks the thing that caused it: a push
-//! that fails leaves the in-app notification exactly where it was.
+//! Three transports, one delivery loop. Delivery is best-effort: a push that
+//! fails leaves the in-app notification exactly where it was.
 
 mod transports;
 
@@ -33,52 +19,25 @@ use kroma_domain::{
 use crate::db;
 use crate::services::jobs::now_ms;
 
-/// Settings keys for the server's VAPID identity. Rotating these invalidates
-/// every existing browser subscription, so they are written once and left alone.
+// Rotating these invalidates every existing browser subscription.
 pub const VAPID_PUBLIC_KEY: &str = "notifications.vapid.publicKey";
 pub const VAPID_PRIVATE_KEY: &str = "notifications.vapid.privateKey";
 
-/// Apple credentials. Unlike Web Push these CANNOT be self-minted, and no code
-/// change will make them so: Apple's own servers only accept a JWT signed by a
-/// `.p8` key THEY issued against a developer account and registered in their
-/// portal. A locally generated key is signed by nobody they trust.
-///
-/// So the credential does not belong to a deployment — it belongs to the
-/// published app, and every KROMA server pushes to that same app. It arrives
-/// with the server (env, and later a relay that holds the key on our side)
-/// rather than being typed in by whoever installed this NAS. The settings key
-/// remains only as the escape hatch for a fork that ships its OWN app under its
-/// own Apple account; see [`apns_credential`]. Absent = iOS push is simply off.
+// Apple only accepts a JWT signed by a `.p8` key THEY issued, so unlike Web
+// Push this cannot be self-minted; absent = iOS push is off.
 pub const APNS_KEY_P8: &str = "notifications.apns.keyP8";
-/// The auth key's id — the `AuthKey_XXXXXXXXXX.p8` suffix, so an upload reads it
-/// off the filename rather than asking for it.
 pub const APNS_KEY_ID: &str = "notifications.apns.keyId";
-/// The 10-character Apple team. The one thing a `.p8` genuinely cannot yield:
-/// it is a bare PKCS#8 key with no metadata, and a wrong `iss` is rejected
-/// outright, so a fork supplying its own key must supply this alongside it.
 pub const APNS_TEAM_ID: &str = "notifications.apns.teamId";
 
-/// The Firebase service-account JSON, for Android. Same story as APNs, with the
-/// same escape hatch: absent = Android push is off.
 pub const FCM_SERVICE_ACCOUNT: &str = "notifications.fcm.serviceAccount";
 
-/// The published app's bundle id, sent as `apns-topic`. A constant rather than a
-/// setting because it is the same string on every KROMA server in the world —
-/// mirrors `bundleIdentifier` in `clients/mobile/app.json`. A fork that renames
-/// the app overrides it with the rest of its credential bundle.
+// Sent as `apns-topic`; mirrors `bundleIdentifier` in `clients/mobile/app.json`.
 const APNS_TOPIC: &str = "tv.kroma.mobile";
 
-/// Fallback contact when nothing better can be derived. A `mailto:` is required
-/// to be present, not to be reachable; push services use it only for abuse
-/// reports, and a self-hoster has no public address to offer.
 const DEFAULT_SUBJECT: &str = "mailto:admin@kroma.invalid";
 
-/// A credential supplied with the server rather than by the operator.
-///
-/// Env is read first so that a distribution — a container image, a package, the
-/// relay — can carry the app's own Apple and Google keys and leave the admin
-/// with nothing to fill in. The stored setting is the fallback, which is what a
-/// fork shipping its own build writes to.
+// Env is read first so a distribution can carry the app's own Apple and Google
+// keys; the stored setting is the fallback a fork writes to.
 fn from_env_or_setting<S: HostCtx>(state: &S, var: &str, key: &str) -> String {
     match std::env::var(var) {
         Ok(v) if !v.trim().is_empty() => v.trim().to_string(),
@@ -87,10 +46,6 @@ fn from_env_or_setting<S: HostCtx>(state: &S, var: &str, key: &str) -> String {
 }
 
 /// The server's VAPID public key, minting the keypair on first call.
-///
-/// Lazily created rather than at startup: a server whose users never enable push
-/// never needs one, and generating it on demand keeps the key out of fresh
-/// installs that will never use it.
 pub fn public_key<S: HostCtx>(state: &S) -> anyhow::Result<String> {
     if let Some(key) = keys_for(&credentials(state)).web.as_ref() {
         return Ok(key.public_base64url());
@@ -105,26 +60,12 @@ pub fn public_key<S: HostCtx>(state: &S) -> anyhow::Result<String> {
     Ok(public)
 }
 
-/// The RFC 8292 `sub` claim — derived, never asked for.
-///
-/// A push service uses this only to have someone to contact about an abusive
-/// sender; nothing validates that it is reachable, and it must merely be a
-/// `mailto:` or `https:` URL. That makes it pure ceremony to put in front of an
-/// admin, so it comes from the address the server already knows it answers on,
-/// and from a syntactically valid placeholder when it has no public address at
-/// all — which is the normal state for a NAS on a home LAN.
-///
-/// What it must never be is EMPTY: an empty `sub` is not the same as an absent
-/// one, and FCM rejects the token outright.
+// The RFC 8292 `sub` claim. Must be a `mailto:` or `https:` URL and must never
+// be empty — an empty `sub` is not an absent one, and FCM rejects the token.
 fn subject_of<S: HostCtx>(state: &S) -> String {
     public_url_of(state).unwrap_or_else(|| DEFAULT_SUBJECT.to_string())
 }
 
-/// The address this server answers on, when it has a public one.
-///
-/// The same `remoteUrl` the share and Quick Connect links are built from
-/// (`settings::public_url`), read through the one accessor `HostCtx` offers.
-/// `None` for a NAS with nothing but a LAN address, which is the normal case.
 fn public_url_of<S: HostCtx>(state: &S) -> Option<String> {
     let public = state.setting_str("remoteUrl", "");
     let public = public.trim().trim_end_matches('/');
@@ -132,18 +73,11 @@ fn public_url_of<S: HostCtx>(state: &S) -> Option<String> {
     usable.then(|| public.to_string())
 }
 
-/// Everything a push needs that is per-SERVER rather than per-recipient: the
-/// configured transports and their credentials.
-///
-/// Built once per emission by [`sender`]. Resolving it per recipient meant a
-/// settings read and a key parse each time.
+/// The configured transports and their credentials, built once per emission.
 pub type Sender = transports::Senders;
 
-/// The credential material the cached [`Keys`] were parsed from.
-///
-/// Kept only to be compared: a `.p8` pasted into the admin console must take
-/// effect on the next push rather than after a restart, and equality on the raw
-/// strings is the whole test for that.
+// Compared raw so a `.p8` pasted into the admin console takes effect on the
+// next push rather than after a restart.
 #[derive(Clone, PartialEq, Eq)]
 struct Credentials {
     vapid_private: String,
@@ -154,21 +88,8 @@ struct Credentials {
     fcm_service_account: String,
 }
 
-/// The parsed credentials, kept between emissions.
-///
-/// [`ApnsKey`] and [`FcmKey`] each cache a bearer token good for the better part
-/// of an hour, and that cache lives INSIDE the key. Parsing them fresh per
-/// emission therefore threw the cache away every time: every notification
-/// re-signed Apple's JWT — which Apple rate-limits to one per 20 minutes per key
-/// — and re-traded Google's assertion over the network, before a single
-/// subscription had even been queried.
-///
-/// [`Sender`] is still assembled per emission on top of these, because the FCM
-/// access token and the push subject are cheap to re-resolve and must be allowed
-/// to change without a restart.
-///
-/// [`ApnsKey`]: kroma_push::apns::ApnsKey
-/// [`FcmKey`]: kroma_push::fcm::FcmKey
+// Parsed credentials, kept between emissions: each key caches its bearer token
+// internally, and Apple rate-limits JWT signing to one per 20 minutes per key.
 #[derive(Default)]
 struct Keys {
     web: Option<Arc<VapidKey>>,
@@ -176,15 +97,10 @@ struct Keys {
     fcm: Option<Arc<kroma_push::fcm::FcmKey>>,
 }
 
-/// What the cache holds: the credentials last seen, and the keys parsed from
-/// them.
 type Cached = Mutex<Option<(Credentials, Arc<Keys>)>>;
 
-/// One server per process, so a single slot is the whole cache.
 static PARSED: OnceLock<Cached> = OnceLock::new();
 
-/// What this server was configured with, read fresh so a settings change is
-/// noticed. Cheap: these are settings reads and env lookups, no parsing.
 fn credentials<S: HostCtx>(state: &S) -> Credentials {
     Credentials {
         vapid_private: state.setting_str(VAPID_PRIVATE_KEY, ""),
@@ -203,7 +119,6 @@ fn credentials<S: HostCtx>(state: &S) -> Credentials {
     }
 }
 
-/// The parsed keys for `credentials`, from cache when they have not changed.
 fn keys_for(credentials: &Credentials) -> Arc<Keys> {
     let slot = PARSED.get_or_init(|| Mutex::new(None));
     let mut slot = slot.lock().unwrap_or_else(|e| e.into_inner());
@@ -217,14 +132,8 @@ fn keys_for(credentials: &Credentials) -> Arc<Keys> {
     keys
 }
 
-/// Parse whatever is configured. Each transport is independent: an unusable
-/// Apple key must not take Web Push down with it.
-///
-/// Nothing here is asked of the operator for APNs. The key, its id and the team
-/// come as one bundle from whoever publishes the app, and the topic is a
-/// constant because every KROMA server pushes to that same published app. The
-/// environment is deliberately absent: it is a property of each device TOKEN,
-/// not of the server (see [`transports::retry`]).
+// Each transport is independent: an unusable Apple key must not take Web Push
+// down with it.
 fn parse(credentials: &Credentials) -> Keys {
     let web = if credentials.vapid_private.is_empty() {
         None
@@ -232,9 +141,6 @@ fn parse(credentials: &Credentials) -> Keys {
         match VapidKey::from_base64url(&credentials.vapid_private) {
             Ok(key) => Some(Arc::new(key)),
             Err(e) => {
-                // A corrupted key would otherwise fail every push forever with
-                // no clue why; say so loudly and let `public_key` mint a fresh
-                // one.
                 tracing::error!(error = %e, "stored VAPID key is unusable");
                 None
             }
@@ -249,10 +155,8 @@ fn parse(credentials: &Credentials) -> Keys {
             credentials.apns_key_id.clone(),
             credentials.apns_team_id.clone(),
             credentials.apns_topic.clone(),
-            // Where the FIRST attempt goes. A production token is the
-            // overwhelming majority — every App Store and TestFlight install —
-            // so trying it first means the fallback costs a wasted request only
-            // while developing.
+            // Where the FIRST attempt goes: a token's environment is a property
+            // of the token, and production covers all but development installs.
             kroma_push::apns::Environment::Production,
         );
         match key {
@@ -280,9 +184,6 @@ fn parse(credentials: &Credentials) -> Keys {
 }
 
 /// The server's push identity for this emission.
-///
-/// Never `None`: the relay needs no credentials, so every server can reach a
-/// phone even when it holds nothing of Apple's or Google's.
 pub fn sender<S: HostCtx>(state: &S) -> Sender {
     let keys = keys_for(&credentials(state));
     transports::Senders {
@@ -291,9 +192,7 @@ pub fn sender<S: HostCtx>(state: &S) -> Sender {
             .clone()
             .map(|key| transports::WebPush { key, subject: subject_of(state) }),
         apns: keys.apns.clone().map(|key| transports::Apns { key }),
-        // The token exchange is a network call, so it happens here, once per
-        // emission, rather than per device — and now genuinely hits the key's
-        // own cache instead of re-trading every time.
+        // The token exchange is a network call: once per emission, not per device.
         fcm: keys.fcm.clone().and_then(|key| match fcm_access_token(&key) {
             Ok(access_token) => Some(transports::Fcm { key, access_token }),
             Err(e) => {
@@ -307,7 +206,6 @@ pub fn sender<S: HostCtx>(state: &S) -> Sender {
     }
 }
 
-/// The cached OAuth2 token, or a fresh one traded for a signed assertion.
 fn fcm_access_token(key: &kroma_push::fcm::FcmKey) -> anyhow::Result<String> {
     let now = now_ms() / 1_000;
     if let Some(token) = key.cached_token(now) {
@@ -321,20 +219,17 @@ fn fcm_access_token(key: &kroma_push::fcm::FcmKey) -> anyhow::Result<String> {
     key.store_token(&response.text(), now)
 }
 
-/// Send one rendered notification to every endpoint `user_id` has registered.
-///
-/// Returns how many endpoints accepted it. Called after the in-app row is
-/// already written, so any failure here costs a push, never the notification.
+/// Sends to every endpoint `user_id` has registered and returns how many
+/// accepted it. Any failure here costs a push, never the in-app notification.
 pub fn deliver<S: HostCtx>(
     state: &S,
     sender: &Sender,
     user_id: &str,
     notification: &Notification,
 ) -> usize {
-    // Scoped deliberately. Everything below this is blocking network I/O, and
-    // the per-endpoint health bookkeeping takes connections of its own, so a
-    // connection held across the sends pins a pool slot for the length of every
-    // round trip and contends with the very pool it is about to ask again.
+    // Scoped deliberately: everything below is blocking network I/O and takes
+    // connections of its own, so holding one across the sends pins a pool slot
+    // and contends with the very pool it is about to ask again.
     let subs = {
         let Ok(conn) = state.db().get() else {
             return 0;
@@ -364,14 +259,8 @@ pub fn deliver<S: HostCtx>(
     sent
 }
 
-/// Send one "push is working" message to a user's own devices.
-///
-/// Lives here rather than in the api layer because composing a notification is
-/// this service's job, and because the answer to "is my setup wired up?" should
-/// exercise the very same path a real notification takes.
-///
-/// Deliberately bypasses the category preferences: the user just pressed the
-/// button, so a muted category is not a reason to stay silent.
+/// Sends one "push is working" message to a user's own devices, deliberately
+/// bypassing the category preferences: the user just pressed the button.
 pub fn send_test<S: HostCtx>(state: &S, user: &User) -> anyhow::Result<usize> {
     let sender = sender(state);
     let locale = crate::i18n::user_locale(user);
@@ -391,8 +280,8 @@ pub fn send_test<S: HostCtx>(state: &S, user: &User) -> anyhow::Result<usize> {
     Ok(deliver(state, &sender, &user.id, &notification))
 }
 
-/// Deliver to one endpoint, updating its health. `Ok(false)` = not delivered but
-/// handled (dropped as gone, or a transport this server has no credentials for).
+// `Ok(false)` = not delivered but handled (dropped as gone, or a transport
+// this server has no credentials for).
 fn send_one<S: HostCtx>(
     state: &S,
     sender: &Sender,
@@ -415,8 +304,6 @@ fn send_one<S: HostCtx>(
     }
     let body = response.text();
     if transports::is_gone(sub, response.status, &body) {
-        // The app was uninstalled, the browser unsubscribed, or the token was
-        // rotated. Permanent: keeping it costs requests and gets us rate-limited.
         tracing::info!(
             endpoint = %sub.endpoint, status = response.status,
             "dropping dead push endpoint"
@@ -425,7 +312,7 @@ fn send_one<S: HostCtx>(
         return Ok(false);
     }
     if is_transient(response.status) {
-        // Not this endpoint's fault, so it earns no strike. See [`is_transient`].
+        // Not this endpoint's fault, so it earns no strike.
         anyhow::bail!("push service is unavailable ({}): {body}", response.status)
     }
     if push_subs::record_failure(state.db(), &sub.id).unwrap_or(false) {
@@ -435,35 +322,15 @@ fn send_one<S: HostCtx>(
     anyhow::bail!("push service returned {} {body}", response.status)
 }
 
-/// Whether a rejection is the SERVICE's problem rather than this endpoint's.
-///
-/// The failure streak exists to evict endpoints that quietly stop working
-/// without ever saying so — a token that is dead but answers 400, say. A 429 or
-/// a 5xx says nothing about the endpoint: it says the service is busy or down,
-/// and it will say the same thing to every device on this server at once.
-///
-/// Counting those was how one digest could unsubscribe a household. The relay
-/// rate-limits per device (30 a minute), and `digest::run` announces every
-/// followed show in one pass with no pacing, so a big scan earns 429s in bulk;
-/// eight in a row hit [`MAX_FAILURES`] and the row is deleted. Nothing
-/// re-registers it — the app only ever subscribes from the settings toggle, and
-/// its grant refresh is a no-op while the grant it holds is still valid — so the
-/// reader's push stays off until they notice and toggle it themselves.
-///
-/// [`kroma_push::relay::is_gone`] states this rule already; this is the half of
-/// it the delivery loop owes.
-///
-/// [`MAX_FAILURES`]: kroma_db::push_subs::MAX_FAILURES
+// Whether a rejection is the SERVICE's problem rather than this endpoint's. A
+// 429 or 5xx hits every device at once, so counting it towards
+// `push_subs::MAX_FAILURES` unsubscribes a whole household on one outage.
 fn is_transient(status: u16) -> bool {
-    // 408 for completeness: no transport sends it today, but a proxy in front of
-    // one can, and it means the same thing.
+    // 408: no transport sends it today, but a proxy in front of one can.
     status == 408 || status == 429 || (500..600).contains(&status)
 }
 
-/// Perform one built request over the curl transport.
-///
-/// `http2` is not a preference: APNs refuses HTTP/1.1 outright, so a request
-/// that asks for it must get it or the send is pointless.
+// `http2` is not a preference: APNs refuses HTTP/1.1 outright.
 fn send(request: &kroma_push::PushRequest) -> anyhow::Result<kroma_http::Response> {
     let mut fetch = kroma_http::Fetch::new().max_time(15);
     if request.http2 {
@@ -484,18 +351,14 @@ fn send(request: &kroma_push::PushRequest) -> anyhow::Result<kroma_http::Respons
     fetch.post_bytes(&request.url, content_type, &request.body)
 }
 
-/// What the service worker receives: the notification's own wire shape.
-///
-/// Serialized straight from [`Notification`] rather than rebuilt field-by-field,
-/// so a push and the notification-centre row it mirrors cannot drift apart —
-/// renaming a field in the domain now changes both at once instead of silently
-/// desyncing this copy. `sw.js` reads the fields it needs and ignores the rest.
+// Serialized straight from `Notification` rather than rebuilt field-by-field,
+// so a push and the notification-centre row it mirrors cannot drift apart.
 fn payload_of(n: &Notification) -> Vec<u8> {
     serde_json::to_vec(n).unwrap_or_else(|_| b"{}".to_vec())
 }
 
-/// How hard to wake the device. Something the user is actively waiting for
-/// (their request landed) is worth a radio wake; a media digest is not.
+// How hard to wake the device: something the user is waiting for is worth a
+// radio wake, a media digest is not.
 fn urgency_of(n: &Notification) -> Urgency {
     use kroma_domain::NotificationCategory as C;
     match n.category {
@@ -505,7 +368,6 @@ fn urgency_of(n: &Notification) -> Urgency {
     }
 }
 
-/// Whether this user has any push endpoint (drives the settings toggle).
 pub fn is_subscribed<S: HostCtx>(state: &S, user_id: &str) -> bool {
     let Ok(conn) = state.db().get() else { return false };
     db::push_subs::has_subscription(&conn, user_id).unwrap_or(false)
@@ -555,17 +417,13 @@ mod tests {
 
     #[test]
     fn the_payload_fits_a_single_push_record() {
-        // Push services cap a message around 4 KiB; our own encoder caps at
-        // MAX_PAYLOAD. A realistic notification must be nowhere near it.
+        // Push services cap a message around 4 KiB.
         let raw = payload_of(&notification(NotificationCategory::Requests));
         assert!(raw.len() < kroma_push::webpush::MAX_PAYLOAD, "payload was {} bytes", raw.len());
     }
 
     #[test]
     fn the_subject_is_derived_and_never_empty() {
-        // A server with no public address — the normal case for a NAS on a home
-        // LAN — still needs a syntactically valid `sub`: an EMPTY one is not the
-        // same as an absent one, and FCM rejects the token outright.
         let state = crate::test_support::test_state();
         assert_eq!(subject_of(&state), DEFAULT_SUBJECT);
 
@@ -575,15 +433,13 @@ mod tests {
         )]));
         assert_eq!(subject_of(&state), DEFAULT_SUBJECT, "whitespace is still no address");
 
-        // Once the server knows where it answers, that IS the contact — nobody
-        // has to be asked for one.
         state.set_settings(std::collections::BTreeMap::from([(
             "remoteUrl".to_string(),
             json!("https://kroma.example.com/"),
         )]));
         assert_eq!(subject_of(&state), "https://kroma.example.com", "trailing slash trimmed");
 
-        // A bare hostname is not a valid `sub`, so it must not be passed through.
+        // A bare hostname is not a valid `sub`.
         state.set_settings(std::collections::BTreeMap::from([(
             "remoteUrl".to_string(),
             json!("kroma.example.com"),
@@ -596,15 +452,10 @@ mod tests {
         assert_eq!(urgency_of(&notification(NotificationCategory::Requests)), Urgency::High);
         assert_eq!(urgency_of(&notification(NotificationCategory::Reports)), Urgency::High);
         assert_eq!(urgency_of(&notification(NotificationCategory::Downloads)), Urgency::Normal);
-        // A "12 new titles" digest should never wake a sleeping phone's radio.
         assert_eq!(urgency_of(&notification(NotificationCategory::Media)), Urgency::Low);
     }
 
-    // ----- delivery against a fake push service -----------------------------------
-    //
-    // `Fetch` shells out to curl, so a socket is the only seam. These drive the
-    // real signed request and, more to the point, the endpoint-health rules:
-    // which failures retire a device and which ones are just a bad night.
+    // `Fetch` shells out to curl, so a socket is the only seam.
 
     use std::io::{BufRead, BufReader, Read, Write};
     use std::net::TcpListener;
@@ -613,13 +464,11 @@ mod tests {
     use kroma_db::push_subs::{self, NewSubscription};
     use kroma_domain::PushTransport;
 
-    /// A push service that answers every POST with the same status.
     struct FakeService {
         endpoint: String,
         hits: Arc<Mutex<usize>>,
     }
 
-    /// Read and discard one HTTP request. `false` when the peer sent nothing.
     fn drain_request(stream: &std::net::TcpStream) -> bool {
         let Ok(clone) = stream.try_clone() else { return false };
         let mut reader = BufReader::new(clone);
@@ -674,7 +523,6 @@ mod tests {
         }
     }
 
-    /// A state with a real VAPID key, an account, and one registered endpoint.
     fn state_with_endpoint(
         endpoint: &str,
         transport: PushTransport,
@@ -684,8 +532,8 @@ mod tests {
         // Mint a real key: `deliver` refuses to send without one.
         public_key(&state).unwrap();
         let user = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id;
-        // A subscriber's p256dh is a P-256 public point, which is exactly the
-        // shape of a VAPID public key - so one can stand in for the other.
+        // A subscriber's p256dh is a P-256 public point, the same shape as a
+        // VAPID public key, so one can stand in for the other.
         let (p256dh, auth) = if keys {
             (Some(VapidKey::generate().public_base64url()), Some("MDEyMzQ1Njc4OWFiY2RlZg".to_string()))
         } else {
@@ -725,8 +573,6 @@ mod tests {
 
     #[test]
     fn an_endpoint_the_browser_retired_is_dropped_on_the_spot() {
-        // 404/410 is permanent - the browser unsubscribed or the user cleared
-        // site data. Keeping the row would mean pushing into the void forever.
         for gone in [404u16, 410] {
             let service = FakeService::answering(gone);
             let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
@@ -737,12 +583,6 @@ mod tests {
 
     #[test]
     fn a_service_having_a_bad_night_never_costs_the_reader_their_registration() {
-        // A 500 says the SERVICE is down, never that this device is gone - and it
-        // says it to every device on the server at once. This used to earn a
-        // strike, so an outage (or one digest outrunning the relay's 30-a-minute
-        // rate limit) walked every endpoint to MAX_FAILURES and deleted it. The
-        // reader would not come back until they re-granted permission by hand,
-        // which is the outcome the streak exists to avoid, not to cause.
         let service = FakeService::answering(500);
         let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
         let note = notification(NotificationCategory::Requests);
@@ -755,8 +595,8 @@ mod tests {
 
     #[test]
     fn a_rate_limited_push_is_not_the_devices_fault_either() {
-        // The one the relay actually produces: `digest::run` announces every
-        // followed show in one pass, so a big scan earns 429s in bulk.
+        // `digest::run` announces every followed show in one pass, so a big scan
+        // earns the relay's 429s in bulk.
         let service = FakeService::answering(429);
         let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
         let note = notification(NotificationCategory::Media);
@@ -769,9 +609,8 @@ mod tests {
 
     #[test]
     fn an_endpoint_that_keeps_being_refused_is_still_retired() {
-        // The streak still does its job: a 400 is about THIS request reaching
-        // THIS endpoint, so an endpoint that answers it forever is dead in every
-        // way except saying so, and keeping it costs a request per notification.
+        // A 400 is about THIS request reaching THIS endpoint, so an endpoint
+        // that answers it forever is dead in every way except saying so.
         let service = FakeService::answering(400);
         let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
         let note = notification(NotificationCategory::Requests);
@@ -786,15 +625,12 @@ mod tests {
 
     #[test]
     fn a_success_forgives_the_failures_before_it() {
-        // Otherwise a device that has been online for months would eventually
-        // accumulate its way to being dropped.
         let failing = FakeService::answering(500);
         let (state, user) = state_with_endpoint(&failing.endpoint, PushTransport::WebPush, true);
         let note = notification(NotificationCategory::Requests);
         deliver(&state, &sender(&state), &user, &note);
         deliver(&state, &sender(&state), &user, &note);
 
-        // Re-point the same subscription id at a service that works.
         let ok = FakeService::answering(201);
         state
             .db
@@ -818,9 +654,7 @@ mod tests {
 
     #[test]
     fn a_transport_we_cannot_speak_yet_is_left_alone() {
-        // APNs/FCM rows are stored but not deliverable yet. They must be skipped
-        // rather than mangled through the Web Push encoding - and above all not
-        // counted as failures, which would eventually delete the device.
+        // APNs/FCM rows are stored but not deliverable without credentials.
         let service = FakeService::answering(201);
         let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::Apns, true);
         assert_eq!(deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests)), 0);
@@ -830,8 +664,7 @@ mod tests {
 
     #[test]
     fn a_web_push_row_without_its_keys_fails_that_endpoint_only() {
-        // Without p256dh/auth there is nothing to encrypt to. It is an error,
-        // not a panic, and it must not take the whole delivery down.
+        // Without p256dh/auth there is nothing to encrypt to.
         let service = FakeService::answering(201);
         let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, false);
         assert_eq!(deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests)), 0);
@@ -848,14 +681,11 @@ mod tests {
 
     #[test]
     fn endpoints_without_a_usable_key_are_skipped_rather_than_re_keyed() {
-        // Minting a fresh keypair here would not match what those browsers
-        // subscribed with, so every push would be rejected anyway. This needs an
-        // operator, and the endpoints must survive until one shows up.
+        // A fresh keypair would not match what those browsers subscribed with.
         let service = FakeService::answering(201);
         let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
         assert!(is_subscribed(&state, &user));
 
-        // Wipe the key, then corrupt it - both mean "no usable key".
         for broken in ["", "not-a-base64url-key"] {
             state.set_settings(std::collections::BTreeMap::from([(
                 VAPID_PRIVATE_KEY.to_string(),
@@ -870,8 +700,6 @@ mod tests {
 
     #[test]
     fn the_public_key_is_minted_once_and_then_reused() {
-        // The browser subscribes against this exact key; handing out a new one
-        // on every call would invalidate every existing subscription.
         let state = crate::test_support::test_state();
         let first = public_key(&state).unwrap();
         assert!(!first.is_empty());

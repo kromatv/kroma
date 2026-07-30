@@ -1,7 +1,5 @@
 //! SQLite DDL: connection pragmas, the table/index schema, the canonical column
-//! lists for item/file SELECTs, and the `init`/`migrate` that apply them. Moved
-//! out of [`super`] (the directory root) verbatim to keep that file focused on
-//! the connection pool and the shared row-mappers.
+//! lists for item/file SELECTs, and the `init`/`migrate` that apply them.
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -19,8 +17,8 @@ pub(crate) const PRAGMAS: &str = "
     PRAGMA busy_timeout = 5000;
     PRAGMA mmap_size = 268435456;
     PRAGMA cache_size = -16000;
-    -- Checkpoint every ~40 MB instead of the 4 MB default: scan/probe bursts
-    -- write thousands of rows, and frequent checkpoints stall readers on HDD.
+    -- ~40 MB checkpoints instead of the 4 MB default: frequent checkpoints
+    -- stall readers on HDD during scan/probe bursts.
     PRAGMA wal_autocheckpoint = 10000;
 ";
 
@@ -93,17 +91,14 @@ pub(crate) const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_items_library ON items(library);
     CREATE INDEX IF NOT EXISTS idx_items_kind    ON items(kind);
     CREATE INDEX IF NOT EXISTS idx_items_show    ON items(show_id, season, episode);
-    -- Home 'recently added' rows sort the whole table by added_at; without this
-    -- index that is a full scan + sort on every home load.
     CREATE INDEX IF NOT EXISTS idx_items_added   ON items(added_at DESC);
     CREATE INDEX IF NOT EXISTS idx_shows_library ON shows(library);
     CREATE INDEX IF NOT EXISTS idx_files_item    ON files(item_id);
     CREATE INDEX IF NOT EXISTS idx_files_abs     ON files(abs_path);
     CREATE INDEX IF NOT EXISTS idx_files_probed  ON files(probed);
 
-    -- Segment markers per episode (skip-intro + next-up at credits). One row per
-    -- (item, kind); kind is 'intro' | 'credits' | …; bounds in ms. Populated from
-    -- embedded chapters and the audio-fingerprint job.
+    -- Skip-intro / next-up markers. One row per (item, kind); kind is
+    -- 'intro' | 'credits' | …; bounds in ms.
     CREATE TABLE IF NOT EXISTS markers (
         item_id    TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
         kind       TEXT NOT NULL,
@@ -114,10 +109,8 @@ pub(crate) const SCHEMA: &str = "
         PRIMARY KEY (item_id, kind)
     );
 
-    -- EBU R128 loudness analysis per (file, audio track), written by the
-    -- pipeline.loudness stage. Raw measured values (LUFS/LU/dBTP) are kept so
-    -- playback-side remediation can reuse them; verdict is the derived flag
-    -- ('ok' | 'highDynamics' | 'quietDialog').
+    -- EBU R128 loudness per (file, audio track), written by pipeline.loudness.
+    -- Raw measured values are kept so playback-side remediation can reuse them.
     CREATE TABLE IF NOT EXISTS audio_analysis (
         file_id     TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
         track_index INTEGER NOT NULL,
@@ -130,9 +123,8 @@ pub(crate) const SCHEMA: &str = "
         PRIMARY KEY (file_id, track_index)
     );
 
-    -- Subtitles fetched from an online provider (OpenSubtitles, …), converted to
-    -- WebVTT and cached under <data>/subs/downloaded/. Merged into the item's
-    -- subtitle list so they appear in the player alongside embedded tracks.
+    -- Subtitles fetched from an online provider, converted to WebVTT and cached
+    -- under <data>/subs/downloaded/; merged into the item's subtitle list.
     CREATE TABLE IF NOT EXISTS downloaded_subtitles (
         id         TEXT PRIMARY KEY,
         item_id    TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
@@ -159,11 +151,9 @@ pub(crate) const SCHEMA: &str = "
         created_at TEXT NOT NULL,
         expires_at INTEGER NOT NULL
     );
-    -- Long-lived per-device credential. The client stores ONLY this (not a bearer
-    -- session) and exchanges it for a short-lived session token via /auth/token.
-    -- `pin_verified` gates the exchange for PIN-locked accounts: it's set once the
-    -- correct PIN is presented (or at password login) and lets subsequent silent
-    -- refreshes skip the PIN; returning to the profile picker re-locks it.
+    -- Long-lived per-device credential, exchanged for a short-lived session token
+    -- via /auth/token. `pin_verified` gates PIN-locked accounts: set once the
+    -- correct PIN is presented, letting silent refreshes skip re-prompting.
     CREATE TABLE IF NOT EXISTS access_tokens (
         token        TEXT PRIMARY KEY,
         user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -188,9 +178,8 @@ pub(crate) const SCHEMA: &str = "
         expires_at  INTEGER NOT NULL,
         used_at     TEXT
     );
-    -- `item_id` is a catalogue id: a movie item id OR a show id (shows live in
-    -- their own table, so this column is intentionally NOT an items FK a show
-    -- can be marked watched as a whole).
+    -- `item_id` is a movie item id OR a show id; intentionally NOT an items FK
+    -- so a show can be marked watched as a whole.
     CREATE TABLE IF NOT EXISTS watched (
         user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         item_id    TEXT NOT NULL,
@@ -205,10 +194,8 @@ pub(crate) const SCHEMA: &str = "
         casts   TEXT NOT NULL,
         PRIMARY KEY (show_id, season)
     );
-    -- Library missing-episode scan (Sonarr-style): aired TMDB episodes of a
-    -- library show that are NOT on disk, recomputed by the library.missing job. Title +
-    -- poster are denormalized so the Wanted/Missing view lists them without a join
-    -- back through the JSON metadata. Cleared + rewritten per show each scan.
+    -- Library missing-episode scan: aired TMDB episodes not on disk, recomputed
+    -- by the library.missing job. Title/poster are denormalized to avoid a join.
     CREATE TABLE IF NOT EXISTS library_gaps (
         show_id     TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
         tmdb_id     INTEGER NOT NULL,
@@ -288,9 +275,8 @@ pub(crate) const SCHEMA: &str = "
     );
     CREATE INDEX IF NOT EXISTS idx_job_logs_run ON job_logs(run_id, ts);
 
-    -- Per-user LLM-generated taste: a natural-language profile that evolves each
-    -- run, plus the cached personalized home sections (JSON). See the
-    -- `sections.personalize` job + services::sections.
+    -- Per-user LLM-generated taste profile plus the cached personalized home
+    -- sections (JSON). See the `sections.personalize` job.
     CREATE TABLE IF NOT EXISTS user_taste (
         user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
         profile    TEXT,
@@ -298,12 +284,9 @@ pub(crate) const SCHEMA: &str = "
         updated_at INTEGER NOT NULL
     );
 
-    -- Global, editorial LLM/director-curated collections (same for everyone):
-    -- 'Spielberg', 'Best Horror', 'Top IMDb', …. Regenerated by the
-    -- `sections.curate` job; member ids resolved at write time. `source` is
-    -- 'director' (deterministic, grouped by crew) or 'llm'.
-    -- Localized title/reason per language live in `translations`
-    -- (`subject_kind='curated'`), not in per-language columns.
+    -- Global editorial collections, regenerated by the `sections.curate` job
+    -- (member ids resolved at write time). Localized title/reason live in
+    -- `translations` (`subject_kind='curated'`), not in per-language columns.
     CREATE TABLE IF NOT EXISTS curated_sections (
         key        TEXT PRIMARY KEY,
         rank       INTEGER NOT NULL DEFAULT 0,
@@ -312,22 +295,17 @@ pub(crate) const SCHEMA: &str = "
         updated_at INTEGER NOT NULL
     );
 
-    -- Per-movie/show AI suggestions ('Suggestions IA' on the detail page), one
-    -- row per seed item. Lazily generated by the LLM connector on first view and
-    -- cached here (member ids resolved at write time); empty item_ids = 'tried,
-    -- nothing usable' (terminal, so the client stops polling).
-    -- The localized reason per language lives in `translations`
-    -- (`subject_kind='suggestion'`), not in per-language columns.
+    -- Per-item AI suggestions, lazily generated on first view; empty item_ids is
+    -- a terminal `tried, nothing usable` marker. Localized reason lives in
+    -- `translations` (`subject_kind='suggestion'`), not in per-language columns.
     CREATE TABLE IF NOT EXISTS item_suggestions (
         item_id    TEXT PRIMARY KEY,
         item_ids   TEXT NOT NULL DEFAULT '[]',
         updated_at INTEGER NOT NULL
     );
 
-    -- Keyframe-derived HLS segment table per physical file (see infra::hls).
-    -- Computed lazily on the first HLS request and revalidated by mtime/size/
-    -- version; `segments` is a JSON array of [start_us, end_us] keyframe-aligned
-    -- ranges, `v_codec` the cached RFC6381 video codec string for the master.
+    -- Keyframe-derived HLS segment table per physical file (see infra::hls),
+    -- computed lazily and revalidated by mtime/size/version.
     CREATE TABLE IF NOT EXISTS file_segments (
         file_id     TEXT PRIMARY KEY REFERENCES files(id) ON DELETE CASCADE,
         mtime       INTEGER,
@@ -339,13 +317,9 @@ pub(crate) const SCHEMA: &str = "
         updated_at  INTEGER NOT NULL
     );
 
-    -- Per-element processing ledger (see services::pipeline). One row per
-    -- (stage, subject): the unit of work a pipeline stage does for one file /
-    -- item / show / season. `input_sig` is a cheap signature of the subject's
-    -- inputs (mtime, size, version, mode) so a re-run skips work whose inputs
-    -- are unchanged (`status='done'` + same sig) and re-queues work whose inputs
-    -- changed. This is what makes the heavy jobs incremental and resumable, and
-    -- what the admin Pipeline dashboard reads to show per-stage health + failures.
+    -- Per-element processing ledger (see services::pipeline): one row per
+    -- (stage, subject). `input_sig` is a cheap signature of the subject's inputs,
+    -- so unchanged + `status='done'` skips work and a changed one re-queues it.
     CREATE TABLE IF NOT EXISTS pipeline_tasks (
         stage        TEXT NOT NULL,
         subject_kind TEXT NOT NULL,
@@ -374,15 +348,10 @@ pub(crate) const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_pipeline_subject
         ON pipeline_tasks(stage, subject_id);
 
-    -- ----- acquisition stack (see services::requests / services::acquisition) --
-
-    -- Media requests (the 'ask for a title' flow). One row per user request; a
-    -- show request may carry a season subset (JSON int array; NULL = whole show
-    -- or a movie) and/or an individual-episode subset (`episodes`: JSON array of
-    -- {season,episode}; NULL = none). The target is the union of the two.
-    -- Linked to the catalog ONLY via tmdb_id: the acquisition.match job flips
-    -- status once enrichment writes metadata.tmdbId for a local title.
-    -- Timestamps are epoch ms (the newer-table convention, like pipeline_tasks).
+    -- Media requests (the 'ask for a title' flow). A show request may carry a
+    -- season subset and/or an individual-episode subset (`episodes`); the target
+    -- is their union. Linked to the catalog ONLY via tmdb_id: acquisition.match
+    -- flips status once enrichment writes metadata.tmdbId for a local title.
     CREATE TABLE IF NOT EXISTS requests (
         id           TEXT PRIMARY KEY,
         kind         TEXT NOT NULL,
@@ -396,10 +365,8 @@ pub(crate) const SCHEMA: &str = "
         reviewed_by  TEXT,
         note         TEXT,
         episodes     TEXT,
-        -- Airing signals synced from TMDB by the acquisition.refresh job (Phase 2).
-        -- air_status: TMDB status string; next_air_date: YYYY-MM-DD of a show's
-        -- next episode / a movie's soonest availability; last_refresh_at: epoch-ms
-        -- throttle key. NULL until the first refresh.
+        -- Airing signals synced from TMDB by the acquisition.refresh job.
+        -- NULL until the first refresh.
         air_status     TEXT,
         next_air_date  TEXT,
         last_refresh_at INTEGER,
@@ -410,11 +377,9 @@ pub(crate) const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_requests_ident  ON requests(kind, tmdb_id);
     CREATE INDEX IF NOT EXISTS idx_requests_user   ON requests(requested_by, created_at DESC);
 
-    -- Episode-level wanted ledger, materialized when a request is approved
-    -- (movie: one row; show: one row per aired episode of the requested
-    -- seasons, from TMDB season data). Season packs are computed at search time
-    -- by grouping rows on (tmdb_id, season); there are no separate season rows.
-    -- `air_date` (YYYY-MM-DD) gates searching unaired episodes.
+    -- Episode-level wanted ledger, materialized when a request is approved.
+    -- Season packs are computed at search time by grouping rows on (tmdb_id,
+    -- season); there are no separate season rows.
     CREATE TABLE IF NOT EXISTS wanted (
         id             TEXT PRIMARY KEY,
         request_id     TEXT NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
@@ -434,13 +399,9 @@ pub(crate) const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_wanted_request ON wanted(request_id);
     CREATE INDEX IF NOT EXISTS idx_wanted_ident   ON wanted(tmdb_id, season, episode);
 
-    -- User-submitted problem reports (the 'signaler un probleme' flow). Any user
-    -- can flag an issue on a movie / show / episode; `reports.manage` holders
-    -- triage them. `subject_id` is the local catalog id (a movie/episode item id
-    -- OR a show id, same no-items-FK rationale as `watched`/`my_list`), and
-    -- `subject_title` is snapshotted so the queue survives a re-scan / deletion of
-    -- the underlying title. `category` is metadata|video|audio|subtitles|other;
-    -- `status` is open|resolved|dismissed. Timestamps are epoch ms.
+    -- User-submitted problem reports. `subject_id` is a movie/episode item id OR
+    -- a show id (no items FK, same rationale as `watched`/`my_list`), and
+    -- `subject_title` is snapshotted so the queue survives a re-scan/deletion.
     CREATE TABLE IF NOT EXISTS reports (
         id            TEXT PRIMARY KEY,
         subject_kind  TEXT NOT NULL,
@@ -459,23 +420,13 @@ pub(crate) const SCHEMA: &str = "
     CREATE INDEX IF NOT EXISTS idx_reports_subject ON reports(subject_kind, subject_id);
     CREATE INDEX IF NOT EXISTS idx_reports_user    ON reports(reported_by, created_at DESC);
 
-    -- ----- notifications (see db::notifications / services::notify) --------------
-
     -- One row per (user, thing that happened). The text is NOT stored: `title_key`
-    -- / `body_key` are i18n keys and `params` their interpolation vars, rendered
-    -- against the reader's locale on the way out, so switching language re-reads
-    -- the whole history in the new one (same catalogs as the clients, see
-    -- packages/core/src/locales).
-    --
-    -- `link` is the in-app route a tap opens, `image_url` the poster shown on the
-    -- row and in a rich push, and `actions` a JSON array of buttons
-    -- ([{id,labelKey,kind,href,method,style}]) so a notification can be acted on
-    -- without navigating. `push_category` names a UNNotificationCategory the
-    -- mobile app registered at launch APNs cannot render arbitrary buttons, so
-    -- native push picks from a fixed set while `actions` stays the full-fidelity
-    -- in-app form. `category` is requests|media|reports|downloads|system and is
-    -- derived from `event`; it is stored so the prefs filter and the UI grouping
-    -- are one indexed column. Timestamps are epoch ms.
+    -- / `body_key` are i18n keys, rendered against the reader's locale on the way
+    -- out, so switching language re-reads the whole history in the new one.
+    -- `push_category` names a UNNotificationCategory (APNs can't render arbitrary
+    -- buttons, so native push picks from a fixed set) while `actions` stays the
+    -- full-fidelity in-app form. `category` is derived from `event` but stored,
+    -- so the prefs filter and the UI grouping are one indexed column.
     CREATE TABLE IF NOT EXISTS notifications (
         id            TEXT PRIMARY KEY,
         user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -508,12 +459,9 @@ pub(crate) const SCHEMA: &str = "
         PRIMARY KEY (user_id, category)
     );
 
-    -- One row per push endpoint (a browser, an iPhone, an Android handset).
-    -- `transport` is webpush|apns|fcm. For Web Push `endpoint` is the push
-    -- service URL and `p256dh`/`auth` are the subscription's client keys (RFC
-    -- 8291); for the native transports `endpoint` is the raw device token and
-    -- both keys are NULL. `failures` counts CONSECUTIVE delivery failures so a
-    -- dead endpoint is pruned; a 404/410 drops it immediately.
+    -- One row per push endpoint. For Web Push `endpoint` is the push service URL
+    -- and `p256dh`/`auth` are the subscription's client keys (RFC 8291); for the
+    -- native transports `endpoint` is the raw device token and both are NULL.
     CREATE TABLE IF NOT EXISTS push_subscriptions (
         id         TEXT PRIMARY KEY,
         user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -532,39 +480,28 @@ pub(crate) const SCHEMA: &str = "
 
     -- The acquisition MODULE tables (`indexers`, `download_clients`, `downloads`)
     -- no longer live here: each is owned by its module crate and created at DB
-    -- init via that module's `ServerModule::migrations` (run right after this core
-    -- schema). `downloads.request_id` still FKs the core `requests` table above,
-    -- which is fine because the module schema is applied after this one. Backup
-    -- still dumps `indexers` / `download_clients` by name (see `backup::TABLES`).
+    -- init via that module's `ServerModule::migrations`, run right after this
+    -- core schema (so `downloads.request_id` can FK the `requests` table above).
 
     -- Known TMDB id for an acquired file, keyed by the ABSOLUTE PATH the import
-    -- wrote it to. Set at import time so enrichment adopts the real id instead of
-    -- re-guessing it from the filename (which fails for obscure/foreign titles or
-    -- near-identical namesakes like Scary Movie vs A Scary Movie).
-    --
-    -- Keyed by path, not by a recomputed logical id: the import knows exactly
-    -- where it placed the file, and the scanner records that same path in
-    -- `files.abs_path` (both canonicalized), so the join is on ground truth and
-    -- can never orphan on a title-parse difference. Enrichment resolves an item's
-    -- id by joining `files` to this table (see `db::acq_tmdb_for_item`). Rows are
-    -- harmless to keep: a stale one is only read when a file at that path exists.
+    -- wrote it to: the import knows exactly where it placed the file, and the
+    -- scanner records that same (canonicalized) path in `files.abs_path`, so the
+    -- join is on ground truth and can never orphan on a title-parse difference
+    -- (unlike guessing from the filename, e.g. Scary Movie vs A Scary Movie).
     CREATE TABLE IF NOT EXISTS acq_file_tmdb (
         abs_path  TEXT PRIMARY KEY,
         tmdb_id   INTEGER NOT NULL
     );
 
-    -- Availability matching ('is this TMDB title in the library') is a seek on
-    -- `metadata_core.tmdb_id` (a real indexed column, see idx_meta_core_tmdb
-    -- below) the old json_extract expression indexes on the metadata blob are
-    -- retired in `migrate`.
+    -- Availability matching is a seek on `metadata_core.tmdb_id` (a real indexed
+    -- column, see idx_meta_core_tmdb below); the old json_extract expression
+    -- indexes on the metadata blob are retired in `migrate`.
 
     -- An operator-chosen TMDB id for one catalog subject, set from the 'fix the
-    -- match' picker when automatic resolution picked the wrong title (or none).
-    -- Enrichment consults this BEFORE any title guess and fetches the id
-    -- directly, so a correction is authoritative and survives every re-scan and
-    -- nightly re-run. Deleting the row restores automatic matching.
-    -- Distinct from `acq_file_tmdb` above (keyed by an imported file's path, set
-    -- automatically at import): enrichment prefers this operator choice over it.
+    -- match' picker. Enrichment consults this BEFORE any title guess, so a
+    -- correction is authoritative and survives every re-scan. Distinct from
+    -- `acq_file_tmdb` above (set automatically at import): this operator choice
+    -- takes precedence over it.
     CREATE TABLE IF NOT EXISTS tmdb_pin (
         subject_kind TEXT NOT NULL,          -- 'item' | 'show'
         subject_id   TEXT NOT NULL,
@@ -573,16 +510,10 @@ pub(crate) const SCHEMA: &str = "
         PRIMARY KEY (subject_kind, subject_id)
     );
 
-    -- ----- language-agnostic metadata cache (see db::metadata_core / translations) --
-
-    -- Language-INVARIANT resolved metadata, one row per catalog subject (a movie
-    -- item OR a show). Split out of the per-item `metadata` JSON so identity /
-    -- availability / art / cast don't depend on which language was fetched, and so
-    -- adding or switching a UI language never touches this row (nor the embeddings
-    -- derived from it). `tmdb_id` is a real indexed column here it supersedes the
-    -- json_extract expression indexes above once the read path moves over.
-    -- `cast_json` / `crew_json` are the invariant people (names + photos); the
-    -- localized character names live per-language in `translations`.
+    -- Language-INVARIANT resolved metadata, one row per catalog subject. Split
+    -- out of the per-item `metadata` JSON so identity/availability/art/cast don't
+    -- depend on which language was fetched, and switching UI language never
+    -- touches this row (nor the embeddings derived from it).
     CREATE TABLE IF NOT EXISTS metadata_core (
         subject_kind TEXT NOT NULL,          -- 'item' | 'show'
         subject_id   TEXT NOT NULL,
@@ -601,13 +532,9 @@ pub(crate) const SCHEMA: &str = "
     );
     CREATE INDEX IF NOT EXISTS idx_meta_core_tmdb ON metadata_core(tmdb_id);
 
-    -- The GENERIC per-language translation cache: ONE table for every localized
-    -- string in the app. TMDB fills it (title/overview/tagline/genres/characters,
-    -- `source='tmdb'`); the LLM fills it at generation time with a row per
-    -- supported locale for section/suggestion titles + reasons (`source='llm'`).
-    -- Adding a language is inserting rows, never a schema change. `data` is a JSON
-    -- object of only the variant fields for that `subject_kind`. Reads are point /
-    -- range seeks on the PK; `resolve` falls back requested lang -> en -> any.
+    -- The GENERIC per-language translation cache: one table for every localized
+    -- string in the app, so adding a language is inserting rows, never a schema
+    -- change. `resolve` falls back requested lang -> en -> any.
     CREATE TABLE IF NOT EXISTS translations (
         subject_kind TEXT NOT NULL,   -- 'item'|'show'|'episode'|'season_cast'|'curated'|'suggestion'
         subject_id   TEXT NOT NULL,
@@ -650,9 +577,9 @@ pub fn init(path: &Path) -> Result<Pool> {
     Ok(pool)
 }
 
-/// Idempotent column additions for databases created before a column existed.
-/// `ALTER TABLE … ADD COLUMN` errors with "duplicate column name" once the
-/// column is present, which we ignore.
+// Idempotent column additions for databases created before a column existed.
+// `ALTER TABLE … ADD COLUMN` errors with "duplicate column name" once the
+// column is present, which we ignore.
 fn migrate(conn: &Connection) {
     for sql in [
         "ALTER TABLE items ADD COLUMN metadata TEXT",
@@ -688,11 +615,9 @@ fn migrate(conn: &Connection) {
             mtime INTEGER, size INTEGER, version INTEGER NOT NULL,\
             duration_us INTEGER NOT NULL, v_codec TEXT,\
             segments TEXT NOT NULL, updated_at INTEGER NOT NULL)",
-        // ----- language cache cutover (see db::metadata_core / translations) ------
         // One-time migration for DBs created before the language-agnostic cache.
-        // Each statement is idempotent: the backfills are INSERT OR IGNORE, and the
-        // index/column drops error harmlessly (and are ignored) on a DB that has
-        // already dropped them or was created fresh without them.
+        // Each statement is idempotent, and must run in this order: the backfills
+        // (1, 2) need the old columns/indexes still present to read from.
         //
         // 1) Seed `metadata_core.tmdb_id` (+ the other invariant fields) from the
         //    existing single-language `metadata` blobs, so availability matching can
@@ -739,19 +664,14 @@ fn migrate(conn: &Connection) {
         "ALTER TABLE curated_sections DROP COLUMN reason_en",
         "ALTER TABLE item_suggestions DROP COLUMN reason_fr",
         "ALTER TABLE item_suggestions DROP COLUMN reason_en",
-        // ----- session management ------------------------------------------------
         // The device's User-Agent captured when its access token is minted, so the
-        // account's session list can label each device. NULL for tokens created
-        // before this column (or by clients that send no UA).
+        // account's session list can label each device.
         "ALTER TABLE access_tokens ADD COLUMN user_agent TEXT",
         // The parent access token a session was minted from, so the account can
-        // tell which listed device is the one making the current request. NULL for
-        // sessions created before this column.
+        // tell which listed device is the one making the current request.
         "ALTER TABLE sessions ADD COLUMN access_token TEXT",
-        // ----- passkeys (WebAuthn credentials) -----------------------------------
         // One row per registered authenticator. `id` is the credential id
-        // (base64url) from the authenticator; `credential` is the serialized
-        // webauthn-rs `Passkey` (JSON). Idempotent for DBs created before it.
+        // (base64url); `credential` is the serialized webauthn-rs `Passkey` (JSON).
         "CREATE TABLE IF NOT EXISTS passkeys (\
             id          TEXT PRIMARY KEY,\
             user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\
@@ -760,23 +680,17 @@ fn migrate(conn: &Connection) {
             created_at  TEXT NOT NULL,\
             last_used   TEXT)",
         "CREATE INDEX IF NOT EXISTS idx_passkeys_user ON passkeys(user_id)",
-        // ----- pipeline retry backoff ---------------------------------------------
         // Earliest auto-retry time for a failed pipeline task (exponential backoff
         // between attempts, so a manually re-kicked stage doesn't hammer a flaky
-        // dependency). NULL for DBs created before the column / non-failed rows.
+        // dependency).
         "ALTER TABLE pipeline_tasks ADD COLUMN next_retry_at INTEGER",
-        // ----- per-episode requests -----------------------------------------------
         // Individual-episode subset for a show request (JSON array of
-        // {season,episode}; NULL = none). Unioned with the `seasons` full-season
-        // subset. NULL for DBs / requests created before per-episode requests.
+        // {season,episode}), unioned with the `seasons` full-season subset.
         "ALTER TABLE requests ADD COLUMN episodes TEXT",
-        // ----- airing / release-date signals (Phase 2) ---------------------------
-        // Synced from TMDB by the acquisition.refresh job. NULL until first refresh.
+        // Airing signals synced from TMDB by the acquisition.refresh job.
         "ALTER TABLE requests ADD COLUMN air_status TEXT",
         "ALTER TABLE requests ADD COLUMN next_air_date TEXT",
         "ALTER TABLE requests ADD COLUMN last_refresh_at INTEGER",
-        // ----- loudness analysis (pipeline.loudness stage) -------------------------
-        // Idempotent for DBs created before the table existed.
         "CREATE TABLE IF NOT EXISTS audio_analysis (\
             file_id     TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,\
             track_index INTEGER NOT NULL,\
@@ -787,12 +701,9 @@ fn migrate(conn: &Connection) {
             verdict     TEXT NOT NULL,\
             updated_at  TEXT NOT NULL,\
             PRIMARY KEY (file_id, track_index))",
-        // ----- acquisition tmdb hint: logical-id key -> file-path key -------------
         // The old `acq_tmdb(logical_id)` keyed the import's known id by a
-        // recomputed logical id that orphaned whenever the filename parsed to a
-        // slightly different title/year than the request. Replaced by
-        // `acq_file_tmdb(abs_path)` (created in SCHEMA above), keyed by the exact
-        // path both the import and the scanner agree on. Drop the dead table.
+        // recomputed logical id that orphaned on a title-parse mismatch; replaced
+        // by `acq_file_tmdb(abs_path)` (created in SCHEMA above).
         "DROP TABLE IF EXISTS acq_tmdb",
     ] {
         let _ = conn.execute(sql, []);

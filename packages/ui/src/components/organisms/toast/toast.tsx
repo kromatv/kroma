@@ -1,16 +1,11 @@
-// <Toaster>: transient notices, the shadcn/sonner shape.
+// <Toaster>: transient notices, the shadcn/sonner shape. One <Toaster/> is
+// mounted by the shell; anything, anywhere, calls `toast(...)`, so the thing
+// with something to say never needs to know where notices are drawn.
 //
-// One <Toaster/> is mounted by the shell; anything, anywhere, calls `toast(...)`.
-// That split is the whole point of the pattern: the thing with something to say
-// (a cast receiver learning a phone just picked up its remote) has no business
-// knowing where notices are drawn, and the screen drawing them has no business
-// knowing what might speak.
-//
-// Written for the ten-foot case first, because that is the hard one: a notice on
-// a television is read from the sofa, is never dismissed by hand, and must never
-// take the remote - so it is `pointerEvents="none"`, sized at 10-foot metrics,
-// and leaves on a timer. It is deliberately NOT a dialog: nothing here is a
-// question.
+// Written for the ten-foot case first: a notice on a television is read from
+// the sofa, is never dismissed by hand, and must never take the remote — so
+// it is `pointerEvents="none"`, sized at 10-foot metrics, and leaves on a
+// timer. Deliberately not a dialog: nothing here is a question.
 
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Platform } from 'react-native';
@@ -20,9 +15,8 @@ import { Txt } from '#ui/components/atoms/text';
 import { hasGlyph } from '#ui/lib/icons/glyphs';
 import { colors, fonts, radius } from '#ui/lib/tokens';
 
-/** How long a notice stays up when it doesn't say otherwise. */
 const DEFAULT_MS = 4500;
-/** Never stack more than this: a column of notices is a wall, not a message. */
+// Never stack more than this: a column of notices is a wall, not a message.
 const MAX_VISIBLE = 3;
 
 export interface ToastOptions {
@@ -120,7 +114,6 @@ export function Toaster({ placement = 'top-right', inset = 32 }: Readonly<Toaste
 
 const FULL_WIDTH = { width: '100%' } as const;
 
-/** One notice: fades and rises in, holds, then leaves on its own. */
 function ToastCard({ entry, onDone }: Readonly<{ entry: Entry; onDone: () => void }>) {
   const appear = useRef(new Animated.Value(0)).current;
   const done = useRef(onDone);
@@ -197,7 +190,6 @@ const CARD = {
   ...(Platform.OS === 'web' ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
 } as const;
 
-/** The glyph's ink, by tone. */
 function wellTone(tone: ToastOptions['tone']): string {
   if (tone === 'success') return colors.success;
   if (tone === 'accent') return colors.accent;

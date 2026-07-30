@@ -1,20 +1,8 @@
 // @vitest-environment jsdom
 //
-// The route guard behind every authenticated layout.
-//
-// It has to wait, then redirect, then stand down, and each of those is a bug if
-// it happens at the wrong moment.
-//
-// Waiting: the session hydrates asynchronously, so on the first render there is
-// no user yet AND no proof there is no user. Redirecting there signs out every
-// visitor on every hard refresh.
-//
-// Standing down is the subtle one. While the redirect navigation settles, this
-// layout can re-render with the location ALREADY at /login - and navigating
-// again would fold the login url into its own `redirect`, once per render:
-// /login?redirect=/login?redirect=/login?... The first navigation already
-// carried the real destination, so the guard has to recognise that it has
-// arrived and stop.
+// The route guard behind every authenticated layout: it must wait for the
+// session to hydrate, then redirect, then recognise it has already arrived at
+// /login and stand down — each wrong at the wrong moment is a bug.
 
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -32,7 +20,6 @@ vi.mock('@tanstack/react-router', () => ({
 
 import { useRequireAuth } from './require-auth';
 
-/** Mount the guard on a given page. */
 function guard(href = '/library') {
   router.href = href;
   return renderHook(() => useRequireAuth());

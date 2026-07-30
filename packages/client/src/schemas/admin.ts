@@ -66,8 +66,6 @@ export const SettingRow = z.object({
   options: z.array(z.string()),
   value: z.unknown(),
   applied: z.boolean(),
-  /** `secret` rows only: whether a value is stored. The value itself is never
-   * sent, so this is the only way to tell "set" from "empty". */
   configured: z.boolean().nullish(),
 });
 export type SettingRow = z.infer<typeof SettingRow>;
@@ -145,8 +143,6 @@ export const MetricsSnapshot = z.object({
   bwLocalMbps: z.number(),
   bwRemoteMbps: z.number(),
   uptimeSecs: z.number(),
-  /** The server's sampling cadence in ms, so the chart labels its time axis with
-   * the real interval. Defaulted for tolerance against an older server. */
   sampleIntervalMs: z.number().default(3000),
   series: MetricsSeries,
 });
@@ -256,13 +252,9 @@ export type InviteCreated = z.infer<typeof InviteCreated>;
 
 /** One line of the server's in-memory log ring (`GET /api/admin/logs`). */
 export const LogEntry = z.object({
-  /** Arrival time, unix ms. */
   ts: z.number(),
-  /** trace | debug | info | warn | error. */
   level: z.string(),
-  /** Rust tracing target for core lines; empty for module lines. */
   target: z.string(),
-  /** `core` or a module id (`tv.kroma.vpn`). */
   source: z.string(),
   message: z.string(),
 });

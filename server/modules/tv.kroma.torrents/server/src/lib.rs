@@ -42,19 +42,16 @@ pub use rqbit::{RqbitConfig, RqbitEngine};
 // `engine_probe` diagnostic example.
 #[cfg(feature = "rqbit")]
 pub use announce::tracker_peers as announce_peers;
-// The `downloads` ledger table moved into this crate; the app's request/discover
-// overlay reads its live-grab roll-up, so re-export those two at the crate root
-// (the binary names `kroma_torrent::requests_with_active_downloads`).
+// The app's request/discover overlay reads this crate's live-grab roll-up, so
+// these two are re-exported at the crate root (the binary names
+// `kroma_torrent::requests_with_active_downloads`).
 pub use db::{requests_with_active_downloads, ActiveDownload};
-// The download manager + monitor (merged in from the former kroma-downloads crate),
-// re-exported at the crate root so `kroma_torrent::DownloadManager` etc. keep working.
+// Re-exported at the crate root so `kroma_torrent::DownloadManager` etc. keep
+// working.
 pub use downloads::{active_proxy_url, DownloadDb, DownloadManager, GrabSpec, LABEL};
 
-/// Whether the embedded engine is compiled into this build.
 pub const RQBIT_COMPILED: bool = cfg!(feature = "rqbit");
 
-/// This module's id, shared with `module.json` and the frontend package. The one
-/// place callers (route gate, job guards, monitor, lifecycle) name the module.
 pub const MODULE_ID: &str = "tv.kroma.torrents";
 
 /// The Downloads module's backend behavior: it serves the queue / download-client
@@ -120,8 +117,9 @@ pub fn server_module<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 
 }
 
 // The download-client contract (engine trait + shared types + magnet_info_hash)
-// lives in the SDK ports module (kroma_module_sdk::ports) now, so download engine modules depend only on the SDK.
-// Re-exported so this crate's own modules keep using crate::DownloadClient etc.
+// lives in the SDK ports module, so download engine modules depend only on the
+// SDK; re-exported here so this crate's own modules keep using
+// crate::DownloadClient etc.
 pub use kroma_module_sdk::ports::{
     magnet_info_hash, AddTorrentReq, ClientDef, DownloadClient, DownloadClientCtx,
     DownloadClientHost, DownloadClientRegistry, TorrentFileEntry, TorrentState, TorrentStatus,
@@ -174,9 +172,6 @@ pub fn builtin_download_clients() -> DownloadClientRegistry {
     reg
 }
 
-/// Best-effort info-hash extraction from a magnet URI (`xt=urn:btih:HEX`). Public
-/// so the external engine crates (qBittorrent) can reuse it.
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -191,7 +186,6 @@ mod tests {
         assert_eq!(magnet_info_hash("magnet:?xt=urn:btih:short"), None);
         assert_eq!(magnet_info_hash("https://example.com/file.torrent"), None);
     }
-    // ----- the client-kind registry and the module lifecycle ----------------------
 
     #[test]
     fn only_the_kind_this_module_owns_registers() {
@@ -242,10 +236,8 @@ mod tests {
         assert!(e.to_string().contains("nope"), "{e}");
     }
 
-    // ----- lifecycle against a host with no DownloadManager -----------------------
-
-    /// The shared stub. These hooks stop at the service lookup, so the neutral
-    /// host (no database, nothing registered) is the whole fixture.
+    // The shared stub. These hooks stop at the service lookup, so the neutral
+    // host (no database, nothing registered) is the whole fixture.
     type BareHost = kroma_module_sdk::host::testing::StubHost;
 
     #[test]

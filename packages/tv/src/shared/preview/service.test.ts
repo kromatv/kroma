@@ -1,22 +1,13 @@
-// The Tizen Smart Hub preview, foreground half.
+// The Tizen Smart Hub preview, foreground half. The carousel is drawn by a
+// background service that cannot reach KROMA on its own, so this module
+// writes the tile JSON to a package-private file the service reads. Every
+// failure here is silent on a real television, which is exactly what makes it
+// worth testing.
 //
-// The carousel on the TV's home screen is drawn by the platform from data a
-// BACKGROUND SERVICE provides, and that service cannot reach KROMA on its own -
-// no shared localStorage, no mDNS, and no `fs`. So the work is split: this
-// module builds the tile JSON from the live catalog and writes it to the
-// package-private dir, and the service reads that file and calls
-// `webapis.preview.setPreviewData()`.
-//
-// Everything here is best-effort by design, which is exactly what makes it worth
-// testing: on a real television every failure below is silent. The app is not on
-// screen when the carousel is wrong, there is no console to read, and the only
-// symptom is a home row showing yesterday's films - or the app failing to start
-// because a write threw on a set nobody could reproduce.
-//
-// The throttle is a Samsung policy rather than an optimisation: preview data
-// should not refresh more than about once per ten minutes. The file is kept
-// current on every catalog change regardless, because the TV also polls the
-// service on its own schedule.
+// The throttle is a Samsung policy, not an optimisation: preview data should
+// not refresh more than about once per ten minutes. The file is still kept
+// current on every catalog change, since the TV also polls the service on its
+// own schedule.
 
 import type { ContinueItem, KromaClient, MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -24,7 +15,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const buildPreviewData = vi.hoisted(() => vi.fn(() => '{"sections":[]}' as string | null));
 vi.mock('#tv/shared/preview/cards', () => ({ buildPreviewData }));
 
-/** A fake Tizen runtime, recording what the app did to it. */
 function runtime(over: { resolveFails?: boolean; openFails?: boolean; noFile?: boolean } = {}) {
   const writes: string[] = [];
   const opened: string[] = [];
@@ -113,8 +103,8 @@ const client = {
 
 const movies = [{ id: 'itm_1' }] as MediaItem[];
 
-/** A fresh copy of the module: the republish throttle is module scope, so a
- *  nudge in one test would otherwise suppress the next test's. */
+// A fresh copy of the module: the republish throttle is module scope, so a
+// nudge in one test would otherwise suppress the next test's.
 async function load() {
   vi.resetModules();
   return await import('./service');

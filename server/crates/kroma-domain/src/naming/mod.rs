@@ -32,7 +32,6 @@ pub enum Parsed {
         show_year: Option<u32>,
         season: u32,
         episode: u32,
-        /// Last episode for multi-episode files (`S01E02-E03`).
         episode_end: Option<u32>,
         episode_title: Option<String>,
     },

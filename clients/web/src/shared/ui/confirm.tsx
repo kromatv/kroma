@@ -11,11 +11,9 @@ import { createCallable } from 'react-call';
 
 export interface ConfirmProps {
   title: string;
-  /** Optional body copy under the title. */
   message?: ReactNode;
   confirmLabel: string;
   cancelLabel: string;
-  /** Render the confirm button red for a destructive action (delete/reset). */
   destructive?: boolean;
 }
 

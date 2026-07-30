@@ -8,10 +8,8 @@
 
 import { deviceStorage } from '@kroma/core';
 
-/** Persisted per device, shared by every detail page. */
 const MUTE_KEY = 'kroma.theme.muted';
 
-/** Quiet background level: present, never competing with the user. */
 export const TARGET_VOLUME = 0.35;
 export const FADE_IN_MS = 900;
 export const FADE_OUT_MS = 600;

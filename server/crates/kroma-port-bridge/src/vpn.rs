@@ -14,8 +14,6 @@ use serde_json::json;
 
 use crate::{call_raw, Resolver};
 
-// --- VpnProxyPort ------------------------------------------------------------
-
 pub fn vpnproxy_routes<S: HostCtx + Clone + Send + Sync + 'static>(
     port: Arc<dyn VpnProxyPort>,
 ) -> Router<S> {
@@ -45,8 +43,6 @@ impl VpnProxyPort for VpnProxyClient {
         call_raw(&self.resolve, "vpnproxy/proxy_url", &json!({})).ok().flatten()
     }
 }
-
-// --- DownloadVpnPort (async) -------------------------------------------------
 
 pub fn downloadvpn_routes<S: HostCtx + Clone + Send + Sync + 'static>(
     port: Arc<dyn DownloadVpnPort>,
@@ -176,7 +172,6 @@ mod tests {
         // Fire-and-forget restart must not panic when the provider is offline.
         vpn.restart_engine(&StubHost::new()).await;
     }
-    // --- A live round trip over the real bridge -----------------------------------
 
     async fn serve<S: HostCtx + Clone + Send + Sync + 'static>(
         router: Router<S>,

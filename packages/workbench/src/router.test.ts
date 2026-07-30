@@ -1,11 +1,5 @@
-// The routing port's pure parts.
-//
-// The adapters themselves are exercised through the kit site's integration test
-// (`clients/kit/src/kit.test.tsx`), which drives a real workbench and then reads
-// the address bar. What is worth testing in isolation is the SPELLING of a view,
-// because it is written one way and read two: `?view=scene:1` in a search param
-// and `/story/x/scene-1` in a path, and a link written either way has to open the
-// same tab.
+// The routing port's pure parts; the adapters are covered by the kit site's
+// integration test (`clients/kit/src/kit.test.tsx`).
 
 import { describe, expect, it } from 'vitest';
 import { memoryRouter, parseView, viewPath } from './router';
@@ -24,7 +18,6 @@ describe('parseView', () => {
   });
 
   it('still takes the bare number a scene used to be', () => {
-    // Links to a scene end up in review comments and commit messages.
     expect(parseView('2')).toBe('scene:2');
   });
 
@@ -42,8 +35,7 @@ describe('viewPath', () => {
     expect(viewPath('matrix')).toBe('matrix');
     expect(viewPath('scene:1')).toBe('scene-1');
     expect(viewPath('demo:0')).toBe('demo-0');
-    // `preview` is spelled by being absent: the shortest URL should be the state
-    // you are in nine times out of ten.
+    // `preview` is spelled by being absent.
     expect(viewPath('preview')).toBeNull();
     expect(viewPath(undefined)).toBeNull();
   });
@@ -57,9 +49,6 @@ describe('viewPath', () => {
 
 describe('memoryRouter', () => {
   it('is a hook, so a fresh adapter per render would remount its state', () => {
-    // Not a behaviour test - a shape one. Every adapter is a hook, which is the
-    // contract that lets `useSearch` subscribe in the TanStack one, and it is why
-    // `defineWorkbench` builds the adapter once outside any render.
     expect(typeof memoryRouter()).toBe('function');
     expect(memoryRouter({ story: 'button' })).not.toBe(memoryRouter({ story: 'button' }));
   });

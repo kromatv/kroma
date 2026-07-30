@@ -1,71 +1,20 @@
-// `sv` = style variants. What `cva` is to Tailwind class strings, this is to
-// React Native styles.
-//
-// Why it exists: React Native has no className, so the honest way to express "a
-// primary button, large" is a lookup from props to style objects. Hand-rolling
-// that per component produces the ternary soup this kit is meant to eliminate:
-//
-//   style={[s.base, variant === 'primary' && s.primary, size === 'lg' && s.lg]}
-//
-// With `sv` the component declares its design once and reads as a shadcn
-// component does:
-//
-//   const button = sv({
-//     base: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.md },
-//     variants: {
-//       variant: { primary: { backgroundColor: colors.accent }, ghost: {} },
-//       size: { md: { paddingHorizontal: 36 }, sm: { paddingHorizontal: 20 } },
-//     },
-//     compound: [{ when: { variant: 'primary', size: 'sm' }, style: { borderRadius: 8 } }],
-//     defaults: { variant: 'primary', size: 'md' },
-//   });
-//
-//   <View style={button({ variant, size }, style)} />
-//
-// The caller's own `style` is always merged LAST, so a one-off override wins,
-// exactly like passing `className` to a shadcn component.
-//
-// A component with named parts declares SLOTS instead of `base`, the way
-// tailwind-variants does, and every part's design lives in the one declaration
-// rather than in parallel lookup maps beside it:
-//
-//   const button = sv({
-//     slots: { root: { flexDirection: 'row' }, label: { fontWeight: '700' } },
-//     variants: {
-//       size: {
-//         md: { root: { paddingHorizontal: 36 }, label: { fontSize: 16 } },
-//         sm: { root: { paddingHorizontal: 20 }, label: { fontSize: 13 } },
-//       },
-//     },
-//     defaults: { size: 'md' },
-//   });
-//
-//   const s = button({ size });
-//   <View style={[s.root, style]}><Text style={s.label} /></View>
-//
-// Both forms resolve each variant combination ONCE and hand back the same
-// (frozen) arrays on every call after that. The style objects themselves are
-// the module-level declarations, so a row in a browse grid re-rendering does
-// not allocate, and react-native-web's styleq cache is hit by identity instead
-// of re-walking the declarations. Do not mutate what a compiled `sv` returns.
+// `sv` = style variants: a props-to-style lookup for React Native, which has no
+// className to drive with something like `cva`/tailwind-variants. A slotted
+// config (`slots` instead of `base`) styles a component with named parts. Each
+// resolved combination is memoized and frozen; the caller's own `style` is
+// always merged last.
 
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 
-// TextStyle extends ViewStyle in React Native's types, so it is the WIDEST of
-// the style shapes a component composes: one type lets a declaration carry
-// paddings and fontSizes alike.
+// TextStyle extends ViewStyle in React Native's types, so it is the widest style
+// shape a component composes.
 type Style = TextStyle;
 
-// What a compiled `sv` RETURNS. The intersection - not TextStyle - because the
-// two interfaces are only mutually assignable under mainline React Native's
-// types: the tvos fork (which the phone app's checker resolves) declares a few
-// properties with literal unions the other spells differently, so a TextStyle
-// there is NOT a ViewStyle and a plain-TextStyle result would satisfy neither
-// a <View>'s style prop nor a <Text>'s across both type sets. An intersection
-// is assignable to each by construction, whichever fork is looking. The casts
-// into it below are downcasts (the intersection is a subtype of Style), legal
-// under every checker; at runtime nothing changes - these are the same frozen
-// declaration objects either way.
+// The intersection - not TextStyle - because the two are only mutually
+// assignable under mainline React Native's types: the tvos fork (which the
+// phone app's checker resolves) types some properties differently, so a plain
+// TextStyle there would satisfy neither a <View> nor a <Text>. The casts below
+// are safe downcasts; nothing changes at runtime.
 type AnyStyle = ViewStyle & TextStyle;
 
 /** A variant group: the prop name maps to its options' styles. */
@@ -106,15 +55,9 @@ export interface VariantSource {
 /**
  * The compiled variant function. Extra `overrides` are appended last.
  *
- * It returns a flat `AnyStyle[]` rather than the wider `StyleProp<ViewStyle>`:
- * an array is what React Native wants anyway, and the concrete type keeps the
- * result inspectable (in tests, and when composing one variant set into another)
- * instead of collapsing to a union you have to narrow first.
- *
- * It also carries its own declaration. That is what lets the workbench build a
- * component's controls and its variant matrix with nothing hand-written: the
- * variant map IS the design source, so there is no second list to keep in sync
- * and no way for the two to disagree.
+ * Returns `AnyStyle[]` rather than the wider `StyleProp<ViewStyle>` so the
+ * result stays inspectable instead of collapsing to a union, and carries its
+ * own `config` so the workbench can derive controls without a hand-kept list.
  */
 export type SvFn<V extends VariantGroups> = ((
   props?: VariantProps<V>,
@@ -125,8 +68,6 @@ export type SvFn<V extends VariantGroups> = ((
   options: { [K in keyof V]: (keyof V[K])[] };
   defaults: VariantProps<V>;
 };
-
-// ---- the slotted form ----
 
 /** Slot name to its always-applied base style. */
 export type Slots = Record<string, Style>;
@@ -157,15 +98,10 @@ export type SvSlotsFn<S extends Slots, V extends SlotVariantGroups<S>> = ((
   defaults: VariantProps<V>;
 };
 
-// ---- shared resolution machinery ----
-
-/** The cache key for the caller's picks resolved against the defaults: the
- * picks in group-declaration order, so two calls that resolve to the same
- * combination share one entry whatever the caller spelled out.
- *
- * Deliberately split from `resolvePicked` and allocation-free: the cache HIT is
- * the hot path, and it only needs the key. The picks record is built once per
- * combination, on the miss that fills the entry. */
+/** Cache key for the caller's picks resolved against the defaults, in
+ * group-declaration order, so two calls resolving to the same combination
+ * share one entry. Split from `resolvePicked` and allocation-free since the
+ * cache hit is the hot path. */
 function pickKey(
   groups: readonly string[],
   props: Record<string, PropertyKey | undefined> | undefined,

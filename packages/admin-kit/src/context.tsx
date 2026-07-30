@@ -2,21 +2,16 @@
 // `AdminKitProvider` (inside the admin shell) with the live authed client, the
 // current user, and the resolved API origin; the kit's hooks (`useCap`,
 // `useAsyncAction`) and any admin page read them through `useAdminKit()`.
-//
-// This is what lets a MODULE page use the same primitives + data access as a
-// built-in admin page without importing app internals: the module renders under
-// the admin shell, so the provider is always above it. The kit stays a leaf
-// package (no dependency on the web app).
+// This lets a MODULE page use the same primitives and data access as a
+// built-in admin page while the kit stays a leaf package with no dependency
+// on the web app.
 
 import type { KromaClient, User } from '@kroma/core';
 import { createContext, type ReactNode, useContext } from 'react';
 
 export interface AdminKitValue {
-  /** The authed API client (token attached while logged in). */
   client: KromaClient;
-  /** The logged-in user, or null when signed out. */
   user: User | null;
-  /** The KROMA server origin, no trailing slash (for building image / event URLs). */
   apiBase: string;
 }
 

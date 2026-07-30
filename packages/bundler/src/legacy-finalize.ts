@@ -47,12 +47,11 @@ function rewriteIndexHtml(distDir: string): void {
       'legacy-finalize: modern <script type=module> / stylesheet not found in dist/index.html',
     );
   }
-  // The modulepreloads have to move INSIDE the gate. Left in the document they
-  // are plain <link>s, so an old engine happily fetches every modern chunk it has
-  // no way to run - measured at 1.04 MiB on webOS, before the legacy bundle it
-  // actually needs even starts downloading, and silently: no console error, just
-  // a slower launch on the TVs least able to afford one. Re-emitted below on the
-  // modern branch, so that tier keeps the head start they were there to give.
+  // The modulepreloads have to move INSIDE the gate: left in the document
+  // they are plain <link>s, so an old engine fetches every modern chunk it
+  // cannot run (measured at 1.04 MiB on webOS) before the legacy bundle it
+  // needs even starts, silently. Re-emitted below on the modern branch so
+  // that tier keeps its head start.
   const preloads = [...html.matchAll(/<link rel="modulepreload"[^>]*href="([^"]+)"[^>]*>/g)].map(
     (m) => m[1],
   );
@@ -94,20 +93,12 @@ function rewriteIndexHtml(distDir: string): void {
   writeFileSync(path, html);
 }
 
-/**
- * Drop every legacy asset that is byte-for-byte the modern tier's, and point the
- * legacy bundle at the one remaining copy.
- *
- * The two tiers are separate Vite builds, so each emitted its own copy of the
- * brand intro - and that film is 7.8 MB, which was **42% of the whole TV
- * package** duplicated for nothing. Content hashes make this safe and cheap:
- * both builds name a file from its contents, so identical bytes already carry
- * identical names, and deduping is a delete plus a path rewrite.
- *
- * The two rewrites differ because the two files resolve URLs from different
- * places: the legacy JS resolves against the document (dist/index.html), the
- * legacy stylesheet against itself (dist/legacy/style.css).
- */
+// Drops every legacy asset that is byte-for-byte the modern tier's, and
+// points the legacy bundle at the one remaining copy: the two tiers are
+// separate Vite builds, so each emitted its own copy of the brand intro -
+// 7.8 MB, 42% of the whole TV package, duplicated for nothing. Content
+// hashing makes this safe and cheap: identical bytes already carry
+// identical names.
 function dedupeAssets(distDir: string): number {
   const legacyAssets = join(distDir, 'legacy', 'assets');
   const modernAssets = join(distDir, 'assets');

@@ -1,22 +1,13 @@
-// The chromatic wheel's geometry: the "O" of the KROMA lockup, drawn as six
-// annular sectors instead of a masked ring so every surface can render it from
-// plain path data (SVG in the browser, react-native-svg on mobile, a rasterizer
-// in the brand-asset generator) with no mask support required.
-//
-// This lives in core because the same six paths are consumed by both runtime UI
-// and the build-time asset generator; keeping one copy is what makes the app
-// icon and the in-app logo provably the same shape.
+// The "O" of the KROMA lockup, as six annular sectors rather than a masked ring
+// so every surface can render it from plain path data with no mask support.
 
-/** Two decimals: keeps the emitted path data short and byte-stable, so
- * regenerating an asset doesn't produce a spurious diff. */
+// Two decimals keeps the emitted path byte-stable, so regenerating an asset
+// produces no spurious diff.
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-/** The lockup's hub/outer radius ratio. The wheel reads as a letter O only at
- * this proportion, so every caller derives its inner radius from it. */
 export const WHEEL_HUB_RATIO = 17.045 / 50;
 
-/** SVG path data for the wheel's six sectors around `(cx, cy)`, outer radius
- * `R`, hub radius `r`. Defaults frame the lockup's own O (Frame 2). */
+/** Six SVG sector paths; the defaults frame the lockup's own O. */
 export function wheelSectors(cx = 209, cy = 50, R = 50, r = 50 * WHEEL_HUB_RATIO): string[] {
   const rad = (deg: number) => (deg * Math.PI) / 180;
   const pt = (radius: number, deg: number) => [

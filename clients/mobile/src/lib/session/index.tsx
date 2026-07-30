@@ -1,8 +1,7 @@
-// Auth + server session, on the same multi-server / multi-profile model as the
-// TV client: any number of saved servers, any number of remembered accounts
-// (device credentials in SecureStore), one active session. Two-token model:
-// the long-lived accessToken is stored and exchanged on demand for a
-// short-lived bearer kept in memory; a 401 mid-flight silently re-exchanges.
+// Auth + server session: multiple saved servers, multiple remembered accounts
+// (device credentials in SecureStore), one active session. The long-lived
+// accessToken is stored and exchanged on demand for a short-lived bearer kept
+// in memory; a 401 mid-flight silently re-exchanges.
 
 import { type KromaClient, normalizeServerUrl, setSessionToken, type User } from '@kroma/core';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
@@ -19,26 +18,18 @@ import { sameAccount, useAccountStore, useServerStore } from './stores';
 
 export interface AuthSession {
   status: 'booting' | 'signedOut' | 'signedIn';
-  /** The server the connect/sign-in flow is pointed at (last used). */
   serverUrl: string | null;
   client: KromaClient | null;
   user: User | null;
-  /** Saved servers, most recently used first. */
   servers: ServerEntry[];
-  /** Every remembered account on this device (all servers). */
   accounts: MobileAccount[];
   connect(url: string): Promise<void>;
-  /** Point the sign-in flow at another saved server. */
   selectServer(url: string): void;
-  /** Refresh a saved server's display name (from a `/health` probe). */
   renameServer(url: string, name: string): void;
   login(identifier: string, password: string): Promise<void>;
-  /** Enter a remembered account without a password (stored device token).
-   * PIN-locked profiles need `pin` (401 body `pinRequired: true` otherwise). */
+  // PIN-locked profiles need `pin` (401 body `pinRequired: true` otherwise).
   switchAccount(account: MobileAccount, pin?: string): Promise<void>;
-  /** Leave the session but KEEP the account remembered (profile switcher). */
   switchProfile(): void;
-  /** Leave AND forget the active account. */
   signOut(): Promise<void>;
   forgetAccount(account: MobileAccount): void;
   forgetServer(url: string): void;
@@ -72,11 +63,9 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
     (url: string, accessToken: string, token: string, freshUser: User) => {
       const next = makeClient(url);
       next.setAuthToken(token);
-      // The live-events WebSocket (`KromaEvents`) authenticates through the
-      // module-level session store, not the client instance - the upgrade
-      // carries the token as a subprotocol. Without this line the socket 401s
-      // silently forever, which is how the admin's "stop this session" never
-      // reached the phone.
+      // The live-events WebSocket authenticates through this module-level
+      // store, not the client instance; without it the socket 401s silently
+      // forever.
       setSessionToken(token);
       next.setRefreshHandler(async () => {
         try {
@@ -157,7 +146,6 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
     [enterSession],
   );
 
-  /** Drop every device-local secret tied to a profile. */
   const forgetSecrets = useCallback((url: string, userId: string) => {
     void deletePinBehindBiometrics(url, userId);
     void setBiometricLockEnabled(url, userId, false);

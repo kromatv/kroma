@@ -8,13 +8,13 @@
 import { describe, expect, it } from 'vitest';
 import { lines, tokenize } from './code';
 
-/** The tokens of one kind, in order - the readable form of "what got painted". */
+// The tokens of one kind, in order - the readable form of "what got painted".
 const of = (code: string, kind: string) =>
   tokenize(code)
     .filter((t) => t.kind === kind)
     .map((t) => t.text);
 
-/** Tokenizing must never lose or reorder a character. */
+// Tokenizing must never lose or reorder a character.
 const roundTrips = (code: string) =>
   tokenize(code)
     .map((t) => t.text)
@@ -72,9 +72,9 @@ describe('tokenize', () => {
     expect(roundTrips(code)).toBe(true);
   });
 
-  // The shape this replaced was `(?:[^"\\]|\\.)*`, whose two branches can claim
-  // the same characters: an unterminated string made it backtrack quadratically.
-  // The unrolled form cannot, so a pathological input stays fast.
+  // A regex shaped `(?:[^"\\]|\\.)*` backtracks quadratically on an
+  // unterminated string, since its two branches can claim the same
+  // characters. The unrolled form here cannot, so this stays fast.
   it('does not hang on a long unterminated string', () => {
     const code = `const s = "${'a\\'.repeat(20_000)}`;
     const started = Date.now();

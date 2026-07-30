@@ -1,11 +1,6 @@
 import type { RemoteKey } from '@kroma/core';
 import { useCallback, useState } from 'react';
 
-/**
- * Reusable 2-D focus for a card grid (the "À suivre" up-next sheet, §10). ▲▼◀▶
- * move a flat index across a fixed column count; ▲ off the top row calls
- * `onExit('top')` so the sheet can close, and hover moves focus like the D-pad.
- */
 export interface GridFocusOptions {
   count: number;
   cols: number;
@@ -20,13 +15,11 @@ export interface GridFocus {
   setIndex: (i: number) => void;
   onKey: (key: RemoteKey) => boolean;
   hover: (i: number) => () => void;
-  /** Bumps on every D-pad move (NOT hover), so a scroll container can bring the
-   *  focused card into view only for keyboard nav (scrolling on pointer hover
-   *  would shift the layout under the cursor). */
+  /** Bumps on every D-pad move but not on hover: scrolling the focused card into
+   *  view on hover would shift the layout under the cursor. */
   keyNonce: number;
 }
 
-/** Key handling when the grid is empty: ▲ or Back can still exit / go back. */
 function emptyGridKey(
   key: RemoteKey,
   onExit?: (edge: 'top' | 'bottom') => void,
@@ -48,8 +41,6 @@ export function useGridFocus(opts: GridFocusOptions): GridFocus {
   const [index, setIndex] = useState(opts.initial ?? 0);
   const [keyNonce, setKeyNonce] = useState(0);
 
-  // A D-pad move: change the index AND bump the nonce (so the sheet scrolls it into
-  // view). `hover` uses the plain setIndex, so pointer focus never triggers scroll.
   const move = useCallback((i: number) => {
     setIndex(i);
     setKeyNonce((n) => n + 1);

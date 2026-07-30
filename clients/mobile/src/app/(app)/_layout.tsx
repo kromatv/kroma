@@ -13,8 +13,6 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.bg },
-        // Phones live in portrait everywhere except the player: dismissing the
-        // landscape player then snaps back natively. Tablets rotate freely.
         orientation: isTablet ? 'default' : 'portrait',
       }}
     >
@@ -25,8 +23,8 @@ export default function AppLayout() {
           animation: 'fade',
           gestureEnabled: false,
           presentation: 'fullScreenModal',
-          // Native per-screen orientation: the rotation happens as part of the
-          // transition instead of an ugly post-mount flip. Tablets stay free.
+          // Per-screen orientation rotates during the transition rather than as a
+          // post-mount flip.
           orientation: isTablet ? 'default' : 'landscape',
         }}
       />

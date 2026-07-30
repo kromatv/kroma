@@ -9,7 +9,6 @@ import {
 } from 'react';
 import type { ControlId, Overlay, Zone } from '../lib/nav';
 
-/** Auto-hide the chrome after this long idle while playing (§16). */
 const HIDE_MS = 3500;
 
 /** Actions the top-level machine invokes; the shell wires them to the controller. */
@@ -66,8 +65,6 @@ interface DpadContext {
   activate: (id: ControlId) => void;
 }
 
-/** Hardware media keys act globally, regardless of zone / overlay. Returns
- * whether the key was a media key (already handled). */
 function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
   switch (key) {
     case 'Play':
@@ -93,8 +90,6 @@ function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
   }
 }
 
-/** Up: from the controls row, bump volume or hop to the progress bar; from the
- * progress bar, leave display mode (hide the chrome). */
 function dpadUp(ctx: DpadContext): void {
   const { a, zone, focused } = ctx;
   if (zone === 'controls') {
@@ -109,7 +104,6 @@ function dpadUp(ctx: DpadContext): void {
   }
 }
 
-/** Down: progress -> controls, lower the volume when focused, else open the sheet. */
 function dpadDown(ctx: DpadContext): void {
   const { a, zone, focused } = ctx;
   if (zone === 'progress') ctx.setZone('controls');
@@ -117,7 +111,6 @@ function dpadDown(ctx: DpadContext): void {
   else ctx.openOverlay('sheet');
 }
 
-/** Zone-aware D-pad routing, once the chrome is revealed and no overlay is open. */
 function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
   const { a, zone, focused } = ctx;
   switch (key) {
@@ -151,28 +144,25 @@ function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
  * the auto-hiding chrome. It owns zone/overlay/focus; panels manage their own
  * internal focus (see useListFocus / useGridFocus) and the shell routes keys to
  * the open panel first.
+ *
+ * `controls` must be exactly the row as drawn (see ../lib/metrics
+ * `chromeMetrics`): the machine steps through only the controls on screen, so a
+ * shed control never keeps a focus stop nobody can see.
  */
 export function usePlayerNav(
   playing: boolean,
   actions: PlayerNavActions,
-  /** The row as it is actually drawn (see ../lib/metrics `chromeMetrics`), which
-   *  on a narrow stage is less than the flags allow. Required, and the single
-   *  source of truth for the row: the machine steps through exactly the controls
-   *  on screen, because a shed control must not keep a stop nobody can see. */
   controls: readonly ControlId[],
 ): PlayerNav {
   const [revealed, setRevealed] = useState(true);
   const [zone, setZone] = useState<Zone>('controls');
   const [overlay, setOverlay] = useState<Overlay>(null);
-  // Focus is a CONTROL, not a slot. The row changes underneath it - a flag
-  // flips, a next episode appears, the window narrows until a control is shed -
-  // and the button the user was on should stay lit rather than whatever slid
-  // into its index (and a shed control should hand focus back rather than strand
-  // it past the end of the row). Play to start with, so the first OK plays.
+  // Focus is a CONTROL, not a slot: the row can change under it (a flag flips,
+  // a control is shed), and the button the user was on should stay lit rather
+  // than jump to whatever slid into its old index.
   const [focusedId, setFocusedId] = useState<ControlId>('play');
-  // ...but ◀ ▶ still move by position, because that is what they mean. The two
-  // views of the same focus meet here: the D-pad steps an index, the state
-  // remembers what that index landed on.
+  // ◀ ▶ still move by position: the D-pad steps an index, and this resolves it
+  // back to the control that index currently points at.
   const controlIndex = Math.max(0, controls.indexOf(focusedId));
   const setControlIndex = useCallback(
     (update: SetStateAction<number>) => {
@@ -202,7 +192,6 @@ export function usePlayerNav(
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
   }, [clearHide]);
 
-  // Freeze the timer while paused or a panel is open; re-arm when playing again.
   useEffect(() => {
     if (!playing || overlay) {
       setRevealed(true);

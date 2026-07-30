@@ -1,28 +1,11 @@
 #!/usr/bin/env bun
-/**
- * Generate a Synology "package source" repository for static hosting (GitHub
- * Pages, Cloudflare Pages, any static host).
- *
- * A Synology package source (Package Center > Settings > Package Sources > Add)
- * is just a URL that returns a JSON catalog of packages. Point it at the
- * catalog.json this writes and the package shows up in the Community tab with an
- * Install button + in-place auto-updates - no server. The .spk itself is hosted
- * elsewhere (e.g. a GitHub Release asset); the catalog only points at it.
- *
- * Fully self-contained (reads the version + icon out of the .spk itself) and
- * env-driven so it is not tied to any one repo. Run with `bun`, which auto-loads
- * `.env` from the working directory; CI passes the same vars inline. Uses only
- * Node built-ins, so it also runs under Node. See `.env.example`.
- *
- * Run:  bun run --filter @kroma/synology-repo gen
- *   or: bun packages/synology-repo/src/gen-catalog.ts
- */
+// Generate a Synology "package source" repository (catalog.json + icon + landing page) for
+// static hosting. Env-driven; see `.env.example`.
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { channelSubs, renderLanding, type Subs } from './render-landing';
 import { extractIcon, readSpkInfo } from './spk';
 
-/** Read an env var, falling back to a default (or throwing if required). */
 function env(key: string, fallback?: string): string {
   const v = process.env[key]?.trim();
   if (v) return v;
@@ -30,15 +13,13 @@ function env(key: string, fallback?: string): string {
   throw new Error(`Missing required env var ${key} (see packages/synology-repo/.env.example)`);
 }
 
-/** Strip trailing `/` in one linear pass. A `/\/+$/` regex is super-linear here:
- * unanchored at the start, it retries + backtracks the run at every position. */
+// Linear pass on purpose: a `/\/+$/` regex backtracks the run at every position.
 function stripTrailingSlash(s: string): string {
   let end = s.length;
   while (end > 0 && s[end - 1] === '/') end--;
   return s.slice(0, end);
 }
 
-/** Newest *.spk found across the given dirs (relative to cwd), so a bare run works. */
 function findSpk(dirs: string[]): string {
   const found: { path: string; mtime: number }[] = [];
   for (const dir of dirs) {
@@ -55,10 +36,9 @@ function findSpk(dirs: string[]): string {
   return newest.path;
 }
 
-// --- Config (all overridable via env / .env) ---------------------------------
 const spk = process.env.CATALOG_SPK?.trim() || findSpk(['.', 'dist', 'clients/synology/dist']);
-const downloadUrl = env('CATALOG_DOWNLOAD_URL'); // where DSM downloads the .spk
-const pagesUrl = stripTrailingSlash(env('CATALOG_PAGES_URL')); // base URL of the out dir
+const downloadUrl = env('CATALOG_DOWNLOAD_URL');
+const pagesUrl = stripTrailingSlash(env('CATALOG_PAGES_URL'));
 const outDir = resolve(env('CATALOG_OUT_DIR', 'dist/repo'));
 const catalogName = env('CATALOG_NAME', 'catalog.json'); // e.g. nightly.json for a beta channel
 const beta = env('CATALOG_BETA', 'false') === 'true';
@@ -70,8 +50,6 @@ const meta = {
   changelogUrl: env('CATALOG_CHANGELOG_URL', 'https://github.com/maxscharwath/kroma/releases'),
 };
 
-// --- Read the package's own INFO + icon so the catalog can never disagree ------
-// DSM compares `version` to the installed version.
 const {
   package: pkg,
   version: rawVersion,
@@ -83,19 +61,15 @@ const {
   md5,
 } = readSpkInfo(spk);
 
-// build.sh stamps nightlies `X.Y.Z.BUILD-BUILD` (4th feature segment). DSM's
-// package-center list hides a package whose feature version has a 4th segment
-// that large, so collapse to the conventional `major.minor.micro-build` that it
-// renders. Mirrors worker/catalog.ts dsmVersion(). Stable (already 3-segment)
-// is untouched.
+// DSM's package-center list hides a package whose feature version has a large 4th
+// segment, which is how build.sh stamps nightlies (`X.Y.Z.BUILD-BUILD`), so
+// collapse to `major.minor.micro-build`. Mirrors worker/catalog.ts dsmVersion().
 const [feat = '', build] = rawVersion.split('-');
 const version = build ? `${feat.split('.').slice(0, 3).join('.')}-${build}` : feat;
 
-// Icon: an explicit override wins, else pull the store icon out of the .spk itself.
 const iconOverride = process.env.CATALOG_ICON?.trim();
 const iconBytes = iconOverride ? readFileSync(iconOverride) : extractIcon(spk);
 
-// --- Emit catalog.json + icon + landing page ---------------------------------
 const iconFile = `${pkg}.png`;
 const iconUrl = `${pagesUrl}/${iconFile}`;
 const catalog = {
@@ -119,11 +93,9 @@ const catalog = {
       distributor_url: meta.distributorUrl,
       changelog: meta.changelogUrl,
       firmware,
-      // No `model`/`beta` fields: `model: []` reads to DSM as an empty
-      // supported-model whitelist, and `beta: true` from a dynamic source both
-      // make DSM silently HIDE the row. SynoCommunity omits both; the channel is
-      // gated by which .spk this catalog points at, not a per-package flag. See
-      // worker/catalog.ts.
+      // No `model`/`beta` fields: DSM reads `model: []` as an empty supported-model
+      // whitelist, and `beta: true` from a dynamic source, as reasons to hide the
+      // row. The channel is gated by which .spk this catalog points at.
       qinst: true,
       qstart: true,
       qupgrade: true,
@@ -135,8 +107,6 @@ const catalog = {
 };
 
 const catalogUrl = `${pagesUrl}/${catalogName}`;
-// Landing page lives in a real HTML file (syntax-highlightable, no escaping); fill
-// its {{PLACEHOLDER}} tokens. Values are precomputed so the template stays logic-free.
 const subs: Subs = {
   DNAME: dname,
   ICON_FILE: iconFile,

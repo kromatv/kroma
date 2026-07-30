@@ -1,24 +1,17 @@
 // <OtpField>: the one-time-code entry, as a row of individual character slots.
+// Replaces the web client's `input-otp` (a hidden <input> plus a render prop),
+// a shape that can't exist on Apple TV: one off-screen TextInput owns the text
+// here (so paste, SMS autofill and hardware typing keep working), while on a
+// television there is no hidden input at all — the on-screen keypad feeds
+// `onChange`, as <PinField> does.
 //
-// This is the universal replacement for the web client's `input-otp` wrapper.
-// That library is a hidden <input> plus a render prop, which is exactly the
-// shape that cannot exist on Apple TV, so the same idea is rebuilt here on the
-// kit's own primitives: one off-screen TextInput owns the text (so paste, SMS
-// autofill and hardware typing all keep working) while the slots are ordinary
-// views the design controls. On a television there is no hidden input at all -
-// the on-screen keypad feeds `onChange`, exactly as <PinField> does.
+// The API mirrors shadcn's InputOTP (`maxLength`, `value`, `onChange`,
+// `pattern`, `onComplete`, `disabled`, the REGEXP_* names) so a ported screen
+// reads unchanged; `groups={[3, 3]}` replaces its nested Group/Slot/Separator
+// components.
 //
-// The API deliberately mirrors shadcn's InputOTP - `maxLength`, `value`,
-// `onChange`, `pattern`, `onComplete`, `disabled` - and the REGEXP_* constants
-// carry the same names, so a screen ported from the web reads unchanged. What
-// shadcn spells as three nested components (InputOTPGroup / InputOTPSlot /
-// InputOTPSeparator) is spelled here as `groups={[3, 3]}`: React Native has no
-// className to hang the grouping off, and a number per group says the same
-// thing without four components to keep in step.
-//
-// Sibling: <PinField> is the DOTS spelling of the same job, for the 10-foot
-// secret PIN. Use OtpField when the characters should be legible (a pairing
-// code, an emailed code) or when the slots themselves carry the design.
+// Sibling: <PinField> is the masked-dots spelling of the same job, for a
+// 10-foot secret PIN.
 
 import { type ReactNode, useMemo, useRef } from 'react';
 import { TextInput } from 'react-native';
@@ -30,10 +23,6 @@ import { colors, radius as radii } from '#ui/lib/tokens';
 import { useCompleteOnce } from '#ui/lib/use-complete-once';
 import { useControllable } from '#ui/lib/use-controllable';
 
-/** The same names `input-otp` (and therefore shadcn) exports, so a `pattern`
- * copied from a web screen keeps working. They are whole-value regexes there;
- * here each candidate CHARACTER is tested against the pattern, which means a
- * code pasted with stray spaces is cleaned instead of rejected outright. */
 const REGEXP_ONLY_DIGITS = String.raw`^\d+$`;
 const REGEXP_ONLY_CHARS = '^[a-zA-Z]+$';
 const REGEXP_ONLY_DIGITS_AND_CHARS = '^[a-zA-Z0-9]+$';
@@ -52,11 +41,9 @@ const otpVariants = sv({
   variants: {
     size: {
       md: { slot: { width: 52, height: 60, borderRadius: radii.lg }, char: { fontSize: 26 } },
-      /** The 10-foot size: a pairing code read from the sofa. */
       tv: { slot: { width: 72, height: 84, borderRadius: radii.xl }, char: { fontSize: 38 } },
     },
-    /** Where this slot sits relative to what has been typed. `active` is the
-     *  slot the next character lands in, and the only one with a caret. */
+    /** `active` is the slot the next character lands in, and the only one with a caret. */
     state: {
       empty: {},
       filled: {},
@@ -80,14 +67,11 @@ const otpVariants = sv({
 
 type OtpSize = 'md' | 'tv';
 
-/** What a slot knows about itself. The same three facts `input-otp` hands its
- * render prop, so a custom slot ports across. */
+/** The same three facts `input-otp` hands its render prop, so a custom slot ports across. */
 interface OtpSlot {
-  /** The character in this slot, or null when it is still empty. */
   char: string | null;
   /** True for the slot the next character lands in. */
   isActive: boolean;
-  /** True when this slot should paint the blinking insertion point. */
   hasFakeCaret: boolean;
 }
 
@@ -100,8 +84,10 @@ interface OtpFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   onChange?: (next: string) => void;
   /** Fired once, the instant the last slot fills. Auto-submit belongs here. */
   onComplete?: (code: string) => void;
-  /** Which characters are allowed, as a regex source string. Use one of the
-   *  REGEXP_* constants. Defaults to digits only. */
+  /** Which characters are allowed, tested per character rather than against
+   *  the whole value, so a pasted code with stray spaces is cleaned rather
+   *  than rejected outright. Use one of the REGEXP_* constants; defaults to
+   *  digits only. */
   pattern?: string;
   disabled?: boolean;
   /** Show dots instead of the characters, for a secret PIN. */
@@ -143,8 +129,6 @@ function OtpField({
   const [value, setValue] = useControllable(valueProp, defaultValue, onChange);
   const input = useRef<TextInput>(null);
 
-  // One compiled matcher per pattern, applied per character: a pasted code with
-  // spaces or dashes is cleaned rather than thrown away.
   const allowed = useMemo(() => new RegExp(pattern), [pattern]);
 
   // Fire exactly once per fill - the shared rule, because <PinField> needs the
@@ -173,9 +157,8 @@ function OtpField({
     <Box row align="center" gap={12} opacity={disabled ? 0.5 : 1} {...box}>
       {physicalKeyboard ? (
         // Off-screen rather than hidden: `opacity: 0` still leaves a focusable,
-        // pasteable, autofillable entry, which is the whole trick behind an OTP
-        // field that also supports SMS codes. It covers the row so a tap
-        // anywhere on the slots lands the caret.
+        // pasteable, autofillable entry. It covers the row so a tap anywhere
+        // on the slots lands the caret.
         <TextInput
           ref={input}
           value={value}
@@ -212,8 +195,6 @@ function OtpField({
   );
 }
 
-/** True when a separator belongs after this slot: the index closes a group and
- * is not the very last slot. */
 function isGroupEnd(groups: readonly number[] | undefined, at: number, maxLength: number): boolean {
   if (!groups || at === maxLength - 1) return false;
   let edge = 0;
@@ -224,8 +205,8 @@ function isGroupEnd(groups: readonly number[] | undefined, at: number, maxLength
   return false;
 }
 
-/** Which of the slot variants this slot is in. A filled slot reads as filled
- * even while it is the active one, because the character is the stronger signal. */
+// A filled slot reads as filled even while it is also the active one: the
+// character is the stronger signal.
 function slotState(slot: OtpSlot): 'filled' | 'active' | 'empty' {
   if (slot.char != null) return 'filled';
   return slot.isActive ? 'active' : 'empty';
@@ -247,13 +228,12 @@ function Slot({
   );
 }
 
-/** The dash between two groups. */
 function Separator() {
   return <Box w={12} h={2} radius="pill" bg={colors.borderStrong} />;
 }
 
-/** Off-screen, not `display: none`: it has to stay focusable to receive the
- * paste, the autofill and the keystrokes. */
+// Off-screen, not `display: none`: it has to stay focusable to receive the
+// paste, the autofill and the keystrokes.
 const ENTRY = {
   position: 'absolute',
   left: 0,

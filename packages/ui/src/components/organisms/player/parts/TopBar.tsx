@@ -107,8 +107,8 @@ export const TopBar = memo(function TopBar({
   );
 });
 
-/** The design's sizes, at the design's scale; the styles below carry everything
- * that does NOT vary with it, so neither number is written twice. */
+// The design's sizes; the styles below carry what doesn't vary with them, so
+// neither number is written twice.
 const TITLE_SIZE = 19;
 const SUBTITLE_SIZE = 13;
 const WARN_SIZE = 13;

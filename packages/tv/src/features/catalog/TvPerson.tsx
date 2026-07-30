@@ -10,13 +10,9 @@ import { PersonHeader } from '#tv/features/catalog/person/PersonHeader';
 import { usePersonDetail } from '#tv/features/catalog/person/usePersonDetail';
 import { EMPTY } from '#tv/features/catalog/screenStyle';
 
-/** Everything one cast/crew person is credited in, under who they are reached
- * by selecting a face in a detail page's "Distribution" rail.
- *
- * The filmography is filtered out of the already-loaded catalogue (no request,
- * ranked best-known work first); the biography beside it is the one thing the
- * library cannot know, so it comes from the metadata provider and lands a
- * moment later. */
+/** Everything one cast/crew person is credited in. The filmography is filtered
+ * out of the already-loaded catalogue (no request); the biography comes from the
+ * metadata provider and lands a moment later. */
 export function TvPerson() {
   const { name } = useParams('person');
   const { movies, shows } = useConnection();
@@ -62,15 +58,13 @@ export function TvPerson() {
   }, [movies, shows, name, client, nav]);
 
   const detail = usePersonDetail(name);
-  // The provider's portrait is the better one (a bigger source, and it exists
-  // for people who only ever crewed); the credit's photo is the instant one.
+  // The provider's portrait is the better one; the credit's photo is the instant
+  // one.
   const photo = client.resolveArt(detail?.profileUrl ?? involvement.profileUrl, PORTRAIT_W);
   const roles = roleLabels(t, involvement);
 
   return (
     <Box fill bg="bg" overflow="hidden">
-      {/* Header sits below the persistent nav bar (its top padding clears it);
-          Back is the remote key, so no separate hint. */}
       <PersonHeader
         name={detail?.name ?? name}
         roles={roles}
@@ -92,6 +86,5 @@ export function TvPerson() {
   );
 }
 
-/** The filmography posters, and the portrait beside the name. */
 const POSTER_W = 203;
 const PORTRAIT_W = 220;

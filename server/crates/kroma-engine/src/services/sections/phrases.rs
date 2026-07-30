@@ -13,20 +13,20 @@ use super::context::Context;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum When {
     Always,
-    /// Evening / late-night only.
+    // Evening / late-night only.
     Evening,
-    /// Weekends only.
+    // Weekends only.
     Weekend,
 }
 
 pub struct Phrase {
-    /// Slug → section id `themed:<key>`.
+    // Slug → section id `themed:<key>`.
     pub key: &'static str,
-    /// i18n key for the localized row title.
+    // i18n key for the localized row title.
     pub title_key: &'static str,
-    /// The vibe the embedding model ranks titles against.
+    // The vibe the embedding model ranks titles against.
     pub query: &'static str,
-    /// Seasonal gate: only eligible in these months (1–12). `None` = any month.
+    // Seasonal gate: only eligible in these months (1–12). `None` = any month.
     pub months: Option<&'static [u8]>,
     pub when: When,
 }
@@ -53,22 +53,18 @@ pub fn eligible(ctx: &Context) -> Vec<&'static Phrase> {
 }
 
 const BANK: &[Phrase] = &[
-    // --- seasonal (lead when in season) ---
     Phrase { key: "christmas", title_key: "content.themeChristmas", query: "heartwarming christmas holiday movie", months: Some(&[12]), when: When::Always },
     Phrase { key: "halloween", title_key: "content.themeHalloween", query: "halloween horror scary movie", months: Some(&[10]), when: When::Always },
     Phrase { key: "cozy-autumn", title_key: "content.themeCozyAutumn", query: "cozy atmospheric autumn drama", months: Some(&[9, 10, 11]), when: When::Always },
     Phrase { key: "summer", title_key: "content.themeSummer", query: "summer road trip adventure movie", months: Some(&[6, 7, 8]), when: When::Always },
-    // --- evergreen mood / genre ---
     Phrase { key: "action", title_key: "content.themeAction", query: "high octane action movie", months: None, when: When::Always },
     Phrase { key: "feel-good", title_key: "content.themeFeelGood", query: "feel-good uplifting comedy", months: None, when: When::Always },
     Phrase { key: "heist", title_key: "content.themeHeist", query: "clever heist crew robbery thriller", months: None, when: When::Always },
     Phrase { key: "true-story", title_key: "content.themeTrueStory", query: "based on a true story biographical drama", months: None, when: When::Always },
     Phrase { key: "tearjerker", title_key: "content.themeTearjerker", query: "emotional heartbreaking tearjerker drama", months: None, when: When::Always },
-    // --- evening-leaning ---
     Phrase { key: "mind-bending", title_key: "content.themeMindBending", query: "mind-bending surreal science fiction", months: None, when: When::Evening },
     Phrase { key: "neon-night", title_key: "content.themeNeonNight", query: "neon-soaked night drive crime thriller", months: None, when: When::Evening },
     Phrase { key: "thriller", title_key: "content.themeThriller", query: "edge of your seat suspense thriller", months: None, when: When::Evening },
-    // --- weekend ---
     Phrase { key: "adventure", title_key: "content.themeAdventure", query: "epic adventure fantasy quest", months: None, when: When::Weekend },
 ];
 

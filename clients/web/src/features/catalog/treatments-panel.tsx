@@ -1,12 +1,8 @@
-// Per-element "Traitements" panel (admin-only): shows, for one film/episode/show,
-// the status of every processing treatment applied to it (probe, TMDB, storyboard
-// previews, markers, embedding), plus a one-click reprocess and a "fix the TMDB
-// match" action. Plex-style: see at a glance what has and hasn't been done to this
-// exact element.
-//
-// Two permissions meet here: the treatment list is `settings.manage`, correcting a
-// wrong TMDB match is `library.manage` ("libraries, scans and metadata"). Either
-// one shows the strip; each control gates itself.
+// Per-element "Traitements" panel (admin-only): the status of every processing
+// treatment applied to this film/episode/show (probe, TMDB, storyboard previews,
+// markers, embedding), plus a one-click reprocess and a "fix the TMDB match"
+// action. The treatment list needs `settings.manage`; fixing a match needs
+// `library.manage`. Either shows the strip; each control gates itself.
 
 import { hasPermission, type MessageKey, type Treatment } from '@kroma/core';
 import { useT } from '@kroma/ui';

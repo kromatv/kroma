@@ -8,32 +8,21 @@ import {
   updateCalibration,
 } from './gamepad-map';
 
-// Gamepad -> TV navigation bridge (@kroma/desktop; Steam Deck the primary target).
+// Gamepad -> TV navigation bridge. The 10-foot input model is keyboard-shaped
+// (@kroma/tv resolves `keydown`/`keyup` on `window`), so this polls the Gamepad
+// API and dispatches the matching synthetic key events.
 //
-// The shared @kroma/tv nav (useFocusNav) and player (usePlayerControls,
-// useDirectPlayback) all listen for `keydown` / `keyup` on `window` and normalize
-// them with `resolveRemoteKey` (packages/core/src/remote.ts), which resolves by
-// `KeyboardEvent.key` first. So the entire 10-foot input model is already
-// keyboard-shaped: we just poll the Gamepad API and dispatch the matching synthetic
-// key events on `window`. Nothing in @kroma/tv has to change. All the messy
-// per-layout decoding (raw evdev pads, hat-axis D-pads, analog triggers) lives in
-// gamepad-map.ts.
-//
-// Debug: `localStorage.setItem('kroma.gamepadDebug', '1')` then reload logs every
-// emitted key with a raw button/axis snapshot; connect info is always logged.
+// Debug: `localStorage.setItem('kroma.gamepadDebug', '1')` then reload.
 
-const REPEAT_DELAY_MS = 400; // hold this long before the first auto-repeat
-const REPEAT_EVERY_MS = 120; // then repeat this often
+const REPEAT_DELAY_MS = 400;
+const REPEAT_EVERY_MS = 120;
 
 function now(): number {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 
-/**
- * Start translating connected gamepads into TV key events. Safe to call once at
- * boot; a no-op (returns an empty stopper) where the Gamepad API is absent.
- * Returns a stop function.
- */
+/** Starts translating connected gamepads into TV key events, and returns the
+ * stopper. A no-op where the Gamepad API is absent. */
 export function startGamepadBridge(): () => void {
   if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') {
     return () => {};
@@ -41,7 +30,6 @@ export function startGamepadBridge(): () => void {
   const debug =
     typeof localStorage !== 'undefined' && localStorage.getItem('kroma.gamepadDebug') === '1';
   const pads = new Map<number, PadState>();
-  // Per-key hold state: when its next auto-repeat is due.
   const held = new Map<EmitKey, { nextRepeat: number }>();
   let raf = 0;
   let stopped = false;
@@ -72,15 +60,11 @@ export function startGamepadBridge(): () => void {
     return `[gamepad] raw pad${pad.index} buttons=[${btns.join(',')}] axes=[${axes}]`;
   };
 
-  // A fresh press is the interesting moment for layout debugging: dump the raw pad
-  // snapshots collected this frame (once per frame, not per held frame).
   const dumpRaw = (raw: string[]): void => {
     if (!debug) return;
     for (const line of raw.splice(0)) console.debug(line);
   };
 
-  // Poll every connected pad: collect the keys currently active across all of them,
-  // forget the states of pads that went away, and append this frame's debug snapshots.
   const pollPads = (raw: string[]): Set<EmitKey> => {
     const active = new Set<EmitKey>();
     const seen = new Set<number>();
@@ -98,7 +82,6 @@ export function startGamepadBridge(): () => void {
     return active;
   };
 
-  // Newly pressed -> keydown; still-held repeatable key past its due time -> repeat.
   const emitPresses = (active: Set<EmitKey>, raw: string[], t: number): void => {
     for (const k of active) {
       const state = held.get(k);
@@ -113,7 +96,6 @@ export function startGamepadBridge(): () => void {
     }
   };
 
-  // Released -> keyup (drives e.g. the player's commit-seek-on-release).
   const emitReleases = (active: Set<EmitKey>): void => {
     for (const k of held.keys()) {
       if (!active.has(k)) {

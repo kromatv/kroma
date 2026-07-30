@@ -7,10 +7,6 @@
 // treats it as "unknown browser", the TV input environment as "assume the TV"),
 // so that decision stays with them.
 
-/** Is `name` present on the global object? The TV platforms inject their bridge
- * objects there (`tizen`, `webOS`), which is a positive signal on its own. The
- * cast is read into a local first: this is a plain lookup on an untyped bag, not
- * a narrowing of `globalThis` itself. */
 function hasGlobal(name: string): boolean {
   const globals = globalThis as Record<string, unknown>;
   return globals[name] !== undefined;

@@ -1,7 +1,5 @@
-//! Module management for the admin console: list every module with its enabled
-//! state + config schema + current config values, toggle enablement, and write
-//! per-module config. State persists in the settings store under the
-//! `moduleStates` blob (see `kroma_engine::modules`).
+//! Module management for the admin console. State persists in the settings store
+//! under the `moduleStates` blob (see `kroma_engine::modules`).
 
 use std::collections::BTreeMap;
 
@@ -24,27 +22,22 @@ pub fn routes() -> Router<SharedState> {
         .route("/modules/{id}/config", put(set_config))
 }
 
-/// A module manifest plus its runtime admin state.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct AdminModule {
     #[serde(flatten)]
     manifest: kroma_module_sdk::ModuleManifest,
     enabled: bool,
-    /// Current value per config field key (falls back to the field's default).
     config_values: BTreeMap<String, Value>,
-    /// Runtime-installed (`.kmod`) modules can be uninstalled; compile-time ones can't.
     removable: bool,
 }
 
-/// `GET /api/admin/modules` -> every module with enabled state + config values.
 async fn list_modules(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
-    // Runtime-installed `.kmod` modules (from the supervisor) are removable;
-    // compile-time roster modules are not.
+    // Runtime-installed `.kmod` modules are removable; compile-time ones are not.
     let removable_ids: std::collections::HashSet<String> =
         kroma_module_kernel::installed_ids(&state).into_iter().collect();
     let mods: Vec<AdminModule> = kroma_module_kernel::manifests(&state)
@@ -74,7 +67,6 @@ struct EnabledBody {
     enabled: bool,
 }
 
-/// `POST /api/admin/modules/:id/enabled` `{ enabled }`.
 async fn set_enabled(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -83,8 +75,8 @@ async fn set_enabled(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     kroma_engine::modules::set_module_enabled(&state.settings, &state.db, &id, body.enabled);
-    // Drive the backend module's lifecycle so the toggle actually starts/stops
-    // its live services (e.g. the torrent engine), not just its listing flag.
+    // Drive the module's lifecycle so the toggle starts/stops its live services,
+    // not just its listing flag.
     if let Some(module) = kroma_module_kernel::find_server(&id) {
         let host: std::sync::Arc<dyn kroma_module_host::HostCtx> = state.clone();
         if body.enabled {
@@ -96,7 +88,6 @@ async fn set_enabled(
     Ok(Json(json!({ "id": id, "enabled": body.enabled })).into_response())
 }
 
-/// `PUT /api/admin/modules/:id/config` body = `{ key: value, … }`.
 async fn set_config(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -104,9 +95,8 @@ async fn set_config(
     Json(values): Json<BTreeMap<String, Value>>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
-    // Allow-list against the manifest's declared config keys, so a client can only
-    // write fields the module actually defines (a typo or stale key is dropped
-    // rather than polluting the stored config).
+    // Allow-list against the manifest, so a client can only write fields the module
+    // actually declares.
     let allowed: std::collections::HashSet<String> = kroma_module_kernel::manifests(&state)
         .into_iter()
         .find(|m| m.id == id)

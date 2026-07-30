@@ -1,6 +1,5 @@
-//! Library management: list / create / update / delete libraries and trigger
-//! rescans. Library edits persist to the settings store and kick a background
-//! rescan so the catalogue reflects the change.
+//! Library CRUD and rescans. Edits persist to the settings store and kick a
+//! background rescan so the catalogue reflects the change.
 
 use std::path::{Path, PathBuf};
 
@@ -22,7 +21,7 @@ use crate::state::SharedState;
 use axum::routing::{get, patch, post};
 use axum::Router;
 
-/// Admin library management. Paths are relative to the `/api/admin` nest.
+/// Paths are relative to the `/api/admin` nest.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/libraries", get(list_libraries).post(create_library))
@@ -31,7 +30,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/libraries/{id}/scan", post(scan_library))
 }
 
-/// `GET /api/admin/libraries` → library cards (folders, size, item count).
 pub async fn list_libraries(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -77,14 +75,8 @@ pub struct BrowseQuery {
     pub path: Option<String>,
 }
 
-/// `GET /api/admin/libraries/browse?path=<abs>` → list the browseable
-/// sub-directories of `path` so the admin UI can pick library folders off the
-/// NAS filesystem instead of typing paths. With no `path`, returns the roots
-/// (Synology `volumeN` dirs; falls back to `/` on a dev box with no volumes).
-///
-/// Response JSON:
-/// `{ "path": "<current abs path|\"\">", "parent": "<abs path>"|null,
-///    "entries": [ { "name": "Films", "path": "/volume1/video/Films" }, … ] }`
+/// Browseable sub-directories of `path`, as `{ path, parent, entries: [{ name,
+/// path }] }`. With no `path`, the roots: Synology `volumeN` dirs, else `/`.
 pub async fn browse_libraries(
     AuthUser(user): AuthUser,
     Query(q): Query<BrowseQuery>,
@@ -116,7 +108,6 @@ pub struct CreateLibraryBody {
     pub folders: Vec<String>,
 }
 
-/// `POST /api/admin/libraries` → add a library, then rescan.
 pub async fn create_library(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -153,7 +144,6 @@ pub struct UpdateLibraryBody {
     pub auto_scan: Option<bool>,
 }
 
-/// `PATCH /api/admin/libraries/:id` → rename / change folders / toggle auto-scan.
 pub async fn update_library(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -187,8 +177,7 @@ pub async fn update_library(
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
-/// `DELETE /api/admin/libraries/:id` → remove a library and rescan (the vanished
-/// library + its items are cascade-deleted by the diff-sync).
+/// The vanished library and its items are cascade-deleted by the diff-sync.
 pub async fn delete_library(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -206,7 +195,7 @@ pub async fn delete_library(
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
-/// `POST /api/admin/libraries/:id/scan` (and any library) → kick a full rescan.
+/// Kicks a full rescan, whichever library id is named.
 pub async fn scan_library(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -217,21 +206,15 @@ pub async fn scan_library(
     Ok(Json(json!({ "started": true })).into_response())
 }
 
-/// Filesystem-browse failure, mapped to an HTTP status by `browse_libraries`.
 enum BrowseErr {
-    /// Path escapes the allowed volume roots (403).
     Forbidden,
-    /// Path is missing or not a directory (404).
     NotFound,
 }
 
-/// Blocking directory walk backing `GET /libraries/browse`. Runs on a
-/// `spawn_blocking` thread. See `browse_libraries` for the response shape.
 fn browse_dirs(raw: String) -> Result<Value, BrowseErr> {
     let roots = volume_roots();
     let raw = raw.trim();
 
-    // No path → the roots: Synology volumes, or `/` on a dev machine with none.
     if raw.is_empty() {
         if !roots.is_empty() {
             return Ok(json!({ "path": "", "parent": Value::Null, "entries": to_entries(roots) }));
@@ -261,19 +244,12 @@ fn browse_dirs(raw: String) -> Result<Value, BrowseErr> {
     Ok(json!({ "path": canon.to_string_lossy(), "parent": parent, "entries": entries }))
 }
 
-/// Whether `path` is inside the area an admin may browse: under one of `roots`,
-/// or anywhere at all when there are none (a dev box with no Synology volumes).
-///
-/// Split out of `browse_dirs` because it is the rule that keeps the browse off
-/// the rest of the NAS - `/etc`, another user's home - and `volume_roots()` reads
-/// the real `/`, so on anything but a DSM box the confining branch is otherwise
-/// dead code that no test can reach.
+// Confines the browse to the volume roots; with none (a dev box, not a DSM
+// one) anywhere is allowed.
 fn within_roots(path: &Path, roots: &[PathBuf]) -> bool {
     roots.is_empty() || roots.iter().any(|r| path.starts_with(r))
 }
 
-/// Top-level `/` directories named `volume…` (Synology `/volume1`, `/volumeUSB1`).
-/// Empty on a non-Synology host, which flips the browse into its dev fallback.
 fn volume_roots() -> Vec<PathBuf> {
     std::fs::read_dir("/")
         .into_iter()
@@ -290,8 +266,7 @@ fn volume_roots() -> Vec<PathBuf> {
         .collect()
 }
 
-/// Immediate sub-directories of `dir` as browse entries: directories only,
-/// skipping hidden/system names (`.`, `@`, `#` → e.g. `@eaDir`, `#recycle`).
+// Skips hidden and DSM system names (`@eaDir`, `#recycle`).
 fn read_subdirs(dir: &Path) -> Result<Vec<Value>, BrowseErr> {
     let rd = std::fs::read_dir(dir).map_err(|_| BrowseErr::NotFound)?;
     let mut dirs: Vec<PathBuf> = Vec::new();
@@ -308,7 +283,6 @@ fn read_subdirs(dir: &Path) -> Result<Vec<Value>, BrowseErr> {
     Ok(to_entries(dirs))
 }
 
-/// Sort paths case-insensitively by file name and map to `{ name, path }` entries.
 fn to_entries(mut paths: Vec<PathBuf>) -> Vec<Value> {
     paths.sort_by_key(|p| p.file_name().unwrap_or_default().to_string_lossy().to_lowercase());
     paths
@@ -322,7 +296,6 @@ fn to_entries(mut paths: Vec<PathBuf>) -> Vec<Value> {
         .collect()
 }
 
-/// Clean a folder list: trim, drop empties, dedupe.
 fn clean_folders(folders: Vec<String>) -> Vec<String> {
     let mut seen = std::collections::HashSet::new();
     folders
@@ -332,11 +305,8 @@ fn clean_folders(folders: Vec<String>) -> Vec<String> {
         .collect()
 }
 
-/// Background rescan triggered by library edits. Routes through the job manager
-/// (the same `library.scan` job as `POST /api/scan`) so it shares the single-
-/// flight guard no concurrent walk + sync racing on the DB and picks up the full
-/// follow-up pipeline (probe + search reindex + enrich), instead of spawning its
-/// own partial pass. A no-op when a scan is already running (it covers the edit).
+// Goes through the job manager so it shares the `library.scan` single-flight
+// guard and its follow-up pipeline; a no-op when a scan is already running.
 fn spawn_rescan(state: SharedState) {
     let _ = state.jobs.trigger(state.clone(), crate::services::jobs::JobKey("library.scan"), "library-edit");
 }
@@ -347,9 +317,8 @@ mod tests {
 
     use crate::model::User;
 
-    /// A scratch tree, removed when the guard drops. The name carries a process-
-    /// unique counter as well as the pid: `cargo test` runs these in threads of
-    /// one process, so a pid alone collides between two tests in this module.
+    // The name carries a counter as well as the pid: `cargo test` runs these in
+    // threads of one process, so a pid alone collides between two tests here.
     struct Tree(PathBuf);
 
     impl Tree {
@@ -404,7 +373,6 @@ mod tests {
         }
     }
 
-    /// The names offered by a browse result, in the order the picker renders them.
     fn names(body: &Value) -> Vec<String> {
         body["entries"]
             .as_array()
@@ -422,22 +390,12 @@ mod tests {
         user_with(vec![Permission::LibraryManage])
     }
 
-    /// A real app harness, from the crate's own API support. The CRUD handlers
-    /// read and write the persisted `libraries` setting, so nothing short of one
-    /// exercises them.
-    ///
-    /// Returns the WHOLE `TestApp`, not just its `state`: the harness owns a
-    /// `TempDir` for the data directory, and moving one field out of a temporary
-    /// drops the rest at the end of that statement - deleting the SQLite
-    /// directory out from under the state the caller is about to use. It shows up
-    /// as an occasional 500 from `list_libraries` under parallel test threads,
-    /// never on its own.
+    // Returns the whole `TestApp`, not just its `state`: the harness owns the
+    // data directory's `TempDir`, and keeping only `state` drops it early.
     fn app() -> crate::api::test_support::TestApp {
         crate::api::test_support::test_app()
     }
 
-    /// The libraries as they are actually persisted, read back the way the
-    /// handlers read them.
     fn defs(state: &SharedState) -> Vec<LibraryDef> {
         settings::library_defs(&state.settings, &state.config)
     }
@@ -457,10 +415,6 @@ mod tests {
 
     #[test]
     fn folder_lists_are_trimmed_deduped_and_stripped_of_blanks() {
-        // These come from an admin typing paths into a form, so leading spaces
-        // and a stray empty row are the normal case - and a duplicated folder
-        // would make the scanner walk the same tree twice and import every file
-        // under two logical ids.
         assert_eq!(
             clean_folders(vec![
                 "  /media/movies  ".into(),
@@ -475,25 +429,17 @@ mod tests {
 
     #[test]
     fn the_first_spelling_of_a_folder_is_the_one_kept() {
-        // Dedupe happens AFTER the trim, so "/a" and " /a " are the same folder.
         assert_eq!(clean_folders(vec![" /a ".into(), "/a".into(), "/b".into()]), ["/a", "/b"]);
     }
 
     #[test]
     fn a_list_of_nothing_stays_a_list_of_nothing() {
-        // A library with no folders is allowed (it is configured later); this
-        // must not become a vec containing an empty string, which the scanner
-        // would treat as the filesystem root.
         assert!(clean_folders(Vec::new()).is_empty());
         assert!(clean_folders(vec!["".into(), "  ".into()]).is_empty());
     }
 
-    // ----- the folder picker ---------------------------------------------------
-
     #[test]
     fn only_directories_are_offered() {
-        // The picker chooses a library FOLDER. Offering a file would let an admin
-        // configure a library whose "folder" the scanner can never walk.
         let t = Tree::new("dirs-only");
         t.dir("Films");
         t.dir("Series");
@@ -505,9 +451,6 @@ mod tests {
 
     #[test]
     fn synology_system_directories_are_hidden() {
-        // `@eaDir` (DSM's thumbnail cache) and `#recycle` sit inside every share
-        // on a NAS. They are not media, and a library pointed at one would import
-        // thousands of thumbnails as if they were the library.
         let t = Tree::new("system");
         t.dir("Films");
         t.dir("@eaDir");
@@ -519,8 +462,6 @@ mod tests {
 
     #[test]
     fn entries_are_sorted_the_way_a_human_reads_them() {
-        // Byte order would put every capitalised name above every lowercase one,
-        // so `anime` would land after `Zik` in a list an admin has to scan.
         let t = Tree::new("sort");
         for name in ["Zik", "anime", "Films", "docs"] {
             t.dir(name);
@@ -531,8 +472,6 @@ mod tests {
 
     #[test]
     fn an_entry_carries_the_full_path_the_scanner_will_use() {
-        // The UI shows `name` and stores `path`; if `path` were relative the
-        // library would be saved pointing at nothing.
         let t = Tree::new("entry");
         let films = t.dir("Films");
 
@@ -544,10 +483,8 @@ mod tests {
 
     #[test]
     fn the_path_returned_is_the_resolved_one_not_the_one_asked_for() {
-        // macOS hands out `/var/...` symlinks for temp dirs and a NAS share is
-        // routinely a link into `/volume1`. The picker must hand back the path
-        // the scanner will actually walk, or the saved folder drifts from the
-        // browsed one the moment the link moves.
+        // macOS hands out `/var/...` symlinks for temp dirs, and a NAS share is
+        // routinely a link into `/volume1`.
         let t = Tree::new("canon");
         t.dir("Films");
         let asked = format!("{}/./Films/..", t.path());
@@ -569,8 +506,6 @@ mod tests {
 
     #[test]
     fn browsing_with_no_path_lands_on_a_root_with_nowhere_above_it() {
-        // The entry point of the picker. `parent: null` is what stops the UI
-        // offering an "up" button that would walk off the top.
         let body = browse("");
         assert!(body["parent"].is_null(), "{body}");
         // Either the Synology volumes (path "") or the dev fallback ("/").
@@ -580,8 +515,6 @@ mod tests {
 
     #[test]
     fn a_directory_that_is_not_there_is_a_miss_not_an_empty_folder() {
-        // An empty list would read as "this folder has no sub-folders", and an
-        // admin would save a library pointing at a path that does not exist.
         let t = Tree::new("missing");
         assert!(matches!(
             browse_dirs(format!("{}/nope", t.path())),
@@ -598,19 +531,13 @@ mod tests {
 
     #[test]
     fn an_empty_directory_browses_to_an_empty_list() {
-        // Distinct from the miss above: this one succeeds, with no entries.
         let t = Tree::new("empty");
         let body = browse(&t.path());
         assert_eq!(body["entries"].as_array().unwrap().len(), 0);
     }
 
-    // ----- confinement ---------------------------------------------------------
-
     #[test]
     fn with_volumes_present_the_browse_cannot_leave_them() {
-        // The rule that matters on the real target. `volume_roots()` reads the
-        // machine's `/`, so this drives the predicate directly - on a dev box
-        // there are no volumes and the branch is never taken.
         let roots = vec![PathBuf::from("/volume1"), PathBuf::from("/volumeUSB1")];
         assert!(within_roots(Path::new("/volume1/video/Films"), &roots));
         assert!(within_roots(Path::new("/volumeUSB1"), &roots));
@@ -621,8 +548,8 @@ mod tests {
 
     #[test]
     fn a_path_that_merely_starts_with_a_root_name_is_not_inside_it() {
-        // `starts_with` on a Path compares whole components, so `/volume10` is
-        // not under `/volume1` - a string prefix check would have let it through.
+        // `starts_with` on a Path compares whole components; a string prefix
+        // check would let these through.
         let roots = vec![PathBuf::from("/volume1")];
         assert!(!within_roots(Path::new("/volume10/video"), &roots));
         assert!(!within_roots(Path::new("/volume1x"), &roots));
@@ -630,17 +557,13 @@ mod tests {
 
     #[test]
     fn with_no_volumes_at_all_the_dev_box_may_browse_anywhere() {
-        // Otherwise the picker would be empty on every non-Synology install.
         assert!(within_roots(Path::new("/etc"), &[]));
     }
 
-    // ----- the handler ---------------------------------------------------------
-
     #[tokio::test]
     async fn browsing_needs_the_library_permission() {
-        // The picker walks the host filesystem. Anyone who can reach it can
-        // enumerate the NAS, so it is gated on library management, not on merely
-        // being some kind of admin.
+        // The picker enumerates the host filesystem, so it is gated on library
+        // management rather than on merely being some kind of admin.
         let user = user_with(vec![Permission::Playback, Permission::UsersManage]);
         let err = browse_libraries(AuthUser(user), Query(BrowseQuery { path: None }))
             .await
@@ -650,9 +573,8 @@ mod tests {
 
     #[tokio::test]
     async fn a_traversal_segment_is_refused_before_the_filesystem_is_touched() {
-        // `canonicalize` would happily resolve `..` and the confinement check
-        // would then pass on a dev box with no volumes. Rejecting the segment up
-        // front is what keeps that from being the only thing standing in the way.
+        // `canonicalize` would resolve `..`, and the confinement check then
+        // passes on a dev box with no volumes.
         let user = user_with(vec![Permission::LibraryManage]);
         let err = browse_libraries(
             AuthUser(user),
@@ -689,8 +611,6 @@ mod tests {
         assert_eq!(err.status(), StatusCode::NOT_FOUND);
     }
 
-    // ----- creating, editing and removing a library ----------------------------
-
     #[tokio::test]
     async fn a_created_library_persists_with_its_folders_cleaned() {
         let harness = app();
@@ -702,20 +622,14 @@ mod tests {
         let saved = defs(&state);
         assert_eq!(saved.len(), 1);
         assert_eq!(saved[0].id, id);
-        // Trimmed, and the duplicate folder is gone - the scanner would otherwise
-        // walk the same tree twice.
         assert_eq!(saved[0].name, "Films");
         assert_eq!(saved[0].folders, ["/media/films"]);
         assert_eq!(saved[0].kind, "movies");
-        // New libraries scan on their own; an admin should not have to remember.
         assert!(saved[0].auto_scan);
     }
 
     #[tokio::test]
     async fn every_library_gets_its_own_id() {
-        // The id is hashed from the name plus a random token. Two libraries that
-        // happen to share a name must still be two libraries, or editing one
-        // would silently edit the other.
         let harness = app();
         let state = harness.state.clone();
         let a = create(&state, "Films", vec!["/a"]).await.unwrap();
@@ -726,7 +640,6 @@ mod tests {
 
     #[tokio::test]
     async fn a_library_needs_a_name() {
-        // A blank name renders as an unlabelled card nobody can identify.
         let harness = app();
         let state = harness.state.clone();
         for blank in ["", "   "] {
@@ -757,8 +670,6 @@ mod tests {
 
     #[tokio::test]
     async fn an_update_touches_only_the_fields_it_names() {
-        // The admin form PATCHes; an omitted field must keep its value rather
-        // than reset to a default.
         let harness = app();
         let state = harness.state.clone();
         let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
@@ -784,8 +695,6 @@ mod tests {
 
     #[tokio::test]
     async fn an_update_can_turn_auto_scan_off_without_touching_anything_else() {
-        // `Some(false)` has to survive: an `Option<bool>` that treated false as
-        // "not supplied" would make the toggle impossible to turn off.
         let harness = app();
         let state = harness.state.clone();
         let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
@@ -807,7 +716,6 @@ mod tests {
 
     #[tokio::test]
     async fn a_blank_new_name_is_ignored_rather_than_applied() {
-        // The form sends every field; a cleared name must not wipe the label.
         let harness = app();
         let state = harness.state.clone();
         let id = create(&state, "Films", vec!["/media/films"]).await.unwrap();
@@ -848,7 +756,6 @@ mod tests {
 
     #[tokio::test]
     async fn editing_a_library_that_is_not_there_is_a_404() {
-        // A stale admin tab must not create a library by PATCHing a dead id.
         let harness = app();
         let state = harness.state.clone();
         create(&state, "Films", vec!["/media/films"]).await.unwrap();
@@ -893,8 +800,6 @@ mod tests {
 
     #[tokio::test]
     async fn deleting_a_library_that_is_not_there_is_a_404() {
-        // Not a silent success: a delete that "worked" on a dead id would hide
-        // that the admin's list is stale.
         let harness = app();
         let state = harness.state.clone();
         create(&state, "Films", vec!["/media/films"]).await.unwrap();
@@ -941,13 +846,8 @@ mod tests {
         assert_eq!(err.status(), StatusCode::FORBIDDEN);
     }
 
-    // ----- the library list ----------------------------------------------------
-
     #[tokio::test]
     async fn the_list_reports_every_library_with_a_zeroed_card() {
-        // A library with nothing scanned yet still has to render: the counts come
-        // from a stats query that has no row for it, and `None` there must read
-        // as zero rather than drop the card.
         let harness = app();
         let state = harness.state.clone();
         create(&state, "Films", vec!["/media/films"]).await.unwrap();
@@ -968,8 +868,6 @@ mod tests {
 
     #[tokio::test]
     async fn the_list_is_open_to_any_admin_not_just_a_library_manager() {
-        // It is a read for the console shell; a requests moderator needs to see
-        // the libraries page without holding library.manage.
         let harness = app();
         let state = harness.state.clone();
         let res =
@@ -985,12 +883,8 @@ mod tests {
         assert_eq!(err.status(), StatusCode::FORBIDDEN);
     }
 
-    // ----- library cards -------------------------------------------------------
-
     #[test]
     fn a_library_kind_becomes_the_icon_the_card_renders() {
-        // The web + TV cards switch on this string, so an unknown kind must map
-        // to something that draws rather than to a blank tile.
         let of = |kind: &str| {
             kind_label(
                 &LibraryDef {

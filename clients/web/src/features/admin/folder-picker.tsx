@@ -1,7 +1,5 @@
-// A server-side folder browser for the library admin: walk the NAS volumes and
-// their subdirectories, then commit the current directory as the picked folder.
-// Controlled: `value` is the committed path, `onChange` fires when the operator
-// presses "use this folder". Browsing state is internal (seeded from `value`).
+// A server-side folder browser: `value` is the committed path and `onChange`
+// fires on "use this folder"; browsing state is internal, seeded from `value`.
 import type { AdminFsList } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, IconButton } from '@kroma/ui/kit';
@@ -9,7 +7,6 @@ import { IconChevronRight, IconFolder } from '@tabler/icons-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 
-/** The already-picked state: a success wash over the kit's glass button. */
 const SELECTED_FILL = {
   backgroundColor: 'rgba(70, 208, 141, 0.15)',
   borderColor: 'rgba(70, 208, 141, 0.35)',

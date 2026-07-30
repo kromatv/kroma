@@ -15,33 +15,19 @@ pub struct User {
     pub username: String,
     #[serde(rename = "avatarUrl", skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
-    /// Preferred UI locale (`"fr"` | `"en"`), synced across this account's
-    /// devices. `None` → clients fall back to the device/browser locale. See the
-    /// shared i18n catalogs (`packages/core/src/locales`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
-    /// Preferred audio-track language for playback (an ISO-639 code such as
-    /// `"en"` | `"fr"` | `"ja"`), synced across devices. `None` → no preference;
-    /// the player falls back to the file's default track. Independent of the UI
-    /// `language` above (you might browse in French but watch in Japanese).
+    // An ISO-639 code; `None` falls back to the file's default track. Independent
+    // of the UI `language` above (you might browse in French, watch in Japanese).
     #[serde(rename = "audioLanguage", skip_serializing_if = "Option::is_none")]
     pub audio_language: Option<String>,
-    /// Preferred subtitle-track language for playback. An ISO-639 code selects
-    /// that language when a matching track exists; the sentinel `"off"` forces
-    /// subtitles off; `None` → no preference (leave the player's default). Synced
-    /// across devices.
+    // An ISO-639 code, or the sentinel `"off"` to force subtitles off; `None` is
+    // no preference.
     #[serde(rename = "subtitleLanguage", skip_serializing_if = "Option::is_none")]
     pub subtitle_language: Option<String>,
-    /// Granted permissions (capability-based, no roles). The first registered
-    /// account (owner) gets every permission; the rest default to `[Playback]`.
-    /// Clients unlock pages/actions from this set (admin panel, future stats…).
     pub permissions: Vec<Permission>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
-    /// Whether this account has a numeric profile-lock PIN set on the server
-    /// (`pin_hash IS NOT NULL`). Lets a client show its own PIN state (e.g. the
-    /// TV profile menu's "Change PIN" vs "Set PIN"); the PIN itself never leaves
-    /// the server. See `/api/auth/pin/*`.
     #[serde(rename = "hasPin")]
     pub has_pin: bool,
 }
@@ -70,30 +56,20 @@ impl User {
 /// e.g. a `stats.view` for the upcoming stats pages.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Permission {
-    /// Manage user accounts (the admin panel).
     #[serde(rename = "users.manage")]
     UsersManage,
-    /// Manage libraries, scans and metadata.
     #[serde(rename = "library.manage")]
     LibraryManage,
-    /// Manage server settings.
     #[serde(rename = "settings.manage")]
     SettingsManage,
-    /// Watch the catalogue and save playback progress (default for everyone).
     #[serde(rename = "playback")]
     Playback,
-    /// Submit media requests (discover on TMDB + ask for a title).
     #[serde(rename = "requests.create")]
     RequestsCreate,
-    /// Review the request queue: approve/deny anyone's requests, run
-    /// interactive searches and manage downloads.
     #[serde(rename = "requests.manage")]
     RequestsManage,
-    /// This user's requests skip the approval queue (Overseerr's auto-approve).
     #[serde(rename = "requests.auto")]
     RequestsAuto,
-    /// Triage user-submitted problem reports (the "Signalements" admin queue:
-    /// resolve / dismiss / reopen / delete).
     #[serde(rename = "reports.manage")]
     ReportsManage,
 }
@@ -149,9 +125,6 @@ pub struct PublicUser {
     pub username: String,
     #[serde(rename = "avatarUrl", skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
-    /// Whether this account has a profile-lock PIN (`pin_hash IS NOT NULL`), so
-    /// the "Qui regarde ?" picker can render a lock and route to the PIN screen
-    /// before switching in. Defaults to `false` for accounts without one.
     #[serde(rename = "hasPin")]
     pub has_pin: bool,
 }
@@ -161,13 +134,11 @@ pub struct PublicUser {
 #[derive(Debug, Clone, Serialize)]
 pub struct Invite {
     pub token: String,
-    /// Permissions the invited account will be granted.
     pub permissions: Vec<Permission>,
     #[serde(rename = "createdBy", skip_serializing_if = "Option::is_none")]
     pub created_by: Option<String>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
-    /// Unix-seconds expiry.
     #[serde(rename = "expiresAt")]
     pub expires_at: i64,
     pub used: bool,

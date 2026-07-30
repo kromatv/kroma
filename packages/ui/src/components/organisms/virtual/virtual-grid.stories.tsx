@@ -6,10 +6,8 @@ import { VirtualGrid } from './virtual';
 
 const TINT = ['#3A2E4F', '#1B1524'] as const;
 
-/** Enough rows that windowing - and scrolling to the end - is the point. */
 const TITLES = Array.from({ length: 400 }, (_, at) => ({ id: at, title: `Title ${at + 1}` }));
 
-/** The browse screens' geometry, so the story scrolls the way Films / Séries do. */
 const TILE_W = 203;
 const ROW_HEIGHT = Math.round((TILE_W * 3) / 2) + 32;
 
@@ -52,7 +50,7 @@ export default story({
         itemHeight={ROW_HEIGHT}
         style={{ flex: 1, minHeight: 0 }}
         // paddingTop = FOCUS_BLEED: the grid clips flush at its top, so a focused
-        // row's ring room comes from the content. See organisms/virtual/clip.ts.
+        // row's ring room has to come from the content.
         contentStyle={{ paddingHorizontal: 24, paddingTop: 32 }}
         rowStyle={{ gap: 24 }}
         renderItem={(item, at) => (

@@ -1,26 +1,13 @@
-//! The host seam between the running app and a module's backend.
-//!
-//! A module crate's server half (routes + services) needs a few things from the
-//! app: the DB pool, capability gating, settings, the event bus, and so on. If it
-//! took `&SharedState` it would depend on `kroma-engine` (the whole app) and the
-//! two would form a dependency cycle (kroma-engine already depends on the module
-//! crates). Instead it names ONLY the [`HostCtx`] trait defined here, plus the
-//! shared HTTP extractors/helpers. The binary's `AppState` implements `HostCtx`,
-//! so `Router<SharedState>` handlers and generic `Router<S: HostCtx>` module
-//! handlers both work, and a module crate depends only on this leaf.
+//! The host seam between the running app and a module's backend: a module crate
+//! names only the [`HostCtx`] trait here, never `kroma-engine`, so the two do not
+//! form a dependency cycle.
 
-// The axum `Response` is intentionally the Err type of request guards so handlers
-// short-circuit with `?`; boxing every guard for `result_large_err` would churn
-// dozens of signatures for no real gain on these error paths.
+// The axum `Response` is deliberately the Err type of request guards so handlers
+// short-circuit with `?`.
 #![allow(clippy::result_large_err)]
 
-/// The shared-host-token guard used by every hop of the module IPC.
 pub mod host_token;
 
-/// Shared `HostCtx` test doubles, so a seam with ~25 methods is stubbed once
-/// rather than once per crate that tests against it. Behind the `testing`
-/// feature: dependents enable it as a dev-dependency, and no release build
-/// compiles it.
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 
@@ -37,22 +24,18 @@ use axum::Json;
 
 use kroma_db::Pool;
 use kroma_domain::{Permission, User};
-// Re-exported so a module crate builds notifications from `kroma_module_host`
-// (or the SDK's prelude) without naming `kroma-domain` directly.
 pub use kroma_domain::{
     ActionKind, ActionSpec, ActionStyle, Audience, NotificationCategory, NotificationEvent,
     NotificationSpec, PushCategory,
 };
 
 /// Build a JSON error response `{ "error": "<message>" }` with the given status.
-/// The one definition; `kroma-engine` and the binary re-export it so existing
-/// call sites are unchanged.
 pub fn json_error(status: StatusCode, message: &str) -> Response {
     (status, Json(serde_json::json!({ "error": message }))).into_response()
 }
 
 /// Run a blocking DB closure off the async runtime, mapping any failure to a
-/// uniform 500. The shared combinator admin handlers (app + module crates) use.
+/// uniform 500.
 pub async fn blocking<T, F>(f: F) -> Result<T, Response>
 where
     F: FnOnce() -> anyhow::Result<T> + Send + 'static,
@@ -71,26 +54,23 @@ where
     }
 }
 
-/// Register a peer PORT (a trait object) for the service registry: returns the
+/// Register a peer port (a trait object) for the service registry: returns the
 /// `(TypeId, value)` to insert. The registry stores concrete `Any` values, so the
 /// port `Arc<dyn P>` is wrapped in an outer `Arc` keyed by `Arc<dyn P>`'s TypeId.
-/// The port traits themselves live in `the SDK ports module (kroma_module_sdk::ports)`; this is only the generic
-/// plumbing, so the seam names no port trait (and no module).
 pub fn port_service<P: ?Sized + Any + Send + Sync>(
     port: Arc<P>,
 ) -> (TypeId, Arc<dyn Any + Send + Sync>) {
     (TypeId::of::<Arc<P>>(), Arc::new(port))
 }
 
-/// Resolve a peer PORT registered via [`port_service`]. `None` when no provider
+/// Resolve a peer port registered via [`port_service`]. `None` when no provider
 /// registered it (e.g. the providing module is absent / disabled).
 pub fn resolve_port<P: ?Sized + Any + Send + Sync>(host: &dyn HostCtx) -> Option<Arc<P>> {
     let any = host.get_service(TypeId::of::<Arc<P>>())?;
     any.downcast::<Arc<P>>().ok().map(|boxed| (*boxed).clone())
 }
 
-/// Clone the pool and run a blocking DB closure off the async runtime; a thin
-/// combinator over [`blocking`] that hands the closure its own [`Pool`].
+/// [`blocking`], with the closure handed its own clone of the [`Pool`].
 pub async fn query<T, F>(pool: &Pool, f: F) -> Result<T, Response>
 where
     F: FnOnce(Pool) -> anyhow::Result<T> + Send + 'static,
@@ -100,14 +80,10 @@ where
     blocking(move || f(pool)).await
 }
 
-/// A real-time event a module publishes onto the host's bus (fanned out to
-/// WebSocket clients as `{ "type": <topic>, ...payload }`). The module owns its
-/// topic string and payload shape; the seam names no module event type, so the
-/// core stays generic. The host merges `topic` under the wire `type` key.
+/// A real-time event a module publishes onto the host's bus, fanned out to
+/// WebSocket clients as `{ "type": <topic>, ...payload }`.
 pub struct Event {
-    /// The wire event type, e.g. `"download.progress"`.
     pub topic: String,
-    /// The event fields as a JSON object (merged next to `type` on the wire).
     pub payload: serde_json::Value,
 }
 
@@ -117,11 +93,8 @@ impl Event {
     }
 }
 
-/// One configured library, in the leaf shape a module needs to place files:
-/// its id (for logical-id hashing), `kind` (`movies` / `shows`, to pick the right
-/// library for a movie vs a show), display `name` (to honor a "preferred library"
-/// setting), and folder roots. The engine's richer `LibraryDef` maps onto this at
-/// the seam so a module never names the engine type.
+/// One configured library, in the leaf shape a module needs to place files.
+/// `kind` is `movies` or `shows`.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LibraryFolders {
     pub id: String,
@@ -133,199 +106,116 @@ pub struct LibraryFolders {
 /// The slice of the running app a module's backend can reach. The binary's
 /// `AppState` (as `Arc<AppState>` = `SharedState`) implements it; a module crate
 /// names only this trait, never the app, so it stays a leaf and breaks the cycle.
-///
-/// The trait is grown as subsystems are relocated (settings accessors, event
-/// publish, job triggers, the VPN proxy URL, ...); it starts with the DB pool and
-/// capability gating, which the shared extractors + every admin route need.
 pub trait HostCtx: Send + Sync + 'static {
-    /// The SQLite connection pool.
     fn db(&self) -> &Pool;
 
-    /// The server data directory (per-module scratch lives under it).
     fn data_dir(&self) -> &Path;
 
-    /// Gate a handler on a capability. Returns a localized `403` response on
-    /// failure (the app resolves the caller's locale).
+    // A failure is a localized `403` response.
     fn require(&self, user: &User, perm: Permission) -> Result<(), Response>;
 
-    /// Gate on holding ANY management capability (unlocks the console shell).
+    // Gate on holding ANY management capability (unlocks the console shell).
     fn require_any_admin(&self, user: &User) -> Result<(), Response>;
 
-    /// A localized JSON error for `user`'s account locale (the app resolves the
-    /// message `key` against the shared catalogs).
+    // A localized JSON error for `user`'s account locale, from a message `key`.
     fn lerr(&self, user: &User, status: StatusCode, key: &str) -> Response;
 
-    /// A persisted string setting (or `default` when unset).
     fn setting_str(&self, key: &str, default: &str) -> String;
-    /// A persisted boolean setting (or `default` when unset).
     fn setting_bool(&self, key: &str, default: bool) -> bool;
-    /// A persisted integer setting (or `default` when unset).
     fn setting_i64(&self, key: &str, default: i64) -> i64;
-    /// Persist a batch of settings atomically (one write).
+    // Persist a batch of settings atomically (one write).
     fn set_settings(&self, patch: std::collections::BTreeMap<String, serde_json::Value>);
 
-    /// Publish a module event onto the app's real-time bus (fanned out to
-    /// WebSocket clients). The event's topic + payload are generic; the host
-    /// forwards them without knowing the module's event types.
     fn publish(&self, event: Event);
-    /// Publish an event addressed to ONE user, for content that is personal
-    /// (notifications: "your request was denied" names its recipient).
-    ///
-    /// Required, deliberately. This started out defaulted-to-drop, which meant a
-    /// host that forgot it still compiled and then silently swallowed every
-    /// addressed event including the `Arc` blanket impl below, and the
-    /// out-of-process `RemoteHost`. Keeping every method required is what makes
-    /// a missing forward a compile error instead of a silent hole.
+    // Publish an event addressed to ONE user. Required rather than defaulted: a
+    // host that forgot it would silently swallow every addressed event.
     fn publish_to(&self, user_id: &str, event: Event);
 
-    /// Raise a durable notification: it lands in the recipients' notification
-    /// centre and (once they've subscribed a device) is pushed to them.
-    ///
-    /// This is the module-facing half of the notifications domain. A module says
-    /// WHAT happened and WHO cares the core resolves the audience, honours each
-    /// recipient's per-category preferences, and delivers it.
-    ///
-    /// A module supplies its own WORDS. The core's catalogs hold the core's
-    /// events; "the VPN dropped" is the VPN module's concern, and a core that
-    /// spelled it would be shipping strings for a feature it does not have.
-    /// `NotificationSpec::custom` carries a module's own text through the same
-    /// pipeline - stored, rendered, pushed - and names the preference bucket it
-    /// answers to.
-    ///
-    /// Returns how many accounts were notified. Required for the same reason as
-    /// [`Self::publish_to`]: a silently-defaulted no-op is indistinguishable
-    /// from a working notifier until someone wonders why nothing arrives.
-    ///
-    /// ```ignore
-    /// ctx.notify(
-    ///     &Audience::permission(Permission::SettingsManage),
-    ///     &NotificationSpec::custom(
-    ///         NotificationCategory::System,
-    ///         // Translated by the module, in the module's own catalog.
-    ///         t("notifications.vpn.down.title"),
-    ///         t("notifications.vpn.down.body"),
-    ///     )
-    ///     .link("/admin/network"),
-    /// );
-    /// ```
+    // Raise a durable notification: it lands in the recipients' notification
+    // centre and, once they've subscribed a device, is pushed to them. Returns
+    // how many accounts were notified. A module supplies its own words through
+    // `NotificationSpec::custom`; the core resolves the audience and honours
+    // each recipient's per-category preferences.
     fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize;
-    /// Trigger a background job by its key (e.g. `"acquisition.import"`), running
-    /// against the app state. No-op if the key is unknown or already running.
+    // Trigger a background job by its key (e.g. `"acquisition.import"`). No-op if
+    // the key is unknown or already running.
     fn trigger_job(&self, key: &'static str, reason: &'static str);
 
-    /// Whether the module with id `id` is currently enabled (a relocated module's
-    /// resident loop idles when its own module is toggled off).
     fn module_enabled(&self, id: &str) -> bool;
 
-    /// The configured libraries as `(library_id, kind, name, folder_paths)`
-    /// tuples. Resolved core-side from the persisted `libraries` setting (falling
-    /// back to the env-configured media dirs on first run), so an out-of-process
-    /// module (import / organize) can place files under the right root without
-    /// naming the engine's `Settings`/`Config` types. Empty when none configured.
+    // Resolved core-side from the persisted `libraries` setting, falling back to
+    // the env-configured media dirs on first run. Empty when none configured.
     fn library_folders(&self) -> Vec<LibraryFolders>;
 
-    /// The TMDB v3 API key the app is configured with (`None` when TMDB is not
-    /// set up). Needed by any module doing metadata lookups (acquisition's wanted
-    /// materialization). It lives in the app's env config, not settings, so it is
-    /// its own accessor rather than a `setting_str`.
+    // The TMDB v3 API key, from the app's env config rather than settings.
+    // `None` when TMDB is not set up.
     fn tmdb_api_key(&self) -> Option<String>;
 
-    /// The metadata language tag (e.g. `"fr-FR"`) the app resolves from settings +
-    /// config, for TMDB lookups that should match the user's catalog language.
+    // The metadata language tag (e.g. `"fr-FR"`) for TMDB lookups.
     fn metadata_language(&self) -> String;
 
-    /// Resolve a host-registered service by its type, so a relocated module can
-    /// reach its own engine / bridge without the seam ever naming a module type
-    /// (dependency injection). Prefer the typed [`service`] helper. `None` when no
-    /// service of that type is registered.
+    // Prefer the typed [`service`] helper.
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>>;
 }
 
-/// Resolve a typed host service (dependency injection). The host registers its
-/// concrete services (the download manager, the VPN bridge, ...) under their
-/// `TypeId`; a module crate looks its own up by type. `None` when unregistered.
-/// Takes `&dyn HostCtx` so a route (with `&S`) and a lifecycle hook (with
-/// `Arc<dyn HostCtx>`) both call it uniformly.
 pub fn service<T: Any + Send + Sync>(host: &dyn HostCtx) -> Option<Arc<T>> {
     host.get_service(TypeId::of::<T>())?.downcast::<T>().ok()
 }
 
-/// One scheduled job an out-of-process module contributes to the CORE
-/// JobManager, so it appears in the admin Tâches page with cron scheduling, a
-/// run-now button and run history exactly like an in-core job. The module
-/// declares the job's identity + default cadence; its `run` pass executes
-/// in-process on the sidecar when the core scheduler fires the job (the runtime
-/// serves a `/_job/run/{key}` endpoint the core calls). `S` is the module's host
-/// state (`RemoteHost` in the sidecar).
+/// One scheduled job a module contributes to the core JobManager. Its `run` pass
+/// executes in-process on the sidecar, which serves the `/_job/run/{key}`
+/// endpoint the core scheduler calls.
 pub struct ModuleJob<S> {
-    /// Stable dotted key (`"acquisition.import"`) the job's identity everywhere
-    /// (DB key, URL segment, i18n base).
+    // `key` is dotted (`"acquisition.import"`) and doubles as DB key, URL segment
+    // and i18n base. `category` is one of `maintenance`, `library`,
+    // `recommendations`, `pipeline`, `acquisition`. `schedule` is cron,
+    // admin-overridable, `None` for manual-only.
     pub key: &'static str,
-    /// UI grouping bucket, as the lowercase wire string the core parses into its
-    /// `Category` (`"maintenance" | "library" | "recommendations" | "pipeline" |
-    /// "acquisition"`).
     pub category: &'static str,
-    /// Default cron schedule (admin-overridable), or `None` for manual-only.
     pub schedule: Option<&'static str>,
-    /// The pass to run, in-process on the sidecar, when the job fires.
     pub run: fn(&S) -> anyhow::Result<()>,
 }
 
-/// The backend contract a module crate implements to own its full server-side
-/// vertical: the admin routes it serves (behind the host's enabled-gate) and its
-/// enable/disable lifecycle. Generic over the host state `S` so the crate depends
-/// only on this seam, never on the app; the binary instantiates it at
-/// `S = SharedState`. Anything the module needs from the app (its engine, bridge,
-/// DB, settings) comes through `host`, so the binary wires nothing per module.
+/// The backend contract a module crate implements to own its server-side
+/// vertical. Generic over the host state `S` so the crate depends only on this
+/// seam, never on the app; the binary instantiates it at `S = SharedState`.
 #[async_trait]
 pub trait ServerModule<S>: Send + Sync
 where
     S: HostCtx + Clone + Send + Sync + 'static,
 {
-    /// The module id (matches its `module.json` and frontend package).
+    // Matches its `module.json` and frontend package.
     fn id(&self) -> &'static str;
 
-    /// SQL run once at DB init (after the core schema) so a module owns its own
-    /// tables. `IF NOT EXISTS` DDL only; runs on every boot. Default: no schema.
+    // SQL run at DB init, after the core schema. `IF NOT EXISTS` DDL only; runs
+    // on every boot.
     fn migrations(&self) -> &'static str {
         ""
     }
 
-    /// Routes served under `/api/admin`, or `None` for a lifecycle-only module
-    /// (e.g. a download engine). Mounted behind the module's enabled-gate by the
-    /// host, so they 404 while it is disabled.
+    // Routes served under `/api/admin`. Mounted behind the module's enabled-gate
+    // by the host, so they 404 while it is disabled.
     fn admin_routes(&self, _host: &S) -> Option<axum::Router<S>> {
         None
     }
 
-    /// The scheduled jobs this module contributes to the core JobManager, so they
-    /// appear in admin Tâches with cron scheduling + run history like an in-core
-    /// job. The runtime registers each with the core over the `/_host/register-job`
-    /// callback and serves a `/_job/run/{key}` endpoint the core scheduler calls to
-    /// run it. Default: none (the module keeps whatever private loops it had).
     fn jobs(&self) -> Vec<ModuleJob<S>> {
         Vec::new()
     }
 
-    /// Bring the module's live services up: called when it is enabled at runtime
-    /// AND at boot for an already-enabled module. Awaited (not detached), so a slow
-    /// start completes before a following disable can race it. Takes an owned
-    /// `Arc<dyn HostCtx>` so the module can hand a long-lived handle to a spawned
-    /// watchdog / supervisor. Default: nothing.
+    // Called when the module is enabled at runtime AND at boot for an
+    // already-enabled module. Awaited, not detached, so a slow start completes
+    // before a following disable can race it.
     async fn on_enable(&self, _host: Arc<dyn HostCtx>) {}
 
-    /// Tear the module's live services down: called when it is disabled at runtime
-    /// AND at boot for a disabled module, so nothing is left running. Awaited.
-    /// Default: nothing.
+    // Called when the module is disabled at runtime AND at boot for a disabled
+    // module, so nothing is left running. Awaited.
     async fn on_disable(&self, _host: Arc<dyn HostCtx>) {}
 }
 
-/// The router state is `Arc<AppState>` (= `SharedState`), but the orphan rule
-/// forbids `impl HostCtx for Arc<AppState>` in the app crate (foreign `Arc`,
-/// covered local type). This blanket impl - legal here because the trait is
-/// local - lifts any `T: HostCtx` to `Arc<T>`, so `AppState: HostCtx` (in the
-/// app) gives `Arc<AppState>: HostCtx` for free, which the extractors + generic
-/// `Router<S>` module handlers require.
+// The router state is `Arc<AppState>`, but the orphan rule forbids
+// `impl HostCtx for Arc<AppState>` in the app crate. This blanket impl - legal
+// here because the trait is local - lifts any `T: HostCtx` to `Arc<T>`.
 impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     fn db(&self) -> &Pool {
         (**self).db()
@@ -384,9 +274,8 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
 }
 
 /// An authenticated user, resolved from an `Authorization: Bearer <token>`
-/// header against the `sessions` table. Generic over any [`HostCtx`], so it works
-/// with the app's concrete `SharedState` AND a module crate's generic
-/// `Router<S: HostCtx>`. A missing/expired/unknown token yields `401`.
+/// header against the `sessions` table. A missing, expired or unknown token
+/// yields `401`.
 pub struct AuthUser(pub User);
 
 impl<S: HostCtx> FromRequestParts<S> for AuthUser {
@@ -405,9 +294,8 @@ impl<S: HostCtx> FromRequestParts<S> for AuthUser {
     }
 }
 
-/// Optionally-authenticated user: `Some(user)` for a valid Bearer token, `None`
-/// otherwise. Never rejects for endpoints that are public but personalise when
-/// signed in.
+/// `Some(user)` for a valid Bearer token, `None` otherwise. Never rejects, for
+/// endpoints that are public but personalise when signed in.
 pub struct OptionalAuthUser(pub Option<User>);
 
 impl<S: HostCtx> FromRequestParts<S> for OptionalAuthUser {
@@ -427,7 +315,6 @@ impl<S: HostCtx> FromRequestParts<S> for OptionalAuthUser {
     }
 }
 
-/// Extract the bearer token from a header map's `Authorization` header, if any.
 pub fn bearer_from_headers(headers: &axum::http::HeaderMap) -> Option<String> {
     let h = headers.get(axum::http::header::AUTHORIZATION)?;
     let s = h.to_str().ok()?;
@@ -443,9 +330,6 @@ mod tests {
 
     #[test]
     fn peer_port_round_trips_through_the_service_registry() {
-        // The double-Arc TypeId trick port_service/resolve_port rely on: a port
-        // registered as Arc<dyn P> must come back as the same trait object (a
-        // silent mismatch would resolve to None and break cross-module calls).
         trait Greeter: Send + Sync {
             fn hi(&self) -> &'static str;
         }
@@ -462,16 +346,6 @@ mod tests {
         assert_eq!((*back).hi(), "hi");
     }
 
-    // The HostCtx doubles live in `crate::testing`, shared with every other
-    // crate that tests against this seam.
-
-    /// Regression guard on the `Arc` blanket impl. `publish_to` and `notify`
-    /// are required methods precisely so that a host which forgets one fails to
-    /// compile - but "implemented" and "forwarded to the inner host" are not the
-    /// same claim, and the app calls through `Arc<AppState>`, never `AppState`
-    /// directly. A blanket impl that answered from its own body rather than
-    /// delegating would still build and then silently swallow every addressed
-    /// event. This asserts the delegation is real.
     #[test]
     fn the_arc_blanket_impl_forwards_the_addressed_methods() {
         let host = Arc::new(testing::StubHost::new());
@@ -508,7 +382,6 @@ mod tests {
         let resolved = resolve_port::<dyn Greeter>(&host).expect("port resolves");
         assert_eq!(resolved.hi(), "hi");
 
-        // Nothing registered -> None.
         let empty = testing::StubHost::new();
         assert!(resolve_port::<dyn Greeter>(&empty).is_none());
     }
@@ -520,7 +393,6 @@ mod tests {
         let got = service::<Manager>(&host).expect("service resolves");
         assert_eq!(got.0, 42);
 
-        // A different type is not registered.
         struct Other;
         assert!(service::<Other>(&host).is_none());
     }
@@ -548,20 +420,16 @@ mod tests {
         h.insert(AUTHORIZATION, HeaderValue::from_static("Bearer abc123"));
         assert_eq!(bearer_from_headers(&h).as_deref(), Some("abc123"));
 
-        // Lowercase scheme + surrounding whitespace on the token.
         let mut h = HeaderMap::new();
         h.insert(AUTHORIZATION, HeaderValue::from_static("bearer   tok  "));
         assert_eq!(bearer_from_headers(&h).as_deref(), Some("tok"));
 
-        // No header at all.
         assert!(bearer_from_headers(&HeaderMap::new()).is_none());
 
-        // Wrong scheme.
         let mut h = HeaderMap::new();
         h.insert(AUTHORIZATION, HeaderValue::from_static("Basic Zm9v"));
         assert!(bearer_from_headers(&h).is_none());
 
-        // Empty token after the scheme.
         let mut h = HeaderMap::new();
         h.insert(AUTHORIZATION, HeaderValue::from_static("Bearer    "));
         assert!(bearer_from_headers(&h).is_none());
@@ -594,9 +462,6 @@ mod tests {
 
     #[test]
     fn a_module_that_declares_nothing_gets_empty_defaults() {
-        // A lifecycle-only module (a download engine) declares no schema, no
-        // admin routes and no jobs. Any of these defaulting to something
-        // non-empty would run SQL or mount routes nobody asked for.
         struct Bare;
         #[async_trait]
         impl ServerModule<Arc<testing::StubHost>> for Bare {
@@ -609,7 +474,6 @@ mod tests {
         assert!(Bare.admin_routes(&Arc::new(testing::StubHost::new())).is_none());
         assert!(Bare.jobs().is_empty());
 
-        // ...and its lifecycle hooks are no-ops that complete rather than panic.
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         rt.block_on(async {
             let host: Arc<dyn HostCtx> = Arc::new(testing::StubHost::new());
@@ -618,9 +482,6 @@ mod tests {
         });
     }
 
-    // ----- the Arc blanket impl ---------------------------------------------------
-
-    /// Records which methods were reached through it.
     #[derive(Default)]
     struct Recorder {
         calls: std::sync::Mutex<Vec<String>>,
@@ -705,11 +566,6 @@ mod tests {
 
     #[test]
     fn every_call_through_an_arc_reaches_the_host_inside_it() {
-        // The router state is `Arc<AppState>`, so EVERY call the app makes goes
-        // through this blanket impl. A method that forwarded to the trait
-        // DEFAULT instead of the inner host would silently lose behaviour - and
-        // for `publish_to` and `notify` that means dropped notifications, which
-        // nothing else would catch.
         let inner = Arc::new(Recorder::default());
         let host: Arc<Recorder> = inner.clone();
 
@@ -770,8 +626,6 @@ mod tests {
         );
     }
 
-    // ----- bearer extraction ------------------------------------------------------
-
     #[test]
     fn a_bearer_token_is_read_case_insensitively_and_trimmed() {
         let header = |v: &str| {
@@ -780,15 +634,14 @@ mod tests {
             h
         };
         assert_eq!(bearer_from_headers(&header("Bearer abc123")).as_deref(), Some("abc123"));
-        // Some clients lowercase the scheme.
         assert_eq!(bearer_from_headers(&header("bearer abc123")).as_deref(), Some("abc123"));
         assert_eq!(bearer_from_headers(&header("Bearer   abc123  ")).as_deref(), Some("abc123"));
     }
 
     #[test]
     fn anything_that_is_not_a_bearer_token_is_no_token() {
-        // An empty token must not read as a valid one, or a request with
-        // `Authorization: Bearer ` would look authenticated to the lookup.
+        // An empty token must not read as valid, or `Authorization: Bearer `
+        // would look authenticated to the session lookup.
         let header = |v: &str| {
             let mut h = axum::http::HeaderMap::new();
             h.insert(axum::http::header::AUTHORIZATION, v.parse().unwrap());

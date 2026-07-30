@@ -18,11 +18,10 @@ import { useStoryboard } from '#tv/features/playback/player/useStoryboard';
 import { useTvController } from '#tv/features/playback/use-tv-controller';
 import { useTvUpNext } from '#tv/features/playback/use-tv-upnext';
 
-/** Scrub-preview thumbnail width (px); the storyboard tile keeps 16:9. */
 const PREVIEW_W = 256;
 
-/** Warning pill text, by priority: stream/codec error -> direct-play verdict
- * (in-page surface only) -> audio support. Null when nothing to warn about. */
+// Priority order: stream/codec error -> direct-play verdict (in-page surface
+// only) -> audio support. Null when nothing to warn about.
 function playerWarn(pb: Playback, item: MediaItem, t: Translate): string | null {
   if (pb.error) return t(pb.error);
   if (pb.surface === 'video' && pb.verdict && !pb.verdict.canDirectPlay)
@@ -33,20 +32,19 @@ function playerWarn(pb: Playback, item: MediaItem, t: Translate): string | null 
 }
 
 /**
- * The TV player: a thin wrapper adapting the native-plane engine to the shared
- * unified `<Player>` (packages/ui/src/player), with TV feature flags (no volume /
- * PiP / fullscreen). All chrome + D-pad interaction live in the shared component;
- * this handles the surface plane, the "up next" series autoplay and the OS
- * now-playing widget.
+ * The TV player: a thin wrapper adapting the native-plane engine to the
+ * shared unified `<Player>`, with TV feature flags (no volume / PiP /
+ * fullscreen). This handles the surface plane, "up next" autoplay, and the
+ * OS now-playing widget; chrome + D-pad interaction live in the shared component.
  */
 export function TvPlayer() {
   const nav = useNav();
   const { item } = useParams('player');
   const client = useClient();
   const t = useT();
-  // Reveal-on-pointer only with a real desktop mouse; a TV magic remote is a fine
-  // pointer but emits phantom pointermove that would pin the chrome open, so there
-  // the D-pad drives reveal and the chrome auto-hides on idle (see env.mousePointer).
+  // Reveal-on-pointer only with a real desktop mouse: a TV remote emits
+  // phantom pointermove that would pin the chrome open, so there the D-pad
+  // drives reveal instead (see env.mousePointer).
   const { mousePointer } = useEnv();
   const playerFlags = useMemo(() => ({ ...TV_FLAGS, pointer: mousePointer }), [mousePointer]);
 
@@ -134,9 +132,7 @@ export function TvPlayer() {
 
   const surface = <PlayerSurface pb={pb} title={item.title} />;
 
-  // Reporting from inside the player targets exactly what is playing, which for
-  // a series is the EPISODE, not the show: the whole reason a viewer reaches for
-  // this mid-film is that this file is broken.
+  // Targets exactly what is playing — for a series, the episode, not the show.
   const onReport = useCallback(
     async (category: ReportCategory) => {
       await client.createReport({

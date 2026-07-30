@@ -1,13 +1,10 @@
 #!/usr/bin/env bun
-// Drives the built TV app in a real browser and prints wh
-// at the remote feels
+// Drives the built TV app in a real browser and prints what the remote feels
 // like. The browser targets (Tizen, webOS, desktop) run this exact bundle, so a
-// number here is a number there, scaled by the TV's slower CPU.i
+// number here is a number there, scaled by the TV's slower CPU.
 //
-// It exists because every performance claim about this app has been a guess
-// until now, and the guesses were wrong: the lag was never where it looked. The
-// app carries the same measurements on screen (device settings -> "Mesures de
-// performance") for the TV itself; this is the desk version, repeatable and
+// The app carries the same measurements on screen (device settings -> "Mesures
+// de performance") for the TV itself; this is the desk version, repeatable and
 // diffable between two commits.
 //
 //   bun clients/tv-build/perf-bench.ts                    # build + serve + run
@@ -28,32 +25,27 @@ const flag = (name: string, fallback: string): string => {
 };
 
 const KEYS = Number(flag('keys', '24'));
-/**
- * How much slower than this machine to pretend to be.
- *
- * A Samsung TV's browser is roughly six times slower than a developer laptop,
- * and an unthrottled run says "120fps, 0ms" about a screen that stutters in the
- * living room - which is exactly how the last round of guesses went wrong. The
- * absolute number is not the point; comparing two commits at the same throttle
- * is.
- */
+// A Samsung TV's browser is roughly six times slower than a developer laptop, and
+// an unthrottled run says "120fps, 0ms" about a screen that stutters in the living
+// room. The absolute number is not the point; comparing two commits at the same
+// throttle is.
 const THROTTLE = Number(flag('throttle', '6'));
 const PORT = Number(flag('port', '4999'));
 const url = flag('url', '');
-/** Real artwork to decode, and the rendition width to ask the server for.
- * Without these the bench measures layout only, which is not where a television
- * spends its time. */
+// Real artwork to decode, and the rendition width to ask the server for. Without
+// these the bench measures layout only, which is not where a television spends
+// its time.
 const ART = flag('art', '');
 const WIDTH = flag('w', '');
-/** How big a screen to mount. The real home is around eight rails of twenty. */
+// How big a screen to mount. The real home is around eight rails of twenty.
 const RAILS = flag('rails', '');
 const TILES = flag('tiles', '');
-/** How many looping animations (spinner + skeleton) run alongside the walk. The
- * player's buffering overlay is one; a loading browse grid is dozens. */
+// How many looping animations (spinner + skeleton) run alongside the walk. The
+// player's buffering overlay is one; a loading browse grid is dozens.
 const LOADERS = flag('loaders', '');
 
-/** The walk: down into the rails, along one, back up. The shape of real use,
- * not a synthetic hammer - a TV's cost is in scrolling rows of artwork. */
+// The walk: down into the rails, along one, back up. The shape of real use, not
+// a synthetic hammer - a TV's cost is in scrolling rows of artwork.
 const WALK = ['ArrowDown', 'ArrowRight', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
 
 async function serve(): Promise<() => void> {

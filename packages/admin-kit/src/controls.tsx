@@ -82,8 +82,6 @@ const VARIANT: Record<Variant, string> = {
   primary: 'bg-accent text-accent-ink hover:bg-accent-hover',
   secondary: 'border border-border-strong bg-surface-2 text-text hover:border-accent/50',
   danger: 'border border-[#E8536A]/25 bg-[#E8536A]/10 text-[#E8536A]',
-  // Text-only muted action (e.g. "Cancel", "Select all"): no border/fill,
-  // hover just brightens the label.
   quiet: 'text-muted hover:text-text',
 };
 
@@ -112,10 +110,8 @@ export function Button({
   variant?: Variant;
   size?: Size;
   disabled?: boolean;
-  /** Busy state: shows a spinner in the icon slot and disables the button. */
   loading?: boolean;
   icon?: TablerIcon;
-  /** Native button type; defaults to `button` so forms don't submit by accident. */
   type?: 'button' | 'submit' | 'reset';
   className?: string;
 }>) {
@@ -147,11 +143,8 @@ const ICON_BUTTON_VARIANT: Record<IconButtonVariant, string> = {
 export interface IconButtonProps
   extends Omit<ComponentPropsWithoutRef<'button'>, 'children' | 'aria-label'> {
   icon: TablerIcon;
-  /** Accessible name — rendered as `aria-label` + `title` (icon-only button). */
   label: string;
-  /** Square box edge in px (default 34). */
   size?: number;
-  /** Icon glyph size in px; defaults to ~42% of the box. */
   iconSize?: number;
   variant?: IconButtonVariant;
 }

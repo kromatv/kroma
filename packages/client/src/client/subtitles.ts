@@ -10,17 +10,13 @@ export interface DownloadedSub {
   id: string;
   language: string | null;
   label: string;
-  /** `"whisper"` | `"translate"` (drives the "IA" badge). */
   provider: string;
-  /** WebVTT URL, e.g. `/api/items/:id/subtitles/dl/:id.vtt`. */
   url: string;
 }
 
 /** Which generation actions the server build + config enable (to hide empty UI). */
 export interface SubCapabilities {
-  /** On-device Whisper transcription is compiled in. */
   transcribe: boolean;
-  /** A default LLM provider is configured (for translation). */
   translate: boolean;
 }
 
@@ -58,17 +54,11 @@ export const GEN_QUALITIES: GenQuality[] = ['fast', 'balanced', 'accurate'];
  * `sourceSubId` (a generated track); the server resolves the source text itself. */
 export interface GenerateReq {
   mode: GenMode;
-  /** Target language label, e.g. "Français". */
   lang: string;
-  /** Transcribe: spoken language to force (name or code); omit to auto-detect. */
   spokenLang?: string;
-  /** Transcribe: model tier (default `balanced`). */
   quality?: GenQuality;
-  /** Transcribe: audio-relative track index (default 0). */
   audioTrack?: number;
-  /** Translate: embedded subtitle track index to translate from. */
   sourceTrack?: number;
-  /** Translate: a generated subtitle id to translate from. */
   sourceSubId?: string;
 }
 
@@ -77,13 +67,11 @@ export interface SubtitleGeneration {
   id: string;
   mode: GenMode;
   lang: string | null;
-  /** `queued` | `model` | `extract` | `transcribe` | `translate` | `done` | `error`. */
   stage: string;
   status: 'running' | 'done' | 'error';
   progress: number;
   etaSec: number | null;
   error: string | null;
-  /** The resulting downloaded-subtitle id, once `status === 'done'`. */
   subId: string | null;
 }
 

@@ -23,21 +23,15 @@ export default story({
     ],
   },
   matrix: false,
-  // A range: the pill is pinned to the bottom-right of the player, so what has
-  // to hold is the surface changing size under it, not one size of it.
   width: { min: 480, max: 1000 },
-  // Pinned bottom-RIGHT, so a stage narrower than `min` (a phone) opens its
-  // scroller on the empty left half and the pill is off canvas. The TV frame
-  // shows the pill where it sits; `Fit` stays one press away.
+  // Pinned bottom-right, so a stage narrower than `min` opens its scroller on the
+  // empty left half with the pill off canvas.
   viewport: 'tv',
   args: { visible: true, focused: false, lift: 214 },
   controls: { lift: { min: 40, max: 400, step: 2 } },
   render: ({ visible, focused, lift }) => (
     // It positions itself absolutely against the player surface, so the story
-    // provides one to sit in - 16:9, because that surface is the picture, and
-    // `lift` is measured from the bottom of it. The player measures its own
-    // transport for that number; here it is a slider, which is the same thing
-    // seen from the other side.
+    // provides a 16:9 one to sit in; `lift` is measured from the bottom of it.
     <Box aspect={16 / 9} minH={280} bg="surface2" radius="lg" overflow="hidden">
       <SkipIntroButton visible={visible} focused={focused} lift={lift} onSkip={() => {}} />
     </Box>

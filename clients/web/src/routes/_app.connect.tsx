@@ -5,10 +5,8 @@ import { useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { Otp } from '#web/shared/ui';
 
-// "Connecter un appareil" the approver side of Quick Connect. A TV shows a
-// short code (or a QR pointing here with `?code=`); a signed-in user enters it
-// to grant that device a session for their account. The global AuthGate already
-// ensures the user is logged in before this page is usable.
+// The approver side of Quick Connect: a signed-in user enters the code a TV
+// shows to grant that device a session. AuthGate guarantees the sign-in.
 export const Route = createFileRoute('/_app/connect')({
   validateSearch: (s: Record<string, unknown>): { code?: string } => ({
     code: typeof s.code === 'string' ? s.code : undefined,

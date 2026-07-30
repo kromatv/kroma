@@ -11,8 +11,7 @@ import { confirmDialog } from '#web/shared/ui';
 /** Library kind as accepted by the create/update API: `""` = Auto. */
 export type LibKind = '' | 'movies' | 'shows' | 'mixed';
 
-/** Map whatever `kind` the server stores/returns onto the picker's value set so
- *  the current type is preselected (old `film`/`tv` and new `movies`/`shows`). */
+/** Accepts both the legacy `film`/`tv` kinds and the current `movies`/`shows`. */
 export function normalizeLibKind(kind: string): LibKind {
   if (kind === 'shows' || kind === 'tv') return 'shows';
   if (kind === 'movies' || kind === 'film') return 'movies';
@@ -20,8 +19,6 @@ export function normalizeLibKind(kind: string): LibKind {
   return '';
 }
 
-/** Segmented Auto / Films / Séries / Mixte type picker, shared by the create
- *  modal and the per-library card. */
 export function LibraryTypeSelect({
   value,
   onChange,

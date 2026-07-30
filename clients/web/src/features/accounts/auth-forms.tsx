@@ -25,13 +25,8 @@ export function LoginForm({
   profile: PublicUser | null;
   busy: boolean;
   error: string | null;
-  /** A calm, non-error info line (e.g. "your session expired") shown above the
-   * fields distinct from the red `error`. */
   notice?: string | null;
-  /** Hide the back link when sign-in is the root screen (roster hidden, no
-   * picker to return to). Defaults to shown. */
   canGoBack?: boolean;
-  /** Show the "sign in with a passkey" button (secure context + a handler). */
   canUsePasskey?: boolean;
   onBack: () => void;
   onSubmit: (identifier: string, password: string) => void;
@@ -88,8 +83,7 @@ export function LoginForm({
         autoComplete="current-password"
         value={password}
         onChange={setPassword}
-        // Deliberate: with a profile already picked, the password is the only
-        // thing left to type.
+        // Deliberate: with a profile already picked, the password is the only thing left to type.
         autoFocus={Boolean(profile)}
       />
 

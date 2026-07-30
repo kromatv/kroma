@@ -1,12 +1,9 @@
 import type { Chapter } from '../types';
 
 /**
- * The chapter model behind the progress bar (§1). Real chapter data (embedded
- * MKV/MP4 chapters, exposed by the server when available) is passed straight
- * through, normalized. When an item has NO chapters the bar degrades gracefully
- * to a single continuous segment (the returned array is empty and the bar draws
- * one fill) intro/credits markers are always drawn as coloured ticks on top,
- * independent of chapters.
+ * The chapter model behind the progress bar (§1). Real chapter data passes
+ * through normalized; with none, the bar degrades to a single continuous
+ * segment. Intro/credits markers are drawn as ticks independent of chapters.
  */
 
 /**
@@ -24,7 +21,6 @@ export function normalizeChapters(
     .map((c) => ({ ...c, startMs: Math.max(0, Math.min(c.startMs, durMs)) }))
     .sort((a, b) => a.startMs - b.startMs);
   if (sorted.length < 2) return [];
-  // Make each chapter end where the next begins (and the last at the runtime).
   return sorted.map((c, i) => {
     const next = sorted[i + 1];
     return { ...c, endMs: next ? next.startMs : durMs, kind: c.kind ?? 'chapter' };

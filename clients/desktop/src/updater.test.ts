@@ -23,7 +23,6 @@ import { startUpdater } from './updater';
 
 const CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
-/** An available update that records the order it was driven in. */
 function available(order: string[] = []) {
   return {
     version: '0.1.36',

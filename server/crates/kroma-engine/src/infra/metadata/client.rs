@@ -15,12 +15,7 @@ use super::search;
 
 pub(super) const API: &str = "https://api.themoviedb.org/3";
 
-/// The TMDB base every request is built from.
-///
-/// A function rather than the bare const so the services that go THROUGH TMDB
-/// (requests, rematch, the missing-episode scan) can be tested against a fake
-/// server. The override below is `#[cfg(test)]`, so a release build compiles
-/// this to the constant and nothing else exists.
+/// A function, not a bare const, so tests can override it via `#[cfg(test)]`.
 pub(super) fn api() -> String {
     #[cfg(test)]
     if let Some(base) = test_override::get() {
@@ -43,7 +38,6 @@ pub(crate) mod test_override {
         BASE.with(|b| b.borrow().clone())
     }
 
-    /// Point TMDB at `base` for the rest of this thread's test.
     pub(crate) fn set(base: &str) {
         BASE.with(|b| *b.borrow_mut() = Some(base.to_string()));
     }
@@ -54,7 +48,6 @@ pub(crate) mod test_override {
 }
 pub(super) const IMG: &str = "https://image.tmdb.org/t/p";
 
-/// Whether to resolve against TMDB's movie or TV namespace.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Target {
     Movie,
@@ -87,17 +80,12 @@ impl Target {
     }
 }
 
-/// How many cast members to keep (top-billed, by TMDB `order`).
 const MAX_CAST: usize = 12;
-
-/// How many key crew to keep (directors first, then writers/creators).
 const MAX_CREW: usize = 8;
 
-/// How many TMDB keyword tags to keep (TMDB returns them unordered; the cap just
-/// bounds how much thematic text feeds the embedding doc).
+// TMDB returns keywords unordered; this bounds how much feeds the embedding doc.
 const MAX_KEYWORDS: usize = 20;
 
-/// Detect whether `curl` is callable. Done once at startup for a log line.
 pub fn curl_available() -> bool {
     Command::new("curl")
         .arg("--version")
@@ -106,9 +94,6 @@ pub fn curl_available() -> bool {
         .unwrap_or(false)
 }
 
-/// Cache key for one resolved detail, keyed by (target, language, year, title).
-/// Shared by [`lookup`] and [`lookup_all`] so a manual single-language lookup can
-/// reuse a language an enrichment pass already fetched.
 fn detail_key(target: Target, language: &str, title: &str, year: Option<u32>) -> String {
     format!(
         "{}|{}|{}|{}",
@@ -119,15 +104,13 @@ fn detail_key(target: Target, language: &str, title: &str, year: Option<u32>) ->
     )
 }
 
-/// Cache key for a detail resolved by a *known* id rather than a title guess.
-/// The `#` cannot collide with a title-keyed entry (titles are lowercased text
-/// and the year slot is numeric).
+// The `#` prefix can't collide with a title-keyed entry (titles are
+// lowercased text, the year slot is numeric).
 fn detail_key_id(target: Target, language: &str, id: u64) -> String {
     format!("{}|{}|#{id}", target.detail_path(), language)
 }
 
-/// Resolve metadata for `title`/`year` in one language, caching the result (hit
-/// or miss).
+/// Resolve metadata for `title`/`year` in one language, caching the result.
 pub fn lookup(
     cache: &Cache,
     api_key: &str,
@@ -141,35 +124,32 @@ pub fn lookup(
         return cached;
     }
     match fetch(api_key, language, target, title, year) {
-        // Genuine "looked up, no match" cache it so we don't retry every request.
         Ok(Some(meta)) => {
             cache.put(key, Some(meta.clone()));
             Some(meta)
         }
+        // Genuine no-match: cache it so we don't retry every request.
         Ok(None) => {
             cache.put(key, None);
             None
         }
-        // A request failed (bad key, rate-limit, timeout, network). Do NOT cache:
-        // caching `None` here would poison the title permanently on a transient
-        // blip. Just return None for this call and let a later one retry.
+        // A request failure (bad key, rate-limit, timeout, network) is never
+        // cached: caching `None` here would poison the title on a transient blip.
         Err(()) => None,
     }
 }
 
-/// The same title resolved in several languages one [`Metadata`] per language
+/// The same title resolved in several languages, one [`Metadata`] per language
 /// that fetched. Invariant fields (ids, art, people) are identical across
-/// entries; only the localized text (title/overview/tagline/genres/characters)
-/// differs. Keyed by the language code passed in (base codes, e.g. `"en"`).
+/// entries; only the localized text differs. Keyed by base language code
+/// (e.g. `"en"`).
 pub struct Resolved {
     pub by_lang: std::collections::HashMap<String, Metadata>,
 }
 
-/// Resolve `title`/`year` in every language in `langs` for the multi-language
-/// enrichment path. The TMDB id is resolved once (a single search in
-/// `search_lang`, typically the household language whose filenames we scanned),
-/// then details are fetched once per language against that id. A language whose
-/// detail fetch fails transiently is simply omitted (the caller falls back);
+/// Resolve `title`/`year` in every language in `langs`. The TMDB id is resolved
+/// once (a search in `search_lang`), then details are fetched per language
+/// against that id; a language whose fetch fails transiently is omitted.
 /// `None` means the title did not resolve at all.
 pub fn lookup_all(
     cache: &Cache,
@@ -182,8 +162,7 @@ pub fn lookup_all(
 ) -> Option<Resolved> {
     let id = match search::best_id(api_key, search_lang, target, title, year) {
         Ok(Some(id)) => id,
-        // No match, or a transient search failure treat both as "no result this
-        // run" (a transient blip is retried on the next enrichment pass).
+        // No match or a transient search failure: retried on the next pass.
         _ => return None,
     };
     let by_lang = details_by_lang(cache, api_key, langs, target, id, |lang| {
@@ -192,10 +171,9 @@ pub fn lookup_all(
     (!by_lang.is_empty()).then_some(Resolved { by_lang })
 }
 
-/// The same as [`lookup_all`] but for an *already known* TMDB id: no search at
-/// all. This is the path a pinned id takes, whether pinned by an acquisition
-/// import or by an operator correcting a wrong match, so the correction is
-/// authoritative and can never be re-litigated by a title guess.
+/// Same as [`lookup_all`] but for an already-known TMDB id: no search. Used for
+/// a pinned id (import or operator correction), which must never be
+/// re-guessed by title.
 pub fn lookup_all_by_id(
     cache: &Cache,
     api_key: &str,
@@ -208,9 +186,6 @@ pub fn lookup_all_by_id(
     (!by_lang.is_empty()).then_some(Resolved { by_lang })
 }
 
-/// Fetch one resolved id's details in every language in `langs`, caching each
-/// under `key_for(lang)`. A language whose fetch fails transiently is omitted
-/// rather than failing the whole resolve.
 fn details_by_lang(
     cache: &Cache,
     api_key: &str,
@@ -224,13 +199,13 @@ fn details_by_lang(
         let key = key_for(lang);
         let meta = match cache.get(&key) {
             Some(Some(m)) => m,
-            Some(None) => continue, // cached miss for this language
+            Some(None) => continue,
             None => match fetch_details(api_key, lang, target, id) {
                 Ok(m) => {
                     cache.put(key, Some(m.clone()));
                     m
                 }
-                Err(()) => continue, // transient; skip this language, keep others
+                Err(()) => continue,
             },
         };
         by_lang.insert(lang.to_string(), meta);
@@ -238,12 +213,8 @@ fn details_by_lang(
     by_lang
 }
 
-/// Search TMDB for the best match, then fetch its details + external IDs.
-///
-/// `Ok(Some)` = resolved, `Ok(None)` = searched fine but no match (cacheable),
-/// `Err(())` = a request failed (transient caller must not cache it). Keeping
-/// the no-match/failure split out of `Option` is what stops [`lookup`] from
-/// poisoning a title on a transient blip.
+// `Ok(Some)` = resolved, `Ok(None)` = no match (cacheable), `Err(())` =
+// transient request failure the caller must not cache.
 fn fetch(
     api_key: &str,
     language: &str,
@@ -257,8 +228,6 @@ fn fetch(
     }
 }
 
-/// Detail half: fetch + map one resolved TMDB `id` into a [`Metadata`] in
-/// `language` (title/overview/genres/cast characters come back localized).
 fn fetch_details(
     api_key: &str,
     language: &str,
@@ -270,7 +239,6 @@ fn fetch_details(
     let detail_params = vec![
         ("language", language.to_string()),
         ("append_to_response", "external_ids,credits,images,keywords".to_string()),
-        // Logos: the configured language, English, and language-neutral.
         ("include_image_language", format!("{lang2},en,null")),
     ];
     let d: Details =
@@ -284,10 +252,8 @@ fn fetch_details(
     // TVDB series id (TV only) keys the theme-song lookup during enrichment.
     let tvdb_id = ext.as_ref().and_then(|e| e.tvdb_id).filter(|&id| id > 0);
 
-    // Cast + crew share the appended `credits` block. Keep the top-billed faces
-    // (TMDB orders `cast` by `order` ascending; sort defensively) trimmed to a
-    // rail size, and the key crew (directors first) for collections / the detail
-    // "Réalisation" line. TV creators come from the top-level `created_by`.
+    // Cast + crew share the appended `credits` block; TV creators come from
+    // the top-level `created_by`.
     let (raw_cast, raw_crew) = d.credits.map(|c| (c.cast, c.crew)).unwrap_or_default();
     let cast = build_cast(raw_cast, MAX_CAST, false);
     let crew = build_crew(raw_crew, d.created_by, MAX_CREW);
@@ -312,17 +278,15 @@ fn fetch_details(
             .map(|p| format!("{IMG}/w500{p}")),
         cast,
         crew,
-        // Theme song is resolved later (a disk download) by `infra::theme`; the
-        // pure lookup just carries the TVDB id it needs.
+        // Resolved later (a disk download) by `infra::theme`; this lookup only
+        // carries the TVDB id it needs.
         theme_url: None,
         tvdb_id,
         tmdb_url: format!("https://www.themoviedb.org/{}/{id}", target.web_kind()),
     })
 }
 
-/// Per-episode artwork + text resolved from a TMDB season fetch. `still_url` is
-/// an absolute TMDB URL (localized to WebP by the enrichment pass, mirroring
-/// poster/backdrop).
+/// Per-episode artwork + text resolved from a TMDB season fetch.
 #[derive(Debug, Clone)]
 pub struct EpisodeArt {
     pub episode: u32,
@@ -333,16 +297,15 @@ pub struct EpisodeArt {
     pub rating: Option<f32>,
 }
 
-/// One season's episode stills + its season-level cast, from a single TMDB call.
 #[derive(Debug, Clone, Default)]
 pub struct SeasonData {
     pub episodes: Vec<EpisodeArt>,
     pub cast: Vec<CastMember>,
 }
 
-/// Fetch one season's episodes (with their stills) and cast for a resolved TV show
-/// in a single TMDB call. Returns empty data on any failure season enrichment is
-/// best-effort and must never break show enrichment.
+/// Fetches one season's episodes and cast in a single TMDB call. Returns empty
+/// data on any failure: season enrichment is best-effort and must never break
+/// show enrichment.
 pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -> SeasonData {
     let params = vec![
         ("language", language.to_string()),
@@ -369,10 +332,8 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
     SeasonData { episodes, cast }
 }
 
-/// Fetch one season in several languages, keyed by language code. Each language
-/// is an independent TMDB call (localized episode titles/overviews + character
-/// names); languages that return nothing are omitted. Reuses [`season_episodes`],
-/// so a transient failure yields empty data for that language, never an error.
+/// Fetches one season in several languages, keyed by language code. Languages
+/// that return nothing are omitted.
 pub fn season_episodes_multi(
     api_key: &str,
     langs: &[&str],
@@ -412,10 +373,9 @@ struct RawEpisode {
     vote_average: Option<f32>,
 }
 
-/// Emit one WARN the first time a TMDB request fails so a wrong
-/// `KROMA_TMDB_API_KEY` or a dead network is visible at the default log level
-/// instead of silently yielding `resolved=0`. Subsequent failures drop to DEBUG
-/// to avoid spamming a bulk enrichment pass.
+// First TMDB failure logs at WARN (so a bad `KROMA_TMDB_API_KEY` or dead
+// network is visible); later ones drop to DEBUG to avoid spamming a bulk
+// enrichment pass.
 static FAILURE_WARNED: AtomicBool = AtomicBool::new(false);
 
 fn note_curl_failure(reason: &str, detail: &str) {
@@ -433,13 +393,10 @@ fn note_curl_failure(reason: &str, detail: &str) {
 }
 
 /// GET `url` with URL-encoded query params via `curl`, parsed as JSON `T`.
-///
-/// Returns `Err(())` on any transport / HTTP-status / parse failure (logged via
-/// [`note_curl_failure`]) and `Ok(T)` on success. The error is intentionally
-/// distinct from an empty-but-valid response so the caller never caches a
-/// transient failure as a permanent miss. `-S` keeps curl's error message on
-/// stderr even under `-s`; curl exit 22 = HTTP ≥ 400 (e.g. 401 bad key), 28 =
-/// timeout, 6/7 = DNS/connect.
+/// `Err(())` on any transport/HTTP-status/parse failure so the caller never
+/// caches a transient failure as a permanent miss. `-S` keeps curl's error
+/// message on stderr even under `-s`; curl exit 22 = HTTP >= 400 (e.g. 401 bad
+/// key), 28 = timeout, 6/7 = DNS/connect.
 pub(super) fn curl_json<T: for<'de> Deserialize<'de>>(
     url: &str,
     api_key: &str,
@@ -478,13 +435,11 @@ pub(super) fn curl_json<T: for<'de> Deserialize<'de>>(
     })
 }
 
-/// A TMDB v4 read token is a JWT (`header.payload.signature`); v3 keys are
-/// 32-char hex with no dots.
+// A TMDB v4 read token is a JWT (`header.payload.signature`); v3 keys are
+// 32-char hex with no dots.
 fn is_bearer_token(key: &str) -> bool {
     key.split('.').count() == 3
 }
-
-// ----- Raw TMDB JSON shapes ----------------------------------------------------
 
 #[derive(Debug, Deserialize)]
 struct Details {
@@ -523,8 +478,7 @@ struct Details {
     keywords: Option<Keywords>, // appended (thematic tags)
 }
 
-/// Appended `keywords` block. Movies nest the list under `keywords`, TV under
-/// `results` only one is ever populated, so flattening both is safe.
+// Movies nest under `keywords`, TV under `results`; only one is ever populated.
 #[derive(Debug, Deserialize)]
 struct Keywords {
     #[serde(default)]
@@ -539,7 +493,6 @@ struct KeywordEntry {
     name: String,
 }
 
-/// Flatten a TMDB keywords block into a capped list of non-empty tag names.
 fn collect_keywords(k: Keywords) -> Vec<String> {
     k.keywords
         .into_iter()
@@ -571,8 +524,8 @@ struct ImageEntry {
     vote_average: Option<f32>,
 }
 
-/// Best title logo `file_path`: PNG only, preferring the configured language,
-/// then English, then language-neutral; ties broken by TMDB vote.
+// Best title logo `file_path`: PNG only, preferring the configured language,
+// then English, then language-neutral; ties broken by TMDB vote.
 fn pick_logo(logos: &[ImageEntry], lang2: &str) -> Option<String> {
     let rank = |l: &ImageEntry| -> u8 {
         match l.lang.as_deref() {
@@ -600,9 +553,8 @@ fn pick_logo(logos: &[ImageEntry], lang2: &str) -> Option<String> {
 struct ExternalIds {
     #[serde(default)]
     imdb_id: Option<String>,
-    /// TheTVDB series id (present on TV external_ids; absent for movies).
     #[serde(default)]
-    tvdb_id: Option<u64>,
+    tvdb_id: Option<u64>, // present on TV external_ids; absent for movies
 }
 
 #[cfg(test)]

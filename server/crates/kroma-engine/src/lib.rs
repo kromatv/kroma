@@ -12,14 +12,12 @@
 use std::sync::OnceLock;
 use std::time::Instant;
 
-// Lower-layer crates, aliased to their historical in-crate module paths.
 pub(crate) use kroma_config as config;
 pub(crate) use kroma_db as db;
 pub(crate) use kroma_domain as domain;
 
-/// The `{ "error": message }` JSON response builder now lives in the host-seam
-/// leaf crate; re-exported so `crate::json_error` / `kroma_engine::json_error`
-/// call sites (api handlers, `infra::stream`) are unchanged.
+/// Re-exported from the host-seam leaf crate so `crate::json_error` /
+/// `kroma_engine::json_error` call sites keep resolving unchanged.
 pub use kroma_module_host::json_error;
 
 pub mod host_ctx;
@@ -37,8 +35,8 @@ pub mod state;
 #[cfg(test)]
 pub(crate) mod test_support;
 
-/// Process start time, for the admin uptime readout. Seeded on first call
-/// (from `main`), read by [`infra::metrics`].
+// Seeded on first call (from `main`), read by `infra::metrics` for the admin
+// uptime readout.
 static PROCESS_START: OnceLock<Instant> = OnceLock::new();
 
 /// When this process started (monotonic). Seeded on first call.

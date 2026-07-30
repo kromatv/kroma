@@ -1,13 +1,7 @@
-//! The **catalog connector** KROMA's library exposed to an LLM as callable
-//! tools ([`crate::infra::llm::ToolBox`]).
-//!
-//! Instead of stuffing hundreds of titles into a prompt, the model *asks* for
-//! exactly what it needs list titles by genre / director / actor, fetch a
-//! title, enumerate genres / people each answered by a read-only
-//! [`db::catalog_query`](crate::db) query. Tools are registered in one [`SPECS`]
-//! table (name → JSON-Schema → handler), so adding a capability is a single
-//! entry. This is the reusable foundation any LLM feature can build on (curate
-//! today; library chat / tool-driven personalize next).
+//! The catalog connector KROMA's library exposed to an LLM as callable tools
+//! ([`crate::infra::llm::ToolBox`]). The model asks for exactly what it needs
+//! instead of receiving the whole catalog in the prompt; tools are registered in
+//! one [`SPECS`] table (name → JSON-Schema → handler).
 
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
@@ -50,8 +44,8 @@ impl ToolBox for CatalogTools {
     }
 }
 
-/// One registered tool: wire name, model-facing description, its argument
-/// JSON-Schema, and the handler that runs it. Adding a tool = one entry here.
+// One registered tool: name, description, schema, and handler. Adding a
+// capability is one entry in SPECS.
 struct ToolSpec {
     name: &'static str,
     description: &'static str,
@@ -90,8 +84,6 @@ const SPECS: &[ToolSpec] = &[
         handler: handle_list_people,
     },
 ];
-
-// ----- handlers ---------------------------------------------------------------
 
 fn handle_find_titles(t: &CatalogTools, args: &Value) -> Result<String> {
     let filter = TitleFilter {
@@ -141,8 +133,6 @@ fn handle_list_people(t: &CatalogTools, args: &Value) -> Result<String> {
     Ok(json!({ "role": role, "people": rows }).to_string())
 }
 
-// ----- schemas ----------------------------------------------------------------
-
 fn schema_find_titles() -> Value {
     json!({
         "type": "object",
@@ -185,8 +175,6 @@ fn schema_list_people() -> Value {
     })
 }
 
-// ----- arg coercion (tolerant of stringly-typed numbers) ----------------------
-
 fn arg_str(v: &Value, k: &str) -> Option<String> {
     v.get(k).and_then(Value::as_str).map(str::trim).filter(|s| !s.is_empty()).map(str::to_string)
 }
@@ -199,7 +187,7 @@ fn arg_f32(v: &Value, k: &str) -> Option<f32> {
 fn arg_usize(v: &Value, k: &str) -> Option<usize> {
     num_of(v.get(k)?).map(|n| n.max(0.0) as usize)
 }
-/// A JSON number, tolerating a numeric string (models sometimes send `"2015"`).
+// A JSON number, tolerating a numeric string (models sometimes send `"2015"`).
 fn num_of(v: &Value) -> Option<f64> {
     v.as_f64().or_else(|| v.as_str().and_then(|s| s.trim().parse().ok()))
 }

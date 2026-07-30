@@ -6,11 +6,9 @@ import { HeroBeams } from '#site/components/home/hero-beams';
 import { site } from '#site/lib/site';
 import { m } from '#site/paraglide/messages';
 
-// Above the fold: the chromatic mark over the intro film's neon burst, the
-// promise, two actions, and three specifics that keep the "one binary" claim
-// from being a slogan. The entrance is a pure-CSS staggered rise: it needs no JS
-// and no scroll observer, so it plays on the prerendered HTML too, and
-// `motion-safe:` drops it entirely for readers who ask for stillness.
+// The entrance is a pure-CSS staggered rise: it needs no JS and no scroll
+// observer, so it plays on the prerendered HTML too, and `motion-safe:` drops
+// it entirely for readers who ask for stillness.
 export function Hero() {
   // The burst locks its origin onto the lockup; the ref hands the canvas that node.
   const markRef = useRef<HTMLSpanElement>(null);
@@ -19,16 +17,13 @@ export function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-      {/* A faint amber source, painted behind the canvas so a browser without
-          WebGL still gets warmth rather than flat charcoal. */}
+      {/* A browser without WebGL still gets warmth rather than flat charcoal. */}
       <div className="glow-amber pointer-events-none absolute inset-x-0 -top-24 h-[620px]" />
       <HeroBeams anchorRef={markRef} />
-      {/* Fade the opaque burst into the page and keep the lower copy readable. */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bg" />
 
       <Container>
         <div className="relative z-10 flex flex-col items-center py-24 text-center sm:py-32">
-          {/* The full KROMA lockup, standing in the burst it converges on. */}
           <div className="mb-9 motion-safe:animate-rise">
             <span ref={markRef} className="inline-block">
               <img
@@ -41,8 +36,6 @@ export function Hero() {
             </span>
           </div>
 
-          {/* The factual, technical voice, set in mono the way the app labels a
-              codec or a build. */}
           <p
             className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-border bg-surface-1/60 px-3.5 py-1.5 font-mono text-xs tracking-tight text-muted backdrop-blur-sm motion-safe:animate-rise"
             style={{ animationDelay: '60ms' }}
@@ -82,8 +75,7 @@ export function Hero() {
             style={{ animationDelay: '320ms' }}
           >
             {facts.map((fact, i) => (
-              // Middot separators live between items only, so they map off the
-              // same list and stay aria-hidden as pure punctuation.
+              // Middot separators live between items only, aria-hidden as pure punctuation.
               <Fragment key={fact}>
                 {i > 0 && (
                   <li aria-hidden className="text-border-strong">

@@ -1,18 +1,7 @@
-// This TV's identity on the cast roster.
-//
-// The id has one job and two ways to fail at it, both of which are visible to
-// every other person in the house rather than to whoever is debugging.
-//
-// Mint a new one on each launch and the TV appears twice in the phone's picker -
-// once live, once a ghost pointing at a receiver that is gone - and "Salon"
-// stops meaning what it meant yesterday. Trust a stored value blindly and a
-// string hand-edited into the preferences file, or written by an older build
-// with a different shape, wedges casting permanently: the server rejects it, and
-// nothing re-mints because something IS stored.
-//
-// It is not a credential. The server binds it to the account that first
-// announced it and addresses commands to that account, so this only has to be
-// unique and to match the server's shape rule: 8-64 of `[A-Za-z0-9._-]`.
+// This TV's identity on the cast roster. Minting a new one on each launch
+// would make the TV appear twice in the phone's picker; trusting a stored
+// value blindly would let a hand-edited or stale value wedge casting
+// permanently. Must match the server's shape rule: 8-64 of `[A-Za-z0-9._-]`.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -25,10 +14,9 @@ import { receiverId, resetReceiverIdCache } from './receiverId';
 
 const KEY = 'kroma:cast-receiver-id';
 
-/** The server's rule, spelled here so a change to either side is a failure. */
+// The server's rule, spelled here so a change to either side is a failure.
 const ACCEPTABLE = /^[A-Za-z0-9._-]{8,64}$/;
 
-/** Behave like a real device preference store. */
 function persisted() {
   readDeviceValue.mockImplementation((key) => store.get(key) ?? null);
   writeDeviceValue.mockImplementation((key, value) => void store.set(key, value));
@@ -55,8 +43,6 @@ describe('the first launch', () => {
 
   it('mints something the server will accept', () => {
     persisted();
-    // A clock plus a counter, which every target has - the same reasoning as
-    // the playback session ids.
     expect(receiverId()).toMatch(ACCEPTABLE);
   });
 });
@@ -65,7 +51,6 @@ describe('every launch after the first', () => {
   it('re-announces the SAME receiver', () => {
     persisted();
     store.set(KEY, 'tv-abcdef-0-1234');
-    // The phone that named this box "Salon" yesterday has to find it today.
     expect(receiverId()).toBe('tv-abcdef-0-1234');
   });
 
@@ -73,7 +58,6 @@ describe('every launch after the first', () => {
     persisted();
     store.set(KEY, 'tv-abcdef-0-1234');
     receiverId();
-    // A write per launch is a write per launch on flash storage, for nothing.
     expect(writeDeviceValue).not.toHaveBeenCalled();
   });
 
@@ -82,8 +66,6 @@ describe('every launch after the first', () => {
     const first = receiverId();
     const second = receiverId();
     expect(second).toBe(first);
-    // Announced on every reconnect; going to the preference store each time is
-    // needless work on a television.
     expect(readDeviceValue).toHaveBeenCalledOnce();
   });
 });
@@ -104,9 +86,6 @@ describe('a stored value the server would reject', () => {
       persisted();
       store.set(KEY, value);
       const id = receiverId();
-      // The failure this prevents: the server refuses the announce and nothing
-      // ever re-mints, because something IS stored. Casting is dead until
-      // someone finds the file.
       expect(id).not.toBe(value);
       expect(id).toMatch(ACCEPTABLE);
       expect(writeDeviceValue).toHaveBeenCalledWith(KEY, id);
@@ -132,17 +111,14 @@ describe('a stored value the server would reject', () => {
 
 describe('a device that cannot remember', () => {
   it('still answers with a usable id', () => {
-    // readDeviceValue keeps returning null (the default mock): casting should
-    // work for this session even if it cannot survive a relaunch.
     expect(receiverId()).toMatch(ACCEPTABLE);
   });
 });
 
 describe('minting twice in the same millisecond', () => {
   it('still differs, because the clock alone is not enough', () => {
-    // Pin BOTH sources of entropy the id does not control, so the only thing
-    // left to tell two ids apart is the in-process counter - which is exactly
-    // what it is there for.
+    // Pin both sources of entropy the id does not control, leaving only the
+    // in-process counter to tell two ids apart.
     vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
     vi.spyOn(Math, 'random').mockReturnValue(0.5);
 

@@ -1,16 +1,8 @@
 // The motion tokens' bezier curves, compiled once into the two forms the kit
-// actually animates with.
-//
-// `motion.bezier.*` is control points, deliberately: the CSS generator turns them
-// into `cubic-bezier(...)` custom properties and cannot import react-native to do
-// it. Every animating component therefore had to compile them itself, and three
-// of them had grown the identical three lines - destructure, interpolate a CSS
-// string, call `Easing.bezier` - while five more spelled the native half as
-// `Easing.bezier(...(motion.bezier.out as [number, number, number, number]))`,
-// a cast that exists only because a spread of a readonly tuple does not satisfy
-// four positional parameters.
-//
-// So it is done here, once, and the cast lives in one place.
+// animates with. `motion.bezier.*` is control points, since the CSS generator
+// turns them into `cubic-bezier(...)` custom properties and cannot import
+// react-native to do it. Compiling here once keeps the cast a readonly tuple
+// needs to satisfy `Easing.bezier`'s four positional parameters in one place.
 
 import { Easing, type EasingFunction } from 'react-native';
 import { motion } from '#ui/lib/tokens';

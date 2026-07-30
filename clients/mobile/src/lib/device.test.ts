@@ -1,7 +1,5 @@
-// The contract between this app and the account page: the phone writes a
-// User-Agent, the web client reads it back. It was broken in the only way it can
-// be - the phone wrote nothing, so iOS' default went out and every session read
-// "Unknown device" - so both halves are asserted here, together.
+// Contract between this app and the account page: the phone writes a
+// User-Agent, the web client reads it back — both halves asserted together.
 
 import { describe, expect, it, vi } from 'vitest';
 

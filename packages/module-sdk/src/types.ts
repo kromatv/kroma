@@ -9,12 +9,8 @@
 export interface Capability {
   kind: string;
   id: string;
-  /** Display name shown in the add-picker (engine capabilities only). */
   label?: string;
-  /** The add-form schema the admin renders for this engine. */
   fields?: ConfigField[];
-  /** Discriminator for a non-form add-flow (e.g. `"definition"` for the native
-   *  Cardigann picker); the host page renders that flow itself. */
   flow?: string;
 }
 
@@ -45,43 +41,31 @@ export interface ConfigField {
   type: 'string' | 'bool' | 'number' | 'select';
   default?: string;
   options?: string[];
-  /** Placeholder text for a text/URL input. */
   placeholder?: string;
-  /** Render as a password input; the value is treated write-only. */
+  // Render as a password input; the value is treated write-only.
   secret?: boolean;
-  /** The field must be non-empty before the form can submit. */
   required?: boolean;
 }
 
 /** The frontend remote a runtime-loaded module ships (Module Federation). The
  *  entry URL is derived by the host as `/modules/<id>/remoteEntry.js`. */
 export interface FeRemote {
-  /** The exposed module key to load (the remote's MF `exposes` name). */
   module: string;
 }
 
 /** A backend module's self-description. */
 export interface ModuleManifest {
-  /** Stable id, shared with the `@kroma/module-<id>` frontend package. */
   id: string;
   name: string;
   version: string;
   description?: string;
-  /** Minimum KROMA server version (bare version or semver range) the module
-   *  needs. Checked server-side at install and spawn. */
   minServer?: string;
   dependsOn?: Dependency[];
-  /** Soft dependencies: ordered first when present, but not required. */
   optionalDependsOn?: Dependency[];
-  /** Capability dependencies, satisfied by any providing module. */
   requires?: CapabilityReq[];
   provides?: Capability[];
-  /** Account capabilities needed to use the module. */
   permissions?: string[];
-  /** Admin-configurable settings. */
   config?: ConfigField[];
-  /** Present when the module ships a runtime-loaded frontend remote. */
   feRemote?: FeRemote;
-  /** Admin enabled state (from GET /api/modules). A disabled module is hidden. */
   enabled?: boolean;
 }

@@ -1,23 +1,3 @@
-// Which build this is.
-//
-// Only the BUILD can know any of it - there is no git and no filesystem on a
-// phone or a television - so it is collected once, in Node, and carried into the
-// bundle. Two things here are worth more than the rest.
-//
-// `browsableRemote` produces a string that is SHOWN on a settings screen and
-// handed to the system browser, and its input is a git remote, which routinely
-// carries a credential: a CI checkout's origin is often
-// `https://x-access-token:<token>@github.com/owner/repo`. Passing that through
-// prints a token on a television and puts it in whatever the browser logs. The
-// credential is dropped, and that is tested for every spelling a remote comes
-// in.
-//
-// And every git field degrades to null rather than throwing, because a build
-// from a source tarball - or a CI checkout with no `.git` - still has to produce
-// an app. It just has less to say, and the consumer hides those rows. The tests
-// use a real temporary repository and a real directory that is not one, because
-// what is being checked is exactly what `git` does in each case.
-
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -30,7 +10,6 @@ afterAll(() => rmSync(work, { recursive: true, force: true }));
 
 let made = 0;
 
-/** A directory holding a package.json, optionally a git repository. */
 function project(options: { git?: boolean; remote?: string; version?: string } = {}): string {
   made += 1;
   const dir = join(work, `proj-${made}`);
@@ -52,7 +31,6 @@ function project(options: { git?: boolean; remote?: string; version?: string } =
 
 describe('browsableRemote', () => {
   it('converts the scp-style remote `git clone git@…` writes', () => {
-    // No scheme at all, which is why it needs its own pattern.
     expect(browsableRemote('git@github.com:owner/repo.git')).toBe('https://github.com/owner/repo');
   });
 
@@ -75,8 +53,8 @@ describe('browsableRemote', () => {
   });
 
   it('DROPS an embedded credential', () => {
-    // A CI checkout's origin looks exactly like this. Shown on a settings
-    // screen, it prints a token on a television.
+    // A CI checkout's origin looks exactly like this, and the result is shown on
+    // a settings screen and handed to the system browser.
     expect(browsableRemote('https://x-access-token:ghs_SECRET@github.com/owner/repo')).toBe(
       'https://github.com/owner/repo',
     );
@@ -98,8 +76,6 @@ describe('browsableRemote', () => {
       'https://x-access-token:ghs_SECRET@github.com/owner/repo',
       'https://user:pw@example.test/o/r',
     ]) {
-      // The one property that matters, whatever the spelling: nothing before an
-      // `@` survives into a URL handed to a browser.
       expect(browsableRemote(remote)).not.toContain('@');
     }
   });
@@ -152,8 +128,6 @@ describe('productVersion', () => {
       join(root, 'server', 'Cargo.toml'),
       '[package]\nname = "kroma-server"\nversion = "0.1.36"\nedition = "2021"\n',
     );
-    // So a LOCAL build reports the real product version too, rather than the
-    // client's own package version.
     expect(productVersion(root)).toBe('0.1.36');
   });
 
@@ -168,7 +142,6 @@ describe('productVersion', () => {
   });
 
   it('answers null when there is no Cargo.toml to read', () => {
-    // Leaving the caller's own package version to stand.
     expect(productVersion(join(work, 'nowhere'))).toBeNull();
   });
 });
@@ -190,16 +163,12 @@ describe('collectBuildInfo', () => {
     expect(collectBuildInfo(dir).dirty).toBe(false);
 
     writeFileSync(join(dir, 'a.txt'), 'changed');
-    // `dirty` drives a warning badge: the build's source is not the commit it
-    // names.
     expect(collectBuildInfo(dir).dirty).toBe(true);
   });
 
   it('DEGRADES to null outside a checkout', () => {
     const dir = project({ git: false });
     const info = collectBuildInfo(dir);
-    // A source tarball, or a CI checkout with no .git, still has to produce an
-    // app - it just has less to say.
     expect(info.commit).toBeNull();
     expect(info.commitFull).toBeNull();
     expect(info.branch).toBeNull();
@@ -234,7 +203,6 @@ describe('collectBuildInfo', () => {
     const dir = join(work, `proj-${made}`);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, 'package.json'), '{}');
-    // A version is shown on a settings screen; an empty one reads as a bug.
     expect(collectBuildInfo(dir).version).toBe('0.0.0');
   });
 

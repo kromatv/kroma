@@ -3,20 +3,15 @@
 // The native focus engine (Apple TV, Android TV, phones).
 //
 // The OS focus engine owns directional movement, so this module only bridges the
-// two keys it does NOT route to a focusable: Back and PlayPause. Small surface,
-// and almost all of it is bugs that were found on a television rather than in a
-// diff:
+// two keys it does NOT route to a focusable: Back and PlayPause.
 //
 //   - The Menu key is ONE global switch with two nesting claimants (every screen
 //     through this hook, and the player through usePlayerKeys). Toggling it per
-//     claimant means the inner one hands the key back while the outer one still
-//     needs it - closing the player's settings panel and pressing Back once more
-//     quit KROMA, mid-film.
+//     claimant lets the inner one hand the key back while the outer one still
+//     needs it.
 //   - `eventKeyAction === 1` is "key up" on Android TV and "every event" on
-//     tvOS. The obvious filter is right on one and silently fatal on the other:
-//     it drops every Menu and every transport key on Apple TV, while the app
-//     still LOOKS alive, because directional movement is the OS moving focus
-//     with no JavaScript involved.
+//     tvOS; filtering on it naively drops every Menu and transport key on Apple
+//     TV while the app still LOOKS alive.
 //   - The whole TV remote surface only exists in the react-native-tvos fork, and
 //     the phone app runs on mainline. The same screens have to compile and run
 //     on both.
@@ -28,9 +23,7 @@ import type { HWEvent } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rn = vi.hoisted(() => ({
-  /** The handler `useTVEventHandler` was given, i.e. the remote's tap. */
   remote: null as ((event: HWEvent) => void) | null,
-  /** Everything currently listening for the hardware Back button. */
   back: [] as Array<() => boolean>,
   enableTVMenuKey: vi.fn(),
   disableTVMenuKey: vi.fn(),
@@ -67,8 +60,6 @@ import { useFocusNav } from './focus-nav';
 import { clearInputHolds, holdInput } from './input-gate';
 import { clearPressGuard, pressGuardActive } from './press-guard';
 
-/** Press the hardware Back button. Returns what the app told the OS: `true`
- *  means consumed, `false` means "not ours, do the default" (leave the app). */
 function pressBack(): boolean {
   let consumed = false;
   act(() => {
@@ -77,7 +68,6 @@ function pressBack(): boolean {
   return consumed;
 }
 
-/** Deliver a remote event, the way react-native-tvos would. */
 function remote(eventType: string, eventKeyAction = 1) {
   act(() => {
     rn.remote?.({ eventType, eventKeyAction } as HWEvent);

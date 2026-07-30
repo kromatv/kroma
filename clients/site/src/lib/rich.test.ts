@@ -23,8 +23,6 @@ describe('parseRich', () => {
     ]);
   });
 
-  // The reason the parser exists: a translator moves the emphasis to where their
-  // language wants it, and nothing in the component changes.
   it('does not care where in the sentence the accent falls', () => {
     expect(parseRich('[Votre médiathèque], chez vous.')).toEqual([
       { kind: 'accent', value: 'Votre médiathèque' },
@@ -32,7 +30,6 @@ describe('parseRich', () => {
     ]);
   });
 
-  // A typo in a catalog must cost one odd-looking word, never a blank page.
   it('treats an unclosed marker as literal text', () => {
     expect(parseRich('a [broken message')).toEqual([{ kind: 'text', value: 'a [broken message' }]);
   });

@@ -18,25 +18,21 @@ import { useWindowDimensions } from 'react-native';
  * phone. A television is always `wide`. */
 type LayoutMode = 'wide' | 'medium' | 'compact';
 
-/** The window widths at which a region has to move. Chosen from the regions
- * themselves rather than from a device chart: below 1240 the sidebar, a 320
- * inspector and a readable canvas no longer fit on one line, and below 880 the
- * sidebar and the canvas do not either. */
+// The window widths at which a region has to move. Chosen from the regions
+// themselves rather than from a device chart: below 1240 the sidebar, a 320
+// inspector and a readable canvas no longer fit on one line, and below 880
+// the sidebar and the canvas do not either.
 const BREAKPOINTS = { wide: 1240, medium: 880 } as const;
 
 interface WorkbenchLayout {
   mode: LayoutMode;
-  /** The story list: its own column, or a drawer over the canvas. */
   nav: 'column' | 'drawer';
-  /** The inspector: the right-hand column, or docked under the canvas. */
   panel: 'side' | 'below';
   navWidth: number;
   panelWidth: number;
-  /** Height of the docked inspector. Ignored while it is a column. */
+  // Ignored while it is a column.
   panelHeight: number;
-  /** The page gutter. Header, tabs and code drawer all align to it. */
   gutter: number;
-  /** Breathing room around the story on its stage. */
   stagePad: number;
   width: number;
   height: number;
@@ -45,24 +41,22 @@ interface WorkbenchLayout {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, Math.round(value)));
 
-/**
- * The layout for a window of this size. Pure, so it is testable without a
- * renderer and identical on every target.
- */
+// The layout for a window of this size. Pure, so it is testable without a
+// renderer and identical on every target.
 function modeFor(width: number): LayoutMode {
   if (width >= BREAKPOINTS.wide) return 'wide';
   return width >= BREAKPOINTS.medium ? 'medium' : 'compact';
 }
 
-/** The page gutter per mode: the canvas header, tabs and code drawer align to
- * it, and it is the first thing to give when the window narrows. */
+// The page gutter per mode: the canvas header, tabs and code drawer align to
+// it, and it is the first thing to give when the window narrows.
 const GUTTER = { wide: 28, medium: 22, compact: 16 } as const;
 
-/** What an unmeasured window is assumed to be. A width of 0 means "not measured
- * yet", not "a very narrow phone": jsdom reports it, and so does a native view
- * asked before its first layout. Falling back to a desk keeps a test and a first
- * frame on the layout the workbench spends most of its life in, rather than
- * flashing the drawer shell for one commit. */
+// What an unmeasured window is assumed to be. A width of 0 means "not
+// measured yet", not "a very narrow phone": jsdom reports it, and so does a
+// native view asked before its first layout. Falling back to a desk keeps a
+// test and a first frame on the layout the workbench spends most of its life
+// in, rather than flashing the drawer shell for one commit.
 const ASSUMED = { width: 1440, height: 900 } as const;
 
 function layoutFor(rawWidth: number, rawHeight: number): WorkbenchLayout {

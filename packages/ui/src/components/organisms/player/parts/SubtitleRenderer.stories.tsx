@@ -6,10 +6,8 @@ import { DEFAULT_SUB_APPEARANCE, type SubEdge, type SubSize } from '../lib/subti
 import type { PlayerSub } from '../types';
 import { SubtitleRenderer } from './SubtitleRenderer';
 
-/** A real WebVTT file, inline. The renderer fetches the track's url itself
- *  (cross-origin `<track>` cues never load when the app and the media server are
- *  different origins), and a `data:` url is a url — so the workbench gets actual
- *  cues instead of an empty caption area. */
+// The renderer fetches the track's url itself, and a `data:` url is a url — so the
+// workbench gets actual cues instead of an empty caption area.
 const CUES = `WEBVTT
 
 00:00:00.000 --> 00:00:20.000
@@ -52,13 +50,9 @@ export default story({
     ],
   },
   matrix: false,
-  // A range, because a caption's line length is the design: the same cue set at
-  // the narrow end wraps to three lines, and that is where `box` starts covering
-  // the picture. One width would only ever answer for itself.
+  // A range, because line length is the design: at the narrow end the same cue set
+  // wraps to three lines, which is where `box` starts covering the picture.
   width: { min: 560, max: 1100 },
-  // The cue is centred on the picture, so a stage narrower than `min` (a phone)
-  // opens its scroller with the caption cut mid-word. The TV frame shows the
-  // cue ON the picture it is set against; `Fit` stays one press away.
   viewport: 'tv',
   args: {
     positionSec: 8,
@@ -77,13 +71,9 @@ export default story({
     opacity: { min: 20, max: 100, step: 5 },
   },
   render: ({ positionSec, playing, raised, size, edge, opacity, backdrop }) => (
-    // 16:9, because the frame IS the picture: a caption is judged against a
-    // still of the shape it will be read over, at whatever size the canvas has.
     <Box aspect={16 / 9} bg="#000000" radius="lg" overflow="hidden" justify="flex-end">
-      {/* A caption is only ever read over PICTURE. Over black every setting looks
-          fine, which is exactly why that is the wrong background to judge them
-          on: `shadow` vanishes on a bright frame and `box` is the one that
-          survives it. `bright` is the hard case, deliberately. */}
+      {/* Over black every setting looks fine, which is why it is the wrong
+          background to judge them on: `bright` is the hard case. */}
       {backdrop === 'black' ? null : (
         <Img
           src={stillArt(backdrop === 'bright' ? 4 : 1)}
@@ -127,6 +117,6 @@ export default story({
   ],
 });
 
-/** The bright-frame case: the sample stills are cinematic and dark, so this
- * lifts one into the range a snow / daylight scene actually sits in. */
+// The sample stills are cinematic and dark; this lifts one into the range a snow /
+// daylight scene sits in.
 const BRIGHT = { opacity: 0.95, filter: 'brightness(2.4) saturate(0.9)' } as const;

@@ -1,15 +1,13 @@
-//! `library.missing` scan the whole library for Sonarr-style missing episodes:
-//! for every show with a resolved TMDB id, diff TMDB's aired episode list against
-//! what is on disk and record the gaps, so the Wanted/Missing view surfaces
-//! series with missing episodes even when they were never requested. Daily by
-//! default (a full scan is TMDB-heavy); also runnable on demand from Tâches.
+//! `library.missing` diffs TMDB's aired episode list against what is on disk for
+//! every show with a resolved TMDB id, so the Wanted/Missing view surfaces
+//! series with gaps even when they were never requested.
 
 use super::prelude::*;
 
 pub(super) const SPEC: Builtin = Builtin {
     key: JobKey("library.missing"),
     category: Category::Library,
-    // Daily at 04:30: after the nightly library scan / enrich, before waking hours.
+    // After the nightly library scan / enrich, before waking hours.
     schedule: Some("30 4 * * *"),
     triggers: &[],
     run,

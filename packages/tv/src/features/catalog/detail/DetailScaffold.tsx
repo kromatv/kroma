@@ -22,16 +22,13 @@ const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
 const TITLE = { fontSize: 82, lineHeight: 78, fontWeight: '700' as const, letterSpacing: -1.64 };
 
 /**
- * Shared chrome for the Film / Série detail screens: full-bleed backdrop, veil,
- * the overline + title + meta row + synopsis header, and the persistent top nav.
+ * Shared chrome for the Film / Série detail screens: full-bleed backdrop,
+ * veil, the overline + title + meta row + synopsis header, and the
+ * persistent top nav.
  *
- * The screen's `actions` are a prop rather than the first of its `children`
- * because the header and its buttons are ONE row: the eye reads them as one
- * block, and so does the page's scroller, which shows a row from its top. Were
- * the buttons a row of their own, taking the focus would align THEM near the top
- * of the screen and push the title and the synopsis off it - and coming back up
- * from the episodes would do exactly the same, so the header would never return.
- * Everything below the header renders as `children`, one row each.
+ * `actions` is a prop rather than the first of `children` because the header
+ * and its buttons must scroll as one row — a row of their own would let the
+ * scroller align on the buttons and push the title off screen.
  */
 export function TvDetailScaffold({
   id,
@@ -63,7 +60,6 @@ export function TvDetailScaffold({
       <Box fill pointerEvents="none" style={gradient(VEIL_VERTICAL)} />
 
       <FocusScroll style={DETAIL_SCROLL} contentStyle={DETAIL_CONTENT} offsetFromStart={120}>
-        {/* The header and the actions, one row: the page shows it whole. */}
         <FocusSlot>
           <Txt variant="overlineTv" color="accent">
             {kind}
@@ -108,7 +104,6 @@ export function TvDetailScaffold({
   );
 }
 
-/** The page scroller's own box: the navigator scrolls it to follow focus. */
 const DETAIL_SCROLL = {
   position: 'absolute' as const,
   top: 0,
@@ -117,6 +112,6 @@ const DETAIL_SCROLL = {
   left: 0,
 } as const;
 
-/** The padding belongs to the CONTENT, not to the scroller's own box: on the
- * box it would pad the viewport and clip the last row instead of the list. */
+// Padding belongs on the content, not the scroller box: on the box it would
+// pad the viewport and clip the last row instead of the list.
 const DETAIL_CONTENT = { paddingHorizontal: 64, paddingTop: 367, paddingBottom: 64 } as const;

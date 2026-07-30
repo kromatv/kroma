@@ -5,10 +5,8 @@ import type { StandaloneScriptOptions } from '@kroma/bundler/standalone-script';
  * How the Web Push service worker is compiled.
  *
  * Named here rather than inline in the Vite config so `src/sw.test.ts` can
- * compile the artefact that actually ships. The bug this whole line of work
- * traces back to was a target regression — Tizen shipping `?.` to an engine
- * that could not parse it — and a test on a second, hand-copied target would
- * not have caught it.
+ * compile the exact artefact that ships, rather than test against a second,
+ * hand-copied target that could drift from it.
  */
 export const swScript: StandaloneScriptOptions = {
   entry: fileURLToPath(new URL('./src/sw.ts', import.meta.url)),

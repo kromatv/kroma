@@ -1,7 +1,4 @@
-//! Episode segment markers (intro / credits): the data behind the player's
-//! "skip intro" button and the credits-triggered "next episode" card. One row per
-//! `(item_id, kind)`; bounds in milliseconds. Rows are written by the probe pass
-//! (embedded chapters) and the audio-fingerprint job.
+//! Episode segment markers: one row per `(item_id, kind)`, bounds in ms.
 
 use super::*;
 use kroma_domain::{Marker, MarkerKind};
@@ -21,8 +18,6 @@ fn kind_from_str(s: &str) -> Option<MarkerKind> {
     }
 }
 
-/// Item ids that have at least one stored marker. Bulk signal for the pipeline
-/// elements list.
 pub fn item_ids_with_markers(pool: &Pool) -> Result<std::collections::HashSet<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT DISTINCT item_id FROM markers")?;
@@ -30,8 +25,7 @@ pub fn item_ids_with_markers(pool: &Pool) -> Result<std::collections::HashSet<St
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
-/// Whether an item has any stored marker (for the per-element treatments view;
-/// note a legitimately intro-less episode has none, so combine with the ledger).
+/// An intro-less episode also has none: combine with the ledger.
 pub fn has_markers(pool: &Pool, item_id: &str) -> Result<bool> {
     let conn = pool.get()?;
     let n: i64 =
@@ -41,8 +35,7 @@ pub fn has_markers(pool: &Pool, item_id: &str) -> Result<bool> {
     Ok(n > 0)
 }
 
-/// All markers for an item, ordered by start (intro before credits). Unknown
-/// kinds are skipped so a future kind can't break older clients.
+/// Unknown kinds are skipped, so a future kind cannot break older clients.
 pub fn markers_for_item(conn: &Connection, item_id: &str) -> rusqlite::Result<Vec<Marker>> {
     let mut stmt = conn
         .prepare("SELECT kind, start_ms, end_ms FROM markers WHERE item_id = ?1 ORDER BY start_ms")?;
@@ -63,8 +56,7 @@ pub fn markers_for_item(conn: &Connection, item_id: &str) -> rusqlite::Result<Ve
     Ok(out)
 }
 
-/// [`markers_for_item`] over many items in one query per id-chunk, keyed by
-/// item id (ids absent from the result simply have no markers).
+/// [`markers_for_item`] over many items; ids absent from the result have none.
 pub(crate) fn markers_for_items(
     conn: &Connection,
     item_ids: &[&str],
@@ -98,13 +90,8 @@ pub(crate) fn markers_for_items(
     Ok(out)
 }
 
-/// Upsert one segment marker (`(item_id, kind)` is unique). `source` records
-/// provenance (`chapters` | `fingerprint` | `manual`).
-///
-/// Writes respect a provenance precedence (`manual` > `fingerprint` > `chapters`):
-/// a write only overwrites an existing marker when its source ranks at least as
-/// high. This keeps a re-probe (cheap embedded `chapters`) from clobbering a more
-/// accurate `fingerprint` marker, while fingerprint/manual still refresh freely.
+/// Overwrites only when `source` ranks at least as high as the stored one
+/// (`manual` > `fingerprint` > `chapters`).
 pub fn set_marker(
     pool: &Pool,
     item_id: &str,
@@ -156,7 +143,6 @@ mod tests {
         assert!(!has_markers(&p, "e1").unwrap());
         assert!(item_ids_with_markers(&p).unwrap().is_empty());
 
-        // Insert credits then intro; reads come back ordered by start.
         set_marker(&p, "e1", MarkerKind::Credits, 60_000, 65_000, "chapters").unwrap();
         set_marker(&p, "e1", MarkerKind::Intro, 0, 5_000, "chapters").unwrap();
 
@@ -179,15 +165,13 @@ mod tests {
     #[test]
     fn provenance_precedence() {
         let p = pool_with_item();
-        // fingerprint (rank 2) sets the intro.
         set_marker(&p, "e1", MarkerKind::Intro, 0, 5_000, "fingerprint").unwrap();
-        // chapters (rank 1) must NOT clobber the higher-ranked fingerprint marker.
+        // Lower-ranked source: must not clobber the fingerprint marker.
         set_marker(&p, "e1", MarkerKind::Intro, 999, 1_000, "chapters").unwrap();
         let conn = p.get().unwrap();
         assert_eq!(markers_for_item(&conn, "e1").unwrap()[0].end_ms, 5_000);
         drop(conn);
 
-        // manual (rank 3) overrides fingerprint.
         set_marker(&p, "e1", MarkerKind::Intro, 100, 200, "manual").unwrap();
         let conn = p.get().unwrap();
         let m = &markers_for_item(&conn, "e1").unwrap()[0];

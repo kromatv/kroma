@@ -4,7 +4,7 @@ import type { KromaModule } from './module';
 import { depEntries, ModuleRegistry } from './registry';
 import type { ModuleManifest } from './types';
 
-/** A tiny module builder; only the fields a given test needs are set. */
+// A tiny module builder; only the fields a given test needs are set.
 function mod(id: string, extra: Partial<KromaModule> = {}): KromaModule {
   return { id, version: '1.0.0', ...extra };
 }

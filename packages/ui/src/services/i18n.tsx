@@ -1,8 +1,6 @@
-// React bindings for the shared i18n core (`@kroma/core`). Web and TV both mount
-// <I18nProvider> and read strings with useT(). The provider is "controlled": the
-// app owns the resolved `locale` (account preference → device override → browser)
-// and passes it in; useSetLocale() bubbles a change request back via
-// `onLocaleChange` so the app can persist it and sync it to the account.
+// React bindings for the shared i18n core. The provider is controlled: the app
+// owns the resolved `locale`, and useSetLocale() bubbles a change request back
+// through `onLocaleChange`.
 
 import { createTranslator, type Locale, type Translate } from '@kroma/core';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
@@ -10,8 +8,6 @@ import { createContext, type ReactNode, useContext, useMemo } from 'react';
 interface I18nValue {
   locale: Locale;
   t: Translate;
-  /** Request a locale change. The app persists it and re-renders with the new
-   * `locale` prop; a no-op if no `onLocaleChange` was provided. */
   setLocale: (locale: Locale) => void;
 }
 
@@ -41,17 +37,15 @@ function useI18n(): I18nValue {
   return ctx;
 }
 
-/** The bound translation function for the active locale. */
 export function useT(): Translate {
   return useI18n().t;
 }
 
-/** The active locale. */
 export function useLocale(): Locale {
   return useI18n().locale;
 }
 
-/** Request a locale change (persisted + account-synced by the app). */
+/** A no-op unless the provider was given an `onLocaleChange`. */
 export function useSetLocale(): (locale: Locale) => void {
   return useI18n().setLocale;
 }

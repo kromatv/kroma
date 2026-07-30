@@ -1,10 +1,5 @@
-/** The two payloads a validated notification becomes.
- *
- * Shape and validation live in `schemas.ts`; this file only translates. The two
- * builders mirror `kroma-push`'s `apns.rs` and `fcm.rs` field for field, and are
- * duplicated rather than shared because the alternative — servers posting
- * pre-built payloads — would let a caller choose the topic and the priority.
- */
+/** The two payloads a validated notification becomes; they mirror `kroma-push`'s
+ * `apns.rs` and `fcm.rs` field for field. */
 
 import type { Notification } from './schemas';
 
@@ -28,13 +23,12 @@ export function apnsPayload(n: Notification): Record<string, unknown> {
   return payload;
 }
 
-/** The Google message body, around the token the caller does not get to choose. */
 export function fcmMessage(n: Notification, deviceToken: string): Record<string, unknown> {
   const notification: Record<string, unknown> = { title: n.title, body: n.body };
   if (n.imageUrl) notification.image = n.imageUrl;
 
-  // Everything the app needs on tap rides in `data`, which survives both the
-  // foreground and background paths.
+  // `data` is the only part that survives both the foreground and background
+  // delivery paths, so everything the app needs on tap rides there.
   const data: Record<string, unknown> = { id: n.id };
   if (n.link) data.link = n.link;
   if (n.category) data.category = n.category;
@@ -49,16 +43,12 @@ export function fcmMessage(n: Notification, deviceToken: string): Record<string,
       // Android 8+ requires a channel; the app creates one per category.
       channel_id: n.category ?? 'default',
       // No `click_action`: it names an intent action an activity must declare an
-      // <intent-filter> for, and the app declares none - so a tap resolved to
-      // nothing at all. Absent, Firebase builds the content intent from the
-      // launcher activity, which is what opens the app and lets
-      // `expo-notifications` hand the tap to the router.
-      // `threadId` is deliberately NOT mapped onto `tag` or `collapse_key`,
-      // though the names invite it. It means "group these together", which is
-      // what it does on Apple; on Android `tag` REPLACES the shade entry and
-      // `collapse_key` tells FCM to store-and-forward only the most recent - so
-      // a season drop of four episodes showed one row, and a phone that was
-      // offline received one notification instead of four. Grouping on Android
+      // <intent-filter> for, and the app declares none, so a tap resolves to
+      // nothing. Absent, Firebase builds the content intent from the launcher
+      // activity, which `expo-notifications` hands to the router.
+      // `threadId` is deliberately NOT mapped onto `tag` or `collapse_key`: on
+      // Android `tag` REPLACES the shade entry and `collapse_key` keeps only the
+      // most recent, so four episodes would arrive as one. Grouping on Android
       // is the client's job (a group key on the channel).
     },
   };

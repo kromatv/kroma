@@ -41,7 +41,6 @@ const listRowVariants = sv({
         label: { fontSize: 15 },
         hint: { fontSize: 13 },
       },
-      /** The 10-foot row: bigger target, bigger type, more air. */
       tv: {
         root: { gap: 16, paddingHorizontal: 20, paddingVertical: 16 },
         label: { fontSize: 18 },
@@ -52,7 +51,6 @@ const listRowVariants = sv({
   defaults: { size: 'tv' },
 });
 
-/** The trailing chevron, sized with the leading well's glyph. */
 const GLYPH = { sm: 17, tv: 20 } as const;
 
 type ListRowSize = keyof typeof GLYPH;
@@ -111,13 +109,12 @@ function ListRow({
   );
 }
 
-/** Focus is a solid amber edge rather than a fill: a row is wide, and a filled
- * one at the top of a list reads as "selected forever" instead of "focused". */
+// Focus is a solid amber edge rather than a fill: a row is wide, and a filled
+// one at the top of a list reads as "selected forever" instead of "focused".
 const FOCUSED = { borderColor: colors.accent } as const;
 
-/** Hover is the step BEFORE that edge: the wash and the hairline both come up,
- * but the amber stays the remote's. Only a row that actually does something on
- * press lights - a settings list is full of rows that only display. */
+// The step before that edge; only a row that actually does something on
+// press lights, since a settings list is full of rows that only display.
 const HOVERED = {
   backgroundColor: 'rgba(255, 255, 255, 0.07)',
   borderColor: colors.borderStrong,

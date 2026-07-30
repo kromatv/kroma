@@ -7,12 +7,8 @@ import { SettingsRows } from './SettingsRows';
 
 /**
  * One group of settings (route `settingsGroup`): languages, playback, device.
- *
- * The screen holds nothing of its own - the group NAMES a list in the registry
- * and this renders it with the same <SettingsRows> the flat menus use, so a
- * setting is still declared exactly once. What the extra step buys is a menu
- * that fits: three or four rows under a title, instead of twelve rows that ran
- * off the bottom of a 1080 screen and took the profile's name with them.
+ * The screen holds nothing of its own — the group names a list in the
+ * registry, keeping each setting declared exactly once.
  */
 export function TvSettingsGroup() {
   const { group } = useParams('settingsGroup');

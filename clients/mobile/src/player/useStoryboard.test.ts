@@ -1,23 +1,10 @@
 // @vitest-environment jsdom
 //
 // Scrub previews: the sprite-sheet manifest, and the tile for a given moment.
-//
-// The tile maths is the part worth pinning, because every way of getting it
-// wrong shows the user a real frame from the wrong place in the film - which
-// reads as the scrubber being inaccurate rather than as an arithmetic bug. It
-// has to clamp at both ends (dragging past the end of a film is one flick), wrap
-// rows by the sheet's column count, and refuse to divide by an interval of zero,
-// which is what a manifest for a file with no duration carries.
-//
-// The other half is WHERE the sheet comes from. An offline title has its sprite
-// on disk, and asking the server for one then is both pointless and impossible -
-// the phone is on a train. So a local sprite short-circuits the fetch entirely,
-// rather than being a fallback after it fails.
-//
-// The server answers 202 while it is still generating, which the client reports
-// as 'pending'. That is a poll, not an error: a title opened seconds after being
-// added has no storyboard yet, and giving up means no previews until the player
-// is closed and reopened.
+// Getting the tile maths wrong shows a real frame from the wrong place in the
+// film, which reads as the scrubber being inaccurate rather than as a bug.
+// Offline, a local sprite short-circuits the fetch entirely; online, the
+// server answers 202 while still generating, which the client polls.
 
 import type { KromaClient, MediaItem } from '@kroma/core';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -139,7 +126,6 @@ describe('offline', () => {
     const { result } = renderHook(() =>
       useStoryboard(client, item, true, offlineWith('file:///sb.img')),
     );
-    // Available on the first frame, with no request to wait for.
     expect(result.current(0)).not.toBeNull();
   });
 });

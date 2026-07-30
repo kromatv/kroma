@@ -4,9 +4,7 @@ import { useAuth } from '#web/shared/lib/auth';
 import { useWatched } from '#web/shared/lib/watched';
 
 export interface ResumeProgress {
-  /** Saved position (seconds) to resume from, or null. */
   resumeAt: number | null;
-  /** Whether the "resumed at …" toast is showing. */
   showResume: boolean;
   setShowResume: (v: boolean) => void;
 }
@@ -19,10 +17,8 @@ export interface ResumeProgress {
 export function useResumeProgress(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   item: MovieView,
-  // Offset-aware position control from useVideoPlayback: `seekTo` an absolute
-  // second (re-`-ss`-es the seamless stream so resume is instantly available),
-  // `getPosition` reads the absolute current position. Falls back to the raw
-  // <video> timeline when omitted (single-stream direct-play).
+  // Offset-aware position from useVideoPlayback; falls back to the raw <video>
+  // timeline when omitted (single-stream direct-play).
   position?: { seekTo: (absSec: number) => void; getPosition: () => number },
 ): ResumeProgress {
   const { client, user } = useAuth();
@@ -68,12 +64,9 @@ export function useResumeProgress(
     const pos = position ? position.getPosition() : v.currentTime;
     const durSec = item.durationMs ? item.durationMs / 1000 : v.duration;
     if (!Number.isFinite(durSec) || durSec <= 0 || pos < 5) return;
-    // ~Finished → mark watched (clears the resume position server-side too, so it
-    // drops out of "Reprendre la lecture") and updates the shared watched set so
-    // cards re-badge immediately on the way back. Reaching the credits marker
-    // counts as finished too: a binge auto-advance unmounts the player at the
-    // credits (below 97%), which would otherwise save as in-progress and leave the
-    // just-watched episode stuck in "Reprendre".
+    // ~Finished → mark watched (clears server-side resume too). Reaching the
+    // credits marker counts as finished too: a binge auto-advance unmounts the
+    // player there (below 97%), which would otherwise strand it as in-progress.
     const creditsMs = (item.markers ?? []).find((m) => m.kind === 'credits')?.startMs;
     const finished = pos > durSec * 0.97 || (creditsMs != null && pos >= creditsMs / 1000);
     if (finished) setWatched(item.id, true);

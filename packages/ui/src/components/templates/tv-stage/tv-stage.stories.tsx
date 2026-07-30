@@ -23,18 +23,12 @@ export default story({
     ],
   },
   matrix: false,
-  // A RANGE, not a number: the stage's whole job is to scale 1920x1080 into
-  // whatever a panel gives it, so a story pinned to one width is the one case
-  // it is never asked to handle. Resize the window and watch it rescale.
+  // A RANGE, not a number: a story pinned to one width is the one case the
+  // stage is never asked to handle.
   width: { min: 480, max: 1280 },
   pad: 0,
   args: {},
   render: () => (
-    // A stage inside the canvas is shown at a fraction of its size, which is
-    // exactly what it does on a panel smaller than the design. The height comes
-    // from the RATIO, because 16:9 is what the stage is - and an aspect the
-    // design is not authored in letterboxes, which is the other half of the
-    // point.
     <Box aspect={16 / 9} overflow="hidden" bg="surface1" radius="lg">
       <TvStage>
         <Box flex px={64} py={48} gap={24} justify="center">

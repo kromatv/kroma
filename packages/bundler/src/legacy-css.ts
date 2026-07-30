@@ -22,7 +22,7 @@ import type { AtRule, ChildNode, Declaration, Plugin, Root, Rule } from 'postcss
 
 const RATIO = /(?=(\d+(?:\.\d+)?))\1\s*\/\s*(\d+(?:\.\d+)?)/;
 
-/** Split a CSS value on top-level whitespace (never inside parentheses). */
+// Split a CSS value on top-level whitespace (never inside parentheses).
 function splitSpace(value: string): string[] {
   const parts: string[] = [];
   let depth = 0;
@@ -41,13 +41,13 @@ function splitSpace(value: string): string[] {
   return parts;
 }
 
-/** Half of a CSS length as a calc(), sign '' (positive) or '-' (negative). */
+// Half of a CSS length as a calc(), sign '' (positive) or '-' (negative).
 function half(value: string, sign: '' | '-'): string {
   const inner = value.startsWith('calc(') && value.endsWith(')') ? value.slice(5, -1) : value;
   return `calc((${inner}) * ${sign}.5)`;
 }
 
-/** All `--aspect-*`-style custom properties whose value is a `W / H` ratio. */
+// All `--aspect-*`-style custom properties whose value is a `W / H` ratio.
 function collectRatioVars(root: Root): Map<string, string> {
   const map = new Map<string, string>();
   root.walkDecls(/^--/, (d) => {
@@ -56,7 +56,7 @@ function collectRatioVars(root: Root): Map<string, string> {
   return map;
 }
 
-/** `aspect-ratio: W/H` -> `S::before { padding-bottom: H/W% }` strut. */
+// `aspect-ratio: W/H` -> `S::before { padding-bottom: H/W% }` strut.
 function shimAspect(root: Root, ratios: Map<string, string>): void {
   const decls: Declaration[] = [];
   root.walkDecls('aspect-ratio', (d) => {
@@ -85,7 +85,7 @@ function shimAspect(root: Root, ratios: Map<string, string>): void {
   }
 }
 
-/** flex `gap` -> container -gap/2 margins + a `S > *` child rule with +gap/2. */
+// flex `gap` -> container -gap/2 margins + a `S > *` child rule with +gap/2.
 function shimGap(root: Root, generated: WeakSet<ChildNode>): void {
   const decls: Declaration[] = [];
   root.walkDecls(/^(gap|column-gap|row-gap)$/, (d) => {
@@ -130,9 +130,9 @@ function shimGap(root: Root, generated: WeakSet<ChildNode>): void {
   }
 }
 
-/** `scale:` / `translate:` properties -> one composed `transform`. Both rules
- * emit the SAME transform value, so whichever wins the cascade still composes
- * the other utility's `--tw-*` variables (with inline fallbacks). */
+// `scale:` / `translate:` properties -> one composed `transform`. Both rules
+// emit the SAME transform value, so whichever wins the cascade still composes
+// the other utility's `--tw-*` variables (with inline fallbacks).
 function shimScaleTranslate(root: Root): void {
   const COMPOSED =
     'translate(var(--tw-translate-x, 0), var(--tw-translate-y, 0)) ' +
@@ -172,10 +172,10 @@ function shimScaleTranslate(root: Root): void {
   }
 }
 
-/** Drop bare `display: grid|inline-grid` utilities. Chromium 53 ignores the
- * declaration anyway (the element stays block), so removing it just makes the
- * 87/94 legacy engines behave identically. Real grid LAYOUTS (grid-template*,
- * col-span, ...) are not silently fixed - the compat check fails the build. */
+// Drop bare `display: grid|inline-grid` utilities. Chromium 53 ignores the
+// declaration anyway (the element stays block), so removing it just makes the
+// 87/94 legacy engines behave identically. Real grid LAYOUTS (grid-template*,
+// col-span, ...) are not silently fixed - the compat check fails the build.
 function stripGridDisplay(root: Root): void {
   const decls: Declaration[] = [];
   root.walkDecls('display', (d) => {
@@ -188,9 +188,9 @@ function stripGridDisplay(root: Root): void {
   }
 }
 
-/** Unwrap Tailwind's `@supports` fallback carrying the @property --tw-* initial
- * values (recognised by its `-moz-orient` probe): old Chromium fails the
- * condition but needs exactly the rules inside it. */
+// Unwrap Tailwind's `@supports` fallback carrying the @property --tw-* initial
+// values (recognised by its `-moz-orient` probe): old Chromium fails the
+// condition but needs exactly the rules inside it.
 function unwrapPropertyFallback(root: Root): void {
   const targets: AtRule[] = [];
   root.walkAtRules('supports', (at) => {
@@ -199,8 +199,8 @@ function unwrapPropertyFallback(root: Root): void {
   for (const at of targets) at.replaceWith(at.nodes ?? []);
 }
 
-/** Move margin-only utility rules to the end of the utilities layer, after the
- * generated `S > *` gap-child margins, so explicit margins keep winning. */
+// Move margin-only utility rules to the end of the utilities layer, after the
+// generated `S > *` gap-child margins, so explicit margins keep winning.
 function hoistMarginUtilities(root: Root, generated: WeakSet<ChildNode>): void {
   root.walkAtRules('layer', (at) => {
     if (at.params !== 'utilities' || !at.nodes) return;

@@ -1,21 +1,15 @@
-// The shared @kroma/tv UI is authored on a fixed 1920x1080 canvas (px-sized 10-foot
-// layout). On a FIXED-SCREEN shell - the Steam Deck or a fullscreen Chromium kiosk -
-// we render #root at 1920x1080 and scale it to fit the screen, letterboxed with the
-// app background. This is the "TV" behaviour. Desktop windows (macOS / Windows) skip
-// it entirely (see main.tsx) and run free-size, like a web page.
-//
-// The `transform` on #root also makes it the containing block for the app's
-// `position: fixed` full-screen layers (home / player / detail), so they fill the
-// stage. Caveat: a few `vh`-based `clamp()`s in the TV CSS resolve against the real
-// window, so they drift slightly on heavy scale.
+// The shared @kroma/tv UI is authored on a fixed 1920x1080 canvas, so a
+// fixed-screen shell renders #root at that size and scales it to fit. The
+// `transform` also makes #root the containing block for the app's
+// `position: fixed` layers; `vh`-based `clamp()`s still resolve against the real
+// window and drift slightly on heavy scale.
 
 const STAGE_W = 1920;
 const STAGE_H = 1080;
 
-/** Install the self-scaling 1920x1080 stage. Call only for fixed-screen shells. */
+/** Installs the self-scaling 1920x1080 stage. Only for fixed-screen shells. */
 export function installStage(): void {
-  // Transparent when a native mpv window renders behind the UI (the Linux desktop
-  // shell); otherwise the app background fills the letterbox surround.
+  // Transparent when a native mpv window renders behind the UI.
   const inTauri = '__TAURI_INTERNALS__' in globalThis || '__TAURI__' in globalThis;
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const mpvBehind = inTauri && /Linux/i.test(ua) && !/Android/i.test(ua);

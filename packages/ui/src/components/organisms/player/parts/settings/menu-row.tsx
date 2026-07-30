@@ -56,9 +56,9 @@ export function MenuRow({
         <Txt style={menuLabel}>{label}</Txt>
         {!toggle && value != null ? <Txt style={menuValue}>{value}</Txt> : null}
       </Box>
-      {/* The KIT's switch face, not a private lookalike: the row is the control
-          (see the header), so it renders the atom's visuals without the atom's
-          `Focusable`. The 10-foot size, because this panel is read from a sofa. */}
+      {/* The KIT's switch face, not a lookalike: the row is the control (see the
+          header), so it renders the atom's visuals without its `Focusable`.
+          `size="tv"`: this panel is read from a sofa. */}
       {toggle ? (
         <SwitchFace checked={Boolean(on)} size="tv" style={NO_SHRINK} />
       ) : (

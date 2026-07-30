@@ -34,26 +34,17 @@ const flag = (name: string, fallback: string): string => {
 const URL_ = flag('url', 'http://localhost:5174');
 const OUT = flag('out', join(process.cwd(), 'perf'));
 const SCENARIO = flag('scenario', 'browse');
-/**
- * How much slower than this machine to pretend to be. A Samsung TV's browser is
- * roughly six times slower than a developer laptop; the absolute number is not
- * the point, comparing two commits at the same throttle is.
- */
+// A Samsung TV's browser is roughly six times slower than a developer laptop; the
+// absolute number is not the point, comparing two commits at the same throttle is.
 const THROTTLE = Number(flag('throttle', '6'));
-/** localStorage to seed, as JSON. Without it the app opens on the sign-in
- * screen and every scenario profiles the same empty page. */
+// localStorage to seed, as JSON. Without it the app opens on the sign-in screen
+// and every scenario profiles the same empty page.
 const SESSION = flag('session', process.env.KROMA_SESSION ?? '');
-/** How long to record, in milliseconds. */
 const RECORD_MS = Number(flag('ms', '12000'));
-/**
- * Pretend to BE the television, not just to be as slow as one.
- *
- * The app asks the user agent what it is running on and changes behaviour on the
- * answer (see @kroma/tv's env provider): a desktop browser gets typeable text
- * fields and pointer affordances, a Samsung TV gets the on-screen keyboard and
- * D-pad-only focus. Profiling the desktop paths and calling it a TV measurement
- * is how the wrong thing gets optimised, so this defaults to the TV.
- */
+// Pretend to BE the television, not just to be as slow as one: the app asks the
+// user agent what it is running on and changes behaviour on the answer (see
+// @kroma/tv's env provider), so profiling the desktop paths and calling it a TV
+// measurement is how the wrong thing gets optimised.
 const UA_PRESETS: Record<string, string> = {
   tizen:
     'Mozilla/5.0 (SMART-TV; LINUX; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko) Version/7.0 TV Safari/537.36',
@@ -63,12 +54,9 @@ const UA_PRESETS: Record<string, string> = {
 };
 const UA = UA_PRESETS[flag('ua', 'tizen')] ?? '';
 
-// ----- the scenarios ----------------------------------------------------------
-
 /** A scripted walk. Each returns once it has driven the app for RECORD_MS. */
 type Scenario = (page: Page) => Promise<void>;
 
-/** Press a key and let the app answer, at a human's pace. */
 async function walk(page: Page, keys: string[], everyMs: number, forMs: number): Promise<void> {
   const until = Date.now() + forMs;
   let at = 0;
@@ -123,8 +111,6 @@ const SCENARIOS: Record<string, Scenario> = {
   idle: (page) => page.waitForTimeout(RECORD_MS),
 };
 
-// ----- reading the profile ----------------------------------------------------
-
 interface CpuProfileNode {
   id: number;
   callFrame: { functionName: string; url: string; lineNumber: number };
@@ -139,9 +125,9 @@ interface CpuProfile {
   timeDeltas?: number[];
 }
 
-/** Self time per function, the Performance panel's "Bottom-Up" view. Frames are
- * merged by name + script so the same function called from ten places reads as
- * one line, which is what makes a regression obvious. */
+// Self time per function, the Performance panel's "Bottom-Up" view. Frames are
+// merged by name + script so the same function called from ten places reads as
+// one line, which is what makes a regression obvious.
 function bottomUp(
   profile: CpuProfile,
   window?: { start: number; end: number } | null,
@@ -197,8 +183,8 @@ interface TraceEvent {
   args?: { data?: { type?: string } };
 }
 
-/** The worst task's window, in trace microseconds. A long task IS the stutter -
- * the frame the eye sees - so it deserves attribution rather than a number. */
+// The worst task's window, in trace microseconds. A long task IS the stutter -
+// the frame the eye sees - so it deserves attribution rather than a number.
 function longestTaskWindow(events: TraceEvent[]): { start: number; end: number } | null {
   let best: TraceEvent | null = null;
   for (const e of events) {
@@ -209,8 +195,8 @@ function longestTaskWindow(events: TraceEvent[]): { start: number; end: number }
   return { start: best.ts, end: best.ts + best.dur };
 }
 
-/** What the Performance panel calls the summary: how long the main thread spent
- * in each kind of work, plus the long tasks that are the visible stutters. */
+// What the Performance panel calls the summary: how long the main thread spent
+// in each kind of work, plus the long tasks that are the visible stutters.
 function traceSummary(events: TraceEvent[]): Record<string, number> {
   const KINDS = new Set([
     'RunTask',
@@ -242,9 +228,7 @@ function traceSummary(events: TraceEvent[]): Record<string, number> {
   return out;
 }
 
-// ----- the run ----------------------------------------------------------------
-
-/** Collect the tracing stream the Tracing domain emits after `Tracing.end`. */
+// Collect the tracing stream the Tracing domain emits after `Tracing.end`.
 function collectTrace(cdp: CDPSession): { events: Promise<TraceEvent[]> } {
   const chunks: TraceEvent[] = [];
   let settle: (v: TraceEvent[]) => void = () => {};

@@ -11,17 +11,13 @@ import { getLocale } from '#site/lib/i18n';
 import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';
 
-// The meta description is the hero's own lead, read from the same message the
-// section renders, so the two can never drift apart.
+// The meta description reads the same message the hero renders, so the two
+// cannot drift apart.
 export const Route = createFileRoute('/')({
   head: () => seo({ lang: getLocale(), path: '/', description: m.home_hero_description() }),
   component: Home,
 });
 
-// The home page is a composition, not a wall of markup: each band is a single
-// self-contained section under components/home. The order tells the story: the
-// promise, the one-binary differentiator, the full capability set, the playback
-// moment, where it runs, why you'd own it, what we're writing, then the ask.
 export function Home() {
   return (
     <>

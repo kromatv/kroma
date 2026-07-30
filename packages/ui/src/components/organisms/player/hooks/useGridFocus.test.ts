@@ -3,8 +3,6 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useGridFocus } from './useGridFocus';
 
-/** Render the grid hook and expose a helper that presses a key inside `act`,
- * returning whether the hook reported the key as handled. */
 function grid(opts: Parameters<typeof useGridFocus>[0]) {
   const view = renderHook((p: Parameters<typeof useGridFocus>[0]) => useGridFocus(p), {
     initialProps: opts,
@@ -34,10 +32,8 @@ describe('useGridFocus', () => {
 
   it('clamps ◀ at the first column and ▶ at the last column (no wrap)', () => {
     const { result, press } = grid({ count: 6, cols: 3 });
-    // At col 0, Left is consumed but does not move.
     expect(press('Left')).toBe(true);
     expect(result.current.index).toBe(0);
-    // Walk to the last column, then Right must not overflow.
     act(() => result.current.setIndex(2));
     expect(press('Right')).toBe(true);
     expect(result.current.index).toBe(2);
@@ -63,7 +59,6 @@ describe('useGridFocus', () => {
     const { press } = grid({ count: 6, cols: 3, onExit });
     expect(press('Up')).toBe(true);
     expect(onExit).toHaveBeenCalledWith('top');
-    // Without an onExit, the same edge press is reported unhandled.
     const bare = grid({ count: 6, cols: 3 });
     expect(bare.press('Up')).toBe(false);
   });

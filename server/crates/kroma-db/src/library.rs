@@ -51,7 +51,6 @@ mod tests {
             let conn = p.get().unwrap();
             conn.execute("INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('l2','Series','shows','/tv','t')", []).unwrap();
             conn.execute("INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('l1','Films','movies','/mov','t')", []).unwrap();
-            // Two items in the movies library, none in shows.
             for id in ["m1", "m2"] {
                 conn.execute(
                     "INSERT INTO items (id,kind,title,container,library,added_at) VALUES (?1,'movie','T','mkv','l1','t')",
@@ -62,7 +61,6 @@ mod tests {
         }
         let libs = list_libraries(&p).unwrap();
         assert_eq!(libs.len(), 2);
-        // Ordered by name: Films before Series.
         assert_eq!(libs[0].id, "l1");
         assert_eq!(libs[0].kind, LibraryKind::Movies);
         assert_eq!(libs[0].item_count, 2);

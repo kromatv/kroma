@@ -8,14 +8,13 @@ import {
   subnetCandidates,
 } from './discover';
 
-// A fetch stub driven by a URL -> health-body map. Any URL absent from the map
-// resolves as a non-ok response (a dead host).
+// A fetch stub driven by a URL -> health-body map; a URL absent from the map is
+// a dead host.
 type Health = {
   ok?: boolean;
   status?: string;
   throws?: boolean;
   body?: Record<string, unknown>;
-  /** Where the answer really came from, when the server redirected. */
   url?: string;
 };
 function fakeFetch(map: Record<string, Health>): typeof globalThis.fetch {
@@ -67,9 +66,8 @@ describe('getLocalIPv4', () => {
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 
-  // Tizen. `getPropertyValue(prop, onSuccess, onError)`, asked for Wi-Fi first
-  // and Ethernet second. A set that is plugged in AND associated answers both,
-  // which is why the order is the preference.
+  // Tizen's `getPropertyValue(prop, onSuccess, onError)`. Wi-Fi is asked first: a
+  // set that is plugged in AND associated answers both.
   function tizenWith(answers: Record<string, { ipAddress?: string } | 'error'>) {
     (globalThis as Record<string, unknown>).tizen = {
       systeminfo: {
@@ -121,8 +119,6 @@ describe('getLocalIPv4', () => {
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 
-  // webOS. One luna call; wired wins over wifi for the same "plugged in is the
-  // better route" reason.
   function webOsWith(res: unknown, fail = false) {
     (globalThis as Record<string, unknown>).webOS = {
       service: {
@@ -149,7 +145,6 @@ describe('getLocalIPv4', () => {
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 
-  // WebRTC, the browser fallback: read the host candidate off an ICE gather.
   function rtcEmitting(candidates: (string | null)[]) {
     (globalThis as Record<string, unknown>).RTCPeerConnection = class {
       onicecandidate: ((e: { candidate: { candidate: string } | null }) => void) | null = null;
@@ -173,8 +168,8 @@ describe('getLocalIPv4', () => {
   });
 
   it('ignores mDNS-obfuscated and public candidates', async () => {
-    // `.local` carries no address at all, and a public reflexive address is the
-    // router's, not this device's - neither can seed a subnet scan.
+    // `.local` carries no address, and a reflexive address is the router's, not
+    // this device's - neither can seed a subnet scan.
     rtcEmitting([
       'candidate:1 1 udp 2113 9f8e.local 54321 typ host',
       'candidate:2 1 udp 1686 203.0.113.7 54321 typ srflx',
@@ -273,8 +268,8 @@ describe('discoverServers', () => {
     const identity = { instanceId: 'abc', name: 'Salon', version: '1', libraries: 2 };
     const fetch = fakeFetch({
       'http://kroma.local:4040/api/health': { body: identity },
-      // Same install, reached by IP, and answering with a different NAME (the
-      // server only labels LAN callers, and the origin decides that).
+      // The same install by IP, answering with a different NAME: the server only
+      // labels LAN callers.
       'http://10.0.0.7:4040/api/health': { body: { ...identity, name: undefined } },
     });
     const found = await discoverServers({
@@ -287,8 +282,6 @@ describe('discoverServers', () => {
   });
 
   it('keeps two DISTINCT servers whose health bodies are otherwise identical', async () => {
-    // Two fresh installs: same default name, same version, both empty. Only the
-    // instance id tells them apart, and both must be listed.
     const fresh = { name: 'KROMA', version: '1', libraries: 0, items: 0, shows: 0 };
     const fetch = fakeFetch({
       'http://10.0.0.7:4040/api/health': { body: { ...fresh, instanceId: 'one' } },
@@ -346,8 +339,8 @@ describe('resolveServerOrigin', () => {
     });
   });
 
-  // The case that makes the padlock honest: a plain-http probe SUCCEEDS against
-  // a server that redirects, so only the final URL can be trusted.
+  // A plain-http probe SUCCEEDS against a server that redirects, so only the
+  // final URL can be trusted for the padlock.
   it('reports https when http redirects to it', async () => {
     const fetch = fakeFetch({
       [`http://media.example.net${H}`]: { url: `https://media.example.net${H}` },
@@ -402,7 +395,6 @@ describe('discovery via the DNS-SD browse', () => {
     );
   });
 
-  // The whole point of announcing: a port the sweep would never have scanned.
   it('finds a server on a port nothing would have guessed', async () => {
     const fetch = fakeFetch({ [`https://media.local:8443${H}`]: {} });
     const browse = async () => [{ host: 'media.local', port: 8443 }];
@@ -419,8 +411,6 @@ describe('discovery via the DNS-SD browse', () => {
     );
   });
 
-  // An accelerator in front of two working fallbacks must never be the reason
-  // discovery fails.
   it('falls back when the browse throws', async () => {
     const fetch = fakeFetch({ [`http://kroma.local:4040${H}`]: {} });
     const browse = async () => {

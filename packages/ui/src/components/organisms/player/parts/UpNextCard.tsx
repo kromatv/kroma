@@ -9,23 +9,12 @@ import { colors, fonts } from '#ui/lib/tokens';
 import { FOCUS_SCALE, FOCUS_SHADOW } from '../lib/style';
 import { VIRTUAL_FOCUS } from '../lib/virtual-focus';
 
-/**
- * One "À suivre" tile (§10): a 16:9 thumbnail with a duration badge, then a
- * category eyebrow, a title and an optional meta line. The same card renders in
- * the parked peek and inside the open sheet (no zoom between states); focus is
- * state-driven, so the ring comes from the `focused` prop and a pointer entering
- * the card only moves focus via `onFocus` (§15).
- */
 export interface UpNextItem {
   id: string;
   title: string;
-  /** e.g. "S1 E4" or a year / genre line. */
   subtitle?: string;
-  /** 16:9 thumbnail preferred; falls back to a subtle gradient. */
   posterUrl?: string | null;
-  /** e.g. "48 min". */
   durationLabel?: string;
-  /** e.g. "Épisode" or a genre. */
   categoryLabel?: string;
 }
 
@@ -34,15 +23,12 @@ export interface UpNextCardProps {
   focused: boolean;
   onActivate: () => void;
   onFocus?: () => void;
-  /** Explicit width. The sheet lays three across, the peek shows one. */
   width?: DimensionValue;
 }
 
-/** Three cards across with 26px gaps, which is the sheet's layout. */
 export const UP_NEXT_COLUMNS = 3;
 export const UP_NEXT_GAP = 26;
 
-/** Deterministic, subtle amber-into-charcoal placeholder when there is no still. */
 function placeholderGradient(id: string): string {
   const tilt = 138 + (hashString(id) % 54);
   return `linear-gradient(${tilt}deg, rgba(244,182,66,0.16) 0%, rgba(20,18,22,0.96) 64%)`;
@@ -67,13 +53,9 @@ export function UpNextCard({
       accessibilityLabel={item.title}
       style={{ width }}
     >
-      {/* The ring and the lift belong to the ARTWORK, not to the whole card.
-          Drawn around the card as a whole they enclosed the caption too, so the
-          amber outline ran along the bottom of the subtitle with the still
-          floating inside it - and the scaled block shoved its own text into the
-          row below. Ringing the still is also what every other card in the kit
-          does (see MediaCard), so a focused "À suivre" tile now reads the same
-          as a focused rail tile. */}
+      {/* The ring and the lift belong to the artwork, not to the whole card:
+          around the card they enclose the caption and the scale shoves the text
+          into the row below. */}
       <Box
         aspect={16 / 9}
         w="100%"
@@ -116,8 +98,8 @@ const DURATION = {
 };
 
 const CATEGORY = {
-  // Clears the focused still's lift (FOCUS_SCALE grows it ~8px downwards) so the
-  // ring never sits on top of the eyebrow.
+  // Clears the focused still's lift (FOCUS_SCALE grows it ~8px downwards) so
+  // the ring never sits on top of the eyebrow.
   marginTop: 18,
   fontFamily: fonts.ui,
   fontSize: 11,

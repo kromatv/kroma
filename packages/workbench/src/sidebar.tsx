@@ -1,23 +1,9 @@
-// The workbench sidebar: the brand, the search key, and every story as a TREE.
+// The workbench sidebar: the brand, a button that opens the command palette, and
+// every story as a collapsible tree. Stories nest by LEVEL (atoms, molecules,
+// organisms), then by GROUP within it (Actions, Input, Media, State).
 //
-// It reads the way Storybook's explorer reads, and for the same reason: a design
-// system is a hierarchy, so its navigation should be one you can fold. A flat
-// list of sixty entries is a scroll; the same sixty under six collapsible levels
-// is a page you can see the whole of. Folding is also the only honest answer to
-// the kit growing - the list gets longer every week and the window does not.
-//
-// Two axes, and both matter. The LEVEL is the atomic one - atoms, molecules,
-// organisms - so the tree reads as the hierarchy the system is built out of. The
-// GROUP inside it is what the thing is FOR: Actions, Input, Media, State. "A
-// molecule" and "a form control" answer different questions, and a list offering
-// only the first made you read every name to find the field you wanted.
-//
-// Search is NOT here any more. It is ⌘K (see command.tsx), and what sits at the
-// top of the tree is the button that says so - which is Storybook's arrangement
-// too, and it stopped the sidebar being the only place a search could reach.
-//
-// Everything is a `Focusable` rather than a link, so the same tree is operated
-// with a mouse in a browser and with a D-pad on a television.
+// Everything is a `Focusable` rather than a link, so the same tree works with a
+// mouse in a browser and a D-pad on a television.
 
 import { Box, Focusable, Icon, IconButton, Txt } from '@kroma/ui/kit';
 import { colors, radius, shadow } from '@kroma/ui/tokens';
@@ -32,25 +18,14 @@ interface SidebarProps {
   stories: readonly Story[];
   selected: string;
   onSelect: (id: string) => void;
-  /** Opens the command palette. The search row is a button, not a field. */
   onSearch: () => void;
-  /**
-   * The MARK, drawn at the top of the tree. A slot rather than a component,
-   * because this package has no design system of its own to be the logo of: it
-   * renders whatever the host hands it, at whatever size the host chose, and
-   * draws nothing at all when the host hands it nothing.
-   */
+  // `brand` and `footer` are slots: this package has no design system of its own,
+  // so it renders whatever the host hands it and nothing when handed nothing.
   brand?: ReactNode;
-  /** The wordmark beside it. Defaults to naming the tool. */
   title?: string;
-  /**
-   * Pinned under the tree, below the scroll. A slot for the same reason `brand`
-   * is one: what a host wants to say about itself down there - a build stamp, a
-   * link, a licence - is the host's business, not this package's.
-   */
   footer?: ReactNode;
   layout: WorkbenchLayout;
-  /** Present only while the tree is a drawer, where it has to be dismissible. */
+  // Only set while the tree is a drawer, where it has to be dismissible.
   onClose?: () => void;
 }
 
@@ -65,15 +40,11 @@ interface TreeTier {
   groups: readonly TreeGroup[];
 }
 
-/** The tree, in the registry's own order - see `groupBy`, which is also what the
- * command palette groups with. */
+// Registry order, via the same `groupBy` the command palette uses.
 function tree(stories: readonly Story[]): TreeTier[] {
   return groupBy(stories, (story) => story.tier).map(({ key: tier, items: entries }) => ({
     tier,
     count: entries.length,
-    // A level with everything under one heading (Foundations, Templates) has
-    // nothing to gain from a sub-heading that repeats the section, so the group
-    // row is dropped rather than shown twice.
     groups: groupBy(entries, (story) => story.group).map(({ key: group, items }) => ({
       group,
       entries: items,
@@ -81,15 +52,8 @@ function tree(stories: readonly Story[]): TreeTier[] {
   }));
 }
 
-/**
- * The branch keys along the path to one story: its level, and its group inside
- * that level.
- *
- * This is what the tree opens with, and it is also what it opens WHEN THE STORY
- * CHANGES from somewhere else - the palette, a deep link. A tree that leaves the
- * open component folded away is a tree that has stopped saying where you are,
- * which is most of its job.
- */
+// Branch keys along the path to one story, so the tree re-opens to it when the
+// selection changes from elsewhere (the palette, a deep link).
 function revealPath(tiers: readonly TreeTier[], selected: string): Set<string> {
   const open = new Set<string>();
   for (const tier of tiers) {
@@ -99,8 +63,7 @@ function revealPath(tiers: readonly TreeTier[], selected: string): Set<string> {
       open.add(`${tier.tier}/${group}`);
     }
   }
-  // No match (a deep link to a story that has since moved) still has to show
-  // something foldable rather than six shut doors.
+  // A deep link to a story that has since moved must still leave something open.
   if (open.size === 0 && tiers[0]) {
     open.add(tiers[0].tier);
     if (tiers[0].groups[0]) open.add(`${tiers[0].tier}/${tiers[0].groups[0].group}`);
@@ -201,9 +164,9 @@ function Sidebar({
   );
 }
 
-/** Who this is, at the top of the tree rather than in a bar over the whole page.
- * That is Storybook's arrangement, and the reason for it is that the canvas is
- * the subject: the only full-width chrome should be the toolbar acting ON it. */
+// Who this is, at the top of the tree rather than in a bar over the whole page. That is
+// Storybook's arrangement, and the reason for it is that the canvas is the subject: the only
+// full-width chrome should be the toolbar acting ON it.
 function Brand({
   brand,
   title,
@@ -240,10 +203,9 @@ function Brand({
   );
 }
 
-/** The search row: a button that looks like the field it replaced, with the
- * accelerator on it. Storybook's, and it is the right shape - a field you cannot
- * type into would be a lie, but a field-shaped button carrying `⌘ K` teaches the
- * shortcut to everyone who ever clicks it. */
+// The search row: a button that looks like the field it replaced, with the accelerator on it.
+// Storybook's, and it is the right shape - a field you cannot type into would be a lie, but a
+// field-shaped button carrying `⌘ K` teaches the shortcut to everyone who ever clicks it.
 function SearchButton({ onPress }: Readonly<{ onPress: () => void }>) {
   return (
     <Focusable
@@ -263,17 +225,11 @@ function SearchButton({ onPress }: Readonly<{ onPress: () => void }>) {
   );
 }
 
-/** A foldable row: the twisty, the name, and how many leaves are under it. The
- * chevron ROTATES in place rather than swapping glyph, which is the one detail
- * that makes a tree feel like a tree. */
-/**
- * One group inside a tier: its own row, and the stories under it.
- *
- * Its own component so the tree is two nested maps rather than three. The leaf
- * loop used to sit inside the group loop inside the tier loop, four callbacks
- * deep, which is the point at which the indentation stops telling you which
- * level you are looking at.
- */
+// A foldable row: the twisty, the name, and how many leaves are under it. The chevron ROTATES
+// in place rather than swapping glyph, which is the one detail that makes a tree feel like a
+// tree.
+// One group inside a tier: its own row, and the stories under it. Its own component
+// so the tree is two nested maps rather than three.
 function Group({
   group,
   entries,
@@ -286,7 +242,7 @@ function Group({
 }: Readonly<{
   group: string;
   entries: readonly Story[];
-  /** The only group in its tier: the row would just repeat the tier's name. */
+  // The only group in its tier: the row would just repeat the tier's name.
   solo: boolean;
   open: ReadonlySet<string>;
   tier: string;
@@ -354,9 +310,9 @@ function Branch({
   );
 }
 
-/** A story. The open one is FILLED - amber, with ink to match - rather than
- * tinted: the sidebar is read at a glance from across a desk, and a 16% wash was
- * not enough to find your place in sixty rows. */
+// A story. The open one is FILLED - amber, with ink to match - rather than tinted: the sidebar
+// is read at a glance from across a desk, and a 16% wash was not enough to find your place in
+// sixty rows.
 function Leaf({
   story,
   active,
@@ -387,7 +343,7 @@ function Leaf({
   );
 }
 
-/** How far one level of the tree steps in. */
+// How far one level of the tree steps in.
 const INDENT = 12;
 
 const SCROLL = { flex: 1 } as const;
@@ -398,7 +354,7 @@ const DRAWER = {
   borderRightColor: colors.borderStrong,
   boxShadow: shadow.pop,
 };
-/** The 16pt glyph in the box the old padded shape came to. */
+// The 16pt glyph in the box the old padded shape came to.
 const CLOSE_BOX = 30;
 const BRAND = { fontWeight: '700', fontSize: 13 } as const;
 const TALLY = { fontSize: 10.5 } as const;

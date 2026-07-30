@@ -8,12 +8,6 @@ import { Rail } from './rail';
 
 const TINT = ['#3A2E4F', '#1B1524'] as const;
 
-/**
- * The rail with its tiles WIRED, because a gallery row whose tiles did nothing
- * on Select read as a broken rail rather than as an undemonstrated callback.
- * The caption under it is the story's stand-in for what a press does in the
- * app, which is navigate.
- */
 function SelectableRail({
   count,
   virtualised,
@@ -32,8 +26,7 @@ function SelectableRail({
       <Rail
         {...props}
         gap={gap}
-        // The pitch is the tile's own width PLUS the gap after it, which is what
-        // the offset maths counts in.
+        // The pitch is the tile width PLUS the gap after it.
         item={virtualised ? { width: 320 + gap, height: 180 } : undefined}
       >
         {Array.from({ length: count }, (_, index) => `Title ${index + 1}`).map((title, index) => (
@@ -62,8 +55,6 @@ export default story({
   group: 'Media',
   docs: 'A horizontal scrolling row. Given a tile PITCH (`item`) it runs on `<VirtualRail>`: the row holds still while the highlight travels and moves only when the selection comes within a tile of either end, a wheel pans it without changing the selection, and a pointer gets an arrow at each end. Without a pitch it falls back to the growing rail, which is for rows whose tiles are not all one width (chips, cast faces).',
   matrix: false,
-  // Dynamic, the way it ships: the stage's width, clamped. Drag the window and
-  // the row re-measures - which is the behaviour a fixed width hid.
   width: { min: 560, max: 1400 },
   args: { title: 'Continue watching', gap: 24, inset: 0, count: 24, virtualised: true },
   controls: { gap: { min: 8, max: 48, step: 4 }, count: { min: 1, max: 40, step: 1 } },

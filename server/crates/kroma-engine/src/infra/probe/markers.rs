@@ -25,7 +25,6 @@ pub fn markers_from_chapters(
         if !plausible(kind, c, duration_ms) {
             continue;
         }
-        // Keep the first chapter of each kind.
         if !out.iter().any(|(k, _, _)| *k == kind) {
             out.push((kind, c.start_ms, c.end_ms));
         }
@@ -33,8 +32,8 @@ pub fn markers_from_chapters(
     out
 }
 
-/// Classify a chapter title. Intro is checked first so "opening credits" counts
-/// as the opening, not the end credits.
+// Intro is checked first so "opening credits" counts as the opening, not the
+// end credits.
 fn classify(title: &str) -> Option<MarkerKind> {
     let t = title.trim().to_lowercase();
     const INTRO: &[&str] = &[
@@ -65,8 +64,8 @@ fn classify(title: &str) -> Option<MarkerKind> {
     None
 }
 
-/// Sanity check: with a known duration, an intro should sit in the first half and
-/// credits in the second. Without a duration we trust the title.
+// With a known duration, an intro should sit in the first half and credits in
+// the second. Without a duration we trust the title.
 fn plausible(kind: MarkerKind, c: &Chapter, duration_ms: Option<u64>) -> bool {
     let Some(dur) = duration_ms.filter(|d| *d > 0) else {
         return true;

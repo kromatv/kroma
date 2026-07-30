@@ -1,15 +1,10 @@
 import type { ReactElement } from 'react';
 
 // @vitest-environment jsdom
-//
-// The whole site rendered for real, through react-native-web.
-//
-// This is the integration test for the three-way split: @kroma/workbench as the
-// tool, @kroma/ui as the stories, and `config.tsx` as the glue. It lives HERE
-// rather than in either package because neither of them is a workbench on its own
-// - the tool has no stories and the design system has no config - and what is
-// worth checking is that the composition works, on top of the claim that a design
-// system's own components can host the tool that inspects them.
+
+// The whole site rendered for real, through react-native-web: the
+// integration test for @kroma/workbench, @kroma/ui's stories, and
+// config.tsx's glue.
 
 import { onScreen } from '@kroma/ui/testing';
 import { matches, type Story, slug } from '@kroma/workbench';
@@ -17,20 +12,18 @@ import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-librar
 import { afterEach, describe, expect, it } from 'vitest';
 import { Kit } from './config';
 
-/** Every kit control is a node of the spatial navigator, and a node needs a
- * navigator - the router gives every screen one. A test renders inside the same
- * scope so the tree it mounts is the tree the app mounts. */
+// Every kit control is a node of the spatial navigator; wrapping renders
+// inside the same scope the app mounts in.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
-/** Press a run of controls by their accessible name. The tree opens folded
- * except along the path to the open story, so reaching a component in a test
- * takes the same presses it takes in the app. */
+// The tree opens folded except along the path to the open story, so pressing
+// by accessible name takes the same presses in a test as in the app.
 function press(...names: string[]): void {
   for (const name of names) fireEvent.click(screen.getByRole('button', { name }));
 }
 
-/** ⌘K, dispatched where the palette listens for it: on the document, in the
- * capture phase. See command.tsx. */
+// ⌘K, dispatched where the palette listens for it: on the document, in the
+// capture phase. See command.tsx.
 function commandKey(): void {
   fireEvent.keyDown(document, { key: 'k', metaKey: true });
 }
@@ -101,8 +94,6 @@ describe('the kit site', () => {
   it('shows the inspector as tabs, one per kind of answer', () => {
     render(<Kit />);
     press('Expand Atoms', 'Expand Actions', 'Button');
-    // Controls lead, because they are the only part of the panel anyone
-    // interacts with; the prose and the prop table are one press away.
     expect(screen.getByRole('button', { name: 'Docs' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Props' })).toBeTruthy();
     press('Docs');

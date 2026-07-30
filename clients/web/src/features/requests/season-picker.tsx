@@ -1,7 +1,3 @@
-// Season selection sheet for a TV request: per-season checkboxes (already-owned
-// or requested seasons disabled with their chip), a "toutes les saisons"
-// master, and the request action.
-
 import { useLocale, useT } from '@kroma/ui';
 import { Button, IconButton } from '@kroma/ui/kit';
 import { IconCheck } from '@tabler/icons-react';
@@ -20,15 +16,11 @@ export function SeasonPicker({
   seasons: TitleSeason[];
   title: string;
   busy: boolean;
-  /** Seasons ticked when the sheet opens; omit to preselect every open season
-   * (e.g. clicking a single season card opens the sheet with just that one). */
   initial?: number[];
   onClose: () => void;
-  /** `null` = all seasons. */
   onRequest: (seasons: number[] | null) => void;
 }>) {
   const t = useT();
-  // Seasons still requestable (not already fully available or requested).
   const open = seasons.filter((s) => !s.available && !s.requested);
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set(initial ?? open.map((s) => s.number)),
@@ -46,7 +38,6 @@ export function SeasonPicker({
   const toggleAll = () => setSelected(allOpen ? new Set() : new Set(open.map((s) => s.number)));
 
   const submit = () => {
-    // Whole show when every season is picked; otherwise the subset.
     const all = seasons.length === selected.size && open.length === seasons.length;
     onRequest(all ? null : Array.from(selected).sort((a, b) => a - b));
   };
@@ -120,7 +111,6 @@ function SeasonRow({
   const t = useT();
   const locale = useLocale();
   const locked = s.available || s.requested;
-  // "Available on <date>" when the season is announced but has not aired yet.
   const today = new Date().toISOString().slice(0, 10);
   const upcoming =
     s.airDate && s.airDate > today

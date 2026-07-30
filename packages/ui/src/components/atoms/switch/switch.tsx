@@ -1,18 +1,13 @@
-// <Switch>: the on/off primitive.
+// <Switch>: the on/off primitive. A television has no gestures, so this is
+// not a draggable thumb: it is a Focusable that toggles on Select, and the
+// track fills amber (rather than relying on thumb position alone) so the
+// state reads from three metres.
 //
-// A television has no gestures, so this is not a draggable thumb: it is a
-// Focusable that toggles on Select. The state has to be legible from three
-// metres, which is why the track fills amber rather than relying on the thumb's
-// position alone.
-//
-// The flip ANIMATES, on the kit's usual split (see <VirtualRail>, which set the
-// pattern): a CSS transition on the browser targets, where react-native-web has
-// no native animated module and every `Animated` value is a rAF loop on the main
-// thread, and `Animated` with the real native driver on the phones and the TVs.
-// Only compositor-friendly properties move - the thumb is a `translateX` and the
-// amber is a FILL LAYER crossfading over the off-track, because neither driver
-// can animate a background colour natively and a colour that snapped while the
-// thumb slid read as two switches disagreeing.
+// The flip animates on the kit's usual split (see <VirtualRail>): a CSS
+// transition on the browser targets, `Animated` with the real native driver
+// elsewhere. Only compositor-friendly properties move — the thumb is a
+// `translateX` and the amber is a fill layer crossfading over the off-track,
+// since neither driver can animate a background colour natively.
 
 import { useEffect, useRef } from 'react';
 import { Animated, Platform, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
@@ -44,21 +39,19 @@ const switchVariants = sv({
   variants: {
     size: {
       sm: { width: 46, height: 28, padding: 3 },
-      /** The 10-foot size, for a settings row read from the sofa. */
       tv: { width: 64, height: 36, padding: 4 },
     },
-    /** Styleless on purpose: the checked look is the CROSSFADE LAYERS above,
-     * which a static style cannot describe - but `checked` is still the
+    /** Styleless on purpose: the checked look is the crossfade layers below,
+     * which a static style can't describe — but `checked` is still the
      * component's axis, and the workbench matrix reads the axes from here. */
     checked: { true: {}, false: {} },
   },
   defaults: { size: 'sm', checked: 'false' },
 });
 
-/** Thumb diameter per size, derived from the track so the two cannot drift. */
 const THUMB = { sm: 20, tv: 26 } as const;
-/** How far the thumb slides: the track less its padding less the thumb. Static
- * per size, which is what lets the animation need no measurement pass. */
+// Track less its padding less the thumb, static per size so the animation
+// needs no measurement pass.
 const TRAVEL = { sm: 46 - 3 * 2 - 20, tv: 64 - 4 * 2 - 26 } as const;
 
 type SwitchSize = keyof typeof THUMB;
@@ -103,15 +96,11 @@ interface SwitchFaceProps {
 }
 
 /**
- * The switch's VISUALS alone: the track, the amber fill and the sliding thumb,
- * with nothing pressable about them.
- *
- * For surfaces where the switch is not its own control. The player's settings
- * menu is the one that forced the split: its rows drive focus through the
- * panel's own list navigation, so the whole ROW is the control and a `Focusable`
- * switch inside it would be a second stop the D-pad has to fight past - which is
- * why that menu used to carry a private lookalike, drifting from this atom one
- * hue at a time.
+ * The switch's visuals alone: the track, the amber fill and the sliding
+ * thumb, with nothing pressable about them — for surfaces where the switch is
+ * not its own control (a settings row that drives focus through its own list
+ * navigation, where a `Focusable` switch would be a second stop the D-pad has
+ * to fight past).
  */
 function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) {
   return (
@@ -121,11 +110,10 @@ function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) 
   );
 }
 
-/** The moving parts: the amber fill fading in over the track, and the thumb
- * sliding across it. The thumb keeps ONE face - light in both states, the way
- * every platform's toggle does it - because the track is the state signal and a
- * thumb that changed colour mid-slide read as two things happening. One value
- * drives fill and slide, so neither can arrive before the other. */
+// The thumb keeps one face, light in both states: the track is the state
+// signal, and a thumb that changed colour mid-slide read as two things
+// happening. One value drives both the fill and the slide, so neither can
+// arrive before the other.
 function Flip({ on, travel, thumb }: Readonly<{ on: boolean; travel: number; thumb: number }>) {
   const face = { width: thumb, height: thumb, borderRadius: radius.pill };
   if (WEB) {
@@ -151,8 +139,8 @@ function FlipNative({
   travel,
   face,
 }: Readonly<{ on: boolean; travel: number; face: ViewStyle }>) {
-  /** 0 = off, 1 = on. The initial value matches the initial state, so a switch
-   * mounted on does not play its own flip as an entrance. */
+  // Initial value matches the initial state, so a switch mounted on doesn't
+  // play its own flip as an entrance.
   const flip = useRef(new Animated.Value(on ? 1 : 0)).current;
   useEffect(() => {
     Animated.timing(flip, {
@@ -173,18 +161,17 @@ function FlipNative({
 
 const DISABLED = { opacity: 0.5 } as const;
 
-/** The track under a POINTER: both the OFF wash and the hairline come up.
- * Brightening the wash cannot be mistaken for the state, because the state is a
- * LAYER - the amber ON fill covers the track entirely (see `styles.fill`), so
- * what this lifts is only ever the off colour, and the border carries the hover
- * on its own once the switch is on. */
+// The off wash and the hairline both come up under a pointer. Brightening the
+// wash can't be mistaken for the state: the amber on-fill is a layer that
+// covers the track entirely (see `styles.fill`), so this only ever lifts the
+// off colour.
 const HOVERED = {
   backgroundColor: 'rgba(255, 255, 255, 0.18)',
   borderColor: 'rgba(255, 255, 255, 0.32)',
 } as const;
 
-/** react-native-web understands these CSS-only props; React Native's types do
- * not, hence the casts at the use sites. */
+// react-native-web understands these CSS-only props; React Native's types do
+// not, hence the casts at the use sites.
 const TRANSITION_OPACITY = {
   transitionProperty: 'opacity',
   transitionDuration: `${FLIP_MS}ms`,
@@ -197,7 +184,6 @@ const TRANSITION_TRANSFORM = {
 };
 
 const styles = StyleSheet.create({
-  /** The ON track, as a layer: the amber and its border fade in as one. */
   fill: {
     position: 'absolute',
     top: 0,

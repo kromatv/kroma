@@ -1,21 +1,6 @@
-// The standalone biometric lock, at boot.
-//
-// This is the gate a cold start passes before a remembered profile is reopened,
-// and it has to be read as a SECURITY decision rather than a convenience: the
-// only thing standing between someone holding the phone and someone else's
-// profile is this function returning false.
-//
-// Which is why the order of its three answers matters. A PIN-locked profile
-// passes here because the SERVER gates it - prompting for Face ID as well would
-// be a second lock on a door that is already locked, and failing it would strand
-// a user whose face the phone no longer recognises behind a PIN they can still
-// type. A profile with no lock at all passes. Only the third case - no server
-// PIN, but a device lock turned on - is this gate's own, and it must not pass
-// without the system prompt actually succeeding.
-//
-// It lives outside session.tsx because the prompt needs a translator and
-// SessionProvider mounts above I18nProvider, so the device locale is resolved
-// here directly.
+// The standalone biometric lock, at boot: a SECURITY decision, not a
+// convenience — this function returning false is the only thing standing
+// between someone holding the phone and someone else's profile.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,7 +18,6 @@ vi.mock('expo-localization', () => ({ getLocales }));
 import { passBootBiometricGate, passProfileBiometricGate } from './biometricGate';
 import type { MobileAccount } from './storage';
 
-/** The string the OS was asked to put on the Face ID sheet. */
 function promptShown(): string {
   const call = passBiometricLock.mock.calls[0];
   if (!call) throw new Error('the system prompt was never raised');
@@ -57,9 +41,6 @@ beforeEach(() => {
 describe('passProfileBiometricGate', () => {
   it('lets a PIN-locked profile through without prompting', async () => {
     await expect(passProfileBiometricGate(account({ hasPin: true }), 'Unlock')).resolves.toBe(true);
-    // The server already gates this profile. A second lock on the same door
-    // would strand a user whose face the phone no longer knows behind a PIN
-    // they can still type.
     expect(isBiometricLockEnabled).not.toHaveBeenCalled();
     expect(passBiometricLock).not.toHaveBeenCalled();
   });
@@ -80,8 +61,6 @@ describe('passProfileBiometricGate', () => {
   it('REFUSES when the prompt is cancelled or fails', async () => {
     isBiometricLockEnabled.mockResolvedValue(true);
     passBiometricLock.mockResolvedValue(false);
-    // The whole point of the gate. Anything other than false here opens someone
-    // else's profile to whoever is holding the phone.
     await expect(passProfileBiometricGate(account(), 'Unlock')).resolves.toBe(false);
   });
 
@@ -129,8 +108,6 @@ describe('passBootBiometricGate', () => {
 
     isBiometricLockEnabled.mockResolvedValue(true);
     passBiometricLock.mockResolvedValue(false);
-    // Cold start is where an attacker actually arrives, so it must be no weaker
-    // than the in-app gate.
     await expect(passBootBiometricGate(account())).resolves.toBe(false);
   });
 });

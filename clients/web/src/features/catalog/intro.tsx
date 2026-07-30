@@ -1,8 +1,7 @@
-// The KROMA brand intro a full-screen, audio-synced sting shown once per browser
-// session before the app. It overlays everything (including the login gate) and
-// hands off to the app on completion. Client-only: Audio() and sessionStorage
-// don't exist during SSR, so it renders nothing on the server and until the first
-// client effect decides whether it should play (no hydration mismatch).
+// The KROMA brand intro, shown once per browser session before the app.
+// Client-only: Audio() and sessionStorage don't exist during SSR, so it
+// renders nothing until the first client effect decides whether it should
+// play (avoids a hydration mismatch).
 
 import { KromaIntro } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';

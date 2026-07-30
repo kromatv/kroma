@@ -1,19 +1,7 @@
 #!/usr/bin/env python3
-"""Mint fresh App Store provisioning profiles for tv.kroma.mobile and write them
-out base64-encoded, ready for `gh secret set`.
-
-Why this exists: a profile goes state=INVALID the moment the App ID's
-capabilities change - adding an App Group or SiriKit is enough - and Apple does
-not re-issue it. The stored secret still decodes and still looks right (correct
-type, correct app id, expiry in 2027), so the failure surfaces far away from the
-cause: `xcodebuild -allowProvisioningUpdates` quietly mints a DEVELOPMENT
-identity instead, the archive succeeds, and only `exportArchive` fails with
-"No profiles for 'tv.kroma.mobile' were found".
-
-Creates rather than replaces. The invalid profiles are left alone - Apple
-retires them on its own - so this is re-runnable and never destroys something
-that turns out to have been in use. Names carry the date to stay unique, since
-Apple rejects a duplicate profile name.
+"""Mint fresh App Store provisioning profiles for tv.kroma.mobile, base64-encoded
+for `gh secret set`. A profile goes state=INVALID the moment the App ID's
+capabilities change and Apple does not re-issue it.
 
 Usage:
   ASC_KEY_ID=... ASC_ISSUER_ID=... ASC_PRIVATE_KEY_PATH=AuthKey_X.p8 \
@@ -32,52 +20,38 @@ import sys
 import asc_api as asc
 
 BUNDLE = "tv.kroma.mobile"
-# (bundle id, profileType, output basename).
-#
-# Both platforms of one App Store record share the bundle id - see
-# clients/tv-native/app.config.js - so the app's two profiles differ only by the
-# platform they are minted for.
-#
-# The Top Shelf extension is a SEPARATE App ID and needs its own profile. The
-# tvOS archive builds two targets, and manual signing has to name a profile for
-# each; without this one the extension falls back to a Team profile that does
-# not carry group.tv.kroma, and the archive dies on an entitlements mismatch.
+# (bundle id, profileType, output basename). Both platforms of one App Store
+# record share the bundle id, so the app's two profiles differ only by platform.
+# The Top Shelf extension is a SEPARATE App ID: without its own profile the tvOS
+# archive signs it with a Team profile lacking group.tv.kroma and dies on an
+# entitlements mismatch.
 WANTED = [
     (BUNDLE, "IOS_APP_STORE", "ios"),
     (BUNDLE, "TVOS_APP_STORE", "tvos"),
     (f"{BUNDLE}.TopShelf", "TVOS_APP_STORE", "tvos-topshelf"),
 ]
 
-# Capabilities the App ID must carry for a minted profile to be usable.
-#
-# A profile only ever contains what the App ID had AT MINT TIME, so this is the
-# other half of the job: minting against an App ID that is missing a capability
-# produces a profile that installs cleanly and then fails the archive with
-# "doesn't include the ... entitlement". That is exactly how push shipped - the
-# app declared `aps-environment`, the App ID did not have Push Notifications,
-# and the stored profile predated both.
-#
-# Listed here rather than read from the entitlements because enabling one is a
-# change to the Apple ACCOUNT: it should be a deliberate line in a diff, not
-# something a build infers and does silently.
-#
-# Only ones that need no configuration of their own. APP_GROUPS is deliberately
-# absent: it has to be pointed at a specific group, so it stays a manual step.
+# A profile only ever contains what the App ID had AT MINT TIME: minting against
+# an App ID missing a capability produces a profile that installs cleanly and
+# then fails the archive with "doesn't include the ... entitlement". Listed here
+# rather than inferred from the entitlements, because enabling one changes the
+# Apple ACCOUNT and should be a deliberate line in a diff. APP_GROUPS is absent
+# on purpose: it has to be pointed at a specific group, so it stays manual.
 REQUIRED_CAPABILITIES = {
     BUNDLE: ["PUSH_NOTIFICATIONS"],
 }
 
 
 def ensure_capabilities(bundle: str, bundle_id: str, jwt: str) -> bool:
-    """Turn on anything the App ID is missing. True when something changed."""
     wanted = REQUIRED_CAPABILITIES.get(bundle, [])
     if not wanted:
         return False
+    # No `limit` here, unlike every other GET in this file: Apple rejects it on
+    # THIS relationship with a 400 ("The parameter 'limit' can not be used with
+    # this request"). It returns every capability unpaged.
     have = {
         c["attributes"]["capabilityType"]
-        for c in asc.get(f"bundleIds/{bundle_id}/bundleIdCapabilities?limit=200", jwt).get(
-            "data", []
-        )
+        for c in asc.get(f"bundleIds/{bundle_id}/bundleIdCapabilities", jwt).get("data", [])
         if c.get("attributes", {}).get("capabilityType")
     }
     changed = False
@@ -106,20 +80,13 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=".", help="where to write the .b64 files")
     args = ap.parse_args()
-    # The workflow points --out at a fresh path under RUNNER_TEMP, so this has to
-    # create it; writing was previously only ever done into an existing cwd.
     os.makedirs(args.out, exist_ok=True)
 
     jwt = asc.token()
 
     # `filter[identifier]` is a PREFIX match, not an exact one: asking for
-    # tv.kroma.mobile also returns tv.kroma.mobile.TopShelf, and the extension
-    # sorts first. Taking [0] mints a perfectly valid, perfectly useless profile
-    # for the Top Shelf extension - which decodes and installs cleanly, so the
-    # build fails later with the same "no profiles" message it started with.
-    # Match the identifier here rather than trusting the server's filter.
-    # One prefix query covers the app AND its extension, then each is matched
-    # exactly below.
+    # tv.kroma.mobile also returns tv.kroma.mobile.TopShelf. One query covers
+    # both; each identifier is matched exactly below.
     found = {
         b["attributes"]["identifier"]: b["id"]
         for b in asc.get(f"bundleIds?filter[identifier]={BUNDLE}&limit=200", jwt).get("data", [])
@@ -133,15 +100,13 @@ def main() -> int:
     if not certs:
         print("::error::no distribution certificate on the account; a profile cannot be minted")
         return 1
-    # Newest by expiry: if the team has rotated, the freshest is the one CI holds.
+    # Newest by expiry: after a rotation the freshest is the one CI holds.
     certs.sort(key=lambda c: c["attributes"].get("expirationDate", ""), reverse=True)
     cert_id = certs[0]["id"]
     print(f"using certificate {certs[0]['attributes'].get('displayName','?')}")
 
-    # Capabilities FIRST, for every App ID, before a single profile is minted.
-    # Enabling one invalidates every existing profile for that App ID - including
-    # any this loop had already created - so doing it per-bundle inside the mint
-    # loop would invalidate the profiles minted on earlier iterations.
+    # Capabilities FIRST, for every App ID: enabling one invalidates every
+    # existing profile for that App ID, including any minted earlier in a loop.
     for bundle in {b for b, _, _ in WANTED}:
         bundle_id = found.get(bundle)
         if bundle_id:
@@ -153,11 +118,8 @@ def main() -> int:
         if not bundle_id:
             print(f"::error::no App ID registered for {bundle}")
             return 1
-        # The bundle id is IN the name because the account also carries
-        # tv.kroma.mobile.TopShelf, and a name that does not say which App ID it
-        # belongs to is how a profile for the extension ends up looking like the
-        # profile for the app. Apple rejects duplicate names outright (409), so
-        # the collision surfaces immediately rather than as a silent wrong pick.
+        # The bundle id is IN the name so the app's profile cannot be mistaken
+        # for the extension's; Apple rejects duplicate names outright (409).
         name = f"KROMA {bundle} {profile_type} CI {stamp}"
         body = {
             "data": {
@@ -169,10 +131,8 @@ def main() -> int:
                 },
             }
         }
-        # Re-runnable: Apple rejects a duplicate name with a 409, and a second
-        # run on the same day would otherwise fail after having done real work.
-        # An existing profile of this exact name is the one this run would have
-        # created, so reuse it rather than inventing a name to dodge the clash.
+        # Re-runnable: a same-day rerun would hit the 409 on the duplicate name,
+        # so an existing profile of this exact name is reused instead.
         same_name = [
             p
             for p in asc.get("profiles?limit=200", jwt).get("data", [])
@@ -181,11 +141,8 @@ def main() -> int:
         existing = next(
             (p for p in same_name if p["attributes"].get("profileState") == "ACTIVE"), None
         )
-        # A same-named INVALID profile is the common case on a re-run: enabling a
-        # capability invalidates every profile for the App ID, including one this
-        # script minted minutes earlier. It cannot be reused and it cannot be left
-        # alone either - Apple rejects the duplicate name with a 409 - and an
-        # invalid profile can sign nothing, so removing it costs nothing.
+        # A same-named INVALID profile can neither be reused nor left in place
+        # (409 on the duplicate name), and it can sign nothing anyway.
         if not existing:
             for dead in same_name:
                 asc.delete(f"profiles/{dead['id']}", jwt)
@@ -193,9 +150,8 @@ def main() -> int:
         attrs = (existing or asc.post("profiles", jwt, body)["data"])["attributes"]
         if existing:
             print("  (reusing the still-ACTIVE profile of this name)")
-        # profileContent IS the .mobileprovision, already base64 - which is
-        # exactly the form the GitHub secret holds, so it is written through
-        # untouched rather than decoded and re-encoded.
+        # profileContent IS the .mobileprovision, already base64 - the form the
+        # GitHub secret holds, so it is written through untouched.
         path = f"{args.out}/{basename}.b64"
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(attrs["profileContent"])

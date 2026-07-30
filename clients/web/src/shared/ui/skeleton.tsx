@@ -1,16 +1,10 @@
-// Loading-placeholder kit. The base `Skeleton` primitive plus the admin
-// table/card shells come from the browser primitives (@kroma/admin-kit); this file adds the
-// catalogue-specific composites shaped like the real layouts they stand in for
-// (rails, the title-detail page) so a loading screen keeps the page's structure
-// instead of a blank gap or a spinner. Used as `<Suspense>` fallbacks and route
-// `pendingComponent`s. Every list here is a fixed-length placeholder that never
-// reorders, so an index key is correct.
+// Catalogue-specific loading placeholders, shaped like the layouts they stand
+// in for. The base primitives come from @kroma/admin-kit.
 
 import { Skeleton } from '@kroma/admin-kit';
 
 export { CardSkeleton, Skeleton, TableSkeleton } from '@kroma/admin-kit';
 
-/** A stack of text-line placeholders; the last line is shortened like real text. */
 export function SkeletonText({
   lines = 3,
   className = '',
@@ -25,8 +19,6 @@ export function SkeletonText({
   );
 }
 
-/** Poster-shaped placeholder (2:3 art + title + subtitle), matching `Poster`
- * (same fluid `--card-w` default width). */
 export function PosterSkeleton({ width }: Readonly<{ width?: number }>) {
   return (
     <div style={{ width: width ?? 'var(--card-w)' }} className="shrink-0">
@@ -37,8 +29,7 @@ export function PosterSkeleton({ width }: Readonly<{ width?: number }>) {
   );
 }
 
-/** A wrapping grid of poster skeletons (search / trending / list pages).
- * Mirrors the pages' auto-fill GRID (cards.tsx) so tiles line up. */
+/** Mirrors the pages' auto-fill grid (cards.tsx) so tiles line up. */
 export function SkeletonRow({ count = 7 }: Readonly<{ count?: number }>) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!">
@@ -50,7 +41,6 @@ export function SkeletonRow({ count = 7 }: Readonly<{ count?: number }>) {
   );
 }
 
-/** One catalogue rail: a section heading bar + a horizontal run of posters. */
 export function RailSkeleton({ count = 7 }: Readonly<{ count?: number }>) {
   return (
     <section>
@@ -65,7 +55,6 @@ export function RailSkeleton({ count = 7 }: Readonly<{ count?: number }>) {
   );
 }
 
-/** The home / list route shell: a hero band followed by a few rails. */
 export function PageSkeleton({ rails = 3 }: Readonly<{ rails?: number }>) {
   return (
     <main className="min-w-0 px-(--gutter-web) pb-20 pt-9">
@@ -78,7 +67,6 @@ export function PageSkeleton({ rails = 3 }: Readonly<{ rails?: number }>) {
   );
 }
 
-/** The title-detail route shell: backdrop hero + meta column + one rail. */
 export function DetailSkeleton() {
   return (
     <main className="pb-16">

@@ -1,13 +1,6 @@
-// Player settings: the TV settings panel's model at phone size. In the
-// landscape player it slides in as a blurred side panel (safe-area aware); in
-// portrait (tablets) it behaves as a bottom sheet.
-//
-// The STRUCTURE is the television's (@kroma/ui SettingsPanel): a main menu of
-// icon rows - each naming its current value - opening one sub-view per
-// setting, plus in-place toggles for Loop and Statistics and a row into the
-// report flow. Same glyphs, same row shapes (radius-14, the 10% white fill on
-// the chosen row, accent overlines), so a viewer who knows one player knows
-// both. The UX stays the phone's: a modal sheet, touch rows, no focus engine.
+// Player settings, phone-sized: mirrors the TV SettingsPanel's structure and
+// visual language (icon rows, sub-views, same glyphs and shapes), but stays
+// touch-driven — a modal or bottom sheet, no focus engine.
 
 import {
   audioTrackLabel,
@@ -41,7 +34,6 @@ export type SheetView =
   | 'appearance'
   | 'speed';
 
-/** A selectable sub-view row (the TV's selectRow, at phone scale). */
 function Row({
   label,
   selected,
@@ -51,9 +43,6 @@ function Row({
 }: Readonly<{
   label: string;
   selected: boolean;
-  /** A row the server cannot deliver (a subtitle whose extraction failed):
-   *  shown, dimmed and inert, with the reason as its note - a silent row that
-   *  does nothing reads as a broken app. */
   disabled?: boolean;
   note?: string;
   onPress(): void;
@@ -76,8 +65,6 @@ function Row({
   );
 }
 
-/** A main-menu row: the TV's menuRow - leading glyph, bold label with the
- * current value under it, a chevron into its sub-view OR an in-place switch. */
 function MenuRow({
   icon,
   label,
@@ -119,7 +106,6 @@ function MenuRow({
   );
 }
 
-/** A sub-view's header: back into the menu, then the setting's name. */
 function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
   return (
     <Pressable
@@ -132,7 +118,6 @@ function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }
   );
 }
 
-/** Accent overline + chip row, for the appearance panel's compact pickers. */
 function ChipGroup({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
     <View style={styles.chipGroup}>
@@ -142,24 +127,15 @@ function ChipGroup({ label, children }: Readonly<{ label: string; children: Reac
   );
 }
 
-/** One selectable audio track, as the sheet lists it. */
 interface AudioOption {
   index: number;
   prefCode: string | null;
   label: string;
 }
 
-/**
- * The audio tracks on offer, from whichever side knows about them.
- *
- * A downloaded file is described by the PLAYER (the native track list), a
- * streamed one by the item's own metadata - and where the two line up, the
- * item's richer label wins.
- *
- * `prefCode` is what a pick REMEMBERS: the language refined by the variant the
- * track's title betrays ('fre' + "VFF …" -> 'fr-FR'), so choosing the France
- * dub can never auto-pick the Quebec one on the next title.
- */
+// `prefCode` is the language refined by the variant in the track's title
+// ('fre' + "VFF …" -> 'fr-FR'), so picking the France dub never auto-picks
+// the Quebec one on the next title.
 function audioOptions(engine: Engine, item: MediaItem, t: ReturnType<typeof useT>): AudioOption[] {
   const itemAudio = audioTracksOf(item);
   if (!engine.offline) {
@@ -179,27 +155,18 @@ function audioOptions(engine: Engine, item: MediaItem, t: ReturnType<typeof useT
   }));
 }
 
-/** The subtitle row's value: Off, the track's own label, else its language. */
 function subtitleLabel(subs: Subtitles, t: ReturnType<typeof useT>): string {
   if (subs.active === null) return t('player.subtitlesOff');
   const track = subs.tracks.find((s) => s.index === subs.active);
   return track?.label?.trim() ?? langName(t, track?.language) ?? `#${(subs.active ?? 0) + 1}`;
 }
 
-/**
- * The main menu: one row per setting, each naming its current value.
- *
- * Its own component because it is a flat list of what the sheet OFFERS, and
- * inlining it put seven more conditionals in a body that also owns the sheet's
- * animation, its sub-views and its gesture handling.
- */
 function SheetMenu(
   at: Readonly<{
     t: ReturnType<typeof useT>;
     quality: string;
     audioCount: number;
     audio: string | undefined;
-    /** Null where there is no filter to offer (an offline file). */
     filter: string | null;
     subtitles: string;
     appearance: string;
@@ -285,8 +252,6 @@ export function TrackSheet({
   onAppearance(next: Partial<SubtitleAppearance>): void;
   statsOn: boolean;
   onToggleStats(): void;
-  /** Open straight into a sub-view (the chrome's quick-access capsule), the
-   *  kit SettingsPanel's own prop. */
   initialView?: SheetView;
 }>) {
   const t = useT();
@@ -294,20 +259,15 @@ export function TrackSheet({
   const prefs = useLangPrefs();
   const [view, setView] = useState<SheetView>(initialView);
   const backToMenu = () => setView('menu');
-  // A validated pick DISMISSES the sheet - the point of picking a track is to
-  // get back to the film, and a shortcut that opened straight into a sub-view
-  // has no menu to "return" to. The header's back chevron still walks to the
-  // menu for whoever wants to browse the other settings.
+  // Picking a track dismisses the whole sheet rather than returning to the
+  // menu; the back chevron is what browses the other settings.
   const done = () => onClose();
-  // Each open starts where the trigger asked: the gear at the menu, the
-  // capsule straight in the subtitles view - never wherever the last visit
-  // happened to end (the Modal stays mounted between opens).
+  // The Modal stays mounted between opens, so each open must reset to
+  // `initialView` rather than resuming wherever the last visit ended.
   useEffect(() => {
     if (visible) setView(initialView);
   }, [visible, initialView]);
 
-  // Menu <-> sub-view slide: a sub-view enters from the right, the menu
-  // re-enters from the left, opacity riding along so the swap never flashes.
   const slide = useRef(new Animated.Value(1)).current;
   const prevView = useRef(view);
   useEffect(() => {
@@ -533,16 +493,12 @@ export function TrackSheet({
   );
 }
 
-/** The subtitle row's status note: "preparing" while its VTT request is in
- * flight (a first request can wait on the server extracting the whole file),
- * "unavailable" once it broke, nothing otherwise. */
 function subNote(t: ReturnType<typeof useT>, subs: Subtitles, index: number): string | undefined {
   if (subs.failed.has(index)) return t('error.subtitleUnavailable');
   if (subs.active === index && subs.loading) return t('player.subPreparing');
   return undefined;
 }
 
-/** " · 2160p HEVC"-style suffix for the quality row, from the file itself. */
 function qualityBadge(item: MediaItem): string {
   const v = item.video;
   if (!v) return '';
@@ -576,7 +532,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   subTitle: { ...type.section, color: colors.text },
-  /** The panel's section voice: the TV settings' accent overline. */
   group: {
     ...type.small,
     color: colors.accent,

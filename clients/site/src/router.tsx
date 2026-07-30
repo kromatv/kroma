@@ -12,11 +12,10 @@ export function getRouter() {
     defaultPreload: 'intent',
     defaultNotFoundComponent: NotFound,
     // The locale lives in the URL, but the route tree does NOT: routes are
-    // defined once, unlocalized (`/download`), and Paraglide rewrites around them
-    // — `input` strips the prefix so /fr/download matches the /download route,
-    // `output` puts it back so every generated href stays in the reader's
-    // language. That is what replaced the hand-written src/routes/fr/* mirrors,
-    // four files whose only job was to re-declare a route with a French <head>.
+    // defined once, unlocalized (`/download`), and Paraglide rewrites around
+    // them — `input` strips the prefix so /fr/download matches the /download
+    // route, `output` puts it back so every generated href stays in the
+    // reader's language.
     rewrite: {
       input: ({ url }) => deLocalizeUrl(url),
       output: ({ url }) => localizeUrl(url),

@@ -1,14 +1,6 @@
-//! The element-centric pipeline view: the whole catalog (films / series /
-//! episodes) with, per element, the status of each treatment applied to it and an
-//! overall roll-up, filtered / searched / paginated + full-catalog counts.
-//!
-//! Computed in BULK from cheap signals so it scales to thousands of items: a few
-//! set / map queries (probed items, items with markers, items with a vector, each
-//! stage's ledger tasks) + LEAN item/show rows (poster/genre/has-metadata pulled
-//! from the JSON via `json_extract`, never a full metadata deserialize) folded in
-//! memory. No per-item disk stats. The ledger overlays running/failed/pending
-//! (with the error); `storyboard`/`markers` are assumed done when no ledger task
-//! exists (their absence isn't cheaply detectable and shouldn't spam the view).
+//! The element-centric pipeline view: the whole catalog with, per element, the
+//! status of each treatment and an overall roll-up. Computed in bulk from cheap
+//! set/map queries so it scales to thousands of items; no per-item disk stats.
 
 use std::collections::{HashMap, HashSet};
 
@@ -19,11 +11,10 @@ use crate::db::pipeline::RawItem;
 use crate::model::{ElementCounts, ElementRow, EpStats, PipelineElements, Treatment};
 use crate::state::SharedState;
 
-/// Query for [`list`].
 pub struct Filter {
-    /// `"all" | "attention" | "ok" | "pending" | "running" | "failed"`.
+    // `"all" | "attention" | "ok" | "pending" | "running" | "failed"`.
     pub status: String,
-    /// `"all" | "film" | "series" | "episode"`.
+    // `"all" | "film" | "series" | "episode"`.
     pub kind: String,
     pub query: String,
     pub page: i64,
@@ -36,12 +27,9 @@ fn tr(key: &str, status: &str, error: Option<String>) -> Treatment {
     Treatment { key: key.to_string(), status: status.to_string(), error }
 }
 
-/// The single source of truth for "what status does this (subject, stage) show".
-/// Shared by the elements list ([`status_of`]) and the per-element drawer
-/// (`crate::api::admin::pipeline::combine`) so the two never disagree: a present
-/// ledger state always wins; with no ledger row, `artifact_done`/`assume_done`
-/// decide done vs pending (there is deliberately no "missing" any stage the list
-/// assumes done when unledgered must read the same in the drawer).
+/// The single source of truth for a (subject, stage) status, shared with the
+/// per-element drawer so the two never disagree: a present ledger state always
+/// wins; with no ledger row, `artifact_done`/`assume_done` decide done vs pending.
 pub fn resolve_status(ledger_status: Option<&str>, artifact_done: bool, assume_done: bool) -> &'static str {
     match ledger_status {
         Some("failed") => "failed",
@@ -121,7 +109,6 @@ pub fn list(state: &SharedState, f: &Filter) -> Result<PipelineElements> {
     let embed_l: Ledger = db::pipeline::stage_statuses(db, "embed")?;
     let mark_l: Ledger = db::pipeline::stage_statuses(db, "markers")?;
 
-    // Episodes grouped by show (for the series aggregate + posters).
     let ep_by_show = group_episodes_by_show(&items);
     let show_poster: HashMap<&str, Option<String>> =
         shows.iter().map(|s| (s.id.as_str(), s.poster.clone())).collect();
@@ -194,10 +181,8 @@ pub fn list(state: &SharedState, f: &Filter) -> Result<PipelineElements> {
         });
     }
 
-    // Counts over the full (unfiltered) set.
     let counts = tally_counts(&all);
 
-    // Filter.
     let q = f.query.trim().to_lowercase();
     let filtered: Vec<&ElementRow> =
         all.iter().filter(|el| matches_filter(el, f, &q)).collect();
@@ -213,8 +198,6 @@ pub fn list(state: &SharedState, f: &Filter) -> Result<PipelineElements> {
     Ok(PipelineElements { total, page, pages, counts, elements })
 }
 
-/// The bulk lookups shared while building each element's per-treatment status,
-/// bundled so the row builders take one context instead of a dozen params.
 struct Ledgers<'a, 'k> {
     probed: &'a HashSet<String>,
     markset: &'a HashSet<String>,
@@ -227,7 +210,6 @@ struct Ledgers<'a, 'k> {
     show_poster: &'a HashMap<&'k str, Option<String>>,
 }
 
-/// Episodes grouped by their show id (for the series aggregate + posters).
 fn group_episodes_by_show(items: &[RawItem]) -> HashMap<&str, Vec<&RawItem>> {
     let mut ep_by_show: HashMap<&str, Vec<&RawItem>> = HashMap::new();
     for it in items {
@@ -240,9 +222,6 @@ fn group_episodes_by_show(items: &[RawItem]) -> HashMap<&str, Vec<&RawItem>> {
     ep_by_show
 }
 
-/// The `(treatments, kind, poster)` for one item row: an episode gets probe /
-/// storyboard / subtitles / markers; a film/video gets probe / metadata /
-/// storyboard / subtitles / embed.
 fn item_treatments(it: &RawItem, lg: &Ledgers<'_, '_>) -> (Vec<Treatment>, &'static str, Option<String>) {
     if it.kind == "episode" {
         let (p, _) = status_of(None, lg.probed.contains(&it.id), false);
@@ -288,7 +267,6 @@ fn item_treatments(it: &RawItem, lg: &Ledgers<'_, '_>) -> (Vec<Treatment>, &'sta
     }
 }
 
-/// Roll up per-status and per-kind counts over the full (unfiltered) set.
 fn tally_counts(all: &[ElementRow]) -> ElementCounts {
     let mut counts = ElementCounts { total: all.len() as i64, ..Default::default() };
     for el in all {
@@ -309,8 +287,7 @@ fn tally_counts(all: &[ElementRow]) -> ElementCounts {
     counts
 }
 
-/// Whether one row passes the query / kind / status filter (`q` is already
-/// trimmed + lowercased).
+// `q` is already trimmed + lowercased.
 fn matches_filter(el: &ElementRow, f: &Filter, q: &str) -> bool {
     if !q.is_empty() && !el.title.to_lowercase().contains(q) {
         return false;
@@ -365,13 +342,10 @@ mod tests {
 
     #[test]
     fn resolve_status_ledger_wins_then_artifacts() {
-        // A present ledger state always wins over artifact flags.
         assert_eq!(resolve_status(Some("failed"), true, true), "failed");
         assert_eq!(resolve_status(Some("running"), false, false), "running");
         assert_eq!(resolve_status(Some("pending"), true, false), "pending");
-        // Any other ledger value (e.g. "done") reads done.
         assert_eq!(resolve_status(Some("done"), false, false), "done");
-        // No ledger: artifact_done OR assume_done => done, else pending.
         assert_eq!(resolve_status(None, true, false), "done");
         assert_eq!(resolve_status(None, false, true), "done");
         assert_eq!(resolve_status(None, false, false), "pending");
@@ -381,10 +355,8 @@ mod tests {
     fn status_of_surfaces_error_only_when_failed() {
         let failed = ("failed".to_string(), Some("boom".to_string()));
         assert_eq!(status_of(Some(&failed), false, false), ("failed", Some("boom".to_string())));
-        // A running ledger with a stale error message does not leak the error.
         let running = ("running".to_string(), Some("stale".to_string()));
         assert_eq!(status_of(Some(&running), false, false), ("running", None));
-        // No ledger, artifact present -> done, no error.
         assert_eq!(status_of(None, true, false), ("done", None));
     }
 
@@ -413,16 +385,13 @@ mod tests {
         ep.episode_title = Some("Breakage".into());
         assert_eq!(element_title(&ep), "Breaking Bad - S02E05 « Breakage »");
 
-        // No episode title -> just "show - code".
         ep.episode_title = None;
         assert_eq!(element_title(&ep), "Breaking Bad - S02E05");
 
-        // Missing season/episode -> just the show.
         ep.season = None;
         ep.episode = None;
         assert_eq!(element_title(&ep), "Breaking Bad");
 
-        // No show + no code -> falls back to the raw title.
         ep.show_title = None;
         assert_eq!(element_title(&ep), "Some Title");
     }
@@ -437,7 +406,6 @@ mod tests {
         b.show_id = Some("show1".into());
         let mut movie = raw_item("film");
         movie.id = "m".into();
-        // An episode with no show_id is dropped.
         let mut orphan = raw_item("episode");
         orphan.id = "o".into();
         orphan.show_id = None;
@@ -469,8 +437,6 @@ mod tests {
         let markset: HashSet<String> = HashSet::new();
         let vecset: HashSet<String> = ["m1".to_string()].into_iter().collect();
         let empty: Ledger = HashMap::new();
-        // A failed metadata ledger row surfaces its error; other stages fall back
-        // to artifact/assume-done.
         let meta_l: Ledger =
             [("m1".to_string(), ("failed".to_string(), Some("boom".to_string())))].into_iter().collect();
         let show_poster: HashMap<&str, Option<String>> = HashMap::new();
@@ -492,15 +458,14 @@ mod tests {
         let (treatments, kind, poster) = item_treatments(&movie, &lg);
         assert_eq!(kind, "film");
         assert_eq!(poster.as_deref(), Some("p.jpg"));
-        // Film row: probe / metadata / storyboard / subtitles / embed.
         let keys: Vec<&str> = treatments.iter().map(|t| t.key.as_str()).collect();
         assert_eq!(keys, vec!["probe", "metadata", "storyboard", "subtitles", "embed"]);
         let by = |k: &str| treatments.iter().find(|t| t.key == k).unwrap();
-        assert_eq!(by("probe").status, "done"); // in probed set
+        assert_eq!(by("probe").status, "done");
         assert_eq!(by("metadata").status, "failed");
         assert_eq!(by("metadata").error.as_deref(), Some("boom"));
-        assert_eq!(by("embed").status, "done"); // in vecset
-        assert_eq!(by("storyboard").status, "done"); // no ledger, assume_done
+        assert_eq!(by("embed").status, "done");
+        assert_eq!(by("storyboard").status, "done");
     }
 
     #[test]
@@ -530,12 +495,10 @@ mod tests {
         ep.season = Some(1);
         let (treatments, kind, poster) = item_treatments(&ep, &lg);
         assert_eq!(kind, "episode");
-        // The episode inherits its show's poster.
         assert_eq!(poster.as_deref(), Some("show.jpg"));
         let keys: Vec<&str> = treatments.iter().map(|t| t.key.as_str()).collect();
         assert_eq!(keys, vec!["probe", "storyboard", "subtitles", "markers"]);
         let by = |k: &str| treatments.iter().find(|t| t.key == k).unwrap();
-        // No ledger + no probe artifact -> probe pending; storyboard/subtitles/markers assume done.
         assert_eq!(by("probe").status, "pending");
         assert_eq!(by("storyboard").status, "done");
         assert_eq!(by("markers").status, "done");
@@ -552,24 +515,18 @@ mod tests {
         };
         let el = row("film", "failed"); // title "The Matrix"
 
-        // Query is a case-insensitive substring of the title (already lowercased by caller).
         assert!(matches_filter(&el, &f("all", "all", ""), ""));
         assert!(matches_filter(&el, &f("all", "all", "matrix"), "matrix"));
         assert!(!matches_filter(&el, &f("all", "all", "inception"), "inception"));
 
-        // Kind filter.
         assert!(!matches_filter(&el, &f("all", "series", ""), ""));
         assert!(matches_filter(&el, &f("all", "film", ""), ""));
 
-        // Status filter: exact match, plus "attention" = anything not ok.
         assert!(matches_filter(&el, &f("failed", "all", ""), ""));
         assert!(!matches_filter(&el, &f("ok", "all", ""), ""));
         assert!(matches_filter(&el, &f("attention", "all", ""), ""));
         assert!(!matches_filter(&row("film", "ok"), &f("attention", "all", ""), ""));
     }
-
-    // ----- list(): the full SharedState-backed grouped view over a seeded catalog
-    // + ledger. --------------------------------------------------------------------
 
     use crate::test_support;
 
@@ -582,23 +539,17 @@ mod tests {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");
         test_support::seed_show_episode(&state, "sh1", "ep1");
-        // A failed metadata ledger row must drive the movie's overall to "failed"
-        // and surface its error in the drawer/list.
         test_support::seed_task(&state, "metadata", "item", "m1", "failed", Some("meta boom"));
 
         let page = list(&state, &all_filter()).unwrap();
 
-        // A row per movie + per episode + per show.
         assert_eq!(page.total, 3);
         assert_eq!(page.counts.total, 3);
         assert_eq!((page.counts.film, page.counts.series, page.counts.episode), (1, 1, 1));
-        // The movie is failed; the episode (unprobed) and the show (no metadata yet)
-        // are pending. Nothing is ok/running.
         assert_eq!(page.counts.failed, 1);
         assert_eq!(page.counts.pending, 2);
         assert_eq!((page.counts.ok, page.counts.running), (0, 0));
 
-        // The movie row carries the failed metadata treatment + its error message.
         let movie = page.elements.iter().find(|e| e.id == "m1").expect("movie row present");
         assert_eq!(movie.kind, "film");
         assert_eq!(movie.overall, "failed");
@@ -606,7 +557,6 @@ mod tests {
         assert_eq!(meta.status, "failed");
         assert_eq!(meta.error.as_deref(), Some("meta boom"));
 
-        // The show row exposes its episode aggregate.
         let show = page.elements.iter().find(|e| e.id == "sh1").expect("show row present");
         assert_eq!(show.kind, "series");
         assert_eq!(show.ep_stats.as_ref().unwrap().episodes, 1);
@@ -619,8 +569,6 @@ mod tests {
         test_support::seed_show_episode(&state, "sh1", "ep1");
         test_support::seed_task(&state, "metadata", "item", "m1", "failed", Some("x"));
 
-        // status=failed keeps only the movie, but the counts still cover the whole
-        // (unfiltered) catalog.
         let failed = list(
             &state,
             &Filter { status: "failed".into(), kind: "all".into(), query: String::new(), page: 0, limit: 50 },
@@ -631,7 +579,6 @@ mod tests {
         assert_eq!(failed.elements[0].id, "m1");
         assert_eq!(failed.counts.total, 3, "counts are over the full catalog, not the filtered page");
 
-        // kind=film keeps only the movie row.
         let films = list(
             &state,
             &Filter { status: "all".into(), kind: "film".into(), query: String::new(), page: 0, limit: 50 },

@@ -1,9 +1,7 @@
 import type { Marker } from '@kroma/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** No credits marker → treat the last CREDITS_TAIL seconds as the credits. */
 const CREDITS_TAIL = 30;
-/** Circular timer length before auto-advancing the next episode (§11). */
 const AUTO_NEXT = 5;
 
 export interface CreditsState {

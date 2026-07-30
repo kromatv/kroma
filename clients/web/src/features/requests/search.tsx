@@ -45,7 +45,6 @@ export function SearchPage() {
 
   return (
     <main className="min-w-0 pb-20">
-      {/* discovery hero: title + prominent search + type filter */}
       <div className="relative overflow-hidden px-(--gutter-web) pt-9">
         <div className="pointer-events-none absolute inset-x-0 -top-20 h-72 bg-[radial-gradient(48%_60%_at_28%_20%,rgba(242,180,66,.10),transparent_70%)]" />
         <div className="relative">

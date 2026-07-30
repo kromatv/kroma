@@ -10,8 +10,8 @@
 import { fileURLToPath } from 'node:url';
 import type { UserConfig } from 'vite';
 
-/** Extension order. `.web.*` first, mirroring what Metro does in reverse for the
- * native apps (it prefers `.ios` / `.android` / `.native` and never sees these). */
+// `.web.*` first, mirroring what Metro does in reverse for the native apps
+// (it prefers `.ios` / `.android` / `.native` and never sees these).
 export const WEB_EXTENSIONS = [
   '.web.tsx',
   '.web.ts',
@@ -25,24 +25,24 @@ export const WEB_EXTENSIONS = [
   '.mjs',
 ];
 
-/**
- * Build a shell's `resolve` block. `alias` is the shell's own path aliases (e.g.
- * `#tv`); the react-native redirect is appended last. `extraDedupe` names any
- * further single-instance package the shell needs (the web client adds
- * `react-call`, whose callables keep a module-level store).
- *
- * The redirect is an anchored RegExp on purpose: a plain string alias also
- * matches subpath imports, so `react-native/Libraries/...` would silently become
- * `react-native-web/Libraries/...` and fail to resolve with a confusing error.
- */
-/** `@kroma/ui`'s own internal subpath alias, declared in its package.json
- * `imports` and mirrored here. Every web target gets it for free, because it is
- * the kit's own spelling of its own files - a shell should not have to know that
- * the kit refers to itself as `#ui`. The Metro half lives in
- * clients/expo-build/metro-workspace.js, and tsconfig.base.json carries the
- * types. */
+// `@kroma/ui`'s own internal subpath alias, declared in its package.json
+// `imports` and mirrored here. Every web target gets it for free, because it
+// is the kit's own spelling of its own files - a shell should not have to
+// know that the kit refers to itself as `#ui`. The Metro half lives in
+// clients/expo-build/metro-workspace.js, and tsconfig.base.json carries the
+// types.
 const KIT_SRC = fileURLToPath(new URL('../../ui/src', import.meta.url));
 
+/**
+ * Build a shell's `resolve` block. `alias` is the shell's own path aliases
+ * (e.g. `#tv`); the react-native redirect is appended last. `extraDedupe`
+ * names any further single-instance package the shell needs (the web client
+ * adds `react-call`, whose callables keep a module-level store).
+ *
+ * The redirect is an anchored RegExp on purpose: a plain string alias also
+ * matches subpath imports, so `react-native/Libraries/...` would silently
+ * become `react-native-web/Libraries/...` and fail with a confusing error.
+ */
 export function webResolve(
   alias: Record<string, string> = {},
   extraDedupe: string[] = [],
@@ -80,23 +80,16 @@ export function webResolve(
   };
 }
 
-/** react-native-web is CommonJS and pulls a deep tree; pre-bundling it keeps the
- * dev server's module graph small enough for a TV's slow connection. */
+// react-native-web is CommonJS and pulls a deep tree; pre-bundling it keeps
+// the dev server's module graph small enough for a TV's slow connection.
 export const RNW_OPTIMIZE_INCLUDE = ['react-native-web'];
 
-/**
- * The packages an SSR target must NOT externalize, as a consequence of the
- * aliases above.
- *
- * It lives here rather than being hand-copied into the one shell that renders on
- * a server, because it is not a fact about that shell: `webResolve` aliases
- * inline-style-prefixer and css-in-js-utils to their ESM `es/` builds, whose
- * relative imports are extensionless and therefore only resolve through Vite,
- * and it lands react-tv-space-navigation's bare `require('react-native')` on
- * react-native-web. An alias whose precondition is remembered in a different
- * file is an alias that eventually 500s with `createPrefixer is undefined` the
- * day a second SSR target appears.
- */
+// The packages an SSR target must NOT externalize, as a consequence of the
+// aliases above: `webResolve` lands inline-style-prefixer and css-in-js-utils
+// on their ESM `es/` builds (extensionless relative imports, resolved only
+// through Vite) and react-tv-space-navigation's bare `require('react-native')`
+// on react-native-web. Kept here rather than hand-copied into the one shell
+// that renders on a server, since it's a fact about the aliases, not the shell.
 export const RNW_SSR_NO_EXTERNAL = [
   'react-native-web',
   'inline-style-prefixer',
@@ -104,27 +97,21 @@ export const RNW_SSR_NO_EXTERNAL = [
   'react-tv-space-navigation',
 ];
 
-/**
- * The workspace packages a dev server must serve from SOURCE.
- *
- * Left out of Vite's pre-bundle: they are the repo's own code, and pre-bundling
- * them means an edit to one is invisible until the cache is cleared. Kept as one
- * list because a source package missing from a shell's copy is a dev server
- * quietly serving a stale build of it - which is what happened to
- * `@kroma/workbench` on the TV shells.
- */
+// The workspace packages a dev server must serve from SOURCE: left out of
+// Vite's pre-bundle, since pre-bundling them means an edit to one is invisible
+// until the cache is cleared. Kept as one list because a source package
+// missing from a shell's copy is a dev server quietly serving a stale build
+// of it.
 export const KROMA_SOURCE_PACKAGES = ['@kroma/ui', '@kroma/core', '@kroma/tv', '@kroma/workbench'];
 
-/**
- * react-native-web's Animated implementation reads the React Native `global`,
- * which no browser defines: without this, every Animated component throws
- * `ReferenceError: global is not defined` the moment it unmounts and tries to
- * stop its animation. That is the pulsing skeleton, the spinner, the brand
- * wheel, the settings switch and the text caret, so the whole screen goes with
- * them.
- *
- * `globalThis` is the standard spelling of what React Native means by `global`,
- * and it exists on every engine this app ships to, including the Chromium 53
- * legacy webOS tier (it is ES2020, which that tier's build already down-levels).
- */
+// react-native-web's Animated implementation reads the React Native `global`,
+// which no browser defines: without this, every Animated component throws
+// `ReferenceError: global is not defined` the moment it unmounts and tries to
+// stop its animation - the pulsing skeleton, the spinner, the brand wheel, the
+// settings switch, the text caret, and the whole screen with them.
+//
+// `globalThis` is the standard spelling of what React Native means by
+// `global`, and it exists on every engine this app ships to, including the
+// Chromium 53 legacy webOS tier (it is ES2020, which that tier already
+// down-levels).
 export const RNW_DEFINE = { global: 'globalThis' };

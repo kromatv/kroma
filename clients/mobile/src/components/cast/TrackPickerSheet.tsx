@@ -1,9 +1,7 @@
 // Audio / subtitle picker for the remote.
 //
-// The rows are the TV's OWN track list, labelled the way that player labels them
-// (the receiver sends both with its heartbeat), so what this phone offers is
-// what the set across the room can actually switch to - never a track derived
-// from the file that its player would refuse.
+// Rows come from the receiver's own track list (sent with its heartbeat), so
+// only tracks the TV can actually switch to are ever offered.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { CastTrack } from '@kroma/core';
@@ -16,11 +14,8 @@ import { colors, radius, spacing, type } from '#mobile/lib/theme';
 interface TrackPickerSheetProps {
   title: string;
   tracks: CastTrack[];
-  /** The live selection, or null when none / off. */
   activeIndex: number | null;
-  /** When given, an "off" row is offered above the tracks (subtitles). */
   offLabel?: string;
-  /** `null` picks "off"; only reachable when `offLabel` is set. */
   onPick: (index: number | null) => void;
 }
 
@@ -30,10 +25,9 @@ export const TrackPickerSheet = forwardRef<BottomSheetModal, TrackPickerSheetPro
       <BottomSheetModal ref={ref} {...sheetChrome}>
         <SheetBody>
           <SheetTitle>{title}</SheetTitle>
-          {/* Bounded: a long-dubbed film can carry a dozen tracks, and the sheet
-              still has to stop somewhere short of the whole screen. A film with
-              one audio track is the other end of it - that is what the drawer
-              floor in <SheetBody> is for. */}
+          {/* Bounded: a long-dubbed film can carry a dozen tracks, so the sheet
+              stops short of the full screen; <SheetBody>'s drawer floor covers
+              the other end. */}
           <ScrollView style={styles.list} bounces={false}>
             {offLabel ? (
               <Row label={offLabel} selected={activeIndex == null} onPress={() => onPick(null)} />

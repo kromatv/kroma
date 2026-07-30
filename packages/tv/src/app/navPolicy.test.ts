@@ -1,10 +1,5 @@
-// The app's actual navigation policy, as opposed to the generic resolver next
-// door: which screens each session may sit on.
-//
-// Worth testing on its own because the failure mode is invisible in review and
-// obvious to a user: a screen missing from the signed-in list still mounts, and
-// is then replaced by the home page on the same tick, so the feature "opens and
-// closes immediately". That is precisely what happened to the report screen.
+// A screen missing from a session's list still mounts and is then replaced by the
+// home page on the same tick, so the feature "opens and closes immediately".
 
 import { describe, expect, it } from 'vitest';
 import { resolveRedirect } from './guard';
@@ -46,10 +41,7 @@ describe('navigation policy', () => {
   });
 
   it('leaves no screen out of both lists, so nothing is unreachable in every session', () => {
-    // *Classifying* a new route is enforced by the compiler (the map is a
-    // Record<RouteName, …>). What this checks is the derivation: a screen that
-    // fell out of both lists would be a screen the guard bounces away from
-    // whoever is looking at it.
+    // Classifying a new route is compiler-enforced; this checks the derivation.
     const reachable = new Set([...AUTH_SCREENS, ...APP_SCREENS]);
     expect([...ALL_SCREENS].sort()).toEqual([...reachable].sort());
   });

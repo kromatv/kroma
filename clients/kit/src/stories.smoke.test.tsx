@@ -1,12 +1,8 @@
 // @vitest-environment jsdom
-//
-// Every story, every scene, every demo, actually rendered.
-//
-// The workbench's own test covers the shell; this covers the CONTENT, which is
-// where breakage actually happens: a story is the only consumer of some props,
-// a demo is real code with real hooks, and neither is exercised by anything
-// else in the suite. A story that throws used to be discoverable only by
-// clicking through 32 components in a browser.
+
+// Every story, every scene, every demo, actually rendered: the workbench's
+// own test covers the shell, this covers the CONTENT, since a story is the
+// only consumer of some props and a demo is real code with real hooks.
 
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
@@ -15,8 +11,8 @@ import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { STORIES } from './stories';
 
-/** A story's `render` is typed as ReactNode (it may legitimately return a
- * string or a fragment), while Testing Library wants an element. */
+// A story's `render` is typed as ReactNode (it may legitimately return a
+// string or a fragment), while Testing Library wants an element.
 const render = (ui: ReactNode) => renderRaw(onScreen(ui as ReactElement));
 
 afterEach(cleanup);
@@ -44,10 +40,9 @@ describe('every story renders', () => {
 });
 
 describe('interactive stories respond to a press', () => {
-  /** The Dialog story is the one that MUST be driven to be seen: it ships a
-   * trigger precisely because a permanently open modal would eat the
-   * workbench's focus. If the trigger stops opening it, the story is dead and
-   * nothing else in the suite notices. */
+  // The Dialog story ships a trigger because a permanently open modal would
+  // eat the workbench's focus; if the trigger stops opening it, nothing else
+  // in the suite notices.
   it('opens the Dialog story from its own trigger', () => {
     const story = STORIES.find((entry) => entry.name === 'Dialog');
     if (!story) throw new Error('the Dialog story has gone missing');
@@ -67,10 +62,8 @@ describe('interactive stories respond to a press', () => {
     expect(screen.queryByText(String(story.args.title))).toBeNull();
   });
 
-  /** A pointer user who opens a modal must be able to get out of it. The
-   * overlay fills the viewport and eats every click, so when this regresses it
-   * does not merely break the dialog - it makes the entire page behind it feel
-   * dead, which is exactly how it was reported. */
+  // The overlay fills the viewport and eats every click; if this regresses,
+  // the whole page behind the dialog reads as dead, not just the dialog.
   it('closes a dialog when the backdrop is pressed', () => {
     const story = STORIES.find((entry) => entry.name === 'Dialog');
     if (!story) throw new Error('the Dialog story has gone missing');

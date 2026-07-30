@@ -27,15 +27,8 @@ interface LiveProps {
   fullscreen: boolean;
 }
 
-/**
- * The row wired to state, because the three things it does are all callbacks:
- * hover moves the focus ring, pressing play swaps the glyph, and the volume rail
- * is a drag. Handed no-ops, the story could only ever show one frozen frame of
- * a control surface.
- */
 function Live({ focused: focusedArg, playing, muted, volume, ...rest }: Readonly<LiveProps>) {
   const [state, setState] = useState({ focused: focusedArg, playing, muted, volume });
-  // The controls in the panel are the other way to drive it, so they win.
   useEffect(() => {
     setState({ focused: focusedArg, playing, muted, volume });
   }, [focusedArg, playing, muted, volume]);
@@ -45,9 +38,6 @@ function Live({ focused: focusedArg, playing, muted, volume, ...rest }: Readonly
     if (id === 'volume') setState((prev) => ({ ...prev, muted: !prev.muted }));
   };
 
-  // The player hands the row its metrics; the story measures the canvas itself,
-  // so switching the workbench viewport (or dragging the window) walks it down
-  // the whole ladder - full size, shrunk, rail gone, then one control at a time.
   const [width, setWidth] = useState(0);
   const metrics = chromeMetrics(ALL, width);
 

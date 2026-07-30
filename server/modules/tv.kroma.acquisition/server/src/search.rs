@@ -18,8 +18,7 @@ use kroma_module_sdk::ports::IndexerRow;
 use kroma_module_sdk::db::{self, WantedRow};
 
 /// A release remembered from the last interactive search of a request, so a
-/// manual grab can hand its magnet/.torrent link to the download manager
-/// without a re-sweep (and without putting grab URLs on the wire).
+/// manual grab can reuse its magnet/.torrent link without a re-sweep.
 #[derive(Clone)]
 pub struct CachedRelease {
     pub view: ScoredReleaseView,
@@ -27,8 +26,6 @@ pub struct CachedRelease {
     pub tmdb_id: u64,
 }
 
-/// Last interactive-search results per request id (bounded: one entry per
-/// request, cleared on grab).
 static SEARCH_CACHE: Mutex<Option<HashMap<String, Vec<CachedRelease>>>> = Mutex::new(None);
 
 pub fn cached_release(request_id: &str, guid: &str, indexer_id: &str) -> Option<CachedRelease> {
@@ -53,8 +50,7 @@ fn cache_results(request_id: &str, releases: Vec<CachedRelease>) {
 }
 
 /// Build a grab spec from a scored release the search chose, for a specific
-/// request/title. Formerly `GrabSpec::from_release` in `kroma-torrent`; it moved
-/// here with `ScoredReleaseView` so the Downloads module names no acquisition type.
+/// request/title.
 pub fn grab_spec_from_release(
     release: &ScoredReleaseView,
     magnet_or_url: &str,
@@ -89,24 +85,19 @@ pub fn grab_spec_from_release(
 pub struct SearchTarget {
     pub query: Query,
     pub target: Target,
-    /// `movie` | `episode` | `season`.
     pub kind: &'static str,
     pub season: Option<u32>,
     pub episodes: Option<Vec<u32>>,
 }
 
-/// Build the search targets for a request. `today` (YYYY-MM-DD) decides, per
-/// season, whether it is COMPLETE (every episode has aired) or AIRING (an episode
-/// is still to come). An AIRING season searches each AIRED-but-open episode on
-/// its own (SxxExx), since a full season pack does not exist mid-airing so a pack
-/// query is wasteful. A COMPLETE season searches the season pack FIRST (one
-/// efficient release), then the aired episodes individually as a fallback the
-/// auto pass skips once the pack grab covers them (`covered` set), so a season
-/// with no pack still fills in per episode instead of stalling. Unaired episodes
-/// (air_date in the future) are never searched.
+/// Build the search targets for a request. An AIRING season (an episode still
+/// to come) searches only the aired-but-open episodes individually, since no
+/// season pack exists mid-airing. A COMPLETE season searches the pack first,
+/// then the aired episodes as a fallback for when there's no pack. Unaired
+/// episodes are never searched.
 pub fn targets_for_wanted(kind: RequestKind, wanted: &[WantedRow], today: &str) -> Vec<SearchTarget> {
     let open: Vec<&WantedRow> = wanted.iter().filter(|w| w.status == "wanted").collect();
-    // A row with no air date is treated as aired (older ledgers, specials).
+    // No air date is treated as aired (older ledgers, specials).
     let aired = |w: &WantedRow| w.air_date.as_deref().is_none_or(|d| d <= today);
     let mut out: Vec<SearchTarget> = Vec::new();
     match kind {
@@ -136,7 +127,7 @@ pub fn targets_for_wanted(kind: RequestKind, wanted: &[WantedRow], today: &str) 
                 let aired_eps: Vec<u32> =
                     rows.iter().copied().filter(|w| aired(w)).filter_map(|w| w.episode).collect();
                 if aired_eps.is_empty() {
-                    continue; // nothing has aired for this season yet
+                    continue;
                 }
                 let has_future =
                     rows.iter().any(|w| w.air_date.as_deref().is_some_and(|d| d > today));
@@ -154,7 +145,6 @@ pub fn targets_for_wanted(kind: RequestKind, wanted: &[WantedRow], today: &str) 
                     episodes: Some(vec![episode]),
                 };
                 if !has_future {
-                    // Complete season: the pack (covers everything) comes first.
                     out.push(SearchTarget {
                         query: Query::Season {
                             tmdb_id: Some(sample.tmdb_id),
@@ -167,8 +157,6 @@ pub fn targets_for_wanted(kind: RequestKind, wanted: &[WantedRow], today: &str) 
                         episodes: Some(aired_eps.clone()),
                     });
                 }
-                // Per-episode targets: the only search for an airing season, or the
-                // fallback after a complete season's pack (skipped once covered).
                 for ep in aired_eps {
                     out.push(episode_target(ep));
                 }
@@ -178,7 +166,6 @@ pub fn targets_for_wanted(kind: RequestKind, wanted: &[WantedRow], today: &str) 
     out
 }
 
-/// Score one Torznab release against a target, into the wire view.
 pub fn score_release(
     release: &Release,
     indexer: &IndexerRow,
@@ -219,9 +206,7 @@ pub fn score_release(
         breakdown,
         rejected,
         // A details URL is grabbable too: built-in indexers resolve the actual
-        // magnet/.torrent from the details page (the definition's `download`
-        // block) at grab time. Torznab releases always carry magnet/link, so
-        // this only widens grabbability for the built-in download-block case.
+        // magnet/.torrent from it at grab time.
         grabbable: release.magnet.is_some()
             || release.link.is_some()
             || release.details_url.is_some(),
@@ -247,11 +232,9 @@ pub fn interactive_search<S: kroma_module_sdk::host::HostCtx>(state: &S, request
     if wanted.is_empty() {
         kroma_module_sdk::engine::services::requests::preview_wanted(state, &req, &mut wanted)?;
     }
-    // An interactive search is an explicit admin action: search the request's
-    // FULL content regardless of ledger status, so a request that's already
-    // available / grabbed / partially available can still be searched and
-    // (re)grabbed. targets_for_wanted only considers `wanted` rows, so force
-    // every row to `wanted` for target generation (this clone is not persisted).
+    // An explicit admin search covers the request's full content regardless of
+    // ledger status, so already-grabbed rows can still be (re)searched.
+    // targets_for_wanted only looks at `wanted` rows, so force them on a clone.
     let mut search_wanted = wanted.clone();
     for w in &mut search_wanted {
         w.status = "wanted".into();
@@ -277,8 +260,6 @@ pub fn interactive_search<S: kroma_module_sdk::host::HostCtx>(state: &S, request
     Ok(InteractiveSearchView { releases, indexer_errors: errors })
 }
 
-/// Sweep every indexer over every target, de-duplicating by (indexer, guid),
-/// into scored candidates plus per-indexer errors.
 fn collect_search_hits<S: kroma_module_sdk::host::HostCtx>(
     state: &S,
     indexers: &[IndexerRow],
@@ -300,7 +281,6 @@ fn collect_search_hits<S: kroma_module_sdk::host::HostCtx>(
     (cached, errors)
 }
 
-/// Score and keep one indexer/target batch's new releases (unseen guids).
 fn push_hits(
     found: Vec<Release>,
     indexer: &IndexerRow,
@@ -328,9 +308,8 @@ pub fn grab_cached<S: kroma_module_sdk::host::HostCtx>(state: &S,
     guid: &str,
     indexer_id: &str,
 ) -> Result<kroma_module_sdk::ports::DownloadRow> {
-    // The search cache is in-memory, so a server restart (common in dev with
-    // cargo-watch) or a direct grab with no prior search would miss it. On a
-    // miss, re-run the interactive search to repopulate, then look up again.
+    // The search cache is in-memory, so a restart or a direct grab with no
+    // prior search would miss it; on a miss, re-run the search and retry.
     let cached = match cached_release(request_id, guid, indexer_id) {
         Some(c) => c,
         None => {
@@ -340,9 +319,8 @@ pub fn grab_cached<S: kroma_module_sdk::host::HostCtx>(state: &S,
             })?
         }
     };
-    // Resolve the grabbable target. A built-in indexer may need a details-page
-    // fetch (the definition's `download` block) to turn a search row into a
-    // magnet / .torrent link.
+    // A built-in indexer may need a details-page fetch to turn a search row
+    // into a magnet / .torrent link.
     let magnet_or_url = {
         let row = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerDbPort>(state)
             .ok_or_else(|| anyhow!("indexer module unavailable"))?
@@ -361,10 +339,8 @@ pub fn grab_cached<S: kroma_module_sdk::host::HostCtx>(state: &S,
     if magnet_or_url.is_empty() {
         return Err(anyhow!("release has no magnet or download link"));
     }
-    // Grabbing a release implies approval. A still-pending request has no wanted
-    // ledger, so the grab would create a download but leave the request stuck in
-    // "pending" forever. Approve it first (materializes the ledger + moves it out
-    // of pending), so the grab can flip the right rows to "grabbed".
+    // Grabbing implies approval: a still-pending request has no wanted ledger,
+    // so approve it first, or the request would stay stuck in "pending".
     let conn = state.db().get()?;
     let req = db::get_request(&conn, request_id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
@@ -393,8 +369,9 @@ pub fn grab_cached<S: kroma_module_sdk::host::HostCtx>(state: &S,
 }
 
 /// Free-text manual search across every enabled indexer: parse each result for
-/// quality/episode hints and sort best-first, but do NOT accept/reject (there
-/// is no specific target). The admin picks and grabs via the add endpoint.
+/// quality/episode hints and sort best-first, with no accept/reject scoring
+/// since there's no specific target. The admin picks and grabs via the add
+/// endpoint.
 pub fn manual_search<S: kroma_module_sdk::host::HostCtx>(state: &S, query: &str) -> Result<ManualSearchView> {
     let q = query.trim();
     if q.is_empty() {
@@ -417,8 +394,6 @@ pub fn manual_search<S: kroma_module_sdk::host::HostCtx>(state: &S, query: &str)
     let mut errors: Vec<String> = Vec::new();
     let mut seen: HashSet<(String, String)> = HashSet::new();
     for indexer in &indexers {
-        // Free text: the Movie query's last attempt is the `q` fallback (torznab)
-        // / the keywords search (built-in).
         match crate::search_indexer(state, indexer, &torznab_query) {
             Ok(found) => {
                 for r in found {
@@ -450,7 +425,6 @@ pub fn manual_search<S: kroma_module_sdk::host::HostCtx>(state: &S, query: &str)
             Err(e) => errors.push(format!("{}: {e:#}", indexer.name)),
         }
     }
-    // Best-first: more seeders, then bigger (rough quality proxy).
     releases.sort_by(|a, b| {
         b.seeders.unwrap_or(0).cmp(&a.seeders.unwrap_or(0)).then(b.size_bytes.unwrap_or(0).cmp(&a.size_bytes.unwrap_or(0)))
     });
@@ -511,8 +485,6 @@ mod target_tests {
 
     #[test]
     fn airing_season_searches_aired_episodes_per_episode_only() {
-        // Ep1-2 aired, ep3 airs in the future: airing season -> per-episode for
-        // the two aired ones, NO season pack, and never the unaired episode.
         let rows = vec![
             ep(1, 1, Some("2026-07-01")),
             ep(1, 2, Some("2026-07-08")),
@@ -526,7 +498,6 @@ mod target_tests {
 
     #[test]
     fn complete_season_searches_pack_first_then_episode_fallback() {
-        // All aired: complete season -> pack first, then per-episode fallback.
         let rows = vec![ep(2, 1, Some("2025-01-01")), ep(2, 2, Some("2025-01-08"))];
         let t = targets_for_wanted(RequestKind::Show, &rows, "2026-07-16");
         assert_eq!(t.len(), 3);
@@ -538,7 +509,7 @@ mod target_tests {
     fn no_air_date_is_treated_as_aired_complete() {
         let rows = vec![ep(1, 1, None), ep(1, 2, None)];
         let t = targets_for_wanted(RequestKind::Show, &rows, "2026-07-16");
-        assert_eq!(t[0].kind, "season"); // no future -> complete -> pack + fallback
+        assert_eq!(t[0].kind, "season");
         assert_eq!(t.len(), 3);
     }
 
@@ -582,16 +553,12 @@ mod target_tests {
             ep(1, 1, None),
             ep(1, 2, None),
         ];
-        // Movie coverage picks the movie row only.
         assert_eq!(wanted_ids_by(&rows, "movie", None, None), vec!["m1".to_string()]);
-        // Season coverage picks every row of that season.
         assert_eq!(
             wanted_ids_by(&rows, "season", Some(1), None),
             vec!["s1e1".to_string(), "s1e2".to_string()]
         );
-        // Episode coverage intersects season + the episode list.
         assert_eq!(wanted_ids_by(&rows, "episode", Some(1), Some(&[2])), vec!["s1e2".to_string()]);
-        // No matching episode -> empty.
         assert!(wanted_ids_by(&rows, "episode", Some(1), Some(&[9])).is_empty());
     }
 }

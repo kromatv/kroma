@@ -22,8 +22,6 @@ import type { Translate } from './i18n';
 // Echoes the message key so localized output is asserted by key.
 const t: Translate = (key) => key;
 
-// ----- fixtures --------------------------------------------------------------
-
 function episode(p: {
   season?: number | null;
   episode?: number | null;
@@ -49,8 +47,6 @@ const MOVIE = {
   video: { codec: 'hevc', width: 3840, hdr: true },
 } as unknown as MediaItem;
 
-// ----- episodeTag ------------------------------------------------------------
-
 describe('episodeTag', () => {
   it('zero-pads season and episode', () => {
     expect(episodeTag(episode({ season: 1, episode: 5 }))).toBe('S01E05');
@@ -71,8 +67,6 @@ describe('episodeTag', () => {
   });
 });
 
-// ----- playerSubtitle --------------------------------------------------------
-
 describe('playerSubtitle', () => {
   it('joins show title and the S/E tag for an episode', () => {
     expect(playerSubtitle(episode({ showTitle: 'Severance', season: 1, episode: 5 }))).toBe(
@@ -89,16 +83,13 @@ describe('playerSubtitle', () => {
   });
 });
 
-// ----- sizedImageUrl ---------------------------------------------------------
-
 // The pixel ratio is read from the global at call time, so a stub must not leak
 // into the next test.
 afterEach(() => vi.unstubAllGlobals());
 
 describe('sizedImageUrl', () => {
-  /** jsdom reports a ratio of 1, which is also what a 1920x1080 television
-   * reports - and asking a television for 2x was four times the pixels it can
-   * show, on every backdrop swap. */
+  // jsdom reports a ratio of 1, which is also what a 1920x1080 television
+  // reports.
   it('asks for the display width on a 1x screen (a television)', () => {
     expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=200');
   });
@@ -129,8 +120,6 @@ describe('sizedImageUrl', () => {
   });
 });
 
-// ----- hueFromString ---------------------------------------------------------
-
 describe('hueFromString', () => {
   it('is deterministic and always a hue on the wheel', () => {
     expect(hueFromString('the-matrix')).toBe(hueFromString('the-matrix'));
@@ -145,8 +134,6 @@ describe('hueFromString', () => {
     expect(posterColors('tt123')[0]).toBe(`hsl(${hueFromString('tt123')} 38% 26%)`);
   });
 });
-
-// ----- posterColors ----------------------------------------------------------
 
 describe('posterColors', () => {
   it('is deterministic for a given id', () => {
@@ -168,8 +155,6 @@ describe('posterColors', () => {
   });
 });
 
-// ----- codecLabel ------------------------------------------------------------
-
 describe('codecLabel', () => {
   it('maps known codecs to display names', () => {
     expect(codecLabel('hevc')).toBe('H.265');
@@ -182,8 +167,6 @@ describe('codecLabel', () => {
     expect(codecLabel('mpeg2')).toBe('MPEG2');
   });
 });
-
-// ----- qualityBadge / qualityBadgeForVideo -----------------------------------
 
 describe('qualityBadgeForVideo', () => {
   const v = (p: Partial<VideoTrack>): VideoTrack => p as VideoTrack;
@@ -207,8 +190,6 @@ describe('qualityBadgeForVideo', () => {
   });
 });
 
-// ----- formatTimecode --------------------------------------------------------
-
 describe('formatTimecode', () => {
   it('omits the hour when under an hour', () => {
     expect(formatTimecode(0)).toBe('0:00');
@@ -227,8 +208,6 @@ describe('formatTimecode', () => {
   });
 });
 
-// ----- langCode --------------------------------------------------------------
-
 describe('langCode', () => {
   it('upper-cases the first two letters', () => {
     expect(langCode('fra')).toBe('FR');
@@ -241,8 +220,6 @@ describe('langCode', () => {
     expect(langCode('')).toBe('ST');
   });
 });
-
-// ----- channelLabel ----------------------------------------------------------
 
 describe('channelLabel', () => {
   it('labels common layouts', () => {
@@ -260,8 +237,6 @@ describe('channelLabel', () => {
   });
 });
 
-// ----- langName --------------------------------------------------------------
-
 describe('langName', () => {
   it('maps 2- and 3-letter ISO codes to a catalog key', () => {
     expect(langName(t, 'fr')).toBe('lang.fr');
@@ -276,8 +251,6 @@ describe('langName', () => {
     expect(langName(t, '')).toBeNull();
   });
 });
-
-// ----- audioTrackLabel -------------------------------------------------------
 
 describe('audioTrackLabel', () => {
   const track = (p: Partial<AudioTrack>): AudioTrack => p as AudioTrack;
@@ -307,8 +280,6 @@ describe('audioTrackLabel', () => {
     expect(audioTrackLabel(t, undefined)).toBeUndefined();
   });
 });
-
-// ----- safeImageUrl ----------------------------------------------------------
 
 describe('safeImageUrl', () => {
   it('passes our own artwork paths through untouched', () => {

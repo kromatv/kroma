@@ -5,8 +5,8 @@
 
 import type { KeyboardLayoutPref } from '#tv/app/keyboardLayoutPref';
 
-/** Uppercase letter rows per layout. The LAST row is deliberately short: the
- * search keyboard appends space / backspace / close to it. */
+// The last row of each layout is deliberately short: the search keyboard
+// appends space / backspace / close to it.
 export const LAYOUT_LETTER_ROWS: Record<KeyboardLayoutPref, readonly (readonly string[])[]> = {
   abc: [
     ['A', 'B', 'C', 'D', 'E', 'F'],
@@ -32,9 +32,9 @@ export const LAYOUT_LETTER_ROWS: Record<KeyboardLayoutPref, readonly (readonly s
   ],
 };
 
-/** URL-keyboard rows for a layout: the digits row, then the layout's letters
- * (lowercase) flattened and chunked into rows of ten, with the URL specials
- * appended to the tail 26 letters + 4 specials = exactly three rows of ten. */
+/** Digits row, then the layout's lowercase letters chunked into rows of ten
+ * with the URL specials appended to the tail (26 letters + 4 specials = three
+ * even rows). */
 export function urlRows(layout: KeyboardLayoutPref): string[][] {
   const keys = [
     ...LAYOUT_LETTER_ROWS[layout].flat().map((l) => l.toLowerCase()),

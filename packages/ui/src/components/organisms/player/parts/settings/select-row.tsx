@@ -6,8 +6,6 @@ import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
 import { rowOn, rowStyle, selectLabel, selectRow, selectSub } from './panelStyle';
 
-/** A row line: a plain string gets the row's own type, anything richer is
- * rendered as given (a badge, a coloured fragment). */
 function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>) {
   if (node == null) return null;
   if (typeof node !== 'string') return node;
@@ -19,10 +17,9 @@ function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>)
  * filter): a label, an optional sub-line, an accent check when it is the current
  * value, and an optional trailing control.
  *
- * Every one of those panels had this markup spelled out; extracting it is what
- * keeps them looking identical. Focus is the `focused` PROP, not CSS state: the
- * panel's list navigation owns which row is current, and a pointer entering a
- * row moves that selection exactly as the D-pad would (§15).
+ * Focus is the `focused` PROP, not CSS state: the panel's list navigation owns
+ * which row is current, and a pointer entering a row moves that selection
+ * exactly as the D-pad would (§15).
  */
 export function SelectRow({
   label,

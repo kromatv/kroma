@@ -24,11 +24,9 @@ import {
   themeFor,
 } from './media';
 
-// `hlsMasterUrl` (and the other URL builders) only read `ctx.baseUrl`, so a
-// minimal stub suffices.
+// The URL builders only read `ctx.baseUrl`, so a minimal stub suffices.
 const ctx = { baseUrl: 'http://kroma.test' } as unknown as RequestContext;
 
-// A context that records `ctx.json` calls and drives `ctx.fetchFn` responses.
 function recordCtx(resp?: { ok?: boolean; status?: number; json?: unknown; text?: string }) {
   const calls: string[] = [];
   const rich = {
@@ -127,8 +125,6 @@ describe('resolveArt + art helpers', () => {
   });
 
   it('asks the server for the width the artwork is actually drawn at', () => {
-    // The cached originals are full-size and a browse grid decodes a hundred of
-    // them; the server serves bucketed renditions from `?w=`.
     expect(resolveArt(ctx, '/api/images/x.webp', 320)).toBe(
       'http://kroma.test/api/images/x.webp?w=320',
     );
@@ -138,7 +134,6 @@ describe('resolveArt + art helpers', () => {
     expect(backdropFor(ctx, meta({ backdropUrl: '/api/images/b.webp' }), 320)).toBe(
       'http://kroma.test/api/images/b.webp?w=320',
     );
-    // A hero backdrop is wider than the largest bucket, so it asks for nothing.
     expect(resolveArt(ctx, '/api/images/x.webp')).toBe('http://kroma.test/api/images/x.webp');
     // An absolute TMDB fallback is not ours to resize.
     expect(resolveArt(ctx, 'https://image.tmdb.org/x.jpg', 320)).toBe(

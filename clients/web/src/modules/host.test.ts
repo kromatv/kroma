@@ -1,23 +1,4 @@
 // @vitest-environment jsdom
-//
-// The host a module actually receives.
-//
-// A module never imports app internals; it gets this surface, which is what
-// lets one be compiled in today and runtime-loaded later without the module's
-// own code changing. Four things about it are load-bearing and none are visible
-// from the type:
-//
-//   - It is built ONCE. The host reads the newest auth / i18n / router values
-//     through a ref, so its identity never changes. Rebuilding it per render
-//     re-runs the effect, which calls setHost, which renders again - React error
-//     #185, an infinite loop rather than a slow page.
-//   - Nothing is wired before there is a session. A module's setup() must not
-//     run on the login screen, and `/api/modules` would 401 there anyway.
-//   - A DISABLED module is not set up. Its panel is hidden, so running its
-//     setup() subscribes a module the operator has switched off.
-//   - A failure to start renders with a no-op module API rather than leaving the
-//     page on "Wiring modules…" forever. That screen has no retry and no
-//     message; it is indistinguishable from a hang.
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -42,8 +23,6 @@ const navigate = vi.hoisted(() => vi.fn());
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => navigate }));
 
 const registry = vi.hoisted(() => ({
-  // Both parameters declared, because the second - the set of module ids whose
-  // setup() to skip - is what several of these tests read back.
   start: vi.fn(async (base: unknown, _skipSetup?: ReadonlySet<string>) => ({
     ...(base as object),
     getModuleApi: () => undefined,
@@ -61,7 +40,6 @@ vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => auth }));
 
 import { useModuleHost } from './host';
 
-/** The `HostBase` the registry was started with. */
 function base() {
   const call = registry.start.mock.calls.at(-1);
   if (!call) throw new Error('the registry was never started');
@@ -76,7 +54,6 @@ function base() {
 
 const fetchMock = vi.fn();
 
-/** Answer the next fetch with `body`. */
 const answers = (body: unknown, ok = true, status = 200) =>
   fetchMock.mockResolvedValue({ ok, status, json: async () => body });
 
@@ -146,7 +123,6 @@ describe('starting the modules', () => {
     await waitFor(() => expect(registry.start).toHaveBeenCalled());
 
     const skip = registry.start.mock.calls.at(-1)?.[1] as Set<string>;
-    // Its panel is hidden; running its setup() subscribes a module that is off.
     expect(skip.has('torrents')).toBe(true);
     expect(skip.has('vpn')).toBe(false);
   });

@@ -1,14 +1,10 @@
 // The controls themselves: scrims, title bar, transport row and the scrub bar
-// with its actions. Mounted only while the controls are up; every press pokes
-// the auto-hide timer so touching a control keeps them on screen.
+// with its actions. Mounted only while controls are up; every press pokes the
+// auto-hide timer.
 //
-// The DESIGN is the TV player's (see @kroma/ui player parts), at phone scale:
-// the glass circles of its control cluster (12% white at rest, 22% pressed -
-// the same numbers as the kit's CTRL_OFF / CTRL_ON), the amber play carrying
-// the ink glyph, the display-face title beside a glass back button, and one
-// icon-only action row under the scrub bar. The UX stays the phone's own -
-// touch targets, tap-to-toggle, an auto-hide timer - which is why this file
-// mirrors the TV parts rather than importing them.
+// The design mirrors the TV player's (@kroma/ui player parts) at phone scale;
+// the UX stays the phone's own, which is why this file mirrors those parts
+// rather than importing them.
 
 import { audioTracksOf, episodeTag, formatTimecode, type MediaItem } from '@kroma/core';
 import { fonts, Icon, IconButton, type IconName, Spinner } from '@kroma/ui/kit';
@@ -38,7 +34,6 @@ export function ControlsLayer({
   engine: Engine;
   item: MediaItem;
   insets: EdgeInsets;
-  /** Restart the auto-hide countdown. */
   poke(): void;
   onBack(): void;
   onOpenSheet(view?: SheetView): void;
@@ -46,7 +41,6 @@ export function ControlsLayer({
   next?: MediaItem | null;
   onPlayNext?(): void;
   onPip?(): void;
-  /** Hand this playback to a TV. Absent when nothing is castable. */
   onCast?(): void;
 }>) {
   const t = useT();
@@ -92,8 +86,8 @@ export function ControlsLayer({
         <IconButton size={42} onPress={onBack} label={t('common.back')}>
           <Icon name="chevron-left" size={20} stroke={2.4} />
         </IconButton>
-        {/* Beside the back button, the TV bar's arrangement: the title reads
-            from the corner, not from the centre of the picture. */}
+        {/* Beside the back button, like the TV bar: the title reads from the
+            corner, not the centre of the picture. */}
         <View style={styles.titleBox}>
           <Text numberOfLines={1} style={styles.title}>
             {title}
@@ -117,10 +111,9 @@ export function ControlsLayer({
           }}
           label={t('player.back10')}
         />
-        {/* The signature of the TV cluster: play is the one AMBER control, its
-            glyph in ink. Buffering lives IN the button while the controls are
-            up: a second spinner floating behind the cluster read as two
-            half-drawn controls fighting over the same centre. */}
+        {/* Buffering lives IN the play button while controls are up: a second
+            spinner floating behind the cluster read as two half-drawn
+            controls fighting over the same centre. */}
         <IconButton
           size={72}
           variant="primary"
@@ -159,10 +152,7 @@ export function ControlsLayer({
         ]}
       >
         <ScrubRow engine={engine} onInteract={poke} tileFor={tileFor} item={item} />
-        {/* Every secondary control lives in THIS row - the one place to look,
-            the phone's reading of the TV cluster, icon-only (labels ride on
-            accessibility). Left: shortcuts straight into the sheet's sub-views.
-            Right: next episode, PiP, and the gear for the full menu. */}
+        {/* Icon-only: labels ride on accessibility, not the row itself. */}
         <View style={styles.actionsRow}>
           <View style={styles.actionsGroup}>
             {audioCount > 1 ? (
@@ -215,7 +205,6 @@ export function ControlsLayer({
   );
 }
 
-/** One action-row control: the row's uniform 40pt glass circle. */
 function RowShortcut({
   icon,
   label,

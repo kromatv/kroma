@@ -48,6 +48,8 @@ bun run build              # all frontends
 cd server && cargo build   # server (use `cargo clippy` if you have it)
 ```
 
+- Read [`CODE_STYLE.md`](CODE_STYLE.md) — how code is written here, and in
+  particular when a comment is allowed to exist. The default is none.
 - Keep clients **thin** UI belongs in `@kroma/ui`, logic in `@kroma/core`, and the
   shared TV experience in `@kroma/tv`. Write platform code once.
 - Match the existing style: the design language (deep-charcoal + amber, French

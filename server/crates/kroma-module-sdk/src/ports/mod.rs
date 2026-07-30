@@ -30,13 +30,13 @@ pub mod naming;
 /// view crosses the wire as opaque JSON (the core just forwards it); `grab` returns
 /// the enqueued download id and backgrounds the slow engine add provider-side.
 pub trait AcquisitionSearchPort: Send + Sync {
-    /// Live interactive search for one request; the scored-releases view as JSON.
+    // Live interactive search for one request; the scored-releases view as JSON.
     fn interactive_search(
         &self,
         host: &dyn HostCtx,
         request_id: &str,
     ) -> anyhow::Result<serde_json::Value>;
-    /// Grab one release from the last interactive search; returns the download id.
+    // Grab one release from the last interactive search; returns the download id.
     fn grab(
         &self,
         host: &dyn HostCtx,
@@ -50,7 +50,7 @@ pub trait AcquisitionSearchPort: Send + Sync {
 /// (downloads always; indexers when opted in). `None` when no bridge is configured
 /// or the VPN module is absent.
 pub trait VpnProxyPort: Send + Sync {
-    /// The `socks5://127.0.0.1:<port>` URL when a bridge is configured, else `None`.
+    // The `socks5://127.0.0.1:<port>` URL when a bridge is configured, else `None`.
     fn proxy_url(&self, host: &dyn HostCtx) -> Option<String>;
 }
 
@@ -59,10 +59,10 @@ pub trait VpnProxyPort: Send + Sync {
 /// this lets the downloads module grab the real file without depending on the
 /// indexer crate.
 pub trait TorrentFetchPort: Send + Sync {
-    /// Fetch the `.torrent` bytes for `url` through the indexer's authenticated
-    /// session. `None` when this indexer is not one the port handles (the caller
-    /// then does a plain HTTP fetch); `Some(Err)` when the authenticated fetch
-    /// itself failed.
+    // Fetch the `.torrent` bytes for `url` through the indexer's authenticated
+    // session. `None` when this indexer is not one the port handles (the caller
+    // then does a plain HTTP fetch); `Some(Err)` when the authenticated fetch
+    // itself failed.
     fn fetch_torrent(
         &self,
         host: &dyn HostCtx,
@@ -71,11 +71,10 @@ pub trait TorrentFetchPort: Send + Sync {
     ) -> Option<anyhow::Result<Vec<u8>>>;
 }
 
-// --- Download manager VPN surface -------------------------------------------
 // The VPN module's admin page shows the download engine's kill-switch status,
-// runs a seal check, and restarts the engine after the VPN config changes. These
-// live here so the VPN module resolves them as a port instead of naming the
-// torrents crate.
+// runs a seal check, and restarts the engine after the VPN config changes.
+// These live here so the VPN module resolves them as a port instead of naming
+// the torrents crate.
 
 /// The download engine's VPN / kill-switch status, for the VPN admin page.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -83,7 +82,6 @@ pub trait TorrentFetchPort: Send + Sync {
 pub struct VpnStatusView {
     pub connected: bool,
     pub exit_ip: Option<String>,
-    /// Downloads are currently held by the kill switch.
     pub paused: bool,
 }
 
@@ -99,10 +97,10 @@ pub struct VpnSeal {
 /// The download manager's VPN surface, resolved by the VPN module.
 #[kroma_module_host::async_trait]
 pub trait DownloadVpnPort: Send + Sync {
-    /// Latest VPN/kill-switch status of the download engine.
+    // Latest VPN/kill-switch status of the download engine.
     fn vpn_status(&self) -> Option<VpnStatusView>;
-    /// Run the VPN seal check now.
+    // Run the VPN seal check now.
     fn vpn_seal_check(&self, host: &dyn HostCtx) -> Option<VpnSeal>;
-    /// Restart the embedded engine (e.g. after the VPN config changed).
+    // Restart the embedded engine (e.g. after the VPN config changed).
     async fn restart_engine(&self, host: &dyn HostCtx);
 }

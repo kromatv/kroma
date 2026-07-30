@@ -3,8 +3,7 @@
 // is visible only when the backend lists it AND it is enabled. With the
 // zero-module base build, a compile-time-bundled UI (vpn, downloads, remote,
 // ...) may have no installed backend at all; it must hide exactly like a
-// disabled one (before, only an explicit `enabled: false` hid it, so
-// uninstalled modules ghosted in the sidebar).
+// disabled one.
 
 export interface ModuleListing {
   id: string;

@@ -1,5 +1,3 @@
-// Server-URL helpers shared across the TV auth/profile screens.
-
 import { normalizeServerUrl } from '@kroma/core';
 
 /** Hostname of a server URL, or `null` when it can't be parsed. */

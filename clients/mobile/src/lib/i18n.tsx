@@ -1,7 +1,6 @@
-// React bindings for the shared @kroma/core i18n catalogs (fr/en). Locale
-// precedence: in-app override, then the OS locale (which reflects the per-app
-// language in iOS Settings, thanks to CFBundleLocalizations), then the account
-// preference for devices whose OS language we don't support.
+// React bindings for the shared @kroma/core i18n catalogs. Locale precedence:
+// in-app override, then the OS locale (which reflects the per-app language in
+// iOS Settings, thanks to CFBundleLocalizations), then the account preference.
 
 import {
   createTranslator,
@@ -26,7 +25,6 @@ import { loadPref, savePref } from './storage';
 interface I18n {
   locale: Locale;
   t: Translate;
-  /** Device override; null = follow account/OS. */
   override: Locale | null;
   setOverride(locale: Locale | null): void;
 }

@@ -7,20 +7,11 @@ import { useNav } from '#tv/app/router';
 import { AuthScreen, KromaMark } from '#tv/shared/ui';
 
 /**
- * About (route `about`): which build of the client is running, reachable from
- * device settings and from the profile menu.
+ * About (route `about`): which build of the client is running.
  *
- * It answers the question a bug report starts with. The version alone never did:
- * every TV shell ships the same version string, so "v0.1.33" does not say which
- * commit, from which branch, built when - and on a television there is no
- * `--version` to fall back on and no way to look.
- *
- * The fact rows are DISABLED, which takes them out of the focus graph entirely:
- * there is nothing here to activate, and a remote that walks through five dead
- * rows to reach the only live one is worse than one that lands on it. That
- * single live row is Back, so the D-pad always has a target - a screen with no
- * focus node at all leaves the remote doing nothing, which is indistinguishable
- * from a frozen app.
+ * The fact rows are disabled, taking them out of the focus graph — a remote
+ * that walks through five dead rows to reach the only live one is worse than
+ * one that lands on it directly. Back stays the sole focus target.
  */
 export function TvAbout() {
   const nav = useNav();
@@ -43,19 +34,14 @@ export function TvAbout() {
 
       <Box w="100%" maxW={560} gap={12}>
         <Fact label={t('about.version')} value={`v${build.version}`} />
-        {/* Each row is its own value's guard: a build made outside a git
-            checkout (a source tarball) has no commit to name, and an empty row
-            would say less than no row at all. */}
+        {/* A build outside a git checkout has no commit to name; Fact hides
+            the row rather than show an empty value. */}
         <Fact label={t('about.commit')} value={commitLabel(build.commit, build.dirty)} mono />
         <Fact label={t('about.branch')} value={build.branch} mono />
         <Fact label={t('about.buildDate')} value={formatBuildDate(build.buildDate, locale)} />
         <Fact label={t('about.repository')} value={repoLabel(build.repository)} />
-        {/* Both TV stores require the privacy policy to be readable IN the app,
-            not only on the listing - and a television cannot open a browser to
-            go and read it. So the substance is stated here (it is short, because
-            the app genuinely collects nothing) with the address of the full text
-            for anyone who wants it. Not a focus target: there is nothing to
-            activate, exactly like the fact rows above. */}
+        {/* Both TV stores require the privacy policy readable in-app, not only
+            on the listing — a television can't open a browser to go read it. */}
         <Box mt={20}>
           <Txt variant="label" color="textMuted" style={{ marginBottom: 6 }}>
             {t('about.privacyTitle')}
@@ -82,7 +68,6 @@ export function TvAbout() {
   );
 }
 
-/** One read-only line. Renders nothing without a value. */
 function Fact({
   label,
   value,
@@ -103,9 +88,8 @@ function Fact({
 }
 
 const VALUE = { fontSize: 16, fontWeight: '600' as const };
-/** A hash and a branch name are strings to COMPARE, not to read as prose. Native
- * takes ONE family name (a CSS-style list resolves to nothing and silently falls
- * back); the browser shells take the list. */
+// Native takes one font family name (a CSS-style list resolves to nothing
+// and silently falls back); the browser shells take the list.
 const MONO_VALUE = {
   fontSize: 16,
   fontFamily: Platform.select({

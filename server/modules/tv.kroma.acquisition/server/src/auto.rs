@@ -13,9 +13,7 @@ use kroma_module_sdk::db;
 
 use crate::search::{score_release, targets_for_wanted, wanted_ids_by};
 
-/// How many wanted rows one pass considers (bounds runtime; the cron loops).
 const BATCH: usize = 40;
-/// How many distinct requests one pass searches.
 const MAX_REQUESTS: usize = 5;
 
 #[derive(Debug, Default)]
@@ -81,8 +79,6 @@ fn wanted_row_ids(wanted: &[db::WantedRow], st: &crate::search::SearchTarget) ->
         .collect()
 }
 
-/// Search every enabled indexer for one request's targets and grab the best
-/// accepted release per target.
 fn search_request<S: kroma_module_sdk::host::HostCtx>(
     state: &S,
     request_id: &str,
@@ -142,8 +138,6 @@ fn search_request<S: kroma_module_sdk::host::HostCtx>(
     Ok(())
 }
 
-/// Sweep every indexer for one target and keep the single highest-scoring
-/// grabbable release across all of them.
 fn best_candidate<S: kroma_module_sdk::host::HostCtx>(
     state: &S,
     indexers: &[kroma_module_sdk::ports::IndexerRow],
@@ -170,7 +164,6 @@ fn best_candidate<S: kroma_module_sdk::host::HostCtx>(
     best
 }
 
-/// The best grabbable release within one indexer's result batch.
 fn best_in_batch(
     found: Vec<kroma_module_sdk::ports::Release>,
     indexer: &kroma_module_sdk::ports::IndexerRow,

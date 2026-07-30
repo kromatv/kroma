@@ -4,18 +4,13 @@ use super::*;
 
 use kroma_domain::{Season, Show, ShowDetail};
 
-/// `SELECT … FROM shows s` with the season/episode-count correlated subqueries;
-/// callers append their own `WHERE`/`ORDER BY` and map rows with
-/// [`row_to_show_counted`].
+// Callers append their own `WHERE`/`ORDER BY` and map rows with `row_to_show_counted`.
 const SHOWS_COUNTED_SELECT: &str = "SELECT s.id,s.title,s.year,s.library,s.added_at,\
     (SELECT COUNT(DISTINCT i.season) FROM items i WHERE i.show_id=s.id),\
     (SELECT COUNT(*) FROM items i WHERE i.show_id=s.id),\
     s.metadata \
  FROM shows s";
 
-/// Map a `shows` row selected via [`SHOWS_COUNTED_SELECT`]
-/// (`id,title,year,library,added_at,season_count,episode_count,metadata`) into a
-/// [`Show`]; its representative `video` is filled in afterwards.
 fn row_to_show_counted(r: &Row) -> rusqlite::Result<Show> {
     Ok(Show {
         id: r.get(0)?,
@@ -31,9 +26,7 @@ fn row_to_show_counted(r: &Row) -> rusqlite::Result<Show> {
     })
 }
 
-/// Map a `shows` row selected as `id,title,year,library,added_at,metadata` (no
-/// count subqueries) into a [`Show`] with zeroed season/episode counts (the
-/// caller fills real counts in later when it needs them).
+// Season/episode counts come back zeroed; the caller fills them in.
 fn row_to_show_bare(r: &Row) -> rusqlite::Result<Show> {
     Ok(Show {
         id: r.get(0)?,
@@ -49,8 +42,7 @@ fn row_to_show_bare(r: &Row) -> rusqlite::Result<Show> {
     })
 }
 
-/// Map five consecutive stream columns starting at `base`
-/// (`v_codec,v_width,v_height,v_hdr,v_bit_depth`) into a [`VideoStream`].
+// `base` is the index of `v_codec`; the five stream columns follow it in order.
 fn row_to_video_at(r: &Row, base: usize) -> rusqlite::Result<VideoStream> {
     Ok(VideoStream {
         codec: r.get::<_, String>(base)?,
@@ -80,7 +72,7 @@ pub fn list_movies(pool: &Pool, library: Option<&str>) -> Result<Vec<MediaItem>>
     )
 }
 
-/// All playable items (movies + episodes) backwards-compatible `/api/items`.
+/// All playable items: movies + episodes.
 pub fn list_items(pool: &Pool, library: Option<&str>) -> Result<Vec<MediaItem>> {
     query_items(
         pool,
@@ -124,10 +116,8 @@ pub fn list_shows(pool: &Pool, library: Option<&str>) -> Result<Vec<Show>> {
     Ok(shows)
 }
 
-/// Lightweight catalogue snapshot for the search index: `(items, shows)` with
-/// only the fields the index reads (title, show/episode title, metadata) and
-/// none of the per-row file / representative-video lookups [`list_movies`] /
-/// [`list_shows`] do so a full reindex is just two table scans.
+/// Catalogue snapshot for the search index: no per-row file or
+/// representative-video lookups, so a full reindex is two table scans.
 pub fn index_snapshot(pool: &Pool) -> Result<(Vec<MediaItem>, Vec<Show>)> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&format!("SELECT {ITEM_COLS} FROM items"))?;
@@ -140,8 +130,7 @@ pub fn index_snapshot(pool: &Pool) -> Result<(Vec<MediaItem>, Vec<Show>)> {
     Ok((items, shows))
 }
 
-/// Fetch full items for a set of ids (search-result hydration). Order is
-/// unspecified the caller re-orders by relevance.
+/// Order is unspecified the caller re-orders by relevance.
 pub fn get_items_by_ids(pool: &Pool, ids: &[String]) -> Result<Vec<MediaItem>> {
     if ids.is_empty() {
         return Ok(Vec::new());
@@ -157,8 +146,7 @@ pub fn get_items_by_ids(pool: &Pool, ids: &[String]) -> Result<Vec<MediaItem>> {
     Ok(items)
 }
 
-/// Fetch full shows (with season/episode counts + representative video) for a set
-/// of ids. Order is unspecified the caller re-orders by relevance.
+/// Order is unspecified the caller re-orders by relevance.
 pub fn get_shows_by_ids(pool: &Pool, ids: &[String]) -> Result<Vec<Show>> {
     if ids.is_empty() {
         return Ok(Vec::new());
@@ -174,10 +162,8 @@ pub fn get_shows_by_ids(pool: &Pool, ids: &[String]) -> Result<Vec<Show>> {
     Ok(shows)
 }
 
-/// Ids of every movie + show crediting `name` in its cast OR key crew, matched
-/// case-insensitively over the metadata JSON. Returns `(movie_ids, show_ids)`;
-/// episodes are excluded (they inherit a show's credits). Powers `GET /api/people`
-/// "everything this actor/director appears in or worked on".
+/// `(movie_ids, show_ids)` crediting `name` in cast or crew, matched
+/// case-insensitively. Episodes are excluded: they inherit a show's credits.
 pub fn titles_by_person(pool: &Pool, name: &str) -> Result<(Vec<String>, Vec<String>)> {
     let name = name.trim();
     if name.is_empty() {
@@ -190,8 +176,6 @@ pub fn titles_by_person(pool: &Pool, name: &str) -> Result<(Vec<String>, Vec<Str
     Ok((movie_ids, show_ids))
 }
 
-/// Run the shared "credited as `name`" EXISTS predicate (cast OR crew) appended to
-/// a table-specific `prefix`, returning the matching ids.
 fn person_ids(conn: &rusqlite::Connection, prefix: &str, name: &str) -> Result<Vec<String>> {
     let sql = format!(
         "{prefix} \
@@ -205,7 +189,6 @@ fn person_ids(conn: &rusqlite::Connection, prefix: &str, name: &str) -> Result<V
     Ok(ids)
 }
 
-/// Cheap title lookup for show poster rendering.
 pub fn show_title(pool: &Pool, id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     Ok(conn
@@ -213,8 +196,7 @@ pub fn show_title(pool: &Pool, id: &str) -> Result<Option<String>> {
         .ok())
 }
 
-/// The show's resolved poster artwork (`metadata.posterUrl`), when enrichment
-/// found one. `None` for an unknown show or one still on the placeholder.
+/// `metadata.posterUrl`, when enrichment found one.
 pub fn show_poster_art(pool: &Pool, id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let raw: Option<Option<String>> = conn
@@ -244,7 +226,6 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
         .collect::<rusqlite::Result<Vec<_>>>()?;
     attach_files_batch(&conn, &mut episodes)?;
 
-    // Group into seasons.
     let mut seasons: Vec<Season> = Vec::new();
     for ep in episodes.iter().cloned() {
         let n = ep.season.unwrap_or(0);
@@ -255,7 +236,6 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
     }
     seasons.sort_by_key(|s| s.number);
 
-    // Attach per-season cast (TMDB season credits), resolved during enrichment.
     let mut casts = season_casts(pool, id)?;
     for s in &mut seasons {
         if let Some(cast) = casts.remove(&s.number) {
@@ -270,9 +250,8 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
     Ok(Some(ShowDetail { show, seasons }))
 }
 
-/// [`representative_video`] over a whole listing in one query per id-chunk:
-/// rows arrive widest-first, so the first row seen per show wins exactly the
-/// per-show `ORDER BY v_width DESC LIMIT 1` the single-show query does.
+// Rows arrive widest-first, so the first row seen per show wins exactly the
+// per-show `ORDER BY v_width DESC LIMIT 1` the single-show query does.
 fn apply_representative_videos(conn: &rusqlite::Connection, shows: &mut [Show]) -> Result<()> {
     if shows.is_empty() {
         return Ok(());
@@ -302,8 +281,6 @@ fn apply_representative_videos(conn: &rusqlite::Connection, shows: &mut [Show]) 
     Ok(())
 }
 
-/// Pick a representative video stream for a show the highest-resolution probed
-/// file across all of the show's episodes.
 fn representative_video(conn: &rusqlite::Connection, show_id: &str) -> Result<Option<VideoStream>> {
     let mut stmt = conn.prepare(
         "SELECT f.v_codec,f.v_width,f.v_height,f.v_hdr,f.v_bit_depth \
@@ -362,7 +339,6 @@ mod tests {
         .unwrap();
     }
 
-    /// A probed file for an item (drives the representative video/container).
     fn seed_probed_file(conn: &Connection, id: &str, item_id: &str, abs: &str, v_width: i64) {
         conn.execute(
             "INSERT INTO files (id,item_id,abs_path,rel_path,container,probed,duration_ms,v_codec,v_width,v_height) \
@@ -422,16 +398,13 @@ mod tests {
             )
             .unwrap();
         }
-        // Movies exclude episodes; ordered by title COLLATE NOCASE.
         let movies = list_movies(&p, None).unwrap();
         assert_eq!(movies.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(), ["m2", "m1", "mo"]);
         assert!(movies.iter().all(|i| i.kind != Kind::Episode));
 
-        // Library filter narrows the set.
         let lib_movies = list_movies(&p, Some("lib")).unwrap();
         assert_eq!(lib_movies.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(), ["m2", "m1"]);
 
-        // list_items includes episodes.
         let items = list_items(&p, None).unwrap();
         assert!(items.iter().any(|i| i.id == "e1"));
         assert_eq!(items.len(), 4);
@@ -486,7 +459,6 @@ mod tests {
                 )
                 .unwrap();
             }
-            // A probed 1080p file on one episode supplies the show's rep video.
             seed_probed_file(&conn, "f-e1", "e1", "/media/e1.mkv", 1920);
         }
         let shows = list_shows(&p, None).unwrap();
@@ -495,7 +467,6 @@ mod tests {
         assert_eq!(s.season_count, 2);
         assert_eq!(s.episode_count, 3);
         assert_eq!(s.video.as_ref().map(|v| v.width), Some(Some(1920)));
-        // Library scoping.
         assert_eq!(list_shows(&p, Some("lib")).unwrap().len(), 1);
         assert!(list_shows(&p, Some("nope")).unwrap().is_empty());
     }
@@ -536,7 +507,6 @@ mod tests {
         assert_eq!(detail.show.season_count, 2);
         assert_eq!(detail.show.episode_count, 3);
         assert_eq!(detail.seasons.len(), 2);
-        // Seasons sorted ascending; season 1 has two episodes, its cast attached.
         assert_eq!(detail.seasons[0].number, 1);
         assert_eq!(detail.seasons[0].episodes.len(), 2);
         assert_eq!(detail.seasons[0].cast.len(), 1);
@@ -568,7 +538,6 @@ mod tests {
             )
             .unwrap();
         }
-        // Empty id lists short-circuit.
         assert!(get_items_by_ids(&p, &[]).unwrap().is_empty());
         assert!(get_shows_by_ids(&p, &[]).unwrap().is_empty());
 

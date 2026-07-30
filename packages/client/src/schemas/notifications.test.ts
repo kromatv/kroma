@@ -6,7 +6,7 @@ import {
   NotificationsView,
 } from './notifications';
 
-/** A notification exactly as the Rust side serializes it. */
+// A notification exactly as the Rust side serializes it.
 const wire = {
   id: 'n1',
   category: 'requests',
@@ -38,8 +38,7 @@ describe('Notification', () => {
   });
 
   it('treats link, imageUrl and actions as optional', () => {
-    // The server omits `link`/`imageUrl` entirely when unset
-    // (`skip_serializing_if = "Option::is_none"`), so absent must parse.
+    // The server omits these entirely when unset (`skip_serializing_if`).
     const { link, imageUrl, actions, ...bare } = wire;
     const n = Notification.parse(bare);
     expect(n.link).toBeUndefined();
@@ -73,10 +72,8 @@ describe('Notification', () => {
   });
 
   it('accepts an event this client has never heard of', () => {
-    // The server owns this vocabulary and grows it (`custom` for module-raised
-    // notifications arrived exactly this way). Title and body are already
-    // rendered, so an older client can show the row perfectly well — rejecting
-    // it would blank the notification centre against a newer server.
+    // The server owns this vocabulary and grows it; rejecting an unknown value
+    // would blank the notification centre against a newer server.
     expect(Notification.parse({ ...wire, event: 'custom' }).event).toBe('custom');
     expect(Notification.parse({ ...wire, event: 'request.teleported' }).event).toBe(
       'request.teleported',
@@ -84,8 +81,6 @@ describe('Notification', () => {
   });
 
   it('still rejects an unknown category, which the UI does switch on', () => {
-    // Unlike `event`, category drives the preferences matrix and the grouping,
-    // so an unknown one is not renderable and must not slip through.
     expect(() => Notification.parse({ ...wire, category: 'gossip' })).toThrow();
   });
 
@@ -120,8 +115,7 @@ describe('NotificationPrefs', () => {
   });
 
   it('exposes every category the server knows about', () => {
-    // Guards the settings matrix against drifting from the Rust
-    // `NotificationCategory::ALL`.
+    // Must stay in step with the Rust `NotificationCategory::ALL`.
     expect(NotificationCategory.options).toEqual([
       'requests',
       'media',

@@ -31,15 +31,15 @@ public class ServerDiscoveryModule: Module {
   }
 }
 
-/// One browse. Holds itself alive until it answers, then lets go.
+// One browse. Holds itself alive until it answers, then lets go.
 private final class ServiceBrowse {
   private let queue = DispatchQueue(label: "tv.kroma.discovery")
   private var browser: NWBrowser?
   private var connections: [NWConnection] = []
   private var found: [[String: Any]] = []
   private var answered = false
-  /// The retain cycle is the point: nothing else holds this object, and it must
-  /// outlive the call that made it. Broken in `finish`.
+  // The retain cycle is the point: nothing else holds this object, and it must
+  // outlive the call that made it. Broken in `finish`.
   private var retainedSelf: ServiceBrowse?
 
   func run(timeout: TimeInterval, promise: Promise) {
@@ -63,9 +63,9 @@ private final class ServiceBrowse {
     queue.asyncAfter(deadline: .now() + timeout) { [weak self] in self?.finish(promise) }
   }
 
-  /// A Bonjour endpoint is a NAME, not an address. Opening a connection is what
-  /// makes the system do the resolution, and `currentPath.remoteEndpoint` is
-  /// where the answer lands.
+  // A Bonjour endpoint is a NAME, not an address. Opening a connection is what
+  // makes the system do the resolution, and `currentPath.remoteEndpoint` is
+  // where the answer lands.
   private func resolve(endpoint: NWEndpoint, name: String) {
     let connection = NWConnection(to: endpoint, using: .tcp)
     connections.append(connection)
@@ -86,7 +86,7 @@ private final class ServiceBrowse {
     connection.start(queue: queue)
   }
 
-  /// `fe80::1%en0` and a trailing dot are both real and both useless in a URL.
+  // `fe80::1%en0` and a trailing dot are both real and both useless in a URL.
   private static func plain(_ host: NWEndpoint.Host) -> String {
     let text: String
     switch host {

@@ -58,7 +58,6 @@ describe('play', () => {
     setCastTarget({ item: item('it1'), controller: c });
     const d = deps();
     await applyCastCommand({ type: 'play', itemId: 'it1' as never, positionMs: 30_000 }, d);
-    // No remount (which would black the screen); just a seek + resume.
     expect(d.nav.reset).not.toHaveBeenCalled();
     expect(c.seekTo).toHaveBeenCalledWith(30);
     expect(c.togglePlay).toHaveBeenCalled();
@@ -77,14 +76,14 @@ describe('transport', () => {
     const playing = controller({ playing: true });
     setCastTarget({ item: item('it1'), controller: playing });
     await applyCastCommand({ type: 'resume' }, deps());
-    expect(playing.togglePlay).not.toHaveBeenCalled(); // already playing
+    expect(playing.togglePlay).not.toHaveBeenCalled();
     await applyCastCommand({ type: 'pause' }, deps());
     expect(playing.togglePlay).toHaveBeenCalledTimes(1);
 
     const paused = controller({ playing: false });
     setCastTarget({ item: item('it1'), controller: paused });
     await applyCastCommand({ type: 'pause' }, deps());
-    expect(paused.togglePlay).not.toHaveBeenCalled(); // already paused
+    expect(paused.togglePlay).not.toHaveBeenCalled();
     await applyCastCommand({ type: 'resume' }, deps());
     expect(paused.togglePlay).toHaveBeenCalledTimes(1);
   });
@@ -128,8 +127,6 @@ describe('skipNext / stop', () => {
   });
 
   it('stop only leaves a player that is actually up', async () => {
-    // Nothing playing: a stale stop must not yank the viewer out of a screen
-    // they browsed to after the cast ended.
     const idle = deps();
     await applyCastCommand({ type: 'stop' }, idle);
     expect(idle.nav.home).not.toHaveBeenCalled();

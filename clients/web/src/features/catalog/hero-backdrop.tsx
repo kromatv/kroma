@@ -1,26 +1,8 @@
 import { Image } from '@kroma/admin-kit';
 
-/** Layered backdrop + scrims for the cinematic `DetailHero` (movie/series fiche).
- *
- * The hero overlays text on an *unknown* key-art image, so legibility can't rely
- * on the artwork being dark but the artwork should still read through as much
- * as possible. The layers are tuned art-forward: large transparent zones reveal
- * the backdrop, and every dark edge fades over a long, soft distance so there's
- * no visible seam. Text legibility is carried by the gradients near the left
- * gutter *plus* the title halo / column text-shadow defined in `DetailHero`.
- *
- *  1. backdrop image (bg-cover) the raw, un-dimmed art.
- *  2. radial falloff a big transparent core keeps most of the art visible;
- *     only the far edges sink into the page bg.
- *  3. left scrim anchored dark at the very left (under the start of the text),
- *     then a long gentle fade so the image reveals across the hero.
- *  4. bottom fade clean hand-off to the page below.
- *  5. reading frost a *light* `backdrop-blur` + dark fill behind the text
- *     column only, wide-feathered via a left-anchored mask so the art shows
- *     through and it blends into the image rather than reading as a card. The
- *     mask is in `rem` at md+ (tracks layout / font-scaling, not viewport
- *     width) and in viewport-proportional `%` below md.
- */
+/** Layered backdrop + scrims for the cinematic `DetailHero`. Overlays text on an
+ * *unknown* key-art image, so legibility can't assume dark art: each layer fades
+ * over a long, soft distance instead of a hard edge, keeping the art visible. */
 export function HeroBackdrop({
   backdrop,
   gradient,

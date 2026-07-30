@@ -34,7 +34,6 @@ async fn any_user_can_file_a_report_and_the_title_is_resolved() {
     assert_eq!(body["status"], json!("open"));
     assert_eq!(body["message"], json!("no sound"));
 
-    // The reporter sees it in their own list.
     let (status, mine) = get(&t.app, "/api/reports/mine", Some(&m)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(mine.as_array().unwrap().len(), 1);
@@ -85,7 +84,6 @@ async fn triage_queue_requires_reports_manage() {
     let (status, _) = send(&t.app, "POST", "/api/admin/reports/x/resolve", Some(&m), None).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 
-    // The owner (all permissions) can.
     let (status, body) = get(&t.app, "/api/admin/reports", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     assert!(body["reports"].is_array());
@@ -107,21 +105,18 @@ async fn resolve_dismiss_reopen_and_delete_transitions() {
     .await;
     let id = created["id"].as_str().unwrap().to_string();
 
-    // Resolve records the acting admin.
     let (status, body) =
         send(&t.app, "POST", &format!("/api/admin/reports/{id}/resolve"), Some(&t.token), None).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["status"], json!("resolved"));
     assert_eq!(body["resolvedBy"], json!(t.user_id));
 
-    // Reopen clears the resolver fields.
     let (status, body) =
         send(&t.app, "POST", &format!("/api/admin/reports/{id}/reopen"), Some(&t.token), None).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["status"], json!("open"));
     assert_eq!(body["resolvedBy"], json!(null));
 
-    // Dismiss, then delete.
     let (status, body) =
         send(&t.app, "POST", &format!("/api/admin/reports/{id}/dismiss"), Some(&t.token), None).await;
     assert_eq!(status, StatusCode::OK);
@@ -130,7 +125,6 @@ async fn resolve_dismiss_reopen_and_delete_transitions() {
     let (status, _) =
         send(&t.app, "DELETE", &format!("/api/admin/reports/{id}"), Some(&t.token), None).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    // A second delete is a 404.
     let (status, _) =
         send(&t.app, "DELETE", &format!("/api/admin/reports/{id}"), Some(&t.token), None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
@@ -141,7 +135,6 @@ async fn queue_filters_by_status_and_category() {
     let t = test_app();
     let m = member(&t, "filterer");
     let movie = demo_item_id("The Matrix");
-    // File two reports of different categories.
     for category in ["audio", "video"] {
         send(
             &t.app,
@@ -161,7 +154,6 @@ async fn queue_filters_by_status_and_category() {
     assert_eq!(list.len(), 1);
     assert_eq!(list[0]["category"], json!("audio"));
 
-    // An open-status filter still returns both; a resolved filter returns none yet.
     let (_, body) = get(&t.app, "/api/admin/reports?status=open", Some(&t.token)).await;
     assert_eq!(body["reports"].as_array().unwrap().len(), 2);
     let (_, body) = get(&t.app, "/api/admin/reports?status=resolved", Some(&t.token)).await;

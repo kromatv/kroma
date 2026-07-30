@@ -10,15 +10,10 @@ import { formatMbps, posterGradient, timecode } from '#web/shared/lib/adminForma
 import { kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** Width (px) of the Now Playing thumbnail. Height follows the 16:9 frame so a
- * storyboard tile maps 1:1 its background geometry is computed for this width. */
 const THUMB_W = 132;
 
-/**
- * The live session thumbnail: the current storyboard frame (mapped from
- * `positionMs`) when the sheet is ready, else the item poster, else a
- * title-seeded gradient.
- */
+// The current storyboard frame when the sheet is ready, else the item poster,
+// else a title-seeded gradient.
 function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
   // Never kick/await lazy ffmpeg generation just to paint a 132px thumb: fetch
   // once and only use the sheet if it already exists (else poster / gradient).
@@ -35,10 +30,8 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
       {posterFailed ? null : (
         <Image src={poster} fit="cover" fill onError={() => setPosterFailed(true)} />
       )}
-      {/* A storyboard tile is a window onto the sprite sheet; here that window is
-          this box, so the sheet is drawn at its scaled size and slid into place.
-          (The shared player draws the same geometry with an offset child, which
-          is what a television can render - see StoryboardThumb.) */}
+      {/* A storyboard tile is a window onto the sprite sheet: the sheet is drawn
+          at its scaled size and slid into place (see StoryboardThumb). */}
       {frame ? (
         <div
           className="absolute inset-0"
@@ -79,7 +72,6 @@ export function NowPlayingCard({
     stateLabel = t('admin.playing');
   }
 
-  // The playback-pipeline badge: direct copy · remux · audio-only transcode.
   let pipe: { color: string; bg: string; label: string } = {
     color: C.green,
     bg: 'rgba(70,208,141,.14)',
@@ -127,7 +119,6 @@ export function NowPlayingCard({
               </div>
             </div>
             <Avatar name={s.username} avatarUrl={avatarUrl} size={38} radius={10} />
-            {/* The kit disc with a danger-tinted glyph: stop is destructive. */}
             <IconButton size={36} radius={10} label={t('admin.stopStream')} onPress={onStop}>
               <Icon name="player-stop-filled" size={15} color="danger" />
             </IconButton>
@@ -156,7 +147,6 @@ export function NowPlayingCard({
             </span>
           </Stat>
           <Stat label={t('admin.statVideo')}>
-            {/* Video is always stream-copied it never gets a transcode badge. */}
             <span className="text-[13px] font-semibold" style={{ color: C.green }}>
               {s.videoLabel}
             </span>
@@ -205,12 +195,8 @@ function Stat({ label, children }: Readonly<{ label: string; children: React.Rea
   );
 }
 
-/**
- * The "stop this stream" confirmation, as an imperative callable: open it with
- * `await StopStreamModal.call({ session })`, which resolves `true` once the
- * session was terminated (so the caller can refresh) or `false` if dismissed.
- * Its root is mounted once by `AdminModalHosts`; no open-state at the call site.
- */
+// Open with `await StopStreamModal.call({ session })`; resolves `true` once the
+// session was terminated, `false` if dismissed. Mounted once by `AdminModalHosts`.
 export const StopStreamModal = createCallable<{ session: PlaybackSession }, boolean>(
   ({ call, session }) => {
     const t = useT();

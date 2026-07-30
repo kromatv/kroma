@@ -11,12 +11,11 @@ export interface Sidecars {
   storyboard?: NonNullable<DownloadEntry['storyboard']>;
 }
 
-/** Embedded text subtitles (by track index) plus any AI-generated ones the
- * server has already produced. Image subtitles (PGS) are skipped: they can't be
- * converted, so there is nothing to take offline. */
 async function fetchSubs(client: KromaClient, item: MediaItem): Promise<OfflineSub[]> {
   const subs: OfflineSub[] = [];
   for (const [index, sub] of item.subtitles.entries()) {
+    // Image subtitle codecs (PGS, DVD) can't be converted to text, so they
+    // have nothing to take offline.
     if (!isTextSubtitle(sub.codec)) continue;
     const path = mediaPath(item.id, `e${index}.vtt`);
     try {

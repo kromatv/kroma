@@ -16,8 +16,8 @@ use serde_json::json;
 
 use crate::b64;
 
-/// How long a VAPID JWT stays valid. The RFC caps it at 24h; 12h is the common
-/// choice and leaves room for clock skew at both ends.
+// The RFC caps a VAPID JWT at 24h; 12h is the common choice and leaves room
+// for clock skew at both ends.
 const TOKEN_LIFETIME_SECS: i64 = 12 * 60 * 60;
 
 /// The server's VAPID identity: one P-256 keypair, generated once and persisted.
@@ -62,9 +62,8 @@ impl VapidKey {
         Ok(format!("vapid t={jwt}, k={}", self.public_base64url()))
     }
 
-    /// Sign an ES256 JWT. Two base64url JSON segments, then a raw `r || s`
-    /// signature JOSE wants the fixed-width pair, NOT the DER encoding that
-    /// most ECDSA APIs hand back by default.
+    // JOSE wants the raw fixed-width `r || s` signature, not the DER encoding
+    // most ECDSA APIs hand back by default.
     fn sign_jwt(&self, audience: &str, subject: &str, exp: i64) -> Result<String> {
         let header = b64::encode(json!({ "typ": "JWT", "alg": "ES256" }).to_string());
         let claims =
@@ -77,11 +76,9 @@ impl VapidKey {
     }
 }
 
-/// `scheme://host[:port]` of a push endpoint the JWT audience.
-///
-/// Audiencing to the full endpoint URL (a common mistake) is rejected by some
-/// push services, and the path carries the subscription's secret id, which has
-/// no business inside a token.
+// `scheme://host[:port]` of a push endpoint, for the JWT audience. Audiencing
+// to the full endpoint URL (a common mistake) is rejected by some push
+// services, and the path carries the subscription's secret id.
 fn origin_of(endpoint: &str) -> Result<String> {
     let (scheme, rest) = endpoint
         .split_once("://")

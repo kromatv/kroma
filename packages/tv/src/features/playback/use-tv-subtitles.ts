@@ -23,14 +23,10 @@ export interface TvSubtitles {
 }
 
 /**
- * TV subtitle state for the shared player: the renderable tracks (embedded +
- * on-device generated) mapped to {@link PlayerSub}, plus the prop-driven
- * generation bundle the shared Settings panel consumes. Wraps the existing
- * `useSubtitleSelection` and the shared generation poll.
- *
- * The account's preferred subtitle language is applied on open AND updated by
- * the picker: turning on French subtitles here is what makes the next title
- * open with French subtitles too.
+ * TV subtitle state for the shared player: the renderable tracks mapped to
+ * {@link PlayerSub}, plus the generation bundle the shared Settings panel
+ * consumes. The account's preferred language is applied on open and updated
+ * by the picker, so turning on French subtitles here carries to the next title.
  */
 export function useTvSubtitles(
   client: KromaClient,

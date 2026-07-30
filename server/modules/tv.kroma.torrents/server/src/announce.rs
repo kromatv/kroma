@@ -37,7 +37,7 @@ pub fn tracker_peers(torrent_bytes: &[u8], socks: Option<&str>) -> Vec<SocketAdd
     out
 }
 
-/// One HTTP announce; returns the peers it reported (both families).
+// One HTTP announce; returns the peers it reported (both families).
 fn announce_once(base: &str, info_hash: &[u8; 20], socks: Option<&str>) -> Vec<SocketAddr> {
     // A fixed-but-torrent-specific peer id (`-LM0001-` + hash nibbles).
     let mut peer_id = *b"-LM0001-000000000000";
@@ -64,7 +64,7 @@ fn announce_once(base: &str, info_hash: &[u8; 20], socks: Option<&str>) -> Vec<S
     }
 }
 
-/// Percent-encode arbitrary bytes (BitTorrent info_hash / peer_id style).
+// Percent-encode arbitrary bytes (BitTorrent info_hash / peer_id style).
 fn urlencode(bytes: &[u8]) -> String {
     let mut s = String::with_capacity(bytes.len() * 3);
     for &b in bytes {
@@ -78,8 +78,8 @@ fn urlencode(bytes: &[u8]) -> String {
     s
 }
 
-/// Extract `peers` (6-byte v4) + `peers6` (18-byte v6) from a compact tracker
-/// response (a flat bencoded dict).
+// Extracts `peers` (6-byte v4) + `peers6` (18-byte v6) from a compact tracker
+// response (a flat bencoded dict).
 fn parse_peers(body: &[u8]) -> Vec<SocketAddr> {
     let mut out = Vec::new();
     for (key, val) in top_dict_strings(body) {
@@ -105,9 +105,7 @@ fn parse_peers(body: &[u8]) -> Vec<SocketAddr> {
     out
 }
 
-// ----- minimal bencode --------------------------------------------------------
-
-/// End index (exclusive) of the bencode value starting at `i`.
+// End index (exclusive) of the bencode value starting at `i`.
 fn bskip(b: &[u8], i: usize) -> Option<usize> {
     match b.get(i)? {
         b'i' => b[i..].iter().position(|&c| c == b'e').map(|p| i + p + 1),
@@ -135,7 +133,7 @@ fn bskip(b: &[u8], i: usize) -> Option<usize> {
     }
 }
 
-/// Read a bencode byte string at `i`, returning `(bytes, next_index)`.
+// Reads a bencode byte string at `i`, returning `(bytes, next_index)`.
 fn read_bstr(b: &[u8], i: usize) -> Option<(&[u8], usize)> {
     let colon = i + b.get(i..)?.iter().position(|&c| c == b':')?;
     let len: usize = std::str::from_utf8(b.get(i..colon)?).ok()?.parse().ok()?;
@@ -143,7 +141,7 @@ fn read_bstr(b: &[u8], i: usize) -> Option<(&[u8], usize)> {
     Some((b.get(start..start + len)?, start + len))
 }
 
-/// SHA-1 of the `.torrent`'s `info` dict = the info hash.
+// SHA-1 of the `.torrent`'s `info` dict = the info hash.
 fn info_hash(b: &[u8]) -> Option<[u8; 20]> {
     let (start, end) = dict_value_bounds(b, b"info")?;
     let mut h = Sha1::new();
@@ -151,7 +149,7 @@ fn info_hash(b: &[u8]) -> Option<[u8; 20]> {
     Some(h.finalize().into())
 }
 
-/// The `announce` string + every `announce-list` entry.
+// The `announce` string + every `announce-list` entry.
 fn announce_urls(b: &[u8]) -> Vec<String> {
     let mut urls = Vec::new();
     if let Some((s, e)) = dict_value_bounds(b, b"announce") {
@@ -168,8 +166,8 @@ fn announce_urls(b: &[u8]) -> Vec<String> {
     urls
 }
 
-/// Parse a bencoded `announce-list` (a list of lists of tracker URLs) starting
-/// at the outer list at index `s`, appending each URL to `urls`.
+// Parses a bencoded `announce-list` (a list of lists of tracker URLs) starting
+// at the outer list at index `s`, appending each URL to `urls`.
 fn parse_announce_list(b: &[u8], s: usize, e: usize, urls: &mut Vec<String>) {
     let mut i = s + 1; // into the outer list
     while i < e && b.get(i) == Some(&b'l') {
@@ -183,7 +181,7 @@ fn parse_announce_list(b: &[u8], s: usize, e: usize, urls: &mut Vec<String>) {
     }
 }
 
-/// Byte-range of the value for `key` in the TOP-LEVEL dict.
+// Byte-range of the value for `key` in the TOP-LEVEL dict.
 fn dict_value_bounds(b: &[u8], key: &[u8]) -> Option<(usize, usize)> {
     if b.first()? != &b'd' {
         return None;
@@ -200,7 +198,7 @@ fn dict_value_bounds(b: &[u8], key: &[u8]) -> Option<(usize, usize)> {
     None
 }
 
-/// Top-level dict keys whose values are byte strings, as `(key, value)`.
+// Top-level dict keys whose values are byte strings, as `(key, value)`.
 fn top_dict_strings(b: &[u8]) -> Vec<(&[u8], &[u8])> {
     let mut out = Vec::new();
     if b.first() != Some(&b'd') {

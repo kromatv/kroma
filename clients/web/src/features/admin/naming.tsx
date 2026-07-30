@@ -1,5 +1,5 @@
-// Admin "Nommage & organisation": edit the Sonarr/Radarr-style naming
-// templates with a live sample, then preview + apply a library-wide rename.
+// Admin naming: edit the naming templates with a live sample, then preview and
+// apply a library-wide rename.
 
 import { apiErrorText, type NamingTemplatesView, type OrganizePlan } from '@kroma/core';
 import { useT } from '@kroma/ui';
@@ -30,8 +30,6 @@ const CASES: { value: string; labelKey: string }[] = [
 
 export function NamingPage() {
   const t = useT();
-  // One prefix for the five template fields, so each caption is a real <label>
-  // for its own entry rather than a span that happens to sit above it.
   const fieldIds = useId();
   const { client } = useAuth();
   const canManage = useCap('library.manage');
@@ -51,7 +49,6 @@ export function NamingPage() {
       .catch(() => undefined);
   }, [client]);
 
-  // Debounced live sample as the templates change.
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const refreshSample = useCallback(
     (next: NamingTemplatesView) => {
@@ -75,11 +72,8 @@ export function NamingPage() {
       return next;
     });
   };
-  // Keep the modal editing the live template value.
   const setField = (key: FieldKey) => (value: string) => set(key, value);
 
-  // Open the token picker for a field; it writes back through `setField` so the
-  // page stays live-synced while the modal is open.
   const openTokens = (key: FieldKey) => {
     if (!tpl) return;
     void NamingTokenModal.call({

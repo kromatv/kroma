@@ -28,9 +28,9 @@ import Intents
     (intent is INSearchForMediaIntent || intent is INPlayMediaIntent) ? shared : nil
   }
 
-  /// What the user actually said to search for. `mediaName` is the title; the
-  /// others cover "joue quelque chose de Villeneuve" style requests, where a
-  /// name-less search still describes something our full-text index can find.
+  // What the user actually said to search for. `mediaName` is the title; the
+  // others cover "joue quelque chose de Villeneuve" style requests, where a
+  // name-less search still describes something our full-text index can find.
   static func spokenQuery(_ search: INMediaSearch?) -> String? {
     guard let search else { return nil }
     let candidates = [
@@ -86,7 +86,7 @@ public final class SiriSearchBridge {
 
   private let lock = NSLock()
   private var pending: String?
-  /// Set while JavaScript is listening (the module's observers).
+  // Set while JavaScript is listening (the module's observers).
   var onQuery: ((String) -> Void)?
 
   func deliver(_ query: String) {
@@ -99,7 +99,7 @@ public final class SiriSearchBridge {
     DispatchQueue.main.async { notify?(query) }
   }
 
-  /// The query Siri left, once. Taking it is what clears it.
+  // The query Siri left, once. Taking it is what clears it.
   func take() -> String? {
     lock.lock()
     defer { lock.unlock() }

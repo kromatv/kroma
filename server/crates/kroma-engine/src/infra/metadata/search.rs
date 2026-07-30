@@ -1,18 +1,11 @@
 //! The search half of TMDB enrichment: gather *candidates*, then let
-//! [`kroma_domain::matching`] pick one, instead of trusting TMDB's first result.
-//!
-//! Two things went wrong with taking `results[0]`:
-//!
-//! 1. TMDB orders by its own popularity heuristic, so a generic title ("It",
-//!    "Frozen") routinely resolved to the wrong film and nothing downstream ever
-//!    re-questioned the stored poster.
-//! 2. TMDB's year filter is *exact*, so a filename carrying the production year
-//!    instead of the release year returned zero results and the title was
-//!    recorded as a permanent miss.
-//!
-//! So: search with the year, and if nothing credible comes back, widen to an
-//! unfiltered search and score the union. Scoring is pure and lives in the domain
-//! crate; this module is only the HTTP half.
+//! [`kroma_domain::matching`] pick one, instead of trusting TMDB's first
+//! result. TMDB orders by its own popularity heuristic (a generic title like
+//! "It" routinely resolves to the wrong film), and its year filter is exact
+//! (a filename carrying the production year returns zero results). So: search
+//! with the year, and if nothing credible comes back, widen to an unfiltered
+//! search and score the union. Scoring is pure and lives in the domain crate;
+//! this module is only the HTTP half.
 
 use serde::Deserialize;
 
@@ -35,9 +28,8 @@ pub(super) fn best_id(
     Ok(matching::pick_best(&query, &found).map(|(c, _)| c.tmdb_id))
 }
 
-/// Every candidate TMDB offers for `title`/`year`, deduped by id: the
-/// year-filtered results first, widened with an unfiltered search when the
-/// filtered set holds nothing credible.
+// Deduped by id: the year-filtered results first, widened with an unfiltered
+// search when the filtered set holds nothing credible.
 fn candidates(
     api_key: &str,
     language: &str,
@@ -57,7 +49,6 @@ fn candidates(
     Ok(found)
 }
 
-/// One TMDB search request. `year` adds the target's exact-year filter.
 fn search_page(
     api_key: &str,
     language: &str,
@@ -88,8 +79,8 @@ struct SearchResp {
     results: Vec<SearchHit>,
 }
 
-/// A TMDB search result. Movies and shows use different field names for the same
-/// three things, hence the pairs.
+// Movies and shows use different field names for the same three things,
+// hence the pairs.
 #[derive(Debug, Deserialize)]
 struct SearchHit {
     id: u64,

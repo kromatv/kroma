@@ -1,13 +1,7 @@
-// What each push blocker is called, once.
-//
-// Lives in `core` rather than `client` because it is the one piece of the push
-// story that needs the i18n catalogue: `client` sits underneath i18n and cannot
-// name a `MessageKey`.
-//
-// Shared for the same reason the blocker vocabulary is: a user who cannot turn
-// push on should get the same explanation whichever KROMA they are looking at,
-// and a new reason should be impossible to add without writing its copy — which
-// the exhaustive `Record` below enforces at build time.
+// What each push blocker is called, once. Lives in `core` rather than `client`
+// because it needs the i18n catalogue, which sits above `client`. The
+// exhaustive `Record` below makes a new blocker reason impossible to add
+// without writing its copy.
 
 import type { PushBlocker } from '@kroma/client';
 import type { MessageKey } from './i18n';

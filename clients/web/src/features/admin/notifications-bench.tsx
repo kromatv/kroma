@@ -1,18 +1,7 @@
-// Sending a notification from the console.
-//
-// The screen is a COMPOSER, not a test button: an admin writes the thing they
-// mean to say - the server reboots at nine - and sends it. Every notification
-// from here is a `custom` one carrying those exact words, so what is on screen
-// is what lands, with no sample to diverge from.
-//
-// Nothing here is a rehearsal. Send goes through the same pipeline a producer's
-// notification does - category preferences, per-recipient rendering, the stored
-// row, the live bell, the push fan-out - so the count is people reached.
-//
-// Layout: what you are writing on the left, what it becomes and who gets it in
-// one sticky rail on the right. The rail is the preview AND the send control
-// because they are the same question - "is this the thing I want to send?" - and
-// splitting them across a side card and a footer bar asked it twice.
+// Sending a notification from the console. There is no test/dry-run mode: send
+// goes through the same pipeline as a producer's notification (category
+// preferences, per-recipient rendering, the stored row, the live bell, the push
+// fan-out), so "everyone" reaches every account for real.
 
 import { Card, Field, OptionSelect, TextArea, TextInput, useAsyncAction } from '@kroma/admin-kit';
 import type { MessageKey, Notification } from '@kroma/core';
@@ -85,8 +74,7 @@ export function NotificationBench() {
     );
 
   return (
-    // Capped rather than full-bleed: a five-field form stretched across a 27"
-    // display is a row of postage stamps adrift in a slab of empty card.
+    // Capped width: a five-field form shouldn't stretch full-bleed on a wide display.
     <div className="mt-6 grid max-w-[58rem] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
       <Card className="min-w-0 px-5.5 pb-1.5 pt-5">
         <Field label={t('admin.notifFieldTitle')}>
@@ -132,8 +120,7 @@ export function NotificationBench() {
         </div>
 
         <Field label={t('admin.notifFieldImage')}>
-          {/* Upload OR paste: an admin announcing something has a file on their
-              desk, an admin reusing a poster already has its path. */}
+          {/* Upload or paste a path: covers a new image and reusing an existing poster. */}
           <div className="flex items-center gap-2">
             <TextInput
               className="w-full flex-1"
@@ -173,16 +160,13 @@ export function NotificationBench() {
         </Field>
       </Card>
 
-      {/* The rail: what lands, who gets it, and the one button that sends it. */}
       <Card className="px-5 py-5 lg:sticky lg:top-5">
         <h2 className="mb-4 text-[14px] font-semibold text-text">{t('admin.notifPreview')}</h2>
         <PreviewRow draft={draft} empty={t('admin.notifTitlePlaceholder')} />
 
         <div className="mt-5 border-t border-border pt-4">
-          {/* Real radios, not styled buttons: "who gets this" is a one-of-three
-              choice, and the native control brings arrow-key navigation and the
-              grouping a screen reader announces. The app blanks the shared focus
-              ring on form controls, so the row carries it instead. */}
+          {/* Real radios, not styled buttons: native arrow-key nav and screen-reader
+              grouping. The row carries the focus ring the app blanks on form controls. */}
           <fieldset>
             <legend className="mb-2 text-[12px] font-semibold text-dim">
               {t('admin.notifTestTarget')}
@@ -254,10 +238,8 @@ export function NotificationBench() {
   );
 }
 
-/** The draft as the bell will draw it — the same tile, gutter and metrics the
- * drawer uses, so "what you see is what is sent" covers the shape too. New
- * notifications land unread, hence the dot; written ones are `custom` events,
- * which is the glyph a recipient gets when there is no artwork. */
+// The same tile, gutter and metrics the drawer uses, so the preview matches
+// what recipients actually see; `custom` is the event type this bench always sends.
 function PreviewRow({ draft, empty }: Readonly<{ draft: Draft; empty: string }>) {
   const t = useT();
   const art = draft.imageUrl ? kromaClient().resolveArt(draft.imageUrl) : null;

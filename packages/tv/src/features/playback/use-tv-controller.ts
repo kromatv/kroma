@@ -11,44 +11,29 @@ import { useLangPrefs } from '#tv/app/langPref';
 import { type Playback, useDirectPlayback } from '#tv/features/playback/player/useDirectPlayback';
 import { type TvSubtitles, useTvSubtitles } from '#tv/features/playback/use-tv-subtitles';
 
-/** The controls a television does not own (the set has the volume, there is no
- * PiP and it is already fullscreen; the native engines expose no rate). One
- * shared no-op, because a fresh `() => undefined` per render is a NEW prop on
- * every ~4 Hz playback tick, and `ControlCluster` is memoized precisely so it can
- * skip those - a transport row of ten focusables was reconciling for the whole
- * film. */
+// Shared, because a fresh `() => undefined` per render is a new prop on every
+// ~4 Hz playback tick and the memoized `ControlCluster` exists to skip those.
 const NOOP = (): undefined => undefined;
 
 export interface TvController {
   controller: PlayerController;
-  /** Underlying engine hook (surface refs, resume, warn live in the wrapper). */
   pb: Playback;
   subtitleGen: TvSubtitles['subtitleGen'];
 }
 
 /**
- * Adapts the TV engine (`useDirectPlayback`, driving AVPlay / mpv / ExoPlayer /
- * hls.js) + subtitle state into the shared {@link PlayerController}. Volume, PiP
- * and fullscreen are TV-off (handled by the set / already fullscreen) and
- * playback speed is not exposed by the native engines - surfaced
- * honestly as no-ops so the shared chrome hides or disables them. Audio filters
- * work on EVERY surface: Web Audio on the in-page <video>, in-engine DSP on the
- * native planes.
+ * Adapts the TV engine + subtitle state into the shared {@link PlayerController}.
+ * Volume, PiP, fullscreen and rate are no-ops on a TV, so the shared chrome hides
+ * or disables them.
  */
 export function useTvController(client: KromaClient, item: MediaItem): TvController {
   const t = useT();
-  // Preferred audio / subtitle language, on the ACCOUNT. Read here so a title
-  // opens on the right tracks, and written back by the pickers below so the
-  // choice made once in the player is the choice every later title starts from.
   const langs = useLangPrefs();
   const pb = useDirectPlayback(client, item, langs.audio);
   const subs = useTvSubtitles(client, item, langs);
 
-  // Audio normalizer (§7), one persisted mode across every engine. The Web Audio
-  // compressor taps the in-page <video> (HTML engine: legacy webOS, the macOS
-  // desktop webview, a desktop browser); the native planes implement the same
-  // modes in-engine (mpv `af`, ExoPlayer DynamicsProcessing, AVPlay via the
-  // server's filtered remux), driven through the engine port below.
+  // One persisted mode across every engine: Web Audio taps the in-page <video>,
+  // the native planes implement the same modes in-engine.
   const filter = useAudioFilter(pb.videoRef, `${item.id}:${pb.surface}`);
   const { setAudioFilter: pushEngineFilter, surface } = pb;
   useEffect(() => {
@@ -68,19 +53,15 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
     return [{ id: 'auto', label: `${t('player.qualityAuto')}${badgeSuffix}` }];
   }, [item.video, t]);
 
-  // Engine picker (Settings): the engines this platform actually offers (Tizen ->
-  // AVPlay/remux, webOS -> direct/remux, desktop -> direct/remux/mpv, ...). A
-  // single-option list hides the row (nothing to switch).
+  // An empty list hides the picker row: a single option is nothing to switch.
   const engines = useMemo(() => {
     const list = availableEngines();
     return list.length > 1 ? list.map((id) => ({ id, label: t(ENGINE_LABEL_KEY[id]) })) : [];
   }, [t]);
 
-  // Switching audio track is also how a viewer says "I watch in French": store
-  // the track's language as the preference - REFINED by the dub variant its
-  // title betrays ('fre' + "VFF …" → 'fr-FR'), so choosing the France dub can
-  // never auto-pick the Quebec one on the next title. A track with no declared
-  // language leaves the stored preference alone - nothing to learn from it.
+  // Picking a track also sets the account's language preference, refined by the
+  // dub variant its title betrays ('fre' + "VFF …" → 'fr-FR') so the France dub
+  // never auto-picks the Quebec one on the next title.
   const { setAudio: pickAudio, audioTracks: tracks } = pb;
   const { setAudio: rememberAudio } = langs;
   const setAudio = useCallback(
@@ -145,10 +126,8 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
     setEngine,
     audioFilter: filter.mode,
     setAudioFilter: filter.setMode,
-    // In-page <video> needs Web Audio; a native plane answers for its own DSP
-    // (ExoPlayer has none before API 28 or on passthrough, and AVPlay loses it
-    // when the server's filtered remux fails), so the row hides instead of
-    // showing a mode that is doing nothing.
+    // A native plane answers for its own DSP (ExoPlayer has none before API 28 or
+    // on passthrough), so the row hides rather than showing a dead mode.
     audioFilterSupported: pb.surface === 'video' ? filter.supported : pb.audioFilterSupported,
     pipActive: false,
     togglePip: NOOP,

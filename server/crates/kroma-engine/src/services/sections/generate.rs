@@ -11,9 +11,9 @@ use crate::db::{self, Pool};
 
 use super::taste::Cluster;
 
-/// How many sections we ask the model for (and cap to).
+// How many sections we ask the model for (and cap to).
 const MAX_SECTIONS: usize = 6;
-/// Cap on a single section title, defended on parse (catchy, not an essay).
+// Cap on a single section title, defended on parse (catchy, not an essay).
 const MAX_TITLE: usize = 48;
 
 /// A personalized section authored by the LLM and cached per user. `query` is the
@@ -126,7 +126,7 @@ pub fn parse_response(text: &str) -> anyhow::Result<(String, Vec<GenSection>)> {
     Ok((out.profile.trim().to_string(), sections))
 }
 
-/// Find the outermost JSON object in `text` (handles ```json fences / preamble).
+// Find the outermost JSON object in `text` (handles ```json fences / preamble).
 fn extract_json(text: &str) -> Option<&str> {
     let start = text.find('{')?;
     let end = text.rfind('}')?;

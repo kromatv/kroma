@@ -10,8 +10,8 @@ const SECTIONS = [
   { key: 'search', label: 'Search', icon: 'search' },
 ] as const;
 
-/** Wired, so Select actually moves the lens: the story's stand-in for the
- * navigation a press performs in the apps. */
+// Wired, so Select actually moves the lens: the story's stand-in for the
+// navigation a press performs in the apps.
 function Switcher(props: Readonly<Omit<NavPillProps, 'children'>>) {
   const [active, setActive] = useState('home');
   return (

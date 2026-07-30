@@ -1,12 +1,6 @@
-//! Request lifecycle orchestration: create (with duplicate-merge and
-//! auto-approve), approve (materializes the episode-level wanted ledger from
-//! TMDB season data), deny, and the availability matcher that flips requests
-//! once their titles appear in the local catalog (whether imported by the
-//! acquisition stack or added by hand).
-//!
-//! Everything here is synchronous and does network/DB work: call it from a
-//! blocking context (`api::util::blocking`, a job thread), never inline in an
-//! async handler.
+//! Request lifecycle: create, approve, deny, and the availability matcher.
+//! Synchronous and does network/DB work: call it from a blocking context, never
+//! inline in an async handler.
 
 use anyhow::{anyhow, bail, Result};
 
@@ -22,11 +16,6 @@ use crate::model::{
 };
 use crate::services::jobs::now_ms;
 
-// Request orchestration is generic over the host state `S: HostCtx` (settings /
-// TMDB config / event bus / job triggers / DB reached through the seam), so it
-// runs both in-core (`S = SharedState`, the request API) and out-of-process
-// (`S = RemoteHost`, the acquisition `.kmod` calling the same fulfillment logic).
-
 fn tmdb_key<S: HostCtx>(state: &S) -> Result<String> {
     state.tmdb_api_key().ok_or_else(|| anyhow!("TMDB is not configured"))
 }
@@ -36,22 +25,16 @@ fn language<S: HostCtx>(state: &S) -> String {
 }
 
 fn publish<S: HostCtx>(state: &S, req_id: &str, status: RequestStatus) {
-    // The wire shape matches the former `ServerEvent::RequestUpdated`
-    // (`{ "type": "request.updated", id, status }`): HostCtx::publish merges the
-    // topic under the `type` key, so clients see identical bytes.
+    // Clients depend on the wire shape `{ "type": "request.updated", id, status }`;
+    // HostCtx::publish merges the topic under the `type` key.
     state.publish(Event::new(
         "request.updated",
         json!({ "id": req_id, "status": status.as_str() }),
     ));
 }
 
-/// Tell the person who asked that their request moved.
-///
-/// Deliberately NOT folded into [`publish`]: that fires on every touch,
-/// including a duplicate-merge that changes no status, and a notification must
-/// mark a real transition. Every call site below sits behind an actual state
-/// change. A request filed before accounts existed (`requested_by` NULL) has
-/// nobody to tell.
+// Only call on a real state change: [`publish`] fires on every touch, but a
+// notification must mark a transition.
 fn notify_requester<S: HostCtx>(state: &S, req: &MediaRequest, status: RequestStatus, link: &str) {
     let Some(user_id) = req.requested_by.as_deref() else {
         return;
@@ -62,9 +45,6 @@ fn notify_requester<S: HostCtx>(state: &S, req: &MediaRequest, status: RequestSt
         RequestStatus::Available | RequestStatus::PartiallyAvailable => {
             (NotificationEvent::RequestAvailable, "available")
         }
-        // Pending is where a request starts, and searching/downloading/importing
-        // are machinery the requester did not ask to watch. Only the four
-        // outcomes above are worth interrupting someone for.
         RequestStatus::Pending
         | RequestStatus::Searching
         | RequestStatus::Downloading
@@ -84,8 +64,6 @@ fn notify_requester<S: HostCtx>(state: &S, req: &MediaRequest, status: RequestSt
         spec = spec.param("note", note);
     }
     if available {
-        // "Ready to watch" is the one notification worth a button: it takes you
-        // straight into the title instead of the requests list.
         spec = spec.push_category(PushCategory::MediaAvailable).action(ActionSpec {
             id: "watch".into(),
             label_key: "notifications.action.watch".into(),
@@ -98,8 +76,6 @@ fn notify_requester<S: HostCtx>(state: &S, req: &MediaRequest, status: RequestSt
     state.notify(&Audience::user(user_id), &spec);
 }
 
-/// Tell the moderators a request is waiting for them, with Approve / Deny on the
-/// notification itself so a decision costs one tap and no navigation.
 fn notify_moderators<S: HostCtx>(state: &S, req: &MediaRequest, requester: &User) {
     let spec = NotificationSpec::new(
         NotificationEvent::RequestSubmitted,
@@ -130,8 +106,6 @@ fn notify_moderators<S: HostCtx>(state: &S, req: &MediaRequest, requester: &User
     state.notify(&Audience::permission(Permission::RequestsManage), &spec);
 }
 
-/// Where a request's notification should take you: the title itself once it is
-/// in the catalogue, else the requests list.
 fn request_link<S: HostCtx>(state: &S, req: &MediaRequest) -> String {
     let local = state.db().get().ok().and_then(|conn| match req.kind {
         RequestKind::Movie => {
@@ -144,8 +118,6 @@ fn request_link<S: HostCtx>(state: &S, req: &MediaRequest) -> String {
     local.unwrap_or_else(|| "/requests".to_string())
 }
 
-/// Re-read a request and notify its author of a transition. Best effort: a
-/// notification is never the point of the operation that triggered it.
 fn notify_transition<S: HostCtx>(state: &S, id: &str, status: RequestStatus) {
     let Ok(conn) = state.db().get() else { return };
     let Ok(Some(req)) = db::get_request(&conn, id) else { return };
@@ -163,7 +135,6 @@ pub fn create_request<S: HostCtx>(state: &S, user: &User, body: &CreateRequestBo
         .map_err(|()| anyhow!("TMDB lookup failed"))?
         .ok_or_else(|| anyhow!("title not found on TMDB"))?;
 
-    // Normalize the ask: None/empty = whole show; movies carry None for both.
     let asked_seasons: Option<Vec<u32>> = match body.kind {
         RequestKind::Movie => None,
         RequestKind::Show => body.seasons.clone().filter(|s| !s.is_empty()).map(|mut s| {
@@ -177,9 +148,6 @@ pub fn create_request<S: HostCtx>(state: &S, user: &User, body: &CreateRequestBo
         RequestKind::Show => normalize_episodes(body.episodes.clone()),
     };
 
-    // Duplicate-merge: a second ask for an open title folds in (a show ask can
-    // widen the season subset and/or the individual-episode subset;
-    // re-materialized below if already approved).
     let conn = state.db().get()?;
     if let Some(existing) = db::find_open_request(&conn, body.kind, body.tmdb_id)? {
         drop(conn);
@@ -216,11 +184,8 @@ pub fn create_request<S: HostCtx>(state: &S, user: &User, body: &CreateRequestBo
     if user.can(Permission::RequestsAuto) {
         approve_request(state, &id, Some(&user.id))?;
     } else {
-        // The title may already sit in the library (e.g. season subset overlap):
-        // let the matcher flip it right away rather than waiting for the cron.
         let matched = match_one(state, &id)?;
-        // Only bother the moderators if it is genuinely waiting on them: a
-        // request that the matcher just satisfied needs no review.
+        // A request the matcher just satisfied needs no review.
         if matched.is_none() || matched == Some(RequestStatus::Pending) {
             let conn = state.db().get()?;
             let pending = db::get_request(&conn, &id)?;
@@ -235,9 +200,6 @@ pub fn create_request<S: HostCtx>(state: &S, user: &User, body: &CreateRequestBo
     db::get_request(&conn, &id)?.ok_or_else(|| anyhow!("request vanished after insert"))
 }
 
-/// Duplicate-merge for a show ask that folds into an open request: widen the
-/// season and/or individual-episode subset, persist any change, re-materialize
-/// the wanted ledger when the request was already green-lit, and notify clients.
 fn merge_show_request<S: HostCtx>(
     state: &S,
     existing: &MediaRequest,
@@ -260,7 +222,6 @@ fn merge_show_request<S: HostCtx>(
     }
     if seasons_changed || episodes_changed {
         if matches!(existing.status, RequestStatus::Approved | RequestStatus::PartiallyAvailable) {
-            // Already green-lit: extend the wanted ledger to the new target.
             materialize_wanted(state, &existing.id)?;
         }
         publish(state, &existing.id, existing.status);
@@ -268,8 +229,6 @@ fn merge_show_request<S: HostCtx>(
     Ok(())
 }
 
-/// Approve: materialize the wanted ledger, mark approved, match availability,
-/// and kick the automatic search.
 pub fn approve_request<S: HostCtx>(state: &S, id: &str, reviewer: Option<&str>) -> Result<MediaRequest> {
     let conn = state.db().get()?;
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
@@ -281,11 +240,8 @@ pub fn approve_request<S: HostCtx>(state: &S, id: &str, reviewer: Option<&str>) 
     materialize_wanted(state, id)?;
     let status = match_one(state, id)?.unwrap_or(RequestStatus::Approved);
     publish(state, id, status);
-    // Approving is a real transition, so the requester hears about it whether it
-    // merely got green-lit or the matcher found it already on disk.
     notify_transition(state, id, status);
-    // Fire the wanted-list search right away (registered with the downloads
-    // milestone; until then the trigger is a no-op on the unknown key).
+    // A no-op until the downloads milestone registers this job key.
     state.trigger_job("acquisition.search", "request-approved");
     let conn = state.db().get()?;
     db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request vanished after approve"))
@@ -303,7 +259,6 @@ pub fn deny_request<S: HostCtx>(state: &S, id: &str, reviewer: &str, note: Optio
     db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request vanished after deny"))
 }
 
-/// Canonicalize an individual-episode ask: empty -> `None`, else sorted + deduped.
 fn normalize_episodes(episodes: Option<Vec<EpisodeRef>>) -> Option<Vec<EpisodeRef>> {
     let mut list = episodes.filter(|e| !e.is_empty())?;
     list.sort_unstable_by_key(|e| (e.season, e.episode));
@@ -311,17 +266,13 @@ fn normalize_episodes(episodes: Option<Vec<EpisodeRef>>) -> Option<Vec<EpisodeRe
     Some(list)
 }
 
-/// A Show request targets the WHOLE show only when it names neither full seasons
-/// nor individual episodes; that is the maximal target.
 fn is_whole_show(seasons: &Option<Vec<u32>>, episodes: &Option<Vec<EpisodeRef>>) -> bool {
     seasons.is_none() && episodes.is_none()
 }
 
-/// Union of two Show targets (existing + a second ask), each expressed as an
-/// optional full-season set plus an optional individual-episode set. A whole-show
-/// side absorbs everything (stays whole show); otherwise a `None` set means the
-/// EMPTY set (not "all", which only whole show denotes), so the two sets union
-/// cleanly without a single-episode ask ever narrowing a broader request.
+// Union of two Show targets. A whole-show side absorbs everything; otherwise a
+// `None` set means the EMPTY set, not "all", so a narrow ask never shrinks a
+// broader request.
 fn merge_target(
     ex_seasons: Option<Vec<u32>>,
     ex_episodes: Option<Vec<EpisodeRef>>,
@@ -348,9 +299,6 @@ fn merge_target(
     (seasons, normalize_episodes(Some(episodes)))
 }
 
-/// (Re)build a request's wanted rows from TMDB. Movies: one row. Shows: one
-/// row per episode of every requested season, with air dates so unaired
-/// episodes wait their turn. Idempotent: replaces the request's ledger.
 fn materialize_wanted<S: HostCtx>(state: &S, id: &str) -> Result<()> {
     let conn = state.db().get()?;
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
@@ -359,8 +307,7 @@ fn materialize_wanted<S: HostCtx>(state: &S, id: &str) -> Result<()> {
     db::replace_wanted(state.db(), &req.id, &rows, now_ms())
 }
 
-/// Fill `out` with the wanted rows a request WOULD get on approval, without
-/// persisting anything (interactive search on a still-pending request).
+/// The wanted rows a request WOULD get on approval, persisting nothing.
 pub fn preview_wanted<S: HostCtx>(state: &S, req: &MediaRequest, out: &mut Vec<db::WantedRow>) -> Result<()> {
     *out = build_wanted_rows(state, req)?;
     Ok(())
@@ -375,10 +322,6 @@ fn build_wanted_rows<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<Vec<db
     build_wanted_rows_from(state, req, &detail)
 }
 
-/// The wanted rows a request targets, given an already-fetched TMDB detail (the
-/// refresh pass fetches the detail once, for the air signals AND the ledger).
-/// Still does one TMDB `season_episodes` call per requested season for the
-/// per-episode air dates.
 fn build_wanted_rows_from<S: HostCtx>(
     state: &S,
     req: &MediaRequest,
@@ -402,40 +345,30 @@ fn build_wanted_rows_from<S: HostCtx>(
             year: req.year,
             season: None,
             episode: None,
-            // The soonest availability date (digital > theatrical > release) gates
-            // an unreleased movie out of search until it is out, then the search
-            // pass auto-grabs it (wanted_searchable: air_date NULL or <= today).
-            // A movie already out / with no TMDB date has a past / NULL date and
-            // stays immediately searchable.
+            // The soonest availability date (digital > theatrical > release) gates an
+            // unreleased movie out of search (wanted_searchable: air_date NULL or <= today).
             air_date: detail.available_date.clone(),
             status: "wanted".into(),
             last_search_at: None,
         }),
         RequestKind::Show => {
             use std::collections::{BTreeSet, HashSet};
-            // Full seasons to pull whole: the explicit `seasons` ask, or EVERY
-            // season only when neither seasons nor episodes were specified.
             let full_seasons: HashSet<u32> = match (&req.seasons, &req.episodes) {
                 (Some(list), _) => list.iter().copied().collect(),
                 (None, None) => detail.seasons.iter().map(|s| s.season).collect(),
                 (None, Some(_)) => HashSet::new(),
             };
-            // Individual (season, episode) asks unioned on top of the full seasons.
             let individual: HashSet<(u32, u32)> = req
                 .episodes
                 .as_ref()
                 .map(|eps| eps.iter().map(|e| (e.season, e.episode)).collect())
                 .unwrap_or_default();
-            // One TMDB call per distinct season across either source (sorted for a
-            // stable order).
             let needed: BTreeSet<u32> =
                 full_seasons.iter().copied().chain(individual.iter().map(|(s, _)| *s)).collect();
             for season in needed {
                 let want_whole = full_seasons.contains(&season);
                 let data = crate::infra::metadata::season_episodes(&key, &lang, req.tmdb_id, season);
                 for ep in data.episodes {
-                    // Include if the whole season is wanted OR this exact episode is;
-                    // iterating distinct seasons once yields one row per episode.
                     if !want_whole && !individual.contains(&(season, ep.episode)) {
                         continue;
                     }
@@ -463,18 +396,13 @@ fn build_wanted_rows_from<S: HostCtx>(
     Ok(rows)
 }
 
-// ----- availability matching ------------------------------------------------------
-
-/// Outcome of one matcher pass, for job logs.
 #[derive(Debug, Default)]
 pub struct MatchSummary {
     pub checked: usize,
     pub changed: usize,
 }
 
-/// Re-derive availability for every non-terminal request. Runs after each
-/// library scan (chained) and on a daily safety-net cron: enrichment writes
-/// `metadata.tmdbId` some time after the scan itself.
+/// Re-derive availability for every non-terminal request.
 pub fn availability_pass<S: HostCtx>(state: &S) -> Result<MatchSummary> {
     let conn = state.db().get()?;
     let all = db::list_requests(&conn, None)?;
@@ -495,24 +423,12 @@ pub fn availability_pass<S: HostCtx>(state: &S) -> Result<MatchSummary> {
     Ok(summary)
 }
 
-// ----- TMDB refresh (keep the wanted ledger + air signals current) ---------------
-
-/// Minimum spacing between TMDB refreshes of the same request (~3h), so the
-/// 6-hourly refresh cron never re-hits TMDB for a request touched recently
-/// (e.g. just approved / merged).
 const REFRESH_MIN_INTERVAL_MS: i64 = 3 * 60 * 60 * 1000;
 
-/// TMDB `status` strings for a show whose episode set is fixed forever: no new
-/// episodes will air, so once refreshed we never need to fetch it again.
 fn is_ended(air_status: Option<&str>) -> bool {
     matches!(air_status, Some("Ended") | Some("Canceled"))
 }
 
-/// Should this request be re-fetched from TMDB this pass? Skips terminal
-/// requests, throttles by `last_refresh_at`, and skips the requests that CANNOT
-/// change: a released movie already on disk, and an ended/canceled show (its
-/// episode set is complete once we've recorded that status). Ongoing shows and
-/// unreleased / not-yet-available movies always refresh (subject to the throttle).
 fn needs_refresh(req: &MediaRequest, now: i64) -> bool {
     if matches!(req.status, RequestStatus::Denied | RequestStatus::Failed) {
         return false;
@@ -523,19 +439,13 @@ fn needs_refresh(req: &MediaRequest, now: i64) -> bool {
         }
     }
     match req.kind {
-        // A released movie already in the library will not change.
         RequestKind::Movie => req.status != RequestStatus::Available,
-        // An ended/canceled show gets no new episodes; refresh it once (to record
-        // the ended status + backfill air dates), then never again.
         RequestKind::Show => !is_ended(req.air_status.as_deref()),
     }
 }
 
-/// Re-fetch every refreshable request from TMDB: ADDITIVELY extend its wanted
-/// ledger with newly-aired episodes, backfill air dates TMDB now knows, and
-/// store the airing signals (air_status / next_air_date). Bounded by
-/// [`needs_refresh`] + the throttle so TMDB is never hammered. Called by the
-/// `acquisition.refresh` job.
+/// Re-fetch every refreshable request from TMDB: additively extend its wanted
+/// ledger, backfill air dates, and store the airing signals.
 pub fn refresh_pass<S: HostCtx>(state: &S) -> Result<usize> {
     let conn = state.db().get()?;
     let all = db::list_requests(&conn, None)?;
@@ -546,8 +456,7 @@ pub fn refresh_pass<S: HostCtx>(state: &S) -> Result<usize> {
         if !needs_refresh(&req, now) {
             continue;
         }
-        // Per-request failures (a vanished TMDB id, a transient error) must not
-        // abort the whole pass; the next cron retries.
+        // A per-request failure must not abort the pass; the next cron retries.
         if let Err(e) = refresh_one(state, &req) {
             tracing::warn!(target: "requests", request = %req.id, "refresh failed: {e:#}");
             continue;
@@ -557,9 +466,6 @@ pub fn refresh_pass<S: HostCtx>(state: &S) -> Result<usize> {
     Ok(refreshed)
 }
 
-/// Refresh one request: one TMDB detail fetch, then additive ledger merge + air
-/// signals. A show additively extends its episode ledger; a movie has nothing to
-/// extend but backfills its wanted row's air (release) date once TMDB knows it.
 fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<()> {
     let key = tmdb_key(state)?;
     let lang = language(state);
@@ -570,11 +476,8 @@ fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<()> {
     if req.kind == RequestKind::Show {
         refresh_wanted(state, req, &detail)?;
     } else if let Some(avail) = detail.available_date.as_deref() {
-        // Movie: backfill the wanted row's air date once TMDB publishes it, so a
-        // movie requested before its release date was known still gets gated out
-        // of search until release, then auto-grabbed. set_wanted_air_date writes
-        // only rows whose air_date IS NULL, so a known date is never overwritten
-        // (and a grabbed/available row is left untouched by the search gate).
+        // set_wanted_air_date only writes rows whose air_date IS NULL, so a known
+        // date is never overwritten.
         let conn = state.db().get()?;
         let rows = db::wanted_for_request(&conn, &req.id)?;
         drop(conn);
@@ -583,9 +486,8 @@ fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<()> {
         }
     }
 
-    // Airing signals: show = its next episode's date; movie = its soonest
-    // availability, but only while still in the future (a past date is "already
-    // out", so no upcoming badge).
+    // A movie's next air date is only reported while still in the future: a past
+    // date means "already out", which gets no upcoming badge.
     let today = today_ymd();
     let next_air_date = match req.kind {
         RequestKind::Show => detail.next_air.as_ref().map(|(d, _, _)| d.clone()),
@@ -601,12 +503,8 @@ fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<()> {
     Ok(())
 }
 
-/// ADDITIVELY reconcile a show's wanted ledger against TMDB: INSERT rows for
-/// (season, episode) pairs not yet present (status `wanted`, with air date), and
-/// backfill an air date onto an existing row that lacked one. NEVER deletes a
-/// row and NEVER changes a row's status, so grabbed/available episodes are
-/// untouched. This is what lets an ongoing show's newly-aired episodes finally
-/// enter the ledger (and thus get searched / matched) over time.
+// Additive only: inserts missing (season, episode) rows and backfills air dates.
+// Never deletes a row and never changes a row's status.
 fn refresh_wanted<S: HostCtx>(
     state: &S,
     req: &MediaRequest,
@@ -615,30 +513,23 @@ fn refresh_wanted<S: HostCtx>(
     let conn = state.db().get()?;
     let existing = db::wanted_for_request(&conn, &req.id)?;
     drop(conn);
-    // Only EXTEND an existing ledger, never create one: a pending (not-yet-
-    // approved) request has no wanted rows and must stay that way, else the
-    // search pass would start grabbing before a moderator green-lit it. Approval
-    // (materialize_wanted) always seeds a non-empty ledger, so an approved show
-    // reaches here with rows.
+    // Never seed a ledger, only extend one: a pending request must stay empty or
+    // the search pass would grab before a moderator green-lit it.
     if existing.is_empty() {
         return Ok(());
     }
     let desired = build_wanted_rows_from(state, req, detail)?;
 
     use std::collections::HashMap;
-    // Key on (season, episode) rather than id so a row created under an older id
-    // formula still dedups correctly. Movie rows key on (None, None).
+    // Key on (season, episode), not id: a row minted under an older id formula
+    // must still dedup.
     let have: HashMap<(Option<u32>, Option<u32>), &db::WantedRow> =
         existing.iter().map(|w| ((w.season, w.episode), w)).collect();
 
     let mut to_insert: Vec<db::WantedRow> = Vec::new();
     for d in desired {
         match have.get(&(d.season, d.episode)) {
-            // New (season, episode): add it as a plain wanted row.
             None => to_insert.push(d),
-            // Present already: only backfill a now-known air date (the writer
-            // guards on `air_date IS NULL`, so a set date is never overwritten
-            // and the row's status is left alone).
             Some(existing_row) => {
                 if existing_row.air_date.is_none() {
                     if let Some(air) = d.air_date.as_deref() {
@@ -652,11 +543,8 @@ fn refresh_wanted<S: HostCtx>(
     Ok(())
 }
 
-/// Directly fulfill a request from a completed import, WITHOUT waiting for the
-/// scan -> TMDB-enrich -> match-by-tmdbId chain (which is fragile: enrichment
-/// may not recover the id). We already know this download satisfied the request,
-/// so flip its `grabbed` wanted rows to `available` and recompute the request
-/// status. Called from the importer when a request-linked download lands.
+/// Fulfill a request from a completed import, without waiting for the
+/// scan -> enrich -> match-by-tmdbId chain (enrichment may not recover the id).
 pub fn on_download_imported<S: HostCtx>(state: &S, request_id: &str) -> Result<()> {
     let conn = state.db().get()?;
     let Some(req) = db::get_request(&conn, request_id)? else {
@@ -664,13 +552,11 @@ pub fn on_download_imported<S: HostCtx>(state: &S, request_id: &str) -> Result<(
     };
     let wanted = db::wanted_for_request(&conn, request_id)?;
     drop(conn);
-    // Rows this request grabbed are now on disk = available.
     let grabbed: Vec<String> =
         wanted.iter().filter(|w| w.status == "grabbed").map(|w| w.id.clone()).collect();
     if !grabbed.is_empty() {
         db::set_wanted_status(state.db(), &grabbed, "available", now_ms())?;
     }
-    // Recompute from the (updated) ledger: all available -> available, some -> partial.
     let conn = state.db().get()?;
     let wanted = db::wanted_for_request(&conn, request_id)?;
     drop(conn);
@@ -679,24 +565,19 @@ pub fn on_download_imported<S: HostCtx>(state: &S, request_id: &str) -> Result<(
     } else if wanted.iter().any(|w| w.status == "available") {
         RequestStatus::PartiallyAvailable
     } else {
-        return Ok(()); // nothing became available (shouldn't happen post-import)
+        return Ok(());
     };
     if req.status != status {
         db::set_request_status(state.db(), request_id, status, None, None, now_ms())?;
         publish(state, request_id, status);
-        // The download landed and was imported: the requester's "ready to watch"
-        // moment. Transition-gated like every other notify site, so a re-import
-        // of an already-available request stays quiet.
         let link = request_link(state, &req);
         notify_requester(state, &req, status, &link);
     }
     Ok(())
 }
 
-/// Match one request against the local catalog. Returns the (possibly
-/// unchanged) derived status, or `None` when no judgement is possible (show
-/// not yet in library, pending show with no wanted ledger...). Never
-/// downgrades a request that already reached `available`.
+/// Match one request against the local catalog. `None` when no judgement is
+/// possible; never downgrades a request that already reached `available`.
 pub fn match_one<S: HostCtx>(state: &S, id: &str) -> Result<Option<RequestStatus>> {
     let conn = state.db().get()?;
     let Some(req) = db::get_request(&conn, id)? else {
@@ -708,7 +589,6 @@ pub fn match_one<S: HostCtx>(state: &S, id: &str) -> Result<Option<RequestStatus
     }
 }
 
-/// Match a movie request: available the moment its item is in the catalog.
 fn match_movie<S: HostCtx>(
     state: &S,
     conn: db::PooledConn,
@@ -723,18 +603,12 @@ fn match_movie<S: HostCtx>(
     db::set_wanted_status(state.db(), &wanted_ids, "available", now_ms())?;
     if req.status != RequestStatus::Available {
         db::set_request_status(state.db(), &req.id, RequestStatus::Available, None, None, now_ms())?;
-        // The film they asked for just landed guarded by the transition above,
-        // so a re-match over an already-available request stays quiet.
         let link = request_link(state, req);
         notify_requester(state, req, RequestStatus::Available, &link);
     }
     Ok(Some(RequestStatus::Available))
 }
 
-/// Match a show request against the episodes actually present, deriving
-/// available / partially-available from the wanted ledger. `None` when no
-/// judgement is possible (show not in library, or a pending show with no
-/// ledger); never regresses a request that already reached `available`.
 fn match_show<S: HostCtx>(
     state: &S,
     conn: db::PooledConn,
@@ -748,7 +622,6 @@ fn match_show<S: HostCtx>(
     let wanted = db::wanted_for_request(&conn, &req.id)?;
     drop(conn);
     if wanted.is_empty() {
-        // Pending show: no episode ledger yet, so no exact judgement.
         return Ok(None);
     }
     let today = today_ymd();
@@ -761,22 +634,18 @@ fn match_show<S: HostCtx>(
     } else {
         return Ok(None);
     };
-    // Never regress a fully-available request (e.g. temporary unmount).
+    // Never regress a fully-available request (e.g. a temporary unmount).
     if req.status == RequestStatus::Available && new_status != RequestStatus::Available {
         return Ok(Some(RequestStatus::Available));
     }
     if new_status != req.status {
         db::set_request_status(state.db(), &req.id, new_status, None, None, now_ms())?;
-        // Fires at most twice per show request (pending -> partial -> available),
-        // never once per episode: the write above is already transition-gated.
         let link = request_link(state, req);
         notify_requester(state, req, new_status, &link);
     }
     Ok(Some(new_status))
 }
 
-/// Tally the wanted ledger against the episodes present: count aired episodes and
-/// how many are on disk, collecting the ids that newly became available.
 fn tally_wanted(
     wanted: &[db::WantedRow],
     present: &std::collections::HashSet<(u32, u32)>,
@@ -801,7 +670,7 @@ fn tally_wanted(
     (aired, have, newly_available)
 }
 
-/// Today as `YYYY-MM-DD` (UTC), the wanted ledger's air-date vocabulary.
+/// Today as `YYYY-MM-DD` in UTC, the wanted ledger's air-date vocabulary.
 pub fn today_ymd() -> String {
     let now = time::OffsetDateTime::now_utc();
     format!("{:04}-{:02}-{:02}", now.year(), u8::from(now.month()), now.day())
@@ -817,32 +686,25 @@ mod tests {
 
     #[test]
     fn merge_target_whole_show_absorbs_any_ask() {
-        // Whole show (both None) + an episode ask stays whole show, never narrows.
         assert_eq!(merge_target(None, None, None, Some(vec![ep(1, 3)])), (None, None));
-        // A subset ask merged into whole show also stays whole show.
         assert_eq!(merge_target(None, None, Some(vec![2]), None), (None, None));
-        // Whole-show ask widens an existing subset back to whole show.
         assert_eq!(merge_target(Some(vec![1]), None, None, None), (None, None));
     }
 
     #[test]
     fn merge_target_unions_seasons_and_episodes() {
-        // Seasons union (a None side here is the EMPTY set, not "all").
         assert_eq!(
             merge_target(Some(vec![1]), None, Some(vec![2, 1]), None),
             (Some(vec![1, 2]), None)
         );
-        // Episode-only ask unions onto an existing episode-only request.
         assert_eq!(
             merge_target(None, Some(vec![ep(1, 3)]), None, Some(vec![ep(1, 4)])),
             (None, Some(vec![ep(1, 3), ep(1, 4)]))
         );
-        // A season subset plus a stray episode coexist as a mixed target.
         assert_eq!(
             merge_target(Some(vec![2]), None, None, Some(vec![ep(1, 5)])),
             (Some(vec![2]), Some(vec![ep(1, 5)]))
         );
-        // Duplicate episode across asks collapses to one.
         assert_eq!(
             merge_target(None, Some(vec![ep(1, 3)]), None, Some(vec![ep(1, 3)])),
             (None, Some(vec![ep(1, 3)]))
@@ -903,14 +765,11 @@ mod tests {
     #[test]
     fn needs_refresh_skips_terminal_and_throttles() {
         let now = 1_000_000_000_000i64;
-        // Terminal requests never refresh.
         assert!(!needs_refresh(&req(RequestKind::Movie, RequestStatus::Denied), now));
         assert!(!needs_refresh(&req(RequestKind::Show, RequestStatus::Failed), now));
-        // Throttled: a very recent refresh blocks another one.
         let mut recent = req(RequestKind::Movie, RequestStatus::Approved);
         recent.last_refresh_at = Some(now - 1000);
         assert!(!needs_refresh(&recent, now));
-        // Past the throttle window it refreshes again.
         let mut old = req(RequestKind::Movie, RequestStatus::Approved);
         old.last_refresh_at = Some(now - REFRESH_MIN_INTERVAL_MS - 1);
         assert!(needs_refresh(&old, now));
@@ -919,11 +778,8 @@ mod tests {
     #[test]
     fn needs_refresh_movie_and_show_rules() {
         let now = 1_000_000_000_000i64;
-        // A released movie already in the library will not change.
         assert!(!needs_refresh(&req(RequestKind::Movie, RequestStatus::Available), now));
-        // Any other movie state refreshes.
         assert!(needs_refresh(&req(RequestKind::Movie, RequestStatus::Approved), now));
-        // An ended show is skipped; an ongoing / unknown one refreshes.
         let mut ended = req(RequestKind::Show, RequestStatus::Approved);
         ended.air_status = Some("Ended".into());
         assert!(!needs_refresh(&ended, now));
@@ -962,9 +818,9 @@ mod tests {
         ];
         let present: HashSet<(u32, u32)> = [(1, 1), (1, 3)].into_iter().collect();
         let (aired, have, newly) = tally_wanted(&wanted, &present, today);
-        assert_eq!(aired, 3); // e1, e3, e4 (e2 unaired)
-        assert_eq!(have, 2); // e1, e3
-        assert_eq!(newly, vec!["s1e1".to_string()]); // e3 already available, not re-flagged
+        assert_eq!(aired, 3);
+        assert_eq!(have, 2);
+        assert_eq!(newly, vec!["s1e1".to_string()]);
     }
 
     #[test]
@@ -985,7 +841,6 @@ mod tests {
         let bytes = today.as_bytes();
         assert_eq!(bytes[4], b'-');
         assert_eq!(bytes[7], b'-');
-        // The three components parse as numbers in range.
         let parts: Vec<&str> = today.split('-').collect();
         assert_eq!(parts.len(), 3);
         let (y, m, d): (i32, u8, u8) =
@@ -995,22 +850,10 @@ mod tests {
         assert!((1..=31).contains(&d));
     }
 
-    // ----- DB-backed matcher tests (a minimal in-process HostCtx double) ----------
-
-    /// The shared stub over a real temp DB pool. The availability matcher +
-    /// ledger flips only touch `db()`, `publish()` (counted), `notify()`
-    /// (recorded) and `trigger_job()`; everything else stays neutral.
-    ///
-    /// `module_enabled(false)` is deliberate: these tests must exercise the
-    /// no-acquisition-module path, where a request goes to the queue rather than
-    /// straight to a downloader.
     type TestHost = kroma_module_host::testing::StubHost;
 
     use kroma_domain::ParamValue;
 
-    /// A notification param's literal text. Params are typed now (a `Key` is
-    /// resolved in the reader's own locale); every one asserted on here is
-    /// `Text`, and resolving a key to itself keeps that visible if one changes.
     fn param(params: &std::collections::BTreeMap<String, ParamValue>, key: &str) -> Option<String> {
         params.get(key).map(|v| v.resolve(|k| Some(k.to_string())))
     }
@@ -1019,15 +862,13 @@ mod tests {
         host_with_tmdb(Some("test-key"))
     }
 
-    /// The same host with TMDB unconfigured - every path into this service needs
-    /// it, so its absence is its own set of cases.
     fn host_without_tmdb() -> TestHost {
         host_with_tmdb(None)
     }
 
     fn host_with_tmdb(key: Option<&str>) -> TestHost {
-        // `en-US` rather than the stub's bare `en`: these tests assert on the
-        // exact `language=` TMDB is called with.
+        // `en-US`, not the stub's bare `en`: a test asserts the exact `language=`
+        // sent to TMDB.
         let host = TestHost::with_db("requests")
             .with_module_enabled(false)
             .with_metadata_language("en-US");
@@ -1036,7 +877,6 @@ mod tests {
             None => host,
         }
     }
-
 
     fn exec(host: &TestHost, sql: &str) {
         host.db().get().unwrap().execute(sql, []).unwrap();
@@ -1065,14 +905,10 @@ mod tests {
         insert_req_by(host, id, kind, tmdb, status, None);
     }
 
-    /// `requests.requested_by` is a foreign key, so an authored request needs a
-    /// real account row behind it.
     fn seed_user(host: &TestHost, id: &str) {
         exec(host, &format!("INSERT OR IGNORE INTO users (id,email,username,password_hash,created_at) VALUES ('{id}','{id}@example.test','{id}','x','now')"));
     }
 
-    /// As [`insert_req`], but with an author - the notification paths do nothing
-    /// without one.
     fn insert_req_by(
         host: &TestHost,
         id: &str,
@@ -1143,7 +979,6 @@ mod tests {
     #[test]
     fn match_one_movie_absent_from_catalog_is_no_judgement() {
         let host = test_host();
-        // No catalog item for tmdb 999 -> matcher cannot decide.
         insert_req(&host, "r1", RequestKind::Movie, 999, RequestStatus::Approved);
         assert_eq!(match_one(&host, "r1").unwrap(), None);
         assert_eq!(status_of_req(&host, "r1"), RequestStatus::Approved);
@@ -1172,7 +1007,6 @@ mod tests {
     #[test]
     fn match_one_show_partial_when_some_episodes_missing() {
         let host = test_host();
-        // Only episode 1 is on disk; both are aired and wanted.
         seed_show(&host, "s1", 1396, &[(1, 1)]);
         insert_req(&host, "r1", RequestKind::Show, 1396, RequestStatus::Approved);
         db::replace_wanted(
@@ -1194,7 +1028,6 @@ mod tests {
     fn match_one_show_pending_without_ledger_is_no_judgement() {
         let host = test_host();
         seed_show(&host, "s1", 1396, &[(1, 1)]);
-        // A pending show with no wanted ledger yields no verdict.
         insert_req(&host, "r1", RequestKind::Show, 1396, RequestStatus::Pending);
         assert_eq!(match_one(&host, "r1").unwrap(), None);
     }
@@ -1224,14 +1057,11 @@ mod tests {
     #[test]
     fn availability_pass_checks_nonterminal_and_counts_changes() {
         let host = test_host();
-        // A movie that will match (Approved -> Available: a change).
         seed_movie_item(&host, "m1", 603);
         insert_req(&host, "r1", RequestKind::Movie, 603, RequestStatus::Approved);
         db::replace_wanted(host.db(), "r1", &[wanted("w1", "r1", None, None, None, "wanted")], now_ms())
             .unwrap();
-        // A show not in the library (no verdict -> checked but unchanged).
         insert_req(&host, "r2", RequestKind::Show, 1396, RequestStatus::Approved);
-        // A denied request is skipped entirely.
         insert_req(&host, "r3", RequestKind::Movie, 700, RequestStatus::Denied);
 
         let summary = availability_pass(&host).unwrap();
@@ -1257,8 +1087,6 @@ mod tests {
     #[test]
     fn build_wanted_rows_from_show_with_empty_seasons_bails() {
         let host = test_host();
-        // A show ask naming an empty explicit season set targets nothing, so no
-        // TMDB season calls happen and the builder refuses an empty ledger.
         let mut request = req(RequestKind::Show, RequestStatus::Approved);
         request.seasons = Some(Vec::new());
         let detail = raw_detail(None, None);
@@ -1309,10 +1137,8 @@ mod tests {
     fn approve_request_on_denied_bails_without_network() {
         let host = test_host();
         insert_req(&host, "r1", RequestKind::Movie, 603, RequestStatus::Denied);
-        // A denied request refuses re-approval before any TMDB call happens.
         let err = approve_request(&host, "r1", Some("mod")).unwrap_err();
         assert!(err.to_string().contains("denied"), "unexpected error: {err}");
-        // Untouched.
         assert_eq!(status_of_req(&host, "r1"), RequestStatus::Denied);
     }
 
@@ -1325,8 +1151,6 @@ mod tests {
     #[test]
     fn merge_show_request_widens_pending_seasons_without_materializing() {
         let host = test_host();
-        // A Pending show request (no wanted ledger) can widen its season set with
-        // no TMDB call, because materialize_wanted only runs once green-lit.
         db::insert_request(
             host.db(),
             &db::NewRequest {
@@ -1359,7 +1183,6 @@ mod tests {
     #[test]
     fn merge_show_request_no_change_does_not_publish() {
         let host = test_host();
-        // Merging a subset already covered widens nothing, so nothing is published.
         db::insert_request(
             host.db(),
             &db::NewRequest {
@@ -1388,8 +1211,6 @@ mod tests {
     #[test]
     fn refresh_wanted_noop_on_empty_ledger() {
         let host = test_host();
-        // A request with no wanted rows is never seeded by refresh (only extended),
-        // so this returns Ok before any TMDB season fetch.
         let request = req(RequestKind::Show, RequestStatus::Approved);
         let detail = raw_detail(None, None);
         refresh_wanted(&host, &request, &detail).unwrap();
@@ -1400,11 +1221,9 @@ mod tests {
     #[test]
     fn refresh_pass_skips_all_terminal_and_settled_requests() {
         let host = test_host();
-        // Denied + failed are terminal; an available movie can't change either.
         insert_req(&host, "r1", RequestKind::Movie, 1, RequestStatus::Denied);
         insert_req(&host, "r2", RequestKind::Show, 2, RequestStatus::Failed);
         insert_req(&host, "r3", RequestKind::Movie, 3, RequestStatus::Available);
-        // Nothing needs a refresh, so no TMDB call is made and the count is zero.
         assert_eq!(refresh_pass(&host).unwrap(), 0);
     }
 
@@ -1417,8 +1236,6 @@ mod tests {
     #[test]
     fn match_show_never_regresses_a_fully_available_request() {
         let host = test_host();
-        // Only e1 is on disk now, but the request is already Available (e.g. a
-        // temporary unmount dropped e2): the matcher must not downgrade it.
         seed_show(&host, "s1", 1396, &[(1, 1)]);
         insert_req(&host, "r1", RequestKind::Show, 1396, RequestStatus::Available);
         db::replace_wanted(
@@ -1438,7 +1255,6 @@ mod tests {
     #[test]
     fn match_show_no_verdict_when_aired_but_none_present() {
         let host = test_host();
-        // The show is in the library but has none of the aired episodes on disk yet.
         seed_show(&host, "s1", 1396, &[]);
         insert_req(&host, "r1", RequestKind::Show, 1396, RequestStatus::Approved);
         db::replace_wanted(
@@ -1470,7 +1286,6 @@ mod tests {
         )
         .unwrap();
         on_download_imported(&host, "r1").unwrap();
-        // The grabbed row is now available, but one row is still merely wanted.
         assert_eq!(status_of_req(&host, "r1"), RequestStatus::PartiallyAvailable);
         let conn = host.db().get().unwrap();
         let rows = db::wanted_for_request(&conn, "r1").unwrap();
@@ -1481,18 +1296,12 @@ mod tests {
     fn on_download_imported_no_grabbed_rows_is_noop() {
         let host = test_host();
         insert_req(&host, "r1", RequestKind::Movie, 603, RequestStatus::Approved);
-        // No grabbed rows: nothing becomes available, status is left as-is.
         db::replace_wanted(host.db(), "r1", &[wanted("w1", "r1", None, None, None, "wanted")], now_ms())
             .unwrap();
         on_download_imported(&host, "r1").unwrap();
         assert_eq!(status_of_req(&host, "r1"), RequestStatus::Approved);
         assert_eq!(host.published().len(), 0);
     }
-
-    // ----- notifications ---------------------------------------------------------
-    //
-    // The whole point of this layer is deciding WHO hears WHAT, and when not to
-    // speak at all. None of it touches TMDB.
 
     fn user(id: &str, permissions: Vec<Permission>) -> User {
         User {
@@ -1509,7 +1318,6 @@ mod tests {
         }
     }
 
-    /// A request that has an author, so the notification path is not short-circuited.
     fn req_by(kind: RequestKind, status: RequestStatus, requester: &str) -> MediaRequest {
         let mut r = req(kind, status);
         r.requested_by = Some(requester.into());
@@ -1518,9 +1326,6 @@ mod tests {
 
     #[test]
     fn only_the_four_outcomes_worth_interrupting_someone_for_notify() {
-        // Pending is where a request starts, and searching/downloading/importing
-        // are machinery nobody asked to watch. Notifying on those would make the
-        // feature a nuisance and train people to ignore it.
         let host = test_host();
         let silent = [
             RequestStatus::Pending,
@@ -1551,16 +1356,13 @@ mod tests {
                 NotificationEvent::RequestApproved,
                 NotificationEvent::RequestDenied,
                 NotificationEvent::RequestAvailable,
-                // A partially-available show is still "there is something to
-                // watch now", so it uses the same event.
+                // Partially available still means "there is something to watch now".
                 NotificationEvent::RequestAvailable,
             ]
         );
-        // Each one is addressed to the person who asked, never broadcast.
         for (audience, _) in &sent {
             assert_eq!(audience, &Audience::user("u1"));
         }
-        // The i18n key follows the outcome, since the four read very differently.
         assert_eq!(sent[0].1.title_key, "notifications.request.approved.title");
         assert_eq!(sent[1].1.body_key, "notifications.request.denied.body");
         assert_eq!(sent[2].1.title_key, "notifications.request.available.title");
@@ -1568,8 +1370,6 @@ mod tests {
 
     #[test]
     fn a_request_filed_before_accounts_existed_has_nobody_to_tell() {
-        // `requested_by` is NULL for pre-accounts requests; notifying would mean
-        // inventing a recipient.
         let host = test_host();
         let orphan = req(RequestKind::Movie, RequestStatus::Approved);
         assert!(orphan.requested_by.is_none());
@@ -1584,8 +1384,6 @@ mod tests {
         denied.note = Some("we already have this in 4K".into());
         notify_requester(&host, &denied, RequestStatus::Denied, "/requests");
 
-        // The same request object approved instead: the note is a denial reason
-        // and would read as nonsense attached to good news.
         let mut approved = denied.clone();
         approved.status = RequestStatus::Approved;
         notify_requester(&host, &approved, RequestStatus::Approved, "/requests");
@@ -1593,7 +1391,6 @@ mod tests {
         let sent = host.notifications();
         assert_eq!(param(&sent[0].1.params, "note").as_deref(), Some("we already have this in 4K"));
         assert_eq!(param(&sent[1].1.params, "note"), None);
-        // The title is always interpolated, whatever the outcome.
         assert_eq!(param(&sent[0].1.params, "title").as_deref(), Some("Title"));
         assert_eq!(param(&sent[1].1.params, "title").as_deref(), Some("Title"));
     }
@@ -1618,14 +1415,11 @@ mod tests {
         let watch = &available.actions[0];
         assert_eq!(watch.id, "watch");
         assert_eq!(watch.kind, ActionKind::Link);
-        // The button jumps straight into the title rather than the requests list,
-        // which is the entire reason it exists.
         assert_eq!(watch.href, "/movie/abc");
         assert_eq!(watch.method, None);
         assert_eq!(available.link.as_deref(), Some("/movie/abc"));
         assert_eq!(available.image_url.as_deref(), Some("https://img.example/p.jpg"));
 
-        // "Approved" is not actionable yet: nothing to watch, so no button.
         assert!(sent[1].1.actions.is_empty());
         assert_eq!(sent[1].1.push_category, None);
     }
@@ -1640,8 +1434,6 @@ mod tests {
         let sent = host.notifications();
         assert_eq!(sent.len(), 1);
         let (audience, spec) = &sent[0];
-        // Addressed by capability, not by a hardcoded owner: whoever holds the
-        // permission is a moderator.
         assert_eq!(audience, &Audience::permission(Permission::RequestsManage));
         assert_eq!(spec.event, NotificationEvent::RequestSubmitted);
         assert_eq!(param(&spec.params, "user").as_deref(), Some("alice"));
@@ -1651,8 +1443,6 @@ mod tests {
         let ids: Vec<&str> = spec.actions.iter().map(|a| a.id.as_str()).collect();
         assert_eq!(ids, ["approve", "deny"]);
         for action in &spec.actions {
-            // Both are API calls answered in place - a decision costs one tap and
-            // no navigation - so both need a method and the request's own id.
             assert_eq!(action.kind, ActionKind::Api);
             assert_eq!(action.method.as_deref(), Some("POST"));
             assert!(action.href.contains("req-7"), "{}", action.href);
@@ -1663,8 +1453,6 @@ mod tests {
 
     #[test]
     fn a_notification_links_to_the_title_once_it_is_in_the_library() {
-        // Before the title exists locally there is nothing to link to, so the
-        // notification falls back to the requests list.
         let host = test_host();
         let away = req(RequestKind::Movie, RequestStatus::Pending);
         assert_eq!(request_link(&host, &away), "/requests");
@@ -1680,7 +1468,6 @@ mod tests {
 
     #[test]
     fn denying_a_request_tells_its_author_where_to_look() {
-        // The public path end to end: status flip, client event, notification.
         let host = test_host();
         insert_req_by(&host, "r-deny", RequestKind::Movie, 42, RequestStatus::Pending, Some("u1"));
         seed_movie_item(&host, "item-42", 42);
@@ -1696,7 +1483,6 @@ mod tests {
         assert_eq!(sent[0].0, Audience::user("u1"));
         assert_eq!(sent[0].1.event, NotificationEvent::RequestDenied);
         assert_eq!(param(&sent[0].1.params, "note").as_deref(), Some("duplicate"));
-        // The title happens to be in the library already, so the link points at it.
         assert_eq!(sent[0].1.link.as_deref(), Some("/movie/item-42"));
     }
 
@@ -1710,8 +1496,6 @@ mod tests {
 
     #[test]
     fn approving_a_denied_request_is_refused_rather_than_silently_reopened() {
-        // Denial is a decision, not a state to bounce out of: re-asking has to go
-        // through a new request so the moderator sees it again.
         let host = test_host();
         insert_req(&host, "r-x", RequestKind::Movie, 42, RequestStatus::Denied);
         let err = approve_request(&host, "r-x", Some("mod-1")).unwrap_err().to_string();
@@ -1723,8 +1507,6 @@ mod tests {
 
     #[test]
     fn creating_a_request_without_tmdb_configured_says_so() {
-        // Every path into this service needs TMDB; failing here names the actual
-        // problem instead of surfacing a lookup error later.
         let host = host_without_tmdb();
         let err = create_request(
             &host,
@@ -1743,16 +1525,12 @@ mod tests {
 
     #[test]
     fn a_refresh_pass_survives_a_request_it_cannot_refresh() {
-        // One bad TMDB id must not abort the cron for everyone else, and the
-        // count reports what actually refreshed - not what was attempted.
         // No TMDB key, so every refresh_one fails at the first step.
         let host = host_without_tmdb();
         insert_req(&host, "r1", RequestKind::Movie, 42, RequestStatus::Approved);
         insert_req(&host, "r2", RequestKind::Movie, 43, RequestStatus::Approved);
         assert_eq!(refresh_pass(&host).unwrap(), 0);
 
-        // A request in a terminal state is skipped before TMDB is ever consulted,
-        // so an empty pass is not the same as a failing one.
         let host2 = test_host();
         insert_req(&host2, "r3", RequestKind::Movie, 44, RequestStatus::Denied);
         assert_eq!(refresh_pass(&host2).unwrap(), 0);
@@ -1784,8 +1562,6 @@ mod tests {
 
     #[test]
     fn refresh_never_creates_a_ledger_for_a_request_nobody_approved() {
-        // A pending request has no wanted rows, and giving it some here would let
-        // the search pass start grabbing before a moderator green-lit it.
         let host = test_host();
         insert_req(&host, "r1", RequestKind::Movie, 42, RequestStatus::Pending);
         let req = req(RequestKind::Movie, RequestStatus::Pending);
@@ -1797,8 +1573,6 @@ mod tests {
 
     #[test]
     fn refresh_backfills_a_missing_air_date_and_leaves_the_row_alone_otherwise() {
-        // The ledger is additive: a row that was already grabbed must keep its
-        // status, and a date that is already known must not be rewritten.
         let host = test_host();
         insert_req(&host, "r1", RequestKind::Movie, 42, RequestStatus::Approved);
         let undated = wanted("w1", "r1", None, None, None, "grabbed");
@@ -1814,23 +1588,13 @@ mod tests {
         assert_eq!(rows[0].air_date.as_deref(), Some("2026-03-04"));
         assert_eq!(rows[0].status, "grabbed", "an in-flight download is untouched");
 
-        // A second pass with a different date changes nothing: the writer guards
-        // on air_date IS NULL.
         refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2030-01-01"))).unwrap();
         let conn = host.db().get().unwrap();
         let rows = db::wanted_for_request(&conn, "r1").unwrap();
         assert_eq!(rows[0].air_date.as_deref(), Some("2026-03-04"));
     }
-    // ----- the whole lifecycle, against a fake TMDB -------------------------------
-    //
-    // Everything above stops at the first TMDB call. `client::api()` is
-    // overridable in test builds, so the REAL client (curl, the api_key param,
-    // the JSON decode) can run against a server on localhost - which is what
-    // makes create -> approve -> materialise reachable at all.
-
     use crate::test_support::FakeTmdb;
 
-    /// The TMDB detail body for a movie, with only the fields this flow reads.
     fn movie_detail(title: &str, year: &str) -> serde_json::Value {
         json!({
             "title": title,
@@ -1842,7 +1606,6 @@ mod tests {
         })
     }
 
-    /// A show detail plus its season list.
     fn show_detail(title: &str, seasons: &[u32]) -> serde_json::Value {
         json!({
             "name": title,
@@ -1872,8 +1635,6 @@ mod tests {
 
     #[test]
     fn creating_a_movie_request_takes_its_title_from_tmdb() {
-        // The title is stored on the request, not re-fetched, so the admin queue
-        // reads correctly even if TMDB later goes away.
         let host = test_host();
         let _tmdb = FakeTmdb::start(|path| match path {
             "/movie/603" => (200, movie_detail("The Matrix", "1999-03-31")),
@@ -1886,7 +1647,6 @@ mod tests {
         assert_eq!(req.year, Some(1999));
         assert_eq!(req.status, RequestStatus::Pending);
         assert_eq!(req.requested_by.as_deref(), Some("u1"));
-        // ...and the moderators were told it is waiting for them.
         let sent = host.notifications();
         assert_eq!(sent.len(), 1);
         assert_eq!(sent[0].0, Audience::permission(Permission::RequestsManage));
@@ -1894,25 +1654,18 @@ mod tests {
 
     #[test]
     fn a_tmdb_id_that_does_not_resolve_is_refused_two_different_ways() {
-        // Storing it either way would put a row in the queue that can never be
-        // fulfilled - but the two failures are genuinely different and the
-        // message says which happened.
         seed_user_and_fail(
-            // curl -f turns a 404 into a transport failure, indistinguishable
-            // from a dead network at this layer.
+            // curl -f turns a 404 into a transport failure, indistinguishable from
+            // a dead network at this layer.
             |_| (404, json!({ "status_message": "Not Found" })),
             "TMDB lookup failed",
         );
         seed_user_and_fail(
-            // A 200 whose body carries neither `title` nor `name`: TMDB answered,
-            // and the answer is that there is no such title.
             |_| (200, json!({ "overview": "no title field" })),
             "title not found",
         );
     }
 
-    /// Run `create_request` against a TMDB that answers with `route`, and assert
-    /// the error names `expected`.
     fn seed_user_and_fail(
         route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static,
         expected: &str,
@@ -1928,8 +1681,6 @@ mod tests {
 
     #[test]
     fn asking_twice_folds_into_the_open_request_rather_than_duplicating() {
-        // Two people asking for the same film is one request, or the moderators
-        // review the same title repeatedly.
         let host = test_host();
         let _tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
         seed_user(&host, "u1");
@@ -1938,14 +1689,11 @@ mod tests {
         let first = create_request(&host, &user("u1", vec![Permission::Playback]), &body("u1")).unwrap();
         let second = create_request(&host, &user("u2", vec![Permission::Playback]), &body("u2")).unwrap();
         assert_eq!(first.id, second.id);
-        // The author stays the person who asked FIRST.
         assert_eq!(second.requested_by.as_deref(), Some("u1"));
     }
 
     #[test]
     fn a_requester_who_may_self_approve_skips_the_queue() {
-        // `requests.auto` exists so a household's owner does not review their own
-        // asks - the request arrives already approved, with a wanted ledger.
         let host = test_host();
         let _tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
         seed_user(&host, "owner");
@@ -1958,7 +1706,6 @@ mod tests {
         .unwrap();
         assert_eq!(req.status, RequestStatus::Approved);
 
-        // A movie request materialises exactly one wanted row.
         let conn = host.db().get().unwrap();
         let wanted = db::wanted_for_request(&conn, &req.id).unwrap();
         assert_eq!(wanted.len(), 1);
@@ -1966,7 +1713,6 @@ mod tests {
         assert_eq!(wanted[0].imdb_id.as_deref(), Some("tt0000001"));
         drop(conn);
 
-        // ...and nobody was asked to review it.
         assert!(
             host.notifications().iter().all(|(a, _)| a != &Audience::permission(Permission::RequestsManage)),
             "a self-approved request should not page the moderators"
@@ -1975,8 +1721,6 @@ mod tests {
 
     #[test]
     fn approving_a_show_builds_one_wanted_row_per_episode_of_every_season() {
-        // The ledger is episode-level: that is what lets a season pack and a
-        // single episode both satisfy part of one request.
         let host = test_host();
         let _tmdb = FakeTmdb::start(|path| match path {
             "/tv/1396" => (200, show_detail("Breaking Bad", &[1, 2])),
@@ -1999,8 +1743,6 @@ mod tests {
 
     #[test]
     fn a_season_subset_only_materialises_the_seasons_that_were_asked_for() {
-        // Asking for season 2 must not queue season 1, and TMDB should not even
-        // be asked about it.
         let host = test_host();
         let tmdb = FakeTmdb::start(|path| match path {
             "/tv/1396" => (200, show_detail("Breaking Bad", &[1, 2])),
@@ -2042,7 +1784,6 @@ mod tests {
 
     #[test]
     fn a_show_tmdb_lists_no_episodes_for_is_refused_rather_than_approved_empty() {
-        // An empty ledger would sit "approved" forever with nothing to search.
         let host = test_host();
         let _tmdb = FakeTmdb::start(|path| match path {
             "/tv/1396" => (200, show_detail("Breaking Bad", &[1])),
@@ -2072,9 +1813,6 @@ mod tests {
 
     #[test]
     fn the_refresh_pass_backfills_a_release_date_tmdb_did_not_have_before() {
-        // A movie requested before its release date was announced is gated out of
-        // search until it is out, then auto-grabbed. That only works if the
-        // refresh writes the date once TMDB publishes it.
         let host = test_host();
         let _tmdb = FakeTmdb::start(|_| {
             let mut d = movie_detail("Dune: Part Three", "2027-03-04");
@@ -2099,8 +1837,6 @@ mod tests {
 
     #[test]
     fn the_api_key_and_language_reach_tmdb_on_every_call() {
-        // A request built without them comes back in the wrong language, or
-        // unauthenticated.
         let host = test_host();
         let tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
         seed_user(&host, "u1");

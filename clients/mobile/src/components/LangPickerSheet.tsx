@@ -1,29 +1,7 @@
-// The playback-language picker: every language there is, in a sheet you can
-// search.
-//
-// It sizes itself to a fixed share of the screen rather than to its content,
-// which is the opposite of what a season list or a three-way action sheet wants
-// and the only thing that works here: the list is close to two hundred rows, so
-// the sheet takes a fixed share of the screen and the list scrolls inside it (a
-// virtualised FlatList, not a column of two hundred mounted Pressables).
-//
-// THAT OPPOSITION IS ALSO THE BUG THIS FILE WAS BORN WITH, so it is written
-// down: @gorhom/bottom-sheet defaults `enableDynamicSizing` to TRUE, and a sheet
-// that has both `snapPoints` AND dynamic sizing measures itself against its
-// <BottomSheetView> - which here was only the header. The sheet came out one
-// header tall and the list drew straight over the search field. A sheet with
-// snap points and a scrollable in it must turn dynamic sizing OFF and keep its
-// header in a plain <View>; <BottomSheetView> is for the sizes-to-content case
-// this deliberately is not.
-//
-// The SEARCH FIELD is what makes the long list a feature rather than a chore. A
-// phone already has the keyboard out; typing "sué" or "swe" or plain "sv" beats
-// flicking past a hundred and forty names. The match ignores accents on purpose
-// - someone reaching for Swedish types "suedois" as often as "suédois", and a
-// picker that answers "no results" to that is just wrong. The codes are matched
-// too, and shown down the right edge, which is both a scanning aid and how
-// anyone finds out they can type "swe": the tag they read off a track list is
-// the tag that works.
+// Playback-language picker sheet: searches across ~200 languages in a
+// virtualized list. Sized to a fixed screen share, not to content —
+// @gorhom/bottom-sheet's dynamic sizing measures only the header, so the list
+// would draw over the search field otherwise.
 
 import {
   BottomSheetFlatList,
@@ -40,42 +18,26 @@ import { SheetTitle, sheetChrome } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
-/** Fixed so the list can lay itself out without measuring: what lets the jump to
- * a row a hundred and forty down be instant rather than a scroll through
- * everything above it. Every row is exactly this tall - the divider under the
- * sentinels is a border INSIDE the row, not a taller row - because a list with
- * `getItemLayout` and a variable row is a list that scrolls to the wrong place. */
+// Must equal every row's actual rendered height: `getItemLayout` assumes a
+// constant row height and scrolls to the wrong place otherwise.
 const ROW_HEIGHT = 52;
 
-/** Tall enough that the list reads as a list; short enough to leave the screen
- * behind it visible, which is what says "this is a choice, not a page". */
 const SNAP_POINTS = ['85%'];
 
 export type LangPickerRef = BottomSheetModal;
 
 interface LangPickerSheetProps {
-  /** Names the choice being made ("Preferred audio language"). */
   title: string;
-  /** The stored preference: a language code, `off`, or null for "no preference". */
   value?: string | null;
-  /** Offer "keep subtitles off" above the languages. Subtitles only: it is a
-   *  real preference there and meaningless for audio. */
   offerOff?: boolean;
-  /** `null` clears the preference; `off` is the sentinel; anything else is a code. */
   onPick: (code: string | null) => void;
 }
 
 interface Row {
-  /** The stored value this row picks. */
   value: string | null;
   label: string;
-  /** The ISO code, shown dim down the right edge. Absent on the sentinels,
-   *  which are not languages and have nothing to tag. */
   code?: string;
-  /** "No preference" / "Off": the rows that answer something other than
-   *  "which language", and are ruled off from the ones that do. */
   sentinel?: boolean;
-  /** What a search query is matched against, folded once at build time. */
   search: string;
 }
 
@@ -92,8 +54,6 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
         value: code as string | null,
         label,
         code,
-        // The code is searchable too: "sv" and "swe" are what a track is
-        // tagged with, so they are what someone reads off a file and types.
         search: fold(`${label} ${code}`),
       }));
       const sentinel = (v: string | null, label: string): Row => ({
@@ -107,11 +67,8 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
       return [...head, ...languages];
     }, [t, locale, offerOff]);
 
-    // ONE row ticks, and it is the most specific one offered: a stored `fr-CA`
-    // (what the player writes when you pick the VFQ track) ticks "Français
-    // (Canada)", not "Français". Comparing on the base would tick both the
-    // variant's parent and nothing else, and tapping that parent is exactly how
-    // the variant used to get thrown away.
+    // Matches the most specific stored value: `fr-CA` ticks "Français (Canada)",
+    // not the base "Français" — comparing on the base would lose the variant.
     const current = value && value !== LANG_OFF ? offeredLang(value) : null;
     const isActive = useCallback(
       (row: Row) => {
@@ -128,16 +85,8 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
       return rows.filter((row) => row.search.includes(q));
     }, [rows, query]);
 
-    /**
-     * Open ON the current choice rather than at the top.
-     *
-     * Someone who already chose Swedish should see it ticked, not have to scroll
-     * a hundred and forty rows to find out it stuck. It cannot be
-     * `initialScrollIndex`: the sheet is MOUNTED the whole time the screen is
-     * (that is what a modal sheet is), so an initial prop is read once, long
-     * before anyone opens it. `onChange` fires on every present, which is when
-     * the question is actually being asked.
-     */
+    // Scrolls to the current choice on each present, not via
+    // `initialScrollIndex` (read once at mount; the sheet stays mounted for the screen's life).
     const onChange = useCallback(
       (index: number) => {
         if (index < 0) return;
@@ -152,15 +101,10 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
         ref={ref}
         {...sheetChrome}
         snapPoints={SNAP_POINTS}
-        // See the note at the top: with snap points AND a scrollable, dynamic
-        // sizing measures the sheet against its header and the list covers it.
         enableDynamicSizing={false}
         onChange={onChange}
-        // `extend` rather than `interactive`: the search field sits at the TOP of
-        // the sheet, so there is nothing to lift it above the keyboard for - and
-        // a sheet that slides up on every keystroke is a sheet that never sits
-        // still. The keyboard covers the bottom of the list, which is the part
-        // you stopped reading the moment you started typing.
+        // `extend`, not `interactive`: the search field is at the top, so there
+        // is nothing to lift above the keyboard.
         keyboardBehavior="extend"
         keyboardBlurBehavior="restore"
         android_keyboardInputMode="adjustResize"
@@ -172,9 +116,8 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
             <Icon name="search" size={17} stroke={2} color={colors.textFaint} />
             <BottomSheetTextInput
               value={query}
-              // Back to the top on every keystroke. Without it, a list left
-              // scrolled at "Suédois" keeps that offset when the filter cuts it
-              // to four rows, and the answer you asked for is off the screen.
+              // Reset scroll on each keystroke, or a prior scroll offset can
+              // land past the end of a newly filtered (shorter) list.
               onChangeText={(next) => {
                 setQuery(next);
                 list.current?.scrollToOffset({ offset: 0, animated: false });
@@ -204,12 +147,8 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
 
         <BottomSheetFlatList
           ref={list}
-          // Explicit, and not a belt-and-braces `flex: 1`: the library only
-          // applies its own to the ANDROID scrollable container (see
-          // bottomSheetScrollable/ScrollableContainer.android). On iOS the list
-          // is handed straight through, and a FlatList with no flex in a bounded
-          // column takes its CONTENT's height - which here is a hundred and
-          // eighty-six rows, out the bottom of the sheet.
+          // @gorhom only applies its own flex on Android (ScrollableContainer.android);
+          // iOS needs it explicit or the list overflows the sheet.
           style={styles.listBox}
           data={shown}
           keyExtractor={(row) => row.value ?? 'none'}
@@ -228,8 +167,6 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
             <LangRow
               row={item}
               active={isActive(item)}
-              // Rule off the sentinels from the languages - but only where the
-              // two actually meet, which a filtered list may not have.
               ruled={Boolean(item.sentinel) && !shown[index + 1]?.sentinel}
               onPress={() => onPick(item.value)}
             />
@@ -267,16 +204,13 @@ function LangRow({
   );
 }
 
-/** Lower-cased and stripped of accents, so "suedois" finds "Suédois". The
- * combining-marks RANGE rather than `\p{Diacritic}`: unicode property escapes
- * are not something every Hermes build ships, and this is the same answer. */
+// Combining-marks range, not `\p{Diacritic}`: not every Hermes build supports
+// unicode property escapes.
 function fold(text: string): string {
   return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 const styles = StyleSheet.create({
-  /** The gap under the title is <SheetTitle>'s own, which is why this header
-   *  sets none of its own between the two. */
   header: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
@@ -305,8 +239,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     gap: spacing.md,
   },
-  /** A border INSIDE the row: the rule has to cost no height, or `getItemLayout`
-   *  starts lying about where a row is. */
+  // Border must be inset, not additive, or it breaks the fixed ROW_HEIGHT
+  // getItemLayout relies on.
   ruled: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   rowLabel: { ...type.body, color: colors.text, fontWeight: '500', flexShrink: 1 },
   rowLabelActive: { color: colors.accent, fontWeight: '800' },

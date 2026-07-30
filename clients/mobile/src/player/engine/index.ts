@@ -1,14 +1,12 @@
-// The mobile playback engine: the TV clients' base-engine model (see
-// packages/tv/src/features/playback/player/baseEngine.ts) ported onto
+// The mobile playback engine: the TV clients' base-engine model, ported onto
 // expo-video (AVPlayer on iOS, ExoPlayer on Android).
 //
-// Two modes over one absolute clock:
-//   direct: the ORIGINAL file, fully seekable, absolute timeline.
-//   master: the server's continuous HLS remux anchored at `baseSec`; its clock
-//           restarts at 0 so the absolute position is `baseSec + currentTime`.
-// Far/backward seeks and audio switches on the master re-anchor (reload at a
-// new anchor); a direct file the decoder rejects falls back to the master ONCE
-// at the same position, and a failing copy-audio master retries ONCE as AAC.
+// Two modes over one absolute clock: `direct` plays the original file on its
+// own absolute timeline; `master` plays the server's HLS remux anchored at
+// `baseSec`, whose clock restarts at 0 (absolute position = `baseSec +
+// currentTime`). Far/backward seeks and audio switches re-anchor by reloading;
+// a rejected direct file falls back to the master once, and a failing
+// copy-audio master retries once as AAC.
 
 import type { KromaClient, MediaItem } from '@kroma/core';
 import { type AudioTrack, useVideoPlayer } from 'expo-video';
@@ -37,9 +35,8 @@ export function useKromaEngine(
 ): Engine {
   const decision = useMemo(() => decideSource(item), [item]);
   const core = useRef<EngineCore>({
-    // A non-default OPENING track forces the master exactly as a manual switch
-    // does (see controls.setAudio): direct play always carries the container's
-    // default audio, so a preferred language can only be honoured by the remux.
+    // A non-default OPENING track forces the master, same as a manual switch:
+    // direct play always carries the container's default audio.
     mode: localUri || (decision.direct && startAudioIndex === 0) ? 'direct' : 'master',
     baseSec: 0,
     elSec: 0,
@@ -81,8 +78,8 @@ export function useKromaEngine(
     return client.hlsMasterUrl(item.id, core.forceAac, core.baseSec, core.audioIndex, f);
   }, [client, item.id, core, localUri]);
 
-  /** (Re)load the current mode's source. Master anchors resolve their REAL
-   * keyframe start first so the absolute clock stays honest. */
+  // Master anchors resolve their REAL keyframe start first so the absolute
+  // clock stays honest.
   const load = useCallback(
     async (absSec: number) => {
       const id = ++core.loadId;
@@ -121,8 +118,8 @@ export function useKromaEngine(
     [core, player, sourceUrl, client, item],
   );
 
-  /** Prepare/playback failure ladder: direct falls back to the master once;
-   * a copy-audio master retries once as AAC; anything else surfaces. */
+  // Failure ladder: direct falls back to the master once; a copy-audio master
+  // retries once as AAC; anything else surfaces.
   const fail = useCallback(() => {
     if (localUri) {
       // Offline: there is no server to fall back to.
@@ -181,11 +178,10 @@ export function useKromaEngine(
         setBuffered(core.baseSec + Math.max(currentTime, core.bufSec));
       }),
       player.addListener('playingChange', ({ isPlaying }) => setPlaying(isPlaying)),
-      // ExoPlayer reports ENDED for the empty initial source and again on every
-      // source swap, so a bare event is NOT proof playback reached the end: on
-      // Android it fired ~10ms after each load and cascaded the up-next chain
-      // (or popped the screen for a movie). Only trust it once this source has
-      // actually produced playback time and the clock sits near the end.
+      // ExoPlayer reports ENDED for the empty initial source and again on
+      // every source swap — a bare event is not proof playback reached the
+      // end. Only trust it once this source has produced playback time and
+      // the clock sits near the actual end.
       player.addListener('playToEnd', () => {
         if (!core.started) return;
         const end = Math.max(player.duration, 0);
@@ -213,7 +209,6 @@ export function useKromaEngine(
     };
   }, [player, core, fail, localUri]);
 
-  // Initial open (and re-open if the item itself changes).
   // biome-ignore lint/correctness/useExhaustiveDependencies: open once per item; startSec/load must not re-trigger a reload mid-playback
   useEffect(() => {
     void load(startSec);

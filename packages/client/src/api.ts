@@ -141,9 +141,8 @@ export type {
 } from './client/subtitles';
 export { GEN_LANGS, GEN_QUALITIES } from './client/subtitles';
 
-/** Endpoints a 401 must NOT trigger a silent refresh for: the token exchange
- * itself (would recurse) and the pre-auth handshake endpoints (no session bearer
- * to refresh). Every other authed route recovers via one refresh + retry. */
+// Endpoints a 401 must not trigger a silent refresh for: the token-exchange
+// endpoint (would recurse) and pre-auth handshake endpoints (no session bearer).
 const NO_REFRESH = new Set([
   '/auth/token',
   '/auth/login',
@@ -154,30 +153,21 @@ const NO_REFRESH = new Set([
   '/auth/quickconnect/poll',
 ]);
 
-/** Thin typed client over the KROMA server REST API. Shared by every client shell.
- *
- * The flat method surface is intentional call sites use `client.listMovies()`.
- * Each method is a thin delegate to a per-domain implementation in `./client/*`
- * (media, accounts, playback, library, admin), wired through a shared
- * {@link RequestContext}. */
+/** Thin typed client over the KROMA server REST API, shared by every client shell.
+ * Each method delegates to a per-domain implementation in `./client/*`, wired
+ * through a shared {@link RequestContext}. */
 export class KromaClient {
   readonly baseUrl: string;
   private readonly fetchFn: typeof globalThis.fetch;
   private authToken?: string;
   private locale?: string;
-  /** Called on a 401 to mint a fresh session token from the stored access token
-   * (silent refresh). Returns the new bearer, or undefined when refresh isn't
-   * possible (no access token / PIN needed) then the 401 propagates. */
   private refreshHandler?: () => Promise<string | undefined>;
-  /** The request plumbing handed to every domain function. `json` is bound so it
-   * always reads the current auth token / locale set on this instance. */
   private readonly ctx: RequestContext;
 
   constructor(options: KromaClientOptions) {
     this.baseUrl = options.baseUrl.replace(/(^|[^/])\/+$/, '$1');
     const fetchFn = options.fetch ?? globalThis.fetch.bind(globalThis);
-    // Wrapped once here rather than per request, so EVERY route carries the
-    // device's name - including the ones that bypass `json`/`blob`.
+    // Wrapped once so every route carries the device's name, including calls that bypass json/blob.
     this.fetchFn = options.userAgent ? withUserAgent(fetchFn, options.userAgent) : fetchFn;
     this.authToken = options.authToken;
     this.locale = options.locale;
@@ -187,23 +177,19 @@ export class KromaClient {
       json: this.json.bind(this),
       blob: this.blob.bind(this),
     };
-    // Warm the connection to the media server as early as possible.
     preconnect(this.baseUrl);
   }
 
-  /** Set (or clear, with `undefined`) the bearer token sent on every request. */
   setAuthToken(token?: string): void {
     this.authToken = token;
   }
 
-  /** Install (or clear) the silent-refresh handler. When set, a 401 on a
-   * non-auth endpoint triggers one refresh + retry before the error surfaces. */
+  /** When set, a 401 on a non-auth endpoint triggers one refresh + retry before the error surfaces. */
   setRefreshHandler(fn?: () => Promise<string | undefined>): void {
     this.refreshHandler = fn;
   }
 
-  /** Set (or clear) the active UI locale sent as `Accept-Language`, so the
-   * server localises admin labels and error messages to match the client. */
+  /** Sent as `Accept-Language`; the server localises admin labels and error messages to match. */
   setLocale(locale?: string): void {
     this.locale = locale;
   }
@@ -213,17 +199,14 @@ export class KromaClient {
     return Boolean(this.authToken);
   }
 
-  /** The bearer this client authenticates with, for the one caller that cannot
-   * send a header: the event socket, which carries it as a subprotocol. */
+  /** For the one caller that cannot send a header: the event socket, which carries it as a subprotocol. */
   get sessionToken(): string | undefined {
     return this.authToken;
   }
 
-  /** Headers a RAW request must carry to authenticate as this session: for
-   * transfers that don't go through `json`/`blob` because the platform owns the
-   * socket (the native file downloader behind [`downloadUrl`]). Media-element
-   * URLs (`streamUrl`, `hlsMasterUrl`) need nothing - those routes are public
-   * precisely because a `<video>` can't send a header. */
+  /** For requests that bypass `json`/`blob` because the platform owns the socket
+   * (the native downloader behind {@link downloadUrl}); media-element URLs need
+   * nothing, since those routes are public because a `<video>` can't send a header. */
   authHeaders(): Record<string, string> {
     return this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {};
   }
@@ -239,11 +222,7 @@ export class KromaClient {
         init,
       );
     } catch (e) {
-      // A 401 on an authed endpoint means the session lapsed refresh once from
-      // the access token and retry. Only the token-exchange endpoint itself and
-      // the pre-auth handshake endpoints are excluded (refreshing them would
-      // recurse or is pointless they carry no session bearer). Authed `/auth/*`
-      // routes like /auth/me, /auth/me/pin and quickconnect/authorize DO refresh.
+      // A 401 on an authed endpoint refreshes once from the access token and retries.
       if (
         !retried &&
         e instanceof KromaApiError &&
@@ -265,14 +244,10 @@ export class KromaClient {
     return requestBlob(this.fetchFn, this.baseUrl, this.authToken, this.locale, path, init);
   }
 
-  // ----- catalogue / media ----------------------------------------------------
-
   health(init?: RequestInit): Promise<Health> {
     return media.health(this.ctx, init);
   }
-  /** The modules running on this server, each with its enabled flag + provided
-   * capabilities (engine add-form schemas). Drives the admin's data-driven ADD
-   * flows. */
+  /** Modules on this server with their enabled flag + capabilities; drives the admin's data-driven ADD flows. */
   modules(): Promise<ModuleInfo[]> {
     return moduleRegistry.listModules(this.ctx);
   }
@@ -318,7 +293,6 @@ export class KromaClient {
   personCredits(name: string, opts?: { libraryId?: string }): Promise<PersonResponse> {
     return media.personCredits(this.ctx, name, opts);
   }
-  /** The person behind a credit: biography and life facts, from the provider. */
   personDetails(name: string): Promise<PersonDetailResponse> {
     return media.personDetails(this.ctx, name);
   }
@@ -352,10 +326,8 @@ export class KromaClient {
   posterUrl(id: string): string {
     return media.posterUrl(this.ctx, id);
   }
-  /** The item's REAL poster bytes (cached TMDB art), for the OS "Now Playing" artwork.
-   * Prefers `metadata.posterUrl` (a raster the OS can decode) over the generated SVG
-   * placeholder, which NSImage can't render. Cached art is a relative `/api/images/…`
-   * path fetched WITH the bearer token; TMDB fallbacks are absolute + fetched directly. */
+  /** Real poster bytes (cached TMDB art) for the OS "Now Playing" artwork; prefers
+   * a raster over the generated SVG placeholder, which NSImage can't render. */
   posterBlob(item: Pick<MediaItem, 'id' | 'metadata'>): Promise<Blob> {
     const raw = item.metadata?.posterUrl;
     // Absolute (TMDB) fallback: fetch directly, no KROMA auth needed.
@@ -413,16 +385,12 @@ export class KromaClient {
   subtitleGenerations(id: string): Promise<subtitlesClient.SubtitleGeneration[]> {
     return subtitlesClient.subtitleGenerations(this.ctx, id);
   }
-  /** Cancel a running generation. */
   cancelGeneration(id: string, genId: string): Promise<void> {
     return subtitlesClient.cancelGeneration(this.ctx, id, genId);
   }
-  /** Delete a generated subtitle track. */
   deleteSubtitle(id: string, dlId: string): Promise<void> {
     return subtitlesClient.deleteSubtitle(this.ctx, id, dlId);
   }
-
-  // ----- accounts / sessions / invites / quick connect ------------------------
 
   register(
     email: string,
@@ -530,8 +498,6 @@ export class KromaClient {
     return accounts.quickConnectAuthorize(this.ctx, code);
   }
 
-  // ----- playback progress / resume / heartbeats ------------------------------
-
   progress(): Promise<ProgressEntry[]> {
     return playback.progress(this.ctx);
   }
@@ -587,8 +553,6 @@ export class KromaClient {
     return playback.stopPlayback(this.ctx, sessionId);
   }
 
-  // ----- cast (drive playback on another device) ------------------------------
-
   /** Receiver side: register + heartbeat + ack, and collect pending commands. */
   announceCast(body: CastAnnounceBody): Promise<CastAnnounceReply> {
     return cast.announceCast(this.ctx, body);
@@ -606,8 +570,6 @@ export class KromaClient {
     return cast.sendCastCommand(this.ctx, receiverId, command);
   }
 
-  // ----- discovery / requests -------------------------------------------------
-
   discoverSearch(
     query: string,
     opts?: { type?: DiscoverType; page?: number },
@@ -620,8 +582,6 @@ export class KromaClient {
   discoverDetail(kind: 'movie' | 'tv', tmdbId: number): Promise<DiscoverDetail> {
     return discovery.discoverDetail(this.ctx, kind, tmdbId);
   }
-
-  // ----- fixing a wrong TMDB match (library.manage) ----------------------------
 
   matchCandidates(kind: RematchKind, id: string, query?: string): Promise<MatchCandidates> {
     return rematch.matchCandidates(this.ctx, kind, id, query);
@@ -663,8 +623,6 @@ export class KromaClient {
     return requests.grabRelease(this.ctx, id, body);
   }
 
-  // ----- problem reports (signaler un probleme) ---------------------------------
-
   createReport(body: CreateReportBody): Promise<Report> {
     return reports.createReport(this.ctx, body);
   }
@@ -686,8 +644,6 @@ export class KromaClient {
   deleteReport(id: string): Promise<void> {
     return reports.deleteReport(this.ctx, id);
   }
-
-  // ----- notification centre ----------------------------------------------------
 
   listNotifications(): Promise<NotificationsView> {
     return notifications.listNotifications(this.ctx);
@@ -712,8 +668,6 @@ export class KromaClient {
     return notifications.runNotificationAction(this.ctx, action);
   }
 
-  // ----- Web Push ---------------------------------------------------------------
-
   pushKey(): Promise<{ publicKey: string; subscribed: boolean }> {
     return notifications.pushKey(this.ctx);
   }
@@ -726,8 +680,6 @@ export class KromaClient {
   testPush(): Promise<{ delivered: number }> {
     return notifications.testPush(this.ctx);
   }
-
-  // ----- admin: naming / organize -----------------------------------------------
 
   adminNaming(): Promise<NamingView> {
     return organize.adminNaming(this.ctx);
@@ -744,8 +696,6 @@ export class KromaClient {
   organizeApply(): Promise<OrganizeResult> {
     return organize.organizeApply(this.ctx);
   }
-
-  // ----- admin: acquisition (indexers / clients / downloads) --------------------
 
   adminIndexers(): Promise<IndexersView> {
     return acquisition.adminIndexers(this.ctx);
@@ -832,8 +782,6 @@ export class KromaClient {
     return acquisition.testVpn(this.ctx);
   }
 
-  // ----- admin: libraries -----------------------------------------------------
-
   adminLibraries(): Promise<{ libraries: AdminLibrary[] }> {
     return library.adminLibraries(this.ctx);
   }
@@ -857,8 +805,6 @@ export class KromaClient {
   adminBrowseFolders(path?: string): Promise<admin.AdminFsList> {
     return admin.adminBrowseFolders(this.ctx, path);
   }
-
-  // ----- admin: console -------------------------------------------------------
 
   adminServer(): Promise<ServerInfo> {
     return admin.adminServer(this.ctx);
@@ -914,15 +860,11 @@ export class KromaClient {
     return admin.adminOverview(this.ctx);
   }
 
-  // ----- admin: server logs ----------------------------------------------------
-
   adminLogs(
     opts: { level?: string; source?: string; q?: string; limit?: number } = {},
   ): Promise<LogsView> {
     return admin.adminLogs(this.ctx, opts);
   }
-
-  // ----- admin: background jobs / scheduler -----------------------------------
 
   /** Every notification kind this server can send, rendered for the console. */
   notificationSamples(): Promise<{ events: KromaNotification[] }> {
@@ -957,8 +899,6 @@ export class KromaClient {
   jobRunLogs(runId: string): Promise<{ logs: JobLog[] }> {
     return admin.jobRunLogs(this.ctx, runId);
   }
-
-  // ----- admin: per-element pipeline ------------------------------------------
 
   adminPipeline(): Promise<PipelineView> {
     return admin.adminPipeline(this.ctx);
@@ -1009,8 +949,6 @@ export class KromaClient {
     return admin.showProcessing(this.ctx, id);
   }
 
-  // ----- admin: AI / LLM ------------------------------------------------------
-
   adminLlm(): Promise<LlmAdminConfig> {
     return admin.adminLlm(this.ctx);
   }
@@ -1023,8 +961,6 @@ export class KromaClient {
   testLlm(probe: admin.LlmProbe): Promise<{ ok: boolean; message: string }> {
     return admin.testLlm(this.ctx, probe);
   }
-
-  // ----- admin: remote access (Cloudflare Tunnel connector) -------------------
 
   adminRemote(): Promise<admin.RemoteAccessView> {
     return admin.adminRemote(this.ctx);

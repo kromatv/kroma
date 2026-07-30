@@ -3,15 +3,11 @@ import { useAiSuggest, useT } from '@kroma/ui';
 import { Box, MediaCard, ProgressRing, Rail, Txt } from '@kroma/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
-// The "Suggestions IA" rail on a TV detail screen. The shared `useAiSuggest` hook
-// polls the lazily-generated section (LLM connector, server-cached); a progress
-// ring shows while it generates and cards render once items arrive (empty items or a
-// timeout -> nothing). The cards are <Focusable>s, and the focus engine picks up
-// whatever is on screen at the time, so the rail becomes navigable the moment it
-// appears.
+// The "Suggestions IA" rail on a TV detail screen. `useAiSuggest` polls the
+// lazily-generated section; a progress ring shows while it generates and
+// cards render once items arrive (empty items or a timeout -> nothing).
 
-/** A <MediaCard> at this row's 300 width, 16:9, and the 24px gap after it (the
- * same recipe as TvHome's ROW_TILE: `item.width` is the tile PITCH). */
+// `item.width` is the tile pitch, not the card width: same recipe as TvHome's ROW_TILE.
 const ROW_TILE = { width: 300 + 24, height: Math.round((300 * 9) / 16) };
 
 const LABEL = {
@@ -67,10 +63,8 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
             {section.reason}
           </Txt>
         ) : null}
-        {/* The rail already pads itself by the 10-foot gutter; this one sits
-            inside a detail column that has its own padding, so it opts out.
-            Virtualised like TvHome's rows: the pitch is the card width plus the
-            gap after it, the height the 16:9 card at 300 wide. */}
+        {/* The rail pads itself by the 10-foot gutter by default; this one
+            sits inside a detail column with its own padding, so it opts out. */}
         <Rail inset={0} gap={24} item={ROW_TILE}>
           {section.items.map(card)}
         </Rail>

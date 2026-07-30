@@ -28,19 +28,13 @@ if (!dir) {
 }
 const root = resolve(process.cwd(), dir);
 
-/**
- * The size this client is not allowed to exceed, in MB (`--max 10`).
- *
- * A RATCHET, not a target: it is set just above whatever the bundle weighs
- * today, so the number can only ever be lowered. Bloat on a television does not
- * arrive as one bad commit, it arrives as fifty reasonable ones, and the gate
- * exists to make the fifty-first argue for itself. Without a ceiling the size
- * was printed on every run and read by nobody - the TV bundle reached 9.4 MB of
- * bytecode that way, 69% of it icons nothing asked for.
- *
- * Lower it whenever a change wins room back. See atlas-report.ts for where the
- * weight actually is.
- */
+// The size this client is not allowed to exceed, in MB (`--max 10`). A RATCHET, not a target:
+// it is set just above whatever the bundle weighs today, so the number can only ever be
+// lowered. Bloat on a television does not arrive as one bad commit, it arrives as fifty
+// reasonable ones, and the gate exists to make the fifty-first argue for itself. Without a
+// ceiling the size was printed on every run and read by nobody - the TV bundle reached 9.4 MB
+// of bytecode that way, 69% of it icons nothing asked for. Lower it whenever a change wins room
+// back. See atlas-report.ts for where the weight actually is.
 const maxAt = envArgs.indexOf('--max');
 const MAX_MB = maxAt === -1 ? Number.POSITIVE_INFINITY : Number(envArgs[maxAt + 1]);
 const extraEnv = Object.fromEntries(
@@ -58,9 +52,9 @@ const extraEnv = Object.fromEntries(
 
 const platforms = ['ios', 'android'] as const;
 
-/** Expo prints `(9.4 MB)`, and a gate needs a number. Returns NaN for a size it
- * did not recognise, which compares false against the budget - an unreadable
- * size must not fail the build, it is the bundle that is being tested here. */
+// Expo prints `(9.4 MB)`, and a gate needs a number. Returns NaN for a size it
+// did not recognise, which compares false against the budget - an unreadable
+// size must not fail the build, it is the bundle that is being tested here.
 function bytesOf(size: string): number {
   const match = /^([\d.]+)\s*([kMG]?B)$/.exec(size.trim());
   if (!match) return Number.NaN;
@@ -68,9 +62,9 @@ function bytesOf(size: string): number {
   return Number(match[1]) * scale;
 }
 
-/** Bundle one platform. Neither depends on the other's result, so the two runs
- * are started together: a Metro export of this workspace is minutes, and this
- * gate runs for two clients on every push. */
+// Bundle one platform. Neither depends on the other's result, so the two runs
+// are started together: a Metro export of this workspace is minutes, and this
+// gate runs for two clients on every push.
 async function bundle(platform: (typeof platforms)[number]): Promise<string | null> {
   const out = mkdtempSync(join(tmpdir(), `kroma-bundle-${platform}-`));
   try {

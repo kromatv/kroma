@@ -1,15 +1,6 @@
-// <BackButton>: the way back, drawn once.
-//
-// Five of these existed before it - the phone header's bare chevron, the detail
-// hero's dark disc (on the web AND the phone), the 10-foot corner button, the
-// player's top-bar pill - each re-deriving the same disc by hand. This is the
-// one they share: an <IconButton> holding the chevron, scrimmed by default so
-// it can float over artwork without brightening it, filling amber on focus so
-// a remote can read where it is from the couch (a corner control gets no
-// neighbour to compare against, so its focus state has to carry alone).
-//
-// The label is the accessibility name. The default is deliberately plain
-// English; an app with an <I18nProvider> passes `label={t('common.back')}`.
+// The shared way back: a chevron <IconButton>, scrimmed so it can float over
+// artwork. `label` is the accessibility name and defaults to plain English; an
+// app with an <I18nProvider> passes `label={t('common.back')}`.
 
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
 
@@ -31,8 +22,8 @@ function BackButton({
       {...rest}
       icon="chevron-left"
       size={size}
-      // The chevron reads half a size small at the disc's default 40%: it is an
-      // open stroke, not a filled glyph, so it gets exactly half the diameter.
+      // An open stroke reads small at the disc's default 40%, so the chevron
+      // gets exactly half the diameter.
       glyph={glyph ?? Math.round(size / 2)}
       variant={variant}
       focusFill={focusFill}

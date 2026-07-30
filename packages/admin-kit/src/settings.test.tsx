@@ -1,13 +1,8 @@
 // @vitest-environment jsdom
-//
-// The generic settings renderer behind every admin settings page and the VPN /
-// Acquisition module pages.
-//
-// It writes on every keystroke-free interaction, optimistically, so the two
-// things worth holding are: a row shows the new value immediately (the server
-// round-trip must not make a toggle feel broken), and a failed PUT does not
-// take the page down - the admin is left looking at what they chose, and the
-// next load tells the truth.
+
+// The generic settings renderer behind every admin settings page and the VPN
+// / Acquisition module pages. It writes optimistically: a row shows the new
+// value immediately, and a failed PUT does not take the page down.
 
 import type { SettingGroup } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';

@@ -11,24 +11,19 @@ import java.util.Collections
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Finding the server by ASKING the network, instead of guessing at it.
- *
- * The JS discovery this replaces had two moves: try the hostname `kroma.local`,
- * then probe all 253 addresses of the local /24 on port 4040. That is slow, it
- * only ever works on a /24, and it can only find a server that happens to be on
- * 4040 over plain http - so a server behind a reverse proxy on 443 was
- * invisible no matter how long it swept.
- *
- * The server has advertised itself over DNS-SD the whole time (`_kroma._tcp`,
- * see server/modules/tv.kroma.mdns) carrying its real host and its real port.
- * Nothing on this side was listening. NsdManager is Android's resolver for
- * exactly that, and it is in the platform, so this module has no dependencies.
- *
- * It answers with hosts and PORTS only. Whether a given one speaks https is not
- * mDNS's business and is not guessed at here - `resolveServerOrigin` in
- * @kroma/core settles that by asking, which also gets redirects right.
- */
+// Finding the server by ASKING the network, instead of guessing at it.
+//
+// The JS discovery this replaces tried the hostname `kroma.local`, then probed
+// all 253 addresses of the local /24 on port 4040 - slow, /24-only, and blind to
+// a server behind a reverse proxy on 443.
+//
+// The server has advertised itself over DNS-SD the whole time (`_kroma._tcp`,
+// see server/modules/tv.kroma.mdns); nothing on this side was listening.
+// NsdManager is Android's resolver for exactly that, and it is in the platform,
+// so this module has no dependencies.
+//
+// It answers with hosts and PORTS only - whether one speaks https is not mDNS's
+// business; `resolveServerOrigin` in @kroma/core settles that by asking.
 private const val SERVICE_TYPE = "_kroma._tcp."
 
 class ServerDiscoveryModule : Module() {

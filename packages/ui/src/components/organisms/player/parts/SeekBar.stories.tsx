@@ -8,8 +8,6 @@ import { fakeTileAt } from '../player.fixture';
 import type { Chapter } from '../types';
 import { SeekBar } from './SeekBar';
 
-/** A film with a real shape: cold open, three acts, credits. `kind` is what earns
- *  the intro and credits segments their own colour. */
 const CHAPTERS: Chapter[] = [
   { startMs: 0, endMs: 96_000, title: 'Cold open', kind: 'intro' },
   { startMs: 96_000, endMs: 2_760_000, title: 'Act one', kind: 'chapter' },
@@ -25,17 +23,10 @@ interface ScrubbableProps {
   focused: boolean;
   endsAt: string;
   withChapters: boolean;
-  /** Show a pending scrub that is not where playback is, without touching it. */
   scrubbing: boolean;
   withPreview: boolean;
 }
 
-/**
- * The bar wired to state, which is the only way to show what it does: this
- * component IS a gesture, and a story that hands it `onScrub={() => {}}` shows a
- * picture of one. Press or drag the track and the playhead follows the cursor;
- * release and the seek commits, the way <Player> commits it to the media element.
- */
 function Scrubbable({
   cur: curArg,
   dur,
@@ -48,11 +39,10 @@ function Scrubbable({
 }: Readonly<ScrubbableProps>) {
   const [cur, setCur] = useState(curArg);
   const [preview, setPreview] = useState<number | null>(null);
-  // The `cur` control is the other way to seek, so it still drives the bar.
   useEffect(() => setCur(curArg), [curArg]);
 
-  // The pending position lives in a ref as well as in state: the handlers stay
-  // identity-stable, so the component's PanResponder is not rebuilt mid-drag.
+  // The pending position is a ref as well as state so the handlers stay
+  // identity-stable and the PanResponder is not rebuilt mid-drag.
   const pending = useRef<number | null>(null);
   const onScrub = useCallback((sec: number) => {
     pending.current = sec;
@@ -65,7 +55,6 @@ function Scrubbable({
   }, []);
 
   const chapters = withChapters ? CHAPTERS : [];
-  // `scrubbing` is the state a drag passes through, held still for the scene.
   const seekPreview = preview ?? (scrubbing ? Math.min(dur, cur + 900) : null);
   const shown = seekPreview ?? cur;
 
@@ -82,8 +71,6 @@ function Scrubbable({
         chapterLabel={currentChapter(chapters, shown * 1000)?.title ?? ''}
         total={formatTimecode(dur)}
         endsAt={endsAt}
-        // A synthesized sprite-sheet tile per bucket of the film: the preview is
-        // the point of the component, so the story has to have one.
         tileAt={
           withPreview
             ? fakeTileAt([stillArt(0), stillArt(1), stillArt(2), stillArt(3)])
@@ -139,10 +126,6 @@ export default story({
     dur: { min: 600, max: 14_400, step: 60 },
     bufEnd: { min: 0, max: 9_840, step: 60 },
   },
-  // The labels are not controls: `elapsed`, `chapterLabel` and `total` are
-  // derived from the position exactly as <Player> derives them, so dragging the
-  // bar moves the clock and the chapter name with it. Faking them as text would
-  // let the story show 49:00 next to a playhead at 20:00.
   render: (args) => <Scrubbable {...args} />,
   scenes: [
     {

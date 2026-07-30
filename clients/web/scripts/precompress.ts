@@ -1,12 +1,9 @@
-// Post-build pre-compression: emit a `.br` and `.gz` sibling for every
-// compressible asset in dist/client. The Rust server's ServeDir is configured
-// with `precompressed_br()/precompressed_gzip()`, so it serves these files
-// as-is and the NAS never spends CPU compressing static assets at runtime.
-// Zero-dependency on purpose (node:zlib ships both codecs).
+// Emits `.br`/`.gz` siblings for compressible assets in dist/client, matching
+// the Rust server's ServeDir precompressed_br()/precompressed_gzip() config.
 //
-// node:zlib's async codecs run on the libuv threadpool, so files are compressed
-// CONCURRENTLY (a sequential loop here cost ~5 min of CI per web build); the
-// pool size is raised to match the machine before the first threadpool call.
+// node:zlib's codecs run on the libuv threadpool; files compress concurrently
+// (a sequential loop cost ~5 min of CI per build), so the pool size is raised
+// to match the machine before the first threadpool call.
 import os from 'node:os';
 
 process.env.UV_THREADPOOL_SIZE = String(Math.max(4, os.availableParallelism()));

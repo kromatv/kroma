@@ -1,27 +1,9 @@
-// Entering a remembered profile from the gate.
-//
-// Five ways in, tried in a fixed order: the stored device token, the standalone
-// Face ID lock, the PIN vault, the PIN pad, and finally that profile's password.
-// The order is the security model, and each step's FAILURE is a different
-// destination - which is the whole reason this is not a chain of ifs in the
-// screen.
-//
-// The three that matter most:
-//
-//   - The device lock is checked BEFORE the token is spent. A profile with a
-//     standalone Face ID lock must not open because its stored token happens to
-//     still be valid; that is what "locked" means here.
-//   - A vaulted PIN that the server now rejects is DROPPED, not retried. The
-//     user changed their PIN on another device; leaving the stale one behind
-//     means every future unlock silently fails Face ID first and then shows the
-//     pad, forever.
-//   - A revoked token is not a wrong PIN. It falls back to the password with the
-//     account forgotten and the server pre-selected, because the profile itself
-//     is still real - the user just has to prove it again.
-//
-// And one thing that must NOT happen: a PIN typed on the pad is only stored when
-// biometric unlock is enabled for that profile. Storing it regardless would put
-// a PIN behind Face ID for someone who deliberately turned that off.
+// Entering a remembered profile from the gate: the stored device token, the
+// standalone Face ID lock, the PIN vault, the PIN pad, and finally that
+// profile's password, tried in a fixed order where each step's failure is a
+// different destination. The device lock is checked before the token is
+// spent; a vaulted PIN the server rejects is dropped, not retried; a revoked
+// token falls back to the password rather than being read as a wrong PIN.
 
 import { KromaApiError } from '@kroma/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -50,7 +32,6 @@ const account = (over: Partial<MobileAccount['user']> = {}): MobileAccount =>
     user: { id: 'u1', username: 'max', avatarUrl: null, ...over },
   }) as MobileAccount;
 
-/** The screen, recording everything the flow did to it. */
 function deps(switchAccount: (a: MobileAccount, pin?: string) => Promise<void>) {
   const state = {
     busy: [] as Array<string | null>,
@@ -103,7 +84,6 @@ describe('the device lock, before anything else', () => {
     const { d, state } = deps(ok);
     await enterSavedAccount(d as unknown as EnterSavedDeps, account());
 
-    // "Locked" has to mean locked even when the stored token is still valid.
     expect(d.session.switchAccount).not.toHaveBeenCalled();
     expect(state.entered).toBe(0);
     expect(state.busy.at(-1)).toBeNull();
@@ -152,7 +132,6 @@ describe('when the server asks for a PIN', () => {
     });
 
     await enterSavedAccount(d as unknown as EnterSavedDeps, account());
-    // Face ID first: a stored PIN opens the profile without showing the pad.
     expect(attempts).toEqual([undefined, '1234']);
     expect(state.entered).toBe(1);
     expect(state.phase).toEqual([]);
@@ -173,8 +152,6 @@ describe('when the server asks for a PIN', () => {
     const { d, state } = deps(pinRequired);
     await enterSavedAccount(d as unknown as EnterSavedDeps, account());
 
-    // The profile-lock setting says no prompt; asking anyway is a Face ID sheet
-    // the user switched off.
     expect(readPinBehindBiometrics).not.toHaveBeenCalled();
     expect(state.phase.at(-1)).toMatchObject({ kind: 'pin' });
   });
@@ -184,8 +161,7 @@ describe('when the server asks for a PIN', () => {
     const { d, state } = deps(pinRequired);
     await enterSavedAccount(d as unknown as EnterSavedDeps, account());
 
-    // Changed on another device. Left behind, every future unlock fails Face ID
-    // first and then shows the pad, forever.
+    // Left behind, every future unlock would fail Face ID first, then the pad.
     expect(deletePinBehindBiometrics).toHaveBeenCalledWith('https://attic', 'u1');
     expect(state.phase.at(-1)).toMatchObject({ kind: 'pin' });
   });
@@ -210,8 +186,6 @@ describe('a PIN typed on the pad', () => {
     expect(state.entered).toBe(1);
     await Promise.resolve();
     await Promise.resolve();
-    // Storing it regardless puts a PIN behind Face ID for someone who
-    // deliberately turned that off.
     expect(savePinBehindBiometrics).not.toHaveBeenCalled();
   });
 
@@ -228,8 +202,8 @@ describe('a PIN typed on the pad', () => {
     });
     await enterSavedAccount(d as unknown as EnterSavedDeps, account(), '9999');
 
-    // The server's message is localized and says WHY (wrong, or locked out);
-    // replacing it with a generic string loses the retry delay.
+    // The server's message says why (wrong, or locked out); a generic string
+    // would lose the retry delay.
     expect(state.error.at(-1)).toBe('Too many attempts, try again in 30s');
     expect(state.pin.at(-1)).toBe('');
     expect(state.phase).toEqual([]);
@@ -263,8 +237,6 @@ describe('a revoked device token', () => {
     const { d, state } = deps(revoked);
     await enterSavedAccount(d as unknown as EnterSavedDeps, account());
 
-    // The profile is still real; only the token is gone, so the password form
-    // opens against the right server rather than an empty field.
     expect(state.forgot).toHaveLength(1);
     expect(state.selected).toEqual(['https://attic']);
   });
@@ -272,7 +244,6 @@ describe('a revoked device token', () => {
   it('says why the password is being asked for', async () => {
     const { d, state } = deps(revoked);
     await enterSavedAccount(d as unknown as EnterSavedDeps, account());
-    // Without this the form looks like a random demand for a password.
     expect(state.error.at(-1)).toBe('auth.sessionExpiredHint');
   });
 
@@ -290,8 +261,7 @@ describe('a failure that is not the server refusing', () => {
     });
     await enterSavedAccount(d as unknown as EnterSavedDeps, account());
 
-    // Offline, or a server that is not answering. Forgetting the account here
-    // would cost the user their remembered profile for a dropped connection.
+    // Forgetting the account here would cost the profile over a dropped connection.
     expect(state.error.at(-1)).toBe('auth.loginFailed');
     expect(state.forgot).toEqual([]);
     expect(state.phase).toEqual([]);

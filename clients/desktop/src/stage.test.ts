@@ -1,19 +1,4 @@
 // @vitest-environment jsdom
-//
-// The self-scaling 1920x1080 stage, for fixed-screen shells.
-//
-// The shared TV UI is authored on a fixed canvas in real pixels, so on a Steam
-// Deck or a fullscreen kiosk the whole thing is rendered at 1920x1080 and scaled
-// to fit. The scale must be the SMALLER of the two ratios: take the larger and
-// the canvas overflows the screen, which on a 10-foot layout means the row of
-// controls along one edge is simply not on the television. Letterboxing is the
-// deliberate trade.
-//
-// The transparent background is the one platform-specific decision. On the Linux
-// desktop shell mpv renders in a native window BEHIND the web view, so a painted
-// background hides the film entirely - a black screen with working audio and
-// working controls. Everywhere else the surround has to be painted, or the
-// letterbox bars show whatever the compositor last had there.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installStage } from './stage';
@@ -21,7 +6,6 @@ import { installStage } from './stage';
 const STAGE_W = 1920;
 const STAGE_H = 1080;
 
-/** Pretend the window is this size, and report the stage's scale. */
 function resizeTo(width: number, height: number) {
   Object.defineProperty(window, 'innerWidth', { value: width, configurable: true });
   Object.defineProperty(window, 'innerHeight', { value: height, configurable: true });
@@ -61,8 +45,7 @@ describe('the scale', () => {
   });
 
   it('takes the SMALLER ratio on a wider screen', () => {
-    // 21:9. Scaling to the width would push the top and bottom of the layout off
-    // the panel - on a 10-foot UI, that is the whole nav row.
+    // 21:9. Scaling to the width pushes the whole nav row off the panel.
     resizeTo(2560, 1080);
     installStage();
     expect(scale()).toBeCloseTo(1080 / STAGE_H, 6);
@@ -97,8 +80,6 @@ describe('the scale', () => {
 
     resizeTo(960, 540);
     window.dispatchEvent(new Event('resize'));
-    // A kiosk changes resolution when a television renegotiates HDMI; a stage
-    // frozen at the old scale is cropped or postage-stamped until relaunch.
     expect(scale()).toBeCloseTo(0.5, 6);
   });
 });
@@ -112,8 +93,6 @@ describe('the stage box', () => {
 
   it('centres it and scales from the centre', () => {
     installStage();
-    // Letterboxing has to be symmetric; a corner origin puts the whole surround
-    // on two sides.
     expect(css()).toContain('transform-origin: center center');
     expect(css()).toContain('translate(-50%, -50%)');
   });
@@ -125,8 +104,6 @@ describe('the stage box', () => {
 
   it('makes #root a containing block for the app’s fixed layers', () => {
     installStage();
-    // The transform is what makes home/player/detail fill the STAGE rather than
-    // the window; without it they escape the letterbox.
     expect(css()).toMatch(/#root\s*\{[^}]*position: fixed/);
   });
 
@@ -152,8 +129,8 @@ describe('the letterbox surround', () => {
       configurable: true,
     });
     installStage();
-    // Painting here hides the film entirely: a black screen with working audio
-    // and working controls.
+    // mpv renders in a native window behind the web view; painting here hides
+    // the film entirely.
     expect(css()).toContain('background: transparent');
   });
 

@@ -1,10 +1,9 @@
-//! The shared-host-token guard, in one place.
+//! The shared-host-token guard.
 //!
 //! Every hop of the module IPC authenticates with the SAME random token the
 //! supervisor mints at boot: the core's `/api/_host/*` callbacks, the core's
 //! `/_host/register-job` endpoint, and a sidecar's `/_job/run/*` + `/_port/*`
-//! routes. The guard used to be copy-pasted into each of those crates; it lives
-//! here instead, in the host seam they all already depend on.
+//! routes. It lives in the host seam they all already depend on.
 
 use axum::extract::{Request, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -35,8 +34,8 @@ pub async fn require_host_token(
     }
 }
 
-/// Constant-time byte comparison, so matching the shared host token never leaks a
-/// shared prefix through timing.
+// Constant-time, so matching the shared host token never leaks a shared
+// prefix through timing.
 fn ct_eq(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         return false;
@@ -60,7 +59,6 @@ mod tests {
 
     const TOKEN: &str = "s3cret-host-token";
 
-    /// A router behind the guard, with one route that answers when let through.
     fn guarded() -> Router {
         Router::new()
             .route("/_host/ping", get(|| async { "pong" }))

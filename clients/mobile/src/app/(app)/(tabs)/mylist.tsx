@@ -1,13 +1,5 @@
-// My list: the user's bookmarked titles, as their own tab.
-//
-// The ids come from the my-list API and can name a movie OR a show, so they are
-// resolved against both catalogues - the same resolution the web's /mylist page
-// does, order preserved (the server keeps newest-first). The catalogue queries
-// share their keys with the Films / Series tabs, so visiting either has already
-// paid for this screen's data.
-//
-// No sort or genre chips, deliberately: a personal list is read in the order it
-// was made, which is also how the web page shows it.
+// A my-list id can name a movie OR a show, so the ids are resolved against both
+// catalogues, in the order the server returned them (newest first).
 
 import { ItemId, type MediaItem, type Show, ShowId } from '@kroma/core';
 import { Icon } from '@kroma/ui/kit';

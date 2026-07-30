@@ -22,8 +22,8 @@ import { controlOrder } from './nav';
 const WEB = controlOrder({ ...WEB_FLAGS, cast: true }, true);
 const TV = controlOrder(TV_FLAGS, true);
 
-/** The width the row would take at design scale, computed the long way round so
- * the test does not simply restate `chromeMetrics`' own arithmetic. */
+// Computed the long way round so the test does not restate `chromeMetrics`' own
+// arithmetic.
 function designWidth(
   controls: readonly ReturnType<typeof controlOrder>[number][],
   rail = true,
@@ -63,24 +63,19 @@ describe('chromeMetrics', () => {
     const tight = chromeMetrics(WEB, needed - 200);
     expect(tight.scale).toBeLessThan(1);
     expect(tight.scale).toBeGreaterThanOrEqual(MIN_SCALE);
-    // Shrinking comes first: nothing has been given up yet.
     expect(tight.controls).toEqual(WEB);
     expect(tight.rail).toBe(true);
-    // The whole row still fits the stage it was measured against.
     expect(needed * tight.scale).toBeLessThanOrEqual(needed - 200);
   });
 
   it('keeps a control set that fits at full size at full size', () => {
-    // The same window is comfortable for a TV row and tight for a web one: the
-    // scale answers for the controls that are present, not for the platform.
     const width = designWidth(TV) + 10;
     expect(chromeMetrics(TV, width).scale).toBe(1);
     expect(chromeMetrics(WEB, width).scale).toBeLessThan(1);
   });
 
   it('gives up the volume rail before it gives up size', () => {
-    // One pixel under what the full row needs at the floor: the rail goes, and
-    // the row that is left grows back rather than shrinking further.
+    // One pixel under what the full row needs at the floor.
     const railless = chromeMetrics(WEB, Math.round(designWidth(WEB) * MIN_SCALE) - 1);
     expect(railless.rail).toBe(false);
     expect(railless.controls).toEqual(WEB);
@@ -90,40 +85,32 @@ describe('chromeMetrics', () => {
   it('sheds controls instead of shrinking past the touch-target floor', () => {
     const phone = chromeMetrics(WEB, 390);
     expect(phone.scale).toBeGreaterThanOrEqual(MIN_SCALE);
-    // The floor is what keeps the smallest circle tappable.
+    // 44pt is the smallest tappable circle.
     expect(px(phone.scale, CONTROL_SIZE.subtitles)).toBeGreaterThanOrEqual(44);
-    // What a phone-width browser keeps: play, the gear that reaches everything
-    // shed, and the window control. What it drops is reachable elsewhere.
     expect(phone.controls).toContain('play');
     expect(phone.controls).toContain('settings');
     expect(phone.controls).toContain('fullscreen');
     expect(phone.controls).not.toContain('pip');
-    // ...and it is still ONE row: the whole of it fits the stage.
     expect(designWidth(phone.controls, phone.rail) * phone.scale).toBeLessThanOrEqual(390);
   });
 
   it('reports every shed control, so the panel can offer it', () => {
-    // The contract the shedding rests on: what leaves the row is named, in the
-    // row's own order, and the two lists together are always the whole row.
     for (const w of [1920, 900, 700, 600, 500, 420, 360, 280]) {
       const m = chromeMetrics(WEB, w);
       expect([...m.controls, ...m.overflow].sort()).toEqual([...WEB].sort());
       expect(m.overflow).toEqual(WEB.filter((id) => !m.controls.includes(id)));
     }
-    // Nothing is shed while the row fits - not even when the rail collapses.
     expect(chromeMetrics(WEB, 1920).overflow).toEqual([]);
     const railless = chromeMetrics(WEB, Math.round(designWidth(WEB) * MIN_SCALE) - 1);
     expect(railless.rail).toBe(false);
     expect(railless.overflow).toEqual([]);
-    // ...and a phone hands over the ones it dropped, cast among them.
     expect(chromeMetrics(WEB, 390).overflow).toContain('cast');
     expect(chromeMetrics(WEB, 390).overflow).toContain('pip');
   });
 
   it('sheds the controls the panel reaches before the ones it does not', () => {
-    // Walk the whole range and check the order things disappear in: `cast` (the
-    // one thing people do from a small window) outlives `audio` and `subtitles`
-    // (already rows of the settings panel), which outlive `pip`.
+    // `cast` outlives `audio` and `subtitles` (already rows of the settings
+    // panel), which outlive `pip`.
     const widthOf = (id: (typeof WEB)[number]) => {
       for (let w = 240; w <= 1400; w += 2) {
         if (chromeMetrics(WEB, w).controls.includes(id)) return w;
@@ -151,28 +138,23 @@ describe('chromeMetrics', () => {
       steps.add(chromeMetrics(WEB, w).scale);
     }
     expect(steps.size).toBeLessThanOrEqual(1 + Math.ceil((1 - MIN_SCALE) / 0.02));
-    // ...and every step it does take is a size the row actually fits in.
     for (const scale of steps) expect(scale).toBeGreaterThanOrEqual(MIN_SCALE);
   });
 
   it('reports the cluster width at the scale it will be drawn at', () => {
-    // Against the design's own width rather than a third transcription of the
-    // sum: what this asserts is the RULE (whatever the cluster measures, it is
-    // reported at the scale it is drawn at), not the arithmetic behind it.
     const design = chromeMetrics(WEB, 1920);
     expect(design.scale).toBe(1);
     const tight = chromeMetrics(WEB, 900);
     expect(tight.scale).toBeLessThan(1);
-    // Like for like: 900 is still wide enough for the whole row, so the only
-    // difference between the two is the scale.
+    // 900 is still wide enough for the whole row, so only the scale differs.
     expect(tight.controls).toEqual(design.controls);
     expect(tight.rail).toBe(design.rail);
     expect(tight.clusterWidth).toBe(Math.round(design.clusterWidth * tight.scale));
   });
 
   it('survives a stage it has not been measured on yet', () => {
-    // The whole row at full size, not the floor: the first frame is drawn before
-    // the stage has reported a width, and it must not flash a shed row.
+    // Width 0 is the first frame, before the stage has measured; it must not
+    // flash a shed row.
     expect(chromeMetrics(WEB, 0)).toMatchObject({ scale: 1, controls: WEB, rail: true });
   });
 });
@@ -196,11 +178,8 @@ describe('panelGeometry', () => {
   });
 
   it('covers the stage rather than leaving the card no width at all', () => {
-    // The band that used to make the picture DISAPPEAR when settings opened.
-    // The panel decided it did not need to cover (420 < 540 * 0.8) while the
-    // card, which pays 64px of margin on each side, was left 540 - 420 - 128 =
-    // -8 and clamped to a scale of 0. The two answers are now computed from the
-    // same numbers, so they cannot disagree.
+    // The band where a non-covering panel plus the card's margins used to leave
+    // the picture a negative width, clamped to a scale of 0.
     for (const stage of [526, 540, 548, 600, 650]) {
       const panel = panelGeometry(stage);
       const card = stage - panel.width - CARD_MARGIN * 2;
@@ -209,7 +188,7 @@ describe('panelGeometry', () => {
   });
 
   it('leaves a picture worth looking at whenever it does not cover', () => {
-    // Not merely non-zero: below a fifth of the stage it is a postage stamp.
+    // Below a fifth of the stage the picture is a postage stamp.
     for (const stage of [700, 834, 960, 1400, 1920, 2560]) {
       const panel = panelGeometry(stage);
       if (panel.covers) continue;
@@ -223,7 +202,6 @@ describe('panelGeometry', () => {
     const narrow = panelGeometry(500);
     expect(narrow.covers).toBe(true);
     expect(narrow.width).toBe(500);
-    // A tablet has room for both, so it keeps the panel and the card.
     expect(panelGeometry(834)).toEqual({ width: PANEL_MIN, covers: false });
   });
 

@@ -1,27 +1,16 @@
-/** The relay's wire contract, as zod schemas.
- *
- * Every byte reaching this Worker is untrusted — a self-hosted server anyone
- * can run, or anyone at all posting to a public endpoint — so nothing is read
- * off a request until a schema has agreed to its shape. Declaring that shape
- * once, here, is also what keeps `index.ts` readable: a handler validates in one
- * line and then works with a real type instead of `Record<string, unknown>`.
- *
- * Mirrors `packages/client/src/schemas`, which is where the rest of KROMA keeps
- * its runtime schemas.
- */
+// The relay's wire contract. Every byte reaching this Worker is untrusted, so nothing is read
+// off a request until a schema here has agreed to its shape.
 
 import { z } from 'zod';
 
-/** Which service a sealed device token belongs to. */
 export const Transport = z.enum(['apns', 'fcm']);
 export type Transport = z.infer<typeof Transport>;
 
 export const Urgency = z.enum(['low', 'normal', 'high']);
 export type Urgency = z.infer<typeof Urgency>;
 
-/** An actionable button. Only `api` actions reach a native payload — a link is
- * plain navigation the tap handler already covers — so the server sends just
- * these three fields. */
+/** An actionable button. Only `api` actions reach a native payload; a link is
+ * plain navigation the tap handler already covers. */
 export const Action = z.object({
   id: z.string().min(1),
   method: z.string().min(1).default('POST'),
@@ -30,12 +19,10 @@ export const Action = z.object({
 export type Action = z.infer<typeof Action>;
 
 /**
- * What a server may ask the relay to deliver.
- *
- * STRUCTURE, not a finished Apple or Google payload: the relay decides the
- * topic, the push type, the priority and the collapse key. A caller that could
- * hand over a built payload could also address another app or promote a digest
- * to a radio-waking alert, so those fields are deliberately absent here.
+ * What a server may ask the relay to deliver: structure, not a finished Apple or
+ * Google payload. The topic, push type, priority and collapse key are the
+ * relay's to set — a caller that could supply them could address another app or
+ * promote a digest to a radio-waking alert.
  */
 export const Notification = z.object({
   id: z.string().min(1).max(128),
@@ -43,9 +30,7 @@ export const Notification = z.object({
   body: z.string().max(1024).default(''),
   link: z.string().max(1024).optional(),
   imageUrl: z.string().max(2048).optional(),
-  /** The action set the app registered, if this notification names one. */
   category: z.string().max(64).optional(),
-  /** Groups related notifications in the shade. */
   threadId: z.string().max(64).optional(),
   actions: z.array(Action).max(4).default([]),
   urgency: Urgency.default('high'),
@@ -55,8 +40,8 @@ export type Notification = z.infer<typeof Notification>;
 /** `POST /v1/grant` — the app trades its device token for a capability. */
 export const GrantRequest = z.object({
   transport: Transport,
-  /** The raw APNs/FCM token. Bounded because a real one is far shorter, and an
-   * unbounded string is a free way to make the relay do work. */
+  // Bounded: a real token is far shorter, and an unbounded string is a free
+  // way to make the relay do work.
   token: z.string().trim().min(1).max(1024),
 });
 export type GrantRequest = z.infer<typeof GrantRequest>;
@@ -68,26 +53,19 @@ export const PushRequest = z.object({
 });
 export type PushRequest = z.infer<typeof PushRequest>;
 
-/**
- * What one transport made of one send. Transport-neutral on purpose: `index.ts`
- * dispatches to Apple or Google and then answers the caller identically, so this
- * belongs beside the other shared wire types rather than inside whichever
- * transport happened to define it first.
- */
+/** What one transport made of one send, in a shape neutral across Apple and
+ * Google. */
 export interface Delivery {
-  /** Whether the service accepted it. */
   ok: boolean;
-  /** Whether this device is permanently gone and should be dropped. */
   gone: boolean;
   status: number;
   reason?: string;
 }
 
 /**
- * The first problem zod found, as an error body: it names the offending field
- * and nothing else. Deliberately not `z.treeifyError` or the raw issue list —
- * those echo the received value back, which for this Worker means reflecting an
- * attacker's payload into a response.
+ * The first problem zod found, naming the offending field and nothing else.
+ * Deliberately not `z.treeifyError` or the raw issue list — those echo the
+ * received value back, reflecting an attacker's payload into a response.
  *
  * Typed structurally rather than as `z.ZodError` because `@hono/zod-validator`
  * hands back zod v4's core `$ZodError`, which is not the same class.

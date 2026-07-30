@@ -1,12 +1,3 @@
-// The MOLECULES: primitives arranged into a shape the design names.
-//
-// A molecule composes primitives and owns an arrangement, not a behaviour: the
-// scrim over a poster, the glyph well on a settings row, the fact that a field's
-// error replaces its hint. It may know the shape of the data it lays out (a
-// title, a progress fraction) but never where that data came from.
-//
-// The test for adding one: has this arrangement now been written twice?
-
 export type { BackButtonProps } from './back-button';
 export { BackButton } from './back-button';
 export type { CategoryTileProps, CategoryTileSize } from './category-tile';

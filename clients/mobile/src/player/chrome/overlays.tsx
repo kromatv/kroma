@@ -1,5 +1,4 @@
-// Overlays that sit above the video independently of the controls: the subtitle
-// cue line, the buffering spinner, skip-intro, and the up-next card.
+// Overlays that sit above the video independently of the player controls.
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
 import { type SubtitleAppearance, withOpacity } from '@kroma/ui';
@@ -10,13 +9,11 @@ import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { absoluteFill, colors, radius } from '#mobile/lib/theme';
 
-/** The design's subtitle sizes at PHONE scale (the shared model's px are
- * 10-foot numbers). */
+// Phone scale; the shared appearance model's px are 10-foot numbers.
 const CUE_SIZE: Record<SubtitleAppearance['size'], number> = { sm: 13, md: 17, lg: 21, xl: 26 };
 
-/** CEA-708's eight font styles on a phone. `undefined` means the system face,
- * which is what "default", the proportional sans and small capitals all want -
- * small caps is a variant rather than a family, applied below. */
+// CEA-708's eight font styles. `undefined` is the system face; small caps is a
+// variant rather than a family, applied in `cueStyle`.
 const CUE_FONT: Record<SubtitleAppearance['font'], string | undefined> = {
   default: undefined,
   propSans: undefined,
@@ -28,9 +25,7 @@ const CUE_FONT: Record<SubtitleAppearance['font'], string | undefined> = {
   cursive: Platform.select({ ios: 'Snell Roundhand', default: 'cursive' }),
 };
 
-/** The edge treatments, as the one text shadow React Native gives us: a blur for
- * the drop shadow, a tight halo for the uniform stroke, and a hard offset for the
- * directional pair (see @kroma/ui's subtitle-edge). */
+// The edge treatments squeezed into the one text shadow React Native offers.
 const CUE_EDGE: Record<
   SubtitleAppearance['edge'],
   { radius: number; offset: { width: number; height: number } }
@@ -44,9 +39,6 @@ const CUE_EDGE: Record<
   depressed: { radius: 0.01, offset: { width: -1, height: -1 } },
 };
 
-/** The viewer's appearance choice, as the cue Text's style. Mirrors the shared
- * renderer: the background is its own layer with its own colour and opacity, so
- * it no longer rides on the edge treatment. */
 function cueStyle(a: SubtitleAppearance): TextStyle {
   const edge = CUE_EDGE[a.edge];
   return {
@@ -61,8 +53,6 @@ function cueStyle(a: SubtitleAppearance): TextStyle {
   };
 }
 
-/** The current subtitle line. It rides above the controls when they are up, so
- * the two never overlap. */
 export function CueLine({
   cue,
   bottom,

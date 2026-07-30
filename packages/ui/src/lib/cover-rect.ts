@@ -1,17 +1,11 @@
-// CSS `object-position` maths, for the platform that does not have it.
-//
-// The browsers do (an <img> takes objectFit / objectPosition and stops there).
-// React Native's <Image> only offers `resizeMode="cover"`, which is hard-centred,
-// so <Img> reproduces object-position exactly: it measures the box and the
-// artwork, computes the cover rectangle here and offsets it. Pure functions, so
-// the behaviour is unit-tested rather than eyeballed on a TV.
+// CSS `object-position` maths for React Native, whose <Image> only offers a
+// hard-centred `resizeMode="cover"`.
 
 /** A CSS position string (`'50% 28%'`, `'50%'`, `'center top'`) as fractions. */
 export function parsePosition(value: string): { x: number; y: number } {
   const parts = value.trim().split(/\s+/);
   const x = axis(parts[0], 0.5);
-  // A single value sets the horizontal axis and centres the vertical one - and
-  // an unparseable second value centres too, so the fallback is 0.5 either way.
+  // Per CSS, a single value sets the horizontal axis and centres the vertical one.
   const y = axis(parts[1], 0.5);
   return { x, y };
 }
@@ -37,10 +31,8 @@ export interface Rect {
 
 /**
  * The rectangle to draw `source` at so it covers `box` with its focal point at
- * `position`. Mirrors `object-fit: cover` + `object-position` exactly.
- *
- * Returns null when either size is not known yet (the artwork has not loaded, or
- * the box has not been laid out): callers fall back to a plain centred cover.
+ * `position`, mirroring `object-fit: cover` + `object-position`. Null when either
+ * size is not known yet, which callers treat as a plain centred cover.
  */
 export function coverRect(
   box: { width: number; height: number } | null,
@@ -53,8 +45,6 @@ export function coverRect(
   const scale = Math.max(box.width / source.width, box.height / source.height);
   const width = source.width * scale;
   const height = source.height * scale;
-  // Only the overflow moves; a dimension that exactly fits has none, so its
-  // position component is a no-op, which is what CSS does too.
   return {
     left: noNegZero(-(width - box.width) * position.x),
     top: noNegZero(-(height - box.height) * position.y),
@@ -63,6 +53,6 @@ export function coverRect(
   };
 }
 
-/** Negating an exact zero offset yields -0, which is a valid layout value but
- * makes snapshots and equality checks read confusingly. */
+// Negating an exact zero offset yields -0, which lays out fine but reads
+// confusingly in snapshots and equality checks.
 const noNegZero = (n: number) => (n === 0 ? 0 : n);

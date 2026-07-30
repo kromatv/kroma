@@ -1,15 +1,13 @@
-// Expose the compile target triple to the binary (env!("KROMA_BUILD_TARGET")):
-// the module store uses it at runtime to pick the matching per-target `.kmod`
-// artifact from a registry catalog (a sidecar module carries a NATIVE binary,
-// so its platform must match this server's).
+// The module store needs the compile target triple at runtime (env!("KROMA_BUILD_TARGET"))
+// to pick the matching per-target `.kmod` artifact: a sidecar module carries a
+// native binary, so its platform must match this server's.
 fn main() {
     println!(
         "cargo:rustc-env=KROMA_BUILD_TARGET={}",
         std::env::var("TARGET").unwrap_or_default()
     );
-    // Short git commit hash for the admin "Version installée" row (env!(
-    // "KROMA_GIT_HASH")). Best effort: a source tarball with no .git, or git
-    // missing, yields "unknown". Re-run when HEAD moves so the hash stays fresh.
+    // env!("KROMA_GIT_HASH") for the admin "Version installée" row. Best effort:
+    // "unknown" with no .git dir or no git binary.
     let commit = std::process::Command::new("git")
         .args(["rev-parse", "--short", "HEAD"])
         .output()
@@ -21,8 +19,8 @@ fn main() {
         .unwrap_or_else(|| "unknown".to_owned());
     println!("cargo:rustc-env=KROMA_GIT_HASH={commit}");
 
-    // UTC build date for the admin "Version installée" row. `date -u` exists on
-    // the Linux/macOS build hosts; anything else falls back to "unknown".
+    // `date -u` exists on the Linux/macOS build hosts; anything else falls back
+    // to "unknown".
     let date = std::process::Command::new("date")
         .args(["-u", "+%Y-%m-%d %H:%M UTC"])
         .output()

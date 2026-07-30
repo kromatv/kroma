@@ -10,36 +10,25 @@ interface DevOnlyHtmlPlugin {
 }
 
 export interface TvFrameOptions {
-  /** Stage width in CSS px (the TV's logical canvas). Default 1920. */
   width?: number;
-  /** Stage height in CSS px. Default 1080 (→ 16:9 with the default width). */
   height?: number;
-  /** Turn the frame off without removing the plugin from the config. Default true. */
   enabled?: boolean;
 }
 
 /**
- * Dev-only **TV frame**. In `vite dev` it letterboxes the mounted app into a
- * fixed 16:9 stage (1920×1080 by default), scaled to fit the browser window
- * the way a real TV renders a 1080p canvas onto its panel. The shells ship a
- * `<meta name="viewport" width=1920 height=1080>` so a TV webview gets that exact
- * canvas, but desktop Chrome ignores that tag, so without this the TV UI just
- * stretches to whatever the browser window is. This restores the authored aspect.
+ * Dev-only TV frame: in `vite dev`, letterboxes the mounted app into a fixed
+ * 16:9 stage (1920×1080 by default) scaled to fit the browser window, since
+ * desktop Chrome ignores the `<meta name="viewport">` a real TV webview reads
+ * for its exact canvas. A `transform` on `#root` becomes the containing block
+ * for the app's `position: fixed` full-screen layers, and the injected rules
+ * are unlayered so they beat tv.css's `@layer base` without `!important`.
  *
- * How it works: a `transform` on `#root` turns it into the containing block for
- * the app's `position: fixed` full-screen layers (TvHome / TvPlayer / detail /
- * profiles), so they fill the *stage* rather than the viewport. The injected
- * rules are unlayered, so they beat tv.css's `@layer base` `html/body/#root`
- * rules without `!important`.
+ * Never runs in `vite build` (`apply: 'serve'`). Press ` (backtick) to toggle
+ * framed / full-window; the choice is remembered in localStorage.
  *
- * Never runs in `vite build` (`apply: 'serve'`), so production TV packages are
- * untouched. Press the ` (backtick) key to toggle framed / full-window; the
- * choice is remembered in localStorage.
- *
- * Caveat: a handful of `vh`-based `clamp()`s in the TV CSS still resolve against
- * the real window (CSS can't remap viewport units under a `transform`), so they
- * drift slightly on heavy up/down-scale. The fixed-px bulk of the layout which
- * is nearly all of it stays pixel-faithful.
+ * A handful of `vh`-based `clamp()`s in the TV CSS still resolve against the
+ * real window, since CSS can't remap viewport units under a `transform`, so
+ * they drift slightly on heavy up/down-scale.
  */
 export function tvFrame(options: TvFrameOptions = {}): DevOnlyHtmlPlugin {
   const width = options.width ?? 1920;
@@ -47,7 +36,7 @@ export function tvFrame(options: TvFrameOptions = {}): DevOnlyHtmlPlugin {
   const enabled = options.enabled ?? true;
   return {
     name: 'kroma:tv-frame',
-    apply: 'serve', // dev server only no effect on `vite build`
+    apply: 'serve',
     transformIndexHtml() {
       if (!enabled) return [];
       return [

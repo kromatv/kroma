@@ -1,20 +1,14 @@
 // @vitest-environment jsdom
 //
 // The browser targets' half of the remote: Back, the transport keys, and the
-// auto-repeat guard.
-//
-// Directional movement is NOT here any more. The spatial navigator owns it on
-// every target at once, and it is covered end to end - through real key events,
-// on the real components - in ui/primitives/focusable.test.tsx. What is left in
-// this engine is the part the navigator has no opinion about.
+// auto-repeat guard. Directional movement is covered in focusable.test.tsx.
 
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useFocusNav } from './focus-nav.web';
 
-// jsdom returns a zero rect for every element and does not implement
-// scrollIntoView, so we stub both: each focusable gets a hand-placed rect and
-// scrollIntoView is a no-op (spatial nav calls it after every move).
+// jsdom returns a zero rect for every element and has no scrollIntoView, so both
+// are stubbed.
 function rect(left: number, top: number, w: number, h: number): DOMRect {
   return {
     left,
@@ -71,9 +65,9 @@ describe('useFocusNav handlers', () => {
     const onBack = vi.fn();
     const onPlayPause = vi.fn();
     renderHook(() => useFocusNav({ onBack, onPlayPause }));
-    key('Escape'); // -> Back
+    key('Escape');
     expect(onBack).toHaveBeenCalledTimes(1);
-    key('MediaPlayPause'); // -> PlayPause
+    key('MediaPlayPause');
     expect(onPlayPause).toHaveBeenCalledTimes(1);
   });
 
@@ -91,7 +85,7 @@ describe('useFocusNav handlers', () => {
     });
     expect(repeat.defaultPrevented).toBe(true);
 
-    // A deliberate single press is left alone: the <button> activates natively.
+    // A single press is left alone: the <button> activates natively.
     const press = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
     act(() => {
       window.dispatchEvent(press);
@@ -118,8 +112,6 @@ describe('useFocusNav text-field handling', () => {
 });
 
 describe('useFocusNav pointer environment', () => {
-  // Hover-focus was removed on request: the ring moves on D-pad / arrows only,
-  // and a mouse interacts by clicking.
   it('hover does not change focus', () => {
     const { a, b } = grid2x2();
     a.focus();

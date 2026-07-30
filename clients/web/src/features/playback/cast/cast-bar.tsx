@@ -1,13 +1,6 @@
-// "Playing on Salon": the docked remote, pinned to the bottom of the app shell
-// while this browser is driving a TV.
-//
-// It shows what the TV last REPORTED, not what was last asked of it - the
-// position included, interpolated between the receiver's heartbeats so the bar
-// runs smoothly rather than stepping every ten seconds.
-//
-// The scrubber is a plain range input on purpose: it is the one control the OS
-// already makes accessible (keyboard, screen reader, touch) and this bar is a
-// remote, not a player - it has no frames of its own to preview.
+// The docked remote, pinned to the bottom of the app shell while this browser
+// drives a TV. It shows what the TV last reported, not what was last asked of
+// it, with the position interpolated between the receiver's heartbeats.
 
 import { formatTimecode } from '@kroma/core';
 import { useCast, useT } from '@kroma/ui';
@@ -16,14 +9,13 @@ import { useState } from 'react';
 import { castPicker } from '#web/features/playback/cast/cast-picker';
 import { kromaClient } from '#web/shared/lib/api';
 
-/** ±10 s, the same jump the players use. */
 const SKIP_MS = 10_000;
 
 export function CastBar() {
   const t = useT();
   const { active, positionMs, send, select } = useCast();
-  // While a drag is in flight the bar follows the FINGER, not the TV: the
-  // receiver's heartbeats would otherwise yank the handle back mid-gesture.
+  // While a drag is in flight the bar follows the finger: the receiver's
+  // heartbeats would otherwise yank the handle back mid-gesture.
   const [dragMs, setDragMs] = useState<number | null>(null);
 
   if (!active) return null;
@@ -34,8 +26,7 @@ export function CastBar() {
   const poster = item ? kromaClient().posterFor(item, 96) : null;
   const durationMs = playing?.durationMs ?? 0;
   const shownMs = dragMs ?? positionMs;
-  // Buffering IS playing, stalled: the button a viewer needs is still Pause, the
-  // same reading the phone's remote uses.
+  // Buffering is playing, stalled: the button a viewer needs is still Pause.
   const isPlaying = playing?.state === 'playing' || playing?.state === 'buffering';
 
   return (
@@ -126,7 +117,6 @@ export function CastBar() {
     </aside>
   );
 
-  /** Send the dragged position, then hand the bar back to the TV's own beats. */
   function commit() {
     if (dragMs == null) return;
     void send({ type: 'seek', positionMs: Math.round(dragMs) });

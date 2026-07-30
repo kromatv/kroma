@@ -13,7 +13,7 @@ use crate::api::extract::AuthUser;
 use crate::infra::logbuf::LOG_BUFFER;
 use crate::state::SharedState;
 
-/// Max lines one request returns (the buffer itself holds more).
+// Max lines one request returns (the buffer itself holds more).
 const MAX_LIMIT: usize = 2000;
 const DEFAULT_LIMIT: usize = 500;
 
@@ -23,17 +23,17 @@ pub fn routes() -> Router<SharedState> {
 
 #[derive(Deserialize)]
 struct LogsQuery {
-    /// Minimum severity (`warn` shows warn + error). Omit for everything.
+    // Minimum severity (`warn` shows warn + error). Omit for everything.
     level: Option<String>,
-    /// `core` or a module id. Omit for everything.
+    // `core` or a module id. Omit for everything.
     source: Option<String>,
-    /// Case-insensitive substring over message/target/source.
+    // Case-insensitive substring over message/target/source.
     q: Option<String>,
     limit: Option<usize>,
 }
 
-/// `GET /api/admin/logs` → newest-last recent log lines + the distinct sources
-/// present (for the filter dropdown).
+// `GET /api/admin/logs` → newest-last recent log lines + the distinct sources
+// present (for the filter dropdown).
 async fn list_logs(
     State(_state): State<SharedState>,
     AuthUser(user): AuthUser,

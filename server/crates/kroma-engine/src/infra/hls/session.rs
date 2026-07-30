@@ -1,19 +1,8 @@
-//! One continuous ffmpeg per (item, audio-mode): copies the video once and
-//! exposes every audio track as an alternate rendition (the player switches
-//! language in place), writing fMP4 segment files as it goes. The server serves
-//! those files as ffmpeg produces them.
-//!
-//! Why continuous (not per-segment cuts): independent `-ss … -c:v copy -t <dur>`
-//! cuts are unreliable on MKV (the cue index is a keyframe subset, so the seek
-//! lands earlier and the copy over-runs), which desyncs audio/video and stalls
-//! hls.js. One continuous process splits at real keyframes and decodes audio+video
-//! together, so they are always aligned and gapless, and ffmpeg owns the playlist
-//! (the only source of truth for the segment boundaries). With `-copyts` the
-//! timeline is absolute, so the client seeks natively with no `baseSec`.
-//!
-//! A resume / far seek the client can't reach within the produced range reloads
-//! the master at `?t=<secs>`, which RE-ANCHORS: ffmpeg restarts at that input
-//! `-ss` so the position is available in ~1 s even over a network mount.
+//! One continuous ffmpeg per (item, audio-mode), writing fMP4 segments served as
+//! it produces them. Per-segment `-ss … -c:v copy -t <dur>` cuts are unreliable on
+//! MKV (the cue index is only a keyframe subset, so the copy over-runs and desyncs
+//! A/V); one process splits at real keyframes and owns the playlist. A seek the
+//! client cannot reach re-anchors by reloading the master at `?t=<secs>`.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -32,50 +21,27 @@ use super::{same_program, StreamMode};
 const SEGMENT_SECONDS: &str = "6";
 const IDLE_TIMEOUT: Duration = Duration::from_secs(180);
 const REAP_INTERVAL: Duration = Duration::from_secs(30);
-/// Give ffmpeg this long to write the master / a requested segment.
 const FILE_WAIT: Duration = Duration::from_secs(20);
-/// Read-ahead cap: ffmpeg reads the input at most this multiple of realtime, so N
-/// concurrent sessions don't thrash the disk / network mount racing to buffer the
-/// whole file. Also bounds the on-disk footprint, which then grows at ~playback
-/// rate rather than all-at-once.
-/// 2.0 (not 1.0) so the produced edge pulls AHEAD of the playhead over time,
-/// letting clients build a deep forward buffer (the web engines now target ~120s;
-/// see FORWARD_BUFFER_SEC in video-engine.ts) instead of riding the live edge.
+// Multiple of realtime ffmpeg may read at, so concurrent sessions don't
+// thrash the mount; above 1.0 so clients can still build a forward buffer.
 const READRATE: &str = "2.0";
-/// Seconds of stream read at FULL speed before [`READRATE`] throttling kicks in,
-/// so playback starts instantly AND a chunk of head-start buffer lands up front.
-/// Needs ffmpeg >= 6.1 (see [`detect_burst`]).
+// Seconds read at full speed before READRATE throttling starts (ffmpeg >= 6.1).
 const READRATE_BURST: &str = "60";
-/// A session whose last access is more recent than this is treated as actively
-/// playing: it is NEVER evicted to reclaim disk (that would stall a live stream)
-/// and is dropped under the concurrency cap only as a last resort.
-/// Superseded anchors / finished sessions go idle at once, so they free quickly.
+// Under this age a session counts as actively playing: never evicted to
+// reclaim disk, dropped under the concurrency cap only as a last resort.
 const BUDGET_GRACE: Duration = Duration::from_secs(45);
-/// Per-session sliding window: keep this many segments BEHIND the furthest one the
-/// client has requested (its playhead + read-ahead), delete older ones. ~45 x 6s =
-/// 270s. The furthest requested segment sits ~forward-buffer ahead of the playhead
-/// (the web engines now target ~120s), so this must exceed forward+back buffer in
-/// segments (~30) with margin, or it would prune a segment the client still holds
-/// in its back-buffer and stall a backward seek.
-/// Safe with no client change: the player NATIVE-seeks only into already-buffered
-/// ranges and re-anchors (fresh session) otherwise, so a pruned segment is never
-/// re-fetched (see `seekTo` in the web `useVideoPlayback`).
+// Must exceed the client's forward+back buffer in segments (~30) or a
+// backward seek stalls.
 const KEEP_BEHIND_SEGS: u64 = 45;
 
 struct Session {
     dir: PathBuf,
     child: Mutex<Child>,
     last_access: Mutex<Instant>,
-    /// Highest segment index the client has requested (its playhead + read-ahead),
-    /// the anchor for behind-pruning. See [`KEEP_BEHIND_SEGS`].
     max_seg: AtomicU64,
-    /// Prune watermark: the exclusive cutoff below which segments have been deleted
-    /// by [`prune_behind`] and will NEVER be reproduced (the remux is forward-only).
-    /// `file()` 404s such indices immediately instead of blocking [`FILE_WAIT`].
     pruned: AtomicU64,
-    /// The real stream start (s): the keyframe at-or-before the requested anchor
-    /// (where `-noaccurate_seek` puts BOTH video and audio). The client uses this
-    /// as `baseSec` so the clock / subtitles stay aligned with A/V.
+    // Real stream start (s): the keyframe at-or-before the requested anchor,
+    // which the client uses as `baseSec`.
     start: f64,
 }
 
@@ -88,16 +54,12 @@ impl Session {
     }
 }
 
-/// Registry of continuous HLS remux sessions, keyed per program + anchor (see
-/// `session_key`).
+/// Remux sessions keyed per program + anchor (see `session_key`).
 pub struct Sessions {
     root: PathBuf,
     cap: usize,
-    /// On-disk byte budget for the whole cache (0 = unlimited). Enforced by
-    /// evicting idle sessions oldest-first; live sessions are never touched.
-    /// Atomic so an admin can retune it live (see [`Self::set_budget`]).
+    // On-disk byte budget for the whole cache; 0 = unlimited.
     budget: AtomicU64,
-    /// Whether this ffmpeg supports `-readrate_initial_burst` (>= 6.1).
     burst: bool,
     inner: Mutex<HashMap<String, Arc<Session>>>,
 }
@@ -110,8 +72,7 @@ impl Sessions {
         Sessions { root, cap: cap.max(1), budget: AtomicU64::new(budget), burst: detect_burst(), inner: Mutex::new(HashMap::new()) }
     }
 
-    /// Retune the disk budget at runtime (0 = unlimited); applied on the next
-    /// `make_room` / reaper sweep.
+    /// Retune the disk budget at runtime; 0 = unlimited.
     pub fn set_budget(&self, bytes: u64) {
         self.budget.store(bytes, Ordering::Relaxed);
     }
@@ -126,8 +87,7 @@ impl Sessions {
             .sum()
     }
 
-    /// Start (or reuse) the session for `key` (one muxed video+audio program) and
-    /// return the media playlist bytes + the real stream start (s) for `baseSec`.
+    /// Returns the media playlist bytes plus the real stream start (s) for `baseSec`.
     pub async fn master(&self, key: &str, input: &Path, audio: u32, mode: StreamMode, start_secs: f64) -> Option<(Vec<u8>, f64)> {
         let session = match self.ensure(key, input, audio, mode, start_secs).await {
             Ok(s) => s,
@@ -141,7 +101,7 @@ impl Sessions {
         let deadline = Instant::now() + FILE_WAIT;
         loop {
             if let Ok(bytes) = tokio::fs::read(&path).await {
-                // The media playlist has a target-duration header once it is valid.
+                // A media playlist is only valid once it carries a target duration.
                 if contains(&bytes, b"#EXT-X-TARGETDURATION") {
                     return Some((bytes, start));
                 }
@@ -153,23 +113,18 @@ impl Sessions {
         }
     }
 
-    /// Serve a child file (variant playlist, init fragment, or media segment). A
-    /// variant playlist gets `#EXT-X-ENDLIST` once the remux has finished, so the
-    /// completed stream becomes seekable VOD. A not-yet-produced segment is polled
-    /// for until ffmpeg flushes it.
+    /// A finished playlist gains `#EXT-X-ENDLIST` so it becomes seekable VOD; a
+    /// not-yet-produced segment is polled for until ffmpeg flushes it.
     pub async fn file(&self, key: &str, name: &str) -> Option<(Vec<u8>, &'static str)> {
         if !is_safe_name(name) {
             return None;
         }
         let session = { self.inner.lock().await.get(key).cloned() }?;
         session.touch().await;
-        // Track the playhead (furthest requested segment) so the reaper can prune
-        // everything well behind it (see prune_behind).
         if let Some(idx) = seg_index(name) {
             session.max_seg.fetch_max(idx, Ordering::Relaxed);
-            // A segment below the prune watermark was deleted and will never be
-            // reproduced (the remux only moves forward), so a poll would just burn
-            // FILE_WAIT (20s) then 404. Return 404 NOW so the client re-anchors fast.
+            // A pruned segment is never reproduced (the remux only moves forward),
+            // so 404 now instead of burning FILE_WAIT on a poll that cannot succeed.
             if idx < session.pruned.load(Ordering::Relaxed) {
                 return None;
             }
@@ -191,8 +146,7 @@ impl Sessions {
     }
 
     async fn ensure(&self, key: &str, input: &Path, audio: u32, mode: StreamMode, start_secs: f64) -> std::io::Result<Arc<Session>> {
-        // The anchor is part of the key, so an existing session is always the
-        // right one - just reuse it (no in-place re-anchor).
+        // The anchor is part of the key, so an existing session is always the right one.
         {
             let map = self.inner.lock().await;
             if let Some(s) = map.get(key) {
@@ -200,8 +154,7 @@ impl Sessions {
                 return Ok(s.clone());
             }
         }
-        // Probe the real start (keyframe at-or-before the anchor) WITHOUT holding
-        // the lock - it shells out to ffprobe and must not stall other sessions.
+        // Shells out to ffprobe: must not run under the lock.
         let start = keyframe_before(input, start_secs).await;
 
         let mut map = self.inner.lock().await;
@@ -209,10 +162,6 @@ impl Sessions {
             s.touch().await; // another task created it while we probed
             return Ok(s.clone());
         }
-        // A seek or an audio-filter toggle mints a NEW key for the same program,
-        // so the client's previous session is dead weight the moment it stops
-        // being read: reclaim it here instead of holding an ffmpeg (the filtered
-        // modes really do transcode) plus its segments for the full IDLE_TIMEOUT.
         self.reap_superseded(&mut map, key).await;
         self.make_room(&mut map, key).await;
         let dir = self.root.join(safe_dir(key));
@@ -225,20 +174,9 @@ impl Sessions {
         Ok(session)
     }
 
-    /// Free a slot for the incoming `key`: enforce the hard concurrency cap,
-    /// then the soft disk budget.
-    ///
-    /// The cap picks its victim in this order (one eviction per pass, so the
-    /// loop always terminates):
-    /// 1. the least-recently-used session when it has gone quiet (untouched for
-    ///    [`BUDGET_GRACE`]). It is the coldest one by construction, so nothing
-    ///    live is dropped while a colder session exists;
-    /// 2. otherwise EVERY session is live and killing one stalls a viewer
-    ///    mid-play (its next segment 404s), so prefer a sibling of `key` - same
-    ///    program, different mode / anchor - which is almost certainly the
-    ///    arriving client's OWN superseded stream (see [`same_program`]);
-    /// 3. only failing that, the plain LRU: a new stream must be able to start
-    ///    even when every session is genuinely live.
+    // Victim order under the concurrency cap: a session that has gone quiet, else
+    // a sibling of `key` (almost certainly the arriving client's own superseded
+    // stream, so no other viewer is cut off), else the plain LRU.
     async fn make_room(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) {
         while map.len() >= self.cap {
             let Some((oldest, la)) = lru(map.iter()).await else { break };
@@ -249,18 +187,11 @@ impl Sessions {
             };
             self.evict(map, &victim).await;
         }
-        // Soft disk budget: reclaim idle bloat before adding another session.
         self.enforce_budget(map).await;
     }
 
-    /// Drop the sessions superseded by `key` - same program (title + audio
-    /// track), different mode / anchor - that have already gone quiet
-    /// ([`BUDGET_GRACE`], the same liveness test the disk budget uses). A
-    /// re-anchor mints such a sibling and never reads the old one again, so this
-    /// returns its ffmpeg + disk in seconds instead of [`IDLE_TIMEOUT`].
-    /// Sibling sessions still being read are left alone: the HLS routes are
-    /// anonymous (no bearer, no device id), so a warm sibling could equally be a
-    /// second viewer on the same title and we must not cut them off.
+    // A sibling still being read is left alone: the HLS routes are anonymous, so
+    // a warm sibling could equally be a second viewer on the same title.
     async fn reap_superseded(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) {
         let now = Instant::now();
         let mut stale = Vec::new();
@@ -275,12 +206,9 @@ impl Sessions {
         }
     }
 
-    /// Evict idle / superseded sessions oldest-first until the on-disk cache is
-    /// under [`Self::budget`]. A session touched within [`BUDGET_GRACE`] is treated
-    /// as actively playing and left alone (even if that means briefly exceeding the
-    /// budget) - dropping a live stream's segments mid-play would stall it. The
-    /// oldest entry gates the loop, so once it is "active" the rest are too.
-    /// `budget == 0` disables trimming.
+    // Evict idle sessions oldest-first until the cache is under budget (0
+    // disables trimming). A session younger than BUDGET_GRACE is left alone
+    // even if that briefly exceeds the budget: dropping its segments would stall it.
     async fn enforce_budget(&self, map: &mut HashMap<String, Arc<Session>>) {
         let budget = self.budget.load(Ordering::Relaxed);
         if budget == 0 {
@@ -290,7 +218,7 @@ impl Sessions {
         while total > budget && map.len() > 1 {
             let Some((k, la)) = lru(map.iter()).await else { break };
             if Instant::now().duration_since(la) < BUDGET_GRACE {
-                break; // the least-recent session is still live - keep it and the rest
+                break; // the oldest is live, so the rest are too
             }
             if let Some(s) = map.get(&k) {
                 total = total.saturating_sub(dir_bytes(&s.dir));
@@ -299,7 +227,6 @@ impl Sessions {
         }
     }
 
-    /// Kill a session's ffmpeg and delete its segment directory.
     async fn evict(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) {
         if let Some(s) = map.remove(key) {
             let _ = s.child.lock().await.start_kill();
@@ -323,23 +250,16 @@ impl Sessions {
                 for id in dead {
                     this.evict(&mut map, &id).await;
                 }
-                // Bound each LIVE session: drop segments far behind its playhead so
-                // a single long stream's footprint stays flat (the budget alone
-                // can't trim an active session). Safe with no client change - the
-                // player never re-fetches an un-buffered segment (see seekTo).
+                // The budget cannot trim a live session, so bound each one here.
                 for s in map.values() {
                     prune_behind(s);
                 }
-                // Then reclaim whole idle / superseded sessions still over budget.
                 this.enforce_budget(&mut map).await;
             }
         });
     }
 }
 
-/// The (key, last_access) of the least-recently-used session in `sessions`, if
-/// any. Takes an iterator so a subset (e.g. one program's sessions) can be
-/// ranked with the same pass.
 async fn lru<'a>(sessions: impl Iterator<Item = (&'a String, &'a Arc<Session>)>) -> Option<(String, Instant)> {
     let mut victim: Option<(String, Instant)> = None;
     for (k, s) in sessions {
@@ -352,26 +272,18 @@ async fn lru<'a>(sessions: impl Iterator<Item = (&'a String, &'a Arc<Session>)>)
     victim
 }
 
-/// The key of the least-recently-used session that plays the same program as
-/// `key` (another mode / anchor of the same title + audio track), if any. `key`
-/// itself is never returned. See [`Sessions::make_room`] for why this is the
-/// preferred victim once every session is live.
 async fn lru_sibling(map: &HashMap<String, Arc<Session>>, key: &str) -> Option<String> {
     lru(map.iter().filter(|(k, _)| k.as_str() != key && same_program(k, key))).await.map(|(k, _)| k)
 }
 
-/// Delete this session's media segments more than [`KEEP_BEHIND_SEGS`] behind the
-/// furthest one the client has requested. The init fragment and playlist are never
-/// touched (they are not `seg_*.m4s`); the playlist keeps listing pruned entries,
-/// but the player never re-fetches them - a seek to an un-buffered position
-/// re-anchors a fresh session instead (see web `seekTo`).
+// The playlist keeps listing pruned entries, but the player never re-fetches them:
+// a seek to an un-buffered position re-anchors a fresh session instead.
 fn prune_behind(s: &Session) {
     let max = s.max_seg.load(Ordering::Relaxed);
     if max <= KEEP_BEHIND_SEGS {
-        return; // nothing far enough behind yet
+        return;
     }
     let cutoff = max - KEEP_BEHIND_SEGS;
-    // Publish the watermark so file() can 404 pruned indices without polling.
     s.pruned.fetch_max(cutoff, Ordering::Relaxed);
     let Ok(entries) = std::fs::read_dir(&s.dir) else {
         return;
@@ -385,13 +297,10 @@ fn prune_behind(s: &Session) {
     }
 }
 
-/// The index of a media segment filename (`seg_00042.m4s` → 42); `None` for the
-/// init fragment, playlists, or anything else.
 fn seg_index(name: &str) -> Option<u64> {
     name.strip_prefix("seg_")?.strip_suffix(".m4s")?.parse().ok()
 }
 
-/// Recursive byte size of one session's segment directory.
 fn dir_bytes(dir: &Path) -> u64 {
     walkdir::WalkDir::new(dir)
         .into_iter()
@@ -402,9 +311,8 @@ fn dir_bytes(dir: &Path) -> u64 {
         .sum()
 }
 
-/// Whether the installed ffmpeg understands `-readrate_initial_burst` (added in
-/// 6.1). Probed once at startup; on older builds we fall back to a plain
-/// `-readrate` (universally supported) and accept a slightly slower first segment.
+// `-readrate_initial_burst` only exists from ffmpeg 6.1; older builds get a plain
+// `-readrate` and a slightly slower first segment.
 fn detect_burst() -> bool {
     std::process::Command::new("ffmpeg")
         .args(["-hide_banner", "-h", "full"])
@@ -417,10 +325,6 @@ fn detect_burst() -> bool {
         .unwrap_or(false)
 }
 
-/// The largest video keyframe PTS at-or-before `anchor` - where `-noaccurate_seek
-/// -ss anchor` actually starts BOTH video and audio. 0 for `anchor <= 0.5`. Reads
-/// only a short interval ending at `anchor`, keyframes only, so it is fast even
-/// over a network mount. Falls back to `anchor` if ffprobe finds nothing.
 async fn keyframe_before(input: &Path, anchor: f64) -> f64 {
     if anchor <= 0.5 {
         return 0.0;
@@ -449,32 +353,19 @@ async fn keyframe_before(input: &Path, anchor: f64) -> f64 {
     best.unwrap_or(anchor)
 }
 
-/// Build the ffmpeg command for ONE program: copy the video + the SELECTED audio
-/// track (`0:a:<audio>`), MUXED into a single media playlist (`index.m3u8`). We
-/// mux the chosen language rather than expose alternate audio renditions because
-/// hls.js's alternate-audio switching was unreliable (it kept playing rendition 0
-/// regardless of selection); muxing makes the chosen language play unconditionally.
-/// Language switch = the client reloads with a different `audio` (a fresh session).
+// The selected audio track is MUXED into one media playlist rather than exposed as
+// an alternate rendition: hls.js keeps playing rendition 0 regardless of selection.
+// A language switch is therefore a reload with a different `audio` (a new session).
 fn spawn_stream(input: &Path, dir: &Path, audio: u32, mode: StreamMode, start_secs: f64, burst: bool) -> std::io::Result<Child> {
     let mut cmd = Command::new("ffmpeg");
-    // Remux never decodes video (`-c:v copy`); at most it decodes ONE audio
-    // stream for the aac fallback. `-threads 1` stops ffmpeg from standing up a
-    // per-core decoder pool it can't use, keeping a session ~free CPU-wise.
+    // `-threads 1`: the remux never decodes video, so a decoder pool is pure overhead.
     cmd.args(["-v", "error", "-nostdin", "-threads", "1"]);
     if start_secs > 0.5 {
-        // `-noaccurate_seek` is CRITICAL for A/V sync: the default accurate seek
-        // backs the video up to a keyframe but decodes-and-DISCARDS audio up to
-        // the exact -ss point, so audio starts ~1 GOP after video (desync).
-        // `-noaccurate_seek` starts BOTH streams at the keyframe together; the
-        // client learns the real start via the X-Hls-Start header → baseSec.
+        // Required for A/V sync: an accurate seek backs the video to a keyframe but
+        // decodes-and-discards audio to the exact `-ss`, starting it a GOP late.
         cmd.arg("-noaccurate_seek").arg("-ss").arg(format!("{start_secs:.3}"));
     }
-    // Read-ahead throttle (input option, before `-i`): cap reading at READRATE x
-    // realtime so concurrent sessions don't saturate the disk / network mount, and
-    // so segments are produced at ~playback rate instead of the whole file at once.
-    // The initial burst (when the ffmpeg supports it) reads the first chunk at full
-    // speed so playback still starts immediately. Throttling only caps the UPPER
-    // bound, so it never slows a mount that already can't keep up.
+    // Input option: must come before `-i`.
     cmd.args(["-readrate", READRATE]);
     if burst {
         cmd.args(["-readrate_initial_burst", READRATE_BURST]);
@@ -486,8 +377,6 @@ fn spawn_stream(input: &Path, dir: &Path, audio: u32, mode: StreamMode, start_se
     cmd.args(["-map", "0:v:0"]).arg("-map").arg(format!("0:a:{audio}"));
     cmd.args(["-c:v", "copy"]);
     if mode.transcode() {
-        // The loudness filter (volume leveling) rides the decode the transcode
-        // already pays for; `-ac 2` downmixes after the filter graph.
         if let Some(af) = mode.filter_chain() {
             cmd.args(["-af", af]);
         }
@@ -506,7 +395,6 @@ fn spawn_stream(input: &Path, dir: &Path, audio: u32, mode: StreamMode, start_se
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .kill_on_drop(true);
-    // Capture ffmpeg stderr to the session dir so remux failures are diagnosable.
     match std::fs::File::create(dir.join("ffmpeg.log")) {
         Ok(f) => {
             cmd.stderr(Stdio::from(f));
@@ -568,14 +456,7 @@ mod tests {
         assert_eq!(content_type("seg_0_00001.m4s"), "video/iso.segment");
     }
 
-    // ---- eviction policy -----------------------------------------------------
-    // The registry is driven directly (no ffmpeg): each fake session holds a
-    // harmless child process and an explicit last-access age, which is all the
-    // cap / supersede rules look at.
-
-    /// Age of a session the client is still reading (well inside [`BUDGET_GRACE`]).
     const LIVE: Duration = Duration::from_secs(1);
-    /// Age of a session nobody has read for longer than [`BUDGET_GRACE`].
     const QUIET: Duration = Duration::from_secs(BUDGET_GRACE.as_secs() + 5);
 
     fn fake_session(dir: PathBuf, age: Duration) -> Arc<Session> {
@@ -598,8 +479,7 @@ mod tests {
         })
     }
 
-    /// A registry over its own temp root, pre-populated with `(key, age)` fakes.
-    /// `budget = 0` so only the concurrency cap is exercised.
+    // `budget = 0` so only the concurrency cap is exercised.
     async fn registry(name: &str, cap: usize, sessions: &[(&str, Duration)]) -> Sessions {
         let data = std::env::temp_dir().join(format!("kroma-hls-test-{}-{name}", std::process::id()));
         let s = Sessions::new(&data, cap, 0);
@@ -613,7 +493,6 @@ mod tests {
         s
     }
 
-    /// The registry's session keys, sorted.
     async fn keys(s: &Sessions) -> Vec<String> {
         let mut keys: Vec<String> = s.inner.lock().await.keys().cloned().collect();
         keys.sort();
@@ -622,8 +501,7 @@ mod tests {
 
     #[tokio::test]
     async fn hard_cap_prefers_the_arriving_clients_own_superseded_sibling() {
-        // Two viewers mid-stream: itA started first (so it is the LRU) while itB
-        // toggles the audio filter, which mints a third key for its own program.
+        // itA is the LRU; itB toggles the audio filter, minting a third key of its own.
         let s = registry(
             "sibling",
             2,
@@ -634,7 +512,6 @@ mod tests {
             let mut map = s.inner.lock().await;
             s.make_room(&mut map, "itB:aac-night:0:a0").await;
         }
-        // The plain-LRU rule used to kill itA here: another viewer's LIVE stream.
         assert_eq!(keys(&s).await, ["itA:copy:0:a0"]);
         assert!(!s.root.join(safe_dir("itB:aac:0:a0")).exists());
     }
@@ -661,8 +538,6 @@ mod tests {
             let mut map = s.inner.lock().await;
             s.make_room(&mut map, "itC:copy:0:a0").await;
         }
-        // Nothing is quiet and nothing is related, so the LRU still goes: a new
-        // stream must always be able to start.
         assert_eq!(keys(&s).await, ["itB:aac:0:a0"]);
     }
 

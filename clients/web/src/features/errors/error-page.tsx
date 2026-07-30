@@ -17,7 +17,6 @@ const COPY: Record<Kind, { code: string; title: MessageKey; body: MessageKey }> 
   server: { code: '500', title: 'error.serverTitle', body: 'error.serverBody' },
 };
 
-/** Map a thrown value to a screen variant via its HTTP status (if any). */
 function kindOf(error: unknown): Kind {
   const status = error instanceof KromaApiError ? error.status : undefined;
   if (status === 404) return 'notFound';
@@ -53,7 +52,6 @@ function ErrorScreen({
           <Logo size={20} />
         </div>
 
-        {/* Big cinematic status number with an amber-tinted glow. */}
         <div
           className="font-display text-[104px] font-extrabold leading-none tracking-[-.04em] text-transparent"
           style={{
@@ -119,8 +117,7 @@ export function RouteError({ error, reset }: Readonly<{ error: Error; reset: () 
       : undefined;
 
   // 401: the session is gone but `user` may still be cached locally, so the
-  // ambient gate won't show. Send them to /login (which drops the stale session
-  // and shows the picker); it returns here once they sign back in.
+  // ambient gate won't show. Send them to /login instead, which returns here.
   const onSignIn =
     kind === 'unauthorized'
       ? () => void navigate({ to: '/login', search: { redirect: href } })

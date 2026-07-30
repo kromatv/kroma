@@ -3,24 +3,9 @@ import { Box, Icon, Txt } from '@kroma/ui/kit';
 import { CLIENT_BUILD } from '#tv/app/clientBuild';
 import { useConnection } from '#tv/app/providers/connection';
 
-// Non-blocking banner shown when the connected server is older than this client
-// build requires (see @kroma/core `checkServerCompat`). Deliberately PASSIVE - it
-// takes no D-pad focus and no pointer events, so it never disrupts navigation -
-// and it clears itself the moment the server is updated.
-//
-// Drawn with the KIT rather than with a DOM element, because TvApp mounts this
-// for every platform and that now includes the native TV clients: React Native
-// has no `<output>` host component, no `position: fixed` and no CSSProperties,
-// so an outdated server would have red-boxed the app on Apple TV instead of
-// warning about itself. `accessibilityRole="alert"` keeps the live region the
-// `<output>` was there for - react-native-web maps it to role="alert", which
-// Blink has announced since well before the Chromium 53 engine of the legacy
-// webOS tier.
-//
-// The warning sign is a GLYPH, not the "⚠" character: tvOS gives that code point
-// emoji presentation, so the text version would draw a cartoon triangle on
-// exactly the platform this rewrite is for - the same reason <Hint> takes its
-// arrows from the icon set.
+// Drawn with the KIT, not a DOM element: React Native has no `<output>` host
+// component or `position: fixed`, which would red-box the native TV clients.
+// The warning sign is a glyph, not "⚠", which tvOS renders as emoji.
 
 export function CompatBanner() {
   const { compat, serverVersion } = useConnection();
@@ -53,7 +38,6 @@ export function CompatBanner() {
   );
 }
 
-/** The amber of a warning that is not an error: the server still works. */
 const WARN_BG = '#8A5A00';
 
 const LINE = { fontSize: 17, fontWeight: '600' as const, textAlign: 'center' as const };

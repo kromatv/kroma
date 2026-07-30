@@ -8,6 +8,10 @@ bun.lockb
 # Builds
 dist/
 build/
+# Gradle's per-project cache. Not covered by clients/tv-native/.gitignore's
+# `/android`, which is anchored to the generated prebuild folder: gradle also runs
+# inside the tracked Expo modules at clients/tv-native/modules/*/android/.
+.gradle/
 *.tsbuildinfo
 .tanstack/
 # On-device TV live-dev staging (clients/tizen/.dev-shell)

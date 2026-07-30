@@ -23,10 +23,9 @@ import { useEffect, useReducer } from 'react';
 
 /**
  * Call from the component that renders the `<Modal>` - the repair is a re-render
- * of the Modal's PARENT, since that is what re-runs ModalPortal's render.
- *
- * @param mounted whether the modal is currently rendered, so a dialog that opens
- * later is repaired when it opens rather than only on first mount.
+ * of the Modal's PARENT, since that is what re-runs ModalPortal's render. Repairs
+ * when `mounted` turns true, so a dialog that opens later is fixed on open, not
+ * only on first mount.
  */
 function useModalPortalRepair(mounted: boolean): void {
   // useReducer, not useState: nothing reads the value, and a discarded state

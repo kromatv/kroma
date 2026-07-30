@@ -119,7 +119,7 @@ pub fn overlay_show_detail(pool: &Pool, detail: &mut ShowDetail, locale: &str) -
     Ok(())
 }
 
-/// Overlay one season's cast character names from its `season_cast` translation.
+// Overlay one season's cast character names from its `season_cast` translation.
 fn overlay_season_cast(conn: &Connection, show_id: &str, season: &mut Season, locale: &str) -> Result<()> {
     if season.cast.is_empty() {
         return Ok(());
@@ -131,8 +131,8 @@ fn overlay_season_cast(conn: &Connection, show_id: &str, season: &mut Season, lo
     Ok(())
 }
 
-/// Overlay the localized text fields onto an item's metadata (no-op when the item
-/// has no blob metadata yet, i.e. not enriched).
+// Overlay the localized text fields onto an item's metadata (no-op when the item
+// has no blob metadata yet, i.e. not enriched).
 fn apply(meta: Option<&mut Metadata>, tr: &TransData) {
     let Some(meta) = meta else { return };
     if tr.title.is_some() {
@@ -150,13 +150,13 @@ fn apply(meta: Option<&mut Metadata>, tr: &TransData) {
     apply_characters(&mut meta.cast, &tr.characters);
 }
 
-/// A show's metadata overlay (same fields; shows carry no per-title cast here).
+// A show's metadata overlay (same fields; shows carry no per-title cast here).
 fn apply_show(show: &mut Show, tr: &TransData) {
     apply(show.metadata.as_mut(), tr);
 }
 
-/// Overlay localized character names onto a cast list, aligned by index (the
-/// translation was written in the same TMDB cast order the core was stored in).
+// Overlay localized character names onto a cast list, aligned by index (the
+// translation was written in the same TMDB cast order the core was stored in).
 fn apply_characters(cast: &mut [CastMember], characters: &[Option<String>]) {
     for (member, ch) in cast.iter_mut().zip(characters.iter()) {
         if ch.is_some() {

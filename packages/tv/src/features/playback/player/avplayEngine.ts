@@ -1,23 +1,13 @@
-// Native Samsung AVPlay backend, in one of two source modes:
+// Native Samsung AVPlay backend, in one of two source modes: `direct` opens
+// the original file URL and lets the TV demux/decode it natively (seeks and
+// audio-track switches are native, in place); `master` is the server's HLS
+// remux for files AVPlay can't demux, anchored at `baseSec` so a resume/far
+// seek over a network mount starts fast (absolute position is
+// `baseSec + avplay time`; a far seek or language switch re-anchors).
 //
-//  - `direct`: AVPlay opens the ORIGINAL file URL (`/api/items/:id/stream`,
-//    plain HTTP Range). The TV demuxes MKV/MP4 and hardware-decodes video +
-//    surround audio itself, so the server does nothing but send bytes zero
-//    ffmpeg, no remux session. Seeks are native and absolute; audio languages
-//    switch IN PLACE via `setSelectTrack('AUDIO', …)`. This is the preferred
-//    mode whenever `avplayDirectPlayable(item)` holds; a prepare/playback error
-//    falls back (once) to the master at the current position.
-//
-//  - `master`: the server's HLS remux master, for files AVPlay cannot demux.
-//    The remux is anchored at `baseSec` (server input `-ss`) so a resume/far
-//    -seek over a network mount starts fast. The stream restarts at 0, so the
-//    absolute position is `baseSec + avplay time`; a nearby seek is a native
-//    `seekTo`, a far one re-anchors, and a language switch re-anchors too (the
-//    stream carries only the ONE audio track named in its URL).
-//
-// Either way AVPlay renders to a video plane behind the page, so the player
-// shows an `<object type="application/avplayer">` surface (transparent body)
-// and the HTML chrome + subtitle overlay sit on top.
+// AVPlay renders to a video plane behind the page: the player shows a
+// transparent `<object type="application/avplayer">` with the HTML chrome
+// and subtitle overlay on top.
 
 import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
 import {
@@ -27,21 +17,15 @@ import {
 } from '#tv/features/playback/player/baseEngine';
 import { type AvplayApi, getAvplay, resolveMasterStart } from '#tv/features/playback/player/engine';
 
-/** AVPlay's display coordinate space is the app's fixed 1920x1080 canvas. */
+// AVPlay's display coordinate space is the app's fixed 1920x1080 canvas.
 const AVPLAY_W = 1920;
 const AVPLAY_H = 1080;
 
 export class AvplayEngine extends BaseTvEngine {
   readonly kind = 'avplay';
   private readonly api: AvplayApi;
-  /** Direct mode: absolute position to seek to right after prepare (resume /
-   * fallback hand-off), else null. */
   private pendingSeek: number | null = null;
-  /** Current display rectangle (device px). Re-applied on every (re)open so a
-   * shrunk plane survives a re-anchor / audio switch instead of popping back. */
   private displayRect = { x: 0, y: 0, w: AVPLAY_W, h: AVPLAY_H };
-  /** Bumped on every (re)open so an in-flight master-start resolution that has
-   * been superseded can tell and bow out. */
   private openGen = 0;
   private readonly onVisibility: () => void;
 
@@ -68,9 +52,8 @@ export class AvplayEngine extends BaseTvEngine {
     this.open();
   }
 
-  /** The shared source logic, except a filtered master carries the loudness
-   * filter in its mode segment - AVPlay has no client-side audio DSP, so the
-   * server's remux applies the compressor instead (see infra/hls). */
+  /** A filtered master carries the loudness filter in its mode segment: AVPlay
+   * has no client-side audio DSP, so the server's remux applies it instead. */
   protected sourceUrl(): string {
     if (this.mode === 'master' && this.filter !== 'off') {
       return this.client.hlsMasterUrl(
@@ -84,10 +67,8 @@ export class AvplayEngine extends BaseTvEngine {
     return super.sourceUrl();
   }
 
-  /** Switch the server-side filter: reload the source at the current position
-   * with the new mode segment (re-preps in ~1s, like a language switch). A
-   * filtered direct source moves onto the remux; once the filter is off a
-   * filter-forced remux drops back to the original file. */
+  /** Reloads the source at the current position with the new filter mode; a
+   * filtered direct source moves onto the remux, and vice versa when turned off. */
   setAudioFilter(mode: AudioFilterMode): void {
     if (mode === this.filter) return;
     this.filter = mode;
@@ -102,15 +83,12 @@ export class AvplayEngine extends BaseTvEngine {
     this.reanchor(this.position());
   }
 
-  /** (Re)open the current source and prepare it. An anchored master first
-   * resolves its REAL start (the keyframe the server actually seeked to) so
-   * `baseSec` and every absolute-time consumer (progress bar, subtitle cues)
-   * stay honest; direct sources have an absolute timeline and open at once. */
+  // An anchored master first resolves its real start (the keyframe the server
+  // actually seeked to) so `baseSec` stays honest; direct sources open at once.
   private open(): void {
-    // Resolving a master start is a server round-trip that blocks until ffmpeg
-    // writes the playlist (seconds). A filter toggle or seek in that window
-    // supersedes this open, so stamp a generation and drop a stale resolution -
-    // otherwise it would overwrite `baseSec` and reopen the abandoned source.
+    // A filter toggle or seek can arrive while this round-trip is pending, so
+    // stamp a generation and drop a stale resolution rather than overwrite
+    // `baseSec` with an abandoned source's answer.
     const gen = ++this.openGen;
     const url = this.sourceUrl();
     if (this.mode === 'master' && this.baseSec > 0.5) {
@@ -156,9 +134,8 @@ export class AvplayEngine extends BaseTvEngine {
     }
   }
 
-  /** Suppress AVPlay's OWN subtitle/caption rendering (we draw our own overlay).
-   * Firmware honors it inconsistently by state, so it's re-asserted at READY
-   * (onPrepared) and PLAYING (play) - IDLE (openNow) is ignored. Idempotent. */
+  // Suppresses AVPlay's own subtitle rendering (we draw our own). Firmware
+  // honors it inconsistently by state, so it's re-asserted at READY and PLAYING.
   private silenceSubtitles(): void {
     try {
       this.api.setSilentSubtitle(true);
@@ -290,8 +267,7 @@ export class AvplayEngine extends BaseTvEngine {
     // onPrepared fires onReady; the hook restarts playback there.
   }
 
-  /** Direct mode: select the Nth AUDIO track in place (audio-relative index →
-   * AVPlay's internal track index). True when the switch took. */
+  // Maps an audio-relative index to AVPlay's internal track index.
   private selectNativeAudio(rendition: number): boolean {
     try {
       const audios = this.api.getTotalTrackInfo().filter((t) => t.type === 'AUDIO');
@@ -329,10 +305,8 @@ export class AvplayEngine extends BaseTvEngine {
   setAudioRendition(rendition: number): void {
     if (rendition === this.rendition) return;
     this.rendition = rendition;
-    // Direct: an in-place native track switch (picture never stops). Master: the
-    // stream carries only the ONE audio track named in its URL (the server maps a
-    // single `0:a:<n>` per session), so a language switch reopens the master at
-    // the CURRENT position with the new track (re-preps in ~1s, resumes there).
+    // Direct: in-place native track switch. Master: the stream carries only
+    // one audio track, so a language switch reopens it at the current position.
     if (this.mode === 'direct' && this.selectNativeAudio(rendition)) return;
     this.reanchor(this.position());
   }

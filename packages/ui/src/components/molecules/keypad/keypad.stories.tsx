@@ -4,7 +4,6 @@ import { Box } from '#ui/components/atoms/box';
 import { PinField } from '#ui/components/molecules/pin-field';
 import { Keypad } from './keypad';
 
-/** The pair as a screen builds it: the field holds the code, the keypad feeds it. */
 function PinEntry() {
   const [code, setCode] = useState('');
   return (

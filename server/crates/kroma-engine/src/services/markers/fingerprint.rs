@@ -13,7 +13,7 @@ use std::process::{Command, Stdio};
 use anyhow::{bail, Context, Result};
 use rusty_chromaprint::{match_fingerprints, Configuration, Fingerprinter};
 
-/// Keep only well-aligned segments. `Segment::score` is 0 (identical) … 32 (worst).
+// Keep only well-aligned segments. `Segment::score` is 0 (identical) … 32 (worst).
 const MAX_SCORE: f64 = 10.0;
 
 /// Chromaprint config (preset_test1 ≈ standard fpcalc). Cheap to build.
@@ -68,13 +68,9 @@ pub fn fingerprint_window(
     })
 }
 
-/// The ffmpeg argv for one fingerprint window.
-///
-/// Split out because it is the part that fails SILENTLY. Seeking to the wrong
-/// end fingerprints the wrong part of the episode and places every marker
-/// somewhere plausible but wrong, and a sample rate that disagrees with the
-/// Chromaprint configuration produces fingerprints that simply never align -
-/// neither shows up as an error anywhere.
+// Seeking to the wrong end, or a sample rate that disagrees with the Chromaprint
+// config, fails SILENTLY: wrong markers or fingerprints that never align, with
+// no error anywhere.
 fn decode_args(path: &Path, secs: u32, from_end: bool, sample_rate: u32) -> Vec<OsString> {
     let mut args: Vec<OsString> = Vec::new();
     // Audio-only decode is single-stream work; cap the decoder pool so marker
@@ -99,16 +95,14 @@ fn decode_args(path: &Path, secs: u32, from_end: bool, sample_rate: u32) -> Vec<
     args
 }
 
-/// Little-endian mono s16 PCM off ffmpeg's stdout. A trailing odd byte is a
-/// truncated sample and is dropped rather than read past the end of the buffer.
+// A trailing odd byte is a truncated sample and is dropped rather than read
+// past the end of the buffer.
 fn samples_from_pcm(bytes: &[u8]) -> Vec<i16> {
     bytes.chunks_exact(2).map(|b| i16::from_le_bytes([b[0], b[1]])).collect()
 }
 
-/// Where this window begins in the file, so a match's in-window time can be
-/// mapped back to an absolute position. Clamped at zero: an episode shorter
-/// than the credits window would otherwise anchor at a negative time and push
-/// every marker before the start of the file.
+// Clamped at zero: an episode shorter than the credits window would otherwise
+// anchor at a negative time and push every marker before the start of the file.
 fn window_start_s(secs: u32, from_end: bool, duration_s: f64) -> f64 {
     if from_end {
         (duration_s - f64::from(secs)).max(0.0)
@@ -166,8 +160,6 @@ pub fn abs_ms(window_start_s: f64, secs: f32) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    // ----- the ffmpeg argv --------------------------------------------------------
-
     fn args(secs: u32, from_end: bool) -> Vec<String> {
         decode_args(Path::new("/media/ep.mkv"), secs, from_end, 11025)
             .into_iter()
@@ -175,7 +167,6 @@ mod tests {
             .collect()
     }
 
-    /// Index of `flag` in `args`, or `None`.
     fn at(args: &[String], flag: &str) -> Option<usize> {
         args.iter().position(|a| a == flag)
     }
@@ -240,8 +231,6 @@ mod tests {
         assert!(a.iter().any(|x| x == "/media/Le Fabuleux Destin.mkv"), "{a:?}");
     }
 
-    // ----- the PCM stream ---------------------------------------------------------
-
     #[test]
     fn samples_are_read_little_endian() {
         // ffmpeg writes s16le; reading it big-endian yields plausible-looking
@@ -255,8 +244,6 @@ mod tests {
         assert!(samples_from_pcm(&[0x7f]).is_empty());
         assert!(samples_from_pcm(&[]).is_empty());
     }
-
-    // ----- anchoring the window ---------------------------------------------------
 
     #[test]
     fn the_intro_window_is_anchored_at_the_start_of_the_file() {
@@ -307,13 +294,11 @@ mod tests {
         assert_eq!(abs_ms(0.0, 12.0), 12_000); // intro window starts at 0
         assert_eq!(abs_ms(1200.0, 15.0), 1_215_000); // end window offset added
     }
-    // ----- matched_range over synthetic fingerprints -------------------------------
-    //
-    // A fingerprint is just a `Vec<u32>`; it does not have to come from audio, so
-    // the matcher can be driven without ffmpeg or a media file.
 
-    /// A fingerprint long enough for the matcher to align, deterministic so the
-    /// test cannot drift.
+    // A fingerprint is just a `Vec<u32>`; the matcher can be driven with
+    // synthetic data, without ffmpeg or a media file.
+
+    // Deterministic so the test cannot drift.
     fn synthetic_fp(len: usize, seed: u32) -> Vec<u32> {
         // A simple LCG: reproducible, and varied enough that two different seeds
         // do not accidentally align.
@@ -360,8 +345,8 @@ mod tests {
         assert_eq!(matched_range(&fp, &fp, (0.0, 600.0), 10_000.0), None);
     }
 
-    /// `a` with `bits` bits flipped in every value: the shape of the same intro
-    /// re-encoded at a different bitrate. Aligns, but not perfectly.
+    // The shape of the same intro re-encoded at a different bitrate: aligns, but
+    // not perfectly.
     fn noisy(a: &[u32], bits: u32) -> Vec<u32> {
         let mask = (1u32 << bits) - 1;
         a.iter().map(|v| v ^ mask).collect()
@@ -369,14 +354,8 @@ mod tests {
 
     #[test]
     fn a_heavily_corrupted_fingerprint_yields_no_marker() {
-        // The same intro re-encoded badly enough stops matching at all.
-        //
-        // Note what this does NOT show: raising MAX_SCORE to 1000 still passes
-        // it, because chromaprint returns no segment here rather than a
-        // high-scoring one. The score floor's UPPER side is not reachable with
-        // synthetic fingerprints - it would need two real recordings of the same
-        // intro - so nothing here pins it, and the comment says so instead of the
-        // test implying otherwise.
+        // This does NOT pin MAX_SCORE's upper bound: chromaprint returns no
+        // segment here (not a high-scoring one), and testing that needs real audio.
         let a = synthetic_fp(600, 1);
         assert_eq!(matched_range(&a, &noisy(&a, 24), (0.0, 600.0), 10.0), None);
     }

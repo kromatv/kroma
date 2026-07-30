@@ -1,16 +1,6 @@
 // Shared Vite config factory for every TV shell (Tizen, webOS, Android TV, ...).
-// A shell declares WHAT it targets in its `tv.target.ts` (platform, dev port,
-// engine floors); this factory turns that into the HOW - so all shells build the
-// same way and a new platform is a 4-line target file, not a copied config.
-//
-// Two tiers per target:
-//  - modern (always): ESM / ES2020, Tailwind v4 untouched, Lightning CSS
-//    down-levels color-mix()/oklch() to `chromeFloor` (default 99 - Tailwind's
-//    cascade layers make Chrome 99 the hard minimum for this tier).
-//  - legacy (opt-in via `legacyChrome`): a second self-contained ES2015 IIFE +
-//    flattened stylesheet for engines below the floor (e.g. webOS 4.x-23 =
-//    Chromium 53-94). dist/index.html is rewritten into an ES5 loader that
-//    picks the tier at runtime. See legacy-css.ts / legacy-finalize.ts.
+// Two tiers per target: modern (always) and legacy (opt-in via `legacyChrome`,
+// see legacy-css.ts / legacy-finalize.ts).
 
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -29,33 +19,15 @@ import react from '@vitejs/plugin-react';
 import type { ConfigEnv, UserConfig } from 'vite';
 
 export interface TvTarget {
-  /** Which TV this shell is for (diagnostics label; playback wiring is runtime-detected).
-   * `bench` is not a television: the perf bench reuses this exact build so it
-   * measures the shipping pipeline rather than an approximation of it. `web` is
-   * the 10-foot experience served from an origin (tv.kroma.tv) rather than
-   * packaged - same build, no platform SDK. */
   platform: 'tizen' | 'webos' | 'bench' | 'web';
-  /** Vite dev-server port for this shell. */
   port: number;
-  /** Chrome floor of the MODERN bundle's Lightning CSS down-level. Tailwind v4
-   * keeps its cascade layers, so 99 (the default) is the hard minimum. */
   chromeFloor?: number;
-  /** Also emit the LEGACY tier (ES2015 IIFE + flattened CSS in dist/legacy/,
-   * runtime-gated loader in dist/index.html) down to this Chrome major.
-   * Omit for modern-only shells. */
   legacyChrome?: number;
-  /** Honor KROMA_TV_DEVICE=1 on-device dev (LAN HMR, no letterbox frame, keep
-   * console.* so on-TV logs reach the platform log collector). */
   deviceDev?: boolean;
 }
 
-/** Build for the profiler rather than for the television: readable names and
- * source maps, so a recorded profile attributes time to components instead of to
- * single letters. Off unless asked for. */
 const PROFILE = process.env.KROMA_PROFILE === '1';
 
-/** This machine's LAN IPv4 a dev TV connects back to for the HMR websocket.
- * KROMA_TV_HOST (set by dev-device.sh) wins; the scan is only a fallback. */
 function lanIp(): string | undefined {
   if (process.env.KROMA_TV_HOST) return process.env.KROMA_TV_HOST;
   return Object.values(networkInterfaces())
@@ -63,21 +35,9 @@ function lanIp(): string | undefined {
     .find((a) => a.family === 'IPv4' && !a.internal)?.address;
 }
 
-/**
- * What a browser shell bakes in about its own build, as Vite `define` entries.
- *
- *   __KROMA_VERSION__  the version alone, which the server-compatibility banner
- *                      compares (see @kroma/tv CompatBanner). It is the PRODUCT's
- *                      version, not the shell package's - CI stamps
- *                      `KROMA_VERSION`, else server/Cargo.toml, the repo's single
- *                      source of truth - falling back to 'dev', which the compat
- *                      check treats as always-compatible.
- *   __KROMA_BUILD__    the whole identity (commit, branch, date, repository) the
- *                      About screen shows. The native TV app gets the same object
- *                      by the other road; see @kroma/build-info.
- *
- * `shellDir` is the shell's own directory, which is where git is asked.
- */
+/** Vite `define` entries a browser shell bakes in: `__KROMA_VERSION__` (compared
+ * by the server-compatibility banner) and `__KROMA_BUILD__` (full commit/branch
+ * identity for the About screen). */
 export function buildDefine(repoRoot: string, shellDir: string): Record<string, string> {
   const info = collectBuildInfo(shellDir, { version: productVersion(repoRoot) ?? 'dev' });
   return {
@@ -93,12 +53,9 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
   const floor = target.chromeFloor ?? 99;
   return ({ command }: ConfigEnv): UserConfig => ({
     define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE },
-    // `tvFrame()` is dev-only (apply: 'serve'): letterboxes the app into a
-    // 1920x1080 stage in a desktop browser; on a real TV the panel already is
-    // that canvas, so device mode turns it off.
+    // tvFrame() is dev-only: letterboxes into a 1920x1080 stage in a desktop
+    // browser; off in device mode, where the panel already is that canvas.
     plugins: [tailwindcss(), react(), tvFrame({ enabled: !deviceDev }), kromaUi.vite({ repoRoot })],
-    // `#tv/*` -> the @kroma/tv package src (mirrors tsconfig.base paths), plus
-    // the react-native -> react-native-web redirect every browser target needs.
     resolve: webResolve({ '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)) }),
     // Packaged TV apps load from a local path: assets must be referenced relatively.
     base: './',
@@ -112,9 +69,8 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
       exclude: KROMA_SOURCE_PACKAGES,
       include: RNW_OPTIMIZE_INCLUDE,
     },
-    // Down-level the modern CSS Tailwind emits (color-mix, oklch) to plain
-    // fallbacks. The typefaces are self-hosted woff2 (@kroma/ui/fonts.css), so no
-    // remote @import reaches the transformer. Version encoding: major << 16.
+    // Down-levels modern CSS (color-mix, oklch) to plain fallbacks. Chrome
+    // version is encoded as major << 16.
     css: {
       transformer: 'lightningcss',
       lightningcss: { targets: { chrome: floor << 16 } },
@@ -127,17 +83,11 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
       cssMinify: 'lightningcss',
       modulePreload: { polyfill: false },
       reportCompressedSize: true,
-      // A profile of a mangled bundle names every frame `Zt`, which is the same
-      // as having no profile at all. KROMA_PROFILE=1 keeps the names and emits
-      // the maps, so clients/tv-build/perf-profile.ts (and the DevTools
-      // Performance panel it writes for) can say which component is spending the
-      // frame. Never on for a shipped build: it is bigger and slower to parse.
+      // Mangled names make a profile useless (every frame reads `Zt`); never on
+      // for a shipped build, since it's bigger and slower to parse.
       sourcemap: PROFILE,
       rolldownOptions: {
-        // Strip logging from shipped bundles; dev keeps console.* so on-TV logs
-        // still surface in the platform log collector. vite 8 IGNORES
-        // `esbuild.drop` (oxc took over), so dropping lives in the oxc minifier
-        // output options now. Legal comments are already stripped by minify.
+        // vite 8 ignores `esbuild.drop`; dropConsole moved to the oxc minifier.
         output: {
           minify:
             command === 'build' && !PROFILE
@@ -149,10 +99,8 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
   });
 }
 
-/** The LEGACY tier config (only for targets with `legacyChrome`). Builds
- * src/main.legacy.ts (polyfills + the same app) into dist/legacy/ and rewrites
- * dist/index.html into the runtime engine gate - run it AFTER the modern build,
- * then `bun ../tv-build/check-legacy.ts` to guard the output. */
+/** The legacy tier config (only for targets with `legacyChrome`); run this AFTER
+ * the modern build, then `bun ../tv-build/check-legacy.ts` to guard the output. */
 export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserConfig {
   const repoRoot = fileURLToPath(new URL('../..', shellUrl));
   const chrome = target.legacyChrome;
@@ -162,21 +110,16 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
       tailwindcss(),
       react(),
       legacyFinalize({ distDir: fileURLToPath(new URL('dist', shellUrl)), chrome }),
-      // The legacy tier inlines every chunk into one IIFE, so without this it
-      // would carry a second full copy of Tabler.
+      // Inlines every chunk into one IIFE; without this it duplicates Tabler.
       kromaUi.vite({ repoRoot }),
     ],
-    // `import.meta` does not exist in a classic script, and the IIFE output
-    // substitutes `{}` for it - so `new URL(asset, '' + import.meta.url)` (how
-    // Vite emits every `new URL(…, import.meta.url)` asset reference, e.g. the
-    // brand intro's film and sting) became `new URL(asset, 'undefined')`, which
-    // THROWS at module init and takes the whole legacy bundle down with it.
-    // `document.baseURI` is the same thing the modern tier resolves against -
-    // the document - and it exists on every engine this tier targets.
+    // `import.meta` doesn't exist in a classic script; the IIFE output substitutes
+    // `{}` for it, so `new URL(asset, import.meta.url)` throws at module init.
+    // `document.baseURI` resolves the same as the modern tier and exists on
+    // every engine this tier targets.
     define: { ...RNW_DEFINE, 'import.meta.url': 'document.baseURI' },
-    // `#tv/workbench` FIRST: Vite matches string aliases by prefix in order, so
-    // a bare `#tv` listed first would swallow it. See workbench-stub.tsx for why
-    // the legacy tier drops the workbench entirely.
+    // `#tv/workbench` must come first: Vite matches string aliases by prefix in
+    // order, and a bare `#tv` listed first would swallow it.
     resolve: webResolve({
       '#tv/workbench': fileURLToPath(new URL('workbench-stub.tsx', import.meta.url)),
       '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)),
@@ -185,15 +128,9 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
     // appinfo/manifest + icons are already copied into dist/ by the modern build.
     publicDir: false,
     server: { fs: { allow: [repoRoot] } },
-    // Assets emitted by this build live under dist/legacy/, and where a URL
-    // RESOLVES FROM decides the prefix:
-    //  - from JS / HTML: against the document, dist/index.html, so the path
-    //    needs the subdirectory.
-    //  - from the stylesheet: against dist/legacy/style.css, which is already
-    //    inside it, so the same prefix would ask for dist/legacy/legacy/… .
-    // Nothing in the legacy CSS referenced a file until the typefaces were
-    // self-hosted; the first thing that did got a 404 and fell back to
-    // system-ui on every pre-2024 TV, while the build stayed green.
+    // Assets live under dist/legacy/. JS/HTML resolve against dist/index.html
+    // (needs the subdirectory); the stylesheet resolves against its own
+    // dist/legacy/style.css (the prefix would double up).
     experimental: {
       renderBuiltUrl: (filename: string, { hostType }: { hostType: 'js' | 'css' | 'html' }) =>
         hostType === 'css' ? `./${filename}` : `./legacy/${filename}`,
@@ -218,8 +155,6 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
             (info.names?.[0] ?? '').endsWith('.css')
               ? 'style.css'
               : 'assets/[name]-[hash][extname]',
-          // vite 8 ignores `esbuild.drop`: console/debugger stripping moved to
-          // the oxc minifier output options.
           minify: {
             compress: { dropConsole: true, dropDebugger: true },
             mangle: true,

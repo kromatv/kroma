@@ -1,6 +1,5 @@
 //! Catalogue browse + detail endpoints (libraries / items / movies / shows) plus
-//! the server status / scan / logs handlers. All responses are JSON unless noted.
-//! DB work runs on `spawn_blocking` threads via [`crate::api::util`].
+//! the server status / scan / logs handlers.
 
 use std::net::SocketAddr;
 
@@ -19,17 +18,16 @@ use crate::state::SharedState;
 use axum::routing::{get, post};
 use axum::Router;
 
-/// Public, unauthenticated routes: liveness + a minimal status probe. These must
-/// stay open the TV health monitor polls `/api/health` before any login, and
-/// they leak no catalogue data.
+/// Unauthenticated: the TV health monitor polls `/api/health` before any login.
+/// Neither route may leak catalogue data.
 pub fn public_routes() -> Router<SharedState> {
     Router::new()
         .route("/health", get(health))
         .route("/status", get(status))
 }
 
-/// Authenticated catalogue routes: browsing, detail, logs and rescan. Gated by
-/// the session middleware in [`super`] so the library isn't listable anonymously.
+/// Gated by the session middleware in [`super`] so the library isn't listable
+/// anonymously.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/libraries", get(list_libraries))
@@ -47,11 +45,8 @@ pub struct LibraryQuery {
     pub library: Option<String>,
 }
 
-/// `GET /api/health`
-///
-/// Public (the TV health monitor and the mobile server picker poll it before any
-/// login), so the human-readable server name is attached for LAN callers only;
-/// see [`super::dto::Health::name`].
+/// `GET /api/health`. Public, so the human-readable server name is attached for
+/// LAN callers only.
 pub async fn health(
     State(state): State<SharedState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -174,15 +169,12 @@ pub async fn get_item(
 }
 
 /// `POST /api/scan` → trigger a full library rescan. Routed through the tracked
-/// `library.scan` job so it shares the job manager's single-flight guard (no
-/// concurrent walk racing a watch-triggered run on the same DB) and shows in the
-/// admin "Tâches" console; the walk + sync + phase-2 follow-ups live there.
+/// `library.scan` job so it shares the job manager's single-flight guard: no
+/// concurrent walk can race a watch-triggered run on the same DB.
 pub async fn rescan(State(state): State<SharedState>) -> Result<Response, Response> {
     use crate::services::jobs::{JobKey, TriggerError};
     match state.jobs.trigger(state.clone(), JobKey("library.scan"), "manual") {
         Ok(run_id) => Ok(Json(serde_json::json!({ "runId": run_id })).into_response()),
-        // A scan is already in progress (manual or watch-triggered) report it
-        // rather than starting a second, racing pass.
         Err(TriggerError::AlreadyRunning) => {
             Err(json_error(StatusCode::CONFLICT, "a scan is already running"))
         }
@@ -200,7 +192,6 @@ pub async fn status(State(state): State<SharedState>) -> Response {
 
 #[derive(Debug, Deserialize)]
 pub struct LogsQuery {
-    /// Number of trailing lines to return (default 200, max 5000).
     pub tail: Option<usize>,
 }
 
@@ -217,7 +208,6 @@ pub async fn logs(
     Ok(([(header::CONTENT_TYPE, "text/plain; charset=utf-8")], text).into_response())
 }
 
-/// Read the last `tail` lines of the newest log file in `dir` (empty if none).
 fn read_log_tail(dir: &std::path::Path, tail: usize) -> String {
     let newest = std::fs::read_dir(dir)
         .into_iter()
@@ -236,8 +226,8 @@ fn read_log_tail(dir: &std::path::Path, tail: usize) -> String {
         return String::new();
     };
     let content = std::fs::read_to_string(&path).unwrap_or_else(|e| {
-        // Keep the always-200, text/plain contract (an empty body for the
-        // legitimately-empty-log case) but don't swallow a real read failure.
+        // Keep the always-200, text/plain contract, but don't swallow a real
+        // read failure.
         tracing::warn!(path = %path.display(), error = %e, "failed to read log file for /api/logs");
         String::new()
     });

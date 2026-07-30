@@ -14,8 +14,8 @@ use std::time::{Duration, Instant};
 
 use serde::Serialize;
 
-/// How long a finished generation stays listed so a polling client sees its
-/// terminal snapshot before it disappears.
+// How long a finished generation stays listed so a polling client sees its
+// terminal snapshot before it disappears.
 const LINGER: Duration = Duration::from_secs(45);
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -29,17 +29,17 @@ enum Status {
 struct Entry {
     id: String,
     item_id: String,
-    /// `"transcribe"` | `"translate"`.
+    // `"transcribe"` | `"translate"`.
     mode: String,
-    /// Target language label (what the track will be).
+    // Target language label (what the track will be).
     lang: Option<String>,
-    /// `queued` | `model` | `extract` | `transcribe` | `translate` | `done` | `error`.
+    // `queued` | `model` | `extract` | `transcribe` | `translate` | `done` | `error`.
     stage: String,
     done: usize,
     total: usize,
     status: Status,
     error: Option<String>,
-    /// Resulting [`crate::db::DownloadedSub`] id once finished.
+    // Resulting [`crate::db::DownloadedSub`] id once finished.
     sub_id: Option<String>,
     started: Instant,
     finished: Option<Instant>,
@@ -55,7 +55,7 @@ pub struct GenerationView {
     pub mode: String,
     pub lang: Option<String>,
     pub stage: String,
-    /// `"running"` | `"done"` | `"error"`.
+    // `"running"` | `"done"` | `"error"`.
     pub status: String,
     pub progress: f32,
     pub eta_sec: Option<i64>,
@@ -63,8 +63,8 @@ pub struct GenerationView {
     pub sub_id: Option<String>,
 }
 
-/// Map a (stage, done, total) to a single overall 0..1 bar. Extraction occupies a
-/// small head (it has no sub-progress); transcription fills the rest.
+// Map a (stage, done, total) to a single overall 0..1 bar. Extraction occupies a
+// small head (it has no sub-progress); transcription fills the rest.
 fn overall(stage: &str, done: usize, total: usize) -> f32 {
     let frac = if total > 0 { (done as f32 / total as f32).clamp(0.0, 1.0) } else { 0.0 };
     match stage {

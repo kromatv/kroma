@@ -47,7 +47,6 @@ const badgeVariants = sv({
         root: { paddingVertical: 4, paddingHorizontal: 9 },
         label: { fontSize: 11, letterSpacing: 0.44 },
       },
-      /** The 10-foot size, as used on the hero and the rail tiles. */
       tv: {
         root: { paddingVertical: 5, paddingHorizontal: 11, borderRadius: 7 },
         label: { fontSize: 13, letterSpacing: 0.26 },
@@ -57,9 +56,8 @@ const badgeVariants = sv({
   defaults: { tone: '4K', size: 'sm' },
 });
 
-/** The quality strings the catalogue produces ("4K", "HDR", "H.265", ...) mapped
- * to a tone. Anything unrecognised gets the amber treatment, which is what the
- * pre-kit `badgeClasses` did and what every non-special quality badge wants. */
+/** Maps the catalogue's quality strings ("4K", "HDR", "H.265", ...) to a
+ * tone. Anything unrecognised gets the amber treatment. */
 function qualityTone(badge: string): BadgeTone {
   if (badge === 'HDR') return 'HDR';
   if (badge === 'H.265') return 'H.265';
@@ -74,7 +72,7 @@ interface BadgeProps {
 
 function Badge({ tone = '4K', size = 'sm', children }: Readonly<BadgeProps>) {
   // The catalogue can hand over a quality string the design never named;
-  // anything unrecognised gets the neutral treatment, as before.
+  // anything unrecognised gets the neutral treatment.
   const known = badgeVariants.options.tone.includes(tone) ? tone : 'neutral';
   const s = badgeVariants({ tone: known, size });
   return (

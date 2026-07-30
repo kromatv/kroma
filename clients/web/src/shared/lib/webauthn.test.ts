@@ -1,51 +1,24 @@
 // @vitest-environment jsdom
-//
-// The WebAuthn bridge: the server speaks webauthn-rs JSON (binary fields as
-// base64url strings), `navigator.credentials` speaks ArrayBuffers, and these
-// helpers are the only place the two meet.
-//
-// Every failure mode here looks identical from the outside - the browser refuses
-// the ceremony, or the server rejects the result - so the conversion is worth
-// pinning byte for byte:
-//
-//   - base64url is NOT base64. `-` and `_` stand in for `+` and `/`, and a
-//     challenge containing either byte is common enough to reach a real user
-//     rather than a test. Decoding it as plain base64 yields a different
-//     challenge, and the assertion fails signature verification server-side.
-//   - The input is padded and the output is not. webauthn-rs strips `=`, and
-//     `atob` refuses a string whose length is not a multiple of four, so the
-//     padding has to be put back before decoding and taken off after encoding.
-//   - Three different fields carry binary and they are nested differently:
-//     `challenge` at the top, `user.id` one level down, and the id of every
-//     entry in `excludeCredentials` / `allowCredentials`. Missing one leaves a
-//     base64url STRING where the browser wants a buffer, and Chrome throws a
-//     TypeError naming only the option object.
 
 import type { WebAuthnOptions } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPasskey, getPasskey, passkeysSupported } from './webauthn';
 
-/** Bytes whose base64 spelling contains BOTH characters base64url replaces. */
+// Bytes whose base64 spelling contains both characters base64url replaces.
 const TRICKY = new Uint8Array([0xfb, 0xff, 0xbf, 0x00, 0x10, 0x83]);
-/** The same bytes, base64url, unpadded - which is what the server sends. */
 const TRICKY_B64URL = '-_-_ABCD';
 
 const bytes = (buffer: ArrayBuffer | Uint8Array) => [
   ...new Uint8Array(buffer instanceof Uint8Array ? buffer.buffer : buffer),
 ];
 
-/** What `navigator.credentials.*` was handed. */
 let received: { publicKey: Record<string, unknown> } | null = null;
 
-/** The options the browser actually got. Throws rather than optional-chaining,
- *  so "the ceremony never ran" reads differently from "the field was wrong". */
 function sent(): Record<string, unknown> {
   if (!received) throw new Error('navigator.credentials was never called');
   return received.publicKey;
 }
 
-/** The credential JSON as the server will read it. `WebAuthnCredential` is an
- *  open record, so its shape is stated once here instead of per assertion. */
 interface SentCredential {
   id: string;
   rawId: string;
@@ -59,7 +32,6 @@ const created = async (options: WebAuthnOptions) =>
 const asserted = async (options: WebAuthnOptions) =>
   (await getPasskey(options)) as unknown as SentCredential;
 
-/** Install a fake authenticator that answers with `response`. */
 function authenticator(response: Record<string, unknown> | null, method: 'create' | 'get') {
   received = null;
   const credential = response && {
@@ -81,7 +53,6 @@ function authenticator(response: Record<string, unknown> | null, method: 'create
 
 const options = (publicKey: Record<string, unknown>) => ({ publicKey }) as WebAuthnOptions;
 
-/** A minimal but complete creation options blob, as webauthn-rs sends it. */
 const creationOptions = () =>
   options({
     challenge: TRICKY_B64URL,
@@ -129,8 +100,7 @@ describe('passkeysSupported', () => {
 
   it('is false outside a secure context', () => {
     support({ isSecureContext: false });
-    // WebAuthn is HTTPS-or-localhost only. A LAN server on plain http reaches
-    // this, and the caller has to hide the button rather than throw.
+    // WebAuthn is HTTPS-or-localhost only; a LAN server on plain http reaches this.
     expect(passkeysSupported()).toBe(false);
   });
 
@@ -142,7 +112,6 @@ describe('passkeysSupported', () => {
   it('is false where the credentials API is missing', () => {
     support();
     vi.stubGlobal('navigator', {});
-    // Optional-chained, so this must answer false rather than throwing.
     expect(passkeysSupported()).toBe(false);
   });
 });
@@ -151,15 +120,13 @@ describe('converting the server’s options for the browser', () => {
   it('decodes the challenge from base64url, not base64', async () => {
     authenticator(attestation(), 'create');
     await createPasskey(creationOptions());
-    // `-` and `_` are the whole point: read as plain base64 these are different
-    // bytes, and the server rejects the signature over them.
     expect(bytes(sent().challenge as ArrayBuffer)).toEqual([...TRICKY]);
   });
 
   it('decodes an unpadded string, which is what webauthn-rs sends', async () => {
     authenticator(attestation(), 'create');
-    // 6 bytes -> 8 base64 chars, no `=`. `atob` refuses a length that is not a
-    // multiple of four, so the padding has to be restored first.
+    // `atob` refuses a length that is not a multiple of four, so the padding
+    // webauthn-rs strips has to be restored first.
     await createPasskey(options({ challenge: 'AQIDBAUG' }));
     expect(bytes(sent().challenge as ArrayBuffer)).toEqual([1, 2, 3, 4, 5, 6]);
   });
@@ -181,7 +148,6 @@ describe('converting the server’s options for the browser', () => {
     await createPasskey(creationOptions());
     const user = sent().user as { id: ArrayBuffer; name: string };
     expect(bytes(user.id)).toEqual([...TRICKY]);
-    // And leaves the rest of the user alone.
     expect(user.name).toBe('max');
   });
 
@@ -190,8 +156,6 @@ describe('converting the server’s options for the browser', () => {
     await createPasskey(creationOptions());
     const [excluded] = sent().excludeCredentials as [{ id: ArrayBuffer; transports: string[] }];
     expect(bytes(excluded.id)).toEqual([...TRICKY]);
-    // The other fields of the descriptor survive: dropping `transports` costs
-    // the browser its hint about where to look for the key.
     expect(excluded.transports).toEqual(['internal']);
   });
 
@@ -218,8 +182,6 @@ describe('converting the server’s options for the browser', () => {
     authenticator(attestation(), 'create');
     const original = creationOptions();
     await createPasskey(original);
-    // The caller holds this object across a retry; turning its strings into
-    // buffers in place makes the second attempt decode a buffer.
     expect(original.publicKey.challenge).toBe(TRICKY_B64URL);
     expect((original.publicKey.user as { id: string }).id).toBe(TRICKY_B64URL);
   });
@@ -238,7 +200,6 @@ describe('the registration ceremony', () => {
   it('re-encodes the authenticator’s bytes as unpadded base64url', async () => {
     authenticator(attestation(), 'create');
     const credential = await created(creationOptions());
-    // Round trip: what came out is exactly what the server would have sent in.
     expect(credential.rawId).toBe(TRICKY_B64URL);
     expect(credential.response.attestationObject).toBe(TRICKY_B64URL);
     expect(credential.response.clientDataJSON).toBe(TRICKY_B64URL);
@@ -260,7 +221,7 @@ describe('the registration ceremony', () => {
   });
 
   it('reports no transports where the browser cannot say', async () => {
-    // getTransports is not universal; its absence must not throw mid-ceremony.
+    // getTransports is not universal across browsers.
     authenticator({ ...attestation(), getTransports: undefined }, 'create');
     const credential = await created(creationOptions());
     expect(credential.response.transports).toEqual([]);
@@ -268,8 +229,7 @@ describe('the registration ceremony', () => {
 
   it('throws when the user cancels', async () => {
     authenticator(null, 'create');
-    // The browser resolves with null rather than rejecting, so a caller that
-    // only catches would carry a null credential to the server.
+    // The browser resolves with null rather than rejecting on cancel.
     await expect(createPasskey(creationOptions())).rejects.toThrow('cancelled');
   });
 });
@@ -287,7 +247,6 @@ describe('the authentication ceremony', () => {
   it('reports a null user handle rather than an empty string', async () => {
     authenticator(assertion(null), 'get');
     const credential = await asserted(options({ challenge: TRICKY_B64URL }));
-    // A discoverable-credential login has no handle; '' would read as one.
     expect(credential.response.userHandle).toBeNull();
   });
 

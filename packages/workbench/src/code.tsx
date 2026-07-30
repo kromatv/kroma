@@ -1,15 +1,5 @@
-// Code, rendered by the kit.
-//
-// The workbench shows TSX in three places (a story's `usage`, the live call
-// site under the canvas, a demo's source), and a wall of one-colour monospace
-// is close to unreadable in all three. A syntax highlighter is normally a
-// dependency - Shiki, Prism, highlight.js - and every one of them emits HTML,
-// which rules them out: this has to render on Apple TV too. So the tokenizer
-// below is ~40 lines over the subset TSX snippets actually use, and the colours
-// come from the design's own palette rather than from an imported theme.
-//
-// Everything is <Txt> and <Box>, so the same code block renders in a browser,
-// on a television and in a screenshot.
+// A small TSX syntax highlighter and code block: renders via <Txt>/<Box> so
+// it works on web and Apple TV without an HTML-emitting dependency.
 
 import { Box, Icon, IconButton, type IconName, Txt } from '@kroma/ui/kit';
 import { type ColorToken, colors, radius } from '@kroma/ui/tokens';
@@ -24,8 +14,8 @@ interface Token {
   kind: TokenKind;
 }
 
-/** The palette, from the design's own tokens: no imported highlighter theme,
- * and every colour here is one the rest of the app already paints with. */
+// The palette, from the design's own tokens: no imported highlighter theme,
+// and every colour here is one the rest of the app already paints with.
 const INK: Record<TokenKind, string> = {
   plain: colors.text,
   tag: colors.accent,
@@ -63,28 +53,17 @@ const KEYWORDS = new Set([
   'interface',
 ]);
 
-/**
- * The scanners, in longest-match-first order: comments, strings, a JSX tag name
- * (`<Button`, `</Box`), an attribute name (an identifier followed by `=`), a
- * number, a brace or bracket, then any other identifier.
- *
- * ORDERED AND STICKY rather than one alternation, which is what this used to be:
- * a single 87-branch regex that no one could read and that backtracked
- * quadratically on an unterminated string, because `(?:[^"\\]|\\.)*` lets the
- * two branches claim the same characters. Each pattern here is tried at one
- * position only, and each string pattern is the unrolled form, which cannot.
- *
- * Anything no scanner claims falls through as plain text, so an unsupported
- * construct degrades to uncoloured rather than to mangled.
- */
-/** A scanner's name. `word` is not a token kind: it is the fallback identifier
- * scanner, whose match becomes `keyword` or `plain` depending on the word. */
+// A scanner's name. `word` is not a token kind: it is the fallback identifier
+// scanner, whose match becomes `keyword` or `plain` depending on the word.
 type ScanKind = TokenKind | 'word';
 
-// One pattern per thing, rather than one pattern per KIND: three quote styles
-// and two comment styles are five separate shapes, and an alternation of five
-// is where this stopped being readable in the first place. The string patterns
-// are the unrolled form (`"[^"\\]*(?:\\.[^"\\]*)*"`), which cannot backtrack.
+// One scanner per shape, tried in order at a fixed position (sticky `y`
+// regex): comments, strings, a JSX tag name, an attribute name, a number, a
+// brace, then any other identifier. Each string pattern is the unrolled form
+// (`"[^"\\]*(?:\\.[^"\\]*)*"`), which cannot backtrack quadratically on an
+// unterminated string the way `(?:[^"\\]|\\.)*` can. Anything no scanner
+// claims falls through as plain text, so an unsupported construct degrades to
+// uncoloured rather than mangled.
 const SCANNERS: readonly (readonly [ScanKind, RegExp])[] = [
   ['comment', /\/\/[^\n]*/y],
   ['comment', /\/\*[\s\S]*?\*\//y],
@@ -99,14 +78,13 @@ const SCANNERS: readonly (readonly [ScanKind, RegExp])[] = [
   ['word', /[A-Za-z_$][\w$]*/y],
 ];
 
-/** `word` is the fallback identifier scanner: whether its match is a keyword is
- * the only thing the scanner list cannot say for itself. */
+// `word` is the fallback identifier scanner: whether its match is a keyword
+// is the only thing the scanner list cannot say for itself.
 function kindOf(scanner: ScanKind, text: string): TokenKind {
   if (scanner !== 'word') return scanner;
   return KEYWORDS.has(text) ? 'keyword' : 'plain';
 }
 
-/** The token starting at `from`, or null when nothing claims that position. */
 function scanAt(code: string, from: number): { text: string; kind: TokenKind } | null {
   for (const [kind, pattern] of SCANNERS) {
     pattern.lastIndex = from;
@@ -147,8 +125,8 @@ function tokenize(code: string): Token[] {
   return out;
 }
 
-/** Tokens regrouped per line, so a line number can sit beside each one without
- * the colouring having to survive a wrapping layout. */
+// Tokens regrouped per line, so a line number can sit beside each one without the colouring
+// having to survive a wrapping layout.
 function lines(code: string): Token[][] {
   const out: Token[][] = [[]];
   for (const token of tokenize(code)) {
@@ -161,34 +139,26 @@ function lines(code: string): Token[][] {
   return out;
 }
 
-/** The platform's own monospace: the kit ships no mono family, and code blocks
- * in a workbench do not justify bundling one. */
+// The platform's own monospace: the kit ships no mono family, and code blocks
+// in a workbench do not justify bundling one.
 const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
 interface CodeBlockProps {
   code: string;
-  /** Number the lines. Off for one-liners, where the gutter is just noise. */
   numbers?: boolean;
-  /** Offer a copy button (web only: there is no clipboard to write to on a
-   *  television, and nothing to paste into either). */
+  // Web only: there is no clipboard to write to on a television, and nothing
+  // to paste into either.
   copy?: boolean;
-  /** Where the block stops growing and starts scrolling instead. It only ever
-   *  caps: a short snippet is a short block. */
   maxHeight?: number;
 }
 
-/**
- * A block of TSX: highlighted, optionally numbered, optionally copyable.
- *
- * Code is never wrapped and never truncated - a broken call site reads as a
- * different call site - so a long line scrolls sideways instead. Which is why
- * the layout is two scrollers rather than one: the line numbers sit OUTSIDE the
- * horizontal one, so they stay put while the code slides under them, and INSIDE
- * the vertical one, so they still travel with their own lines.
- *
- * The block hugs its content up to `maxHeight`; only past that does it scroll,
- * so a two-line snippet is a two-line block rather than a mostly-empty well.
- */
+// A block of TSX: highlighted, optionally numbered, optionally copyable. Code is never wrapped
+// and never truncated - a broken call site reads as a different call site - so a long line
+// scrolls sideways instead. Which is why the layout is two scrollers rather than one: the line
+// numbers sit OUTSIDE the horizontal one, so they stay put while the code slides under them,
+// and INSIDE the vertical one, so they still travel with their own lines. The block hugs its
+// content up to `maxHeight`; only past that does it scroll, so a two-line snippet is a two-line
+// block rather than a mostly-empty well.
 function CodeBlock({ code, numbers, copy = true, maxHeight = 320 }: Readonly<CodeBlockProps>) {
   const trimmed = code.trim();
   const rows = useMemo(() => lines(trimmed), [trimmed]);
@@ -239,8 +209,8 @@ function CodeBlock({ code, numbers, copy = true, maxHeight = 320 }: Readonly<Cod
   );
 }
 
-/** Copy to the clipboard, where there is one. The confirmation is the icon
- * itself turning into a tick, so the button never changes width. */
+// Copy to the clipboard, where there is one. The confirmation is the icon
+// itself turning into a tick, so the button never changes width.
 function CopyButton({ code }: Readonly<{ code: string }>) {
   const { available, state, copy } = useCopy();
   const onPress = useCallback(() => copy(code), [copy, code]);
@@ -278,9 +248,9 @@ const SCROLL_Y = { flexGrow: 0 } as const;
 // a flex child shrink under its (very wide) content on the web targets.
 const SCROLL_X = { flex: 1, minWidth: 0 } as const;
 const BODY = { padding: 14 } as const;
-/** Fill the scroller when the code is narrower than the frame. */
+// Fill the scroller when the code is narrower than the frame.
 const CODE_COL = { flexGrow: 1 } as const;
-/** Clearance for the copy button floating over the top-right corner. */
+// Clearance for the copy button floating over the top-right corner.
 const BODY_COPY = { paddingRight: 44 } as const;
 // The gutter is a fixed column, so the separator is what tells you the numbers
 // are parked rather than scrolled off with the code.
@@ -290,15 +260,16 @@ const GUTTER_COL = {
   borderRightWidth: 1,
   borderRightColor: colors.border,
 } as const;
-/** Never shrink to the frame: shrinking is what would re-wrap the long lines. */
+// Never shrink to the frame: shrinking is what would re-wrap the long lines.
 const CODE_LINES = { flexShrink: 0 } as const;
 // `lineHeight` is shared with GUTTER, and neither column adds row spacing of its
 // own, which is what keeps a number level with its line.
 const LINE = { fontFamily: MONO, fontSize: 12.5, lineHeight: 19 } as const;
-/** One style array per token KIND, built once. A hundred-line snippet is ~1500
- * spans, and `CodeBlock` re-renders on any shell state change (a slider drag is
- * one per frame) - so building those arrays inline was three thousand
- * allocations, and as many styleq cache misses, per unrelated state change. */
+// One style array per token KIND, built once: a hundred-line snippet is
+// ~1500 spans, and `CodeBlock` re-renders on any shell state change (a
+// slider drag is one per frame), so building those arrays inline costs
+// thousands of allocations and as many styleq cache misses per unrelated
+// state change.
 const INK_STYLE = Object.fromEntries(
   Object.entries(INK).map(([kind, color]) => [kind, [LINE, { color }]]),
 ) as Record<TokenKind, [typeof LINE, { color: string }]>;
@@ -309,7 +280,7 @@ const GUTTER = {
   opacity: 0.6,
 } as const;
 const COPY_SLOT = { top: 6, right: 6, zIndex: 1 } as const;
-/** The 15pt glyph in the box the old padded shape came to. */
+// The box around the 15pt glyph.
 const COPY_BOX = 29;
 // A notch up from the chrome's FOCUS_WASH: the button floats over a lifted
 // surface, where the plain wash reads as nothing at all.

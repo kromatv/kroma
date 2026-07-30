@@ -1,24 +1,18 @@
-/**
- * `gen-catalog.ts` is a top-level script: it reads env + a .spk and writes the
- * repository DSM points at. Nothing imported it, so it sat at 0% — and the
- * things it gets right are the kind DSM punishes silently, by hiding the row
- * rather than reporting an error.
- *
- * The fixtures are real .spk files (tar archives) built here with `tar`, the
- * same tool `extractFromSpk` shells out to, so nothing binary is checked in.
- */
+// `gen-catalog.ts` is a top-level script: it reads env + a .spk and writes the repository DSM
+// points at. Nothing imported it, so it sat at 0% — and the things it gets right are the kind
+// DSM punishes silently, by hiding the row rather than reporting an error. The fixtures are
+// real .spk files (tar archives) built here with `tar`, the same tool `extractFromSpk` shells
+// out to, so nothing binary is checked in.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/**
- * Build a .spk (a tar of INFO + icons) and return its path. `retina: false`
- * omits PACKAGE_ICON_256.PNG so the extractor has to fall back to the plain one
- * - `tar` writes to stderr on that path, which is why it is opt-in rather than
- * the default for every fixture here.
- */
+// Builds a .spk (a tar of INFO + icons) and returns its path. `retina: false`
+// omits PACKAGE_ICON_256.PNG so the extractor has to fall back to the plain
+// one - `tar` writes to stderr on that path, which is why it's opt-in rather
+// than the default for every fixture here.
 function makeSpk(
   dir: string,
   name: string,
@@ -57,7 +51,7 @@ const BASE_INFO = {
 let work: string;
 const savedEnv = { ...process.env };
 
-/** Run the generator with `env` applied, and return the files it wrote. */
+// Run the generator with `env` applied, and return the files it wrote.
 async function generate(env: Record<string, string | undefined>) {
   for (const key of Object.keys(process.env)) {
     if (key.startsWith('CATALOG_')) delete process.env[key];

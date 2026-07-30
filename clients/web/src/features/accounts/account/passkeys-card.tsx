@@ -17,18 +17,14 @@ import { userQueries } from '#web/shared/lib/queries';
 import { createPasskey, passkeysSupported } from '#web/shared/lib/webauthn';
 import { Button } from '#web/shared/ui';
 
-/** The kit sm-button label metrics, tinted danger for the destructive text action. */
 const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
-/** A DOMException raised because the user dismissed the browser prompt (not a
- * real failure worth surfacing). */
 function isCancel(e: unknown): boolean {
   return e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'AbortError');
 }
 
-/** Human-facing text for a failed ceremony. WebAuthn failures are `DOMException`s
- * whose `name` (e.g. `SecurityError` for an invalid RP id like an IP address) is
- * the actionable part, so surface it alongside the generic message. */
+// WebAuthn failures are DOMExceptions whose `name` (e.g. SecurityError for an
+// invalid RP id like an IP address) is the actionable part.
 function ceremonyError(e: unknown, fallback: string): string {
   if (e instanceof DOMException) return `${fallback} (${e.name})`;
   return apiErrorText(e, fallback);
@@ -137,7 +133,6 @@ export function PasskeysCard() {
   );
 }
 
-/** The list body: HTTPS notice, empty note, or one row per registered key. */
 function PasskeysBody({
   supported,
   keys,

@@ -9,19 +9,12 @@ import { useAuth } from '#web/shared/lib/auth';
 
 interface Params {
   item: MovieView;
-  /** Absolute current position in seconds (offset-aware). */
   getPosition: () => number;
   playing: boolean;
-  /** True while the element is stalled/rebuffering reported as `buffering`. */
   waiting: boolean;
-  /** Label of the selected audio track (viewer's choice, shown on the dashboard). */
   audioLabel?: string;
-  /** Label of the selected subtitle track, or the "off" label when none. */
   subtitleLabel?: string;
-  /** `direct` (range copy) · `remux` (HLS, streams copied) · `transcode`
-   * (HLS, audio re-encoded to AAC). Video is never transcoded. */
   mode: 'direct' | 'remux' | 'transcode';
-  /** Called when an admin terminates this session. `message` may be empty. */
   onTerminated?: (message: string) => void;
 }
 

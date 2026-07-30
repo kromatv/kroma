@@ -44,8 +44,8 @@ fn require(user: &User, perm: Permission) -> Result<(), Response> {
     }
 }
 
-/// TMDB works zero-config via the built-in key, so absence means the operator
-/// explicitly blanked it: surface that rather than a silent empty page.
+// TMDB works zero-config via the built-in key, so absence means the operator
+// explicitly blanked it: surface that rather than a silent empty page.
 fn require_tmdb(state: &SharedState, user: &User) -> Result<String, Response> {
     state
         .config
@@ -54,8 +54,6 @@ fn require_tmdb(state: &SharedState, user: &User) -> Result<String, Response> {
         .ok_or_else(|| lerr(locale(user), StatusCode::SERVICE_UNAVAILABLE, "error.tmdbUnavailable"))
 }
 
-/// Route/query media-type vocabulary (`movie` | `tv`/`show`) -> TMDB scope,
-/// shared by the search and trending handlers so the aliases can't drift.
 fn scope_from_type(kind: Option<&str>) -> discover::DiscoverScope {
     match kind {
         Some("movie") => discover::DiscoverScope::Movies,
@@ -68,14 +66,12 @@ fn scope_from_type(kind: Option<&str>) -> discover::DiscoverScope {
 pub struct SearchParams {
     #[serde(default)]
     q: String,
-    /// `movie` | `tv` | `all` (default).
     #[serde(rename = "type", default)]
     kind: Option<String>,
     #[serde(default)]
     page: Option<u32>,
 }
 
-/// `GET /api/discover/search?q=&type=&page=`
 pub async fn search(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -106,7 +102,6 @@ pub async fn search(
 
 #[derive(Debug, Deserialize)]
 pub struct TrendingParams {
-    /// `movie` | `tv` (default: merged movies + shows).
     #[serde(rename = "type", default)]
     kind: Option<String>,
     #[serde(default)]
@@ -168,8 +163,6 @@ pub async fn detail(
     }
 }
 
-// ----- catalog / request flagging ----------------------------------------------
-
 fn local_id_for(conn: &Connection, kind: RequestKind, tmdb_id: u64) -> anyhow::Result<Option<String>> {
     Ok(match kind {
         RequestKind::Movie => db::movie_item_by_tmdb(conn, tmdb_id)?,
@@ -184,9 +177,8 @@ fn flag_hits(conn: &Connection, hits: Vec<discover::DiscoverHit>) -> anyhow::Res
     flag_hits_with(conn, hits, &active)
 }
 
-/// Flag hits against the catalog + open requests, reusing an already-built
-/// active-download map so a caller (the detail page) doesn't re-aggregate the
-/// download ledger a second time.
+// Reuses an already-built active-download map so a caller (the detail page)
+// doesn't re-aggregate the download ledger a second time.
 fn flag_hits_with(
     conn: &Connection,
     hits: Vec<discover::DiscoverHit>,
@@ -216,7 +208,6 @@ fn flag_hits_with(
         .collect()
 }
 
-/// Overlay the live download phase + progress onto a request's stored status.
 fn overlay_active(
     active: &std::collections::HashMap<String, super::downloads_overlay::ActiveDownload>,
     request: Option<&(String, RequestStatus)>,

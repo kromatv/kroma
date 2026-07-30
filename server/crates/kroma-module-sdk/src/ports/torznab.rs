@@ -5,18 +5,15 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Torznab category: movies. Sub-categories (2040 HD, 2045 UHD...) are the
-/// indexer's business; the coarse bucket is what we ask for by default.
+// The coarse Torznab category bucket; sub-categories (2040 HD, 2045 UHD...)
+// are the indexer's business.
 pub const CAT_MOVIES: u32 = 2000;
-/// Torznab category: TV.
 pub const CAT_TV: u32 = 5000;
 
 /// A configured Torznab endpoint (crate-owned config type; the server maps its
 /// DB row into this).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct IndexerEndpoint {
-    /// Base URL up to and including the torznab api path, e.g.
-    /// `http://nas:9117/api/v2.0/indexers/xyz/results/torznab`.
     pub url: String,
     pub api_key: String,
     pub categories: Vec<u32>,
@@ -36,9 +33,7 @@ pub enum Query {
 pub struct Release {
     pub title: String,
     pub guid: String,
-    /// `.torrent` download URL (Jackett proxies these), when present.
     pub link: Option<String>,
-    /// `torznab:attr magneturl`, when present.
     pub magnet: Option<String>,
     pub info_hash: Option<String>,
     pub size_bytes: Option<u64>,
@@ -46,10 +41,7 @@ pub struct Release {
     pub leechers: Option<u32>,
     pub tmdb_id: Option<u64>,
     pub imdb_id: Option<String>,
-    /// RFC 2822 `pubDate`, unparsed (age display only).
     pub published_at: Option<String>,
-    /// The tracker's human-viewable torrent page (RSS `<comments>`, else the
-    /// details `<guid>` when it is an http URL). Sonarr/Radarr's "info" link.
     pub details_url: Option<String>,
 }
 
@@ -66,9 +58,9 @@ pub struct Caps {
 /// Runs Torznab searches for a configured endpoint. Implemented by the torznab
 /// crate (over HTTP/XML) and resolved via `kroma_module_host::resolve_port`.
 pub trait TorznabPort: Send + Sync {
-    /// Fetch `t=caps` (also the admin test-connection call).
+    // Fetch `t=caps` (also the admin test-connection call).
     fn caps(&self, endpoint: &IndexerEndpoint) -> anyhow::Result<Caps>;
-    /// Run one query against one indexer and normalize the results.
+    // Run one query against one indexer and normalize the results.
     fn search(
         &self,
         endpoint: &IndexerEndpoint,

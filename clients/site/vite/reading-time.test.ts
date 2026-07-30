@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { remarkReadingTime } from './reading-time';
 
-// The plugin injects `export const readingMinutes = N` at the top of the compiled
-// module. These tests read the injected node rather than compiling MDX: the number and
-// the shape of the ESM node it hands to the MDX compiler are the whole contract.
+// These tests read the injected node directly rather than compiling MDX: the
+// number and the shape of the ESM node it hands to the MDX compiler are the
+// whole contract.
 
 interface TestNode {
   type: string;
@@ -26,7 +26,6 @@ describe('remarkReadingTime', () => {
     expect(minutes({ type: 'root', children: [text(words)] })).toBe(3);
   });
 
-  // Never "0 min read": a one-line post still takes a moment.
   it('never reports less than a minute', () => {
     expect(minutes({ type: 'root', children: [text('three short words')] })).toBe(1);
   });

@@ -53,14 +53,14 @@ pub fn routes() -> Router<SharedState> {
         .route("/pipeline/element/retry", post(retry_element_stage))
 }
 
-/// Resolve a short stage key (`"markers"`) to `(short, full job key, subject_kind)`.
+// Resolves a short stage key (`"markers"`) to `(short, full job key, subject_kind)`.
 fn resolve(short: &str) -> Option<(&'static str, &'static str, &'static str)> {
     STAGE_KEYS.iter().copied().find(|(s, _, _)| *s == short)
 }
 
-/// Trigger a stage's drain now (so a retry/requeue runs promptly, not only on the
-/// next schedule). Best-effort: a 409 (already running) is fine, it will absorb
-/// the new pending tasks.
+// Triggers a stage's drain now, so a retry/requeue runs promptly rather than
+// waiting on the next schedule. Best-effort: a 409 (already running) is fine,
+// it will absorb the new pending tasks.
 fn kick(state: &SharedState, full_key: &str) {
     if let Some(job) = state.jobs.resolve(full_key) {
         let _ = state.jobs.trigger(state.clone(), job, "manual");

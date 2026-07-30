@@ -25,20 +25,19 @@ import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { colors, posterWidth, spacing, type } from '#mobile/lib/theme';
 
-/** Show + "S01E02" line above an episode's title; movies have no context. */
 function episodeContext(media: MediaItem): string | undefined {
   if (media.kind !== 'episode' || !media.showTitle) return undefined;
   const numbering = episodeTag(media);
   return numbering ? `${media.showTitle} · ${numbering}` : media.showTitle;
 }
 
-/** Saved position worth resuming from (anything under 30s starts over). */
+const RESUME_THRESHOLD_MS = 30_000;
+
 function resumeSeconds(progress: ProgressEntry | null | undefined): number {
-  return progress && progress.positionMs > 30_000 ? progress.positionMs / 1000 : 0;
+  return progress && progress.positionMs > RESUME_THRESHOLD_MS ? progress.positionMs / 1000 : 0;
 }
 
-/** What the big button promises. With a TV connected it says where it will
- * land, because Play stops meaning "here" the moment one is. */
+// With a TV connected, Play stops meaning "here": the label says where it will land.
 function playLabel(t: Translate, device: string | undefined, resumeSec: number): string {
   if (device) return t('cast.playOn', { device });
   if (resumeSec > 0) return t('player.resumeAt', { time: formatTimecode(resumeSec) });
@@ -50,7 +49,6 @@ function reportPath(media: MediaItem, title: string): string {
   return `/report/${media.id}?kind=${kind}&title=${encodeURIComponent(title)}`;
 }
 
-/** Year / runtime / quality / HDR / rating strip under the hero title. */
 function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
   const runtime = formatRuntime(media.durationMs);
   const badge = qualityBadge(media);

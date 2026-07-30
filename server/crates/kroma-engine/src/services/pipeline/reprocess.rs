@@ -11,14 +11,14 @@ use crate::model::Kind;
 use crate::services::jobs::now_ms;
 use crate::state::SharedState;
 
-/// Reprocessed elements jump ahead of the nightly backlog.
+// Reprocessed elements jump ahead of the nightly backlog.
 const HIGH: i64 = 100;
 
 /// What a reprocess kicked off.
 pub struct Outcome {
-    /// Ledger tasks (re)queued across all stages.
+    // Ledger tasks (re)queued across all stages.
     pub subjects: usize,
-    /// Full keys of the stage drains triggered.
+    // Full keys of the stage drains triggered.
     pub stages: Vec<&'static str>,
 }
 
@@ -66,7 +66,6 @@ pub fn stage_for(state: &SharedState, kind: &str, id: &str, stage: &str) -> Resu
     Ok(())
 }
 
-/// Clear + requeue the metadata stage for one element.
 fn stage_metadata(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     if kind == "show" {
         db::clear_subject_metadata(db, db::metadata_core::SHOW, id)?;
@@ -77,15 +76,14 @@ fn stage_metadata(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     Ok(())
 }
 
-/// Clear + requeue the embed stage for one element.
 fn stage_embed(db: &db::Pool, id: &str, now: i64) -> Result<()> {
     db::clear_item_vector(db, id)?;
     db::pipeline::enqueue(db, "embed", "item", id, HIGH, now)?;
     Ok(())
 }
 
-/// Storyboards live per episode, not on the show id: fan out just like
-/// `reprocess_show` so each episode is actually rebuilt.
+// Storyboards live per episode, not on the show id: fan out just like
+// `reprocess_show` so each episode is actually rebuilt.
 fn stage_storyboard(state: &SharedState, db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     if kind == "show" {
         for ep in show_episodes(db, id)? {
@@ -101,7 +99,7 @@ fn stage_storyboard(state: &SharedState, db: &db::Pool, kind: &str, id: &str, no
     Ok(())
 }
 
-/// Subtitles live per episode: fan out to the show's episodes.
+// Subtitles live per episode: fan out to the show's episodes.
 fn stage_subtitles(state: &SharedState, db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     if kind == "show" {
         for ep in show_episodes(db, id)? {
@@ -121,7 +119,7 @@ fn stage_subtitles(state: &SharedState, db: &db::Pool, kind: &str, id: &str, now
     Ok(())
 }
 
-/// Files hang off episodes, not the show: fan out per episode.
+// Files hang off episodes, not the show: fan out per episode.
 fn stage_probe(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     if kind == "show" {
         for ep in show_episodes(db, id)? {
@@ -139,7 +137,7 @@ fn stage_probe(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     Ok(())
 }
 
-/// Markers are per season: enqueue every affected season key.
+// Markers are per season: enqueue every affected season key.
 fn stage_markers(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     let seasons: Vec<String> = if kind == "show" {
         db::get_show(db, id)?
@@ -159,16 +157,15 @@ fn stage_markers(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     Ok(())
 }
 
-/// Every episode of a show, flattened across seasons. Used to fan a show-level
-/// per-stage retry (storyboard/subtitles/probe) out to the episodes/files that
-/// actually carry those artifacts (a show id has none of its own).
+// Used to fan a show-level per-stage retry (storyboard/subtitles/probe) out to
+// the episodes/files that actually carry those artifacts (a show id has none).
 fn show_episodes(db: &db::Pool, id: &str) -> Result<Vec<crate::model::MediaItem>> {
     Ok(db::get_show(db, id)?
         .map(|d| d.seasons.into_iter().flat_map(|s| s.episodes).collect())
         .unwrap_or_default())
 }
 
-/// Queue every processing subject for one item + reset its artifacts.
+// Queue every processing subject for one item + reset its artifacts.
 fn reprocess_item(
     state: &SharedState,
     db: &db::Pool,
@@ -217,7 +214,7 @@ fn reprocess_item(
     }
 }
 
-/// Queue every processing subject for a whole show + reset its artifacts.
+// Queue every processing subject for a whole show + reset its artifacts.
 fn reprocess_show(
     state: &SharedState,
     db: &db::Pool,
@@ -274,7 +271,7 @@ mod tests {
         db::init(&path).unwrap()
     }
 
-    /// Pending count for a stage after enqueue.
+    // Pending count for a stage after enqueue.
     fn pending(pool: &db::Pool, stage: &str) -> i64 {
         db::pipeline::counts(pool, stage).unwrap().0
     }
@@ -422,11 +419,9 @@ mod tests {
         assert_eq!(eps.len(), 3, "all episodes across both seasons are flattened");
     }
 
-    // ----- SharedState-backed paths: the ledger effects of a whole-element or
-    // per-stage reprocess. These enqueue tasks + invalidate caches but do NOT
-    // trigger the drains (the pub `reprocess`/`stage_for` success path spawns real
-    // ffmpeg stage drains via `state.jobs.trigger`, so only their pre-trigger
-    // ledger effects and error branches are asserted here). ------------------------
+    // These enqueue tasks + invalidate caches but do not trigger the drains: the
+    // real `state.jobs.trigger` drains are not exercised here, only their
+    // pre-trigger ledger effects and error branches.
 
     use crate::test_support;
 

@@ -2,10 +2,8 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// The catalogue hook is all about orchestrating the @kroma/core data client, so
-// we mock the client (+ the two TV-shared modules it reaches into) and assert the
-// connection state it derives. The health monitor + event stream are real but
-// inert here (client.health resolves; KromaEvents never emits).
+// The health monitor and event stream are real but inert here: `client.health`
+// resolves and `KromaEvents` never emits.
 const H = vi.hoisted(() => {
   const norm = (u: string) => (u || '').replace(/\/+$/, '');
   return {
@@ -70,7 +68,6 @@ vi.mock('#tv/shared/preview', () => ({
 // Imported after the mocks are registered (vi.mock is hoisted above this line).
 const { useCatalogue } = await import('#tv/app/useCatalogue');
 
-/** Flush pending promises (the movies/shows fetch + its setState). */
 async function settle() {
   await act(async () => {
     await new Promise<void>((r) => setTimeout(r, 0));
@@ -105,7 +102,6 @@ describe('useCatalogue boot session', () => {
     H.shows.mockResolvedValue([{ id: 's1' }]);
 
     const { result } = renderHook(() => useCatalogue('tizen'));
-    // Client is built at the session's server before any fetch resolves.
     expect(H.instances[0]?.baseUrl).toBe('http://tv.local');
     expect(result.current.activeServerUrl).toBe('http://tv.local');
 
@@ -125,7 +121,6 @@ describe('useCatalogue signed-out picker', () => {
 
     const { result } = renderHook(() => useCatalogue('tizen'));
     await settle();
-    // No boot session → signed out → the catalogue stays silent.
     expect(H.movies).not.toHaveBeenCalled();
     expect(result.current.connection.status).toBe('connecting');
 
@@ -159,7 +154,7 @@ describe('useCatalogue server management', () => {
 
     act(() => result.current.setActiveServer('http://b.local/'));
     await settle();
-    expect(result.current.activeServerUrl).toBe('http://b.local'); // trailing slash stripped
+    expect(result.current.activeServerUrl).toBe('http://b.local');
     expect(H.instances.at(-1)?.baseUrl).toBe('http://b.local');
   });
 
@@ -175,7 +170,6 @@ describe('useCatalogue server management', () => {
     await settle();
     expect(H.forgetServer).toHaveBeenCalledWith('http://a.local');
     expect(result.current.connection.servers.map((s) => s.url)).toEqual(['http://b.local']);
-    // The active server followed to the survivor.
     expect(result.current.activeServerUrl).toBe('http://b.local');
   });
 });

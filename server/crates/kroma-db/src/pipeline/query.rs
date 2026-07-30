@@ -197,8 +197,8 @@ pub fn show_titles(pool: &Pool, ids: &[String]) -> Result<HashMap<String, String
     titles_in(pool, "shows", ids)
 }
 
-/// `id -> title` for the given ids from `table` (a fixed `"items"`/`"shows"`,
-/// never user input), in one `IN (...)` query. Empty ids yields an empty map.
+// `id -> title` for the given ids from `table` (a fixed `"items"`/`"shows"`,
+// never user input), in one `IN (...)` query. Empty ids yields an empty map.
 fn titles_in(pool: &Pool, table: &str, ids: &[String]) -> Result<HashMap<String, String>> {
     if ids.is_empty() {
         return Ok(HashMap::new());

@@ -1,18 +1,12 @@
 //! On-demand HLS delivery.
 //!
 //! Direct-play (raw byte range, [`crate::infra::stream`]) is the default; this
-//! covers what a browser can't direct-play: MKV→fMP4 repackaging, audio it can't
-//! decode (AC3/EAC3/DTS → AAC), and seamless language switching. It is a thin
-//! wrapper over a [`session`] registry: one continuous ffmpeg per (item,
-//! audio-mode, ANCHOR) produces a complete-program HLS master (video + alternate
-//! audio renditions); see [`session`] for why continuous (correct A/V, no desync,
-//! no holes) and how the client seeks.
-//!
-//! The anchor (resume / seek position, input `-ss`) is part of the key AND the
-//! URL path (`/hls/:mode/:anchor/...`). So each seek gets its OWN session with
-//! UNIQUE child URLs - a re-anchor never reuses another anchor's segment names
-//! (which would replay stale content) and never thrashes a shared session. Old
-//! anchors are LRU- / idle-reaped.
+//! covers what a browser can't direct-play: MKV→fMP4 repackaging, audio it
+//! can't decode (AC3/EAC3/DTS → AAC), and language switching. A thin wrapper
+//! over a [`session`] registry: one continuous ffmpeg per (item, audio-mode,
+//! anchor) produces a complete-program HLS master. The anchor is part of both
+//! the session key and the URL path, so a re-anchor never reuses another
+//! anchor's segment names or thrashes a shared session.
 
 mod session;
 
@@ -45,8 +39,7 @@ impl StreamMode {
         }
     }
 
-    /// The `{mode}` path/key token (the inverse of [`Self::parse`], emitted by the
-    /// client URL builder in packages/client `media.ts`).
+    // Inverse of `parse`; emitted by the client URL builder in `packages/client media.ts`.
     fn token(self) -> &'static str {
         match self {
             Self::Copy => "copy",
@@ -56,16 +49,12 @@ impl StreamMode {
         }
     }
 
-    /// Whether the audio is decoded + re-encoded (vs stream-copied).
     fn transcode(self) -> bool {
         !matches!(self, Self::Copy)
     }
 
-    /// The ffmpeg `-af` chain for the filtered modes, tuned to MATCH the client
-    /// Web Audio compressor (packages/ui `audio-filter.ts`) so every engine
-    /// sounds the same: standard = gentle 4:1 leveling with make-up gain
-    /// (threshold -24 dB = 0.063), night = 8:1 peak clamping (threshold -28 dB =
-    /// 0.04) with below-unity make-up so it is never louder than off/standard.
+    // Tuned to match the client Web Audio compressor (packages/ui
+    // `audio-filter.ts`) so every engine sounds the same.
     fn filter_chain(self) -> Option<&'static str> {
         match self {
             Self::Copy | Self::Aac => None,
@@ -79,29 +68,25 @@ impl StreamMode {
     }
 }
 
-/// `{item_id}:{mode}:{anchor_secs}:a{audio}` session key. The audio track is
-/// part of the key because it is muxed into the stream (one program per
-/// language); the mode is part of it because filtered and clean programs must
-/// never share segment URLs (segments are cached immutably per URL).
+// `{item_id}:{mode}:{anchor_secs}:a{audio}`. The mode is part of the key
+// because filtered and clean programs must never share segment URLs (segments
+// are cached immutably per URL).
 fn session_key(item_id: &str, mode: StreamMode, anchor: u64, audio: u32) -> String {
     format!("{item_id}:{}:{anchor}:a{audio}", mode.token())
 }
 
-/// The `(item_id, a{audio})` PROGRAM of a session key: what it identifies apart
-/// from the mode and the anchor. `None` for a malformed key. Split from the
-/// RIGHT because an item id may itself contain a colon.
+// The `(item_id, a{audio})` a key identifies, apart from mode and anchor.
+// Split from the right because an item id may itself contain a colon.
 fn program_of(key: &str) -> Option<(&str, &str)> {
-    let (head, audio) = key.rsplit_once(':')?; // "{item}:{mode}:{anchor}" + "a{audio}"
+    let (head, audio) = key.rsplit_once(':')?;
     let (head, _anchor) = head.rsplit_once(':')?;
     let (item, _mode) = head.rsplit_once(':')?;
     Some((item, audio))
 }
 
-/// Whether two session keys play the SAME program (same title, same muxed audio
-/// track) and differ only in mode / anchor - i.e. one supersedes the other for
-/// whichever client re-anchored (a seek) or toggled the audio filter. A
-/// malformed key matches nothing. Used by the session registry to pick a victim
-/// under the concurrency cap (see `Sessions::make_room`).
+// Whether two session keys play the same program and differ only in mode /
+// anchor - used by the session registry to pick a victim under the
+// concurrency cap (see `Sessions::make_room`).
 fn same_program(a: &str, b: &str) -> bool {
     match (program_of(a), program_of(b)) {
         (Some(x), Some(y)) => x == y,
@@ -111,9 +96,6 @@ fn same_program(a: &str, b: &str) -> bool {
 
 pub struct HlsEngine {
     sessions: Arc<Sessions>,
-    /// Cache of `abs_path -> true media duration (ms)`, so the on-demand ffprobe
-    /// fallback (for catalog rows that were never probed) runs at most once per
-    /// file. `None` = probed but no readable duration.
     durations: std::sync::Mutex<std::collections::HashMap<String, Option<u64>>>,
 }
 
@@ -210,10 +192,8 @@ mod tests {
     #[test]
     fn same_program_spans_anchors_and_modes_only() {
         let key = session_key("it1", StreamMode::Aac, 30, 1);
-        // A seek and an audio-filter toggle both mint a sibling of the SAME program.
         assert!(same_program(&key, &session_key("it1", StreamMode::Aac, 900, 1)));
         assert!(same_program(&key, &session_key("it1", StreamMode::AacNight, 30, 1)));
-        // Another language track, another title and junk are all different programs.
         assert!(!same_program(&key, &session_key("it1", StreamMode::Aac, 30, 2)));
         assert!(!same_program(&key, &session_key("it2", StreamMode::Aac, 30, 1)));
         assert!(!same_program(&key, "nonsense"));

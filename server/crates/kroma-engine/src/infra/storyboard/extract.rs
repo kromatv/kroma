@@ -1,6 +1,5 @@
-//! Tile extraction: the parallel keyframe-seek workers that grab each thumbnail,
-//! the black-tile gap fill, and the one-time hardware-decode probe that decides
-//! whether `-hwaccel auto` is worth it on this box.
+//! Tile extraction: parallel keyframe-seek workers, black-tile gap fill, and the
+//! one-time hardware-decode probe for `-hwaccel auto`.
 
 use std::path::Path;
 use std::process::Command;
@@ -13,17 +12,17 @@ use tracing::info;
 use super::proc::{run_capturing, run_capturing_cancellable, Cancel, TMP_SEQ};
 use super::{Plan, TILE_H, TILE_W};
 
-/// Wall-clock ceiling for a SINGLE tile's keyframe seek (a stalled mount is
-/// killed, not hung on). The happy path is well under a second.
+// Wall-clock ceiling for a single tile's keyframe seek (a stalled mount is
+// killed, not hung on). The happy path is well under a second.
 const TILE_TIMEOUT: Duration = Duration::from_secs(120);
-/// Upper bound on the per-item tile thread pool. Enough to hide seek/decode
-/// latency on real storage without one item monopolising the box (the outer
-/// [`MAX_CONCURRENT`] still bounds how many items generate at once).
+// Upper bound on the per-item tile thread pool, high enough to hide
+// seek/decode latency without one item monopolising the box (the outer
+// `MAX_CONCURRENT` still bounds how many items generate at once).
 const MAX_TILE_WORKERS: usize = 8;
 
-/// How many tiles to extract in parallel: one per core, clamped to a sane band.
-/// Seeks are IO- and decode-bound, so a handful of workers hides the latency;
-/// past that, extra processes only thrash shared storage.
+// One per core, clamped to a sane band: seeks are IO- and decode-bound, so a
+// handful of workers hides the latency, and past that extra processes only
+// thrash shared storage.
 fn tile_workers() -> usize {
     std::thread::available_parallelism()
         .map(std::num::NonZeroUsize::get)
@@ -31,9 +30,9 @@ fn tile_workers() -> usize {
         .clamp(2, MAX_TILE_WORKERS)
 }
 
-/// hw must beat sw by this margin to be worth it (avoids flapping on noise).
+// hw must beat sw by this margin to be worth it (avoids flapping on noise).
 const HWACCEL_MARGIN: f64 = 0.9;
-/// Machine-wide, process-lifetime decode decision: `true` = pass `-hwaccel auto`.
+// Machine-wide, process-lifetime decode decision: `true` = pass `-hwaccel auto`.
 static HWACCEL: OnceLock<bool> = OnceLock::new();
 
 /// Whether `-hwaccel auto` is worth it here, decided ONCE (per process) by a real
@@ -45,10 +44,10 @@ pub(super) fn use_hwaccel(abs: &str, dur_s: f64) -> bool {
     *HWACCEL.get_or_init(|| probe_hwaccel(abs, dur_s))
 }
 
-/// Time software vs `-hwaccel auto` decoding the SAME warmed mid-film keyframe
-/// (so the comparison is pure decode path, IO neutralised) and pick hardware only
-/// if it is clearly faster. `-hwaccel auto` itself falls back to software per
-/// stream, so choosing it is always safe; this only decides whether it is faster.
+// Times software vs `-hwaccel auto` decoding the same warmed mid-film
+// keyframe (so the comparison is pure decode path, IO neutralised) and picks
+// hardware only if it is clearly faster; `-hwaccel auto` itself falls back to
+// software per stream, so choosing it is always safe.
 fn probe_hwaccel(abs: &str, dur_s: f64) -> bool {
     // No GPU device node = `-hwaccel auto` can only ever fall back to software,
     // so the head-to-head (4 extra full keyframe decodes, ~10s on a weak NAS)
@@ -116,8 +115,8 @@ pub(super) fn extract_tiles(abs: &str, scratch: &Path, plan: &Plan, hwaccel: boo
     Ok(())
 }
 
-/// One scoped worker: pull the next tile index until the range is drained (or a
-/// cancel fires), extracting each keyframe and recording the first failure cause.
+// Pulls the next tile index until the range is drained (or a cancel fires),
+// extracting each keyframe and recording the first failure cause.
 #[allow(clippy::too_many_arguments)]
 fn extract_tile_worker(
     next: &AtomicU32,
@@ -144,11 +143,9 @@ fn extract_tile_worker(
     }
 }
 
-/// One tile: fast input seek (`-ss` before `-i` jumps to the GOP at `t_secs`
-/// without decoding up to it) and grab a single keyframe, scaled+cropped to an
-/// exact, letterbox-free 160x90. With `hwaccel`, `-hwaccel auto` offloads decode
-/// to the GPU (it falls back to software per stream, so it is always safe).
-/// `Err` carries ffmpeg's captured cause.
+// Fast input seek (`-ss` before `-i` jumps to the GOP at `t_secs` without
+// decoding up to it), grabbing a single keyframe scaled+cropped to an exact,
+// letterbox-free 160x90. `Err` carries ffmpeg's captured cause.
 fn extract_one(abs: &str, t_secs: u32, out: &Path, hwaccel: bool, cancel: Cancel) -> std::result::Result<(), String> {
     // `increase,crop` (the proven pattern in infra::image) fills the tile with no
     // letterbox and an exact, even output size.
@@ -178,10 +175,10 @@ fn extract_one(abs: &str, t_secs: u32, out: &Path, hwaccel: bool, cancel: Cancel
     }
 }
 
-/// Backfill any missing `px_<NNNN>.png` (a failed seek) with a black tile so the
-/// image2 montage never truncates at a gap (trailing gaps the `tile` filter pads
-/// on its own; only interior holes need this). Returns how many REAL tiles landed
-/// so an all-empty extraction can be reported as a hard failure.
+// Backfills any missing `px_<NNNN>.png` (a failed seek) with a black tile;
+// trailing gaps the `tile` filter pads on its own, only interior holes need
+// this. Returns how many real tiles landed, so an all-empty extraction can be
+// reported as a hard failure.
 fn fill_gaps(scratch: &Path, count: u32) -> u32 {
     let missing: Vec<u32> = (0..count)
         .filter(|i| !scratch.join(format!("px_{i:04}.png")).exists())

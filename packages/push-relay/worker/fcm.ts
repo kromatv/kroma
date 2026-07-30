@@ -1,10 +1,6 @@
-/** Google, from inside the relay.
- *
- * Mirrors `server/crates/kroma-push/src/fcm.rs`. FCM v1 does not take the
- * service account directly: the key signs a JWT-bearer assertion, Google's token
- * endpoint trades that for a short-lived OAuth2 access token, and the access
- * token authorises the send.
- */
+// FCM v1 does not take the service account directly: the key signs a JWT-bearer assertion,
+// which Google's token endpoint trades for the short-lived OAuth2 access token that authorises
+// the send.
 
 import { z } from 'zod';
 import { importRs256, sign } from './jwt';
@@ -14,13 +10,10 @@ import type { Delivery } from './schemas';
 
 const SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
-/** Google issues these for an hour; refresh at fifty minutes so a send never
- * races the expiry. */
+// Google issues these for an hour; refresh early so a send never races expiry.
 const TOKEN_LIFETIME_SECS = 50 * 60;
 
-/** The three fields of a Google service-account JSON that the relay uses. The
- * file carries more; `.loose()` keeps them rather than failing on a key Google
- * adds later. */
+// `.loose()` so a key Google adds to the service-account file later is kept, not rejected.
 const ServiceAccount = z
   .object({
     project_id: z.string().min(1),
@@ -32,9 +25,6 @@ type ServiceAccount = z.infer<typeof ServiceAccount>;
 
 let cached: { token: string; mintedAt: number; email: string } | null = null;
 
-/** The last service-account JSON parsed, and what it parsed to. The binding is
- * a constant for the isolate's life, so re-parsing it per push was a JSON parse
- * plus a schema validation to read three fields that never change. */
 let parsed: { json: string; account: ServiceAccount } | null = null;
 
 export function parseServiceAccount(json: string): ServiceAccount {
@@ -77,7 +67,6 @@ async function accessToken(account: ServiceAccount, nowSecs: number): Promise<st
   return access_token;
 }
 
-/** Deliver one notification to one device token. */
 export async function send(
   account: ServiceAccount,
   deviceToken: string,
@@ -96,8 +85,7 @@ export async function send(
   if (response.ok) return { ok: true, gone: false, status: response.status };
 
   const text = await response.text();
-  // Google's vocabulary for "this token is dead": a 404 on the message, or
-  // UNREGISTERED in the error body. Other 4xx are our bug.
+  // Google's vocabulary for a dead token: 404/410, or UNREGISTERED in the body.
   const gone = response.status === 404 || response.status === 410 || text.includes('UNREGISTERED');
   return { ok: false, gone, status: response.status, reason: text.slice(0, 200) };
 }

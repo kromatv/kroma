@@ -1,10 +1,6 @@
 //! Installed-module frontend assets: serves an installed module's Module
-//! Federation remote from disk.
-//!
-//! - `/modules/:id/*path` (public, at the root): serves `<data>/modules/:id/fe/*`
-//!   -- the `remoteEntry.js` + chunks the frontend `loadRemote`s (no bearer, like
-//!   the icon route). The supervisor unpacks a `.kmod`'s `fe/` there on install.
-//!   Mounted before the SPA fallback.
+//! Federation remote (`remoteEntry.js` + chunks) from `<data>/modules/:id/fe/*`,
+//! public like the icon route.
 
 use std::path::{Component, PathBuf};
 
@@ -53,7 +49,7 @@ async fn serve_fe(State(state): State<SharedState>, Path((id, path)): Path<(Stri
     }
 }
 
-/// A single path segment that is a plain name (no separators / traversal).
+// A plain path segment: rejects `.`, `..`, and separators to block traversal.
 fn safe_segment(s: &str) -> Option<&str> {
     if s.is_empty() || s == "." || s == ".." || s.contains(['/', '\\']) {
         None

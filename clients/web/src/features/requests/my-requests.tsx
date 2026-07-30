@@ -1,7 +1,3 @@
-// "Mes demandes": a user's own requests with live status/progress, and a
-// cancel action for still-pending ones. Slow poll + a page-scoped event
-// stream (request.updated reloads, download.progress patches the bar).
-
 import { Image } from '@kroma/admin-kit';
 import { KromaEvents, type MediaRequest, posterColors, sizedImageUrl } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
@@ -22,7 +18,6 @@ export function MyRequestsPage() {
   const { client } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  // Slow background poll; the SSE stream below invalidates on push for freshness.
   const requestsQuery = userQueries.myRequests();
   const { data: requests, isPending } = useQuery({
     ...requestsQuery,
@@ -98,7 +93,6 @@ export function MyRequestsPage() {
             onCancel={() => cancel(req)}
             onOpen={() => {
               if (req.status === 'available') {
-                // Best-effort: search takes them to the fiche once scanned.
                 navigate({ to: '/search' });
               } else {
                 navigate({
@@ -135,8 +129,6 @@ function RequestRow({
   const [c1, c2] = posterColors(String(req.tmdbId));
   const poster = sizedImageUrl(req.posterUrl, 92);
   const seasons = seasonsSummary(req.seasons);
-  // Coming-soon badge: a show's next episode, or an unreleased movie's release,
-  // shown only while the date is still upcoming (today or later).
   const today = new Date().toISOString().slice(0, 10);
   const upcomingKey = req.kind === 'show' ? 'requests.nextEpisodeDate' : 'requests.availableDate';
   const upcoming =

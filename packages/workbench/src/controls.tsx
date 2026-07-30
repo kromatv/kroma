@@ -9,8 +9,8 @@
 import { Box, Chip, Divider, Field, Switch, Txt } from '@kroma/ui/kit';
 import type { Control, ResolvedControl } from './story';
 
-/** Beyond this many options a row of chips stops being scannable and turns into
- * a wall, so the control becomes a stepper through the list instead. */
+// Beyond this many options a row of chips stops being scannable and turns
+// into a wall, so the control becomes a stepper through the list instead.
 const MAX_CHIPS = 8;
 
 interface ControlRowProps {
@@ -20,8 +20,8 @@ interface ControlRowProps {
   onChange: (next: unknown) => void;
 }
 
-/** Steps a value forwards and backwards, showing where it currently sits. Used
- * for numbers and for option lists too long to lay out flat. */
+// Steps a value forwards and backwards, showing where it currently sits.
+// Used for numbers and for option lists too long to lay out flat.
 function Stepper({
   label,
   onPrev,
@@ -135,8 +135,8 @@ interface ControlsProps {
   controls: readonly ResolvedControl[];
   args: Record<string, unknown>;
   onChange: (key: string, value: unknown) => void;
-  /** Put every control back to the story's own defaults. Omitted where there is
-   *  nothing to put back. */
+  // Put every control back to the story's own defaults. Omitted where there
+  // is nothing to put back.
   onReset?: () => void;
 }
 
@@ -153,8 +153,8 @@ function Controls({ controls, args, onChange, onReset }: Readonly<ControlsProps>
     );
   }
   // Empty sections drop out, and the rule appears only BETWEEN two that are
-  // there - which is what makes the divider a function of the list rather than
-  // of the two conditions it used to be spelled with.
+  // there - the divider is a function of the list, not of two separate
+  // conditions.
   const sections = [
     { title: 'Variants', rows: variants },
     { title: 'Props', rows: props },

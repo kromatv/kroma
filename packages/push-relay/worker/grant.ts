@@ -1,31 +1,8 @@
-/** Grants: the only thing a KROMA server is ever given about a device.
- *
- * The problem this solves is specific to how KROMA is deployed. The app is
- * published by one team, so the Apple and Google credentials belong to that
- * team; the SERVER is self-hosted by anybody, and its source is public. There
- * is therefore no secret that can live on a server — anything shipped there is
- * readable by everyone, and a shared relay password would be world-readable the
- * day it was committed.
- *
- * So a server is not authenticated at all. Instead it is handed a CAPABILITY:
- * an opaque blob, minted by the relay, that names exactly one device and can do
- * exactly one thing — push to that device. It is issued to the app (which holds
- * the real device token), and the app passes it to whichever server the reader
- * signed into.
- *
- * What that buys, stated as the attack it prevents: to notify everyone you would
- * need everyone's grant. Grants cannot be forged without `GRANT_SECRET`, which
- * never leaves the relay, and they cannot be harvested in bulk because they are
- * only ever minted to a device that already holds its own push token. Breaking
- * into one self-hosted server yields grants for that server's own users — people
- * who already trusted it with their notifications and whom it could already
- * reach. The blast radius is the same as before the relay existed.
- *
- * The blob is SEALED, not merely signed: AES-256-GCM, so a grant is unreadable
- * as well as unforgeable. A server never learns the raw APNs/FCM token even
- * though it stores the grant, which means a leaked server database is not a
- * pile of device tokens.
- */
+// Grants: the only thing a KROMA server is ever given about a device. A self-hosted server
+// holds no secret - its source and deployment are public - so it is never authenticated.
+// Instead it holds a CAPABILITY: an opaque, sealed blob minted by the relay that can push to
+// exactly one device. Sealed (AES-256-GCM), not merely signed, so a leaked server database
+// yields no readable device tokens either.
 
 import { z } from 'zod';
 import { b64url, fromB64url } from './jwt';
@@ -41,50 +18,38 @@ export type { Transport };
  * version. Parsing is what makes the fields below safe to read.
  */
 export const GrantPayload = z.object({
-  /** Transport. */
   t: Transport,
-  /** The raw device token. Never leaves the relay in readable form. */
+  // Never leaves the relay in readable form.
   d: z.string().min(1),
-  /** Expiry, epoch seconds. */
   e: z.number(),
 });
 export type GrantPayload = z.infer<typeof GrantPayload>;
 
-/**
- * How long a grant stays valid.
- *
- * Long, because only the APP can mint a replacement and a server has no way to
- * refresh one it holds — a short life would mean push silently dying for anyone
- * who had not opened the app recently. The app refreshes on launch, so in
- * practice a grant is replaced long before this. Expiry still matters: it bounds
- * how long a grant recovered from an old backup stays useful.
- */
+// Long, because only the APP can mint a replacement and a server has no way
+// to refresh one it holds - a short life would mean push silently dying for
+// anyone who hadn't opened the app recently. The app refreshes on launch, so
+// in practice a grant is replaced long before this; expiry still bounds how
+// long a grant recovered from an old backup stays useful.
 export const GRANT_TTL_SECS = 180 * 24 * 60 * 60;
 
-/** Versioned so the format can change without every device re-registering. */
+// Versioned so the format can change without every device re-registering.
 const PREFIX = 'v1';
 const IV_BYTES = 12;
 
 const utf8 = new TextEncoder();
 const decoder = new TextDecoder();
 
-/**
- * The derived key, kept for the isolate's life.
- *
- * Both hot routes need it — every `/v1/grant` seals and every `/v1/push` opens —
- * and the derivation is two WebCrypto calls that produce the same key every time
- * for a given secret. Safe to hold: it is non-extractable, so this is a handle
- * rather than key material, the same argument `apns.ts` makes for its imported
- * `.p8`. Keyed on the secret so a rotated `GRANT_SECRET` re-derives rather than
- * serving a stale key.
- */
+// The derived key, kept for the isolate's life: both hot routes need it
+// (every /v1/grant seals, every /v1/push opens), and deriving it is two
+// WebCrypto calls that produce the same key every time for a given secret.
+// Safe to hold since it's non-extractable - a handle, not key material (the
+// same argument apns.ts makes for its imported .p8). Keyed on the secret so a
+// rotated GRANT_SECRET re-derives rather than serving a stale key.
 let derived: { secret: string; key: Promise<CryptoKey> } | null = null;
 
-/**
- * The AES key, derived from the configured secret rather than used directly, so
- * that `GRANT_SECRET` can be any string an operator pastes in without its length
- * or entropy layout mattering to AES.
- */
+// Derived from the configured secret rather than used directly, so
+// `GRANT_SECRET` can be any string an operator pastes in without its length
+// or entropy layout mattering to AES.
 function sealingKey(secret: string): Promise<CryptoKey> {
   if (!secret) throw new Error('GRANT_SECRET is not configured');
   if (derived?.secret === secret) return derived.key;

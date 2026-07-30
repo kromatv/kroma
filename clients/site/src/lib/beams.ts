@@ -2,15 +2,13 @@
 // beams, hashed per-cell for color, width, reach and flicker, on three slowly
 // counter-rotating layers.
 //
-// Without WebGL, or after a lost context, this draws NOTHING and says so by leaving
-// the canvas transparent - the hero paints a `glow-amber` div behind it precisely so
-// that a browser that cannot run this still gets the warm source rather than flat
-// charcoal. There is no fallback class to add: an earlier version set `.static` here,
-// which no stylesheet ever defined.
+// Without WebGL, or after a lost context, this draws nothing and leaves the
+// canvas transparent; the hero paints a `glow-amber` div behind it so a
+// browser that cannot run this still gets warmth instead of flat charcoal.
 //
-// mountBeams returns a disposer: on a client-side route change the hero unmounts,
-// so the caller (a useEffect cleanup) tears down the RAF loop, the observers and
-// the listeners rather than leaking them against a detached canvas.
+// mountBeams returns a disposer: the caller's useEffect cleanup tears down the
+// RAF loop, the observers and the listeners rather than leaking them against a
+// detached canvas.
 
 const FRAG = `
 precision highp float;
@@ -90,9 +88,7 @@ void main(){
 const VERT = 'attribute vec2 v;void main(){gl_Position=vec4(v,0.,1.);}';
 
 export interface BeamOptions {
-  /** Burst origin in GL coords: x from left 0..1, y from BOTTOM 0..1. */
   center?: [number, number];
-  /** Element whose center the burst locks onto (wins over `center`). */
   anchor?: Element | null;
 }
 
@@ -148,11 +144,8 @@ export function mountBeams(canvas: HTMLCanvasElement, opts: BeamOptions = {}): (
   const uC = gl.getUniformLocation(prog, 'uC');
   gl.uniform2f(uC, ucx, ucy);
 
-  // The buffer size and the anchor-locked origin change only on layout, never
-  // per frame: measure on resize/font-load, not inside draw() (that forced 3
-  // getBoundingClientRect reads every tick). The anchor and canvas share the
-  // same positioned ancestor, so scrolling never shifts their relative offset,
-  // and the wheel's rotation leaves its bbox center fixed.
+  // Measured on resize/font-load, not inside draw(): that would force
+  // getBoundingClientRect reads every frame instead of only on layout change.
   const measure = () => {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
@@ -203,9 +196,8 @@ export function mountBeams(canvas: HTMLCanvasElement, opts: BeamOptions = {}): (
   });
   io.observe(canvas);
   document.addEventListener('visibilitychange', wake);
-  // A headline reflow can move the anchor, so re-measure once the faces land. Guarded:
-  // this resolves long after a fast route change, and measuring then would touch a
-  // detached canvas through a context the disposer has already given up on.
+  // Re-measure once fonts land, since a reflow can move the anchor. Guarded:
+  // this can resolve after a fast route change, against an already-detached canvas.
   document.fonts?.ready.then(() => {
     if (!dead) measure();
   });

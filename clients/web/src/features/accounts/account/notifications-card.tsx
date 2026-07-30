@@ -1,11 +1,4 @@
-// Notifications section: the push opt-in for this device, plus the per-category
-// delivery matrix for the account.
-//
-// The push toggle is per-DEVICE (a browser subscription belongs to this browser)
-// while the matrix is per-ACCOUNT — a distinction worth being explicit about in
-// the copy, because "why is my phone quiet but my laptop isn't" is otherwise a
-// mystery. When push can't work here at all, the row says which reason applies
-// instead of offering a switch that would silently do nothing.
+// The push opt-in for this device, plus the per-account delivery matrix.
 
 import {
   blockerOf,
@@ -36,7 +29,6 @@ export function NotificationsCard() {
   );
 }
 
-/** Per-device push opt-in. */
 function PushPanel() {
   const t = useT();
   const qc = useQueryClient();
@@ -45,8 +37,7 @@ function PushPanel() {
   const [error, setError] = useState<string | null>(null);
   const [tested, setTested] = useState<number | null>(null);
 
-  // Capability check runs client-side only (it reads `navigator`), so it can't
-  // be part of the initial render on the prerendered shell.
+  // Reads `navigator`, so it cannot run in the prerendered shell's first render.
   useEffect(() => setBlocker(pushBlocker()), []);
 
   const { data } = useQuery(userQueries.pushKey());
@@ -126,7 +117,6 @@ function PushPanel() {
   );
 }
 
-/** Per-account, per-category delivery matrix. */
 function CategoryMatrix() {
   const t = useT();
   const qc = useQueryClient();
@@ -140,8 +130,6 @@ function CategoryMatrix() {
       const categories = data.categories.map((c) =>
         c.category === category ? { ...c, ...patch } : c,
       );
-      // The PUT returns the saved matrix, so seed the cache with it rather than
-      // throwing it away and refetching the same rows.
       const saved = await kromaClient().setNotificationPrefs({ categories });
       qc.setQueryData(userQueries.notificationPrefs().queryKey, saved);
     } finally {

@@ -17,7 +17,6 @@
 import type { LauncherBackend } from '@kroma/tv';
 import { TvLauncher } from '../../modules/tv-launcher';
 
-/** The Android TV launcher backend, or null on a platform without one. */
 function launcherFor(module: NonNullable<typeof TvLauncher>): LauncherBackend {
   // Bound to a NON-NULL local: the module is read once here, so neither method
   // has to re-narrow the optional import every time it is called.

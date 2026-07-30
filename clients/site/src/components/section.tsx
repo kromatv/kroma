@@ -3,22 +3,15 @@ import { Container } from '#site/components/container';
 
 export interface SectionProps {
   children: ReactNode;
-  /** Anchor id, for the header's in-page nav (#fonctionnalites, #plateformes). */
   id?: string;
-  /** Small amber eyebrow above the heading. */
   eyebrow?: string;
   title?: ReactNode;
-  /** A lead paragraph under the heading. */
   intro?: ReactNode;
   className?: string;
-  /** Center the header block (default) or left-align it. */
   align?: 'center' | 'left';
 }
 
-/** A vertical band with the site's rhythm and an optional titled header. The
- *  header block is deliberately typographic, an eyebrow, a tight display
- *  heading, one lead line, rather than the stacked-badge intro a template
- *  reaches for. */
+/** A vertical band with the site's rhythm and an optional titled header. */
 export function Section({
   children,
   id,

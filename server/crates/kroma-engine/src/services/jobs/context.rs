@@ -1,6 +1,5 @@
-//! The per-run handle (live state behind the registry) and the [`JobContext`]
-//! handed to a running job its only interface to the outside world: structured
-//! logging, progress reporting and cooperative cancellation.
+//! The per-run handle and the [`JobContext`] handed to a running job: logging,
+//! progress reporting and cooperative cancellation.
 
 use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::Arc;
@@ -20,7 +19,6 @@ pub struct RunHandle {
     pub(super) cancel: AtomicBool,
     pub(super) done: AtomicI64,
     pub(super) total: AtomicI64,
-    /// Throttle stamp for the DB/WS progress writes (epoch ms of the last flush).
     last_flush_ms: AtomicI64,
 }
 
@@ -36,7 +34,7 @@ impl RunHandle {
         }
     }
 
-    /// Request cooperative cancellation; the job observes it via
+    /// Cancellation is cooperative: the job observes it via
     /// [`JobContext::cancelled`].
     pub fn request_cancel(&self) {
         self.cancel.store(true, Ordering::Relaxed);
@@ -46,7 +44,7 @@ impl RunHandle {
         self.cancel.load(Ordering::Relaxed)
     }
 
-    /// Current progress `(done, total)` `total == 0` means "indeterminate".
+    /// `total == 0` means "indeterminate".
     pub fn progress(&self) -> (i64, i64) {
         (self.done.load(Ordering::Relaxed), self.total.load(Ordering::Relaxed))
     }
@@ -63,37 +61,29 @@ impl JobContext {
         Self { state, handle }
     }
 
-    /// Test-only: build a context around a caller-owned run handle so
-    /// `&SharedState`-dependent services (the pipeline dispatcher) can be
-    /// exercised without going through [`super::JobManager::trigger`]. Keeping the
-    /// handle lets a test drive cancellation (`handle.request_cancel()`).
     #[cfg(test)]
     pub(crate) fn from_handle(state: SharedState, handle: Arc<RunHandle>) -> Self {
         Self { state, handle }
     }
 
-    /// Test-only convenience: a context wrapping a fresh, non-cancelled handle.
     #[cfg(test)]
     pub(crate) fn for_test(state: SharedState) -> Self {
         Self::from_handle(state, Arc::new(RunHandle::new("test-run".into(), "test.job".into())))
     }
 
-    /// Whether an admin has requested cancellation. Long jobs should poll this
-    /// between units of work and return early (returning `Ok(())` → the run is
-    /// recorded as `cancelled`).
+    /// Long jobs should poll this between units of work and return early;
+    /// returning `Ok(())` records the run as `cancelled`.
     pub fn cancelled(&self) -> bool {
         self.handle.is_cancelled()
     }
 
-    /// Report progress. `total == 0` renders as an indeterminate/among-N bar.
-    /// DB + WS writes are throttled to ~1/s; the in-memory value updates every
-    /// call so the API always sees the latest.
+    /// `total == 0` renders as an indeterminate bar. DB + WS writes are
+    /// throttled to ~1/s; the in-memory value updates on every call.
     pub fn progress(&self, done: usize, total: usize) {
         self.handle.done.store(done as i64, Ordering::Relaxed);
         self.handle.total.store(total as i64, Ordering::Relaxed);
         let now = now_ms();
         let last = self.handle.last_flush_ms.load(Ordering::Relaxed);
-        // Always flush the terminal (done == total) update; otherwise rate-limit.
         let terminal = total > 0 && done >= total;
         if !terminal && now - last < 1000 {
             return;
@@ -111,9 +101,8 @@ impl JobContext {
     }
 
     /// Append a log line (persisted, streamed over the WS bus, and mirrored to
-    /// the server's own tracing log). `level` is `"debug" | "info" | "warn" |
-    /// "error"`. All levels persist so the admin Tâches run view can show the
-    /// full story (debug reasoning, warnings, and errors), not just `info`.
+    /// tracing). `level` is `"debug" | "info" | "warn" | "error"`; all of them
+    /// persist, so the admin run view shows the full story and not just `info`.
     pub fn log(&self, level: &'static str, message: impl Into<String>) {
         let message = message.into();
         let ts = now_ms();
@@ -132,16 +121,12 @@ impl JobContext {
         });
     }
 
-    /// Verbose detail for diagnosing a run (skip reasons, request/response sizes,
-    /// per-item outcomes). Persisted + shown in the Tâches log, tagged `debug`.
     pub fn debug(&self, message: impl Into<String>) {
         self.log("debug", message);
     }
 
-    /// An owned `debug`-level logger that outlives a borrow of `self` for
-    /// helpers run within the job that log on their own (e.g. the LLM connector's
-    /// per-tool-call lines). Captures cloned handles, so it writes to this same
-    /// run exactly like [`debug`](Self::debug).
+    /// An owned `debug`-level logger for helpers that outlive a borrow of
+    /// `self`; it writes to this same run, exactly like [`debug`](Self::debug).
     pub fn debug_logger(&self) -> Box<dyn Fn(String) + Send + Sync> {
         let pool = self.state.db.clone();
         let events = self.state.events.clone();
@@ -162,9 +147,7 @@ impl JobContext {
         self.log("warn", message);
     }
 
-    /// A genuine failure within the run (an LLM call errored, a reply wouldn't
-    /// parse). The run can still complete; this surfaces *why* something was
-    /// skipped instead of swallowing it.
+    /// A failure within a run that can still complete.
     pub fn error(&self, message: impl Into<String>) {
         self.log("error", message);
     }
@@ -175,7 +158,6 @@ mod tests {
     use super::*;
     use crate::test_support::test_state;
 
-    /// Every bus message published so far, as JSON.
     fn drain(
         rx: &mut tokio::sync::broadcast::Receiver<crate::infra::events::Envelope>,
     ) -> Vec<serde_json::Value> {
@@ -198,8 +180,6 @@ mod tests {
         let (_state, handle, ctx) = ctx();
         assert!(!ctx.cancelled(), "a fresh run is not cancelled");
         handle.request_cancel();
-        // Long jobs poll this between units of work; if it never flipped, the
-        // Cancel button in the console would do nothing.
         assert!(ctx.cancelled());
     }
 
@@ -209,8 +189,6 @@ mod tests {
         ctx.progress(1, 100);
         ctx.progress(2, 100);
         ctx.progress(3, 100);
-        // The DB/WS writes are throttled, but the value the API reads is not -
-        // otherwise `GET /api/jobs` would show a figure up to a second stale.
         assert_eq!(handle.progress(), (3, 100));
     }
 
@@ -219,16 +197,12 @@ mod tests {
         let (state, _handle, ctx) = ctx();
         let mut rx = state.events.subscribe();
 
-        // A tight loop of mid-run updates: at most one gets out per second, so a
-        // fast job cannot flood every connected client.
         for i in 1..50 {
             ctx.progress(i, 100);
         }
         let mid = drain(&mut rx).len();
         assert!(mid <= 2, "expected at most one throttled flush, saw {mid}");
 
-        // The terminal update always flushes, or the bar finishes at 49/100 and
-        // sits there.
         ctx.progress(100, 100);
         let last = drain(&mut rx);
         assert_eq!(last.len(), 1);
@@ -242,8 +216,8 @@ mod tests {
     fn an_indeterminate_total_is_not_treated_as_terminal() {
         let (state, _handle, ctx) = ctx();
         let mut rx = state.events.subscribe();
-        // `total == 0` renders as an indeterminate bar. `done >= total` would be
-        // true for every such call, defeating the throttle entirely.
+        // A bare `done >= total` would be true for every such call, defeating
+        // the throttle entirely.
         for i in 1..50 {
             ctx.progress(i, 0);
         }
@@ -264,8 +238,6 @@ mod tests {
             .iter()
             .map(|v| (v["level"].as_str().unwrap().into(), v["message"].as_str().unwrap().into()))
             .collect();
-        // ALL levels reach the run view, not just info: the Tâches log is meant
-        // to show the full story, including why something was skipped.
         assert_eq!(
             seen,
             vec![
@@ -285,8 +257,6 @@ mod tests {
 
         let events = drain(&mut rx);
         assert_eq!(events[0]["type"], "job.log");
-        // The console filters by run id; without it a line lands under whichever
-        // run the user happens to have open.
         assert_eq!(events[0]["runId"], "run-1");
     }
 
@@ -295,8 +265,6 @@ mod tests {
         let (state, _handle, ctx) = ctx();
         let mut rx = state.events.subscribe();
 
-        // Handed to helpers that outlive a borrow of the context (the LLM
-        // connector's per-tool-call lines).
         let logger = ctx.debug_logger();
         drop(ctx);
         logger("from a helper".into());

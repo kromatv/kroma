@@ -9,16 +9,15 @@
 import { ease } from '#ui/lib/ease';
 import { motion } from '#ui/lib/tokens';
 
-/** How the row settles. Short, because this is a cursor moving rather than a
- * transition, and long enough to read as movement rather than a cut. */
+// Short, because this is a cursor moving rather than a transition, and long
+// enough to read as movement rather than a cut.
 export const SETTLE_MS = motion.duration.fast;
 
 export const EASE_CSS = ease.out.css;
 export const EASE_NATIVE = ease.out.native;
 
-/** The web-only opacity transition the edge controls fade with, so they come
- * and go with the pointer rather than blinking. react-native-web understands
- * these CSS props; native animates the same values through `Animated`. */
+// The web-only opacity transition the edge controls fade with, so they come
+// and go with the pointer rather than blinking.
 export const FADE = {
   transitionProperty: 'opacity',
   transitionDuration: `${SETTLE_MS}ms`,

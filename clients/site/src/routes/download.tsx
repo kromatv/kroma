@@ -12,15 +12,12 @@ import { m } from '#site/paraglide/messages';
 
 export const Route = createFileRoute('/download')({
   // `head` runs outside React, but a Paraglide message still resolves from the
-  // ambient locale there, so one head serves both languages - this is what the
-  // deleted src/routes/fr/* mirrors used to exist for.
+  // ambient locale there, so one head serves both languages.
   head: () => seo({ lang: getLocale(), title: m.download_head_title(), path: '/download' }),
   component: Download,
 });
 
-/** The install page: the model, then the server, then every screen, then why the
- *  one-time setup exists. Shared with /fr/download, which renders this component
- *  under the French locale. */
+/** Shared with /fr/download, which renders this component under the French locale. */
 export function Download() {
   return (
     <>

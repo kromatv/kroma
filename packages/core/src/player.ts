@@ -2,16 +2,14 @@ import type { KromaClient, MediaItem } from '@kroma/client';
 import { canDirectPlay, capabilities, type DirectPlayVerdict } from './hevc';
 
 export interface AttachOptions {
-  /** Resume position in milliseconds. */
   startMs?: number;
   autoplay?: boolean;
 }
 
 /**
- * Direct-play attach: point a <video> element at the server's range-streamed
- * original file. No MSE, no transcoding the device decodes the source codec
- * (HEVC included) natively. Returns the playback verdict so the caller can warn
- * when the codec is unsupported.
+ * Points a `<video>` at the server's range-streamed original file: no MSE, no
+ * transcoding, the device decodes the source codec natively. Returns the verdict
+ * so the caller can warn when the codec is unsupported.
  */
 export function attachDirectPlay(
   video: HTMLVideoElement,
@@ -43,7 +41,7 @@ export function attachDirectPlay(
   return verdict;
 }
 
-/** Format milliseconds as cinematic French runtime, e.g. "2h08" or "47min". */
+/** Formats a runtime as `"2h08"` or `"47min"`. */
 export function formatRuntime(durationMs: number | null | undefined): string {
   if (!durationMs || durationMs <= 0) return '';
   const totalMin = Math.round(durationMs / 60000);

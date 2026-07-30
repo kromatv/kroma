@@ -9,8 +9,6 @@ use serde_json::json;
 use crate::api::test_support::{demo_item_id, demo_show_id, get, seed_session, send, test_app};
 use crate::model::Permission;
 
-// ----- live-session heartbeat -------------------------------------------------
-
 #[tokio::test]
 async fn ping_upserts_then_stop_ends_the_session() {
     let t = test_app();
@@ -40,7 +38,6 @@ async fn ping_upserts_then_stop_ends_the_session() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
-    // Stop ends it and the live list drops back to empty.
     let (status, _) =
         send(&t.app, "POST", "/api/playback/stop", Some(&t.token), Some(json!({ "sessionId": "sess-1" }))).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
@@ -53,7 +50,6 @@ async fn stop_will_not_end_another_viewers_session() {
     let t = test_app();
     let item = demo_item_id("The Matrix");
 
-    // The owner starts watching.
     let (status, _) = send(
         &t.app,
         "POST",
@@ -81,7 +77,6 @@ async fn stop_will_not_end_another_viewers_session() {
     let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
     assert_eq!(admin["sessions"].as_array().map(Vec::len), Some(1), "someone else ended it");
 
-    // The viewer whose session it is can still end their own.
     let (status, _) = send(
         &t.app,
         "POST",
@@ -94,8 +89,6 @@ async fn stop_will_not_end_another_viewers_session() {
     let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
     assert_eq!(admin["sessions"].as_array().map(Vec::len), Some(0));
 }
-
-// ----- progress edge cases ----------------------------------------------------
 
 #[tokio::test]
 async fn progress_clamps_negative_positions_to_zero() {
@@ -155,8 +148,6 @@ async fn progress_read_for_an_unknown_item_is_null() {
     assert!(entry.is_null());
 }
 
-// ----- watched markers --------------------------------------------------------
-
 #[tokio::test]
 async fn watched_marker_add_list_and_clear() {
     let t = test_app();
@@ -178,7 +169,6 @@ async fn marking_watched_clears_the_resume_position() {
     let t = test_app();
     let item = demo_item_id("Dune Part Two");
 
-    // Save a resume position, then mark the title watched.
     send(
         &t.app,
         "PUT",
@@ -195,8 +185,6 @@ async fn marking_watched_clears_the_resume_position() {
     assert!(entry.is_null(), "resume position should be gone after watched");
 }
 
-// ----- up-next / next-episode -------------------------------------------------
-
 #[tokio::test]
 async fn up_next_points_at_the_first_episode_of_a_fresh_show() {
     let t = test_app();
@@ -208,7 +196,6 @@ async fn up_next_points_at_the_first_episode_of_a_fresh_show() {
     assert_eq!(up["item"]["episodeTitle"], json!("Islands"));
     assert_eq!(up["resume"], json!(false));
 
-    // An unknown show has nothing to play next.
     let (status, up) = get(&t.app, "/api/shows/ghost/up-next", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     assert!(up.is_null());
@@ -224,7 +211,6 @@ async fn next_episode_walks_the_sequence_then_ends() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(next["id"], json!(ep2));
 
-    // The last episode has no successor.
     let (status, next) = get(&t.app, &format!("/api/items/{ep2}/next"), Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     assert!(next.is_null());
@@ -241,13 +227,11 @@ async fn following_lists_the_upcoming_episodes() {
     let ep1 = demo_item_id("Islands"); // Planet Earth II S1E1
     let ep2 = demo_item_id("Mountains"); // S1E2 (last)
 
-    // From the first episode, the rail lists every later episode in order.
     let (status, list) = get(&t.app, &format!("/api/items/{ep1}/following"), Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     let ids: Vec<&str> = list.as_array().unwrap().iter().map(|i| i["id"].as_str().unwrap()).collect();
     assert_eq!(ids, vec![ep2.as_str()]);
 
-    // The last episode and a movie have an empty rail.
     let (_, list) = get(&t.app, &format!("/api/items/{ep2}/following"), Some(&t.token)).await;
     assert_eq!(list.as_array().unwrap().len(), 0);
     let movie = demo_item_id("The Matrix");

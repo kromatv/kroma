@@ -1,20 +1,4 @@
 // @vitest-environment jsdom
-//
-// The three forever-loops the kit runs - the busy ring's rotation, the
-// skeleton's pulse and the caret's blink - on both platforms.
-//
-// The pair exists so a component that needs one of them stays a single file, and
-// the price of that is a shared contract neither half can see: `active: false`
-// must return null AND schedule nothing, all three kinds must answer on both,
-// and the result must sit on an `Animated.View` either way.
-//
-// Each half then has one thing that is the entire reason it was written.
-// Native drives on the UI thread (`useNativeDriver: true`), so the JS thread
-// never wakes for a frame. The web half hands back the SHARED StyleSheet object
-// by reference, because that reference is the key into react-native-web's
-// compiled `@keyframes` registry - spread it into a new object and it is an
-// unknown style that silently falls back to an inline property the browser
-// ignores, which is the per-frame JS timer the whole file exists to avoid.
 
 import { renderHook } from '@testing-library/react';
 import { Animated } from 'react-native';
@@ -24,8 +8,6 @@ import { useLoop as useLoopWeb } from './loop.web';
 
 const KINDS: LoopKind[] = ['spin', 'pulse', 'blink'];
 
-/** The web half calls no hooks - it is a lookup - but render it as one anyway,
- *  so the rules-of-hooks lint stays meaningful over this file. */
 function webLoop(kind: LoopKind, ms: number, active?: boolean) {
   return renderHook(() => useLoopWeb(kind, ms, active)).result.current;
 }
@@ -39,8 +21,6 @@ describe('the native half', () => {
     const timing = vi.spyOn(Animated, 'timing');
     const { unmount } = renderHook(() => useLoop('spin', 800));
     expect(timing).toHaveBeenCalled();
-    // Every leg of every loop: one that forgot the flag would wake the JS thread
-    // once a frame for as long as the component is mounted.
     for (const [, config] of timing.mock.calls) {
       expect(config).toMatchObject({ useNativeDriver: true });
     }
@@ -69,8 +49,7 @@ describe('the native half', () => {
   it('runs pulse and blink as a there-and-back sequence', () => {
     const sequence = vi.spyOn(Animated, 'sequence');
     const { unmount } = renderHook(() => useLoop('pulse', 800));
-    // Down to the floor and back, each half the total - so one cycle of the
-    // stated duration is one full breath rather than two.
+    // Down to the floor and back, each leg half the stated duration.
     const [legs] = sequence.mock.calls[0] ?? [];
     expect(legs).toHaveLength(2);
     unmount();
@@ -79,7 +58,6 @@ describe('the native half', () => {
   it('spins in one direction instead, with no sequence', () => {
     const sequence = vi.spyOn(Animated, 'sequence');
     const { unmount } = renderHook(() => useLoop('spin', 800));
-    // A rotation that reversed halfway would rock rather than spin.
     expect(sequence).not.toHaveBeenCalled();
     unmount();
   });
@@ -88,8 +66,6 @@ describe('the native half', () => {
     const loop = vi.spyOn(Animated, 'loop');
     const { result } = renderHook(() => useLoop('spin', 800, false));
     expect(result.current).toBeNull();
-    // Not merely invisible: a hidden spinner still animating is the cost this
-    // flag exists to avoid.
     expect(loop).not.toHaveBeenCalled();
   });
 
@@ -110,8 +86,6 @@ describe('the native half', () => {
     const composite = loop.mock.results[0]?.value as { stop: () => void };
     const stop = vi.spyOn(composite, 'stop');
     unmount();
-    // An animation left running holds the component's value alive and keeps
-    // asking for frames after the spinner is gone.
     expect(stop).toHaveBeenCalled();
   });
 
@@ -130,15 +104,14 @@ describe('the web half', () => {
   it('hands back the shared StyleSheet object BY REFERENCE', () => {
     const [styleA] = webLoop('spin', 800) as unknown[];
     const [styleB] = webLoop('spin', 1600) as unknown[];
-    // The identity IS the key into the compiled @keyframes registry. Two
-    // different durations must still be the same registered animation.
+    // The identity is the key into react-native-web's compiled @keyframes registry.
     expect(styleA).toBe(styleB);
   });
 
   it('carries the duration alongside rather than inside', () => {
     const [, duration] = webLoop('pulse', 1200) as unknown[];
-    // An array, not a spread: spreading the registry object into a new one turns
-    // it back into an unknown style the browser ignores.
+    // An array, not a spread: spreading the registry object into a new one makes
+    // it an unknown style the browser ignores.
     expect(duration).toEqual({ animationDuration: '1200ms' });
   });
 

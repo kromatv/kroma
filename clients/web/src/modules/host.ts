@@ -1,8 +1,6 @@
 // Adapts the web app's providers (auth, i18n, router, session) into the neutral
-// KromaHost the module SDK defines, then resolves + starts the registry. A module
-// only ever sees this host surface, never the app internals - which is exactly
-// what lets a module be compiled in today or runtime-loaded later without
-// touching the module's own code.
+// KromaHost the module SDK defines, then resolves + starts the registry. A
+// module only ever sees this host surface, never the app internals.
 
 import { hasPermission, type MessageKey, sessionToken, type TVars } from '@kroma/core';
 import {
@@ -19,7 +17,6 @@ import { loadRuntimeRemotes } from '#web/modules/remotes';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** GET a JSON resource under the server's /api, carrying the session bearer. */
 async function apiGet<T>(path: string): Promise<T> {
   const token = sessionToken();
   const res = await fetch(`${apiBase()}/api${path}`, {
@@ -29,24 +26,23 @@ async function apiGet<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-// One event bus for the whole app, so a module's setup() subscriptions (which
-// run once, see the registry's setupDone guard) stay valid across page visits.
+// One event bus for the whole app: a module's setup() subscriptions (see the
+// registry's setupDone guard) run once and must stay valid across page visits.
 const appBus = createEventBus();
 
-/** Resolve + start the module registry against a host adapted from the app's
+/** Resolves + starts the module registry against a host adapted from the app's
  *  providers, returning the wired host once ready. The host is built ONCE and
- *  reads the latest auth / i18n / router values through a ref, so its identity
- *  never changes: re-creating it each render would re-run the effect, call
- *  setHost, and loop (React error #185). */
+ *  reads the latest auth / i18n / router values through a ref: re-creating it
+ *  each render would re-run the effect, call setHost, and loop (React error
+ *  #185). */
 export function useModuleHost(revision = 0): KromaHost | null {
   const navigate = useNavigate();
   const t = useT();
   const locale = useLocale();
   const auth = useAuth();
 
-  // Keep the newest provider values in a ref WITHOUT mutating during render
-  // (which the React Compiler dislikes and can turn into an update loop). The
-  // host is built once, in a run-once effect, and reads through this ref.
+  // Updated outside render (the React Compiler turns in-render mutation into an
+  // update loop); the host is built once and reads the latest values through it.
   const latest = useRef({ navigate, t, locale, auth });
   useEffect(() => {
     latest.current = { navigate, t, locale, auth };
@@ -54,14 +50,11 @@ export function useModuleHost(revision = 0): KromaHost | null {
 
   const [host, setHost] = useState<KromaHost | null>(null);
   // Only wire modules once there is a session: a module's setup() must not run on
-  // the pre-auth login screen, and `/api/modules` would 401 anyway. Re-running on
-  // sign-in (and on a `revision` bump from refresh(): install / uninstall / a live
-  // enable) is safe (loadRuntimeRemotes + start() are idempotent via the
-  // registry's `has`/`setupDone`), and is what runs a newly-enabled module's
-  // setup()/exports() without a page reload.
+  // the pre-auth login screen, and `/api/modules` would 401 anyway.
+  // Re-running on a `revision` bump (from refresh(): install / uninstall / a live
+  // enable) is safe, since loadRuntimeRemotes + start() are idempotent via the
+  // registry's `has`/`setupDone`.
   const authed = auth.user != null;
-  // `revision` is read only in the dep array on purpose: refresh() bumps it after
-  // an install / uninstall / live-enable to re-run the modules' setup()/exports().
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; revision re-wires modules after install/uninstall/enable
   useEffect(() => {
     if (!authed) return;
@@ -81,9 +74,8 @@ export function useModuleHost(revision = 0): KromaHost | null {
         },
       },
       i18n: {
-        // Core-catalog translator (the per-module catalog overlay is applied by
-        // the host each module actually receives -- see ModuleRouteOutlet). Pass
-        // `vars` through so plural/interpolation works.
+        // Core-catalog translator; the per-module catalog overlay is applied by
+        // ModuleRouteOutlet.
         t: (key, vars) => latest.current.t(key as MessageKey, vars as TVars | undefined),
         get locale() {
           return latest.current.locale;
@@ -96,8 +88,8 @@ export function useModuleHost(revision = 0): KromaHost | null {
     };
     void (async () => {
       try {
-        // Pull in any runtime-loaded (Module Federation) modules first, so they
-        // resolve and set up alongside the compile-time ones.
+        // Runtime-loaded (Module Federation) modules resolve first, so they set
+        // up alongside the compile-time ones.
         await loadRuntimeRemotes(moduleRegistry);
         // Don't run a disabled module's setup() (its panel is hidden too).
         let skip: Set<string> | undefined;
@@ -110,8 +102,8 @@ export function useModuleHost(revision = 0): KromaHost | null {
         const wired = await moduleRegistry.start(base, skip);
         if (alive) setHost(wired);
       } catch (e) {
-        // A start/federation failure must not hang the page on "Wiring
-        // modules..." forever; render with a no-op module API instead.
+        // Don't hang the page on "Wiring modules..." forever; fall back to a
+        // no-op module API.
         console.error('[modules] host start failed', e);
         if (alive) setHost({ ...base, getModuleApi: () => undefined });
       }

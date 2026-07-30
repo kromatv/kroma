@@ -1,16 +1,10 @@
 //! The Acquisition module as a standalone process (its `.kmod` entrypoint).
 //!
-//! Serves its admin routes (`/api/admin/acquisition/*`, reverse-proxied by the
-//! core). The search / import / match passes are contributed as
-//! [`ServerModule::jobs`](kroma_module_sdk::host::ServerModule::jobs): the runtime
-//! registers them with the CORE JobManager (so they appear in admin Tâches with
-//! cron scheduling + history) and serves the `/_job/run/{key}` endpoint the core
-//! scheduler calls to run each pass in this process.
-//!
-//! It CONSUMES (as client proxies through the core reverse-proxy): `DownloadGrabPort`
-//! + `DownloadDbPort` (← the Downloads sidecar, for grab + the import ledger) and
-//! `IndexerDbPort` + `IndexerSearchPort` (← the Indexers sidecar, for the search
-//! sweep). It provides no ports (nothing consumes acquisition).
+//! Serves its admin routes and contributes the search / import / match passes
+//! as [`ServerModule::jobs`](kroma_module_sdk::host::ServerModule::jobs),
+//! reachable via `/_job/run/{key}`. Consumes `DownloadGrabPort` +
+//! `DownloadDbPort` (Downloads sidecar) and `IndexerDbPort` +
+//! `IndexerSearchPort` (Indexers sidecar); provides no ports.
 
 use std::sync::Arc;
 
@@ -40,9 +34,6 @@ async fn main() -> anyhow::Result<()> {
                     host.sibling_resolver("tv.kroma.indexer"),
                 ));
             host.register_port(isearch);
-            // The search / import / match passes are contributed via `jobs()`; the
-            // runtime registers them with the core JobManager and serves the
-            // `/_job/run/{key}` endpoint the core scheduler drives them through.
         },
         vec![kroma_acquisition::server_module::<RemoteHost>()],
         // Provider routes for the core's /api/requests/:id/search + /grab endpoints.

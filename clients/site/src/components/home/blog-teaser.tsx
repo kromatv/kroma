@@ -6,10 +6,8 @@ import { useLang } from '#site/lib/i18n';
 import { getAllPosts } from '#site/lib/posts';
 import { m } from '#site/paraglide/messages';
 
-// The two most recent posts, as editorial cards. Resolved at build time from the
-// MDX glob, so this renders in the prerender with no fetch. Renders nothing at all
-// when the blog is empty, a "coming soon" placeholder on the home page would read
-// as unfinished, which is worse than absence.
+// Renders nothing when the blog is empty: a "coming soon" placeholder on the
+// home page would read as unfinished, which is worse than absence.
 export function BlogTeaser() {
   const lang = useLang();
   const posts = getAllPosts(lang).slice(0, 2);

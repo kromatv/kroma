@@ -66,10 +66,10 @@ describe('module-registry worker', () => {
     expect(res.headers.get('content-type')).toContain('text/html');
     const html = await res.text();
     expect(html).toContain('KROMA modules');
-    expect(html).toContain('1 module available'); // singular count
-    expect(html).toContain('needs tv.kroma.base'); // deps line
-    expect(html).toContain('3.0 MB'); // size
-    expect(html).toContain('&lt;demo&gt;'); // escaped description
+    expect(html).toContain('1 module available');
+    expect(html).toContain('needs tv.kroma.base');
+    expect(html).toContain('3.0 MB');
+    expect(html).toContain('&lt;demo&gt;');
     expect(html).toContain('server ≥ 0.1.0');
   });
 
@@ -94,9 +94,8 @@ describe('module-registry worker', () => {
     expect(body.error).toBe('catalog unavailable');
   });
 
-  // This endpoint is public and unauthenticated. It used to answer with
-  // `String(err)`, which on a failed fetch names the upstream URL and repeats
-  // whatever a thrown message happens to carry.
+  // Public and unauthenticated: `String(err)` on a failed fetch would leak
+  // the upstream URL and whatever a thrown message happens to carry.
   it('does not disclose the upstream failure to the caller', async () => {
     vi.stubGlobal(
       'fetch',
@@ -126,9 +125,9 @@ describe('module-registry worker', () => {
     expect(DEFAULT_REPO).toBe('maxscharwath/kroma');
   });
 
-  // Regression: every unmatched path fell through to the JSON catch-all, so
-  // /favicon.ico answered 200 application/json and browsers kept showing
-  // whatever icon they had cached. The page also carried no mark at all.
+  // Without this, an unmatched path falls through to the JSON catch-all, so
+  // /favicon.ico would answer 200 application/json and browsers would keep
+  // showing whatever icon they had cached.
   it('serves the brand mark at /favicon.svg and /favicon.ico, not the catalog', async () => {
     for (const p of ['/favicon.svg', '/favicon.ico']) {
       const res = await worker.fetch(req(p), {}, ctx());

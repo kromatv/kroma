@@ -18,41 +18,23 @@ export interface SeekBarProps {
   cur: number;
   dur: number;
   bufEnd: number;
-  /** Pending scrub target while dragging / D-pad seeking (null when settled). */
   seekPreview: number | null;
-  /** Normalized chapters; empty = one continuous segment (graceful fallback). */
+  /** Empty = one continuous segment over the whole runtime. */
   chapters: Chapter[];
-  /** Storyboard thumbnail at a position (null until the sheet is ready). */
   tileAt: (sec: number) => StoryboardTile | null;
-  /** The progress zone is the active D-pad focus (ring + always preview). */
   focused: boolean;
-  /** Left label: elapsed time. */
   elapsed: string;
-  /** Current chapter title, shown next to the elapsed time (empty to hide). */
   chapterLabel?: string;
-  /** Right labels: total runtime + real end clock ("fin à 22h38"). */
   total: string;
   endsAt: string;
-  /** The chrome's scale (see ../lib/metrics). 1 on a television stage. */
   scale?: number;
-  /** Live scrub preview (absolute seconds) while dragging. */
   onScrub: (sec: number) => void;
   onScrubCommit: () => void;
 }
 
-/**
- * The chapter-aware progress bar (§1, §2), matching the 10-foot design: an info
- * row (elapsed . current-chapter on the left, runtime . end-clock on the right)
- * above a track of distinct chapter segments, each with its own amber played
- * fill + lighter buffered zone, a playhead pill, and the storyboard preview that
- * follows the cursor (mouse) or the position (D-pad). Pointer down-drag-up
- * previews then commits one seek click-to-point is the zero-length drag.
- */
-/** Where the scrub preview's centre sits: over the moment it is previewing,
- * clamped so the whole thumbnail stays within the track. */
 function previewCentre(centre: number, trackWidth: number, half: number): number {
   if (trackWidth <= 0) return 0;
-  if (half * 2 >= trackWidth) return centre; // nothing to clamp into
+  if (half * 2 >= trackWidth) return centre;
   return Math.max(half, Math.min(trackWidth - half, centre));
 }
 
@@ -73,15 +55,11 @@ export function SeekBar({
   onScrubCommit,
 }: Readonly<SeekBarProps>) {
   const px = scaler(scale);
-  // Every style that depends on the scale, built once per SCALE rather than per
-  // tick. This bar re-renders at the playback tick (~4 Hz) and is not memoized,
-  // so a fresh array here is a guaranteed style-cache miss on the track and the
-  // timecodes, four times a second, for a value that only moves on a resize.
+  // Built per scale, not per tick: this bar re-renders ~4 Hz and is not memoized,
+  // so a fresh array would miss the style cache four times a second.
   const s = useMemo(() => styles(scale), [scale]);
   // The track measures itself rather than reading a DOM rect, so the same drag
-  // maths runs on a TV. React Native's responder system (through PanResponder)
-  // is the one gesture API both renderers implement; `useDragTrack` is what
-  // reconciles the pointer's units with the scaled canvas the bar is drawn on.
+  // maths runs on a TV; PanResponder is the one gesture API both renderers have.
   const track = useDragTrack();
   const trackWidth = track.width;
   const dragging = useRef(false);
@@ -89,9 +67,8 @@ export function SeekBar({
 
   const shown = seekPreview ?? cur;
 
-  // Segments: real chapters, or a single implicit chapter over the whole runtime.
-  // They are the track's coordinate system - see lib/seek-track - so everything
-  // below is measured against them rather than against `cur / dur`.
+  // The segments are the track's coordinate system (see lib/seek-track), so
+  // everything below is measured against them rather than against `cur / dur`.
   const segs = useMemo(
     () =>
       chapters.length > 0
@@ -100,7 +77,6 @@ export function SeekBar({
     [chapters, dur],
   );
 
-  /** The moment under a press, from its offset along the track. */
   const secAt = useCallback(
     (locationX: number): number | null => {
       const offset = track.offsetOf(locationX);
@@ -146,18 +122,14 @@ export function SeekBar({
 
   const shownMs = shown * 1000;
   const bufMs = bufEnd * 1000;
-  // The playhead rides the same geometry as the fills beneath it, so it always
-  // sits exactly where the amber stops.
   const playheadX = offsetAt(shownMs, segs, trackWidth);
 
-  // Preview follows the cursor on hover, else the position while focused (D-pad).
   let previewSec: number | null = null;
   if (hoverSec != null) previewSec = hoverSec;
   else if (focused) previewSec = shown;
   const previewTile = previewSec != null ? tileAt(previewSec) : null;
   // Centred on the cursor, but kept inside the track: at 0:00 half the thumbnail
-  // would hang off the left edge of the screen (and the last frames off the
-  // right), which is exactly where a resume point or the credits put you.
+  // would otherwise hang off the edge of the screen.
   const previewHalf = (previewTile?.width ?? 0) / 2;
   const previewX =
     previewSec == null
@@ -166,9 +138,8 @@ export function SeekBar({
 
   return (
     <Box mb={px(20)}>
-      {/* info row. The left label carries the chapter title, which is the one
-          string here of unbounded length: it shrinks (and truncates) so it can
-          never grow into the runtime on its right. */}
+      {/* The chapter title is the one string of unbounded length here, so it
+          shrinks and truncates rather than growing into the runtime. */}
       <Box row align="baseline" between gap={px(12)} mb={px(13)}>
         <Txt lines={1} style={s.timeShrink}>
           {elapsed}
@@ -197,9 +168,8 @@ export function SeekBar({
         accessibilityValue={{ min: 0, max: Math.round(dur), now: Math.round(shown) }}
         style={focused ? FOCUSED_TRACK : null}
       >
-        {/* storyboard preview + timestamp. The continuously-varying offset rides
-            the transform (via `style`, never a shorthand prop): a shorthand
-            would mint a permanent sharedBoxStyle cache entry per pixel. */}
+        {/* The varying offset rides the transform via `style`, never a shorthand
+            prop: a shorthand mints a permanent sharedBoxStyle entry per pixel. */}
         {previewSec != null ? (
           <Box
             absolute
@@ -225,12 +195,9 @@ export function SeekBar({
             const played = clamp01((shownMs - seg.startMs) / span);
             const buffed = clamp01((bufMs - seg.startMs) / span);
             return (
-              // `flex={span}`: a segment is as wide as its chapter is long. Equal
-              // widths would draw a 96-second cold open the size of a 53-minute
-              // act, and then no playhead could agree with its own fill.
-              // `h="100%"`, not the scaled height again: the track above already
-              // sets it, and a scaled number here would mint a shared-style
-              // entry per chapter length PER SCALE (see lib/box-style's cap).
+              // `flex={span}`: a segment is as wide as its chapter is long, so the
+              // playhead agrees with its fill. `h="100%"` mints one shared style,
+              // not one per chapter per scale.
               <Box
                 key={seg.startMs}
                 flex={span}
@@ -240,8 +207,7 @@ export function SeekBar({
                 bg={SEEK_BAR.track}
                 pointerEvents="none"
               >
-                {/* Fill insets vary per tick, so they go through `style` (which
-                    bypasses the shared cache) rather than the `right` shorthand.
+                {/* Insets vary per tick, so they bypass the shared cache via `style`.
                     Not scaleX: that would stretch the gradient and the pill caps. */}
                 <Box
                   fill
@@ -258,9 +224,8 @@ export function SeekBar({
             );
           })}
 
-          {/* playhead pill: the varying offset is folded into the transform, so
-              a tick only moves a composited layer (and never touches the shared
-              style cache). */}
+          {/* The offset is folded into the transform so a tick only moves a
+              composited layer. */}
           <Box
             absolute
             top="50%"
@@ -283,9 +248,6 @@ export function SeekBar({
   );
 }
 
-/** The design's sizes, at the design's scale. The single source for each: the
- * styles below are DERIVED from them, so there is never a second copy to keep
- * in agreement. */
 const TIME_SIZE = 18;
 const STAMP_SIZE = 14;
 const TRACK_HEIGHT = 6;
@@ -297,7 +259,6 @@ const TIME = {
   fontVariant: ['tabular-nums' as const],
 };
 const MUTED = { fontWeight: '500' as const };
-/** The chapter label yields before the runtime on the other end does. */
 const SHRINK = { flexShrink: 1 };
 const FOCUSED_TRACK = { boxShadow: '0 0 0 4px rgba(242, 180, 66, 0.28)' };
 const TRACK = {
@@ -320,8 +281,6 @@ const STAMP = {
   fontVariant: ['tabular-nums' as const],
 };
 
-/** The scale-dependent half of the bar's styles. The ARRAYS are what the views
- * receive, so they are what has to keep its identity between ticks. */
 function styles(scale: number) {
   const px = scaler(scale);
   const time = { fontSize: px(TIME_SIZE) };

@@ -94,7 +94,7 @@ function setup(over: Partial<Params> = {}) {
         new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }),
       );
     });
-    return notPrevented; // false when the handler called preventDefault
+    return notPrevented;
   };
   return { ...view, params, press };
 }
@@ -107,7 +107,7 @@ describe('usePlayerKeys letter/space transport shortcuts', () => {
     const prevented = press({ key: ' ', code: 'Space' });
     expect(params.controller.togglePlay).toHaveBeenCalledTimes(1);
     expect(params.nav.poke).toHaveBeenCalled();
-    expect(prevented).toBe(false); // preventDefault fired
+    expect(prevented).toBe(false);
     press({ key: 'k' });
     expect(params.controller.togglePlay).toHaveBeenCalledTimes(2);
   });
@@ -164,7 +164,7 @@ describe('usePlayerKeys D-pad routing', () => {
     nav.overlay = 'settings';
     const onKey = vi.fn(() => false);
     const { press } = setup({ nav, panelRef: { current: { onKey } } });
-    press({ key: 'Escape' }); // Escape -> Back
+    press({ key: 'Escape' });
     expect(onKey).toHaveBeenCalledWith('Back');
     expect(nav.handleKey).toHaveBeenCalledWith('Back');
   });
@@ -193,10 +193,10 @@ describe('usePlayerKeys locked / intro / credits gates', () => {
     const nav = makeNav();
     const onKey = vi.fn((k: string) => k === 'Left');
     const { press } = setup({ nav, credits: { active: true, onKey } });
-    press({ key: 'ArrowLeft' }); // claimed by credits
+    press({ key: 'ArrowLeft' });
     expect(onKey).toHaveBeenCalledWith('Left');
     expect(nav.handleKey).not.toHaveBeenCalled();
-    press({ key: 'ArrowRight' }); // declined -> nav
+    press({ key: 'ArrowRight' });
     expect(nav.handleKey).toHaveBeenCalledWith('Right');
   });
 });

@@ -1,7 +1,5 @@
-// @kroma/ui: the SERVICES half of the design system - the hooks and providers
-// that talk to the server or hold app state - plus the player, whose props are
-// those services' own types. The components are `@kroma/ui/kit`; see kit.ts for
-// why the two are disjoint and how that is (not) enforced.
+// The SERVICES half of the design system: the hooks and providers, plus the
+// player. The components are `@kroma/ui/kit`.
 
 export * from './components/organisms/player';
 export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';

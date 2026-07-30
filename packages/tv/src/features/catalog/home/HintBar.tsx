@@ -8,8 +8,8 @@ import { Box, gradient, Hint, shade, Txt } from '@kroma/ui/kit';
 
 const HINT = { fontSize: 13, fontWeight: '600' as const };
 
-/** `strength` matches the design: Home fades from 0.8, the grids from 0.85 (they
- * have a denser field of tiles running under the strip). */
+/** `strength` matches the design: Home fades from 0.8, the grids from 0.85
+ * (they have a denser field of tiles running under the strip). */
 export function HintBar({
   browseKey,
   strength = 0.8,

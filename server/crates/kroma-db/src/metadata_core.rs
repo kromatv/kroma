@@ -35,7 +35,7 @@ pub struct MetaCore {
     pub crew: Vec<CrewMember>,
 }
 
-/// Column list for core SELECTs keeps [`row_to_core`] index-stable.
+// Column list for core SELECTs keeps [`row_to_core`] index-stable.
 const CORE_COLS: &str =
     "tmdb_id,imdb_id,tvdb_id,release_date,rating,poster_url,backdrop_url,logo_url,cast_json,crew_json";
 
@@ -118,12 +118,12 @@ pub fn get_cores(conn: &Connection, kind: &str, ids: &[&str]) -> Result<HashMap<
     Ok(rows.into_iter().collect())
 }
 
-/// Row mapper for a `SELECT CORE_COLS` (cols 0..=9).
+// Row mapper for a `SELECT CORE_COLS` (cols 0..=9).
 fn row_to_core(r: &Row) -> rusqlite::Result<MetaCore> {
     row_to_core_offset(r, 0)
 }
 
-/// Row mapper starting at column `base` (so callers can prepend `subject_id`).
+// Row mapper starting at column `base` (so callers can prepend `subject_id`).
 fn row_to_core_offset(r: &Row, base: usize) -> rusqlite::Result<MetaCore> {
     let cast_json: String = r.get(base + 8)?;
     let crew_json: String = r.get(base + 9)?;

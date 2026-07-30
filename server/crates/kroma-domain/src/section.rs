@@ -9,18 +9,18 @@ use crate::media::{MediaItem, Show};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Section {
-    /// Stable-ish key for list rendering / focus restoration (e.g.
-    /// `"themed:heist"`, `"for-you"`).
+    // Stable-ish key for list rendering / focus restoration (e.g.
+    // `"themed:heist"`, `"for-you"`).
     pub id: String,
-    /// Localized, ready-to-display heading (the server resolves i18n, so clients
-    /// stay generic).
+    // Localized, ready-to-display heading (the server resolves i18n, so clients
+    // stay generic).
     pub title: String,
-    /// Optional secondary line, e.g. "Parce que vous avez regardé Mad Max".
+    // Optional secondary line, e.g. "Parce que vous avez regardé Mad Max".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
-    /// The rail's entries movies *or* shows already capped and de-duplicated
-    /// against earlier rows. A `type`-tagged union so the client switches on it
-    /// (mirrors `SearchHit`): a movie carries a [`MediaItem`], a show a [`Show`].
+    // The rail's entries — movies *or* shows — already capped and de-duplicated
+    // against earlier rows. A `type`-tagged union so the client switches on it
+    // (mirrors `SearchHit`): a movie carries a `MediaItem`, a show a `Show`.
     pub items: Vec<SectionItem>,
 }
 

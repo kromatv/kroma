@@ -35,7 +35,6 @@ import { useWatched } from '#web/shared/lib/watched';
 
 type ProgressEntry = { itemId: string; positionMs: number; durationMs?: number | null };
 
-/** Resume-progress percentage per item id (owned show episodes). */
 function progressMap(entries: readonly ProgressEntry[]): Record<string, number> {
   const map: Record<string, number> = {};
   for (const e of entries) {
@@ -47,8 +46,6 @@ function progressMap(entries: readonly ProgressEntry[]): Record<string, number> 
   return map;
 }
 
-/** Optimistically fold a fresh request into the view (top-level status + the
- * requested seasons). Per-episode asks only lift the status. */
 function nextViewAfterRequest(
   v: TitleView,
   status: TitleView['requestStatus'],
@@ -66,14 +63,12 @@ function nextViewAfterRequest(
   };
 }
 
-/** Mark the picked episodes pending (`"season-episode"` keys). */
 function addPendingEpisodes(prev: Set<string>, episodes: EpisodeRef[]): Set<string> {
   const next = new Set(prev);
   for (const e of episodes) next.add(`${e.season}-${e.episode}`);
   return next;
 }
 
-/** The cinematic hero for a title (Play for owned, Request CTA otherwise). */
 function TitleHero({
   view,
   owned,
@@ -167,7 +162,6 @@ function TitleHero({
   );
 }
 
-/** The stacked sections below the hero (treatments, cast/seasons, similar, AI). */
 function TitleBody({
   view,
   owned,
@@ -373,8 +367,6 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   );
 }
 
-/** The hero's primary action for a not-owned title: the live request status
- * chip once requested, else the Request button (shows open the season sheet). */
 function RequestCta({
   view,
   busy,
@@ -397,8 +389,8 @@ function RequestCta({
   );
 }
 
-/** Hero meta line: owned movie = year · runtime · audio lang; show = year ·
- * seasons · episodes; not-owned movie = year · TMDB runtime. */
+// Owned movie: year · runtime · audio lang. Show: year · seasons · episodes.
+// Not-owned movie: year · TMDB runtime.
 function metaLine(t: ReturnType<typeof useT>, view: TitleView): string {
   if (view.kind === 'show') {
     const episodes = view.seasons.reduce((n, s) => n + (s.episodes.length || s.episodeCount), 0);

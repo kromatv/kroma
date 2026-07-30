@@ -49,8 +49,8 @@ describe('Image', () => {
   it('fill stretches the container to its positioned parent; default self-sizes', () => {
     const filled = render(el({ src: 'a.jpg', fill: true }));
     const box = filled.container.firstElementChild as HTMLElement;
-    // Regression: an inline `position` must win, so `fill` (not a className)
-    // is what stretches the box otherwise it collapses and the art reads black.
+    // The stretch must come from an inline style, not a className: a losing
+    // cascade collapses the box and the art reads black.
     expect(box.style.position).toBe('absolute');
     expect(box.style.right).toBe('0px');
     cleanup();
@@ -77,7 +77,6 @@ describe('Image', () => {
       fireEvent.load(next);
       expect(next.style.opacity).toBe('1');
 
-      // once the fade completes the stale underlay is removed
       act(() => vi.advanceTimersByTime(100));
       expect(under(container)).toBeNull();
     } finally {

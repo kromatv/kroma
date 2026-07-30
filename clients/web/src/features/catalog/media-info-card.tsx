@@ -43,7 +43,6 @@ export function FileCard({
   );
 }
 
-/** File name + full relative path, with the edition / "#n of many" chips. */
 function FileHeader({
   file,
   index,
@@ -68,7 +67,6 @@ function FileHeader({
   );
 }
 
-/** Shown instead of the stream list for a file ffprobe has not read yet. */
 function Unprobed() {
   const t = useT();
   return (
@@ -78,7 +76,6 @@ function Unprobed() {
   );
 }
 
-/** The three stream sections of a probed file. */
 function FileTracks({ file }: Readonly<{ file: MediaFile }>) {
   const t = useT();
   // Legacy rows carry a single top-level audio stream instead of the track list.
@@ -164,7 +161,6 @@ function Section({
   );
 }
 
-/** A dot-separated technical line, skipping the parts that are unknown. */
 function TrackLine({
   parts,
   badge,

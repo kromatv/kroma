@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createBlog, type MdxModule } from './blog';
 
-// `createBlog` takes the module map, so these drive the resolver directly instead of
-// going through the MDX pipeline: what is worth testing is what the loader DECIDES -
-// which language a reader gets, what a translation inherits, the ordering, the draft
-// rule - and none of that needs a real .mdx to compile.
+// `createBlog` takes the module map directly, so these drive the resolver
+// without a real .mdx compiling through the MDX pipeline.
 
 const Body = (() => null) as unknown as MdxModule['default'];
 
@@ -28,8 +26,6 @@ describe('createBlog', () => {
     expect(blog.getPost('one', 'fr')?.title).toBe('Un');
   });
 
-  // The point of the fallback: a reader is never shown a missing page for a post
-  // nobody has translated yet.
   it('falls back to the default language, and says it did', () => {
     const blog = createBlog({ [`${dir}/only-en.mdx`]: mod({ title: 'Only', date: '2026-01-01' }) });
 
@@ -39,7 +35,6 @@ describe('createBlog', () => {
     expect(blog.getPost('only-en', 'en')?.translated).toBe(true);
   });
 
-  // So a `.fr.mdx` can carry only the fields that actually changed.
   it('inherits missing frontmatter from the default-language file', () => {
     const blog = createBlog({
       [`${dir}/p.mdx`]: mod({ title: 'T', date: '2026-03-04', author: 'Max', tags: ['a'] }),

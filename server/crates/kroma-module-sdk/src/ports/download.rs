@@ -12,10 +12,8 @@ use super::TorrentFileEntry;
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct GrabSpec {
     pub magnet_or_url: String,
-    /// `movie` | `episode` | `season`.
     pub kind: String,
     pub tmdb_id: u64,
-    /// Import title (`None` => derive from the release name at import time).
     pub title: Option<String>,
     pub year: Option<u32>,
     pub season: Option<u32>,
@@ -26,12 +24,8 @@ pub struct GrabSpec {
     pub score: Option<i32>,
     pub score_breakdown: Option<String>,
     pub request_id: Option<String>,
-    /// Wanted rows this grab covers (flip to `grabbed`); empty for manual adds.
     pub wanted_ids: Vec<String>,
-    /// Download only these file indices (Sonarr/Radarr-style selection). `None`
-    /// = the whole torrent.
     pub only_files: Option<Vec<usize>>,
-    /// The tracker's torrent page, stored so the queue can link back to it.
     pub details_url: Option<String>,
 }
 
@@ -40,14 +34,10 @@ pub struct GrabSpec {
 pub struct DownloadRow {
     pub id: String,
     pub client_id: String,
-    /// The engine's identifier (info-hash hex).
     pub client_ref: String,
     pub request_id: Option<String>,
-    /// `movie` | `episode` | `season`.
     pub kind: String,
     pub tmdb_id: u64,
-    /// Display / import title (denormalized so a manual grab imports without a
-    /// request). `None` = fall back to parsing the release title.
     pub title: Option<String>,
     pub year: Option<u32>,
     pub season: Option<u32>,
@@ -62,38 +52,33 @@ pub struct DownloadRow {
     pub status: String,
     pub progress: f64,
     pub save_path: Option<String>,
-    /// Library files written by the import (persisted for the record / future
-    /// "reveal in library"; not surfaced in a view yet).
+    // Persisted for the record / a future "reveal in library"; not read yet.
     #[allow(dead_code)]
     pub imported_paths: Option<Vec<String>>,
     pub error: Option<String>,
     pub grabbed_at: i64,
     pub completed_at: Option<i64>,
     pub imported_at: Option<i64>,
-    /// The tracker's human-viewable torrent page (Sonarr/Radarr's info link).
     pub details_url: Option<String>,
-    /// Selected torrent file indices for a partial grab (`None` = whole torrent).
-    /// Persisted so the background add (`crate::downloads`) keeps the selection
-    /// even though it runs after the request returned.
     pub only_files: Option<Vec<usize>>,
 }
 
 /// The download manager's grab + lifecycle surface, resolved by acquisition.
 pub trait DownloadGrabPort: Send + Sync {
-    /// Grab a release: record the ledger row and hand it to the engine.
+    // Grab a release: record the ledger row and hand it to the engine.
     fn grab(&self, host: &dyn HostCtx, spec: GrabSpec) -> anyhow::Result<DownloadRow>;
-    /// List a torrent's files (metadata only, no download) so the admin can
-    /// analyze + select before grabbing.
+    // List a torrent's files (metadata only, no download) so the admin can
+    // analyze + select before grabbing.
     fn list_files(
         &self,
         host: &dyn HostCtx,
         magnet_or_url: &str,
     ) -> anyhow::Result<Vec<TorrentFileEntry>>;
-    /// Whether the kill switch currently allows new grabs.
+    // Whether the kill switch currently allows new grabs.
     fn gate_open(&self) -> bool;
-    /// Kick a freshly-recorded row into the engine (background add).
+    // Kick a freshly-recorded row into the engine (background add).
     fn activate(&self, host: &dyn HostCtx, row: &DownloadRow);
-    /// Free a download's data + stop seeding (post-import cleanup).
+    // Free a download's data + stop seeding (post-import cleanup).
     fn drop_data(&self, host: &dyn HostCtx, row: &DownloadRow);
 }
 

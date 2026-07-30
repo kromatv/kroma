@@ -10,8 +10,7 @@ use crate::domain::metadata::{CastMember, CrewMember};
 
 use super::client::IMG;
 
-/// TMDB crew jobs we surface the authorship roles, ranked. Anything else
-/// (gaffer, editor, …) is dropped.
+// TMDB crew jobs we surface, ranked; anything else (gaffer, editor, …) is dropped.
 pub(super) const KEY_CREW_JOBS: &[&str] = &["Director", "Creator", "Writer", "Screenplay", "Story"];
 
 /// The appended `credits` block cast + crew.

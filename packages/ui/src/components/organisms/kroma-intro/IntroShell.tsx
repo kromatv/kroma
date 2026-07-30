@@ -2,20 +2,13 @@ import type { ReactNode } from 'react';
 import { KEYFRAMES } from './constants';
 
 export interface IntroShellProps {
-  /** Fade the black veil in over the intro (the hand-off to the app). */
   exiting: boolean;
   children: ReactNode;
 }
 
 /**
- * The full-screen frame both intros render into: the fixed black stage (with the
- * shared {@link KEYFRAMES}, brand font and the single "KROMA" accessible name)
- * plus the exit veil that fades to black on the way out.
- *
- * Framework-free (plain inline styles) so it renders identically on the web SSR
- * shell and on old TV webviews. The stage is flex-centred for the CSS scene;
- * the film path only holds absolutely-positioned layers, so centring is inert
- * there.
+ * The full-screen frame both intros render into. Framework-free (plain inline
+ * styles) so it renders identically on the web SSR shell and on old TV webviews.
  */
 export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
   return (
@@ -39,7 +32,6 @@ export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
 
       {children}
 
-      {/* exit transition to the app */}
       <div
         style={{
           position: 'absolute',

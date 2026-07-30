@@ -1,6 +1,4 @@
-// Data hooks backing the sign-in screen: a per-server client cache, the
-// continuous LAN discovery sweep while the server picker is open, and the
-// selected server's public profile roster.
+// Data hooks backing the sign-in screen.
 
 import {
   type DiscoveredServer,
@@ -13,12 +11,10 @@ import { makeClient } from '#mobile/lib/device';
 import { getDeviceLocalIp } from '#mobile/lib/localIp';
 import { isBiometricLockEnabled, type MobileAccount } from '#mobile/lib/storage';
 
-/** Stable identity of a remembered account across servers. */
 export const keyOf = (a: MobileAccount) => `${a.serverUrl}::${a.user.id}`;
 
 export const hostOf = (url: string) => url.replace(/^https?:\/\//, '');
 
-/** Per-server KromaClient cache (art URL resolution across servers). */
 export function useClientCache(): (url: string) => KromaClient {
   const clientsRef = useRef(new Map<string, KromaClient>());
   return (url: string) => {
@@ -30,8 +26,8 @@ export function useClientCache(): (url: string) => KromaClient {
   };
 }
 
-/** While `active`, sweep the LAN for KROMA servers in a loop so the local
- * servers section stays live without a manual rescan. */
+/** While `active`, sweeps the LAN for KROMA servers in a loop, so the local
+ * servers list stays live without a manual rescan. */
 export function useDiscoveryLoop(active: boolean): DiscoveredServer[] {
   const [found, setFound] = useState<DiscoveredServer[]>([]);
   useEffect(() => {
@@ -58,7 +54,7 @@ export function useDiscoveryLoop(active: boolean): DiscoveredServer[] {
 }
 
 /** `keyOf` keys of the accounts locked behind device biometrics without a
- * server PIN, so their gate tiles show the same lock badge as PIN ones. */
+ * server PIN. */
 export function useBiometricLockedKeys(accounts: MobileAccount[]): Set<string> {
   const [locked, setLocked] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -77,8 +73,8 @@ export function useBiometricLockedKeys(accounts: MobileAccount[]): Set<string> {
   return locked;
 }
 
-/** Public profile roster of the selected server (when the server exposes one).
- * Resets on server change; failures leave it empty, the form still works. */
+/** Public profile roster of the selected server, when it exposes one; empty on
+ * failure. */
 export function useServerRoster(serverUrl: string | null): PublicUser[] {
   const [roster, setRoster] = useState<PublicUser[]>([]);
   useEffect(() => {

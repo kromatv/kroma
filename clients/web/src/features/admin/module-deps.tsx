@@ -7,8 +7,6 @@ import type { AdminModule } from '#web/features/admin/module-api';
 
 type DepState = 'ok' | 'missing' | 'disabled' | 'optional';
 
-/** Colour/state for a dependency chip: absent deps are `optional`/`missing`, an
- *  installed dep is `ok` when enabled and `disabled` otherwise. */
 function depState(target: AdminModule | undefined, optional: boolean): DepState {
   if (!target) return optional ? 'optional' : 'missing';
   return target.enabled ? 'ok' : 'disabled';
@@ -35,9 +33,9 @@ function DepChip({ label, state }: Readonly<{ label: string; state: DepState }>)
   );
 }
 
-/** Modules that depend on `module`: a hard/optional `dependsOn` on its id, or a
- *  capability `requires` this module's `provides` satisfies. The reverse edges of
- *  the dependency graph, so a provider (e.g. Downloads) shows who needs it. */
+// The reverse edges of the dependency graph, so a provider (e.g. Downloads)
+// shows who needs it: a hard/optional `dependsOn` on its id, or a capability
+// `requires` this module's `provides` satisfies.
 function dependents(module: AdminModule, all: AdminModule[]): AdminModule[] {
   const provides = module.provides ?? [];
   return all.filter((other) => {
@@ -50,9 +48,8 @@ function dependents(module: AdminModule, all: AdminModule[]): AdminModule[] {
   });
 }
 
-/** A module's dependency status, both directions: its hard + optional deps and
- *  capability requirements (each colored by whether it is satisfied), plus the
- *  modules that in turn depend on it. */
+/** A module's dependency status in both directions: what it depends on
+ * (colored by whether each is satisfied), plus what depends on it. */
 export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all: AdminModule[] }>) {
   const byId = new Map(all.map((m) => [m.id, m]));
   const deps = [

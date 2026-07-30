@@ -1,6 +1,5 @@
-// A styled one-time-code / PIN input built on `input-otp`: a row of individual
-// digit slots with an animated caret, matching the KROMA design. Used for the
-// profile PIN (masked) and Quick Connect codes (plain).
+// A styled one-time-code / PIN input built on `input-otp`, used for the profile PIN
+// (masked) and Quick Connect codes (plain).
 
 import { OTPInput, REGEXP_ONLY_DIGITS, type SlotProps } from 'input-otp';
 import { useMemo } from 'react';
@@ -8,11 +7,8 @@ import { useMemo } from 'react';
 export interface OtpProps {
   value: string;
   onChange: (value: string) => void;
-  /** Number of slots (digits). Defaults to 4. */
   length?: number;
-  /** Fired once every slot is filled great for auto-submit. */
   onComplete?: (value: string) => void;
-  /** Render dots instead of the digits (for a secret PIN). */
   mask?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
@@ -29,15 +25,9 @@ export function Otp({
   autoFocus,
   ariaLabel,
 }: Readonly<OtpProps>) {
-  // Keys for the fixed positional slot row. Derived from the position, NOT from
-  // crypto.randomUUID(): that is only defined in a SECURE CONTEXT, and a
-  // self-hosted server is normally reached over plain http on a LAN address
-  // (http://192.168.x.x:4040), where it is undefined and throws
-  // "crypto.randomUUID is not a function" - taking the whole login screen down
-  // with it, which is the one screen nobody can route around.
-  //
-  // A position is the right key here anyway. These slots never reorder or get
-  // inserted into; slot 0 is always slot 0, so its index IS its identity.
+  // Positional keys, NOT crypto.randomUUID(): that only exists in a secure context,
+  // and a self-hosted server is normally reached over plain http on a LAN address,
+  // where it throws and takes the login screen down.
   const slotKeys = useMemo(
     () => Array.from({ length }, (_, index) => `otp-slot-${index}`),
     [length],

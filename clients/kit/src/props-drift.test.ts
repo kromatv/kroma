@@ -1,16 +1,5 @@
-// The prop reader, pointed at the real components in this repo.
-//
-// The reader itself is `propDocs` in clients/tv-build, driving TypeScript's own
-// checker. What a unit test of it could not check is the thing that actually
-// breaks: whether it still understands the way the kit's own components are
-// written. A props interface refactored into an `extends`, a doc comment moved,
-// a type aliased somewhere new - each should fail a test rather than quietly
-// emptying the inspector's Props tab, and the only place that can be checked is
-// against the components themselves.
-//
-// It is also the regression test for what the old regex parser got wrong: it
-// could not follow `extends`, so <Button> documented ten props while taking
-// eighteen.
+// The prop reader (`propDocs` in clients/tv-build) pointed at the real components,
+// so a refactor that empties the inspector's Props tab fails a test.
 
 import { fileURLToPath } from 'node:url';
 import { readPropDocs } from '@kroma/bundler/props-docs';
@@ -36,15 +25,13 @@ describe('the prop docs read off the kit', () => {
   });
 
   it('follows `extends`, which is the whole reason a checker reads these', () => {
-    // ButtonProps extends Omit<FocusableProps, ...>: these four are declared on
-    // FocusableProps, in another file, and a text parser never saw them.
+    // These four are declared on FocusableProps, in another file.
     const names = (docs.Button ?? []).map((prop) => prop.name);
     expect(names).toEqual(expect.arrayContaining(['onPress', 'disabled', 'autoFocus', 'ref']));
   });
 
   it('keeps a type AS WRITTEN rather than resolving the alias', () => {
-    // The checker would expand `IconName` to its 6215-member union. The panel
-    // has to show what the author wrote.
+    // The checker would expand `IconName` to its 6215-member union.
     const icon = (docs.Button ?? []).find((prop) => prop.name === 'icon');
     expect(icon?.type).toBe('IconName');
   });

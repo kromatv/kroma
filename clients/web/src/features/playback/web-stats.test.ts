@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { MovieView } from '../../shared/lib/api';
 import { buildWebStats, type WebStatsInput } from './web-stats';
 
-// Echo the key + vars so we can assert which catalog string a field used without
-// depending on the real i18n catalog.
+// Echoes the key + vars, so an assertion names the catalog string a field used
+// without depending on the real catalog.
 const t: Translate = ((key: string, vars?: unknown) =>
   vars ? `${key}(${JSON.stringify(vars)})` : key) as Translate;
 
@@ -133,13 +133,11 @@ describe('buildWebStats', () => {
   it('always emits a buffer meter, adding bandwidth/bitrate when the engine reports them', () => {
     const bufferOnly = buildWebStats(input()).meters ?? [];
     expect(bufferOnly.map((m) => m.key)).toEqual(['buffer']);
-    expect(bufferOnly[0]?.value).toBe(60); // bufEnd 100 - cur 40
+    expect(bufferOnly[0]?.value).toBe(60);
 
     const withEngine =
       buildWebStats(input({ engine: { estBandwidthKbps: 512, streamBitrateKbps: 8200 } })).meters ??
       [];
-    // Throughput leads, because the bandwidth/bitrate gap is the diagnostic a
-    // stall investigation starts from; buffer follows on its own axis.
     expect(withEngine.map((m) => m.key)).toEqual(['bandwidth', 'bitrate', 'buffer']);
     expect(withEngine.find((m) => m.key === 'bandwidth')?.display).toBe('512 kb/s');
     expect(withEngine.find((m) => m.key === 'bitrate')?.value).toBe(8200);
@@ -151,7 +149,6 @@ describe('buildWebStats', () => {
       [];
     const bandwidth = meters.find((m) => m.key === 'bandwidth');
     const bitrate = meters.find((m) => m.key === 'bitrate');
-    // Same unit, so they may share a chart - and the gap between them is the point.
     expect(bandwidth?.chart).toBe('throughput');
     expect(bitrate?.chart).toBe('throughput');
     expect(bandwidth?.band).toBe(true);
@@ -160,7 +157,6 @@ describe('buildWebStats', () => {
 
   it('keeps buffer off the throughput axis and gives it a low-water reference', () => {
     const buffer = (buildWebStats(input()).meters ?? []).find((m) => m.key === 'buffer');
-    // Seconds against kb/s on one axis would flatten this to a dead line.
     expect(buffer?.chart).toBeUndefined();
     expect(buffer?.reference?.value).toBe(10);
   });

@@ -20,7 +20,6 @@ const PENDING: Meta = {
   dot: 'rgba(244,243,240,.4)',
 };
 
-/** Per-treatment status (a stage applied to one element). */
 const STATUS_META: Record<string, Meta> = {
   done: {
     color: '#46D08D',
@@ -46,7 +45,6 @@ const STATUS_META: Record<string, Meta> = {
 };
 export const statusMeta = (s: string): Meta => STATUS_META[s] ?? PENDING;
 
-/** An element's overall roll-up. */
 const OVERALL_PENDING: Meta = {
   ...PENDING,
   color: 'rgba(244,243,240,.7)',
@@ -72,7 +70,6 @@ const OVERALL_META: Record<string, Meta> = {
 };
 export const overallMeta = (s: string): Meta => OVERALL_META[s] ?? OVERALL_PENDING;
 
-/** Element kind → badge color + the i18n type key for its label. */
 const FILM_KIND: KindMeta = { color: '#F4B642', bg: 'rgba(242,180,66,.14)', typeKey: 'movie' };
 const KIND_META: Record<string, KindMeta> = {
   film: FILM_KIND,

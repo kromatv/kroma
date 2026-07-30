@@ -12,8 +12,8 @@ use std::path::{Path, PathBuf};
 
 use tokio::process::Command;
 
-/// Official release base. `latest/download/<asset>` always resolves to the newest
-/// build for that asset name.
+// `latest/download/<asset>` always resolves to the newest build for that asset
+// name.
 const RELEASE: &str = "https://github.com/cloudflare/cloudflared/releases/latest/download";
 
 /// The cached binary's file name.
@@ -30,8 +30,8 @@ pub fn cached_path(data_dir: &Path) -> PathBuf {
     data_dir.join("bin").join(bin_name())
 }
 
-/// The release asset for this platform + whether it's a gzip tarball (macOS) as
-/// opposed to a directly-usable binary (Linux / Windows).
+// The release asset for this platform + whether it's a gzip tarball (macOS) as
+// opposed to a directly-usable binary (Linux / Windows).
 fn asset() -> Option<(&'static str, bool)> {
     let a = match (std::env::consts::OS, std::env::consts::ARCH) {
         ("linux", "x86_64") => ("cloudflared-linux-amd64", false),

@@ -1,14 +1,13 @@
 // Sample artwork for the workbench, and ONLY for the workbench.
 //
-// The media stories used to render with `art={null}`, which showed the instant
-// gradient placeholder and never an actual image - so PosterCard, MediaCard and
-// Img all looked like empty boxes, and the one thing those components exist to
-// do went unseen.
+// Real photographs rather than `art={null}`: a placeholder gradient leaves
+// PosterCard, MediaCard and Img all looking like empty boxes, hiding the one
+// thing those components exist to show.
 //
-// These are real photographs from Lorem Picsum (which serves Unsplash-licensed
-// images), pinned by `seed` so a given tile always gets the same picture: a
-// workbench whose artwork reshuffles on every reload makes visual comparison
-// impossible. No film posters - nothing licensed to a studio belongs in a repo.
+// From Lorem Picsum (which serves Unsplash-licensed images), pinned by `seed`
+// so a given tile always gets the same picture: a workbench whose artwork
+// reshuffles on every reload makes visual comparison impossible. No film
+// posters - nothing licensed to a studio belongs in a repo.
 //
 // They are URLs rather than files in the repo because the kit's `src` prop is a
 // STRING. Metro's `require` of a .jpg yields an opaque asset id, not a string,

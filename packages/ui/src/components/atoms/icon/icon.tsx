@@ -13,9 +13,8 @@ import { STROKE_PROP } from '#ui/lib/icons/stroke-prop';
 
 export type { IconName, IconProps } from '#ui/lib/glyph';
 
-/** The fade styles, remembered: the palette holds a handful of alphas, and icons
- *  re-render on every focus move in a 10-foot grid. `alignItems` keeps a glyph
- *  its own size in a stretching parent, so wrapping changes no layout. */
+// The palette holds a handful of alphas, and icons re-render on every focus
+// move in a 10-foot grid, so the fade styles are worth remembering.
 const FADES = new Map<number, ViewStyle>();
 function fade(opacity: number): ViewStyle {
   const hit = FADES.get(opacity);

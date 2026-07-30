@@ -134,15 +134,10 @@ export function me(ctx: RequestContext): Promise<{ user: User }> {
  * server-side username/email must be non-empty). All fields persist server-side
  * and sync across the account's devices. */
 export interface AccountPatch {
-  /** New display name (non-empty). */
   username?: string;
-  /** New email (valid, unused; stored lower-cased). */
   email?: string;
-  /** Preferred UI locale (`"fr"` | `"en"`), or `null` to clear. */
   language?: string | null;
-  /** Preferred audio-track language (ISO code), or `null` to clear. */
   audioLanguage?: string | null;
-  /** Preferred subtitle-track language (ISO code or `"off"`), or `null` to clear. */
   subtitleLanguage?: string | null;
 }
 
@@ -238,8 +233,6 @@ export function sessions(ctx: RequestContext): Promise<SessionInfo[]> {
 export async function revokeSession(ctx: RequestContext, id: string): Promise<void> {
   await ctx.json<void>(`/auth/me/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
-
-// ----- passkeys (WebAuthn) ----------------------------------------------------
 
 /** Opaque WebAuthn ceremony payloads. Their shape is defined by the platform
  * (`navigator.credentials`), not by us the web layer converts the binary

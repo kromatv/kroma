@@ -33,15 +33,15 @@ pub fn parse_release_name(name: &str) -> ParsedRelease {
     out
 }
 
-/// Remember the earliest structural-marker index (the title ends before it).
+// Remembers the earliest structural-marker index (the title ends before it).
 fn mark(slot: &mut Option<usize>, i: usize) {
     if slot.is_none() || i < slot.unwrap() {
         *slot = Some(i);
     }
 }
 
-/// Classify token `i`: fold any resolution/codec/source/episode marker into
-/// `out`, else fall back to the word/flag/year table.
+// Classifies token `i`: folds any resolution/codec/source/episode marker into
+// `out`, else falls back to the word/flag/year table.
 fn classify_token(
     out: &mut ParsedRelease,
     first_marker: &mut Option<usize>,
@@ -82,7 +82,7 @@ fn classify_token(
     classify_word(out, first_marker, tokens, i, &t);
 }
 
-/// The word/flag table for tokens that are not a resolution/codec/source/episode.
+// The word/flag table for tokens that are not a resolution/codec/source/episode.
 fn classify_word(
     out: &mut ParsedRelease,
     first_marker: &mut Option<usize>,
@@ -104,7 +104,7 @@ fn classify_word(
     }
 }
 
-/// A spelled-out `season <n>` marker.
+// A spelled-out `season <n>` marker.
 fn mark_season_word(
     out: &mut ParsedRelease,
     first_marker: &mut Option<usize>,
@@ -120,7 +120,6 @@ fn mark_season_word(
     }
 }
 
-/// A 4-digit year token (keep the LAST one, never index 0).
 fn mark_year_word(out: &mut ParsedRelease, first_marker: &mut Option<usize>, i: usize, t: &str) {
     if let Some(year) = parse_year(t) {
         // Keep the LAST year-looking token ("2001 A Space Odyssey 1968" must not
@@ -132,9 +131,9 @@ fn mark_year_word(out: &mut ParsedRelease, first_marker: &mut Option<usize>, i: 
     }
 }
 
-/// Split a trailing `-GROUP` tag off the release name. The group is the text
-/// after the LAST hyphen when it looks like a tag (alphanumeric, short, no
-/// spaces) and is not itself a known token ("WEB-DL", "HDR10-PLUS"...).
+// The group is the text after the LAST hyphen when it looks like a tag
+// (alphanumeric, short, no spaces) and is not itself a known token
+// ("WEB-DL", "HDR10-PLUS"...).
 fn split_group(name: &str) -> (String, Option<String>) {
     let trimmed = name.trim();
     if let Some((body, tail)) = trimmed.rsplit_once('-') {
@@ -207,8 +206,8 @@ fn parse_source(t: &str, next: Option<&str>) -> Option<Source> {
     }
 }
 
-/// `s01e02`, `s01e01-e03` / `s01e01e02`, bare `s01`, `1x02` (guarded against
-/// `1920x1080`). Returns `(season, episode, episode_end, full_season)`.
+// Matches `s01e02`, `s01e01-e03` / `s01e01e02`, bare `s01`, `1x02` (guarded
+// against `1920x1080`). Returns `(season, episode, episode_end, full_season)`.
 fn parse_episode_marker(t: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     if let Some(rest) = t.strip_prefix('s') {
         return parse_s_marker(rest);
@@ -220,7 +219,8 @@ fn parse_episode_marker(t: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)
     None
 }
 
-/// `sNN` / `sNNeMM` / `sNNeMM-eKK` / `sNNeMMeKK`, given the text after the `s`.
+// Matches `sNN` / `sNNeMM` / `sNNeMM-eKK` / `sNNeMMeKK`, given the text after
+// the `s`.
 fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
     if digits.is_empty() || digits.len() > 2 {
@@ -249,7 +249,7 @@ fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     Some((season, Some(first), last, false))
 }
 
-/// `NxMM` episode marker (guarded so `1920x1080` stays a resolution).
+// `NxMM` episode marker (guarded so `1920x1080` stays a resolution).
 fn parse_x_marker(s: &str, e: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
     if !s.is_empty()
         && !e.is_empty()

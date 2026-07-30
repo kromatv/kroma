@@ -17,10 +17,8 @@ use crate::services::activity::{self, Shared as Activity};
 use super::parse::build_result;
 use super::ProbeResult;
 
-/// Max concurrent ffprobe processes in the phase-2 background pass: half the
-/// cores, clamped to 2..4. Each ffprobe is a real process doing header reads +
-/// a few frame decodes; ten at once starved interactive work on a 4-core NAS.
-/// `KROMA_PROBE_WORKERS` overrides (e.g. bump it on a big box / remote mount).
+// Half the cores, clamped to 2..4: each ffprobe is a real process, and more at
+// once starves interactive work on a small NAS. `KROMA_PROBE_WORKERS` overrides.
 fn probe_workers() -> usize {
     if let Some(n) = std::env::var("KROMA_PROBE_WORKERS").ok().and_then(|s| s.parse().ok()) {
         return n;
@@ -29,7 +27,6 @@ fn probe_workers() -> usize {
     (cores / 2).clamp(2, 4)
 }
 
-/// Detect whether `ffprobe` is callable. Done once at startup.
 pub fn ffprobe_available() -> bool {
     Command::new("ffprobe")
         .arg("-version")
@@ -38,10 +35,9 @@ pub fn ffprobe_available() -> bool {
         .unwrap_or(false)
 }
 
-/// Fast duration-only probe: reads just the container's `format.duration` (a
-/// header read, no frame decode), so it is cheap enough to call on demand when the
-/// catalog row was never probed. Returns milliseconds, or None if ffprobe is
-/// missing / the file has no readable duration.
+/// Reads just the container's `format.duration`: a header read, no frame decode,
+/// so it is cheap enough to call on demand. `None` when ffprobe is missing or the
+/// file has no readable duration.
 pub fn probe_duration_ms(path: &Path) -> Option<u64> {
     let out = Command::new("ffprobe")
         .args(["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1"])
@@ -55,8 +51,8 @@ pub fn probe_duration_ms(path: &Path) -> Option<u64> {
     (secs > 0.0).then(|| (secs * 1000.0) as u64)
 }
 
-/// Probe a single file. Returns a best-effort [`ProbeResult`]; on any failure
-/// it falls back to a container-extension guess for the video codec.
+/// Best effort: on any failure this falls back to a container-extension guess
+/// for the video codec.
 pub fn probe_file(path: &Path, ffprobe_present: bool) -> ProbeResult {
     if ffprobe_present {
         if let Some(result) = run_ffprobe(path) {
@@ -66,18 +62,15 @@ pub fn probe_file(path: &Path, ffprobe_present: bool) -> ProbeResult {
     fallback_from_extension(path)
 }
 
-/// One file awaiting a probe.
 struct ProbeJob {
     file_id: String,
     abs_path: String,
     item_id: String,
 }
 
-/// Spawn the background phase-2 probing pass: ffprobe every file with `probed=0`,
-/// write the result, and emit live events so clients fill in codec/HDR badges.
-///
-/// Returns immediately; work runs on a small pool of detached threads, mirroring
-/// [`crate::services::enrich`]. A no-op when there are no unprobed files.
+/// ffprobe every file with `probed=0`, write the result, and emit live events so
+/// clients fill in codec/HDR badges. Returns immediately; work runs on a small
+/// pool of detached threads. A no-op when there are no unprobed files.
 pub fn spawn_probe_pass(pool: Pool, ffprobe_present: bool, bus: Bus, activity: Activity) {
     let unprobed = match db::unprobed_files(&pool) {
         Ok(v) => v,
@@ -105,8 +98,6 @@ pub fn spawn_probe_pass(pool: Pool, ffprobe_present: bool, bus: Bus, activity: A
     thread::spawn(move || run_probe_pass(pool, ffprobe_present, bus, activity, queue, done, total));
 }
 
-/// The detached driver of the probe pass: fan out [`probe_workers`] threads over
-/// the shared queue, join them, then publish the completion events.
 #[allow(clippy::too_many_arguments)]
 fn run_probe_pass(
     pool: Pool,
@@ -140,8 +131,6 @@ fn run_probe_pass(
     bus.publish(ServerEvent::LibraryUpdated);
 }
 
-/// One worker: pull jobs off the shared queue until it's drained, probing each
-/// and emitting periodic progress.
 #[allow(clippy::too_many_arguments)]
 fn probe_worker_loop(
     pool: &Pool,
@@ -170,10 +159,9 @@ fn probe_worker_loop(
     }
 }
 
-/// Probe one file and persist it: run ffprobe, store the stream columns (+
-/// `probed=1`), derive intro/credits markers from any embedded chapters, and emit
-/// `ItemUpdated` when this is the item's first probed file. Shared by the
-/// background probe pass and the `pipeline.probe` stage.
+/// Store the stream columns (+ `probed=1`), derive intro/credits markers from any
+/// embedded chapters, and emit `ItemUpdated` when this is the item's first probed
+/// file. Shared by the background probe pass and the `pipeline.probe` stage.
 pub fn probe_one(
     pool: &Pool,
     ffprobe: bool,
@@ -182,8 +170,6 @@ pub fn probe_one(
     abs_path: &str,
     item_id: &str,
 ) -> anyhow::Result<()> {
-    // Whether this is the item's first probe → emit ItemUpdated so the client
-    // shows the codec badge appear.
     let first_for_item = db::item_has_probed_file(pool, item_id).map(|has| !has).unwrap_or(true);
     let result = probe_file(Path::new(abs_path), ffprobe);
     db::set_file_probe(
@@ -195,7 +181,6 @@ pub fn probe_one(
         &result.audio_tracks,
         &result.subtitles,
     )?;
-    // Intro/credits markers from embedded chapters (free since we already probed).
     for (kind, start, end) in super::markers_from_chapters(&result.chapters, result.duration_ms) {
         let _ = db::set_marker(pool, item_id, kind, start, end, "chapters");
     }
@@ -205,12 +190,9 @@ pub fn probe_one(
     Ok(())
 }
 
-/// Run ffprobe and parse its JSON. Returns `None` (→ extension-guess fallback)
-/// if anything goes wrong, logging the cause at DEBUG. It's DEBUG, not WARN,
-/// because 10 workers probing every file would flood the default log; a wholesale
-/// degradation still shows up as `probed` ≪ `total` in the phase-2 summary, and
-/// `RUST_LOG=kroma_server=debug` surfaces the per-file detail. `-v error` (vs the
-/// old `-v quiet`) lets ffmpeg's own diagnostic reach stderr.
+// Failures log at DEBUG, not WARN: every worker probing every file would flood
+// the default log, and a wholesale degradation still shows up as `probed` ≪
+// `total` in the phase-2 summary.
 fn run_ffprobe(path: &Path) -> Option<ProbeResult> {
     let output = match Command::new("ffprobe")
         .args([
@@ -245,7 +227,6 @@ fn run_ffprobe(path: &Path) -> Option<ProbeResult> {
     }
 }
 
-/// When ffprobe is unavailable, guess the video codec from the file extension.
 fn fallback_from_extension(path: &Path) -> ProbeResult {
     let ext = path
         .extension()
@@ -256,7 +237,6 @@ fn fallback_from_extension(path: &Path) -> ProbeResult {
     let codec = match ext.as_str() {
         "webm" => "vp9",
         "avi" => "mpeg4",
-        // Modern containers commonly carry h264; leave it as a soft guess.
         "mp4" | "m4v" | "mov" | "mkv" | "ts" => "h264",
         _ => "unknown",
     };

@@ -34,8 +34,7 @@ export default story({
     ],
   },
   matrix: false,
-  // A field is as wide as the form around it. The range is the one that matters:
-  // at the narrow end the hint has to wrap rather than push the entry out of
+  // At the narrow end the hint has to wrap rather than push the entry out of
   // shape, and the reveal eye has to stay off the text.
   width: { min: 280, max: 560 },
   args: {
@@ -49,8 +48,8 @@ export default story({
     hideLabel: false,
   },
   controls: { type: TYPES, icon: 'icon' },
-  // Uncontrolled with a remount key: the panel seeds the text, and typing in the
-  // preview just works without the story holding state.
+  // Uncontrolled with a remount key, so the panel can seed the text without the
+  // story holding state.
   render: ({ error, value, ...props }) => (
     <Field
       {...props}

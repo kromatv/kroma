@@ -48,9 +48,6 @@ const UP_NEXT = {
   })),
 };
 
-/** A still standing in for the video element. The real surface is an in-page
- *  <video> on the web and a native plane behind a transparent page on a TV -
- *  either way the chrome only ever receives it as a node. */
 function Surface() {
   return <Img src={stillArt(1)} fill fit="cover" />;
 }
@@ -84,11 +81,8 @@ export default story({
     ],
   },
   matrix: false,
-  // Authored against the 1920x1080 stage, like every 10-foot screen, so the
-  // story OPENS in the scaled TV frame. It does not stay there: the chrome
-  // measures the stage it is drawn on, so the phone and tablet frames show the
-  // shrunken row, the controls it sheds to stay on one line, and the full-width
-  // settings panel a browser window actually gets.
+  // Authored against the 1920x1080 stage; the chrome still measures whatever
+  // frame it is drawn on, so the phone and tablet frames stay meaningful.
   viewport: 'tv',
   pad: 0,
   args: { playing: false as boolean, warn: '', tv: false as boolean, intro: false as boolean },

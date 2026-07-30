@@ -1,9 +1,7 @@
 // @vitest-environment jsdom
 //
-// The 1-D focus every player panel navigates with. Quality, Audio, Speed,
-// Subtitles, the appearance rows and the AI-gen wizard all share it, so the
-// difference between "consumed" and "not consumed" here decides whether a key
-// moves the row or falls through to the shell and closes the panel.
+// The 1-D focus every player panel navigates with (Quality, Audio, Speed,
+// Subtitles, the appearance rows, the AI-gen wizard).
 
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';

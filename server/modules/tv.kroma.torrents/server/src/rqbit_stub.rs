@@ -1,6 +1,5 @@
 //! Stub for builds without the `rqbit` feature: same public surface, but
-//! starting the engine reports "not compiled" (the whisper-local pattern).
-//! Transmission / qBittorrent connectors remain fully functional.
+//! starting the engine reports "not compiled".
 
 use std::path::PathBuf;
 use std::sync::Arc;

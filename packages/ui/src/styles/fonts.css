@@ -1,13 +1,11 @@
 /* KROMA's two typefaces, SELF-HOSTED.
  *
- * They used to come from Google's CDN through a render-blocking <link>, which is
- * the wrong shape for this product twice over. A KROMA server is self-hosted, so
- * a television on a network with no route to the internet is a NORMAL
- * deployment - and there the request cannot succeed, it can only time out, with
- * first paint waiting behind it. (Samsung wants the first screen inside 10
- * seconds.) It was also the app's only always-on third-party request, so serving
- * the files ourselves is what makes "the app talks to your server and nothing
- * else" true rather than nearly true - see PRIVACY.md.
+ * A KROMA server is self-hosted, so a television on a network with no route to
+ * the internet is a NORMAL deployment - a CDN request there cannot succeed, it
+ * can only time out, with first paint waiting behind it. (Samsung wants the
+ * first screen inside 10 seconds.) Self-hosting is also what makes "the app
+ * talks to your server and nothing else" true rather than nearly true - see
+ * PRIVACY.md.
  *
  * Both families are VARIABLE fonts, so one file per subset covers the whole
  * 400-800 range the design uses; latin + latin-ext cover English and French.

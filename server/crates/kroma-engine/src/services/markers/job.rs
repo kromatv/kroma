@@ -22,22 +22,18 @@ use crate::infra::probe::{markers_from_chapters, probe_file};
 use crate::model::{MarkerKind, MediaItem, Season};
 use crate::services::jobs::JobContext;
 
-/// Seconds of audio fingerprinted from the start (intro) and end (credits).
+// Seconds of audio fingerprinted from the start (intro) and end (credits).
 const INTRO_WINDOW_S: u32 = 240;
 const CREDITS_WINDOW_S: u32 = 360;
 const INTRO_REGION_END_S: f32 = 150.0;
 const MIN_INTRO_S: f32 = 10.0;
 const MIN_CREDITS_S: f32 = 10.0;
-/// Upper bound on concurrent ffmpeg/ffprobe decode workers. Deliberately low:
-/// fingerprinting streams whole audio tracks off disk, which competes with live
-/// playback IO. We also pause entirely while anyone is watching (see
-/// [`wait_while_idle`]), so this only bounds the brief in-flight contention when a
-/// stream starts mid-decode. Playback is always the priority.
+// Deliberately low: fingerprinting competes with live playback IO. Playback
+// always wins (see `wait_while_idle`); this only bounds brief mid-decode overlap.
 const MAX_WORKERS: usize = 3;
-/// Poll interval while paused for active playback.
 const PAUSE_POLL_S: u64 = 4;
 
-/// Per-episode analysis result from the parallel decode pass.
+// Per-episode analysis result from the parallel decode pass.
 struct EpData {
     chapters: Vec<(MarkerKind, u64, u64)>,
     start_fp: Option<WindowFp>,
@@ -105,8 +101,8 @@ fn process_season(
     Ok(written)
 }
 
-/// Decode every episode concurrently on a bounded worker pool: read chapters via
-/// ffprobe and (when `do_fp`) fingerprint the start + end audio windows.
+// Decode every episode concurrently on a bounded worker pool: read chapters via
+// ffprobe and (when `do_fp`) fingerprint the start + end audio windows.
 fn parallel_decode(
     eps: &[&MediaItem],
     do_fp: bool,
@@ -128,9 +124,8 @@ fn parallel_decode(
         .collect()
 }
 
-/// One scoped decode worker: pull the next episode index until the season is
-/// drained (or cancelled), yielding to live playback before each heavy decode,
-/// and store the result into its slot.
+// Pulls the next episode index until the season is drained (or cancelled),
+// yielding to live playback before each heavy decode.
 #[allow(clippy::too_many_arguments)]
 fn decode_worker(
     next: &AtomicUsize,
@@ -156,8 +151,8 @@ fn decode_worker(
     }
 }
 
-/// Block while any playback session is live, so the job yields all disk/CPU to
-/// streaming. Logs the pause/resume transition exactly once (CAS on `paused`).
+// Blocks while any playback session is live, so the job yields all disk/CPU to
+// streaming. Logs the pause/resume transition exactly once (CAS on `paused`).
 fn wait_while_idle(ctx: &JobContext, paused: &AtomicBool) {
     loop {
         if ctx.cancelled() {
@@ -200,12 +195,12 @@ fn decode_one(
     EpData { chapters, start_fp, end_fp }
 }
 
-/// How to pick a window fingerprint for a marker kind, plus its search region and
-/// minimum run length: `(picker, (region_start_s, region_end_s), min_len_s)`.
+// How to pick a window fingerprint for a marker kind, plus its search region and
+// minimum run length: `(picker, (region_start_s, region_end_s), min_len_s)`.
 type MarkerPick = (fn(&EpData) -> &Option<WindowFp>, (f32, f32), f32);
 
-/// The fingerprint-derived range for `kind` on episode `i`, via pairwise alignment
-/// + season consensus. Returns absolute ms; credits run to the episode end.
+// The fingerprint-derived range for `kind` on episode `i`, via pairwise alignment
+// + season consensus. Returns absolute ms; credits run to the episode end.
 fn align(data: &[EpData], i: usize, kind: MarkerKind, support: usize, e: &MediaItem) -> Option<(u64, u64)> {
     let (pick, region, min_len): MarkerPick = match kind {
         MarkerKind::Intro => (|d| &d.start_fp, (0.0, INTRO_REGION_END_S), MIN_INTRO_S),
@@ -234,9 +229,8 @@ fn align(data: &[EpData], i: usize, kind: MarkerKind, support: usize, e: &MediaI
     }
 }
 
-/// Pick the marker to store from the two sources and log the comparison. Chapters
-/// win when present (authoritative); fingerprint fills gaps. Returns the stored
-/// `(start, end, source)` or `None` if neither source found the segment.
+// Chapters win when present (authoritative); fingerprint fills gaps. Returns
+// `None` if neither source found the segment.
 fn reconcile(
     kind: MarkerKind,
     chap: Option<(u64, u64)>,

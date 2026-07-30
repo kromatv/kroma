@@ -26,10 +26,8 @@ import { Rich } from '#site/components/rich';
 import { site } from '#site/lib/site';
 import { m } from '#site/paraglide/messages';
 
-/** The one-time-setup note: the icon is an editorial choice (a key for a setup, a
- *  triangle for a Gatekeeper prompt), the words come from the catalog. `link` is
- *  the off-site follow-up some notes end on; its label is a message of its own,
- *  because an anchor cannot live inside a plain-string message. */
+// A link label is a message of its own: an anchor cannot live inside a
+// plain-string message.
 function note(
   icon: IconComponent,
   tag: string,
@@ -49,13 +47,7 @@ function note(
   );
 }
 
-/**
- * Step 2's body: every screen KROMA runs on, grouped by family. The families are
- * data, not four near-identical JSX blocks, so each device still gets the note and
- * the command that actually matters for it without the frame repeating. Device
- * names, extensions and commands are language-neutral and live here; every word a
- * reader parses comes from the catalog.
- */
+/** Every screen KROMA runs on, grouped by family. */
 export function AppPlatforms() {
   const families: readonly PlatformFamilyProps[] = [
     {

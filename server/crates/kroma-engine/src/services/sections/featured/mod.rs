@@ -1,30 +1,6 @@
-//! The "En vedette" hero pick: one spotlight title per user per day, chosen by
-//! a multi-signal score instead of "first item of some list".
-//!
-//! Signals, blended as a weighted sum (weights renormalize when a signal has no
-//! data, so scores stay comparable):
-//! - **Taste**: cosine similarity to the viewer's taste centroid (the same
-//!   embedding centroid "For You" ranks with), min-max normalized across the
-//!   candidate pool because the lexical backend clusters in a narrow band.
-//! - **Quality**: TMDB rating.
-//! - **Freshness**: half-life decay on `added_at`, so new arrivals surface.
-//! - **Trending**: recency-weighted household plays (rank-normalized).
-//! - **Cinematic**: 4K / HDR bonus the hero is a showcase surface.
-//!
-//! Gates (relaxed in order if they empty the pool, so the hero never dies on a
-//! small or fully-watched library):
-//! 1. Presentation: the entry must carry backdrop art and an overview.
-//! 2. Novelty: not watched, not in progress, not recently played (an episode in
-//!    flight excludes its whole show it already lives in "Continue watching").
-//!
-//! The winner is not simply the top score: the top [`ROTATION_POOL`] rotate
-//! deterministically by day and user, so the hero changes daily without any
-//! per-request randomness (stable within a day, per user). The scoring clock is
-//! quantized to that same day ([`today`]), so freshness decay cannot re-order
-//! the pool between two requests made on it either.
-//!
-//! Layout: this file orchestrates (gather -> gate -> rank -> rotate -> localize),
-//! [`score`] holds the pure scoring rules, [`gather`] the catalog/history reads.
+//! The "En vedette" hero pick: one spotlight title per user per day. This file
+//! orchestrates gather -> gate -> rank -> rotate -> localize; [`score`] holds the
+//! scoring rules and [`gather`] the catalog/history reads.
 
 mod gather;
 mod score;
@@ -41,12 +17,10 @@ use crate::state::SharedState;
 
 use score::{presentable, rank, rotation_index, DAY_MS};
 
-/// The daily rotation cycles through this many top-scored titles.
 const ROTATION_POOL: usize = 5;
 
-/// Pick today's featured entry for one user, localized. `None` only when the
-/// catalog is empty (clients keep their own last-resort fallback); a catalog the
-/// DB refuses to read looks the same to the client but is logged, not silent.
+/// Today's featured entry for one user, localized. `None` only when the catalog
+/// is empty.
 pub fn pick(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Option<SectionItem> {
     let _ = state.vectors.refresh_if_stale(pool);
 
@@ -55,8 +29,6 @@ pub fn pick(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Op
         return None;
     }
 
-    // Read once, used twice: the novelty gate excludes recent plays, the taste
-    // centroid is built from them.
     let recent = db::recent_watched_ids(pool, user_id).unwrap_or_default();
     let seen = gather::seen_ids(pool, user_id, &recent);
     let taste: HashMap<String, f32> = if recent.is_empty() {
@@ -75,8 +47,8 @@ pub fn pick(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Op
     hero.pop()
 }
 
-/// The gate ladder: strict (presentable **and** novel) -> presentable-only ->
-/// anything, so a small or fully-watched library still yields a hero.
+// Relaxes strict -> presentable-only -> anything, so a small or fully-watched
+// library still yields a hero.
 fn gate<'a>(all: &'a [SectionItem], seen: &HashSet<String>) -> Vec<&'a SectionItem> {
     let strict: Vec<&SectionItem> =
         all.iter().filter(|e| presentable(e) && !seen.contains(e.id())).collect();
@@ -87,10 +59,9 @@ fn gate<'a>(all: &'a [SectionItem], seen: &HashSet<String>) -> Vec<&'a SectionIt
     if presentable_only.is_empty() { all.iter().collect() } else { presentable_only }
 }
 
-/// The UTC day number of `now_ms` and the millisecond that day began. Scoring
-/// runs on the day start, not the wall clock: freshness is the one continuously
-/// moving term, and re-ranking against it on every request would slide the hero
-/// through the day instead of holding it, as the module contract promises.
+// Scoring runs on the day start, not the wall clock: freshness moves
+// continuously, and re-ranking against it per request would slide the hero
+// through the day instead of holding it.
 fn today(now_ms: i64) -> (u64, i64) {
     let day = now_ms.div_euclid(DAY_MS);
     (day as u64, day * DAY_MS)
@@ -110,8 +81,8 @@ mod tests {
             [],
         )
         .unwrap();
-        // Test-controlled literals (ids + JSON without single quotes), so inline
-        // them like the other section tests (kroma-engine has no direct rusqlite).
+        // Test-controlled literals, inlined because kroma-engine has no direct
+        // rusqlite dependency for parameter binding.
         let json = serde_json::to_string(m).unwrap();
         let now = kroma_primitives::now_iso8601();
         conn.execute(
@@ -128,11 +99,8 @@ mod tests {
     fn scoring_clock_is_quantized_to_the_day() {
         let (day, start) = today(1_700_000_000_000);
         assert_eq!(start % DAY_MS, 0);
-        // Every instant of that day scores against the same millisecond, so two
-        // requests hours apart rank the pool identically.
         assert_eq!(today(start), (day, start));
         assert_eq!(today(start + DAY_MS - 1), (day, start));
-        // The next day advances both halves by exactly one day.
         assert_eq!(today(start + DAY_MS), (day + 1, start + DAY_MS));
     }
 
@@ -147,7 +115,6 @@ mod tests {
         let state = test_support::test_state();
         seed_movie(&state.db, "plain", &meta(Some(9.9), false, false));
         seed_movie(&state.db, "hero", &meta(Some(7.0), true, true));
-        // The strict gate keeps only the presentable title, whatever its rating.
         let picked = pick(&state, &state.db, "en", "u1").expect("a hero");
         assert_eq!(picked.id(), "hero");
     }
@@ -162,7 +129,6 @@ mod tests {
         db::mark_watched(&state.db, "u1", "seen").unwrap();
         let picked = pick(&state, &state.db, "en", "u1").expect("a hero");
         assert_eq!(picked.id(), "fresh");
-        // Everything watched: the novelty gate relaxes rather than going dark.
         db::mark_watched(&state.db, "u1", "fresh").unwrap();
         assert!(pick(&state, &state.db, "en", "u1").is_some());
     }
@@ -173,12 +139,9 @@ mod tests {
         let shown = fixtures::movie("shown", Some(meta(None, true, true)), "t", None);
         let all = vec![plain, shown];
         let seen: HashSet<String> = ["shown".to_string()].into();
-        // Strict: presentable and unseen.
         let ids = |v: Vec<&SectionItem>| v.iter().map(|e| e.id().to_string()).collect::<Vec<_>>();
         assert_eq!(ids(gate(&all, &HashSet::new())), ["shown"]);
-        // The only presentable title is seen -> novelty drops, presentation holds.
         assert_eq!(ids(gate(&all, &seen)), ["shown"]);
-        // Nothing presentable at all -> everything is a candidate.
         assert_eq!(ids(gate(&all[..1], &HashSet::new())), ["plain"]);
     }
 }

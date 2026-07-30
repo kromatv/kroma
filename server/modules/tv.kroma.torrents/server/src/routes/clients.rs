@@ -21,7 +21,7 @@ use kroma_module_sdk::primitives::{now_ms, random_token, short_hash};
 
 use crate::DownloadManager;
 
-/// Resolve the module's download manager from the host service registry.
+// Resolve the module's download manager from the host service registry.
 fn dm<S: HostCtx>(state: &S) -> Arc<DownloadManager> {
     service::<DownloadManager>(state).expect("download manager registered")
 }

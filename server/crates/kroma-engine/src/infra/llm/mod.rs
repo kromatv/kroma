@@ -1,16 +1,6 @@
-//! Pluggable LLM client the small text model behind KROMA's "smart" features
-//! (personalized, auto-named home sections; an evolving per-user taste profile).
-//!
-//! KROMA is open source and self-hosted, so the user chooses *which* model and
-//! *where* it runs. Backends sit behind one [`LlmClient`] trait, mirroring the
-//! embedder-port design (see [`crate::ports::Embedder`]):
-//!   * [`http`] any **OpenAI-compatible** server (Ollama, llama.cpp, LM Studio,
-//!     vLLM, OpenRouter, …) **or** the **Anthropic** Messages API (Claude). Shells
-//!     out to `curl`, exactly like the TMDB client no heavy HTTP dep.
-//!
-//! The task ("name this cluster of titles" / "summarize this taste") is tiny, so
-//! a small model is enough Qwen2.5-0.5B/1.5B on Ollama, or Claude Haiku. It runs
-//! in the nightly `sections.personalize` job, so even slow CPU inference is fine.
+//! Pluggable LLM client behind KROMA's small-text-model features (auto-named home
+//! sections, per-user taste profiles). Backends sit behind the [`LlmClient`] trait;
+//! [`http`] speaks any OpenAI-compatible server or the Anthropic Messages API.
 
 use std::sync::Arc;
 
@@ -22,9 +12,8 @@ mod tools;
 pub use http::list_models;
 pub use tools::{ToolBox, ToolDef};
 
-/// Build a one-off HTTP client from explicit config (the admin Test / Load-models
-/// endpoints, which probe values the admin is still editing before they're
-/// saved). `None` when the config can't form a usable client.
+/// A one-off client from unsaved config, for the admin Test / Load-models probes.
+/// `None` when the config can't form a usable client.
 pub fn build_http(
     provider: &str,
     base_url: &str,
@@ -37,27 +26,20 @@ pub fn build_http(
         .map(|c| Arc::new(c) as Arc<dyn LlmClient>)
 }
 
-/// A text-generation backend. Implementations are cheap to clone via `Arc`.
 pub trait LlmClient: Send + Sync {
-    /// Whether the client is configured and usable (a real endpoint/model).
     fn available(&self) -> bool;
 
-    /// Run a single completion: a system instruction + a user message in, the
-    /// assistant's text out. `max_tokens` caps the reply. Blocking (network /
-    /// CPU) call from a blocking context (the job runs on `spawn_blocking`).
+    // Blocking call; must be made from a blocking context.
     fn complete(&self, system: &str, user: &str, max_tokens: u32) -> anyhow::Result<String>;
 
-    /// Whether this client can run the agentic [`run_tools`](LlmClient::run_tools)
-    /// loop (function calling). `false` clients only do [`complete`]; tool-driven
-    /// features should check this and fall back to a prompt path.
+    // `false` clients only do [`complete`]; tool-driven features must check this
+    // and fall back to a prompt path.
     fn supports_tools(&self) -> bool {
         false
     }
 
-    /// Agentic tool loop: hand the model `tools`, dispatch each requested call
-    /// through `toolbox`, feed results back, and repeat up to `max_steps` until
-    /// the model produces a final answer (returned as text). Errors including
-    /// "unsupported" so callers can fall back to a non-tool path. Blocking.
+    // Dispatches each requested call through `toolbox` and feeds results back, up
+    // to `max_steps`, until the model produces a final answer. Blocking.
     fn run_tools(
         &self,
         system: &str,
@@ -71,16 +53,12 @@ pub trait LlmClient: Send + Sync {
         anyhow::bail!("this LLM client does not support tool calling")
     }
 
-    /// Short human description for logs (`"openai qwen2.5:1.5b @ …"`).
     fn describe(&self) -> String;
 }
 
-/// Build the configured client from settings. Returns a [`Disabled`] client when
-/// the feature is off or unconfigured, so callers can always call `complete` and
-/// just check `available()` first. With more than one configured provider it
-/// returns a [`Failover`] that tries the default first, then the rest so a
-/// primary that's out of credits / rate-limited / down degrades to a secondary
-/// (e.g. cloud Claude → local Ollama) transparently.
+/// Never fails: an unconfigured feature yields a [`Disabled`] client, so callers
+/// can always call `complete` and check `available()` first. Several configured
+/// providers yield a failover chain, default first.
 pub fn from_settings(settings: &Settings) -> Arc<dyn LlmClient> {
     if !settings.get_bool("llmEnabled", false) {
         return Arc::new(Disabled);
@@ -99,10 +77,6 @@ pub fn from_settings(settings: &Settings) -> Arc<dyn LlmClient> {
     }
 }
 
-/// Tries each configured provider in order (default first), falling through to
-/// the next on error resilience against a primary that's out of credits,
-/// rate-limited, or down. Per-provider failures are logged (server tracing); the
-/// caller only sees the first success or, if all fail, the last error.
 struct Failover {
     clients: Vec<Arc<dyn LlmClient>>,
 }
@@ -140,8 +114,6 @@ impl LlmClient for Failover {
         max_steps: usize,
     ) -> anyhow::Result<String> {
         let mut last = None;
-        // Only tool-capable providers; the caller falls back to `complete` if
-        // every tool attempt fails.
         for c in self.clients.iter().filter(|c| c.supports_tools()) {
             match c.run_tools(system, user, tools, toolbox, max_tokens, max_steps) {
                 Ok(s) => return Ok(s),
@@ -160,9 +132,8 @@ impl LlmClient for Failover {
     }
 }
 
-/// The no-op client used when no LLM is configured. `available()` is false and
-/// `complete()` errors, so dependent features degrade gracefully (the home falls
-/// back to the static themed-row bank).
+/// The client used when no LLM is configured: `available()` is false and
+/// `complete()` errors, so dependent features degrade rather than break.
 pub struct Disabled;
 
 impl LlmClient for Disabled {

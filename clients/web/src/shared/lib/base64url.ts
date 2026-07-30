@@ -1,9 +1,9 @@
 // base64url (RFC 4648 §5) — the encoding the Push API's subscription keys and
 // WebAuthn's credential fields both travel in.
 //
-// One copy on purpose: this used to be three (push.ts, webauthn.ts and the
-// service worker), which had drifted into three different ways of stripping the
-// padding. Nothing is imported here, so the service worker can bundle it too.
+// One copy on purpose: three separate ones drifted into three different ways of
+// stripping the padding. Nothing is imported here, so the service worker can
+// bundle it too.
 
 /** Takes either form: WebAuthn and `PushSubscription.getKey` hand out raw
  * ArrayBuffers, while callers that already have a view pass it straight in. */

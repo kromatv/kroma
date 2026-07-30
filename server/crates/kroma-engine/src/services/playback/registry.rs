@@ -1,5 +1,5 @@
-//! The live-session store: the in-memory heartbeat map, its upsert/list/reap
-//! lifecycle, and appending ended sessions to the play-history log.
+//! The live-session store: the heartbeat map, its upsert/list/reap lifecycle, and
+//! appending ended sessions to the play-history log.
 
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -13,21 +13,16 @@ use crate::model::MediaItem;
 
 use super::snapshot::snapshot;
 
-/// A session is considered ended once no ping arrives for this long. Clients
-/// heartbeat every ~10s, so this tolerates a couple of missed beats.
+// Clients heartbeat every ~10s, so this tolerates a couple of missed beats.
 const SESSION_TTL: Duration = Duration::from_secs(30);
-/// How often the reaper sweeps for stale sessions.
 const REAP_INTERVAL: Duration = Duration::from_secs(10);
 
-/// What a client reports on each heartbeat.
 pub struct Ping {
     pub session_id: String,
     pub item_id: String,
     pub position_ms: i64,
     pub duration_ms: Option<i64>,
-    /// `playing` | `paused`.
     pub state: String,
-    /// `direct` | `transcode`.
     pub mode: String,
     pub player: String,
     pub device: String,
@@ -35,8 +30,7 @@ pub struct Ping {
     pub subtitle: Option<String>,
 }
 
-/// A live playback session, serialized for the admin API. Field names feed the
-/// dashboard's "En cours de lecture" card directly.
+/// A live playback session, serialized for the admin API.
 #[derive(Clone, Serialize)]
 pub struct Session {
     pub id: String,
@@ -57,39 +51,35 @@ pub struct Session {
     #[serde(rename = "audioLabel")]
     pub audio_label: String,
     pub subtitle: String,
-    /// Approx stream bitrate in Mb/s (from file size ÷ duration).
+    // Mb/s, approximated from file size ÷ duration.
     pub bitrate: f64,
-    /// `direct` | `transcode`.
+    // `direct` | `transcode`.
     pub mode: String,
     pub player: String,
     pub device: String,
-    /// `LAN` | `WAN`.
+    // `LAN` | `WAN`.
     pub network: String,
     pub ip: String,
-    /// `playing` | `paused`.
+    // `playing` | `paused`.
     pub state: String,
     #[serde(rename = "positionMs")]
     pub position_ms: i64,
     #[serde(rename = "durationMs")]
     pub duration_ms: Option<i64>,
-    /// Unix-seconds the session started (server clock).
+    // Unix seconds, server clock.
     #[serde(rename = "startedAt")]
     pub started_at: i64,
-    /// Internal: last heartbeat (for TTL). Skipped from JSON.
     #[serde(skip)]
     last_seen: Instant,
 }
 
-/// How long a terminated session id is remembered so its in-flight heartbeats
-/// can't immediately re-register it before the client processes the stop event.
+// Long enough that in-flight heartbeats can't re-register a terminated session.
 const TERMINATE_GRACE: Duration = Duration::from_secs(60);
 
 /// Shared, cheap-to-clone handle to the live-session map.
 #[derive(Clone)]
 pub struct Registry {
     inner: Arc<RwLock<HashMap<String, Session>>>,
-    /// session id → when it was terminated, so re-pings within the grace window
-    /// are rejected instead of recreating the session.
     terminated: Arc<RwLock<HashMap<String, Instant>>>,
 }
 
@@ -101,9 +91,7 @@ impl Registry {
         }
     }
 
-    /// Admin-terminate a session: drop it and remember the id for a grace window
-    /// so its next heartbeat won't recreate it. Returns the removed session (for
-    /// history) if it was live.
+    /// Drops the session and remembers the id, so its next heartbeat won't recreate it.
     pub fn terminate(&self, session_id: &str) -> Option<Session> {
         self.terminated
             .write()
@@ -112,16 +100,14 @@ impl Registry {
         self.inner.write().unwrap().remove(session_id)
     }
 
-    /// Whether `session_id` was terminated within the grace window (so a ping for
-    /// it should be refused, not recreated).
+    /// Whether a ping for `session_id` should be refused rather than recreated.
     pub fn is_recently_terminated(&self, session_id: &str) -> bool {
         let mut map = self.terminated.write().unwrap();
         map.retain(|_, at| at.elapsed() < TERMINATE_GRACE);
         map.contains_key(session_id)
     }
 
-    /// Upsert a heartbeat. `snapshot` (title/streams) is built by the caller from
-    /// the item on first sight; subsequent pings just refresh position/state.
+    /// `item` is only read on first sight, to build the title/streams snapshot.
     pub fn upsert(
         &self,
         ping: Ping,
@@ -163,7 +149,6 @@ impl Registry {
                 last_seen: now,
             }
         });
-        // Refresh the volatile fields on every beat.
         entry.position_ms = ping.position_ms;
         if ping.duration_ms.is_some() {
             entry.duration_ms = ping.duration_ms;
@@ -182,31 +167,20 @@ impl Registry {
         is_new
     }
 
-    /// Whether a session id is already tracked (so the caller can skip the
-    /// per-ping item lookup once a session's snapshot is built).
     pub fn contains(&self, session_id: &str) -> bool {
         self.inner.read().unwrap().contains_key(session_id)
     }
 
-    /// Remove a session explicitly (client signalled stop). Returns it so the
-    /// caller can record history.
-    ///
-    /// Unauthenticated by design - callers that act on a viewer's request must
-    /// use [`Registry::remove_owned`] instead.
+    /// Unauthenticated by design - callers acting on a viewer's request must use
+    /// [`Registry::remove_owned`] instead.
     pub fn remove(&self, session_id: &str) -> Option<Session> {
         self.inner.write().unwrap().remove(session_id)
     }
 
-    /// Remove a session ONLY if `user_id` is the viewer watching it.
-    ///
-    /// `/playback/stop` used to remove any session by id, so any authenticated
-    /// account could end anyone else's playback just by naming their session -
-    /// and the ids were `Math.random()`, so naming one was not hard. Admins keep
-    /// their own terminate route; this one is "I stopped watching".
-    ///
-    /// Returns `None` both for an unknown id and for someone else's, so the
-    /// result cannot be used to probe which sessions exist. The lookup and the
-    /// removal share one write lock, so two racing stops cannot interleave.
+    /// Removes ONLY if `user_id` is the viewer watching it, so no account can end
+    /// another's playback by naming their session id. Returns `None` both for an
+    /// unknown id and for someone else's, so it cannot probe which sessions exist;
+    /// one write lock covers lookup and removal, so racing stops cannot interleave.
     pub fn remove_owned(&self, session_id: &str, user_id: &str) -> Option<Session> {
         let mut sessions = self.inner.write().unwrap();
         let owned = sessions
@@ -215,7 +189,7 @@ impl Registry {
         if owned { sessions.remove(session_id) } else { None }
     }
 
-    /// Snapshot all live (non-stale) sessions, newest first.
+    /// Live (non-stale) sessions only, newest first.
     pub fn list(&self) -> Vec<Session> {
         let mut v: Vec<Session> = self
             .inner
@@ -229,7 +203,6 @@ impl Registry {
         v
     }
 
-    /// Whether a given user currently has a live session (the "online" flag).
     pub fn user_online(&self, user_id: &str) -> bool {
         self.inner
             .read()
@@ -238,7 +211,6 @@ impl Registry {
             .any(|s| s.user_id.as_deref() == Some(user_id) && s.last_seen.elapsed() < SESSION_TTL)
     }
 
-    /// Drain stale sessions, returning them for history recording.
     fn drain_stale(&self) -> Vec<Session> {
         let mut map = self.inner.write().unwrap();
         let stale: Vec<String> = map
@@ -249,7 +221,7 @@ impl Registry {
         stale.into_iter().filter_map(|k| map.remove(&k)).collect()
     }
 
-    /// Spawn the background reaper: evict stale sessions and log each to history.
+    /// Evicts stale sessions and logs each to history.
     pub fn spawn_reaper(&self, pool: Pool, events: Bus) {
         let reg = self.clone();
         tokio::spawn(async move {
@@ -276,7 +248,7 @@ impl Default for Registry {
     }
 }
 
-/// Append one ended session to the play-history log (best-effort).
+/// Append one ended session to the play-history log; best-effort.
 pub fn record(pool: &Pool, s: &Session) {
     let ended = unix_now();
     let watched = ((ended - s.started_at).max(0)) * 1000;
@@ -329,7 +301,6 @@ mod tests {
     fn upsert_creates_then_refreshes() {
         let reg = Registry::new();
         assert!(reg.upsert(ping("s1", 1000, "playing"), Some("u1".into()), "Alice".into(), "1.2.3.4".into(), "WAN".into(), None));
-        // Second ping for the same id is NOT new; volatile fields refresh.
         assert!(!reg.upsert(ping("s1", 5000, "paused"), Some("u1".into()), "Alice".into(), "1.2.3.4".into(), "LAN".into(), None));
         let list = reg.list();
         assert_eq!(list.len(), 1);
@@ -372,7 +343,6 @@ mod tests {
         assert!(ended.is_some());
         assert!(reg.is_recently_terminated("s1"));
         assert!(!reg.is_recently_terminated("other"));
-        // Terminating a missing session yields None but still records the id.
         assert!(reg.terminate("ghost").is_none());
         assert!(reg.is_recently_terminated("ghost"));
     }
@@ -391,7 +361,7 @@ mod tests {
         let reg = Registry::new();
         reg.upsert(ping("old", 0, "playing"), None, "u".into(), "ip".into(), "LAN".into(), None);
         reg.upsert(ping("new", 0, "playing"), None, "u".into(), "ip".into(), "LAN".into(), None);
-        // Force distinct started_at values (same-second inserts would tie).
+        // Same-second inserts would tie.
         {
             let mut map = reg.inner.write().unwrap();
             map.get_mut("old").unwrap().started_at = 100;
@@ -412,10 +382,8 @@ mod tests {
             let mut map = reg.inner.write().unwrap();
             map.get_mut("dead").unwrap().last_seen = Instant::now() - Duration::from_secs(120);
         }
-        // list() hides it; user_online is false for the dead session's user.
         assert_eq!(reg.list().len(), 1);
         assert!(!reg.user_online("u9"));
-        // drain_stale removes and returns it.
         let drained = reg.drain_stale();
         assert_eq!(drained.len(), 1);
         assert_eq!(drained[0].id, "dead");

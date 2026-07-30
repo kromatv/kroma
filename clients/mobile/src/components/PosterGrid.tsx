@@ -1,10 +1,6 @@
-// Responsive poster grid. One source of truth for the column math: the grid
-// derives columns from breakpoints and sizes cards to fill the row exactly, so
-// no gutter is left over on the right.
-//
-// The grid measures its OWN width instead of trusting the window: inside a
-// <Screen> the horizontal safe-area insets (notch in landscape) are already
-// consumed by the container, and window-width math overflowed the row.
+// Responsive poster grid, sizing cards to fill the row exactly. It measures its
+// own width rather than the window's: inside a <Screen> the horizontal
+// safe-area insets are already consumed, and window-width math overflows.
 
 import { useState } from 'react';
 import { FlatList } from 'react-native';
@@ -35,13 +31,9 @@ export function PosterGrid({
 }: Readonly<{
   cards: CardModel[];
   header?: React.ReactElement;
-  /** Centered placeholder when there is nothing to show. */
   empty?: React.ReactElement;
   refreshing?: boolean;
   onRefresh?: () => void;
-  /** Horizontal content padding. Pages sitting on the raw window (the tabs)
-   * pass `useGutters()` so landscape clears the notch; pages already inside an
-   * inset-padded <Screen> keep the plain default. */
   gutters?: { left: number; right: number };
 }>) {
   const [listW, setListW] = useState<number | null>(null);

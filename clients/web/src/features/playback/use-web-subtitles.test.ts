@@ -17,8 +17,7 @@ const H = vi.hoisted(() => ({
   updateAccount: vi.fn(async () => ({})),
 }));
 
-// The language matcher is the real one (it IS what this test exercises); the
-// catalog-facing bits stay stubbed.
+// The language matcher stays real; only the catalog-facing bits are stubbed.
 vi.mock('@kroma/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@kroma/core')>()),
   GEN_LANGS: [
@@ -49,9 +48,6 @@ vi.mock('#web/shared/lib/api', () => ({
   }),
 }));
 
-// The picker now WRITES the preference as well as reading it (see
-// `useLangPrefs` in shared/lib/lang-pref), so the stub owes it the two things
-// that hook binds to: the optimistic local update and the account PATCH.
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({
     user: H.user,
@@ -101,7 +97,6 @@ describe('useWebSubtitles track merge', () => {
     expect(subs).toHaveLength(3);
     expect(subs[0]).toMatchObject({ index: 0, selectable: true, ai: false });
     expect(subs[1]).toMatchObject({ index: 1, selectable: false });
-    // Downloaded/AI track takes an index in the 1000+ band and is selectable.
     expect(subs[2]).toMatchObject({ index: 1000, ai: true, selectable: true, subId: 'd1' });
   });
 });
@@ -160,7 +155,6 @@ describe('useWebSubtitles generation lifecycle', () => {
 
     act(() => result.current.setActive(1001)); // the 'd2' track
     act(() => result.current.subtitleGen.onDelete('d1'));
-    // Deleting d1 (index 1000) shifts d2 down to 1000.
     expect(result.current.activeIndex).toBe(1000);
     expect(H.deleteSubtitle).toHaveBeenCalledWith('movie-1', 'd1');
   });

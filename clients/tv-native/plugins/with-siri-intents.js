@@ -23,7 +23,7 @@ const {
   createRunOncePlugin,
 } = require('expo/config-plugins');
 
-/** The intents KROMA answers. Both carry the spoken title. */
+// The intents KROMA answers. Both carry the spoken title.
 const INTENTS = ['INSearchForMediaIntent', 'INPlayMediaIntent'];
 
 const HANDLER = `

@@ -49,16 +49,15 @@ export default function Settings() {
         <Text style={styles.group}>{t('nav.server')}</Text>
         <View style={styles.card}>
           <Row label={t('nav.server')} value={serverUrl?.replace(/^https?:\/\//, '')} />
-          {/* Plain "Version" in both cards: which side it belongs to is what the
-              group heading above it already says. */}
+          {/* Plain "Version": the group heading above already says which side. */}
           <Row label={t('about.version')} value={health.data ? `v${health.data.version}` : '…'} />
         </View>
 
         <Text style={styles.group}>{t('about.title')}</Text>
         <View style={styles.card}>
           <Row label={t('about.version')} value={`v${buildInfo.version}`} />
-          {/* Everything git-derived is absent in a build made outside a checkout
-              (a source tarball), so each of these rows is its own value's guard. */}
+          {/* Git-derived fields are absent in a build made outside a checkout
+              (a source tarball); each row hides itself when its value is empty. */}
           <Row label={t('about.commit')} value={commitLabel()} mono />
           <Row label={t('about.branch')} value={buildInfo.branch} mono />
           <Row label={t('about.buildDate')} value={formatBuildDate(buildInfo.buildDate, locale)} />
@@ -78,18 +77,15 @@ export default function Settings() {
 
 interface RowProps {
   label: string;
-  /** Nullish renders NOTHING - a row with no value is a row with no reason to
-   * exist, which is how the git-less build hides its empty half. */
   value: string | null | undefined;
-  /** Hashes and branch names are strings to COMPARE, not to read as prose. */
   mono?: boolean;
   icon?: IconName;
   onPress?: () => void;
 }
 
-/** One settings line: label left, value right, pressable only when it leads
- * somewhere. */
 function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
+  // A row with no value renders nothing, which is how a git-less build hides
+  // its own empty rows.
   if (!value) return null;
   const body: ReactNode = (
     <>

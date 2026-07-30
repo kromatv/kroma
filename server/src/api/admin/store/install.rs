@@ -14,7 +14,7 @@ use serde_json::{json, Value};
 use super::catalog::{self, CatalogModule};
 use crate::state::SharedState;
 
-/// This server's version, checked against each entry's `minServer`.
+// This server's version, checked against each entry's `minServer`.
 const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Update every runtime-installed module to the newest COMPATIBLE catalog
@@ -121,11 +121,11 @@ pub async fn install_with_deps(
     Ok(json!({ "requested": root_id, "installed": installed }))
 }
 
-/// Post-order walk of the hard-dependency graph, so dependencies land in the
-/// plan before their dependents. A dependency already present at a satisfying
-/// version is skipped; one that is missing (or installed outside the declared
-/// range) is planned from the catalog. `is_root` bypasses that shortcut so an
-/// explicit install/update of an already-installed module still proceeds.
+// Post-order walk of the hard-dependency graph, so dependencies land in the
+// plan before their dependents. A dependency already present at a satisfying
+// version is skipped; one that is missing (or installed outside the declared
+// range) is planned from the catalog. `is_root` bypasses that shortcut so an
+// explicit install/update of an already-installed module still proceeds.
 fn plan_install<'a>(
     id: &str,
     is_root: bool,

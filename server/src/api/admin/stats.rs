@@ -115,7 +115,7 @@ pub async fn overview(
     .into_response())
 }
 
-/// "DD/MM–DD/MM" label for a weekly bucket.
+// "DD/MM–DD/MM" label for a weekly bucket.
 fn date_range_label(start: i64, end: i64) -> String {
     let fmt = |ts: i64| {
         time::OffsetDateTime::from_unix_timestamp(ts)

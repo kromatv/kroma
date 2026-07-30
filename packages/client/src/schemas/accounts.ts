@@ -18,22 +18,16 @@ export const Permission = z.enum([
   'reports.manage',
 ]);
 
-/** A full account (`GET /auth/me`, login/exchange results). `avatarUrl` etc. are
- * `.nullish()` they're `Option` fields the server omits when unset.
- *
- * `permissions` is validated as `string[]`, NOT the closed `Permission`
- * enum, on purpose: this runs in the auth-critical path on possibly-older clients
- * (esp. multi-server TV) against newer servers. A server that adds a capability
- * must NOT make an admin's login/exchange throw the Rust side already tolerates
- * unknown permission keys, so the client stays forward-compatible too. */
+/** A full account (`GET /auth/me`, login/exchange results). `permissions` is
+ * validated as `string[]`, not the closed `Permission` enum: this runs in the
+ * auth-critical login/exchange path, so a server that adds a capability must
+ * not make an older client throw on an unknown key. */
 export const User = z.object({
   id: UserId,
   email: z.string(),
   username: z.string(),
-  // `.nullish()`, not `.nullable()`: the server OMITS these `Option` fields when
-  // unset (`skip_serializing_if = "Option::is_none"`), so the key is absent
-  // (`undefined`), which `.nullable()` (string | null) would reject and throw in
-  // the auth-critical login/exchange path.
+  // `.nullish()`, not `.nullable()`: the server OMITS these `Option` fields
+  // when unset, so the key is absent, which `.nullable()` would reject.
   avatarUrl: z.string().nullish(),
   language: z.string().nullish(),
   audioLanguage: z.string().nullish(),

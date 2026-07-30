@@ -1,8 +1,6 @@
-// Subtitle appearance on the phone: the design system's OWN model
-// (@kroma/ui SubtitleAppearance - size / colour / edge / font / opacities),
-// persisted per device. The web and TV persist through localStorage
-// (useSubtitleAppearance); React Native has no synchronous storage, so this is
-// the same contract hydrated through the app's async pref store instead.
+// Subtitle appearance on the phone: the same @kroma/ui SubtitleAppearance the
+// web and TV keep in localStorage, hydrated through the app's async pref store
+// instead, because React Native has no synchronous storage.
 
 import type { SubtitleAppearance } from '@kroma/ui';
 import { DEFAULT_SUB_APPEARANCE, migrateAppearance } from '@kroma/ui';
@@ -23,11 +21,9 @@ export function useSubAppearance(): [
       .then((raw) => {
         if (cancelled || !raw) return;
         try {
-          // Through the shared migration, NOT a raw spread: a pref written
-          // before the renderer took on CEA-708 still names `box` or `outline`,
-          // and those reach `CUE_EDGE[a.edge]` as undefined - a TypeError inside
-          // the cue's render, which unmounts the player with no boundary to
-          // catch it. It also rescues the background the old `box` edge drew.
+          // Migrated, not spread: a pref written before the renderer took on
+          // CEA-708 still names `box` or `outline`, and those reach
+          // `CUE_EDGE[a.edge]` as undefined - a TypeError inside the cue render.
           setStyle(migrateAppearance(JSON.parse(raw)));
         } catch {
           // A corrupt pref falls back to the defaults it was seeded from.

@@ -1,16 +1,6 @@
-//! The generic per-language translation cache (`translations`).
-//!
-//! ONE table for every localized string in the app: TMDB text (`source='tmdb'`)
-//! and LLM-generated section / suggestion titles + reasons (`source='llm'`).
-//! Adding a language is inserting rows never a schema change. Reads resolve with
-//! a fallback chain: requested lang -> `en` -> any available.
-//!
-//! `subject_kind` is `'item'|'show'|'episode'|'season_cast'|'curated'|'suggestion'`;
-//! only the [`TransData`] fields relevant to that kind are populated (the rest
-//! serialize away). Reads are point / range seeks on the PK `(kind,id,lang)`.
-//!
-//! Not yet wired into the read/write paths (built additively ahead of the
-//! cutover); remove the `dead_code` allowance once serving + generation move over.
+//! One table for every localized string, keyed `(subject_kind, subject_id, lang)`
+//! with `subject_kind` in `'item'|'show'|'episode'|'season_cast'|'curated'|'suggestion'`.
+//! Reads fall back requested lang -> `en` -> any available.
 #![allow(dead_code)]
 
 use std::collections::HashMap;
@@ -19,14 +9,13 @@ use serde::{Deserialize, Serialize};
 
 use super::*;
 
-/// Provenance tags for the `source` column (cache invalidation + backfill).
+/// Values for the `source` column.
 pub const TMDB: &str = "tmdb";
 pub const LLM: &str = "llm";
 pub const MANUAL: &str = "manual";
 
-/// The variant payload stored per `(subject, lang)`. Every field is optional /
-/// skip-if-empty so a row only carries what its `subject_kind` needs (a catalog
-/// row uses title/overview/…, a curated/suggestion row uses title/reason).
+/// The payload stored per `(subject, lang)`; every field is skip-if-empty so a row
+/// only carries what its `subject_kind` needs.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TransData {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -37,17 +26,14 @@ pub struct TransData {
     pub overview: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub genres: Vec<String>,
-    /// Localized character names, aligned by index to the subject's core `cast`
-    /// (or the season cast for `season_cast`). `None` = character unknown.
+    // Aligned by index to the subject's core `cast` (or the season cast for `season_cast`).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub characters: Vec<Option<String>>,
-    /// One-line reason (curated collections + AI suggestions).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
 }
 
 impl TransData {
-    /// Whether this payload carries anything worth persisting.
     pub fn is_empty(&self) -> bool {
         self.title.is_none()
             && self.tagline.is_none()
@@ -64,8 +50,8 @@ pub fn put(pool: &Pool, kind: &str, id: &str, lang: &str, source: &str, data: &T
     write(&conn, kind, id, lang, source, data)
 }
 
-/// Connection-level upsert (shares one tx/connection with a caller doing a batch,
-/// e.g. writing every supported language for one title).
+/// Connection-level upsert, so a caller writing every language for one title
+/// shares a single connection.
 pub(crate) fn write(
     conn: &Connection,
     kind: &str,
@@ -85,7 +71,6 @@ pub(crate) fn write(
     Ok(())
 }
 
-/// Resolve one subject's translation in `lang` (fallback requested -> en -> any).
 /// `None` only when the subject has no translations at all.
 pub fn resolve_one(pool: &Pool, kind: &str, id: &str, lang: &str) -> Result<Option<TransData>> {
     let conn = pool.get()?;
@@ -93,9 +78,7 @@ pub fn resolve_one(pool: &Pool, kind: &str, id: &str, lang: &str) -> Result<Opti
     Ok(raw.remove(id).and_then(|by_lang| pick(by_lang, lang)))
 }
 
-/// Resolve a batch of ids in `lang` (fallback requested -> en -> any), keyed by
-/// id. Ids with no translation at all are absent from the map. One indexed query
-/// per id-chunk the hot home / listing path.
+/// Ids with no translation at all are absent from the returned map.
 pub fn resolve_many(
     conn: &Connection,
     kind: &str,
@@ -110,8 +93,6 @@ pub fn resolve_many(
 }
 
 /// Every stored translation for a subject kind, grouped by id (all languages).
-/// The search indexer uses this to index title/overview/genres in every language
-/// so a query matches whatever language the user typed.
 pub fn all_for_kind(pool: &Pool, kind: &str) -> Result<HashMap<String, Vec<TransData>>> {
     let conn = pool.get()?;
     let mut stmt =
@@ -129,7 +110,6 @@ pub fn all_for_kind(pool: &Pool, kind: &str) -> Result<HashMap<String, Vec<Trans
     Ok(out)
 }
 
-/// Which languages a subject already has stored (for enrichment gap-filling).
 pub fn languages_for(pool: &Pool, kind: &str, id: &str) -> Result<Vec<String>> {
     let conn = pool.get()?;
     let mut stmt =
@@ -138,14 +118,13 @@ pub fn languages_for(pool: &Pool, kind: &str, id: &str) -> Result<Vec<String>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Load every stored language for a set of ids as `id -> (lang -> data)` (no
-/// fallback the caller picks per locale, e.g. curated rows carrying all langs).
+/// `id -> (lang -> data)` with no fallback applied; the caller picks per locale.
 pub fn load_all(pool: &Pool, kind: &str, ids: &[&str]) -> Result<HashMap<String, HashMap<String, TransData>>> {
     let conn = pool.get()?;
     load(&conn, kind, ids)
 }
 
-/// Delete every language row for one subject (re-language / reprocess).
+/// Delete every language row for one subject.
 pub fn delete_all(conn: &Connection, kind: &str, id: &str) -> Result<()> {
     conn.execute(
         "DELETE FROM translations WHERE subject_kind=?1 AND subject_id=?2",
@@ -154,7 +133,6 @@ pub fn delete_all(conn: &Connection, kind: &str, id: &str) -> Result<()> {
     Ok(())
 }
 
-/// Pick the best available payload: requested lang, then `en`, then any.
 fn pick(mut by_lang: HashMap<String, TransData>, lang: &str) -> Option<TransData> {
     by_lang
         .remove(lang)
@@ -162,7 +140,6 @@ fn pick(mut by_lang: HashMap<String, TransData>, lang: &str) -> Option<TransData
         .or_else(|| by_lang.into_values().next())
 }
 
-/// Load all stored languages for a set of ids, as `id -> (lang -> data)`.
 fn load(
     conn: &Connection,
     kind: &str,
@@ -225,16 +202,12 @@ mod tests {
         .unwrap();
         put(&p, "show", "s1", "fr", TMDB, &td("Severance VF")).unwrap();
 
-        // Requested language wins.
         assert_eq!(resolve_one(&p, "show", "s1", "fr").unwrap().unwrap().title.as_deref(), Some("Severance VF"));
-        // Unknown language falls back to en.
         assert_eq!(resolve_one(&p, "show", "s1", "de").unwrap().unwrap().title.as_deref(), Some("Severance"));
 
-        // A subject with only a non-en language falls back to "any".
         put(&p, "show", "s2", "ja", TMDB, &td("only ja")).unwrap();
         assert_eq!(resolve_one(&p, "show", "s2", "de").unwrap().unwrap().title.as_deref(), Some("only ja"));
 
-        // Nothing stored at all -> None.
         assert!(resolve_one(&p, "show", "missing", "fr").unwrap().is_none());
     }
 
@@ -263,8 +236,8 @@ mod tests {
         let conn = p.get().unwrap();
         let many = resolve_many(&conn, "show", &["s1", "s2", "ghost"], "fr").unwrap();
         assert_eq!(many.len(), 2);
-        assert_eq!(many["s1"].title.as_deref(), Some("A fr")); // requested fr
-        assert_eq!(many["s2"].title.as_deref(), Some("B ja")); // fallback to any
+        assert_eq!(many["s1"].title.as_deref(), Some("A fr"));
+        assert_eq!(many["s2"].title.as_deref(), Some("B ja"));
         drop(conn);
 
         let all = all_for_kind(&p, "show").unwrap();

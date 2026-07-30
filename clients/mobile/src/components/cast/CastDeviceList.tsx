@@ -1,13 +1,8 @@
 // The device list itself: which screen should this play on.
 //
-// Kept apart from any shell because it has to live in two of them. Everywhere in
-// the app the picker is a bottom sheet (<CastSheet>), but the player is
-// presented as a native fullScreenModal, and @gorhom's modal renders into a host
-// that sits BEHIND that - so there the same list is drawn in the player's own
-// panel (<CastPanel>), the one the track picker already uses.
-//
-// "This device" sits at the top and is a real row, not a cancel: the choice is
-// between screens, and going back to the phone is one of them.
+// Shared between the bottom sheet (<CastSheet>) and the player's own panel
+// (<CastPanel>): the player is a native fullScreenModal, and @gorhom's sheet
+// renders into a host that sits behind it.
 
 import type { CastReceiver } from '@kroma/core';
 import { useCast } from '@kroma/ui';
@@ -19,9 +14,7 @@ import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 export interface CastDeviceListProps {
-  /** `null` = "this device": stop casting and play here. */
   onPick: (receiverId: string | null) => void;
-  /** Show the "this device" row. Off where playing locally makes no sense. */
   offerLocal?: boolean;
 }
 
@@ -59,10 +52,8 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
       {receivers.length === 0 ? (
         <NoDevices />
       ) : (
-        // The roster is live whether or not it is empty, and the drawer has the
-        // room to say so now that it has a floor under it: what is otherwise
-        // dead space below one Apple TV is where a second one is going to
-        // appear, and this is the line that promises it.
+        // Shown even with devices already listed: the roster is live, so a
+        // second receiver can still appear below.
         <View style={styles.searchingRow}>
           <Searching />
         </View>
@@ -71,13 +62,8 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
   );
 }
 
-/**
- * Nothing to cast to (yet).
- *
- * Deliberately not a dead end: the roster is live, so a set that wakes up walks
- * into this list on its own. The pulsing line says exactly that - the picker is
- * looking, and the viewer does not have to come back and re-open it.
- */
+// Not a dead end: the roster stays live, so a device that wakes up appears
+// here without reopening the picker.
 function NoDevices() {
   const t = useT();
 
@@ -93,8 +79,6 @@ function NoDevices() {
   );
 }
 
-/** The pulsing "still looking" pill - under an empty list, and under a list
- *  that already found something. */
 function Searching() {
   const t = useT();
   const pulse = useRef(new Animated.Value(0.35)).current;
@@ -117,8 +101,6 @@ function Searching() {
   );
 }
 
-/** The second line of a device row: what it is playing, else whose profile it
- * is on - which is what tells two identical Apple TVs apart. */
 function detailOf(r: CastReceiver, t: ReturnType<typeof useT>): string {
   const playing = r.nowPlaying?.item;
   if (playing) return playing.metadata?.title ?? playing.title;

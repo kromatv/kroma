@@ -5,7 +5,7 @@
 
 use super::prelude::*;
 
-/// Nightly: name per-account taste clusters into personalized rows.
+// Nightly: name per-account taste clusters into personalized rows.
 pub(super) const SPEC: Builtin = Builtin {
     key: JobKey("sections.personalize"),
     category: Category::Recommendations,
@@ -14,7 +14,7 @@ pub(super) const SPEC: Builtin = Builtin {
     run,
 };
 
-/// How many taste clusters (→ ~that many named sections) per user.
+// How many taste clusters (→ ~that many named sections) per user.
 const PERSONALIZE_CLUSTERS: usize = 4;
 
 pub(super) fn run(ctx: &JobContext) -> Result<()> {
@@ -88,7 +88,6 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     Ok(())
 }
 
-/// First 8 chars of an id, for compact log lines.
 fn short_id(id: &str) -> &str {
     &id[..id.len().min(8)]
 }
@@ -100,7 +99,7 @@ mod tests {
     use crate::state::SharedState;
     use crate::test_support::{seed_movie, seed_play, test_state, FakeLlm};
 
-    /// Enough watched, embedded titles for `taste::cluster` to produce groups.
+    // Enough watched, embedded titles for `taste::cluster` to produce groups.
     fn seed_history(state: &SharedState, user: &str) {
         for n in 0..8 {
             let id = format!("itm-{n}");

@@ -27,7 +27,7 @@ pub struct PushSubscription {
     pub user_id: String,
     pub transport: PushTransport,
     pub endpoint: String,
-    /// Web Push only: the subscriber's public key and auth secret (base64url).
+    // Web Push only: the subscriber's public key and auth secret (base64url).
     pub p256dh: Option<String>,
     pub auth: Option<String>,
     pub device: Option<String>,

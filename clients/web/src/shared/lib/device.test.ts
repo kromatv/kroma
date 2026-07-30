@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { deviceInfo } from './device';
 
-// What this protects: a row in the account's session list. Every miss here reads
-// as "Unknown device" next to a working sign-in, which is how the phone app went
-// unnamed for as long as it did.
+// A miss here reads as "Unknown device" next to a working sign-in.
 describe('deviceInfo', () => {
   it('names a browser by browser and platform', () => {
     const chrome =

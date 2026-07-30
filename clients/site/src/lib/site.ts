@@ -9,13 +9,9 @@ export const site = {
   domain: 'kroma.tv',
   url: 'https://kroma.tv',
   repo: 'https://github.com/maxscharwath/kroma',
-  /** The 10-foot experience, served on its own subdomain (clients/tv-web). */
   tvUrl: 'https://tv.kroma.tv',
-  /** The design system / component kit, on its own subdomain. */
   uiUrl: 'https://ui.kroma.tv',
-  /** The backend module registry / catalogue. */
   modulesUrl: 'https://modules.kroma.tv',
-  /** The Synology package source: downloads + automatic server updates. */
   packagesUrl: 'https://packages.kroma.tv',
   email: {
     support: 'support@kroma.tv',

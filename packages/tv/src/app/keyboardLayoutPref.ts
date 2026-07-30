@@ -19,7 +19,6 @@ export const ALL_KEYBOARD_LAYOUTS: readonly KeyboardLayoutPref[] = [
   'qwertz',
 ];
 
-/** The reactive store behind the pref (the settings registry binds rows to it). */
 export const keyboardLayoutStore = reactivePref('kroma:kbd-layout', ALL_KEYBOARD_LAYOUTS, 'abc');
 
 /** The saved keyboard layout for this device, or `abc`. */
@@ -27,12 +26,10 @@ export function getKeyboardLayoutPref(): KeyboardLayoutPref {
   return keyboardLayoutStore.get();
 }
 
-/** Persist the keyboard layout preference. */
 export function setKeyboardLayoutPref(p: KeyboardLayoutPref): void {
   keyboardLayoutStore.set(p);
 }
 
-/** i18n label key for each layout (rendered in the picker). */
 export const KEYBOARD_LAYOUT_LABEL_KEY: Record<KeyboardLayoutPref, MessageKey> = {
   abc: 'keyboardLayout.abc',
   azerty: 'keyboardLayout.azerty',

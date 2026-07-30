@@ -1,25 +1,19 @@
-//! Passkeys: stored WebAuthn credentials for passwordless sign-in.
-//!
-//! Storage-only the WebAuthn ceremonies (register/authenticate) live in the
-//! server binary (`api::passkeys`), which serializes the webauthn-rs `Passkey`
-//! into the `credential` text column and reads it back here.
+//! Storage for WebAuthn credentials. The ceremonies live in `api::passkeys`,
+//! which serializes the webauthn-rs `Passkey` into the `credential` column.
 
 use super::*;
 
 use rusqlite::OptionalExtension;
 
-/// One registered authenticator in the account's passkey list.
 pub struct PasskeyRow {
-    /// Credential id (base64url) the authenticator's handle.
+    // Credential id, base64url.
     pub id: String,
-    /// Friendly label the user gave it.
     pub name: String,
     pub created_at: String,
     pub last_used: Option<String>,
 }
 
-/// Persist a freshly-registered credential → the `created_at` timestamp written
-/// (so the caller can echo the full row back without a re-read).
+/// Returns the `created_at` timestamp written.
 pub fn insert_passkey(
     pool: &Pool,
     id: &str,
@@ -37,7 +31,7 @@ pub fn insert_passkey(
     Ok(created_at)
 }
 
-/// The account's registered passkeys (display shape), newest first.
+/// Newest first.
 pub fn list_passkeys(pool: &Pool, user_id: &str) -> Result<Vec<PasskeyRow>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
@@ -55,8 +49,7 @@ pub fn list_passkeys(pool: &Pool, user_id: &str) -> Result<Vec<PasskeyRow>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// The serialized `Passkey` JSON blobs for a user needed to build the exclude
-/// list on registration and the allow-list on authentication.
+/// The serialized `Passkey` JSON blobs for a user.
 pub fn passkey_credentials(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT credential FROM passkeys WHERE user_id = ?1")?;
@@ -64,9 +57,8 @@ pub fn passkey_credentials(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Distinct account ids that have at least one passkey. Usernameless
-/// (discoverable) sign-in maps the assertion's user handle back to an account by
-/// matching against these ids, so only accounts with passkeys are considered.
+/// Distinct account ids that have at least one passkey; discoverable sign-in
+/// matches the assertion's user handle against these.
 pub fn passkey_user_ids(pool: &Pool) -> Result<Vec<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT DISTINCT user_id FROM passkeys")?;
@@ -74,8 +66,8 @@ pub fn passkey_user_ids(pool: &Pool) -> Result<Vec<String>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Mark a credential used, optionally replacing the stored blob when the
-/// authenticator's signature counter advanced (webauthn-rs `needs_update`).
+/// Marks a credential used, replacing the stored blob when the authenticator's
+/// signature counter advanced (webauthn-rs `needs_update`).
 pub fn touch_passkey(pool: &Pool, id: &str, credential: Option<&str>) -> Result<()> {
     let conn = pool.get()?;
     match credential {
@@ -91,8 +83,7 @@ pub fn touch_passkey(pool: &Pool, id: &str, credential: Option<&str>) -> Result<
     Ok(())
 }
 
-/// Remove one of a user's passkeys by id. Scoped to `user_id` so a caller can
-/// only delete their own. Returns whether a row was removed.
+/// Scoped to `user_id` so a caller can only delete their own.
 pub fn delete_passkey(pool: &Pool, user_id: &str, id: &str) -> Result<bool> {
     let conn = pool.get()?;
     let n = conn.execute(
@@ -102,9 +93,6 @@ pub fn delete_passkey(pool: &Pool, user_id: &str, id: &str) -> Result<bool> {
     Ok(n > 0)
 }
 
-/// Look up the credential id of a passkey (exists check used when finishing
-/// registration to reject a duplicate). Currently unused externally but kept for
-/// symmetry with the other lookups.
 #[allow(dead_code)]
 pub fn passkey_exists(pool: &Pool, id: &str) -> Result<bool> {
     let conn = pool.get()?;
@@ -158,15 +146,12 @@ mod tests {
         let (p, alice, bob) = pool_with_users();
         insert_passkey(&p, "cred-a1", &alice, "Alice iPhone", "{\"blob\":1}").unwrap();
 
-        // Touch stamps last_used and can rotate the credential blob.
         touch_passkey(&p, "cred-a1", Some("{\"blob\":9}")).unwrap();
         assert!(list_passkeys(&p, &alice).unwrap()[0].last_used.is_some());
         assert_eq!(passkey_credentials(&p, &alice).unwrap(), vec!["{\"blob\":9}".to_string()]);
-        // Touch without a blob keeps the credential.
         touch_passkey(&p, "cred-a1", None).unwrap();
         assert_eq!(passkey_credentials(&p, &alice).unwrap(), vec!["{\"blob\":9}".to_string()]);
 
-        // Bob can't delete Alice's passkey (scoped to user_id).
         assert!(!delete_passkey(&p, &bob, "cred-a1").unwrap());
         assert!(delete_passkey(&p, &alice, "cred-a1").unwrap());
         assert!(list_passkeys(&p, &alice).unwrap().is_empty());

@@ -1,17 +1,7 @@
 import type { StyleProp, ViewStyle } from 'react-native';
-// <CategoryTile>: a labelled artwork tile with a coloured wash over it.
-//
-// The genre grid wrote this first - a library backdrop under a bottom-heavy
-// wash of the genre's own hue, with the label sitting in the darkest part - and
-// it is the right shape for anything that groups titles rather than being one:
-// a genre, a collection, a channel, a studio. So it moves here, and the screen
-// keeps only the part that IS about genres (which hue, which backdrop).
-//
-// The two gradients do different jobs and both are needed. `background` is the
-// instant fill <Img> paints before (or instead of) the artwork. `wash` is the
-// veil ON TOP of the artwork, which is what makes white text readable over a
-// photograph nobody chose for its contrast. Each is a CSS gradient string, the
-// same currency <Img> and `gradient()` already trade in.
+// A labelled artwork tile for anything that groups titles. `background` is the
+// instant fill under the art, `wash` the veil over it that keeps the label
+// readable; both are CSS gradient strings.
 
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
@@ -36,7 +26,6 @@ const categoryTileVariants = sv({
   variants: {
     size: {
       md: { label: { fontSize: 18, lineHeight: 20 }, meta: { fontSize: 12 } },
-      /** The 10-foot size, as the genre grid uses it. */
       tv: { label: { fontSize: 23, lineHeight: 24 }, meta: { fontSize: 14 } },
     },
   },
@@ -46,26 +35,15 @@ const categoryTileVariants = sv({
 type CategoryTileSize = 'md' | 'tv';
 
 interface CategoryTileProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
-  /** The category's name. Also the accessibility name. */
   label: string;
-  /** A second line under it: a count, a year range. */
   meta?: string;
-  /** Artwork URL, already sized. Null falls back to `background` alone. */
   art?: string | null;
-  /** CSS gradient painted behind the art: visible instantly, and the whole tile
-   *  when there is no artwork. Build it with `tintGradient()`. */
   background?: string;
-  /** CSS gradient laid OVER the art, so the label stays readable on any photo. */
   wash?: string;
-  /** The small dash above the label, in the category's own colour. Omit for no
-   *  dash. */
   accent?: string;
   size?: CategoryTileSize;
-  /** Tile width. The height follows from `aspect`. */
   width?: number;
-  /** Artwork ratio. 16:9 by default, as the genre grid uses it. */
   aspect?: number;
-  /** Anything extra pinned into the bottom block, under the meta line. */
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
@@ -91,8 +69,7 @@ function CategoryTile({
       {...focusProps}
       label={label}
       focusScale={focusScale}
-      // The frame's own padding is what keeps the amber focus ring clear of the
-      // artwork instead of cutting across it.
+      // The frame's padding is what keeps the focus ring clear of the artwork.
       style={[s.frame, { width }, style]}
     >
       <Box aspect={aspect} radius="lg" overflow="hidden" bg="surface1" shadow="card">

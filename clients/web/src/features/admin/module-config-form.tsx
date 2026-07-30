@@ -11,8 +11,6 @@ import { FIELD, Toggle } from '#web/features/admin/ui';
 
 type ConfigValue = string | number | boolean;
 
-/** Seed a field's editable value from the stored value (which may already be
- *  typed) or its string `default`, coerced to the field's kind. */
 function initial(field: ConfigField, stored: unknown): ConfigValue {
   const raw = stored ?? field.default;
   switch (field.type) {
@@ -89,7 +87,6 @@ function Field({
   onChange: (v: ConfigValue) => void;
 }>) {
   const id = useId();
-  // The console's field, at the width this two-column form gives a value.
   const inputCls = `${FIELD} w-40`;
 
   let control: ReactNode;

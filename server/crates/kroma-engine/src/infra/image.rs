@@ -1,10 +1,6 @@
-//! Local WebP cache for remote (TMDB) artwork.
-//!
-//! Each poster/backdrop is downloaded once and transcoded to WebP via `ffmpeg`
-//! (already required for `ffprobe`), stored under `<data>/images/`. The catalog
-//! then serves art from KROMA itself smaller files, faster loads, and
-//! resilient to TMDB outages. If caching fails (no ffmpeg / no network) the
-//! original remote URL is kept, so nothing breaks.
+//! Local WebP cache for remote (TMDB) artwork: downloaded once and transcoded
+//! via `ffmpeg` into `<data>/images/`. Falls back to the original remote URL
+//! if caching fails.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -13,26 +9,21 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use crate::model::Metadata;
 use kroma_primitives::short_hash;
 
-/// Monotonic counter so two concurrent renditions of the same artwork get
-/// distinct temp paths and never clobber each other's in-progress file.
 static TMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
-/// Public route prefix served by `GET /api/images/:name`.
+/// Served by `GET /api/images/:name`.
 pub const PUBLIC_PREFIX: &str = "/api/images/";
 
-/// WebP quality (0–100) and effort. 80/6 keeps posters crisp at a fraction of
-/// the JPEG size.
+// 80/6 keeps posters crisp at a fraction of JPEG's size.
 const WEBP_QUALITY: &str = "80";
 const WEBP_EFFORT: &str = "6";
 
-/// Directory holding cached WebP artwork.
 pub fn images_dir(data_dir: &Path) -> PathBuf {
     data_dir.join("images")
 }
 
-/// Rewrite a [`Metadata`]'s poster/backdrop URLs to locally-cached WebP,
-/// transcoding on the way. Returns the metadata unchanged for any image that
-/// can't be cached.
+/// Rewrites a [`Metadata`]'s poster/backdrop URLs to locally-cached WebP.
+/// Leaves any image unchanged that can't be cached.
 pub fn localize(data_dir: &Path, mut meta: Metadata) -> Metadata {
     if let Some(url) = meta.poster_url.as_deref() {
         if let Some(local) = cache(data_dir, url) {
@@ -44,13 +35,12 @@ pub fn localize(data_dir: &Path, mut meta: Metadata) -> Metadata {
             meta.backdrop_url = Some(local);
         }
     }
-    // Logo: keep as PNG (transparency must survive WebP transcode is skipped).
+    // Logo kept as PNG, not transcoded: transparency must survive.
     if let Some(url) = meta.logo_url.as_deref() {
         if let Some(local) = cache_verbatim(data_dir, url, "png") {
             meta.logo_url = Some(local);
         }
     }
-    // Cast profile photos same WebP cache, so the rail serves local art too.
     for member in &mut meta.cast {
         if let Some(url) = member.profile_url.as_deref() {
             if let Some(local) = cache(data_dir, url) {
@@ -61,9 +51,6 @@ pub fn localize(data_dir: &Path, mut meta: Metadata) -> Metadata {
     meta
 }
 
-/// Download a remote image and cache it verbatim (no transcode) as
-/// `<hash>.<ext>`, so transparency survives used for title logos. Returns the
-/// public `/api/images/<hash>.<ext>` path, or `None` on failure.
 fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String> {
     if !remote_url.starts_with("http") {
         return Some(remote_url.to_string());
@@ -73,7 +60,6 @@ fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String
     let name = format!("{}.{ext}", short_hash(remote_url));
     let out = dir.join(&name);
     if !out.exists() {
-        // Download to a unique temp, then atomically rename onto the served path.
         let tmp = unique_tmp(&out);
         let dl = Command::new("curl")
             .args(["-sf", "-L", "--max-time", "25", "-o"])
@@ -89,10 +75,9 @@ fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String
     Some(format!("{PUBLIC_PREFIX}{name}"))
 }
 
-/// A title logo (alpha preserved) bounded to fit a card, for overlay. Scales the
-/// cached PNG down to ≤300×120 (`scale` 1) or ≤600×240 (`scale` 2, the Apple TV
-/// Top Shelf card) and caches as `<name>.logo.png` / `<name>.logo2x.png`.
-/// `name` is a bare cached logo filename (`<hash>.png`).
+/// A title logo (alpha preserved), scaled to fit ≤300×120 (`scale` 1) or
+/// ≤600×240 (`scale` 2, the Apple TV Top Shelf card) and cached as
+/// `<name>.logo.png` / `<name>.logo2x.png`.
 pub fn card_logo_png(data_dir: &Path, name: &str, scale: u32) -> Option<PathBuf> {
     let dir = images_dir(data_dir);
     let (w, h, sfx) = if scale >= 2 { (600, 240, "2x") } else { (300, 120, "") };
@@ -104,12 +89,9 @@ pub fn card_logo_png(data_dir: &Path, name: &str, scale: u32) -> Option<PathBuf>
     )
 }
 
-/// 16:9 cover-fit PNG of a cached WebP, used as the base layer for a preview
-/// "card" (tiny-skia decodes PNG natively): 640×360 at `scale` 1 (Smart Hub
-/// tiles), 1280×720 at `scale` 2 (the Apple TV Top Shelf, whose cards render
-/// nearly full-width on a 4K screen). ffmpeg scales to fill then centre-crops.
-/// Cached as `<hash>.webp.card.png` / `<hash>.webp.card2x.png`. `webp_name` is
-/// a bare, path-checked cache filename.
+/// 16:9 cover-fit PNG of a cached WebP (tiny-skia decodes PNG, not WebP):
+/// 640×360 at `scale` 1 (Smart Hub tiles), 1280×720 at `scale` 2 (Apple TV Top
+/// Shelf). Cached as `<hash>.webp.card.png` / `<hash>.webp.card2x.png`.
 pub fn card_base_png(data_dir: &Path, webp_name: &str, scale: u32) -> Option<PathBuf> {
     let dir = images_dir(data_dir);
     let (w, h, sfx) = if scale >= 2 { (1280, 720, "2x") } else { (640, 360, "") };
@@ -121,12 +103,8 @@ pub fn card_base_png(data_dir: &Path, webp_name: &str, scale: u32) -> Option<Pat
     )
 }
 
-/// JPEG rendition of a cached WebP, for Samsung TV Smart Hub preview tiles
-/// the carousel accepts only PNG/JPG (not WebP), max 360 KB, height ≤360 px.
-/// Produced on demand from `<hash>.webp` → cached as `<hash>.webp.jpg`, scaled
-/// to 360 px tall. `webp_name` is a bare cache filename (already path-checked by
-/// the caller). Returns the JPEG path, or `None` if the source is missing or
-/// transcoding fails.
+/// JPEG rendition of a cached WebP, scaled to 360px tall: Samsung TV Smart Hub
+/// preview tiles accept only PNG/JPG, max 360 KB, height ≤360px.
 pub fn jpeg_rendition(data_dir: &Path, webp_name: &str) -> Option<PathBuf> {
     let dir = images_dir(data_dir);
     ffmpeg_rendition(
@@ -138,12 +116,8 @@ pub fn jpeg_rendition(data_dir: &Path, webp_name: &str) -> Option<PathBuf> {
 }
 
 /// Downscaled rendition of a cached image, for the `?w=` query on
-/// `GET /api/images/:name`: a 200px card has no business downloading the full
-/// 500-780px poster (the TV grid pulls dozens at once). Produced on demand and
-/// cached forever (the source name is content-addressed, so renditions are
-/// immutable too). Encoded by `cwebp -resize` when available (best bytes), else
-/// ffmpeg → JPEG many ffmpeg builds ship without a WebP *encoder*, but every
-/// build has mjpeg. Returns the rendition path + its content type.
+/// `GET /api/images/:name`. Encoded by `cwebp -resize` when available, else
+/// ffmpeg → JPEG (many ffmpeg builds lack a WebP encoder but all have mjpeg).
 pub fn sized_rendition(data_dir: &Path, name: &str, width: u32) -> Option<(PathBuf, &'static str)> {
     let dir = images_dir(data_dir);
     let src = dir.join(name);
@@ -182,14 +156,9 @@ pub fn sized_rendition(data_dir: &Path, name: &str, width: u32) -> Option<(PathB
     .map(|p| (p, "image/jpeg"))
 }
 
-/// Single-frame ffmpeg rendition of `src` → `out` (cached: returns `out`
-/// immediately if it already exists). `vf` is the `-vf` filtergraph; `extra`
-/// carries any additional output args (e.g. JPEG quality).
-///
-/// The frame is written to a unique temp sibling and **atomically renamed** into
-/// place, so a concurrent reader checking `out.exists()` never observes a
-/// half-written file (which would be served 200 + immutable cache-control). The
-/// temp keeps `out`'s extension so ffmpeg still infers the right muxer.
+// Written to a unique temp then renamed atomically, so a concurrent reader
+// checking `out.exists()` never observes a half-written file (which would be
+// served 200 + immutable cache-control).
 fn ffmpeg_rendition(src: &Path, out: &Path, vf: &str, extra: &[&str]) -> Option<PathBuf> {
     if !src.exists() {
         return None;
@@ -212,9 +181,7 @@ fn ffmpeg_rendition(src: &Path, out: &Path, vf: &str, extra: &[&str]) -> Option<
     finalize(&tmp, out)
 }
 
-/// A unique sibling temp path for `out` that preserves `out`'s extension (so
-/// ffmpeg/cwebp still detect the output format) and can't collide with a
-/// concurrent writer.
+// Keeps `out`'s extension so ffmpeg/cwebp still detect the output format.
 fn unique_tmp(out: &Path) -> PathBuf {
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
     let base = out.file_name().and_then(|n| n.to_str()).unwrap_or("rendition");
@@ -222,8 +189,6 @@ fn unique_tmp(out: &Path) -> PathBuf {
     out.with_file_name(format!("{base}.{}.{seq}.tmp.{ext}", std::process::id()))
 }
 
-/// Atomically move a freshly-written temp file onto its final served path. On
-/// failure the temp is cleaned up. Returns `out` on success.
 fn finalize(tmp: &Path, out: &Path) -> Option<PathBuf> {
     match std::fs::rename(tmp, out) {
         Ok(()) => Some(out.to_path_buf()),
@@ -234,17 +199,13 @@ fn finalize(tmp: &Path, out: &Path) -> Option<PathBuf> {
     }
 }
 
-/// Ensure a remote image is cached as WebP and return its public path, or
-/// `None` on failure (the caller keeps the provider URL). The one entry point
-/// for art that arrives outside title enrichment for instance a person's
-/// portrait, resolved per request rather than stored on a row.
+/// Ensures a remote image is cached as WebP and returns its public path, or
+/// `None` on failure (the caller keeps the provider URL). The entry point for
+/// art that arrives outside title enrichment, e.g. a person's portrait.
 pub fn cache_remote(data_dir: &Path, remote_url: &str) -> Option<String> {
     cache(data_dir, remote_url)
 }
 
-/// Ensure `remote_url` is cached as WebP and return its public path
-/// (`/api/images/<hash>.webp`). Returns `None` on failure (caller keeps the
-/// original URL).
 fn cache(data_dir: &Path, remote_url: &str) -> Option<String> {
     // Already a local path (idempotent if called twice).
     if !remote_url.starts_with("http") {
@@ -261,32 +222,24 @@ fn cache(data_dir: &Path, remote_url: &str) -> Option<String> {
     Some(format!("{PUBLIC_PREFIX}{name}"))
 }
 
-/// Store an uploaded image (raw bytes, any common format) as a
-/// content-addressed WebP under the image cache, returning its public path
-/// (`/api/images/<hash>.webp`). Reuses the same WebP encoder as TMDB art.
-/// Returns `None` if the bytes can't be decoded/encoded (no `cwebp`/ffmpeg or
-/// not an image). Served by the existing `GET /api/images/:name`.
-///
-/// `max_width` caps the stored master in pixels, shrinking only - a phone
-/// photograph is 4000 px wide and nothing here is ever drawn above a thousand,
-/// so without a cap the cache fills with megabytes nobody will ever see at that
-/// size. `None` stores whatever came in.
+/// Stores an uploaded image as a content-addressed WebP, returning its public
+/// path. `max_width`, if given, caps the stored master in pixels (shrinking
+/// only) so an oversized upload doesn't fill the cache with pixels nothing
+/// ever draws.
 pub fn store_upload(data_dir: &Path, bytes: &[u8], max_width: Option<u32>) -> Option<String> {
     let dir = images_dir(data_dir);
     std::fs::create_dir_all(&dir).ok()?;
 
-    // The address covers the CAP as well as the bytes: the same photograph
-    // stored for two different purposes is two different images, and reusing one
-    // hash would serve the first caller's cap to the second.
+    // Hash covers the cap too: the same photo stored for two different caps
+    // is two different images, so reusing one hash would serve the wrong crop.
     let name = match max_width {
         Some(w) => format!("{}-w{w}.webp", content_hash(bytes)),
         None => format!("{}.webp", content_hash(bytes)),
     };
     let out = dir.join(&name);
     if !out.exists() {
-        // Transcode goes through files (cwebp/ffmpeg read from disk): write the
-        // raw bytes to a unique temp, encode to another unique temp, then
-        // atomically rename onto the served path.
+        // cwebp/ffmpeg read from disk, not stdin, so the raw bytes go to a temp
+        // file first.
         let src_tmp = unique_tmp(&out);
         if std::fs::write(&src_tmp, bytes).is_err() {
             let _ = std::fs::remove_file(&src_tmp);
@@ -299,7 +252,7 @@ pub fn store_upload(data_dir: &Path, bytes: &[u8], max_width: Option<u32>) -> Op
         } && out_tmp.exists();
         let _ = std::fs::remove_file(&src_tmp);
         if !ok {
-            let _ = std::fs::remove_file(&out_tmp); // drop any partial output
+            let _ = std::fs::remove_file(&out_tmp);
             return None;
         }
         finalize(&out_tmp, &out)?;
@@ -307,19 +260,13 @@ pub fn store_upload(data_dir: &Path, bytes: &[u8], max_width: Option<u32>) -> Op
     Some(format!("{PUBLIC_PREFIX}{name}"))
 }
 
-/// Encode `src` → WebP, shrinking to `max_width` if it is wider.
-///
-/// cwebp cannot say "shrink only" - `-resize 1280 0` blows a 320 px logo up to a
-/// blurry 1280 - so the source is measured first and the flag only added when it
-/// would actually shrink. ffmpeg is the fallback, where its own `min(iw,W)`
-/// expresses the same rule; it is second because plenty of ffmpeg builds ship
-/// without the libwebp encoder (this one does), which would silently leave the
-/// master uncapped if it went first.
+// cwebp has no "shrink only" flag: `-resize 1280 0` blows a 320px logo up to a
+// blurry 1280. The source is measured first and resize only added when it
+// would actually shrink. ffmpeg is the fallback (`min(iw,W)` expresses the
+// same rule) since some ffmpeg builds lack the libwebp encoder.
 fn encode_webp_capped(src: &Path, out: &Path, max_width: u32) -> bool {
-    // `is_some_and`, not `is_none_or`: when the width cannot be read - no ffprobe
-    // in a slim container, or a format it does not know - the answer is "do not
-    // resize", never "resize anyway". The latter is the exact upscale the doc
-    // above says this measurement exists to prevent.
+    // `is_some_and`, not `is_none_or`: an unreadable width must mean "do not
+    // resize", never "resize anyway" (which would upscale).
     let too_wide = probe_width(src).is_some_and(|w| w > max_width);
     let mut cwebp = Command::new("cwebp");
     cwebp.args(["-quiet", "-q", WEBP_QUALITY, "-m", WEBP_EFFORT]);
@@ -356,9 +303,6 @@ fn encode_webp_capped(src: &Path, out: &Path, max_width: u32) -> bool {
     false
 }
 
-/// Pixel width of an image file, via ffprobe (already a dependency). `None` when
-/// it cannot be read - the caller then assumes "wide", because capping something
-/// small costs nothing and leaving a photograph uncapped costs megabytes.
 fn probe_width(src: &Path) -> Option<u32> {
     let out = Command::new("ffprobe")
         .args([
@@ -377,8 +321,6 @@ fn probe_width(src: &Path) -> Option<u32> {
     String::from_utf8_lossy(&out.stdout).trim().split(',').next()?.parse().ok()
 }
 
-/// `hex(sha256(bytes))[..16]` content address for an uploaded image, so
-/// identical uploads dedupe and the immutable cache header stays correct.
 fn content_hash(bytes: &[u8]) -> String {
     use sha2::{Digest, Sha256};
     let mut h = Sha256::new();
@@ -386,11 +328,7 @@ fn content_hash(bytes: &[u8]) -> String {
     hex::encode(h.finalize())[..16].to_string()
 }
 
-/// Download `remote_url` and transcode it to a WebP at `out`.
 fn transcode(remote_url: &str, out: &Path) -> bool {
-    // Download to a unique sibling temp first (curl handles HTTPS/redirects),
-    // encode to another unique temp, then atomically rename onto `out` so a
-    // concurrent reader never observes a partial WebP.
     let src_tmp = unique_tmp(out);
     let dl = Command::new("curl")
         .args(["-sf", "-L", "--max-time", "25", "-o"])
@@ -406,21 +344,18 @@ fn transcode(remote_url: &str, out: &Path) -> bool {
     let ok = encode_webp(&src_tmp, &out_tmp) && out_tmp.exists();
     let _ = std::fs::remove_file(&src_tmp);
     if !ok {
-        let _ = std::fs::remove_file(&out_tmp); // drop any partial output
+        let _ = std::fs::remove_file(&out_tmp);
         return false;
     }
     finalize(&out_tmp, out).is_some()
 }
 
-/// Encode `src` → WebP at `out` at the default poster quality.
 fn encode_webp(src: &Path, out: &Path) -> bool {
     encode_webp_quality(src, out, WEBP_QUALITY)
 }
 
-/// Encode `src` → WebP at `out` at an explicit quality (0–100). Prefers `cwebp`
-/// (canonical, present on most systems incl. the Docker image); falls back to
-/// ffmpeg's libwebp encoder. Shared with the storyboard sheet, which wants a
-/// lower quality than posters.
+/// Prefers `cwebp`; falls back to ffmpeg's libwebp encoder. Shared with the
+/// storyboard sheet, which wants a lower quality than posters.
 pub(crate) fn encode_webp_quality(src: &Path, out: &Path, quality: &str) -> bool {
     let cwebp = Command::new("cwebp")
         .args(["-quiet", "-q", quality, "-m", WEBP_EFFORT])

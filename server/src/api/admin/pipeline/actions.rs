@@ -23,10 +23,10 @@ use super::{kick, resolve, unknown_stage};
 /// Body for `POST /api/admin/pipeline/element/retry`.
 #[derive(Deserialize)]
 pub struct RetryStageBody {
-    /// `"item"` (movie/episode) or `"show"`.
+    // `"item"` (movie/episode) or `"show"`.
     pub kind: String,
     pub id: String,
-    /// Short stage key: `probe|metadata|storyboard|subtitles|markers|embed`.
+    // Short stage key: `probe|metadata|storyboard|subtitles|markers|embed`.
     pub stage: String,
 }
 
@@ -157,7 +157,7 @@ pub async fn retry_task(
 /// PATCH body: which element to reprocess.
 #[derive(Deserialize)]
 pub struct ReprocessSubjectBody {
-    /// `"item"` (a movie or single episode) or `"show"`.
+    // `"item"` (a movie or single episode) or `"show"`.
     pub kind: String,
     pub id: String,
 }

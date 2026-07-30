@@ -13,7 +13,6 @@ use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
-/// `GET /api/themes/:name`.
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/themes/{name}", get(theme))
 }
@@ -25,9 +24,8 @@ pub async fn theme(
     headers: HeaderMap,
     Path(name): Path<String>,
 ) -> Response {
-    // Honour the feature flag at serve time too, so disabling it silences any
-    // theme still referenced by already-enriched metadata (before a re-scan
-    // clears it).
+    // Checked here too, not just at scan time, so disabling the flag silences
+    // themes already referenced by enriched metadata before the next scan.
     if !crate::services::settings::theme_songs_enabled(&state.settings) {
         return json_error(StatusCode::NOT_FOUND, "theme songs are disabled");
     }

@@ -9,15 +9,15 @@ pub trait Embedder: Send + Sync {
     /// Output dimension (stable for one embedder's lifetime).
     #[allow(dead_code)]
     fn dim(&self) -> usize;
-    /// Embed `text` into a unit-length vector of length `dim`.
+    // Embed `text` into a unit-length vector of length `dim`.
     fn embed(&self, text: &str) -> Vec<f32>;
-    /// Embed a batch in one call. The default loops `embed`; an out-of-process
-    /// embedder overrides it so a catalog-wide pass (reembed) is ONE round-trip
-    /// instead of thousands (the difference between fast and unusable over IPC).
+    // Embed a batch in one call. The default loops `embed`; an out-of-process
+    // embedder overrides it so a catalog-wide pass (reembed) is ONE round-trip
+    // instead of thousands (the difference between fast and unusable over IPC).
     fn embed_batch(&self, texts: &[String]) -> Vec<Vec<f32>> {
         texts.iter().map(|t| self.embed(t)).collect()
     }
-    /// Minimum cosine for a themed-query hit to count as signal (backend-specific).
+    // Minimum cosine for a themed-query hit to count as signal (backend-specific).
     fn relevance_floor(&self) -> f32;
 }
 

@@ -2,19 +2,17 @@
 # Sign + notarize the already-built .app, then package (and sign + notarize) the
 # dmg. Runs in CI and by hand - see "Signing locally" below.
 #
-# Signing is INSIDE-OUT, not `codesign --deep`. Apple deprecates --deep for
-# distribution signing and it is a well-known source of notarization rejections:
-# it applies the OUTER bundle's options to nested code rather than signing each
-# nested item on its own terms, and it silently skips things it does not
-# recognise. This app has a whole embedded dylib tree to get right - libmpv plus
-# its ffmpeg dependencies, put there by bundle-libmpv-macos.sh - so every nested
-# Mach-O is signed first, deepest first, and the bundle last.
+# Signing is INSIDE-OUT, not `codesign --deep`: Apple deprecates --deep for
+# distribution signing (it applies the outer bundle's options to nested code
+# instead of signing each item on its own terms, and silently skips items it
+# doesn't recognise), a well-known source of notarization rejections. So every
+# nested Mach-O (libmpv + its ffmpeg deps, from bundle-libmpv-macos.sh) is
+# signed deepest-first, bundle last.
 #
-# Order matters twice over: dylibbundler rewrites Mach-O load commands, which
-# invalidates any signature made before it ran, and the dmg must contain an app
-# that is already signed, notarized AND stapled (stapling the dmg alone leaves
-# the app inside it unstapled, so a Mac that copies the app out and goes offline
-# cannot verify it).
+# Order matters twice: dylibbundler rewrites Mach-O load commands, invalidating
+# any signature made before it ran; and the dmg must contain an app that is
+# already signed, notarized AND stapled (stapling the dmg alone leaves the app
+# inside it unstapled, so a Mac that copies it out and goes offline can't verify it).
 #
 # Inputs (env):
 #   APPLE_SIGNING_IDENTITY  required to sign, e.g.
@@ -49,7 +47,6 @@ if [[ -z "$APP" ]]; then
   exit 1
 fi
 
-# Scratch that works on a runner and on a developer's Mac alike.
 WORK=${RUNNER_TEMP:-$(mktemp -d)}
 mkdir -p "$WORK"
 
@@ -60,9 +57,8 @@ APPLE_ID=${APPLE_ID:-}
 APPLE_PASSWORD=${APPLE_PASSWORD:-}
 APPLE_TEAM_ID=${APPLE_TEAM_ID:-}
 
-# Restore whatever keychain was default before we ran. The previous version of
-# this script left its own temporary keychain as the machine default, which is
-# survivable on a throwaway runner and decidedly not on a real Mac.
+# Restore the previous default keychain - leaving a temp one as default is fine
+# on a throwaway runner, not on a real Mac.
 PREV_DEFAULT_KEYCHAIN=""
 cleanup() {
   if [[ -n "$PREV_DEFAULT_KEYCHAIN" ]]; then
@@ -89,8 +85,7 @@ if [[ "$SIGN" = "true" ]]; then
     security default-keychain -s "$KEYCHAIN"
     security unlock-keychain -p '' "$KEYCHAIN"
     # No timeout: notarization can outlast the 5-minute default and relock the
-    # keychain mid-run, which surfaces as a baffling "User interaction is not
-    # allowed" from codesign.
+    # keychain mid-run, surfacing as "User interaction is not allowed" from codesign.
     security set-keychain-settings "$KEYCHAIN"
     echo "$APPLE_CERTIFICATE" | base64 --decode > "$WORK/cert.p12"
     security import "$WORK/cert.p12" -k "$KEYCHAIN" \
@@ -99,8 +94,6 @@ if [[ "$SIGN" = "true" ]]; then
   fi
 fi
 
-# --- signing ---------------------------------------------------------------
-
 sign_one() {
   local target="$1"
   codesign --force --timestamp --options runtime \
@@ -108,7 +101,6 @@ sign_one() {
 }
 
 notarize() {
-  # the file to submit (.zip for an app, or the .dmg itself)
   local submission="$1"
   xcrun notarytool submit "$submission" \
     --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" \
@@ -122,14 +114,10 @@ can_notarize() {
 if [[ "$SIGN" = "true" ]]; then
   MAIN_EXEC=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist")
 
-  # Every nested Mach-O, deepest path first, so a dylib is always signed before
-  # whatever contains it. `file` is the test rather than a *.dylib glob: the
-  # embedded ffmpeg tree carries versioned names (libavcodec.61.dylib) and
-  # extensionless binaries that a glob quietly misses - and an unsigned nested
-  # binary is exactly what the notary service rejects.
-  # `if`, not `a && b`: with `set -e` + `pipefail` a non-matching grep would make
-  # the loop body - and so the whole pipeline - exit non-zero on the first file
-  # that is not Mach-O, killing the script with no output at all.
+  # `file` is the test rather than a *.dylib glob: the embedded ffmpeg tree has
+  # versioned names (libavcodec.61.dylib) and extensionless binaries a glob misses.
+  # `if`, not `a && b`: with `set -e` + `pipefail`, a non-matching grep would exit
+  # the loop body - and the whole pipeline - non-zero on the first non-Mach-O file.
   find "$APP/Contents" -type f | while IFS= read -r f; do
     if file -b "$f" | grep -q 'Mach-O'; then printf '%s\n' "$f"; fi
   done | awk -F/ '{print NF"\t"$0}' | sort -rn | cut -f2- > "$WORK/nested.txt"
@@ -142,12 +130,10 @@ if [[ "$SIGN" = "true" ]]; then
   done < "$WORK/nested.txt"
   echo "Signed $COUNT nested binaries, deepest first."
 
-  # The bundle last: this seals Contents/ and covers the main executable.
   sign_one "$APP"
 
-  # Verify BEFORE spending a notarization round-trip on it. `--deep` is correct
-  # here even though it is wrong for signing: verification is exactly when you
-  # want every nested item walked. `--strict` applies the full set of checks.
+  # `--deep` is correct here even though it's wrong for signing: verification
+  # is exactly when you want every nested item walked.
   codesign --verify --deep --strict --verbose=2 "$APP"
   echo "Signature verified: $APP"
 
@@ -161,8 +147,6 @@ if [[ "$SIGN" = "true" ]]; then
   fi
 fi
 
-# --- dmg -------------------------------------------------------------------
-
 mkdir -p "$BUNDLE/dmg"
 DMG="$BUNDLE/dmg/KROMA_$(uname -m).dmg"
 hdiutil create -volname KROMA -srcfolder "$APP" -ov -format UDZO "$DMG"
@@ -173,9 +157,8 @@ if [[ "$SIGN" = "true" ]]; then
     notarize "$DMG"
     xcrun stapler staple "$DMG"
   fi
-  # What a user's Mac will actually conclude. Advisory: `spctl` needs the
-  # notarized+stapled ticket to pass, so an intentionally un-notarized local
-  # build reports rejection here without that being a build failure.
+  # Advisory: `spctl` needs the notarized+stapled ticket to pass, so an
+  # intentionally un-notarized local build reports rejection without failing the build.
   spctl -a -t open --context context:primary-signature -vv "$DMG" || \
     echo "::warning::spctl is not satisfied with $DMG (expected when un-notarized)."
 fi

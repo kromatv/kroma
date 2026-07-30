@@ -15,14 +15,12 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { name: 'theme-color', content: '#0A0A0C' },
-      // No og:* here. Open Graph is keyed by `property`, not `name`, so this carried a
-      // `name="og:site_name"` no scraper reads - and seo() already emits the real
-      // `property="og:site_name"` for every page, which is what this comment claims.
+      // No og:* here: Open Graph is keyed by `property`, not `name`, and
+      // seo() already emits the real `property="og:site_name"` per page.
       { title: site.name },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },
-      // The chromatic-wheel mark; SVG first, with the deep-charcoal tab colour.
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
     ],
   }),
@@ -39,7 +37,6 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         <HeadContent />
       </head>
       <body className="page-grain bg-bg text-text antialiased">
-        {/* The grain sits at z-0; everything real sits above it. */}
         <div className="relative z-10 flex min-h-screen flex-col">
           <SiteHeader />
           <main className="flex-1">{children}</main>

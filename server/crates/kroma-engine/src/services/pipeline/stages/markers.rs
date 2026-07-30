@@ -1,9 +1,6 @@
-//! Pipeline stage `markers`: detect intro/credits segments, one **season** at a
-//! time (chromaprint aligns a season's episodes pairwise, so the season is the
-//! natural unit). Wraps [`crate::services::markers::job::detect_season`]; the
-//! ledger makes it incremental (a season whose episode files are unchanged is
-//! skipped) and per-season failures visible, replacing the old whole-library
-//! re-fingerprint that took hours every run.
+//! Pipeline stage `markers`: detects intro/credits per **season**, since
+//! chromaprint aligns a season's episodes pairwise. Wraps
+//! [`crate::services::markers::job::detect_season`].
 
 use anyhow::{anyhow, Result};
 
@@ -12,11 +9,9 @@ use crate::state::SharedState;
 
 use super::common::stage;
 
-// One season at a time; `detect_season` parallelizes the episode decode internally
-// and yields to playback there, so the dispatcher does not. Nightly, and chained
-// after `subtitles` (the tail of the storyboard -> subtitles -> markers heavy-stage
-// chain, so they run one at a time rather than all firing on the same library
-// change). Also manual.
+// `detect_season` parallelizes the episode decode internally and yields to
+// playback there, so the dispatcher does not. Chained after `subtitles` so the
+// heavy stages run one at a time rather than all firing on one library change.
 stage! {
     short: "markers",
     subject_kind: "season",
@@ -26,10 +21,8 @@ stage! {
     triggers: &[Trigger::AfterJob(JobKey("pipeline.subtitles"))],
 }
 
-/// One subject per season that has at least one probed episode. Subject id is
-/// `"{show_id}#{season}"`; signature = detection mode + every episode file's
-/// `mtime:size`, so a replaced episode or a mode change re-runs just that season.
-/// When detection is off, nothing is in scope (existing tasks are then purged).
+// With detection off nothing is in scope, which is how the ledger purges the
+// existing tasks.
 fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
     let mode = state.settings.get_str("introDetection", "chapters");
     if mode == "off" {
@@ -50,11 +43,9 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
     Ok(out)
 }
 
-/// The ledger signature for one season: detection mode + every playable episode
-/// file's `mtime:size`. `None` when the season has no probed episodes yet (wait
-/// for probe/scan). An unreadable episode (mount blip) collapses the whole season
-/// to [`UNREADABLE_SIG`](crate::db::pipeline::UNREADABLE_SIG) so `reconcile` skips
-/// it rather than re-fingerprinting on every flap.
+// One unreadable episode (a mount blip) collapses the whole season to
+// `UNREADABLE_SIG`, so `reconcile` skips it instead of re-fingerprinting on
+// every flap.
 fn season_signature(mode: &str, season: &crate::model::Season) -> Option<String> {
     let mut parts = vec![mode.to_string()];
     let mut playable = 0usize;
@@ -70,7 +61,7 @@ fn season_signature(mode: &str, season: &crate::model::Season) -> Option<String>
         }
     }
     if playable == 0 {
-        return None; // no probed episodes yet: wait for probe/scan
+        return None;
     }
     if unreadable {
         Some(crate::db::pipeline::UNREADABLE_SIG.to_string())
@@ -102,8 +93,6 @@ mod tests {
     use super::season_signature;
     use crate::model::{Kind, MediaItem, Season};
 
-    /// A bare episode item; only the fields `season_signature` reads
-    /// (`abs_path`, `duration_ms`) vary per test.
     fn episode(abs_path: Option<&str>, duration_ms: Option<u64>) -> MediaItem {
         MediaItem {
             id: "e".into(),
@@ -140,7 +129,6 @@ mod tests {
 
     #[test]
     fn season_signature_none_without_probed_episodes() {
-        // No abs_path or a zero/missing duration means "not yet probed".
         assert_eq!(season_signature("chapters", &season(vec![episode(None, Some(1000))])), None);
         assert_eq!(
             season_signature("chapters", &season(vec![episode(Some("/x.mkv"), None)])),
@@ -155,8 +143,6 @@ mod tests {
 
     #[test]
     fn season_signature_unreadable_file_collapses_to_sentinel() {
-        // A playable episode pointing at a missing path stats as unreadable, so the
-        // whole season collapses to the UNREADABLE sentinel (reconcile leaves it be).
         let sig = season_signature(
             "chapters",
             &season(vec![episode(Some("/no/such/kroma/file.mkv"), Some(1000))]),
@@ -175,33 +161,25 @@ mod tests {
 
         let s = season(vec![episode(Some(&abs), Some(1000))]);
         let a = season_signature("chapters", &s).unwrap();
-        // A real, readable file yields a stable non-sentinel hash.
         assert_ne!(a, crate::db::pipeline::UNREADABLE_SIG);
         assert_eq!(a, season_signature("chapters", &s).unwrap());
-        // The detection mode is folded into the signature, so it changes with mode.
         assert_ne!(a, season_signature("silence", &s).unwrap());
 
         let _ = std::fs::remove_file(&path);
     }
-    // ----- enumerate + process ----------------------------------------------------
 
     use super::{enumerate, process};
     use crate::services::jobs::JobContext;
     use crate::state::SharedState;
     use crate::test_support::{seed_show_episode, test_state};
 
-    /// A show with one probed episode in season 1, which is the minimum for the
-    /// season to be in scope. `on_disk` controls whether the episode's file
-    /// actually exists - `seed_show_episode` points at a path that does not, and
-    /// an unreadable file collapses the whole season's signature.
     fn seed_probed_season(state: &SharedState, show: &str, ep: &str) {
         seed_probed_season_with(state, show, ep, true);
     }
 
     fn seed_probed_season_with(state: &SharedState, show: &str, ep: &str, on_disk: bool) {
-        // Unique per CALL, not per episode id: several tests use "ep-1", they run
-        // in parallel, and a shared path means one test's file creation races
-        // another's removal.
+        // Unique per CALL, not per episode id: several tests use "ep-1" and run
+        // in parallel, so a shared path races file creation against removal.
         static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
         let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         seed_show_episode(state, show, ep);
@@ -226,9 +204,6 @@ mod tests {
 
     #[test]
     fn one_unreadable_episode_collapses_the_whole_season() {
-        // A mount blip makes a file unreadable. Collapsing to the sentinel means
-        // `reconcile` SKIPS the season rather than treating the changed
-        // signature as new work - otherwise every flap re-fingerprints it.
         let state = test_state();
         seed_probed_season_with(&state, "shw-1", "ep-1", false);
         set_mode(&state, "chapters");
@@ -248,9 +223,6 @@ mod tests {
 
     #[test]
     fn detection_turned_off_puts_nothing_in_scope() {
-        // The ledger purges tasks for subjects that leave scope, so returning an
-        // empty set is how "off" actually stops the work - not a flag checked
-        // later, per season, after the fingerprinting has already run.
         let state = test_state();
         seed_probed_season(&state, "shw-1", "ep-1");
         set_mode(&state, "off");
@@ -270,8 +242,6 @@ mod tests {
 
     #[test]
     fn a_season_with_nothing_probed_yet_waits_rather_than_queuing() {
-        // Without a duration there is no playable file to fingerprint; queuing
-        // it would fail the task and need a manual retry once probe catches up.
         let state = test_state();
         seed_show_episode(&state, "shw-1", "ep-1"); // no duration_ms
         set_mode(&state, "chapters");
@@ -280,9 +250,6 @@ mod tests {
 
     #[test]
     fn changing_the_detection_mode_re_queues_the_season() {
-        // The mode is part of the signature, so switching from chapters to
-        // fingerprinting must re-run every season rather than leave the old
-        // markers in place.
         let state = test_state();
         seed_probed_season(&state, "shw-1", "ep-1");
 
@@ -297,8 +264,6 @@ mod tests {
 
     #[test]
     fn a_subject_id_that_is_not_a_season_is_named_in_the_error() {
-        // Subject ids come from the ledger, which can outlive a format change;
-        // the message has to say which row is wrong.
         let state = test_state();
         let ctx = JobContext::for_test(state);
         let err = process(&ctx, "no-hash-here").unwrap_err().to_string();
@@ -310,8 +275,6 @@ mod tests {
 
     #[test]
     fn a_season_deleted_since_it_was_queued_errors_rather_than_panicking() {
-        // The ledger is enumerated up front, so the show or the season can be
-        // gone by the time the task runs.
         let state = test_state();
         let ctx = JobContext::for_test(state.clone());
         let err = process(&ctx, "gone-show#1").unwrap_err().to_string();

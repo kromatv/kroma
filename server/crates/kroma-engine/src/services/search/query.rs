@@ -12,8 +12,8 @@ use tantivy::Term;
 
 use super::schema::Fields;
 
-/// Field weights: a title hit outranks an alt-title/cast hit, which outranks a
-/// genre hit, which outranks a loose overview hit.
+// Field weights: a title hit outranks an alt-title/cast hit, which outranks a
+// genre hit, which outranks a loose overview hit.
 fn weights(f: &Fields) -> [(Field, f32); 6] {
     [
         (f.title, 6.0),
@@ -25,9 +25,9 @@ fn weights(f: &Fields) -> [(Field, f32); 6] {
     ]
 }
 
-/// Edit-distance budget for a token. Short tokens get none (a single edit is a
-/// different word); longer tokens tolerate more voice/typing noise grows with
-/// length. tantivy caps fuzzy distance at 2.
+// Edit-distance budget for a token. Short tokens get none (a single edit is a
+// different word); longer tokens tolerate more voice/typing noise grows with
+// length. tantivy caps fuzzy distance at 2.
 fn distance(token: &str) -> u8 {
     match token.chars().count() {
         0..=2 => 0,

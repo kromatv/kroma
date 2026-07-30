@@ -1,25 +1,18 @@
 // The frontend module registry: the host-side mirror of the Rust `Registry`.
-// It gathers `KromaModule`s, resolves their dependency graph (same Kahn topo
-// sort, same missing-dep / cycle / duplicate errors), runs setup in order,
-// collects the routes/nav/panels, and reconciles the registered set against the
-// backend's `/api/modules` manifest.
 
 import type { HostBase, KromaHost } from './host';
 import type { KromaModule, NavItem, RouteDef, SettingsPanel } from './module';
 import type { Dependencies, ModuleManifest } from './types';
 
-/** Normalize either dependency form (a package.json-style `{ id: range }` map,
- *  or a legacy array of ids / `"id@range"` strings / `{ id, version }` objects)
- *  to a flat `{ id, version? }[]`. A `"*"` range is treated as no constraint.
- *  Version ranges are enforced on the backend; the frontend uses only the id for
- *  setup ordering, but the admin UI shows the range. */
+/** Normalize either dependency form (a `{ id: range }` map or a legacy array of
+ *  ids / `"id@range"` / `{ id, version }`) to a flat list; `"*"` means no
+ *  constraint. */
 export function depEntries(deps?: Dependencies): { id: string; version?: string }[] {
   if (!deps) return [];
   if (Array.isArray(deps)) {
     return deps.map((d) => {
       if (typeof d !== 'string') return d;
-      // Split on the FIRST '@' only; no '@' (or a leading one) means the whole
-      // string is the id with no range.
+      // Split on the FIRST '@'; a leading one (scoped id) is not a separator.
       const at = d.indexOf('@');
       return at <= 0 ? { id: d } : { id: d.slice(0, at), version: d.slice(at + 1) };
     });
@@ -30,16 +23,12 @@ export function depEntries(deps?: Dependencies): { id: string; version?: string 
   }));
 }
 
-/** A route with the id of the module that registered it. */
 export type ModuleRoute = RouteDef & { moduleId: string };
 
-/** A nav entry with the id of the module that contributed it. */
 export type ModuleNav = NavItem & { moduleId: string };
 
-/** A settings panel with its owning module id. */
 export type ModulePanel = SettingsPanel & { moduleId: string };
 
-/** Whether a registered frontend module has a matching active backend module. */
 export interface ModuleStatus {
   id: string;
   frontend: true;
@@ -49,8 +38,6 @@ export interface ModuleStatus {
 
 export class ModuleRegistry {
   private readonly modules = new Map<string, KromaModule>();
-  // Module ids whose setup() has run, so re-entering start() (e.g. re-visiting
-  // the page) does not re-run a module's setup side effects.
   private readonly setupDone = new Set<string>();
 
   register(module: KromaModule): this {
@@ -61,8 +48,8 @@ export class ModuleRegistry {
     return this;
   }
 
-  /** Remove a module (used to roll back a runtime remote whose deps don't
-   *  resolve, so it can't break order() for everyone else). */
+  /** Remove a module, e.g. to roll back a runtime remote whose deps don't
+   *  resolve before it breaks `order()` for everyone else. */
   unregister(id: string): void {
     this.modules.delete(id);
     this.setupDone.delete(id);
@@ -72,21 +59,17 @@ export class ModuleRegistry {
     return this.modules.has(id);
   }
 
-  /** The ids of every registered module (compile-time + runtime-loaded). */
   ids(): string[] {
     return [...this.modules.keys()];
   }
 
-  /** A module's own message catalogs (locale -> key -> string), if it ships any.
-   *  The host resolves that module's labels + `host.i18n.t` against these. */
+  /** A module's own message catalogs (locale -> key -> string), if it ships any. */
   localesOf(id: string): Record<string, Record<string, string>> | undefined {
     return this.modules.get(id)?.locales;
   }
 
   /** Modules in initialization order (dependencies first). Throws on a missing
-   *  hard dependency or a cycle. Edges = hard deps (must be registered) + any
-   *  optional deps that happen to be present. (Version ranges + capability deps
-   *  are enforced on the backend; the frontend only needs setup ordering.) */
+   *  hard dependency or a cycle; version ranges are the backend's business. */
   order(): KromaModule[] {
     const mods = [...this.modules.values()];
     const edgesOf = (m: KromaModule): string[] => {
@@ -117,8 +100,8 @@ export class ModuleRegistry {
 
     const queue = mods.filter((m) => (indegree.get(m.id) ?? 0) === 0).map((m) => m.id);
     const orderedIds: string[] = [];
-    // A worklist: the for-of iterator keeps up with `queue.push` below, so newly
-    // unblocked ids are visited in the same pass (Kahn's topological sort).
+    // The for-of iterator keeps up with `queue.push` below, so newly unblocked
+    // ids are visited in the same pass (Kahn's topological sort).
     for (const id of queue) {
       orderedIds.push(id);
       for (const dependent of dependents.get(id) ?? []) {
@@ -135,10 +118,9 @@ export class ModuleRegistry {
     return orderedIds.map((id) => this.modules.get(id)).filter((m): m is KromaModule => m != null);
   }
 
-  /** Resolve the graph, compute each module's exports, and run its setup - all
-   *  in dependency order - then return the fully-wired host. Modules in
-   *  `skipSetup` (e.g. admin-disabled ones) have their setup skipped, and every
-   *  module's setup runs at most once across calls. */
+  /** Resolve the graph, compute each module's exports and run its setup in
+   *  dependency order, then return the wired host. Ids in `skipSetup` are not
+   *  set up, and a module's setup runs at most once across calls. */
   async start(base: HostBase, skipSetup?: ReadonlySet<string>): Promise<KromaHost> {
     const exports = new Map<string, unknown>();
     const host: KromaHost = {
@@ -159,9 +141,8 @@ export class ModuleRegistry {
   }
 
   routes(): ModuleRoute[] {
-    // Route paths are the URL under the mount point (/m/<path>), so they must be
-    // unique across modules. Keep the first registrant and skip a collision (with
-    // a warning) rather than silently shadowing one page with another.
+    // Route paths are the URL under /m/, so they must be unique across modules:
+    // keep the first registrant rather than silently shadowing a page.
     const out: ModuleRoute[] = [];
     const owner = new Map<string, string>();
     for (const m of this.order()) {
@@ -186,9 +167,8 @@ export class ModuleRegistry {
     );
   }
 
-  /** Cross-check registered frontend modules against the backend manifest. A
-   *  frontend module whose id is absent from `/api/modules` has no backend
-   *  installed (`backend: false`); the host can hide or disable it. */
+  /** Cross-check registered frontend modules against the backend manifest: an
+   *  id absent from `/api/modules` comes back `backend: false`. */
   reconcile(manifest: ModuleManifest[]): ModuleStatus[] {
     const backend = new Map(manifest.map((m) => [m.id, m]));
     return [...this.modules.values()].map((m) => ({

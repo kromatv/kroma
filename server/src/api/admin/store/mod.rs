@@ -4,10 +4,8 @@
 //! code is an admin-trust action.
 //!
 //! A "registry" is any static host serving a catalog index (see [`catalog`])
-//! plus the `.kmod` files it points at. The default is the `modules.json` the
-//! release workflow attaches to this repo's GitHub Releases, so the Store is
-//! GitHub-backed out of the box; the `moduleRegistryUrl` setting points it at
-//! any other registry (a third-party repo's releases, GitHub Pages, a NAS).
+//! plus the `.kmod` files it points at; the default is this repo's GitHub
+//! Releases, overridable via the `moduleRegistryUrl` setting.
 
 mod catalog;
 pub mod install;
@@ -27,13 +25,13 @@ use crate::api::extract::AuthUser;
 use crate::model::Permission;
 use crate::state::SharedState;
 
-/// Max bundle size (a native module binary + a small frontend bundle).
+// Max bundle size (a native module binary + a small frontend bundle).
 const MAX_BUNDLE_BYTES: usize = 64 * 1024 * 1024;
 
-/// Default module registry: the machine-readable index of `.kmod` bundles the
-/// release workflow attaches to every GitHub Release of this repo.
-/// `releases/latest/download/...` is a stable URL that always resolves to the
-/// newest release's asset. Overridable via the `moduleRegistryUrl` setting.
+// Default module registry: the machine-readable index of `.kmod` bundles the
+// release workflow attaches to every GitHub Release of this repo.
+// `releases/latest/download/...` is a stable URL that always resolves to the
+// newest release's asset. Overridable via the `moduleRegistryUrl` setting.
 const DEFAULT_REGISTRY: &str =
     "https://github.com/maxscharwath/kroma/releases/latest/download/modules.json";
 
@@ -49,13 +47,11 @@ pub fn routes() -> Router<SharedState> {
 #[derive(serde::Deserialize)]
 struct InstallUrl {
     url: String,
-    /// Expected SHA-256 of the bundle, when known (the registry catalog pins
-    /// one per artifact). Verified before install; omitted = unverified.
+    // Verified before install when given; omitted means unverified.
     #[serde(default)]
     sha256: Option<String>,
 }
 
-/// Install a module straight from a URL. Verified against `sha256` when given.
 async fn install_url(
     Extension(sup): Extension<Arc<Supervisor>>,
     AuthUser(user): AuthUser,
@@ -79,10 +75,6 @@ struct InstallId {
     id: String,
 }
 
-/// One-click Store install/update by module id: resolves the module (and any
-/// missing hard dependencies) against the registry catalog, checks server
-/// compatibility + platform, downloads with checksum verification, and
-/// installs everything in dependency order.
 async fn install_id(
     State(state): State<SharedState>,
     Extension(sup): Extension<Arc<Supervisor>>,
@@ -96,12 +88,10 @@ async fn install_id(
     Ok(Json(report).into_response())
 }
 
-/// The registry catalog the Store lists, fetched server-side (no CORS, one
-/// registry URL) and enriched per module with this server's verdict: the
-/// artifact matching its build target, installed version, update flag, and
-/// compatibility + reason. An unreachable registry is NOT an HTTP error: the
-/// response carries `registryUrl` + `error` and an empty module list, so the
-/// Store UI can show what failed and offer to fix the URL.
+// Fetched server-side (no CORS, one registry URL) and enriched per module with
+// this server's verdict. An unreachable registry is NOT an HTTP error: the
+// response carries `registryUrl` + `error` and an empty module list, so the
+// Store UI can show what failed and offer to fix the URL.
 async fn catalog_view(
     State(state): State<SharedState>,
     Extension(sup): Extension<Arc<Supervisor>>,
@@ -116,8 +106,8 @@ async fn catalog_view(
     Ok(Json(body).into_response())
 }
 
-/// Install an uploaded `.kmod` (raw request body). The manual escape hatch:
-/// no registry, no checksum to verify against (the upload IS the source).
+// The manual escape hatch: no registry, no checksum to verify against - the
+// upload IS the source.
 async fn install_upload(
     Extension(sup): Extension<Arc<Supervisor>>,
     AuthUser(user): AuthUser,
@@ -142,7 +132,7 @@ async fn install_upload(
 
 #[derive(serde::Deserialize, Default)]
 struct UninstallQuery {
-    /// Skip the dependents guard (the UI asks for explicit confirmation).
+    // Skips the dependents guard; the UI asks for explicit confirmation first.
     #[serde(default)]
     force: bool,
 }

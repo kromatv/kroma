@@ -1,10 +1,4 @@
-// "Playing on Salon": the strip above the tab bar while this phone is driving a
-// TV. Tapping it opens the full remote; the play/pause is right there because
-// that is the one control worth reaching for without opening anything.
-//
-// Rendered inside the floating tab dock, so it travels with the tab bar instead
-// of being pinned to a screen - the cast session outlives whichever tab you are
-// on.
+// The strip above the tab bar while this phone is driving a TV.
 
 import { useCast } from '@kroma/ui';
 import { Icon } from '@kroma/ui/kit';

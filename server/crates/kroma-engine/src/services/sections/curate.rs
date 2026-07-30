@@ -20,18 +20,18 @@ use crate::model::{Kind, MediaItem, Show};
 
 use super::generate::slug;
 
-/// Build a `locale -> value` map over every [`i18n::SUPPORTED_LOCALES`] entry.
+// Build a `locale -> value` map over every [`i18n::SUPPORTED_LOCALES`] entry.
 fn per_locale(mut f: impl FnMut(&str) -> String) -> HashMap<String, String> {
     i18n::SUPPORTED_LOCALES.iter().map(|&l| (l.to_string(), f(l))).collect()
 }
 
 /// Minimum members for a collection to be worth keeping.
 pub const MIN_ITEMS: usize = 5;
-/// Cap on deterministic director collections (most prolific directors first).
+// Cap on deterministic director collections (most prolific directors first).
 const MAX_DIRECTORS: usize = 12;
-/// Cap on LLM editorial collections kept from one reply.
+// Cap on LLM editorial collections kept from one reply.
 const MAX_LLM: usize = 14;
-/// Crew jobs that count as "directed/created by" for director collections.
+// Crew jobs that count as "directed/created by" for director collections.
 const DIRECTING_JOBS: &[&str] = &["Director", "Creator"];
 
 /// A recommendable entity (movie or show) flattened for curation.
@@ -121,8 +121,8 @@ pub fn prune_for_prompt(catalog: &[CatalogEntry], max: usize) -> Vec<&CatalogEnt
     refs
 }
 
-/// JSON shape fragment for one collection, with `title`/`reason` as objects keyed
-/// by every supported language code (e.g. `"title":{"en":string,"fr":string}`).
+// JSON shape fragment for one collection, with `title`/`reason` as objects keyed
+// by every supported language code (e.g. `"title":{"en":string,"fr":string}`).
 fn collection_shape() -> String {
     let fields = i18n::SUPPORTED_LOCALES
         .iter()
@@ -132,7 +132,7 @@ fn collection_shape() -> String {
     format!("{{\"title\":{{{fields}}},\"reason\":{{{fields}}},\"members\":[string]}}")
 }
 
-/// The language rule shared by both curate prompts.
+// The language rule shared by both curate prompts.
 fn language_rule() -> String {
     let codes = i18n::SUPPORTED_LOCALES.join(", ");
     format!(
@@ -248,10 +248,10 @@ pub fn resolve_members_by_id(specs: &[CuratedSpec], catalog: &[CatalogEntry]) ->
     })
 }
 
-/// Shared resolver for both paths: map each spec's members to catalog ids via
-/// `resolve_one` (per member → its id or `None`), dedup within a collection, drop
-/// collections under [`MIN_ITEMS`], and assemble unique-keyed rows. They differ
-/// only in `resolve_one` (title-normalized lookup vs exact id membership).
+// Shared resolver for both paths: map each spec's members to catalog ids via
+// `resolve_one` (per member → its id or `None`), dedup within a collection, drop
+// collections under [`MIN_ITEMS`], and assemble unique-keyed rows. They differ
+// only in `resolve_one` (title-normalized lookup vs exact id membership).
 fn resolve(specs: &[CuratedSpec], mut resolve_one: impl FnMut(&str) -> Option<String>) -> (Vec<CuratedRow>, usize) {
     let mut rows = Vec::new();
     let mut dropped = 0usize;
@@ -277,10 +277,10 @@ fn resolve(specs: &[CuratedSpec], mut resolve_one: impl FnMut(&str) -> Option<St
     (rows, dropped)
 }
 
-/// Assemble one row from a spec and its (already ≥ [`MIN_ITEMS`]) resolved member
-/// ids: slug the key from the English (else any) title, reject empty/duplicate
-/// keys, and keep the non-empty localized title/reason maps. Shared by both
-/// resolvers.
+// Assemble one row from a spec and its (already ≥ [`MIN_ITEMS`]) resolved member
+// ids: slug the key from the English (else any) title, reject empty/duplicate
+// keys, and keep the non-empty localized title/reason maps. Shared by both
+// resolvers.
 fn build_row(spec: &CuratedSpec, member_ids: Vec<String>, seen_keys: &mut HashSet<String>) -> Option<CuratedRow> {
     let title_for_slug = spec
         .title
@@ -305,7 +305,7 @@ fn build_row(spec: &CuratedSpec, member_ids: Vec<String>, seen_keys: &mut HashSe
     })
 }
 
-/// Trim and drop empty-string entries from a locale -> string map.
+// Trim and drop empty-string entries from a locale -> string map.
 fn clean_map(m: &HashMap<String, String>) -> HashMap<String, String> {
     m.iter()
         .filter(|(_, v)| !v.trim().is_empty())
@@ -313,16 +313,16 @@ fn clean_map(m: &HashMap<String, String>) -> HashMap<String, String> {
         .collect()
 }
 
-/// Normalize a title for matching: drop a trailing `(year)` the model may have
-/// copied from the catalog listing, then lowercase and keep only alphanumerics.
-/// `"Le Parrain (1972)"` and `"Le Parrain"` both → `"leparrain"`; `"E.T. the
-/// Extra-Terrestrial"` → `"etheextraterrestrial"`. (Bare-number titles like
-/// `"1917"` keep their digits only a *parenthesized* 4-digit year is dropped.)
+// Normalize a title for matching: drop a trailing `(year)` the model may have
+// copied from the catalog listing, then lowercase and keep only alphanumerics.
+// `"Le Parrain (1972)"` and `"Le Parrain"` both → `"leparrain"`; `"E.T. the
+// Extra-Terrestrial"` → `"etheextraterrestrial"`. (Bare-number titles like
+// `"1917"` keep their digits only a *parenthesized* 4-digit year is dropped.)
 fn normalize_title(s: &str) -> String {
     strip_year(s).chars().filter(|c| c.is_alphanumeric()).flat_map(char::to_lowercase).collect()
 }
 
-/// Strip a trailing ` (YYYY)` from a title, if present.
+// Strip a trailing ` (YYYY)` from a title, if present.
 fn strip_year(s: &str) -> &str {
     let t = s.trim_end();
     if let Some(open) = t.strip_suffix(')').and_then(|head| head.rfind('(')) {
@@ -334,7 +334,7 @@ fn strip_year(s: &str) -> &str {
     t
 }
 
-/// Outermost JSON array in `text` (handles ```json fences / preamble).
+// Outermost JSON array in `text` (handles ```json fences / preamble).
 fn extract_json_array(text: &str) -> Option<&str> {
     let start = text.find('[')?;
     let end = text.rfind(']')?;

@@ -29,8 +29,8 @@ describe('subtitle appearance constants', () => {
     });
   });
 
-  // Not a design choice: CEA-708 names these eight, and an "App UI" caption
-  // declaration is graded against offering all of them.
+  // CEA-708 names these eight, and an "App UI" caption declaration is graded
+  // against offering all of them.
   it('exposes the eight CEA-708 colours', () => {
     expect(SUB_COLORS).toHaveLength(8);
     expect(SUB_COLORS).toEqual([
@@ -62,7 +62,7 @@ describe('subtitleStyle', () => {
     expect(String(subtitleStyle(base({ font: 'propSans' })).fontFamily)).toContain('Arial');
     expect(String(subtitleStyle(base({ font: 'casual' })).fontFamily)).toContain('Comic Sans');
     expect(String(subtitleStyle(base({ font: 'cursive' })).fontFamily)).toContain('cursive');
-    // The colour carries the text opacity (see below), so it comes back rgba().
+    // The colour carries the text opacity, so it comes back rgba().
     expect(subtitleStyle(base({ color: '#FFFF00' })).color).toBe('rgba(255, 255, 0, 1)');
   });
 
@@ -70,16 +70,14 @@ describe('subtitleStyle', () => {
     expect(subtitleStyle(base({ font: 'smallCaps' })).fontVariant).toEqual(['small-caps']);
   });
 
-  // Text opacity rides in the COLOUR, not as node opacity: the same node carries
-  // the background box, so dimming the node would dim a background the viewer set
-  // to 100% - and would leave the window, a separate View, undimmed. Each of
-  // CEA-708's three layers owns its own opacity.
+  // Text opacity rides in the colour, not as node opacity: the same node carries
+  // the background box, and each of CEA-708's three layers owns its own opacity.
   it('folds text opacity into the colour, clamped into [0.2, 1]', () => {
     const at = (opacity: number) => subtitleStyle(base({ color: '#FFFFFF', opacity })).color;
     expect(at(100)).toBe('rgba(255, 255, 255, 1)');
     expect(at(50)).toBe('rgba(255, 255, 255, 0.5)');
-    expect(at(0)).toBe('rgba(255, 255, 255, 0.2)'); // floor
-    expect(at(500)).toBe('rgba(255, 255, 255, 1)'); // ceiling
+    expect(at(0)).toBe('rgba(255, 255, 255, 0.2)');
+    expect(at(500)).toBe('rgba(255, 255, 255, 1)');
     expect(subtitleStyle(base()).opacity).toBeUndefined();
   });
 
@@ -92,10 +90,9 @@ describe('subtitleStyle', () => {
     expect(css.opacity).toBeUndefined();
   });
 
-  // The edge treatment is the one piece that differs per platform: the web can
-  // spell a four-way stroke out as four text shadows, React Native supports a
-  // single shadow. These assertions run against the WEB implementation, which is
-  // what the test runner resolves (see vitest's resolve.extensions).
+  // The edge treatment differs per platform (React Native supports one shadow,
+  // the web four). These assertions run against the web implementation, which is
+  // what the runner resolves (see vitest's resolve.extensions).
   it('shadow edge sets a text shadow and no padding or background', () => {
     const css = subtitleStyle(base({ edge: 'shadow' })) as Record<string, unknown>;
     expect(String(css.textShadow)).toContain('rgba(0,0,0,.92)');
@@ -108,8 +105,6 @@ describe('subtitleStyle', () => {
     expect(String(css.textShadow)).toContain('-1.5px -1.5px 0 #000');
   });
 
-  // Raised and depressed are the same stroke pointing opposite ways - that is
-  // the whole difference between them, so assert the sign.
   it('raised and depressed offset in opposite directions', () => {
     const raised = String(
       (subtitleStyle(base({ edge: 'raised' })) as Record<string, unknown>).textShadow,
@@ -135,7 +130,6 @@ describe('subtitleStyle', () => {
     expect(css.backgroundColor).toBe('rgba(255, 0, 0, 0.5)');
     expect(css.paddingVertical).toBe(4);
     expect(css.paddingHorizontal).toBe(16);
-    // The edge still applies - background and edge are separate layers now.
     expect(String(css.textShadow)).toContain('rgba(0,0,0,.92)');
   });
 
@@ -171,8 +165,7 @@ describe('withOpacity', () => {
 });
 
 // A viewer who set their captions before the renderer took on CEA-708 has a
-// stored value naming options that no longer exist. Losing their choice - or
-// worse, their background - on upgrade is what this guards.
+// stored value naming options that no longer exist.
 describe('migrateAppearance', () => {
   it('renames outline to uniform', () => {
     expect(migrateAppearance({ edge: 'outline' }).edge).toBe('uniform');

@@ -1,11 +1,6 @@
-//! KROMA's i18n wiring over the generic [`kroma_i18n`] engine.
-//!
-//! The engine crate is app-agnostic; this module supplies KROMA's specifics the
-//! default locale, the supported set, and the shared catalogs in
-//! `packages/core/src/locales` (the same files the TS clients bundle, so keys
-//! stay in lock-step). It builds one [`kroma_i18n::I18n`] at first use and exposes
-//! it under the historical `crate::i18n::…` paths, plus the axum request-locale
-//! extractor.
+//! KROMA's i18n wiring over the generic [`kroma_i18n`] engine: the default
+//! locale, the supported set, and the shared catalogs in
+//! `packages/core/src/locales` (the same files the TS clients bundle).
 
 use std::convert::Infallible;
 use std::sync::OnceLock;
@@ -16,17 +11,11 @@ use kroma_i18n::I18n;
 
 use crate::state::SharedState;
 
-/// KROMA's fallback locale (a key missing in the active locale resolves here, then
-/// to the raw key).
 pub const DEFAULT_LOCALE: &str = "fr";
 
-/// KROMA's supported locale codes the single source of truth for "which languages
-/// we support". Drives i18n resolution, TMDB translation fetch, and LLM
-/// section-title fan-out. Guarded against the built engine by a test below.
 pub const SUPPORTED_LOCALES: &[&str] = &["fr", "en"];
 
-/// `include_str!` a shared catalog, path anchored to this crate's manifest dir
-/// (`server/crates/kroma-engine`), so `../../../` reaches the repo root.
+// Path anchored to this crate's manifest dir, so `../../../` reaches the repo root.
 macro_rules! catalog {
     ($code:literal) => {
         include_str!(concat!(
@@ -38,7 +27,6 @@ macro_rules! catalog {
     };
 }
 
-/// The process-wide KROMA translation engine, built once from the shared catalogs.
 fn i18n() -> &'static I18n {
     static ENGINE: OnceLock<I18n> = OnceLock::new();
     ENGINE.get_or_init(|| {
@@ -62,20 +50,15 @@ pub fn normalize(tag: &str) -> Option<&'static str> {
     i18n().normalize_locale(tag)
 }
 
-/// Whether `key` names a real entry in the catalogs.
-///
-/// Only [`kroma_domain::ParamValue::Legacy`] asks - a bare string from a row
-/// written before params carried their own kind, where a key and a literal were
-/// indistinguishable on the wire. Anything stored since says which it is, so no
-/// amount of user text can be mistaken for a key any more.
+/// Whether `key` names a real entry in the catalogs. Only
+/// [`kroma_domain::ParamValue::Legacy`] asks, for rows written before params
+/// carried their own kind.
 pub fn is_message_key(key: &str) -> bool {
     i18n().is_message_key(key)
 }
 
-/// A user's account locale for server-rendered strings. Admin endpoints are
-/// always authenticated, so the (account-synced) preference is the right source;
-/// falls back to [`DEFAULT_LOCALE`] for an unset/unknown value. Shared by the
-/// admin handlers and the module host-seam gate.
+/// A user's account locale for server-rendered strings, falling back to
+/// [`DEFAULT_LOCALE`] for an unset or unknown value.
 pub fn user_locale(user: &kroma_domain::User) -> &'static str {
     user.language.as_deref().and_then(normalize).unwrap_or(DEFAULT_LOCALE)
 }
@@ -86,7 +69,6 @@ pub fn detect_locale(preferred: Option<&str>, accept_language: Option<&str>) -> 
 }
 
 /// The resolved request locale, from `Accept-Language` (else [`DEFAULT_LOCALE`]).
-/// Drives every server-rendered string (admin labels, error messages).
 pub struct ReqLocale(pub &'static str);
 
 impl FromRequestParts<SharedState> for ReqLocale {
@@ -113,7 +95,6 @@ mod tests {
         let e = i18n();
         assert_eq!(e.default_locale(), DEFAULT_LOCALE);
         assert_eq!(e.supported().collect::<Vec<_>>(), SUPPORTED_LOCALES.to_vec());
-        // Real catalogs load and pluralize (default rule: singular at 1).
         assert_eq!(t("fr", "content.seasonCount", &[("count", "1")]), "1 saison");
         assert_eq!(t("fr", "content.seasonCount", &[("count", "2")]), "2 saisons");
         assert_eq!(t("en", "content.seasonCount", &[("count", "1")]), "1 season");

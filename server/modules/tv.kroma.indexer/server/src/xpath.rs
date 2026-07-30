@@ -108,7 +108,7 @@ fn read_node(field: &Field, node: &Node) -> String {
     }
 }
 
-/// Evaluate an XPath expression, optionally relative to a context node.
+// Evaluates an XPath expression, optionally relative to a context node.
 fn eval_nodes(xctx: &mut XpathCtx, xpath: &str, node: Option<&Node>) -> Vec<Node> {
     if let Some(n) = node {
         // Relative evaluation: pin the context node first.

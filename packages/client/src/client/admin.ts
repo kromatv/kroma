@@ -27,18 +27,15 @@ import type { RequestContext } from './base';
 
 const JSON_HEADERS = { 'content-type': 'application/json' };
 
-/** Server identity + uptime (requires an admin capability). */
 export function adminServer(ctx: RequestContext): Promise<ServerInfo> {
   return ctx.json<ServerInfo>('/admin/server');
 }
 
-/** Live playback sessions for the dashboard. */
 export function adminSessions(ctx: RequestContext): Promise<{ sessions: PlaybackSession[] }> {
   return ctx.json<{ sessions: PlaybackSession[] }>('/admin/sessions');
 }
 
-/** Terminate a live playback session; the owning client stops and shows
- * `message` (empty → the client's localized default). */
+/** An empty `message` falls back to the client's localized default. */
 export async function terminateSession(
   ctx: RequestContext,
   id: string,
@@ -51,62 +48,49 @@ export async function terminateSession(
   });
 }
 
-/** CPU / RAM / bandwidth snapshot + history (poll for live charts). */
 export function adminMetrics(ctx: RequestContext): Promise<MetricsSnapshot> {
   return ctx.json<MetricsSnapshot>('/admin/metrics');
 }
 
-/** Volumes, totals and cache usage. */
 export function adminStorage(ctx: RequestContext): Promise<StorageInfo> {
   return ctx.json<StorageInfo>('/admin/storage');
 }
 
-/** Wipe transcode + image caches (requires `settings.manage`). */
+/** Wipes the transcode + image caches; requires `settings.manage`. */
 export function clearCache(ctx: RequestContext): Promise<{ freedBytes: number }> {
   return ctx.json<{ freedBytes: number }>('/admin/cache/clear', { method: 'POST' });
 }
 
-/**
- * Drop every resolved TMDB metadata (DB JSON, season casts, embeddings) and the
- * in-memory lookup cache so the next enrichment re-fetches from scratch. Returns
- * how many movies/videos and shows were cleared (requires `settings.manage`).
- */
+/** Drops every resolved TMDB metadata so the next enrichment re-fetches from
+ *  scratch; requires `settings.manage`. */
 export function resetMetadata(ctx: RequestContext): Promise<{ items: number; shows: number }> {
   return ctx.json<{ items: number; shows: number }>('/admin/cache/reset-metadata', {
     method: 'POST',
   });
 }
 
-// ----- library folder browser -------------------------------------------------
-
-/** One directory entry returned by the server-side folder browser. */
 export interface AdminFsEntry {
   name: string;
   path: string;
 }
 
-/** A directory listing for the library folder picker: the current absolute
- *  `path`, its `parent` (null at a root), and its immediate subdirectories. */
 export interface AdminFsList {
   path: string;
   parent: string | null;
   entries: AdminFsEntry[];
 }
 
-/** Browse server-side directories for the library folder picker. An empty/absent
- *  `path` returns the roots (NAS volumes, or `/` in dev). Requires an admin
- *  capability. */
+/** An empty/absent `path` returns the roots (NAS volumes, or `/` in dev). */
 export function adminBrowseFolders(ctx: RequestContext, path?: string): Promise<AdminFsList> {
   const qs = path ? `?path=${encodeURIComponent(path)}` : '';
   return ctx.json<AdminFsList>(`/admin/libraries/browse${qs}`);
 }
 
-/** Full member list (requires `users.manage`). */
+/** Requires `users.manage`. */
 export function adminUsers(ctx: RequestContext): Promise<AdminUsers> {
   return ctx.json<AdminUsers>('/admin/users');
 }
 
-/** Update a user's permissions and/or username. */
 export async function updateUser(
   ctx: RequestContext,
   id: string,
@@ -119,17 +103,15 @@ export async function updateUser(
   });
 }
 
-/** Delete a user account. */
 export async function deleteUser(ctx: RequestContext, id: string): Promise<void> {
   await ctx.json<void>(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-/** Grouped settings schema + current values for one view. */
 export function adminSettings(ctx: RequestContext, view: string): Promise<SettingsView> {
   return ctx.json<SettingsView>(`/admin/settings?view=${encodeURIComponent(view)}`);
 }
 
-/** Persist a settings patch → the keys actually written. */
+/** Resolves with the keys actually written. */
 export function updateSettings(
   ctx: RequestContext,
   patch: Record<string, unknown>,
@@ -141,32 +123,25 @@ export function updateSettings(
   });
 }
 
-// ----- portable backup --------------------------------------------------------
-
-/** Per-table row counts written by an import, plus whether a re-scan was kicked. */
 export interface BackupImportResult {
   imported: Record<string, number>;
   rescanStarted: boolean;
 }
 
-/** Options for restoring a backup. */
 export interface BackupImportOptions {
-  /** Password for an encrypted (`.kroma`) backup. */
   password?: string;
-  /** Wipe this server's portable tables before importing (clean A→B clone). */
   reset?: boolean;
 }
 
-/** Hex-encode a UTF-8 string so an arbitrary password survives an HTTP header. */
+// Hex so an arbitrary password survives an HTTP header.
 function hexUtf8(s: string): string {
   return Array.from(new TextEncoder().encode(s))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
-/** Download a portable backup (accounts, settings, history, resume positions,
- *  invites, cron overrides, custom avatars) as a `Blob`. A `password` encrypts it
- *  (`.kroma`), else a plain `.zip`. Requires `settings.manage`. */
+/** A `password` encrypts the archive (`.kroma`), else it is a plain `.zip`.
+ *  Requires `settings.manage`. */
 export function exportBackup(ctx: RequestContext, password?: string): Promise<Blob> {
   return ctx.blob(
     '/admin/backup/export',
@@ -174,8 +149,8 @@ export function exportBackup(ctx: RequestContext, password?: string): Promise<Bl
   );
 }
 
-/** Restore a backup file (`.zip`/`.kroma`/legacy `.json`), then trigger a re-scan
- *  so the catalogue regenerates with matching item IDs. */
+/** Restores a `.zip`/`.kroma`/legacy `.json`, then triggers a re-scan so the
+ *  catalogue regenerates with matching item IDs. */
 export function importBackup(
   ctx: RequestContext,
   file: Blob,
@@ -191,26 +166,21 @@ export function importBackup(
   });
 }
 
-/** Per-user watch aggregates over the last `days` (default 7). */
 export function topUsers(ctx: RequestContext, days = 7): Promise<{ users: TopUser[] }> {
   return ctx.json<{ users: TopUser[] }>(`/admin/stats/top-users?days=${days}`);
 }
 
-/** Weekly films-vs-TV watch buckets over the last `days` (default 28). */
+/** Weekly films-vs-TV watch buckets. */
 export function playHistory(ctx: RequestContext, days = 28): Promise<HistoryStats> {
   return ctx.json<HistoryStats>(`/admin/stats/history?days=${days}`);
 }
 
-/** Top-line counts for the users page. */
 export function adminOverview(ctx: RequestContext): Promise<AdminOverview> {
   return ctx.json<AdminOverview>('/admin/stats/overview');
 }
 
-// ----- server logs -------------------------------------------------------------
-
-/** Recent server log lines (core + module sidecars), newest last. Filters:
- * `level` is a minimum severity, `source` is `core` or a module id, `q` is a
- * case-insensitive substring. */
+/** Newest last. `level` is a minimum severity, `source` is `core` or a module
+ *  id, `q` is a case-insensitive substring. */
 export function adminLogs(
   ctx: RequestContext,
   opts: { level?: string; source?: string; q?: string; limit?: number } = {},
@@ -225,47 +195,26 @@ export function adminLogs(
   return ctx.json<LogsView>(`/admin/logs${suffix}`);
 }
 
-// ----- notifications from the console -----------------------------------------
-
-/** Who a notification goes to. `me` is the safe default; `everyone` writes a row
- * into every account on the server. */
 export type NotificationTarget = 'me' | 'admins' | 'everyone';
 
-/** What the console sends: either one of the core's own events, sampled, or a
- * notification written by hand. Title present = written wins. */
+/** Either a core `event` to sample or hand-written text; a `title` wins. */
 export interface SendNotificationBody {
-  /** A core event to sample, e.g. `request.available`. */
   event?: string;
-  /** Literal text, in whatever language it was typed. */
   title?: string;
   body?: string;
-  /** Preference bucket for a written one (defaults to `system`). */
   category?: Notification['category'];
-  /** In-app route a tap opens, and the art on the row. */
   link?: string;
   imageUrl?: string;
   target?: NotificationTarget;
 }
 
-/**
- * Every kind of notification this server can send, already rendered in the
- * caller's language - the samples the console picks from.
- *
- * Rendered server-side on purpose: the sample text and the message keys live
- * with the sender, so a preview cannot drift from what pressing Send delivers.
- */
+/** Rendered server-side so a preview cannot drift from what Send delivers. */
 export function notificationSamples(ctx: RequestContext): Promise<{ events: Notification[] }> {
   return ctx.json<{ events: Notification[] }>('/admin/notifications/samples');
 }
 
-/**
- * Send one REAL notification - for checking a layout, a translation, whether
- * push reaches a device, or to tell the household something.
- *
- * It goes through the same pipeline a producer's does (category preferences,
- * per-recipient rendering, the stored row, the live bell, the push fan-out), so
- * `delivered` is people actually reached - a muted category is not counted.
- */
+/** Sends a real notification through the normal pipeline, so `delivered` counts
+ *  people actually reached - a muted category is not counted. */
 export function sendNotification(
   ctx: RequestContext,
   body: SendNotificationBody,
@@ -277,8 +226,8 @@ export function sendNotification(
   });
 }
 
-/** Attach an image to a notification: raw bytes in, the cached WebP's path out
- * (the same store avatars use, so every client already resolves it). */
+/** Returns the cached WebP's path in the same store avatars use, so every
+ *  client already resolves it. */
 export function uploadNotificationImage(
   ctx: RequestContext,
   file: Blob,
@@ -290,33 +239,27 @@ export function uploadNotificationImage(
   });
 }
 
-// ----- background jobs / scheduler --------------------------------------------
-
-/** Every background job with its schedule, last run and next fire. */
 export function adminJobs(ctx: RequestContext): Promise<JobsView> {
   return ctx.json<JobsView>('/admin/jobs');
 }
 
-/** One job plus its recent run history. */
 export function adminJob(ctx: RequestContext, key: string): Promise<JobDetail> {
   return ctx.json<JobDetail>(`/admin/jobs/${encodeURIComponent(key)}`);
 }
 
-/** Trigger a job now (manual). Resolves with the new run id. */
 export function runJob(ctx: RequestContext, key: string): Promise<{ runId: string }> {
   return ctx.json<{ runId: string }>(`/admin/jobs/${encodeURIComponent(key)}/run`, {
     method: 'POST',
   });
 }
 
-/** Request cancellation of a job's current run. */
 export function cancelJob(ctx: RequestContext, key: string): Promise<{ cancelled: boolean }> {
   return ctx.json<{ cancelled: boolean }>(`/admin/jobs/${encodeURIComponent(key)}/cancel`, {
     method: 'POST',
   });
 }
 
-/** Update a job's cron schedule (`null` clears it) and/or enabled flag. */
+/** A `null` schedule clears it. */
 export async function updateJob(
   ctx: RequestContext,
   key: string,
@@ -329,19 +272,15 @@ export async function updateJob(
   });
 }
 
-/** The log lines of a specific run (chronological). */
 export function jobRunLogs(ctx: RequestContext, runId: string): Promise<{ logs: JobLog[] }> {
   return ctx.json<{ logs: JobLog[] }>(`/admin/job-runs/${encodeURIComponent(runId)}/logs`);
 }
 
-// ----- per-element processing pipeline ----------------------------------------
-
-/** Per-stage health counts (probe/metadata/storyboard/markers/…). */
 export function adminPipeline(ctx: RequestContext): Promise<PipelineView> {
   return ctx.json<PipelineView>('/admin/pipeline');
 }
 
-/** A stage's failed tasks (newest first) for the drill-down. */
+/** Newest first. */
 export function pipelineFailed(
   ctx: RequestContext,
   stage: string,
@@ -351,14 +290,12 @@ export function pipelineFailed(
   );
 }
 
-/** Trigger a stage's drain now. */
 export function runPipelineStage(ctx: RequestContext, stage: string): Promise<{ runId: string }> {
   return ctx.json<{ runId: string }>(`/admin/pipeline/${encodeURIComponent(stage)}/run`, {
     method: 'POST',
   });
 }
 
-/** Cancel a stage's running drain. */
 export function cancelPipelineStage(
   ctx: RequestContext,
   stage: string,
@@ -368,7 +305,7 @@ export function cancelPipelineStage(
   });
 }
 
-/** Hold (paused=true) or release all pipeline stages. Returns the new state. */
+/** Holds or releases every stage at once. */
 export function pausePipeline(ctx: RequestContext, paused: boolean): Promise<{ paused: boolean }> {
   return ctx.json<{ paused: boolean }>('/admin/pipeline/pause', {
     method: 'POST',
@@ -377,7 +314,7 @@ export function pausePipeline(ctx: RequestContext, paused: boolean): Promise<{ p
   });
 }
 
-/** Reset all of a stage's failed tasks to pending. */
+/** Resets a stage's failed tasks to pending. */
 export function retryPipelineStage(
   ctx: RequestContext,
   stage: string,
@@ -387,7 +324,7 @@ export function retryPipelineStage(
   });
 }
 
-/** Force a full re-run of a stage (every non-running task back to pending). */
+/** Puts every non-running task of a stage back to pending. */
 export function reprocessPipelineStage(
   ctx: RequestContext,
   stage: string,
@@ -397,7 +334,6 @@ export function reprocessPipelineStage(
   });
 }
 
-/** Reset one failed task to pending. */
 export function retryPipelineTask(
   ctx: RequestContext,
   stage: string,
@@ -410,8 +346,7 @@ export function retryPipelineTask(
   });
 }
 
-/** The catalog as a filtered, paginated list of elements with per-treatment
- *  status + full-catalog counts (the element-centric pipeline dashboard). */
+/** Filtered, paginated elements with per-treatment status + full-catalog counts. */
 export function pipelineElements(
   ctx: RequestContext,
   params: { status?: string; kind?: string; q?: string; page?: number; limit?: number } = {},
@@ -427,7 +362,6 @@ export function pipelineElements(
   return ctx.json<PipelineElements>(`/admin/pipeline/elements${suffix}`);
 }
 
-/** Re-run one stage for one element (the drawer's per-treatment retry). */
 export async function retryElementStage(
   ctx: RequestContext,
   kind: 'item' | 'show',
@@ -441,18 +375,16 @@ export async function retryElementStage(
   });
 }
 
-/** The treatments applied to one movie/episode and their status. */
 export function itemProcessing(ctx: RequestContext, id: string): Promise<ElementProcessing> {
   return ctx.json<ElementProcessing>(`/admin/pipeline/item/${encodeURIComponent(id)}`);
 }
 
-/** The treatments applied to a whole series (aggregated across episodes). */
+/** Aggregated across the series' episodes. */
 export function showProcessing(ctx: RequestContext, id: string): Promise<ElementProcessing> {
   return ctx.json<ElementProcessing>(`/admin/pipeline/show/${encodeURIComponent(id)}`);
 }
 
-/** Force one element (a movie/episode `item`, or a whole `show`) through every
- *  pipeline stage now: clears its artifacts, requeues its tasks, kicks the stages. */
+/** Clears the element's artifacts, requeues its tasks and kicks every stage. */
 export function reprocessSubject(
   ctx: RequestContext,
   kind: 'item' | 'show',
@@ -465,12 +397,9 @@ export function reprocessSubject(
   });
 }
 
-// ----- AI / LLM configuration -------------------------------------------------
-
-/** Probe values (the in-progress form); blank fields fall back to the saved
- *  provider identified by `id` (notably a masked API key). */
+/** Blank fields fall back to the saved provider identified by `id`, notably a
+ *  masked API key. */
 export interface LlmProbe {
-  /** The provider being edited, so a blank key reuses that provider's stored one. */
   id?: string;
   provider?: string;
   baseUrl?: string;
@@ -478,13 +407,12 @@ export interface LlmProbe {
   apiKey?: string;
 }
 
-/** Current LLM config: all providers + the default id (keys never returned). */
+/** API keys are never returned. */
 export function adminLlm(ctx: RequestContext): Promise<LlmAdminConfig> {
   return ctx.json<LlmAdminConfig>('/admin/llm');
 }
 
-/** A provider as sent on save like the view but without `hasApiKey`, plus an
- *  optional `apiKey` (blank/omitted keeps the stored secret). */
+/** A blank/omitted `apiKey` keeps the stored secret. */
 export interface LlmProviderInput {
   id: string;
   name: string;
@@ -497,15 +425,14 @@ export interface LlmProviderInput {
   reasoning: boolean;
 }
 
-/** The full IA config to persist (PUT /admin/llm). The default is identified by
- *  **index** a not-yet-saved provider has no id yet (the server assigns one). */
+/** The default is identified by index, not id: a not-yet-saved provider has no
+ *  id until the server assigns one. */
 export interface LlmSave {
   enabled: boolean;
   defaultIndex: number;
   providers: LlmProviderInput[];
 }
 
-/** Persist the provider list + default selection + enable flag. */
 export function saveLlm(ctx: RequestContext, body: LlmSave): Promise<void> {
   return ctx.json<void>('/admin/llm', {
     method: 'PUT',
@@ -514,7 +441,6 @@ export function saveLlm(ctx: RequestContext, body: LlmSave): Promise<void> {
   });
 }
 
-/** List the models an endpoint advertises (for the model picker). */
 export function llmModels(
   ctx: RequestContext,
   probe: LlmProbe,
@@ -526,7 +452,7 @@ export function llmModels(
   });
 }
 
-/** Probe a connection (trivial completion). Always resolves with `{ ok, message }`. */
+/** Never rejects on a bad endpoint: failures come back as `{ ok: false }`. */
 export function testLlm(
   ctx: RequestContext,
   probe: LlmProbe,
@@ -538,23 +464,17 @@ export function testLlm(
   });
 }
 
-// ----- remote access (managed Cloudflare Tunnel connector) --------------------
-
-/** Live state of the supervised `cloudflared` child (never carries the token). */
+/** Live state of the supervised `cloudflared` child; never carries the token. */
 export interface RemoteConnectorStatus {
   running: boolean;
-  /** A launch is in progress (spawning, or downloading the binary). */
   connecting: boolean;
   since?: string | null;
   lastError?: string | null;
-  /** Whether the resolved `cloudflared` binary is present + runnable. */
   binaryFound: boolean;
   binaryVersion?: string | null;
-  /** Recent connector log lines (oldest first). */
   logs: string[];
 }
 
-/** Remote-access config (token masked as `hasToken`) + live connector status. */
 export interface RemoteAccessView {
   enabled: boolean;
   url: string;
@@ -562,22 +482,19 @@ export interface RemoteAccessView {
   status: RemoteConnectorStatus;
 }
 
-/** Config to persist (PUT /admin/remote). A blank/omitted `token` keeps the
- *  stored one (never wiped by an empty field). The `cloudflared` binary is
- *  provided by the server, so there is no path to configure. */
+/** A blank/omitted `token` keeps the stored one; an empty field never wipes it. */
 export interface RemoteAccessSave {
   enabled: boolean;
   url: string;
   token?: string;
 }
 
-/** Current remote-access config + live connector status. */
 export function adminRemote(ctx: RequestContext): Promise<RemoteAccessView> {
   return ctx.json<RemoteAccessView>('/admin/remote');
 }
 
-/** Persist config; the server's reconcile loop starts/stops the connector to
- *  match `enabled` (non-blocking). Returns the fresh config + status. */
+/** Returns before the connector has reacted: the server reconciles `enabled`
+ *  asynchronously, so the returned status may still be the old one. */
 export function saveRemote(ctx: RequestContext, body: RemoteAccessSave): Promise<RemoteAccessView> {
   return ctx.json<RemoteAccessView>('/admin/remote', {
     method: 'PUT',

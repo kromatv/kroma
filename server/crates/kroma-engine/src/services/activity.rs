@@ -1,9 +1,9 @@
 //! Live scan / enrichment activity, exposed at `GET /api/status`.
 //!
 //! Complements the `/api/events` WebSocket (which streams deltas) with a
-//! queryable *snapshot*, so a client that connects mid-scan can still show
-//! current progress (a Plex-style "Activity" panel). Behind a `std::sync::RwLock`
-//! because the enrichment workers are plain threads.
+//! queryable snapshot, so a client that connects mid-scan can still show
+//! current progress. Behind a `std::sync::RwLock` because the enrichment
+//! workers are plain threads.
 
 use std::sync::{Arc, RwLock};
 
@@ -12,7 +12,6 @@ use serde::Serialize;
 /// A snapshot of what the server is doing.
 #[derive(Debug, Clone, Serialize)]
 pub struct Activity {
-    /// `idle` | `scanning` | `enriching` | `ready`.
     pub phase: &'static str,
     pub scanning: bool,
     pub libraries: usize,
@@ -22,7 +21,6 @@ pub struct Activity {
     pub enrich_done: usize,
     #[serde(rename = "enrichTotal")]
     pub enrich_total: usize,
-    /// Background per-file probing (phase 2) progress.
     #[serde(rename = "probeDone")]
     pub probe_done: usize,
     #[serde(rename = "probeTotal")]
@@ -48,7 +46,6 @@ impl Default for Activity {
     }
 }
 
-/// Cheap-to-clone shared handle.
 pub type Shared = Arc<RwLock<Activity>>;
 
 pub fn new() -> Shared {
@@ -119,7 +116,6 @@ mod tests {
 
     #[test]
     fn starts_idle_with_nothing_counted() {
-        // What `GET /api/status` answers on a server that has just booted.
         let a = new();
         let s = snapshot(&a);
         assert_eq!(s.phase, "idle");
@@ -171,7 +167,6 @@ mod tests {
 
         enrich_progress(&a, 12);
         assert_eq!(snapshot(&a).enrich_done, 12);
-        // Still enriching: progress alone must not flip the phase.
         assert_eq!(snapshot(&a).phase, "enriching");
 
         enrich_completed(&a);

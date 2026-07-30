@@ -1,9 +1,4 @@
-// Admin "Modules" page: every module installed on this server with its packaged
-// icon, capabilities, an enable toggle and its config, plus the registry Store
-// (browse / install / update with dependency auto-install + checksum verify),
-// install-by-upload and uninstall. Backed by GET/POST/PUT /api/admin/modules
-// and /api/admin/store. The Store grid lives in module-store.tsx, the
-// dependency chips in module-deps.tsx.
+// Admin "Modules" page, backed by /api/admin/modules and /api/admin/store.
 
 import { Image } from '@kroma/admin-kit';
 import { sessionToken } from '@kroma/core';
@@ -25,10 +20,8 @@ import { Card, Pill, Toggle } from '#web/features/admin/ui';
 import { useModuleSettingsPanels, useRefreshModules } from '#web/modules/ModuleHostProvider';
 import { apiBase } from '#web/shared/lib/api';
 
-/** The kit sm-button label metrics, tinted danger for the destructive action. */
 const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
-/** POST a module bundle (raw .kmod bytes) to the install endpoint. */
 async function installBundle(file: File): Promise<void> {
   const token = sessionToken();
   const res = await fetch(`${apiBase()}/api/admin/store/install`, {
@@ -49,9 +42,8 @@ export function ModulesAdminPage() {
     () => adminApi<AdminModule[]>('/modules'),
     30000,
   );
-  // The registry catalog, enriched server-side with this server's verdict per
-  // module. Undefined while loading or if the registry is unreachable; the
-  // Store section just hides then.
+  // Undefined while loading or if the registry is unreachable; the Store
+  // section hides itself then.
   const { data: catalog, reload: reloadCatalog } = usePoll(
     ['admin', 'store', 'catalog'],
     () => adminApi<StoreCatalog>('/store/catalog'),
@@ -64,7 +56,6 @@ export function ModulesAdminPage() {
   if (!canManage) return <Denied />;
   const modules = data ?? [];
   const installedIds = new Set(modules.map((m) => m.id));
-  // Registry entry per installed module, for the update badge/button.
   const registryById = new Map((catalog?.modules ?? []).map((m) => [m.id, m]));
 
   const installFromRegistry = async (id: string) => {
@@ -90,15 +81,10 @@ export function ModulesAdminPage() {
         body: JSON.stringify({ enabled }),
       });
     } catch (e) {
-      // Surface instead of an unhandled rejection; the refresh below resyncs the
-      // toggle to the true server state (it reverts on failure).
       console.error('[modules] failed to toggle', id, e);
     }
-    // Re-snapshot the whole module host, not just this page: refreshes the
-    // ['modules'] query behind `disabledIds`, so the sidebar nav, the
-    // /admin/<id> route and any contributed panels reflect the toggle live -
-    // no page reload. (This also refetches the admin list, so `reload()` is
-    // covered.)
+    // Re-snapshots the whole module host, so the sidebar nav, the /admin/<id>
+    // route and contributed panels follow the toggle without a page reload.
     await refreshModules();
   };
 
@@ -109,8 +95,6 @@ export function ModulesAdminPage() {
     setNotice(null);
     try {
       await installBundle(file);
-      // Soft-reload: load the new module's remote + re-snapshot nav/pages, so the
-      // module appears immediately with no page refresh.
       await refreshModules();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -218,8 +202,6 @@ function InstalledCard({
   onUpdate: () => void;
   onUninstall: () => void;
 }>) {
-  // An update is offered only when the registry has a newer version AND a
-  // compatible artifact for this server (the backend computed both).
   const update = registry?.updateAvailable && registry.compatible ? registry : undefined;
   return (
     <Card className="p-4">
@@ -277,9 +259,6 @@ function InstalledCard({
   );
 }
 
-/** A module's settings block: any rich `settingsPanels` the frontend module
- *  contributes, followed by the typed form generated from its `config` schema.
- *  Renders nothing when the module exposes neither. */
 function ModuleSettings({
   module,
   onSaved,

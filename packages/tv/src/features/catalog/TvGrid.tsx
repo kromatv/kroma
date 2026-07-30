@@ -26,16 +26,12 @@ import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid'
 import { EMPTY } from '#tv/features/catalog/screenStyle';
 import { BrowseFilters, BrowseHeader } from '#tv/features/catalog/TvBrowseHeader';
 
-/** The section label over the grid, one key per section. */
 const LABEL_KEY: Record<'films' | 'series' | 'mylist', MessageKey> = {
   films: 'nav.films',
   series: 'nav.series',
   mylist: 'nav.myList',
 };
 
-/** One kind's base list for the active section, before genre filter + sort: the
- * whole catalogue in its own section, nothing in the other one, and the saved
- * titles in Ma liste. */
 function sectionList<T extends MediaItem | Show>(
   items: T[],
   own: boolean,
@@ -47,13 +43,7 @@ function sectionList<T extends MediaItem | Show>(
   return items.filter((it) => myList.has(it.id));
 }
 
-/**
- * Full-screen catalogue browse for one section (Films / Séries / Ma liste), in
- * the content-forward Disney+/Apple TV shape: a full-bleed ambient backdrop of
- * the focused tile (no dedicated hero block), a compact fixed-height header
- * echoing that tile's title + meta, a slim sort/genre chip strip, then a poster
- * grid holding ~75% of the screen. Shares the top nav with Home.
- */
+/** Full-screen catalogue browse for one section (Films / Séries / Ma liste). */
 export function TvGrid() {
   const { kind } = useParams('grid');
   const { movies, shows } = useConnection();
@@ -68,12 +58,7 @@ export function TvGrid() {
 
   const [sort, setSort] = useState<SortMode>('added');
   const [genre, setGenre] = useState<string | undefined>(undefined);
-  // The id of the grid tile currently holding focus; the header + ambient art
-  // follow it (falling back to the first title of the view).
   const [focusId, setFocusId] = useState<string | null>(null);
-  // Films / Séries / Ma liste share this component (a top-nav jump swaps the
-  // param without remounting), so drop the genre filter (it may not exist in the
-  // other section's catalogue) and the focus echo when the section changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: kind is an intentional re-run key (resets the filter on a section switch), not read inside the effect
   useEffect(() => {
     setGenre(undefined);
@@ -118,8 +103,6 @@ export function TvGrid() {
     [entries, client, nav, watched],
   );
 
-  // The entry the header + ambient art echo: the focused tile, else the first
-  // title of the current view (also covers a filter change dropping the id).
   const focused = useMemo<Entry | null>(
     () => entries.find((e) => e.item.id === focusId) ?? entries[0] ?? null,
     [entries, focusId],

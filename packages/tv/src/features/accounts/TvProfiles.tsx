@@ -27,10 +27,9 @@ interface Tile {
 }
 
 /**
- * Profile picker the signed-out home. It shows ONLY the profiles paired on this
- * device (remembered accounts); it never lists the server's other accounts and
- * makes no request on open. A PIN-protected profile routes to the PIN screen, the
- * rest sign in instantly. "Ajouter un profil" opens the wizard to pair a new one.
+ * Profile picker, the signed-out home. Shows only the profiles paired on this
+ * device; a PIN-protected profile routes to the PIN screen, the rest sign in
+ * instantly.
  */
 export function TvProfiles() {
   const nav = useNav();
@@ -50,9 +49,6 @@ export function TvProfiles() {
     }));
   }, [accounts, servers, activeServerName]);
 
-  // Probe each distinct server behind the remembered profiles so a tile can show
-  // whether its server is reachable BEFORE you pick it (public /api/health, no
-  // auth needed while signed out).
   const serverUrls = useMemo(
     () => Array.from(new Set(accounts.map((a) => norm(a.serverUrl ?? '')).filter(Boolean))),
     [accounts],
@@ -62,8 +58,7 @@ export function TvProfiles() {
   useFocusNav({ onBack: nav.back, resetKey: tiles.length });
 
   const onSelect = (a: StoredSession, offline: boolean) => {
-    // Signing in would only fail (catalogue fetch, progress sync) against a
-    // server that isn't answering don't let the profile "connect" into a dead end.
+    // Signing in would only fail against a server that isn't answering.
     if (offline) return;
     const locked = a.user.hasPin && !isUnlocked(a);
     if (locked) nav.go('pin', { intent: 'verify', account: a });
@@ -97,9 +92,8 @@ export function TvProfiles() {
               <Focusable
                 onPress={() => onSelect(account, offline)}
                 label={account.user.username}
-                // The screen's entry point: the first profile. Named rather than
-                // left to chance, because tvOS picks by geometry and the web
-                // engine by DOM order, and neither is a design decision.
+                // The screen's entry point: tvOS picks by geometry and the web
+                // engine by DOM order, so this isn't left to chance.
                 autoFocus={index === 0}
                 focusScale={1.07}
                 style={{ borderRadius: 24 }}

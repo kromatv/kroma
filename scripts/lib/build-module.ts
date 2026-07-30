@@ -14,13 +14,11 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { $ } from 'bun';
+import { byCodeUnit } from './sort';
 
 export interface StagedBundle {
-  /** The module id from its `module.json`. */
   id: string;
-  /** Temp dir holding the bundle's files (delete after archiving). */
   staging: string;
-  /** Top-level entries to archive, in a stable order (no `./` prefix). */
   entries: string[];
 }
 
@@ -33,7 +31,6 @@ export async function buildModuleBundle(moduleDir: string): Promise<StagedBundle
   const { id } = manifest;
   console.log(`building module bundle: ${id}`);
 
-  // 1) Compile the WASM backend guest (if the module ships one).
   const beDir = join(moduleDir, 'server');
   if (existsSync(beDir)) {
     console.log('  - cargo build --target wasm32-unknown-unknown');
@@ -43,11 +40,10 @@ export async function buildModuleBundle(moduleDir: string): Promise<StagedBundle
   const wasmCandidates = existsSync(wasmOutDir)
     ? readdirSync(wasmOutDir)
         .filter((f) => f.endsWith('.wasm'))
-        .sort()
+        .sort(byCodeUnit)
     : [];
-  // A module that ships a backend but produced no .wasm did not actually build
-  // (e.g. the guest crate is not `crate-type = ["cdylib"]`). Fail loudly rather
-  // than shipping a backend-less bundle that 404s on every /api/plugin call.
+  // Fail loudly rather than shipping a backend-less bundle that 404s on every
+  // /api/plugin call.
   if (existsSync(beDir) && wasmCandidates.length === 0) {
     throw new Error(
       `no .wasm produced in ${wasmOutDir}; is the guest crate crate-type = ["cdylib"]?`,
@@ -60,7 +56,6 @@ export async function buildModuleBundle(moduleDir: string): Promise<StagedBundle
   }
   const wasmFile = wasmCandidates[0];
 
-  // 2) Build the Module Federation frontend remote (if the module ships one).
   const feDir = join(moduleDir, 'ui');
   const feDist = join(feDir, 'dist');
   if (existsSync(feDir)) {
@@ -73,7 +68,6 @@ export async function buildModuleBundle(moduleDir: string): Promise<StagedBundle
     }
   }
 
-  // 3) Stage the bundle contents.
   const staging = join(moduleDir, '.bundle');
   rmSync(staging, { recursive: true, force: true });
   mkdirSync(staging, { recursive: true });

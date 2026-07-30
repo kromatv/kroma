@@ -90,10 +90,8 @@ use crate::api::error::json_error;
 use crate::api::extract::bearer_from_headers;
 use crate::state::SharedState;
 
-/// Require a valid session (bearer) token on the content routes. Rejects a
-/// missing/expired/unknown token with `401` before the handler runs, so the
-/// catalogue can't be listed anonymously. Public routes (auth handshake, roster,
-/// invites, avatars, health, media bytes) are merged OUTSIDE this layer.
+// Rejects a missing/expired/unknown bearer with 401 before the handler runs,
+// so the catalogue can't be listed anonymously.
 async fn require_session(State(state): State<SharedState>, req: Request, next: Next) -> Response {
     let Some(token) = bearer_from_headers(req.headers()) else {
         return json_error(StatusCode::UNAUTHORIZED, "authentication required");
@@ -112,9 +110,8 @@ async fn require_session(State(state): State<SharedState>, req: Request, next: N
     }
 }
 
-/// Build the application router with all `/api` routes plus CORS and tracing.
-/// Reverse-proxy `/api/module/<id>/<rest>` to the installed module's process
-/// (the module validates the forwarded bearer itself against the shared DB).
+// Reverse-proxies to the installed module's process; the module validates the
+// forwarded bearer itself against the shared DB.
 async fn module_proxy(
     Extension(sup): Extension<Arc<Supervisor>>,
     Path((id, rest)): Path<(String, String)>,
@@ -129,6 +126,9 @@ async fn module_proxy(
     }
 }
 
+/// Build the application router: `/api` route groups (public + session-gated),
+/// the module reverse proxy and host callbacks, static module/SPA assets, then
+/// CORS, compression and tracing layers.
 pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     // Public endpoints reachable before (or without) a session: the auth
     // handshake + roster + invites, uploaded avatars/art, liveness, and the media
@@ -197,13 +197,11 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     // BEFORE the SPA fallback so an installed remote's `remoteEntry.js` resolves.
     app = app.merge(plugin::asset_routes());
 
-    // Single-binary deploy: serve the built web SPA on the same origin as the API.
-    // Static assets are served from disk; any unmatched route falls back to the
-    // SPA shell so client-side routing (e.g. /films, /movie/:id) works on refresh.
-    // Skipped in dev (no KROMA_WEB_DIR) where the web runs on its own Vite server.
-    // `precompressed_*` serves the `.br`/`.gz` siblings the web build emits
-    // (scripts/precompress.mjs), so static bytes cost the NAS zero compression
-    // CPU; assets without a sibling fall through to the live CompressionLayer.
+    // Single-binary deploy: serve the built web SPA on the same origin as the API,
+    // falling back to the SPA shell for client-side routes (e.g. /films). Skipped
+    // in dev (no KROMA_WEB_DIR), where the web runs on its own Vite server.
+    // `precompressed_*` serves the build's `.br`/`.gz` siblings so static assets
+    // cost the NAS zero compression CPU; files without one hit CompressionLayer.
     if let Some(web_dir) = state.config.web_dir.clone() {
         let shell = web_dir.join("_shell.html");
         app = app.fallback_service(
@@ -232,11 +230,9 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .with_state(state)
 }
 
-/// Cache policy for the SPA files: Vite content-hashes every built asset, so
-/// hashed files are immutable (cache for a year) while the shell and any
-/// unhashed file revalidate (`no-cache` = cached but conditionally refetched).
-/// Without this the TV re-downloads the whole bundle on every app launch.
-/// `/api/*` responses are left untouched.
+// Vite content-hashes every built asset, so hashed files are immutable (cache
+// a year) while the shell and unhashed files revalidate. Without this the TV
+// re-downloads the whole bundle on every app launch. `/api/*` is left untouched.
 async fn spa_cache_headers(
     req: axum::extract::Request,
     next: axum::middleware::Next,
@@ -258,9 +254,8 @@ async fn spa_cache_headers(
     res
 }
 
-/// Whether a request path looks like a Vite content-hashed asset
-/// (`Poster-BKMFTghM.js`, `assets/index-DXQwrN_7.css`): a `-<hash>` stem
-/// suffix of 8+ [A-Za-z0-9_] chars and a non-HTML extension.
+// A Vite content-hashed asset (`Poster-BKMFTghM.js`, `assets/index-DXQwrN_7.css`):
+// a `-<hash>` stem suffix of 8+ [A-Za-z0-9_] chars and a non-HTML extension.
 fn is_hashed_asset(path: &str) -> bool {
     let name = path.rsplit('/').next().unwrap_or("");
     if name.ends_with(".html") {

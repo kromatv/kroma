@@ -112,8 +112,8 @@ describe('attachDemos', () => {
 });
 
 // The doc comment above `export default` is the LAST one, not the first the
-// regex engine can start from. A file header or a note on a helper used to
-// swallow everything between the two.
+// regex engine can start from - a file header or a note on a helper would
+// otherwise swallow everything between the two.
 describe('a demo with an earlier block comment', () => {
   const SOURCE = `import { Button } from '@kroma/ui/kit';
 

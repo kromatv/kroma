@@ -13,8 +13,6 @@ function stubFetch(resp: {
   ok?: boolean;
   status?: number;
   json?: () => unknown;
-  /** Raw body for the text() path. Defaults to the JSON stringified, so an
-   * omitted `text` mirrors a normal JSON response; pass '' for an empty body. */
   text?: () => string;
   blob?: () => unknown;
 }): { fetch: typeof globalThis.fetch; calls: { url: string; init?: RequestInit }[] } {

@@ -1,22 +1,6 @@
-// The phone's design vocabulary, mapped onto the kit's tokens.
-//
-// Nothing here holds a value - every colour and size comes from @kroma/ui - so
-// what is worth testing is the MAPPING, and it contains one deliberate
-// inversion that looks exactly like a bug:
-//
-//   this app's `textDim`   is the kit's `textMuted` (62% ink)
-//   this app's `textFaint` is the kit's `textDim`   (45% ink)
-//
-// The names cross. A reader who "fixes" that alignment makes every dimmed label
-// on the phone one step darker and every faint one one step lighter, which is
-// not a crash and does not fail a type check - it just quietly degrades contrast
-// across the whole app. So the crossing is pinned here, on purpose.
-//
-// The inked type ramp is the other one. The kit's `mobileType` bakes no colour,
-// because a role has to be reusable on any surface. But the phone's screens
-// spread `...type.x` and mostly say nothing about colour, and React Native's
-// silent default is BLACK - which on this app's near-black surfaces rendered
-// every unlabelled heading invisible.
+// The two dim names cross on purpose: this app's `textDim` is the kit's
+// `textMuted` (62% ink) and its `textFaint` is the kit's `textDim` (45% ink).
+// Aligning them would silently degrade contrast across the whole app.
 
 import { colors as kit, mobileType } from '@kroma/ui/kit';
 import { describe, expect, it } from 'vitest';
@@ -24,19 +8,14 @@ import { colors, posterWidth, TAB_BAR_CLEARANCE, type } from './theme';
 
 describe('the colour mapping', () => {
   it('takes every value from the kit rather than holding its own', () => {
-    // A literal here is a colour that can drift from the TV and the web.
     for (const value of Object.values(colors)) {
       expect(Object.values(kit)).toContain(value);
     }
   });
 
   it('CROSSES the two dim names, which is deliberate', () => {
-    // The app's `textDim` is the 62% ink; the kit calls that `textMuted`.
     expect(colors.textDim).toBe(kit.textMuted);
-    // The app's `textFaint` is the 45% ink; the kit calls that `textDim`.
     expect(colors.textFaint).toBe(kit.textDim);
-    // Aligning the names would silently change the contrast of every dimmed and
-    // faint label on the phone.
     expect(colors.textDim).not.toBe(colors.textFaint);
   });
 
@@ -68,8 +47,6 @@ describe('the type ramp', () => {
 
   it('keeps the kit’s metrics untouched', () => {
     for (const [role, style] of Object.entries(type)) {
-      // Colour is the ONLY thing added; a font size that drifts here is a phone
-      // that no longer matches its own design.
       const { color: _color, ...metrics } = style;
       expect(metrics).toEqual(mobileType[role as keyof typeof mobileType]);
     }
@@ -79,7 +56,6 @@ describe('the type ramp', () => {
     for (const role of ['display', 'title', 'heading', 'section', 'body'] as const) {
       expect(type[role].color).toBe(kit.text);
     }
-    // Caption and small are supporting text by definition.
     expect(type.caption.color).toBe(kit.textMuted);
     expect(type.small.color).toBe(kit.textMuted);
   });
@@ -98,7 +74,7 @@ describe('posterWidth', () => {
 
   it('steps up to four columns on a small tablet', () => {
     expect(posterWidth(600)).toBe(Math.floor((600 - 32 - 12 * 3) / 4));
-    // 599 is still a phone: the breakpoint is inclusive at 600.
+    // The breakpoint is inclusive at 600.
     expect(posterWidth(599)).toBe(Math.floor((599 - 32 - 24) / 3));
   });
 
@@ -108,8 +84,6 @@ describe('posterWidth', () => {
   });
 
   it('always leaves room for the padding and the gutters', () => {
-    // A card wider than its share overflows the row, and on a phone that is a
-    // horizontal scroll on a vertical grid.
     const columns = (width: number) => {
       if (width >= 900) return 6;
       if (width >= 600) return 4;
@@ -123,23 +97,18 @@ describe('posterWidth', () => {
   });
 
   it('returns whole pixels', () => {
-    // A fractional width is a seam of background between two cards on some
-    // densities and not others.
     for (const width of [320, 375, 390, 414, 600, 900]) {
       expect(Number.isInteger(posterWidth(width))).toBe(true);
     }
   });
 
   it('grows with the screen', () => {
-    // Within a column count, a wider screen means wider cards.
     expect(posterWidth(430)).toBeGreaterThan(posterWidth(390));
   });
 });
 
 describe('the tab bar clearance', () => {
   it('is a real height the scrolls can pad by', () => {
-    // The tab bar floats and is translucent, so content scrolls UNDER it; this
-    // is what keeps the last row reachable.
     expect(TAB_BAR_CLEARANCE).toBeGreaterThan(0);
     expect(Number.isInteger(TAB_BAR_CLEARANCE)).toBe(true);
   });

@@ -1,14 +1,7 @@
-// The subtitle edge treatment, both halves.
-//
-// Five settings, two very different spellings. The browser takes a
-// comma-separated shadow list and draws each CEA-708 treatment as the standard
-// describes it; React Native supports ONE text shadow, so `uniform` is
-// approximated by a tight dark halo and the directional pair by a hard offset.
-// What has to hold across that gap is that all five settings answer on both
-// platforms, and that NONE of them paints a background - the background is its
-// own CEA-708 layer now, with its own colour and opacity, and lives in
-// subtitle-appearance.ts. An edge that quietly kept drawing one would put a slab
-// behind the text that no setting in the panel could turn off.
+// The browser takes a comma-separated shadow list and draws each CEA-708 treatment
+// as the standard describes it; React Native supports only ONE text shadow, so the
+// native half approximates. The background is a separate CEA-708 layer that lives
+// in subtitle-appearance.ts, so no edge may paint one.
 
 import { describe, expect, it } from 'vitest';
 import type { SubEdge } from './subtitle-appearance';
@@ -27,8 +20,6 @@ describe('the native half', () => {
   });
 
   it('approximates the uniform stroke with a tight centred halo', () => {
-    // Offset zero and a small radius: with only one shadow available, a halo in
-    // every direction is the closest thing to a stroke.
     expect(native.edgeStyle('uniform')).toEqual({
       textShadowColor: '#000000',
       textShadowOffset: { width: 0, height: 0 },
@@ -41,9 +32,8 @@ describe('the native half', () => {
     const depressed = native.edgeStyle('depressed');
     expect(raised.textShadowOffset).toEqual({ width: 2, height: 2 });
     expect(depressed.textShadowOffset).toEqual({ width: -2, height: -2 });
-    // Near-zero, never zero: Android's Paint removes the shadow layer outright at
-    // radius 0, which would render both of these exactly like `none` and quietly
-    // cost CEA-708 two of its five treatments.
+    // Near-zero, never zero: Android's Paint drops the shadow layer outright at
+    // radius 0, rendering both of these exactly like `none`.
     for (const r of [raised.textShadowRadius, depressed.textShadowRadius]) {
       expect(r).toBeGreaterThan(0);
       expect(r).toBeLessThan(0.5);
@@ -63,9 +53,8 @@ describe('the web half', () => {
 
   it('draws the uniform stroke as four real corners plus a soft drop', () => {
     const { textShadow } = web.edgeStyle('uniform') as { textShadow: string };
-    // The thing the native half cannot do: one hard shadow per corner. Counted
-    // by the corners themselves rather than by splitting on commas, which would
-    // also split the rgba() of the drop shadow that follows them.
+    // Counted by corner rather than by splitting on commas, which would also split
+    // the rgba() of the drop shadow that follows them.
     for (const x of ['-1.5px', '1.5px']) {
       for (const y of ['-1.5px', '1.5px']) {
         expect(textShadow).toContain(`${x} ${y} 0 #000`);
@@ -91,8 +80,6 @@ describe('the web half', () => {
 
 describe('the two halves together', () => {
   it('answer every setting on both platforms', () => {
-    // A missing branch is an unstyled subtitle on one platform only, which is
-    // exactly the kind of gap nobody sees until a television is in front of them.
     for (const edge of EDGES) {
       expect(native.edgeStyle(edge)).toBeTypeOf('object');
       expect(web.edgeStyle(edge)).toBeTypeOf('object');

@@ -1,10 +1,6 @@
-// Profile / cast avatar, from the design system.
-//
-// @kroma/ui's <Avatar> already does exactly this: the photo when it loads,
-// otherwise the person's initials on a stable gradient. What stays here is this
-// app's call shape and its choice of gradient: the phone seeds it from
-// `posterColors(name)`, which is the same per-title palette its artwork
-// placeholders use, rather than the five-way profile palette the TV pickers use.
+// Profile / cast avatar, from the design system. Seeds its gradient from
+// `posterColors(name)` — the per-title palette used for artwork placeholders,
+// not the five-way profile palette the TV pickers use.
 
 import { posterColors } from '@kroma/core';
 import { Avatar as KitAvatar, tintGradient } from '@kroma/ui/kit';

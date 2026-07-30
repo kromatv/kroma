@@ -8,19 +8,16 @@ import { useClient, useNav, useParams } from '#tv/app/router';
 import { CategoryRows, GroupLabel, ReportSent, SubjectRow } from '#tv/features/reports/parts';
 import { AuthScreen, OnScreenKeyboard } from '#tv/shared/ui';
 
-/** How long the confirmation stays up before the screen shows itself out. Long
- * enough to read one sentence from a sofa, short enough not to feel stuck. */
+// Long enough to read one confirmation sentence from a sofa, short enough
+// not to feel stuck.
 const DONE_MS = 1800;
 
 /**
- * "Signaler un problème" from a television: pick what is affected, pick the kind
- * of problem, optionally say more, send. The same `POST /api/reports` the web
- * and mobile clients use, so a report raised from the sofa lands in the same
- * admin triage queue.
- *
- * Typing is deliberately a step of its own rather than a field in the form: the
- * on-screen keyboard needs the whole screen, and a viewer who has nothing to add
- * (most of them) never has to walk through it.
+ * "Signaler un problème" from a television: pick what is affected, pick the
+ * kind of problem, optionally say more, send — the same `POST /api/reports`
+ * the web and mobile clients use. Typing is a step of its own rather than a
+ * form field, since the on-screen keyboard needs the whole screen and most
+ * viewers have nothing to add.
  */
 export function TvReport() {
   const { kind, id, title, episodes } = useParams('report');

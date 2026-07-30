@@ -9,7 +9,6 @@ use serde_json::json;
 use crate::api::test_support::{demo_item_id, get, seed_session, send, test_app};
 use crate::model::Permission;
 
-/// A well-formed heartbeat body for a TV playing (or not) something.
 fn beat(id: &str, playback: Option<serde_json::Value>) -> serde_json::Value {
     let mut body = json!({
         "receiverId": id,
@@ -28,7 +27,6 @@ async fn a_receiver_announces_and_a_sender_drives_it() {
     let t = test_app();
     let item = demo_item_id("The Matrix");
 
-    // The TV appears on the roster, idle.
     let (status, reply) = send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(reply["commands"].as_array().map(Vec::len), Some(0));
@@ -45,7 +43,6 @@ async fn a_receiver_announces_and_a_sender_drives_it() {
     assert!(list[0].get("userId").is_none());
     assert!(list[0].get("mine").is_none());
 
-    // A sender starts a title on it.
     let (status, sent) = send(
         &t.app,
         "POST",
@@ -160,7 +157,6 @@ async fn the_cast_surface_is_closed_to_strangers() {
 #[tokio::test]
 async fn commands_are_refused_for_a_missing_receiver_or_title() {
     let t = test_app();
-    // No such receiver.
     let (status, _) = send(
         &t.app,
         "POST",

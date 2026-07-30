@@ -46,7 +46,6 @@ where
         .route("/indexers/{id}/test", post(test::<S>))
 }
 
-/// Names of settings that currently hold a (non-empty) value.
 fn configured_settings(row: &IndexerRow) -> Vec<String> {
     let map: HashMap<String, String> = serde_json::from_str(&row.settings).unwrap_or_default();
     let mut names: Vec<String> =
@@ -128,8 +127,6 @@ pub async fn create<S: HostCtx + Clone>(
     Ok(Json(view).into_response())
 }
 
-/// Assemble a built-in indexer row from the chosen definition + submitted
-/// settings.
 async fn build_builtin_row<S: HostCtx + Clone>(
     state: &S,
     body: &SaveIndexerBody,
@@ -250,8 +247,8 @@ pub async fn update<S: HostCtx + Clone>(
     }
 }
 
-/// Merge submitted settings into the stored map, preserving a stored password
-/// when the incoming value for a `password`-type setting is empty.
+// Preserves a stored password when the incoming value for a `password`-type
+// setting is empty.
 fn merge_settings<S: HostCtx>(
     state: &S,
     id: &str,
@@ -346,8 +343,6 @@ pub async fn test<S: HostCtx + Clone>(
         None => Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.indexerNotFound")),
     }
 }
-
-// ----- definition catalog ---------------------------------------------------------
 
 /// `GET /api/admin/indexers/definitions` the browsable Cardigann catalog.
 pub async fn list_definitions<S: HostCtx + Clone>(

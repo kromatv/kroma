@@ -24,9 +24,7 @@ export type ReportStatus = z.infer<typeof ReportStatus>;
 export const Report = z.object({
   id: ReportId,
   subjectKind: ReportSubjectKind,
-  /** Local catalog id (movie/episode item id, or show id) deep-links to the fiche. */
   subjectId: z.string(),
-  /** Display title snapshotted at report time (survives a re-scan / deletion). */
   subjectTitle: z.string(),
   category: ReportCategory,
   message: z.string().nullable(),

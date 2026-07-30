@@ -1,8 +1,4 @@
 // @vitest-environment jsdom
-//
-// Reporting a problem from inside the player: the row exists only when the host
-// can send one, and opening it must stay open. A settings panel that closed on
-// the way into a sub-view would read as "the dialog shuts itself".
 
 import type { ReportCategory } from '@kroma/core';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -16,7 +12,6 @@ import type { SubtitleGenBundle } from './settings/gen';
 
 afterEach(cleanup);
 
-/** The least controller the panel will render against. */
 function controller(): PlayerController {
   return {
     qualities: [],
@@ -68,8 +63,6 @@ describe('the player settings panel, reporting', () => {
 
     fireEvent.click(screen.getByText('Report a problem'));
 
-    // The sub-view is up (its categories are on screen) and the menu it came
-    // from is gone - not the panel itself.
     expect(screen.getByText('Audio problem')).toBeTruthy();
     expect(screen.queryByText('Playback speed')).toBeNull();
   });

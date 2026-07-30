@@ -1,8 +1,6 @@
 //! Stable logical-id derivation (so the same movie/episode collapses to one
 //! item across files) and best-effort edition labelling from a filename.
 
-// ----- logical ids ------------------------------------------------------------
-
 /// Stable movie logical id: same title+year → one item.
 pub fn movie_logical_id(lib_id: &str, title: &str, year: Option<u32>) -> String {
     let norm = normalize_title(title);
@@ -28,8 +26,6 @@ pub(super) fn show_key(lib_id: &str, show_title: &str) -> String {
     let norm = normalize_title(show_title);
     short_hash(&format!("{lib_id}|show|{norm}"))
 }
-
-// ----- edition detection ------------------------------------------------------
 
 /// Best-effort edition label from a filename. Keep it simple: scan for a known
 /// set of edition/quality tokens and return the first match (preferring cut

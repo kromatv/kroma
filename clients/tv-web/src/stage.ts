@@ -1,29 +1,23 @@
 // The 1920x1080 stage, fitted inside the window.
 //
 // The shared @kroma/tv UI is authored on a fixed 1920x1080 canvas in real pixels
-// - PosterGrid says it outright: "The 1920px stage makes the column maths
-// static: 1792px of content is exactly 8 x 203px tiles plus 7 x 24px gaps",
-// which with its 2 x 64px padding is exactly 1920. Every packaged shell IS that
-// panel. A browser window is not, and the raw pixels do not survive the
-// difference: at any other width the fixed-px rows overflow (a rail's last
-// poster clipped, the right gutter gone, the grid's 8th column off the edge),
-// and at any height under 1080 the column does not fit either - the browse
-// screen's header, filter chips, grid and hint bar are sized for 1080, so a
-// shorter canvas rides the grid's clip box (which bleeds 32px for focus rings,
-// see organisms/virtual/clip.ts) up over the filter chips.
+// - PosterGrid's column math depends on it: 1792px of content is exactly
+// 8 x 203px tiles plus 7 x 24px gaps, which with its 2 x 64px padding is exactly
+// 1920. Every packaged shell IS that panel; a browser window is not, and the raw
+// pixels do not survive the difference: at any other width the fixed-px rows
+// overflow, and at any height under 1080 the browse screen's header, filter
+// chips, grid and hint bar no longer fit either.
 //
-// Both failures are the same failure: the layout is not responsive, it is a
-// fixed canvas. So the canvas is what gets fitted.
+// So the canvas is what gets fitted, by the smaller ratio:
 //
 //   scale = min(w / 1920, h / 1080)
 //
 // FIT-INSIDE, the same rule the desktop shell's `installStage()` uses for the
-// Steam Deck. It costs a surround on a window that is not 16:9 - painted in the
-// app background, so it reads as the frame of the picture rather than as a bug -
-// and it buys a layout that is pixel-identical to a television at every window
-// size. Fitting WIDTH only (fill, no surround) was tried and is what caused the
-// filter-chip overlap: there is no way to both fill the width and keep 1080
-// logical px of height unless the window happens to be 16:9 or taller.
+// Steam Deck. Fitting WIDTH only would starve the height requirement whenever
+// the window isn't 16:9 or taller, riding the grid's clip box (which bleeds
+// 32px for focus rings, see organisms/virtual/clip.ts) up over the filter
+// chips. The surround FIT-INSIDE costs on a non-16:9 window is painted in the
+// app background, so it reads as the frame of the picture rather than as a bug.
 //
 // The real "no surround" answer is a responsive 10-foot layout - columns and
 // gutters derived from the viewport instead of from 1920 - which is a change to

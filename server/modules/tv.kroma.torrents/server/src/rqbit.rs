@@ -17,7 +17,7 @@ use librqbit::{
     SessionPersistenceConfig,
 };
 
-/// `librqbit::torrent_state::ManagedTorrentHandle`, not re-exported at the root.
+// `librqbit::torrent_state::ManagedTorrentHandle`, not re-exported at the root.
 type ManagedTorrentHandle = Arc<ManagedTorrent>;
 
 use crate::{AddTorrentReq, DownloadClient, TorrentState, TorrentStatus};
@@ -25,14 +25,9 @@ use crate::{AddTorrentReq, DownloadClient, TorrentState, TorrentStatus};
 /// Everything the engine needs at start (mapped from server settings).
 #[derive(Debug, Clone, Default)]
 pub struct RqbitConfig {
-    /// Session state folder (fastresume JSON).
     pub session_dir: PathBuf,
-    /// Default output folder (each torrent normally overrides per download).
     pub download_dir: PathBuf,
-    /// `socks5://[user:pass@]host:port`; every peer connection routes through
-    /// it when set (the VPN seal).
     pub socks_proxy_url: Option<String>,
-    /// Fixed listen port; `None`/0 = ephemeral.
     pub listen_port: Option<u16>,
     pub download_bps: Option<u32>,
     pub upload_bps: Option<u32>,
@@ -42,8 +37,8 @@ pub struct RqbitConfig {
 pub struct RqbitEngine {
     session: Arc<Session>,
     handle: tokio::runtime::Handle,
-    /// The VPN socks5 the session dials through (if any), reused for our own
-    /// tracker announces so recovered peers are reachable from the same network.
+    // The VPN socks5 the session dials through (if any), reused for our own
+    // tracker announces so recovered peers are reachable from the same network.
     socks_proxy: Option<String>,
 }
 
@@ -158,7 +153,7 @@ pub(crate) struct RqbitClient {
     engine: Arc<RqbitEngine>,
 }
 
-/// librqbit `Speed.mbps` is MiB/s (bytes / 1024 / 1024).
+// librqbit `Speed.mbps` is MiB/s (bytes / 1024 / 1024).
 fn mib_to_bytes(mbps: f64) -> u64 {
     (mbps * 1024.0 * 1024.0).max(0.0) as u64
 }

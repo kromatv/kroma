@@ -1,17 +1,7 @@
-// "Someone asked us to search for this."
-//
-// A search can arrive from outside the app, and the app should not care which
-// outside: on Apple TV it is Siri (the shell hands over what the user said to
-// the Siri Remote), and the same door is what a paired phone or a launcher tile
-// would use. So this is a request, not a Siri API - one function a shell calls,
-// one subscription the app answers with.
-//
-// It is a module-level bus rather than a context on purpose: the request usually
-// arrives BEFORE React is ready. Siri launches a cold app to handle an intent,
-// which means the query exists while there is still no tree to put it in. So a
-// request that nobody is listening to is kept, and handed to the first listener
-// that shows up (`onSearchRequest` replays it) or read straight out by the
-// search screen when it mounts.
+// A search asked for from outside the app (Siri, a paired phone, a launcher
+// tile). Module-level rather than a context because Siri cold-launches the app
+// to handle an intent: the query exists before there is a tree to put it in, so
+// a request nobody is listening to is kept and replayed.
 
 type Listener = (query: string) => void;
 
@@ -22,14 +12,13 @@ const listeners = new Set<Listener>();
 export function requestSearch(query: string): void {
   const q = query.trim();
   if (!q) return;
-  // Kept even when it is delivered: the listener navigates to the search screen,
-  // and the screen itself reads the query when it mounts, one turn later.
+  // Kept even when delivered: the screen the listener navigates to reads the
+  // query itself, one turn later.
   pending = q;
   for (const listener of listeners) listener(q);
 }
 
-/** React to search requests (the app navigates to the search screen). A request
- * that arrived before anyone was listening is replayed immediately. */
+/** A request that arrived before anyone was listening is replayed immediately. */
 export function onSearchRequest(listener: Listener): () => void {
   listeners.add(listener);
   if (pending) listener(pending);
@@ -38,8 +27,8 @@ export function onSearchRequest(listener: Listener): () => void {
   };
 }
 
-/** The requested query, once. The search screen calls this as it mounts, which
- * is also what clears it: a query must not come back on the next visit. */
+/** The requested query, once: reading it clears it, so it cannot come back on
+ * the next visit. */
 export function takePendingSearch(): string | null {
   const q = pending;
   pending = null;

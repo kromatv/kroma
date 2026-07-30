@@ -1,17 +1,15 @@
 //! Self-provisioning of the `wireproxy` binary (userspace WireGuard exposing a
-//! SOCKS5 proxy), mirroring the cloudflared provisioner. Static Go binary,
-//! ISC-licensed, official releases from github.com/windtf/wireproxy; assets
-//! are tarballs named `wireproxy_<os>_<arch>.tar.gz` holding one `wireproxy`.
+//! SOCKS5 proxy). Releases from github.com/windtf/wireproxy are tarballs named
+//! `wireproxy_<os>_<arch>.tar.gz` holding one `wireproxy`.
 
 use std::path::{Path, PathBuf};
 
 use tokio::process::Command;
 
-/// Pinned release. NEVER track `latest`: the bridge carries opaque BitTorrent
-/// TCP, and an upstream behavior change (e.g. v1.1.3's SNI-proxy rework) can
-/// break peer traffic while plain HTTPS keeps working, which looks like "VPN
-/// green but downloads dead". Bump only after verifying peer flows end-to-end
-/// (`cargo run -p kroma-torrent --example engine_probe --features rqbit`).
+// Never track `latest`: an upstream change (e.g. v1.1.3's SNI-proxy rework) can
+// break the opaque BitTorrent TCP the bridge carries while HTTPS keeps working,
+// which looks like "VPN green but downloads dead". Bump only after verifying
+// peer flows (`cargo run -p kroma-torrent --example engine_probe --features rqbit`).
 const VERSION: &str = "v1.1.2";
 const RELEASE: &str = "https://github.com/windtf/wireproxy/releases/download";
 
@@ -19,8 +17,6 @@ fn cached_path(data_dir: &Path) -> PathBuf {
     data_dir.join("bin").join("wireproxy")
 }
 
-/// Marker recording which release the cached binary came from; a mismatch
-/// (or a pre-pinning cache with no marker) triggers a re-download of the pin.
 fn version_path(data_dir: &Path) -> PathBuf {
     data_dir.join("bin").join("wireproxy.version")
 }
@@ -36,8 +32,8 @@ fn asset() -> Option<&'static str> {
     })
 }
 
-/// The wireproxy binary path, downloading the pinned release on first use or
-/// whenever the cached binary is from a different release.
+/// Downloads the pinned release on first use, or whenever the cached binary is
+/// from a different one.
 pub async fn ensure(data_dir: &Path) -> Result<PathBuf, String> {
     let dest = cached_path(data_dir);
     let cached_version = std::fs::read_to_string(version_path(data_dir)).unwrap_or_default();
@@ -98,7 +94,6 @@ async fn download(data_dir: &Path) -> Result<PathBuf, String> {
         let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o755));
     }
 
-    // Validate: it must actually run, else discard the partial/corrupt file.
     let runs = Command::new(&dest)
         .arg("--version")
         .output()

@@ -1,40 +1,26 @@
-//! Notifications: durable, per-user messages about things the user asked to be
-//! told about (a request they filed was approved, a film they wanted arrived, a
-//! report they need to triage). Pure data (serde); persistence lives in
+//! Notifications as pure data (serde); persistence lives in
 //! `crate::db::notifications`, delivery in `crate::services::notify`.
 //!
-//! A stored notification holds an **i18n key plus params**, never rendered text,
-//! so a user who switches language re-reads their whole history in the new one.
-//! The wire shape below is the RENDERED form: the server resolves keys against
-//! the recipient's locale on the way out, exactly like `api::error::lerr` does.
-//!
-//! The JSON shape here is a public contract web/mobile/TV clients depend on it,
-//! so field names and casing must not drift. Timestamps are epoch milliseconds.
+//! Stored rows hold an i18n key plus params, never rendered text; the wire shape
+//! below is the RENDERED form and is a public client contract, so field names,
+//! casing and epoch-millisecond timestamps must not drift.
 
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-// The push half of this domain (transports, subscriptions, the registered mobile
-// action sets) lives next door in `push.rs` and is re-exported by the crate root
-// the same seam `kroma-db` and `services/notify` already cut.
 use crate::push::PushCategory;
 
 /// What a notification is about. Users switch delivery on and off per category
-/// (`notification_prefs`), so these are the knobs in the settings UI and must
-/// stay coarse enough to be meaningful choices.
+/// (`notification_prefs`), so these are the knobs in the settings UI.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum NotificationCategory {
-    /// Media requests: yours were reviewed, or one needs your review.
     Requests,
-    /// New films / shows / episodes in the library.
     Media,
-    /// Problem reports: yours was triaged, or one needs triage.
     Reports,
-    /// Acquisition: a download landed and was imported.
     Downloads,
-    /// Server health. Admin-only (`settings.manage`).
+    // Admin-only (`settings.manage`).
     System,
 }
 
@@ -60,7 +46,6 @@ impl NotificationCategory {
         }
     }
 
-    /// Every category, for seeding the preferences matrix in the settings UI.
     pub const ALL: [NotificationCategory; 5] = [
         NotificationCategory::Requests,
         NotificationCategory::Media,
@@ -70,14 +55,9 @@ impl NotificationCategory {
     ];
 }
 
-/// The specific thing that happened.
-///
-/// The core's own events are named here, so the category mapping below is
-/// exhaustive and a new one can't silently land in the wrong preference bucket.
-/// Anything a MODULE raises is [`NotificationEvent::Custom`]: the VPN dropping
-/// is the VPN module's business, and a core that enumerated it would be naming a
-/// feature it does not ship and cannot translate (module catalogs are the
-/// module's own). A custom event states its category on the spec instead.
+/// The specific thing that happened. Core events are named here; anything a
+/// module raises is [`NotificationEvent::Custom`], which states its category on
+/// the spec instead.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NotificationEvent {
     #[serde(rename = "request.submitted")]
@@ -106,16 +86,9 @@ pub enum NotificationEvent {
     SystemJobFailed,
     #[serde(rename = "system.disk.low")]
     SystemDiskLow,
-    /// A "push is working" message the user asked for from settings. Never
-    /// persisted; it exists so the test push isn't forced to impersonate a real
-    /// event (it used to borrow `system.job.failed`, which then showed up in the
-    /// category preferences and the urgency mapping as a phantom failure).
+    // A "push is working" message from settings. Never persisted.
     #[serde(rename = "system.test")]
     SystemTest,
-    /// Raised by something the core has no name for - a module, or an admin
-    /// composing one by hand. The category comes from the spec
-    /// ([`NotificationSpec::in_category`]), and the text is carried as params so
-    /// it survives a core that knows nothing about it.
     #[serde(rename = "custom")]
     Custom,
 }
@@ -162,9 +135,8 @@ impl NotificationEvent {
         }
     }
 
-    /// Every event this server can raise, in the order a person reads them:
-    /// grouped by category, oldest concept first. The admin console's test bench
-    /// walks this, so an event missing here is an event nobody can preview.
+    /// The admin console's test bench walks this, so an event missing here is
+    /// an event nobody can preview.
     pub const ALL: [NotificationEvent; 14] = [
         NotificationEvent::RequestSubmitted,
         NotificationEvent::RequestApproved,
@@ -182,7 +154,6 @@ impl NotificationEvent {
         NotificationEvent::SystemTest,
     ];
 
-    /// Which preference bucket this event answers to.
     pub fn category(self) -> NotificationCategory {
         match self {
             NotificationEvent::RequestSubmitted
@@ -201,8 +172,7 @@ impl NotificationEvent {
             NotificationEvent::SystemJobFailed
             | NotificationEvent::SystemDiskLow
             | NotificationEvent::SystemTest
-            // The fallback bucket for an event the core does not know. A spec
-            // that means otherwise says so with `in_category`.
+            // Fallback bucket; a spec that means otherwise says so with `in_category`.
             | NotificationEvent::Custom => NotificationCategory::System,
         }
     }
@@ -212,14 +182,10 @@ impl NotificationEvent {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ActionKind {
-    /// Navigate to an in-app route (`href` is a client route, e.g. `/movie/ab12`).
     Link,
-    /// Call the server directly from the notification (`href` is an API path).
-    /// Lets an admin approve a request from the row without opening the console.
     Api,
 }
 
-/// How prominently a client should render the button.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ActionStyle {
@@ -234,14 +200,11 @@ pub enum ActionStyle {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationAction {
-    /// Stable id, so a client (and a service worker's `notificationclick`) can
-    /// tell which button was pressed.
     pub id: String,
     pub label: String,
     pub kind: ActionKind,
-    /// Client route for [`ActionKind::Link`], API path for [`ActionKind::Api`].
+    // Client route for `ActionKind::Link`, API path for `ActionKind::Api`.
     pub href: String,
-    /// HTTP method for [`ActionKind::Api`]. Ignored for links.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub method: Option<String>,
     #[serde(default)]
@@ -253,7 +216,6 @@ pub struct NotificationAction {
 #[serde(rename_all = "camelCase")]
 pub struct ActionSpec {
     pub id: String,
-    /// i18n key, resolved against the recipient's locale at read/push time.
     pub label_key: String,
     pub kind: ActionKind,
     pub href: String,
@@ -263,43 +225,24 @@ pub struct ActionSpec {
     pub style: ActionStyle,
 }
 
-/// One interpolation variable on a notification.
-///
-/// Producers say which kind they mean rather than leaving it to be guessed. The
-/// guess used to be "translate this value if it happens to be a catalog key",
-/// which quietly replaced any user-controlled text that collided with one — a
-/// username, or a moderator's free-text denial note — and that collision surface
-/// grew with every key added to the catalogs.
+/// One interpolation variable on a notification. Producers tag which kind they
+/// mean, so user-controlled text that collides with a catalog key is never
+/// silently translated.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "lowercase")]
 pub enum ParamValue {
-    /// Literal text, interpolated as-is: a film title, a username, a note.
     Text(String),
-    /// An i18n key, resolved in the reader's locale first (a job's
-    /// `jobs.{key}.name`, so a failed-task notification names the task in the
-    /// language the reader is actually using).
     Key(String),
-    /// A bare string from a row written BEFORE params were typed, where a key
-    /// and a literal were the same thing on the wire.
-    ///
-    /// It has to stay ambiguous. Calling it `Text` renders a stored
-    /// `system.job.failed` as "Job jobs.library.scan.name failed" - those rows
-    /// live until the 200-per-user retention pushes them out, and nothing
-    /// migrates them. Calling it `Key` re-introduces the collision this enum was
-    /// added to end, where a username or a moderator's free-text note that
-    /// happened to name a catalog entry was silently replaced by it.
-    ///
-    /// So it is resolved only when it names a REAL entry, and only for these old
-    /// rows: anything written since is tagged, and a tagged `Text` is never
-    /// looked up. See `services::notify::render`.
+    // A bare string from a row written before params were typed, where a key
+    // and a literal were the same thing on the wire. It stays ambiguous on
+    // purpose: resolved only when it names a REAL catalog entry, and only for
+    // these old rows. See `services::notify::render`.
     Legacy(String),
 }
 
 impl ParamValue {
-    /// The text to interpolate.
-    ///
-    /// `translate` answers `None` for a string the catalogs do not know, which is
-    /// what lets [`ParamValue::Legacy`] fall back to its own literal text while
+    /// `translate` answers `None` for a string the catalogs do not know, which
+    /// lets [`ParamValue::Legacy`] fall back to its own literal text while
     /// [`ParamValue::Key`] keeps the key visible rather than rendering blank.
     pub fn resolve(&self, translate: impl FnOnce(&str) -> Option<String>) -> String {
         match self {
@@ -311,12 +254,8 @@ impl ParamValue {
 }
 
 impl<'de> Deserialize<'de> for ParamValue {
-    /// Accepts the tagged form AND a bare string.
-    ///
-    /// Rows written before params were typed stored plain strings, and every one
-    /// of them was literal text so that is what a bare string means. Without
-    /// this an existing notification's whole `params` map would fail to parse and
-    /// the row would render with its placeholders unsubstituted.
+    // Accepts the tagged form AND a bare string: without the latter an existing
+    // row's whole `params` map fails to parse and renders unsubstituted.
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         #[derive(Deserialize)]
         #[serde(untagged)]
@@ -332,40 +271,31 @@ impl<'de> Deserialize<'de> for ParamValue {
     }
 }
 
-/// What a producer hands to `services::notify::emit`: keys, not text.
-///
-/// Serializable for the same reason as [`Audience`]: this is the payload a
-/// module posts to the host's callback API.
+/// What a producer hands to `services::notify::emit`: keys, not text. Also the
+/// payload a module posts to the host's callback API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationSpec {
     pub event: NotificationEvent,
     pub title_key: String,
     pub body_key: String,
-    /// Interpolation vars for both keys (`{title}`, `{count}`, …).
     #[serde(default)]
     pub params: BTreeMap<String, ParamValue>,
-    /// In-app route a tap opens.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub link: Option<String>,
-    /// Poster / backdrop shown on the row and in a rich push.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
     #[serde(default)]
     pub actions: Vec<ActionSpec>,
-    /// Which registered action set a native push should use.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub push_category: Option<PushCategory>,
-    /// Which preference bucket this belongs to, when the event does not say.
-    /// Only a [`NotificationEvent::Custom`] needs it - a core event's category
-    /// is part of what the event MEANS and is not the producer's to override.
+    // Only a `NotificationEvent::Custom` may set this; a core event's category
+    // is not the producer's to override.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub category: Option<NotificationCategory>,
 }
 
 impl NotificationSpec {
-    /// A notification with no image, link or actions the minimum a producer
-    /// must state. Chain the builders below for the rest.
     pub fn new(event: NotificationEvent, title_key: &str, body_key: &str) -> Self {
         Self {
             event,
@@ -381,11 +311,8 @@ impl NotificationSpec {
     }
 
     /// Text a module supplies itself, rather than a key the core can translate.
-    ///
-    /// The core's catalogs are the core's; a module ships its own, which the
-    /// server-side renderer does not load. So a module's own wording rides in as
-    /// interpolation params through a passthrough key, which is how it survives
-    /// storage, rendering and push without the core knowing the words.
+    /// The server-side renderer does not load module catalogs, so the module's
+    /// wording rides in as params through a passthrough key.
     pub fn custom(category: NotificationCategory, title: impl Into<String>, body: impl Into<String>) -> Self {
         Self::new(NotificationEvent::Custom, "notifications.custom.title", "notifications.custom.body")
             .param("title", title)
@@ -393,8 +320,8 @@ impl NotificationSpec {
             .in_category(category)
     }
 
-    /// A literal interpolation var: a title, a username, a count. Never
-    /// translated, however much it may look like a catalog key.
+    /// A literal interpolation var. Never translated, however much it may look
+    /// like a catalog key.
     pub fn param(mut self, key: &str, value: impl Into<String>) -> Self {
         self.params.insert(key.to_string(), ParamValue::Text(value.into()));
         self
@@ -427,8 +354,8 @@ impl NotificationSpec {
         self
     }
 
-    /// State the preference bucket for a [`NotificationEvent::Custom`]. Ignored
-    /// - deliberately - for the core's own events: see the field.
+    /// State the preference bucket for a [`NotificationEvent::Custom`].
+    /// Deliberately ignored for the core's own events.
     pub fn in_category(mut self, category: NotificationCategory) -> Self {
         self.category = Some(category);
         self
@@ -456,10 +383,8 @@ pub struct Notification {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
     pub actions: Vec<NotificationAction>,
-    /// The registered action set a NATIVE push should use. Absent for most
-    /// notifications, and ignored by the web client (which carries its buttons
-    /// in `actions`); APNs and Android can only show buttons from a set the app
-    /// registered at launch, so this names one.
+    // APNs and Android can only show buttons from a set the app registered at
+    // launch, so this names one. Ignored by the web client, which uses `actions`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub push_category: Option<PushCategory>,
     pub read: bool,
@@ -471,7 +396,6 @@ pub struct Notification {
 #[serde(rename_all = "camelCase")]
 pub struct NotificationsView {
     pub notifications: Vec<Notification>,
-    /// Drives the bell badge.
     pub unread: u32,
 }
 
@@ -506,8 +430,7 @@ mod tests {
 
     #[test]
     fn every_event_round_trips_and_has_a_category() {
-        // Exhaustive by construction: adding a variant without extending this
-        // list leaves it untested, so keep it in sync with the enum.
+        // Keep in sync with the enum: a variant missing here is untested.
         let all = [
             NotificationEvent::RequestSubmitted,
             NotificationEvent::RequestApproved,
@@ -526,8 +449,6 @@ mod tests {
         ];
         for e in all {
             assert_eq!(NotificationEvent::parse(e.as_str()), Some(e), "{}", e.as_str());
-            // The serde rename and as_str must agree they are two spellings of
-            // one wire contract.
             let json = serde_json::to_string(&e).unwrap();
             assert_eq!(json, format!("\"{}\"", e.as_str()));
         }
@@ -546,8 +467,6 @@ mod tests {
         .param("who", "library.scan")
         .param_key("job", "jobs.library.scan.name");
 
-        // Two similar-looking strings, opposite intent and the type records it,
-        // rather than the renderer guessing from how the value happens to read.
         assert_eq!(spec.params.get("who"), Some(&ParamValue::Text("library.scan".into())));
         assert_eq!(spec.params.get("job"), Some(&ParamValue::Key("jobs.library.scan.name".into())));
     }
@@ -561,11 +480,7 @@ mod tests {
             ParamValue::Key("jobs.x.name".into())
         );
 
-        // Rows written before params were typed stored a bare string, and it is
-        // impossible to tell from the value alone whether it was a key or a
-        // literal - so they read back as `Legacy`, which `render` resolves only
-        // when the catalogs actually know it. Calling them Text here rendered a
-        // stored `system.job.failed` as "Job jobs.library.scan.name failed".
+        // Bare strings predate typed params and read back as `Legacy`.
         assert_eq!(
             serde_json::from_str::<ParamValue>(r#""Dune""#).unwrap(),
             ParamValue::Legacy("Dune".into())
@@ -575,7 +490,6 @@ mod tests {
         assert_eq!(legacy.get("title"), Some(&ParamValue::Legacy("Dune".into())));
         assert_eq!(legacy.get("job"), Some(&ParamValue::Legacy("jobs.library.scan.name".into())));
 
-        // A tagged value is never ambiguous, whatever it spells.
         assert_eq!(
             serde_json::from_str::<ParamValue>(r#"{"kind":"text","value":"jobs.library.scan.name"}"#)
                 .unwrap(),

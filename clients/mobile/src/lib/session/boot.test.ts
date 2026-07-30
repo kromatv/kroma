@@ -1,26 +1,9 @@
 // @vitest-environment jsdom
 //
 // Cold start: restore what was saved, then decide whether this launch may
-// silently re-enter the last profile.
-//
-// Every branch here is a decision about someone's session, and getting one
-// wrong is either a security hole or an unexplained sign-out. The three that
-// carry the most weight:
-//
-//   - A PIN-gated 401 is NOT a revoked credential. A PIN-locked profile answers
-//     `{ pinRequired: true }`, and treating that as "this token is dead" FORGETS
-//     the account - so a user who has done nothing wrong loses a remembered
-//     profile they could have unlocked by typing four digits.
-//   - A network failure is not a revocation either. On a train, or on a NAS that
-//     is asleep, dropping the account means the user re-adds their server by
-//     hand for a problem that fixes itself.
-//   - The standalone biometric lock must be able to REFUSE. A cold start that
-//     resumed regardless would make Face ID decorative.
-//
-// The dev auto-login is gated twice over - on `__DEV__` and on there being no
-// stored accounts - because it exists for a fresh simulator, and a release build
-// that baked in the rig's credentials would sign every user into the developer's
-// server.
+// silently re-enter the last profile. A PIN-gated 401 must not be treated as a
+// revoked credential, nor must a plain network failure; the standalone
+// biometric lock must be able to refuse the resume outright.
 
 import { KromaApiError } from '@kroma/core';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -51,7 +34,6 @@ const account = (over: Partial<Account> = {}): Account => ({
   ...over,
 });
 
-/** The session surface boot writes through, recorded. */
 function deps(over: Record<string, unknown> = {}) {
   const persisted: Account[][] = [];
   const state = {
@@ -109,7 +91,6 @@ function deps(over: Record<string, unknown> = {}) {
   return { d: d as never, state };
 }
 
-/** Boot, and wait for the restore to settle. */
 async function boot(over: Record<string, unknown> = {}) {
   const { d, state } = deps(over);
   const view = renderHook(() => useBootRestore(d));
@@ -144,8 +125,6 @@ describe('restoring what was saved', () => {
 
   it('reads all three in parallel', async () => {
     await boot();
-    // Three keychain round trips on the launch path; serialising them is three
-    // times the blank screen.
     expect(loadServers).toHaveBeenCalled();
     expect(loadAccounts).toHaveBeenCalled();
     expect(loadActive).toHaveBeenCalled();
@@ -163,7 +142,6 @@ describe('with nothing to resume', () => {
   it('offers the first saved server as the starting point', async () => {
     loadServers.mockResolvedValue([{ url: 'https://attic' }, { url: 'https://salon' }]);
     const { state } = await boot();
-    // The picker opens on somewhere plausible instead of an empty field.
     expect(state.serverUrl).toBe('https://attic');
     expect(state.signedOut).toBe(1);
   });
@@ -172,8 +150,6 @@ describe('with nothing to resume', () => {
     loadAccounts.mockResolvedValue([account({ user: { id: 'u2', username: 'other' } })]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot();
-    // A forgotten profile must not resume as whichever account happens to be
-    // first.
     expect(state.entered).toBeNull();
     expect(state.signedOut).toBe(1);
   });
@@ -192,7 +168,6 @@ describe('the standalone biometric lock', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot();
-    // A cold start that resumed regardless would make Face ID decorative.
     expect(state.entered).toBeNull();
     expect(state.signedOut).toBe(1);
   });
@@ -202,7 +177,6 @@ describe('the standalone biometric lock', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot();
-    // Failing a prompt is not losing a credential; the gate can prompt again.
     expect(state.forgotten).toEqual([]);
     expect(state.serverUrl).toBe('https://attic');
   });
@@ -221,8 +195,7 @@ describe('exchanging the stored device token', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot();
-    // The cached user can be stale (a renamed profile, a new avatar); the
-    // exchange is what refreshes it.
+    // The cached user can be stale; the exchange is what refreshes it.
     expect(state.entered?.user).toEqual({ id: 'u1', username: 'max' });
     expect(state.entered?.token).toBe('live');
   });
@@ -237,8 +210,6 @@ describe('exchanging the stored device token', () => {
         },
       }),
     });
-    // The device was signed out elsewhere; keeping it offers a profile that can
-    // never open.
     expect(state.forgotten).toEqual([['https://attic', 'u1']]);
     expect(state.signedOut).toBe(1);
   });
@@ -253,8 +224,6 @@ describe('exchanging the stored device token', () => {
         },
       }),
     });
-    // THE BUG THIS PREVENTS: reading the gate as a revocation forgets a profile
-    // the user could have opened by typing four digits.
     expect(state.forgotten).toEqual([]);
     expect(state.signedOut).toBe(1);
   });
@@ -285,8 +254,7 @@ describe('exchanging the stored device token', () => {
       }),
     });
     const written = state.persisted.at(-1);
-    // Keyed on the (server, user) pair: the same person on another server is a
-    // different profile, and is not PIN-locked just because this one is.
+    // Keyed on the (server, user) pair, so u9 is unaffected by u1's lock.
     expect(written?.find((a) => a.user.id === 'u9')?.user.hasPin).toBeFalsy();
   });
 
@@ -300,8 +268,6 @@ describe('exchanging the stored device token', () => {
         },
       }),
     });
-    // On a train, or against a sleeping NAS. Dropping it makes the user re-add
-    // their server by hand for a problem that fixes itself.
     expect(state.forgotten).toEqual([]);
     expect(state.persisted).toEqual([]);
     expect(state.signedOut).toBe(1);
@@ -317,7 +283,6 @@ describe('exchanging the stored device token', () => {
         },
       }),
     });
-    // The gate opens on the server they were last using, not on nothing.
     expect(state.serverUrl).toBe('https://attic');
   });
 });
@@ -328,8 +293,6 @@ describe('the dev rig', () => {
     vi.stubEnv('EXPO_PUBLIC_KROMA_SERVER', 'https://rig.local');
     vi.stubEnv('EXPO_PUBLIC_KROMA_DEV_LOGIN', 'dev:hunter2');
     const { state } = await boot();
-    // A release build that baked in the rig would sign every user into the
-    // developer's server.
     expect(state.entered).toBeNull();
     expect(state.signedOut).toBe(1);
   });
@@ -348,8 +311,6 @@ describe('the dev rig', () => {
     vi.stubEnv('EXPO_PUBLIC_KROMA_DEV_LOGIN', 'dev:hunter2');
     loadAccounts.mockResolvedValue([account()]);
     const { state } = await boot();
-    // It exists for a fresh simulator. Signing in over a real profile would
-    // silently swap whose library a developer is looking at.
     expect(state.entered).toBeNull();
     expect(state.serverUrl).toBe('https://rig.local');
   });
@@ -374,7 +335,6 @@ describe('the dev rig', () => {
     vi.stubEnv('EXPO_PUBLIC_KROMA_SERVER', 'https://rig.local');
     vi.stubEnv('EXPO_PUBLIC_KROMA_DEV_LOGIN', '');
     const { state } = await boot();
-    // A server with no credentials is a normal dev setup, not an auto-login.
     expect(state.entered).toBeNull();
     expect(state.serverUrl).toBe('https://rig.local');
   });
@@ -390,7 +350,6 @@ describe('leaving before the restore finishes', () => {
 
     rerender();
     rerender();
-    // Re-running a cold start would re-enter a session the user just left.
     expect(loadAccounts).toHaveBeenCalledOnce();
   });
 
@@ -413,8 +372,6 @@ describe('leaving before the restore finishes', () => {
     release.fire?.();
     await new Promise((r) => setTimeout(r, 10));
 
-    // The screen is gone: hydrating into it, or entering a session on it, is a
-    // React warning at best and a resurrected session at worst.
     expect(state.hydratedAccounts).toBeNull();
     expect(state.entered).toBeNull();
     expect(state.signedOut).toBe(0);

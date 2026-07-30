@@ -1,9 +1,4 @@
 // @vitest-environment jsdom
-//
-// The contract a caller relies on: `toast()` reaches a mounted <Toaster/>, does
-// nothing at all when none is mounted (a shell that never opted in must not
-// throw from a receiver callback), and the notice leaves on its own - nothing on
-// a television is ever going to dismiss it by hand.
 
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,7 +11,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-/** Both the timeout and the exit animation are on fake timers. */
 const passTime = (ms: number) =>
   act(() => {
     vi.advanceTimersByTime(ms);

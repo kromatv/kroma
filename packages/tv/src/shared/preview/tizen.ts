@@ -1,6 +1,5 @@
 // Minimal Tizen typings for the foreground web runtime, plus a feature-detect.
-// Everything is gated on the `tizen` global, so callers become no-ops on webOS
-// and in the browser dev server.
+// Everything is gated on the `tizen` global, so callers no-op elsewhere.
 
 interface TizenFileStream {
   write(data: string): void;

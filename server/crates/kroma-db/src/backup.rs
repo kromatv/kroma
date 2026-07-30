@@ -23,18 +23,18 @@ use serde_json::{Map, Value};
 
 use super::{now_or_blank, Pool};
 
-/// On-disk shape version; bump on an incompatible change.
+// On-disk shape version; bump on an incompatible change.
 const VERSION: u32 = 1;
 
-/// Tables carried by a portable backup. Everything else (catalogue, embeddings,
-/// AI sections, sessions, job run history, and the machine-specific `downloads`
-/// torrent state) is regenerated and left out. `settings` carries the VPN /
-/// naming / acquisition preferences; `indexers` and `download_clients` are the
-/// admin's acquisition config (their credentials ride inside the
-/// password-encrypted archive); `requests` + `wanted` carry the users' media
-/// wishlist and its episode ledger. `progress`/`watched`/`my_list` are item-keyed
-/// user state that re-links by `item_id` once a re-scan recreates the catalogue
-/// with matching ids.
+// Tables carried by a portable backup. Everything else (catalogue, embeddings,
+// AI sections, sessions, job run history, and the machine-specific `downloads`
+// torrent state) is regenerated and left out. `settings` carries the VPN /
+// naming / acquisition preferences; `indexers` and `download_clients` are the
+// admin's acquisition config (their credentials ride inside the
+// password-encrypted archive); `requests` + `wanted` carry the users' media
+// wishlist and its episode ledger. `progress`/`watched`/`my_list` are item-keyed
+// user state that re-links by `item_id` once a re-scan recreates the catalogue
+// with matching ids.
 const TABLES: &[&str] = &[
     "users",
     "settings",
@@ -56,12 +56,12 @@ const TABLES: &[&str] = &[
 pub struct BackupDoc {
     pub version: u32,
     pub exported_at: String,
-    /// table name → rows, each row a `{column: value}` object.
+    // table name → rows, each row a `{column: value}` object.
     pub tables: BTreeMap<String, Vec<Map<String, Value>>>,
-    /// User-uploaded files the rows reference but that live outside the DB
-    /// (custom avatars in the image cache): cache filename → hex of the bytes.
-    /// Populated by `services::backup`, not the DB layer. `default` so older
-    /// (pre-assets) backups still deserialize.
+    // User-uploaded files the rows reference but that live outside the DB
+    // (custom avatars in the image cache): cache filename → hex of the bytes.
+    // Populated by `services::backup`, not the DB layer. `default` so older
+    // (pre-assets) backups still deserialize.
     #[serde(default)]
     pub assets: BTreeMap<String, String>,
 }
@@ -82,8 +82,8 @@ pub fn export_portable(pool: &Pool) -> Result<BackupDoc> {
     Ok(BackupDoc { version: VERSION, exported_at: now_or_blank(), tables, assets: BTreeMap::new() })
 }
 
-/// Whether `name` is a table in the current database (module-owned tables may not
-/// be, see [`export_portable`]).
+// Whether `name` is a table in the current database (module-owned tables may not
+// be, see [`export_portable`]).
 fn table_exists(conn: &Connection, name: &str) -> Result<bool> {
     let n: i64 = conn.query_row(
         "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",
@@ -113,8 +113,8 @@ pub fn import_portable(pool: &Pool, doc: &BackupDoc, reset: bool) -> Result<Vec<
     result
 }
 
-/// The transactional body of [`import_portable`], split out so the caller can
-/// restore `foreign_keys` whether it succeeds or fails.
+// The transactional body of [`import_portable`], split out so the caller can
+// restore `foreign_keys` whether it succeeds or fails.
 fn restore_all(conn: &mut rusqlite::Connection, doc: &BackupDoc, reset: bool) -> Result<Vec<(String, usize)>> {
     let tx = conn.transaction()?;
     if reset {
@@ -140,9 +140,7 @@ fn restore_all(conn: &mut rusqlite::Connection, doc: &BackupDoc, reset: bool) ->
     Ok(summary)
 }
 
-// ----- generic row passthrough ------------------------------------------------
-
-/// Run `sql` and map every row to a `{column: value}` JSON object.
+// Run `sql` and map every row to a `{column: value}` JSON object.
 fn dump_query(conn: &Connection, sql: &str) -> Result<Vec<Map<String, Value>>> {
     let mut stmt = conn.prepare(sql)?;
     let cols: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
@@ -158,8 +156,8 @@ fn dump_query(conn: &Connection, sql: &str) -> Result<Vec<Map<String, Value>>> {
     Ok(out)
 }
 
-/// `INSERT OR REPLACE` each row into `table` (replace-by-primary-key). Column
-/// names are validated as plain identifiers before interpolation.
+// `INSERT OR REPLACE` each row into `table` (replace-by-primary-key). Column
+// names are validated as plain identifiers before interpolation.
 fn restore_rows(conn: &Connection, table: &str, rows: &[Map<String, Value>]) -> Result<usize> {
     let mut written = 0;
     for row in rows {
@@ -177,8 +175,8 @@ fn restore_rows(conn: &Connection, table: &str, rows: &[Map<String, Value>]) -> 
     Ok(written)
 }
 
-/// SQLite value → JSON. Blobs become a byte array (none of the exported tables
-/// have blob columns today, but keep it lossless).
+// SQLite value → JSON. Blobs become a byte array (none of the exported tables
+// have blob columns today, but keep it lossless).
 fn sql_to_json(v: ValueRef<'_>) -> Value {
     match v {
         ValueRef::Null => Value::Null,
@@ -189,8 +187,8 @@ fn sql_to_json(v: ValueRef<'_>) -> Value {
     }
 }
 
-/// JSON → SQLite value, inverse of [`sql_to_json`]. Stored-JSON text columns
-/// (`settings.value`, `permissions`, …) round-trip as `Text`.
+// JSON → SQLite value, inverse of [`sql_to_json`]. Stored-JSON text columns
+// (`settings.value`, `permissions`, …) round-trip as `Text`.
 fn json_to_sql(v: &Value) -> SqlValue {
     match v {
         Value::Null => SqlValue::Null,
@@ -205,7 +203,7 @@ fn json_to_sql(v: &Value) -> SqlValue {
     }
 }
 
-/// A safe SQL identifier (`[A-Za-z0-9_]+`) guards interpolated column names.
+// A safe SQL identifier (`[A-Za-z0-9_]+`) guards interpolated column names.
 fn is_ident(s: &str) -> bool {
     !s.is_empty() && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
 }

@@ -5,14 +5,8 @@ import { aboutItem, DEVICE_SETTINGS, quitAppItem } from '#tv/app/settings/regist
 import { AuthScreen, KromaMark } from '#tv/shared/ui';
 import { SettingsRows } from './SettingsRows';
 
-/**
- * Device settings (route `deviceSettings`), reachable from the signed-out
- * profile picker: the device-level prefs that must not require an account.
- * The rows come straight from the settings registry (DEVICE_SETTINGS), plus the
- * two the registry cannot own outright - About, which needs this screen's
- * navigator, and Quit, which belongs last. Account-level extras live in
- * TvProfileMenu.
- */
+/** Device settings (route `deviceSettings`), reachable from the signed-out
+ * profile picker: the prefs that must not require an account. */
 export function TvDeviceSettings() {
   const nav = useNav();
   const t = useT();

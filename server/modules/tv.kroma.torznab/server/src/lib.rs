@@ -7,7 +7,6 @@
 //! The public surface is stable from day one; the transport + XML parsing land
 //! with the indexer milestone.
 
-
 // The Torznab types now live in the SDK ports module (kroma_module_sdk::ports) (so indexer / acquisition use
 // them without depending on this crate); re-exported here for this crate's fns.
 pub use kroma_module_sdk::ports::{
@@ -16,7 +15,7 @@ pub use kroma_module_sdk::ports::{
 
 mod xml;
 
-/// Network budget per Torznab call: trackers behind Jackett can be slow.
+// Network budget per Torznab call: trackers behind Jackett can be slow.
 const MAX_TIME_SECS: u32 = 40;
 
 fn fetch_xml(endpoint: &IndexerEndpoint, params: &[(&str, String)]) -> anyhow::Result<Vec<u8>> {
@@ -68,7 +67,7 @@ pub fn search(endpoint: &IndexerEndpoint, query: &Query, caps: &Caps) -> anyhow:
     }
 }
 
-/// The ordered parameter sets to try for a query, strongest first.
+// The ordered parameter sets to try for a query, strongest first.
 fn attempts(query: &Query, caps: &Caps) -> Vec<Vec<(&'static str, String)>> {
     match query {
         Query::Movie { tmdb_id, imdb_id, title, year } => {
@@ -239,7 +238,6 @@ mod tests {
         assert!(a[1].contains(&("t", "search".to_string())));
     }
 
-    // ----- over a fake Jackett ----------------------------------------------------
     //
     // The transport shells out to curl, so a socket serving canned XML drives
     // the real request - including the attempt ladder, which is only observable
@@ -249,8 +247,8 @@ mod tests {
     use std::net::TcpListener;
     use std::sync::{Arc, Mutex};
 
-    /// A Torznab endpoint that answers each request from `route`, keyed on the
-    /// query string it received.
+    // A Torznab endpoint that answers each request from `route`, keyed on the
+    // query string it received.
     struct FakeJackett {
         url: String,
         seen: Arc<Mutex<Vec<String>>>,

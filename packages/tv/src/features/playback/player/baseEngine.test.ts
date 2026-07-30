@@ -55,7 +55,6 @@ class TestEngine extends BaseTvEngine {
     this.destroyed = true;
   }
 
-  // ----- expose protected state / helpers for assertions ------------------
   url(): string {
     return this.sourceUrl();
   }
@@ -121,7 +120,6 @@ describe('BaseTvEngine sourceUrl', () => {
 
   it('master mode returns the anchored HLS master with the chosen audio rendition', () => {
     const e = make({ direct: false, startSec: 30, initialRendition: 2 });
-    // hlsMasterUrl(id, aac=false, baseSec, rendition)
     expect(e.url()).toBe('master:m1:false:30:2');
   });
 });

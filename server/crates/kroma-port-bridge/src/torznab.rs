@@ -1,4 +1,4 @@
-//! The `TorznabPort` bridge (stateless, no `HostCtx`, the cleanest port).
+//! The `TorznabPort` bridge: stateless, no `HostCtx`.
 
 use std::sync::Arc;
 
@@ -7,8 +7,6 @@ use axum::{Extension, Json, Router};
 use kroma_module_sdk::ports::{Caps, IndexerEndpoint, Query, Release, TorznabPort};
 
 use crate::{call, Resolver};
-
-// --- Provider side (the torznab module process serves these) -----------------
 
 /// Routes a provider mounts to expose its `TorznabPort` over HTTP. Merge into the
 /// module process's router (see `kroma_module_runtime::serve`'s `extra`).
@@ -19,7 +17,6 @@ pub fn torznab_routes<S: Clone + Send + Sync + 'static>(engine: Arc<dyn TorznabP
         .layer(Extension(engine))
 }
 
-/// Map an `anyhow::Result` from a blocking port call into the wire envelope.
 async fn run<T>(
     job: impl FnOnce() -> anyhow::Result<T> + Send + 'static,
 ) -> Json<Result<T, String>>
@@ -53,8 +50,6 @@ async fn search_h(
 ) -> Json<Result<Vec<Release>, String>> {
     run(move || engine.search(&req.endpoint, &req.query, &req.caps)).await
 }
-
-// --- Consumer side (whoever holds the indexer resolves this) -----------------
 
 /// A `TorznabPort` that forwards to the torznab module process over localhost.
 pub struct TorznabClient {

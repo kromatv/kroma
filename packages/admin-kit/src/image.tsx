@@ -13,40 +13,19 @@ import {
 type ImgAttrs = ImgHTMLAttributes<HTMLImageElement>;
 
 export interface ImageProps {
-  /** Image URL. Pass an already-sized URL this component never rewrites it. */
   src?: string | null;
-  /** Alt text. Empty (the default) marks the artwork decorative. */
   alt?: string;
-  /** Fade duration (ms) for both the load-in and the cross-fade on `src` change. */
   duration?: number;
-  /** object-fit for the artwork. Default `'cover'`. */
   fit?: CSSProperties['objectFit'];
-  /** object-position for the artwork. Default `'50% 50%'`. */
   position?: CSSProperties['objectPosition'];
-  /** CSS background painted behind the image the instant-visible fallback fill
-   *  (gradient or solid colour) shown while loading and if the load fails. */
   background?: string;
-  /** Rich loading state rendered above the background until the image loads
-   *  (e.g. a `<Skeleton/>`). Most callers just use `background` instead. */
   placeholder?: ReactNode;
-  /** Rendered above the background when there is no `src` or the load fails.
-   *  Omit to simply reveal the `background`. */
   fallback?: ReactNode;
-  /** Container border-radius (the container clips the image to it). */
   radius?: CSSProperties['borderRadius'];
-  /** Stretch the container to fill a positioned parent (`position:absolute`,
-   *  inset 0). Use this instead of an `absolute inset-0` class an inline style
-   *  would otherwise lose to (see below). Default self-sizes via `className`. */
   fill?: boolean;
-  /** Sizing classes for the container when NOT `fill` (e.g. `aspect-2/3`,
-   *  `h-14 w-14 rounded-full`). NB: a `position`/`inset` utility here cannot win
-   *  over the container's inline styles reach for `fill` to stretch instead. */
   className?: string;
-  /** Extra styles merged onto the container. */
   style?: CSSProperties;
   loading?: NonNullable<ImgAttrs['loading']>;
-  /** Fetch priority hint. Set `'high'` on the one above-the-fold hero/backdrop
-   *  that is the LCP element; leave unset (browser default) everywhere else. */
   fetchPriority?: NonNullable<ImgAttrs['fetchPriority']>;
   decoding?: NonNullable<ImgAttrs['decoding']>;
   draggable?: boolean;
@@ -58,8 +37,8 @@ export interface ImageProps {
   onError?: (e: SyntheticEvent<HTMLImageElement>) => void;
 }
 
-/* Fill the container. Uses the four longhands (not the `inset` shorthand, which
-   old webOS Chromium 53 does not know and would drop from an inline style). */
+// Fill the container with the four longhands, not the `inset` shorthand: old
+// webOS Chromium 53 doesn't know it and would drop it from an inline style.
 const FILL: CSSProperties = {
   position: 'absolute',
   top: 0,
@@ -70,20 +49,15 @@ const FILL: CSSProperties = {
   height: '100%',
 };
 
-/** The live cross-fade state for the current `src`: whether it has decoded, and
- * the previously loaded image held underneath while it does. */
 interface CrossFade {
   loaded: boolean;
   errored: boolean;
-  /** The previous, still fully loaded image kept under the incoming one. */
   under: string | null;
   imgRef: RefObject<HTMLImageElement | null>;
   markLoaded: () => void;
   markErrored: () => void;
 }
 
-/** Drive the load-in / cross-fade state machine for `src`. Split out of the
- * component so the render stays a plain description of the layers. */
 function useCrossFade(src: string | null, duration: number): CrossFade {
   const [shown, setShown] = useState<string | null>(src);
   const [loaded, setLoaded] = useState(false);
@@ -92,10 +66,10 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
   const loadedSrcRef = useRef<string | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
-  // Adjust state during render when `src` changes (avoids a one-frame flicker a
-  // post-commit effect would cause): promote the last fully-loaded image to the
-  // underlay and start the incoming one from opacity 0. Clearing to null (or the
-  // same url) drops the underlay so we never cross-fade from a stale image.
+  // Adjusted during render, not in an effect, to avoid a one-frame flicker:
+  // promotes the last loaded image to the underlay and starts the incoming
+  // one at opacity 0. Clearing to null (or the same url) drops the underlay
+  // so we never cross-fade from a stale image.
   if (shown !== src) {
     const prev = loadedSrcRef.current;
     setUnder(src && prev && prev !== src ? prev : null);
@@ -134,9 +108,9 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
   return { loaded, errored, under, imgRef, markLoaded, markErrored };
 }
 
-/** The container box: `fill` stretches it to a positioned parent; otherwise it is
- * a relative box the caller sizes (via className) and the positioning context for
- * the layered images. */
+// `fill` stretches the container to a positioned parent via inline styles,
+// not a className: a losing cascade would collapse the box and the art reads
+// black. Otherwise it's a relative box the caller sizes via className.
 function containerStyle(
   o: Readonly<Pick<ImageProps, 'fill' | 'radius' | 'background' | 'style'>>,
 ): CSSProperties {
@@ -151,22 +125,16 @@ function containerStyle(
 }
 
 /**
- * Generic image surface with a built-in fade a shadcn-style drop-in wherever
+ * Generic image surface with a built-in fade: a shadcn-style drop-in wherever
  * KROMA renders artwork (posters, backdrops, avatars, stills, module icons).
  *
- * - **Fade-in on load** the artwork starts transparent and eases to full
- *   opacity once decoded, so tiles/heroes never pop in.
- * - **Cross-fade on `src` change** the previously loaded image is held
- *   underneath while the new one loads, then the new one fades in over it (great
- *   for a hero/backdrop that swaps as you browse).
- * - Reveals `background` (gradient/colour) while loading and on error, so the
- *   surface is never blank the KROMA "instant gradient" look.
+ * Fades in on load, cross-fades the previous image in underneath on a `src`
+ * change, and reveals `background` while loading or on error so the surface
+ * is never blank.
  *
- * Inline styles + an opacity transition only, so it is safe on every client tier
- * including the legacy-TV browsers (no grid, no colour-mix, no util down-levelling).
- *
- * Sizing is the caller's job: give the container a size via `className`/`style`.
- * The image fills it with `object-fit: cover` by default.
+ * Inline styles plus an opacity transition only, so it works on every client
+ * tier including the legacy-TV browsers (no grid, no colour-mix, no util
+ * down-levelling). Sizing is the caller's job via `className`/`style`.
  */
 export function Image({
   src: requested = null,

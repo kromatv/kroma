@@ -33,8 +33,6 @@ export interface ShowBundle {
  * shape). The queries that can come up empty spell the `| null` themselves. */
 export type HeroEntry = { type: 'movie'; movie: MovieView } | { type: 'show'; show: ShowView };
 
-// ---- Catalogue ------------------------------------------------------------
-
 export const catalogQueries = {
   /** All movies, art/stream URLs pre-resolved. */
   moviesView: () =>
@@ -158,8 +156,7 @@ export const catalogQueries = {
     }),
 } as const;
 
-// ---- Per-user (only mount once `ready && user`) ---------------------------
-
+// Only mount once `ready && user`.
 export const userQueries = {
   home: () => queryOptions({ queryKey: ['home'] as const, queryFn: () => kromaClient().home() }),
 
@@ -223,8 +220,6 @@ export const userQueries = {
     queryOptions({ queryKey: ['push-key'] as const, queryFn: () => kromaClient().pushKey() }),
 } as const;
 
-// ---- Server ---------------------------------------------------------------
-
 export const serverQueries = {
   /** Public `GET /api/health`: server version + basic counts (no auth). Used by
    * the sidebar to show the server version; cached generously as it rarely moves. */
@@ -235,8 +230,6 @@ export const serverQueries = {
       staleTime: 5 * 60_000,
     }),
 } as const;
-
-// ---- Discover -------------------------------------------------------------
 
 export const discoverQueries = {
   detail: (kind: 'movie' | 'tv', tmdbId: number) =>

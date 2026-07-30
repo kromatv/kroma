@@ -10,7 +10,6 @@ use serde_json::json;
 use crate::api::test_support::{demo_item_id, demo_show_id, get, raw, test_app, test_app_with_tmdb};
 use serde_json::Value;
 
-/// The demo Movies-library id, resolved through the live libraries endpoint.
 async fn movies_library_id(t: &crate::api::test_support::TestApp) -> String {
     let (_, libs) = get(&t.app, "/api/libraries", Some(&t.token)).await;
     libs.as_array()
@@ -23,8 +22,6 @@ async fn movies_library_id(t: &crate::api::test_support::TestApp) -> String {
         .to_string()
 }
 
-// ----- library-scoped browse --------------------------------------------------
-
 #[tokio::test]
 async fn items_and_movies_filter_by_library() {
     let t = test_app();
@@ -35,12 +32,10 @@ async fn items_and_movies_filter_by_library() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(all.as_array().map(Vec::len), Some(10));
 
-    // Scoped to the movies library = only the 6 movies.
     let (status, scoped) = get(&t.app, &format!("/api/items?library={movies}"), Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(scoped.as_array().map(Vec::len), Some(6));
 
-    // `/movies` scoped to the movies library is the same 6.
     let (_, m) = get(&t.app, &format!("/api/movies?library={movies}"), Some(&t.token)).await;
     assert_eq!(m.as_array().map(Vec::len), Some(6));
 
@@ -49,8 +44,6 @@ async fn items_and_movies_filter_by_library() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(none.as_array().map(Vec::len), Some(0));
 }
-
-// ----- server status / health / logs ------------------------------------------
 
 #[tokio::test]
 async fn health_and_status_are_public_and_report_the_demo_counts() {
@@ -84,7 +77,6 @@ async fn logs_tail_returns_plain_text_from_the_newest_file() {
         .unwrap_or_default()
         .starts_with("text/plain"));
 
-    // Drop a log file, then the tail reads its last N lines back.
     let dir = t.state.config.logs_dir();
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("kroma.log"), "line-1\nline-2\nline-3\n").unwrap();
@@ -97,8 +89,6 @@ async fn logs_tail_returns_plain_text_from_the_newest_file() {
     let raw_text = std::fs::read_to_string(dir.join("kroma.log")).unwrap();
     assert!(raw_text.contains("line-3"));
 }
-
-// ----- shows (personalised progress) ------------------------------------------
 
 #[tokio::test]
 async fn shows_list_carries_progress_for_an_authed_caller() {
@@ -123,8 +113,6 @@ async fn shows_scoped_to_the_movies_library_is_empty() {
     assert_eq!(shows.as_array().map(Vec::len), Some(0), "no shows live in the movies library");
 }
 
-// ----- search query params ----------------------------------------------------
-
 #[tokio::test]
 async fn search_honours_the_limit() {
     let t = test_app();
@@ -143,7 +131,6 @@ async fn search_scoped_to_a_library_excludes_other_libraries() {
     let (_, in_scope) = get(&t.app, &format!("/api/search?q=Matrix&library={movies}"), Some(&t.token)).await;
     assert!(in_scope["results"].as_array().map(Vec::len).unwrap_or(0) >= 1);
 
-    // Scoping to a foreign library drops it.
     let (status, out) = get(&t.app, "/api/search?q=Matrix&library=ghost-lib", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(out["results"].as_array().map(Vec::len), Some(0));
@@ -161,8 +148,6 @@ async fn search_surfaces_an_episode_hit_as_episode() {
     );
 }
 
-// ----- themed recommendation row ----------------------------------------------
-
 #[tokio::test]
 async fn themed_row_is_empty_for_a_blank_query_and_an_array_otherwise() {
     let t = test_app();
@@ -176,8 +161,6 @@ async fn themed_row_is_empty_for_a_blank_query_and_an_array_otherwise() {
     assert_eq!(status, StatusCode::OK);
     assert!(row.is_array());
 }
-
-// ----- TMDB-gated metadata ----------------------------------------------------
 
 #[tokio::test]
 async fn show_metadata_is_unavailable_without_a_tmdb_key() {
@@ -195,8 +178,6 @@ async fn metadata_routes_require_a_session() {
     let (status, _) = get(&t.app, &format!("/api/items/{id}/metadata"), None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
-
-// ----- theme songs (public) ---------------------------------------------------
 
 fn enable_theme_songs(t: &crate::api::test_support::TestApp) {
     t.state.settings.set_patch(
@@ -226,8 +207,6 @@ async fn theme_endpoint_rejects_unsafe_names_then_404s_a_missing_file() {
     let (status, _) = get(&t.app, "/api/themes/424242.mp3", None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
-
-// ----- people library scope ---------------------------------------------------
 
 #[tokio::test]
 async fn people_lookup_accepts_a_library_scope() {
@@ -275,7 +254,6 @@ async fn people_lookup_merges_movie_and_show_credits() {
     assert!(results.iter().any(|r| r["type"] == json!("movie")));
     assert!(results.iter().any(|r| r["type"] == json!("show")));
 
-    // Scoping to one library keeps only that library's hit.
     let matrix_lib = movies_library_id(&t).await;
     let (_, scoped): (StatusCode, Value) =
         get(&t.app, &format!("/api/people?name=Ada%20Lovelace&library={matrix_lib}"), Some(&t.token)).await;

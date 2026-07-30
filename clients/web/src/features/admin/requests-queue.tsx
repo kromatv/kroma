@@ -23,7 +23,6 @@ import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
-/** Filter-chip buckets over the wire statuses. */
 const BUCKETS: Record<string, (s: RequestStatus) => boolean> = {
   pending: (s) => s === 'pending',
   active: (s) =>
@@ -65,9 +64,8 @@ export function RequestsQueuePage() {
     return () => ev.close();
   }, [throttledReload]);
 
-  // Actions return the settle promise so the drawer can track its own busy state
-  // while the queue keeps owning the toast + list refresh. The open drawer stays
-  // fresh by subscribing to this same query (shared cache), so no push is needed.
+  // The open drawer subscribes to this same query (shared cache), so it stays
+  // fresh here without an explicit push.
   const act = (label: string, fn: () => Promise<unknown>) => {
     if (!canReview) return Promise.resolve();
     return fn()

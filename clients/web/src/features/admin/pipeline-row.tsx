@@ -15,7 +15,6 @@ import {
 } from '#web/features/admin/pipeline-meta';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** The secondary line: on failure/run it names the stage(s); otherwise metadata. */
 function subLine(t: Translate, el: ElementRow): { text: string; color: string } {
   const names = (pred: (x: Treatment) => boolean) =>
     el.treatments
@@ -158,8 +157,6 @@ export function ElementRowView({
       </div>
 
       <div className="flex justify-end">
-        {/* This row is itself a <button>, and a <button> can't be nested inside a
-            button, so the reprocess control is a role="button" span instead. */}
         {/* biome-ignore lint/a11y/useSemanticElements: cannot be a native <button> because it lives inside the row's <button> */}
         <span
           role="button"

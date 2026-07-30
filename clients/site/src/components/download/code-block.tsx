@@ -1,23 +1,11 @@
 import { CopyButton } from '#site/components/download/copy-button';
 
 export interface CodeBlockProps {
-  /**
-   * The command(s), verbatim. This exact string is what the copy button places
-   * on the clipboard, so it must stay paste-ready: no leading `$` prompts, real
-   * newlines for multi-line snippets.
-   */
   code: string;
-  /** Caption in the header bar, a shell name (`bash`) or a filename. */
   label?: string;
 }
 
-/**
- * A command in the app's charcoal treatment: a raised surface, a hairline header
- * carrying the caption + copy affordance, and a horizontally scrollable body so
- * a long one-liner never widens the page. Comment lines (`# …`) are dimmed at
- * render time only, the copied `code` prop is untouched, which reads like a
- * lightly highlighted terminal without pulling in a syntax-highlighter.
- */
+/** Comment lines (`# …`) are dimmed at render time only; `code` is untouched. */
 export function CodeBlock({ code, label = 'bash' }: Readonly<CodeBlockProps>) {
   const lines = code.split('\n');
   return (

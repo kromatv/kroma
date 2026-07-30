@@ -51,9 +51,9 @@ use crate::state::SharedState;
 pub fn routes(state: SharedState) -> Router<SharedState> {
     // Core admin routers merged directly; each backend module's routers are
     // mounted behind its enabled-gate (404 when the module is disabled), so a
-    // disabled module's whole admin surface disappears. The Downloads / VPN /
-    // Indexers / Remote routers are modules now, so they are no longer merged
-    // here -- they come in via `kroma_module_kernel::mount_admin` below.
+    // disabled module's whole admin surface disappears. Downloads / VPN /
+    // Indexers / Remote are modules, merged via `kroma_module_kernel::mount_admin`
+    // below instead.
     let mut router = Router::new()
         .route("/server", get(server_info))
         .route("/sessions", get(sessions))
@@ -86,8 +86,8 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .route("/{seg}/{*rest}", axum::routing::any(admin_module_proxy))
 }
 
-/// Reverse-proxy an unmatched `/api/admin/<seg>/*` to the module sidecar owning
-/// `<seg>`; 404 otherwise.
+// Reverse-proxy an unmatched `/api/admin/<seg>/*` to the module sidecar owning
+// `<seg>`; 404 otherwise.
 async fn admin_module_proxy(
     Extension(sup): Extension<Arc<Supervisor>>,
     OriginalUri(uri): OriginalUri,
@@ -104,12 +104,8 @@ async fn admin_module_proxy(
     }
 }
 
-// ----- guards -----------------------------------------------------------------
-
-/// The admin's account locale. Admin endpoints are always authenticated, so the
-/// (account-synced) preference is the right source for server-rendered strings
-/// no `Accept-Language` needed. Falls back to the default for an unset/unknown
-/// preference.
+// Admin endpoints are always authenticated, so the account-synced preference is
+// the right source for server-rendered strings - no `Accept-Language` needed.
 fn user_locale(user: &User) -> &'static str {
     i18n::user_locale(user)
 }
@@ -122,7 +118,7 @@ fn require(user: &User, perm: Permission) -> Result<(), Response> {
     }
 }
 
-/// Any management capability unlocks the read-only dashboard panels.
+// Any management capability unlocks the read-only dashboard panels.
 fn require_any_admin(user: &User) -> Result<(), Response> {
     if user.is_any_admin() {
         Ok(())
@@ -130,8 +126,6 @@ fn require_any_admin(user: &User) -> Result<(), Response> {
         Err(lerr(user_locale(user), StatusCode::FORBIDDEN, "error.permissionDenied"))
     }
 }
-
-// ----- server status ----------------------------------------------------------
 
 /// `GET /api/admin/server` → identity + uptime for the sidebar status card.
 pub async fn server_info(
@@ -150,8 +144,6 @@ pub async fn server_info(
     })
     .into_response())
 }
-
-// ----- live sessions ----------------------------------------------------------
 
 /// `GET /api/admin/sessions` → live "En cours de lecture" sessions.
 pub async fn sessions(
@@ -198,8 +190,6 @@ pub async fn terminate_session(
         .publish(ServerEvent::PlaybackStopped { count: state.playback.list().len() });
     Ok(Json(json!({ "ok": true })).into_response())
 }
-
-// ----- metrics ----------------------------------------------------------------
 
 /// `GET /api/admin/metrics` → CPU / RAM / bandwidth snapshot + history.
 pub async fn metrics(

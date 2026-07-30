@@ -3,7 +3,6 @@ import type { ReactNode } from 'react';
 export interface ContainerProps {
   children: ReactNode;
   className?: string;
-  /** Narrower measure for long-form reading (blog body, legal text). */
   size?: 'default' | 'prose';
 }
 

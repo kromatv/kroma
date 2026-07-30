@@ -1,11 +1,5 @@
-// Post-build guard for a shell's LEGACY tier: the bundle must stay parseable +
-// renderable on old TV engines (Chromium 53, the tier's floor). Authors keep
-// writing normal Tailwind v4 / modern TS; this catches a pipeline regression
-// (someone bumps build.target, a shim stops matching Tailwind's output, ...) at
-// build time instead of as a black screen on a 2018 TV.
-//
-// Run from the SHELL directory (cwd): `bun ../tv-build/check-legacy.ts`.
-// Exits non-zero with the offending excerpt on the first violation.
+// Post-build guard for a shell's legacy tier: the bundle must stay parseable and
+// renderable on Chromium 53, the tier's floor. Run from the shell directory.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,20 +9,16 @@ const dist = (p: string): string => join(process.cwd(), 'dist', p);
 type Check = [RegExp, string];
 
 // The JS patterns dodge known lookalikes: `?.` before a digit is a ternary
-// (`x?.5:.1`), `(??` only appears inside regex literals (core-js feature
-// probes), and `async function*` only inside core-js probe STRINGS (evaluated
-// in try/catch at runtime, safe on old engines).
+// (`x?.5:.1`), `(??` only appears inside regex literals (core-js feature probes),
+// and `async function*` only inside core-js probe strings.
 const JS_CHECKS: Check[] = [
   [/[\w$)\]]\?\.[[($A-Za-z_]/, 'optional chaining (?.) is ES2020 - Chromium 53 fails to parse'],
   [/[\w$)\]"']\?\?[^?=/]/, 'nullish coalescing (??) is ES2020 - Chromium 53 fails to parse'],
   [/\?\?=/, 'logical assignment (??=) is ES2021 - Chromium 53 fails to parse'],
   [/\basync function(?!\*)|\basync\s+\w+\s*=>/, 'async (ES2017) must be lowered to generators'],
-  // A classic script has no `import.meta`, so the IIFE build substitutes `{}`
-  // for it - and every `new URL(asset, import.meta.url)` Vite emits (the brand
-  // intro's film and sting, today) becomes `new URL(asset, 'undefined')`, which
-  // THROWS at module init. Nothing renders: the tier is dead on every TV it
-  // exists for, while the build says "built in 1.10s". shell.ts defines
-  // `import.meta.url` as `document.baseURI` to prevent it; this is the tripwire.
+  // A classic script has no `import.meta`, so the IIFE build substitutes `{}` and
+  // every `new URL(asset, import.meta.url)` Vite emits throws at module init.
+  // shell.ts defines `import.meta.url` as `document.baseURI` to prevent it.
   [
     /\{\s*\}\s*\.url/,
     '`import.meta.url` was substituted with `{}` - asset URLs throw at module init',
@@ -70,7 +60,6 @@ function check(path: string, checks: Check[]): void {
 check(join('legacy', 'index.js'), JS_CHECKS);
 check(join('legacy', 'style.css'), CSS_CHECKS);
 
-// The loader must actually reference the legacy bundle.
 if (!readFileSync(dist('index.html'), 'utf8').includes('./legacy/index.js')) {
   console.error('[check-legacy] dist/index.html does not gate to ./legacy/index.js');
   failed = true;

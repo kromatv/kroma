@@ -1,9 +1,7 @@
-// The KROMA chromatic wheel: the standalone brand symbol and the O of the
-// wordmark. Geometry and palette only, so both the universal <Wheel> and the
-// older DOM <KromaMark> draw from one source.
+// The KROMA chromatic wheel: geometry and palette only, so both the universal
+// <Wheel> and the DOM <KromaMark> draw from one source.
 
-/** The six wheel segments, clockwise from 12 o'clock: corail, ambre, menthe,
- * azur, indigo, violet. */
+// Clockwise from 12 o'clock.
 export const KROMA_WHEEL_COLORS = [
   '#F2685C',
   '#F4B642',
@@ -24,11 +22,9 @@ export const KROMA_WHEEL_SEGMENTS = [
   'M37.01 42.5 L12 28 A44 44 0 0 1 50 6 L50 35 A15 15 0 0 0 37.01 42.5 Z',
 ] as const;
 
-/** Continuous rotation: ambient, or the faster loading spinner. */
 export type WheelSpin = 'idle' | 'loading';
 
-/** Rotation period per mode, in milliseconds. */
 export const WHEEL_SPIN_MS: Record<WheelSpin, number> = { idle: 9000, loading: 2600 };
 
-/** The viewBox is cropped to the wheel's bounds, so `size` is the true diameter. */
+// Cropped to the wheel's bounds, so `size` is the true diameter.
 export const WHEEL_VIEWBOX = '6 6 88 88';

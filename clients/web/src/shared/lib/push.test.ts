@@ -13,16 +13,11 @@ const { pushBlocker, webPush } = await import('./push');
 const { base64UrlToBytes, bytesToBase64Url } = await import('./base64url');
 const { kromaClient } = await import('#web/shared/lib/api');
 
-// `enablePush`/`disablePush` moved into `@kroma/core` when push grew a second
-// platform: the flow (check the blocker, mint the key, subscribe, tell the
-// server) is the same on a phone, and only the browser half below is web's. The
-// assertions are unchanged - they are about that browser half.
 const enablePush = () => enable(webPush, kromaClient());
 const disablePush = () => disable(webPush, kromaClient());
 const currentEndpoint = () => webPush.endpoint();
 
-// These two are the boundary between the server's VAPID key and the browser's
-// PushManager. Getting either wrong doesn't throw — it produces a subscription
+// Getting either conversion wrong doesn't throw — it produces a subscription
 // the server can never encrypt for, and pushes silently vanish.
 describe('base64url conversion', () => {
   it('decodes a real VAPID public key to a 65-byte uncompressed point', () => {
@@ -59,12 +54,9 @@ describe('base64url conversion', () => {
   });
 });
 
-// ---- capability + subscription flow ----------------------------------------
-//
-// Push is absent in plenty of ordinary situations, and each one needs a
-// different sentence in the settings UI. Getting the classification wrong shows
-// an iPhone user "your browser can't do this" when the real answer is "add it to
-// your home screen and it can".
+// Push is absent in plenty of ordinary situations, each needing a different
+// settings-UI sentence: misclassifying shows an iPhone user "your browser
+// can't do this" when the real answer is "add it to your home screen".
 
 const MAC_CHROME =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36';
@@ -77,13 +69,11 @@ interface Env {
   hasPush?: boolean;
   permission?: NotificationPermission;
   standalone?: boolean;
-  /** The active registration, or `undefined` for "the worker is not registered". */
   registration?: unknown;
 }
 
 const noWindow = Symbol('no window');
 
-/** Install a browser. Returns the handles a test asserts on. */
 function browser(env: Env = {}) {
   const {
     ua = MAC_CHROME,
@@ -113,7 +103,6 @@ function browser(env: Env = {}) {
   return { requestPermission, register, getRegistration, serviceWorker };
 }
 
-/** A push subscription with the two keys the server needs to encrypt. */
 function subscription(endpoint = 'https://push.test/abc', keys = true) {
   return {
     endpoint,
@@ -123,7 +112,6 @@ function subscription(endpoint = 'https://push.test/abc', keys = true) {
   };
 }
 
-/** A registration whose pushManager already holds `existing`. */
 function registration(existing: unknown = null) {
   const subscribe = vi.fn();
   return {

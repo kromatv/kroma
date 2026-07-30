@@ -16,7 +16,6 @@ use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
-/// Poster / card rendering plus static image serving.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/shows/{id}/poster", get(show_poster))
@@ -38,9 +37,8 @@ pub async fn show_poster(
 }
 
 /// `GET /api/items/:id/poster` → the show's real poster for an episode, else the
-/// inline SVG placeholder. An episode has no poster of its own (enrichment only
-/// gives it a still), so a poster rail showing one - My List, a search grid -
-/// always got the placeholder tile; the show's artwork is what that tile means.
+/// inline SVG placeholder. Episodes have no poster of their own (enrichment only
+/// gives a still), so any poster rail (My List, search) shows the show's art.
 pub async fn item_poster(
     State(state): State<SharedState>,
     Path(id): Path<String>,
@@ -60,8 +58,8 @@ pub async fn item_poster(
     Ok(render_poster(&id, &item.title))
 }
 
-/// 302 to a cached artwork URL. Cached for a day like the placeholder - the
-/// target is content-addressed, so a stale redirect still resolves.
+// Cached for a day like the placeholder — the target is content-addressed, so a
+// stale redirect still resolves.
 fn redirect_to_art(url: &str) -> Response {
     Response::builder()
         .status(StatusCode::FOUND)
@@ -71,14 +69,12 @@ fn redirect_to_art(url: &str) -> Response {
         .unwrap()
 }
 
-/// Allowed `?w=` rendition widths. A fixed bucket set keeps the on-disk cache
-/// bounded (each source image can gain at most this many variants) and makes
-/// every rendition shareable between clients that ask for similar sizes.
+// A fixed bucket set keeps the on-disk cache bounded and lets clients asking
+// for similar widths share a rendition.
 const IMAGE_WIDTHS: [u32; 4] = [160, 320, 480, 780];
 
 #[derive(Debug, Deserialize)]
 pub struct ImageQuery {
-    /// Requested display width (px); snapped up to the nearest bucket.
     pub w: Option<u32>,
 }
 
@@ -119,9 +115,6 @@ pub async fn image(
     }
 }
 
-/// Serve a bucketed downscale of a cached `.webp` (`?w=`), producing it once on the
-/// blocking pool. `None` when there's no `?w=` on a `.webp`, the width doesn't map
-/// to a bucket, or the rendition can't be produced/read (caller falls through).
 async fn sized_rendition_response(state: &SharedState, name: &str, q: &ImageQuery) -> Option<Response> {
     let w = q.w.filter(|_| name.ends_with(".webp"))?;
     let width = IMAGE_WIDTHS.iter().copied().find(|b| *b >= w).unwrap_or(0);
@@ -139,9 +132,6 @@ async fn sized_rendition_response(state: &SharedState, name: &str, q: &ImageQuer
     Some(image_response(bytes, content_type))
 }
 
-/// Serve the JPEG transcode of a cached `.webp` for a `<hash>.webp.jpg` request,
-/// transcoding it on demand. `None` only when the name isn't a `.webp.jpg` (caller
-/// falls through); a matching name always yields a response (image or 404).
 async fn jpeg_rendition_response(state: &SharedState, name: &str) -> Option<Response> {
     let webp = name.strip_suffix(".jpg").filter(|s| s.ends_with(".webp"))?;
     let data_dir = state.config.data_dir.clone();
@@ -156,7 +146,6 @@ async fn jpeg_rendition_response(state: &SharedState, name: &str) -> Option<Resp
     })
 }
 
-/// Cached-artwork content type by extension (WebP posters/backdrops, PNG logos).
 fn content_type_for(name: &str) -> &'static str {
     if name.ends_with(".png") {
         "image/png"
@@ -167,8 +156,6 @@ fn content_type_for(name: &str) -> &'static str {
     }
 }
 
-/// Content-addressed artwork response: serve `bytes` as `content_type`, cached
-/// forever (filenames are immutable hashes).
 fn image_response(bytes: Vec<u8>, content_type: &str) -> Response {
     Response::builder()
         .header(header::CONTENT_TYPE, content_type)
@@ -179,12 +166,8 @@ fn image_response(bytes: Vec<u8>, content_type: &str) -> Response {
 
 #[derive(Debug, Deserialize)]
 pub struct CardQuery {
-    /// Category label baked onto the card, e.g. "Ajout récent".
     pub label: Option<String>,
-    /// Resume fraction 0.0–1.0 → draws a progress bar.
     pub progress: Option<f32>,
-    /// Requested display width. Anything above 640 selects the 1280×720
-    /// rendition (the Apple TV Top Shelf card); default is the 640×360 tile.
     pub w: Option<u32>,
 }
 
@@ -248,7 +231,6 @@ pub async fn item_card(
     Ok(resp)
 }
 
-/// Bare cache filename from a `/api/images/<name>` URL, or `None` if remote.
 fn cache_name(url: &str) -> Option<&str> {
     url.strip_prefix(crate::infra::image::PUBLIC_PREFIX)
 }

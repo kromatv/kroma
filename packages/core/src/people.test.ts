@@ -9,7 +9,7 @@ import {
   roleLabels,
 } from './people';
 
-// A trivial translator that echoes the key, so role labels are asserted by key.
+// Echoes the key, so role labels are asserted by key.
 const t: Translate = (key) => key;
 
 function meta(p: {
@@ -54,7 +54,6 @@ describe('personInvolvement', () => {
           { name: 'Greta Gerwig', job: 'Writer' },
         ],
       }),
-      // Duplicate Director job must not be added twice.
       meta({ crew: [{ name: 'greta gerwig', job: 'Director', profileUrl: '/other.jpg' }] }),
     ];
     const inv = personInvolvement(metas, 'Greta Gerwig');
@@ -117,7 +116,6 @@ describe('roleLabels', () => {
   });
 
   it('de-duplicates identical resolved labels', () => {
-    // Two unknown jobs with the same verbatim string collapse to one chip.
     const labels = roleLabels(t, { acted: false, jobs: ['Gaffer', 'Gaffer'], profileUrl: null });
     expect(labels).toEqual(['Gaffer']);
   });

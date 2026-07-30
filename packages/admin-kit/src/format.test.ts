@@ -7,7 +7,7 @@ describe('hue', () => {
       const h = hue(s);
       expect(h).toBeGreaterThanOrEqual(0);
       expect(h).toBeLessThan(360);
-      expect(hue(s)).toBe(h); // stable across calls
+      expect(hue(s)).toBe(h);
     }
   });
 

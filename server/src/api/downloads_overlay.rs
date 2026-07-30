@@ -1,12 +1,7 @@
 //! The live-grab overlay for request / discover list views: derives the
 //! transient `downloading` / `importing` status + progress for a request from the
-//! shared `downloads` table (the relationship, so nothing goes stale when a
-//! torrent fails or is deleted).
-//!
-//! Read directly here rather than through the Downloads module, so the core names
-//! no module crate; the `downloads` table is created by that module's migrations
-//! (in the shared DB), so this tolerates its absence -- when the Downloads module
-//! isn't installed, the overlay is simply empty.
+//! shared `downloads` table, read directly so the core names no module crate.
+//! Tolerates the table's absence when the Downloads module isn't installed.
 
 use std::collections::HashMap;
 

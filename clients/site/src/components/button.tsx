@@ -10,13 +10,9 @@ const base =
   'transition-all duration-200 ease-out focus-visible:outline-none disabled:opacity-50';
 
 const variants: Record<Variant, string> = {
-  // The amber action: ink text on the warm fill, lifting on hover, the app's
-  // primary button, translated to a pointer.
   primary:
     'bg-accent text-accent-ink shadow-[0_6px_22px_rgba(242,180,66,0.32)] hover:bg-accent-hover hover:-translate-y-0.5',
-  // A quiet bordered action for the secondary path.
   outline: 'border border-border-strong text-text hover:border-accent hover:text-accent',
-  // Barely-there, for tertiary links that still want a target.
   ghost: 'text-muted hover:text-text',
 };
 
@@ -31,10 +27,7 @@ export interface ButtonProps {
   variant?: Variant;
   size?: Size;
   className?: string;
-  /** Internal router destination as a CANONICAL path (e.g. `/download`); the
-   *  active locale prefix is added automatically. Mutually exclusive with `href`. */
   to?: string;
-  /** External / anchor destination (opens in a new tab when it leaves the site). */
   href?: string;
 }
 

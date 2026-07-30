@@ -1,9 +1,8 @@
 import { defineModule } from '@kroma/module-sdk';
 import { lazy } from 'react';
 
-// The Acquisition module (frontend half). Contributes the acquisition settings
-// page into the Acquisition sidebar group. It is a settings-view module (the
-// backend is the shared settings endpoint), so disabling it hides the nav + page.
+// The Acquisition module, frontend half: a settings view, so the backend is the
+// shared settings endpoint and disabling the module hides the nav and the page.
 export const acquisitionModule = defineModule({
   pages: [
     {

@@ -4,14 +4,12 @@
 import { type ContinueItem, type KromaClient, type MediaItem, metaLine } from '@kroma/core';
 import type { DeepLink } from '#tv/shared/preview/types';
 
-// Row headers (shown by the carousel) vs. the badge baked onto each card.
 const RECENT_SECTION = 'Ajout récent';
 const RESUME_SECTION = 'Reprendre la lecture';
 const RECENT_BADGE = 'Nouveauté';
 const RESUME_BADGE = 'Reprendre';
 const MAX_TILES = 20;
 
-/** Newest first, by ISO-8601 `addedAt`. */
 function newest(movies: MediaItem[]): MediaItem[] {
   return [...movies].sort((a, b) => {
     if (a.addedAt < b.addedAt) return 1;
@@ -21,7 +19,6 @@ function newest(movies: MediaItem[]): MediaItem[] {
 }
 
 interface Tile {
-  // Shown by the carousel itself (the card art carries only the badge + logo).
   title: string;
   subtitle: string;
   image_url: string;
@@ -34,34 +31,27 @@ interface Section {
   tiles: Tile[];
 }
 
-/** True when the server has cached art we can composite a card from. */
 function hasArt(m: MediaItem): boolean {
   return !!(m.metadata?.backdropUrl || m.metadata?.posterUrl);
 }
 
-/** Where a tile points: movies/videos → their detail page; episodes → the show. */
 function deepLinkFor(m: MediaItem): DeepLink {
   return m.kind === 'episode' && m.showId
     ? { type: 'show', id: m.showId }
     : { type: 'movie', id: m.id };
 }
 
-/** Native tile title: the show name for episodes, else the item title. */
 function titleFor(m: MediaItem): string {
   return m.showTitle ?? m.title;
 }
 
-/** Native tile subtitle: media type + the usual meta line (year · runtime · …). */
 function subtitleFor(m: MediaItem): string {
   const type = m.kind === 'episode' || m.showId ? 'Série' : 'Film';
   const meta = metaLine(m);
   return meta ? `${type} · ${meta}` : type;
 }
 
-/** A landscape "card" tile. The image is the server-composited 16:9 card
- *  (backdrop + category badge + title logo, with an optional resume bar). The
- *  title/subtitle are carousel-native. `?v=<addedAt>` busts the TV's preview
- *  image cache when art changes. */
+// `?v=<addedAt>` busts the TV's preview image cache when art changes.
 function tile(client: KromaClient, m: MediaItem, badge: string, progress?: number): Tile {
   const params = new URLSearchParams({ label: badge, v: m.addedAt });
   if (progress != null && progress > 0) params.set('progress', progress.toFixed(3));
@@ -75,9 +65,7 @@ function tile(client: KromaClient, m: MediaItem, badge: string, progress?: numbe
   };
 }
 
-/** Build the Smart Hub preview document: a "Reprendre la lecture" row (when the
- *  user has resumable items) followed by "Ajout récent" (newest movies). Returns
- *  `null` when there's nothing worth showing. */
+/** The Smart Hub preview document, or `null` when there is nothing to show. */
 export function buildPreviewData(
   client: KromaClient,
   movies: MediaItem[],

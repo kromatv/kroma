@@ -1,14 +1,9 @@
 // Prop documentation, read from the components at BUILD time.
 //
-// The workbench's Props tab shows every prop a component takes, its type and the
-// JSDoc line explaining what it is for. Getting that used to be a regex parser
-// running IN THE BROWSER over the component sources, which the `?raw` glob
-// inlined into the bundle. Three things were wrong with that: half a megabyte of
-// source text shipped to every visitor, 52 files re-parsed before first paint,
-// and - the one that actually mattered - a regex cannot follow `extends`, so a
-// <Button> documented ten props and took eighteen.
-//
-// So it runs here instead, against a real type checker, and ships DATA.
+// The workbench's Props tab shows every prop a component takes, its type and
+// the JSDoc line explaining what it is for, read here against a real type
+// checker rather than a regex over source text - which cannot follow
+// `extends`, so a <Button> would document ten props and take eighteen.
 //
 // The checker is TypeScript 7's own, which is the version this repo already
 // builds with - no second toolchain, and no react-docgen-typescript, whose
@@ -43,12 +38,11 @@ export interface PropDoc {
  * by the story's own name, which is the component's name by convention. */
 export type PropDocs = Record<string, PropDoc[]>;
 
-/** Props every React component has and nobody needs told about. */
+// Props every React component has and nobody needs told about.
 const NOISE = new Set(['key']);
 
-/** The JSDoc block immediately above a member, as one paragraph.
- *
- * `@tag` lines are dropped: they document the author's intent, not the prop. */
+// The JSDoc block immediately above a member, as one paragraph. `@tag` lines are dropped: they
+// document the author's intent, not the prop.
 function docsFrom(memberText: string): string {
   const block = /^\s*\/\*\*((?:(?!\*\/)[\s\S])*)\*\//.exec(memberText);
   if (!block?.[1]) return '';
@@ -61,9 +55,9 @@ function docsFrom(memberText: string): string {
     .trim();
 }
 
-/** A declaring file's text, memoised by the caller. An inherited prop is
- * declared in the file its own interface lives in, so this is keyed by the
- * DECLARATION's path rather than the component's. */
+// A declaring file's text, memoised by the caller. An inherited prop is declared in the file
+// its own interface lives in, so this is keyed by the DECLARATION's path rather than the
+// component's.
 type TextOf = (path: string) => Promise<string>;
 
 type Snapshot = Awaited<ReturnType<API['updateSnapshot']>>;
@@ -71,8 +65,8 @@ type Project = NonNullable<ReturnType<Snapshot['getProject']>>;
 type Checker = Project['checker'];
 type PropSymbol = Awaited<ReturnType<Checker['getPropertiesOfType']>>[number];
 
-/** One property, as the panel shows it - or null when it is noise, or has no
- * declaration to read a written type and a doc comment out of. */
+// One property, as the panel shows it - or null when it is noise, or has no declaration to read
+// a written type and a doc comment out of.
 async function propDocOf(symbol: PropSymbol, textOf: TextOf): Promise<PropDoc | null> {
   if (NOISE.has(symbol.name)) return null;
   const handle = symbol.declarations?.[0];
@@ -96,8 +90,8 @@ async function propDocOf(symbol: PropSymbol, textOf: TextOf): Promise<PropDoc | 
   };
 }
 
-/** `interface FooProps { ... }` -> `Foo` and its documented props. Null for any
- * other statement, and for a `*Props` that turns out to document nothing. */
+// `interface FooProps { ... }` -> `Foo` and its documented props. Null for any other statement,
+// and for a `*Props` that turns out to document nothing.
 async function componentPropsOf(
   statement: unknown,
   checker: Checker,
@@ -163,19 +157,19 @@ export async function readPropDocs(
   }
 }
 
-/** The module a host imports to get the docs. Virtual: nothing is written to
- * disk, so there is no generated artifact to keep in step or to gitignore. */
+// The module a host imports to get the docs. Virtual: nothing is written to disk, so there is
+// no generated artifact to keep in step or to gitignore.
 const VIRTUAL = 'virtual:kroma-props';
-/** Rollup's convention for "this id belongs to a plugin, do not touch it". */
+// Rollup's convention for "this id belongs to a plugin, do not touch it".
 const RESOLVED = `\0${VIRTUAL}`;
 
 export interface PropDocsOptions {
-  /** The project whose program the components live in. */
+  // The project whose program the components live in.
   tsconfig: string;
-  /** Which of its files to scan. Defaults to everything but tests and stories. */
+  // Which of its files to scan. Defaults to everything but tests and stories.
   include?: (fileName: string) => boolean;
-  /** Files whose changes should refresh the docs during `vite dev`. Defaults to
-   *  anything the `include` filter accepts. */
+  // Files whose changes should refresh the docs during `vite dev`. Defaults to anything the
+  // `include` filter accepts.
   watch?: (fileName: string) => boolean;
 }
 

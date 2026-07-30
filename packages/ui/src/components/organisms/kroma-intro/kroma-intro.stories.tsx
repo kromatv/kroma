@@ -7,32 +7,22 @@ import { Txt } from '#ui/components/atoms/text';
 import { Portal } from '#ui/lib/portal';
 import { KromaIntro } from './kroma-intro';
 
-/** A source no decoder will take. The component falls back to its pure-CSS
- *  scene when the film fails to load, so this reaches the fallback the way a
- *  codec-less browser reaches it - through the real error path, rather than by
- *  importing past the component's own API. */
+// A source no decoder will take, so the story reaches the CSS fallback through
+// the real error path rather than past the component's own API.
 const UNDECODABLE = 'data:video/mp4;base64,AAAA';
 
 interface StageProps {
   tagline: string;
   lite: boolean;
   loop: boolean;
-  /** Break the film on purpose, to land on the CSS scene. */
   breakVideo?: boolean;
 }
 
-/**
- * The intro cannot render INSIDE the canvas: its shell is `position: fixed` over
- * the whole viewport, with sound, which is the entire point of a brand film. So
- * the story is a launcher - press it, watch, and it hands control back the same
- * way it hands control back to the app.
- */
+// The intro cannot render inside the canvas: its shell is `position: fixed` over
+// the whole viewport, with sound. So the story is a launcher.
 function Stage({ tagline, lite, loop, breakVideo }: Readonly<StageProps>) {
   const [playing, setPlaying] = useState(false);
 
-  // The film is a <video> and the fallback is CSS keyframes, so neither can be
-  // mounted off the web. Saying so beats a button that throws, and beats a blank
-  // canvas that looks broken.
   if (Platform.OS !== 'web') {
     return (
       <Box gap={8}>
@@ -63,11 +53,8 @@ function Stage({ tagline, lite, loop, breakVideo }: Readonly<StageProps>) {
         onPress={() => setPlaying(true)}
       />
       {playing && (
-        // Through a <Portal>, which is what a shell does by mounting this at its
-        // ROOT: the film is `position: fixed`, and the workbench renders a story
-        // inside a scaled device frame - a transform, which would make itself
-        // the containing block and play the film in a box on the canvas instead
-        // of over the window.
+        // The workbench renders a story inside a scaled device frame, and that
+        // transform would become the `position: fixed` film's containing block.
         <Portal>
           <KromaIntro
             onDone={() => setPlaying(false)}
@@ -98,10 +85,8 @@ export default story({
     ],
   },
   matrix: false,
-  // No device frame: this story is a launcher and a note, not a 10-foot layout,
-  // and the film itself takes the whole window through a portal rather than the
-  // canvas. The width is the note's measure - prose, so it is capped rather than
-  // pinned.
+  // No device frame: the film takes the whole window through a portal, so the
+  // width is only the note's measure.
   width: { min: 320, max: 620 },
   args: {
     tagline: '',

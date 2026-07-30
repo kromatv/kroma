@@ -1,8 +1,7 @@
 // The unified season section: one switcher over ALL seasons; the selected
 // season renders its owned, playable episodes (with watched/progress) and/or a
 // request card for a missing or partial season, so a partially-owned show
-// plays what it has and requests the gaps on one screen. Extracted from the old
-// show fiche + the discover season cards.
+// plays what it has and requests the gaps on one screen.
 
 import { Image } from '@kroma/admin-kit';
 import { type CastMember, formatRuntime, type MediaItem, posterColors } from '@kroma/core';
@@ -115,8 +114,6 @@ function EpisodeRow({
   );
 }
 
-/** A season episode not on disk: a compact row with a per-episode request button
- * (or a pending chip once asked). Rendered only when the viewer can request. */
 function MissingEpisodeRow({
   episode,
   pending,
@@ -157,7 +154,6 @@ function MissingEpisodeRow({
   );
 }
 
-/** Horizontally-scrollable season pill row; the active season is filled amber. */
 function SeasonSwitcher({
   seasons,
   current,
@@ -178,8 +174,6 @@ function SeasonSwitcher({
   );
 }
 
-/** A not-owned or partial season: request the whole season (or fill the gaps),
- * or show its availability/request chip. */
 function SeasonRequestCard({
   s,
   canRequest,
@@ -266,7 +260,6 @@ export function SeasonSection({
   onPickSeason: (season: number) => void;
   onPickAll: () => void;
   onRequestEpisode: (season: number, episode: number) => void;
-  /** `"season-episode"` keys optimistically marked pending after a per-episode ask. */
   pendingEpisodes: Set<string>;
   requestBusy: boolean;
 }>) {
@@ -277,10 +270,6 @@ export function SeasonSection({
   const hasOpen = canRequest && seasons.some((s) => !s.available && !s.requested);
   const partialCurrent = canRequest && current.episodes.length > 0 && !current.available;
 
-  // Merge owned episodes with the season's missing ones (by number) so each row
-  // plays what is on disk or offers a per-episode request. Missing rows are only
-  // enumerated when the viewer can request AND TMDB gave us the episode count;
-  // otherwise the list stays owned-only (unchanged for no-permission viewers).
   const { ownedByNum, ordered, perEpisode } = mergeEpisodes(current, canRequest);
 
   return (
@@ -352,9 +341,8 @@ export function SeasonSection({
   );
 }
 
-/** Merge the season's owned episodes with its missing ones (by number). Missing
- * rows are only enumerated when the viewer can request AND TMDB gave us the
- * episode count; otherwise the list stays owned-only. */
+// Missing rows are only enumerated when the viewer can request AND TMDB gave us
+// the episode count; otherwise the list stays owned-only.
 function mergeEpisodes(
   current: TitleSeason,
   canRequest: boolean,
@@ -368,8 +356,6 @@ function mergeEpisodes(
   return { ownedByNum, ordered, perEpisode };
 }
 
-/** The season's episode rows: each number is either an owned, playable row or a
- * per-episode request row for a gap. */
 function SeasonEpisodes({
   current,
   ordered,

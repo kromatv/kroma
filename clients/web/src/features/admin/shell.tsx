@@ -53,8 +53,6 @@ export { HeaderAction, PageHeader } from '@kroma/admin-kit';
 // re-exported here so call sites keep importing them from this shell module.
 export { Denied, isAnyAdmin, useAsyncAction, useCap, usePoll } from '#web/features/admin/hooks';
 
-// ----- data + events context --------------------------------------------------
-
 interface AdminCtx {
   serverInfo: ServerInfo | null;
 }
@@ -64,21 +62,14 @@ const AdminContext = createContext<AdminCtx | null>(null);
 export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { client, user } = useAuth();
   const queryClient = useQueryClient();
-  // The admin UI kit (@kroma/admin-kit) reads the authed client / user / API
-  // origin from this context, so both built-in and module admin pages share one
-  // data + capability surface without importing app internals.
+  // So both built-in and module admin pages share one data + capability surface
+  // without importing app internals.
   const kit = useMemo(() => ({ client, user, apiBase: apiBase() }), [client, user]);
-  // Server info (uptime etc.) as a plain admin poll it refetches on the 15s tick
-  // and whenever the event stream below invalidates the `['admin']` namespace.
   const { data: serverInfo } = usePoll(['admin', 'server'], () => client.adminServer(), 15000);
 
-  // Live event stream → invalidate every admin query (they share the `['admin']`
-  // key prefix). Skip the high-frequency per-line `job.log` / `job.progress` /
-  // `download.progress` frames (the jobs page streams those itself for smooth
-  // progress); a verbose job would otherwise storm the admin endpoints. Remaining
-  // events are COALESCED (one refresh per window): an enrich pass emits one
-  // `item.updated` per title, which would otherwise refetch every panel hundreds
-  // of times in a row.
+  // Skip the high-frequency per-line job.log/job.progress/download.progress
+  // frames (the jobs page streams those itself); coalesce the rest to one
+  // refresh per window, since e.g. an enrich pass emits one item.updated per title.
   useEffect(() => {
     let pending: ReturnType<typeof setTimeout> | null = null;
     const ev = new KromaEvents(apiBase(), {
@@ -114,12 +105,9 @@ export function useAdmin(): AdminCtx {
   return ctx;
 }
 
-// ----- sidebar ----------------------------------------------------------------
-
 // `cap: null` → visible to any admin (the read-only dashboard panels); otherwise
-// the item is shown only to users holding that specific capability, mirroring the
-// server-side guards in `api/admin.rs`. Each section is dropped entirely when the
-// current user can see none of its items.
+// the item needs that specific capability, mirroring the server-side guards in
+// `api/admin.rs`.
 interface NavItem {
   to: string;
   labelKey: MessageKey;
@@ -243,8 +231,6 @@ const NAV_GROUPS: { labelKey: MessageKey; section: string; items: NavItem[] }[] 
 const linkCls =
   'flex items-center gap-3 rounded-md px-3.5 py-2.5 text-[14px] font-semibold text-muted no-underline transition-colors hover:bg-white/4 hover:text-text aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent';
 
-/** KROMA wordmark + "Admin" badge, shared by the desktop rail, the mobile topbar
- * and the drawer header. */
 function AdminBrand() {
   const t = useT();
   return (
@@ -257,17 +243,13 @@ function AdminBrand() {
   );
 }
 
-/** Everything below the brand, shared by the desktop rail and the mobile drawer:
- * back-to-app link, the scrolling grouped nav, and the live server status card
- * pinned to the bottom. */
 function AdminSidebarBody() {
   const t = useT();
   const { serverInfo } = useAdmin();
   const { user } = useAuth();
   const visible = (cap: Permission | null) => !cap || (!!user && hasPermission(user, cap));
-  // Module pages target a nav-group by `section` (e.g. Torrents -> "acquisition"),
-  // so they render INSIDE the matching group beside the built-in pages. A disabled
-  // module drops out, so its link vanishes with the rest of its system.
+  // Module pages target a nav-group by `section` (e.g. Torrents -> "acquisition")
+  // and render inside the matching group beside the built-in pages.
   const moduleNav = useModuleNavAll();
   const knownSections = new Set(NAV_GROUPS.map((g) => g.section));
   const groups = NAV_GROUPS.map((g) => ({
@@ -280,7 +262,6 @@ function AdminSidebarBody() {
   const orphanModules = moduleNav.filter((m) => !knownSections.has(m.section ?? 'library'));
   return (
     <>
-      {/* Fixed header: back-to-app link */}
       <div className="shrink-0 px-3.5 pb-2">
         <Link
           to="/"
@@ -294,7 +275,7 @@ function AdminSidebarBody() {
         </Link>
       </div>
 
-      {/* Scrolling nav: the only part that scrolls when sections overflow */}
+      {/* The only part of the sidebar that scrolls when sections overflow. */}
       <nav className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3">
         {groups.map((g) => (
           <SidebarGroup key={g.labelKey} label={t(g.labelKey)}>
@@ -323,7 +304,6 @@ function AdminSidebarBody() {
         )}
       </nav>
 
-      {/* Fixed footer: live server status */}
       <div className="shrink-0 px-3.5 pb-6 pt-2">
         <ServerStatusCard />
       </div>
@@ -334,7 +314,6 @@ function AdminSidebarBody() {
 function AdminSidebar() {
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-[#0C0C0E] lg:flex">
-      {/* Fixed header: identity */}
       <div className="mb-4 shrink-0 px-6 pt-6">
         <AdminBrand />
       </div>
@@ -343,15 +322,10 @@ function AdminSidebar() {
   );
 }
 
-/** Compact top bar shown below the `lg` breakpoint: brand + hamburger opening
- * the admin nav as a left drawer (same AdminSidebarBody as the desktop rail).
- * The drawer closes itself on navigation rather than intercepting link clicks. */
 function AdminMobileTopbar() {
   const t = useT();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  // Close the drawer on navigation: `pathname` is read only in the dep array so
-  // the effect re-runs on each route change (removing it would break that).
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; pathname closes the drawer on navigation
   useEffect(() => setOpen(false), [pathname]);
   return (
@@ -394,7 +368,6 @@ function AdminMobileTopbar() {
   );
 }
 
-/** A nav link contributed by a module (resolved icon + localized label). */
 function ModuleNavLink({ item }: Readonly<{ item: ModuleNav }>) {
   const Icon = resolveModuleIcon(item.icon);
   return (
@@ -435,21 +408,15 @@ function ServerStatusCard() {
   );
 }
 
-// ----- layout -----------------------------------------------------------------
-
 export function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <AdminProvider>
       <div className="flex min-h-screen w-full flex-col bg-bg text-text lg:flex-row">
         <AdminSidebar />
         <AdminMobileTopbar />
-        {/* Same gutter + vertical rhythm as the catalogue pages (PAGE_MAIN) so
-            every page in the app aligns; pages render their PageHeader + content
-            directly into this. */}
+        {/* Same gutter + vertical rhythm as the catalogue pages (PAGE_MAIN) so every page aligns. */}
         <main className="min-w-0 flex-1 px-(--gutter-web) pb-20 pt-9">{children}</main>
       </div>
-      {/* One mount point for every admin imperative modal (react-call), so call
-          sites open them with `await SomeModal.call(...)` and keep no open-state. */}
       <AdminModalHosts />
     </AdminProvider>
   );

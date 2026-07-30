@@ -16,7 +16,6 @@ import { startGamepadBridge } from './gamepad';
 const REPEAT_DELAY_MS = 400;
 const REPEAT_EVERY_MS = 120;
 
-/** A pad reporting `pressed` buttons by index; everything else released. */
 function pad(pressed: number[] = [], id = 'Test Pad', index = 0): Gamepad {
   return {
     id,
@@ -33,7 +32,6 @@ function pad(pressed: number[] = [], id = 'Test Pad', index = 0): Gamepad {
   } as unknown as Gamepad;
 }
 
-/** Standard-mapping button indices, from the Gamepad API. */
 const A = 0;
 const B = 1;
 const DPAD_UP = 12;
@@ -43,7 +41,6 @@ let clock = 0;
 let keys: KeyboardEvent[] = [];
 const record = (e: Event) => keys.push(e as KeyboardEvent);
 
-/** Advance the animation loop by one frame, `ms` later. */
 function tick(ms = 16) {
   clock += ms;
   const run = frame;
@@ -58,7 +55,6 @@ function setPads(...gamepads: (Gamepad | null)[]) {
   });
 }
 
-/** A live pad whose reported state the test can swap between frames. */
 function livePad() {
   let current: Gamepad | null = pad([]);
   vi.stubGlobal('navigator', { ...navigator, getGamepads: () => [current] });
@@ -69,9 +65,8 @@ function livePad() {
   };
 }
 
-/** Run one frame with nothing pressed. A button is only decoded once it has
- *  been SEEN AT REST - the guard against a pad that reports a stuck button the
- *  moment it connects - so every press test has to calibrate first. */
+// A button is only decoded once it has been seen at rest, so every press test
+// has to calibrate first.
 function calibrate() {
   tick();
   keys = [];

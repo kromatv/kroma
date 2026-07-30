@@ -16,8 +16,8 @@ export const Route = createFileRoute('/_app/discover/$type/$tmdbId')({
     const detail = await queryClient.ensureQueryData(
       discoverQueries.detail(kind, Number(params.tmdbId)),
     );
-    // Owned (fully OR partially) → the canonical local fiche, which now overlays
-    // the season gaps itself. Only not-owned titles render on the discover route.
+    // Owned (fully OR partially) → the canonical local fiche, which overlays the
+    // season gaps itself. Only not-owned titles render on the discover route.
     if (detail.localId) {
       throw redirect({
         to: detail.kind === 'show' ? '/show/$id' : '/movie/$id',

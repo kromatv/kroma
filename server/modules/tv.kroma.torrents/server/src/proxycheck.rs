@@ -1,22 +1,17 @@
 //! VPN reachability probe for the kill switch: fetch an IP-echo endpoint
 //! through the SOCKS5 proxy, plus (best-effort) directly, and compare. A dead
-//! proxy or a proxy that is not actually diverting traffic both read as "not
-//! sealed".
+//! proxy and a proxy that is not diverting traffic both read as "not sealed".
 
-/// Outcome of one probe.
 #[derive(Debug, Clone, Default)]
 pub struct VpnCheck {
-    /// Exit IP as seen through the proxy; `None` = the proxy is unreachable.
     pub proxied_ip: Option<String>,
-    /// Exit IP without the proxy (best-effort; boxes with VPN-only egress
-    /// legitimately have none).
     pub direct_ip: Option<String>,
     pub error: Option<String>,
 }
 
 impl VpnCheck {
-    /// The gate: proxied egress works AND (when a direct comparison exists)
-    /// actually differs from the direct route.
+    /// Proxied egress works and, when a direct comparison exists, differs from
+    /// the direct route.
     pub fn sealed(&self) -> bool {
         match (&self.proxied_ip, &self.direct_ip) {
             (Some(p), Some(d)) => p != d,

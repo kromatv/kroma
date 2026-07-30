@@ -1,19 +1,6 @@
-// The web client's build stamp, served as a virtual module.
-//
-// The web app is a static SPA: nothing of Node ships, so the build identity
-// cannot be READ at runtime the way it is on a phone. It is collected once here,
-// at build time or dev-server start, and served as `virtual:build-info` - a
-// module with no file on disk, whose entire body is the resolved constants.
-//
-// Two things carry the weight, and both are about the module id rather than the
-// data. The resolved id is PREFIXED with a NUL byte, which is Rollup's
-// convention for "this is mine, nobody else touch it" - without it another
-// plugin, or Rollup's own file resolution, tries to read it from disk. And
-// `load` must answer for the resolved id and nothing else: answering for the raw
-// specifier means the module is served before any other plugin has had its say.
-//
-// The stamp itself degrades to 'unknown' rather than throwing, because a build
-// from a source tarball still has to produce a site.
+// The web client's build stamp, served as `virtual:build-info` - a module
+// with no file on disk. The web app is a static SPA, so identity is
+// collected once at build time here rather than read at runtime.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -21,13 +8,11 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { buildInfoPlugin } from './build-info';
 
-/** This package itself: it has a package.json and sits in the checkout. */
 const PROJECT_ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const VIRTUAL = 'virtual:build-info';
 const RESOLVED = `\0${VIRTUAL}`;
 
-/** The plugin's hooks, as Rollup will call them. */
 function hooks() {
   const plugin = buildInfoPlugin({ projectRoot: PROJECT_ROOT }) as {
     name: string;
@@ -99,7 +84,6 @@ describe('serving the module', () => {
 });
 
 describe('the stamp it serves', () => {
-  /** The default export, parsed back out of the generated module. */
   function stamp() {
     const code = hooks().load(RESOLVED) ?? '';
     const json = /export default (\{.*?\});/s.exec(code)?.[1];

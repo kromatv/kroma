@@ -22,19 +22,9 @@ import { getKeyboardLayoutPref, type KeyboardLayoutPref } from '#tv/app/keyboard
 import { useEnv } from '#tv/app/providers/env';
 import { LAYOUT_LETTER_ROWS, urlRows } from './keyboardLayouts';
 
-// ----- physical-keyboard bridge -------------------------------------------------
-
-/** On devices with a hardware keyboard (useEnv().physicalKeyboard: never a real
- * TV shell), let the user type straight into the value while the on-screen
- * keyboard is up, whatever element holds the spatial focus. The real text input
- * handles its own typing, so events targeting it are skipped; printable keys and
- * Backspace are consumed here (Space intentionally types a space instead of
- * activating the focused key: typing wins on keyboard devices). D-pad / Enter /
- * Escape stay with the focus nav.
- *
- * A DOM listener, which is exactly right: `physicalKeyboard` is only ever true
- * on a browser-based shell. The capability check keeps that explicit rather than
- * implied, so the native builds cannot trip over it. */
+// On a hardware keyboard (`physicalKeyboard`, never a real TV shell), typing
+// wins over D-pad activation: Space types a space rather than pressing the
+// focused key, and a real text input's own events are left alone.
 function usePhysicalTyping(value: string, onChange: (next: string) => void) {
   const { physicalKeyboard } = useEnv();
   const stateRef = useRef({ value, onChange });
@@ -61,14 +51,9 @@ function usePhysicalTyping(value: string, onChange: (next: string) => void) {
     return () => w.removeEventListener('keydown', onKey);
   }, [physicalKeyboard]);
 
-  // The native half of the same idea. An Android TV takes a bluetooth keyboard
-  // and the emulator has one; there is no `document` to listen to, so the
-  // characters come from the remote bridge instead (a no-op on every browser
-  // shell, where the listener above already has it covered). No capability
-  // check: `physicalKeyboard` decides whether to render a typeable input INSTEAD
-  // of this keyboard, which is not the question here - a keyboard someone
-  // plugged into a television should just work, with the on-screen one still up
-  // for the remote.
+  // Native half of the same idea: an Android TV/emulator bluetooth keyboard has
+  // no `document` to listen to, so characters come from the remote bridge
+  // instead (a no-op on browser shells, already covered above).
   useHardwareKeys(
     useCallback((key: string) => {
       const s = stateRef.current;
@@ -78,27 +63,19 @@ function usePhysicalTyping(value: string, onChange: (next: string) => void) {
   );
 }
 
-// ----- layout preference ------------------------------------------------------
-
-/** The device's layout preference mapped through `derive`, computed ONCE per
- * mount. Both keyboards re-render on EVERY keystroke, and reading the stored
- * preference is a blocking cross-process hop on the old TV webviews, so neither
- * the read nor the row building it feeds may sit in the render body. Changing the
- * layout still lands: its picker is a screen of its own (the profile menu), so
- * the keyboard is unmounted while it happens and the next mount reads the new
- * value. `derive` must be a module-level (stable) function. */
+// Reads the layout preference once per mount, not per render: both keyboards
+// re-render on every keystroke, and the read is a blocking cross-process hop
+// on old TV webviews. The layout picker is a separate screen, so a changed
+// value still lands on the keyboard's next mount.
 function useLayout<T>(derive: (layout: KeyboardLayoutPref) => T): T {
   const [layout] = useState(getKeyboardLayoutPref);
   return useMemo(() => derive(layout), [derive, layout]);
 }
 
-// ----- shared key -------------------------------------------------------------
-
 const KEY_FACE = { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 16 } as const;
 
-/** One keyboard key. `focusFill` is what the focused key becomes: the URL
- * keyboard tints amber, the search keyboard fills solid for a stronger 10-foot
- * cue at its larger size. */
+// `focusFill` is what the focused key becomes: the URL keyboard tints amber,
+// the search keyboard fills solid for a stronger 10-foot cue at its larger size.
 function Key({
   label,
   icon,
@@ -118,7 +95,6 @@ function Key({
   textStyle?: TextStyle;
   focusFill: string;
   focusInk: string;
-  /** Marks this key the screen's focus entry point. */
   autoFocus?: boolean;
 }>) {
   return (
@@ -149,11 +125,9 @@ function Key({
   );
 }
 
-/** A remote-driven on-screen keyboard. The caller owns the text value; each key
- * mutates it through `onChange`, and the special keys (space / delete / clear /
- * submit / close) call the matching handler. `layout` swaps between the
- * server-URL keyboard ({@link UrlKeyboard}) and the search keyboard (which has
- * its own dedicated design, {@link SearchKeyboard}). */
+/** The caller owns the text value; each key mutates it through `onChange`, and
+ * the special keys (space / delete / clear / submit / close) call the matching
+ * handler. `layout` swaps between the server-URL and search keyboards. */
 export function OnScreenKeyboard({
   value,
   onChange,
@@ -179,9 +153,8 @@ export function OnScreenKeyboard({
 }
 
 const URL_FOCUS_FILL = 'rgba(244, 182, 66, 0.18)';
-// Module scope, not the render body: this keyboard re-renders on every keystroke
-// and hands these to ~40 keys, so rebuilding them would hand every key a new
-// style identity each time (see useLayout's note above).
+// Module scope, not the render body: this hands the same style identity to
+// ~40 keys on every keystroke instead of rebuilding it each time.
 const URL_KEY: ViewStyle = { height: 52, flex: 1 };
 const URL_KEY_TEXT: TextStyle = { fontSize: 20 };
 const URL_CLEAR_KEY: ViewStyle = { height: 52, flex: 2 };
@@ -190,9 +163,6 @@ const URL_SUBMIT: ViewStyle = { height: 52, flex: 3 };
 
 const KEY_ROW = { flexDirection: 'row' as const, gap: 12 };
 
-/** The server-URL keyboard: a digit row, the preferred layout's letters as rows
- * of ten lowercase keys with the URL specials appended, then clear / "." / the
- * optional submit button. */
 function UrlKeyboard({
   value,
   onChange,
@@ -210,8 +180,8 @@ function UrlKeyboard({
     else onChange(value + k);
   };
   return (
-    // `grid`: Down from a key lands on the key BELOW it, not on wherever the next
-    // row was last left. Same reason as the search keyboard.
+    // `grid`: Down from a key lands on the key below it, not wherever the next
+    // row was last left.
     <FocusColumn grid style={{ gap: 12 }}>
       {rows.map((row, rowIndex) => (
         <FocusRegion key={row.join('')} style={KEY_ROW}>
@@ -219,7 +189,6 @@ function UrlKeyboard({
             <Key
               key={k}
               label={k}
-              // Entry point of every screen built on the keyboard: its first key.
               autoFocus={rowIndex === 0 && keyIndex === 0}
               onPress={() => press(k)}
               style={URL_KEY}
@@ -230,10 +199,8 @@ function UrlKeyboard({
           ))}
         </FocusRegion>
       ))}
-      {/* A row, and it has to SAY so: as a plain box its three controls were
-          siblings of the vertical column, so Left and Right did nothing between
-          them and the submit button could only be reached by pressing Down past
-          it. */}
+      {/* Declared as a row: a plain box would make Left/Right do nothing
+          between these three controls. */}
       <FocusRegion style={KEY_ROW}>
         <Key
           label="⌧"
@@ -259,16 +226,10 @@ function UrlKeyboard({
   );
 }
 
-// ----- search keyboard --------------------------------------------------------
-
 const SEARCH_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
-/** Everything the search keyboard's look derives from a layout's letter rows.
- * Typewriter layouts run ten keys per row; in the 520px column that only reads
- * as a keyboard with uniform fixed near-square keys and centred rows (the
- * natural stagger). Stretchy flexible keys would give every row a different key
- * width. The ABC grid keeps the original roomy 6-column design. Built once per
- * mount (see {@link useLayout}), never per keystroke. */
+// Typewriter layouts (10 keys/row) get fixed near-square keys so the column
+// stays uniform; the ABC grid keeps its original roomy 6-column flex layout.
 function searchLook(layout: KeyboardLayoutPref) {
   const letterRows = LAYOUT_LETTER_ROWS[layout];
   const wide = letterRows.some((r) => r.length > 6);
@@ -285,11 +246,7 @@ function searchLook(layout: KeyboardLayoutPref) {
   };
 }
 
-/** The search on-screen keyboard, matching the KROMA design: a 1-0 digit row,
- * the uppercase alphabet in the preferred layout's rows, and a final row pairing
- * the layout's trailing letters with space, backspace and a close key. Letters
- * insert lowercase (search is case-insensitive); the focused key fills solid
- * amber for a strong 10-foot cue. */
+// Letters insert lowercase: search is case-insensitive.
 function SearchKeyboard({
   value,
   onChange,
@@ -319,11 +276,8 @@ function SearchKeyboard({
     />
   );
   const letter = (l: string) => key(l, l, () => onChange(value + l.toLowerCase()));
-  // A <FocusRegion>, not a <Box row>. A plain box is a layout and nothing else:
-  // the keys inside it end up siblings of every other key on the keyboard, one
-  // flat list in the order they mounted, so Up and Down stepped along that list
-  // and the ring appeared to move diagonally. (The URL keyboard next door always
-  // did declare its rows, which is why only this one felt broken.)
+  // <FocusRegion>, not a plain box: without declared rows, every key is a
+  // sibling in one flat list and Up/Down step through it diagonally.
   const row = (children: React.ReactNode, id: string) => (
     <FocusRegion
       key={id}
@@ -337,9 +291,8 @@ function SearchKeyboard({
     </FocusRegion>
   );
   return (
-    // `grid`: keep the COLUMN when moving between rows. Without it the navigator
-    // lands on whichever key the next row was last left on, which on a keyboard
-    // is the difference between Down from T reaching G and reaching A.
+    // `grid`: keep the column when moving between rows, e.g. Down from T
+    // reaches G, not wherever the next row was last left.
     <FocusColumn grid style={{ gap: rowGap }}>
       {row(
         SEARCH_DIGITS.map((d) => key(d, d, () => onChange(value + d))),

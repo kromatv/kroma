@@ -120,11 +120,9 @@ meters: [
   ],
 });
 
-/**
- * A stream losing its connection: bandwidth sliding under the bitrate it needs
- * while the buffer drains. Deterministic in its own tick (the panel polls twice a
- * second), so the scene captures identically every time.
- */
+// A stream losing its connection: bandwidth sliding under the bitrate it needs
+// while the buffer drains. Deterministic in its own tick, so the scene captures
+// identically every time.
 function starvingStats(): () => PlayerStats {
   let tick = 0;
   return () => {

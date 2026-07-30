@@ -18,18 +18,10 @@ pub type Version = String;
 pub struct Capability {
     pub kind: String,
     pub id: String,
-    /// Display name for engine capabilities (`download-client`, `indexer-engine`),
-    /// shown in the admin's data-driven add-picker. Absent when the capability has
-    /// no add-flow. Ignored by dependency resolution (which matches on kind+id).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
-    /// The add-form schema (reuses [`ConfigField`]) the admin renders for this
-    /// engine. Empty when the engine has a custom [`flow`](Self::flow) or no form.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ConfigField>,
-    /// A discriminator for engines whose add-flow is NOT a plain field form (e.g.
-    /// `"definition"` for the native Cardigann definition picker); the host page
-    /// renders that flow itself.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub flow: Option<String>,
 }
@@ -47,22 +39,16 @@ impl Capability {
 pub struct ConfigField {
     pub key: String,
     pub label: String,
-    /// "string" | "bool" | "number" | "select".
     #[serde(rename = "type")]
     pub kind: String,
-    /// Default value, as a string the admin UI parses per `kind`.
     #[serde(default)]
     pub default: Option<String>,
-    /// Choices for `kind == "select"`.
     #[serde(default)]
     pub options: Vec<String>,
-    /// Placeholder text for a text/URL input.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<String>,
-    /// Render as a password input; the value is treated write-only.
     #[serde(default)]
     pub secret: bool,
-    /// The field must be non-empty before the form can submit.
     #[serde(default)]
     pub required: bool,
 }
@@ -74,8 +60,6 @@ pub struct ConfigField {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FeRemote {
-    /// The exposed module key to load (the remote's MF `exposes` name, e.g.
-    /// "./module").
     pub module: String,
 }
 
@@ -123,20 +107,18 @@ impl<'de> Deserialize<'de> for Dependency {
     }
 }
 
-/// Normalize a declared version range: a blank or `"*"` range means "no
-/// constraint" (`None`); anything else is trimmed and kept. Applied to every
-/// input form so `{ id, version: "*" }`, `"id@*"` and the map value `"*"` all
-/// collapse to the same in-memory shape (and round-trip stably).
+// A blank or `"*"` range means "no constraint" (`None`); applied to every
+// input form so they all collapse to the same in-memory shape.
 fn normalize_range(range: &str) -> Option<String> {
     let trimmed = range.trim();
     (!trimmed.is_empty() && trimmed != "*").then(|| trimmed.to_string())
 }
 
-/// (De)serialize a `dependsOn` / `optionalDependsOn` collection as a
-/// package.json-style map `{ "<id>": "<range>" }`, where a bare `"*"` (or empty)
-/// range means "any version". The legacy array form (a list of bare ids,
-/// `"id@range"` strings, or `{ id, version }` objects) is still accepted on the
-/// way in, so older manifests and third-party `.tar` modules keep loading.
+// (De)serialize a `dependsOn` / `optionalDependsOn` collection as a
+// package.json-style map `{ "<id>": "<range>" }`, where a bare `"*"` (or empty)
+// range means "any version". The legacy array form (a list of bare ids,
+// `"id@range"` strings, or `{ id, version }` objects) is still accepted on the
+// way in, so older manifests and third-party `.tar` modules keep loading.
 mod dep_map {
     use std::fmt;
 
@@ -215,55 +197,29 @@ pub struct CapabilityReq {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModuleManifest {
-    /// Stable identifier, shared with the module's frontend package.
     pub id: String,
-    /// Human-facing name.
     pub name: String,
     pub version: Version,
-    /// One-line description.
     #[serde(default)]
     pub description: String,
-    /// Minimum KROMA server version this module needs: a bare version
-    /// (`"0.2.0"`, shorthand for "at least 0.2.0") or a full semver range
-    /// (`">=0.2, <0.4"`). Checked at install and at spawn (see
-    /// [`crate::server_satisfies`]); absent = compatible with any server.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min_server: Option<String>,
-    /// Hard dependencies on other modules, written as a package.json-style
-    /// `{ id: range }` map. Resolution fails if any are absent or version-
-    /// incompatible; init order is a topological sort over these edges.
     #[serde(default, with = "dep_map", skip_serializing_if = "Vec::is_empty")]
     pub depends_on: Vec<Dependency>,
-    /// Soft dependencies (same shape): if a listed module is present it is
-    /// initialized first (and version-checked), but the module still loads when
-    /// it is absent.
     #[serde(default, with = "dep_map", skip_serializing_if = "Vec::is_empty")]
     pub optional_depends_on: Vec<Dependency>,
-    /// Capability dependencies: each is satisfied by any module providing it.
     #[serde(default)]
     pub requires: Vec<CapabilityReq>,
-    /// Capabilities this module registers. Filled by the registry.
     #[serde(default)]
     pub provides: Vec<Capability>,
-    /// Account capabilities (permissions) needed to use this module; the host
-    /// hides or gates it otherwise.
     #[serde(default)]
     pub permissions: Vec<String>,
-    /// Admin-configurable settings this module exposes.
     #[serde(default)]
     pub config: Vec<ConfigField>,
-    /// The module's frontend remote, when it ships one (runtime-loaded modules).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fe_remote: Option<FeRemote>,
-    /// First path segments of the admin routes this module owns (e.g. `["vpn"]`
-    /// for `/api/admin/vpn/*`). For out-of-process modules, the core reverse-
-    /// proxies `/api/admin/<prefix>/*` to the module's sidecar. Empty for
-    /// compiled-in modules (mounted directly) and port-only modules.
     #[serde(default, rename = "adminPrefixes", skip_serializing_if = "Vec::is_empty")]
     pub admin_prefixes: Vec<String>,
-    /// A library module: its `.kmod` ships no native binary (its code is co-linked
-    /// into the processes that need it), so the supervisor registers it but spawns
-    /// no process (e.g. the release-name parser). Purely informational for the UI.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub library: bool,
 }

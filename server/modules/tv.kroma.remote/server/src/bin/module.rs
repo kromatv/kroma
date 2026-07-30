@@ -2,9 +2,7 @@
 //!
 //! The whole binary is one `serve()` call: the runtime opens the shared DB,
 //! builds the out-of-process host, and serves this module's admin routes on the
-//! local port the core supervisor assigned. The service wiring that used to live
-//! in the core binary's `main.rs` (constructing `RemoteAccess`) now lives here,
-//! where it belongs.
+//! local port the core supervisor assigned.
 
 use kroma_module_runtime::RemoteHost;
 use kroma_module_sdk::host::HostCtx;

@@ -1,12 +1,7 @@
-// How this phone names itself to a server.
-//
-// Two lists on the account page are drawn from it: the push subscription's
-// device column, and "active sessions", which reads the User-Agent captured when
-// the device signed in. iOS sends `KROMA/1 CFNetwork/… Darwin/…` when nobody
-// sets one and Android `okhttp/4.12.0` - neither names a device or a platform,
-// so every signed-in phone listed itself as an unknown desktop. The shape of the
-// replacement is @kroma/client's (`clientUserAgent`), shared with the TV app;
-// what this file adds is where a PHONE reads its own hardware from.
+// How this phone names itself to a server, feeding the account page's active
+// sessions list and the push subscription's device column. Uses @kroma/core's
+// clientUserAgent (shared with the TV app); this file supplies the phone's own
+// hardware fields.
 
 import { clientUserAgent, KromaClient } from '@kroma/core';
 import * as Device from 'expo-device';

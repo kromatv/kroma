@@ -12,11 +12,10 @@ export default story({
     dont: ["Don't use a Switch for an action; it states a condition, not a command."],
   },
   variants: switchVariants,
-  // `checked` is both a variant and a real prop: the control comes from the
-  // `sv`, and declaring it here is what lets `render` read it with types.
+  // Declaring `checked` here is what lets `render` read it with types.
   args: { disabled: false, checked: false as boolean },
-  // `defaultChecked` + a remount key: the panel picks the starting state, and
-  // the switch in the preview still toggles when pressed (uncontrolled).
+  // A remount key, so the panel picks the starting state and the preview still
+  // toggles on press.
   render: ({ checked, ...props }) => (
     <Switch {...props} key={String(checked)} defaultChecked={checked === true} />
   ),

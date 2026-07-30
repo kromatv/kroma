@@ -4,7 +4,6 @@ import { m } from '#site/paraglide/messages';
 
 export interface LogoProps {
   className?: string;
-  /** Wheel size in px; the wordmark scales to sit beside it. */
   size?: number;
 }
 

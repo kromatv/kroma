@@ -17,12 +17,11 @@ import { KromaMark, OnScreenKeyboard } from '#tv/shared/ui';
 
 const DEBOUNCE_MS = 250;
 
-/** Search with a live results grid, typed either on our D-pad on-screen keyboard
- * or on the platform's own where that is the better one (Apple TV, whose
- * keyboard is also the only thing on the device that can hear dictation - see
- * `app/searchShell`). Queries the server's full-text engine (`/api/search`
- * typo-tolerant, ranked across title/cast/genre/overview), falling back to the
- * in-memory catalogue when the request fails. */
+/** Search with a live results grid, typed either on our D-pad on-screen
+ * keyboard or on the platform's own where that is the better one (Apple TV,
+ * whose keyboard is also the only thing that can hear dictation — see
+ * `app/searchShell`). Falls back to the in-memory catalogue when the
+ * server's `/api/search` request fails. */
 export function TvSearch() {
   const { movies, shows } = useConnection();
   const client = useClient();
@@ -225,9 +224,9 @@ export function TvSearch() {
 }
 
 const RESULTS_WIDTH = 1180;
-/** The scroller's own horizontal padding, which the grid does not get to use. */
+// The scroller's own horizontal padding, which the grid does not get to use.
 const RESULTS_PADDING = 40;
 const RECENT_LABEL = { fontSize: 13, fontWeight: '700' as const, letterSpacing: 0.52 };
 
-/** The results grid draws 277pt posters, which the server serves from its 320 bucket. */
+// The results grid draws 277pt posters, served from the server's 320 bucket.
 const RESULT_W = 320;

@@ -1,24 +1,17 @@
-/* KROMA showcase site, Tailwind v4.
-
-   The shared entry (`@kroma/ui/tailwind.css`) is the ENTIRE design system: the
-   colour + type + effect tokens, the two brand families loaded from Google
-   Fonts, and the @theme block that maps those tokens onto Tailwind utilities
-   (`bg-bg`, `text-accent`, `font-display`, `shadow-hero`, `ease-out`…). Importing
-   it here is what makes this marketing site render in the exact same charcoal and
-   amber as the app, with no second source of truth to keep in step. */
+/* KROMA showcase site, Tailwind v4. The shared entry (`@kroma/ui/tailwind.css`)
+   is the entire design system - tokens, fonts, and the @theme mapping onto
+   Tailwind utilities - so this site renders in the same charcoal and amber as
+   the app, with no second source of truth. */
 @import "@kroma/ui/tailwind.css";
 
 /* Tailwind v4 scans this app's own sources automatically; nothing outside
    clients/site contributes class names, so no extra @source is needed. */
 
-/* @kroma/ui ships an UNLAYERED `a { color: inherit }` (for the app shell), and
-   an unlayered rule outranks Tailwind's layered text-color utilities. On this
-   marketing site links ARE coloured with utilities (the amber CTA's dark ink,
-   the muted footer/nav links), so a bare `text-accent-ink` on an <a> was being
-   ignored and the primary button rendered ivory-on-amber. For any link that
-   carries a class, defer to the value its utility set (the layered one);
-   class-less links still inherit. `revert-layer` is the precise tool for exactly
-   this unlayered-vs-layered conflict. */
+/* @kroma/ui ships an UNLAYERED `a { color: inherit }` (for the app shell),
+   which outranks Tailwind's layered text-color utilities. This site colours
+   links with utilities, so any link carrying a class must defer to the value
+   its utility set; class-less links still inherit. `revert-layer` is the
+   precise tool for an unlayered-vs-layered conflict. */
 a[class] {
   color: revert-layer;
 }
@@ -62,12 +55,10 @@ a[class] {
   }
 
   body {
-    /* Hanken Grotesk, from the shared tokens, with the antialiasing the app uses. */
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
-  /* Editorial defaults: display type is Bricolage Grotesque, tight and dark. */
   h1,
   h2,
   h3 {
@@ -76,7 +67,6 @@ a[class] {
     text-wrap: balance;
   }
 
-  /* Long-form paragraphs read better with pretty wrapping where supported. */
   p {
     text-wrap: pretty;
   }
@@ -86,7 +76,6 @@ a[class] {
    variant-aware (`hover:`, `md:`…) and ordered correctly against the generated
    utilities, unlike a plain class in `@layer utilities`. */
 
-/* The signature amber, laid into text as the brand's warm highlight. */
 @utility text-gradient-amber {
   background: linear-gradient(180deg, var(--kroma-accent-bright), var(--kroma-accent));
   -webkit-background-clip: text;
@@ -94,8 +83,7 @@ a[class] {
   color: transparent;
 }
 
-/* A hairline top-lit surface, the same trick the app's raised cards use, so a
-   panel on the site reads as lifted off the charcoal rather than drawn on it. */
+/* The same top-lit hairline trick the app's raised cards use. */
 @utility surface-hairline {
   background-image: linear-gradient(
     180deg,
@@ -104,8 +92,6 @@ a[class] {
   );
 }
 
-/* Radial amber glow behind the hero mark. Deliberately restrained, a single
-   warm source, not the rainbow wash a generated hero reaches for. */
 @utility glow-amber {
   background: radial-gradient(
     60% 60% at 50% 40%,
@@ -114,13 +100,9 @@ a[class] {
   );
 }
 
-/* The fine charcoal grain that keeps large flat areas from banding. Two
-   low-opacity dot gradients pinned behind the page content, no image asset.
-
-   A plain class rather than an `@utility`, unlike the three above: it is applied once,
-   to <body>, so it never needs a variant - and a real selector gives its ::before an
-   explicit scoping root instead of a bare nesting `&`, which every CSS parser that
-   does not know Tailwind's `@utility` reads as a mistake. */
+/* A plain class rather than an `@utility`, unlike the three above: it is
+   applied once, to <body>, so it never needs a variant, and a real selector
+   gives its ::before an explicit scoping root instead of a bare nesting `&`. */
 .page-grain::before {
   content: "";
   position: fixed;
@@ -134,11 +116,8 @@ a[class] {
   background-position: 0 0, 1px 2px;
 }
 
-/* Long-form article body. Scoped to `.prose-kroma`, styling the raw elements MDX
-   emits so a post reads like an edited page, measured line length, a clear
-   heading rhythm, amber links, and code blocks that sit in the charcoal surface
-   rather than a bright card. rehype-slug puts ids on headings; rehype-pretty-code
-   tokenises the code. */
+/* Scoped to `.prose-kroma`, styling the raw elements MDX emits.
+   rehype-slug puts ids on headings; rehype-pretty-code tokenises the code. */
 .prose-kroma {
   color: var(--kroma-text);
   font-size: 1.075rem;

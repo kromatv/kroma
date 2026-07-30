@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { addRecentSearch, getRecentSearches } from './searchHistory';
 
-/** A Map-backed localStorage stand-in. */
 function fakeStorage(initial: Record<string, string> = {}) {
   const m = new Map(Object.entries(initial));
   return {

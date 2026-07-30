@@ -16,7 +16,7 @@ interface AudioPanelProps {
   onBack: () => void;
 }
 
-/** Audio-track picker (§5): language + title on top, a codec · channel sub-line. */
+/** Audio-track picker (§5). */
 export const AudioPanel = forwardRef<PanelHandle, AudioPanelProps>(function AudioPanel(
   { tracks, current, onSelect, onBack },
   ref,

@@ -6,13 +6,11 @@ import type { MovieView } from '#web/shared/lib/api';
 const READY = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT', 'HAVE_FUTURE', 'HAVE_ENOUGH'];
 const NETWORK = ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'];
 
-/** Kbps as a friendly bitrate: "12.34 Mb/s" above 1 Mbps, else "512 kb/s". */
 function kbps(k: number | undefined): string | undefined {
   if (!k || k <= 0) return undefined;
   return k >= 1000 ? `${(k / 1000).toFixed(2)} Mb/s` : `${Math.round(k)} kb/s`;
 }
 
-/** Bytes as a friendly size: Go / Mo / Ko. */
 function bytesH(b: number | undefined): string | undefined {
   if (!b || b <= 0) return undefined;
   if (b >= 1e9) return `${(b / 1e9).toFixed(2)} Go`;
@@ -37,11 +35,8 @@ export interface WebStatsInput {
   baseSec: number;
   audioTracks: AudioTrack[];
   audioIndex: number;
-  /** Measured playback frame rate (frames decoded / wall-clock), when known. */
   fps?: number;
-  /** Live metrics from the active MSE engine (Shaka / hls.js), or null. */
   engine?: EngineLiveStats | null;
-  /** Total stream size in bytes (one-shot range probe), for the average bitrate. */
   bytes: number;
   t: Translate;
 }
@@ -61,7 +56,6 @@ interface StatsMetrics {
   rate: number;
 }
 
-/** Read the live playback metrics off the `<video>` element and the input. */
 function computeMetrics(s: WebStatsInput): StatsMetrics {
   const { v, item, cur, dur, bufEnd } = s;
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
@@ -86,7 +80,6 @@ function computeMetrics(s: WebStatsInput): StatsMetrics {
   };
 }
 
-/** The "video codec" headline string (codec + bit depth + HDR). */
 function videoCodecLabel(item: MovieView): string {
   const vcodec = item.video?.codec?.toUpperCase() ?? '-';
   const depth = item.video?.bitDepth ? ` ${item.video.bitDepth}-bit` : '';
@@ -94,7 +87,6 @@ function videoCodecLabel(item: MovieView): string {
   return `${vcodec}${depth}${hdr}`;
 }
 
-/** The "audio format" headline string (codec + channels + language). */
 function audioFormatLabel(selAudio: AudioTrack | undefined, item: MovieView): string {
   const acodec = selAudio?.codec?.toUpperCase() ?? item.audio?.codec?.toUpperCase() ?? '-';
   const channels = selAudio?.channels ? ` ${selAudio.channels}.0` : '';
@@ -102,14 +94,9 @@ function audioFormatLabel(selAudio: AudioTrack | undefined, item: MovieView): st
   return `${acodec}${channels}${language}`;
 }
 
-/** A row of the panel's `extra` list, in the block it belongs to. The panel
- * renders each `group` as its own titled column, which is what keeps twenty
- * diagnostics readable. */
+// The panel renders each `group` as its own titled column.
 type ExtraRow = { label: string; value: string; group?: string };
 
-/** The verbose HLS/transport diagnostics rows shown under the headline fields,
- * sorted into three blocks: what the FILE is, what the TRANSPORT is doing, and
- * what this CLIENT is. */
 function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
   const { v, item, cur, useHls, anchor, baseSec, engine, t } = s;
   const { dw, dh, dpr, rel, conn, rate } = m;
@@ -138,8 +125,7 @@ function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
       value: `${clock(anchor)} (${baseSec.toFixed(0)}s)`,
     });
   }
-  // Live engine transport (Shaka / hls.js): real bitrate, bandwidth estimate,
-  // rebuffering and bytes fetched. Absent on direct-play / native HLS.
+  // Absent on direct-play / native HLS.
   if (engine) {
     push(transport, t('stats.streamBitrate'), kbps(engine.streamBitrateKbps));
     push(transport, t('stats.bandwidth'), kbps(engine.estBandwidthKbps));
@@ -170,40 +156,16 @@ function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
   return rows;
 }
 
-/**
- * Where a buffer stops being comfortable, as the panel's reference line.
- *
- * A low-water mark, not the goal: the engines here are tuned to buffer 120 s
- * ahead (video-engine.ts FORWARD_BUFFER_SEC), so a healthy stream sits far above
- * this. 10 s is Shaka's own default `bufferingGoal` - the level the library
- * considers merely adequate - which makes a trace sagging toward it the earliest
- * honest warning that the connection is losing.
- */
+// A low-water mark, not the goal: the engines buffer 120 s ahead, and 10 s is
+// Shaka's own default `bufferingGoal`.
 const LOW_BUFFER_SEC = 10;
 
-/**
- * The live numeric series the panel charts.
- *
- * Bandwidth and bitrate SHARE a chart, because they share a unit and because the
- * gap between them is the actual diagnostic: while the connection is delivering
- * more than the stream is asking for there is slack, and when the two meet the
- * stream is about to stall. As two independently auto-scaled sparklines - which
- * is what they were - that relationship was invisible, and each one's wobble was
- * scaled up to look alarming no matter how steady the stream was.
- *
- * Buffer keeps its own chart: it is seconds, not kb/s, and putting it on the same
- * axis as a number ~3000x larger would flatten it to a dead line.
- *
- * No colours are set here. The panel assigns them from the design system's
- * validated series palette, which is checked as a SET (adjacent contrast, and
- * separation under each kind of colourblindness); hand-picking one per call site
- * is how a set stops being a set.
- */
+// Bandwidth and bitrate share one chart: the gap between them is the
+// diagnostic. Colours are the panel's to assign, from a colourblind-safe palette.
 function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
   const meters: PlayerMeter[] = [];
   const eng = s.engine;
-  // Bandwidth first: it is the upper series of the pair, and the one that owns
-  // the band drawn between them.
+  // Bandwidth first: it owns the band drawn between the pair.
   if (eng?.estBandwidthKbps) {
     meters.push({
       key: 'bandwidth',
@@ -237,11 +199,7 @@ function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
   return meters;
 }
 
-/**
- * Build the "stats for nerds" snapshot (§9) for the shared StatsPanel from the
- * web `<video>` + HLS internals. The headline fields map to PlayerStats; the HLS
- * transport diagnostics ride in `extra`; the live series ride in `meters`.
- */
+/** The "stats for nerds" snapshot for the shared StatsPanel. */
 export function buildWebStats(s: WebStatsInput): PlayerStats {
   const { item, useHls, aac, audioTracks, audioIndex, t } = s;
   const m = computeMetrics(s);

@@ -23,7 +23,7 @@ stage! {
     triggers: &[],
 }
 
-/// Every file, signed by `mtime:size` (a replaced file re-probes).
+// Every file, signed by `mtime:size` (a replaced file re-probes).
 fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
     crate::db::all_file_sigs(&state.db)
 }

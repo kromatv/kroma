@@ -42,9 +42,8 @@ import { join } from 'node:path';
 
 const API = 'https://api.appstoreconnect.apple.com/v1';
 
-/** Where the key, request and certificate live between the two steps. Outside
- * the repository on purpose: a .p12 is a private key, and a working tree is
- * exactly where one gets committed by accident. */
+// Outside the repository on purpose: a .p12 is a private key, and a working
+// tree is exactly where one gets committed by accident.
 const DEFAULT_DIR = join(homedir(), '.kroma', 'developer-id');
 
 function env(name: string): string {
@@ -60,13 +59,6 @@ function expandHome(p: string): string {
   return p.startsWith('~') ? join(homedir(), p.slice(1)) : p;
 }
 
-/**
- * An ES256 JWT for App Store Connect.
- *
- * `dsaEncoding: 'ieee-p1363'` is the whole trick: OpenSSL emits an ECDSA
- * signature as a DER SEQUENCE, and JWS wants the raw r‖s pair. Without it Apple
- * answers 401 on a signature that is otherwise perfectly valid.
- */
 function token(keyId: string, issuerId: string, privateKey: string): string {
   const header = { alg: 'ES256', kid: keyId, typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
@@ -78,6 +70,8 @@ function token(keyId: string, issuerId: string, privateKey: string): string {
   };
   const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
   const signingInput = `${b64(header)}.${b64(payload)}`;
+  // `dsaEncoding: 'ieee-p1363'` converts OpenSSL's DER ECDSA signature to the raw
+  // r‖s pair JWS requires; without it Apple answers 401 on an otherwise valid signature.
   const sig = createSign('SHA256')
     .update(signingInput)
     .sign({ key: privateKey, dsaEncoding: 'ieee-p1363' })
@@ -179,10 +173,9 @@ function importCer(cerPath: string, dir: string): void {
 
   const password = crypto.randomUUID();
   const p12 = join(dir, 'kroma-developer-id.p12');
-  // Keychain and `security import` want the pre-OpenSSL-3 PBE. OpenSSL 3 defaults
-  // to AES-256-CBC + PBKDF2 and needs `-legacy` to go back; 1.1.1 and LibreSSL
-  // (what macOS ships) already emit it and reject the flag outright. So ask the
-  // binary which it is rather than assuming - guessing wrong fails the export.
+  // Keychain and `security import` want the pre-OpenSSL-3 PBE; OpenSSL 3 defaults
+  // to AES-256-CBC + PBKDF2 and needs `-legacy` to go back, but 1.1.1 and LibreSSL
+  // (what macOS ships) reject that flag outright — so ask the binary which it is.
   const openssl3 = execFileSync('openssl', ['version']).toString().startsWith('OpenSSL 3.');
   execFileSync('openssl', [
     'pkcs12',

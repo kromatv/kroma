@@ -1,29 +1,19 @@
-//! In-memory ring buffer of recent log lines, backing the admin "Journaux"
-//! page. Two producers feed it: a tracing layer in `main` (the core's own
-//! events, post-EnvFilter) and the module supervisor (each sidecar's piped
-//! stdout/stderr, tagged with its module id). Process-global because the
-//! tracing layer is installed before any state exists.
+//! In-memory ring buffer of recent log lines, fed by the core's tracing layer
+//! and by each module sidecar's piped output. Process-global because the tracing
+//! layer is installed before any state exists.
 
 use std::collections::VecDeque;
 use std::sync::{LazyLock, Mutex};
 
-/// Lines kept in memory (oldest evicted first). At ~200 bytes a line this is
-/// roughly 1 MiB, enough for hours of normal traffic or minutes of a crash
-/// loop, which is exactly the window an admin needs to see.
 const CAPACITY: usize = 5000;
 
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEntry {
-    /// Arrival time, unix ms (module lines carry their own timestamp in the
-    /// message; this one is close enough for ordering and display).
     pub ts: i64,
-    /// `trace` | `debug` | `info` | `warn` | `error`.
     pub level: String,
-    /// Rust tracing target for core lines (`kroma_engine::infra::watch`),
-    /// empty for module lines (their target stays in the message).
+    // Empty for module lines: their target stays in the message.
     pub target: String,
-    /// `core` or the module id (`tv.kroma.vpn`).
     pub source: String,
     pub message: String,
 }
@@ -47,7 +37,6 @@ impl LogBuffer {
         buf.push_back(entry);
     }
 
-    /// A core tracing event (already through the global EnvFilter).
     pub fn push_core(&self, level: &str, target: &str, message: String) {
         self.push(LogEntry {
             ts: now_ms(),
@@ -58,13 +47,10 @@ impl LogBuffer {
         });
     }
 
-    /// A raw line from a module sidecar's stdout/stderr. The sidecar already
-    /// formatted it (`2026-07-16T07:37:53Z  INFO target: msg`, never ANSI on a
-    /// pipe): parse the level for filtering and drop the leading timestamp
-    /// (the entry carries its own).
+    /// A raw sidecar line (`2026-07-16T07:37:53Z  INFO target: msg`): parses out
+    /// the level and drops the leading timestamp, which the entry carries itself.
     pub fn push_module_line(&self, module_id: &str, line: &str) {
-        // Sidecars keep ANSI colour on (their fmt layer never checks the pipe),
-        // so scrub escape sequences before parsing.
+        // Sidecars keep ANSI colour on (their fmt layer never checks the pipe).
         let line = strip_ansi(line);
         let mut message = line.trim_end();
         let mut level = "info";
@@ -126,7 +112,6 @@ impl LogBuffer {
         out
     }
 
-    /// The distinct sources currently present (for the page's source filter).
     pub fn sources(&self) -> Vec<String> {
         let buf = self.inner.lock().unwrap();
         let mut out: Vec<String> = buf.iter().map(|e| e.source.clone()).collect();
@@ -136,8 +121,6 @@ impl LogBuffer {
     }
 }
 
-/// `level` filter is a minimum severity, not an exact match: asking for warn
-/// shows warn + error.
 fn level_rank(level: &str) -> u8 {
     match level {
         "trace" => 0,
@@ -148,7 +131,6 @@ fn level_rank(level: &str) -> u8 {
     }
 }
 
-/// Drop ANSI escape sequences (`ESC [ ... <letter>`), keeping everything else.
 fn strip_ansi(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut chars = s.chars().peekable();

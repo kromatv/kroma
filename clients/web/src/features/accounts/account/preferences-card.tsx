@@ -1,9 +1,5 @@
-// Preferences section: UI language (applied immediately via the shared locale
-// switch, already account-synced) plus preferred audio and subtitle languages.
-// The audio/subtitle prefs are edited into the parent's pending profile state
-// and persist together through the sticky save bar (`PATCH /auth/me`); they
-// drive the player's default track pick (see useVideoPlayback). Empty value =
-// no preference; subtitles also offer the "off" sentinel.
+// Preferences section: UI language (applied immediately) plus the preferred
+// audio and subtitle languages, which the parent persists with `PATCH /auth/me`.
 
 import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kroma/core';
 import { useLocale, useSetLocale, useT } from '@kroma/ui';
@@ -12,12 +8,8 @@ import { useMemo } from 'react';
 import { PrefRow } from '#web/features/accounts/account/ui';
 import { Select } from '#web/shared/ui';
 
-/** Sentinel for the "no preference" option Radix Select forbids an empty value,
- * so we map it to `null` (clear the pref) on the way to the server. The offered
- * languages come from `langOptions` - the whole set, shared with the TV and the
- * phone - so a Swedish or Thai track can be asked for here too. Radix's own
- * typeahead is what makes a list that long usable: the popup scrolls, and
- * typing the first letters of a name jumps to it. */
+// Radix Select forbids an empty value, so "no preference" uses this sentinel
+// and is mapped back to `null` on the way to the server.
 export const NONE = LANG_NO_PREF;
 
 const TRIGGER = 'min-w-[min(188px,45vw)]';
@@ -37,16 +29,14 @@ export function PreferencesCard({
   const locale = useLocale();
   const setLocale = useSetLocale();
 
-  // Sorting ~190 names is cheap but not free, and this card re-renders on every
-  // keystroke in the profile form above it.
+  // Sorting ~190 names on every keystroke in the profile form above this card.
   const langs = useMemo(
     () => langOptions(t, locale).map(({ code, label }) => ({ value: code, label })),
     [t, locale],
   );
 
-  // Keep the current value selectable even if it isn't in the curated list (e.g.
-  // a code set on the TV, or a 3-letter code) otherwise the trigger shows blank
-  // and the user can't see (or safely keep) their stored preference.
+  // Keep the current value selectable even when it is not in the list (a code set
+  // on the TV, say), or the trigger shows blank and the stored preference is lost.
   const withCurrent = (value: string, opts: { value: string; label: string }[]) =>
     opts.some((o) => o.value === value)
       ? opts

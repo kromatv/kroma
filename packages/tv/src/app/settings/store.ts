@@ -8,11 +8,8 @@ import { devicePref } from '#tv/app/devicePref';
 
 /** A subscribable one-of-N device preference (devicePref + change notification). */
 export interface ReactivePref<T extends string> {
-  /** The current value (cached; storage is only read once at creation). */
   get(): T;
-  /** Persist a new value and notify subscribers. Same-value writes are no-ops. */
   set(value: T): void;
-  /** Listen for changes; returns the unsubscribe. */
   subscribe(listener: () => void): () => void;
 }
 
@@ -50,7 +47,4 @@ export function useStoredPref<T extends string>(
   return [value, pref.set] as const;
 }
 
-/** The performance HUD's on/off, kept with the other device preferences so it
- * survives a restart: a stutter you are chasing rarely reproduces on the first
- * launch. */
 export const perfHudPrefStore = reactivePref('kroma:perf-hud', ['off', 'on'] as const, 'off');

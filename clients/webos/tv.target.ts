@@ -1,8 +1,8 @@
 import type { TvTarget } from '@kroma/bundler/shell';
 
-// LG webOS. Modern tier: webOS 24+ (Chromium 108). Legacy tier: webOS 4.x-23
-// (Chromium 53-94, 2018-2023 models) - LG freezes Chromium per webOS major.
-// webOS 3.x (Chromium 38: no CSS custom properties) is not supported.
+// LG freezes Chromium per webOS major: modern tier is webOS 24+ (Chromium 108),
+// legacy tier webOS 4.x-23 (Chromium 53-94). webOS 3.x (Chromium 38, no CSS
+// custom properties) is unsupported.
 export const target: TvTarget = {
   platform: 'webos',
   port: 5175,

@@ -1,19 +1,10 @@
-// Splitting one control's style between the two views a native <Focusable> is.
-//
-// On the browser targets a control is a single element, so its style needs no
-// splitting. On a television it is two: the navigator's own view, and the
-// painted face inside it (the face is the one that scales, and a scale must not
-// move the layout). The design authors ONE style for the control, and half of it
-// belongs to each view:
-//
-//   - the BOX props say how the PARENT places the control - flex, size, margins,
-//     absolute position. On the outer view, or the parent never sees them: a key
-//     styled `flex: 1` whose outer view has no flex leaves that outer view
-//     shrink-wrapping, and the face's `flex: 1` then resolves against a
-//     zero-width box (this is exactly how the URL keyboard's keys collapsed into
-//     slivers on Apple TV while rendering correctly on the web shells).
-//   - everything else is the FACE: background, radius, padding, and how the
-//     control arranges its own children.
+// Splits one control's authored style between the two views a native
+// <Focusable> renders: the navigator's own outer view, and the painted face
+// inside it (the browser targets are a single element, so nothing to split
+// there). BOX props - flex, size, margins, absolute position - must land on
+// the outer view, since the parent never sees them otherwise and a self-sized
+// face's `flex: 1` would resolve against a zero-width box. Everything else is
+// the FACE: background, radius, padding, and the control's own children.
 
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 

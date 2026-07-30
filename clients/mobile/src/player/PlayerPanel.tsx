@@ -1,16 +1,14 @@
 // The player's panel: the shell every sheet inside the player is drawn in.
 //
-// Not the app's bottom sheet, for two reasons. The player screen is presented as
-// a native fullScreenModal, and @gorhom's modal renders into a host mounted at
-// the app root - BEHIND that, so a sheet opened from the player was invisible. A
-// plain <Modal> gets its own window and cannot be covered. And in landscape,
-// where the film is, a bottom sheet is a letterbox: this slides in from the side
-// instead, and only lies down flat when the phone is upright.
+// Not the app's bottom sheet: the player is a native fullScreenModal, and
+// @gorhom's sheet renders into a host mounted at the app root — behind that,
+// so it would be invisible. A plain <Modal> gets its own window instead, and
+// in landscape (where the film is) slides in from the side rather than
+// letterboxing as a bottom sheet.
 //
-// The corner radius is set on the BLUR as well as on the panel. iOS draws
-// expo-blur as a UIVisualEffectView, and that ignores the rounded clip of the
-// view it sits in - so the panel had tidy corners with a square pane of blur
-// poking out of them.
+// The corner radius is set on the blur too: iOS's UIVisualEffectView ignores
+// the rounded clip of the view it sits in, so an unrounded blur pane would
+// poke out of the panel's rounded corners.
 
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
@@ -34,10 +32,9 @@ export function PlayerPanel({
   children,
 }: Readonly<{
   visible: boolean;
-  /** The backdrop, and the default answer to a system dismiss. */
   onClose(): void;
-  /** Where Android's Back goes when the panel has its own idea (a sub-view
-   *  walking back to its menu). Defaults to `onClose`. */
+  // Where Android's Back goes when the panel has its own idea (a sub-view
+  // walking back to its menu); defaults to `onClose`.
   onRequestClose?(): void;
   children: ReactNode;
 }>) {
@@ -103,7 +100,7 @@ const styles = StyleSheet.create({
   overlayRow: { flex: 1, flexDirection: 'row' },
   overlayColumn: { flex: 1, flexDirection: 'column', justifyContent: 'flex-end' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.45)' },
-  /** Applied to the panel AND to the blur inside it - see the note up top. */
+  // Applied to the panel and to the blur inside it — see the file note above.
   leftCorners: {
     borderTopLeftRadius: radius.xl,
     borderBottomLeftRadius: radius.xl,

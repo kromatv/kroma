@@ -60,18 +60,14 @@ mod tests {
         assert!(c.interactive_search(&StubHost::new(), "req-1").is_err());
         assert!(c.grab(&StubHost::new(), "req-1", "guid-1", "idx-1").is_err());
     }
-    // --- A live round trip -------------------------------------------------------
-    //
-    // The provider half lives in the acquisition crate (its grab handler needs an
-    // owned host), so this stands a router in for it. That makes the test about
-    // the CONTRACT: the exact paths and body keys the two halves have to agree
-    // on, which nothing else checks.
+    // The provider half lives in the acquisition crate (its grab handler needs
+    // an owned host), so this stands a router in for it. That makes the test
+    // about the CONTRACT: the exact paths and body keys the two halves have to
+    // agree on, which nothing else checks.
 
     use axum::{routing::post, Json, Router};
     use std::sync::Mutex;
 
-    /// Serve the two acquisition port paths, recording each body, and answer with
-    /// the `Result<T, String>` envelope the client expects.
     async fn serve(
         seen: Arc<Mutex<Vec<(String, serde_json::Value)>>>,
         answer: Result<serde_json::Value, String>,

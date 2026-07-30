@@ -41,7 +41,6 @@ async fn patch_me_updates_the_display_name() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["user"]["username"], json!("Renamed"));
 
-    // The change persisted: a fresh read reflects it.
     let (_, me) = get(&t.app, "/api/auth/me", Some(&t.token)).await;
     assert_eq!(me["user"]["username"], json!("Renamed"));
 }
@@ -92,7 +91,6 @@ async fn exchanging_a_token_relabels_the_device() {
     let labels: Vec<_> = rows.iter().map(|s| s["userAgent"].clone()).collect();
     assert!(labels.contains(&json!(ua)), "device re-labelled, got {labels:?}");
     assert!(labels.contains(&json!("integration-test")), "other devices untouched");
-    // The session it minted works.
     assert!(body["token"].as_str().is_some_and(|s| !s.is_empty()));
 }
 
@@ -112,7 +110,6 @@ async fn user_roster_is_private_by_default_and_opens_with_the_setting() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body.as_array().map(Vec::len), Some(0));
 
-    // Enable it, then the seeded owner is listed (public fields only).
     t.state
         .settings
         .set_patch(&t.state.db, [("publicUserList".to_string(), json!(true))].into_iter().collect());

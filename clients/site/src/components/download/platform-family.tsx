@@ -7,21 +7,13 @@ import { m } from '#site/paraglide/messages';
 export interface PlatformFamilyProps {
   icon: IconComponent;
   title: string;
-  /** One line placing the family (who it is for). */
   intro: string;
-  /** Deep link to the full walkthrough for these devices (INSTALL.md, BETA.md). */
   docHref: string;
-  /** The devices in this family, one row each. */
   entries: readonly PlatformEntryProps[];
 }
 
-/**
- * A device family (Téléviseurs, Ordinateurs, …) as a magazine spread: the label
- * pinned in the left rail (it trails the reader down its own entries on desktop),
- * the entries collected in a single panel on the right. Reusing this frame across
- * families gives the page rhythm; the varied content inside keeps it from reading
- * as boilerplate.
- */
+/** A device family: the label pinned in a left rail that trails the reader
+ *  down its entries on desktop, the entries collected in a panel on the right. */
 export function PlatformFamily({
   icon: Icon,
   title,

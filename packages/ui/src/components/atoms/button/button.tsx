@@ -102,9 +102,6 @@ type ButtonSize = 'sm' | 'md' | 'lg' | 'tv';
 
 const ICON_SIZE = { sm: 16, md: 20, lg: 22, tv: 22 } satisfies Record<ButtonSize, number>;
 
-/** Ink colour per variant: amber fills carry the dark ink, everything else the
- * body text colour. */
-/** The token a button's glyph and label are drawn in. */
 type ButtonInk = (typeof INK)[ButtonVariant] | 'accent';
 
 const INK = {
@@ -116,8 +113,7 @@ const INK = {
   scrim: 'text',
 } as const;
 
-/** The brightened fill while a finger is down: touch's answer to the focus
- * ring. Amber goes to its hover step; the translucent fills step up. */
+// The brightened fill while a finger is down: touch's answer to the focus ring.
 const PRESSED = {
   primary: { backgroundColor: colors.accentHover },
   glass: { backgroundColor: 'rgba(255, 255, 255, 0.18)' },
@@ -127,18 +123,11 @@ const PRESSED = {
   scrim: { backgroundColor: 'rgba(40, 40, 48, 0.75)' },
 } as const;
 
-/**
- * The fill while a POINTER rests on the control: the MOUSE's answer to the focus
- * ring, and the only one the browser gets on a page with no navigator - the web
- * client mounts no <FocusScope>, so a cursor crossing a button there produced
- * exactly nothing before this map existed. See <Focusable>'s `hoveredStyle`.
- *
- * One step SHORT of `PRESSED` throughout, so hover → press reads as a single
- * escalation rather than as two unrelated states. It lands on the frame the
- * pointer arrives, deliberately: the kit does not transition background colour
- * (see focus-transition.web.ts - it cost a third of the frame rate on a TV
- * panel), and an instant answer is the right one for a cursor anyway.
- */
+// The fill while a pointer rests on the control: the only hover feedback the
+// browser gets on a page with no <FocusScope>. One step short of `PRESSED`
+// throughout, so hover → press reads as a single escalation. Lands instantly
+// rather than transitioning — animating background colour cost a third of the
+// frame rate on a TV panel (see focus-transition.web.ts).
 const HOVERED = {
   primary: { backgroundColor: colors.accentHover },
   glass: { backgroundColor: 'rgba(255, 255, 255, 0.16)' },
@@ -148,8 +137,8 @@ const HOVERED = {
   scrim: { backgroundColor: 'rgba(28, 28, 34, 0.72)' },
 } as const;
 
-/** An `outline` toggle that is already ON hovers AMBER, one step up from its
- * `accentSoft` fill - see the token for why it cannot be the white wash. */
+// An `outline` toggle that is already on hovers amber, one step up from its
+// `accentSoft` fill, rather than the white wash the other variants use.
 const HOVERED_ACTIVE = { backgroundColor: colors.accentSoftHover } as const;
 
 interface ButtonProps
@@ -241,13 +230,8 @@ function Button({
   );
 }
 
-/** What sits inside the button: the leading glyph (or the spinner that replaces
- * it), the label, whatever the caller nested, and the trailing glyph.
- *
- * Its own component because every part of it is optional, and four independent
- * "draw this if you were given one" decisions belong somewhere that is only
- * about them - `<Button>` above is already deciding variant, ink, hover, frost
- * and press state. */
+// Its own component because every part is optional, and `<Button>` above is
+// already deciding variant, ink, hover, frost and press state.
 function ButtonContent({
   ink,
   glyph,
@@ -290,8 +274,8 @@ function ButtonContent({
 
 const DISABLED = { opacity: 0.5 } as const;
 
-/** The variants whose fill is a translucency over whatever sits behind - the
- * ones a backdrop blur has anything to do for. Solid fills stay solid. */
+// The variants whose fill is a translucency over whatever sits behind, the
+// ones a backdrop blur has anything to do for.
 const FROSTED = new Set<ButtonVariant>(['glass', 'outline', 'scrim']);
 
 export type { ButtonProps, ButtonSize, ButtonVariant };

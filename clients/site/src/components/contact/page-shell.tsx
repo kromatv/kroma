@@ -2,23 +2,16 @@ import type { ReactNode } from 'react';
 import { Container } from '#site/components/container';
 
 export interface PageShellProps {
-  /** Small amber eyebrow above the heading. */
   eyebrow: string;
   title: string;
-  /** Lead paragraph under the heading. */
   intro: ReactNode;
-  /** A quiet line between heading and lead, for a legal page's revision date. */
   updated?: string;
-  /** Narrow measure for a long-form document (the privacy policy) instead of the
-   *  page-width grid a landing page uses. */
   size?: 'default' | 'prose';
   children: ReactNode;
 }
 
-/** The standalone-page frame the site's non-landing pages share: the horizontal
- *  measure, the vertical rhythm, and the typographic header (eyebrow, display
- *  title, optional date, one lead line). A page supplies its strings and its
- *  body; the chrome around them is decided once, here. */
+/** The standalone-page frame the site's non-landing pages share: a page
+ *  supplies its strings and body; the chrome around them is decided once, here. */
 export function PageShell({
   eyebrow,
   title,

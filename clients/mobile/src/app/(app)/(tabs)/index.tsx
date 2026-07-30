@@ -1,6 +1,3 @@
-// Home: brand header, Netflix-style billboard, quick category chips, continue
-// watching, my list, then the server's personalized rails.
-
 import { Chip, Icon, IconButton } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -33,9 +30,6 @@ import { useGutters } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
 import { colors, posterWidth, spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
 
-/** The header's downloads shortcut, doubling as a live status pill: the icon
- * becomes the running transfer's progress ring, with a count badge when more
- * titles wait behind it. */
 function DownloadsGlyph() {
   const downloads = useDownloads();
   const pending = downloads.downloading.length + downloads.queuedItems.length;
@@ -81,8 +75,6 @@ function HomeHeader() {
         >
           <DownloadsGlyph />
         </IconButton>
-        {/* Beside the avatar, not past it: the account stays the row's anchor
-            at the right edge, where it has always been. */}
         <NotificationBell />
         <IconButton
           variant="ghost"
@@ -128,16 +120,13 @@ function MyListRail() {
   const items = useQuery({
     queryKey: ['myListItems', ids.data],
     enabled: (ids.data?.length ?? 0) > 0,
-    // A list id names a movie OR a show (same contract the web and TV resolve),
-    // so a miss on the item endpoint is retried as a show rather than dropped -
-    // bookmarked series used to vanish from this rail.
+    // A list id names a movie OR a show, so a miss on the item endpoint is
+    // retried as a show rather than dropped.
     queryFn: async () => {
       const found = await Promise.all(
         (ids.data ?? []).slice(0, 24).map(async (id) => {
           const movie = await client.item(id).catch(() => null);
           if (movie) return { kind: 'movie', movie } as const;
-          // The detail payload wraps the show with its seasons; the card only
-          // needs the show itself.
           const detail = await client.show(id).catch(() => null);
           return detail ? ({ kind: 'show', show: detail.show } as const) : null;
         }),
@@ -235,9 +224,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center' },
-  // The buttons carry their own 40pt targets, so the gap is breathing room
-  // between GLYPHS, not touch spacing - 18 read as four scattered controls
-  // instead of one cluster.
+  // The buttons carry their own 40pt targets, so this gap spaces glyphs, not
+  // touch areas.
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dlGlyph: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
   dlArrow: {

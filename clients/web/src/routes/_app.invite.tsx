@@ -7,11 +7,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
 
-/** The kit sm-button label metrics, tinted danger for the destructive action. */
 const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
-// Admin page to invite users. Gated by the `users.manage` permission the only
-// way (besides the bootstrap owner) to create accounts is via these invites.
 export const Route = createFileRoute('/_app/invite')({
   component: InvitePage,
 });

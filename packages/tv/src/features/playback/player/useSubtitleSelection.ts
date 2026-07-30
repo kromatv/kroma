@@ -11,22 +11,16 @@ export interface SubView {
   index: number;
   language: string | null;
   url: string | null;
-  /** Generated tracks carry a label + id and render an "IA" badge. */
   label?: string;
   subId?: string;
   ai?: boolean;
 }
 
 export interface SubtitleSelection {
-  /** Renderable (text) subtitle tracks: embedded first, then generated. */
   rendered: SubView[];
-  /** Picker options: `null` (off) + each renderable track index. */
   options: (number | null)[];
-  /** The active track index, or null when off. */
   active: number | null;
-  /** Select a track (or null to turn off). */
   pick: (index: number | null) => void;
-  /** Re-fetch the generated-subtitle list (after a generation completes). */
   reload: () => void;
 }
 

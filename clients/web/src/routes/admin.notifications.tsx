@@ -1,15 +1,7 @@
-// The notifications console: writing one and sending it. That is the whole page.
-//
-// It used to carry a delivery section underneath — first seven credential
-// inputs, then three read-only status lines once it became clear no operator
-// could fill those inputs in. Both are gone, because push is now genuinely
-// automatic: browsers work off a VAPID key the server mints itself, and phones
-// are reached through the relay, which every server can use without holding
-// anything. There is no question left for an admin to answer, and a panel that
-// only ever says "fine" is a panel that teaches people to stop reading.
-//
-// What replaced it as the answer to "did that reach anyone?" is better anyway:
-// the composer reports the delivered count from the send itself.
+// The notifications console: writing one and sending it. That is the whole
+// page. Push delivery is automatic (a server-minted VAPID key for browsers,
+// the relay for phones), so the composer reports the delivered count from the
+// send itself rather than a separate status section.
 
 import { useT } from '@kroma/ui';
 import { createFileRoute } from '@tanstack/react-router';

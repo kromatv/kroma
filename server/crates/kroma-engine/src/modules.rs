@@ -1,25 +1,18 @@
 //! Per-module admin state: the enabled flag + config values each module carries,
 //! persisted in the `moduleStates` settings blob (`{ id: { enabled, config } }`).
-//!
-//! The module REGISTRY -- which modules exist, their manifests, capabilities and
-//! backend behavior -- lives in the `kroma-module-kernel` crate (the one
-//! composition point), built from the generated roster. This is only the
-//! settings-state half, kept in the engine because engine internals read a
-//! module's enabled flag to gate their work.
+//! The registry of which modules exist lives in `kroma-module-kernel`.
 
 use serde_json::{json, Map, Value};
 
 use crate::db::Pool;
 use crate::services::settings::Settings;
 
-/// The whole `{ id: { enabled, config } }` blob.
 fn states(settings: &Settings) -> Map<String, Value> {
     settings.get("moduleStates").as_object().cloned().unwrap_or_default()
 }
 
-/// Read-modify-write one module's entry in the `moduleStates` blob under a
-/// single settings write-lock, so a concurrent enable + config-save cannot
-/// clobber each other (a plain read-then-write would drop one).
+// One settings write-lock, so a concurrent enable + config-save cannot clobber
+// each other the way a read-then-write pair would.
 fn update_entry(
     settings: &Settings,
     pool: &Pool,
@@ -35,7 +28,7 @@ fn update_entry(
     });
 }
 
-/// Whether a module is enabled (default true when never toggled).
+/// True when the module was never toggled.
 pub fn module_enabled(settings: &Settings, id: &str) -> bool {
     states(settings)
         .get(id)
@@ -44,7 +37,6 @@ pub fn module_enabled(settings: &Settings, id: &str) -> bool {
         .unwrap_or(true)
 }
 
-/// A module's stored config values (key -> value).
 pub fn module_config(settings: &Settings, id: &str) -> Map<String, Value> {
     states(settings)
         .get(id)
@@ -54,14 +46,13 @@ pub fn module_config(settings: &Settings, id: &str) -> Map<String, Value> {
         .unwrap_or_default()
 }
 
-/// Persist a module's enabled flag.
 pub fn set_module_enabled(settings: &Settings, pool: &Pool, id: &str, enabled: bool) {
     update_entry(settings, pool, id, |entry| {
         entry.insert("enabled".into(), json!(enabled));
     });
 }
 
-/// Merge new config values into a module's stored config.
+/// Merges into the stored config rather than replacing it.
 pub fn set_module_config(settings: &Settings, pool: &Pool, id: &str, values: Map<String, Value>) {
     update_entry(settings, pool, id, |entry| {
         let mut cfg = entry.get("config").and_then(Value::as_object).cloned().unwrap_or_default();
@@ -89,8 +80,6 @@ mod tests {
 
     #[test]
     fn a_module_nobody_ever_toggled_is_enabled() {
-        // Defaulting to false would mean every new module ships dark and the
-        // upgrade silently loses features.
         let (_pool, settings) = store();
         assert!(module_enabled(&settings, "tv.kroma.indexer"));
         assert!(module_enabled(&settings, "a.module.that.does.not.exist"));
@@ -102,7 +91,6 @@ mod tests {
         let (pool, settings) = store();
         set_module_enabled(&settings, &pool, "tv.kroma.vpn", false);
         assert!(!module_enabled(&settings, "tv.kroma.vpn"));
-        // Its neighbours are unaffected.
         assert!(module_enabled(&settings, "tv.kroma.indexer"));
 
         set_module_enabled(&settings, &pool, "tv.kroma.vpn", true);
@@ -111,8 +99,6 @@ mod tests {
 
     #[test]
     fn config_merges_rather_than_replaces() {
-        // The admin UI saves one panel at a time; a replacing write would wipe
-        // every field the open panel did not happen to show.
         let (pool, settings) = store();
         set_module_config(
             &settings,
@@ -136,8 +122,6 @@ mod tests {
 
     #[test]
     fn enabling_and_configuring_do_not_clobber_each_other() {
-        // Both write the same `moduleStates` blob. A read-then-write pair would
-        // drop whichever landed first; this is the reason update_entry exists.
         let (pool, settings) = store();
         set_module_config(
             &settings,
@@ -150,7 +134,7 @@ mod tests {
         assert!(!module_enabled(&settings, "tv.kroma.whisper"));
         assert_eq!(module_config(&settings, "tv.kroma.whisper").get("model"), Some(&json!("small")));
 
-        // ...and in the other order, on a second module.
+        // The other order, on a second module.
         set_module_enabled(&settings, &pool, "tv.kroma.scene", false);
         set_module_config(
             &settings,
@@ -160,15 +144,11 @@ mod tests {
         );
         assert!(!module_enabled(&settings, "tv.kroma.scene"));
         assert_eq!(module_config(&settings, "tv.kroma.scene").get("threshold"), Some(&json!(0.4)));
-        // And the first module is still exactly as it was.
         assert!(!module_enabled(&settings, "tv.kroma.whisper"));
     }
 
     #[test]
     fn a_blob_written_by_hand_is_read_defensively() {
-        // `moduleStates` is a settings value an admin (or an older build) can put
-        // anything into; every accessor has to survive the wrong shape rather
-        // than panic during boot.
         let (pool, settings) = store();
         settings.update_json(&pool, "moduleStates", |_| json!("not an object"));
         assert!(module_enabled(&settings, "tv.kroma.indexer"));
@@ -177,20 +157,15 @@ mod tests {
         settings.update_json(&pool, "moduleStates", |_| {
             json!({ "tv.kroma.indexer": { "enabled": "yes", "config": [1, 2] } })
         });
-        // A non-bool `enabled` is not a false - it is unreadable, so the default
-        // stands.
         assert!(module_enabled(&settings, "tv.kroma.indexer"));
         assert!(module_config(&settings, "tv.kroma.indexer").is_empty());
 
-        // Writing over it repairs the entry without losing the id.
         set_module_enabled(&settings, &pool, "tv.kroma.indexer", false);
         assert!(!module_enabled(&settings, "tv.kroma.indexer"));
     }
 
     #[test]
     fn state_survives_a_reload_from_the_database() {
-        // The flag has to outlive the process, which is the whole reason it is in
-        // settings rather than memory.
         let (pool, settings) = store();
         set_module_enabled(&settings, &pool, "tv.kroma.vector", false);
         set_module_config(

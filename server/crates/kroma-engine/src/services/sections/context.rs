@@ -14,18 +14,15 @@ pub enum PartOfDay {
 }
 
 pub struct Context {
-    /// 1–12 (UTC; good enough for season/holiday gating).
     pub month: u8,
     pub weekday: Weekday,
     pub part_of_day: PartOfDay,
-    /// The viewer's most recent finished item, if any ("Because you watched …").
     pub last_played: Option<String>,
-    /// Recent distinct watched ids the taste window for the "For You" centroid.
+    // Recent distinct watched ids: the taste window for the "For You" centroid.
     pub watched: Vec<String>,
 }
 
 impl Context {
-    /// Build from the current time + the user's recent history.
     pub fn build(pool: &Pool, user_id: &str) -> Self {
         let now = OffsetDateTime::now_utc();
         let part_of_day = match now.hour() {

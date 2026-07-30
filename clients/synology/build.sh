@@ -1,15 +1,6 @@
 #!/usr/bin/env bash
-# Build a single self-contained KROMA Synology package (.spk) for x86_64 DSM 7.
-#
-# Produces ONE installable package containing:
-#   • kroma-server Rust API + streaming, AND serves the web SPA (one process)
-#   • web/ the built static web SPA (served on the same origin)
-#   • ffmpeg/ static ffmpeg + ffprobe (scan + audio HLS remux)
-#
-# The Rust binary is cross-compiled to x86_64-unknown-linux-musl (fully static,
-# runs on every x86_64 DSM 7 model) inside a Docker musl image no host Rust
-# cross-toolchain needed. Run this on your Mac/Linux dev machine; install the
-# resulting .spk on the NAS via Package Center → Manual Install.
+# Build a single self-contained KROMA Synology package (.spk) for x86_64 DSM 7:
+# kroma-server (also serving the web SPA) + static ffmpeg/ffprobe.
 #
 # Usage:   clients/synology/build.sh [version]
 # Env:     RUST_IMAGE   musl cross image (default messense/rust-musl-cross:x86_64-musl)
@@ -17,76 +8,30 @@
 #          SKIP_WEB=1   reuse an existing web build
 set -euo pipefail
 
-# Base version: read from server/Cargo.toml so the .spk version, the in-app
-# version (CARGO_PKG_VERSION) and CI all agree. Override with $1 if needed.
+# Read from server/Cargo.toml so the .spk version, the in-app version
+# (CARGO_PKG_VERSION) and CI all agree. Override with $1.
 _CARGO_TOML="$(cd "$(dirname "$0")/../.." && pwd)/server/Cargo.toml"
 CARGO_VERSION="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$_CARGO_TOML" | head -1)"
 EXPLICIT_VERSION="${1:-}"
 VERSION="${EXPLICIT_VERSION:-${CARGO_VERSION:-0.1.0}}"
-# Canary vs stable (drives the version FORMAT below). A stable release passes an
-# explicit X.Y.Z ($1, e.g. a tag) and gets the clean `X.Y.Z-BUILD`. A nightly or
-# a local rebuild passes no version, so many builds share one X.Y.Z - they need
-# the monotonic BUILD in the FEATURE version (`X.Y.Z.BUILD-BUILD`) to stay
-# upgradable in place. Default: canary when no explicit version. Force with CANARY=1/0.
+# Canary (no explicit version) gets `X.Y.Z.BUILD-BUILD`, stable gets `X.Y.Z-BUILD`.
 CANARY="${CANARY:-$([ -z "$EXPLICIT_VERSION" ] && echo 1 || echo 0)}"
-# ---------------------------------------------------------------------------
-# VERSION / UPGRADE ORDERING - the thing that kept breaking in-place upgrades.
-#
 # DSM installs a manual .spk over an existing one ONLY when the new version is
-# STRICTLY GREATER than the installed one; anything else is refused, and DSM
-# surfaces the refusal as the misleading webapi 4521 "invalid file format",
-# which pushes you into a delete + reinstall that wipes var/ (config, DB, cache,
-# Whisper model).
-#
-# Two DIFFERENT failures both showed up as 4521 and got conflated:
-#   1. A bad OUTER tar format (GNU vs POSIX ustar) - a genuine "invalid format".
-#      Fixed separately by TAR_CLEAN=--format=ustar below.
-#   2. A version that is not strictly greater than what's installed.
-# Fixing (2) by eye while (1) was still live spawned three version schemes, and
-# the last one REGRESSED the number: builds used to stamp a big 4th segment
-# `0.1.3.<minutes-since-2020>` (~3.4M); a later "fix" shrank it to
-# `0.1.3.<days-since-2020>` (~2.4k). On any NAS that already had a big-numbered
-# build, every new build then read as a DOWNGRADE (2383 < 3429372) and DSM
-# refused it for good. That is why upgrades "still" failed.
-#
-# History: an earlier scheme put the monotonic BUILD in a 4th FEATURE segment,
-# `X.Y.Z.BUILD-BUILD`, because DSM's manual-install upgrade check compares the
-# dotted FEATURE version and IGNORES the -build suffix (confirmed on a real NAS:
-# two `0.1.2-<build>` spks read as "same version already installed"). That kept
-# even tag-less NIGHTLIES sharing one human X.Y.Z strictly newer - at the cost of
-# an ugly `0.1.10.3439311-3439311` shown in Package Center.
-#
-# CURRENT scheme: `X.Y.Z-BUILD` (e.g. `0.1.11-3439372`). Every published release
-# now bumps X.Y.Z, so the feature version alone orders releases and DSM upgrades
-# in place fine (0.1.11 > 0.1.10.<anything>: the 3rd segment 11>10 decides before
-# any 4th segment matters, so this is upgrade-safe from the old scheme too). BUILD
-# stays the monotonic versionCode = minutes since 2020-01-01 UTC (same scheme as
-# the Android versionCode in release.yml). Trade-off accepted: two builds of the
-# SAME X.Y.Z are identical to DSM's manual check, so a same-version rebuild can't
-# be manual-installed over itself - bump the patch (0.1.11 -> 0.1.12) instead.
-#
-# THE RULE: the version number must only ever go UP. Bump X.Y.Z for every release
-# (never rebuild the same X.Y.Z with changes for a manual .spk). Keep BUILD as the
-# large minutes counter - do NOT shrink its magnitude (minutes->days is what broke
-# it last time). Override with BUILD=... if you need a specific number.
-# ---------------------------------------------------------------------------
+# strictly greater, and reports a refusal as the misleading webapi 4521 "invalid
+# file format" - which pushes you into a delete + reinstall that wipes var/. Its
+# check compares the dotted FEATURE version and ignores the -build suffix.
+# THE RULE: the version must only ever go UP. Bump X.Y.Z for every release, and
+# keep BUILD as minutes since 2020-01-01 UTC - shrinking its magnitude (minutes
+# to days) once made every new build read as a downgrade. Override with BUILD=...
 BUILD="${BUILD:-$(( ( $(date -u +%s) - 1577836800 ) / 60 ))}"
 ARCH="x86_64"
 TARGET="x86_64-unknown-linux-musl"
-# Digest-pinned: a moving tag swaps rustc underneath, which invalidates every
-# cached build artifact (CI caches server/target across runs). Bump the digest
-# deliberately when a newer toolchain is wanted.
+# Digest-pinned: a moving tag swaps rustc underneath and invalidates every cached
+# build artifact (CI caches server/target across runs).
 RUST_IMAGE="${RUST_IMAGE:-messense/rust-musl-cross:x86_64-musl@sha256:ce75e9174325d4fbb3de85c309e2d7ca29f7500169bc4b5d2c611ff7e86d549a}"
-# Static ffmpeg/ffprobe. Two sources, tried in order.
-#
-# The primary is what has always shipped. It is one person's web server with no
-# CDN behind it, and when it is down - which it has been, for the whole of a
-# 24-minute build - there is nothing to fall back to and the package cannot be
-# built at all. The secondary is BtbN's, hosted on GitHub releases: same GPL
-# static build, a different machine and a different network.
-#
-# Order matters: the primary stays first so a normal build ships exactly what it
-# always has, and the fallback only decides whether an OUTAGE costs a release.
+# Static ffmpeg/ffprobe, tried in order: the primary stays first so a normal build
+# ships what it always has, and BtbN's GPL static build (different machine, different
+# network) only decides whether an outage of the primary costs a release.
 FFMPEG_URL="${FFMPEG_URL:-https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz}"
 FFMPEG_FALLBACK_URL="${FFMPEG_FALLBACK_URL:-https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz}"
 
@@ -100,61 +45,41 @@ mkdir -p "$OUT" "$CACHE"
 
 say() { printf '\033[1;33m▶ %s\033[0m\n' "$*"; }
 
-# Portable tar flags. We always strip xattrs/ACLs so DSM's busybox tar doesn't
-# choke on SCHILY/pax records. `--no-mac-metadata` is a BSD/macOS-tar flag (drops
-# AppleDouble ._* + com.apple.* attrs); GNU tar on Linux/CI doesn't know it, so
-# only add it when the local tar accepts it. (`COPYFILE_DISABLE` below is a no-op
-# off macOS.)
-# Force POSIX ustar (header magic "ustar\0" + version "00"). DSM's Package Center
-# tar accepts ustar but rejects GNU tar's DEFAULT "gnu" format (magic "ustar  \0"),
-# which is exactly why a Linux/CI-built .spk ("POSIX tar archive (GNU)") failed to
-# install while a macOS-built one ("POSIX tar archive") worked. Both GNU tar and
-# bsdtar honor --format=ustar, so this makes the output identical + installable
-# regardless of the build host.
+# DSM's Package Center tar accepts POSIX ustar but rejects GNU tar's default "gnu"
+# format, so a Linux/CI-built .spk failed to install while a macOS-built one worked.
+# xattrs/ACLs are stripped so its busybox tar doesn't choke on SCHILY/pax records.
+# `--no-mac-metadata` is BSD/macOS-tar only, hence the probe.
 TAR_CLEAN=(--format=ustar --no-xattrs --no-acls)
 if tar --no-mac-metadata --help >/dev/null 2>&1; then
   TAR_CLEAN+=(--no-mac-metadata)
 fi
-# SHA helper: macOS has `shasum`, Linux/CI has `sha256sum`.
 sha256() { if command -v shasum >/dev/null; then shasum -a 256 "$@"; else sha256sum "$@"; fi; }
 
-# 1) Web SPA -----------------------------------------------------------------
 if [ "${SKIP_WEB:-}" != "1" ]; then
   say "Building web SPA"
   ( cd "$ROOT" && bun run build:web )
 fi
 [ -f "$ROOT/clients/web/dist/client/_shell.html" ] || { echo "web build missing (_shell.html)"; exit 1; }
 
-# 2) Rust server → static musl binary ----------------------------------------
 BIN="$ROOT/server/target/$TARGET/release/kroma-server"
 if [ "${SKIP_RUST:-}" != "1" ]; then
   command -v docker >/dev/null || { echo "Docker required for the musl cross-build (or set SKIP_RUST=1 after a manual build)"; exit 1; }
   say "Cross-compiling kroma-server → $TARGET (Docker: $RUST_IMAGE)"
-  # `whisper-local`: bundle in-process Whisper (candle) so the .spk transcribes
-  # subtitles with no external binary. Pure-Rust CPU backend → still links on
-  # musl. The model is downloaded at runtime (not baked into the .spk), so the
-  # package stays lean. Adds candle to the build (slower first compile).
-  # Mount `packages/` too: i18n.rs `include_str!`s the shared locale catalogs at
-  # `../../packages/core/src/locales/*.json` (outside server/), so they must exist
-  # at /home/rust/packages for the compile to find them.
+  # `whisper-local`: in-process Whisper (candle) so the .spk transcribes with no
+  # external binary; the pure-Rust CPU backend still links on musl.
+  # `packages/` is mounted because i18n.rs `include_str!`s the shared locale
+  # catalogs at ../../packages/core/src/locales/*.json, outside server/.
   docker run --rm -v "$ROOT/server":/home/rust/src -v "$ROOT/packages":/home/rust/packages \
     -v "$CACHE/cargo":/root/.cargo/registry \
     "$RUST_IMAGE" cargo build --release --target "$TARGET" --features whisper-local
 fi
 [ -f "$BIN" ] || { echo "musl binary missing: $BIN"; exit 1; }
 
-# 3) Static ffmpeg + ffprobe (x86_64) ----------------------------------------
 FF="$CACHE/ffmpeg-amd64-static"
 
-# Download `$1` to `$2`, or return non-zero.
-#
-# `--connect-timeout` is the point of this. Without it a host that accepts no
-# connections is retried five times at ~135 s each, so an outage cost 24 minutes
-# and then failed anyway - the worst of both. A dead host should be established
-# in seconds so the fallback gets its turn while the build still has a chance.
-#
-# --retry-all-errors is kept: the primary intermittently answers a spurious 4xx
-# that a plain retry would not cover.
+# `--connect-timeout`: without it a host that accepts no connections is retried
+# five times at ~135 s each, so an outage burned 24 minutes and failed anyway.
+# `--retry-all-errors`: the primary intermittently answers a spurious 4xx.
 fetch_ffmpeg() {
   curl -fSL --connect-timeout 20 --retry 3 --retry-delay 4 --retry-all-errors \
     --proto '=https' --proto-redir '=https' "$1" -o "$2"
@@ -168,9 +93,8 @@ if [ ! -x "$FF/ffmpeg" ]; then
       || { echo "both ffmpeg sources failed"; exit 1; }
   fi
 
-  # Extracted whole rather than with --strip-components, because the two sources
-  # do not agree on the layout: the primary puts the binaries at the root of its
-  # directory, BtbN puts them under `bin/`. Find them instead of assuming.
+  # Extracted whole rather than with --strip-components: the primary puts the
+  # binaries at the root of its directory, BtbN puts them under `bin/`.
   mkdir -p "$WORK/ffx" && tar xJf "$WORK/ff.tar.xz" -C "$WORK/ffx"
   mkdir -p "$FF"
   for tool in ffmpeg ffprobe; do
@@ -179,15 +103,13 @@ if [ ! -x "$FF/ffmpeg" ]; then
     install -m755 "$found" "$FF/$tool"
   done
 
-  # The tarball URL is a MOVING "latest release" pointer, so there is no checksum
-  # to pin against. Running the thing is the check that is actually available: it
-  # catches a truncated download, an HTML error page saved as a tarball, and an
-  # archive for the wrong architecture.
+  # The tarball URL is a moving "latest release" pointer, so there is no checksum
+  # to pin. Running it catches a truncated download, an HTML error page saved as a
+  # tarball, and an archive for the wrong architecture.
   "$FF/ffmpeg" -version >/dev/null 2>&1 \
     || { echo "downloaded ffmpeg does not run"; exit 1; }
 fi
 
-# 4) Stage the payload (→ /var/packages/kroma/target) -------------------------
 say "Staging payload"
 PAY="$WORK/payload"
 mkdir -p "$PAY/bin" "$PAY/web" "$PAY/ffmpeg"
@@ -195,27 +117,22 @@ install -m755 "$BIN" "$PAY/bin/kroma-server"
 cp -R "$ROOT/clients/web/dist/client/." "$PAY/web/"
 install -m755 "$FF/ffmpeg" "$PAY/ffmpeg/ffmpeg"
 install -m755 "$FF/ffprobe" "$PAY/ffmpeg/ffprobe"
-# Strip macOS xattrs (com.apple.provenance etc.) so bsdtar doesn't embed SCHILY.xattr
-# pax records that DSM's busybox tar can reject. COPYFILE_DISABLE stops AppleDouble.
+# Strip macOS xattrs so bsdtar doesn't embed SCHILY.xattr pax records that DSM's
+# busybox tar can reject. COPYFILE_DISABLE stops AppleDouble.
 xattr -cr "$PAY" 2>/dev/null || true
 ( cd "$PAY" && COPYFILE_DISABLE=1 tar "${TAR_CLEAN[@]}" -czf "$WORK/package.tgz" . )
 
-# 5) Assemble the .spk -------------------------------------------------------
 say "Assembling .spk"
 SPK="$WORK/spk"
 mkdir -p "$SPK"
 cp -R "$SKEL/scripts" "$SKEL/conf" "$SKEL/WIZARD_UIFILES" "$SPK/"
 chmod 755 "$SPK/scripts/"*
 cp "$WORK/package.tgz" "$SPK/package.tgz"
-# INFO extractsize is read in KB on DSM 6+; writing bytes made DSM believe the
-# package needed ~190 GB after extraction.
+# INFO extractsize is read in KB on DSM 6+; bytes made DSM believe the package
+# needed ~190 GB after extraction.
 EXT_SIZE="$(( $(gzip -dc "$WORK/package.tgz" | wc -c | tr -d ' ') / 1024 ))"
-# Version stamp (see the version note above). Stable = clean `X.Y.Z-BUILD`: the
-# feature version X.Y.Z bumps every release so it alone orders them; BUILD is the
-# monotonic versionCode. Canary/nightly = `X.Y.Z.BUILD-BUILD`: many builds share
-# one X.Y.Z, so BUILD sits in the 4th FEATURE segment to keep each strictly newer
-# (DSM's manual-install check compares the dotted feature version, ignoring the
-# -build suffix). BUILD stays after the dash in both as the versionCode.
+# Canary/nightly builds share one X.Y.Z, so BUILD also sits in a 4th feature
+# segment to keep each one strictly newer than the last (see the version note above).
 if [ "$CANARY" = "1" ]; then
   INFO_VERSION="$VERSION.$BUILD-$BUILD"
 else
@@ -224,15 +141,10 @@ fi
 sed -e "s/@INFO_VERSION@/$INFO_VERSION/g" -e "s/@ARCH@/$ARCH/g" -e "s/@SIZE@/$EXT_SIZE/g" \
   "$SKEL/INFO.template" > "$SPK/INFO"
 say "DSM package version: $INFO_VERSION ($([ "$CANARY" = 1 ] && echo 'canary: 4th-segment build keeps every nightly upgradable' || echo 'stable: X.Y.Z orders releases, BUILD is the versionCode'))"
-# Icons: the KROMA brand mark (gold ring + dot), checked in alongside the skeleton.
 cp "$SKEL/PACKAGE_ICON.PNG" "$SKEL/PACKAGE_ICON_256.PNG" "$SPK/"
 
-# Full INFO version in the filename: a bare `kroma-0.1.3-x86_64.spk` made every
-# build look identical, so a stale copy (e.g. in ~/Downloads) was easy to upload
-# by mistake — which DSM refuses with the same opaque 4521.
 OUT_SPK="$OUT/kroma-$INFO_VERSION-$ARCH.spk"
-# Pristine, deterministic outer tar: INFO first (DSM reads it first), no macOS
-# metadata/xattrs/AppleDouble. Members listed explicitly rather than globbed.
+# INFO first: DSM reads it first. Members listed explicitly rather than globbed.
 xattr -cr "$SPK" 2>/dev/null || true
 ( cd "$SPK" && COPYFILE_DISABLE=1 tar "${TAR_CLEAN[@]}" \
     -cf "$OUT_SPK" INFO package.tgz conf scripts WIZARD_UIFILES \

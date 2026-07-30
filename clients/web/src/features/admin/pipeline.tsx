@@ -1,8 +1,3 @@
-// Admin "Pipeline de traitement" console, element-centric: the whole catalog as
-// a searchable / filterable table where each film, series and episode shows the
-// status of every treatment applied to it, with a detail drawer to inspect and
-// reprocess. Backed by GET /api/admin/pipeline/elements + the pipeline.stats WS.
-
 import { type ElementRow, type KromaClient, KromaEvents, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, EmptyState } from '@kroma/ui/kit';
@@ -25,14 +20,12 @@ import { useAuth } from '#web/shared/lib/auth';
 
 const PER_PAGE = 30;
 
-/** The paused pipeline's resume affordance: a success wash over the kit glass. */
 const RESUME_FILL = {
   backgroundColor: 'rgba(70, 208, 141, 0.14)',
   borderColor: 'rgba(70, 208, 141, 0.4)',
 } as const;
 const apiKind = (el: ElementRow): 'item' | 'show' => (el.kind === 'series' ? 'show' : 'item');
 
-// Server events that should refresh the pipeline table.
 const RELOAD_EVENTS = new Set([
   'pipeline.stats',
   'job.finished',
@@ -42,7 +35,6 @@ const RELOAD_EVENTS = new Set([
   'library.updated',
 ]);
 
-/** Refetch the table whenever a pipeline-relevant server event lands. */
 function usePipelineReloadEvents(onReload: () => void): void {
   useEffect(() => {
     const ev = new KromaEvents(apiBase(), {
@@ -55,9 +47,6 @@ function usePipelineReloadEvents(onReload: () => void): void {
   }, [onReload]);
 }
 
-/** The three privileged pipeline actions (pause toggle, reprocess a subject,
- * retry one stage). Built fresh each render like the inline handlers it replaces,
- * but out of the page body so its cognitive complexity stays low. */
 function pipelineActions(deps: {
   client: KromaClient;
   canManage: boolean;
@@ -117,15 +106,13 @@ export function PipelinePage() {
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');
   const [page, setPage] = useState(0);
-  // The element currently shown in the drawer (a ref, not render state: the drawer
-  // is an imperative react-call now). Lets the live reload push fresh treatment
-  // statuses + busy into the open instance via PipelineDrawer.update().
+  // A ref, not render state: the drawer is imperative, and live reloads push
+  // fresh statuses into the open instance via PipelineDrawer.update().
   const openEl = useRef<ElementRow | null>(null);
   const [busy, setBusy] = useState(false);
   const [paused, setPaused] = useState(false);
   const { toast, flash } = useConsoleToast();
 
-  // Debounce the search box.
   useEffect(() => {
     const h = setTimeout(() => {
       setDq(q);
@@ -134,22 +121,18 @@ export function PipelinePage() {
     return () => clearTimeout(h);
   }, [q]);
 
-  // Refresh is event-driven (WS push), with a slow poll only as a reconnect/
-  // missed-event safety net, not a tight interval hammering the endpoint.
+  // Refresh is event-driven; the slow poll is only a reconnect/missed-event net.
   const { data, reload } = usePoll(
     ['admin', 'pipeline', 'elements', status, kind, dq, page],
     () => client.pipelineElements({ status, kind, q: dq, page, limit: PER_PAGE }),
     30000,
   );
 
-  // Throttle event-driven reloads: a draining stage fires pipeline.stats ~1/s and
-  // enrich fires many item.updated; coalesce to at most one refetch per 1.5 s.
+  // A draining stage fires pipeline.stats ~1/s and enrich fires many item.updated.
   const throttledReload = useThrottledReload(reload);
 
   usePipelineReloadEvents(throttledReload);
 
-  // Keep the open drawer fresh from reloads: push new treatment statuses and the
-  // shared busy flag into the live react-call instance (no-op when it's closed).
   useEffect(() => {
     const cur = openEl.current;
     if (!cur) return;
@@ -158,9 +141,8 @@ export function PipelinePage() {
     PipelineDrawer.update({ el: fresh, busy });
   }, [data, busy]);
 
-  // The global pause flag lives on the pipeline-health endpoint; poll it (on the
-  // admin shell's tick) so another admin's toggle shows, and mirror it into local
-  // state so the toggle can update optimistically.
+  // Polled so another admin's toggle shows, mirrored into state so this one can
+  // update optimistically.
   const { data: health } = usePoll(
     ['admin', 'pipeline', 'health'],
     () => client.adminPipeline(),
@@ -181,9 +163,6 @@ export function PipelinePage() {
     flash,
   });
 
-  // Open the element drawer imperatively; the promise resolves when it closes.
-  // Reprocess/retry stay page-level (shared busy + reload) and are handed in as
-  // props; the sync effect above streams fresh el/busy in while it's open.
   const openDrawer = (el: ElementRow) => {
     openEl.current = el;
     void PipelineDrawer.call({
@@ -238,7 +217,6 @@ export function PipelinePage() {
         accentLabel={t('pipeline.needActionLabel')}
       />
 
-      {/* paused banner */}
       {paused ? (
         <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-[#F4B642]/30 bg-[#F4B642]/10 px-4 py-2.5 text-[13.5px] font-semibold text-[#F4B642]">
           <IconPlayerPause size={15} stroke={2} />
@@ -246,7 +224,6 @@ export function PipelinePage() {
         </div>
       ) : null}
 
-      {/* filters */}
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <Chip
           label={t('pipeline.filter.attention')}
@@ -326,7 +303,6 @@ export function PipelinePage() {
         />
       </div>
 
-      {/* table */}
       <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#121216] shadow-[0_10px_28px_rgba(0,0,0,.3)]">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-[#15151A] px-5 py-3 md:grid-cols-[minmax(0,1fr)_150px_132px_46px]">
           <Head>{t('pipeline.colElement')}</Head>

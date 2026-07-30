@@ -90,7 +90,6 @@ function PermPicker({
   );
 }
 
-/** A Permission set with a stable toggle, shared by the edit + invite modals. */
 function usePermissionSet(
   initial: Iterable<Permission>,
 ): [Set<Permission>, (p: Permission) => void] {
@@ -210,12 +209,8 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
             />
             <button
               type="button"
-              // try/catch, not the promise's reject handler: `navigator.clipboard`
-              // is UNDEFINED outside a secure context, so on the plain-http LAN
-              // address a self-hosted server is normally reached on, this throws
-              // a TypeError synchronously - before there is a promise for
-              // `.then(_, onRejected)` to reject. The field beside it is
-              // readOnly + select-on-focus, so the link stays copyable by hand.
+              // `navigator.clipboard` is undefined outside a secure context, so on a
+              // plain-http LAN address this throws synchronously, not via rejection.
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(link);

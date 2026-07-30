@@ -21,7 +21,7 @@ import {
 import { userQueries } from '#web/shared/lib/queries';
 import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
 
-/** Releases at most this many days out get the accent "imminent" date. */
+// Releases at most this many days out get the accent "imminent" date.
 const IMMINENT_DAYS = 7;
 
 export function ComingSoonPage() {
@@ -33,9 +33,8 @@ export function ComingSoonPage() {
     refetchInterval: 60_000,
   });
 
-  // Group the (already date-sorted) entries by month, preserving order. Calendar
-  // entries are always dated (the server filters to future dates); the guard is
-  // for the shared, nullable-airDate type.
+  // Group the (already date-sorted) entries by month, preserving order. The
+  // airDate guard is for the shared, nullable type; the server filters to future dates.
   const groups: Array<{ key: string; label: string; items: CalendarEntry[] }> = [];
   for (const e of entries ?? []) {
     if (!e.airDate) continue;

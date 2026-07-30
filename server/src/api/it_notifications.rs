@@ -17,7 +17,6 @@ fn member(t: &TestApp, tag: &str) -> (String, String) {
     (id, token)
 }
 
-/// Raise one notification for `user_id` through the real service.
 fn notify_user(t: &TestApp, user_id: &str, title: &str) {
     let spec = NotificationSpec::new(
         NotificationEvent::RequestAvailable,
@@ -242,8 +241,6 @@ async fn a_muted_category_stops_landing_in_the_inbox() {
     assert_eq!(inbox["unread"], json!(0));
 }
 
-/// The report flow end to end: filing tells the moderators, triaging tells the
-/// reporter, and a reopen tells nobody.
 #[tokio::test]
 async fn the_report_lifecycle_notifies_both_sides_but_not_on_reopen() {
     let t = test_app();
@@ -291,10 +288,8 @@ async fn the_report_lifecycle_notifies_both_sides_but_not_on_reopen() {
     assert_eq!(ana_inbox["unread"], json!(1), "a reopen must not re-notify");
 }
 
-// ----- Web Push subscriptions -------------------------------------------------
-
-/// A real browser subscription shape (the RFC 8291 example keys serve as
-/// well-formed values; nothing here is actually sent anywhere).
+// A real browser subscription shape (the RFC 8291 example keys serve as
+// well-formed values; nothing here is actually sent anywhere).
 fn subscription(endpoint: &str) -> serde_json::Value {
     json!({
         "transport": "webpush",
@@ -328,7 +323,6 @@ async fn the_vapid_key_is_minted_on_demand_and_then_stays_put() {
     assert_eq!(second["publicKey"], json!(key));
 }
 
-/// Minimal base64url decoder for the assertions above.
 fn base64_url_decode(s: &str) -> Vec<u8> {
     const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     let mut out = Vec::new();
@@ -471,8 +465,6 @@ async fn a_moderator_audience_reaches_the_capability_holder_only() {
     assert_eq!(plain_inbox["unread"], json!(0));
 }
 
-// ----- the console's sender ---------------------------------------------------
-
 #[tokio::test]
 async fn the_bench_sends_a_real_notification_to_the_admin_who_asked() {
     let t = test_app();
@@ -508,10 +500,10 @@ async fn the_bench_sends_a_real_notification_to_the_admin_who_asked() {
 
 #[tokio::test]
 async fn the_bench_refuses_a_notification_the_relay_would_reject() {
-    // The relay caps a push title at 256 and a body at 1024 and answers 400 to
-    // anything longer. A 400 is not `gone`, so before this check an over-long
-    // announcement cost every phone on the server a delivery failure - while the
-    // endpoint still answered `delivered`, because that counts in-app rows.
+    // The relay caps a push title at 256 and a body at 1024, answering 400 to
+    // anything longer. Caught here, not after send: `delivered` counts in-app
+    // rows, so an oversized push would still report success while every phone's
+    // send fails.
     let t = test_app();
 
     let (status, body) = send(

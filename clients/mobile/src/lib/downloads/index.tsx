@@ -1,17 +1,7 @@
-// Offline downloads into the app's documents directory, indexed in a small
-// JSON manifest and played back by the engine straight from disk. When the
-// device can direct-play the original file it is downloaded RAW (byte-identical,
-// zero server work); otherwise the server's /download endpoint remuxes it on
-// the fly to a fragmented MP4 the phone can decode, so EVERY title is
-// downloadable on every platform.
-//
-// Transfers belong to the platform downloader, not to this JS: they keep
-// running while the app is backgrounded or killed. On launch the provider
-// re-adopts whatever the platform kept alive (or finished, or sits paused on
-// native resume data) and requeues whatever it could not (iOS drops background
-// tasks on force-quit), so a started download always either completes or
-// restarts - never vanishes. A network drop is not a failure either: the title
-// goes back in the queue and retries when connectivity returns.
+// Offline downloads live in the app's documents directory, indexed in a JSON
+// manifest, and play back from disk. Transfers run in the platform downloader
+// and survive backgrounding or a kill; iOS drops background tasks on
+// force-quit, so those are requeued on launch.
 
 import {
   getExistingDownloadTasks,
@@ -54,20 +44,16 @@ import {
 export type { DownloadEntry, DownloadState, OfflineSub } from './store';
 export { formatBytes } from './store';
 
-/** One transfer at a time: a season enqueued in bulk must not spawn a remux
- * ffmpeg per episode on the server. */
+// One transfer at a time: a season enqueued in bulk must not spawn a remux
+// ffmpeg per episode on the server.
 const MAX_CONCURRENT = 1;
 
 interface DownloadsApi {
   entries: DownloadEntry[];
-  /** Currently downloading titles (progress -1 = size unknown). */
   downloading: { item: MediaItem; progress: number }[];
-  /** User-paused titles, held on native resume data. */
   paused: { item: MediaItem; progress: number }[];
-  /** Titles waiting in the download queue (one transfer runs at a time). */
   queuedItems: MediaItem[];
   stateFor(itemId: string): DownloadState;
-  /** Whether this item can be taken offline on this device at all. */
   canDownload(item: MediaItem): boolean;
   start(item: MediaItem): void;
   pause(itemId: string): void;
@@ -97,24 +83,20 @@ export function DownloadsProvider({
   const [active, setActive] = useState<Record<string, number>>({});
   const [pausedIds, setPausedIds] = useState<string[]>([]);
   const [queuedIds, setQueuedIds] = useState<string[]>([]);
-  // Mirrors `entries` for the handlers, so persistence stays OUT of the state
-  // updater: a reducer that also writes files runs twice under StrictMode and
-  // is skipped entirely when the React Compiler memoizes the render.
+  // Mirrors `entries` for the handlers, keeping persistence out of the state
+  // updater: a reducer that also writes files runs twice under StrictMode.
   const entriesRef = useRef<DownloadEntry[]>([]);
   const runningRef = useRef<Set<string>>(new Set());
   const activeItemsRef = useRef<Map<string, MediaItem>>(new Map());
   const handlesRef = useRef<Map<string, TransferHandle>>(new Map());
   const pausedRef = useRef<Set<string>>(new Set());
   const queueRef = useRef<string[]>([]);
-  /** Cancels that arrived before the transfer had a handle to cancel. */
   const cancelledRef = useRef<Set<string>>(new Set());
-  /** Consecutive network-interrupt count per title, for retry backoff. */
   const attemptsRef = useRef<Map<string, number>>(new Map());
   const retryTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
 
-  // The index is readable without a session, so downloaded titles show up
-  // even when the app launches offline. Reconciliation with the platform
-  // downloader waits for the client (it needs auth for sidecars / restarts).
+  // The index is readable without a session, so downloaded titles show up even
+  // when the app launches offline; reconciliation waits for the client.
   useEffect(() => {
     void (async () => {
       const stored = await readIndex();
@@ -145,7 +127,6 @@ export function DownloadsProvider({
     });
   }, [t]);
 
-  /** The single write path for the index: ref, state and disk together. */
   const commitEntries = useCallback((next: DownloadEntry[]) => {
     entriesRef.current = next;
     setEntries(next);
@@ -165,8 +146,6 @@ export function DownloadsProvider({
     setPausedIds([...next]);
   }, []);
 
-  /** Persist the running + queued titles so an app kill loses no request:
-   * whatever the platform can't finish on its own is requeued at next boot. */
   const persistWanted = useCallback(() => {
     const ids = [...runningRef.current, ...queueRef.current];
     void writeWanted(
@@ -177,20 +156,16 @@ export function DownloadsProvider({
     );
   }, []);
 
-  /** Publish one transfer's progress fraction on the active map. */
   const trackProgress = useCallback((itemId: string, frac: number) => {
     setActive((a) => ({ ...a, [itemId]: frac }));
   }, []);
 
-  // The remux endpoint makes every title downloadable; keep the check for the
-  // rare item with no file at all.
+  // Remux makes every title downloadable; this only excludes items with no file.
   const canDownload = useCallback(
     (item: MediaItem) => item.files.length > 0 || !!item.container,
     [],
   );
 
-  /** A retry never hammers a dead network: exponential backoff, and the
-   * connectivity listener pumps the queue the moment the network is back. */
   const scheduleRetry = useCallback((attempt: number) => {
     const delay = Math.min(5000 * 2 ** Math.max(0, attempt - 1), 60_000);
     const timer = setTimeout(() => {
@@ -212,7 +187,6 @@ export function DownloadsProvider({
     return () => sub.remove();
   }, []);
 
-  /** Own one transfer's lifecycle - fresh or re-adopted - from hooks to entry. */
   const execute = useCallback(
     (
       item: MediaItem,
@@ -230,8 +204,7 @@ export function DownloadsProvider({
           const entry = await run({
             onTask: (handle) => {
               handlesRef.current.set(item.id, handle);
-              // A cancel that landed while the task was being created has no
-              // handle to act on; honour it now instead of downloading anyway.
+              // Honour a cancel that landed before there was a handle to act on.
               return !cancelledRef.current.delete(item.id);
             },
             onProgress: (frac) => {
@@ -245,9 +218,8 @@ export function DownloadsProvider({
         } catch (err) {
           const cancelled = err instanceof Error && err.message === CANCELLED;
           if (!cancelled && err instanceof TransferInterrupted) {
-            // The network died, not the download: back in the queue, retried
-            // on backoff or the moment connectivity returns. No alert - there
-            // is nothing the user can do about a tunnel.
+            // Network died, not the download: requeue, retry on backoff. No
+            // alert - there's nothing the user can do about a tunnel.
             requeue = true;
             attemptsRef.current.set(item.id, (attemptsRef.current.get(item.id) ?? 0) + 1);
             console.log(`[downloads] interrupted ${item.id}: ${err.message}`);
@@ -291,9 +263,8 @@ export function DownloadsProvider({
     [client, execute],
   );
 
-  // pump() lives behind a ref so runDownload's finally can call the latest one.
-  // Written in an effect, never during render: a ref mutated in the render body
-  // goes stale the moment a render is memoized away or replayed.
+  // pump() lives behind a ref so runDownload's finally can call the latest one;
+  // set in an effect since a ref written during render can go stale.
   const pumpRef = useRef<(() => void) | null>(null);
   const pump = useCallback(() => {
     while (runningRef.current.size < MAX_CONCURRENT && queueRef.current.length > 0) {
@@ -325,9 +296,8 @@ export function DownloadsProvider({
     [client, persistWanted, pump, syncQueue],
   );
 
-  // Once per session: reconcile with the platform downloader. Adopt what it
-  // kept alive, finished or paused while the app was away, THEN sweep orphans
-  // (a live partial file is not an orphan), then requeue what did not survive.
+  // Once per session: adopt what the platform kept alive/finished/paused, THEN
+  // sweep orphans (a live partial file is not one), then requeue the rest.
   const reconciledRef = useRef(false);
   useEffect(() => {
     if (!client || reconciledRef.current) return;
@@ -338,10 +308,8 @@ export function DownloadsProvider({
       const live: string[] = [];
       for (const task of tasks) {
         const meta = transferMetaOf(task);
-        // Only a task the platform still runs (or finished, or parked on
-        // resume data) is adoptable. Anything else - foreign metadata, already
-        // indexed, died natively - is dropped here and, if still wanted,
-        // restarted cleanly below.
+        // Only a task the platform still runs (or finished, or paused) is
+        // adoptable; anything else is dropped and, if still wanted, restarted.
         const adoptable =
           task.state === 'DOWNLOADING' || task.state === 'PAUSED' || task.state === 'DONE';
         if (!meta || !adoptable || stored.some((e) => e.itemId === meta.item.id)) {
@@ -388,7 +356,6 @@ export function DownloadsProvider({
 
   const cancel = useCallback(
     (itemId: string) => {
-      // Still queued: just drop it from the queue.
       if (queueRef.current.includes(itemId)) {
         syncQueue(queueRef.current.filter((id) => id !== itemId));
         activeItemsRef.current.delete(itemId);
@@ -398,15 +365,11 @@ export function DownloadsProvider({
       }
       const handle = handlesRef.current.get(itemId);
       if (!handle) {
-        // Running, but the platform task doesn't exist yet: leave a note that
-        // the transfer checks the moment it has one. Without this the tap is a
-        // silent no-op and the spinner never clears.
+        // Running, but no platform task yet: flag it so the transfer cancels
+        // itself once it has a handle, instead of a silent no-op.
         if (runningRef.current.has(itemId)) cancelledRef.current.add(itemId);
         return;
       }
-      // The handle stops the platform task and fails the in-flight transfer,
-      // which runs the failure path (no entry registered, spinner cleared,
-      // file gone).
       handle.cancel();
     },
     [persistWanted, syncQueue],

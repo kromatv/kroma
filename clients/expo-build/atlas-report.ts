@@ -38,23 +38,19 @@ type Module = {
   output?: Array<{ data?: { code?: string } }>;
 };
 
-/**
- * The dump is two lines: a version header, then one array for the whole graph.
- *
- * Its shape is positional and undocumented, hence the names here:
- * `[platform, projectRoot, workspaceRoot, entry, environment, runtime, modules,
- * transformOptions, serializeOptions]`. The trap is index 5 - it holds the seven
- * prelude/polyfill modules, and reading it INSTEAD of index 6 reports a healthy
- * 122 KB bundle for a 16 MB one, which is exactly the wrong answer to get
- * quietly. Both are counted below, because both ship.
- */
+// The dump is two lines: a version header, then one array for the whole graph. Its shape is
+// positional and undocumented, hence the names here: `[platform, projectRoot, workspaceRoot,
+// entry, environment, runtime, modules, transformOptions, serializeOptions]`. The trap is index
+// 5 - it holds the seven prelude/polyfill modules, and reading it INSTEAD of index 6 reports a
+// healthy 122 KB bundle for a 16 MB one, which is exactly the wrong answer to get quietly. Both
+// are counted below, because both ship.
 const text = await Bun.file(resolve(file)).text();
 const graph = JSON.parse(text.slice(text.indexOf('\n') + 1)) as unknown[];
 const modules = [...(graph[5] as Module[]), ...(graph[6] as Module[])];
 
-/** `node_modules/foo/a.js` -> `foo`, `@a/b/c.js` -> `@a/b`, ours -> `packages/ui`.
- * Bun's store nests real paths under `node_modules/.bun/<pkg>@<ver>/node_modules/`,
- * so the LAST occurrence is the one that names the package. */
+// `node_modules/foo/a.js` -> `foo`, `@a/b/c.js` -> `@a/b`, ours -> `packages/ui`.
+// Bun's store nests real paths under `node_modules/.bun/<pkg>@<ver>/node_modules/`,
+// so the LAST occurrence is the one that names the package.
 function bucketOf(path: string): string {
   const marker = path.lastIndexOf('node_modules/');
   if (marker !== -1) {
@@ -66,9 +62,9 @@ function bucketOf(path: string): string {
   return parts[0] ?? '?';
 }
 
-/** What a module contributes to the bundle is its TRANSFORMED output, not its
- * source: a 3 KB .tsx of types and comments can compile to almost nothing, and
- * a generated barrel does the opposite. */
+// What a module contributes to the bundle is its TRANSFORMED output, not its
+// source: a 3 KB .tsx of types and comments can compile to almost nothing, and
+// a generated barrel does the opposite.
 const outputOf = (mod: Module): number =>
   mod.output?.reduce((sum, part) => sum + (part.data?.code?.length ?? 0), 0) ?? 0;
 

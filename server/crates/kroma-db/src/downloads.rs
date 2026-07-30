@@ -104,9 +104,9 @@ mod tests {
         crate::init(&path).unwrap()
     }
 
-    /// Insert a movie item with one file at `abs_path`, so the hint join has
-    /// something to resolve against. `foreign_keys` is ON, so the parent library
-    /// must exist first.
+    // Insert a movie item with one file at `abs_path`, so the hint join has
+    // something to resolve against. `foreign_keys` is ON, so the parent library
+    // must exist first.
     fn seed_movie(pool: &Pool, item_id: &str, abs_path: &str) {
         let conn = pool.get().unwrap();
         conn.execute(

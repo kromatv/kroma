@@ -1,7 +1,5 @@
-// @kroma/admin-kit: the admin UI contract. The presentational primitives, hooks,
-// and host-context provider that admin pages render with, whether built into the
-// web app or contributed by a module. A module ui/ package imports everything it
-// needs for a full admin page from here, so it never reaches into app internals.
+// The admin UI contract: everything a module's ui/ package needs to render a full
+// admin page without reaching into app internals.
 
 export { AdminKitProvider, type AdminKitValue, resolveImageUrl, useAdminKit } from './context';
 export {

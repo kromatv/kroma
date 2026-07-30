@@ -20,7 +20,6 @@ use kroma_module_sdk::host::{blocking, json_error, query, service, AuthUser, Hos
 
 use crate::DownloadManager;
 
-/// Resolve the module's download manager from the host service registry.
 fn dm<S: HostCtx>(state: &S) -> Arc<DownloadManager> {
     service::<DownloadManager>(state).expect("download manager registered")
 }
@@ -38,7 +37,6 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
         .route("/downloads/{id}", axum::routing::delete(remove::<S>))
 }
 
-/// Queue access: the requests moderator or a settings admin.
 fn require_downloads<S: HostCtx>(state: &S, user: &User) -> Result<(), Response> {
     if user.can(Permission::RequestsManage) || user.can(Permission::SettingsManage) {
         Ok(())
@@ -49,23 +47,20 @@ fn require_downloads<S: HostCtx>(state: &S, user: &User) -> Result<(), Response>
 
 const HISTORY_LIMIT: usize = 200;
 
-/// `GET /api/admin/downloads`
 pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require_downloads(&state, &user)?;
     let vpn = dm(&state).vpn_status();
-    // Live speed/peers per active download, polled straight from the engine so
-    // the panel shows them even when the live WebSocket can't reach the client
-    // (blocking: engine stats run off the runtime).
+    // Polled from the engine so the panel still has stats when the live WebSocket
+    // can't reach the client. Blocking: engine stats run off the runtime.
     let live = {
         let mgr = dm(&state);
         let host = state.clone();
         tokio::task::spawn_blocking(move || mgr.live_stats(&host)).await.unwrap_or_default()
     };
-    // Indexer display names come from the indexer module via its port, resolved
-    // here (before the blocking closure, which can't borrow the host).
+    // Resolved before the blocking closure, which cannot borrow the host.
     let indexers: std::collections::HashMap<String, String> =
         kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerDbPort>(&state)
             .and_then(|p| p.list_indexers(&state).ok())
@@ -76,7 +71,6 @@ pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
     let view = query(state.db(), move |pool| {
         let conn = pool.get()?;
         let rows = db::list_downloads(&conn, HISTORY_LIMIT)?;
-        // Hydrate display names in one pass (few clients, few requests).
         let clients: std::collections::HashMap<String, String> =
             db::list_download_clients(&conn)?.into_iter().map(|c| (c.id, c.name)).collect();
         let downloads = rows
@@ -87,7 +81,6 @@ pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
                 let poster_url = req.as_ref().and_then(|r| r.poster_url.clone());
                 let indexer_name = d.indexer_id.as_deref().and_then(|id| indexers.get(id).cloned());
                 let stats = live.get(&d.id).copied().unwrap_or((0, 0, 0, 0));
-                // Link to the KROMA fiche once the title is in the library.
                 let local_id = req.as_ref().and_then(|r| {
                     if d.kind == "movie" {
                         db::movie_item_by_tmdb(&conn, r.tmdb_id).ok().flatten()
@@ -149,7 +142,6 @@ async fn act<S: HostCtx + Clone + Send + Sync + 'static>(
     }
 }
 
-/// `POST /api/admin/downloads/:id/pause`
 pub async fn pause<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -159,7 +151,6 @@ pub async fn pause<S: HostCtx + Clone + Send + Sync + 'static>(
     act(state.clone(), user, id, move |st, id| downloads.pause(st, id)).await
 }
 
-/// `POST /api/admin/downloads/:id/resume`
 pub async fn resume<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -169,7 +160,7 @@ pub async fn resume<S: HostCtx + Clone + Send + Sync + 'static>(
     act(state.clone(), user, id, move |st, id| downloads.resume(st, id)).await
 }
 
-/// `POST /api/admin/downloads/:id/reannounce` "ask more peers" for one download.
+/// Asks the tracker for more peers on one download.
 pub async fn reannounce<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -179,7 +170,6 @@ pub async fn reannounce<S: HostCtx + Clone + Send + Sync + 'static>(
     act(state.clone(), user, id, move |st, id| downloads.reannounce(st, id)).await
 }
 
-/// `{ "count": N }` from a bulk queue action.
 fn bulk_response(out: anyhow::Result<usize>) -> Result<Response, Response> {
     match out {
         Ok(count) => Ok(Json(json!({ "count": count })).into_response()),
@@ -187,7 +177,6 @@ fn bulk_response(out: anyhow::Result<usize>) -> Result<Response, Response> {
     }
 }
 
-/// `POST /api/admin/downloads/pause-all`
 pub async fn pause_all<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -196,7 +185,6 @@ pub async fn pause_all<S: HostCtx + Clone + Send + Sync + 'static>(
     bulk_response(blocking(move || Ok(dm(&state).pause_all(&state))).await?)
 }
 
-/// `POST /api/admin/downloads/resume-all`
 pub async fn resume_all<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -205,8 +193,7 @@ pub async fn resume_all<S: HostCtx + Clone + Send + Sync + 'static>(
     bulk_response(blocking(move || Ok(dm(&state).resume_all(&state))).await?)
 }
 
-/// `POST /api/admin/downloads/reannounce` force a tracker re-announce ("ask more
-/// peers") on every active download.
+/// Forces a tracker re-announce on every active download.
 pub async fn reannounce_all<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -215,10 +202,9 @@ pub async fn reannounce_all<S: HostCtx + Clone + Send + Sync + 'static>(
     bulk_response(blocking(move || Ok(dm(&state).reannounce_all(&state))).await?)
 }
 
-/// `POST /api/admin/downloads/:id/retry` re-attempt a failed step. A `completed`
-/// download whose import failed (e.g. the library volume was offline) is
-/// re-IMPORTED without re-downloading; a `failed` grab is reset and re-added.
-/// Both run in the background so the request returns immediately.
+/// Re-attempts a failed step in the background: a `completed` download whose
+/// import failed is re-imported without re-downloading, a `failed` grab is reset
+/// and re-added.
 pub async fn retry<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -233,19 +219,14 @@ pub async fn retry<S: HostCtx + Clone + Send + Sync + 'static>(
         }
     };
     if status == "completed" || status == "imported" {
-        // Import failed earlier (or re-run to re-fulfill): re-import in the
-        // background through the Acquisition module's import job, which owns the
-        // import logic now (this crate names no acquisition type, so no cycle).
         // The import pass only considers `completed` rows, so an already-imported
-        // row is flipped back to `completed` first; the import is idempotent, so
-        // existing library files are skipped and the request is re-fulfilled.
+        // row is flipped back first; the import itself is idempotent.
         if status == "imported" {
             let _ = db::set_download_status(state.db(), &id, "completed", None);
         }
         state.trigger_job("acquisition.import", "retry-import");
         return Ok(Json(json!({ "ok": true })).into_response());
     }
-    // Otherwise re-download: reset the row + re-add the torrent in the background.
     let reset_state = state.clone();
     let row = match blocking(move || Ok(dm(&reset_state).retry(&reset_state, &id))).await? {
         Ok(row) => row,
@@ -264,7 +245,6 @@ pub struct RemoveParams {
     delete_data: bool,
 }
 
-/// `DELETE /api/admin/downloads/:id?deleteData=true`
 pub async fn remove<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,

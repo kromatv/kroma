@@ -16,16 +16,10 @@ import { Section } from '#site/components/section';
 import { site } from '#site/lib/site';
 import { m } from '#site/paraglide/messages';
 
-// Platforms grouped by where they live rather than dropped into one flat grid of
-// identical tiles, the grouping is the editorial choice. Each tile names the
-// underlying runtime in mono (Tizen, webOS, .spk…) so the list reads as fact, not
-// a logo wall. One codebase, one design language, every screen.
 interface Platform {
-  /** Stable, language-invariant id: the React key. */
   id: string;
   Icon: TablerIcon;
   name: () => string;
-  /** The runtime under the name, set in mono. */
   detail: () => string;
 }
 

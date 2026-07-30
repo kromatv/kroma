@@ -1,9 +1,3 @@
-// The browse screen's chrome, split out of TvGrid: the fixed-height header that
-// echoes the focused tile (section label + count, title, rating, meta line,
-// quality badge) and the slim sort/genre chip strip under it. Both are
-// presentational and driven entirely by props, so the screen file keeps only its
-// state, its lists and the poster grid.
-
 import {
   formatRuntime,
   type GenreCount,
@@ -25,21 +19,18 @@ const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
   rating: 'browse.sort.rating',
 };
 
-/** Meta line under the focused title: year · runtime|seasons · lead genres. */
 function entryLine(e: CatalogEntry, seasons: string | null): string {
   const mid = e.kind === 'movie' ? formatRuntime(e.item.durationMs) : seasons;
   const genres = e.item.metadata?.genres?.slice(0, 2) ?? [];
   return [e.item.year ? String(e.item.year) : null, mid, ...genres].filter(Boolean).join(' · ');
 }
 
-/** The focused entry's quality badge (a series carries its video on the show). */
 function entryBadge(e: CatalogEntry): string | null {
   return e.kind === 'movie' ? qualityBadge(e.item) : qualityBadgeForVideo(e.item.video);
 }
 
-// The design sizes this with clamp(30px, 4.8vh, 46px). On the fixed 1920x1080
-// stage that always resolves to the 46px ceiling, so it is spelled out: a
-// viewport unit would mean something different on each of the four targets.
+// The design's clamp(30px, 4.8vh, 46px), resolved: on the fixed 1920x1080 stage
+// a viewport unit would mean something different on each of the four targets.
 const ECHO_TITLE = {
   fontSize: 46,
   lineHeight: 48,
@@ -47,10 +38,7 @@ const ECHO_TITLE = {
   letterSpacing: -0.92,
 };
 
-/**
- * Fixed-height header (content pinned to the bottom) so the grid never reflows
- * as the focus echo swaps titles; one truncated line keeps that guarantee.
- */
+/** Fixed height, so the grid never reflows as the focus echo swaps titles. */
 export function BrowseHeader({
   label,
   count,
@@ -63,13 +51,9 @@ export function BrowseHeader({
   focused: CatalogEntry | null;
 }>) {
   return (
-    // `zIndex`: the poster grid below is a LATER sibling, so by DOM order it
-    // paints over this. That matters because the grid's clip box deliberately
-    // bleeds `FOCUS_BLEED` (32px) past its own bounds to clear a focused tile's
-    // ring and scale (organisms/virtual/clip.ts) - which is exactly enough to
-    // show the bottom strip, title bar and all, of the row scrolled off its top.
-    // It was landing on top of the chrome up here. Lifting the header and the
-    // filter strip puts the bleed behind them, where it is invisible.
+    // `zIndex`: the poster grid is a LATER sibling and its clip box bleeds
+    // FOCUS_BLEED (32px) past its bounds to clear a focused tile's ring
+    // (organisms/virtual/clip.ts), which would otherwise paint over this chrome.
     <Box h={208} shrink={0} justify="flex-end" px={64} pb={8} style={{ zIndex: 1 }}>
       <Txt variant="overlineTv" color="accent">
         {label}
@@ -80,7 +64,6 @@ export function BrowseHeader({
   );
 }
 
-/** The focused tile's title + meta line. */
 function FocusEcho({ entry }: Readonly<{ entry: CatalogEntry }>) {
   const t = useT();
   const rating = entry.item.metadata?.rating;
@@ -107,15 +90,6 @@ function FocusEcho({ entry }: Readonly<{ entry: CatalogEntry }>) {
   );
 }
 
-/** The sort + genre chip strip: every sort mode, then (when the section has any)
- * an "all genres" chip and one chip per genre.
- *
- * Memoised, and it matters more than it looks: the browse screen re-renders on
- * every FOCUS MOVE (each tile's `onFocus` sets the id the ambient header echoes),
- * and with a pointer that means every hover. This strip depends on none of that -
- * only on the sort and genre it is showing - so without the memo, moving the
- * mouse across a 1,000-title grid re-rendered twenty-odd Chips, each a navigator
- * node, on every single move. */
 const BrowseFiltersImpl = function BrowseFilters({
   sort,
   onSort,
@@ -130,15 +104,11 @@ const BrowseFiltersImpl = function BrowseFilters({
   onGenre: (name: string | undefined) => void;
 }>) {
   const t = useT();
-  // A kit <Rail> (untitled, unvirtualised) rather than a bare ScrollView: the
-  // rail scrolls to FOLLOW focus, so walking Right along the chips keeps the
-  // focused one on screen. The children stay a FLAT list - a fragment would
-  // reach the rail as ONE tile and swallow the genre chips into a single
-  // navigator node.
+  // A <Rail> rather than a ScrollView: it scrolls to FOLLOW focus. The children
+  // must stay a FLAT list - a fragment reaches the rail as ONE tile and swallows
+  // the genre chips into a single navigator node.
   return (
-    // `grow={false}`: a filter you cannot see is a filter that does not exist,
-    // and a growing rail opened this strip on its first eight children - the
-    // four sort chips, the divider, "all genres", and two genres.
+    // `grow={false}`: a growing rail showed only this strip's first eight chips.
     <Box style={{ zIndex: 1 }}>
       <Rail gap={8} inset={64} grow={false}>
         {SORT_MODES.map((mode) => (
@@ -183,4 +153,6 @@ const BrowseFiltersImpl = function BrowseFilters({
   );
 };
 
+// Memoised: the browse screen re-renders on every focus move (so, with a
+// pointer, on every hover), and this strip depends on none of that.
 export const BrowseFilters = memo(BrowseFiltersImpl);

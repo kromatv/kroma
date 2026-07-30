@@ -37,14 +37,10 @@ use kroma_module_sdk::host::{async_trait, service, AuthUser, HostCtx, ServerModu
 
 mod provision;
 
-/// This module's registry entry (manifest + packaged icon, embedded at compile
-/// time from the shared module folder).
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
-/// How many recent connector log lines we keep for the admin panel.
 const LOG_CAP: usize = 200;
-/// Reconcile cadence: how often the supervisor makes reality match the setting.
 const RECONCILE_SECS: u64 = 3;
 
 #[derive(Default)]
@@ -52,7 +48,6 @@ struct Inner {
     child: Option<Child>,
     logs: VecDeque<String>,
     running: bool,
-    /// A launch (possibly downloading the binary) is in flight.
     starting: bool,
     since: Option<String>,
     last_error: Option<String>,
@@ -61,7 +56,6 @@ struct Inner {
 /// Supervised `cloudflared` connector, held once in [`crate::state::AppState`].
 pub struct RemoteAccess {
     inner: Mutex<Inner>,
-    /// Server data dir, used to locate/cache a server-provided `cloudflared`.
     data_dir: PathBuf,
 }
 
@@ -70,11 +64,9 @@ pub struct RemoteAccess {
 #[serde(rename_all = "camelCase")]
 pub struct RemoteStatus {
     pub running: bool,
-    /// A launch is in progress (spawning, or downloading the binary).
     pub connecting: bool,
     pub since: Option<String>,
     pub last_error: Option<String>,
-    /// Whether the server's `cloudflared` binary is present + runnable.
     pub binary_found: bool,
     pub binary_version: Option<String>,
     pub logs: Vec<String>,
@@ -85,9 +77,9 @@ impl RemoteAccess {
         Arc::new(Self { inner: Mutex::new(Inner::default()), data_dir })
     }
 
-    /// The `cloudflared` binary the server provides. Resolution order: packaged
-    /// next to the server executable, a copy cached under `<data_dir>/bin`, then
-    /// `cloudflared` from `PATH` (dev fallback). Never an admin-configured path.
+    // Resolution order: packaged next to the server executable, a copy cached
+    // under `<data_dir>/bin`, then `cloudflared` from `PATH` (dev fallback).
+    // Never an admin-configured path.
     fn resolve_binary(&self) -> String {
         let name = provision::bin_name();
         if let Ok(exe) = std::env::current_exe() {
@@ -104,9 +96,9 @@ impl RemoteAccess {
         name.to_string()
     }
 
-    /// Resolve a runnable `cloudflared`, downloading + caching it under the data
-    /// dir if the server doesn't already provide one. Called from the background
-    /// launch task, so a multi-MB download never blocks a request.
+    // Downloads + caches a runnable `cloudflared` under the data dir if the
+    // server doesn't already provide one. Called from the background launch
+    // task, so a multi-MB download never blocks a request.
     async fn ensure_binary(&self) -> Result<String, String> {
         let bin = self.resolve_binary();
         if std::path::Path::new(&bin).is_absolute() {
@@ -123,7 +115,6 @@ impl RemoteAccess {
         Ok(path.to_string_lossy().into_owned())
     }
 
-    /// Append a line to the bounded log ring.
     async fn push_log(&self, line: String) {
         let mut g = self.inner.lock().await;
         if g.logs.len() >= LOG_CAP {
@@ -132,7 +123,7 @@ impl RemoteAccess {
         g.logs.push_back(line);
     }
 
-    /// Is the child still alive? Reaps the exit status if it died.
+    // Also reaps the exit status if the child died.
     async fn alive(&self) -> bool {
         let mut g = self.inner.lock().await;
         match g.child.as_mut() {
@@ -150,11 +141,11 @@ impl RemoteAccess {
         }
     }
 
-    /// Kill the connector: the tracked child AND any cloudflared orphaned by a
-    /// SIGKILL of a previous sidecar generation (the supervisor SIGKILLs sidecars
-    /// on update, which leaves their cloudflared running but no longer held by
-    /// this process's in-memory handle - so killing only the tracked child left
-    /// the tunnel up after "disable"). Reaps the tracked child to avoid a zombie.
+    // Kills the tracked child AND any cloudflared orphaned by a SIGKILL of a
+    // previous sidecar generation (the supervisor SIGKILLs sidecars on update,
+    // which leaves their cloudflared running but no longer held by this
+    // process's in-memory handle - so killing only the tracked child left the
+    // tunnel up after "disable"). Reaps the tracked child to avoid a zombie.
     async fn kill_child(&self) {
         let child = {
             let mut g = self.inner.lock().await;
@@ -173,9 +164,9 @@ impl RemoteAccess {
         }
     }
 
-    /// SIGKILL every process running OUR `cloudflared` binary as a tunnel - the
-    /// tracked child plus any orphan from a prior generation. Matching the
-    /// resolved binary path is safe: nothing else on the box runs it. Best-effort.
+    // SIGKILLs every process running OUR `cloudflared` binary as a tunnel - the
+    // tracked child plus any orphan from a prior generation. Matching the
+    // resolved binary path is safe: nothing else on the box runs it. Best-effort.
     #[cfg(unix)]
     fn kill_all_cloudflared(&self) {
         let bin = self.resolve_binary();
@@ -193,8 +184,8 @@ impl RemoteAccess {
         }
     }
 
-    /// Spawn the background launch: download (if needed) then run `cloudflared`.
-    /// Non-blocking; guarded by the `starting` flag so only one runs at a time.
+    // Non-blocking; guarded by the `starting` flag so only one launch runs at
+    // a time.
     fn launch(self: Arc<Self>, token: String) {
         tokio::spawn(async move {
             {
@@ -229,8 +220,8 @@ impl RemoteAccess {
         });
     }
 
-    /// Resolve + spawn the `cloudflared` child, wiring its stdout/stderr into the
-    /// log ring. Does not touch shared start/running state (the caller does).
+    // Wires the child's stdout/stderr into the log ring. Does not touch shared
+    // start/running state (the caller does).
     async fn spawn_child(self: &Arc<Self>, token: String) -> Result<Child, String> {
         let bin = self.ensure_binary().await?;
         let mut cmd = Command::new(&bin);
@@ -310,8 +301,6 @@ impl RemoteAccess {
     }
 }
 
-// ----- routes -----------------------------------------------------------------
-
 /// The Remote-access admin API, generic over any [`HostCtx`] state. Mounted by
 /// the binary's `RemoteModule` with the live [`RemoteAccess`] injected as an
 /// `Extension`. Paths are relative to the `/api/admin` nest.
@@ -324,7 +313,7 @@ where
         .layer(Extension(remote))
 }
 
-/// Config (token masked) + live connector status.
+// Config (token masked) + live connector status.
 async fn status_value(host: &dyn HostCtx, remote: &RemoteAccess) -> serde_json::Value {
     let st = remote.status().await;
     json!({
@@ -335,7 +324,7 @@ async fn status_value(host: &dyn HostCtx, remote: &RemoteAccess) -> serde_json::
     })
 }
 
-/// `GET /api/admin/remote` -> current config (token masked) + live status.
+// `GET /api/admin/remote` -> current config (token masked) + live status.
 async fn get_remote<S: HostCtx>(
     State(state): State<S>,
     Extension(remote): Extension<Arc<RemoteAccess>>,
@@ -350,12 +339,11 @@ async fn get_remote<S: HostCtx>(
 struct RemoteSaveBody {
     enabled: bool,
     url: String,
-    /// Blank/omitted -> keep the stored token.
     token: Option<String>,
 }
 
-/// `PUT /api/admin/remote` -> persist config, then kick one reconcile so the
-/// connector starts/stops immediately (non-blocking). Returns the fresh status.
+// `PUT /api/admin/remote` -> persist config, then kick one reconcile so the
+// connector starts/stops immediately (non-blocking). Returns the fresh status.
 async fn save_remote<S: HostCtx>(
     State(state): State<S>,
     Extension(remote): Extension<Arc<RemoteAccess>>,
@@ -363,7 +351,8 @@ async fn save_remote<S: HostCtx>(
     Json(body): Json<RemoteSaveBody>,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
-    // Only overwrite the secret when a non-blank value was actually typed.
+    // Blank/omitted keeps the stored token: only overwrite it when a non-blank
+    // value was actually typed.
     let token = body.token.as_deref().map(str::trim).filter(|t| !t.is_empty());
     let mut patch = std::collections::BTreeMap::new();
     patch.insert("remoteAccess".to_string(), json!(body.enabled));
@@ -376,7 +365,6 @@ async fn save_remote<S: HostCtx>(
     Ok(Json(status_value(&state, &remote).await).into_response())
 }
 
-/// Drain a child stream line-by-line into the connector's log ring.
 async fn drain<R: tokio::io::AsyncRead + Unpin>(me: Arc<RemoteAccess>, stream: R) {
     let mut lines = BufReader::new(stream).lines();
     while let Ok(Some(l)) = lines.next_line().await {
@@ -384,8 +372,8 @@ async fn drain<R: tokio::io::AsyncRead + Unpin>(me: Arc<RemoteAccess>, stream: R
     }
 }
 
-/// Probe `bin --version`; returns the trimmed first line on success, else `None`
-/// (binary missing / not runnable). Used for the panel's "found" indicator.
+// Returns the trimmed first line of `bin --version` on success, else `None`
+// (binary missing / not runnable). Used for the panel's "found" indicator.
 async fn binary_version(bin: &str) -> Option<String> {
     let out = Command::new(bin).arg("--version").output().await.ok()?;
     if !out.status.success() {
@@ -395,7 +383,6 @@ async fn binary_version(bin: &str) -> Option<String> {
     text.lines().next().map(|l| l.trim().to_string()).filter(|l| !l.is_empty())
 }
 
-/// This module's id (matches its `module.json`).
 pub const MODULE_ID: &str = "tv.kroma.remote";
 
 /// The Remote-access sub-module: serves the connector's admin routes and, on

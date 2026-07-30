@@ -20,25 +20,20 @@ use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
-/// `GET /api/search`.
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/search", get(search))
 }
 
 const DEFAULT_LIMIT: usize = 30;
 const MAX_LIMIT: usize = 60;
-/// Cap the query length. The engine builds ~12 fuzzy/prefix subqueries per token,
-/// so an unbounded `q` (thousands of words) is a CPU-exhaustion vector on a
-/// NAS-class box. A short cap bounds the work while covering any real search.
+// The engine builds ~12 fuzzy/prefix subqueries per token; an unbounded `q` is a
+// CPU-exhaustion vector on a NAS-class box, so cap it well above any real query.
 const MAX_QUERY_CHARS: usize = 128;
 
 #[derive(Debug, Deserialize)]
 pub struct SearchParams {
-    /// The search query (free text; voice transcripts welcome).
     pub q: Option<String>,
-    /// Max results (default 30, capped at 60).
     pub limit: Option<usize>,
-    /// Optional library scope.
     pub library: Option<String>,
 }
 
@@ -66,9 +61,6 @@ pub async fn search(
     Ok(Json(resp).into_response())
 }
 
-/// Load full DTOs for the ranked hits and rebuild the list in score order,
-/// optionally filtering to a single library. Overlays the request locale onto the
-/// hydrated items/shows before wrapping them into `SearchHit`s.
 fn hydrate(pool: &db::Pool, hits: Vec<Hit>, library: Option<&str>, locale: &str) -> anyhow::Result<Vec<SearchHit>> {
     let item_ids: Vec<String> =
         hits.iter().filter(|h| h.kind != HitKind::Show).map(|h| h.id.clone()).collect();

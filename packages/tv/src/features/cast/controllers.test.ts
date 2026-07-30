@@ -1,11 +1,8 @@
 // @vitest-environment jsdom
 //
-// What the top bar is told about the remotes driving this set.
-//
-// The one thing worth pinning down is the diff: the server sends this TV's WHOLE
-// row every time anything about it changes - a film starting, one remote leaving
-// - so a store that announced the list it was handed would say "iPhone
-// connected" again on every pause.
+// The server sends this TV's whole row every time anything about it changes
+// (a film starting, one remote leaving), so the store must diff rather than
+// announce the list it was handed.
 
 import type { CastController } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';

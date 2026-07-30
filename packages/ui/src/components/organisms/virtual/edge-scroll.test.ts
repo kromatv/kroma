@@ -8,23 +8,20 @@ const at = (offset: number, index: number) => edgeScrollOffset({ ...ROW, offset,
 
 describe('edgeScrollOffset', () => {
   it('leaves the row alone while the selection is in the middle', () => {
-    // Offset 0 shows items 0..4. Selecting 1, 2 or 3 keeps a margin on both
-    // sides, so nothing moves - the highlight is what travels.
+    // Offset 0 shows items 0..4; selecting 1, 2 or 3 keeps a margin on both sides.
     expect(at(0, 1)).toBe(0);
     expect(at(0, 2)).toBe(0);
     expect(at(0, 3)).toBe(0);
   });
 
   it('scrolls as the selection comes within a margin of the right edge', () => {
-    // Item 4 ends at 1000, flush with the right edge: a tile of look-ahead means
-    // scrolling by exactly one tile.
+    // Item 4 ends at 1000, flush with the right edge.
     expect(at(0, 4)).toBe(200);
     expect(at(200, 5)).toBe(400);
   });
 
   it('scrolls as the selection comes within a margin of the left edge', () => {
-    // Offset 1000 shows items 5..9. Walking back: 7 and 6 are comfortable, 5
-    // touches the margin and pulls the row back one tile.
+    // Offset 1000 shows items 5..9; 7 and 6 are comfortable, 5 touches the margin.
     expect(at(1000, 7)).toBe(1000);
     expect(at(1000, 6)).toBe(1000);
     expect(at(1000, 5)).toBe(800);
@@ -81,10 +78,8 @@ describe('fitPitch', () => {
 
 describe('whole pixels', () => {
   it('never returns a fractional offset, whatever the strip', () => {
-    // The 691x300 rail that started this: a 683 content strip over three columns
-    // was 227.667, and the row sat at translateX(-264.179px). Every tile boundary
-    // on a sub-pixel, rounded independently by the compositor: hairline seams
-    // between tiles and a sliced sliver at each end.
+    // 683 over three columns is 227.667; a fractional pitch would put every
+    // tile boundary on a sub-pixel, rounded independently into hairline seams.
     const pitch = fitPitch(196, 683);
     expect(pitch).toBe(227);
     const row = { itemSize: pitch, viewport: 683, count: 400, margin: pitch };
@@ -96,13 +91,10 @@ describe('whole pixels', () => {
 });
 
 describe('the pitch grid', () => {
-  // The row's offset is counted in PITCHES, and `edgeScrollOffset` returns an
-  // offset unchanged while it sits inside the margin window - so an offset that
-  // has fallen off the pitch grid is never corrected by it. That is what left
-  // <VirtualRail> with a sliced tile at BOTH ends for the rest of a session once
-  // the pitch changed under it (the `itemWidth` control did exactly that, because
-  // the pitch used to be state written only on layout). The rail now derives the
-  // pitch and snaps the offset; these are the two facts that made the bug possible.
+  // The row's offset is counted in pitches, and `edgeScrollOffset` returns an
+  // offset unchanged while it sits inside the margin window — so an offset
+  // that has fallen off the pitch grid is never corrected by it; only the
+  // rail's own snapping can put it back.
 
   it('fits a whole number of pitches into the row, so the ends land flush', () => {
     // 1400 wide, tiles authored at 196: seven of them at 200 rather than seven at
@@ -141,11 +133,9 @@ describe('the pitch grid', () => {
 });
 
 describe('horizontalInset', () => {
-  // The rail measures its OUTER view but lays the tiles out inside
-  // `contentStyle`'s padding. Dividing the outer width into whole pitches put a
-  // row's worth of tiles into a strip that much narrower, so every offset sat
-  // half a padding out of step: a sliver of a tile at each end, at every scroll
-  // position, for any `itemWidth`. The two numbers have to describe one box.
+  // The rail measures its outer view but lays tiles out inside
+  // `contentStyle`'s padding; the two numbers have to describe one box, or
+  // every offset sits half a padding out of step.
 
   it('is nothing when the content has no padding to spend', () => {
     expect(horizontalInset(undefined)).toBe(0);
@@ -169,15 +159,10 @@ describe('horizontalInset', () => {
   });
 
   it('leaves the tiles a strip the pitch divides exactly', () => {
-    // The whole point, in one line: 1400 wide with 4px of content padding is a
-    // 1392 strip, and the pitch has to fit that - not the 1400 nobody lays out in.
+    // 1400 wide with 4px of content padding is a 1392 strip; the pitch has to
+    // fit that, not the 1400 nobody lays out in.
     const strip = 1400 - horizontalInset({ paddingHorizontal: 4 });
     expect(strip).toBe(1392);
-    // A WHOLE number of pitches, which is what makes both ends land flush. The
-    // pitch itself is fractional (1392/7), so this is the count rather than a
-    // modulo - float residue is not a design fault.
-    // Seven whole pixels of pitch, with at most `columns - 1` pixels of the strip
-    // left over - which nobody can see, unlike a fractional edge on every tile.
     const pitch = fitPitch(196, strip);
     expect(Number.isInteger(pitch)).toBe(true);
     const columns = Math.round(strip / pitch);
@@ -187,10 +172,6 @@ describe('horizontalInset', () => {
 });
 
 describe('edgeWidth', () => {
-  // The fade used to be a constant 92. That is 5% of a 1920pt television row and
-  // invisible - but the workbench's `fit` stage clamps this story to 560, where the
-  // same 92 is 17% of the row and lands as a black slab across a sixth of it. Which
-  // is exactly why the artefact only showed up in `fit`.
   it('is a fraction of the row, so one number is not wrong at both sizes', () => {
     expect(edgeWidth(1920)).toBe(288);
     expect(edgeWidth(560)).toBe(88);

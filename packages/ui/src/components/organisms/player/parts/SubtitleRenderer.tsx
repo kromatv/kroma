@@ -39,10 +39,9 @@ function toSeconds(v: string): number {
 }
 
 /**
- * Minimal, robust WebVTT parser. Splits on blank lines, reads each block's
- * `start --> end` line (ignoring the `WEBVTT` header, `NOTE` blocks and optional
- * cue-id lines), joins the remaining lines as the cue text and strips simple
- * inline tags. Times are absolute seconds.
+ * Minimal WebVTT parser: splits on blank lines, reads each block's
+ * `start --> end` line (skipping `WEBVTT`/`NOTE`/cue-id lines), joins the rest
+ * as text and strips inline tags. Times are absolute seconds.
  */
 function parseVtt(raw: string): Cue[] {
   const cues: Cue[] = [];
@@ -198,9 +197,8 @@ export function SubtitleRenderer({
 
   if (activeIndex == null || !text) return null;
 
-  // Positioned by percentage: 17% clears the control chrome when it is up, 9%
-  // hugs the frame otherwise. Multi-line cues keep their hard breaks, which is
-  // what <Text> does with newlines anyway.
+  // 17% clears the control chrome when it's up, 9% hugs the frame otherwise.
+  // Multi-line cues keep their hard breaks, which <Text> already does for newlines.
   return (
     <Box
       absolute
@@ -213,11 +211,10 @@ export function SubtitleRenderer({
       px="8%"
       pointerEvents="none"
     >
-      {/* CEA-708 has three layers, not one: the text, the box immediately behind
-          it, and the WINDOW the cue block sits in. The first two are text style;
-          the window is a container, so it only exists when it is visible - the
-          default appearance has none, and an always-present wrapper would be a
-          node and a style array per cue for nothing. */}
+      {/* CEA-708 has three layers: text, its background box, and the WINDOW the
+          cue sits in. The window is a container, so it only renders when
+          visible — an always-present wrapper would be a node + style array per
+          cue for nothing. */}
       {appearance.windowOpacity > 0 ? (
         <Box style={subtitleWindowStyle(appearance)}>
           <Txt style={subtitleStyle(appearance)}>{text}</Txt>

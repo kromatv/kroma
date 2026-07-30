@@ -1,22 +1,6 @@
-// This build's own identity, as it arrives on the phone.
-//
-// Nothing here runs git or touches the filesystem: app.config.js collects the
-// values at bundle time and they travel in the Expo manifest, so this module
-// only reads `extra.buildInfo` back out. Which means the interesting cases are
-// all about manifests that do NOT have what this expects:
-//
-//   - An over-the-air update, or a build made before this config existed, has no
-//     `extra.buildInfo` at all. `expo.version` is present in every manifest ever
-//     written, which is why it is the fallback rather than a hardcoded string.
-//   - A build made outside a git checkout (a tarball, a CI cache restore) has no
-//     commit, branch or remote. Every git-derived field is nullable for that
-//     reason, and the settings screen hides the rows that are null - so `null`
-//     has to stay null rather than becoming 'unknown' or ''.
-//
-// The module reads the manifest ONCE at load, the way the real app does, so each
-// case needs its own module instance. They are all built up front rather than
-// per test: `vi.resetModules()` re-imports the whole graph, and doing that ten
-// times inside a full instrumented run is slow enough to blow a test's deadline.
+// The module reads the manifest once at load, so each case needs its own module
+// instance. They are built up front because `vi.resetModules()` re-imports the
+// whole graph, and doing that per test blows the deadline under instrumentation.
 
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -52,7 +36,6 @@ const FULL = {
   },
 };
 
-/** The four manifests worth distinguishing, each loaded once. */
 let inCheckout: Mod;
 let legacy: Mod;
 let noManifest: Mod;
@@ -76,7 +59,6 @@ describe('a build made in a checkout', () => {
 
 describe('a manifest with no buildInfo at all', () => {
   it('falls back to expo.version, which every manifest has', () => {
-    // An over-the-air update, or a build predating this config.
     expect(legacy.buildInfo.version).toBe('0.1.34');
   });
 
@@ -90,15 +72,13 @@ describe('a manifest with no buildInfo at all', () => {
   });
 
   it('is clean rather than dirty when nothing says otherwise', () => {
-    // `dirty` drives a warning badge, so the safe default is the quiet one.
     expect(legacy.buildInfo.dirty).toBe(false);
   });
 });
 
 describe('no manifest at all', () => {
   it('still loads, with an empty version', () => {
-    // `expoConfig` is null in some launch paths; a throw here happens at import
-    // time, and expo-router imports every route at boot.
+    // A throw here happens at import time, and expo-router imports every route at boot.
     expect(noManifest.buildInfo.version).toBe('');
     expect(noManifest.buildInfo.commit).toBeNull();
   });
@@ -115,7 +95,6 @@ describe('a build made outside a checkout', () => {
 describe('how the build is READ', () => {
   it('labels the commit, and marks a dirty tree', () => {
     expect(inCheckout.commitLabel()).toContain('a1b2c3d');
-    // A dirty build is one whose source is not the commit it names.
     const dirty = { ...inCheckout.buildInfo, dirty: true };
     expect(inCheckout.commitLabel(dirty)).not.toBe(inCheckout.commitLabel());
   });

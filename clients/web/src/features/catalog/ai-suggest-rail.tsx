@@ -1,8 +1,6 @@
-// The per-title "Suggestions IA" rail on a detail page. The shared `useAiSuggest`
-// hook polls the lazily-generated section (LLM connector, server-cached); while it
-// generates we show a subtle progress ring, and once items arrive we render them
-// in the same Poster/Rail as the home + similar rails (movies *and* shows). Empty
-// items or a timeout → render nothing.
+// The per-title "Suggestions IA" rail on a detail page. `useAiSuggest` polls the
+// lazily-generated section; while it generates we show a progress ring, and once
+// items arrive we render them in the same Poster/Rail as the home + similar rails.
 
 import { useAiSuggest, useT } from '@kroma/ui';
 import { ProgressRing } from '@kroma/ui/kit';

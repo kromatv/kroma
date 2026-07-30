@@ -23,11 +23,11 @@ stage! {
     triggers: &[Trigger::LibraryChange],
 }
 
-/// Every playable item (has a backing file + a known duration), signed by that
-/// file's `mtime:size` so a replaced file regenerates. Cached items are still
-/// enumerated so the ledger shows them `done`; `process` no-ops on a cache hit.
-/// Unprobed items (duration unknown) are simply skipped until a later probe/scan
-/// makes them eligible that is the probe dependency, encoded as a filter.
+// Every playable item (has a backing file + a known duration), signed by that
+// file's `mtime:size` so a replaced file regenerates. Cached items are still
+// enumerated so the ledger shows them `done`; `process` no-ops on a cache hit.
+// Unprobed items (duration unknown) are simply skipped until a later probe/scan
+// makes them eligible that is the probe dependency, encoded as a filter.
 fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
     let items = crate::db::list_items(&state.db, None)?;
     Ok(items

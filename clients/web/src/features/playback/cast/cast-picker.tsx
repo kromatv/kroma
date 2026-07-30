@@ -10,11 +10,10 @@ import { Icon } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
 
 export interface CastPickerProps {
-  /** Offer "this device" (stop casting, play in the browser). */
   offerLocal?: boolean;
 }
 
-/** `undefined` = dismissed · `null` = this device · a string = that receiver. */
+// `undefined` = dismissed · `null` = this device · a string = that receiver.
 type Picked = string | null | undefined;
 
 export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offerLocal }) => {

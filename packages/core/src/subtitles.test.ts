@@ -41,7 +41,7 @@ describe('parseVtt', () => {
   });
 
   it('accepts a cue index line and MM:SS timestamps with comma millis', () => {
-    // MM:SS: 01:30 = 90 s, 01:45.5 = 105.5 s (comma decimal is normalized).
+    // MM:SS, not HH:MM: 01:30 is 90 s.
     const raw = ['1', '01:30,000 --> 01:45,500', 'Hi'].join('\n');
     expect(parseVtt(raw)).toEqual([{ start: 90, end: 105.5, text: 'Hi' }]);
   });
@@ -99,7 +99,7 @@ describe('activeCueText', () => {
   });
 
   it('binary-searches after a large forward jump beyond the walk window', () => {
-    // From hint 0, jumping to cue D (index 3) is > 3 cues away → binary search.
+    // From hint 0, cue D is more than the 3-cue walk window away.
     expect(activeCueText(cues, 11, 0)).toEqual({ text: 'D', index: 3 });
   });
 
@@ -108,7 +108,6 @@ describe('activeCueText', () => {
   });
 
   it('binary-search returns the nearest lower index past the last cue', () => {
-    // t=13 is beyond every cue; the forward walk finds nothing so it binary-searches.
     const hit = activeCueText(cues, 13, 0);
     expect(hit.text).toBe('');
     expect(hit.index).toBe(3);

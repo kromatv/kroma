@@ -8,12 +8,8 @@ import { aboutItem, groupItem, quitAppItem, SETTINGS_GROUPS } from '#tv/app/sett
 import { AuthScreen } from '#tv/shared/ui';
 import { SettingsRows } from './SettingsRows';
 
-/** Profile menu (route `profileMenu`): the settings GROUPS (languages,
- * playback, device - each opening a screen of its own) followed by the account
- * rows built inline - PIN, change profile, sign out, quit. Removing a server
- * happens by signing its profiles out, not from here. Every stateful
- * hook lives inside SettingsRows' row components, so the `!user` early return
- * below can't break hook order. */
+/** Every stateful hook lives inside SettingsRows' row components, so the `!user`
+ * early return below cannot break hook order. */
 export function TvProfileMenu() {
   const nav = useNav();
   const t = useT();
@@ -29,10 +25,6 @@ export function TvProfileMenu() {
   };
 
   const rows = [
-    // The settings, one step deeper: three rows that each open a screen, rather
-    // than the seven that used to sit here. Twelve rows did not fit a 1080
-    // screen, so the avatar and the name - the one thing that says WHOSE menu
-    // this is - scrolled away the moment you moved.
     ...Object.values(SETTINGS_GROUPS).map((group) =>
       groupItem(group, () => nav.go('settingsGroup', { group: group.id })),
     ),

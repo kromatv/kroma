@@ -1,12 +1,6 @@
-// The listening panel: what the user sees while the app holds the microphone.
-//
-// The platform half - the microphone itself, and how the words arrive - is a
-// backend the shell registers; see `#tv/app/voiceSearch`. This file is only the
-// design: a pulsing mic and the transcript filling in as it is understood.
-//
-// Every partial transcript goes straight to the search query, so the results
-// grid behind fills in while the user is still talking - the same debounce as
-// typing, from the same state.
+// The listening panel: what the user sees while the app holds the
+// microphone. The platform half — the microphone itself, and how the words
+// arrive — is a backend the shell registers; see `#tv/app/voiceSearch`.
 
 import { useLocale, useT } from '@kroma/ui';
 import { Box, Button, colors, Dialog, DialogFooter, Icon, Txt } from '@kroma/ui/kit';
@@ -20,9 +14,7 @@ export function TvVoiceSearch({
   onDone,
 }: Readonly<{
   backend: VoiceSearchBackend;
-  /** The transcript, pushed into the screen's query as it grows. */
   onText: (text: string) => void;
-  /** Close the panel: a final result, a cancel, or a failure. */
   onDone: () => void;
 }>) {
   const t = useT();
@@ -64,10 +56,8 @@ export function TvVoiceSearch({
 const PULSE_MS = 900;
 const CIRCLE = 76;
 
-/** The listening cue: a slow breath on the mic disc. It is the only thing on a
- * silent screen that says the app is still hearing you, so it runs on the native
- * driver (scale and opacity only) and keeps animating no matter what the
- * JavaScript thread is doing with the incoming results. */
+// Runs on the native driver (scale and opacity only) so the pulse keeps
+// animating no matter what the JS thread is doing with incoming results.
 function Pulse({ children }: Readonly<{ children: React.ReactNode }>) {
   const value = useRef(new Animated.Value(0)).current;
   useEffect(() => {

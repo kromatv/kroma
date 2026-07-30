@@ -25,9 +25,8 @@ import { Txt } from './text';
 import { TextArea } from './text-area';
 import { TextField } from './text-field';
 
-/** Every kit control is a node of the spatial navigator, and a node needs a
- * navigator - the router gives every screen one. A test renders inside the same
- * scope so the tree it mounts is the tree the app mounts. */
+// Every kit control is a node of the spatial navigator; a test renders inside
+// the same scope the router gives every real screen.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 afterEach(() => {
@@ -35,25 +34,21 @@ afterEach(() => {
   clearPressGuard();
 });
 
-/** react-native-web compiles most styles into atomic CSS classes and only keeps
- * inline styles where a value is dynamic (an Animated node, for instance), so a
- * DOM assertion has to read the RESOLVED style rather than the style attribute. */
+// react-native-web keeps inline styles only for dynamic values, so a DOM
+// assertion has to read the resolved style rather than the style attribute.
 const css = (el: Element) => getComputedStyle(el);
 
-/** An avatar's own element: the navigator scope `render` adds contributes no DOM
- * of its own, so the disc is the first child. */
+// The navigator scope `render` adds contributes no DOM of its own, so the
+// disc is the first child.
 const disc = (container: HTMLElement) => container.firstElementChild as HTMLElement;
 
-/** Its padlock badge, reached through the one glyph it contains. */
 const padlock = (container: HTMLElement) =>
   (container.querySelector('svg') as SVGElement).parentElement as HTMLElement;
 
-/** The element the kit styles. On the browser targets a control is ONE element,
- * so this is the labelled host itself. */
+// On the browser targets a control is one element, so this is the labelled host itself.
 const inner = (label: string) => screen.getByLabelText(label);
 
-/** jsdom normalises every colour to `rgb()`, so compare through the same lens
- * instead of against the token's hex spelling. */
+// jsdom normalises every colour to `rgb()`, so compare through the same lens.
 function rgb(hex: string): string {
   const m = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
   if (!m) return hex;

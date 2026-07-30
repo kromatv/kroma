@@ -7,10 +7,8 @@ use crate::model::{AudioStream, SubtitleTrack, VideoStream};
 
 use super::{Chapter, ProbeResult};
 
-/// Build our model from raw ffprobe output.
 pub(super) fn build_result(raw: FfprobeOutput) -> ProbeResult {
-    // Every audio stream, in container order. The audio-relative index (0-based
-    // among audio streams) is the position here exactly ffmpeg's `0:a:<n>`.
+    // Container order: the audio-relative index is exactly ffmpeg's `0:a:<n>`.
     let audio_tracks: Vec<AudioStream> = raw
         .streams
         .iter()
@@ -27,9 +25,8 @@ pub(super) fn build_result(raw: FfprobeOutput) -> ProbeResult {
                 .and_then(|d| d.parse::<f64>().ok())
                 .map(|secs| (secs * 1000.0) as u64)
         }),
-        // First real video stream, skipping embedded cover-art (mjpeg posters):
-        // the cover-art test must stay in the predicate so a leading poster
-        // stream doesn't win and null out the actual video.
+        // The cover-art test must stay inside the predicate, or a leading mjpeg
+        // poster stream wins and nulls out the actual video.
         video: raw
             .streams
             .iter()
@@ -50,8 +47,6 @@ pub(super) fn build_result(raw: FfprobeOutput) -> ProbeResult {
     }
 }
 
-/// Map a raw ffprobe chapter (start/end in seconds as strings) to a [`Chapter`].
-/// Dropped if the times are unparseable or zero-length.
 fn build_chapter(c: &FfChapter) -> Option<Chapter> {
     let start = c.start_time.as_deref().and_then(|s| s.parse::<f64>().ok())?;
     let end = c.end_time.as_deref().and_then(|s| s.parse::<f64>().ok())?;
@@ -100,7 +95,7 @@ fn build_audio(stream: &FfStream, index: u32) -> AudioStream {
     }
 }
 
-/// HDR heuristic: PQ / HLG transfer, or 10-bit+ with a wide-gamut primary.
+// PQ / HLG transfer, or 10-bit+ with a wide-gamut primary.
 fn is_hdr(stream: &FfStream, bit_depth: Option<u32>) -> bool {
     let transfer = stream.color_transfer.as_deref().unwrap_or("");
     if matches!(transfer, "smpte2084" | "arib-std-b67") {
@@ -113,7 +108,6 @@ fn is_hdr(stream: &FfStream, bit_depth: Option<u32>) -> bool {
     bit_depth.map(|b| b >= 10).unwrap_or(false) && wide_gamut
 }
 
-/// Map common pixel formats to a bit depth when `bits_per_raw_sample` is absent.
 fn pixel_format_bit_depth(pix_fmt: Option<&str>) -> Option<u32> {
     let pix_fmt = pix_fmt?;
     if pix_fmt.contains("p10") || pix_fmt.contains("10le") || pix_fmt.contains("10be") {
@@ -127,7 +121,7 @@ fn pixel_format_bit_depth(pix_fmt: Option<&str>) -> Option<u32> {
     }
 }
 
-/// Normalize a codec name to the lowercase canonical form clients expect.
+/// The lowercase canonical form clients expect.
 pub fn normalize_codec(name: Option<&str>) -> String {
     let raw = name.unwrap_or("unknown").to_ascii_lowercase();
     match raw.as_str() {
@@ -150,14 +144,11 @@ pub fn normalize_codec(name: Option<&str>) -> String {
         "ass" | "ssa" => "ass",
         "hdmv_pgs_subtitle" | "pgs" => "pgs",
         "mov_text" => "mov_text",
-        // Unknown codec hand back the owned, already-lowercased string rather
-        // than re-allocating a copy of it.
+        // Hand back the owned, already-lowercased string rather than a copy.
         _ => return raw,
     }
     .to_string()
 }
-
-// ----- Raw ffprobe JSON shapes -------------------------------------------------
 
 #[derive(Debug, Deserialize)]
 pub(super) struct FfprobeOutput {
@@ -169,7 +160,7 @@ pub(super) struct FfprobeOutput {
     chapters: Vec<FfChapter>,
 }
 
-/// ffprobe `-show_chapters` entry: `start_time`/`end_time` are seconds as strings.
+// `start_time`/`end_time` are seconds, as strings.
 #[derive(Debug, Deserialize)]
 struct FfChapter {
     start_time: Option<String>,
@@ -211,7 +202,6 @@ struct FfTags {
     title: Option<String>,
 }
 
-/// ffprobe stream `disposition` flags we only read `default`.
 #[derive(Debug, Deserialize)]
 struct FfDisposition {
     default: Option<u8>,

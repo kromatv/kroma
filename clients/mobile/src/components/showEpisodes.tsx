@@ -1,6 +1,3 @@
-// Season-level building blocks for the series detail page: the bulk season
-// download control, the up-next resume card and the episode rows.
-
 import { formatRuntime, type MediaItem, type ProgressEntry, sizedImageUrl } from '@kroma/core';
 import { Button, Icon } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
@@ -14,8 +11,8 @@ import { DownloadButton } from './DownloadButton';
 import { FadeImage } from './FadeImage';
 import { ProgressRing } from './ProgressRing';
 
-/** Bulk season download: enqueues every not-yet-downloaded episode; while the
- * season is transferring it shows x/y and taps cancel the remainder. */
+/** Enqueues every not-yet-downloaded episode; while transferring it shows x/y
+ * and a tap cancels the remainder. */
 export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>) {
   const t = useT();
   const downloads = useDownloads();
@@ -66,7 +63,6 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
   );
 }
 
-/** "Up next" resume card: backdrop thumb, progress sliver, episode title. */
 export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: number }>) {
   const t = useT();
   const client = useClient();

@@ -6,7 +6,7 @@ import { VirtualRail } from './virtual-rail';
 
 const TINT = ['#3A2E4F', '#1B1524'] as const;
 
-/** Enough tiles that windowing is the point rather than a detail. */
+// Enough tiles that windowing is the point rather than a detail.
 const TITLES = Array.from({ length: 400 }, (_, at) => ({ id: at, title: `Title ${at + 1}` }));
 
 export default story({

@@ -1,12 +1,6 @@
 // The line under the story tree: which build of the kit you are looking at.
-//
-// It exists because the kit is a thing people are SENT - a deployed site, a
-// TestFlight build, a simulator someone else launched - and "the buttons look
-// wrong" is unanswerable without knowing which build did the looking. Two lines,
-// dim, out of the way: it is a footnote, not a feature.
-//
-// Where the values come from is the bundler's business, not this file's; see
-// buildInfo.ts / buildInfo.web.ts, of which each toolchain takes one.
+// Two lines, dim, out of the way - a footnote, not a feature. Values come
+// from buildInfo.ts / buildInfo.web.ts, one per toolchain.
 
 import { commitLabel } from '@kroma/core';
 import { Box, Txt } from '@kroma/ui/kit';
@@ -34,9 +28,8 @@ export function BuildStamp() {
 
 const LINE = { fontSize: 11, fontWeight: '500' as const };
 
-/** Date only, no clock, and nothing at all when it will not parse: this sits in
- * 11pt in a 240pt column, so it is deliberately terser than the shared
- * `formatBuildDate` the About screens use. */
+// Date only, no clock: deliberately terser than the shared formatBuildDate,
+// since this sits in 11pt in a 240pt column.
 function formatBuildDate(iso: string | null): string | null {
   if (!iso) return null;
   const date = new Date(iso);

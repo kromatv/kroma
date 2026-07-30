@@ -1,7 +1,5 @@
-// Admin "IA / Intelligence" page: configure the LLM(s) that power personalized,
-// auto-named home sections + taste profiles. Register several providers as
-// inline cards (see aiProviders.tsx), pick the default used for generation, and
-// save the lot. Backed by /api/admin/llm*.
+// Admin AI page: register the LLM providers that power personalized home
+// sections and taste profiles. Backed by /api/admin/llm*.
 import type { LlmAdminConfig } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { EmptyState } from '@kroma/ui/kit';
@@ -12,13 +10,11 @@ import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 import { Button, C, Card, Pill, Section, Toggle } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** A provider row in the form. The persisted `id` is owned by the server (blank
- *  for a not-yet-saved provider); `key` is a client-only, ephemeral handle used
- *  for React keys + local identity we never mint provider ids on the client. */
+// `id` is the server's (blank until saved); `key` is a client-only handle. The
+// client never mints provider ids.
 type Row = ProviderForm & { key: string };
 type Config = { enabled: boolean; defaultKey: string; providers: Row[] };
 
-// Ephemeral, monotonic local key NOT a provider id (the server assigns those).
 let keySeq = 0;
 function nextKey(): string {
   keySeq += 1;
@@ -41,8 +37,6 @@ function emptyProvider(): Row {
   };
 }
 
-/** Map the server config into form rows: attach ephemeral keys, clear the
- *  never-returned secrets, and resolve which row is the default by its id. */
 function toConfig(c: LlmAdminConfig): Config {
   const providers: Row[] = c.providers.map((p) => ({ ...p, key: nextKey(), apiKey: '' }));
   const def = providers.find((p) => p.id === c.defaultId) ?? providers[0];
@@ -98,8 +92,7 @@ export function AiPage() {
     setBusy('save');
     setError(null);
     try {
-      // The default is identified by index (new rows have no id yet the server
-      // assigns one on save).
+      // Identified by index: new rows have no id until the server assigns one.
       const defaultIndex = Math.max(
         0,
         cfg.providers.findIndex((p) => p.key === cfg.defaultKey),
@@ -119,8 +112,8 @@ export function AiPage() {
           ...(p.apiKey ? { apiKey: p.apiKey } : {}),
         })),
       });
-      // Re-fetch so the client adopts the server-assigned ids (needed for the
-      // per-provider key probe) and the refreshed hasApiKey flags.
+      // Re-fetch to adopt the server-assigned ids, which the per-provider key
+      // probe needs.
       setConfig(toConfig(await client.adminLlm()));
       setSaved(true);
     } catch {
@@ -138,7 +131,6 @@ export function AiPage() {
         action={<StatusChip enabled={cfg.enabled} />}
       />
 
-      {/* Global enable */}
       <Card className="mt-6 flex items-center justify-between gap-4 px-5.5 py-4.5">
         <div className="flex items-center gap-3.5">
           <span
@@ -155,7 +147,6 @@ export function AiPage() {
         <Toggle on={cfg.enabled} onChange={(v) => update({ enabled: v })} />
       </Card>
 
-      {/* Providers */}
       <Section
         title={t('admin.aiProviders')}
         right={<Button label={t('admin.aiAddProvider')} icon={IconPlus} onClick={addProvider} />}
@@ -188,7 +179,6 @@ export function AiPage() {
         )}
       </Section>
 
-      {/* Save */}
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Button
           label={busy === 'save' ? t('admin.aiSaving') : t('common.save')}

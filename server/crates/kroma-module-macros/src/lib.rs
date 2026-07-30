@@ -1,30 +1,15 @@
-//! Proc-macros for KROMA modules.
-//!
-//! [`embedded_module!`] collapses the boilerplate every module's server crate
-//! used to write by hand:
-//!
-//! ```ignore
-//! pub const MODULE: EmbeddedModule =
-//!     EmbeddedModule::new(include_str!("../../module.json"), include_bytes!("../../icon.svg"));
-//! ```
-//!
-//! into `pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();`.
-//! It finds the module's `module.json` and its `icon.<ext>` next to it by
-//! convention (the module root is the parent of the server crate) and expands to
-//! the right `EmbeddedModule` constructor, picking the icon MIME from the
-//! extension. A module with no `icon.*` becomes `iconless`.
+//! Proc-macros for KROMA modules. [`embedded_module!`] finds a module's
+//! `module.json` and `icon.<ext>` by convention - the module root is the parent
+//! of the server crate - and expands to the right `EmbeddedModule` constructor.
 
 use proc_macro::TokenStream;
 use std::path::{Path, PathBuf};
 
-/// Build the `MODULE` const for a module server crate by discovering its
-/// `module.json` + `icon.<ext>` at compile time. Takes no arguments.
+/// Builds the `MODULE` const for a module server crate. Takes no arguments.
 #[proc_macro]
 pub fn embedded_module(_input: TokenStream) -> TokenStream {
-    // Cargo sets CARGO_MANIFEST_DIR (of the crate being compiled) in rustc's
-    // environment, and the proc-macro runs inside that rustc, so this is the
-    // CALLER's crate dir: `<module>/server`. The module root (holding
-    // module.json + icon) is its parent.
+    // The proc-macro runs inside the caller's rustc, so CARGO_MANIFEST_DIR is the
+    // CALLER's crate dir: `<module>/server`, whose parent is the module root.
     let manifest_dir = match std::env::var("CARGO_MANIFEST_DIR") {
         Ok(dir) => dir,
         Err(_) => return compile_error("embedded_module!(): CARGO_MANIFEST_DIR is not set"),
@@ -44,10 +29,8 @@ pub fn embedded_module(_input: TokenStream) -> TokenStream {
     let json_path = manifest_json.to_string_lossy();
 
     // `EmbeddedModule` is emitted unqualified so it resolves against whatever the
-    // caller has in scope (`use kroma_module_sdk::EmbeddedModule` for the modules
-    // above the facade, `use kroma_module_manifest::EmbeddedModule` for the ones
-    // below it like scene). The parsed tokens carry call-site hygiene, so this
-    // works in both without the macro hardcoding a crate path.
+    // caller has in scope; the parsed tokens carry call-site hygiene, so the macro
+    // never has to hardcode a crate path.
     let expanded = match find_icon(&module_root) {
         Some((icon_path, mime)) => {
             let icon_path = icon_path.to_string_lossy();
@@ -58,13 +41,9 @@ pub fn embedded_module(_input: TokenStream) -> TokenStream {
         None => format!("EmbeddedModule::iconless(include_str!({json:?}))", json = json_path),
     };
 
-    // The pieces are all path/MIME string literals we formatted ourselves, so
-    // this always parses.
     expanded.parse().expect("embedded_module!(): generated a valid const expression")
 }
 
-/// Probe for `icon.<ext>` in the module root, preferring vector then raster, and
-/// return the path plus the MIME to serve it as. `None` when there is no icon.
 fn find_icon(dir: &Path) -> Option<(PathBuf, &'static str)> {
     const CANDIDATES: &[(&str, &str)] = &[
         ("svg", "image/svg+xml"),

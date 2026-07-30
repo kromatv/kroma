@@ -13,11 +13,8 @@ use serde_json::Value;
 /// the same broadcast channel (serialized to JSON like the rest).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ModuleEvent {
-    /// The id of the module that emitted this.
     pub module: String,
-    /// Event name within the module's namespace, e.g. "download.progress".
     pub tag: String,
-    /// Free-form JSON payload.
     #[serde(default)]
     pub payload: Value,
 }

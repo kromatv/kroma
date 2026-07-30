@@ -1,15 +1,10 @@
 import { IconArrowRight, IconArrowUpRight, type TablerIcon } from '@tabler/icons-react';
 
 interface ContactCardProps {
-  /** The tabler glyph for the channel (rendered, not an element, so the card
-   *  controls its size/stroke to stay on the design grid). */
   icon: TablerIcon;
   title: string;
   description: string;
-  /** The affordance line under the description, the address or destination the
-   *  reader is about to reach (e.g. `support@kroma.tv`, `github.com/…/issues`). */
   action: string;
-  /** External URL or `mailto:` address. */
   href: string;
 }
 
@@ -24,8 +19,7 @@ export function ContactCard({
   href,
 }: Readonly<ContactCardProps>) {
   const Icon = icon;
-  // A mailto is not another site, so it must not open a new tab; only an
-  // http(s) URL does, and only it gets the leaving-the-site arrow.
+  // A mailto is not another site, so it must not open a new tab or get the arrow.
   const external = href.startsWith('http');
   const Arrow = external ? IconArrowUpRight : IconArrowRight;
 

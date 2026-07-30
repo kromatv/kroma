@@ -1,14 +1,12 @@
 //! Notification delivery: who gets told, and how they hear about it.
 //!
-//! One entry point, [`emit`]. Producers describe WHAT happened (a
-//! [`NotificationSpec`] of i18n keys, an image, a link, action buttons) and WHO
-//! should hear about it (an [`Audience`]); everything after that resolving the
-//! recipients, honouring their preferences, persisting a row and waking their
-//! open clients is handled here, so no producer has to know about the inbox.
+//! One entry point, [`emit`]: producers describe WHAT happened (a
+//! [`NotificationSpec`]) and WHO should hear it (an [`Audience`]); everything
+//! else — resolving recipients, honouring preferences, persisting a row, waking
+//! open clients — happens here.
 //!
-//! Emission is synchronous and does DB work: call it from a blocking context
-//! (`api::util::blocking`, a job thread), never inline in an async handler the
-//! same rule the requests service follows.
+//! Emission is synchronous and does DB work: call it from a blocking context,
+//! never inline in an async handler.
 
 pub mod art;
 pub mod digest;
@@ -24,10 +22,8 @@ use kroma_domain::{Audience, NotificationSpec, User};
 use crate::db;
 use crate::services::jobs::now_ms;
 
-/// Resolve an audience to the accounts that should receive this.
-///
-/// Returns full [`User`]s: the caller needs `language` to render for each
-/// recipient, so re-fetching per id would be a query per notification.
+// Returns full `User`s: the caller needs `language` to render for each
+// recipient, so re-fetching per id would be a query per notification.
 fn resolve<S: HostCtx>(audience: &Audience, state: &S) -> anyhow::Result<Vec<User>> {
     // The single-recipient case is by far the most common (a request approved,
     // a report triaged) and has an indexed lookup; only the set-valued audiences
@@ -97,7 +93,7 @@ pub fn emit_to<S: HostCtx>(state: &S, recipients: &[User], spec: &NotificationSp
     sent
 }
 
-/// Deliver to one recipient. `Ok(false)` means they have this category muted.
+// `Ok(false)` means they have this category muted.
 fn deliver<S: HostCtx>(
     state: &S,
     user: &User,
@@ -147,10 +143,8 @@ fn deliver<S: HostCtx>(
         Event::new("notification.created", json!({ "id": id, "unread": unread })),
     );
 
-    // Then the device. Rendered in the recipient's own language, exactly like
-    // the row they will see in the centre. Best effort by design: the row is
-    // already written, so a push service being down costs a push, not the
-    // notification.
+    // Then the device, best-effort: the row is already written, so a push
+    // service being down costs a push, not the notification.
     if push_allowed {
         // Sized on the way out: the device fetches this URL itself, over its own
         // network, and a lock-screen thumbnail has no use for the master (see
@@ -179,9 +173,8 @@ mod tests {
     use super::*;
     use crate::test_support;
 
-    /// A real app host with its bus tapped: the shared decorator forwards every
-    /// method to the app state and captures what was published, which is the
-    /// only thing these tests assert on.
+    // A real app host with its bus tapped: the shared decorator forwards every
+    // method to the app state and captures what was published.
     type RecordingHost = kroma_module_host::testing::Recording<crate::state::SharedState>;
 
     fn recording_host() -> RecordingHost {
@@ -298,8 +291,8 @@ mod tests {
         // Two rows, not one clobbered by a colliding primary key.
         assert_eq!(db::notifications::unread_count(&conn, &ana).unwrap(), 2);
     }
-    /// A show plus one episode, and the three independent ways an account can
-    /// come to follow it.
+    // A show plus one episode, and the three independent ways an account can
+    // come to follow it.
     fn seed_show(host: &RecordingHost) {
         let conn = host.db().get().unwrap();
         conn.execute("INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','shows','/x','now')", []).unwrap();
@@ -391,12 +384,9 @@ mod tests {
 
     #[test]
     fn the_row_the_push_renders_from_is_the_one_just_written() {
-        // `deliver` re-reads the notification it just inserted to render it for
-        // the device, via `ORDER BY created_at DESC LIMIT 1`. Two notifications
-        // landing in the same millisecond tie on that column, so this pins that
-        // the freshly-written row is still findable - if the lookup ever stops
-        // matching, the push is silently dropped while the in-app row is fine,
-        // which is close to invisible in production.
+        // `deliver` re-reads the just-inserted row via `ORDER BY created_at DESC
+        // LIMIT 1`; same-millisecond rows tie on that column, so this pins that the
+        // freshly-written one is still findable - a silent push drop otherwise.
         let host = recording_host();
         let ana = user(&host, "ana@t.dev", "Ana", &[]);
         emit(&host, &Audience::user(ana.clone()), &spec());

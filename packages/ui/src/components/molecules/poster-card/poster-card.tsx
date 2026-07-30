@@ -13,8 +13,8 @@ import { tintGradient } from '#ui/components/molecules/media-card';
 import { gradient } from '#ui/lib/css';
 import { fonts, radius } from '#ui/lib/tokens';
 
-/** Steeper than the rail tile's scrim: a poster is taller, so the fade has
- * further to travel before it reaches the title. */
+// Steeper than the rail tile's scrim: a poster is taller, so the fade has
+// further to travel before it reaches the title.
 const POSTER_SCRIM = [
   'linear-gradient(to top,',
   'rgba(0, 0, 0, 0.92) 0%,',
@@ -64,15 +64,9 @@ function PosterCard({
       style={{ width: width ?? '100%', borderRadius: radius.lg }}
     >
       <Box aspect={2 / 3} radius="lg" overflow="hidden" bg="surface1" shadow="card">
-        {/* Every layer rounds ITSELF, and the parent still clips. Belt and
-            braces, because the braces demonstrably slip: Chrome fails to apply an
-            `overflow: hidden` + `border-radius` clip to a COMPOSITED descendant,
-            and the `<img decoding="async">` below is exactly that. The result was a
-            card that drew as a hard-cornered rectangle - the scrim reaching square
-            into all four corners over rounded artwork - on every tile EXCEPT the
-            focused one, which escaped it only because its focus scale forces Chrome
-            to rasterise the clip. Rounding each layer costs nothing and does not
-            depend on the compositor agreeing with us. */}
+        {/* Every layer rounds itself as well as the parent clipping: Chrome
+            doesn't reliably apply an `overflow: hidden` + `border-radius` clip
+            to a composited descendant like the `<img>` below. */}
         <Img src={art} background={tintGradient(tint)} radius={radius.lg} fill />
         <Box fill radius="lg" style={gradient(POSTER_SCRIM)} />
         {watched ? <WatchedBadge size={26} /> : null}

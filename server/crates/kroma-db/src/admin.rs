@@ -5,8 +5,6 @@ use super::*;
 
 use rusqlite::OptionalExtension;
 
-// ----- settings store ---------------------------------------------------------
-
 /// Every persisted setting as `(key, value)` pairs (value is parsed JSON).
 pub fn settings_all(pool: &Pool) -> Result<Vec<(String, serde_json::Value)>> {
     let conn = pool.get()?;
@@ -37,8 +35,6 @@ pub fn settings_set(pool: &Pool, key: &str, value: &serde_json::Value) -> Result
     )?;
     Ok(())
 }
-
-// ----- admin: users -----------------------------------------------------------
 
 fn row_to_admin_user(r: &Row) -> rusqlite::Result<User> {
     // Reuse the User shape: cols 0..=5 match row_to_user, col 6 carries last_seen
@@ -105,7 +101,6 @@ pub fn update_user_permissions(pool: &Pool, id: &str, permissions: &[Permission]
     Ok(())
 }
 
-/// Rename a user.
 pub fn set_user_username(pool: &Pool, id: &str, username: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -122,7 +117,6 @@ pub fn delete_user(pool: &Pool, id: &str) -> Result<()> {
     Ok(())
 }
 
-/// Stamp a user's last-seen time (called on login + playback ping).
 pub fn touch_last_seen(pool: &Pool, id: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -131,8 +125,6 @@ pub fn touch_last_seen(pool: &Pool, id: &str) -> Result<()> {
     )?;
     Ok(())
 }
-
-// ----- admin: play history + analytics ---------------------------------------
 
 /// Append one finished playback to the history log.
 #[allow(clippy::too_many_arguments)]
@@ -203,9 +195,7 @@ pub fn history_since(pool: &Pool, since: i64) -> Result<Vec<kroma_domain::Histor
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-// ----- admin: library + storage stats ----------------------------------------
-
-/// Per-library item count + total bytes on disk (joins items→files).
+/// Per-library item count + total bytes on disk.
 pub fn library_stats(pool: &Pool) -> Result<Vec<kroma_domain::LibraryStat>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
@@ -268,7 +258,6 @@ mod tests {
         assert!(settings_all(&p).unwrap().is_empty());
         settings_set(&p, "serverName", &serde_json::json!("My KROMA")).unwrap();
         settings_set(&p, "maxConcurrent", &serde_json::json!(3)).unwrap();
-        // Upsert overwrites the same key in place.
         settings_set(&p, "serverName", &serde_json::json!("Renamed")).unwrap();
         let all: std::collections::HashMap<String, serde_json::Value> =
             settings_all(&p).unwrap().into_iter().collect();
@@ -292,7 +281,6 @@ mod tests {
         assert!(!owner_row.online);
         assert!(owner_row.last_seen.is_none());
 
-        // get_user, permission + username updates, last-seen stamp.
         assert_eq!(get_user(&p, &member.id).unwrap().unwrap().username, "member");
         assert!(get_user(&p, "missing").unwrap().is_none());
         update_user_permissions(&p, &member.id, &[Permission::Playback, Permission::RequestsCreate]).unwrap();
@@ -303,7 +291,6 @@ mod tests {
         let after = admin_users(&p).unwrap();
         assert!(after.iter().find(|u| u.id == member.id).unwrap().last_seen.is_some());
 
-        // Delete drops the account.
         delete_user(&p, &member.id).unwrap();
         assert_eq!(admin_users(&p).unwrap().len(), 1);
     }

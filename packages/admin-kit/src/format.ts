@@ -1,31 +1,27 @@
-// The pure formatting + deterministic-gradient helpers the admin kit and its
-// pages need. Copied (not imported) from the app so the kit stays a leaf package;
-// these are ~5 tiny pure functions with no dependencies.
+// Duplicated from the app rather than imported, so the kit stays a leaf package.
 
-/** Deterministic hue (0..359) from a string. */
+/** Deterministic hue in 0..359. */
 export function hue(s: string): number {
   let h = 0;
   for (let i = 0; i < (s || '').length; i++) h = (h * 31 + (s.codePointAt(i) ?? 0)) % 360;
   return h;
 }
 
-/** Avatar gradient for a name. */
 export function avatarGradient(name: string): string {
   const h = hue(name);
   return `linear-gradient(140deg, hsl(${h} 48% 46%), hsl(${(h + 40) % 360} 54% 26%))`;
 }
 
-/** First letter, upper-cased. */
 export function initial(name: string): string {
   return (name?.[0] ?? '?').toUpperCase();
 }
 
-/** A French-style decimal (comma) with `digits` places. */
+/** French-style decimal: a comma separator. */
 export function decimal(n: number, digits = 1): string {
   return n.toFixed(digits).replace('.', ',');
 }
 
-/** Human byte size: To / Go / Mo / Ko. */
+/** Human byte size in French units: o / Ko / Mo / Go / To / Po. */
 export function formatBytes(bytes: number): string {
   if (!bytes || bytes < 0) return '0 o';
   const units = ['o', 'Ko', 'Mo', 'Go', 'To', 'Po'];

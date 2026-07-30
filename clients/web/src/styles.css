@@ -89,41 +89,25 @@
   }
 }
 
-/* The field ring. Same 3px geometry as the app's 10-foot `--ring-focus-sm`, in
+/* The field ring: same 3px geometry as the app's 10-foot `--ring-focus-sm`, in
    an amber a form can carry rather than the solid one, which boxes an input.
-   Named because TWO things draw it: the field itself, and the bordered GROUP
-   that owns focus for a borderless input sitting inside it (a search box, an
-   InputGroup) - they must not drift apart. `color-mix` over the accent token, so
-   a themed accent retints the ring with everything else.
-   An OUTLINE rather than a box-shadow, unlike the 10-foot ring: it follows the
-   control's own corners just as well, and it does not evict the shadow a field
-   already carries (the discovery search box keeps its card shadow while it is
-   focused). */
+   Drawn by both the field itself and the bordered GROUP that owns focus for a
+   borderless input inside it (a search box, an InputGroup) - they must not
+   drift apart. An OUTLINE rather than a box-shadow, unlike the 10-foot ring:
+   it does not evict a shadow the field already carries. */
 :root {
   --ring-field: 3px solid color-mix(in srgb, var(--kroma-accent) 32%, transparent);
 }
 
 /* THE FIELD FOCUS VISUAL, for every text entry on the web.
-   The shared @kroma/ui `:focus-visible` amber ring (essential for 10-foot TV
-   navigation) is UNLAYERED, so it beats Tailwind's layered utilities: a field
-   can neither opt out of it nor dress its own focus from a class - which is why
-   the InputGroup's `focus-visible:shadow-none` never actually suppressed it.
-   So the field's focus is spelled here, once, unlayered, and every field in the
-   app - admin kit, module UIs, one-off dialogs - gets the same one.
-   It is the field ring above plus the accent border the fields already ask for,
-   and it hugs the control's own corners, now that nothing overrides
-   border-radius.
-   Controls that are really buttons or toggles keep the app's own ring, and a
-   borderless control whose WRAPPER is the box a reader sees (a search box with
-   a glyph in it, an InputGroup) marks itself `data-focus-ring="off"`. That one
-   marker does both halves of the job: the control takes no ring, and the box
-   AROUND it - its direct parent, which is the bordered one in every case -
-   lights up instead. Nothing else to remember, and nothing to keep in step.
-   A parent that is NOT the field (the search row inside a select popover, where
-   the popup itself is the box) wears the same marker to sit the round out.
-   `[role="combobox"]` is in here because a select chip is a FIELD even though it
-   is built from a button: without it, the one control in a form that is not an
-   <input> lit up with the solid 10-foot ring while its neighbours got this one. */
+   Unlayered on purpose, so it beats Tailwind's layered utilities: a field
+   can neither opt out of it nor dress its own focus from a class. It is the
+   field ring above plus the accent border the fields already ask for.
+   A borderless control whose WRAPPER is the box a reader sees (a search box
+   with a glyph in it, an InputGroup) marks itself `data-focus-ring="off"`:
+   the control takes no ring, and its direct parent lights up instead.
+   `[role="combobox"]` is included because a select chip is a FIELD even
+   though it is built from a button. */
 input:not(
     [type="checkbox"],
     [type="radio"],

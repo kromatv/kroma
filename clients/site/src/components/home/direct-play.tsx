@@ -2,9 +2,7 @@ import { Container } from '#site/components/container';
 import { BandHeading } from '#site/components/home/heading';
 import { m } from '#site/paraglide/messages';
 
-// The codecs the clients decode themselves. Identifiers, not prose, so they stay
-// here. HEVC is lit in amber as the hero codec; the rest stay neutral, so the row
-// keeps to the single-accent rule.
+// Identifiers, not prose, so they stay out of the message catalogue.
 const CODECS: readonly { label: string; hero?: true }[] = [
   { label: 'HEVC / H.265', hero: true },
   { label: '10-bit · HDR' },
@@ -14,10 +12,6 @@ const CODECS: readonly { label: string; hero?: true }[] = [
   { label: 'AC3 / EAC3' },
 ];
 
-// The playback story gets its own focused moment. The claim is blunt, the server
-// never transcodes video, and the right rail proves it two ways: the codecs the
-// clients decode themselves, and a NAS-CPU meter parked near zero because there is
-// no transcode to run.
 export function DirectPlay() {
   return (
     <section className="py-20 sm:py-28">
@@ -57,8 +51,6 @@ export function DirectPlay() {
 
             <div className="mt-8 h-px bg-border" />
 
-            {/* The whole point, as one gauge: nothing to transcode means the box
-                stays cold. A sliver of amber near the origin, not a full bar. */}
             <div className="mt-6">
               <div className="flex items-baseline justify-between">
                 <span className="font-mono text-xs text-muted">

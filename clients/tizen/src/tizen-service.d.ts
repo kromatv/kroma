@@ -1,9 +1,7 @@
-// The globals a Tizen JS service runs with. There is no @types package for the
-// service runtime, and it is NOT the browser's `tizen`: this context has no DOM
-// and no `fs`, so file access goes through `tizen.filesystem`.
-//
-// Narrow on purpose - only what preview-service.ts touches. A wider guess would
-// be a wider lie, and the compiler cannot check any of it against a real TV.
+// The globals a Tizen JS service runs with; there is no @types package for the
+// service runtime, and it is NOT the browser's `tizen` (no DOM, no `fs`).
+// Narrow on purpose: only what preview-service.ts touches, since the compiler
+// cannot check any of it against a real TV.
 
 interface TizenFileStream {
   bytesAvailable: number;

@@ -63,11 +63,9 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           <AuthProvider>
             <WatchedProvider>
               <MyListProvider>
-                {/* Each route picks its own frame: the `_app` layout wraps
-                    authenticated pages in the sidebar shell + login gate; login,
-                    join and the admin console own their chrome. ModuleHostProvider
-                    runs the module runtime app-wide so both the main and admin
-                    shells can read module-contributed nav + pages. */}
+                {/* Each route picks its own frame (the `_app` layout, or its own
+                    chrome for login/join/admin); ModuleHostProvider runs app-wide
+                    so every shell can read module-contributed nav + pages. */}
                 <LocaleProvider>
                   <ModuleHostProvider>{children}</ModuleHostProvider>
                 </LocaleProvider>

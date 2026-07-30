@@ -1,10 +1,6 @@
-//! Integration tests for the "fix a wrong TMDB match" handlers
-//! (`src/api/rematch.rs`): the `library.manage` gate, the path vocabulary, and
-//! the pin/clear round trip.
-//!
-//! The candidate *listing* needs a live TMDB call, so these cover everything up
-//! to it: authorization, unknown kinds/ids, and `POST` (which touches only the
-//! DB). The ranking itself is unit-tested in `services::rematch`.
+//! Integration tests for the "fix a wrong TMDB match" handlers (`src/api/rematch.rs`):
+//! the `library.manage` gate, path vocabulary, and pin/clear round trip. Candidate
+//! *listing* needs a live TMDB call, so it's out of scope here; see `services::rematch`.
 
 use axum::http::StatusCode;
 use serde_json::json;

@@ -1,10 +1,8 @@
-//! `metadata.enrich` re-resolve TMDB metadata (posters, overviews, embeddings)
-//! for the whole catalog. Runs the enrichment to completion within the run so
-//! the Tâches console tracks real progress, duration and per-run counts.
+//! `metadata.enrich` re-resolves TMDB metadata (posters, overviews, embeddings)
+//! for the whole catalog, to completion within the run so progress is tracked.
 
 use super::prelude::*;
 
-/// Manual-only: fetch posters/backdrops/metadata for items missing it.
 pub(super) const SPEC: Builtin = Builtin {
     key: JobKey("metadata.enrich"),
     category: Category::Library,
@@ -46,8 +44,8 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         summary.resolved, summary.missed, summary.failed, summary.total
     ));
 
-    // Freshly-resolved cast / overview / localized titles are now persisted
-    // rebuild the search index so they become searchable.
+    // Freshly-resolved cast / overview / localized titles only become searchable
+    // after a reindex.
     ctx.info("rebuilding search index…");
     match state.search.reindex_from_db(&state.db) {
         Ok(()) => ctx.info("search index rebuilt"),
@@ -67,8 +65,6 @@ mod tests {
         serde_json::json!({ "page": 1, "total_pages": 1, "results": [] })
     }
 
-    /// Every line the run wrote to its log, which is what the Tâches console
-    /// shows and the only observable this job has.
     fn log_lines(state: &SharedState, run_id: &str) -> Vec<String> {
         let conn = state.db.get().unwrap();
         let mut stmt = conn
@@ -89,9 +85,6 @@ mod tests {
 
     #[test]
     fn without_a_tmdb_key_the_job_says_so_and_does_nothing_else() {
-        // The common self-hosted case: a red job on every manual run would be
-        // wrong, since there is genuinely nothing to enrich from. But it must
-        // also not go on to spend the expensive reindex.
         let state = test_state();
         seed_movie(&state, "itm-1");
 
@@ -104,9 +97,6 @@ mod tests {
 
     #[test]
     fn a_finished_pass_reports_its_counts_and_rebuilds_the_index() {
-        // Freshly-resolved cast / overview / localized titles are only
-        // searchable after the reindex, so a pass that skipped it leaves search
-        // stale until the next scan.
         let state = test_state_with_tmdb("test-key");
         seed_movie(&state, "itm-1");
         let _tmdb = FakeTmdb::start(|_| (200, empty_page()));
@@ -120,8 +110,6 @@ mod tests {
 
     #[test]
     fn a_cancelled_pass_stops_before_the_reindex() {
-        // Rebuilding the index for a catalogue the pass only half-touched spends
-        // the expensive half of the job on a result nobody asked to complete.
         let state = test_state_with_tmdb("test-key");
         seed_movie(&state, "itm-1");
         let _tmdb = FakeTmdb::start(|_| (200, empty_page()));

@@ -6,7 +6,7 @@ use rusqlite::OptionalExtension;
 
 use super::*;
 
-/// A cached generated subtitle. `path` is an absolute WebVTT file under the data dir.
+/// A cached generated subtitle; `path` is an absolute WebVTT file under the data dir.
 #[derive(Debug, Clone)]
 pub struct DownloadedSub {
     pub id: String,
@@ -30,7 +30,7 @@ fn from_row(r: &Row) -> rusqlite::Result<DownloadedSub> {
 
 const COLS: &str = "id, item_id, language, label, provider, path";
 
-/// Every downloaded subtitle for an item, oldest first.
+/// Oldest first.
 pub fn downloaded_subs_for_item(conn: &Connection, item_id: &str) -> rusqlite::Result<Vec<DownloadedSub>> {
     let mut stmt =
         conn.prepare(&format!("SELECT {COLS} FROM downloaded_subtitles WHERE item_id = ?1 ORDER BY created_at"))?;
@@ -38,14 +38,12 @@ pub fn downloaded_subs_for_item(conn: &Connection, item_id: &str) -> rusqlite::R
     rows.collect()
 }
 
-/// One downloaded subtitle by id (for serving its WebVTT).
 pub fn downloaded_sub(conn: &Connection, id: &str) -> rusqlite::Result<Option<DownloadedSub>> {
     let mut stmt = conn.prepare(&format!("SELECT {COLS} FROM downloaded_subtitles WHERE id = ?1"))?;
     let mut rows = stmt.query_map(params![id], from_row)?;
     rows.next().transpose()
 }
 
-/// Insert (or replace) a downloaded subtitle record.
 pub fn insert_downloaded_sub(pool: &Pool, sub: &DownloadedSub) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -56,8 +54,8 @@ pub fn insert_downloaded_sub(pool: &Pool, sub: &DownloadedSub) -> Result<()> {
     Ok(())
 }
 
-/// Delete a downloaded subtitle record by id, returning its file path (if any) so
-/// the caller can remove the cached WebVTT from disk.
+/// Returns the deleted row's file path so the caller can remove the cached
+/// WebVTT from disk.
 pub fn delete_downloaded_sub(pool: &Pool, id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let path: Option<String> = conn
@@ -119,9 +117,8 @@ mod tests {
         assert!(downloaded_sub(&conn, "missing").unwrap().is_none());
         drop(conn);
 
-        // Delete returns the path for on-disk cleanup, then the row is gone.
         assert_eq!(delete_downloaded_sub(&p, "s1").unwrap().as_deref(), Some("/data/subs/s1.vtt"));
-        assert!(delete_downloaded_sub(&p, "s1").unwrap().is_none()); // already gone
+        assert!(delete_downloaded_sub(&p, "s1").unwrap().is_none());
         let conn = p.get().unwrap();
         assert_eq!(downloaded_subs_for_item(&conn, "m1").unwrap().len(), 1);
     }

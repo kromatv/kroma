@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use crate::db::{self, Pool};
 use crate::model::SectionItem;
 
-/// How deep the trending rank signal looks.
+// How deep the trending rank signal looks.
 const TREND_DEPTH: usize = 50;
 
 /// Everything the hero can be picked from: every movie and every show (episodes
@@ -60,8 +60,8 @@ pub(super) fn trend_scores(pool: &Pool) -> HashMap<String, f32> {
     rank_scores(super::super::trending_ids(pool, TREND_DEPTH))
 }
 
-/// Rank -> score: first place scores 1.0 and the tail scales linearly down to
-/// `1/len`, so the signal reads the same in a library of any size.
+// Rank -> score: first place scores 1.0 and the tail scales linearly down to
+// `1/len`, so the signal reads the same in a library of any size.
 fn rank_scores(ids: Vec<String>) -> HashMap<String, f32> {
     let len = ids.len() as f32;
     ids.into_iter().enumerate().map(|(i, id)| (id, (len - i as f32) / len)).collect()

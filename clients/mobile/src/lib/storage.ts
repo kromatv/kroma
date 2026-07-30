@@ -1,7 +1,5 @@
-// Device persistence for the mobile client: remembered accounts (SecureStore,
-// they hold device credentials) and saved servers / small prefs. Mirrors the
-// TV client's multi-server model: any number of servers, any number of
-// remembered accounts per server, one active pointer.
+// Device persistence: remembered accounts (in SecureStore, they hold device
+// credentials), saved servers and small prefs.
 
 import type { User } from '@kroma/core';
 import * as SecureStore from 'expo-secure-store';
@@ -12,7 +10,6 @@ const PREF_PREFIX = 'kroma.mobile.pref.';
 
 export type SlimUser = Pick<User, 'id' | 'username' | 'email' | 'avatarUrl' | 'hasPin'>;
 
-/** One remembered account: enough to silently re-enter it on any launch. */
 export interface MobileAccount {
   serverUrl: string;
   accessToken: string;
@@ -21,7 +18,6 @@ export interface MobileAccount {
 
 export interface ServerEntry {
   url: string;
-  /** Admin-configured server name from `/health`, refreshed on each contact. */
   name?: string;
   lastUsedAt: number;
 }
@@ -92,13 +88,11 @@ export async function saveActive(active: ActivePointer | null): Promise<void> {
   await savePref('active', active ? JSON.stringify(active) : null);
 }
 
-// ----- biometric PIN vault ----------------------------------------------------
-// A PIN-locked profile's PIN, stored behind device biometrics (Face ID /
-// Touch ID): unlocking reads it with a biometric prompt instead of the pad.
+// A PIN-locked profile's PIN, stored behind device biometrics: unlocking reads
+// it with a biometric prompt instead of the pad.
 
 const PIN_KEY_PREFIX = 'kroma.mobile.pin.';
 
-/** One account on one server, sanitized down to a keychain-safe identifier. */
 function accountSlug(serverUrl: string, userId: string): string {
   return `${serverUrl}.${userId}`.replace(/[^A-Za-z0-9._-]/g, '_');
 }
@@ -107,8 +101,6 @@ function pinStoreKey(serverUrl: string, userId: string): string {
   return `${PIN_KEY_PREFIX}${serverUrl}.${userId}`.replace(/[^A-Za-z0-9._-]/g, '_');
 }
 
-/** Whether this device can guard the vault (Face ID / Touch ID / Android
- * biometrics enrolled); gates the toggle in the profile-lock settings. */
 export function canStoreBiometricPin(): boolean {
   return SecureStore.canUseBiometricAuthentication();
 }
@@ -149,10 +141,8 @@ export async function deletePinBehindBiometrics(serverUrl: string, userId: strin
   await SecureStore.deleteItemAsync(pinStoreKey(serverUrl, userId)).catch(() => undefined);
 }
 
-// Standalone biometric lock for profiles WITHOUT a server PIN: an explicit
-// opt-in (default OFF) that gates entering the profile, both from the gate and
-// on app launch, behind Face ID / Touch ID on this device. Passing the lock =
-// successfully reading a keychain sentinel stored behind biometrics; the flag
+// Standalone biometric lock for profiles WITHOUT a server PIN (default OFF).
+// Passing it = reading a keychain sentinel stored behind biometrics; the flag
 // itself is a plain pref so the UI can render without prompting.
 
 const BIOLOCK_SENTINEL_PREFIX = 'kroma.mobile.biolock.';
@@ -165,12 +155,9 @@ function bioLockFlagKey(serverUrl: string, userId: string): string {
   return `biolock.${accountSlug(serverUrl, userId)}`;
 }
 
-/** Whether this profile is biometric-locked on this device. Fails CLOSED: an
- * unreadable keychain (a transient SecureStore error, or a device restored from
- * backup whose keychain is still locked right after boot) must read as "locked",
- * never as "no lock configured" - the second answer would open a locked profile
- * with no prompt at all. `loadPref` swallows its errors, so the raw read is done
- * here. */
+/** Fails CLOSED: an unreadable keychain must read as "locked", never as "no lock
+ *  configured", which would open a locked profile with no prompt. `loadPref`
+ *  swallows its errors, so the raw read is done here. */
 export async function isBiometricLockEnabled(serverUrl: string, userId: string): Promise<boolean> {
   try {
     return (
@@ -202,8 +189,7 @@ export async function setBiometricLockEnabled(
   return true;
 }
 
-/** Shows the system biometric prompt; true only when it succeeds. Fails closed
- * (cancel, failed scan or missing sentinel all deny). */
+/** Fails closed: cancel, failed scan or missing sentinel all deny. */
 export async function passBiometricLock(
   serverUrl: string,
   userId: string,
@@ -220,8 +206,7 @@ export async function passBiometricLock(
   }
 }
 
-// Per-account opt-out of the biometric vault (default ON: the gate stores a
-// pad-typed PIN and tries Face ID / Touch ID first on the next unlock).
+// Per-account opt-out of the biometric vault, default ON.
 
 function bioPrefKey(serverUrl: string, userId: string): string {
   return `bio.${accountSlug(serverUrl, userId)}`;
@@ -242,7 +227,6 @@ export async function setBiometricUnlockEnabled(
   await savePref(bioPrefKey(serverUrl, userId), enabled ? null : '0');
 }
 
-/** Small non-secret prefs (locale override, saved servers, active pointer). */
 export async function loadPref(key: string): Promise<string | null> {
   try {
     return await SecureStore.getItemAsync(PREF_PREFIX + key);

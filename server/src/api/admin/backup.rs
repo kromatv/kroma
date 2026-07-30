@@ -33,13 +33,11 @@ pub fn routes() -> Router<SharedState> {
         )
 }
 
-/// Max accepted import body. The whole `.kroma` is buffered in memory; backups are
-/// normally KB–MB, but lift the small axum default (2 MiB) so a large library
-/// (many accounts/avatars) isn't rejected with an opaque 413.
+// The whole `.kroma` is buffered in memory; lift axum's 2 MiB default so a
+// large library (many accounts/avatars) isn't rejected with an opaque 413.
 pub const MAX_BACKUP_BYTES: usize = 256 * 1024 * 1024;
 
-/// Optional encryption password sent hex-encoded in `X-Backup-Password` so an
-/// arbitrary (non-ASCII) password survives an HTTP header. Empty/absent → none.
+// Hex-encoded so an arbitrary (non-ASCII) password survives an HTTP header.
 fn header_password(headers: &HeaderMap) -> Option<String> {
     let raw = headers.get("x-backup-password")?.to_str().ok()?;
     let bytes = hex::decode(raw).ok()?;

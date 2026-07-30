@@ -67,8 +67,8 @@ mod tests {
 
     use super::*;
 
-    /// An embedder whose output encodes its input, so a test can tell which
-    /// text produced which vector - and therefore whether the ORDER survived.
+    // An embedder whose output encodes its input, so a test can tell which
+    // text produced which vector - and therefore whether the ORDER survived.
     struct Marking;
 
     impl Embedder for Marking {

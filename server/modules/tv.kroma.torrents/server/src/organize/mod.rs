@@ -4,7 +4,7 @@
 //! path, so renaming to a cleaner (still-parseable) name preserves watched
 //! state / progress / my-list.
 
-// The naming engine now lives in the SDK (kroma_module_sdk::ports::naming), shared
+// The naming engine lives in the SDK (kroma_module_sdk::ports::naming), shared
 // with acquisition's import; re-exported here so this crate's own callers keep
 // using crate::organize::naming.
 pub use kroma_module_sdk::ports::naming;
@@ -22,9 +22,9 @@ use kroma_module_sdk::host::HostCtx;
 
 use naming::{NameContext, NamingTemplates};
 
-/// Proper display title + year per show id, preferring the enriched TMDB
-/// metadata over the parsed folder name (so a rename produces "Breaking Bad",
-/// not "breaking bad").
+// Proper display title + year per show id, preferring the enriched TMDB
+// metadata over the parsed folder name (so a rename produces "Breaking Bad",
+// not "breaking bad").
 fn show_info(shows: &[Show]) -> HashMap<String, (String, Option<u32>)> {
     shows
         .iter()
@@ -176,8 +176,8 @@ pub fn apply<S: HostCtx>(state: &S, log: &dyn Fn(String)) -> Result<OrganizeResu
     Ok(result)
 }
 
-/// The naming context + display title for one library file, or `None` if it
-/// can't be placed (loose video, missing episode numbers...).
+// The naming context + display title for one library file, or `None` if it
+// can't be placed (loose video, missing episode numbers...).
 fn expected_rel(
     tpl: &NamingTemplates,
     item: &MediaItem,
@@ -223,8 +223,8 @@ fn expected_rel(
     }
 }
 
-/// Quality + MediaInfo naming context from a probed file, minus the
-/// title/year/season/ids the caller fills per kind.
+// Quality + MediaInfo naming context from a probed file, minus the
+// title/year/season/ids the caller fills per kind.
 fn quality_ctx(file: &MediaFile, parsed: &kroma_module_sdk::scene::ParsedRelease) -> NameContext {
     let width = file.video.as_ref().and_then(|v| v.width).map(|w| w as i64);
     let (_, _, source) = naming::quality_from_parsed(parsed);
@@ -248,7 +248,7 @@ fn quality_ctx(file: &MediaFile, parsed: &kroma_module_sdk::scene::ParsedRelease
     }
 }
 
-/// IMDb + TMDB ids from the item's TMDB metadata, for `{ImdbId}` / `{TmdbId}`.
+// IMDb + TMDB ids from the item's TMDB metadata, for `{ImdbId}` / `{TmdbId}`.
 fn item_ids(item: &MediaItem) -> (Option<String>, Option<u64>) {
     match item.metadata.as_ref() {
         Some(m) => (m.imdb_id.clone(), Some(m.tmdb_id)),
@@ -256,7 +256,7 @@ fn item_ids(item: &MediaItem) -> (Option<String>, Option<u64>) {
     }
 }
 
-/// Prefer the localized TMDB title, then the parsed item title.
+// Prefer the localized TMDB title, then the parsed item title.
 fn movie_title(item: &MediaItem) -> String {
     item.metadata
         .as_ref()
@@ -269,14 +269,14 @@ fn current_abs(file: &MediaFile) -> Option<PathBuf> {
     file.abs_path.as_deref().filter(|p| !p.starts_with("demo://")).map(PathBuf::from)
 }
 
-/// The library folder that contains `abs` (so a rename stays within the same
-/// root / filesystem).
+// The library folder that contains `abs` (so a rename stays within the same
+// root / filesystem).
 fn library_root(folders: &HashMap<String, Vec<PathBuf>>, lib_id: &str, abs: &Path) -> Option<PathBuf> {
     let roots = folders.get(lib_id)?;
     roots.iter().find(|root| abs.starts_with(root)).cloned().or_else(|| roots.first().cloned())
 }
 
-/// Rename in place, refusing to overwrite an existing different file.
+// Rename in place, refusing to overwrite an existing different file.
 fn move_file(from: &Path, to: &Path) -> Result<()> {
     if from == to {
         return Ok(());
@@ -299,8 +299,8 @@ fn move_file(from: &Path, to: &Path) -> Result<()> {
     }
 }
 
-/// Remove now-empty source directories up to (but not including) the library
-/// root, so a rename doesn't leave orphan folders behind.
+// Removes now-empty source directories up to (but not including) the library
+// root, so a rename doesn't leave orphan folders behind.
 fn prune_empty_dirs(dir: Option<&Path>, root: &Path) {
     let mut cur = dir.map(Path::to_path_buf);
     while let Some(d) = cur {

@@ -1,10 +1,8 @@
 import { tvShellLegacyConfig } from '@kroma/bundler/shell';
 import { target } from './tv.target';
 
-// LEGACY tier (Chromium 53-94, i.e. Tizen 6.0-7.0): built AFTER the modern tier;
+// LEGACY tier (Chromium 53-94, i.e. Tizen 6.0-7.0): built after the modern tier;
 // emits dist/legacy/ and rewrites dist/index.html into the runtime engine gate.
-// Guarded afterwards by `bun ../tv-build/check-legacy.ts` (see package.json).
-// Export tv-build's typed config straight through, WITHOUT re-wrapping in this
-// shell's own `defineConfig` (that would introduce a second, separately-deduped
-// physical vite copy and TS would reject the two `UserConfig` identities).
+// Exported straight through, never re-wrapped in this shell's own `defineConfig`:
+// that pulls in a second physical vite copy whose `UserConfig` identity TS rejects.
 export default tvShellLegacyConfig(import.meta.url, target);

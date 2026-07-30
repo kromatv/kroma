@@ -158,9 +158,8 @@ export const NamingTokenModal = createCallable<
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Native <button> backdrop: click (or Enter/Space) dismisses the modal.
-          The panel is a sibling that paints above it, so inside-clicks never
-          reach the backdrop (no stopPropagation needed). */}
+      {/* The panel is a sibling that paints above this backdrop, so inside-clicks
+          never reach it (no stopPropagation needed). */}
       <button
         type="button"
         aria-label={t('common.close')}
@@ -255,7 +254,6 @@ function Fieldset({ title, children }: Readonly<{ title: string; children: React
   );
 }
 
-/** Show the token's example with the chosen separator swapped in for spaces. */
 function example(ex: string, separator: string): string {
   return separator === ' ' ? ex : ex.replaceAll(' ', separator);
 }

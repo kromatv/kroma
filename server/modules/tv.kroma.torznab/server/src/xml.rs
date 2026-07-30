@@ -46,8 +46,8 @@ pub fn parse_items(xml: &[u8]) -> Result<Vec<Release>> {
     Ok(out)
 }
 
-/// A `<...>` open tag: start a new item, or name the simple text field the
-/// following text belongs to. Clears the field-text accumulator.
+// A `<...>` open tag: start a new item, or name the simple text field the
+// following text belongs to. Clears the field-text accumulator.
 fn handle_start(
     e: &BytesStart,
     current: &mut Option<Release>,
@@ -69,8 +69,8 @@ fn handle_start(
     }
 }
 
-/// A self-closing `<... />` element: the torznab error doc, `<enclosure>`, or a
-/// `<torznab:attr>` extension.
+// A self-closing `<... />` element: the torznab error doc, `<enclosure>`, or a
+// `<torznab:attr>` extension.
 fn handle_empty(e: &BytesStart, decoder: Decoder, current: &mut Option<Release>) -> Result<()> {
     match e.local_name().as_ref() {
         b"error" => read_error(e, decoder),
@@ -90,7 +90,7 @@ fn handle_empty(e: &BytesStart, decoder: Decoder, current: &mut Option<Release>)
     }
 }
 
-/// A `<error code=.. description=.. />` document: always surfaced as `Err`.
+// A `<error code=.. description=.. />` document: always surfaced as `Err`.
 fn read_error(e: &BytesStart, decoder: Decoder) -> Result<()> {
     let mut code = String::new();
     let mut description = String::new();
@@ -105,7 +105,7 @@ fn read_error(e: &BytesStart, decoder: Decoder) -> Result<()> {
     bail!("torznab error {code}: {description}");
 }
 
-/// `<enclosure url=.. />`: the `.torrent` link, if no link is set yet.
+// `<enclosure url=.. />`: the `.torrent` link, if no link is set yet.
 fn read_enclosure(e: &BytesStart, decoder: Decoder, rel: &mut Release) -> Result<()> {
     for attr in e.attributes().flatten() {
         if attr.key.local_name().as_ref() == b"url" {
@@ -118,7 +118,7 @@ fn read_enclosure(e: &BytesStart, decoder: Decoder, rel: &mut Release) -> Result
     Ok(())
 }
 
-/// `<torznab:attr name=.. value=.. />`: fold the extension into the release.
+// `<torznab:attr name=.. value=.. />`: fold the extension into the release.
 fn read_attr_el(e: &BytesStart, decoder: Decoder, rel: &mut Release) -> Result<()> {
     let (mut name, mut value) = (String::new(), String::new());
     for attr in e.attributes().flatten() {
@@ -133,8 +133,8 @@ fn read_attr_el(e: &BytesStart, decoder: Decoder, rel: &mut Release) -> Result<(
     Ok(())
 }
 
-/// A `</...>` close tag: flush the accumulated field text, and on `</item>`
-/// commit the release (if it has a title).
+// A `</...>` close tag: flush the accumulated field text, and on `</item>`
+// commit the release (if it has a title).
 fn handle_end(
     e: &BytesEnd,
     current: &mut Option<Release>,
@@ -156,9 +156,9 @@ fn handle_end(
     }
 }
 
-/// Resolve a quick-xml `GeneralRef` (the `amp` of `&amp;`, or `#38` of `&#38;`)
-/// to its text by rebuilding the escaped form and running the standard XML
-/// unescaper (predefined entities + numeric refs). Unknown refs drop to empty.
+// Resolve a quick-xml `GeneralRef` (the `amp` of `&amp;`, or `#38` of `&#38;`)
+// to its text by rebuilding the escaped form and running the standard XML
+// unescaper (predefined entities + numeric refs). Unknown refs drop to empty.
 fn resolve_entity(r: &quick_xml::events::BytesRef) -> String {
     r.decode()
         .ok()
@@ -263,8 +263,8 @@ pub fn parse_caps(xml: &[u8]) -> Result<Caps> {
 mod tests {
     use super::*;
 
-    /// Shape captured from a Jackett Torznab response: CDATA title, escaped
-    /// entities in URLs, enclosure + torznab:attr extensions.
+    // Shape captured from a Jackett Torznab response: CDATA title, escaped
+    // entities in URLs, enclosure + torznab:attr extensions.
     const RSS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed">
  <channel>

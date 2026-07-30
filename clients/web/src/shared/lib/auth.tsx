@@ -14,17 +14,11 @@ import { queryClient } from '#web/shared/lib/query';
 import { getPasskey } from '#web/shared/lib/webauthn';
 
 interface AuthValue {
-  /** Logged-in user, or null when signed out. */
   user: User | null;
-  /** True once the session has been hydrated from storage (client-side). */
   ready: boolean;
-  /** Authed API client (token attached while logged in). */
   client: KromaClient;
-  /** Accounts already signed-in on this device switchable without a password. */
   accounts: StoredSession[];
   login: (email: string, password: string) => Promise<void>;
-  /** Usernameless passwordless sign-in: runs a discoverable WebAuthn assertion
-   * (the browser picks the account) and applies the resulting session. */
   loginPasskey: () => Promise<void>;
   register: (
     email: string,
@@ -33,17 +27,10 @@ interface AuthValue {
     avatar?: File | null,
     inviteToken?: string,
   ) => Promise<void>;
-  /** Switch to a remembered account by exchanging its access token. Pass `pin`
-   * for a PIN-locked profile; the result asks the UI to collect one if needed. */
   activate: (s: StoredSession, pin?: string) => Promise<ActivateResult>;
-  /** Return to the "Qui regarde ?" picker WITHOUT signing out (keeps remembered
-   * accounts, so switching back stays password-free). */
   switchProfile: () => void;
-  /** Forget a remembered account on this device (real sign-out for it). */
   forget: (userId: string) => void;
-  /** Fully sign out of the current account (invalidate + forget this device). */
   logout: () => Promise<void>;
-  /** Merge a patch into the active user, persisting it to the stored session. */
   updateUser: (patch: Partial<User>) => void;
 }
 
@@ -56,10 +43,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const auth = useAuthSession(client);
   const router = useRouter();
 
-  // Signing in (or switching account) flips the catalogue from auth-gated-empty
-  // to authorised: re-run the route loaders so the now-authorised data loads. A
-  // reload while already signed in doesn't need this loaders see `isAuthed()`
-  // and fetch normally so we invalidate only on the sign-in transition itself.
+  // Signing in flips the catalogue from auth-gated-empty to authorised: re-run
+  // the route loaders so the now-authorised data loads. A reload while already
+  // signed in doesn't need this, since loaders see `isAuthed()` and fetch
+  // normally; invalidate only on the sign-in transition itself.
   const login = useCallback(
     async (email: string, password: string) => {
       auth.apply(await client.login(email, password));

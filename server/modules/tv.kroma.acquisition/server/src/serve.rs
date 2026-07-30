@@ -19,7 +19,6 @@ pub fn acqsearch_routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<
         .route("/_port/acqsearch/grab", post(grab_h::<S>))
 }
 
-/// Run a blocking provider call into the `Result<T, String>` wire envelope.
 async fn blocking_env<T: Send + 'static>(
     job: impl FnOnce() -> anyhow::Result<T> + Send + 'static,
 ) -> Json<Result<T, String>> {
@@ -58,10 +57,8 @@ async fn grab_h<S: HostCtx + Clone + Send + Sync + 'static>(
     blocking_env(move || {
         let row = crate::search::grab_cached(&host, &req.request_id, &req.guid, &req.indexer_id)?;
         let id = row.id.clone();
-        // Background the slow engine add (magnet resolve / .torrent fetch) so the
-        // grab returns immediately, matching the core's former behavior. The grab
-        // client's `activate` is a blocking HTTP call to the torrents sidecar, so a
-        // plain thread (no runtime needed) is enough.
+        // Background the slow engine add so the grab returns immediately; `activate`
+        // is a blocking HTTP call, so a plain thread (no runtime needed) is enough.
         std::thread::spawn(move || crate::downloads(&host).activate(&host, &row));
         Ok(id)
     })
@@ -76,8 +73,6 @@ mod tests {
 
     use super::*;
 
-    /// The shared stub over a real (empty) database. The two handlers reach the
-    /// request ledger and stop there, which is all these tests need.
     type DbHost = kroma_module_sdk::host::testing::StubHost;
 
     fn db_host() -> DbHost {

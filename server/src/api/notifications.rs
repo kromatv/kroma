@@ -26,8 +26,8 @@ use crate::services::notify;
 use crate::services::jobs::now_ms;
 use crate::state::SharedState;
 
-/// How many rows one inbox read returns. The store keeps 200 per user
-/// (`db::notifications::RETENTION_PER_USER`); the bell only ever shows a page.
+// The store keeps 200 rows per user (`db::notifications::RETENTION_PER_USER`);
+// the bell only ever shows a page.
 const PAGE: usize = 50;
 
 pub fn routes() -> Router<SharedState> {
@@ -137,15 +137,10 @@ pub async fn put_prefs(
     Ok(Json(NotificationPrefs { categories }).into_response())
 }
 
-// ----- Web Push subscriptions -------------------------------------------------
-
-/// `GET /api/push/key` the server's VAPID public key, which the browser needs
-/// as `applicationServerKey` before it can subscribe. Also reports whether this
-/// account already has an endpoint registered, so the settings toggle renders in
-/// the right state without a second round trip.
-///
-/// The keypair is minted here on first call rather than at startup: a server
-/// whose users never enable push never needs one.
+/// `GET /api/push/key` the server's VAPID public key (`applicationServerKey`),
+/// plus whether this account already has an endpoint registered, so the
+/// settings toggle renders without a second round trip. The keypair is minted
+/// on first call, not at startup, since most servers never need one.
 pub async fn push_key(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -161,11 +156,9 @@ pub async fn push_key(
     Ok(Json(serde_json::json!({ "publicKey": key, "subscribed": subscribed })).into_response())
 }
 
-/// `POST /api/push/subscribe` register this device's push endpoint.
-///
-/// The endpoint is keyed on `(transport, endpoint)`, so re-subscribing the same
-/// browser updates its row rather than piling up duplicates, and a browser now
-/// signed into a different account moves with it.
+/// `POST /api/push/subscribe` register this device's push endpoint. Keyed on
+/// `(transport, endpoint)`, so re-subscribing the same browser updates its row
+/// instead of piling up duplicates, and follows the browser to a new account.
 pub async fn subscribe(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,

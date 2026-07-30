@@ -10,9 +10,7 @@ import { apiBase } from '#web/shared/lib/api';
  *  runtime admin state. Shared by the Modules + Store pages. */
 export interface AdminModule extends ModuleManifest {
   enabled: boolean;
-  /** Current value per config field key (falls back to each field's default). */
   configValues: Record<string, unknown>;
-  /** Runtime-installed (WASM) modules can be uninstalled; compile-time ones can't. */
   removable: boolean;
 }
 

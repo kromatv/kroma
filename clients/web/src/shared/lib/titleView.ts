@@ -1,8 +1,5 @@
 // One normalized "title" model that both the library fiche (owned) and the
-// discover fiche (TMDB / request flow) render through, so a movie/show is one
-// page instead of two divergent stacks. Built client-side from either source
-// (or both, for a partially-owned show): local playback drives Play, the TMDB
-// overlay drives Request + per-season availability.
+// discover fiche (TMDB / request flow) render through.
 
 import {
   type CastMember,
@@ -25,24 +22,19 @@ import {
 import { imageUrl } from '#web/shared/lib/api';
 
 /** A season in the unified model: owned playable episodes merged with TMDB
- * availability, so one list renders play-owned + request-missing. */
+ * availability. */
 export interface TitleSeason {
   number: number;
   name: string | null;
-  /** TMDB episode count (0 = unknown / local-only). */
   episodeCount: number;
   episodesAvailable: number;
   available: boolean;
   requested: boolean;
-  /** TMDB season air date (YYYY-MM-DD), for a "coming soon" hint on a season
-   * that has not aired yet. `null` for owned-only / undated seasons. */
   airDate: string | null;
-  /** Owned, playable episodes (empty for a not-owned season). */
   episodes: MediaItem[];
   cast: CastMember[];
 }
 
-/** A "similar" tile that knows where it opens (local fiche vs discover). */
 export interface SimilarTarget {
   key: string;
   title: string;
@@ -64,22 +56,18 @@ export interface TitleView {
   overview: string | null;
   tagline: string | null;
   genres: string[];
-  /** TMDB runtime for a not-owned movie's meta line (owned uses the file duration). */
   runtimeMin: number | null;
   poster: string;
   backdrop: string | null;
   directors: string[];
   cast: CastMember[];
   themeUrl: string | null;
-  /** Representative video for the quality badges (null = not owned). */
   video: VideoTrack | null;
-  /** The item Play targets (movie item, or a show's up-next/first episode). */
   playable: MediaItem | null;
   playLabel: string | null;
   seasons: TitleSeason[];
   requestStatus: RequestStatus | null;
   requestProgress: number | null;
-  /** The viewer may request missing parts (TMDB id known + `requests.create`). */
   canRequest: boolean;
   similar: SimilarTarget[];
 }
@@ -88,8 +76,8 @@ function dirsFromCrew(crew: CrewMember[] | null | undefined): string[] {
   return (crew ?? []).filter((c) => c.job === 'Director' || c.job === 'Creator').map((c) => c.name);
 }
 
-/** Every input a title page can arrive with. `discover` overlays availability +
- * request state onto owned content (null when unavailable / no permission). */
+/** `discover` overlays availability + request state onto owned content; it is
+ * null when unavailable or the viewer lacks permission. */
 export type TitleInput =
   | { source: 'movie'; item: MediaItem; similar: MediaItem[]; discover: DiscoverDetail | null }
   | {
@@ -199,7 +187,6 @@ export function buildTitleView(
     };
   }
 
-  // Not owned: a pure TMDB title (movie or show) driven by the discover DTO.
   const d = input.detail;
   return {
     kind: d.kind,
@@ -247,8 +234,6 @@ export function buildTitleView(
   };
 }
 
-/** Merge owned seasons (real playable episodes) with the TMDB availability
- * overlay, keyed by season number. Owned-only when no discover overlay. */
 function mergeSeasons(owned: Season[], discover: DiscoverDetail | null): TitleSeason[] {
   const ownedBy = new Map(owned.map((s) => [s.number, s]));
   if (!discover) {

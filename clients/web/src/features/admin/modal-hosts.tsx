@@ -1,8 +1,5 @@
-// Mount points for the admin console's imperative modals (react-call). Each
-// callable needs exactly one Root rendered while it can be called; hosting them
-// here in the admin layout (a) keeps their code in the admin bundle rather than
-// the app root, and (b) lets every call site drop its `useState(open)` +
-// conditional render in favour of `await SomeModal.call(props)`.
+// Mount points for the admin console's imperative modals (react-call): each
+// callable needs exactly one Root rendered while it can be called.
 import { AddEngineModal } from '@kroma/admin-kit';
 import { ExportModal, ImportModal } from '#web/features/admin/backup-modals';
 import { StopStreamModal } from '#web/features/admin/dashboard-now-playing';
@@ -29,8 +26,7 @@ export function AdminModalHosts() {
       <PipelineDrawer />
       <ReportDrawer />
       <RequestDrawer />
-      {/* Shared engine-add modal (admin-kit), used by module pages (indexers,
-          download clients). One root here covers every consumer. */}
+      {/* One root covers every module page (indexers, download clients). */}
       <AddEngineModal />
     </>
   );

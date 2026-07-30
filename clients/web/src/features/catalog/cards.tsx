@@ -94,8 +94,7 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
 }
 
 // Cards are memo()d: a home page renders hundreds of them, and without memo any
-// parent state change (hover, a poll refetch, router transitions) re-renders
-// every card. A watched toggle still re-renders them (context), by design.
+// parent state change (hover, a poll refetch, router transitions) re-renders every card.
 const MoviePoster = memo(function MoviePoster({ item }: Readonly<{ item: MovieView }>) {
   const t = useT();
   const navigate = useNavigate();
@@ -131,13 +130,10 @@ const ShowPoster = memo(function ShowPoster({ show }: Readonly<{ show: ShowView 
   );
 });
 
-/** One item of a server-built [`Section`] (movie or show). */
 type SectionEntry = Section['items'][number];
 
-/** Render a server section entry (movie or show) with the same watched badge +
- * show-progress affordances as the catalogue grids. Used by the home rows and the
- * per-title "Suggestions IA" rail so those rails stay consistent with the grids
- * (the poster URL is resolved through the client, matching those rails). */
+/** Same watched badge + show-progress affordances as the catalogue grids, so the
+ * home rows and the "Suggestions IA" rail stay visually consistent with them. */
 export const SectionPoster = memo(function SectionPoster({
   entry,
   width,
@@ -194,9 +190,8 @@ export function ShowRail({ title, shows }: Readonly<{ title: string; shows: Show
   );
 }
 
-// Poster grid: auto-fill columns at least one card wide, stretched to fill the
-// row (no dead right edge on phones). `*:w-full!` overrides the tiles' inline
-// default width so the grid tracks size them.
+// Auto-fill columns at least one card wide, stretched to fill the row (no dead
+// right edge on phones); `*:w-full!` overrides the tiles' inline default width.
 const GRID =
   'grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
 

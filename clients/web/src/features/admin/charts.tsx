@@ -34,21 +34,17 @@ ChartJS.register(
 ChartJS.defaults.font.family =
   'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
 
-/** Fallback seconds between metric samples, used only if the snapshot omits its
- * real cadence. The server is authoritative via `sampleIntervalMs` (see
- * `server/crates/kroma-engine/src/infra/metrics.rs`); a hardcoded constant here
- * silently drifted from it before. */
+// Fallback only; the server is authoritative via `sampleIntervalMs`
+// (see server/crates/kroma-engine/src/infra/metrics.rs).
 const DEFAULT_SAMPLE_SEC = 3;
 
 const GRID = 'rgba(255,255,255,.05)';
 
-/** Convert a `#rrggbb` hex to an `rgba()` string at the given alpha. */
 function withAlpha(hex: string, a: number): string {
   const n = Number.parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 
-/** A vertical top→bottom gradient under a filled line (scriptable fill). */
 function areaFill(color: string) {
   return (ctx: ScriptableContext<'line'>) => {
     const { chart } = ctx;
@@ -61,7 +57,6 @@ function areaFill(color: string) {
   };
 }
 
-/** "MAINTENANT" / "40s" / "1m 20s" for a point N samples back from now. */
 function timeAgo(secondsAgo: number): string {
   if (secondsAgo <= 0) return 'MAINTENANT';
   const total = Math.round(secondsAgo);
@@ -71,7 +66,6 @@ function timeAgo(secondsAgo: number): string {
   return s === 0 ? `${m}m` : `${m}m ${s}s`;
 }
 
-/** Sparse time-ago labels: 7 evenly-spaced ticks, blanks elsewhere. */
 function timeLabels(n: number, sampleSec: number): string[] {
   return Array.from({ length: n }, (_, i) => {
     const tickEvery = (n - 1) / 6;
@@ -84,7 +78,6 @@ interface SeriesDef {
   label: string;
   data: number[];
   color: string;
-  /** Fill the area under the line (the primary series). */
   fill?: boolean;
 }
 
@@ -99,11 +92,9 @@ export function MetricsChart({
 }: Readonly<{
   series: SeriesDef[];
   max: number;
-  /** Renders a y-axis tick value and the tooltip number. */
   formatValue: (v: number) => string;
   legend: { label: string; color: string }[];
   footer?: ReactNode;
-  /** Seconds between samples, from the server snapshot, for the time-ago axis. */
   sampleSec?: number;
 }>) {
   const n = Math.max(0, ...series.map((s) => s.data.length));
@@ -278,7 +269,6 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
   );
 }
 
-/** Dot-and-label legend shared by both charts. */
 function Legend({ items }: Readonly<{ items: { label: string; color: string }[] }>) {
   return (
     <div className="flex flex-wrap gap-4.5">

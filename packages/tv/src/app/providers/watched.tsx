@@ -1,8 +1,5 @@
-// Per-user "watched" state, hydrated once and shared across every tile + the
-// detail toggle. Unlike "Ma liste" (local-only), this is server-backed: the set
-// of watched item/show ids comes from `client.watched()` and toggles persist via
-// `client.markWatched` / `client.unmarkWatched`. Toggles are optimistic the set
-// updates immediately and reverts if the server call fails.
+// Per-user "watched" state, server-backed and shared across every tile plus the
+// detail toggle. Toggles are optimistic and revert if the server call fails.
 
 import {
   createContext,
@@ -17,13 +14,9 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 
 interface Watched {
-  /** Whether the given item/show id is marked watched. */
   has: (id: string) => boolean;
-  /** Optimistically set/clear an id's watched flag, persisting to the server. */
   setWatched: (id: string, watched: boolean) => void;
-  /** Flip an id's watched flag. */
   toggle: (id: string) => void;
-  /** Re-fetch the watched set from the server (e.g. after finishing playback). */
   refresh: () => void;
 }
 
@@ -45,7 +38,6 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
       .catch(() => undefined);
   }, [client, user]);
 
-  // Hydrate (and clear on sign-out / server switch).
   useEffect(() => refresh(), [refresh]);
 
   const setWatched = useCallback(
@@ -60,7 +52,6 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
       });
       const call = watched ? client.markWatched(id) : client.unmarkWatched(id);
       call.catch(() => {
-        // Revert the optimistic change on failure.
         setIds((prev) => {
           const next = new Set(prev);
           if (watched) next.delete(id);

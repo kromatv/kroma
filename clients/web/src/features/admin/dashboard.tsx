@@ -10,9 +10,6 @@ import { Avatar, C, Card, FilterLabel, Section } from '#web/features/admin/ui';
 import { decimal, formatDuration, formatMbps } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** A range picker for the day-scoped stats sections (Top users, Play history),
- * bound to the `?days=` the backend already accepts. Replaces the old static,
- * chevroned caption that looked like a dropdown but did nothing. */
 function RangeSelect({
   value,
   onChange,
@@ -38,7 +35,6 @@ function RangeSelect({
   );
 }
 
-/** Seconds between server metric samples, from the snapshot (falls back to 3s). */
 const sampleSec = (metrics: MetricsSnapshot | null) => (metrics?.sampleIntervalMs ?? 3000) / 1000;
 
 export function DashboardScreen() {
@@ -46,7 +42,6 @@ export function DashboardScreen() {
   const { client } = useAuth();
   const { serverInfo } = useAdmin();
 
-  // Day-scoped ranges for the two analytics sections (the backend clamps them).
   const [topDays, setTopDays] = useState(7);
   const [historyDays, setHistoryDays] = useState(30);
 
@@ -57,7 +52,6 @@ export function DashboardScreen() {
   );
   // The server samples every 3s; polling faster only redraws identical charts.
   const { data: metrics } = usePoll(['admin', 'metrics'], () => client.adminMetrics(), 5000);
-  // The range is in the poll key, so changing it refetches immediately.
   const { data: top } = usePoll(
     ['admin', 'topUsers', topDays],
     () => client.topUsers(topDays),
@@ -68,19 +62,14 @@ export function DashboardScreen() {
     () => client.playHistory(historyDays),
     60000,
   );
-  // Avatars for the now-playing cards come from the authenticated admin roster,
-  // not the public `/users` picker list (which the `publicUserList` setting can
-  // hide). Needs `users.manage`; without it the map stays empty (cards fall back
-  // to name-based avatars), which is harmless.
+  // The authenticated roster, not the public list `publicUserList` can hide.
+  // Needs `users.manage`; without it cards fall back to name-based avatars.
   const { data: usersData } = usePoll(['admin', 'users'], () => client.adminUsers(), 60000);
 
   const sessions = sessionsData?.sessions ?? [];
-  // Open the stop-stream confirmation imperatively; it resolves `true` once the
-  // session was terminated, so we refresh the live list.
   const askStop = async (session: PlaybackSession) => {
     if (await StopStreamModal.call({ session })) reloadSessions();
   };
-  // Map each streaming user to their uploaded avatar (sessions carry only a name).
   const avatarByUser = useMemo(() => {
     const m = new Map<string, string | null>();
     for (const u of usersData?.users ?? []) m.set(u.id, u.avatarUrl ?? null);
@@ -154,8 +143,6 @@ export function DashboardScreen() {
     </>
   );
 }
-
-// ----- metric chart sections --------------------------------------------------
 
 const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 
@@ -245,8 +232,6 @@ function RamSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) 
     </Section>
   );
 }
-
-// ----- top users --------------------------------------------------------------
 
 function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
   const t = useT();

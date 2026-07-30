@@ -1,25 +1,8 @@
 // @vitest-environment jsdom
 //
-// The remote, fed into the spatial navigator - the one focus engine every target
-// now shares.
-//
-// The navigator listens to nothing by itself; it is handed a stream of
-// directions. This module is that stream on the native targets, and it is really
-// TWO streams, because Android TV does not have the first one:
-//
-//   - tvOS and the legacy Android root deliver `onHWKeyEvent`, read through
-//     `useTVEventHandler`.
-//   - Under the new architecture the Android root is ReactSurfaceView, which
-//     routes keys to per-view `onKeyDown` instead. The hook never fires once
-//     there, and the remote is dead in a way that looks like a focus bug.
-//
-// Two structural details carry most of the risk. The subscriptions are SETS
-// rather than slots: screens stack, and React tears the old subscription down
-// AFTER the new one is up, so a single slot has the teardown null the live
-// handler and the remote goes dead on arrival at the new screen. And the Siri
-// remote has two vocabularies at once - the clickpad's `up`/`down` and the touch
-// surface's `swipeUp`/`swipeDown`, from different gesture recognisers - so both
-// have to map to the same directions.
+// tvOS and the legacy Android root deliver remote keys through `useTVEventHandler`;
+// under the new architecture the Android root is ReactSurfaceView, which routes
+// them to per-view `onKeyDown` instead. Both streams are covered here.
 
 import { act, renderHook } from '@testing-library/react';
 import type { HWEvent, NativeSyntheticEvent, TVKeyEvent } from 'react-native';
@@ -28,7 +11,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const rn = vi.hoisted(() => ({
   os: 'ios' as 'ios' | 'android',
   hasTvEvents: true,
-  /** The handler `useTVEventHandler` was given, i.e. the remote's tap. */
   remote: null as ((event: HWEvent) => void) | null,
 }));
 
@@ -65,14 +47,8 @@ vi.mock('react-tv-space-navigation', () => ({
 type Remote = typeof import('./focus-remote');
 type InputGate = typeof import('./input-gate');
 
-/**
- * Load a fresh copy of the module for one platform.
- *
- * Fresh because `IS_ANDROID` and the TV-hook presence are resolved at module
- * scope (so the hook count cannot change between builds), and because the
- * subscription sets live there too - a leaked handler from an earlier test would
- * be indistinguishable from the bug this file is about.
- */
+// Fresh module per platform: `IS_ANDROID`, the TV-hook presence and the
+// subscription sets all live at module scope.
 async function load(
   os: 'ios' | 'android' = 'ios',
   hasTvEvents = true,
@@ -83,14 +59,12 @@ async function load(
   nav.control = null;
   vi.resetModules();
 
-  // Both from the SAME fresh graph: input-gate's hold count is module scope too.
   const remote: Remote = await import('./focus-remote');
   const gate: InputGate = await import('./input-gate');
   remote.configureRemote();
   return { remote, gate };
 }
 
-/** Subscribe a navigator, the way react-tv-space-navigation does. */
 function navigator(): { moves: string[]; stop: () => void } {
   const moves: string[] = [];
   if (!nav.control) throw new Error('configureRemote never ran');
@@ -98,14 +72,12 @@ function navigator(): { moves: string[]; stop: () => void } {
   return { moves, stop };
 }
 
-/** Deliver a TV remote event. */
 function press(eventType: string, eventKeyAction = 0) {
   act(() => {
     rn.remote?.({ eventType, eventKeyAction } as HWEvent);
   });
 }
 
-/** Deliver an Android `onKeyDown` to the focus root's key host. */
 function keyDown(
   props: { onKeyDown?: (e: NativeSyntheticEvent<TVKeyEvent>) => void },
   over: Partial<TVKeyEvent>,
@@ -126,8 +98,7 @@ describe('the navigator subscription', () => {
     const { remote } = await load();
     const first = navigator();
     const second = navigator();
-    // React mounts the new screen's subscription BEFORE tearing the old one
-    // down. With a single slot, that teardown nulls the live handler.
+    // React mounts the new screen's subscription BEFORE tearing the old one down.
     first.stop();
 
     renderHook(() => remote.useRemoteBridge());
@@ -158,8 +129,8 @@ describe('the TV remote', () => {
     const nav1 = navigator();
     renderHook(() => remote.useRemoteBridge());
 
-    // The clickpad and the touch surface come from different gesture
-    // recognisers and never both fire for one gesture.
+    // The clickpad and the touch surface are different gesture recognisers and
+    // never both fire for one gesture.
     for (const event of ['up', 'down', 'left', 'right']) press(event);
     for (const event of ['swipeUp', 'swipeDown', 'swipeLeft', 'swipeRight']) press(event);
 
@@ -197,7 +168,6 @@ describe('the TV remote', () => {
     renderHook(() => remote.useRemoteBridge());
     press('up', 0);
     press('up', 1);
-    // Acting on both moves focus twice per press.
     expect(nav1.moves).toEqual(['up']);
   });
 
@@ -208,8 +178,6 @@ describe('the TV remote', () => {
     const release = gate.holdInput();
 
     press('up');
-    // Moving focus on a screen nobody can see is worse than inert: the brand
-    // intro's skip press also activated the card behind it.
     expect(nav1.moves).toEqual([]);
 
     release();
@@ -219,7 +187,6 @@ describe('the TV remote', () => {
 
   it('mounts without a remote at all on mainline React Native', async () => {
     const { remote } = await load('android', false);
-    // The phone build has no TV surface; the same screens still have to render.
     expect(() => renderHook(() => remote.useRemoteBridge())).not.toThrow();
   });
 });
@@ -228,7 +195,6 @@ describe('the Android key host', () => {
   it('gives the focus root nothing to spread off Android', async () => {
     const { remote } = await load('ios');
     const { result } = renderHook(() => remote.useRemoteHostProps());
-    // The hook above is the whole story there.
     expect(result.current).toEqual({});
   });
 
@@ -269,8 +235,6 @@ describe('typing on a hardware keyboard', () => {
     const { result } = renderHook(() => remote.useRemoteHostProps());
 
     for (const key of ['k', 'r', 'o']) keyDown(result.current, { code: `Key${key}`, key });
-    // An Android TV box takes a bluetooth keyboard, and until this existed it
-    // could not type a single letter into the app.
     expect(typed).toEqual(['k', 'r', 'o']);
   });
 
@@ -288,7 +252,7 @@ describe('typing on a hardware keyboard', () => {
     const typed: string[] = [];
     renderHook(() => remote.useHardwareKeys((key) => typed.push(key)));
     const { result } = renderHook(() => remote.useRemoteHostProps());
-    // Enter is a direction too, so it activates the focused key rather than
+    // Enter counts as a direction: it activates the focused key rather than
     // typing a newline into the search box.
     for (const code of ['ArrowUp', 'Enter']) keyDown(result.current, { code, key: code });
     expect(typed).toEqual([]);
@@ -319,8 +283,6 @@ describe('typing on a hardware keyboard', () => {
 
     rerender({ sink: second });
     keyDown(result.current, { code: 'KeyZ', key: 'z' });
-    // A fresh closure on every render must not leak a second subscription, and
-    // must not leave the stale one answering either.
     expect(first).toEqual([]);
     expect(second).toEqual(['z']);
   });

@@ -1,17 +1,10 @@
-/**
- * The Smart Hub preview service runs on the TV, in a Tizen JS context, even
- * while KROMA is closed — so nothing in the app can exercise it. It is plain
- * CommonJS, which means a test can evaluate it against fake `tizen` / `webapis`
- * globals and drive its lifecycle hooks.
- *
- * The SOURCE is transpiled here rather than read from `dist/`: the service is
- * emitted by its own build step, and a test that reads the artefact would pass
- * or fail on whether somebody had run a build.
- *
- * The behaviour that matters is not the happy path: it is that the service
- * always exits and always closes its stream. A background service that hangs
- * sits on the TV's memory until the set is unplugged.
- */
+// The Smart Hub preview service runs on the TV, in a Tizen JS context, even while KROMA is
+// closed, so nothing in the app can exercise it. It is plain CommonJS, so a test can evaluate
+// it against fake `tizen` / `webapis` globals and drive its lifecycle hooks. The source is
+// transpiled here rather than read from `dist/`, since the service is emitted by its own build
+// step and a test reading the artefact would pass or fail on whether somebody had run a build.
+// What matters is not the happy path: the service must always exit and always close its stream,
+// or a hung background service sits on the TV's memory until the set is unplugged.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { transformSync } from 'esbuild';
@@ -40,17 +33,11 @@ interface Harness {
 }
 
 interface Options {
-  /** File contents, or `null` for "the file is not there". */
   contents?: string | null;
-  /** Throw when resolving the private directory. */
   dirFails?: boolean;
-  /** Throw when resolving the file inside the directory. */
   fileMissing?: boolean;
-  /** Fail while reading the opened stream. */
   readFails?: boolean;
-  /** Omit `webapis.preview.setPreviewData` entirely. */
   noPreviewApi?: boolean;
-  /** Have setPreviewData call back with an error. */
   publishFails?: boolean;
 }
 

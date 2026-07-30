@@ -1,24 +1,8 @@
-// The extras fetched alongside a downloaded title.
-//
-// The rule the whole module is built around is in its first line: every failure
-// here costs the EXTRA, never the download. A user on a train has already waited
-// for a two-gigabyte film; losing it because a 40 KB subtitle track 404'd would
-// be the worst possible trade, and none of the callers are in a position to
-// notice that is what happened.
-//
-// The other decision worth pinning is the index namespace. Embedded tracks are
-// identified by their position in the file, and the server's AI-generated ones
-// are a separate list starting at zero - so offline, where both end up in one
-// picker, the generated ones are offset past any plausible embedded count. Drop
-// that offset and picking "English (AI)" plays the first embedded track instead,
-// silently, and only offline.
-
 import type { KromaClient, MediaItem } from '@kroma/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const downloadAsync = vi.hoisted(() => vi.fn(async (_url: string, _path: string) => ({})));
-// `documentDirectory` too: ./store reads it at module scope to build the
-// download directory, and it is imported for `mediaPath`.
+// `documentDirectory` is needed too: ./store reads it at module scope.
 vi.mock('expo-file-system/legacy', () => ({
   downloadAsync,
   documentDirectory: 'file:///data/',
@@ -55,8 +39,6 @@ beforeEach(() => {
 describe('embedded subtitle tracks', () => {
   it('takes the text ones offline, keeping their track index', async () => {
     const { subs } = await fetchSidecars(client(), item(['subrip', 'ass']));
-    // The index is what the offline player selects by; renumbering them plays
-    // the wrong language.
     expect(subs.map((s) => s.index)).toEqual([0, 1]);
     expect(subs[0]?.path).toContain('itm_1');
     expect(subs[0]?.path).toMatch(/\.e0\.vtt$/);
@@ -64,15 +46,12 @@ describe('embedded subtitle tracks', () => {
 
   it('skips image subtitles, which cannot be converted at all', async () => {
     const { subs } = await fetchSidecars(client(), item(['hdmv_pgs_subtitle', 'dvd_subtitle']));
-    // There is nothing to take offline, so not even a request is made.
     expect(subs).toEqual([]);
     expect(downloadAsync).not.toHaveBeenCalled();
   });
 
   it('keeps the ORIGINAL index when an earlier track is skipped', async () => {
     const { subs } = await fetchSidecars(client(), item(['hdmv_pgs_subtitle', 'subrip']));
-    // Position in the file, not position among the ones we kept: the player
-    // asks the file for track 1.
     expect(subs).toHaveLength(1);
     expect(subs[0]?.index).toBe(1);
   });
@@ -88,7 +67,6 @@ describe('embedded subtitle tracks', () => {
       return {};
     });
     const { subs } = await fetchSidecars(client(), item(['subrip', 'subrip']));
-    // One unavailable track must not cost the others.
     expect(subs.map((s) => s.index)).toEqual([1]);
   });
 
@@ -122,8 +100,8 @@ describe('server-generated subtitles', () => {
       }),
       item(['subrip', 'ass']),
     );
-    // Two namespaces in one picker. Without the offset, picking the generated
-    // English plays embedded track 0 - silently, and only offline.
+    // Two index namespaces land in one picker; without the offset, picking the
+    // generated English plays embedded track 0.
     expect(subs.map((s) => s.index)).toEqual([0, 1, 1000, 1001]);
     expect(new Set(subs.map((s) => s.index)).size).toBe(subs.length);
   });
@@ -174,8 +152,6 @@ describe('the storyboard', () => {
       client({ storyboard: async () => manifest }),
       item([]),
     );
-    // Both halves or neither: a manifest with no sprite is a scrub bar full of
-    // broken frames.
     expect(storyboard?.manifest).toBe(manifest);
     expect(storyboard?.spritePath).toMatch(/itm_1\.sb\.img$/);
   });
@@ -191,8 +167,6 @@ describe('the storyboard', () => {
       client({ storyboard: async () => 'pending' }),
       item([]),
     );
-    // 'pending' is not a manifest; storing it would persist a placeholder as if
-    // it were the real thing.
     expect(storyboard).toBeUndefined();
     expect(downloadAsync).not.toHaveBeenCalled();
   });
@@ -209,8 +183,6 @@ describe('the storyboard', () => {
 
 describe('the two together', () => {
   it('never throws, whatever the server does', async () => {
-    // The caller has just finished a two-gigabyte download. Nothing here is
-    // worth losing it over.
     downloadAsync.mockRejectedValue(new Error('offline'));
     await expect(
       fetchSidecars(
@@ -244,7 +216,6 @@ describe('the two together', () => {
       }),
       item([]),
     );
-    // Two independent network trips on a connection the user is waiting on.
     expect(storyboardStartedBeforeSubsFinished).toBe(true);
     expect(subs).toEqual([]);
     expect(storyboard).toBeUndefined();

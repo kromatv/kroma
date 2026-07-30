@@ -26,15 +26,10 @@ import { useWebController } from '#web/features/playback/use-web-controller';
 import { useWebUpNext } from '#web/features/playback/use-web-upnext';
 import { kromaClient, type MovieView } from '#web/shared/lib/api';
 
-/** Scrub-preview thumbnail width (px); the storyboard tile keeps 16:9. */
 const PREVIEW_W = 176;
 
-/**
- * The web player: a thin wrapper that adapts the web engine to the shared unified
- * `<Player>` (packages/ui/src/player) and layers on the web-only app concerns
- * (resume prompt, admin-stop overlay, session heartbeat). All chrome + interaction
- * live in the shared component; web feature flags enable volume / PiP / fullscreen.
- */
+/** Adapts the web engine to the shared unified `<Player>`; layers on web-only
+ *  concerns (resume prompt, admin-stop overlay, session heartbeat). */
 export function Player({
   item,
   next,
@@ -45,10 +40,8 @@ export function Player({
 }: Readonly<{
   item: MovieView;
   next?: MediaItem | null;
-  /** Upcoming episodes (sequence order) for the "up next" rail; `next` is [0]. */
   following?: MediaItem[];
   onPlayNext?: () => void;
-  /** Play any up-next card (recommendation / next episode from the sheet). */
   onPlayItem?: (id: string) => void;
   onClose: () => void;
 }>) {
@@ -60,12 +53,10 @@ export function Player({
   const storyboard = useStoryboard(item.id);
   const tileAt = useCallback((sec: number) => storyboard.tile(sec, PREVIEW_W), [storyboard]);
   const upNext = useWebUpNext(item, following);
-  // The cast button joins the control row only while a set is actually live -
-  // an offer to play on a TV that is not there is not an offer.
   const flags = useMemo(() => ({ ...WEB_FLAGS, cast: cast.available }), [cast.available]);
 
-  // Resume prompt (the anchor is already set to the saved position by the engine;
-  // this only shows the toast + offers a restart) and the admin-stop overlay.
+  // The engine already anchors at the saved position; this only shows the toast
+  // and offers a restart.
   const position = useMemo(
     () => ({ seekTo: pb.seekTo, getPosition: pb.getPosition }),
     [pb.seekTo, pb.getPosition],
@@ -91,7 +82,6 @@ export function Player({
     },
   });
 
-  // Undecodable audio with no HLS fallback: warn (Safari / TV needed).
   const audio = audioSupport(item);
   const warn =
     !audio.canPlay && !pb.useHls && audio.messageKey
@@ -114,9 +104,8 @@ export function Player({
     : null;
 
   const surface = (
-    // Fill + object-fit come from the shared stage's `[&>video]:*` rules;
-    // borderRadius stays inline (guaranteed) so the video clips itself to the
-    // shrink-card radius even if the arbitrary-property class isn't generated.
+    // borderRadius stays inline so the video clips itself to the shrink-card
+    // radius even if the arbitrary-property class isn't generated.
     <video
       key={`${pb.anchor}:${pb.audioIndex}`}
       ref={videoRef}
@@ -125,8 +114,7 @@ export function Player({
       crossOrigin="anonymous"
       style={{ borderRadius: 'inherit' }}
     >
-      {/* Captions render out-of-band via the shared SubtitleRenderer; this empty
-          default track satisfies the captions requirement without adding cues. */}
+      {/* Empty track satisfies the captions requirement; SubtitleRenderer renders cues out-of-band. */}
       <track kind="captions" />
     </video>
   );
@@ -134,14 +122,10 @@ export function Player({
   return (
     <UnifiedPlayer
       controller={controller}
-      // The cast button joins the control row only while a set is actually
-      // live - an offer to play on a TV that is not there is not an offer.
       flags={flags}
       title={item.title}
       subtitle={playerSubtitle(item)}
       warn={warn}
-      // Hand this film to a TV: the position goes with it, and the browser
-      // stops once the set has it.
       onCast={async () => {
         const picked = await castPicker();
         if (!picked) return;
@@ -165,11 +149,8 @@ export function Player({
         intro ? { active: introActive, onSkip: () => pb.seekTo(intro.endMs / 1000) } : undefined
       }
       surface={surface}
-      // The shared chrome is written against React Native, so its root is typed
-      // as a <View>. Under react-native-web that ref receives the DOM node,
-      // which is exactly what this client needs it for (requestFullscreen on
-      // the container). One cast, at the single point where the two type worlds
-      // meet.
+      // The shared chrome is typed against React Native, but under
+      // react-native-web this ref receives the DOM node (requestFullscreen).
       rootRef={containerRef as unknown as Ref<View>}
       terminated={
         terminated ? (

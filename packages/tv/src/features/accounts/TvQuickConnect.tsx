@@ -1,11 +1,8 @@
 import type { AuthResult, KromaClient, MessageKey, QuickConnectInit } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Spinner, SvgXml, Txt, useFocusNav } from '@kroma/ui/kit';
-// Imported STATICALLY, not with `import()`. Metro has no code splitting: a
-// dynamic import is a lazy bundle fetch that needs the dev server's HMR client,
-// and it fails outright when that is not connected ("Expected HMRClient.setup()
-// call at startup"), which is exactly how the QR went missing on Apple TV. The
-// library is a few kilobytes, so there was never anything to gain by deferring.
+// Static import on purpose: Metro has no code splitting, and a dynamic `import()`
+// throws "Expected HMRClient.setup() call at startup" without the dev server.
 import qrcode from 'qrcode-generator';
 import { useEffect, useState } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
@@ -13,21 +10,11 @@ import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
 import { AuthScreen, KromaMark } from '#tv/shared/ui';
 
-/** Regenerate the code this many seconds before the server-side TTL lapses. */
 const EXPIRY_MARGIN_SEC = 5;
 
 /**
- * `qrcode-generator` is a UMD module: `module.exports` IS the factory function,
- * with no `default` property and no `__esModule` flag. Vite synthesises a default
- * export for CommonJS, so `mod.default` works on every browser target; Metro does
- * not, so on Apple TV and Android TV `mod.default` is undefined and calling it
- * throws. Take whichever shape the bundler actually produced.
- */
-
-/**
- * Quick Connect (route `quick`) against the active server: shows a code + QR; an
- * already-signed-in user approves it from the web/mobile app and the TV pairs the
- * profile on its next poll no password typed on the remote.
+ * Quick Connect (route `quick`): shows a code + QR that an already-signed-in user
+ * approves from the web/mobile app, pairing the profile on the next poll.
  */
 export function TvQuickConnect() {
   const nav = useNav();
@@ -78,8 +65,8 @@ export function TvQuickConnect() {
     const begin = async () => {
       clearTimers();
       try {
-        // On a rotation, hand the server the code we're leaving so it revokes it
-        // instead of letting it linger approvable until its own TTL lapses.
+        // Passing the outgoing secret has the server revoke it instead of leaving
+        // it approvable until its own TTL lapses.
         const init = await client.quickConnectInitiate(secret || undefined);
         if (cancelled) return;
         secret = init.secret;
@@ -93,15 +80,13 @@ export function TvQuickConnect() {
             qrc.make();
             setQr(qrc.createSvgTag({ cellSize: 6, margin: 1, scalable: true }));
           } catch (cause) {
-            // The code on screen still pairs the device without a QR, so this
-            // must not take the screen down. It must not be SILENT either:
-            // swallowing it is how a missing QR went unnoticed on Apple TV.
+            // The code on screen still pairs without a QR, so this must not take
+            // the screen down — but it must not be silent either.
             console.warn('[kroma] QR code unavailable:', cause);
           }
         }
-        // Proactively mint a fresh code a touch before the server TTL lapses, so
-        // the code on screen is always valid to approve (independent of the poll
-        // loop, which only learns of expiry after the server has already reaped).
+        // Mint a fresh code just before the server TTL lapses; the poll loop only
+        // learns of expiry after the server has already reaped it.
         const marginSec = Math.min(EXPIRY_MARGIN_SEC, Math.floor(init.expiresInSec / 2));
         const renewMs = Math.max(1000, (init.expiresInSec - marginSec) * 1000);
         expireTimer = setTimeout(() => void begin(), renewMs);
@@ -200,11 +185,6 @@ export function TvQuickConnect() {
   );
 }
 
-/**
- * Resolve the web `/connect?code=` URL for the QR. The server-advertised URL
- * wins; otherwise fall back to the API origin, which also serves the web SPA
- * in production (single-binary installs).
- */
 function connectUrl(client: KromaClient, code: string, serverUrl?: string | null): string {
   if (serverUrl) return serverUrl;
   try {

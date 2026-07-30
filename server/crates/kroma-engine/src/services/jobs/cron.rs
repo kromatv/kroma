@@ -1,36 +1,11 @@
-//! A small, dependency-free cron parser + next-occurrence calculator.
-//!
-//! We hand-roll this (rather than pull the `cron` crate, which drags in
-//! `chrono` + `nom`) for the same reason the rest of the server avoids heavy
-//! deps: keep the musl single-binary lean. Calendar math is done with the
-//! already-present [`time`] crate.
-//!
-//! Supported syntax standard Vixie-style 5-field cron, with an optional
-//! leading seconds field (6 fields):
-//!
-//! ```text
-//!  ┌──────────── second        (0-59, optional; defaults to 0)
-//!  │ ┌────────── minute        (0-59)
-//!  │ │ ┌──────── hour          (0-23)
-//!  │ │ │ ┌────── day-of-month  (1-31)
-//!  │ │ │ │ ┌──── month         (1-12 or jan-dec)
-//!  │ │ │ │ │ ┌── day-of-week   (0-6 or sun-sat; 7 = Sunday too)
-//!  * * * * * *
-//! ```
-//!
-//! Each field accepts `*`, a single value, a `a-b` range, a `a,b,c` list, and a
-//! `*/n` / `a-b/n` / `a/n` step. Macros `@yearly`/`@annually`, `@monthly`,
-//! `@weekly`, `@daily`/`@midnight`, `@hourly` expand to the obvious 5-field form.
-//!
-//! Day-of-month and day-of-week follow the classic rule: when *both* are
-//! restricted (not `*`), a day matches if *either* matches; otherwise only the
-//! restricted one applies.
+//! A small, dependency-free cron parser and next-occurrence calculator: Vixie
+//! 5-field syntax with an optional leading seconds field, plus the `@yearly` …
+//! `@hourly` macros. When day-of-month and day-of-week are both restricted, a
+//! day matches if either matches.
 
 use anyhow::{bail, Result};
 use time::{Date, Duration, Month, OffsetDateTime, Time};
 
-/// A parsed cron schedule. Cheap to clone; keeps the original expression for
-/// display/round-tripping.
 #[derive(Debug, Clone)]
 pub struct Cron {
     seconds: u64,
@@ -43,19 +18,15 @@ pub struct Cron {
     dow_star: bool,
 }
 
-/// How far ahead [`Cron::next_after`] will search before giving up (≈4 years of
-/// field-skipping steps far more than enough for any real schedule, but a hard
-/// stop for an unsatisfiable spec like `0 0 30 2 *`, Feb 30th).
+// A hard stop for an unsatisfiable spec like `0 0 30 2 *` (Feb 30th).
 const MAX_STEPS: usize = 100_000;
 
 impl Cron {
-    /// Parse a cron expression, returning a descriptive error on bad syntax.
     pub fn parse(expr: &str) -> Result<Cron> {
         let trimmed = expr.trim();
         let expanded = expand_macro(trimmed);
         let fields: Vec<&str> = expanded.split_whitespace().collect();
 
-        // 6 fields → leading seconds; 5 fields → seconds defaults to {0}.
         let (sec_spec, rest) = match fields.len() {
             6 => (fields[0], &fields[1..]),
             5 => ("0", &fields[..]),
@@ -68,7 +39,7 @@ impl Cron {
         let (dom, dom_star) = parse_field(rest[2], 1, 31, NO_NAMES)?;
         let (months, _) = parse_field(rest[3], 1, 12, MONTH_NAMES)?;
         let (mut dow, dow_star) = parse_field(rest[4], 0, 7, DOW_NAMES)?;
-        // Normalize Sunday-as-7 onto bit 0 and drop the synthetic bit 7.
+        // Cron allows 7 for Sunday: fold it onto bit 0.
         if dow & (1 << 7) != 0 {
             dow = (dow & !(1 << 7)) | 1;
         }
@@ -85,17 +56,14 @@ impl Cron {
         })
     }
 
-    /// Whether a string is a valid cron expression (for API validation).
     pub fn is_valid(expr: &str) -> bool {
         Cron::parse(expr).is_ok()
     }
 
-    /// The first instant strictly after `after` that matches, preserving
-    /// `after`'s UTC offset (so callers can evaluate in any timezone by passing
-    /// an `after` already shifted to it). `None` for an unsatisfiable schedule.
+    /// The first instant strictly after `after` that matches, preserving its UTC
+    /// offset, so callers can evaluate in any timezone by shifting `after` to it.
     pub fn next_after(&self, after: OffsetDateTime) -> Option<OffsetDateTime> {
         let offset = after.offset();
-        // Start at the next whole second strictly after `after`.
         let mut t = after - Duration::nanoseconds(after.nanosecond() as i64) + Duration::seconds(1);
 
         for _ in 0..MAX_STEPS {
@@ -136,14 +104,10 @@ impl Cron {
     }
 }
 
-// ----- bit helpers ------------------------------------------------------------
-
 #[inline]
 fn bit(mask: u64, v: u8) -> bool {
     mask & (1u64 << v) != 0
 }
-
-// ----- time stepping (reset all lower fields on each jump) --------------------
 
 fn make(offset: time::UtcOffset, y: i32, mo: u8, d: u8, h: u8, mi: u8, s: u8) -> Option<OffsetDateTime> {
     let date = Date::from_calendar_date(y, Month::try_from(mo).ok()?, d).ok()?;
@@ -176,8 +140,6 @@ fn next_minute(t: OffsetDateTime, offset: time::UtcOffset) -> Option<OffsetDateT
     make(offset, t.year(), u8::from(t.month()), t.day(), t.hour(), t.minute() + 1, 0)
 }
 
-// ----- field parsing ----------------------------------------------------------
-
 type NameMap = &'static [(&'static str, u8)];
 const NO_NAMES: NameMap = &[];
 const MONTH_NAMES: NameMap = &[
@@ -188,8 +150,8 @@ const DOW_NAMES: NameMap = &[
     ("sun", 0), ("mon", 1), ("tue", 2), ("wed", 3), ("thu", 4), ("fri", 5), ("sat", 6),
 ];
 
-/// Parse one comma-separated field into a bitmask, returning whether it was a
-/// bare `*` (needed for the dom/dow either-or rule).
+// The returned flag is whether the field was a bare `*`, which the dom/dow
+// either-or rule needs.
 fn parse_field(spec: &str, min: u8, max: u8, names: NameMap) -> Result<(u64, bool)> {
     let spec = spec.trim();
     if spec.is_empty() {
@@ -204,7 +166,6 @@ fn parse_field(spec: &str, min: u8, max: u8, names: NameMap) -> Result<(u64, boo
 }
 
 fn parse_part(part: &str, min: u8, max: u8, names: NameMap) -> Result<u64> {
-    // Split an optional `/step` suffix.
     let (range, step) = match part.split_once('/') {
         Some((r, s)) => {
             let step: u8 = s.parse().map_err(|_| anyhow::anyhow!("bad step {s:?} in {part:?}"))?;
@@ -216,7 +177,6 @@ fn parse_part(part: &str, min: u8, max: u8, names: NameMap) -> Result<u64> {
         None => (part, 1),
     };
 
-    // Resolve the base range the step iterates over.
     let (lo, hi) = if range == "*" {
         (min, max)
     } else if let Some((a, b)) = range.split_once('-') {
@@ -243,7 +203,6 @@ fn parse_part(part: &str, min: u8, max: u8, names: NameMap) -> Result<u64> {
     Ok(mask)
 }
 
-/// Resolve a single token (number or name) and bounds-check it.
 fn resolve(tok: &str, names: NameMap, min: u8, max: u8) -> Result<u8> {
     let tok = tok.trim();
     let v = if let Some(&(_, n)) = names.iter().find(|(name, _)| name.eq_ignore_ascii_case(tok)) {

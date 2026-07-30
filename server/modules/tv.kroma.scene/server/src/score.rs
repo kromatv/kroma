@@ -8,7 +8,7 @@ fn reject(rule: &str, note: impl Into<String>) -> Reject {
     Reject { rule: rule.into(), note: note.into() }
 }
 
-/// Case-insensitive token match of `needle` against the release title.
+// Case-insensitive token match of `needle` against the release title.
 fn has_token(title: &str, needle: &str) -> bool {
     let needle = needle.trim().to_ascii_lowercase();
     !needle.is_empty()
@@ -24,7 +24,6 @@ pub fn score(
     profile: &Profile,
     release_title: &str,
 ) -> Result<Scored, Reject> {
-    // ----- hard rejects ---------------------------------------------------------
     reject_keywords(profile, release_title)?;
     if parsed.source == Some(Source::Cam) {
         return Err(reject("cam-source", "cam/telesync/screener release"));
@@ -50,12 +49,10 @@ pub fn score(
         }
     }
 
-    // ----- additive score -------------------------------------------------------
     let lines = score_lines(parsed, candidate, target, profile, resolution, max_size, seeders);
     Ok(Scored { parsed: parsed.clone(), score: lines.iter().map(|l| l.delta).sum(), breakdown: lines })
 }
 
-/// Forbidden/required keyword hard rejects.
 fn reject_keywords(profile: &Profile, release_title: &str) -> Result<(), Reject> {
     for kw in &profile.forbidden_keywords {
         if has_token(release_title, kw) {
@@ -70,7 +67,6 @@ fn reject_keywords(profile: &Profile, release_title: &str) -> Result<(), Reject>
     Ok(())
 }
 
-/// Target shape validation + the byte budget for this kind of grab.
 fn target_budget(parsed: &ParsedRelease, target: &Target, profile: &Profile) -> Result<u64, Reject> {
     match *target {
         Target::Movie { year } => movie_budget(parsed, year, profile),
@@ -126,14 +122,12 @@ fn season_budget(
     Ok(profile.max_size_bytes_episode.saturating_mul(u64::from(episodes.max(1))))
 }
 
-/// Push a score line unless its delta is zero.
 fn push_line(lines: &mut Vec<ScoreLine>, rule: &str, delta: i32, note: String) {
     if delta != 0 {
         lines.push(ScoreLine { rule: rule.into(), delta, note });
     }
 }
 
-/// The additive score explanation for an accepted release.
 fn score_lines(
     parsed: &ParsedRelease,
     candidate: &Candidate,
@@ -181,7 +175,6 @@ fn score_lines(
     lines
 }
 
-/// Resolution delta vs the profile preference.
 fn resolution_delta(got: Res, want: Res) -> i32 {
     match (got, want) {
         (g, w) if g == w => 1000,
@@ -193,7 +186,6 @@ fn resolution_delta(got: Res, want: Res) -> i32 {
     }
 }
 
-/// Codec delta + label, or `None` when there is no codec bonus.
 fn codec_line(parsed: &ParsedRelease, profile: &Profile) -> Option<(i32, &'static str)> {
     match parsed.codec {
         Some(Codec::Hevc) if profile.prefer_hevc => Some((400, "HEVC (HEVC-first)")),
@@ -203,7 +195,6 @@ fn codec_line(parsed: &ParsedRelease, profile: &Profile) -> Option<(i32, &'stati
     }
 }
 
-/// Source delta + label.
 fn source_line(source: Source) -> (i32, &'static str) {
     match source {
         Source::Remux => (250, "Remux"),

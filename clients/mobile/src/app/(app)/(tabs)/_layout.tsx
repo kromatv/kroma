@@ -8,7 +8,6 @@ import { colors } from '#mobile/lib/theme';
 
 const renderTabBar = (props: BottomTabBarProps) => <PillTabBar {...props} />;
 
-/** The tab bar, one row per tab: the route, its kit glyph, its title key. */
 const TABS = [
   { name: 'index', icon: 'home', title: 'nav.home' },
   { name: 'search', icon: 'search', title: 'nav.search' },
@@ -18,9 +17,8 @@ const TABS = [
   { name: 'profile', icon: 'user-circle', title: 'nav.account' },
 ] as const satisfies readonly { name: string; icon: IconName; title: string }[];
 
-// Built once at module level so React sees the same component identity on
-// every render of the layout. The glyphs are the KIT's - the same shared
-// Tabler set every surface draws from.
+// Built once at module level so React sees the same component identity on every
+// render of the layout.
 const SCREENS = TABS.map((tab) => ({
   ...tab,
   tabBarIcon: ({ color }: { color: ColorValue }) => (
@@ -32,8 +30,6 @@ export default function TabsLayout() {
   const t = useT();
   return (
     <Tabs
-      // Floating glass pill: content scrolls underneath (screens pad their
-      // scroll views with TAB_BAR_CLEARANCE).
       tabBar={renderTabBar}
       screenOptions={{
         headerShown: false,

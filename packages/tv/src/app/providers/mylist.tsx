@@ -15,11 +15,8 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 
 interface MyList {
-  /** Whether a title (movie item id OR show id) is in the list. */
   has: (id: string) => boolean;
-  /** Flip a title's membership (optimistic + persisted). */
   toggle: (id: string) => void;
-  /** Re-fetch the list from the server (e.g. to pick up web-side changes). */
   refresh: () => void;
 }
 

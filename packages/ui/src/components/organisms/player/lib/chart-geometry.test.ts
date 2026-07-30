@@ -28,7 +28,6 @@ describe('extentOf', () => {
   });
 
   it('gives a flat series a symmetric span instead of dividing by zero', () => {
-    // A stream holding a steady bitrate is the normal case, not an edge case.
     expect(extentOf([[7, 7, 7]])).toEqual({ min: 6, max: 8 });
   });
 
@@ -49,8 +48,6 @@ describe('xAt', () => {
   });
 
   it('keeps one sample the same width whatever the history length', () => {
-    // The bug this replaces: the step used to be width/(count-1), so the trace
-    // stretched horizontally while history accumulated.
     const step = xAt(4, 5, box) - xAt(3, 5, box);
     expect(xAt(10, 11, box) - xAt(9, 11, box)).toBeCloseTo(step);
     expect(step).toBeCloseTo(10);

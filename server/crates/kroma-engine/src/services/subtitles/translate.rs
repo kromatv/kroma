@@ -1,9 +1,6 @@
-//! AI subtitle translation: translate an existing WebVTT track into another
-//! language using the app's configured LLM providers in failover order (default
-//! first, then the rest, e.g. cloud OpenRouter then a local Ollama). Timestamps
-//! are preserved verbatim; only the cue text is translated, in batches to keep
-//! each prompt small. A provider that is out of credits / rate-limited / down is
-//! skipped for the next provider, sticking with whichever one works.
+//! AI subtitle translation: translate a WebVTT track into another language using
+//! the app's configured LLM providers in failover order. Timestamps are preserved
+//! verbatim; only cue text is translated, in batches.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -14,21 +11,14 @@ use crate::infra::llm::{build_http, LlmClient};
 use crate::services::settings::{self, Settings};
 use crate::services::subtitles::progress::Handle;
 
-/// Sampling temperature for translation: low, for deterministic, format-faithful
-/// output regardless of each provider's configured creativity.
 const TRANSLATE_TEMP: f32 = 0.2;
 
-/// One usable provider in the failover chain: its client plus its own token
-/// budget (a constrained cloud account and a roomy local model differ).
 struct Backend {
     label: String,
     client: Arc<dyn LlmClient>,
     token_cap: u32,
 }
 
-/// Build the ordered, usable provider chain (default first, then the rest), each
-/// at the low translation temperature. Providers whose config can't form a client
-/// are skipped; the result is empty only when nothing is configured.
 fn build_backends(settings: &Settings) -> Vec<Backend> {
     settings::ordered_providers(settings)
         .into_iter()
@@ -39,17 +29,12 @@ fn build_backends(settings: &Settings) -> Vec<Backend> {
             Some(Backend {
                 label: format!("{name} ({})", p.model),
                 client,
-                // Respect each provider's configured output cap (translate used to
-                // ignore it and always ask for BATCH*80+200 tokens, which a
-                // low-credit account rejects outright). Clamp like the other jobs.
                 token_cap: p.max_tokens.clamp(64, 8192) as u32,
             })
         })
         .collect()
 }
 
-/// One parsed cue: its timing line (`00:00:01.000 --> 00:00:04.000` [+ settings])
-/// and the joined text lines.
 struct Cue {
     timing: String,
     text: String,
@@ -81,22 +66,12 @@ fn parse_cues(vtt: &str) -> Vec<Cue> {
     cues
 }
 
-/// Cues per LLM request. Smaller batches keep each request cheap (so it fits a
-/// modest token budget / a low-credit account) and isolate a failing batch.
 const BATCH: usize = 24;
-
-/// How many batches to translate concurrently. The batches are independent, so a
-/// cloud provider (OpenRouter/OpenAI/Anthropic) parallelizes the round-trips for a
-/// big wall-clock win; a single-slot local Ollama just queues them (no harm). Kept
-/// modest so a rate-limited account isn't hammered.
 const PARALLEL: usize = 4;
 
-/// Translate `vtt` into `target_lang` (a language name like "French"). Reports
-/// per-batch progress through `handle` and bails when cancelled. `Ok(webvtt)` on
-/// success (including a partial translation where some batches kept their
-/// originals); `Err(reason)` carries *why* it could not run at all (no provider,
-/// every batch failed, cancelled, …) so the caller can surface it instead of a
-/// blank "generation failed". Blocking (the LLM client shells out) - call off-thread.
+/// Translates `vtt` into `target_lang`, batching cue text through the configured
+/// LLM providers with failover. `Err` carries why nothing could be translated at
+/// all; a partial translation is still `Ok`. Blocking - call off-thread.
 pub fn translate_vtt(
     settings: &Settings,
     vtt: &str,
@@ -119,9 +94,6 @@ pub fn translate_vtt(
     info!(target = %target_lang, cues = total, batches, workers, %chain, "subtitle translate: starting");
     handle.progress(0, total);
 
-    // Shared work state pulled by `workers` scoped threads: a batch cursor, the
-    // sticky provider hint, a running done-count for progress, per-batch result
-    // slots, the first hard error, and how many batches produced any translation.
     let next = AtomicUsize::new(0);
     let active = AtomicUsize::new(0);
     let done = AtomicUsize::new(0);
@@ -145,8 +117,7 @@ pub fn translate_vtt(
     }
     let ok_batches = translated.load(Ordering::Relaxed);
     if ok_batches == 0 {
-        // Every batch failed on every provider: a real failure, and `first_error`
-        // holds the LLM's actual complaint (auth, model, credits, parse, …).
+        // first_error carries the LLM's actual complaint (auth, credits, parse, ...).
         return Err(first_error.into_inner().unwrap().unwrap_or_else(|| "translation failed for every batch".to_string()));
     }
     if ok_batches < batches {
@@ -155,14 +126,9 @@ pub fn translate_vtt(
         info!(batches, "subtitle translate: done");
     }
 
-    // Reassemble in cue order; an untranslated batch or a per-line gap falls back to
-    // the ORIGINAL text (never a blank line).
     Ok(reassemble_vtt(&chunks, &results))
 }
 
-/// One scoped translate worker: pull the next batch until the queue drains (or a
-/// cancel fires), translating it through the provider chain and recording the
-/// result / first hard error, then report progress.
 #[allow(clippy::too_many_arguments)]
 fn translate_worker(
     next: &AtomicUsize,
@@ -205,9 +171,6 @@ fn translate_worker(
     }
 }
 
-/// Reassemble the translated batches back into one WebVTT document in cue order.
-/// An untranslated batch or a per-line gap falls back to the ORIGINAL cue text
-/// (never a blank line).
 fn reassemble_vtt(chunks: &[&[Cue]], results: &[Mutex<Option<Vec<Option<String>>>>]) -> String {
     let mut out = String::from("WEBVTT\n\n");
     for (bi, batch) in chunks.iter().enumerate() {
@@ -228,10 +191,6 @@ fn reassemble_vtt(chunks: &[&[Cue]], results: &[Mutex<Option<Vec<Option<String>>
     out
 }
 
-/// Translate one batch, trying the currently-active backend first and falling
-/// through to the next on failure. Sticks with whichever backend succeeds (sets
-/// `active`), so a dead primary is not re-hit on every batch. `Err` only when
-/// *every* remaining backend fails this batch (carrying the first reason).
 fn translate_one(
     backends: &[Backend],
     active: &AtomicUsize,
@@ -260,10 +219,6 @@ fn translate_one(
     Err(first_err.unwrap_or_else(|| "no usable LLM provider".to_string()))
 }
 
-/// Ask the LLM to translate a batch of cue texts, one per numbered line, and parse
-/// the numbered reply back into the same order. `Err(reason)` on an LLM error or a
-/// reply that doesn't match the numbered shape, so the caller keeps the originals
-/// for that batch *and* learns why.
 fn translate_batch(
     llm: &dyn LlmClient,
     batch: &[Cue],
@@ -277,14 +232,11 @@ fn translate_batch(
          Output EXACTLY the same number of lines, each prefixed with its number and a period, and NOTHING else. \
          Preserve meaning and tone; keep proper nouns. Do not merge or split lines."
     );
-    // Enough headroom for the numbered translation, but never above the provider's
-    // configured cap (which is what a constrained account can actually afford).
     let max_tokens = ((batch.len() as u32) * 80 + 200).min(token_cap);
     let reply = llm
         .complete(&system, &numbered, max_tokens)
         .map_err(|e| format!("LLM request failed: {e:#}"))?;
-    // Per-line result: `Some` for a parsed line, `None` for a gap (the caller keeps
-    // that cue's ORIGINAL text rather than blanking it).
+    // None marks a gap; the caller keeps that cue's original text instead of blanking it.
     let mut out: Vec<Option<String>> = vec![None; batch.len()];
     let mut filled = 0;
     for line in reply.lines() {
@@ -298,8 +250,7 @@ fn translate_batch(
             }
         }
     }
-    // Require most lines to have parsed, else treat the batch as failed (so failover
-    // tries the next provider) and show a snippet of what the model actually returned.
+    // At least half the lines must parse, or the batch is treated as failed.
     if filled * 2 >= batch.len() {
         Ok(out)
     } else {
@@ -311,7 +262,6 @@ fn translate_batch(
     }
 }
 
-/// A short, single-line snippet of an LLM reply for an error message.
 fn snippet(text: &str) -> String {
     let one_line: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
     if one_line.chars().count() > 160 {
@@ -329,7 +279,6 @@ mod tests {
         Cue { timing: timing.to_string(), text: text.to_string() }
     }
 
-    /// An LLM client that returns a fixed reply (or a fixed error).
     struct FakeLlm {
         reply: std::result::Result<String, ()>,
     }
@@ -376,8 +325,6 @@ mod tests {
 
     #[test]
     fn translate_batch_keeps_gap_as_none_when_mostly_parsed() {
-        // Only line 1 comes back; that is >= half of a 2-line batch, so it is
-        // accepted with the missing line left as a None gap (caller keeps original).
         let llm = FakeLlm { reply: Ok("1. Bonjour".to_string()) };
         let batch = [cue("t0", "Hello"), cue("t1", "Hi")];
         let out = translate_batch(&llm, &batch, "French", 8192).unwrap();
@@ -386,7 +333,6 @@ mod tests {
 
     #[test]
     fn translate_batch_errors_when_reply_unparseable() {
-        // Only 1 of 4 lines parses -> below the half threshold -> Err.
         let llm = FakeLlm { reply: Ok("1. Bonjour\ngarbage without numbers".to_string()) };
         let batch = [cue("t0", "a"), cue("t1", "b"), cue("t2", "c"), cue("t3", "d")];
         let err = translate_batch(&llm, &batch, "French", 8192).unwrap_err();
@@ -407,9 +353,7 @@ mod tests {
         let cues1 = vec![cue("00:00:03.000 --> 00:00:04.000", "Original")];
         let chunks: Vec<&[Cue]> = vec![&cues0, &cues1];
         let results = vec![
-            // First batch: line 0 translated, line 1 is a None gap -> keep "World".
             Mutex::new(Some(vec![Some("Bonjour".to_string()), None])),
-            // Second batch never translated (None) -> keep "Original".
             Mutex::new(None),
         ];
         let out = reassemble_vtt(&chunks, &results);
@@ -488,7 +432,6 @@ mod tests {
 
     #[test]
     fn parse_cues_preserves_timing_cue_settings() {
-        // A cue whose timing line carries positioning settings keeps them verbatim.
         let vtt = "WEBVTT\n\n00:00:01.000 --> 00:00:02.000 line:80% align:start\nHi\n";
         let cues = parse_cues(vtt);
         assert_eq!(cues.len(), 1);
@@ -498,17 +441,11 @@ mod tests {
 
     #[test]
     fn translate_batch_ignores_out_of_range_line_numbers() {
-        // A reply that numbers a line beyond the batch is ignored, not written.
         let llm = FakeLlm { reply: Ok("1. Bonjour\n5. Stray".to_string()) };
         let batch = [cue("t0", "Hello"), cue("t1", "Hi")];
         let out = translate_batch(&llm, &batch, "French", 8192).unwrap();
         assert_eq!(out, vec![Some("Bonjour".to_string()), None]);
     }
-    // ----- translate_vtt end to end -----------------------------------------------
-    //
-    // The provider chain is built from settings and the transport shells out to
-    // curl, so a fake OpenAI endpoint drives the whole pass: batching, the
-    // worker pool, failover, and reassembly.
 
     use crate::services::subtitles::progress::GenRegistry;
     use crate::test_support::FakeLlm as FakeEndpoint;
@@ -524,7 +461,6 @@ mod tests {
         (pool, settings)
     }
 
-    /// Point `settings` at a fake endpoint, as the admin IA page would.
     fn configure(settings: &Settings, pool: &kroma_db::Pool, base: &str, max_tokens: i64) {
         settings.set_patch(
             pool,
@@ -543,7 +479,6 @@ mod tests {
         Arc::new(GenRegistry::default()).start("itm-1", "translate", Some("fr".into()))
     }
 
-    /// A WebVTT with `n` cues.
     fn vtt_with(n: usize) -> String {
         let mut out = String::from("WEBVTT\n\n");
         for i in 1..=n {
@@ -556,7 +491,6 @@ mod tests {
         out
     }
 
-    /// Echo back a correctly numbered reply for whatever was asked.
     fn numbered_translation(request: &serde_json::Value) -> (u16, serde_json::Value) {
         let user = request
             .pointer("/messages/1/content")
@@ -575,8 +509,6 @@ mod tests {
 
     #[test]
     fn with_no_provider_configured_it_says_where_to_set_one() {
-        // This string reaches the user in the generation error, so it has to be
-        // actionable rather than "translation failed".
         let (_pool, settings) = settings_pool();
         let err = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap_err();
         assert!(err.contains("admin"), "{err}");
@@ -604,8 +536,6 @@ mod tests {
         for i in 1..=3 {
             assert!(out.contains(&format!("[fr] Line {i}")), "cue {i} missing from:\n{out}");
         }
-        // Timings are structural - a translated line under the wrong timing is
-        // worse than an untranslated one.
         assert!(out.contains("00:00:01.000 --> 00:00:02.000"));
         assert!(out.contains("00:00:03.000 --> 00:00:04.000"));
     }
@@ -624,13 +554,11 @@ mod tests {
 
     #[test]
     fn a_batch_the_model_mangled_keeps_its_original_text() {
-        // A blank line where a subtitle should be is worse than an untranslated
-        // one, so a batch that cannot be parsed falls back to the source.
         let (pool, settings) = settings_pool();
         let llm = FakeEndpoint::always("I cannot help with that request.");
         configure(&settings, &pool, llm.base(), 4096);
 
-        // Every batch fails, so this is a hard error carrying the model's reply.
+        // A single-batch document that fails entirely surfaces as a hard error.
         let err = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap_err();
         assert!(err.contains("numbered format"), "{err}");
         assert!(err.contains("cannot help"), "the model's actual reply is not in: {err}");
@@ -638,8 +566,6 @@ mod tests {
 
     #[test]
     fn a_partial_reply_fills_what_it_can_and_keeps_the_rest() {
-        // The model answered for most lines but skipped one. That batch counts as
-        // translated; the gap keeps its original text rather than going blank.
         let (pool, settings) = settings_pool();
         let llm = FakeEndpoint::routed(|request| {
             let user = request
@@ -662,14 +588,11 @@ mod tests {
         let out = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap();
         assert!(out.contains("[fr] Line 1"));
         assert!(out.contains("[fr] Line 3"));
-        // Cue 2 kept its source text - present, and not translated.
         assert!(out.contains("\nLine 2\n"), "the gap was blanked instead of kept:\n{out}");
     }
 
     #[test]
     fn a_provider_that_is_down_surfaces_its_own_complaint() {
-        // "translation failed" tells an operator nothing; the LLM's actual
-        // error (auth, credits, model) is what they can act on.
         let (pool, settings) = settings_pool();
         let llm = FakeEndpoint::failing(401);
         configure(&settings, &pool, llm.base(), 4096);
@@ -680,8 +603,6 @@ mod tests {
 
     #[test]
     fn the_providers_configured_token_cap_is_respected() {
-        // Translate used to always ask for BATCH*80+200 tokens, which a
-        // low-credit account rejects outright.
         let (pool, settings) = settings_pool();
         let llm = FakeEndpoint::routed(numbered_translation);
         configure(&settings, &pool, llm.base(), 300);

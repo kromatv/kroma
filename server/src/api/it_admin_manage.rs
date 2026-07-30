@@ -14,8 +14,6 @@ fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
     token
 }
 
-// ----- libraries (no-scan paths) ----------------------------------------------
-
 #[tokio::test]
 async fn library_browse_lists_directories_and_blocks_traversal() {
     let t = test_app();
@@ -134,8 +132,6 @@ async fn library_delete_and_scan_guard_branches() {
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
-// ----- members ----------------------------------------------------------------
-
 #[tokio::test]
 async fn admin_user_permission_edit_and_last_owner_guard() {
     let t = test_app();
@@ -166,7 +162,6 @@ async fn admin_user_permission_edit_and_last_owner_guard() {
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 
-    // An unknown target is a 404.
     let (status, _) = send(
         &t.app,
         "PATCH",

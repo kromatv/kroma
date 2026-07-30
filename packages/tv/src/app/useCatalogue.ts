@@ -21,7 +21,6 @@ import { initialServers } from '#tv/shared/server';
 
 type Status = 'discovering' | 'connecting' | 'ready' | 'error';
 
-/** A readable name for a server URL (saved label, else the host). */
 function serverLabel(servers: SavedServer[], url: string | null): string | null {
   if (!url) return null;
   const saved = servers.find((s) => s.url === norm(url));
@@ -57,12 +56,9 @@ export interface Catalogue {
   setSignedIn: (v: boolean) => void;
 }
 
-/**
- * Owns the TV's multi-server connection + catalogue state: discovery, the active
- * client, the movies/shows catalogue, the live event stream, Smart-Hub preview
- * publishing and deep links. Returns the `Connection` context value plus the
- * handles the auth provider needs (client / active server / signed-in toggle).
- */
+/** Owns the TV's multi-server connection + catalogue state: discovery, the
+ * active client, the movies/shows catalogue, the live event stream, Smart-Hub
+ * preview publishing and deep links. */
 export function useCatalogue(platform: string): Catalogue {
   // The session present at boot used to point the first client at the right
   // server with its token already applied (no flicker on "Reprendre").

@@ -1,21 +1,10 @@
-// Language codes, normalized ONCE for the whole app.
-//
-// Track languages reach us from ffprobe, so they are whatever the muxer wrote:
-// "fr", "fra", "fre", "fr-FR", "por"... The account carries ONE preferred audio
-// language and ONE preferred subtitle language, and every client (web, TV,
-// mobile) has to decide "is this the French track?" against that mess. Doing it
-// per client is how "I chose French" ends up meaning French on one screen and
-// the file's default on another - so the alias table, the matcher and the two
-// track pickers live here, and nowhere else.
+// Language codes, normalized once for the whole app: the alias table, the
+// matcher, and the two track pickers every client shares.
 
 import type { MessageKey, Translate } from './i18n';
 
-/** Every code that is not itself the canonical one → the code the catalog and
- * the account use. Generated from CLDR, so it covers the whole mess a muxer can
- * write: ISO 639-2/B and /T (`fre` from a DVD rip, `fra` from a modern
- * encoder), 639-3 members of a macrolanguage (`arb` → `ar`, `cmn` → `zh`),
- * and the deprecated two-letter tags still in the wild (`iw` → `he`,
- * `in` → `id`, `mo` → `ro`, `tl` → `fil`). */
+// Generated from CLDR: ISO 639-2/B and /T, 639-3 macrolanguage members, and the
+// deprecated two-letter tags still in the wild.
 const ALIAS: Record<string, string> = {
   aar: 'aa',
   abk: 'ab',
@@ -278,12 +267,9 @@ const ALIAS: Record<string, string> = {
 };
 
 /**
- * Canonical base for a language code: `"eng"` → `"en"`, `"pt-BR"` → `"pt"`,
- * `"FRA"` → `"fr"`. Null when there is no code at all.
- *
- * An unknown three-letter code is returned UNCHANGED rather than truncated:
- * chopping `"swe"` to `"sw"` would silently claim Swedish is Swahili, and two
- * unknown codes that fail to match are far better than two that match wrongly.
+ * Canonical base for a language code: `"eng"` → `"en"`, `"pt-BR"` → `"pt"`.
+ * An unknown three-letter code is returned unchanged rather than truncated -
+ * chopping `"swe"` to `"sw"` would claim Swedish is Swahili.
  */
 export function langBase(code?: string | null): string | null {
   if (!code) return null;
@@ -294,47 +280,22 @@ export function langBase(code?: string | null): string | null {
   return ALIAS[base] ?? base;
 }
 
-/** Whether a track's language is the preferred one, both sides normalized. */
 export function matchesLang(pref: string | null | undefined, code?: string | null): boolean {
   const a = langBase(pref);
   return a != null && a === langBase(code);
 }
 
-/** A language the catalog has a name for, read straight off the message keys:
- * `'lang.fr' | 'lang.sv' | ...` → `'fr' | 'sv' | ...`. Deriving it rather than
- * declaring it is what keeps {@link PREF_LANGS} and the catalog from drifting -
- * add a code to the list without its `lang.*` entry and the `satisfies` below
- * fails to compile. */
+/** A language the catalog has a name for, derived from the `lang.*` message
+ * keys so the list and the catalog cannot drift. */
 export type LangCode = LangSuffix<MessageKey>;
 
-/** Distributes over the MessageKey union (a naked type parameter is required
- *  for that; inlining the conditional would match the whole union at once). */
+// Naked type parameter: required so the conditional distributes over the
+// MessageKey union instead of matching it whole.
 type LangSuffix<K> = K extends `lang.${infer C}` ? C : never;
 
-/**
- * Every language a client offers as an audio or subtitle preference: the whole
- * ISO 639-1 set, plus the handful of languages a media file realistically
- * carries that never got a two-letter code (Filipino, Cantonese, Cebuano,
- * Hawaiian, Hmong).
- *
- * The list is deliberately complete rather than curated. A curated one is only
- * ever right for the person who curated it - a Swedish or Polish or Thai dub is
- * not an exotic case, it is someone's only case - and the cost of the long list
- * is a picker that scrolls, which every client's picker already does.
- *
- * SIX OF THEM CARRY A REGION, and they are the dub variants {@link
- * titleLangVariant} can read out of a track title: VFF and VFQ are two different
- * dubs with two different casts, and a container has no way to say which beyond
- * a word in the title. Offering `fr-CA` next to `fr` is what lets a viewer state
- * that up front instead of having to find a title that happens to carry the
- * Quebec track and pick it there. They are named "Français (Canada)" rather than
- * "français canadien" precisely so they sort BESIDE their base language: the
- * pickers are alphabetical, and the dialect spelling would file Quebec French
- * under C, an alphabet away from French.
- *
- * `satisfies` is the check that matters: a code with no `lang.*` name in the
- * catalog fails to compile here rather than rendering as a raw key.
- */
+/** Every language a client offers as an audio or subtitle preference. The six
+ * region-tagged entries are the dub variants {@link titleLangVariant} reads out
+ * of a track title. */
 export const PREF_LANGS = [
   'aa',
   'ab',
@@ -530,23 +491,16 @@ export const PREF_LANGS = [
   'hmn',
 ] as const satisfies readonly LangCode[];
 
-/** "No preference": keep the file's default track. Stored as `null` on the
- * account; this is the sentinel the pickers use, since a select needs a value. */
+/** "No preference": stored as `null` on the account, but a select needs a
+ * value, so the pickers use this sentinel. */
 export const LANG_NO_PREF = 'none';
 
-/** Subtitle preference sentinel: keep subtitles off, whatever the file offers. */
 export const LANG_OFF = 'off';
 
 /**
- * The most specific code in {@link PREF_LANGS} that a language tag maps onto,
- * or null when nothing does.
- *
- * SPECIFIC FIRST, and that is the whole of the dub-variant handling: `fr-CA` is
- * offered, so a Quebec preference stays Quebec; `pt-AO` is not, so an Angolan
- * track resolves to plain Portuguese rather than to nothing. Every spelling
- * {@link langBase} knows gets there - `fre`, `fra`, `FR_ca` all land on the same
- * pair of answers - and the server's own lower-casing (`norm_media_lang` stores
- * `fr-ca`) round-trips through it unharmed.
+ * The most specific code in {@link PREF_LANGS} a language tag maps onto, or
+ * null. Specific first: `fr-CA` is offered so a Quebec preference stays Quebec,
+ * `pt-AO` is not so an Angolan track resolves to plain Portuguese.
  */
 export function offeredLang(code?: string | null): LangCode | null {
   const base = langBase(code);
@@ -557,8 +511,6 @@ export function offeredLang(code?: string | null): LangCode | null {
   return isLangCode(base) ? base : null;
 }
 
-/** Language code → the `lang.*` catalog key for its name in the reader's own
- * language, or null when the catalog has no name for it. */
 export function langKey(code?: string | null): MessageKey | null {
   const offered = offeredLang(code);
   return offered ? `lang.${offered}` : null;
@@ -566,31 +518,17 @@ export function langKey(code?: string | null): MessageKey | null {
 
 const LANG_CODES: ReadonlySet<string> = new Set(PREF_LANGS);
 
-/** Whether a code is one the catalog names. */
 function isLangCode(code: string): code is LangCode {
   return LANG_CODES.has(code);
 }
 
-/** One row of a language picker. */
 export interface LangOption {
   code: LangCode;
-  /** The language's name in the READER's language ("Swedish" / "Suédois"). */
   label: string;
 }
 
-/**
- * {@link PREF_LANGS} as picker rows, named and ordered for `locale`.
- *
- * Alphabetical by the LABEL, never by the code: a list sorted by code reads as
- * random once it is nearly two hundred rows long ("de" before "el" before "en"
- * puts German, Greek and English together for no reason a reader can see). The
- * collator is the locale's own, so French sorts "Éwé" where a French reader
- * looks for it; environments without Intl fall back to a plain comparison
- * rather than throwing.
- *
- * Built fresh per call and memoised by the caller (the label depends on the
- * active locale, so a cache here would have to be keyed by it anyway).
- */
+/** {@link PREF_LANGS} as picker rows, labelled for `locale` and sorted by label
+ * with that locale's collator. Built fresh per call. */
 export function langOptions(t: Translate, locale?: string): LangOption[] {
   const options = PREF_LANGS.map((code) => ({ code, label: t(`lang.${code}`) }));
   return options.sort(byLabel(locale));
@@ -608,28 +546,16 @@ function byLabel(locale?: string): (a: LangOption, b: LangOption) => number {
   }
 }
 
-/** An audio track, as the preference matcher needs it. */
 export interface AudioCandidate {
-  /** Audio-relative stream index (what a player selects by). */
   index: number;
   language?: string | null;
-  /** The track's title/label ("VFF AC3 5.1", "VFQ …"): the only place a dub
-   *  VARIANT lives, since VFF and VFQ both declare `language: fre`. */
   title?: string | null;
 }
 
 /**
- * The dub variant a track's TITLE betrays, as a full language tag - or null
- * for a title that names no variant (a neutral track).
- *
- * This exists because containers cannot say it any other way: a French-France
- * dub (VFF) and a Quebec dub (VFQ) both declare `language: fre`, and the only
- * difference is a word in the track title. A viewer who chose VFF is NOT
- * asking for VFQ - they are two different dubs with different casts - so the
- * preference machinery has to read the word. Bare "VF" stays null on purpose:
- * it means "French dub" and names no side. Same story for the other languages
- * the wild labels this way (Castilian vs Latino, Brazilian vs European
- * Portuguese).
+ * The dub variant a track's title betrays, as a full language tag, or null.
+ * Containers cannot say it any other way - VFF and VFQ both declare
+ * `language: fre`. Bare "VF" names no side and stays null.
  */
 export function titleLangVariant(title?: string | null): string | null {
   if (!title) return null;
@@ -644,7 +570,6 @@ export function titleLangVariant(title?: string | null): string | null {
   return null;
 }
 
-/** The region half of a language tag (`fr-FR` → `FR`), or null. */
 export function langRegion(code?: string | null): string | null {
   if (!code) return null;
   const region = code.trim().split(/[-_]/)[1];
@@ -652,11 +577,9 @@ export function langRegion(code?: string | null): string | null {
 }
 
 /**
- * The most specific language a track admits to: its declared language refined
- * by the variant its title betrays (`('fre', 'VFF AC3 5.1')` → `'fr-FR'`).
- * The variant only refines a MATCHING base - an English track titled "VFF" is
- * a mislabel, not a French track - and a track with no declared language takes
- * the title's word for it.
+ * A track's declared language refined by the variant its title betrays
+ * (`('fre', 'VFF AC3 5.1')` → `'fr-FR'`). The variant only refines a matching
+ * base: an English track titled "VFF" is a mislabel, not a French track.
  */
 export function refineTrackLang(language?: string | null, title?: string | null): string | null {
   const base = langBase(language);
@@ -665,28 +588,16 @@ export function refineTrackLang(language?: string | null, title?: string | null)
   return base;
 }
 
-/**
- * A subtitle track, as the preference matcher needs it. Clients map their own
- * shapes onto this (web `SubtitleView.downloaded`, TV `SubView.ai`) so the rule
- * "never auto-enable a generated track" is written once.
- */
 export interface SubtitleCandidate {
   index: number;
   language?: string | null;
-  /** The WebVTT url; absent/null = a picture sub we cannot render as text. */
   url?: string | null;
-  /** AI-transcribed or translated. Selectable by hand, never auto-enabled. */
   generated?: boolean;
 }
 
-/** Index of the audio track matching `pref`, or null when none does (the caller
- * then keeps the file's own default).
- *
- * A pref WITH a region (`fr-FR`, stored when the viewer picked a track whose
- * title named its variant) ranks the language's tracks rather than taking the
- * first: the exact variant, then a track naming NO variant, and the opposite
- * variant only as the last resort - a VFF viewer gets VFQ only when VFQ is the
- * only French in the file. A bare pref (`fr`) keeps the old first-match rule. */
+/** Index of the audio track matching `pref`, or null (the caller then keeps the
+ * file's default). A pref carrying a region ranks the language's tracks: exact
+ * variant, then a track naming no variant, then the opposite one. */
 export function preferredAudioIndex(
   tracks: readonly AudioCandidate[],
   pref?: string | null,
@@ -705,9 +616,8 @@ export function preferredAudioIndex(
   return matches[0]?.index ?? null;
 }
 
-/** Index of the subtitle track to auto-enable for `pref`, or null (leave them
- * off). `off` and "no preference" both yield null; only renderable, non-
- * generated tracks are considered. */
+/** Index of the subtitle track to auto-enable for `pref`, or null. Only
+ * renderable, non-generated tracks are ever auto-enabled. */
 export function preferredSubIndex(
   subs: readonly SubtitleCandidate[],
   pref?: string | null,

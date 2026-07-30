@@ -5,8 +5,8 @@ import { seal } from './grant';
 import type { Env, RateLimit } from './index';
 import worker from './index';
 
-/** A throwaway P-256 key in the PEM shape a real `.p8` has, minted per run so
- * no key material sits in the repo. */
+// A throwaway P-256 key in the PEM shape a real `.p8` has, minted per run so
+// no key material sits in the repo.
 async function testP8(): Promise<string> {
   const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, [
     'sign',
@@ -51,7 +51,7 @@ const post = (path: string, body: unknown) =>
 
 const NOTIFICATION = { id: 'n1', title: 'Ready to watch', body: 'Dune is in your library.' };
 
-/** Stand in for Apple, capturing what it was sent. */
+// Stand in for Apple, capturing what it was sent.
 function stubApple(status: number, body = '') {
   const calls: { url: string; init: RequestInit }[] = [];
   vi.stubGlobal(

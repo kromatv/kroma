@@ -11,7 +11,7 @@ import { createCallable } from 'react-call';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
 import { Avatar } from '#web/features/admin/ui';
 
-/** RN style for a kit button that shares the row like the old `flex-1` CTAs. */
+// Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
 
 function Header({ report, onClose }: Readonly<{ report: Report; onClose: () => void }>) {
@@ -55,14 +55,9 @@ function Header({ report, onClose }: Readonly<{ report: Report; onClose: () => v
   );
 }
 
-/**
- * Slide-in triage drawer, as an imperative callable: open it with
- * `await ReportDrawer.call({ report, canManage, onResolve, ... })`. The action
- * callbacks (each performs the mutation + parent list refresh + toast) are
- * passed in so the queue keeps updating live while the drawer stays open; the
- * drawer owns its own busy + report state and resolves `void` when it closes.
- * Its root is mounted once by `AdminModalHosts`; no open-state at the call site.
- */
+// Open with `await ReportDrawer.call({ report, canManage, onResolve, ... })`.
+// The action callbacks perform the mutation + parent list refresh + toast, so
+// the queue keeps updating live while the drawer stays open.
 export const ReportDrawer = createCallable<
   {
     report: Report;
@@ -91,9 +86,8 @@ export const ReportDrawer = createCallable<
     window.setTimeout(() => call.end(), 300);
   };
 
-  // A triage action: disable the drawer while it runs, then reflect the new
-  // status locally (the parent reloads the list behind us). Failures leave the
-  // report untouched (the callback already surfaced the error toast).
+  // Reflect the new status locally; the parent reloads the list behind us.
+  // Failures leave the report untouched (the callback surfaced its own toast).
   const run = (fn: (r: Report) => Promise<void>, next: ReportStatus) => {
     setBusy(true);
     fn(report)

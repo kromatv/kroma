@@ -37,7 +37,6 @@ pub fn indexer_routes<S: HostCtx + Clone + Send + Sync + 'static>(
         .layer(Extension(fetch))
 }
 
-/// Run a blocking provider call into the `Result<T, String>` wire envelope.
 async fn blocking_env<T: Send + 'static>(
     job: impl FnOnce() -> anyhow::Result<T> + Send + 'static,
 ) -> Json<Result<T, String>> {
@@ -48,8 +47,6 @@ async fn blocking_env<T: Send + 'static>(
             .and_then(|r| r.map_err(|e| format!("{e:#}"))),
     )
 }
-
-// --- IndexerDbPort -----------------------------------------------------------
 
 async fn list_h<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
@@ -95,8 +92,6 @@ async fn note_h<S: HostCtx + Clone + Send + Sync + 'static>(
         .await
 }
 
-// --- IndexerSearchPort -------------------------------------------------------
-
 #[derive(Deserialize)]
 struct SearchReq {
     row: IndexerRow,
@@ -131,11 +126,10 @@ async fn resolve_h<S: HostCtx + Clone + Send + Sync + 'static>(
     .await
 }
 
-// --- TorrentFetchPort (tri-state Option<Result<..>>) -------------------------
-
+// The tri-state Option<Result<..>> crosses the wire as this struct: `found`
+// false means "not this port's indexer" (the caller does a plain fetch).
 #[derive(Serialize, Deserialize, Default)]
 struct FetchResp {
-    /// False = "not this port's indexer" (the caller does a plain fetch).
     found: bool,
     error: Option<String>,
     data: Option<Vec<u8>>,
@@ -162,8 +156,6 @@ async fn fetch_h<S: HostCtx + Clone + Send + Sync + 'static>(
         Some(Err(e)) => FetchResp { found: true, error: Some(format!("{e:#}")), data: None },
     })
 }
-
-// --- Consumer-side clients ---------------------------------------------------
 
 pub struct IndexerDbClient {
     resolve: Resolver,
@@ -272,14 +264,8 @@ impl TorrentFetchPort for TorrentFetchClient {
 
 #[cfg(test)]
 mod tests {
-    // `use super::*` re-exports the parent module's imports (Arc, HostCtx, the
-    // axum extractors, and every port + wire type), so nothing else is needed.
     use super::*;
 
-    // --- Test doubles ---------------------------------------------------------
-
-    /// A `HostCtx` whose methods are never invoked by these bridge handlers (the
-    /// mock ports ignore `host`); only the trait bound needs to be satisfied.
     use kroma_module_host::testing::StubHost;
 
     fn sample_row(id: &str) -> IndexerRow {
@@ -389,8 +375,6 @@ mod tests {
         Arc::new(|| None)
     }
 
-    // --- Provider-side handler tests -----------------------------------------
-
     #[tokio::test]
     async fn list_handler_returns_rows() {
         let db: Arc<dyn IndexerDbPort> = Arc::new(OkDb);
@@ -465,26 +449,21 @@ mod tests {
     async fn fetch_handler_tri_state() {
         let req = || FetchReq { indexer_id: "id".into(), url: "http://x".into() };
 
-        // Not this port's indexer.
         let none: Arc<dyn TorrentFetchPort> = Arc::new(FetchMode(None));
         let Json(resp) = fetch_h::<StubHost>(State(StubHost::new()), Extension(none), Json(req())).await;
         assert!(!resp.found && resp.data.is_none() && resp.error.is_none());
 
-        // Authenticated fetch succeeded.
         let ok: Arc<dyn TorrentFetchPort> = Arc::new(FetchMode(Some(Ok(vec![1, 2, 3]))));
         let Json(resp) = fetch_h::<StubHost>(State(StubHost::new()), Extension(ok), Json(req())).await;
         assert!(resp.found);
         assert_eq!(resp.data, Some(vec![1, 2, 3]));
         assert!(resp.error.is_none());
 
-        // Authenticated fetch itself failed.
         let err: Arc<dyn TorrentFetchPort> = Arc::new(FetchMode(Some(Err(()))));
         let Json(resp) = fetch_h::<StubHost>(State(StubHost::new()), Extension(err), Json(req())).await;
         assert!(resp.found && resp.data.is_none());
         assert_eq!(resp.error.as_deref(), Some("fetch failed"));
     }
-
-    // --- Wire-struct serde ----------------------------------------------------
 
     #[test]
     fn wire_requests_deserialize() {
@@ -504,8 +483,6 @@ mod tests {
         let d = FetchResp::default();
         assert!(!d.found && d.data.is_none() && d.error.is_none());
     }
-
-    // --- Consumer-side client tests (offline resolver) ------------------------
 
     #[test]
     fn db_client_surfaces_offline_error() {
@@ -529,11 +506,11 @@ mod tests {
         let c = TorrentFetchClient::new(offline());
         assert!(c.fetch_torrent(&StubHost::new(), "id", "http://x").is_none());
     }
-    // --- A live round trip over the real bridge -----------------------------------
-    //
-    // Mounts the REAL router and points REAL clients at it, so the wire is under
-    // test: paths, the `Result<T, String>` envelope, and the JSON shape of every
-    // boundary type. Those only disagree at runtime, in a sidecar.
+
+    // Mounts the REAL router and points REAL clients at it, so the wire is
+    // under test: paths, the `Result<T, String>` envelope, and the JSON
+    // shape of every boundary type. Those only disagree at runtime, in a
+    // sidecar.
 
     async fn serve<S: HostCtx + Clone + Send + Sync + 'static>(
         router: Router<S>,

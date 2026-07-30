@@ -1,9 +1,4 @@
-// The PRIMITIVES: the kit's atoms.
-//
-// A primitive owns one visual idea and composes nothing but React Native hosts
-// (or, at most, another primitive as a leaf). It knows about tokens and about
-// focus; it knows nothing about the app. If a component needs to be told what a
-// film is, it is not a primitive.
+// The kit's atoms: each owns one visual idea and knows tokens and focus, not the app.
 
 export type { AvatarProps } from './avatar';
 export { AVATAR_GRADIENT, AVATAR_GRADIENTS, Avatar, gradientFor, initialsOf } from './avatar';
@@ -51,12 +46,8 @@ export type { SwitchProps, SwitchSize } from './switch';
 export { Switch, SwitchFace, switchVariants } from './switch';
 export type { TxtProps } from './text';
 export { Txt } from './text';
-// <TextArea> and <TextField> are deliberately NOT exported. They are the two
-// controls <Field> renders (`multiline` picks the taller one), not components
-// to choose: every text entry in the app goes through <Field>, which is what
-// keeps the label, the hint and the error-replaces-hint rule attached to it.
-// The types come out because Field's own props are spelled in them (`type`,
-// `rows`, and `entry` for the entry's presentation).
+// TextArea and TextField are deliberately not exported: every text entry goes
+// through <Field>, which picks between them via `multiline`.
 export type { TextAreaProps } from './text-area';
 export type { TextFieldProps, TextFieldType } from './text-field';
 export type { WatchedBadgeProps } from './watched-badge';

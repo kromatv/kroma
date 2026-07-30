@@ -1,11 +1,6 @@
 //! Notification persistence: insert, list newest-first, unread tally, read /
-//! delete transitions, retention, and the per-user delivery matrix.
-//!
-//! Rows store i18n KEYS, never rendered text (see the schema comment); turning a
-//! [`StoredNotification`] into the wire shape is `services::notify::render`'s
-//! job, because only the caller knows which user is reading.
-//!
-//! Push endpoints live next door in [`crate::push_subs`].
+//! delete transitions, retention, and the per-user delivery matrix. Rows store
+//! i18n keys, not rendered text; `services::notify::render` builds the wire shape.
 
 use std::collections::BTreeMap;
 
@@ -14,13 +9,9 @@ use kroma_domain::{
     ActionSpec, CategoryPref, NotificationCategory, NotificationEvent, ParamValue, PushCategory,
 };
 
-/// How many notifications to keep per user. Older ones are pruned on insert:
-/// this is an inbox, not an audit log, and the admin history views already cover
-/// "what happened on this server".
 pub const RETENTION_PER_USER: usize = 200;
 
-/// Columns of the notification SELECT. Positional order must match
-/// [`row_to_notification`].
+// Column order must match `row_to_notification`.
 const NOTIFICATION_COLS: &str = "id, category, event, title_key, body_key, params, link, \
     image_url, actions, push_category, read_at, created_at";
 
@@ -50,13 +41,9 @@ fn row_to_notification(r: &Row) -> rusqlite::Result<StoredNotification> {
     let read_at: Option<i64> = r.get(10)?;
     Ok(StoredNotification {
         id: r.get(0)?,
-        // A row written by a newer build can name an event this binary doesn't
-        // know. Skipping it would silently drop the row from the inbox, so both
-        // fall back and the renderer just shows the stored keys.
+        // Unknown category (written by a newer build): fall back rather than drop the row.
         category: NotificationCategory::parse(&category).unwrap_or(NotificationCategory::System),
-        // ... and an unknown event is exactly what `Custom` means, rather than
-        // the old fallback of `system.job.failed`, which told the reader a task
-        // had failed when nothing had.
+        // An unknown event is exactly what `Custom` means.
         event: NotificationEvent::parse(&event).unwrap_or(NotificationEvent::Custom),
         title_key: r.get(3)?,
         body_key: r.get(4)?,
@@ -70,12 +57,8 @@ fn row_to_notification(r: &Row) -> rusqlite::Result<StoredNotification> {
     })
 }
 
-/// Every image a stored notification still points at.
-///
-/// The image cache is trimmed by size (`cache_cleanup`), and art it evicts is
-/// refetched on demand - but an image UPLOADED for a notification has nowhere to
-/// come back from, so the trimmer has to know it is spoken for. Same protection
-/// the avatars already get, for the same reason.
+/// Every image a stored notification still points at, so the size-based cache
+/// trimmer knows an uploaded image is spoken for and must not evict it.
 pub fn referenced_images(conn: &Connection) -> Result<Vec<String>> {
     let mut stmt = conn.prepare("SELECT DISTINCT image_url FROM notifications WHERE image_url IS NOT NULL")?;
     let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
@@ -84,18 +67,12 @@ pub fn referenced_images(conn: &Connection) -> Result<Vec<String>> {
 
 /// Insert one notification for `user_id`, enforce [`RETENTION_PER_USER`], and
 /// return that user's new unread count.
-///
-/// Takes the row in its stored shape (rather than a near-identical `NewX` twin)
-/// so the caller keeps the value it just built and can render a push from it
-/// without reading it back. Returning the unread tally folds what used to be a
-/// separate follow-up query into the same connection.
 pub fn insert_notification(
     conn: &Connection,
     user_id: &str,
     n: &StoredNotification,
 ) -> Result<u32> {
-    // Serialization of a String map / a Vec of plain structs cannot realistically
-    // fail; degrade to the empty shape rather than losing the whole notification.
+    // Serialization can't realistically fail; degrade to empty rather than lose the notification.
     let params = serde_json::to_string(&n.params).unwrap_or_else(|_| "{}".into());
     let actions = serde_json::to_string(&n.actions).unwrap_or_else(|_| "[]".into());
     conn.execute(
@@ -106,14 +83,8 @@ pub fn insert_notification(
         params![
             n.id,
             user_id,
-            // The SPEC's category, not the event's default. They differ for
-            // exactly the case that needs them to: `Custom` reports `System`,
-            // while a module - or the console's composer - names the preference
-            // bucket its notification actually answers to. Writing the event's
-            // answer here filed every written notification under System, so a
-            // reader who muted System still got it and one who muted the chosen
-            // bucket did not, while `render` read the stored value and disagreed
-            // with the push that had already gone out.
+            // The spec's category, not the event's default: `Custom` reports `System`,
+            // while a module names the preference bucket its notification answers to.
             n.category.as_str(),
             n.event.as_str(),
             n.title_key,
@@ -130,7 +101,6 @@ pub fn insert_notification(
     Ok(unread_count(conn, user_id)?)
 }
 
-/// Drop everything past [`RETENTION_PER_USER`] for one user, newest kept.
 fn prune(conn: &Connection, user_id: &str) -> rusqlite::Result<()> {
     conn.execute(
         "DELETE FROM notifications WHERE user_id = ?1 AND id NOT IN \
@@ -205,13 +175,10 @@ pub fn delete_notification(pool: &Pool, user_id: &str, id: &str) -> Result<bool>
     Ok(n > 0)
 }
 
-/// Every account, for audience resolution.
-///
-/// A household server has a handful of users, so "everyone holding
-/// `requests.manage`" is a small scan plus a filter in Rust rather than a `LIKE`
-/// against the permissions JSON blob (which would match substrings and can't use
-/// an index anyway). The full [`User`] comes back because the caller needs both
-/// `permissions` (to filter) and `language` (to render).
+/// Every account, for audience resolution: a household-sized table, scanned and
+/// filtered in Rust rather than queried with `LIKE` on the permissions JSON.
+/// Returns the full [`User`] since callers need both `permissions` (to filter)
+/// and `language` (to render).
 pub fn recipients(conn: &Connection) -> rusqlite::Result<Vec<User>> {
     let mut stmt = conn.prepare(
         "SELECT id,email,username,avatar_url,created_at,permissions,language,\
@@ -239,23 +206,18 @@ pub fn followers_of_show(conn: &Connection, show_id: &str) -> rusqlite::Result<V
 #[derive(Debug, Clone)]
 pub struct AddedTitle {
     pub id: String,
-    /// `movie` | `episode` (and the odd `video`); shows are reached via `show_id`.
     pub kind: String,
     pub title: String,
     pub show_id: Option<String>,
     pub show_title: Option<String>,
     pub season: Option<u32>,
     pub episode: Option<u32>,
-    /// ISO-8601, and therefore lexicographically ordered the digest's watermark.
     pub added_at: String,
 }
 
-/// Everything added to the catalogue strictly after `since`.
-///
-/// `added_at` is ISO-8601, so a plain string comparison is a correct "newer
-/// than" test and uses the natural ordering. `limit` bounds a first import or a
-/// re-scan of a big library from loading the whole catalogue into memory the
-/// digest only ever reports a count and a sample title anyway.
+/// Everything added to the catalogue strictly after `since` (ISO-8601, compared
+/// lexicographically). `limit` bounds a first import or big re-scan from loading
+/// the whole catalogue, since the digest only reports a count and a sample title.
 pub fn items_added_since(
     conn: &Connection,
     since: &str,
@@ -286,8 +248,6 @@ pub fn newest_added_at(conn: &Connection) -> rusqlite::Result<Option<String>> {
     conn.query_row("SELECT MAX(added_at) FROM items", [], |r| r.get(0))
 }
 
-// ----- delivery preferences ---------------------------------------------------
-
 /// One user's full preference matrix, defaults filled in.
 ///
 /// A missing row means "on", so this always returns every category and callers
@@ -312,10 +272,7 @@ pub fn prefs(conn: &Connection, user_id: &str) -> rusqlite::Result<Vec<CategoryP
 }
 
 /// Whether a category may be delivered to this user, as `(in_app, push)`.
-///
-/// Defined in terms of [`prefs`] so the "a missing row means on" rule has one
-/// home: stating it twice is how the settings matrix and the delivery check come
-/// to disagree. The table holds at most one small row per category per user.
+/// Defined in terms of [`prefs`] so the "missing row means on" rule has one home.
 pub fn allows(
     conn: &Connection,
     user_id: &str,
@@ -352,8 +309,7 @@ mod tests {
 
     static SEQ: AtomicU32 = AtomicU32::new(0);
 
-    /// A fresh on-disk DB plus two accounts. `notifications.user_id` FKs `users`
-    /// (and cascades), so the recipients have to be real rows.
+    // Real accounts: notifications.user_id FKs users (and cascades).
     fn pool() -> (Pool, String, String) {
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
         let path = std::env::temp_dir().join(format!("kroma-notif-{}-{n}.db", std::process::id()));
@@ -388,8 +344,6 @@ mod tests {
         }
     }
 
-    /// Insert through a pooled connection, as the tests did before the signature
-    /// moved to `&Connection`.
     fn insert(p: &Pool, id: &str, user: &str, at: i64) -> u32 {
         let conn = p.get().unwrap();
         insert_notification(&conn, user, &new(id, at)).unwrap()
@@ -435,7 +389,6 @@ mod tests {
         let conn = p.get().unwrap();
         assert_eq!(unread_count(&conn, &u1).unwrap(), 0);
         assert!(list_notifications(&conn, &u1, 50, true).unwrap().is_empty());
-        // Already read: a second sweep changes nothing.
         drop(conn);
         assert_eq!(mark_read(&p, &u1, None, 9_001).unwrap(), 0);
     }
@@ -445,7 +398,6 @@ mod tests {
         let (p, u1, u2) = pool();
         insert(&p, "mine", &u1, 1_000);
         insert(&p, "theirs", &u2, 1_000);
-        // u1 naming u2's id changes nothing the UPDATE is scoped to the caller.
         let ids = vec!["theirs".to_string()];
         assert_eq!(mark_read(&p, &u1, Some(&ids), 9_000).unwrap(), 0);
         let conn = p.get().unwrap();
@@ -474,7 +426,6 @@ mod tests {
         let conn = p.get().unwrap();
         let list = list_notifications(&conn, &u1, 1_000, false).unwrap();
         assert_eq!(list.len(), RETENTION_PER_USER);
-        // Newest first, and the five oldest are gone.
         assert_eq!(list[0].id, format!("n{}", RETENTION_PER_USER + 4));
         assert!(!list.iter().any(|n| n.id == "n0"));
     }
@@ -486,7 +437,6 @@ mod tests {
         let prefs = prefs(&conn, &u1).unwrap();
         assert_eq!(prefs.len(), NotificationCategory::ALL.len());
         assert!(prefs.iter().all(|p| p.in_app && p.push));
-        // And the single-category read agrees with the matrix.
         assert_eq!(allows(&conn, &u1, NotificationCategory::Media).unwrap(), (true, true));
     }
 
@@ -505,9 +455,7 @@ mod tests {
         .unwrap();
         let conn = p.get().unwrap();
         assert_eq!(allows(&conn, &u1, NotificationCategory::Media).unwrap(), (true, false));
-        // Untouched categories keep the default.
         assert_eq!(allows(&conn, &u1, NotificationCategory::Requests).unwrap(), (true, true));
-        // And another user is unaffected.
         assert_eq!(allows(&conn, &u2, NotificationCategory::Media).unwrap(), (true, true));
     }
 

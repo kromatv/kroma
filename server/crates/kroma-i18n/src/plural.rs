@@ -1,12 +1,9 @@
 //! Plural categories and the default rule.
 //!
-//! Pluralization is opt-in *per key* via the catalog: a key gets a `_one`
-//! variant only for languages you choose to pluralize. If a key has no `_one`
-//! variant, [`crate::I18n::translate`] falls back to the base key, so languages
-//! you don't pluralize need no rule at all this is why the default rule is a
-//! trivial `one`/`other` split and there is deliberately no CLDR language table.
-//! Supply [`crate::Builder::plural_rule`] only if you actually render a plural
-//! whose language needs something other than "singular at 1".
+//! Pluralization is opt-in per key: a key gets a `_one` variant only for
+//! languages you choose to pluralize, and [`crate::I18n::translate`] falls
+//! back to the base key otherwise. Supply [`crate::Builder::plural_rule`]
+//! only when a language needs more than "singular at 1".
 
 /// A CLDR plural category. Catalog keys carry the category as a suffix
 /// (`key_one`, `key_other`, …); the engine appends the selected one.

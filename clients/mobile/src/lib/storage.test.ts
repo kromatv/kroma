@@ -1,18 +1,11 @@
-// Device persistence for the phone client.
-//
-// Most of this is JSON in and out of SecureStore. The part that is not, and the
-// reason this file is worth pinning, is the pair of BIOMETRIC gates: both must
-// fail CLOSED. A keychain read can fail transiently - a device restored from
-// backup has a locked keychain for a moment after boot - and answering "no lock
-// configured" there opens a locked profile with no prompt at all. The safe
-// answer to "is this locked?" when you cannot tell is yes.
+// Device persistence for the phone client. Most of this is JSON in and out of
+// SecureStore; the exception is the pair of biometric gates, which must both
+// fail closed when a keychain read cannot say whether a profile is locked.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const store = new Map<string, string>();
-/** Keys whose read should throw, to simulate a keychain that cannot be read. */
 const unreadable = new Set<string>();
-/** Keys whose write should throw, i.e. a device with no biometrics enrolled. */
 const unwritable = new Set<string>();
 
 vi.mock('expo-secure-store', () => ({
@@ -77,8 +70,7 @@ describe('accounts', () => {
       account({ user: { id: 'u1', username: 'max', secret: 'do-not-persist' } as never }),
     ]);
     const raw = store.get(ACCOUNTS_KEY) ?? '';
-    // A token in the keychain is one thing; an arbitrary user object copied in
-    // wholesale is another.
+    // A token in the keychain is one thing; the caller's full user object is another.
     expect(raw).not.toContain('do-not-persist');
     expect(raw).toContain('max');
   });
@@ -88,7 +80,6 @@ describe('accounts', () => {
     const loaded = await loadAccounts();
     expect(loaded).toHaveLength(1);
     expect(loaded[0]?.accessToken).toBe('old');
-    // Migration is one-time: the legacy key is cleared and the list now holds it.
     expect(store.has(LEGACY_KEY)).toBe(false);
     expect(store.has(ACCOUNTS_KEY)).toBe(true);
   });
@@ -150,8 +141,6 @@ describe('the PIN vault', () => {
   });
 
   it('reports failure when the device cannot protect it', async () => {
-    // No passcode or biometrics enrolled: the write throws, and the caller has
-    // to know rather than believe the PIN was saved.
     unwritable.add('kroma.mobile.pin.https___a.u1');
     await expect(savePinBehindBiometrics('https://a', 'u1', '1234')).resolves.toBe(false);
   });
@@ -165,8 +154,7 @@ describe('the PIN vault', () => {
   it('sanitizes the server url into a keychain-safe key', async () => {
     await savePinBehindBiometrics('https://kroma.local:4040/', 'u1', '1234');
     const key = [...store.keys()].find((k) => k.startsWith('kroma.mobile.pin.'));
-    // Everything outside [A-Za-z0-9._-] becomes an underscore, so a url with a
-    // scheme, a port and a slash cannot produce an invalid keychain account.
+    // Everything outside [A-Za-z0-9._-] becomes an underscore.
     expect(key).toBeDefined();
     expect(key).toMatch(/^[A-Za-z0-9._-]+$/);
   });
@@ -184,9 +172,7 @@ describe('the biometric profile lock', () => {
   it('reads as LOCKED when the keychain cannot be read', async () => {
     await setBiometricLockEnabled('https://a', 'u1', true);
     unreadable.add('kroma.mobile.pref.biolock.https___a.u1');
-    // The invariant: a device restored from backup has a locked keychain for a
-    // moment after boot. Answering "not locked" there opens a locked profile
-    // with no prompt at all, so an unreadable keychain must read as locked.
+    // An unreadable keychain must read as locked, never as unlocked.
     await expect(isBiometricLockEnabled('https://a', 'u1')).resolves.toBe(true);
   });
 
@@ -200,8 +186,7 @@ describe('the biometric profile lock', () => {
   it('refuses to turn on when the sentinel cannot be stored', async () => {
     unwritable.add('kroma.mobile.biolock.https___a.u1');
     await expect(setBiometricLockEnabled('https://a', 'u1', true)).resolves.toBe(false);
-    // And it must NOT have recorded the flag: a lock the device cannot enforce
-    // would deny entry forever with no way to pass it.
+    // A lock the device cannot enforce must not be recorded either.
     await expect(isBiometricLockEnabled('https://a', 'u1')).resolves.toBe(false);
   });
 
@@ -235,7 +220,6 @@ describe('the biometric unlock opt-out', () => {
 
   it('is per account, not per device', async () => {
     await setBiometricUnlockEnabled('https://a', 'u1', false);
-    // A second profile on the same server keeps its own answer.
     await expect(isBiometricUnlockEnabled('https://a', 'u2')).resolves.toBe(true);
   });
 });

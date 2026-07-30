@@ -1,15 +1,6 @@
-//! The definition store: fetch the community-maintained Cardigann definition
-//! set at runtime and cache it under the data directory.
-//!
-//! The definitions are GPL and must not be distributed with KROMA (MIT); so
-//! nothing is vendored. Instead the end user's server downloads the current set
-//! from the upstream repo on demand (a single tarball), extracts the highest
-//! schema-version directory, and keeps the `*.yml` files locally. The admin
-//! triggers a re-sync to pick up upstream fixes.
-//!
-//! Transport reuses the system `curl` (via `kroma-http`, so a VPN proxy applies)
-//! and the system `tar` for extraction - the same "shell out to the OS" stance
-//! the rest of KROMA's acquisition transport takes.
+//! Fetches the community-maintained Cardigann definition set at runtime and
+//! caches it under the data directory. Not vendored: the definitions are GPL
+//! and KROMA is MIT, so the server downloads them on demand instead.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -19,9 +10,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::definition::{self, Definition};
 
-/// Where the upstream set is fetched from. The `master` tarball is one request
-/// (versus ~600 for per-file fetches). Overridable so a deployment can pin a
-/// fork/mirror.
+// The `master` tarball, in one request instead of ~600 per-file fetches.
+// Overridable so a deployment can pin a fork/mirror.
 pub const DEFAULT_SOURCE: &str =
     "https://codeload.github.com/Prowlarr/Indexers/tar.gz/refs/heads/master";
 
@@ -47,7 +37,6 @@ pub struct SyncReport {
     pub version: String,
 }
 
-/// A local cache of Cardigann definitions.
 pub struct DefinitionStore {
     dir: PathBuf,
     source: String,
@@ -63,22 +52,21 @@ impl DefinitionStore {
         &self.dir
     }
 
-    /// Have definitions been fetched yet?
     pub fn is_populated(&self) -> bool {
         std::fs::read_dir(&self.dir)
             .map(|mut d| d.any(|e| e.as_ref().map(is_yml).unwrap_or(false)))
             .unwrap_or(false)
     }
 
-    /// Download + extract the current definition set. Replaces the cache
-    /// atomically-ish (extract to a temp dir, then swap the yml files in).
+    /// Downloads and extracts the current definition set, replacing the cache
+    /// (extract to a temp dir, then swap the yml files in).
     pub fn sync(&self) -> Result<SyncReport> {
         std::fs::create_dir_all(&self.dir).context("create defs dir")?;
         let tmp = self.dir.join(".sync-tmp");
         let _ = std::fs::remove_dir_all(&tmp);
         std::fs::create_dir_all(&tmp).context("create sync tmp")?;
 
-        // 1) Download the tarball (curl, so the VPN proxy applies if set).
+        // curl, so the VPN proxy applies if one is set.
         let tarball = tmp.join("defs.tar.gz");
         let bytes = kroma_module_sdk::http::Fetch::new()
             .max_time(120)
@@ -88,7 +76,6 @@ impl DefinitionStore {
             .body;
         std::fs::write(&tarball, &bytes).context("write tarball")?;
 
-        // 2) Extract with the system tar.
         let out = Command::new("tar")
             .arg("-xzf")
             .arg(&tarball)
@@ -100,14 +87,12 @@ impl DefinitionStore {
             bail!("tar failed: {}", String::from_utf8_lossy(&out.stderr).trim());
         }
 
-        // 3) Find `.../definitions/v<N>` and pick the highest version.
         let defs_root = find_definitions_root(&tmp)
             .context("no definitions/ directory in the downloaded archive")?;
         let version = pick_version_dir(&defs_root)
             .context("no version directory under definitions/")?;
         let src = defs_root.join(&version);
 
-        // 4) Copy the yml files flat into the cache (overwriting), then clean up.
         let mut count = 0;
         for entry in std::fs::read_dir(&src).context("read version dir")? {
             let entry = entry?;
@@ -139,11 +124,9 @@ impl DefinitionStore {
             }
             if let Ok(bytes) = std::fs::read(entry.path()) {
                 if let Ok(mut meta) = serde_yaml::from_slice::<DefinitionMeta>(&bytes) {
-                    // Key on the file stem, not the internal `id`: Jackett /
-                    // Prowlarr identify an indexer by filename, and a handful of
-                    // definitions carry an internal id that differs from it
-                    // (`darkpeers-api.yml` -> `id: darkpeers`). The stem is what
-                    // `load` resolves and what a saved indexer stores.
+                    // Key on the file stem, not the internal `id`: a definition's
+                    // internal id can differ from its filename (`darkpeers-api.yml`
+                    // -> `id: darkpeers`), and the stem is what `load` resolves.
                     if let Some(stem) = entry.path().file_stem().map(|s| s.to_string_lossy().into_owned()) {
                         meta.id = stem;
                         out.push(meta);
@@ -172,8 +155,6 @@ fn is_yml(entry: &std::fs::DirEntry) -> bool {
     entry.path().extension().is_some_and(|e| e == "yml" || e == "yaml")
 }
 
-/// Locate the `definitions` directory inside the extracted archive (one level
-/// under the `Indexers-master/` top folder).
 fn find_definitions_root(tmp: &Path) -> Option<PathBuf> {
     for entry in std::fs::read_dir(tmp).ok()? {
         let entry = entry.ok()?;
@@ -184,12 +165,11 @@ fn find_definitions_root(tmp: &Path) -> Option<PathBuf> {
             }
         }
     }
-    // Fallback: maybe the archive already IS the definitions dir.
+    // Fallback: the archive might already be the definitions dir.
     let direct = tmp.join("definitions");
     direct.is_dir().then_some(direct)
 }
 
-/// Pick the highest `v<N>` directory name under `definitions/`.
 fn pick_version_dir(defs_root: &Path) -> Option<String> {
     let mut best: Option<(u32, String)> = None;
     for entry in std::fs::read_dir(defs_root).ok()? {
@@ -222,8 +202,8 @@ mod tests {
         let _ = std::fs::remove_dir_all(&tmp);
     }
 
-    /// Live end-to-end sync against the real upstream repo. Ignored by default
-    /// (network + a few MB); run with `cargo test -p kroma-indexer -- --ignored`.
+    // Live end-to-end sync against the real upstream repo; run with
+    // `cargo test -p kroma-indexer -- --ignored`.
     #[test]
     #[ignore]
     fn real_sync_downloads_and_loads() {
@@ -234,17 +214,14 @@ mod tests {
         let report = store.sync().expect("sync");
         assert!(report.count > 100, "expected many definitions, got {}", report.count);
         let metas = store.list().unwrap();
-        // Nearly all copied files list as definitions (a stray non-definition
-        // yaml or two is fine).
+        // A stray non-definition yaml or two is fine.
         assert!(metas.len() >= report.count - 5, "listed {} of {}", metas.len(), report.count);
-        // A well-known public tracker should be loadable + fully parseable.
         let tpb = metas.iter().find(|m| m.id == "thepiratebay").expect("thepiratebay present");
         let def = store.load(&tpb.id).expect("load+parse thepiratebay");
         assert_eq!(def.id, "thepiratebay");
         assert!(!def.search.fields.is_empty());
 
-        // Robustness: how many of the *real* definitions parse fully with our
-        // schema? Print the failures so schema gaps are visible.
+        // Print failures so a schema gap upstream is visible.
         let (mut ok, mut fail) = (0u32, 0u32);
         for m in &metas {
             match store.load(&m.id) {
@@ -258,7 +235,6 @@ mod tests {
             }
         }
         eprintln!("[schema-coverage] {ok} parsed OK, {fail} failed of {}", metas.len());
-        // We should parse the overwhelming majority; allow a small long tail.
         assert!(ok * 100 / metas.len() as u32 >= 90, "only {ok}/{} parsed", metas.len());
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -279,11 +255,8 @@ links:
         assert_eq!(meta.links, vec!["https://example.org/"]);
     }
 
-    // ----- filesystem-backed store behavior --------------------------------------
-
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    /// A unique, freshly-created temp directory for one test.
     fn tmpdir(tag: &str) -> PathBuf {
         static SEQ: AtomicU32 = AtomicU32::new(0);
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
@@ -294,7 +267,6 @@ links:
         dir
     }
 
-    /// A minimal but fully-parseable Cardigann definition body.
     fn valid_definition(id: &str) -> String {
         format!(
             r#"
@@ -322,16 +294,12 @@ search:
     fn is_populated_reflects_presence_of_yaml_files() {
         let data = tmpdir("pop");
         let store = DefinitionStore::new(&data);
-        // Cache dir does not exist yet.
         assert!(!store.is_populated());
 
         std::fs::create_dir_all(store.dir()).unwrap();
-        // Empty dir: still not populated.
         assert!(!store.is_populated());
-        // A non-yaml file does not count.
         std::fs::write(store.dir().join("readme.txt"), b"hi").unwrap();
         assert!(!store.is_populated());
-        // A yaml file does.
         std::fs::write(store.dir().join("t.yml"), b"name: T").unwrap();
         assert!(store.is_populated());
 
@@ -342,7 +310,6 @@ search:
     fn list_returns_empty_when_unsynced() {
         let data = tmpdir("unsynced");
         let store = DefinitionStore::new(&data);
-        // The cache dir does not exist: list is Ok(empty), not an error.
         assert!(store.list().unwrap().is_empty());
         let _ = std::fs::remove_dir_all(&data);
     }
@@ -356,7 +323,6 @@ search:
         std::fs::write(store.dir().join("apple.yml"), b"id: apple\nname: apple").unwrap();
         // Internal id differs from the file stem: the stem must win.
         std::fs::write(store.dir().join("darkpeers-api.yml"), b"id: darkpeers\nname: Dark").unwrap();
-        // Non-yaml files are ignored.
         std::fs::write(store.dir().join("notes.txt"), b"skip me").unwrap();
 
         let metas = store.list().unwrap();
@@ -365,7 +331,6 @@ search:
         assert_eq!(metas[0].name, "apple");
         assert_eq!(metas[1].name, "Dark");
         assert_eq!(metas[2].name, "Zebra");
-        // The Dark entry is keyed on its file stem, not its internal id.
         assert_eq!(metas[1].id, "darkpeers-api");
 
         let _ = std::fs::remove_dir_all(&data);
@@ -379,7 +344,7 @@ search:
         std::fs::write(store.dir().join("mytracker.yml"), valid_definition("t").as_bytes()).unwrap();
 
         let def = store.load("mytracker").expect("loads and parses");
-        // The parsed id comes from the file body, not the file name.
+        // The id comes from the file body, not the file name.
         assert_eq!(def.id, "t");
         assert_eq!(def.name, "My Tracker");
 
@@ -398,21 +363,18 @@ search:
 
     #[test]
     fn find_definitions_root_prefers_nested_then_falls_back() {
-        // Nested: <tmp>/Indexers-master/definitions.
         let nested = tmpdir("root-nested");
         let want = nested.join("Indexers-master").join("definitions");
         std::fs::create_dir_all(&want).unwrap();
         assert_eq!(find_definitions_root(&nested).as_deref(), Some(want.as_path()));
         let _ = std::fs::remove_dir_all(&nested);
 
-        // Direct: <tmp>/definitions itself.
         let direct = tmpdir("root-direct");
         let want = direct.join("definitions");
         std::fs::create_dir_all(&want).unwrap();
         assert_eq!(find_definitions_root(&direct).as_deref(), Some(want.as_path()));
         let _ = std::fs::remove_dir_all(&direct);
 
-        // None: an empty tree has no definitions dir.
         let empty = tmpdir("root-none");
         assert!(find_definitions_root(&empty).is_none());
         let _ = std::fs::remove_dir_all(&empty);
@@ -422,7 +384,7 @@ search:
     fn version_dir_none_when_no_versioned_subdir() {
         let dir = tmpdir("ver-none");
         std::fs::create_dir_all(dir.join("stable")).unwrap();
-        std::fs::create_dir_all(dir.join("vX")).unwrap(); // not a number after 'v'
+        std::fs::create_dir_all(dir.join("vX")).unwrap();
         assert!(pick_version_dir(&dir).is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -432,8 +394,7 @@ search:
         let data = tmpdir("yaml-ext");
         let store = DefinitionStore::new(&data);
         std::fs::create_dir_all(store.dir()).unwrap();
-        // The `.yaml` spelling counts as a definition file for population + listing
-        // (keyed on the file stem). `load` resolves the `.yml` spelling only.
+        // `.yaml` counts for population + listing; `load` resolves `.yml` only.
         std::fs::write(store.dir().join("tracker.yaml"), valid_definition("t").as_bytes()).unwrap();
         assert!(store.is_populated());
         let metas = store.list().unwrap();
@@ -441,10 +402,9 @@ search:
         assert_eq!(metas[0].id, "tracker");
         let _ = std::fs::remove_dir_all(&data);
     }
-    // ----- sync() against a fake tarball server -----------------------------------
-    //
-    // The transport is curl + the system tar, so a socket serving real .tar.gz
-    // bytes exercises the whole path: download, extract, pick the version, copy.
+
+    // sync() runs against a real socket serving .tar.gz bytes: the transport is
+    // curl + the system tar, so this exercises the whole path.
 
     use std::io::{BufRead, BufReader, Write};
     use std::net::TcpListener;
@@ -470,8 +430,8 @@ search:
   rows: {}
 ";
 
-    /// Build a `.tar.gz` laid out the way the upstream repo is, and return its
-    /// bytes. `layout` maps a path inside the archive to its contents.
+    // Builds a `.tar.gz` laid out the way the upstream repo is; `layout` maps a
+    // path inside the archive to its contents.
     fn tarball(layout: &[(&str, &str)]) -> Vec<u8> {
         let root = scratch("tar");
         for (path, body) in layout {
@@ -500,7 +460,6 @@ search:
         bytes
     }
 
-    /// Serve one body, with the given status, to every request.
     fn serve(status: u16, body: Vec<u8>) -> String {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
@@ -536,9 +495,6 @@ search:
 
     #[test]
     fn a_sync_extracts_the_highest_schema_version_and_nothing_else() {
-        // The archive carries every schema version the upstream repo supports.
-        // Taking the wrong one means parsing definitions written against a
-        // schema this build does not model.
         let bytes = tarball(&[
             ("Indexers-master/definitions/v1/ancient.yml", DEMO_YML),
             ("Indexers-master/definitions/v9/demo.yml", DEMO_YML),

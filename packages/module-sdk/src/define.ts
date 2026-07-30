@@ -1,16 +1,10 @@
-// `defineModule` — the compact way to declare a frontend module. It builds a
-// `KromaModule` from the module's `module.json` plus a list of pages, so a module
-// author never re-derives id/version/dependsOn, never hand-writes the nav `to`
-// (it is derived from the page's section + path), and never lists locales twice.
+// Builds a `KromaModule` from a module's `module.json` plus a list of pages.
 
 import type { ComponentType } from 'react';
 import type { KromaHost } from './host';
 import type { KromaModule, ModuleComponentProps, NavItem, SettingsPanel } from './module';
 import type { Dependencies } from './types';
 
-/** Admin nav-group ids (see the admin shell's NAV_GROUPS) plus the generic
- *  `admin` fallback. A page in one of these sections mounts under `/admin`;
- *  every other section (e.g. `library`) mounts under the app root. */
 const ADMIN_SECTIONS = new Set([
   'management',
   'media',
@@ -20,28 +14,22 @@ const ADMIN_SECTIONS = new Set([
   'admin',
 ]);
 
-/** The absolute URL a page's nav entry links to, derived from its section +
- *  path: admin sections live under `/admin/<path>`, everything else under
- *  `/<path>`. This is the single source of truth for a module page's URL, so the
- *  route path and the nav link can never drift (and there is no `m/` segment). */
+/** The absolute URL a module page lives at: admin sections under `/admin/<path>`,
+ *  everything else under `/<path>`. The single source of truth, so the route and
+ *  the nav link cannot drift. */
 export function pageHref(section: string, path: string): string {
   const clean = path.replace(/^\/+/, '');
   return ADMIN_SECTIONS.has(section) ? `/admin/${clean}` : `/${clean}`;
 }
 
-/** One page a module contributes: the route (path + component) and, when it
- *  should show in a sidebar, its nav metadata. Omit `nav` for routes with no
- *  sidebar entry (deep links, detail pages). `section` picks the shell. */
+/** One page a module contributes: a route, plus nav metadata when it should show
+ *  in a sidebar. Omit `nav` for deep links and detail pages. */
 export interface ModulePage {
-  /** Path segment under the module mount point, e.g. `"vpn"`. */
   path: string;
-  /** The screen. Wrap in `React.lazy` so each page is its own chunk. */
   component: ComponentType<ModuleComponentProps>;
-  /** Sidebar entry for this page; the `to` is derived, never written by hand. */
   nav?: Omit<NavItem, 'to'> & { section: string };
 }
 
-/** The fields `defineModule` reads from a module's `module.json`. */
 export interface ModuleManifestInput {
   id: string;
   version: string;
@@ -50,34 +38,19 @@ export interface ModuleManifestInput {
 }
 
 export interface DefineModuleOptions<Exports = unknown> {
-  /** The module's `module.json`. Injected automatically by the
-   *  `@kroma/module-sdk/vite` plugin (which fills it + `locales` from the module's
-   *  folder), so the options-only `defineModule({ pages })` form works. Pass it
-   *  explicitly via the two-arg form when the plugin is not in play. */
   manifest?: ModuleManifestInput;
-  /** Message catalogs. Injected by the `@kroma/module-sdk/vite` plugin from the
-   *  module's `locales/` folder. Accepts a plain `{ en, fr }` map OR the result of
-   *  `import.meta.glob('../../locales/*.json', { eager: true, import: 'default' })`
-   *  — path keys like `../../locales/en.json` are normalized to the locale code. */
   locales?: Record<string, Record<string, string>>;
-  /** The module's pages (routes + optional nav), one entry per screen. */
   pages?: ModulePage[];
   settingsPanels?: SettingsPanel[];
   exports?: (host: KromaHost) => Exports;
   setup?: (host: KromaHost) => void | Promise<void>;
-  /** Override the manifest-derived dependencies (rarely needed). */
   dependsOn?: Dependencies;
   optionalDependsOn?: Dependencies;
 }
 
-/** Build a `KromaModule` from its manifest + pages: id/version/dependsOn come from
- *  the manifest, locales are normalized (so a glob import works), and each nav
- *  `to` is derived from its page's section + path.
- *
- *  Two call forms:
- *  - `defineModule({ pages })` — the manifest + locales are injected from the
- *    module's folder by the `@kroma/module-sdk/vite` plugin (the default).
- *  - `defineModule(manifest, { pages })` — explicit, for when the plugin is off. */
+/** Build a `KromaModule` from its manifest + pages. `defineModule({ pages })` has
+ *  the manifest and locales injected by the `@kroma/module-sdk/vite` plugin;
+ *  `defineModule(manifest, { pages })` is the explicit form for when it is off. */
 export function defineModule<Exports = unknown>(
   manifestOrOptions: ModuleManifestInput | DefineModuleOptions<Exports>,
   maybeOptions?: DefineModuleOptions<Exports>,
@@ -112,15 +85,12 @@ export function defineModule<Exports = unknown>(
   };
 }
 
-/** Normalize locales that may be path-keyed (from `import.meta.glob`) into a
- *  `{ localeCode: catalog }` map. A plain `{ en, fr }` map passes through. */
 function normalizeLocales(
   locales: DefineModuleOptions['locales'],
 ): Record<string, Record<string, string>> | undefined {
   if (!locales) return undefined;
   const out: Record<string, Record<string, string>> = {};
   for (const [key, catalog] of Object.entries(locales)) {
-    // '../../locales/en.json' -> 'en'; a bare 'en' is left as-is.
     const code = key.replace(/^.*\//, '').replace(/\.json$/, '');
     out[code] = catalog;
   }

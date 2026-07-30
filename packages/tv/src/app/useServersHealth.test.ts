@@ -3,7 +3,6 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useServersHealth } from './useServersHealth';
 
-/** A fetch stub answering each `<url>/api/health` from a url -> reply map. */
 function fakeFetch(replies: Record<string, { ok?: boolean; body?: unknown; throws?: boolean }>) {
   return vi.fn((input: string) => {
     const reply = replies[String(input)];

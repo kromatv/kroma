@@ -62,7 +62,6 @@ export function TvShowDetail() {
     return () => {
       cancelled = true;
     };
-    // show.id: re-fetch when switching shows (the screen is reused on this route).
   }, [client, show.id]);
 
   // Marking an episode watched also clears its resume position server-side, so
@@ -206,15 +205,12 @@ export function TvShowDetail() {
         </Txt>
       ) : null}
 
-      {/* Three <FocusSlot>s, always rendered, even while empty.
-          The navigator orders siblings by the moment they REGISTER, and these
-          three do not arrive together: the cast comes from the show the route
-          already carries, while the seasons and the episodes wait for
-          `client.show()`. So the cast used to register first and own the order -
-          Down from the actions reached the cast, and the next Down jumped back
-          UP to the seasons that had appeared above it in the meantime. A slot
-          claims the position at first render and lets its content turn up
-          whenever it likes. */}
+      {/* Three <FocusSlot>s, always rendered even while empty. The navigator
+          orders siblings by registration order, and these three don't arrive
+          together (cast comes from the route immediately, seasons/episodes
+          wait on `client.show()`) — without the slots, Down from the actions
+          could land on the cast and then jump back up once seasons appeared
+          above it. A slot claims its position at first render regardless. */}
       <FocusSlot>
         {detail && detail.seasons.length > 1 ? (
           <Box row align="center" gap={18} mt={30}>
@@ -299,8 +295,6 @@ const EPISODES_LABEL = {
   letterSpacing: 0.6,
   textTransform: 'uppercase' as const,
 };
-/** `font:500 15px;color:rgba(244,243,240,.34)` (design). */
 const EPISODES_PROGRESS = { fontSize: 15, fontWeight: '500' as const };
-/** `font:600 14px;color:rgba(244,243,240,.3)` (design). */
 const EPISODES_HINT = { fontWeight: '600' as const };
 const ACTION_ROW = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 16 };

@@ -1,14 +1,8 @@
-/**
- * The query-options factory is the web client's cache contract: a route loader
- * (`ensureQueryData`) and the component that renders the same data
- * (`useSuspenseQuery`) only share an entry if they agree on the key, and nothing
- * in the type system enforces that they do. A drifted key does not fail - it
- * refetches on every navigation, silently.
- *
- * The fetchers are worth pinning for a second reason: several of them decide
- * what a page does when part of it is unavailable, and getting that wrong turns
- * an optional overlay into an error boundary.
- */
+// A route loader (`ensureQueryData`) and the component rendering the same data
+// (`useSuspenseQuery`) only share a cache entry if they agree on the key, and nothing in the
+// type system enforces that. A drifted key does not fail; it silently refetches on every
+// navigation. The fetchers are pinned too: several decide what a page does when part of it is
+// unavailable, and getting that wrong turns an optional overlay into an error boundary.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface Client {
@@ -63,7 +57,6 @@ const { catalogQueries, discoverQueries, serverQueries, userQueries } = await im
   '#web/shared/lib/queries'
 );
 
-/** Run a query's own fetcher, the way react-query would. */
 // biome-ignore lint/suspicious/noExplicitAny: the options are heterogeneous by design
 async function run(opts: any) {
   return await opts.queryFn({});
@@ -335,8 +328,8 @@ describe('the plain reads', () => {
     ],
   ];
 
-  /** The spy for `method`, failing loudly if the fake client has no such call
-   *  (which would otherwise make the case below pass vacuously). */
+  // Fails loudly if the fake client has no such method, which would otherwise
+  // make the case below pass vacuously.
   function spy(method: string) {
     const fn = c[method];
     if (!fn) throw new Error(`the fake client has no ${method}()`);

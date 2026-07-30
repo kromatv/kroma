@@ -12,13 +12,10 @@ declare const self: ServiceWorkerGlobalScope;
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
-/**
- * Every field degrades on its own rather than failing the whole payload: a push
- * that shows nothing breaches the "must be user-visible" rule that gets a site's
- * push permission revoked, so one bad field must not cost the notification.
- * `catch` is what buys that — absent, wrong type and empty all land on
- * `undefined`, and the caller's fallback takes over.
- */
+// Every field degrades on its own rather than failing the whole payload: a
+// push that shows nothing breaches the "must be user-visible" rule that gets
+// a site's push permission revoked. `catch` is what buys that — absent, wrong
+// type and empty all land on `undefined`, and the caller's fallback takes over.
 const text = z.catch(z.optional(z.string().check(z.minLength(1))), undefined);
 
 const Action = z.object({
@@ -31,7 +28,7 @@ const Action = z.object({
 
 const actions = z.catch(z.array(Action), []);
 
-/** The decrypted push body — what the server builds in `notify/push.rs`. */
+// The decrypted push body — what the server builds in `notify/push.rs`.
 const Payload = z.object({
   title: text,
   body: text,
@@ -41,19 +38,19 @@ const Payload = z.object({
   actions,
 });
 
-/** What we put in `notification.data`, read back after a structured clone. */
+// What we put in `notification.data`, read back after a structured clone.
 const NotificationData = z.pick(Payload, { link: true, actions: true });
 
-/** Also covers a payload that is valid JSON but not an object (`"hi"`, `[]`). */
+// Also covers a payload that is valid JSON but not an object (`"hi"`, `[]`).
 const EMPTY = Payload.parse({});
 
 type PushAction = z.infer<typeof Action>;
 
-/** Three fields lib.dom omits because they are only specified for persistent
- * (service-worker) notifications, which is exactly what these are: `image` is
- * the big-picture poster — the whole point of a film notification — `renotify`
- * re-alerts when a `tag` replaces an existing notification instead of swapping
- * it silently, and `actions` is the buttons. Engines that lack them ignore them. */
+// Three fields lib.dom omits because they are only specified for persistent
+// (service-worker) notifications, which is exactly what these are: `image` is
+// the big-picture poster, `renotify` re-alerts when a `tag` replaces an
+// existing notification instead of swapping it silently, and `actions` is the
+// buttons. Engines that lack them ignore them.
 interface KromaNotificationOptions extends NotificationOptions {
   image?: string;
   renotify?: boolean;
@@ -96,12 +93,10 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(handleClick(chosen, clicked?.link));
 });
 
-/**
- * A tap on the body opens `link`. A tap on an action button either navigates
- * (`kind: 'link'`) or calls the server directly (`kind: 'api'`) — the latter is
- * what lets a moderator approve a request from the lock screen without the app
- * ever coming to the foreground.
- */
+// A tap on the body opens `link`. A tap on an action button either navigates
+// (`kind: 'link'`) or calls the server directly (`kind: 'api'`) — the latter
+// is what lets a moderator approve a request from the lock screen without the
+// app ever coming to the foreground.
 async function handleClick(action: PushAction | undefined, link: string | undefined) {
   if (action?.kind === 'api' && action.href) {
     try {
@@ -116,7 +111,6 @@ async function handleClick(action: PushAction | undefined, link: string | undefi
   await openApp((action?.kind === 'link' ? action.href : link) ?? '/');
 }
 
-/** Focus an existing KROMA tab and navigate it, or open a new one. */
 async function openApp(path: string) {
   const url = new URL(path, self.location.origin).href;
   const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });

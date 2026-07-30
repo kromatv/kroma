@@ -3,7 +3,7 @@
 
 use super::*;
 
-/// One user's stored taste: `(profile, sections_json)`. `None` if never generated.
+/// `(profile, sections_json)`; `None` if never generated.
 pub fn get_user_taste(pool: &Pool, user_id: &str) -> Result<Option<(Option<String>, String)>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT profile, sections FROM user_taste WHERE user_id = ?1")?;
@@ -16,7 +16,7 @@ pub fn get_user_taste(pool: &Pool, user_id: &str) -> Result<Option<(Option<Strin
     }
 }
 
-/// Upsert a user's profile + personalized sections (`sections` is a JSON array).
+/// `sections` is a JSON array.
 pub fn set_user_taste(pool: &Pool, user_id: &str, profile: Option<&str>, sections: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -29,8 +29,6 @@ pub fn set_user_taste(pool: &Pool, user_id: &str, profile: Option<&str>, section
     Ok(())
 }
 
-/// Every account as `(id, language)`, so the personalize job can iterate users
-/// and prompt the LLM in each one's locale.
 pub fn all_users_with_lang(pool: &Pool) -> Result<Vec<(String, Option<String>)>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT id, language FROM users")?;
@@ -61,7 +59,6 @@ mod tests {
         let u = crate::create_user(&p, "a@b.c", "alice", "h", &[Permission::Playback]).unwrap();
         crate::set_user_language(&p, &u.id, Some("fr")).unwrap();
 
-        // Never generated -> None.
         assert!(get_user_taste(&p, &u.id).unwrap().is_none());
 
         set_user_taste(&p, &u.id, Some("likes sci-fi"), "[{\"key\":\"row1\"}]").unwrap();
@@ -69,7 +66,6 @@ mod tests {
         assert_eq!(profile.as_deref(), Some("likes sci-fi"));
         assert_eq!(sections, "[{\"key\":\"row1\"}]");
 
-        // Upsert overwrites; profile can be cleared to NULL.
         set_user_taste(&p, &u.id, None, "[]").unwrap();
         let (profile, sections) = get_user_taste(&p, &u.id).unwrap().unwrap();
         assert!(profile.is_none());

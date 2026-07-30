@@ -46,7 +46,6 @@ const chipVariants = sv({
     },
     size: {
       sm: { label: { fontSize: 13 } },
-      /** The 10-foot size: bigger tap area and type for a 3 m viewing distance. */
       tv: { root: { paddingVertical: 10, paddingHorizontal: 22 }, label: { fontSize: 18 } },
     },
   },
@@ -65,17 +64,16 @@ const chipVariants = sv({
   defaults: { active: 'false', size: 'sm', variant: 'solid' },
 });
 
-/** The fill under a POINTER, one step up from each variant's resting wash. The
- * web's own feedback: a chip carries no focus scale, so on a page with no focus
- * scope this is all a cursor has to go on. See <Focusable>'s `hoveredStyle`. */
+// A chip carries no focus scale, so on a page with no focus scope this hover
+// wash is all a cursor has to go on.
 const HOVERED = {
   solid: { backgroundColor: 'rgba(255, 255, 255, 0.13)' },
   subtle: { backgroundColor: 'rgba(255, 255, 255, 0.14)' },
   surface: { backgroundColor: colors.surface3 },
 } as const;
 
-/** An ACTIVE chip is a solid accent fill, so it hovers up the amber ladder like
- * every other filled control rather than back down to a white wash. */
+// An active chip is a solid accent fill, so it hovers up the amber ladder
+// like every other filled control rather than back down to a white wash.
 const HOVERED_ACTIVE = { backgroundColor: colors.accentHover } as const;
 
 interface ChipProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {

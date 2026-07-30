@@ -16,10 +16,9 @@ use crate::api::util::blocking;
 use crate::model::{ElementProcessing, Kind, Treatment};
 use crate::state::SharedState;
 
-/// Combine a subject's ledger status with whether its artifact actually exists,
-/// using the SAME rule the elements list applies so the drawer never disagrees
-/// with the list (`assume_done` mirrors the list's per-stage assumption: stages
-/// whose absence isn't cheaply detectable are treated done when unledgered).
+// Uses the SAME rule the elements list applies, so the drawer never disagrees
+// with it. `assume_done` mirrors the list's per-stage assumption: stages whose
+// absence isn't cheaply detectable are treated done when unledgered.
 fn combine(ledger: Option<String>, artifact_done: bool, assume_done: bool) -> String {
     crate::services::pipeline::elements::resolve_status(ledger.as_deref(), artifact_done, assume_done)
         .to_string()

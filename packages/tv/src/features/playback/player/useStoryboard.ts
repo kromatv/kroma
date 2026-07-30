@@ -1,6 +1,4 @@
-// Thin TV wrapper over the shared `useStoryboard` hook: keeps the existing
-// `useStoryboard(client, itemId)` call site. All logic (lazy-generation polling,
-// fast+slow backoff, visibility re-check, tile math) lives in `@kroma/ui`.
+// Thin TV wrapper: all the logic lives in `@kroma/ui`.
 
 import type { KromaClient } from '@kroma/core';
 import { useStoryboard as useSharedStoryboard } from '@kroma/ui';

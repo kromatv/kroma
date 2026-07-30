@@ -12,7 +12,7 @@ use std::time::Duration;
 /// workers can all share the one closure.
 pub(super) type Cancel<'a> = &'a (dyn Fn() -> bool + Sync);
 
-/// Distinct temp suffixes so two concurrent writers never clobber each other.
+// Distinct temp suffixes so two concurrent writers never clobber each other.
 pub(super) static TMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 /// Spawn `cmd`, wait up to `dur` (killing it on timeout), and capture stderr so a

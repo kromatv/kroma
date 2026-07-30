@@ -1,13 +1,5 @@
-// The remote: the phone as the TV's control surface.
-//
-// Everything on this screen is a command sent to a set across the room, so it is
-// built to be honest about that. What it draws is what the TV last REPORTED
-// (position included, interpolated between heartbeats) rather than what this
-// phone just asked for - a remote that lies about the state of the room is worse
-// than one that lags a beat.
-//
-// The scrub bar is the player's own, so dragging to a position here feels like
-// dragging in the player: same anatomy, same commit-on-release.
+// The phone as the TV's control surface. It draws what the TV last reported
+// (position interpolated between heartbeats), never what this phone just asked for.
 
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { formatTimecode, type MediaItem, sizedImageUrl } from '@kroma/core';
@@ -26,15 +18,8 @@ import { useClient } from '#mobile/lib/session';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 import { ScrubBar } from '#mobile/player/ScrubBar';
 
-/** How far ±10 s buttons jump, in milliseconds. */
 const SKIP_MS = 10_000;
 
-/** The row of secondary controls under the transport.
- *
- * Its own component because three of them are conditional - a title with one
- * audio track, no subtitles, or that is not an episode hides them - and those
- * branches belong here rather than in the screen.
- */
 type NowPlaying = NonNullable<NonNullable<ReturnType<typeof useCast>['active']>['nowPlaying']>;
 
 function RemoteActions({
@@ -49,7 +34,6 @@ function RemoteActions({
 }: Readonly<{
   playing: NowPlaying;
   isEpisode: boolean;
-  /** The set being driven, named in the stop button's hint. */
   deviceName: string;
   onAudio: () => void;
   onSubtitles: () => void;
@@ -79,8 +63,6 @@ function RemoteActions({
       {isEpisode ? (
         <Wide icon="player-track-next" label={t('player.nextEpisode')} onPress={onNext} />
       ) : null}
-      {/* Two ENDINGS, said plainly. "Stop casting" was doing both of these at
-          once, which is why nobody could tell what it would do to the set. */}
       <Wide icon="device-mobile" label={t('cast.continueHere')} onPress={onContinueHere} />
       <Wide
         icon="player-stop-filled"
@@ -92,13 +74,6 @@ function RemoteActions({
   );
 }
 
-/** What is on the television, as this screen draws it: the backdrop, the title,
- * and the show it belongs to.
- *
- * Its own component for the same reason as <RemoteActions>: every part of it is
- * conditional - a set may be playing something with no art, no show, or (before
- * the first heartbeat lands) no item at all - and those branches belong here
- * rather than in a screen that is already deciding transport state. */
 function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
   const client = useClient();
   const { width } = useWindowDimensions();
@@ -214,8 +189,6 @@ export default function CastRemoteScreen() {
             onSubtitles={() => subtitles.current?.present()}
             onNext={() => void send({ type: 'skipNext' })}
             onContinueHere={() => {
-              // Hand the film back at the exact position the TV is at, and
-              // leave the set idle rather than playing to an empty room.
               const at = Math.round(positionMs / 1000);
               void send({ type: 'stop' });
               select(null);
@@ -230,10 +203,6 @@ export default function CastRemoteScreen() {
           />
         </ScrollView>
       ) : (
-        // Nothing on the set. There is no artwork to show, no position to
-        // scrub and nothing to pause, so the screen says the one true thing
-        // and offers the only two moves left: pick another TV, or let go of
-        // this one.
         <EmptyState
           icon={<Icon name="device-tv" size={40} stroke={1.4} color={colors.textFaint} />}
           title={t('cast.idleTitle')}
@@ -279,7 +248,6 @@ export default function CastRemoteScreen() {
   );
 }
 
-/** The label of the selected track, or undefined when there is no selection. */
 function labelOf(tracks: { index: number; label: string }[], index?: number | null) {
   return tracks.find((track) => track.index === index)?.label;
 }
@@ -359,8 +327,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   deviceText: { ...type.caption, color: colors.accent, flex: 1 },
-  // Idle, the row is a fact about the connection rather than a live signal, so
-  // it drops out of the accent colour.
   deviceTextIdle: { color: colors.textDim },
   art: {
     width: '100%',

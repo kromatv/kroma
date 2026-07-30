@@ -94,7 +94,7 @@ fn channels_label(ch: Option<u32>) -> &'static str {
     }
 }
 
-/// Approx stream bitrate in Mb/s from the representative file size ÷ duration.
+// Approx stream bitrate in Mb/s from the representative file size ÷ duration.
 fn bitrate_mbps(item: &MediaItem) -> f64 {
     let dur_s = item.duration_ms.unwrap_or(0) as f64 / 1000.0;
     if dur_s <= 0.0 {

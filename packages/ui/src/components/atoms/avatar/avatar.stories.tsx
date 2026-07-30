@@ -5,8 +5,6 @@ import { Avatar } from './avatar';
 
 const NAMES = ['Marie Curie', 'jean.dupont', 'ada_lovelace', 'Alan Turing'];
 
-/** The shapes the design uses, from square to disc. `roundness` is a fraction of
- *  the size, so these read the same at any size. */
 const SHAPES = [
   { label: '0 · square', props: { roundness: 0 } },
   { label: '0.16 · default', props: {} },
@@ -14,7 +12,6 @@ const SHAPES = [
   { label: 'circle · 0.5', props: { circle: true } },
 ] as const;
 
-/** Small, medium and picker-sized, to show that ONE roundness holds its shape. */
 const SIZES = [40, 64, 96, 140];
 
 export default story({

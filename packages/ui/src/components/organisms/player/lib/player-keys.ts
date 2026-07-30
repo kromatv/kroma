@@ -1,10 +1,5 @@
-// The player's key routing, in logical remote keys.
-//
-// This is the half of `usePlayerKeys` that has no platform in it: given a
-// resolved {@link RemoteKey}, decide who gets it. The two platform hooks
-// (`usePlayerKeys.web.ts` listens to DOM keydown, `usePlayerKeys.ts` listens to
-// the TV remote) differ only in where the key comes FROM, so the order of
-// refusal - lock, panel, skip-intro, credits, nav - is written once, here.
+// The platform-free half of `usePlayerKeys`: given a resolved RemoteKey, decide
+// who gets it. Both platform hooks differ only in where the key comes from.
 
 import type { RemoteKey } from '@kroma/core';
 import type { RefObject } from 'react';
@@ -16,23 +11,17 @@ export interface PlayerKeysParams {
   nav: PlayerNav;
   controller: PlayerController;
   flags: PlayerFlags;
-  /** The currently-open panel (settings / sheet); keys route here first. */
   panelRef: RefObject<PanelHandle | null>;
   locked: boolean;
-  /** Skip-intro affordance: OK skips while it is showing (§13). */
   intro?: { active: boolean; onSkip: () => void };
-  /** Credits autoplay card: it handles its own OK / Back / left-right (§11). */
   credits?: { active: boolean; onKey: (key: RemoteKey) => boolean };
 }
 
 /**
- * Route one logical remote key (§3, §15).
- *
- * While the player is locked (admin-stop overlay) only Back / OK get through,
- * and both mean "dismiss". Otherwise the chrome reveals first - a key pressed
- * against hidden chrome only brings it back and is then swallowed (§16) - and
- * the open panel, the skip-intro button and the credits card each get first
- * refusal before the nav machine sees it.
+ * Route one logical remote key (§3, §15). While locked only Back / OK get
+ * through, and both mean "dismiss". Otherwise the chrome reveals first and
+ * swallows the key (§16), then the panel, skip-intro and credits card each get
+ * first refusal before the nav machine sees it.
  */
 export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): void {
   const { nav } = p;

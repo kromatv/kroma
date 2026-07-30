@@ -3,7 +3,6 @@
 
 import { isSortMode, type SortMode } from '@kroma/core';
 
-/** Browse-page search params: an optional sort mode and genre filter. */
 export interface BrowseSearch {
   sort?: SortMode;
   genre?: string;

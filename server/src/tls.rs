@@ -54,8 +54,8 @@ pub fn ensure_self_signed(tls_dir: &Path, extra_sans: &[String]) -> Result<CertP
     Ok(CertPaths { cert_pem, key_pem })
 }
 
-/// Write a private key with owner-only permissions where the platform supports
-/// it (0600 on unix), so the key isn't world-readable on a shared box.
+// Owner-only permissions where the platform supports it (0600 on unix), so the
+// key isn't world-readable on a shared box.
 fn write_private(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     std::fs::write(path, bytes)?;
     #[cfg(unix)]
@@ -66,8 +66,6 @@ fn write_private(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     Ok(())
 }
 
-/// Generate a fresh self-signed cert + key (PEM), with SANs covering the box's
-/// local identities plus any admin-supplied extras.
 fn generate(extra_sans: &[String]) -> Result<(String, String)> {
     use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair};
 
@@ -89,9 +87,9 @@ fn generate(extra_sans: &[String]) -> Result<(String, String)> {
     Ok((cert.pem(), key.serialize_pem()))
 }
 
-/// Build the SAN list: always localhost + loopback, plus the machine hostname,
-/// its `.local` mDNS name, the primary LAN IP, and any admin extras (an IP or a
-/// DNS name; parsed as an IP when possible, else a DNS name). Deduplicated.
+// Always localhost + loopback, plus the machine hostname, its `.local` mDNS
+// name, the primary LAN IP, and any admin extras (parsed as an IP when
+// possible, else a DNS name). Deduplicated.
 fn collect_sans(extra: &[String]) -> Vec<rcgen::SanType> {
     use rcgen::SanType;
 
@@ -135,10 +133,10 @@ fn collect_sans(extra: &[String]) -> Vec<rcgen::SanType> {
     out
 }
 
-/// The box's primary LAN IP, via the classic "connect a UDP socket to a public
-/// address and read back the local endpoint the OS picked" trick (no packet is
-/// sent for a UDP connect; it just resolves the default-route source address).
-/// `None` when the host is offline / has no default route.
+// The classic "connect a UDP socket to a public address and read back the
+// local endpoint the OS picked" trick (no packet is sent for a UDP connect; it
+// just resolves the default-route source address). `None` when the host is
+// offline / has no default route.
 fn primary_lan_ip() -> Option<IpAddr> {
     let sock = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
     sock.connect("192.168.255.255:9").or_else(|_| sock.connect("8.8.8.8:53")).ok()?;

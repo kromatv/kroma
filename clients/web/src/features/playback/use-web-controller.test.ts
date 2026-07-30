@@ -3,9 +3,6 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MovieView } from '#web/shared/lib/api';
 
-// use-web-controller is the adapter that folds the engine + subtitle + filter
-// hooks into the shared PlayerController. We mock those sources and assert the
-// contract it derives (playbackMode, scrub wiring, pass-through mapping).
 const H = vi.hoisted(() => ({
   pb: null as Record<string, unknown> | null,
   subs: null as Record<string, unknown> | null,
@@ -25,8 +22,7 @@ vi.mock('@kroma/ui', () => ({
   useAudioFilter: () => H.filter,
   useT: () => (k: string) => k,
 }));
-// `refineTrackLang` stays REAL: "picking a track remembers its dub variant" is
-// behaviour this file tests, and a stubbed matcher would only assert the stub.
+// `refineTrackLang` stays REAL: a stubbed matcher would only assert the stub.
 vi.mock('@kroma/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@kroma/core')>()),
   audioTrackLabel: () => 'English 5.1',
@@ -167,8 +163,7 @@ describe('useWebController audio preference', () => {
 
     result.current.controller.setAudio(1);
     expect(H.pb?.setAudio).toHaveBeenCalledWith(1);
-    // Not plain 'fr': VFQ and VFF are two different dubs, and a viewer who
-    // picked Quebec must not be handed France on the next title.
+    // Not plain 'fr': VFQ and VFF are two different dubs.
     expect(H.rememberAudio).toHaveBeenCalledWith('fr-CA');
 
     result.current.controller.setAudio(2);

@@ -1,14 +1,8 @@
 // @vitest-environment jsdom
 //
-// The persistent browse chrome, which exists for one reason: a nav pill whose
-// lens can travel. The lens animates from the box it last held, so a bar that is
-// rebuilt per screen can only ever ARRIVE - which is exactly what the TV did
-// while each screen drew its own <TvTopNav>.
-//
-// Two things have to hold at once, and they pull against each other: the bar
-// must keep its instance across a section change, and the new screen must still
-// get to say where focus opens. The second is why the scope carries `entryKey`
-// rather than simply not remounting.
+// The persistent browse chrome keeps its bar instance across a section change
+// (so its focus lens can animate rather than snap), while still letting each
+// arriving screen decide where focus opens via `entryKey`.
 
 import { focusSettled, markFocusSettled } from '@kroma/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';
@@ -25,7 +19,6 @@ import {
 
 afterEach(cleanup);
 
-/** Counts its own mounts, so a remount is visible from the outside. */
 function Bar() {
   const mounts = useRef(0);
   useEffect(() => {
@@ -89,8 +82,6 @@ describe('browse chrome', () => {
 
     act(() => nav.reset('grid', { kind: 'films' }));
     expect(screen.getByText('screen:grid')).toBeTruthy();
-    // The screen swapped; the bar did not. This is the whole point: a remount
-    // here is a lens that arrives instead of travelling.
     expect(MOUNTS.bar).toBe(mountsAfterHome);
   });
 
@@ -105,13 +96,11 @@ describe('browse chrome', () => {
   it('lets each arriving screen decide where focus opens', () => {
     mount();
     act(() => nav.reset('home'));
-    // Something on the home screen took the focus.
     act(() => markFocusSettled());
     expect(focusSettled()).toBe(true);
 
-    // Arriving somewhere else must clear that, or the new screen's `autoFocus`
-    // is ignored and the remote opens on nothing. The shared scope does not
-    // remount, so this can only come from `entryKey`.
+    // The shared scope does not remount, so clearing this can only come from
+    // `entryKey` — otherwise the new screen's `autoFocus` is ignored.
     act(() => nav.reset('grid', { kind: 'films' }));
     expect(focusSettled()).toBe(false);
   });

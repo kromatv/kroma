@@ -9,11 +9,6 @@ import {
   type MediaEventSetters,
 } from './video-engine';
 
-// The web `<video>` transport: media-event -> hook-state wiring and the source
-// decision (direct-play vs the HLS master). The API client + hls.js are mocked so
-// the anchor math, the buffered/duration reporting and the ready-gated autoplay
-// are exercised against a hand-rolled fake element, with no network or real MSE.
-
 const H = vi.hoisted(() => {
   const hlsMasterUrl = vi.fn(
     (id: string, aac: boolean, startSec: number, audio: number) =>
@@ -176,18 +171,16 @@ describe('bindMediaEvents', () => {
     const s = mkSetters();
     bindMediaEvents(fv.el, item, s, 0);
     fv.fire('durationchange');
-    expect(s.setDur).toHaveBeenCalledWith(7200); // durationMs / 1000
+    expect(s.setDur).toHaveBeenCalledWith(7200);
 
     const fv2 = fakeVideo({ duration: 900 });
     const s2 = mkSetters();
     bindMediaEvents(fv2.el, { ...item, durationMs: 0 } as MovieView, s2, 10);
     fv2.fire('durationchange');
-    expect(s2.setDur).toHaveBeenCalledWith(910); // baseSec + element duration
+    expect(s2.setDur).toHaveBeenCalledWith(910);
   });
 
   it('prefers the known (server-header) duration over the element clock', () => {
-    // Unprobed catalog row (durationMs 0), but the server supplied 5885s: the
-    // slider must span the whole movie, not the growing playlist's live edge.
     const fv = fakeVideo({ duration: 172 });
     const s = mkSetters();
     bindMediaEvents(fv.el, { ...item, durationMs: 0 } as MovieView, s, 0, 5_885_000);
@@ -206,7 +199,7 @@ describe('bindMediaEvents', () => {
       [50, 80],
     ]);
     fv.fire('progress');
-    expect(s.setBufEnd).toHaveBeenCalledWith(180); // 100 + 80
+    expect(s.setBufEnd).toHaveBeenCalledWith(180);
   });
 
   it('maps pause / waiting / playing / volume / rate events', () => {
@@ -233,13 +226,13 @@ describe('bindMediaEvents', () => {
     const fv = fakeVideo();
     const s = mkSetters();
     bindMediaEvents(fv.el, item, s, 0);
-    fv.fire('canplay'); // ready + paused -> autoplay
+    fv.fire('canplay');
     expect(s.setReady).toHaveBeenCalledWith(true);
     expect(fv.playCalls()).toBe(1);
-    fv.fire('play'); // latches "started" + reports playing
+    fv.fire('play');
     expect(s.setPlaying).toHaveBeenCalledWith(true);
     fv.set('paused', true);
-    fv.fire('canplay'); // already started -> no retry
+    fv.fire('canplay');
     expect(fv.playCalls()).toBe(1);
   });
 
@@ -281,13 +274,13 @@ describe('attachMediaSource direct-play', () => {
     expect(fv.get('src')).toBe('stream://w1');
     expect(fv.get('preload')).toBe('auto');
     cleanup();
-    expect(fv.get('src')).toBe(''); // removed on teardown
+    expect(fv.get('src')).toBe('');
   });
 
   it('resume-seeks to the absolute start once metadata is available', () => {
     const fv = fakeVideo({ readyState: 0 });
     attachMediaSource(base({ v: fv.el, startSec: 300 }));
-    expect(fv.get('currentTime')).toBe(0); // waits for metadata
+    expect(fv.get('currentTime')).toBe(0);
     fv.fire('loadedmetadata');
     expect(fv.get('currentTime')).toBe(300);
   });
@@ -330,7 +323,7 @@ describe('attachMediaSource HLS master', () => {
     const fv = fakeVideo();
     const opts = hlsOpts({ v: fv.el });
     const cleanup = attachMediaSource(opts);
-    await tick(); // dynamic import('hls.js') resolves
+    await tick();
     expect(H.instances).toHaveLength(1);
     const inst = H.instances[0];
     expect(inst?.loadSource).toHaveBeenCalledWith('hls:w1:true:600:2');
@@ -374,13 +367,13 @@ describe('attachMediaSource HLS master via Shaka', () => {
     const opts = shakaOpts({ v: fv.el });
     const cleanup = attachMediaSource(opts);
     expect(opts.setUseHls).toHaveBeenCalledWith(true);
-    await tick(); // dynamic import + attach()/load() microtasks resolve
+    await tick();
     expect(H.installAll).toHaveBeenCalled();
     expect(H.shakaInstances).toHaveLength(1);
     const inst = H.shakaInstances[0];
     expect(inst?.attach).toHaveBeenCalledWith(fv.el);
     expect(inst?.load).toHaveBeenCalledWith('hls:w1:true:600:2');
-    // A generous forward buffer is configured (default bufferingGoal is only 10s).
+    // Shaka's default bufferingGoal is only 10s.
     const cfg = inst?.configure.mock.calls[0]?.[0] as {
       streaming?: { bufferingGoal?: number };
     };
@@ -389,13 +382,12 @@ describe('attachMediaSource HLS master via Shaka', () => {
     expect(inst?.destroy).toHaveBeenCalled();
   });
 
-  // Shaka wins over Safari's native HLS when the user explicitly picks it.
   it('uses Shaka even when useNativeHls is set', async () => {
     const fv = fakeVideo();
     attachMediaSource(shakaOpts({ v: fv.el, useNativeHls: true }));
     await tick();
     expect(H.shakaInstances).toHaveLength(1);
-    expect(fv.get('src')).toBe(''); // no native src attach
+    expect(fv.get('src')).toBe('');
   });
 
   it('falls back to a native src when Shaka is unsupported', async () => {
@@ -403,7 +395,7 @@ describe('attachMediaSource HLS master via Shaka', () => {
     const fv = fakeVideo();
     attachMediaSource(shakaOpts({ v: fv.el }));
     await tick();
-    expect(H.shakaInstances).toHaveLength(0); // support check fails before construction
+    expect(H.shakaInstances).toHaveLength(0);
     expect(fv.get('src')).toBe('hls:w1:true:600:2');
   });
 });

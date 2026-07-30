@@ -21,17 +21,12 @@ import { KromaMark, useClock } from '#tv/shared/ui';
 
 export type NavKey = 'home' | 'films' | 'series' | 'genres' | 'mylist' | 'search';
 
-// Top scrim so the logo / clock / avatar stay readable over bright hero art (a
-// sky, a snowy shot...): the hero veil only darkens left and bottom.
+// Keeps the bar readable over bright hero art; the hero veil only darkens left
+// and bottom.
 const SCRIM = `linear-gradient(180deg, ${shade(0.72)}, ${shade(0.25)} 45%, transparent)`;
 
-/** The shared 10-foot top bar: brand mark, a centred nav pill (Accueil / Films /
- * Séries / Ma liste / Rechercher), the clock and the account avatar (opens the
- * profile menu). Persistent chrome on the browse screens (Home, Grid, detail,
- * Person) for quick section jumps.
- *
- * `active` is optional: deep screens (detail / person) pass none, so nothing is
- * highlighted. */
+/** The shared 10-foot top bar. Omitting `active` highlights nothing, which is
+ * what deep screens (detail / person) want. */
 export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   const nav = useNav();
   const t = useT();
@@ -39,8 +34,6 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   const { user } = useAuth();
   const { client, online } = useConnection();
 
-  // Same glyph per section as the phone app's tab bar (Tabler home / movie /
-  // device-tv / category / bookmark / search), so the two clients read alike.
   const items: NavItem[] = [
     { key: 'home', icon: 'home', label: t('nav.home'), onPress: () => nav.home() },
     {
@@ -76,25 +69,17 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
         pointerEvents="none"
         style={gradient(SCRIM)}
       />
-      {/* The whole bar is one focus BAND, and that is what makes a centred pill
-          reachable at all. A television moves focus in a straight line, so from
-          a control at the bottom left there is nothing overhead and Up does
-          nothing - but the band spans the full width, so every Up from anywhere
-          below lands in it, whatever the screen puts underneath, and it hands
-          focus to the chip you used last. One region here replaces a crossing on
-          every screen that shows the bar. */}
+      {/* One full-width focus band: a TV moves focus in a straight line, so a
+          band is what makes the centred pill reachable by Up from anywhere. */}
       <FocusRegion style={BAND}>
-        {/* Back (mouse users): shown on any pushed screen, hidden on Home. The
-            remote has Back regardless (every screen wires useFocusNav -> onBack);
-            this button is the pointer's equivalent of that key. */}
+        {/* For pointer users; the remote's Back key works regardless. */}
         <Box row align="center" gap={16}>
           {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
           <KromaMark size={28} />
         </Box>
         <NavPill items={items} active={active} />
         <Box row align="center" gap={18}>
-          {/* Only visible while a phone or browser is driving this set, which is
-              also the only time it has anything to say. */}
+          {/* Renders only while a phone or browser is driving this set. */}
           <CastRemotes />
           <ConnectionStatus online={online} label={t('connection.reconnecting')} />
           <Txt style={CLOCK}>{clock}</Txt>
@@ -120,7 +105,6 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   );
 }
 
-/** The band is laid out by its caller, so it has to be told to span the row. */
 const BAND = {
   width: '100%',
   alignItems: 'center',
@@ -134,10 +118,6 @@ const CLOCK = {
   textShadow: '0 1px 4px rgba(0, 0, 0, 0.6)',
 };
 
-/** Server-reachability indicator for the top bar. Online: the app's own
- * kit <StatusDot>, ringed so it reads over any hero art. Offline: a solid red badge
- * holding a wifi-off glyph, over a spinner that signals the automatic reconnect
- * in progress. Icon-only, no label: the state reads at a glance. */
 function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: string }>) {
   if (online) return <StatusDot online overArt />;
   return (

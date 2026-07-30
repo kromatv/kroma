@@ -1,15 +1,13 @@
 import type { CSSProperties } from 'react';
 
-// Static assets / timing / keyframes for the KROMA cinematic intro. Kept apart
-// from the component + scene so the choreography numbers live in one place.
+// Assets, timings and keyframes for the KROMA cinematic intro.
 
 export const DEFAULT_AUDIO = new URL('../../../assets/kroma-intro.mp3', import.meta.url).href;
 
-// The cinematic intro film (chromatic light tunnel landing on the lockup):
-// 4K60 HEVC only, fitting for an HEVC-first product. Platforms without an HEVC
-// decoder (e.g. Firefox, software-only Chrome) fall back to the CSS scene via
-// the play()-rejection path. Timings are read from the video's own metadata,
-// so a re-encoded master is a drop-in file swap (keep `-movflags +faststart`).
+// 4K60 HEVC only: platforms without an HEVC decoder (Firefox, software-only
+// Chrome) fall back to the CSS scene via the play()-rejection path. Timings are
+// read from the video's own metadata, so a re-encoded master is a drop-in swap
+// (keep `-movflags +faststart`).
 export const VIDEO_SOURCES = [
   {
     src: new URL('../../../assets/kroma-intro-hevc.mp4', import.meta.url).href,
@@ -17,12 +15,10 @@ export const VIDEO_SOURCES = [
   },
 ] as const;
 
-/** Fallback duration (ms) if the audio is blocked/unavailable slightly longer
- * than the 4.992 s sting so a playing sting always reaches its own `ended`. */
+// Fallback when the audio is blocked: past the 4.992s sting, so a sting that
+// does play always reaches its own `ended`.
 export const SAFETY_MS = 5400;
-/** Exit fade-to-black length (ms) matches the `transition` below. */
 export const EXIT_MS = 850;
-/** Slack added to the film's own duration for the stall-safety timer (ms). */
 export const SAFETY_SLACK_MS = 1500;
 
 export const KEYFRAMES = `

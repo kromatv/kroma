@@ -19,9 +19,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PushCategory {
-    /// Approve / Deny, for a moderator.
     RequestReview,
-    /// Watch now.
     MediaAvailable,
 }
 
@@ -50,14 +48,14 @@ impl PushCategory {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Audience {
-    /// One account, by id (the requester whose film arrived).
+    // One account, by id (the requester whose film arrived).
     User { id: String },
-    /// Everyone holding a capability (the moderators who must review a request).
+    // Everyone holding a capability (the moderators who must review a request).
     Permission { permission: crate::accounts::Permission },
-    /// Everyone with an account (a new film in the library).
+    // Everyone with an account (a new film in the library).
     Everyone,
-    /// Everyone who follows a show it is in their list, they marked it
-    /// watched, or they have progress on an episode (a new episode aired).
+    // Everyone who follows a show — it is in their list, they marked it
+    // watched, or they have progress on an episode (a new episode aired).
     Followers { show_id: String },
 }
 
@@ -80,23 +78,20 @@ impl Audience {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PushTransport {
-    /// Browser / installed PWA, RFC 8291. Fully self-hosted: the server signs
-    /// with its own VAPID key and posts straight to the browser's push endpoint.
+    // Browser / installed PWA, RFC 8291. Fully self-hosted: the server signs
+    // with its own VAPID key and posts straight to the browser's push endpoint.
     WebPush,
-    /// Raw APNs device token (iOS). Only usable by a server that holds the
-    /// published app's Apple credentials — which a self-hosted one cannot.
+    // Raw APNs device token (iOS). Only usable by a server that holds the
+    // published app's Apple credentials — which a self-hosted one cannot.
     Apns,
-    /// Raw FCM registration token (Android). Same restriction as [`Self::Apns`].
+    // Raw FCM registration token (Android). Same restriction as `Apns`.
     Fcm,
-    /// A grant from the KROMA push relay, for iOS and Android alike.
-    ///
-    /// The normal case for a self-hosted server, and the reason it can notify a
-    /// phone at all. Apple and Google only accept credentials issued to the
-    /// account that publishes the app, so a server that is not that publisher
-    /// has nothing they will take. Instead the app trades its device token with
-    /// the relay for a sealed grant and registers THAT here — the endpoint is a
-    /// capability to notify one device, not a token, and the server never learns
-    /// which device it is.
+    // A grant from the KROMA push relay, for iOS and Android alike: the normal
+    // case for a self-hosted server. Apple and Google only accept credentials
+    // issued to the account that publishes the app, so the app instead trades
+    // its device token with the relay for a sealed grant registered here — a
+    // capability to notify one device, not a token, and the server never learns
+    // which device it is.
     Relay,
 }
 
@@ -132,7 +127,7 @@ pub struct SubscribeBody {
     pub p256dh: Option<String>,
     #[serde(default)]
     pub auth: Option<String>,
-    /// Human label for the "your devices" list (e.g. "iPhone", "Firefox on Mac").
+    // Human label for the "your devices" list (e.g. "iPhone", "Firefox on Mac").
     #[serde(default)]
     pub device: Option<String>,
 }

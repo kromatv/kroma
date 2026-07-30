@@ -1,12 +1,8 @@
 // @vitest-environment jsdom
 //
 // The volume normalizer (§7): a Web Audio compressor behind the player's
-// <video>, so it works on every playback mode including direct play.
-//
-// The tuning is the substance. `night` exists to be the QUIETEST, most even
-// mode - for watching late without waking anyone - so its make-up gain sits
-// BELOW unity. If it ever drifts above, the mode does the opposite of what its
-// name promises, and nothing else in the app would notice.
+// <video>. The tuning is the substance — `night` must sit BELOW unity gain,
+// or the quietest mode ends up louder than the others.
 
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -17,13 +13,10 @@ import {
   useAudioFilter,
 } from './audio-filter';
 
-// ONE graph for the whole file, not one per test.
-//
-// The module keeps its AudioContext in a module-level singleton and its per-
-// element graphs in a module-level WeakMap, so a fresh stub per test would be
-// ignored after the first one that builds a graph - every later assertion would
-// read a stub the module never touched. The counters are cleared between tests
-// instead, and each test uses a NEW <video>, which is what the WeakMap keys on.
+// One graph for the whole file, not one per test: the module's AudioContext is
+// a module-level singleton, so a fresh stub per test would be ignored after the
+// first one that builds a graph. Each test uses a NEW <video> instead, which is
+// what the per-element WeakMap keys on.
 const param = () => ({ value: 0 });
 const comp = {
   threshold: param(),
@@ -44,11 +37,8 @@ const ctx = {
   createGain: vi.fn(() => gain),
 };
 
-/** Install the graph. A plain function, because the module calls `new
- * AudioContext()` and every one of those calls has to hand back the ONE shared
- * stub above: `new` on a function that returns an object yields that object.
- * An arrow cannot be `new`ed at all, and a class returning from its constructor
- * does the same thing while reading as a mistake. */
+// A plain function, not arrow or class: the module calls `new AudioContext()`,
+// and only a function returning an object honors `new` by handing back that object.
 function stubAudio() {
   vi.stubGlobal('AudioContext', function AudioContextStub() {
     return ctx;

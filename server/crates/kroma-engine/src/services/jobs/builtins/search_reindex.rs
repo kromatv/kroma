@@ -2,12 +2,8 @@
 
 use super::prelude::*;
 
-/// Manual, plus chained after the `metadata` stage: that stage rewrites the very
-/// fields the index is built from (catalog title on a corrected/pinned match,
-/// localized titles, overviews, cast), so a rematch correction or the nightly
-/// pass must refresh the index or the new title stays unsearchable. The other
-/// two metadata-writing paths already reindex themselves (the scan-time enrich
-/// coordinator and the `metadata.enrich` admin job); this covers the third.
+// Chained after the `metadata` stage, which rewrites the fields the index is
+// built from; without it a corrected title stays unsearchable.
 pub(super) const SPEC: Builtin = Builtin {
     key: JobKey("search.reindex"),
     category: Category::Library,

@@ -1,6 +1,5 @@
-// Small shared primitives for the mobile screens: the dark screen scaffold and
-// text surfaces, re-exporting the controls and state views so every screen keeps
-// importing them from one place.
+// Shared primitives for the mobile screens, re-exporting the controls and state
+// views so every screen imports them from one place.
 
 import { ExpandableText as KitExpandableText } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
@@ -30,9 +29,8 @@ export function Screen({
   style?: ViewStyle;
 }>) {
   const insets = useSafeAreaInsets();
-  // Horizontal insets matter too: in landscape the notch / Dynamic Island sits
-  // at the LEFT edge and content slid straight under it. The screen's own
-  // padding absorbs the inset rather than stacking on top of it.
+  // In landscape the notch sits at the left edge, so the padding absorbs the
+  // horizontal inset rather than stacking on top of it.
   const pad = padded ? spacing.md : 0;
   return (
     <View
@@ -51,9 +49,7 @@ export function Screen({
   );
 }
 
-/** Netflix-style collapsed paragraph, from the design system. What stays here
- * is this app's call shape: the "more" label bound to its i18n, and the phone's
- * own reading style for a synopsis. */
+/** The kit's collapsed paragraph, bound to this app's i18n and reading style. */
 export function ExpandableText({
   children,
   lines = 3,
@@ -67,8 +63,7 @@ export function ExpandableText({
 }
 
 export function SectionTitle({ children }: Readonly<{ children: ReactNode }>) {
-  // Gutter-aware: section titles sit on full-bleed pages (home, detail), so
-  // they clear the landscape notch themselves.
+  // Section titles sit on full-bleed pages, so they clear the notch themselves.
   const gutters = useGutters();
   return <Text style={[styles.sectionTitle, gutters.style]}>{children}</Text>;
 }

@@ -1,10 +1,5 @@
-//! Portable backup orchestration: the DB row export/import ([`crate::db`]'s
-//! `backup` module) + the user-uploaded files those rows reference (avatars),
-//! packed into a ZIP container ([`archive`]) with an optional password-encryption
-//! envelope ([`crypto`]).
-//!
-//! The DB layer can't read the filesystem (layering: it never sees `data_dir`),
-//! so asset bundling + archiving live here, where `services` may use `db`+`infra`.
+//! Portable backup orchestration: DB rows plus the avatar files they reference,
+//! packed into a ZIP ([`archive`]) with an optional encrypted envelope ([`crypto`]).
 
 mod archive;
 mod crypto;
@@ -22,19 +17,14 @@ use archive::Assets;
 /// Why an import couldn't proceed mapped to localized HTTP errors by the API.
 #[derive(Debug)]
 pub enum ImportError {
-    /// The file is an encrypted backup but no password was supplied.
     PasswordRequired,
-    /// Wrong password or corrupted ciphertext (the AEAD tag failed).
+    // Also covers a corrupted ciphertext (the AEAD tag failed to verify).
     WrongPassword,
-    /// Not a recognizable backup (bad zip / json / envelope).
     Invalid(anyhow::Error),
-    /// A database failure during the restore itself.
     Db(anyhow::Error),
 }
 
-/// Export the portable backup to a `.kroma` file's bytes. With a non-empty
-/// `password` the ZIP is wrapped in an encrypted envelope; otherwise the bytes
-/// are the (compressed) ZIP itself. Either way the import auto-detects.
+/// A non-empty `password` wraps the ZIP in an encrypted envelope; import auto-detects.
 pub fn export(pool: &Pool, data_dir: &Path, password: Option<&str>) -> Result<Vec<u8>> {
     let doc = db::export_portable(pool)?;
     let assets = gather_assets(&doc, data_dir);
@@ -45,9 +35,8 @@ pub fn export(pool: &Pool, data_dir: &Path, password: Option<&str>) -> Result<Ve
     }
 }
 
-/// Restore a backup from bytes (encrypted envelope, ZIP, or legacy v1 JSON):
-/// write avatar files back into the image cache, then the DB rows. `reset` wipes
-/// the portable tables first (atomic). Returns per-table row counts.
+/// Accepts an encrypted envelope, a ZIP, or legacy v1 JSON. `reset` wipes the
+/// portable tables first, atomically. Returns per-table row counts.
 pub fn import(
     pool: &Pool,
     data_dir: &Path,
@@ -60,7 +49,6 @@ pub fn import(
     db::import_portable(pool, &doc, reset).map_err(ImportError::Db)
 }
 
-/// Detect the container, decrypt if needed, and parse to `(doc, assets)`.
 fn decode(bytes: &[u8], password: Option<&str>) -> std::result::Result<(BackupDoc, Assets), ImportError> {
     if crypto::is_encrypted(bytes) {
         let Some(pw) = password.filter(|p| !p.is_empty()) else {
@@ -82,8 +70,6 @@ fn decode(bytes: &[u8], password: Option<&str>) -> std::result::Result<(BackupDo
     Err(ImportError::Invalid(anyhow::anyhow!("unrecognized backup format")))
 }
 
-/// Collect the avatar image files the `users` rows reference (gradient avatars
-/// have no file and need nothing).
 fn gather_assets(doc: &BackupDoc, data_dir: &Path) -> Assets {
     let dir = images_dir(data_dir);
     let mut out = Assets::new();
@@ -102,7 +88,6 @@ fn gather_assets(doc: &BackupDoc, data_dir: &Path) -> Assets {
     out
 }
 
-/// Write restored asset files into the image cache (skipping any already present).
 fn write_assets(data_dir: &Path, assets: &Assets) {
     let dir = images_dir(data_dir);
     std::fs::create_dir_all(&dir).ok();
@@ -117,13 +102,10 @@ fn write_assets(data_dir: &Path, assets: &Assets) {
     }
 }
 
-/// The bare `<hash>.<ext>` filename for an avatar URL that points at our own image
-/// cache (`/api/images/<name>`), or `None` for gradient/remote avatars.
 fn local_image_name(url: &str) -> Option<&str> {
     url.strip_prefix(PUBLIC_PREFIX).filter(|n| is_safe_name(n))
 }
 
-/// A safe cache filename: a bare name, no separators or `..` traversal.
 fn is_safe_name(name: &str) -> bool {
     !name.is_empty() && !name.contains('/') && !name.contains('\\') && !name.contains("..")
 }
@@ -181,11 +163,8 @@ mod tests {
         assert!(crypto::is_encrypted(&sealed));
 
         let (dst, dst_dir) = fresh("edst");
-        // No password on an encrypted file → PasswordRequired.
         assert!(matches!(import(&dst, &dst_dir, &sealed, None, false), Err(ImportError::PasswordRequired)));
-        // Wrong password → WrongPassword.
         assert!(matches!(import(&dst, &dst_dir, &sealed, Some("nope"), false), Err(ImportError::WrongPassword)));
-        // Right password → restored.
         import(&dst, &dst_dir, &sealed, Some("hunter2"), false).unwrap();
         assert_eq!(user_count(&dst), 1);
     }
@@ -201,7 +180,6 @@ mod tests {
         dst.get().unwrap().execute(
             "INSERT INTO users (id,email,username,password_hash,created_at) VALUES ('keep','k@b.c','K','ph','t')", []).unwrap();
 
-        // Merge keeps it (2 users); reset wipes it first (1 user).
         import(&dst, &dst_dir, &bytes, None, false).unwrap();
         assert_eq!(user_count(&dst), 2);
         import(&dst, &dst_dir, &bytes, None, true).unwrap();

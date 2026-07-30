@@ -12,9 +12,8 @@ use tracing::info;
 use super::{now_local, Cron, JobKey, JobManager, TriggerError};
 use crate::state::SharedState;
 
-/// How often the scheduler wakes to fire due jobs. Any cron time that falls in
-/// the `(previous tick, now]` window triggers, so this only bounds latency, not
-/// correctness a minute-granularity schedule needs a tick below 60s.
+// Any cron time in the `(previous tick, now]` window triggers, so this only
+// bounds latency; a minute-granularity schedule needs a tick below 60s.
 const TICK: StdDuration = StdDuration::from_secs(30);
 
 impl JobManager {
@@ -46,10 +45,8 @@ impl JobManager {
         });
     }
 
-    /// Keys whose schedule fires within `(last, now]`. A fire-time exactly equal
-    /// to `now` is included here and excluded from the next window (which starts
-    /// strictly after `last == now` via [`Cron::next_after`]), so a boundary job
-    /// fires exactly once.
+    // A fire-time exactly equal to `now` is included here and excluded from the
+    // next window, so a boundary job fires exactly once.
     fn due_jobs(&self, last: OffsetDateTime, now: OffsetDateTime) -> Vec<JobKey> {
         let map = self.schedules.read().unwrap();
         map.iter()
@@ -75,9 +72,8 @@ mod tests {
 
     const CACHE_CLEANUP: JobKey = JobKey("cache.cleanup");
 
-    /// A manager with one job ([`CACHE_CLEANUP`]) registered on `schedule`.
-    /// `register` wants a `'static` descriptor, so leak one (the test process is
-    /// short-lived).
+    // `register` wants a `'static` descriptor, so leak one — the test process is
+    // short-lived.
     fn with_job(schedule: Option<&'static str>) -> JobManager {
         let mut jm = JobManager::new();
         let builtin: &'static Builtin = Box::leak(Box::new(Builtin {

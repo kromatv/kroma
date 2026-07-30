@@ -8,14 +8,12 @@ type Opts = {
   throwControl?: boolean; // getRequestedAppControl() throws
 };
 
-/** The app-control data for one case: a wrong key, the payload, or nothing. */
 function payloadData(opts: Opts) {
   if (opts.noPayloadKey) return [{ key: 'OTHER', value: ['x'] }];
   if (opts.payload !== undefined) return [{ key: 'PAYLOAD', value: [opts.payload] }];
   return [];
 }
 
-/** Install a fake `tizen` global whose requested app-control carries `payload`. */
 function stubTizen(opts: Opts = {}) {
   const data = payloadData(opts);
   const getRequestedAppControl = () => {

@@ -1,7 +1,6 @@
 // Navigation escape hatch: GO_BACK with an empty stack (a cold-start deep
-// link, a restored session whose first screen is a leaf like the player) is an
-// unhandled action - a console error in dev and a dead button in production.
-// "Back" must always go SOMEWHERE, so with nothing to pop it lands on Home.
+// link, a restored session whose first screen is a leaf like the player) is
+// an unhandled action, so with nothing to pop it lands on Home instead.
 
 import type { useRouter } from 'expo-router';
 

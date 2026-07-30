@@ -21,12 +21,9 @@ export function ServerRow({
   onPress,
 }: Readonly<{
   name: string;
-  /** Optional sub-line under the name (host, or an offline notice). */
   host?: string | null;
-  /** Optional leading glyph, wrapped in the soft accent disc. */
   icon?: ReactNode;
   disabled?: boolean;
-  /** Faded row (offline server); pairs with `disabled`. */
   dimmed?: boolean;
   onPress(): void;
 }>) {

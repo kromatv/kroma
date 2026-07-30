@@ -23,7 +23,7 @@ import { type ComponentType, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** RN style for a kit button that shares the row like the old `flex-1` CTAs. */
+// Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
 
 interface CategoryMeta {
@@ -33,7 +33,7 @@ interface CategoryMeta {
   Icon: ComponentType<{ size?: number; stroke?: number }>;
 }
 
-/** The five report categories, in display order. `metadata` = a wrong fiche. */
+// `metadata` = a wrong fiche.
 const CATEGORIES: readonly CategoryMeta[] = [
   {
     key: 'metadata',
@@ -68,9 +68,7 @@ const CATEGORIES: readonly CategoryMeta[] = [
 ];
 
 // Open with `await ReportDialog.call({ subjectKind, subjectId, subjectTitle })`.
-// The server resolves the title itself and there is nothing for the caller to
-// refresh, so it resolves (`void`) purely on dismiss (including after a
-// successful submit). Its root is mounted once by `CatalogModalHosts`.
+// Resolves (`void`) purely on dismiss, including after a successful submit.
 export const ReportDialog = createCallable<
   { subjectKind: ReportSubjectKind; subjectId: string; subjectTitle: string },
   void

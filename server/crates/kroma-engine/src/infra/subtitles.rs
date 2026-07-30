@@ -1,16 +1,11 @@
 //! Embedded TEXT subtitle → WebVTT extraction + disk cache.
 //!
-//! Extracting a text subtitle demuxes the WHOLE container (cues are interleaved
-//! end-to-end, so ffmpeg must read the file front-to-back), which is slow over a
-//! network mount - especially while the HLS remux competes for the same file. So
-//! we do it ONCE per `(file, mtime, track)` and cache the WebVTT under
-//! `<data>/subs/`, served instantly thereafter.
-//!
-//! [`extract_batch_blocking`] demuxes the file a SINGLE time and writes EVERY
-//! requested track (one `-map 0:s:N` output each), so N tracks cost one whole-file
-//! read, not N. The pipeline `subtitles` stage calls it to pre-warm the cache
-//! before anyone hits play; the on-demand `/subtitles/:track` endpoint calls it on
-//! a cache miss (warming every track off that one read).
+//! Extracting a text subtitle demuxes the whole container front-to-back,
+//! which is slow over a network mount - especially while the HLS remux
+//! competes for the same file. So this runs once per `(file, mtime, track)`
+//! and caches the WebVTT under `<data>/subs/`, served instantly thereafter.
+//! A single ffmpeg pass demuxes the file once and writes every requested
+//! track, so N tracks cost one whole-file read, not N.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -23,26 +18,20 @@ use crate::domain::media::SubtitleTrack;
 
 /// Extraction wall-clock budget, scaled to the file: a text-subtitle demux is
 /// bandwidth-bound (ffmpeg reads the container front-to-back), so budget the
-/// size at a conservative 20 MB/s, clamped to 150s..7200s. The old FIXED 150s
-/// permanently starved big files: the pass timed out, the partial output was
-/// discarded, and the next toggle started the whole read from zero again.
-///
-/// The ceiling used to be 900s, which was the same starvation one size up: at
-/// the budgeted 20 MB/s that is an 18 GB file, and a 4K remux is routinely
-/// 40-80 GB - so its nightly pre-warm was killed at 900s, the partial output
-/// discarded, and every retry started the whole read again, forever. The pass
-/// runs once per (file, mtime) and caches for good, so a long ceiling costs
-/// one long night, not a slow server.
+/// size at a conservative 20 MB/s, clamped to 150s..7200s. A fixed, low
+/// ceiling starves large files (a 4K remux can be 40-80 GB): the pass times
+/// out, the partial output is discarded, and the next attempt restarts the
+/// whole read from zero. The pass runs once per (file, mtime) and caches for
+/// good, so a long ceiling costs one long night, not a slow server.
 pub fn timeout_for(abs: &str) -> Duration {
     let size = std::fs::metadata(abs).map(|m| m.len()).unwrap_or(0);
     let secs = (size / (20 * 1024 * 1024)).clamp(150, 7200);
     Duration::from_secs(secs)
 }
 
-/// Per-file extraction locks. Concurrent callers for the SAME file (a viewer's
-/// toggle racing the playback pre-warm or the pipeline stage, two clients on
-/// one film) serialize here; the losers then find the cache already written and
-/// no-op instead of demuxing the whole file a second time in parallel.
+// Concurrent callers for the same file (a viewer's toggle racing the playback
+// pre-warm or the pipeline stage) serialize here; the losers then find the
+// cache already written and no-op instead of demuxing a second time in parallel.
 fn file_lock(abs: &str) -> Arc<Mutex<()>> {
     static LOCKS: OnceLock<Mutex<HashMap<String, Arc<Mutex<()>>>>> = OnceLock::new();
     let map = LOCKS.get_or_init(|| Mutex::new(HashMap::new()));
@@ -70,9 +59,8 @@ pub fn extract_pending_locked(
     extract_batch_blocking_cancellable(abs, &pending, cancel)
 }
 
-/// Distinct temp suffixes so two concurrent extractions of the SAME file never
-/// clobber each other's `.part` output (the pid alone collides in-process). Mirrors
-/// `infra::storyboard`'s `TMP_SEQ`.
+// Distinct temp suffixes so two concurrent extractions of the same file never
+// clobber each other's `.part` output (the pid alone collides in-process).
 static TMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 /// Whether a (normalized) subtitle codec can be converted to WebVTT. Image subs
@@ -127,14 +115,12 @@ pub fn invalidate(data_dir: &Path, abs: &str, subs: &[SubtitleTrack]) {
     }
 }
 
-/// Extract each requested text subtitle track to its cache file in ONE ffmpeg pass
-/// (the file is demuxed once for all `tracks`). Each output is written to a temp
-/// sibling (scoped by pid AND a per-call sequence, so two concurrent extractions of
-/// the SAME file never collide on one `.part`) and atomically renamed on success,
-/// so a concurrent reader never sees a half-written cue list. Blocking (runs on a
-/// job thread); bounded by [`timeout_for`]. Aborts the in-flight ffmpeg the moment
-/// `cancel` flips. `Ok(())` when nothing is pending or ffmpeg exits clean. Callers
-/// normally go through [`extract_pending_locked`] for the per-file dedupe.
+// Each requested text track is extracted to its cache file in one ffmpeg
+// pass (the file is demuxed once for all `tracks`). Each output goes to a
+// temp sibling (scoped by pid + a per-call sequence, so two concurrent
+// extractions of the same file never collide) and is atomically renamed on
+// success. Blocking; bounded by `timeout_for`; aborts the in-flight ffmpeg
+// the moment `cancel` flips.
 fn extract_batch_blocking_cancellable(
     abs: &str,
     tracks: &[(usize, PathBuf)],
@@ -147,8 +133,6 @@ fn extract_batch_blocking_cancellable(
         std::fs::create_dir_all(dir).map_err(|e| format!("could not create the subtitle cache dir: {e}"))?;
     }
     let pid = std::process::id();
-    // A per-call sequence so two concurrent extractions of the same file write to
-    // distinct temp files before the final rename (mirrors storyboard's `TMP_SEQ`).
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
     let tmps: Vec<PathBuf> = tracks
         .iter()

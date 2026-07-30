@@ -125,8 +125,8 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
           {t('player.subGenerate')}
         </Txt>
         {/* Pointer-only close: controlled at `false` so it never becomes a
-            platform / navigator focus target (see ../../lib/virtual-focus.ts);
-            the wizard's own field list does not include it. */}
+            platform focus target (see ../../lib/virtual-focus.ts); not in the
+            field list. */}
         <IconButton
           variant="glass"
           size={36}
@@ -221,7 +221,6 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
   );
 });
 
-/** The wizard's roomy full-width action, spaced off the hint above it. */
 const START_BUTTON = { marginTop: 4 };
 
 const BACKGROUND_HINT = {
@@ -233,7 +232,6 @@ const BACKGROUND_HINT = {
   lineHeight: 22,
 };
 
-/** One mode tab (transcribe / translate) with its hint line. */
 function ModeTab({
   on,
   enabled,

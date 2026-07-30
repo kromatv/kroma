@@ -69,7 +69,6 @@ export function PopoverMenu({
   const left = Math.max(spacing.md, Math.min(anchor.x, screenW - MENU_WIDTH - spacing.md));
   const below = anchor.y + anchor.height + 8;
   const maxHeight = Math.min(items.length * 50 + 16, screenH * 0.5);
-  // Flip above the trigger when there is no room below.
   const top = below + maxHeight > screenH - 40 ? Math.max(40, anchor.y - maxHeight - 8) : below;
 
   return (

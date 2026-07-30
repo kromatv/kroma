@@ -10,14 +10,14 @@ import { warnIfMixedContent } from './mixed-content';
 
 const DISMISSED = 'kroma.tvweb.mixedContentDismissed';
 
-/** jsdom's `location` is read-only, so the protocol is swapped wholesale. */
+// jsdom's `location` is read-only, so the protocol is swapped wholesale.
 function servedOver(protocol: 'https:' | 'http:') {
   vi.stubGlobal('location', { ...globalThis.location, protocol });
 }
 
-/** This runner has no `localStorage` at all (Node exposes it only behind
- * --localstorage-file), so the store the module reads is supplied here. That
- * also makes the denied-storage cases below straightforward to stage. */
+// This runner has no `localStorage` at all (Node exposes it only behind
+// --localstorage-file), so the store the module reads is supplied here. That
+// also makes the denied-storage cases below straightforward to stage.
 function storage(over: Partial<Storage> = {}) {
   const map = new Map<string, string>();
   vi.stubGlobal('localStorage', {

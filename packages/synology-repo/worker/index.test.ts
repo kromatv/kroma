@@ -14,7 +14,7 @@ type Ctx = { waitUntil: (p: Promise<unknown>) => void };
 const ctx = (): Ctx => ({ waitUntil: vi.fn() });
 const req = (path: string, init?: RequestInit) => new Request(`https://repo.kroma.tv${path}`, init);
 
-/** One published release carrying a .spk, which is all a catalog entry is. */
+// One published release carrying a .spk, which is all a catalog entry is.
 const RELEASES = [
   {
     draft: false,
@@ -33,8 +33,8 @@ const RELEASES = [
   },
 ];
 
-/** GitHub answers the releases API; every other fetch (the .info.json sidecar,
- * the icon) 404s, which the catalog treats as "no extra detail". */
+// GitHub answers the releases API; every other fetch (the .info.json sidecar,
+// the icon) 404s, which the catalog treats as "no extra detail".
 function githubServing(releases: unknown) {
   vi.stubGlobal(
     'fetch',
@@ -61,8 +61,8 @@ describe('synology repo worker', () => {
     expect(await res.text()).toBe('pong');
   });
 
-  // Regression: /favicon.ico used to fall through to the JSON catch-all, so a
-  // browser cached a JSON body as the tab icon and kept showing a stale one.
+  // Without this, /favicon.ico falls through to the JSON catch-all, and a
+  // browser caches that JSON body as the tab icon.
   it('serves the brand mark at /favicon.svg and /favicon.ico, never the catalog', async () => {
     for (const path of ['/favicon.svg', '/favicon.ico']) {
       const res = await worker.fetch(req(path), {}, ctx());

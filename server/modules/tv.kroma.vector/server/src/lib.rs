@@ -34,12 +34,12 @@ pub trait Embedder: Send + Sync {
     /// `semantic` backend (zero-vector fallback / storage sizing).
     #[allow(dead_code)]
     fn dim(&self) -> usize;
-    /// Embed `text` into a unit-length vector of length [`dim`](Self::dim).
+    // Embed `text` into a unit-length vector of length [`dim`](Self::dim).
     fn embed(&self, text: &str) -> Vec<f32>;
-    /// Minimum cosine for a hit to count as "really about" a themed query
-    /// below this a row is just noise and the generator drops it. Backend-
-    /// specific: lexical (sparse hashed TF) scores run lower than MiniLM's dense
-    /// embeddings. Tunable against live probes.
+    // Minimum cosine for a hit to count as "really about" a themed query
+    // below this a row is just noise and the generator drops it. Backend-
+    // specific: lexical (sparse hashed TF) scores run lower than MiniLM's dense
+    // embeddings. Tunable against live probes.
     fn relevance_floor(&self) -> f32;
 }
 
@@ -64,8 +64,8 @@ pub fn default_embedder() -> Arc<dyn Embedder> {
     Arc::new(LexicalEmbedder::new(256))
 }
 
-/// L2-normalize in place; a no-op for the zero vector. Shared by both backends
-/// (a private parent item, visible to the `lexical`/`candle` submodules).
+// L2-normalize in place; a no-op for the zero vector. Shared by both backends
+// (a private parent item, visible to the `lexical`/`candle` submodules).
 fn l2_normalize(v: &mut [f32]) {
     let norm = v.iter().map(|x| x * x).sum::<f32>().sqrt();
     if norm > 0.0 {

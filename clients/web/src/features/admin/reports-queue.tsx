@@ -103,9 +103,8 @@ export function ReportsQueuePage() {
     return () => ev.close();
   }, [throttledReload]);
 
-  // Runs a triage mutation, then refreshes the list + toasts on success (the
-  // drawer owns its own busy state and awaits this). Rejects on failure so the
-  // drawer can leave the report untouched, after surfacing the error toast.
+  // Refreshes the list + toasts on success; rejects on failure so the drawer
+  // (which awaits this) can leave the report untouched.
   const act = (label: string, fn: () => Promise<unknown>) =>
     fn()
       .then(() => {

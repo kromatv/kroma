@@ -8,10 +8,8 @@ import { useNav } from '#tv/app/router';
 import { AuthScreen, KromaMark, OnScreenKeyboard } from '#tv/shared/ui';
 
 /**
- * Add a (distant) server by address, via an on-screen URL keyboard. Reached on
- * first run (no server saved) and from the add-profile wizard's "Add manually".
- * On submit the server is upserted and the flow advances to Quick Connect. A
- * Detect button kicks off LAN discovery and prefills the field.
+ * Add a server by address via an on-screen URL keyboard; on submit the server is
+ * upserted and the flow advances to Quick Connect.
  */
 export function TvConnect() {
   const nav = useNav();
@@ -19,11 +17,8 @@ export function TvConnect() {
   const { addServer, discover, discovered, discovering } = useConnection();
   const { physicalKeyboard } = useEnv();
   const [value, setValue] = useState('');
-  // `connect` is only ever reached from the Add-profile wizard, so Back returns
-  // there (never a dead-end at the launch screen).
   useFocusNav({ onBack: nav.back, resetKey: discovered.length });
 
-  // When LAN discovery finds something, prefill the field (host only) so OK adds it.
   // biome-ignore lint/correctness/useExhaustiveDependencies: prefill once when discovery yields a hit; intentionally not re-run on `value` edits.
   useEffect(() => {
     const found = discovered.at(-1);
@@ -36,14 +31,8 @@ export function TvConnect() {
     }
   }, [discovered]);
 
-  /**
-   * What the typed address turned out to be, once something answered it.
-   *
-   * The scheme is optional to TYPE - nobody spells out `https://` on a remote -
-   * but it must never be invisible: a server reached in the clear and one
-   * reached over TLS look identical in this box, and only one of them is safe to
-   * put a password into. So the address is probed and the answer is shown.
-   */
+  // Only one of http and https is safe to put a password into, so the
+  // address is probed and the scheme shown rather than left implicit.
   const [resolved, setResolved] = useState<ResolvedOrigin | null>(null);
   const [probing, setProbing] = useState(false);
 
@@ -55,8 +44,7 @@ export function TvConnect() {
       return;
     }
     let cancelled = false;
-    // Debounced, because the address arrives one remote press at a time and
-    // probing "l", "lu", "lum"... is a pair of requests per keystroke.
+    // Debounced: each keystroke would otherwise cost a pair of requests.
     const timer = setTimeout(() => {
       setProbing(true);
       resolveServerOrigin(address)
@@ -78,9 +66,8 @@ export function TvConnect() {
   const submit = () => {
     const address = value.trim();
     if (!address) return;
-    // Whatever actually answered wins. The fallback keeps the old behaviour for
-    // a server that is simply not up yet: it can still be saved, it just cannot
-    // be promised to be secure.
+    // Fallback lets a server that isn't up yet still be saved, without a
+    // promise that it's secure.
     const url = resolved?.url ?? (/^https?:\/\//i.test(address) ? address : `http://${address}`);
     addServer(url);
     nav.go('quick');
@@ -114,8 +101,6 @@ export function TvConnect() {
           onSubmit={submit}
           icon="world-search"
           placeholder={t('connect.serverPlaceholder')}
-          // The screen's own title already says "Add a server"; a label row here
-          // would repeat it. Still the accessible name for the input.
           label={t('connect.addServerTitle')}
           hideLabel
           keyboardType="url"
@@ -166,14 +151,8 @@ export function TvConnect() {
 const DETECT = { flexShrink: 0, backgroundColor: 'transparent', paddingHorizontal: 16 } as const;
 const SCHEME_TEXT = { fontSize: 14, fontWeight: '600' } as const;
 
-/**
- * Says which scheme the address really uses, once it is known.
- *
- * Three states, and the third is the point: while nothing has answered it says
- * so rather than showing a padlock it has not earned. `accent` for plain HTTP
- * rather than `danger` - an unencrypted server on a home LAN is the normal case
- * here, worth naming but not an error.
- */
+// Plain HTTP is `accent`, not `danger`: an unencrypted server on a home LAN
+// is the normal case here.
 function SchemeBadge({
   probing,
   resolved,

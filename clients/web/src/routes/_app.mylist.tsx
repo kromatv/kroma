@@ -11,8 +11,8 @@ import { catalogQueries } from '#web/shared/lib/queries';
 import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/mylist')({
-  // The catalogue is public/SSR; the per-user list is hydrated client-side, so we
-  // load everything here and filter by the user's ids in the component.
+  // The catalogue is public/SSR while the per-user list hydrates client-side,
+  // so everything loads here and the component filters by the user's ids.
   loader: async ({ context: { queryClient } }) => {
     if (!isAuthed()) return;
     await Promise.all([
@@ -42,8 +42,6 @@ function MyListPage() {
   const { data: shows } = useSuspenseQuery(catalogQueries.showsView());
   const { ids, ready } = useMyList();
 
-  // Resolve the user's ids (newest-first) to catalogue entries, preserving order
-  // and mixing movies + shows.
   const movieById = new Map(movies.map((m) => [m.id, m]));
   const showById = new Map(shows.map((s) => [s.id, s]));
   const entries: CatalogEntry[] = [];

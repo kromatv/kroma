@@ -2,7 +2,6 @@ import { KromaIntro } from '@kroma/ui/kit';
 import { useState } from 'react';
 
 export interface BrandIntroProps {
-  /** Shell-bundled override for the brand-intro film. */
   videoSrc?: string;
 }
 
@@ -17,11 +16,7 @@ const introAlreadySeen = (() => {
   }
 })();
 
-/**
- * The cinematic brand intro, web (Tizen / webOS / desktop / browser): the
- * bundled film over the app, which fades to it when the film ends or is
- * skipped. An overlay, not a gate the app tree is already mounted behind it.
- */
+// An overlay, not a gate: the app tree is already mounted behind it.
 export function BrandIntro({ videoSrc }: Readonly<BrandIntroProps>) {
   const [done, setDone] = useState(introAlreadySeen);
   if (done) return null;

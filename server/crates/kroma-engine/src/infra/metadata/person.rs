@@ -1,20 +1,13 @@
-//! TMDB *person* lookup: the biography and life facts behind a name in a title's
-//! cast or crew, for the person page.
+//! TMDB *person* lookup: the biography and life facts behind a name in a
+//! title's cast or crew, for the person page.
 //!
-//! A person is not a library entity there is no row to enrich, and the name is
-//! all a credit carries so this resolves by name on demand: `search/person` for
-//! the id, then `person/{id}` for the profile. Same curl/JSON transport as the
-//! sibling [`super::client`].
+//! A person is not a library entity - there is no row to enrich, and the name
+//! is all a credit carries - so this resolves by name on demand:
+//! `search/person` for the id, then `person/{id}` for the profile.
 //!
-//! Two behaviours are worth knowing about:
-//!
-//! * **The cache is the point.** Every visit to a person page would otherwise
-//!   cost two TMDB round trips, and the answer changes about as often as a
-//!   birthday does. A cached `None` ("looked up, nobody by that name") is kept
-//!   too, so an unknown extra doesn't re-hit the provider on every render.
-//! * **Biographies fall back to English.** TMDB translates a fraction of them;
-//!   an empty localized biography with an English one available reads as "we
-//!   know nothing about this person", which is worse than reading it in English.
+//! Results are cached indefinitely, including a `None` miss, since the answer
+//! changes about as often as a birthday. An empty localized biography falls
+//! back to English rather than reading as "we know nothing about this person".
 
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
@@ -25,11 +18,10 @@ use kroma_domain::PersonDetail;
 
 use super::client::{api, curl_json, IMG};
 
-/// Process-wide memo of resolved people, keyed by `language|lowercased name`.
-/// Deliberately a module static rather than a field on the app state: it holds
-/// no configuration and no per-install data, exactly like the DNS cache under
-/// `curl` (the sibling [`super::cache::Cache`] hangs off the state only because
-/// the admin "reset metadata" action clears it; a stale birthday is harmless).
+// Deliberately a module static rather than a field on the app state: it holds
+// no configuration and no per-install data. Unlike the sibling `Cache`, the
+// admin "reset metadata" action does not clear this one; a stale birthday is
+// harmless.
 static CACHE: OnceLock<Mutex<HashMap<String, Option<PersonDetail>>>> = OnceLock::new();
 
 fn cache() -> &'static Mutex<HashMap<String, Option<PersonDetail>>> {
@@ -57,8 +49,6 @@ pub fn detail(api_key: &str, language: &str, name: &str) -> Option<PersonDetail>
     resolved
 }
 
-/// Cache-free resolve: find the id, fetch the profile, fill an empty biography
-/// from English.
 fn resolve(api_key: &str, language: &str, name: &str) -> Option<PersonDetail> {
     let id = best_id(api_key, language, name)?;
     let mut person = profile(api_key, language, id)?;
@@ -68,10 +58,10 @@ fn resolve(api_key: &str, language: &str, name: &str) -> Option<PersonDetail> {
     Some(person)
 }
 
-/// The TMDB id for `name`. TMDB orders `search/person` by popularity, which is
-/// the right tie-break between two actors of the same name but the wrong answer
-/// when a more famous person merely *contains* the query, so an exact
-/// (case-insensitive) name match always wins first.
+// TMDB orders `search/person` by popularity, which is the right tie-break
+// between two actors of the same name but the wrong answer when a more
+// famous person merely *contains* the query, so an exact (case-insensitive)
+// name match always wins first.
 fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
     let params =
         [("language", language.to_string()), ("query", name.to_string()), ("include_adult", "false".to_string())];
@@ -80,9 +70,8 @@ fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
     exact.or_else(|| page.results.first()).map(|r| r.id)
 }
 
-/// `GET /person/{id}` mapped to the wire type. Blank strings are TMDB's way of
-/// saying "unknown", so they are normalized to `None` here rather than at every
-/// call site.
+// Blank strings are TMDB's way of saying "unknown", so they are normalized to
+// `None` here rather than at every call site.
 fn profile(api_key: &str, language: &str, id: u64) -> Option<PersonDetail> {
     let params = [("language", language.to_string())];
     let raw: RawPerson = curl_json(&format!("{}/person/{id}", api()), api_key, &params).ok()?;
@@ -99,7 +88,6 @@ fn profile(api_key: &str, language: &str, id: u64) -> Option<PersonDetail> {
     })
 }
 
-/// `Some(trimmed)` for a field TMDB actually filled in.
 fn text(value: Option<String>) -> Option<String> {
     value.map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
 }

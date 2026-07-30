@@ -31,7 +31,7 @@ where
         .route("/vpn/test", post(test::<S>))
 }
 
-/// `GET /api/admin/vpn`
+// `GET /api/admin/vpn`
 async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -50,9 +50,9 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     Ok(Json(view).into_response())
 }
 
-/// `PUT /api/admin/vpn` store the WireGuard config ("" removes it) and/or the
-/// local bridge port, then restart the bridge + the embedded engine so the new
-/// tunnel applies immediately.
+// `PUT /api/admin/vpn` store the WireGuard config ("" removes it) and/or the
+// local bridge port, then restart the bridge + the embedded engine so the new
+// tunnel applies immediately.
 async fn save<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
@@ -78,7 +78,7 @@ async fn save<S: HostCtx + Clone + Send + Sync + 'static>(
     Ok(Json(json!({ "ok": true, "wgConfigured": wg_configured(&state) })).into_response())
 }
 
-/// `POST /api/admin/vpn/test` run the seal probe now (also drives the gate).
+// `POST /api/admin/vpn/test` run the seal probe now (also drives the gate).
 async fn test<S: HostCtx + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,

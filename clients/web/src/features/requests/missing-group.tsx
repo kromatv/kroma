@@ -12,7 +12,6 @@ import { useState } from 'react';
 import { relativeAirDate } from '#web/features/requests/airdate';
 
 export interface MissingGroup {
-  /** The parent request, or null for a library-scan gap (never requested). */
   requestId: string | null;
   tmdbId: number;
   kind: CalendarEntry['kind'];
@@ -28,12 +27,11 @@ export function epKey(e: CalendarEntry): string {
   return `${groupKey}:${e.season ?? 0}:${e.episode ?? 0}`;
 }
 
-/** Episode lists longer than this collapse behind a "show more" toggle. */
+// Episode lists longer than this collapse behind a "show more" toggle.
 const COLLAPSE_OVER = 12;
-/** How many rows a collapsed list keeps visible. */
+// How many rows a collapsed list keeps visible.
 const COLLAPSED_ROWS = 10;
 
-/** The group's missing EPISODE rows (a movie group has none of its own). */
 function episodesOf(group: MissingGroup): CalendarEntry[] {
   if (group.kind === 'movie') return [];
   return group.items.filter((i) => i.season != null && i.episode != null);
@@ -119,8 +117,6 @@ export function MissingGroupCard({
   );
 }
 
-/** The header's second line: a movie's release info, or the series' missing
- * count (a movie group has no rows, so it carries its date here). */
 function GroupMeta({
   group,
   episodeCount,
@@ -142,8 +138,6 @@ function GroupMeta({
   );
 }
 
-/** The group's missing-episode rows. A long list keeps only its first
- * {@link COLLAPSED_ROWS} rows until the "show more" toggle expands it. */
 function EpisodeList({
   entries,
   canAct,

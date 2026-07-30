@@ -1,24 +1,6 @@
-// <Select>: pick one of a few, from a trigger that says what is picked.
-//
-// The kit went without one for a while because its two ancestors both already
-// existed and neither generalised: the workbench toolbar's lens menu hangs an
-// absolutely-positioned panel off its trigger, which only works because the
-// toolbar is the topmost row of its column and nothing clips it - a form deep
-// in a ScrollView clips it on the first scroll - and the player's settings
-// panel is a whole in-player navigation surface, not a control.
-//
-// So the options are presented in a <Dialog>, and that is a choice about the
-// TELEVISION rather than a shortcut: a modal is its own view controller on
-// tvOS, so the D-pad is confined to the options for free, exactly as it is in
-// the track pickers the player already ships. On a phone a full-window sheet is
-// how a native picker behaves anyway, and on the web the dialog's focus scope
-// keeps the spatial navigator inside. One presentation, every target - the same
-// argument as the dialog it stands on.
-//
-// The trigger is dressed as the ENTRY it sits beside (same radius, same edge,
-// same focus ring rules as <TextField>), because a form should read as one
-// family of controls - and like shadcn's SelectTrigger it is labelled by its
-// value: the closed state answers "what is picked" without being opened.
+// Options are presented in a <Dialog> rather than a popover panel: on tvOS a
+// modal is its own view controller, so the D-pad is confined to the options,
+// and a popover anchored to the trigger is clipped inside a ScrollView.
 
 import { useCallback, useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
@@ -34,26 +16,17 @@ import { useControllable } from '#ui/lib/use-controllable';
 interface SelectOption {
   value: string;
   label: string;
-  /** Trailing detail, dimmed: a codec, a resolution, a count. What turns "the
-   *  second one" into a choice made without opening anything else. */
   note?: string;
-  /** Leading glyph for the option row, and for the trigger while chosen. */
   icon?: IconName;
 }
 
 interface SelectProps extends Omit<FocusableProps, 'children' | 'onPress' | 'style'> {
-  /** Names the control: the accessible name, and the title over the options. */
   label: string;
   options: readonly SelectOption[];
-  /** Present: you own the state (controlled). Absent: the select runs itself
-   *  from `defaultValue` and reports through `onChange`. */
   value?: string;
   defaultValue?: string;
   onChange?: (next: string) => void;
-  /** The closed state before anything is picked. */
   placeholder?: string;
-  /** Paint the edge red: the field holds a rejected value. Usually set by
-   *  <Field error>, the same coupling <TextField invalid> has. */
   invalid?: boolean;
   style?: StyleProp<ViewStyle>;
 }
@@ -70,7 +43,7 @@ function Select({
   style,
   ...focusProps
 }: Readonly<SelectProps>) {
-  // '' is "nothing picked": no option may use it, so the placeholder shows.
+  // '' is "nothing picked": no option may use it, or the placeholder never shows.
   const [value, setValue] = useControllable(valueProp, defaultValue ?? '', onChange);
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -118,9 +91,6 @@ function Select({
   );
 }
 
-/** One option row: its glyph, its name, its detail, and the tick on the chosen
- * one. The tick keeps its column whether or not it is drawn, so the notes down
- * the right edge stay in one line - the same rule the toolbar's menus follow. */
 function Option({
   option,
   chosen,
@@ -145,7 +115,6 @@ function Option({
   );
 }
 
-/** Dressed as the entry it sits beside: <TextField>'s well, minus the caret. */
 const TRIGGER = {
   flexDirection: 'row',
   alignItems: 'center',
@@ -156,9 +125,6 @@ const TRIGGER = {
   borderWidth: 1,
 } as const;
 const TRIGGER_INK = { flexShrink: 1 } as const;
-/** The well fills faintly under the cursor. It carries no focus scale and its
- * border is already spoken for (invalid paints it red), so the fill is the one
- * channel left to answer a pointer with. */
 const TRIGGER_HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.06)' } as const;
 const ROW = {
   flexDirection: 'row',
@@ -169,7 +135,6 @@ const ROW = {
   borderRadius: radius.md,
 } as const;
 const ROW_INK = { flexShrink: 1 } as const;
-/** An option row has no resting fill at all, so hover IS its box. */
 const ROW_HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.08)' } as const;
 
 export type { SelectOption, SelectProps };

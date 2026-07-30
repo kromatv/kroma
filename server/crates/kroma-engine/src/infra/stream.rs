@@ -16,19 +16,14 @@ use tokio_util::io::ReaderStream;
 use crate::infra::metrics::ByteSink;
 use crate::json_error;
 
-/// Wraps a file reader so every byte handed to the response body is metered into
-/// a [`ByteSink`] (the dashboard's LAN/WAN bandwidth counters). Backpressure from
-/// the socket drives `poll_read`, so this tracks bytes as they are actually
-/// delivered, not merely read ahead.
+/// Meters every byte handed to the response body into a [`ByteSink`]. Socket
+/// backpressure drives `poll_read`, so it counts bytes delivered, not read ahead.
 pub struct CountingReader<R> {
     inner: R,
     sink: ByteSink,
 }
 
 impl<R> CountingReader<R> {
-    /// Meter `inner`'s bytes into `sink`. Used for file bodies here and for the
-    /// download remux's ffmpeg pipe in the API layer, so every media byte the
-    /// server delivers lands on the same LAN/WAN counters.
     pub fn new(inner: R, sink: ByteSink) -> Self {
         Self { inner, sink }
     }
@@ -52,12 +47,9 @@ impl<R: AsyncRead + Unpin> AsyncRead for CountingReader<R> {
     }
 }
 
-/// Stream a file, honouring an optional `Range: bytes=start-end` header.
-///
-/// Returns `206 Partial Content` with a `Content-Range` when a satisfiable
-/// range is requested, otherwise a full `200 OK`. The body is streamed and the
-/// file is never fully buffered in memory. `sink` meters delivered bytes into
-/// the dashboard's bandwidth chart ([`ByteSink::none`] to opt out).
+/// Honours `Range: bytes=start-end`: `206 Partial Content` with a
+/// `Content-Range` when satisfiable, else a full `200 OK`. Never buffers the
+/// whole file. Pass [`ByteSink::none`] to opt out of bandwidth metering.
 pub async fn stream_file(path: &Path, req_headers: &HeaderMap, sink: ByteSink) -> Response {
     let mut file = match File::open(path).await {
         Ok(f) => f,
@@ -104,7 +96,6 @@ pub async fn stream_file(path: &Path, req_headers: &HeaderMap, sink: ByteSink) -
     }
 }
 
-/// Full `200 OK` response streaming the whole file.
 fn full_response(file: File, total_size: u64, content_type: &str, sink: ByteSink) -> Response {
     let stream = ReaderStream::new(CountingReader { inner: file, sink });
     let body = Body::from_stream(stream);
@@ -119,7 +110,7 @@ fn full_response(file: File, total_size: u64, content_type: &str, sink: ByteSink
     resp
 }
 
-/// `206 Partial Content` response streaming `[start, end]` inclusive.
+// `[start, end]` inclusive, per RFC 7233.
 fn partial_response(
     file: File,
     start: u64,
@@ -129,7 +120,6 @@ fn partial_response(
     sink: ByteSink,
 ) -> Response {
     let length = end - start + 1;
-    // Limit the reader to exactly the requested window.
     let limited = file.take(length);
     let stream = ReaderStream::new(CountingReader { inner: limited, sink });
     let body = Body::from_stream(stream);
@@ -157,15 +147,12 @@ fn set_common_headers(headers: &mut HeaderMap, content_type: &str) {
     headers.insert(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
 }
 
-/// Outcome of parsing a `Range` header against a known file size.
 enum RangeOutcome {
     Full,
     Partial { start: u64, end: u64 },
     Unsatisfiable,
 }
 
-/// Parse a single-range `bytes=` header. Multi-range requests fall back to a
-/// full response (the common, simple behaviour for media servers).
 fn parse_range(headers: &HeaderMap, total_size: u64) -> RangeOutcome {
     let raw = match headers.get(header::RANGE).and_then(|v| v.to_str().ok()) {
         Some(r) => r,
@@ -228,8 +215,6 @@ fn parse_range(headers: &HeaderMap, total_size: u64) -> RangeOutcome {
     RangeOutcome::Partial { start, end }
 }
 
-/// Pick a Content-Type from the container extension, with media-friendly
-/// defaults the generic mime table doesn't always get right.
 fn content_type_for(path: &Path) -> &'static str {
     let ext = path
         .extension()
@@ -251,8 +236,6 @@ fn content_type_for(path: &Path) -> &'static str {
     }
 }
 
-/// Convenience: build a stream response or a JSON 404 for demo items. `sink`
-/// meters delivered bytes into the dashboard's bandwidth chart.
 pub async fn stream_or_demo_error(
     abs_path: Option<&str>,
     req_headers: &HeaderMap,

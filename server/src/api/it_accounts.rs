@@ -12,10 +12,8 @@ use crate::api::test_support::{
 };
 use crate::model::Permission;
 
-// ----- password login ---------------------------------------------------------
-
-/// Log in and return `(status, body)`, giving each call its own source IP so the
-/// process-wide brute-force guard can't leak lockouts between parallel tests.
+// Gives each call its own source IP so the process-wide brute-force guard
+// can't leak lockouts between parallel tests.
 async fn login(t: &crate::api::test_support::TestApp, ip: &str, id: &str, pw: &str) -> (StatusCode, serde_json::Value) {
     let (status, _h, body) = raw(
         &t.app,
@@ -81,8 +79,6 @@ async fn login_locks_out_a_source_after_five_failures() {
     assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
 }
 
-// ----- token exchange ---------------------------------------------------------
-
 #[tokio::test]
 async fn exchange_token_rejects_blank_and_unknown_tokens() {
     let t = test_app();
@@ -117,7 +113,6 @@ async fn exchange_token_mints_a_session_for_a_pinless_account() {
 async fn exchange_token_enforces_the_pin_gate() {
     let t = test_app();
     let (uid, token) = seed_session_pw(&t.state, "locked@test.dev", "locked", "pw", &[Permission::Playback]);
-    // Give the account a PIN, then a device token that isn't PIN-verified yet.
     let (status, _) =
         send(&t.app, "PATCH", "/api/auth/me/pin", Some(&token), Some(json!({ "pin": "1234" }))).await;
     assert_eq!(status, StatusCode::OK);
@@ -158,8 +153,6 @@ async fn exchange_token_enforces_the_pin_gate() {
     assert_eq!(status, StatusCode::OK);
 }
 
-// ----- relock -----------------------------------------------------------------
-
 #[tokio::test]
 async fn relock_clears_the_pin_verified_flag() {
     let t = test_app();
@@ -173,7 +166,6 @@ async fn relock_clears_the_pin_verified_flag() {
         send(&t.app, "POST", "/api/auth/relock", None, Some(json!({ "accessToken": access }))).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
-    // The next exchange now demands the PIN again.
     let (status, body) =
         send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": access }))).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
@@ -184,8 +176,6 @@ async fn relock_clears_the_pin_verified_flag() {
         send(&t.app, "POST", "/api/auth/relock", None, Some(json!({ "accessToken": "" }))).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
-
-// ----- password change --------------------------------------------------------
 
 #[tokio::test]
 async fn change_password_succeeds_with_the_correct_current() {
@@ -246,8 +236,6 @@ async fn change_password_rejects_a_too_short_new_password() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
-// ----- logout + session revoke ------------------------------------------------
-
 #[tokio::test]
 async fn logout_also_revokes_the_supplied_access_token() {
     let t = test_app();
@@ -265,7 +253,6 @@ async fn logout_also_revokes_the_supplied_access_token() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
-    // The revoked access token no longer exchanges for a session.
     let (status, _) =
         send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": access }))).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
@@ -275,7 +262,6 @@ async fn logout_also_revokes_the_supplied_access_token() {
 async fn logout_revokes_the_current_session() {
     let t = test_app();
     let (_uid, token) = seed_session(&t.state, "bye@test.dev", "bye", &[Permission::Playback]);
-    // Valid session before.
     let (status, _) = get(&t.app, "/api/auth/me", Some(&token)).await;
     assert_eq!(status, StatusCode::OK);
 
@@ -304,14 +290,11 @@ async fn revoke_session_by_id_then_404_on_unknown() {
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
 
-// ----- profile / playback-language preferences --------------------------------
-
 #[tokio::test]
 async fn ui_language_sets_then_clears() {
     let t = test_app();
     let (_uid, token) = seed_session(&t.state, "lang@test.dev", "lang", &[Permission::Playback]);
 
-    // A known tag is stored.
     let (status, body) =
         send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "language": "fr" }))).await;
     assert_eq!(status, StatusCode::OK);
@@ -365,8 +348,6 @@ async fn audio_and_subtitle_languages_round_trip() {
     assert_eq!(body["user"]["subtitleLanguage"], json!("off"));
 }
 
-// ----- uniqueness guards ------------------------------------------------------
-
 #[tokio::test]
 async fn patch_me_rejects_a_taken_username_and_email() {
     let t = test_app();
@@ -417,8 +398,6 @@ async fn patch_me_changes_username_and_email_to_fresh_values() {
     assert_eq!(me["user"]["email"], json!("new@test.dev"));
 }
 
-// ----- quick connect (DB-only slice) ------------------------------------------
-
 #[tokio::test]
 async fn quick_connect_initiate_then_poll_states() {
     let t = test_app();
@@ -466,7 +445,6 @@ async fn quick_connect_initiate_falls_back_to_the_public_url_setting() {
 async fn quick_connect_authorize_then_poll_hands_the_device_a_session() {
     let t = test_app();
 
-    // The device initiates and starts polling with its secret.
     let (_, init) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
     let code = init["code"].as_str().expect("code").to_string();
     let secret = init["secret"].as_str().expect("secret").to_string();
@@ -495,7 +473,6 @@ async fn quick_connect_authorize_then_poll_hands_the_device_a_session() {
 async fn quick_connect_rotating_revokes_the_previous_code() {
     let t = test_app();
 
-    // Device initiates, then rotates its code passing the old secret as prevSecret.
     let (_, first) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
     let old_secret = first["secret"].as_str().expect("secret").to_string();
 
@@ -585,8 +562,6 @@ async fn quick_connect_authorize_rejects_an_unknown_code_and_requires_auth() {
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
-// ----- avatar upload ----------------------------------------------------------
-
 #[tokio::test]
 async fn an_empty_avatar_upload_is_refused_before_any_decoding() {
     // The handler takes raw image bytes, so an empty body is the shape a client
@@ -625,7 +600,6 @@ async fn an_oversized_avatar_is_rejected_by_the_body_limit() {
     assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
 }
 
-/// POST raw bytes (not JSON) to `uri` as `image/png`.
 async fn raw_bytes(
     app: &axum::Router,
     uri: &str,
@@ -650,19 +624,11 @@ async fn raw_bytes(
     (status, headers, body.to_vec())
 }
 
-// ----- when the database will not take the write --------------------------------
-//
-// Every self-service update reads, validates, then writes, and each write has an
-// error arm that returns the failure rather than the happy response. Those arms
-// are the difference between "your name is now X" and a 500 - and an account
-// page that reports success on a write that never landed is the worst possible
-// outcome, because the user has no reason to look again.
-//
-// A trigger makes writes to `users` fail the way a corrupt or read-only database
-// would, while READS keep working - so authentication still succeeds and each
-// handler gets all the way to its write before failing.
-
-/// Reject every UPDATE to `users`, leaving reads alone.
+// Every self-service update reads, validates, then writes, with an error arm
+// that returns the failure instead of the happy response — the difference
+// between "your name is now X" and a 500 that half-applied. A trigger makes
+// writes to `users` fail like a corrupt/read-only DB while reads keep working,
+// so each handler gets all the way to its write before failing.
 fn freeze_users(t: &crate::api::test_support::TestApp) {
     t.state
         .db
@@ -675,7 +641,6 @@ fn freeze_users(t: &crate::api::test_support::TestApp) {
         .expect("install trigger");
 }
 
-/// PATCH `/api/auth/me` with `body`, returning the status.
 async fn patch_me(
     t: &crate::api::test_support::TestApp,
     token: &str,

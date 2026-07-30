@@ -18,8 +18,8 @@ public class NativeSearchModule: Module {
         view.placeholder = placeholder
       }
 
-      /// The query React believes in. Set on the way in only (Siri, a recent
-      /// search): typing flows the other way, through `onChangeText`.
+      // Set on the way in only (Siri, a recent search): typing flows the other
+      // way, through `onChangeText`.
       Prop("text") { (view: NativeSearchView, text: String) in
         view.setText(text)
       }

@@ -1,8 +1,6 @@
-//! Pipeline stage `embed`: compute the content embedding (for "For You" / similar
-//! rows) per title from its stored metadata, using the active embedder. Depends on
-//! `metadata` (only titles that already have metadata are enumerated). Signed by
-//! the embedder's dimension, so switching models re-embeds everything; a vector
-//! already at the current dim is a no-op.
+//! Pipeline stage `embed`: the content embedding per title, from its stored
+//! metadata. Signed by the embedder's dimension, so switching models re-embeds
+//! everything; a vector already at the current dim is a no-op.
 
 use anyhow::{anyhow, Result};
 
@@ -13,8 +11,7 @@ use crate::state::SharedState;
 
 use super::common::stage;
 
-// BERT embedding is in-process CPU work, so it yields to live playback. Nightly +
-// after the metadata stage (fresh metadata -> fresh embedding) + manual.
+// BERT embedding is in-process CPU work, so it yields to live playback.
 stage! {
     short: "embed",
     subject_kind: "item",
@@ -24,8 +21,6 @@ stage! {
     triggers: &[Trigger::AfterJob(JobKey("pipeline.metadata"))],
 }
 
-/// Every movie/show that already has metadata, signed by the active embedder's
-/// dimension so a model switch re-queues them all.
 fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
     let sig = state.embedder.dim().to_string();
     let (items, shows) = crate::db::index_snapshot(&state.db)?;
@@ -46,20 +41,18 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
 fn process(ctx: &JobContext, id: &str) -> Result<()> {
     let embedder = ctx.state.embedder.clone();
     let target = embedder.dim();
-    // Already at the active dim? nothing to do. Single-row lookup (not the whole
-    // `item_vectors` table) so a full re-embed stays O(N), not O(N^2).
+    // A single-row lookup, not the whole `item_vectors` table, so a full re-embed
+    // stays O(N) rather than O(N^2).
     if crate::db::vector_dim(&ctx.state.db, id)? == Some(target) {
         return Ok(());
     }
     let Some((title, year, meta)) = title_year_meta(&ctx.state, id)? else {
-        return Ok(()); // gone, or no metadata yet (waiting on the metadata stage)
+        return Ok(()); // gone, or no metadata yet
     };
     let vec = embedder.embed(&build_doc(&title, year, &meta));
     crate::db::set_item_vector(&ctx.state.db, id, &vec).map_err(|e| anyhow!(e))
 }
 
-/// `(title, year, metadata)` for a movie or show id, or `None` when it has no
-/// metadata to embed yet.
 fn title_year_meta(
     state: &SharedState,
     id: &str,
@@ -82,8 +75,8 @@ mod tests {
     use crate::ports::Embedder;
     use crate::test_support::{seed_movie, seed_show_episode, test_state_with_embedder};
 
-    /// An embedder of a fixed width, so "already at the active dim" is a real
-    /// distinction (NoopEmbedder reports 0 and makes every comparison vacuous).
+    // A fixed width, because NoopEmbedder reports 0 and makes every dimension
+    // comparison vacuous.
     struct FixedDim(usize);
 
     impl Embedder for FixedDim {
@@ -118,8 +111,6 @@ mod tests {
 
     #[test]
     fn only_titles_that_already_have_metadata_are_enumerated() {
-        // The stage depends on `metadata`; queuing a title before its metadata
-        // lands would embed a document that is mostly the filename.
         let st = state(8);
         seed_movie(&st, "itm-with");
         seed_movie(&st, "itm-without");
@@ -132,8 +123,7 @@ mod tests {
 
     #[test]
     fn episodes_are_never_enumerated() {
-        // An episode inherits its show's embedding; embedding each one would
-        // multiply the work by the size of the library and add nothing.
+        // An episode inherits its show's embedding.
         let st = state(8);
         let (show, ep) = seed_show_episode(&st, "shw-1", "ep-1");
         give_metadata(&st, "shows", &show);
@@ -146,9 +136,6 @@ mod tests {
 
     #[test]
     fn the_signature_is_the_embedder_dimension_so_a_model_switch_requeues() {
-        // The signature is what makes the ledger re-run a title. Without the dim
-        // in it, switching models would leave every vector at the old width and
-        // recommendations silently empty.
         let st = state(8);
         seed_movie(&st, "itm-1");
         give_metadata(&st, "items", "itm-1");
@@ -172,8 +159,6 @@ mod tests {
 
     #[test]
     fn a_vector_already_at_the_active_dimension_is_left_alone() {
-        // This is what keeps a nightly re-run cheap: the check is a single-row
-        // lookup, so a full pass stays O(N) rather than O(N^2).
         let st = state(4);
         seed_movie(&st, "itm-1");
         give_metadata(&st, "items", "itm-1");
@@ -202,8 +187,8 @@ mod tests {
 
     #[test]
     fn a_title_with_no_metadata_yet_is_skipped_rather_than_failed() {
-        // It is waiting on the metadata stage; failing here would mark the task
-        // failed and need a manual retry once metadata lands.
+        // It is waiting on the metadata stage; failing here would need a manual
+        // retry once metadata lands.
         let st = state(8);
         seed_movie(&st, "itm-1");
         process(&JobContext::for_test(st.clone()), "itm-1").unwrap();
@@ -212,8 +197,6 @@ mod tests {
 
     #[test]
     fn a_title_deleted_between_enumerate_and_process_is_not_an_error() {
-        // The ledger is enumerated up front, so a title removed in between is a
-        // normal race - not a failure to record against the run.
         let st = state(8);
         process(&JobContext::for_test(st.clone()), "gone").unwrap();
         assert_eq!(crate::db::vector_dim(&st.db, "gone").unwrap(), None);
@@ -221,8 +204,7 @@ mod tests {
 
     #[test]
     fn a_show_is_embedded_from_its_own_metadata() {
-        // Shows and movies live in different tables; only one lookup would leave
-        // every series without a vector.
+        // Shows and movies live in different tables.
         let st = state(8);
         let (show, _ep) = seed_show_episode(&st, "shw-1", "ep-1");
         give_metadata(&st, "shows", &show);

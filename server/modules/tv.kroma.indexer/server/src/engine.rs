@@ -18,11 +18,11 @@ use crate::{filters, IndexerConfig, Query, Release};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchRequest {
     pub url: String,
-    /// `GET` (default) or `POST`.
+    // `GET` (default) or `POST`.
     pub method: String,
-    /// Query params (GET) or form fields (POST), already rendered.
+    // Query params (GET) or form fields (POST), already rendered.
     pub inputs: Vec<(String, String)>,
-    /// `html` (default) | `json` | `xml`.
+    // `html` (default) | `json` | `xml`.
     pub response_kind: String,
 }
 
@@ -36,7 +36,6 @@ pub fn build_requests(
 ) -> Vec<SearchRequest> {
     let mut ctx = Context::with_config(def, cfg);
     ctx.query = query_attributes(query);
-    // Keywords, after the definition's keywordsfilters.
     let base_keywords = query.keywords();
     ctx.keywords = base_keywords.clone();
     ctx.keywords = filters::apply(&base_keywords, &def.search.keywordsfilters, &ctx);
@@ -73,7 +72,7 @@ pub fn build_requests(
     requests
 }
 
-/// The `.Query.*` namespace for a query.
+// Builds the `.Query.*` namespace for a query.
 fn query_attributes(query: &Query) -> HashMap<String, String> {
     let mut m = HashMap::new();
     let mut set = |k: &str, v: String| {
@@ -141,8 +140,6 @@ pub fn preprocess(def: &Definition, cfg: &IndexerConfig, body: &str) -> String {
     filters::apply(body, &def.search.preprocessingfilters, &ctx)
 }
 
-// ----- HTML result parsing --------------------------------------------------------
-
 /// Does this definition select with XPath (rather than CSS)? Checked on the
 /// rows selector and every field selector; definitions are internally
 /// consistent, so any hit routes the whole parse to the XPath path.
@@ -194,14 +191,14 @@ pub fn parse_html(def: &Definition, cfg: &IndexerConfig, body: &str) -> anyhow::
     Ok(releases)
 }
 
-/// A context with config seeded (query/keywords left empty - result parsing
-/// only needs `.Config.*` and `.Result.*`).
+// Query/keywords are left empty - result parsing only needs `.Config.*` and
+// `.Result.*`.
 fn base_context(def: &Definition, cfg: &IndexerConfig) -> Context {
     Context::with_config(def, cfg)
 }
 
-/// Extract all fields for one HTML row. Returns `None` when a required
-/// (non-optional, no-default) field is missing - that release is skipped.
+// Returns `None` when a required (non-optional, no-default) field is missing -
+// that release is skipped.
 fn extract_row_html(def: &Definition, base_ctx: &Context, row: ElementRef) -> Option<HashMap<String, String>> {
     let mut result: HashMap<String, String> = HashMap::new();
     for (name, field) in &def.search.fields {
@@ -213,9 +210,8 @@ fn extract_row_html(def: &Definition, base_ctx: &Context, row: ElementRef) -> Op
     Some(result)
 }
 
-/// Resolve one field against an HTML row. `None` signals a required miss.
+// `None` signals a required miss.
 fn resolve_field_html(field: &Field, row: ElementRef, ctx: &Context) -> Option<String> {
-    // 1) Raw value from text template / case switch / selector / row itself.
     let raw: Option<String> = if let Some(text) = &field.text {
         Some(template::render(text, ctx))
     } else if !field.case.is_empty() {
@@ -224,25 +220,21 @@ fn resolve_field_html(field: &Field, row: ElementRef, ctx: &Context) -> Option<S
         let sel = template::render(sel, ctx);
         selector::select_first(row, &sel).map(|el| read_element(field, el, ctx))
     } else {
-        // No locator: read the row element itself.
         Some(read_element(field, row, ctx))
     };
 
-    // 2) Fall back to `default`, then honor optional/required semantics.
     let value = match raw {
         Some(v) => v,
         None => match &field.default {
             Some(d) => template::render(d, ctx),
             None if field.optional => String::new(),
-            None => return None, // required field missing -> skip the row
+            None => return None,
         },
     };
 
-    // 3) Field filters.
     Some(filters::apply(&value, &field.filters, ctx))
 }
 
-/// Read text (with `remove:`) or an attribute from a matched element.
 fn read_element(field: &Field, el: ElementRef, _ctx: &Context) -> String {
     if let Some(attr) = &field.attribute {
         selector::element_attr(el, attr).unwrap_or_default()
@@ -253,7 +245,7 @@ fn read_element(field: &Field, el: ElementRef, _ctx: &Context) -> String {
     }
 }
 
-/// `case:` switch - first sub-selector that matches wins; `*` is the default.
+// `case:` switch - first sub-selector that matches wins; `*` is the default.
 fn eval_case_html(field: &Field, row: ElementRef, ctx: &Context) -> Option<String> {
     let mut default: Option<&String> = None;
     for (sel, val) in &field.case {
@@ -268,8 +260,6 @@ fn eval_case_html(field: &Field, row: ElementRef, ctx: &Context) -> Option<Strin
     }
     default.map(|d| template::render(d, ctx))
 }
-
-// ----- JSON result parsing --------------------------------------------------------
 
 /// Parse a JSON search response into releases (Cardigann `response: type: json`).
 /// Row/field selectors are dotted JSON paths (`$.data.torrents`, `results`,
@@ -348,7 +338,7 @@ fn resolve_field_json(field: &Field, row: &serde_json::Value, ctx: &Context) -> 
     Some(filters::apply(&value, &field.filters, ctx))
 }
 
-/// Resolve a dotted JSON path (`$.a.b`, `a`, `a[0].b`) against a value.
+// Resolves a dotted JSON path (`$.a.b`, `a`, `a[0].b`) against a value.
 fn json_get<'a>(value: &'a serde_json::Value, path: &str) -> Option<&'a serde_json::Value> {
     let path = path.trim().trim_start_matches('$').trim_start_matches('.');
     if path.is_empty() {
@@ -374,8 +364,6 @@ fn json_get<'a>(value: &'a serde_json::Value, path: &str) -> Option<&'a serde_js
     Some(cur)
 }
 
-/// A JSON scalar as a string (numbers without quotes, bools as `true`/`false`,
-/// null as empty). Non-scalars stringify to their compact JSON.
 fn json_scalar_string(v: &serde_json::Value) -> String {
     match v {
         serde_json::Value::String(s) => s.clone(),
@@ -396,8 +384,6 @@ fn json_truthy(v: &serde_json::Value) -> bool {
         serde_json::Value::Object(o) => !o.is_empty(),
     }
 }
-
-// ----- XML result parsing ---------------------------------------------------------
 
 /// Parse an XML search response (Torznab/Newznab feeds) into releases. Uses the
 /// crate's namespaced-XML DOM rather than the HTML engine.
@@ -437,9 +423,8 @@ fn extract_row_xml(
     Some(result)
 }
 
-/// Resolve one field against an XML row. `None` signals a required miss.
+// `None` signals a required miss.
 fn resolve_field_xml(field: &Field, row: &crate::xmltree::XmlEl, ctx: &Context) -> Option<String> {
-    // 1) Raw value from text template / case switch / selector / row itself.
     let raw: Option<String> = if let Some(text) = &field.text {
         Some(template::render(text, ctx))
     } else if !field.case.is_empty() {
@@ -448,25 +433,21 @@ fn resolve_field_xml(field: &Field, row: &crate::xmltree::XmlEl, ctx: &Context) 
         let sel = template::render(sel, ctx);
         crate::xmltree::select_first(row, &sel).map(|el| read_element_xml(field, el))
     } else {
-        // No locator: read the row element itself.
         Some(read_element_xml(field, row))
     };
 
-    // 2) Fall back to `default`, then honor optional/required semantics.
     let value = match raw {
         Some(v) => v,
         None => match &field.default {
             Some(d) => template::render(d, ctx),
             None if field.optional => String::new(),
-            None => return None, // required field missing -> skip the row
+            None => return None,
         },
     };
 
-    // 3) Field filters.
     Some(filters::apply(&value, &field.filters, ctx))
 }
 
-/// Read an attribute or the flattened text of a matched XML element.
 fn read_element_xml(field: &Field, el: &crate::xmltree::XmlEl) -> String {
     match &field.attribute {
         Some(attr) => el.attr(attr).unwrap_or_default().to_string(),
@@ -474,7 +455,7 @@ fn read_element_xml(field: &Field, el: &crate::xmltree::XmlEl) -> String {
     }
 }
 
-/// `case:` switch - first sub-selector that matches wins; `*` is the default.
+// `case:` switch - first sub-selector that matches wins; `*` is the default.
 fn eval_case_xml(field: &Field, row: &crate::xmltree::XmlEl, ctx: &Context) -> Option<String> {
     let mut default: Option<&String> = None;
     for (sel, val) in &field.case {
@@ -489,8 +470,6 @@ fn eval_case_xml(field: &Field, row: &crate::xmltree::XmlEl, ctx: &Context) -> O
     }
     default.map(|d| template::render(d, ctx))
 }
-
-// ----- result -> release ----------------------------------------------------------
 
 /// Map an extracted field set to a [`Release`], resolving relative URLs and
 /// parsing sizes/numbers.
@@ -538,7 +517,8 @@ pub fn to_release(def: &Definition, cfg: &IndexerConfig, r: &HashMap<String, Str
     }
 }
 
-/// Parse an integer that may carry thousands separators.
+// Strips everything but digits, so thousands separators and trailing labels
+// (e.g. "12 seeders") are tolerated rather than rejected.
 fn parse_int(s: &str) -> Option<u32> {
     let cleaned: String = s.chars().filter(|c| c.is_ascii_digit()).collect();
     cleaned.parse().ok()
@@ -606,8 +586,6 @@ mod tests {
         assert_eq!(parse_int(""), None);
     }
 
-    // ----- fixtures ---------------------------------------------------------------
-
     fn build_def(yaml: &str) -> Definition {
         crate::definition::parse(yaml.as_bytes()).expect("definition fixture must parse")
     }
@@ -615,8 +593,6 @@ mod tests {
     fn cfg(base: &str) -> IndexerConfig {
         IndexerConfig { base_url: base.to_string(), settings: std::collections::HashMap::new() }
     }
-
-    // ----- to_release -------------------------------------------------------------
 
     fn cat_def() -> Definition {
         build_def(
@@ -715,8 +691,6 @@ search:
         let rel = to_release(&def, &cfg, &r);
         assert_eq!(rel.link.as_deref(), Some("https://cdn.example/x.torrent"));
     }
-
-    // ----- parse_html -------------------------------------------------------------
 
     #[test]
     fn parse_html_extracts_rows() {
@@ -863,8 +837,6 @@ search:
         assert!(err.to_string().contains("no rows selector"), "{err}");
     }
 
-    // ----- parse_json -------------------------------------------------------------
-
     #[test]
     fn parse_json_dotted_paths_and_scalars() {
         let def = build_def(
@@ -960,8 +932,6 @@ search:
         assert!(rels.is_empty());
     }
 
-    // ----- json helpers -----------------------------------------------------------
-
     #[test]
     fn json_get_resolves_paths() {
         let v: serde_json::Value =
@@ -992,8 +962,6 @@ search:
         assert!(json_truthy(&json!([1])) && !json_truthy(&json!([])));
         assert!(json_truthy(&json!({"a":1})) && !json_truthy(&json!({})));
     }
-
-    // ----- parse_xml --------------------------------------------------------------
 
     const XML_FEED: &str = r#"<?xml version="1.0"?>
       <rss xmlns:torznab="http://torznab.com/">
@@ -1077,8 +1045,6 @@ search:
         assert_eq!(rels[1].seeders, Some(100));
     }
 
-    // ----- build_requests / query_attributes --------------------------------------
-
     #[test]
     fn build_requests_get_movie_with_imdb_and_categories() {
         let def = build_def(
@@ -1119,8 +1085,8 @@ search:
         assert!(reqs[0].inputs.contains(&("cat".to_string(), "42".to_string())));
     }
 
-    /// A definition that echoes the whole `.Query.*` namespace back as inputs, so
-    /// a test can read exactly which variables were set.
+    // A definition that echoes the whole `.Query.*` namespace back as inputs, so
+    // a test can read exactly which variables were set.
     fn echoing_def() -> Definition {
         build_def(
             r#"
@@ -1250,8 +1216,6 @@ search:
         assert_eq!(reqs[0].method, "post");
         assert_eq!(reqs[0].response_kind, "json");
     }
-
-    // ----- preprocess / uses_xpath ------------------------------------------------
 
     #[test]
     fn preprocess_noop_and_filtered() {

@@ -35,17 +35,11 @@ use kroma_module_sdk::ports::IndexerRow;
 
 const GB: u64 = 1_073_741_824;
 
-/// The acquisition background jobs this module contributes to the app's job
-/// registry (search / import / match). The binary passes this to
-/// `AppState::new` so the core registers them without naming the module.
 pub const JOBS: &[kroma_module_sdk::engine::services::jobs::Builtin] =
     &[jobs::import::SPEC, jobs::search::SPEC, jobs::match_::SPEC];
 
-/// This module's id, shared with `module.json` and the frontend package. The one
-/// place callers (route gate, job guards) name the module.
 pub const MODULE_ID: &str = "tv.kroma.acquisition";
 
-/// This module's registry entry (manifest + packaged icon embedded at compile time).
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
@@ -108,8 +102,8 @@ pub fn search_indexer<S: HostCtx>(
         kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerSearchPort>(state)
             .ok_or_else(|| anyhow::anyhow!("indexer module unavailable"))?;
     let outcome = search.search(state, row, query, &row.categories)?;
-    // Healthy if we got releases (a partial per-path error alongside real
-    // results must not flag the indexer as broken) or the sweep was clean.
+    // A partial per-path error alongside real results must not flag the indexer
+    // as broken.
     let note_ok = !outcome.releases.is_empty() || outcome.errors.is_empty();
     if let Some(idx) =
         kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerDbPort>(state)
@@ -149,17 +143,9 @@ pub fn resolve_builtin_download<S: HostCtx>(
     })
 }
 
-/// The Acquisition module's backend behavior: it serves the search / analyze /
-/// add admin routes (behind its enabled-gate) and contributes the search /
-/// import / match jobs. Disabling it 404s those routes, so the whole search /
-/// grab / auto feature is gated on this module. It reaches the Downloads /
-/// Indexer modules through their SDK ports (see the module docs).
-///
-/// Generic over the host state `S: HostCtx`, like every module. The three passes
-/// are exposed as [`ServerModule::jobs`]: out-of-process (`S = RemoteHost`, its
-/// `.kmod`) the runtime registers them with the CORE JobManager over
-/// `/_host/register-job`, so they show in admin Tâches with cron + history and the
-/// core scheduler drives them by calling this process's `/_job/run/{key}`.
+/// The Acquisition module's backend behavior: serves the search / analyze / add
+/// admin routes and contributes the search / import / match jobs. Disabling it
+/// 404s those routes and stops the jobs.
 pub struct AcquisitionModule;
 
 #[kroma_module_sdk::host::async_trait]
@@ -174,9 +160,8 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> kroma_module_sdk::host::ServerM
         Some(routes::routes::<S>())
     }
 
-    /// The scheduled jobs contributed to the core JobManager. The runtime
-    /// registers each and serves the `/_job/run/{key}` endpoint that runs the pass
-    /// in this process; the core owns the cron cadence, run-now and history.
+    // Jobs contributed to the core JobManager, which owns cron cadence, run-now
+    // and history and drives each via `/_job/run/{key}`.
     fn jobs(&self) -> Vec<kroma_module_sdk::host::ModuleJob<S>> {
         use kroma_module_sdk::host::ModuleJob;
         vec![
@@ -214,11 +199,8 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> kroma_module_sdk::host::ServerM
     }
 }
 
-// The three passes, generic over the host state `S: HostCtx` so they drop
-// straight into a [`ModuleJob::run`] (`fn(&S)`). They are the units the core
-// JobManager runs, via this sidecar's `/_job/run/{key}` endpoint. The sidecar
-// only runs while the module is enabled (the supervisor stops it on disable), so
-// no in-pass enabled-guard is needed here.
+// No enabled-guard needed here: the supervisor stops this sidecar process when
+// the module is disabled.
 
 fn run_search<S: HostCtx>(host: &S) -> anyhow::Result<()> {
     // No JobContext-driven cancellation across the process boundary (MVP): the

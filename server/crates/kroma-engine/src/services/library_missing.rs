@@ -1,14 +1,8 @@
-//! Library "missing" scan (Sonarr-style): for every library show that resolved a
-//! TMDB id, diff TMDB's AIRED episode list against what is on disk and record the
-//! gaps in `library_gaps`. This is what lets the Wanted/Missing view surface a
-//! series with missing episodes even when it was never requested in-app (a show
-//! added by scanning has no request ledger). Best-effort + per-show isolated: a
-//! vanished TMDB id or a transient error skips that show, never the whole run.
-//!
-//! Only episodes with a known air date in the past/today count as "missing"
-//! (matching Sonarr: an undated or future episode has not aired, so its absence
-//! is not a gap). Movies are out of scope a movie is either present or not, with
-//! no episode granularity to be "partially" missing.
+//! Library "missing" scan (Sonarr-style): diff TMDB's aired episode list against
+//! what's on disk for every enriched show and record the gaps in `library_gaps`.
+//! Best-effort and per-show isolated: a vanished TMDB id or transient error skips
+//! that show, not the whole run. Only episodes with a past/today air date count
+//! as missing; movies are out of scope (present or not, no partial state).
 
 use std::collections::HashSet;
 
@@ -22,16 +16,15 @@ use crate::model::RequestKind;
 use crate::services::jobs::now_ms;
 use crate::services::requests::today_ymd;
 
-/// One missing episode: `(season, episode, air_date)`.
+// One missing episode: `(season, episode, air_date)`.
 type Gap = (u32, u32, Option<String>);
 
 #[derive(Debug, Default)]
 pub struct MissingScanSummary {
-    /// Shows with a TMDB id that were scanned.
+    // Only counts shows with a TMDB id.
     pub shows: usize,
-    /// Shows that had at least one missing aired episode.
     pub with_gaps: usize,
-    /// Total missing aired episodes across the library.
+    // Missing episodes need a past/today air date to count.
     pub episodes: usize,
 }
 
@@ -86,9 +79,8 @@ pub fn scan<S: HostCtx>(
     Ok(summary)
 }
 
-/// Diff one show against TMDB: fetch its seasons + each season's episodes, keep
-/// the aired ones not present on disk. Returns the show's poster (for the gap
-/// rows) and the gaps.
+// Fetch the show's seasons + each season's episodes, keep the aired ones not
+// present on disk. Returns the show's poster (for the gap rows) and the gaps.
 fn scan_one<S: HostCtx>(
     state: &S,
     key: &str,
@@ -127,7 +119,7 @@ mod tests {
     use super::*;
     use crate::test_support::{seed_show_episode, test_state, test_state_with_tmdb};
 
-    /// A progress sink recording every `(done, total)` the scan reported.
+    // A progress sink recording every `(done, total)` the scan reported.
     #[derive(Default)]
     struct Progress(RefCell<Vec<(usize, usize)>>);
 
@@ -144,8 +136,8 @@ mod tests {
         || false
     }
 
-    /// How many gap rows the scan left behind. Zero for every case here: none of
-    /// them reaches TMDB, so none of them can discover a gap.
+    // Zero for every case here: none of them reaches TMDB, so none can discover
+    // a gap.
     fn gap_rows(state: &crate::state::SharedState) -> i64 {
         state
             .db
@@ -225,14 +217,10 @@ mod tests {
         // it did manage, not an error.
         assert_eq!(progress.seen(), vec![(1, 1)], "only the closing report");
     }
-    // ----- the actual diff, against a fake TMDB -----------------------------------
-    //
-    // Everything above stops before the first TMDB call. With the base
-    // overridable in test builds, the real diff runs.
 
     use crate::test_support::FakeTmdb;
 
-    /// A show whose seasons TMDB knows about.
+    // A show whose seasons TMDB knows about.
     fn tmdb_show(seasons: &[u32]) -> serde_json::Value {
         serde_json::json!({
             "name": "Show",
@@ -245,7 +233,7 @@ mod tests {
         })
     }
 
-    /// `(episode number, air date)` pairs for one season.
+    // `(episode number, air date)` pairs for one season.
     fn tmdb_episodes(eps: &[(u32, Option<&str>)]) -> serde_json::Value {
         serde_json::json!({
             "episodes": eps
@@ -255,7 +243,7 @@ mod tests {
         })
     }
 
-    /// Give `show_id` a TMDB id so the scan will consider it.
+    // Give `show_id` a TMDB id so the scan will consider it.
     fn link_to_tmdb(state: &crate::state::SharedState, show_id: &str, tmdb_id: u64) {
         let mut meta: crate::model::Metadata = serde_json::from_str(
             r#"{"tmdbId":0,"title":"Show","overview":null,"genres":[],"tmdbUrl":"https://x/1"}"#,

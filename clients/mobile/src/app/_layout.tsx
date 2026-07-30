@@ -24,16 +24,11 @@ SplashScreen.preventAutoHideAsync().catch(() => undefined);
 // A phone wants expo-image's memory + disk cache; see lib/image-backend.
 setImageBackend(expoImageBackend);
 
-/** Feed the app's resolved locale into the design system's own i18n context,
- * so kit organisms that translate for themselves (StatsPanel, ...) read the
- * same language as the app. */
 function KitI18nBridge({ children }: Readonly<{ children: ReactNode }>) {
   return <KitI18nProvider locale={useI18n().locale}>{children}</KitI18nProvider>;
 }
 
-/** Keeps the bell live app-wide: the socket runs even while the notification
- * screen is closed, so the badge is right the moment you look at it. Renders
- * nothing - it is a subscription, not a piece of the interface. */
+// Renders nothing - it is a subscription, not a piece of the interface.
 function NotificationStream() {
   useNotificationStream();
   // Taps on NATIVE pushes route from here too: the socket handles the app while
@@ -83,7 +78,6 @@ function Shell() {
             <CastProvider
               client={client}
               enabled={status === 'signedIn'}
-              // What the television calls this remote in its list.
               deviceName={Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android')}
             >
               <NotificationStream />

@@ -1,9 +1,7 @@
 //! Typed response DTOs for endpoints whose JSON was previously assembled ad-hoc
-//! with `serde_json::json!`. Modeling them as structs (a) makes the wire contract
-//! a single source of truth (the TS clients mirror it via the zod schemas in
-//! packages/core), and (b) removes a whole class of bug a mistyped JSON key that
-//! silently breaks a client. `#[serde(rename_all = "camelCase")]` maps the
-//! snake_case Rust fields to the camelCase the clients expect.
+//! with `serde_json::json!`: a single source of truth the TS clients mirror via
+//! zod (`packages/core`). `#[serde(rename_all = "camelCase")]` maps snake_case
+//! Rust fields to the camelCase clients expect.
 
 use serde::Serialize;
 
@@ -15,16 +13,12 @@ use crate::services::settings::SettingGroup;
 #[derive(Serialize)]
 pub struct Health {
     pub status: &'static str,
-    /// The admin-configured server name, so clients can label saved servers.
-    /// LAN callers only: this endpoint is public, and the name is usually a
-    /// household label ("Salon", a family name) that a box exposed through the
-    /// tunnel should not hand to anonymous scanners. Remote clients keep the
-    /// name they saved at pairing time.
+    // LAN callers only: this endpoint is public, and the household label (e.g.
+    // "Salon") should not reach anonymous scanners through the tunnel.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// Stable, opaque per-install identity, so a client that reached this server
-    /// through several origins lists it once. Deliberately carries no
-    /// information about the box (see `settings::ensure_instance_id`).
+    // Opaque per-install id so a client seen via several origins recognizes the
+    // same server; deliberately carries no info about the box.
     #[serde(rename = "instanceId")]
     pub instance_id: String,
     pub version: &'static str,
@@ -60,7 +54,6 @@ pub struct SessionResult {
 #[serde(rename_all = "camelCase")]
 pub struct SessionInfo {
     pub id: String,
-    /// The device's captured User-Agent, if any (the client derives a label).
     pub user_agent: Option<String>,
     pub created_at: String,
     pub last_seen: Option<String>,
@@ -83,11 +76,8 @@ pub struct PasskeyInfo {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthConfig {
-    /// Whether the account roster is public (the "Qui regarde ?" profile picker).
-    /// Off by default: hiding it means knowing the URL no longer lists accounts.
+    // Off by default: hiding it means knowing the URL no longer lists accounts.
     pub public_user_list: bool,
-    /// Whether any account exists yet. `false` → the first-run owner registration
-    /// flow; `true` → sign in.
     pub has_accounts: bool,
 }
 
@@ -96,7 +86,6 @@ pub struct AuthConfig {
 #[serde(rename_all = "camelCase")]
 pub struct InviteCreated {
     pub token: String,
-    /// `<web>/join?invite=…` when the server knows the web URL, else null.
     pub url: Option<String>,
     pub permissions: Vec<Permission>,
     pub expires_at: i64,
@@ -106,12 +95,9 @@ pub struct InviteCreated {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuickConnectInit {
-    /// Short numeric code shown on the device.
     pub code: String,
-    /// Private handle the device polls with.
     pub secret: String,
     pub expires_in_sec: i64,
-    /// Web URL to approve the code (for a QR), when the server knows it.
     pub authorize_url: Option<String>,
 }
 
@@ -146,22 +132,14 @@ pub struct ServerInfo {
 #[serde(rename_all = "camelCase")]
 pub struct CacheInfo {
     pub dir: String,
-    /// Total on-disk cache (transcode + images).
     pub bytes: u64,
     pub limit: String,
-    /// On-disk size of the transcode segment cache.
     pub transcode_bytes: u64,
-    /// Byte budget for the transcode cache (the `transcodeCacheLimit` label).
     pub transcode_limit: String,
-    /// On-disk size of the downloaded poster/backdrop/logo cache.
     pub images_bytes: u64,
-    /// Number of cached image files (posters, backdrops, logos, stills).
     pub images_count: u64,
-    /// Movies/loose videos that carry resolved TMDB metadata.
     pub enriched_items: u64,
-    /// Shows that carry resolved TMDB metadata.
     pub enriched_shows: u64,
-    /// Title embeddings stored for similar / themed / "For You" rows.
     pub embeddings: u64,
 }
 
@@ -191,7 +169,6 @@ pub struct AdminUsers {
 pub struct AdminLibrary {
     pub id: String,
     pub name: String,
-    /// `film` | `tv` | `music` | `photo`.
     pub kind: String,
     pub folders: Vec<String>,
     pub item_count: i64,
@@ -243,7 +220,6 @@ pub struct SettingsView {
 #[serde(rename_all = "camelCase")]
 pub struct LlmAdminConfig {
     pub enabled: bool,
-    /// Id of the provider used for generation (falls back to the first).
     pub default_id: String,
     pub providers: Vec<LlmProviderView>,
 }
@@ -255,14 +231,12 @@ pub struct LlmAdminConfig {
 pub struct LlmProviderView {
     pub id: String,
     pub name: String,
-    /// `"openai"` (OpenAI-compatible / Ollama) | `"anthropic"` | `"openrouter"`.
     pub provider: String,
     pub base_url: String,
     pub model: String,
     pub has_api_key: bool,
     pub temperature: f32,
     pub max_tokens: i64,
-    /// Anthropic adaptive thinking (Claude 4.6+).
     pub reasoning: bool,
 }
 
@@ -288,7 +262,6 @@ pub struct SearchResponse {
 /// results with their existing card UI.
 #[derive(Serialize)]
 pub struct PersonResponse {
-    /// The matched person's name (echoed; original casing from the request).
     pub name: String,
     pub results: Vec<SearchHit>,
 }
@@ -299,7 +272,6 @@ pub struct PersonResponse {
 /// way, so this is a soft miss, never an error.
 #[derive(Serialize)]
 pub struct PersonDetailResponse {
-    /// Echoed, so a client can key a cache on what it asked for.
     pub name: String,
     pub person: Option<crate::model::PersonDetail>,
 }

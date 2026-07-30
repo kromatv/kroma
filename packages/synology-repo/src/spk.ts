@@ -1,19 +1,16 @@
-/** Read metadata straight out of a built .spk (a ustar tar), so catalogs can
- * never disagree with the package they describe. Shared by the static catalog
- * generator (gen-catalog.ts) and the per-release sidecar (gen-spk-info.ts) the
- * dynamic package-source worker consumes. */
+// Metadata read straight out of a built .spk (a ustar tar), so a catalog can
+// never disagree with the package it describes.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 const INFO_LINE = /^(\w+)=(.*)$/;
 
-/** Extract a single member of the (ustar) .spk to a Buffer. */
 export function extractFromSpk(spk: string, member: string): Buffer {
   return execFileSync('tar', ['-xOf', spk, member], { maxBuffer: 256 * 1024 * 1024 });
 }
 
-/** Parse `key="value"` / `key=value` lines from the package's INFO file. */
+/** Parses `key="value"` / `key=value` lines; the quotes are stripped. */
 export function parseInfo(info: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const line of info.split('\n')) {
@@ -26,7 +23,6 @@ export function parseInfo(info: string): Record<string, string> {
   return out;
 }
 
-/** The store icon bundled in the .spk (256px preferred). */
 export function extractIcon(spk: string): Buffer {
   try {
     return extractFromSpk(spk, 'PACKAGE_ICON_256.PNG');
@@ -35,7 +31,6 @@ export function extractIcon(spk: string): Buffer {
   }
 }
 
-/** Everything a Synology catalog entry needs, read from the .spk itself. */
 export type SpkInfo = {
   package: string;
   version: string;

@@ -1,6 +1,5 @@
-// @kroma/core shared domain logic (media/HEVC direct-play, player, i18n, remote,
-// formatting, permissions). It re-exports @kroma/client so app code can keep
-// importing the API client, wire types and schemas from `@kroma/core` unchanged.
+// Shared domain logic. Re-exports @kroma/client so app code can import the API
+// client, wire types and schemas from `@kroma/core`.
 export * from '@kroma/client';
 export * from './brand';
 export * from './browse';

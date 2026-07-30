@@ -13,7 +13,7 @@ use kroma_module_sdk::ports::VpnStatusView;
 #[serde(rename_all = "camelCase")]
 pub struct DownloadClientView {
     pub id: String,
-    /// `rqbit` | `transmission` | `qbittorrent`.
+    // `rqbit` | `transmission` | `qbittorrent`.
     pub kind: String,
     pub name: String,
     pub url: String,
@@ -22,7 +22,6 @@ pub struct DownloadClientView {
     pub enabled: bool,
     pub priority: i32,
     pub created_at: i64,
-    /// The embedded engine row cannot be deleted (it is seeded by the build).
     pub builtin: bool,
 }
 
@@ -31,7 +30,6 @@ pub struct DownloadClientView {
 #[serde(rename_all = "camelCase")]
 pub struct DownloadClientsView {
     pub clients: Vec<DownloadClientView>,
-    /// Whether the embedded engine is compiled into this build.
     pub rqbit_compiled: bool,
 }
 
@@ -43,7 +41,6 @@ pub struct SaveDownloadClientBody {
     pub name: Option<String>,
     pub url: Option<String>,
     pub username: Option<String>,
-    /// Omitted/empty keeps the stored secret.
     pub password: Option<String>,
     pub enabled: Option<bool>,
     pub priority: Option<i32>,
@@ -54,7 +51,6 @@ pub struct SaveDownloadClientBody {
 #[serde(rename_all = "camelCase")]
 pub struct ClientTestResult {
     pub ok: bool,
-    /// Human version string ("Transmission 4.0.5").
     pub version: Option<String>,
     pub error: Option<String>,
 }
@@ -68,20 +64,17 @@ pub struct DownloadView {
     pub client_id: String,
     pub client_name: String,
     pub request_id: Option<String>,
-    /// `movie` | `episode` | `season`.
     pub kind: String,
     pub title: String,
     pub release_title: String,
     pub season: Option<u32>,
     pub episodes: Option<Vec<u32>>,
-    /// `queued` | `downloading` | `seeding` | `completed` | `imported` |
-    /// `failed` | `removed` | `paused`.
     pub status: String,
     pub progress: f64,
-    /// Live engine stats for an active download (0 when not live/known). Polled
-    /// into the DTO so the panel shows speed + peers even when the live event
-    /// stream (WebSocket) can't reach the client - e.g. through a tunnel that
-    /// doesn't upgrade WebSockets.
+    // Live engine stats for an active download (0 when not live/known). Polled
+    // into the DTO so the panel shows speed + peers even when the live event
+    // stream (WebSocket) can't reach the client - e.g. through a tunnel that
+    // doesn't upgrade WebSockets.
     pub down_bps: u64,
     pub up_bps: u64,
     pub peers: u32,
@@ -92,16 +85,10 @@ pub struct DownloadView {
     pub grabbed_at: i64,
     pub completed_at: Option<i64>,
     pub imported_at: Option<i64>,
-    /// Which indexer this was grabbed from (display name), when known.
     pub indexer_name: Option<String>,
-    /// The tracker's torrent page, for a "view on the tracker" link.
     pub details_url: Option<String>,
-    /// The release's info hash (identifies the exact torrent).
     pub info_hash: Option<String>,
-    /// Poster art (from the linked request), for the queue thumbnail.
     pub poster_url: Option<String>,
-    /// The catalog item id when the title is already in the library (imported),
-    /// so the queue can link to its KROMA detail page. `None` until imported.
     pub local_id: Option<String>,
 }
 
@@ -110,17 +97,9 @@ pub struct DownloadView {
 #[serde(rename_all = "camelCase")]
 pub struct DownloadsView {
     pub downloads: Vec<DownloadView>,
-    /// VPN seal status (None until a proxy is configured). Fleshed out with
-    /// the kill-switch milestone.
+    // VPN seal status (`None` until a proxy is configured).
     pub vpn: Option<VpnStatusView>,
 }
-
-// VpnStatusView now lives in kroma_module_sdk::ports (the download manager's VPN
-// surface is a port); it is imported above for the DownloadsView field.
-
-// --- Library rename tool (organize) wire types ---
-// Relocated from the core `kroma-domain` crate: the organize engine lives in
-// `crate::organize`, so the module that owns it owns its contract too.
 
 /// The five naming templates (Sonarr/Radarr-style token strings) plus the
 /// global case transform applied to every rendered filename.
@@ -132,7 +111,6 @@ pub struct NamingTemplatesView {
     pub series_folder: String,
     pub season_folder: String,
     pub episode_file: String,
-    /// `default` | `upper` | `lower`.
     pub case: String,
 }
 
@@ -148,9 +126,7 @@ pub struct NamingView {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SampleNames {
-    /// e.g. `The Matrix (1999)/The Matrix (1999) Bluray-1080p.mkv`
     pub movie: String,
-    /// e.g. `Breaking Bad (2008)/Season 01/Breaking Bad - S01E02 - ... .mkv`
     pub episode: String,
 }
 
@@ -162,11 +138,8 @@ pub type SampleBody = NamingTemplatesView;
 #[serde(rename_all = "camelCase")]
 pub struct OrganizeMove {
     pub title: String,
-    /// `movie` | `episode`.
     pub kind: String,
-    /// Current path, relative to its library folder.
     pub from: String,
-    /// Expected path, relative to its library folder.
     pub to: String,
 }
 
@@ -175,9 +148,7 @@ pub struct OrganizeMove {
 #[serde(rename_all = "camelCase")]
 pub struct OrganizePlan {
     pub moves: Vec<OrganizeMove>,
-    /// Total library files considered.
     pub total_files: u32,
-    /// Files already matching the templates.
     pub matching: u32,
 }
 

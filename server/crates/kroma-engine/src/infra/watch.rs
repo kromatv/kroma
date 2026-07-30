@@ -1,15 +1,6 @@
-//! Library watcher keeps the catalog in sync with the filesystem.
-//!
-//! Two mechanisms feed one debounced worker thread:
-//!   * a **periodic re-scan** (`KROMA_WATCH_INTERVAL` seconds, default 300, `0`
-//!     disables) the reliable path for **network mounts** (SMB/NFS), where the
-//!     OS delivers no change events for edits made on the NAS itself;
-//!   * a best-effort **`notify` filesystem watcher** for instant pickup of local
-//!     changes (e.g. when the server runs on the NAS / a local disk).
-//!
-//! A re-scan re-applies + notifies clients only when the file set actually
-//! changed (cheap signature compare), so an idle library causes zero churn. The
-//! phase-1 scan is now parallel/fast, so periodic re-scans are cheap.
+//! Library watcher: a periodic re-scan, the reliable path for network mounts
+//! (SMB/NFS deliver no change events for edits made on the NAS itself), plus a
+//! best-effort `notify` watcher, both feeding one debounced worker thread.
 
 use std::collections::HashMap;
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -27,14 +18,13 @@ use crate::state::SharedState;
 const DEFAULT_INTERVAL_SECS: u64 = 300;
 const DEBOUNCE: Duration = Duration::from_secs(2);
 
-/// Start watching the configured media dirs. `baseline` is the signature of the
-/// startup scan (already persisted), so we don't re-emit until something changes.
+/// `baseline` is the startup scan's signature: nothing is re-emitted until the
+/// file set changes.
 pub fn spawn(state: SharedState, baseline: u64) {
     if state.config.media_dirs.is_empty() {
         return; // demo mode nothing on disk to watch
     }
-    // Captured from the (tokio) main thread so the watcher's std::thread can hand
-    // re-scans to the tracked job manager, which spawns work onto the runtime.
+    // Captured on the tokio thread: the watcher's std::thread has no runtime.
     let handle = Handle::current();
 
     std::thread::spawn(move || {
@@ -47,13 +37,10 @@ pub fn spawn(state: SharedState, baseline: u64) {
     });
 }
 
-/// The debounced watcher loop: re-scan on each periodic tick or coalesced burst
-/// of FS events, until the channel disconnects (watcher dropped).
 fn watch_loop(state: &SharedState, handle: &Handle, rx: &mpsc::Receiver<()>, baseline: u64) {
     let mut last = baseline;
     loop {
-        // Re-read the cadence each iteration so an admin change takes effect
-        // without a restart. `0` → block on FS events only (no periodic tick).
+        // Re-read each iteration so an admin change needs no restart.
         let interval = watch_interval(state);
         let recv = if interval > 0 {
             rx.recv_timeout(Duration::from_secs(interval))
@@ -62,10 +49,9 @@ fn watch_loop(state: &SharedState, handle: &Handle, rx: &mpsc::Receiver<()>, bas
         };
         let from_event = match recv {
             Ok(()) => true,
-            Err(RecvTimeoutError::Timeout) => false, // periodic tick
+            Err(RecvTimeoutError::Timeout) => false,
             Err(RecvTimeoutError::Disconnected) => break,
         };
-        // Coalesce a burst of FS events into a single re-scan.
         if from_event {
             while rx.recv_timeout(DEBOUNCE).is_ok() {}
         }
@@ -73,9 +59,7 @@ fn watch_loop(state: &SharedState, handle: &Handle, rx: &mpsc::Receiver<()>, bas
     }
 }
 
-/// The periodic re-scan cadence (seconds): the `watchIntervalSecs` setting, or
-/// when it's `-1` (unset) the `KROMA_WATCH_INTERVAL` env / 300s default. `0`
-/// disables the periodic tick (FS events still fire).
+// Seconds; `0` disables the periodic tick (FS events still fire).
 fn watch_interval(state: &SharedState) -> u64 {
     match state.settings.get_i64("watchIntervalSecs", -1) {
         n if n >= 0 => n as u64,
@@ -103,12 +87,6 @@ fn make_watcher(state: &SharedState, tx: mpsc::Sender<()>) -> Option<notify::Rec
     Some(watcher)
 }
 
-/// Cheap change-detection (fast phase-1 scan + signature compare); on an actual
-/// change, hand off to the **tracked** jobs that opted into [`Trigger::LibraryChange`]
-/// (i.e. `library.scan`) so an auto-scan shows in the Tâches console with logs +
-/// progress, unified with manual scans, and the full sync / probe / enrich /
-/// reindex lives in one place. An idle library triggers nothing (no DB writes, no
-/// client churn).
 fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
     if !state.settings.get_bool("watchAutoScan", true) {
         return; // auto-scan disabled by the admin
@@ -121,12 +99,8 @@ fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
     }
     info!("watcher: filesystem change detected triggering library-change jobs");
 
-    // The job manager spawns blocking work, so run the trigger on the runtime.
-    // Only advance `last` once the change is actually owned by a run (or nothing
-    // opted in): if a scan is already in flight the trigger returns
-    // `AlreadyRunning`, and advancing would consume this change without syncing it
-    // (the running scan may predate the new file) so we keep `last` and retry
-    // next tick instead of losing it.
+    // A scan already in flight may predate the new file, so `AlreadyRunning`
+    // keeps `last` and retries next tick instead of consuming the change.
     let jobs = state.jobs.clone();
     let st = state.clone();
     let owned = handle.block_on(async move {
@@ -139,7 +113,6 @@ fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
                 Err(TriggerError::Unknown) => {}
             }
         }
-        // Advance unless the sole outcome was "already running" (nothing started).
         started || !busy
     });
     if owned {
@@ -147,7 +120,7 @@ fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
     }
 }
 
-/// Cheap change-detection signature: file count + Σsize + Σmtime across all files.
+/// File count + Σsize + Σmtime across all files.
 pub fn signature(items: &[MediaItem], mtimes: &HashMap<String, Option<i64>>) -> u64 {
     let mut count: u64 = 0;
     let mut acc: u64 = 0;

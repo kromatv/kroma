@@ -1,19 +1,9 @@
-// Stamp the release version and a monotonic build number into
-// clients/mobile/app.json, in the runner only (never committed).
+// Must run before `expo prebuild`: the generated Gradle/pbxproj projects bake
+// version/build values from app.json at generation time.
 //
-// This has to happen BEFORE `expo prebuild`: the generated projects bake
-// `versionCode` / `versionName` (Android) and `CFBundleVersion` /
-// `CFBundleShortVersionString` (iOS) from app.json at generation time, so
-// patching afterwards would mean editing generated Gradle and pbxproj files.
-//
-// The build number MUST be unique and increasing forever: App Store Connect
-// rejects a (version, build) pair it has already seen, and Play refuses a
-// versionCode that is not higher than the last one. Minutes since 2020-01-01 UTC
-// gives both properties without any state to carry between runs, and matches
-// what the Android TV job already does. It stays inside Android's 2100000000
-// ceiling until the year 5900.
-//
-// Usage: node .github/scripts/stamp-mobile-version.ts <x.y.z>
+// The build number must be unique and always increasing (App Store Connect and
+// Play both reject a repeat or a decrease); minutes since 2020-01-01 UTC gives
+// that with no state carried between runs, matching the Android TV job.
 
 import { readFileSync, writeFileSync } from 'node:fs';
 

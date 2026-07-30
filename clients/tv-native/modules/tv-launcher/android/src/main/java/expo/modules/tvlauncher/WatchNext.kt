@@ -74,9 +74,9 @@ object WatchNext {
         }
     }
 
-    /** Our currently-published Watch Next rows, grouped by item id (the
-     * internalProviderId). A query returns only this app's own programs, so any
-     * row we see is ours to reconcile. Duplicates for one id land in the list. */
+    // Our currently-published Watch Next rows, grouped by item id (the
+    // internalProviderId). A query returns only this app's own programs, so any
+    // row we see is ours to reconcile. Duplicates for one id land in the list.
     private fun existingRows(context: Context): Map<String, List<Long>> {
         val out = HashMap<String, MutableList<Long>>()
         val projection = arrayOf(

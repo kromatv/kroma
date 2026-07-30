@@ -1,8 +1,6 @@
-// Tablet-aware layout primitives. Width caps are plain yoga styles (maxWidth
-// only bites once the window is wider than the cap), so phones pass through
-// untouched. Multi-column layouts key off the LIVE window width (useIsWide),
-// never the device class: iPadOS windows resize freely, and a narrow floating
-// window must collapse back to the single-column phone flow.
+// Tablet-aware layout primitives. Multi-column layouts key off the LIVE
+// window width (useIsWide), never the device class — iPadOS windows resize
+// freely, so a narrow floating window must collapse back to single-column.
 
 import * as Device from 'expo-device';
 import { type ReactNode, useMemo } from 'react';
@@ -16,12 +14,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from './theme';
 
-/** Device class, for capabilities that genuinely follow the hardware (e.g.
- * player orientation locks). Layout decisions should use useIsWide instead. */
+// Device class, for capabilities that genuinely follow the hardware (e.g.
+// player orientation locks) — resizable iPad windows make it wrong for any
+// layout decision, which should use useIsWide instead.
 export const isTablet = Device.deviceType === Device.DeviceType.TABLET;
 
-/** Window width from which multi-column layouts engage. Full-screen iPads
- * pass in both orientations; iPhones and narrow iPad windows never do. */
+// Full-screen iPads pass in both orientations; iPhones and narrow iPad
+// windows never do.
 export const WIDE_BREAKPOINT = 700;
 
 /** True while the window is wide enough for multi-column layouts; re-renders
@@ -31,11 +30,8 @@ export function useIsWide(min: number = WIDE_BREAKPOINT): boolean {
   return width >= min;
 }
 
-/** Horizontal page gutters: the standard page padding, grown to clear the
- * notch / Dynamic Island when the hardware inset sits at a side edge
- * (landscape). Full-bleed surfaces (home rails, grids, hero cards) pad their
- * content by these instead of a bare `spacing.md`; `style` is the ready-made
- * padding pair for the common case. */
+/** Standard page padding, grown to clear the notch / Dynamic Island when the
+ * hardware inset sits at a side edge (landscape). */
 export function useGutters(min: number = spacing.md): {
   left: number;
   right: number;
@@ -50,11 +46,8 @@ export function useGutters(min: number = spacing.md): {
   );
 }
 
-/** Shared content-column caps (pt): one vocabulary instead of magic numbers. */
 export const contentWidth = {
-  /** Single form column: sign-in, add-server, profile gate. */
   form: 480,
-  /** Reading column: settings lists, prose, single-column detail bodies. */
   reading: 720,
 } as const;
 

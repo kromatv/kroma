@@ -3,14 +3,11 @@ import type { ReactNode } from 'react';
 
 interface FaqEntry {
   question: string;
-  /** Rich answer, so a link (e.g. to the privacy page) can live inside. */
   answer: ReactNode;
 }
 
-/** A short FAQ built on native <details>/<summary>. No client JS: the disclosure
- *  works from the prerendered HTML, before (and without) hydration, the same
- *  JS-free pattern the header's mobile menu uses, which keeps a static page
- *  genuinely static and SSR-safe. */
+/** Built on native `<details>`/`<summary>`, so the disclosure works from the
+ *  prerendered HTML, before and without hydration. */
 export function Faq({ items }: Readonly<{ items: readonly FaqEntry[] }>) {
   return (
     <div className="border-t border-border/70">

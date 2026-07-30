@@ -71,8 +71,7 @@ export function SearchSelect({
           sideOffset={6}
           className="z-50 w-(--radix-select-trigger-width) min-w-60 overflow-hidden rounded-[11px] border border-border-strong bg-[#121216] shadow-pop"
         >
-          {/* The popup IS the box here, so neither this row nor the input in
-              it takes a field ring - see clients/web/src/styles.css. */}
+          {/* The popup itself is the box, so this row takes no field ring (see styles.css). */}
           <div
             data-focus-ring="off"
             className="flex items-center gap-2 border-b border-border px-3 py-2.5"
@@ -90,7 +89,6 @@ export function SearchSelect({
                 }
               }}
               placeholder={searchPlaceholder}
-              // The popup's own border is this box; no ring inside it.
               data-focus-ring="off"
               className="w-full bg-transparent text-[13px] font-medium text-text outline-none placeholder:text-dim"
             />

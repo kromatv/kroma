@@ -24,7 +24,7 @@ declare global {
 
 const DEFAULT_BASE = 'http://localhost:4040';
 
-/** Strip any trailing slashes (linear scan, no backtracking regex). */
+// Linear scan, no backtracking regex.
 function stripTrailingSlashes(s: string): string {
   let end = s.length;
   while (end > 0 && s[end - 1] === '/') end -= 1;
@@ -120,16 +120,10 @@ export interface SubtitleView {
   index: number;
   language: string | null;
   codec: string;
-  /** Text-based subs (subrip/ass/mov_text) can be served as WebVTT; image subs
-   * (PGS/VobSub) cannot `url` is null then. */
   url: string | null;
-  /** True for a generated subtitle (Whisper/translate), vs embedded. */
   downloaded?: boolean;
-  /** Display label for a generated sub. */
   label?: string;
-  /** The generated subtitle's id (for deletion); absent for embedded tracks. */
   subId?: string;
-  /** Provider tag of a generated sub (`whisper`/`translate`), for the "IA" badge. */
   provider?: string;
 }
 

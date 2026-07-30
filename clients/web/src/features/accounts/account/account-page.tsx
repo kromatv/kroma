@@ -1,10 +1,3 @@
-// The `/account` settings page, laid out to the KROMA "Mon profil" design: a
-// title + sections (photo, personal info, language & preferences, security),
-// with a sticky save bar that batches the editable profile fields (name, email,
-// audio/subtitle prefs) into one `PATCH /auth/me`. The photo uploads on pick,
-// and password / PIN keep their own action buttons everything acts on the
-// signed-in account and syncs across devices via the server.
-
 import type { AccountPatch } from '@kroma/core';
 import { prefValue } from '@kroma/core/react';
 import { useT } from '@kroma/ui';
@@ -34,8 +27,7 @@ export function AccountPage() {
     );
   }
 
-  // Keyed by account id so switching profiles remounts the editor and re-seeds
-  // its pending-edit state from the fresh account.
+  // Keyed by account id so switching profiles remounts the editor and re-seeds it.
   return <ProfileEditor key={user.id} />;
 }
 
@@ -43,14 +35,10 @@ function ProfileEditor() {
   const t = useT();
   const { user, client, updateUser, logout } = useAuth();
 
-  // Pending edits for the batch-saved fields, seeded once from the account.
   const [username, setUsername] = useState(user?.username ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
-  // Through `prefValue`, always: the server stores a playback language
-  // lower-cased (`norm_media_lang`), so a Quebec preference comes back as
-  // `fr-ca` while the picker's option for it is `fr-CA`. Seeded raw, the select
-  // matched no option, `withCurrent` appended a second "Français" row, and the
-  // form read as dirty the moment it loaded.
+  // The server lower-cases a playback language (`fr-ca`) while the picker's
+  // option is `fr-CA`; `prefValue` normalizes so a raw seed still matches.
   const [audio, setAudio] = useState(prefValue(user?.audioLanguage ?? null));
   const [subtitle, setSubtitle] = useState(prefValue(user?.subtitleLanguage ?? null));
   const save = useSave();
@@ -91,8 +79,7 @@ function ProfileEditor() {
         audioLanguage: u.audioLanguage ?? null,
         subtitleLanguage: u.subtitleLanguage ?? null,
       });
-      // Mirror the server's normalisation (e.g. lower-cased email) back into the
-      // fields so the form settles to "no unsaved changes".
+      // Mirror the server's normalisation back so the form settles to clean.
       setUsername(u.username);
       setEmail(u.email);
       setAudio(prefValue(u.audioLanguage ?? null));
@@ -161,7 +148,6 @@ function ProfileEditor() {
         <SessionsCard />
       </Section>
 
-      {/* Sticky save bar batches the editable profile fields above. */}
       <div className="sticky bottom-0 mt-6 bg-linear-to-t from-bg via-bg/90 to-transparent pb-5 pt-6">
         {dirty || save.status !== 'idle' ? (
           <div className="flex items-center justify-between gap-4 rounded-[14px] border border-border-strong bg-surface-2 py-3 pl-5 pr-3 shadow-pop">
@@ -192,7 +178,6 @@ function ProfileEditor() {
   );
 }
 
-/** The left side of the save bar: saved ✓ / error / unsaved dot. */
 function SaveStatusLabel({
   dirty,
   status,

@@ -40,7 +40,6 @@ import { HintBar } from '#tv/features/catalog/home/HintBar';
 
 const RAIL_LIMIT = 20;
 
-/** How many rails mount at once. */
 const ROW_CHUNK = 3;
 
 // Two layers rather than one comma-separated background-image: a multi-value
@@ -48,12 +47,11 @@ const ROW_CHUNK = 3;
 const HERO_VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 5%, transparent 60%)`;
 const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 48%)`;
 
-// The design sizes the hero with viewport units (64vh, min 520px) and its title
-// with clamp(42px, 7.6vh, 82px). On the fixed 1920x1080 stage those resolve to
-// constants, and a vh would mean something different on each of the four targets.
+// The design sizes the hero with viewport units and clamps; on the fixed
+// 1920x1080 stage those resolve to the constants below.
 const PAGE_SCROLL = { flex: 1, minHeight: 0 } as const;
 
-/** The padding belongs to the CONTENT, not to the scroller's own box. */
+// Padding belongs on the content, not the scroller box.
 const PAGE_CONTENT = { paddingBottom: 40 } as const;
 
 const HERO_ACTIONS = { flexDirection: 'row' as const, gap: 18 };
@@ -67,18 +65,10 @@ const HERO_TITLE = {
   letterSpacing: -1.64,
 };
 
-/** The hero's eyebrow is a size up from the kit role: it sits under 66px of
- * title, and the design opens it to match. Tracking follows the size. */
 const FEATURED_LABEL = { fontSize: 14 };
 
-/**
- * What one home tile occupies, so the row can be virtualised.
- *
- * A <MediaCard> at its default 328 width, 16:9, and the 24px gap after it: the
- * list positions its tiles rather than laying them out, so it has to be told the
- * pitch. The home rows are the long ones - dozens of films each, a dozen rows -
- * and they are what made the screen get heavier the longer it was used.
- */
+// What one home tile occupies, so the row can be virtualised: a <MediaCard>
+// at its default 328 width, 16:9, plus the 24px gap after it.
 const ROW_TILE = { width: 328 + 24, height: Math.round((328 * 9) / 16) };
 
 const ROW_TITLE = {
@@ -106,10 +96,9 @@ interface HeroInfo {
   heroBadge: string | null;
 }
 
-/** The featured spotlight: the server's daily multi-signal pick
- * (`/api/home/featured`), falling back to the first entry of the top server
- * section, then to the first catalog movie so the hero is never empty, plus its
- * resolved backdrop art and quality badge. */
+// The featured spotlight: the server's daily pick, falling back to the first
+// entry of the top server section, then to the first catalog movie so the
+// hero is never empty.
 function computeHero(
   featured: SectionItem | null,
   sections: Section[],
@@ -135,9 +124,9 @@ function computeHero(
   return { hero, heroId, heroMeta, heroBackdrop, heroBadge };
 }
 
-/** The 10-foot home a cinematic hero over a vertical stack of horizontal rails
- * (Reprendre / Films / Séries previews). Films, Séries and Search live on their
- * own screens via the shared top nav. */
+/** The 10-foot home: a cinematic hero over a vertical stack of horizontal
+ * rails. Films, Séries and Search live on their own screens via the shared
+ * top nav. */
 export function TvHome() {
   const { movies, shows } = useConnection();
   const { items: continueItems, refresh: refreshContinue } = useContinue();
@@ -378,11 +367,9 @@ export function TvHome() {
           )}
         </FocusSlot>
 
-        {/* The rails BELOW the fold are not mounted until the focus comes near
-            them. Measured on the bench (clients/tv-build/perf-bench.ts, CPU
-            throttled to a television's): a screen of 480 controls runs at 46fps
-            with 73ms frames, the same screen at 128 runs clean. Three rails is
-            already more than fits on screen. */}
+        {/* Rails below the fold mount only once focus comes near them. Bench
+            (clients/tv-build/perf-bench.ts, TV-throttled CPU): 480 mounted
+            controls run at 46fps/73ms frames, 128 runs clean. */}
         {rows.slice(0, rowCount).map((row, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the slot - see <FocusSlot>.
           <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
@@ -400,8 +387,8 @@ export function TvHome() {
   );
 }
 
-/** Hero meta line year · runtime · genre (quality lives in the badge). Shows
- * have no runtime, so it's just year · genre. */
+// Year · runtime · genre (quality lives in the badge). Shows have no
+// runtime, so it's just year · genre.
 function heroLine(e: SectionItem): string {
   if (e.type === 'show') {
     return [e.show.year ? String(e.show.year) : null, e.show.metadata?.genres?.[0]]
@@ -414,7 +401,6 @@ function heroLine(e: SectionItem): string {
     .join(' · ');
 }
 
-/** A rail tile is drawn 330pt wide and the server serves fixed rendition
- * buckets (160/320/480/780), so 320 is asked for: a 3% upscale nobody can see
- * on a television, against half the pixels to decode of the 480 bucket. */
+// A rail tile is drawn 330pt wide; the server's fixed rendition buckets
+// (160/320/480/780) make 320 the better trade against the 480 bucket's cost.
 const TILE_W = 320;

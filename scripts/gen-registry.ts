@@ -2,12 +2,9 @@
 
 // Build a static module registry from the packed `.kmod` files: a catalog
 // index (schema 2) plus the `.kmod` files themselves, ready to publish to any
-// static host. The canonical deployment is the release workflow, which attaches
-// the .kmod files + this index (as `modules.json`) to the GitHub Release, so
-// `https://github.com/<owner>/<repo>/releases/latest/download/modules.json` is
-// a permanent, always-current store URL. The in-app Store fetches the index,
-// picks the artifact matching the server's build target, verifies its sha256,
-// and resolves `dependsOn` before installing.
+// static host. The in-app Store fetches the index, picks the artifact
+// matching the server's build target, verifies its sha256, and resolves
+// `dependsOn` before installing.
 //
 //   bun run scripts/gen-registry.ts                             # from dist/modules/*.kmod
 //   bun run scripts/gen-registry.ts --base https://mods.example.com
@@ -15,11 +12,10 @@
 //
 // Output: dist/registry/{catalog.json, <id>[-<target>].kmod, ...}
 //
-// Catalog schema 2: one entry per module id with `artifacts` grouped per build
-// target (a sidecar .kmod carries a native binary, so CI packs one per target
-// and suffixes the filename with the triple; library modules are unsuffixed and
-// platform-independent). Flat url/size/sha256 of the first artifact are kept
-// per entry so schema-1 consumers keep working.
+// Catalog schema 2: one entry per module id with `artifacts` grouped per
+// build target (a sidecar .kmod carries a native binary, so CI packs one per
+// target and suffixes the filename with the triple). Flat url/size/sha256 of
+// the first artifact are kept per entry so schema-1 consumers keep working.
 
 import { createHash } from 'node:crypto';
 import {
@@ -31,6 +27,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { byCodeUnit } from './lib/sort';
 
 const root = join(import.meta.dir, '..');
 const modulesDir = join(root, 'dist/modules');
@@ -55,7 +52,6 @@ interface Manifest {
 }
 
 interface Artifact {
-  /** Build-target triple of the native binary, or null = platform-independent. */
   target: string | null;
   file: string;
   url: string;
@@ -71,9 +67,6 @@ interface Entry {
   minServer?: string;
   library?: boolean;
   dependsOn?: Record<string, string> | unknown[];
-  /** The module's packaged icon inlined as a `data:image/...` URI, so the
-   *  Store shows it BEFORE the module is downloaded (single-file catalog: no
-   *  extra assets to host). Icons are small (svg, a few KB). */
   icon?: string;
   artifacts: Artifact[];
   // Schema-1 compatibility mirror of artifacts[0].
@@ -83,8 +76,8 @@ interface Entry {
   sha256: string;
 }
 
-/** Decompress a `.kmod` to its inner tar (zstd today; gzip/raw accepted like
- *  the server's installer, dispatched by magic bytes). */
+// Dispatched by magic bytes, like the server's installer: zstd today, gzip/raw
+// also accepted.
 function toTar(bytes: Buffer): Uint8Array {
   if (bytes[0] === 0x28 && bytes[1] === 0xb5 && bytes[2] === 0x2f && bytes[3] === 0xfd) {
     return Bun.zstdDecompressSync(bytes);
@@ -95,8 +88,8 @@ function toTar(bytes: Buffer): Uint8Array {
   return bytes;
 }
 
-/** The bundle's icon as a data URI (svg preferred, then png), or undefined.
- *  Capped so one oversized icon can't bloat the whole catalog. */
+// svg preferred, then png; capped so one oversized icon can't bloat the
+// whole catalog.
 function iconDataUri(tar: Uint8Array): string | undefined {
   const MAX = 64 * 1024;
   const svg = tarRead(tar, 'icon.svg');
@@ -110,8 +103,8 @@ function iconDataUri(tar: Uint8Array): string | undefined {
   return undefined;
 }
 
-/** Read one file out of a (ustar) tar buffer. Headers are 512-byte blocks:
- *  name at 0..100 (NUL-padded), size as octal at 124..136. */
+// ustar headers are 512-byte blocks: name at 0..100 (NUL-padded), size as
+// octal at 124..136.
 function tarRead(tar: Uint8Array, wanted: string): Uint8Array | null {
   const field = (start: number, len: number) =>
     new TextDecoder().decode(tar.subarray(start, start + len)).split('\0')[0];
@@ -128,10 +121,14 @@ function tarRead(tar: Uint8Array, wanted: string): Uint8Array | null {
   return null;
 }
 
-const kmods = readdirSync(modulesDir).filter((f) => f.endsWith('.kmod'));
+// Sorted here rather than in the loop header: the catalog's entry order
+// follows this walk.
+const kmods = readdirSync(modulesDir)
+  .filter((f) => f.endsWith('.kmod'))
+  .sort(byCodeUnit);
 const entries = new Map<string, Entry>();
 
-for (const file of kmods.sort()) {
+for (const file of kmods) {
   const path = join(modulesDir, file);
   const bytes = readFileSync(path);
   const tar = toTar(bytes);
@@ -142,9 +139,8 @@ for (const file of kmods.sort()) {
   }
   const manifest = JSON.parse(new TextDecoder().decode(manifestBytes)) as Manifest;
 
-  // The pack script names bundles `<id>.kmod` (host/library build) or
-  // `<id>-<target>.kmod` (per-target sidecar); recover the target from the
-  // filename using the id we just read out of the bundle.
+  // Bundles are named `<id>.kmod` or `<id>-<target>.kmod`; recover the target
+  // from the filename using the id just read out of the bundle.
   const stem = file.slice(0, -'.kmod'.length);
   const target =
     stem === manifest.id ? null : stem.slice(manifest.id.length).replace(/^-/, '') || null;

@@ -4,8 +4,8 @@ import { tintGradient } from '#ui/components/molecules/media-card';
 import { posterArt, stillArt } from '#ui/lib/sample-art';
 import { Img } from './img';
 
-/** The gradient painted behind the art: what the viewer sees for the first few
- *  hundred milliseconds, and what they keep seeing if the artwork never lands. */
+// What the viewer sees for the first few hundred milliseconds, and what they
+// keep seeing if the artwork never lands.
 const TINT = tintGradient(['#3A2E4F', '#1B1524']);
 
 export default story({

@@ -18,10 +18,8 @@ export default story({
       "Don't leave `invalid` on after the user starts retyping; clear it in `onChange`.",
     ],
   },
-  // Deliberately NOT wired to `otpVariants`: that `sv` describes one SLOT's
-  // states (empty / filled / active), which are derived from the value rather
-  // than passed in. A control for them would edit nothing, and a matrix of them
-  // would claim they are part of the API. The props that ARE the API are below.
+  // Not wired to `otpVariants`: those describe one slot's states, derived from
+  // the value rather than passed in, so they are not part of the API.
   matrix: false,
   args: {
     maxLength: 6,

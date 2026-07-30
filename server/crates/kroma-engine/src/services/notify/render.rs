@@ -13,11 +13,9 @@ use crate::i18n;
 /// The locale to render for: the account's preference, else the server default.
 pub use crate::i18n::user_locale as locale_of;
 
-/// Resolve the interpolation vars for `locale`.
-///
-/// Which vars are translatable is stated by the producer ([`ParamValue`]), not
-/// inferred from the text. A title or a username is interpolated exactly as
-/// given, even if it happens to spell a catalog key.
+// Which vars are translatable is stated by the producer (`ParamValue`), not
+// inferred from the text. A title or a username is interpolated exactly as
+// given, even if it happens to spell a catalog key.
 fn vars_for(stored: &StoredNotification, locale: &str) -> Vec<(String, String)> {
     stored
         .params

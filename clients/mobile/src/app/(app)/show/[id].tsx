@@ -1,7 +1,6 @@
-// Series detail: cinematic hero, up-next play block, Netflix-style season
-// dropdown with a bulk season download, episode list with progress / watched /
-// downloads. Tap an episode to play; long-press for its detail page. The row
-// components live in components/showEpisodes.tsx.
+// Series detail: hero, up-next play block, season picker, episode list. Tap an
+// episode to play; long-press for its detail page. Row components live in
+// components/showEpisodes.tsx.
 
 import { sizedImageUrl } from '@kroma/core';
 import { Button, Chip } from '@kroma/ui/kit';
@@ -192,8 +191,6 @@ export default function ShowDetail() {
           </>
         );
 
-        // Wide windows put the episode list beside the info column; narrow
-        // ones keep the stacked flow.
         return wide ? (
           <View style={[styles.split, gutterPad]}>
             <View style={styles.splitInfo}>{info}</View>

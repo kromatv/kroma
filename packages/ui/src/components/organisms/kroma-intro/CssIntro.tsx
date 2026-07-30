@@ -8,34 +8,16 @@ import { useIntroKeys } from './useIntroKeys';
 export interface CssIntroProps {
   onDone: () => void;
   loop?: boolean;
-  /** Optional tagline under the lockup (none by default). */
   tagline?: string;
   lite?: boolean;
 }
 
 /**
- * CSS/DOM fallback intro, used when the video intro cannot play (decode or load
- * failure): a total-black open, an amber glow that ignites the chromatic wheel
- * (segments build clockwise while the wheel spins into place → hub-glow pulse →
- * shockwave), an impact flash + scale punch synced to the 1.30 s bass hit, the
- * "KROMA" wordmark reveal with a metal sheen, then the tagline. Choreographed to
- * the ~5 s audio sting; the visual timeline starts at audio onset (or its
- * rejection) so picture and sound stay locked together, a pointer/key fallback
- * unblocks the sound on the first interaction, and a safety timer guarantees the
- * intro still ends even if audio never plays.
- *
- * Shares its frame, exit hand-off and skip keys with the video intro through
- * {@link IntroShell} / {@link useIntroExit} / {@link useIntroKeys}; only the
- * medium (an audio sting driving CSS layers, rather than a film) differs.
- *
- * `lite` (set by the TV shells) trades a little polish for a smooth frame rate on
- * weak TV GPUs: it drops the per-frame raster work desktop can absorb but a TV
- * can't animated `filter: blur()`, the `mix-blend-mode` grain, the
- * `background-position` sheen and keeps animation on the compositor.
+ * CSS/DOM fallback intro, used when the video intro cannot play. `lite` (set by
+ * the TV shells) drops the per-frame raster work a weak TV GPU cannot absorb:
+ * animated `filter: blur()`, the `mix-blend-mode` grain and the sheen.
  */
 export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readonly<CssIntroProps>) {
-  // `started` gates the animated layers so the CSS timeline begins exactly at
-  // audio onset. `runId` is the React key that restarts every animation on replay.
   const [started, setStarted] = useState(false);
   const [runId, setRunId] = useState(0);
   const { exiting, safetyRef, exit, reopen, clearTimers } = useIntroExit(onDone);
@@ -48,8 +30,8 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
     reopen();
     setStarted(false);
     const a = audioRef.current;
-    // Kick the visual timeline at audio onset so the flash/punch land on the
-    // 1.30 s bass hit (the keyframe delays are timed to the sting).
+    // The keyframe delays are timed to the sting, so the visual timeline has to
+    // start at audio onset (or its rejection).
     const begin = () => setStarted(true);
     if (a) {
       try {
@@ -71,8 +53,7 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
     start();
   }, [start]);
 
-  // First gesture: if the sting never got past the autoplay block, start it now
-  // and run the synced timeline from there.
+  // Autoplay may have blocked the sting; the first gesture is allowed to start it.
   const unblock = useCallback(() => {
     const a = audioRef.current;
     if (!a?.paused) return;

@@ -22,67 +22,28 @@ use crate::infra::hls;
 
 pub struct AppState {
     pub config: Config,
-    /// Whether the `ffprobe` binary was found at startup.
     pub ffprobe_available: bool,
     pub db: Pool,
-    /// Persisted, runtime-editable server settings (admin console).
     pub settings: Settings,
-    /// In-memory TMDB lookup cache, shared across requests and the background
-    /// enrichment threads (hence `Arc`).
     pub metadata_cache: Arc<metadata::Cache>,
-    /// Real-time event bus fanned out to WebSocket clients.
     pub events: Bus,
-    /// Live scan/enrichment status snapshot (served at `/api/status`).
     pub activity: activity::Shared,
-    /// On-demand HLS engine: keyframe-indexed complete-VOD playlists + cached
-    /// stream-copy fMP4 segments (video copy, audio copy or AAC) for browsers
-    /// that can't direct-play the container/audio, and seamless language switch.
     pub hls: hls::HlsEngine,
-    /// Scrub-bar preview sprite sheets (YouTube-style hover thumbnails), built
-    /// once per file with one ffmpeg pass and cached on disk.
     pub storyboard: Storyboard,
-    /// In-flight Quick Connect device-pairing requests.
     pub quickconnect: QuickConnect,
-    /// Live playback sessions (the dashboard's "En cours de lecture" panel).
     pub playback: Registry,
-    /// Live cast receivers: the TVs a phone or a browser can drive right now.
     pub cast: crate::services::cast::Registry,
-    /// Rolling CPU / RAM / bandwidth metrics (the dashboard charts).
     pub metrics: Metrics,
-    /// Content embedder, built once at startup (the MiniLM backend loads a model;
-    /// the default lexical one is free). Used to embed titles during enrichment
-    /// and free-text queries for the `/api/themed` row.
     pub embedder: Arc<dyn Embedder>,
-    /// In-RAM full-text search index (keyword/typo-tolerant title search behind
-    /// `/api/search`). Rebuilt from SQLite on scan/enrich. Internally synchronized.
     pub search: Arc<SearchEngine>,
-    /// In-RAM snapshot of every title's embedding, powering the home-screen
-    /// section generator without re-reading SQLite per request. Self-reloads when
-    /// the vectors change (see [`crate::services::sections::VectorCache`]).
     pub vectors: Arc<VectorCache>,
-    /// Background job registry + cron scheduler (admin "Tâches" console). Built
-    /// at startup with the built-in jobs; the scheduler is spawned in `main`.
     pub jobs: Arc<JobManager>,
-    /// In-flight on-device subtitle generations (Whisper / translate), tracked so
-    /// the player can poll live progress + ETA and cancel.
     pub subtitle_gen: Arc<GenRegistry>,
-    /// Stable identity of this install, served on `/api/health` so a client can
-    /// tell "the same server through two origins" from "two servers".
     pub instance_id: String,
-    /// Admission control for offline-download remuxes. Each one holds an ffmpeg
-    /// for the whole transfer (minutes, not the seconds an HLS segment takes), so
-    /// unlike the HLS semaphore a full gate returns `503` instead of queueing:
-    /// a phone that waits an hour for a permit has already timed out.
+    // Semaphore for offline-download remuxes; a full gate returns `503`
+    // rather than queueing, since a permit is held for the whole transfer.
     pub downloads: Arc<tokio::sync::Semaphore>,
-    /// Weak self-reference (seeded via `Arc::new_cyclic`) so a relocated module's
-    /// `HostCtx::trigger_job` can hand a background job the full `SharedState` it
-    /// runs against (jobs are `Fn(SharedState)`, and the `Arc` is otherwise lost
-    /// through the blanket `Arc<T>: HostCtx` deref).
     me: std::sync::Weak<AppState>,
-    /// Typed service registry for dependency injection into relocated modules:
-    /// each module resolves its own engine / bridge by type through the `HostCtx`
-    /// seam (`get_service`), so the binary wires nothing per module. Holds the same
-    /// `Arc`s as the concrete fields above, keyed by `TypeId`.
     pub(crate) services:
         std::collections::HashMap<std::any::TypeId, std::sync::Arc<dyn std::any::Any + Send + Sync>>,
 }
@@ -90,30 +51,16 @@ pub struct AppState {
 pub type SharedState = Arc<AppState>;
 
 impl AppState {
-    /// The `Arc<AppState>` this `&self` is inside (for the few spots that need to
-    /// re-share the whole state, e.g. triggering a job). `None` only before the
-    /// self-reference is seeded in [`AppState::new`].
+    /// Re-shares this state as an `Arc` (e.g. to trigger a job). `None` only
+    /// before the self-reference is seeded in [`AppState::new`].
     pub(crate) fn shared(&self) -> Option<SharedState> {
         self.me.upgrade()
     }
 }
 
-/// Remove the harness's temp `data_dir` once the last [`SharedState`] handle goes.
-///
-/// [`crate::test_support`] hands every test a `data_dir` under `$TMPDIR`, but the
-/// path was only ever created, never removed: the `remove_dir_all` it does first
-/// clears a *same-pid* name collision, and `cargo test` gets a fresh pid every
-/// run, so each run left its full set behind. macOS only purges `/var/folders/…/T`
-/// at boot for files untouched 3+ days, so on a dev box this grew without bound
-/// (~95 GB / 219k entries in one month before this landed).
-///
-/// This hangs the cleanup off the state's own lifetime instead of the 157 call
-/// sites, which take `SharedState = Arc<AppState>` by value and clone it freely.
-/// `me` is a [`std::sync::Weak`], so the `Arc` really does reach zero and this
-/// runs; any thread still holding a clone keeps the dir alive until it is done.
-///
-/// Guarded on "under `$TMPDIR` and named `kroma-*`" so a test that points a state
-/// at a real directory never has it deleted underneath.
+/// Removes the harness's temp `data_dir` once the last [`SharedState`] handle
+/// drops. Guarded to paths under `$TMPDIR` named `kroma-*`, so a test pointed
+/// at a real directory is never deleted.
 #[cfg(test)]
 impl Drop for AppState {
     fn drop(&mut self) {

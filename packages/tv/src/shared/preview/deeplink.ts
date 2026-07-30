@@ -13,9 +13,8 @@ function asDeepLink(obj: unknown): DeepLink | null {
   return null;
 }
 
-/** Decode a tile's PAYLOAD. The platform delivers our `action_data` either
- *  verbatim, or wrapped as `{"values": "<uri-encoded JSON>"}` (the envelope
- *  Samsung's own sample unwraps) handle both. */
+// Tizen delivers `action_data` either verbatim or wrapped as
+// `{"values": "<uri-encoded JSON>"}`; handle both.
 function parsePayload(raw: string): DeepLink | null {
   try {
     const first = JSON.parse(raw) as unknown;
@@ -31,23 +30,13 @@ function parsePayload(raw: string): DeepLink | null {
   return null;
 }
 
-// A deep link handed in by a SHELL rather than read off a platform global.
-//
-// The native TV app is the case: its launcher rows arrive through React
-// Native's `Linking`, which no code in this package can subscribe to. So the
-// shell parses the URL and pushes the result here, exactly the way
-// `app/searchRequest` takes a search from Siri.
-//
-// A link that arrives before anyone is listening is KEPT (a launcher tile cold-
-// starts the app, so the link exists while there is still no tree to put it in)
-// and read by `readDeepLink` when the catalogue mounts. Once there IS a
-// listener the link goes straight to it and nothing is kept - otherwise a later
-// remount would replay a tile the user opened minutes ago.
+// A link pushed before anyone is listening is kept and read once the catalogue
+// mounts (a launcher tile cold-starts the app); with a listener it is delivered
+// and not kept, or a remount would replay an old tile.
 let pending: DeepLink | null = null;
 const listeners = new Set<(link: DeepLink) => void>();
 
-/** Open `link`, from outside React. Called by a shell (see the native TV app's
- * `lib/launcher-links`). */
+/** Open `link` from outside React; called by a shell. */
 export function requestDeepLink(link: DeepLink): void {
   if (listeners.size === 0) {
     pending = link;
@@ -56,7 +45,6 @@ export function requestDeepLink(link: DeepLink): void {
   for (const listener of listeners) listener(link);
 }
 
-/** The link a shell pushed before the app was listening, once. */
 function takePendingDeepLink(): DeepLink | null {
   const link = pending;
   pending = null;
@@ -76,12 +64,9 @@ export function readDeepLink(): DeepLink | null {
   }
 }
 
-/** Fire `cb` when the running app is re-targeted by a preview tile. The cold
- *  launch is covered by readDeepLink(); this handles selection while open.
- *  Returns a cleanup function. */
+/** Fire `cb` when the running app is re-targeted by a preview tile; the cold
+ *  launch is covered by readDeepLink(). Returns a cleanup function. */
 export function onDeepLink(cb: (link: DeepLink) => void): () => void {
-  // The shell bus first: it is the only source on the native TV clients, and it
-  // is where a link pushed while the app was starting is waiting.
   listeners.add(cb);
   const link = takePendingDeepLink();
   if (link) cb(link);
@@ -89,10 +74,8 @@ export function onDeepLink(cb: (link: DeepLink) => void): () => void {
     listeners.delete(cb);
   };
 
-  // The sources below are WebView-shell events, so the native TV clients have
-  // nothing to subscribe to. Testing `window` alone is not enough to detect
-  // them: React Native defines `window` as an alias of `global`, and only trips
-  // over `addEventListener` missing from it.
+  // Testing `window` alone would not detect the WebView shell: React Native
+  // defines `window` as an alias of `global`, without `addEventListener`.
   if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
     return unsubscribe;
   }

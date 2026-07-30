@@ -50,7 +50,6 @@ export function UserAvatar({
 }: Readonly<{
   name: string;
   avatarUrl?: string | null;
-  /** Stable colour seed (defaults to the name). */
   seed?: string;
   size?: number;
   radius?: number;

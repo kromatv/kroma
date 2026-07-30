@@ -1,6 +1,5 @@
-// Offline downloads, Netflix-style: in-progress titles with a circular
-// progress ring, finished titles as swipe-to-delete rows, storage footer and
-// a clean empty state.
+// Offline downloads screen: active downloads show a progress ring, finished
+// ones are swipe-to-delete rows.
 
 import { episodeTag, formatRuntime, type MediaItem } from '@kroma/core';
 import { Icon } from '@kroma/ui/kit';
@@ -182,9 +181,6 @@ function LegendItem({
   );
 }
 
-/** Netflix-style device storage meter: what the downloads occupy on this
- * phone, against everything else and what is left. One bar, identity carried
- * by the legend dots; the sizes stay in ink, never in segment colour. */
 function StorageMeter() {
   const t = useT();
   const downloads = useDownloads();

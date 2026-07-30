@@ -79,7 +79,7 @@ pub struct LlmProviderInput {
     pub provider: String,
     pub base_url: String,
     pub model: String,
-    /// Blank/omitted → keep the previously stored key for this provider id.
+    // Blank/omitted → keep the previously stored key for this provider id.
     pub api_key: Option<String>,
     pub temperature: f32,
     pub max_tokens: i64,
@@ -95,12 +95,9 @@ pub async fn save_llm(
     Json(body): Json<LlmSaveBody>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
-    // New providers send a blank id; the server owns id assignment (never the
-    // client). Keep existing ids so their stored key/default survive, and give
-    // each new provider the lowest free `p{n}` not already taken by another
-    // provider here. (A plain index-based `p{i}` collides after a delete/reorder:
-    // a new provider can land on an index whose old id another provider still
-    // holds, silently merging the two onto one stored key.)
+    // New providers send a blank id; the server assigns the lowest free `p{n}`
+    // not already taken. A plain index-based `p{i}` would collide after a
+    // delete/reorder, silently merging two providers onto one stored key.
     let mut taken: std::collections::HashSet<String> = body
         .providers
         .iter()
@@ -133,7 +130,6 @@ pub async fn save_llm(
             reasoning: p.reasoning,
         })
         .collect();
-    // Resolve the default from its index now that ids are assigned.
     let default_id = providers.get(body.default_index).map(|p| p.id.clone()).unwrap_or_default();
     settings::set_llm(&state.settings, &state.db, body.enabled, providers, &default_id);
     Ok(StatusCode::NO_CONTENT.into_response())
@@ -153,10 +149,9 @@ pub struct ProbeBody {
 }
 
 fn resolved(settings: &Settings, body: &ProbeBody) -> (String, String, String, String) {
-    // The saved provider this probe edits (by id), else the default its stored
-    // values back-fill any blank form field. Multi-provider keys live in
-    // `llmProviders[].api_key`, so reaching them by id is the only way the probe
-    // can reuse a masked key (the legacy flat keys are empty on these installs).
+    // The saved provider this probe edits (by id), else the default, back-fills
+    // any blank form field - including a masked API key, which only exists per
+    // provider id (the legacy flat keys are empty on these installs).
     let saved = body
         .id
         .as_deref()

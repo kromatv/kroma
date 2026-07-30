@@ -24,9 +24,8 @@ export const Route = createFileRoute('/support')({
   component: Support,
 });
 
-/** The glyph and destination of each secondary channel, plus the messages that
- *  word it. The message functions are referenced, not called: they resolve the
- *  active locale when the component renders them. */
+// Message functions are referenced, not called: they resolve the active
+// locale when the component renders them.
 const channels = [
   {
     icon: IconBrandGithub,
@@ -51,8 +50,6 @@ const channels = [
   },
 ] as const;
 
-/** The bug-report checklist, in order. Each item is its own message; the two that
- *  name flags and codecs carry them as `` `mono` `` markers (see lib/rich). */
 const bugItems = [
   m.support_bug_item1,
   m.support_bug_item2,
@@ -63,9 +60,8 @@ const bugItems = [
 const installHref = `${site.repo}/blob/main/INSTALL.md`;
 
 export function Support() {
-  // Built here rather than at module scope so every string resolves in the locale
-  // being rendered. The two answers that link out keep the link as its own label
-  // message, with the element around it in the component where the href belongs.
+  // Built here, not at module scope, so every string resolves in the locale
+  // being rendered.
   const faqItems = [
     { question: m.support_faq_q1(), answer: m.support_faq_a1() },
     { question: m.support_faq_q2(), answer: m.support_faq_a2() },
@@ -93,9 +89,6 @@ export function Support() {
 
   return (
     <PageShell eyebrow={m.support_eyebrow()} title={m.support_title()} intro={m.support_intro()}>
-      {/* The primary channel, given its own weight rather than a slot in the
-          grid: for a small self-hosted project, a real inbox beats a ticket
-          queue. */}
       <div className="surface-hairline mt-14 flex flex-col gap-6 rounded-2xl border border-border-strong bg-surface-1 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-10">
         <div className="max-w-xl">
           <div className="flex size-12 items-center justify-center rounded-xl bg-accent-soft text-accent">
@@ -114,8 +107,6 @@ export function Support() {
         </div>
       </div>
 
-      {/* The other destinations, uniform because they are peers, each a
-          distinct place, not a repeat of the same call to action. */}
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         {channels.map(({ icon, href, title, description, action }) => (
           <ContactCard
@@ -129,7 +120,6 @@ export function Support() {
         ))}
       </div>
 
-      {/* Bug-report checklist, a helping panel, not a wall of cards. */}
       <section className="mt-20">
         <div className="max-w-2xl">
           <div className="flex size-11 items-center justify-center rounded-xl bg-accent-soft text-accent">

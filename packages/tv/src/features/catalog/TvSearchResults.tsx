@@ -14,15 +14,9 @@ export interface SearchResult {
 
 interface TvSearchResultsProps {
   hits: SearchResult[];
-  /** The query behind these hits, which decides which empty state is right:
-   * nothing typed yet, or nothing found. */
   query: string;
-  /** Room available, gutters included. The on-screen-keyboard layout knows this
-   * up front; the platform chromes only say it once they have been laid out. */
   width: number;
   onOpen: (hit: SearchResult) => void;
-  /** Rendered above the grid, inside the same scroller: the platform chromes
-   * have nowhere else to put the recent searches. */
   header?: ReactNode;
 }
 
@@ -83,5 +77,4 @@ export function TvSearchResults({
 const GAP = 24;
 const POSTER = 277;
 
-/** The page scroller's own box: the navigator scrolls it to follow focus. */
 const RESULTS_SCROLL = { flex: 1, minHeight: 0 } as const;

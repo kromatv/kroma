@@ -5,8 +5,8 @@ import type { AudioTrack, VideoPlayer } from 'expo-video';
 
 export type AudioFilterMode = 'off' | 'standard' | 'night';
 
-/** In master mode, a native seek beyond this many seconds ahead is assumed past
- * the remux's production edge, so we re-anchor instead of stalling. */
+// In master mode, a native seek beyond this many seconds ahead is assumed
+// past the remux's production edge, so it re-anchors instead of stalling.
 export const NATIVE_SEEK_AHEAD = 60;
 
 export interface EngineState {
@@ -25,12 +25,11 @@ export interface EngineState {
 
 export interface Engine extends EngineState {
   player: VideoPlayer;
-  /** True when playing a downloaded local file: no server, so audio switches
-   * ride the native player's track selection and server DSP is unavailable. */
+  // True when playing a downloaded local file: no server, so audio switches
+  // ride the native player's track selection, and server DSP is unavailable.
   offline: boolean;
-  /** Native audio tracks of the local file (offline only; empty online). The
-   * offline picker lists THESE - what the file actually contains - and
-   * `setAudio` takes an ordinal into this list. */
+  // Local file's native tracks (offline only; empty online). The offline
+  // picker lists these, and `setAudio`'s index is an ordinal into this list.
   localAudio: AudioTrack[];
   togglePlay(): void;
   seekTo(abs: number): void;
@@ -39,8 +38,7 @@ export interface Engine extends EngineState {
   setFilter(mode: AudioFilterMode): void;
   setRate(rate: number): void;
   rate: number;
-  /** Kill playback NOW (mute + pause + detach source). Idempotent; called from
-   * every exit path rather than trusting unmount timing. */
+  // Idempotent; called from every exit path rather than trusting unmount timing.
   shutdown(): void;
 }
 
@@ -59,8 +57,7 @@ export interface EngineCore {
   audioIndex: number;
   filter: AudioFilterMode;
   loadId: number;
-  /** Set once the current source has actually produced playback time. Guards
-   * the end-of-playback path against ExoPlayer's spurious ENDED. */
+  // Guards the end-of-playback path against ExoPlayer's spurious ENDED.
   started: boolean;
 }
 

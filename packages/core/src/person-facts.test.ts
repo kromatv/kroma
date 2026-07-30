@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Translate } from './i18n';
 import { departmentLabel, formatDay, personAge, personFacts } from './person-facts';
 
-// Echoes the key with its interpolations, so a fact is asserted by key + vars.
+// Echoes the key with its interpolations.
 const t: Translate = (key, vars) =>
   vars ? `${key}:${Object.values(vars).join(',')}` : String(key);
 
@@ -32,8 +32,7 @@ describe('personAge', () => {
 
 describe('formatDay', () => {
   it('reads a provider date as a local day, never a UTC instant', () => {
-    // `new Date('1988-04-30')` is UTC midnight, which is the 29th in the
-    // Americas; the whole point of the manual parse is that this stays the 30th.
+    // `new Date('1988-04-30')` is UTC midnight, the 29th in the Americas.
     expect(formatDay('1988-04-30', 'en-US')).toBe('April 30, 1988');
   });
 
@@ -62,7 +61,6 @@ describe('personFacts', () => {
   it('moves the age onto the death line once there is one', () => {
     const facts = personFacts(t, { birthday: '1930-08-25', deathday: '2014-08-11' }, 'en-US');
     expect(facts.map((f) => f.key)).toEqual(['born', 'died']);
-    // The birth line is a plain date: "(83 years old)" would read as still living.
     expect(facts[0]?.value).toBe('August 25, 1930');
     expect(facts[1]?.value).toBe('person.diedAge:August 11, 2014,83');
   });

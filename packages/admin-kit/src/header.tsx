@@ -6,11 +6,11 @@ import { useT } from '@kroma/ui';
 import { IconPlus, type TablerIcon } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
-/** Standard page `<h1>` (mirrors `#web/shared/ui/page` PAGE_TITLE). */
+// Mirrors `#web/shared/ui/page` PAGE_TITLE.
 export const PAGE_TITLE =
   'font-display text-[clamp(26px,5vw,32px)] font-bold leading-tight tracking-[-.02em]';
 
-/** Dim one-liner under the title (mirrors `#web/shared/ui/page` PAGE_SUBTITLE). */
+// Mirrors `#web/shared/ui/page` PAGE_SUBTITLE.
 export const PAGE_SUBTITLE = 'mt-1.5 text-[14.5px] font-medium text-dim max-sm:text-[15.5px]';
 
 export function PageHeader({

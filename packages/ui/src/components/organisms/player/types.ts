@@ -167,14 +167,12 @@ export interface PlaneRect {
  * / stable falses on TV (their flag is off, so the chrome never surfaces them).
  */
 export interface PlayerController {
-  // ---- clock (absolute seconds) ----
   cur: number;
   dur: number;
   bufEnd: number;
   /** Pending scrub target while dragging / D-pad seeking; null when settled. */
   seekPreview: number | null;
 
-  // ---- status ----
   playing: boolean;
   waiting: boolean;
   ready: boolean;
@@ -184,67 +182,58 @@ export interface PlayerController {
   endedNonce: number;
   surface: PlayerSurface;
 
-  // ---- transport ----
   togglePlay(): void;
   /** Seek to an absolute position (seconds). */
   seekTo(abs: number): void;
   /** Relative skip (seconds); negative = back. */
   skip(delta: number): void;
 
-  // ---- scrub gesture (absolute seconds; shared by pointer + D-pad) ----
+  // Scrub gesture (absolute seconds; shared by pointer + D-pad).
   scrubPreview(abs: number | null): void;
   scrubCommit(): void;
 
-  // ---- volume (web) ----
   volume: number;
   muted: boolean;
   setVolume(v: number): void;
   toggleMute(): void;
 
-  // ---- rate ----
   rate: number;
   setRate(r: number): void;
 
-  // ---- audio tracks ----
   audioTracks: AudioTrack[];
   audioIndex: number;
   setAudio(index: number): void;
 
-  // ---- subtitles ----
   subtitles: PlayerSub[];
   subtitleIndex: number | null;
   setSubtitle(index: number | null): void;
 
-  // ---- quality (source-honest) ----
   qualities: PlayerQuality[];
   qualityId: string;
   setQuality(id: string): void;
 
-  // ---- playback engine (web: manual override of the auto direct/HLS decision).
-  //      Absent on platforms with no in-player picker (e.g. TV, which offers the
-  //      engine in its profile menu), so the Settings row hides itself. ----
+  // The engine picker (web: manual override of the auto direct/HLS decision).
+  // Absent on platforms with no in-player picker (e.g. TV, which offers the
+  // engine in its profile menu), so the Settings row hides itself.
   engines?: PlayerQuality[];
   engineId?: string;
   setEngine?(id: string): void;
 
-  // ---- audio filter / normalizer ----
   audioFilter: AudioFilterMode;
   setAudioFilter(mode: AudioFilterMode): void;
   audioFilterSupported: boolean;
 
-  // ---- window (web) ----
   pipActive: boolean;
   togglePip(): void;
   fullscreen: boolean;
   toggleFullscreen(): void;
 
-  // ---- native video plane (TV: AVPlay / mpv / ExoPlayer) ----
-  /** Resize the NATIVE video plane to a fraction-rect, or `null` for fullscreen.
-   *  Lets the chrome shrink the plane into the settings card (YouTube-style),
-   *  since a hardware plane behind the page can't be CSS-transformed. Absent for
-   *  an in-page <video> surface, which the chrome shrinks with a CSS transform. */
+  /** Resize the NATIVE video plane (TV: AVPlay / mpv / ExoPlayer) to a
+   *  fraction-rect, or `null` for fullscreen. Lets the chrome shrink the plane
+   *  into the settings card (YouTube-style), since a hardware plane behind the
+   *  page can't be CSS-transformed. Absent for an in-page <video> surface, which
+   *  the chrome shrinks with a CSS transform. */
   setPlaneRect?(rect: PlaneRect | null): void;
 
-  // ---- stats ----
   getStats(): PlayerStats;
 }

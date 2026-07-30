@@ -1,27 +1,15 @@
 //! Sending notifications from the console: a composer, its samples, and the
-//! image an admin attaches to one.
+//! image an admin attaches to one. `GET .../samples` renders the catalogue of
+//! the core's own events so an admin can preview one without triggering it for
+//! real; the same send endpoint also accepts a written announcement (title,
+//! body, optional link/image), riding in as [`NotificationEvent::Custom`].
 //!
-//! Two jobs in one place, because they are the same act.
+//! Every send goes through [`notify::emit`] exactly as a real producer's would,
+//! so it exercises category preferences, per-recipient rendering, the stored
+//! row, the live bus event and the push fan-out - nothing here is a mock.
 //!
-//! **Testing.** Each of the core's events renders differently - some carry a
-//! poster, some carry buttons, each belongs to a category a recipient may have
-//! muted, each takes a different route when tapped. Seeing one used to mean
-//! making the thing happen: approve a request, fail a job. `GET .../samples`
-//! answers that with the catalogue, already rendered, and posting one back sends
-//! it for real.
-//!
-//! **Announcing.** The same endpoint takes a written notification - title, body,
-//! an optional link and image - so an admin can tell the household something the
-//! core has no event for ("the server reboots at nine"). It rides in as a
-//! [`NotificationEvent::Custom`], the same door a module uses for its own
-//! notices, so the core never grows a vocabulary for one-off announcements.
-//!
-//! Nothing here is a preview: the payload goes through [`notify::emit`] exactly
-//! as a producer's would, so it exercises category preferences, per-recipient
-//! rendering, the stored row, the live bus event and the push fan-out.
-//!
-//! `settings.manage` only, and the audience is stated per call: "everyone" here
-//! writes a row into every account on the server.
+//! `settings.manage` only; audience is stated per call, and "everyone" writes a
+//! row into every account on the server.
 
 use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, State};
@@ -44,43 +32,35 @@ use crate::model::{
 };
 use crate::state::SharedState;
 
-/// Cap on an attached image, matching the avatar upload's.
+// Matches the avatar upload's cap.
 const MAX_IMAGE_BYTES: usize = 8 * 1024 * 1024;
 
-/// The relay's own limits on a push, from `packages/push-relay/worker/schemas.ts`.
-///
-/// Enforced HERE, and stated in the same units, because the relay is the last
-/// thing in the chain and rejects with a 400 - which is not `gone`, so an
-/// over-long announcement did not merely fail to arrive: it spent a delivery
-/// failure on every phone on the server, and eight sends would have unsubscribed
-/// the household. Meanwhile the endpoint answered `{"delivered": N}`, because
-/// that counts in-app rows, so the admin was told it had worked.
-///
-/// Refusing at the console turns all of that into one 400 the composer can show.
+// The relay's own limits on a push (`packages/push-relay/worker/schemas.ts`),
+// enforced here too: the relay rejects an over-long push with a 400 per
+// recipient rather than dropping it, which can trip a device's unsubscribe
+// threshold - and the admin endpoint would still report success (it counts
+// in-app rows). Refusing at the console turns that into one 400 up front.
 const MAX_TITLE: usize = 256;
 const MAX_BODY: usize = 1024;
 const MAX_LINK: usize = 1024;
 const MAX_IMAGE_URL: usize = 2048;
 
-/// Length as the relay counts it.
-///
-/// zod's `.max()` measures a JS string's `length`, which is UTF-16 code units -
-/// so an emoji counts twice there and once under `chars()`. Counting the same
-/// way is what keeps "accepted here" and "accepted there" the same sentence.
+// zod's `.max()` on the relay side counts UTF-16 code units, not `chars()`, so
+// an emoji counts twice there; match that so "accepted here" implies "accepted
+// there".
 fn wire_len(s: &str) -> usize {
     s.encode_utf16().count()
 }
 
-/// Refuse anything the relay would, naming the field.
 fn within(value: &str, max: usize, too_long: &'static str) -> Result<(), &'static str> {
     if wire_len(value) > max {
         return Err(too_long);
     }
     Ok(())
 }
-/// Widest the stored master needs to be. A notification's image is drawn at
-/// ~44 px in a list row and at most a phone's width in a rich push, so a master
-/// past this is bytes nobody ever sees - and the `?w=` renditions come off it.
+
+// A notification's image is drawn at ~44px in a list row and at most a phone's
+// width in a rich push; a master past this is bytes nobody ever sees.
 const IMAGE_MAX_WIDTH: u32 = 1280;
 
 pub fn routes() -> Router<SharedState> {
@@ -110,9 +90,8 @@ pub async fn catalogue(AuthUser(user): AuthUser) -> Result<Response, Response> {
     Ok(Json(json!({ "events": events })).into_response())
 }
 
-/// One catalogue entry: the sample payload, rendered as the recipient would get
-/// it. The id is the event name - these rows are never stored, and the page
-/// keys its list by it.
+// The id is the event name: these rows are never stored, and the page keys its
+// list by it.
 fn preview(event: NotificationEvent, admin: &str, locale: &str) -> Notification {
     let spec = sample(event, admin);
     let stored = StoredNotification {
@@ -135,26 +114,21 @@ fn preview(event: NotificationEvent, admin: &str, locale: &str) -> Notification 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SendBody {
-    /// Send one of the core's own events, sampled: `"request.available"`. Ignored
-    /// when `title` is given - what the composer shows is what gets sent.
+    // Ignored when `title` is given: what the composer shows is what gets sent.
     #[serde(default)]
     pub event: Option<String>,
-    /// A written notification. Title and body are literal text, in whatever
-    /// language the admin typed; they ride as params (see `NotificationSpec::custom`).
     #[serde(default)]
     pub title: Option<String>,
     #[serde(default)]
     pub body: Option<String>,
-    /// Which preference bucket a written one answers to. Defaults to `system`,
-    /// the bucket for "the server has something to tell you".
+    // Defaults to `system` when omitted.
     #[serde(default)]
     pub category: Option<String>,
-    /// In-app route a tap opens, and the art on the row / rich push.
     #[serde(default)]
     pub link: Option<String>,
     #[serde(default)]
     pub image_url: Option<String>,
-    /// Who gets it. Defaults to the caller alone, which is the safe answer.
+    // Defaults to the caller alone, which is the safe answer.
     #[serde(default)]
     pub target: Target,
 }
@@ -162,12 +136,9 @@ pub struct SendBody {
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Target {
-    /// The admin pressing the button.
     #[default]
     Me,
-    /// Everyone who can administer the server.
     Admins,
-    /// Every account. Says so in the UI before you press it.
     Everyone,
 }
 
@@ -195,7 +166,6 @@ pub async fn send(
     Ok(Json(json!({ "delivered": delivered })).into_response())
 }
 
-/// What to send: what the composer wrote, else the sample for a named event.
 fn compose(body: &SendBody, admin: &str) -> Result<NotificationSpec, &'static str> {
     if let Some(title) = body.title.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
         let category = match body.category.as_deref() {
@@ -251,12 +221,10 @@ pub async fn upload_image(
     }
 }
 
-/// A believable payload for one event: the same message keys its real producer
-/// uses, so what lands in the bell is what a real one would look like.
-///
-/// The parameters are sample text on purpose (`Sample Film`), and the buttons
-/// are LINKS even where the real notification carries an API action - a test
-/// must not leave an "Approve" that would POST to a request that does not exist.
+// Uses the same message keys a real producer would, so what lands in the bell
+// matches the real thing. Buttons are always LINKS here, even where the real
+// notification carries an API action, so a preview never POSTs to a request
+// that doesn't exist.
 fn sample(event: NotificationEvent, admin: &str) -> NotificationSpec {
     let film = "Sample Film";
     match event {
@@ -372,7 +340,7 @@ fn sample(event: NotificationEvent, admin: &str) -> NotificationSpec {
     }
 }
 
-/// A button that only navigates. See [`sample`] for why nothing here POSTs.
+// A button that only navigates. See `sample` for why nothing here POSTs.
 fn link_action(id: &str, label_key: &str, href: &str) -> ActionSpec {
     ActionSpec {
         id: id.into(),

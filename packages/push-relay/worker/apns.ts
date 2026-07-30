@@ -1,15 +1,10 @@
-/** Apple, from inside the relay.
- *
- * Mirrors `server/crates/kroma-push/src/apns.rs` — the same payload, the same
- * headers, the same two facts that are easy to get wrong: APNs refuses HTTP/1.1
- * (a Worker's `fetch` speaks HTTP/2 to Apple, so this is handled for us), and a
- * device token belongs to exactly ONE of the two hosts.
- *
- * That second one is why nothing here takes an "environment" argument. A relay
- * serves every KROMA server at once, so it sees TestFlight tokens and Xcode
- * tokens in the same second and no global choice could be right for both. It
- * tries production and falls back on the one rejection that means "wrong host".
- */
+// Apple, from inside the relay. Mirrors `server/crates/kroma-push/src/apns.rs` — the same
+// payload, the same headers, the same two facts that are easy to get wrong: APNs refuses
+// HTTP/1.1 (a Worker's `fetch` speaks HTTP/2 to Apple, so this is handled for us), and a device
+// token belongs to exactly ONE of the two hosts. That second one is why nothing here takes an
+// "environment" argument. A relay serves every KROMA server at once, so it sees TestFlight
+// tokens and Xcode tokens in the same second and no global choice could be right for both. It
+// tries production and falls back on the one rejection that means "wrong host".
 
 import { importEs256, sign } from './jwt';
 import type { Notification } from './notification';
@@ -21,12 +16,10 @@ const HOSTS = {
   sandbox: 'https://api.sandbox.push.apple.com',
 } as const;
 
-/**
- * Apple caps token generation at one per 20 minutes per key and rejects a token
- * older than an hour, so 45 minutes sits comfortably inside both. Cached per
- * isolate: this is a derived credential, not request state, and re-signing per
- * push would be pointless work against a documented rate limit.
- */
+// Apple caps token generation at one per 20 minutes per key and rejects a
+// token older than an hour, so 45 minutes sits comfortably inside both.
+// Cached per isolate: this is a derived credential, not request state, and
+// re-signing per push would be pointless work against a documented rate limit.
 const TOKEN_LIFETIME_SECS = 45 * 60;
 let cached: { token: string; mintedAt: number; keyId: string } | null = null;
 

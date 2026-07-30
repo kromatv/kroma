@@ -1,14 +1,6 @@
-// The cast control, in the app's chrome.
-//
-// Always present once signed in - not gated on a TV being up. A button that
-// appears only when a set happens to be awake is a button nobody learns is
-// there, and "why can't I see it" is a worse failure than an empty picker that
-// says, in one line, to open KROMA on the television.
-//
-// Pressing it always opens the device list - that is what a cast button does
-// everywhere, and it is where "this device" lives, so disconnecting is one tap
-// from anywhere in the app. The mini bar above the tabs is the way into the
-// remote; this is the way out.
+// The cast control, deliberately always present once signed in rather than
+// gated on a TV being up: the empty picker explains itself, an absent button
+// does not.
 
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useCast } from '@kroma/ui';
@@ -45,9 +37,8 @@ export function CastIconButton({
         onPick={(id) => {
           devices.current?.dismiss();
           select(id);
-          // Picking a TV from the chrome is "drive that one", not "play this":
-          // the remote is where you say what to play next. Picking this device
-          // simply hands control back and stays where the viewer was.
+          // Picking a TV means "drive that one", so open the remote; picking
+          // this device hands control back and stays where the viewer was.
           if (id) router.push('/cast' as never);
         }}
       />

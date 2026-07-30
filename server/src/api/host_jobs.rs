@@ -1,15 +1,8 @@
 //! The `/_host/register-job` callback a sidecar module POSTs to so its scheduled
-//! jobs join the CORE JobManager, showing up in admin Tâches with cron
-//! scheduling, a run-now button and run history exactly like an in-core job.
-//!
-//! The engine stores a remote job's run logic as an injected closure (it must not
-//! depend on the module supervisor); this file, which has both the supervisor and
-//! the concrete `SharedState`, builds that closure. On each trigger it resolves
-//! the module's current local port and does a blocking HTTP POST to the sidecar's
-//! `/_job/run/{key}` endpoint, so the pass runs in the module's own process.
-//!
-//! Mounted on the `/api` router next to `host_router`, guarded by the same shared
-//! host token (a sidecar authenticates every core callback with it).
+//! jobs join the core `JobManager` (admin Tâches, cron, run-now, history) like an
+//! in-core job. On each trigger, the registered closure resolves the module's
+//! current local port and blocking-POSTs `/_job/run/{key}`. Mounted on `/api`
+//! next to `host_router`, guarded by the same shared host token.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -45,9 +38,6 @@ struct RegisterJobBody {
     schedule: Option<String>,
 }
 
-/// Register (or, on a module respawn, re-register) one sidecar job on the core
-/// JobManager. Idempotent: `register_remote` refreshes the run closure but keeps
-/// any existing (possibly admin-customized) schedule state.
 async fn register_job(
     State(state): State<SharedState>,
     Extension(supervisor): Extension<Arc<Supervisor>>,
@@ -72,12 +62,10 @@ async fn register_job(
     StatusCode::NO_CONTENT.into_response()
 }
 
-/// Build a remote job's run closure: on each trigger (from the core scheduler or a
-/// manual run-now), resolve the module's CURRENT local port and blocking-POST to
-/// its `/_job/run/{key}` with the shared host token. The closure runs on the
-/// JobManager's blocking thread, so a long import is fine; the timeout is generous
-/// for that. A non-2xx (or an unreachable/stopped sidecar) fails the run, which
-/// the console records with the error message.
+// On each trigger, resolves the module's current local port and blocking-POSTs
+// `/_job/run/{key}` with the shared host token, on the JobManager's blocking
+// thread (a long import is fine). A non-2xx or unreachable sidecar fails the
+// run, recorded by the console with the error message.
 fn remote_run(supervisor: Arc<Supervisor>, module_id: String, key: String) -> RemoteRun {
     let host_token = supervisor.host_token().to_string();
     Arc::new(move |_ctx: &JobContext| -> anyhow::Result<()> {
@@ -102,9 +90,9 @@ fn remote_run(supervisor: Arc<Supervisor>, module_id: String, key: String) -> Re
     })
 }
 
-/// Leak a job key to `&'static str` (what `register_remote` needs to key the
-/// engine's `'static` maps), caching by key so a module respawn reuses the same
-/// leak. Job keys are a small fixed set, so the total leak is bounded.
+// Leaks to `&'static str` (what `register_remote` needs for its `'static` maps),
+// caching by key so a respawn reuses the same leak. Job keys are a small fixed
+// set, so the total leak is bounded.
 fn leak_key(key: &str) -> &'static str {
     static CACHE: OnceLock<Mutex<HashMap<String, &'static str>>> = OnceLock::new();
     let mut map = CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap();

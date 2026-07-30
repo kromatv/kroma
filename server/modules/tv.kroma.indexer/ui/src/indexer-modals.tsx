@@ -50,8 +50,6 @@ export const IndexerModal = createCallable<{ indexer: IndexerView }, boolean>(
   },
 );
 
-// ----- Torznab endpoint form ------------------------------------------------------
-
 function TorznabIndexerForm({
   indexer,
   end,
@@ -134,8 +132,6 @@ function TorznabIndexerForm({
     </Modal>
   );
 }
-
-// ----- built-in: definition picker ------------------------------------------------
 
 /** Browse the Cardigann catalog, sync it from upstream, and pick a definition
  * to add. Resolves the picked definition id, or `null` on dismiss. */
@@ -243,8 +239,6 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
     </Modal>
   );
 });
-
-// ----- built-in: settings form ----------------------------------------------------
 
 /** Create or edit a built-in (Cardigann) indexer from its definition schema.
  * Resolves `true` once a save/delete succeeds so the caller can refresh. */

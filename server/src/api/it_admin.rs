@@ -8,8 +8,6 @@ use serde_json::json;
 use crate::api::test_support::{get, seed_library, seed_session, send, test_app};
 use crate::model::Permission;
 
-// ----- guards -----------------------------------------------------------------
-
 #[tokio::test]
 async fn admin_users_requires_authentication() {
     let t = test_app();
@@ -24,8 +22,6 @@ async fn admin_users_forbids_a_non_admin() {
     let (status, _) = get(&t.app, "/api/admin/users", Some(&member)).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
-
-// ----- dashboard reads --------------------------------------------------------
 
 #[tokio::test]
 async fn server_info_reports_identity_for_an_admin() {
@@ -78,8 +74,6 @@ async fn settings_view_returns_grouped_schema() {
     assert!(body["groups"].is_array());
 }
 
-// ----- mutations (no scan, no network) ----------------------------------------
-
 #[tokio::test]
 async fn settings_put_persists_a_known_key() {
     let t = test_app();
@@ -112,7 +106,6 @@ async fn admin_libraries_lists_a_seeded_definition() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["libraries"].as_array().map(Vec::len), Some(0));
 
-    // Seed one, then it shows up.
     let id = seed_library(&t.state, "Mes Films");
     let (status, body) = get(&t.app, "/api/admin/libraries", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);

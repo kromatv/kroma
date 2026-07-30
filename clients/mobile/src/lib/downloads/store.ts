@@ -13,36 +13,28 @@ export interface OfflineSub {
   language: string | null;
   label?: string;
   ai?: boolean;
-  /** Local file URI of the WebVTT. */
   path: string;
 }
 
 export interface DownloadEntry {
   itemId: string;
-  /** Snapshot of the item for fully offline rendering. */
   item: MediaItem;
   fileUri: string;
   posterUrl: string | null;
   backdropUrl: string | null;
   sizeBytes: number;
   downloadedAt: string;
-  /** Sidecar subtitle tracks downloaded with the media (absent on old entries). */
   subs?: OfflineSub[];
-  /** Sidecar storyboard (scrub previews) when the server had one ready. */
   storyboard?: { manifest: StoryboardManifest; spritePath: string };
 }
 
 export type DownloadState =
   | { status: 'none' }
-  /** progress is 0..1, or -1 when the total size is unknown (server remux). */
   | { status: 'downloading'; progress: number }
-  /** User-paused; the platform holds resume data, even across app restarts. */
   | { status: 'paused'; progress: number }
   | { status: 'queued' }
   | { status: 'done'; entry: DownloadEntry };
 
-/** Local media path for an item. The extension matters: the raw path keeps the
- * original container, the remux is always MP4. */
 export function mediaPath(itemId: string, ext: string): string {
   return `${DIR}${itemId}.${ext}`;
 }
@@ -65,10 +57,9 @@ export async function writeIndex(entries: DownloadEntry[]): Promise<void> {
   await FileSystem.writeAsStringAsync(INDEX, JSON.stringify(entries));
 }
 
-/** The titles the user asked for that are not yet in the index: the running
- * transfer plus the queue. Persisted so a download the platform could not keep
- * alive across an app kill (iOS cancels background tasks on force-quit) is
- * requeued on the next launch instead of silently forgotten. */
+/** Titles the user asked for that are not yet in the index; persisted because
+ * iOS cancels background tasks on force-quit and they must be requeued at the
+ * next launch. */
 export async function readWanted(): Promise<MediaItem[]> {
   try {
     const raw = await FileSystem.readAsStringAsync(WANTED);
@@ -83,14 +74,9 @@ export async function writeWanted(items: MediaItem[]): Promise<void> {
   await FileSystem.writeAsStringAsync(WANTED, JSON.stringify(items));
 }
 
-/** Delete everything in the download directory that no index entry claims.
- *
- * A transfer killed with the app (swipe-away, OOM, reboot) leaves its partial
- * file behind with no entry pointing at it: invisible to `remove()`, uncounted
- * in the storage total, and never cleaned up. On a 20 GB film that is 20 GB the
- * user cannot reclaim from inside the app. Runs once at startup, after the
- * still-running platform transfers have been re-adopted: their in-flight files
- * (`live`) are spoken for, not orphans. */
+/** Deletes everything in the download directory that no index entry claims.
+ * Must run after still-running platform transfers are re-adopted, so their
+ * in-flight files can be passed in as `live` rather than swept. */
 export async function sweepOrphans(
   entries: DownloadEntry[],
   live: Iterable<string> = [],
@@ -120,7 +106,6 @@ export async function sweepOrphans(
   }
 }
 
-/** Drop an entry's media file and every sidecar it owns. */
 export async function deleteEntryFiles(entry: DownloadEntry): Promise<void> {
   const paths = [
     entry.fileUri,

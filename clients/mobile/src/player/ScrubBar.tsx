@@ -1,12 +1,6 @@
 // Touch scrub bar: buffered + played fills, drag preview with a storyboard
-// thumbnail + time bubble. A plain tap seeks directly; the engine decides
-// native seek vs re-anchor on commit.
-//
-// Drawn with the TV seek bar's anatomy (the kit's SEEK_BAR constants, shared
-// with @kroma/ui SeekBar): a 6pt pill track, buffer fill, the played span as
-// the amber gradient, and a white playhead wearing the amber halo - always on
-// screen, the way the TV's is, because the bar that says "you can seek here"
-// should not need a touch to start saying it.
+// thumbnail + time bubble, drawn from the kit's SEEK_BAR constants so it matches
+// the TV seek bar.
 
 import { formatTimecode } from '@kroma/core';
 import { SEEK_BAR } from '@kroma/ui';
@@ -20,7 +14,6 @@ import type { StoryboardTile } from './useStoryboard';
 
 const BAR_H = 6;
 const THUMB_W = 148;
-/** The playhead: a white pill in the amber halo, grown a touch under a drag. */
 const KNOB = 14;
 const KNOB_ACTIVE = 18;
 
@@ -37,7 +30,6 @@ export function ScrubBar({
   buffered: number;
   onSeek(abs: number): void;
   tileFor?: (abs: number) => StoryboardTile | null;
-  /** Chapter/marker starts (abs seconds) shown as ticks on the track. */
   markers?: number[];
 }>) {
   const [preview, setPreview] = useState<number | null>(null);
@@ -110,7 +102,6 @@ export function ScrubBar({
         ) : null}
         <View style={styles.track}>
           <View style={[styles.buffered, { width: `${bufFrac * 100}%` }]} />
-          {/* The TV bar's played span: the amber gradient, not a flat fill. */}
           <LinearGradient
             colors={SEEK_BAR.played}
             start={{ x: 0, y: 0.5 }}
@@ -165,8 +156,7 @@ const styles = StyleSheet.create({
     width: 2.5,
     backgroundColor: 'rgba(10, 10, 12, 0.9)',
   },
-  /** The TV playhead: white, in the amber halo. A border stands in for the
-   * box-shadow ring, which native cannot spread. */
+  // The border stands in for a box-shadow ring, which native cannot spread.
   knob: {
     position: 'absolute',
     backgroundColor: '#FFFFFF',

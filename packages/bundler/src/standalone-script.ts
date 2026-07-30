@@ -1,27 +1,14 @@
-// Bundling for the scripts that live OUTSIDE a client's module graph.
-//
-// Every client has one or two: a service worker the browser fetches by URL, a
-// Tizen background service the platform launches from a path in config.xml.
-// Nothing imports them, so Vite never sees them, so for a long time they were
-// hand-written straight into `public/` and copied verbatim — which made them the
-// only files in the repo no compiler read. The Tizen preview service shipped
-// `?.` to a Chromium 76 that treats it as a SyntaxError and killed the Smart Hub
-// carousel silently; turning the typechecker on the web service worker, a file
-// of the same size, found four more holes.
+// Bundling for the scripts that live OUTSIDE a client's module graph: a
+// service worker the browser fetches by URL, a Tizen background service the
+// platform launches from a path in config.xml. Nothing imports them, so Vite
+// never sees them and they'd otherwise ship uncompiled and untypechecked.
 
 import { type BuildOptions, build } from 'esbuild';
 import type { Plugin } from 'vite';
 
 export interface StandaloneScriptOptions {
-  /** The entry to bundle. Absolute, or relative to the Vite root. */
   entry: string;
-  /** Where to write the bundle. Absolute, or relative to the Vite root. */
   outfile: string;
-  /**
-   * esbuild overrides. The defaults produce one self-contained, minified IIFE;
-   * a script shipping to an engine older than the browser floor wants its own
-   * `target`, and the Tizen service wants CJS on a `neutral` platform.
-   */
   esbuild?: BuildOptions;
 }
 

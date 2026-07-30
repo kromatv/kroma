@@ -50,14 +50,14 @@ impl Embedder for LexicalEmbedder {
     }
 }
 
-/// Lowercase, split on non-alphanumerics, drop 1-char noise.
+// Lowercase, split on non-alphanumerics, drop 1-char noise.
 fn tokenize(text: &str) -> impl Iterator<Item = String> + '_ {
     text.split(|c: char| !c.is_alphanumeric())
         .filter(|s| s.len() >= 2)
         .map(|s| s.to_lowercase())
 }
 
-/// FNV-1a 64-bit fast, allocation-free, good enough spread for bucketing.
+// FNV-1a 64-bit fast, allocation-free, good enough spread for bucketing.
 fn fnv1a(s: &str) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in s.bytes() {
@@ -67,8 +67,8 @@ fn fnv1a(s: &str) -> u64 {
     h
 }
 
-/// A tiny stop-list so the most common English/French filler doesn't dominate the
-/// overview text. Not exhaustive by design collisions wash out the long tail.
+// A tiny stop-list so the most common English/French filler doesn't dominate the
+// overview text. Not exhaustive by design collisions wash out the long tail.
 fn is_stopword(t: &str) -> bool {
     matches!(
         t,
@@ -87,7 +87,7 @@ fn is_stopword(t: &str) -> bool {
 mod tests {
     use super::*;
 
-    /// Cosine similarity - both vectors are unit-length, so this is a plain dot.
+    // Cosine similarity - both vectors are unit-length, so this is a plain dot.
     fn cosine(a: &[f32], b: &[f32]) -> f32 {
         a.iter().zip(b).map(|(x, y)| x * y).sum()
     }

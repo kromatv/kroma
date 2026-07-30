@@ -44,7 +44,6 @@ impl QBittorrent {
         Ok(())
     }
 
-    /// GET returning the body, re-logging-in once on 403 (expired SID).
     fn get(&self, path: &str, params: &[(&str, &str)]) -> Result<kroma_module_sdk::http::Response> {
         let url = format!("{}{path}", self.base);
         let build = || {
@@ -202,7 +201,6 @@ impl DownloadClient for QBittorrent {
     }
 }
 
-/// One cookie jar per endpoint+user so two qBittorrent configs never share a SID.
 fn cookie_jar_path(state_dir: &std::path::Path, def: &ClientDef) -> PathBuf {
     let mut tag: u64 = 0xcbf2_9ce4_8422_2325;
     for b in format!("{}|{}", def.url, def.username).bytes() {
@@ -212,7 +210,6 @@ fn cookie_jar_path(state_dir: &std::path::Path, def: &ClientDef) -> PathBuf {
     state_dir.join(format!("qbit-{tag:016x}.cookies"))
 }
 
-/// The download-client registry kind this engine provides.
 pub const KIND: &str = "qbittorrent";
 
 /// Register the qBittorrent factory into a download-client registry (called by
@@ -223,10 +220,8 @@ pub fn register(reg: &mut kroma_module_sdk::ports::DownloadClientRegistry) {
     });
 }
 
-/// This module's id (matches its `module.json`).
 pub const MODULE_ID: &str = "tv.kroma.engine.qbittorrent";
 
-/// This module's registry entry (manifest + packaged icon embedded at compile time).
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
@@ -271,22 +266,17 @@ mod tests {
 
     use super::*;
 
-    /// A stand-in qBittorrent WebUI, speaking just enough HTTP/1.1 for curl.
-    ///
-    /// `Fetch` shells out to curl, so this has to be a real socket rather than a
-    /// mocked client - which is the point: it exercises the connector's actual
-    /// request/response handling, cookie jar and all, with no new dependency.
+    // `Fetch` shells out to curl, so this has to be a real socket rather than a
+    // mocked client - which exercises the connector's actual request/response
+    // handling, cookie jar included.
     struct FakeQbit {
         base: String,
-        /// Every "METHOD PATH" the connector asked for, in order.
         seen: Arc<Mutex<Vec<String>>>,
     }
 
-    /// One canned answer: `(status, body)`.
+    // (status, body)
     type Reply = (u16, String);
 
-    /// Read the request line, returning `"METHOD /path"` with any query dropped,
-    /// plus the declared body length. `None` when the peer sent nothing.
     fn read_request(reader: &mut impl BufRead) -> Option<(String, usize)> {
         let mut first = String::new();
         if reader.read_line(&mut first).unwrap_or(0) == 0 {
@@ -309,7 +299,6 @@ mod tests {
         }
     }
 
-    /// Serialize one reply onto the wire.
     fn write_reply(stream: &mut impl Write, (status, body): Reply) {
         let reason = if status == 200 { "OK" } else { "ERR" };
         let resp = format!(
@@ -321,8 +310,8 @@ mod tests {
     }
 
     impl FakeQbit {
-        /// `route` maps a request line ("POST /api/v2/auth/login") plus the call
-        /// count for that route to a reply.
+        // `route` maps a request line ("POST /api/v2/auth/login") plus the 1-based
+        // call count for that route to a reply.
         fn start(route: impl Fn(&str, usize) -> Reply + Send + 'static) -> Self {
             let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
             let port = listener.local_addr().unwrap().port();
@@ -375,7 +364,6 @@ mod tests {
         }
     }
 
-    /// The routes a healthy server answers: login OK, one torrent, no files.
     fn healthy(key: &str, _n: usize) -> Reply {
         match key {
             "POST /api/v2/auth/login" => (200, "Ok.".into()),
@@ -553,7 +541,6 @@ mod tests {
 
     #[test]
     fn state_mapping_covers_every_qbit_state() {
-        // Explicit error / paused / completed / seeding / queued mappings.
         assert_eq!(state_of("error", 0.5), TorrentState::Error);
         assert_eq!(state_of("missingFiles", 0.5), TorrentState::Error);
         assert_eq!(state_of("pausedDL", 0.3), TorrentState::Paused);

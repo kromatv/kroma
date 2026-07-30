@@ -11,12 +11,8 @@ import {
 } from 'react-native';
 import { colors, radius, spacing } from '#mobile/lib/theme';
 
-/** The entry, with the design system's fixed glyph well: every field carries a
- * leading icon naming what it holds, and the well is a constant size so a field
- * with an icon is never taller than its neighbours (the kit TextField's rule).
- * `icon` is a KIT icon name - the same shared Tabler set every surface draws
- * from - and `style` lands on the WELL, so call sites keep sizing the box they
- * always did. */
+/** `style` lands on the icon well, not the inner `TextInput`, so call sites
+ * keep sizing the box they always did. */
 export function TextField({
   icon,
   style,
@@ -54,7 +50,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
   },
-  /** A growing entry reads from its first line, so its glyph pins to the top. */
+  // A growing entry reads from its first line, so its glyph pins to the top.
   inputWellMultiline: { alignItems: 'flex-start', paddingVertical: 12 },
   inputIcon: { width: 20, alignItems: 'center' },
   inputIconMultiline: { paddingTop: 2 },

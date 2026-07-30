@@ -1,14 +1,8 @@
-// HTML `<video>` backend (+ hls.js for the master). Used by webOS and by any
-// plain compatible MP4 on Tizen. Direct-play for a compatible single-audio MP4,
-// else the HLS master.
+// HTML `<video>` backend (+ hls.js for the master), used by webOS and Tizen.
 //
-// The HLS remux is anchored at `baseSec` (server input `-ss`), so over a network
-// mount a resume/far-seek starts fast (ffmpeg seeks IN the file). The element
-// restarts at 0, so absolute position is `baseSec + element time`. Seeking inside
-// the BUFFERED range is an instant native seek; outside it we re-anchor (reload
-// the master at the new offset) rather than stall at the production edge. The
-// stream carries only the ONE audio track named in its URL, so switching language
-// re-anchors too (reload at the current position with the new `audio` segment).
+// The HLS remux is anchored at `baseSec` (server input `-ss`) and the element
+// restarts at 0, so absolute position is `baseSec + element time`. A seek outside
+// the buffered range re-anchors (reloads the master at the new offset).
 
 import { attachDirectPlay, type KromaClient, type MediaItem } from '@kroma/core';
 import {
@@ -23,19 +17,14 @@ export interface HtmlOptions {
   video: HTMLVideoElement;
   client: KromaClient;
   item: MediaItem;
-  /** Plain direct-play (`<video src>`) vs the HLS master. */
   direct: boolean;
-  /** When using the master, request the AAC renditions (MSE can't decode AC3). */
+  /** Request the AAC renditions of the master (MSE can't decode AC3). */
   masterAac: boolean;
-  /** Force the platform's NATIVE HLS pipeline (`<video src=master>`), bypassing
-   * MSE/hls.js. Legacy webOS engines (Chromium < 99) cannot decode HEVC through
-   * MSE, but the TV's media pipeline plays HLS (surround included) natively -
-   * the same path Safari takes via its canPlayType probe below. */
+  /** Bypass MSE/hls.js: legacy webOS engines (Chromium < 99) cannot decode HEVC
+   * through MSE, but the TV's media pipeline plays HLS natively. */
   forceNativeHls?: boolean;
-  /** Audio-relative rendition to select once the manifest parses. */
   initialRendition: number;
   durationSec: number;
-  /** Initial remux anchor (s). */
   startSec: number;
   listeners: EngineListeners;
 }
@@ -97,16 +86,14 @@ export class HtmlEngine implements TvEngine {
 
     if (opts.direct) {
       attachDirectPlay(v, opts.client, opts.item, { autoplay: false });
-      // Resume: the direct-play timeline is absolute, so seek to the start offset once
-      // metadata is known - it opens near the resume point instead of loading from 0.
       if (opts.startSec > 0.5) {
         const seekOnce = () => {
           v.currentTime = opts.startSec;
           v.removeEventListener('loadedmetadata', seekOnce);
         };
         v.addEventListener('loadedmetadata', seekOnce);
-        // The <video> is reused across items; if this engine is destroyed before
-        // metadata loads, a leaked seekOnce would jump the NEXT item to this offset.
+        // The <video> is reused across items: a leaked seekOnce would jump the
+        // NEXT item to this offset.
         const base = this.cleanupEvents;
         this.cleanupEvents = () => {
           base();
@@ -120,20 +107,16 @@ export class HtmlEngine implements TvEngine {
 
   private attachMaster(): void {
     const v = this.v;
-    // The remux is anchored at `baseSec` (server input `-ss`) and the chosen audio
-    // is MUXED in by the `audio` path segment, so the URL must carry both - hls.js
-    // then plays from RELATIVE 0 and `position()` adds `baseSec` back. Omitting the
-    // anchor makes the server always start at t=0 (the picture ignores every seek).
+    // The URL must carry both the anchor and the audio track: without the anchor
+    // the server always starts at t=0 and the picture ignores every seek.
     const url = this.opts.client.hlsMasterUrl(
       this.opts.item.id,
       this.opts.masterAac,
       this.baseSec,
       this.rendition,
     );
-    // Safari / WKWebView: prefer NATIVE HLS. Its media stack decodes Dolby
-    // (AC3 / E-AC3) with full surround, which hls.js + MSE cannot - so on macOS the
-    // master is stream-copied (5.1 preserved) and played natively, instead of the
-    // server transcoding audio to stereo AAC. Everything else uses hls.js over MSE.
+    // Safari / WKWebView: prefer native HLS, whose stack decodes Dolby
+    // (AC3 / E-AC3) in full surround where hls.js + MSE cannot.
     const useNative =
       this.opts.forceNativeHls === true || v.canPlayType('application/vnd.apple.mpegurl') !== '';
     // The stream really starts at the keyframe AT-OR-BEFORE the anchor; correct
@@ -142,14 +125,14 @@ export class HtmlEngine implements TvEngine {
       if (this.destroyed) return;
       this.baseSec = realStart;
       if (useNative) {
-        v.src = url; // Safari plays the HLS playlist (incl. AC3) natively.
+        v.src = url;
         v.preload = 'auto';
         return;
       }
       void import('hls.js').then(({ default: Hls }) => {
         if (this.destroyed) return;
         if (!Hls.isSupported()) {
-          v.src = url; // last resort the hook's ready-gated play starts it
+          v.src = url;
           v.preload = 'auto';
           return;
         }
@@ -161,8 +144,6 @@ export class HtmlEngine implements TvEngine {
     });
   }
 
-  /** Re-anchor the remux at `absSec` (reload the master at `?t=absSec`), then
-   * resume playback once the new source is ready. */
   private reanchor(absSec: number): void {
     const wasPlaying = !this.v.paused;
     this.baseSec = absSec;
@@ -210,7 +191,7 @@ export class HtmlEngine implements TvEngine {
       }
     }
     if (rel >= 0 && buffered) {
-      this.v.currentTime = rel; // already downloaded: instant
+      this.v.currentTime = rel;
       return;
     }
     this.reanchor(absSec);
@@ -219,10 +200,8 @@ export class HtmlEngine implements TvEngine {
   setAudioRendition(rendition: number): void {
     if (rendition === this.rendition || this.opts.direct) return;
     this.rendition = rendition;
-    // The chosen audio is muxed into the stream by the URL (the server maps one
-    // `0:a:<n>` per session, no alternate renditions), so a language switch reloads
-    // the master at the CURRENT position with the new track. The remux is anchored,
-    // so it restarts in ~1s and the picture resumes exactly where it left off.
+    // The audio track is muxed in by the URL (no alternate renditions), so a
+    // language switch reloads the master at the current position.
     this.reanchor(this.position());
   }
 

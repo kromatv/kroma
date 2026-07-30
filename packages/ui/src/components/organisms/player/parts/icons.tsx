@@ -1,20 +1,11 @@
-/**
- * Shared player glyphs: one semantic set for web + TV so the unified chrome
- * renders identical iconography everywhere. Each entry names the design's intent
- * (IconBack10, IconVolMin, IconQuality) rather than the drawing, which is why
- * this layer exists at all: the chrome asks for "the rewind glyph" and this file
- * decides that the design draws it as a double chevron.
- *
- * They render through the kit's <Icon>, whose path data is generated from
- * @tabler/icons, so the same components compile for Apple TV and Android TV.
- */
+// Shared player glyphs for web + TV. Each entry names the design's intent
+// rather than the drawing, so the chrome asks for "the rewind glyph".
 
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import type { ColorToken } from '#ui/lib/tokens';
 
 type P = Readonly<{ size?: number; stroke?: number; color?: ColorToken | (string & {}) }>;
 
-/** Build one semantic glyph: a fixed drawing with the design's default metrics. */
 function glyph(name: IconName, defaultSize: number, defaultStroke?: number) {
   return function Glyph({ size = defaultSize, stroke = defaultStroke, color }: P) {
     return <Icon name={name} size={size} stroke={stroke} color={color ?? '#FFFFFF'} />;
@@ -23,8 +14,7 @@ function glyph(name: IconName, defaultSize: number, defaultStroke?: number) {
 
 export const IconPlay = glyph('player-play-filled', 30);
 export const IconPause = glyph('player-pause-filled', 28);
-// The design draws rewind / forward as double-chevrons (the +/-10s transport),
-// not the circular "10" glyph, so match that.
+// The design draws the +/-10s transport as double-chevrons, not a circular "10".
 export const IconBack10 = glyph('chevrons-left', 27, 1.8);
 export const IconFwd10 = glyph('chevrons-right', 27, 1.8);
 export const IconNext = glyph('player-track-next-filled', 24);
@@ -48,7 +38,6 @@ export const IconOk = glyph('check', 18, 2.2);
 export const IconAi = glyph('sparkles', 13, 2);
 export const IconDelete = glyph('trash', 16, 1.8);
 export const IconStats = glyph('chart-bar', 22, 1.8);
-// Settings-menu row glyphs (§5): quality / audio-filter / appearance / speed.
 export const IconQuality = glyph('badge-4k', 22, 1.8);
 export const IconAudioFilter = glyph('adjustments-horizontal', 22, 1.8);
 export const IconAppearance = glyph('typography', 22, 1.8);

@@ -13,8 +13,6 @@ import {
   selectEngine,
 } from './directplay';
 
-// ----- fixtures --------------------------------------------------------------
-
 function track(p: Partial<AudioTrack> & { index: number }): AudioTrack {
   return {
     index: p.index,
@@ -46,11 +44,8 @@ const FR_51 = (index: number) => track({ index, language: 'fr', channels: 6, cod
 const FR_COMMENTARY = (index: number) =>
   track({ index, language: 'fr', title: 'Commentary', channels: 2, codec: 'aac' });
 
-// ----- resolveAudioRelativeIndex --------------------------------------------
-
 describe('resolveAudioRelativeIndex', () => {
   it('resolves the commentary id even when the list is reordered', () => {
-    // Served [EN 5.1, FR 5.1, FR-commentary] but delivered reordered.
     const reordered: AudioTrack[] = [FR_51(1), EN_51(0), FR_COMMENTARY(2)];
     const want = audioTrackId(FR_COMMENTARY(2));
     expect(resolveAudioRelativeIndex(reordered, want)).toBe(2);
@@ -61,7 +56,6 @@ describe('resolveAudioRelativeIndex', () => {
       track({ index: 0, language: 'fr', channels: 6 }),
       track({ index: 1, language: 'fr', channels: 2 }),
     ];
-    // No exact index match → must score by language then channels.
     const want = { index: 5, language: 'fr', title: null, channels: 2 };
     expect(resolveAudioRelativeIndex(tracks, want)).toBe(1);
   });
@@ -82,7 +76,6 @@ describe('resolveAudioRelativeIndex', () => {
 
   it('ignores a disagreeing index and resolves by identity', () => {
     const tracks: AudioTrack[] = [EN_51(0), FR_51(1)];
-    // Wanted index 0 but the identity is French → must pick the FR track (index 1).
     const want = { index: 0, language: 'fr', title: null, channels: 6 };
     expect(resolveAudioRelativeIndex(tracks, want)).toBe(1);
   });
@@ -111,8 +104,6 @@ describe('resolveAudioRelativeIndex', () => {
     ).toBe(0);
   });
 });
-
-// ----- selectEngine ----------------------------------------------------------
 
 const WEB_CHROME: PlayEnv = { platform: 'web', safari: false };
 const WEB_SAFARI: PlayEnv = { platform: 'web', safari: true };
@@ -198,8 +189,6 @@ describe('selectEngine', () => {
       videoCodec: 'av1',
       audio: [track({ index: 0, codec: 'aac', channels: 2, default: true })],
     });
-    // Chromium (MSE, dav1d) decodes AV1; Safari / WKWebView reports it unsupported
-    // so the player warns instead of offering it and failing opaquely.
     expect(canDirectPlay(av1, MSE_CAPS).canDirectPlay).toBe(true);
     const verdict = canDirectPlay(av1, SAFARI_CAPS);
     expect(verdict.canDirectPlay).toBe(false);
@@ -218,7 +207,6 @@ describe('selectEngine', () => {
     expect(selectEngine(item, TIZEN)).toEqual({ kind: 'tizen-avplay', aacMaster: false });
     expect(selectEngine(item, WEB_CHROME)).toEqual({ kind: 'web-mse', aacMaster: true });
     expect(selectEngine(item, WEBOS)).toEqual({ kind: 'webos', aacMaster: true });
-    // Steam Deck: native mpv decodes everything, so always its own engine, copy master.
     expect(selectEngine(item, DESKTOP)).toEqual({ kind: 'desktop-mpv', aacMaster: false });
   });
 
@@ -231,8 +219,8 @@ describe('selectEngine', () => {
         track({ index: 1, codec: 'eac3', language: 'fr', channels: 6 }),
       ],
     });
-    // Old engines (Chromium < 99) can't decode HEVC via MSE; the TV pipeline plays
-    // the HLS master natively and decodes surround itself - no AAC transcode.
+    // Chromium < 99 can't decode HEVC via MSE, but the TV pipeline decodes the
+    // HLS master (surround included) itself, so no AAC transcode.
     expect(selectEngine(item, { ...WEBOS, nativeHls: true })).toEqual({
       kind: 'webos',
       aacMaster: false,
@@ -258,8 +246,6 @@ describe('selectEngine', () => {
     expect(selectEngine(item, TIZEN)).toEqual({ kind: 'tizen-avplay', aacMaster: false });
   });
 });
-
-// ----- masterNeedsAac --------------------------------------------------------
 
 describe('masterNeedsAac', () => {
   it('keeps an all-aac master as stream-copy on every engine', () => {
@@ -295,8 +281,6 @@ describe('masterNeedsAac', () => {
   });
 
   it('forces AAC when the audio is unknown (unprobed file, no track list)', () => {
-    // A stream-copy of an unknown codec risks handing MSE undecodable audio
-    // (e.g. EAC3), which stalls the whole load. AAC is the safe default.
     const item = makeItem({ audio: [] });
     expect(masterNeedsAac(item, MSE_CAPS)).toBe(true);
     expect(masterNeedsAac(item, SAFARI_CAPS)).toBe(true);

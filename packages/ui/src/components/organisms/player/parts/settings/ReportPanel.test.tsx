@@ -1,8 +1,4 @@
 // @vitest-environment jsdom
-//
-// Reporting from inside the player: one press on a category is the whole
-// interaction, so what matters is which category leaves the panel, and that the
-// viewer is told what happened either way.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
@@ -14,7 +10,6 @@ afterEach(cleanup);
 
 const show = (ui: ReactElement) => render(<I18nProvider locale="en">{ui}</I18nProvider>);
 
-/** A deferred promise, so a test can hold the panel in its "busy" state. */
 function deferred() {
   let resolve!: () => void;
   let reject!: (e: unknown) => void;
@@ -40,7 +35,6 @@ describe('ReportPanel', () => {
 
     fireEvent.click(screen.getByText('Subtitles'));
     expect(await screen.findByText('Thanks, your report has been sent.')).toBeTruthy();
-    // The categories are gone: there is nothing left to press twice.
     expect(screen.queryByText('Subtitles')).toBeNull();
   });
 

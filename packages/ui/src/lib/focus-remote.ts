@@ -1,17 +1,9 @@
 /// <reference path="types/react-native-tv.d.ts" />
-// Wiring the remote into the spatial navigator, once, for every target.
+// Feeds the TV remote into the spatial navigator (react-tv-space-navigation),
+// which reacts only to a posted stream of directions.
 //
-// The navigator (react-tv-space-navigation, built on the BBC's LRUD) does not
-// listen to anything by itself: it is given a stream of directions and decides
-// what is next to what. That is why it behaves identically on an Apple TV, an
-// Android TV and a browser-based television - and why this app finally has ONE
-// focus engine instead of a native one and a web one that drift apart.
-//
-// The TV remote is read through `useTVEventHandler`, deliberately: it is a hook
-// rather than the plain emitter, and this fork's emitter export has been
-// unreliable, while the hook is the path the player has always used. So the
-// subscription the navigator asks for is a mailbox, and a hook mounted with the
-// screen posts to it.
+// Read via `useTVEventHandler` rather than the plain emitter: this fork's
+// emitter export has been unreliable.
 
 import { useCallback, useEffect, useRef } from 'react';
 import {
@@ -26,8 +18,6 @@ import { inputHeld } from './input-gate';
 import { markPress } from './perf';
 import { isRemoteKeyUp } from './tv-remote';
 
-/** LRUD's directions, as plain strings, so nothing depends on the shape of a
- * re-exported enum. */
 const UP = 'up';
 const DOWN = 'down';
 const LEFT = 'left';
@@ -36,10 +26,8 @@ const ENTER = 'enter';
 
 type Direction = typeof UP | typeof DOWN | typeof LEFT | typeof RIGHT | typeof ENTER;
 
-/** The remote's vocabulary. Both halves of the Siri remote are here: the
- * clickpad sends `up`/`down`/..., a thumb swipe on the touch surface sends
- * `swipeUp`/`swipeDown`/... They come from different gesture recognisers and
- * never both fire for one gesture. */
+// Both Siri Remote input paths, clickpad and touch-surface swipes, land here:
+// they never fire for the same gesture.
 const REMOTE: Record<string, Direction> = {
   up: UP,
   down: DOWN,
@@ -52,22 +40,13 @@ const REMOTE: Record<string, Direction> = {
   select: ENTER,
 };
 
-/**
- * Where directions are posted while a navigator is listening.
- *
- * A SET, not a single slot: screens stack, so two navigators can be subscribed
- * for a moment, and React tears the old subscription down AFTER the new one is
- * up. With one slot that teardown nulls the live handler and the remote goes
- * dead.
- */
+// A SET, not a single slot: screens stack, so two navigators can be subscribed
+// for a moment, and React tears the old subscription down AFTER the new one is
+// up — one slot would let that teardown null the live handler.
 const handlers = new Set<(direction: Direction) => void>();
 
-/**
- * Point the navigator at whichever remote this build actually has.
- *
- * Called once, at startup, before the first screen renders. Calling it twice is
- * harmless: the navigator keeps only the latest pair.
- */
+/** Call once at startup, before the first screen renders; calling it twice is
+ * harmless, the navigator keeps only the latest pair. */
 export function configureRemote(): void {
   SpatialNavigation.configureRemoteControl({
     remoteControlSubscriber: (handle: (direction: Direction) => void) => {
@@ -80,28 +59,20 @@ export function configureRemote(): void {
   });
 }
 
-/** True when the running React Native ships the TV remote surface. Resolved at
- * module scope so the hook count never changes between builds. */
+// Resolved at module scope so the hook count never changes between builds.
 const HAS_TV_EVENTS = typeof useTVEventHandler === 'function';
 const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVENTS
   ? useTVEventHandler
   : () => {};
 
-/**
- * Posts the TV remote into the navigator. Mounted by <FocusScope>, so it lives
- * exactly as long as a screen does.
- *
- * `on` is how a scope drawn INSIDE another one opts out: this posts to EVERY
- * registered navigator (the handler set below), so a second live bridge would
- * deliver each press twice and the ring would jump two controls. See
- * <FocusScope>'s `bridge` prop for who says no and why.
- */
+/** Mounted by <FocusScope>. `on` lets a scope nested inside another opt out —
+ * this posts to EVERY registered navigator, so two live bridges would deliver
+ * each press twice. See <FocusScope>'s `bridge` prop. */
 export function useRemoteBridge(on = true): void {
   useRemoteEvents((event: HWEvent) => {
     if (!on) return;
     if (isRemoteKeyUp(event)) return;
-    // Something full-screen is over the app (the brand intro): it owns the
-    // remote, and moving focus on a screen nobody can see is worse than inert.
+    // A full-screen overlay (the brand intro) owns the remote while it's up.
     if (inputHeld()) return;
     const direction = REMOTE[event.eventType];
     if (!direction) return;
@@ -110,21 +81,12 @@ export function useRemoteBridge(on = true): void {
   });
 }
 
-// ---- Android, which does not have the stream above at all ----
-//
-// `useTVEventHandler` reads `onHWKeyEvent`, and on Android that event comes from
-// ReactAndroidHWInputDeviceHelper, built only by the LEGACY ReactRootView. Under
-// the new architecture the root is ReactSurfaceView, which routes keys to
-// per-view `onKeyDown` through JSKeyDispatcher instead - so on Android TV the
-// hook above never fires once, and the remote is dead in a way that looks like a
-// focus bug. The events arrive at the VIEW that holds focus, which is the key
-// host in focus-root.tsx; these are the props it spreads.
-//
-// The other half is native: the `enableKeyEvents` flag defaults to false and is
-// turned on by clients/tv-native/plugins/with-tv-key-events.js. Neither half is
-// any use alone.
-
-/** Android's spelling of the directions, from the renderer's own table. */
+// Android TV: the new architecture (ReactSurfaceView) routes keys to per-view
+// `onKeyDown` via JSKeyDispatcher instead of `onHWKeyEvent`, so `useTVEventHandler`
+// above never fires. These are the props the key host in focus-root.tsx spreads
+// onto the focused view; native's `enableKeyEvents` flag (turned on by
+// clients/tv-native/plugins/with-tv-key-events.js) must also be set, or neither
+// half does anything.
 const KEY_CODES: Record<string, Direction> = {
   ArrowUp: UP,
   ArrowDown: DOWN,
@@ -133,16 +95,12 @@ const KEY_CODES: Record<string, Direction> = {
   Enter: ENTER,
 };
 
-/** Props for the focus root's key host. Empty off Android, where the hook above
- * is the whole story. */
+/** Empty off Android, where `useTVEventHandler` above is the whole story. */
 export interface RemoteHostProps {
   onKeyDown?: (event: NativeSyntheticEvent<TVKeyEvent>) => void;
 }
 
-/** Whoever is collecting typed text right now - in practice the on-screen
- * keyboard while it is mounted. A SET for the same reason `handlers` is one:
- * screens stack, and React tears the old subscription down after the new one is
- * up. */
+// Same Set-not-slot reasoning as `handlers` above.
 const typists = new Set<(key: string) => void>();
 
 const NO_HOST_PROPS: RemoteHostProps = {};
@@ -150,19 +108,17 @@ const IS_ANDROID = Platform.OS === 'android';
 
 export function useRemoteHostProps(): RemoteHostProps {
   const onKeyDown = useCallback((event: NativeSyntheticEvent<TVKeyEvent>) => {
-    // No key-up filter: this is the DOWN event, and `onKeyUp` is a separate prop
-    // nothing subscribes to.
+    // This is the DOWN event; `onKeyUp` is a separate prop nothing subscribes to.
     if (inputHeld()) return;
     const { code, key, altKey, ctrlKey, metaKey } = event.nativeEvent;
-    // Auto-repeat from a held direction is how a TV scrolls a long rail, so it
-    // is passed through exactly like a fresh press.
+    // Auto-repeat from a held direction is how a TV scrolls a long rail.
     const direction = KEY_CODES[code];
     if (direction) {
       markPress();
       for (const handle of handlers) handle(direction);
       return;
     }
-    // Not a direction: it may be someone TYPING. See `useHardwareKeys`.
+    // Not a direction: may be someone typing. See `useHardwareKeys`.
     if (altKey || ctrlKey || metaKey) return;
     if (key !== 'Backspace' && key.length !== 1) return;
     for (const handle of typists) handle(key);
@@ -171,24 +127,11 @@ export function useRemoteHostProps(): RemoteHostProps {
 }
 
 /**
- * Characters from a HARDWARE keyboard, for whoever is collecting text.
- *
- * An Android TV box takes a bluetooth keyboard, and the emulator simply has one,
- * and until now neither could type a single letter into this app: the browser
- * shells handle it with a `document` keydown listener (see @kroma/tv's
- * `usePhysicalTyping`), which native has no equivalent of, and the on-screen
- * keyboard was the only way in.
- *
- * It is deliberately NOT wired to `physicalKeyboard` in the TV env. That
- * capability means "render a real, typeable text input INSTEAD of the on-screen
- * keyboard", which is wrong here twice over: a television still needs the
- * on-screen keyboard for the remote, and a native `TextInput` would summon the
- * platform IME over the app. This types straight into the value with the
- * on-screen keyboard still up and still working - the same bargain the browser
- * shells already strike.
- *
- * Directions never arrive here; they are spent above. `Enter` is a direction
- * too, so it still activates the focused key rather than typing.
+ * Delivers hardware-keyboard keystrokes (e.g. a Bluetooth keyboard on Android TV)
+ * to whoever is collecting text; directions are consumed above and never reach
+ * here. Deliberately not wired to the `physicalKeyboard` capability, which swaps
+ * in a native `TextInput` and would summon the platform IME over the on-screen
+ * keyboard the remote still needs.
  */
 export function useHardwareKeys(handle: (key: string) => void): void {
   const latest = useRef(handle);

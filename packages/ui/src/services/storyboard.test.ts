@@ -1,13 +1,7 @@
 // @vitest-environment jsdom
 //
-// The scrub-bar storyboard: the sprite sheet behind the seek preview.
-//
-// The geometry is the part worth pinning. A tile is a WINDOW onto one sheet -
-// draw the whole sheet at its own pixel size, offset it, clip to the tile - and
-// the reason it is expressed that way rather than as CSS is written at the type:
-// React Native has no `background-position`, so the CSS spelling rendered
-// nothing at all on Apple TV. Getting an offset wrong shows the wrong moment of
-// the film, which looks like a working feature and is not.
+// A tile is a window onto one sheet, offset and clipped: React Native has no
+// `background-position`, so the CSS spelling renders nothing on Apple TV.
 
 import type { KromaClient, StoryboardManifest } from '@kroma/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -43,8 +37,8 @@ function fakeClient(...pages: (StoryboardManifest | 'pending' | null)[]) {
 const settle = () => act(async () => undefined);
 
 beforeEach(() => {
-  // shouldAdvanceTime: waitFor polls on its own timers, which plain fake
-  // timers freeze - every wait would sit there until it timed out.
+  // shouldAdvanceTime: waitFor polls on its own timers, which plain fake timers
+  // freeze, so every wait would sit there until it timed out.
   vi.useFakeTimers({ shouldAdvanceTime: true });
   prefetch.mockClear();
   prefetch.mockResolvedValue(true);
@@ -74,8 +68,6 @@ describe('loading', () => {
     expect(result.current.tile(0, 160)).toBeNull();
   });
 
-  // An unreachable sheet is not an error the viewer can act on: the scrub bar
-  // simply falls back to its timecode.
   it('stays unready when the sheet cannot be fetched', async () => {
     prefetch.mockRejectedValue(new Error('404'));
     const { client } = fakeClient(manifest());
@@ -131,8 +123,7 @@ describe('polling while the server builds the sheet', () => {
     expect(storyboard).toHaveBeenCalledTimes(after);
   });
 
-  // Dashboard thumbnails must not compete with live-playback IO, so they ask
-  // once and take whatever is already there.
+  // Dashboard thumbnails must not compete with live-playback IO.
   it('never polls when generation is off', async () => {
     const { client, storyboard } = fakeClient('pending');
     renderHook(() => useStoryboard(client, 'item-1', { generate: false }));
@@ -143,13 +134,11 @@ describe('polling while the server builds the sheet', () => {
     expect(storyboard).toHaveBeenCalledTimes(1);
   });
 
-  // Fast for the first minute while ffmpeg works, then back off - but never a
-  // dead stop, because a slow NAS can finish late.
+  // Never a dead stop: a slow NAS can finish late.
   it('backs off after the fast window instead of stopping', async () => {
     const { client, storyboard } = fakeClient('pending');
     renderHook(() => useStoryboard(client, 'item-1'));
     await settle();
-    // Drain the fast window.
     for (let i = 0; i < 40; i++) {
       await act(async () => {
         vi.advanceTimersByTime(1500);
@@ -157,7 +146,6 @@ describe('polling while the server builds the sheet', () => {
     }
     const fast = storyboard.mock.calls.length;
     expect(fast).toBeGreaterThan(20);
-    // A short tick now does nothing; the slow interval does.
     await act(async () => {
       vi.advanceTimersByTime(1500);
     });
@@ -180,8 +168,6 @@ describe('polling while the server builds the sheet', () => {
     expect(storyboard).toHaveBeenCalledTimes(after);
   });
 
-  // A sheet that finished while the tab was hidden should appear on return,
-  // without paying for a tight interval in the background.
   it('re-checks when the tab comes back', async () => {
     const { client, storyboard } = fakeClient('pending');
     renderHook(() => useStoryboard(client, 'item-1'));
@@ -195,7 +181,6 @@ describe('polling while the server builds the sheet', () => {
 });
 
 describe('tile geometry', () => {
-  /** A loaded storyboard, ready to be asked for tiles. */
   async function ready(over: Partial<StoryboardManifest> = {}) {
     const { client } = fakeClient(manifest(over));
     const hook = renderHook(() => useStoryboard(client, 'item-1'));
@@ -230,7 +215,6 @@ describe('tile geometry', () => {
 
   it('scales the offsets with the requested width', async () => {
     const result = await ready();
-    // Half size: every offset halves with it.
     expect(result.current.tile(25, 80)).toMatchObject({
       width: 80,
       height: 45,
@@ -239,8 +223,6 @@ describe('tile geometry', () => {
     });
   });
 
-  // Past the end of the film there is no tile to show; clamping keeps the last
-  // one on screen rather than drawing empty space.
   it('clamps a position past the end to the last tile', async () => {
     const result = await ready();
     expect(result.current.tile(99_999, 160)).toMatchObject({ offsetX: -640, offsetY: -90 });

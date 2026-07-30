@@ -17,7 +17,6 @@ type HomeProgram = {
   title: string;
   subtitle: string;
   imageUrl: string;
-  /** Clean full-size art for launchers that draw their own chrome (Top Shelf). */
   backdropUrl?: string;
   kind: string;
 };
@@ -25,18 +24,13 @@ type HomeProgram = {
 // so the section id is not sent - only the display title + its programs.
 type HomeChannelSpec = { title: string; items: HomeProgram[] };
 
-/** The GENERIC, evergreen home rows to mirror onto the launcher, in display order.
- * `/api/home` also returns personalized/themed rows ("Because you watched X",
- * "Aventures fantastiques légères", curated editorial) - those make poor, unstable
- * launcher channels, so only these stable, self-explanatory categories are published
- * (their server ids are fixed; see services/sections build_home). */
+// Only the evergreen rows are mirrored: the personalized/themed rows `/api/home`
+// also returns make unstable launcher channels. Their server ids are fixed (see
+// services/sections build_home).
 const GENERIC_HOME_ROWS = ['recent', 'for-you', 'trending'] as const;
 
-/** Per-row cap; the launcher shows only a handful anyway. */
 const MAX_PROGRAMS = 20;
 
-/** One launcher program for a movie. The art is the public composited card
- * (backdrop + KROMA logo), busted by the item's addedAt. */
 function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
   const art = `${client.baseUrl}/api/items/${encodeURIComponent(movie.id)}/card?v=${encodeURIComponent(movie.addedAt)}`;
   return {
@@ -49,8 +43,7 @@ function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
   };
 }
 
-/** The section's de-duplicated movie programs, capped. Movies only: the preview
- * deep link resolves a movie id. */
+// Movies only: the launcher preview deep link resolves a movie id.
 function programsOf(section: Section, client: KromaClient): HomeProgram[] {
   const seen = new Set<string>();
   const items: HomeProgram[] = [];
@@ -63,9 +56,6 @@ function programsOf(section: Section, client: KromaClient): HomeProgram[] {
   return items;
 }
 
-/** Map the generic home sections into named launcher rows (one KROMA preview channel
- * each) the native Android shell publishes to the Google TV home - the multi-row
- * equivalent of the Tizen shortcuts. */
 function toHomeChannels(sections: Section[], client: KromaClient): HomeChannelSpec[] {
   const byId = new Map(sections.map((s) => [s.id, s]));
   const channels: HomeChannelSpec[] = [];
@@ -75,9 +65,7 @@ function toHomeChannels(sections: Section[], client: KromaClient): HomeChannelSp
     const items = programsOf(s, client);
     if (items.length) channels.push({ title: s.title, items });
   }
-  // The generic rows are matched by fixed server section ids; if the server ever
-  // renames them we'd silently publish nothing, so surface that instead of a blank
-  // launcher (loud in dev; harmless in prod).
+  // A server that renamed those ids would silently publish nothing.
   if (!channels.length && sections.length) {
     console.warn('[KROMA] no generic home rows matched section ids', GENERIC_HOME_ROWS);
   }
@@ -85,23 +73,14 @@ function toHomeChannels(sections: Section[], client: KromaClient): HomeChannelSp
 }
 
 interface Recommend {
-  /** The server-assembled, ordered, localized home sections (For You, "Because
-   * you watched …", themed/seasonal rows, trending, recently added). Empty until
-   * `/api/home` resolves; the server already drops thin rows and localizes titles. */
   sections: Section[];
-  /** Today's server-picked "En vedette" hero (multi-signal score + daily
-   * rotation). Null until `/api/home/featured` resolves, on an empty catalogue
-   * or against an older server the home keeps its local fallback. */
   featured: SectionItem | null;
 }
 
 const Ctx = createContext<Recommend | null>(null);
 
-/** Home-screen recommendations for the active server. The whole home is now
- * assembled server-side (`/api/home`): ordering, localization, themed/seasonal
- * gating and de-duplication all live on the server. It's Bearer-scoped, so like
- * <ContinueProvider> it waits for a session and a reachable server (the active
- * client). Mounted inside auth + connection. */
+/** Bearer-scoped, so it must be mounted inside auth + connection; stays empty
+ * until there is a session and a reachable server. */
 export function RecommendProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { user } = useAuth();
   const { client } = useConnection();
@@ -132,18 +111,15 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
     };
   }, [user, client]);
 
-  // Mirror the recently-added + suggested titles into a KROMA preview channel on
-  // the Android TV / Google TV launcher home. Guarded on the serialized payload
-  // (the effect re-runs on render churn) so it pushes once per real change.
-  // No-op on a television with no launcher backend registered.
+  // Mirror the rows into the Android TV / Google TV launcher home, guarded on the
+  // serialized payload so render churn does not re-push. No-op without a backend.
   const lastPushed = useRef<string>('');
   useEffect(() => {
     const launcher = launcherBackend();
     if (!launcher || !client) return;
     const json = JSON.stringify(toHomeChannels(sections, client));
     if (json === lastPushed.current) return;
-    // Don't create empty channels on the first (pre-load) render; an empty push
-    // is only meaningful as a clear AFTER we've published something.
+    // An empty push is only meaningful as a clear after something was published.
     if (json === '[]' && lastPushed.current === '') return;
     lastPushed.current = json;
     launcher.setHomeChannel(json);

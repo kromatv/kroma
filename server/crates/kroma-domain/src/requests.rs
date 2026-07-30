@@ -99,38 +99,36 @@ pub struct MediaRequest {
     pub id: String,
     pub kind: RequestKind,
     pub tmdb_id: u64,
-    /// Denormalized at request time so list views need no TMDB call.
+    // Denormalized at request time so list views need no TMDB call.
     pub title: String,
     pub year: Option<u32>,
     pub poster_url: Option<String>,
-    /// Requested season numbers; `None` = the whole show (or a movie).
+    // Requested season numbers; `None` = the whole show (or a movie).
     pub seasons: Option<Vec<u32>>,
-    /// Individual episodes requested alongside any full seasons. `None` = none.
-    /// A show's target is the union of `seasons` (full) and `episodes`; both
-    /// `None` = every season.
+    // Individual episodes requested alongside any full seasons. `None` = none.
+    // A show's target is the union of `seasons` (full) and `episodes`; both
+    // `None` = every season.
     pub episodes: Option<Vec<EpisodeRef>>,
     pub status: RequestStatus,
     pub requested_by: Option<String>,
-    /// Requester's username, hydrated for the admin queue.
     pub requested_by_name: Option<String>,
     pub reviewed_by: Option<String>,
-    /// Denial reason / admin note.
     pub note: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
-    /// Live download progress (0..1) when the request is `downloading` /
-    /// `importing`, derived from its download rows. `None` otherwise.
+    // Live download progress (0..1) when the request is `downloading` /
+    // `importing`, derived from its download rows. `None` otherwise.
     #[serde(default)]
     pub progress: Option<f64>,
-    /// TMDB airing status, refreshed by the `acquisition.refresh` job (show:
-    /// "Returning Series"/"Ended"/…; movie: "Released"/"Post Production"/…).
-    /// `None` until the first refresh.
+    // TMDB airing status, refreshed by the `acquisition.refresh` job (show:
+    // "Returning Series"/"Ended"/…; movie: "Released"/"Post Production"/…).
+    // `None` until the first refresh.
     pub air_status: Option<String>,
-    /// Next air date (`YYYY-MM-DD`): a show's next episode, or an unreleased
-    /// movie's soonest availability. `None` once nothing more is upcoming.
+    // Next air date (`YYYY-MM-DD`): a show's next episode, or an unreleased
+    // movie's soonest availability. `None` once nothing more is upcoming.
     pub next_air_date: Option<String>,
-    /// Epoch-ms of the last TMDB refresh (throttles the refresh pass). Internal:
-    /// never serialized to clients.
+    // Epoch-ms of the last TMDB refresh (throttles the refresh pass). Internal:
+    // never serialized to clients.
     #[serde(skip)]
     pub last_refresh_at: Option<i64>,
 }
@@ -163,24 +161,23 @@ pub struct RequestsView {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CalendarEntry {
-    /// The parent request, or `None` for a library-scan "missing" row (a series
-    /// in the library with aired episodes not on disk, that was never requested).
-    /// The client turns such a row into a request when the user asks to watch it.
+    // The parent request, or `None` for a library-scan "missing" row (a series
+    // in the library with aired episodes not on disk, that was never requested).
+    // The client turns such a row into a request when the user asks to watch it.
     pub request_id: Option<String>,
     pub tmdb_id: u64,
-    /// The parent request's kind (`movie` / `show`).
     pub kind: RequestKind,
     pub title: String,
     pub year: Option<u32>,
     pub poster_url: Option<String>,
-    /// Present for a show episode; `None` for a movie.
+    // Present for a show episode; `None` for a movie.
     pub season: Option<u32>,
     pub episode: Option<u32>,
-    /// `YYYY-MM-DD`. Always set on the calendar feed; may be `None` on the missing
-    /// feed (an undated aired row).
+    // `YYYY-MM-DD`. Always set on the calendar feed; may be `None` on the missing
+    // feed (an undated aired row).
     pub air_date: Option<String>,
-    /// The wanted row's status (`wanted` / `grabbed`): a grabbed-but-unaired
-    /// episode is already secured, shown differently on the calendar.
+    // The wanted row's status (`wanted` / `grabbed`): a grabbed-but-unaired
+    // episode is already secured, shown differently on the calendar.
     pub status: String,
 }
 
@@ -190,11 +187,11 @@ pub struct CalendarEntry {
 pub struct CreateRequestBody {
     pub kind: RequestKind,
     pub tmdb_id: u64,
-    /// For shows: the seasons to request; `None`/empty = every season.
+    // For shows: the seasons to request; `None`/empty = every season.
     #[serde(default)]
     pub seasons: Option<Vec<u32>>,
-    /// For shows: individual episodes to request, unioned with `seasons`.
-    /// `None`/empty = no per-episode ask.
+    // For shows: individual episodes to request, unioned with `seasons`.
+    // `None`/empty = no per-episode ask.
     #[serde(default)]
     pub episodes: Option<Vec<EpisodeRef>>,
 }
@@ -212,14 +209,13 @@ pub struct DiscoverEntry {
     pub backdrop_url: Option<String>,
     pub overview: Option<String>,
     pub rating: Option<f32>,
-    /// Present in the local catalog (movie item / show).
     pub in_library: bool,
-    /// The local catalog id when `in_library` (deep-link to the real fiche).
+    // The local catalog id when `in_library` (deep-link to the real fiche).
     pub local_id: Option<String>,
-    /// The open request covering this title, when one exists.
+    // The open request covering this title, when one exists.
     pub request_id: Option<String>,
     pub request_status: Option<RequestStatus>,
-    /// Live download progress (0..1) while downloading/importing.
+    // Live download progress (0..1) while downloading/importing.
     #[serde(default)]
     pub request_progress: Option<f64>,
 }
@@ -241,11 +237,11 @@ pub struct DiscoverSeason {
     pub name: Option<String>,
     pub episode_count: u32,
     pub air_date: Option<String>,
-    /// Every episode of this season is already in the library.
+    // Every episode of this season is already in the library.
     pub available: bool,
-    /// How many of the season's episodes are on disk (for "4/6" partial state).
+    // How many of the season's episodes are on disk (for "4/6" partial state).
     pub episodes_available: u32,
-    /// Covered by an open request.
+    // Covered by an open request.
     pub requested: bool,
 }
 
@@ -264,30 +260,30 @@ pub struct DiscoverDetail {
     pub genres: Vec<String>,
     pub rating: Option<f32>,
     pub runtime_min: Option<u32>,
-    /// Empty for movies.
+    // Empty for movies.
     pub seasons: Vec<DiscoverSeason>,
-    /// Top-billed cast (name + character + photo), from TMDB credits. Empty when
-    /// the provider returned none.
+    // Top-billed cast (name + character + photo), from TMDB credits. Empty when
+    // the provider returned none.
     #[serde(default)]
     pub cast: Vec<CastMember>,
-    /// Key crew (directors / creators / writers), for the "Réalisation" line.
+    // Key crew (directors / creators / writers), for the "Réalisation" line.
     #[serde(default)]
     pub crew: Vec<CrewMember>,
-    /// "Titres similaires" TMDB recommendations, flagged against the local
-    /// catalog + open requests so each tile deep-links correctly.
+    // "Titres similaires" TMDB recommendations, flagged against the local
+    // catalog + open requests so each tile deep-links correctly.
     #[serde(default)]
     pub similar: Vec<DiscoverEntry>,
     pub in_library: bool,
     pub local_id: Option<String>,
     pub request_id: Option<String>,
     pub request_status: Option<RequestStatus>,
-    /// Live download progress (0..1) while the request is downloading/importing.
+    // Live download progress (0..1) while the request is downloading/importing.
     #[serde(default)]
     pub request_progress: Option<f64>,
-    /// TMDB airing status (show: "Returning Series"/"Ended"/…; movie:
-    /// "Released"/…), for the "coming soon" badge. `None` when unknown.
+    // TMDB airing status (show: "Returning Series"/"Ended"/…; movie:
+    // "Released"/…), for the "coming soon" badge. `None` when unknown.
     pub air_status: Option<String>,
-    /// Next air date (`YYYY-MM-DD`): a show's next episode, or a movie's soonest
-    /// availability. `None` when nothing is upcoming.
+    // Next air date (`YYYY-MM-DD`): a show's next episode, or a movie's soonest
+    // availability. `None` when nothing is upcoming.
     pub next_air_date: Option<String>,
 }

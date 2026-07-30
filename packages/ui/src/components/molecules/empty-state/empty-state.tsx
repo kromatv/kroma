@@ -1,6 +1,3 @@
-// <EmptyState>: the centred "nothing here" block. An icon, a headline, an
-// optional hint and an optional action.
-
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
@@ -11,7 +8,6 @@ interface EmptyStateProps {
   title: string;
   hint?: string;
   action?: ReactNode;
-  /** 10-foot sizing: bigger glyph and type for a three-metre viewing distance. */
   tv?: boolean;
 }
 

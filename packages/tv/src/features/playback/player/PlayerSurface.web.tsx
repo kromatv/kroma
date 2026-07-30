@@ -1,20 +1,14 @@
-// The video surface, on the browser targets.
-//
-// Which element it is depends on the backend the playback hook chose: AVPlay
-// renders to a hardware plane behind an <object> placeholder, mpv and the
-// Android TV ExoPlayer bridge render to their own planes behind a transparent
-// page, and the HTML engine plays into a real <video>. See PlayerSurface.tsx for
-// the native half, which has exactly one surface.
+// The video surface on the browser targets: which element it is depends on the
+// backend the playback hook chose. PlayerSurface.tsx is the native half.
 
 import type { ReactNode } from 'react';
 import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 
 export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: string }>): ReactNode {
   if (pb.surface === 'avplay') {
-    // NO child text: AVPlay renders the video to a hardware plane, not into this
-    // <object>'s box, so any fallback children (the title, say) would render
-    // VISIBLY over the plane: a static title stuck top-left on every file.
-    // aria-label carries the accessible name without drawing anything.
+    // NO child text: AVPlay renders to a hardware plane, not into this <object>'s
+    // box, so fallback children draw visibly over the video. aria-label carries
+    // the accessible name without drawing anything.
     return (
       <object
         ref={pb.objectRef}
@@ -28,10 +22,7 @@ export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: str
     return <div style={{ width: '100%', height: '100%' }} role="img" aria-label={title} />;
   }
   // Subtitles render through the shared SubtitleRenderer; the empty captions
-  // track only satisfies the media-caption accessibility requirement. Fill and
-  // object-fit come from the stylesheet the player injects for its stage;
-  // borderRadius stays inline (guaranteed) so the remux shrink-card is rounded
-  // on the legacy-tier build.
+  // track only satisfies the media-caption accessibility requirement.
   //
   // crossOrigin is REQUIRED for the audio filter: the TV shells load the app
   // from their own origin (file:// / tauri://) while media comes from the

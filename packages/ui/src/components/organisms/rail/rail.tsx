@@ -1,27 +1,18 @@
 // <Rail>: a titled horizontal row of tiles, the backbone of the 10-foot home.
+// A rail IS a row: the spatial navigator moves between rows vertically and
+// inside one horizontally, so nothing needs measuring for that to hold.
 //
-// A rail IS a row, and saying so is the whole of its navigation: the spatial
-// navigator moves between rows vertically and inside one horizontally, so Down
-// from the hero lands on the tile beneath it and Up from the fourth tile comes
-// back to what is above the fourth tile. Nothing is measured, so nothing drifts
-// while the scroller animates.
+// <FocusRail> keeps the focused tile in view on every target, including
+// browser TVs with no OS focus engine. It exists separately from the
+// navigator's own handling because React 19 spreads `ref` like any other
+// prop: the navigator's ref and <Focusable>'s own ref on the same view can't
+// coexist, and the last one written silently wins.
 //
-// <FocusRail> keeps the focused tile in view, on every target - the browser TVs
-// included, where there is no OS focus engine to do it. It is ours rather than
-// the navigator's because the navigator's scroller measures the focused control
-// through a ref it installs on that control's view, and <Focusable> needs its
-// own ref on that same view: React 19 spreads `ref` like any other prop, so the
-// last one written wins and the library's was always the one that lost. Silently
-// - the rails simply never scrolled, and the focus walked off the side of the
-// screen while scrollLeft stayed at 0.
-//
-// A rail also mounts only what is reachable. That is not a micro-optimisation:
-// measured on the bench (clients/tv-build/perf-bench.ts, CPU throttled to a
-// television's), 160 mounted controls hold 96fps and 480 collapse to 46fps with
-// 73ms frames. A home screen of a dozen rails is squarely in the second case,
-// while about six tiles of each rail are ever on screen. So a rail starts with a
-// screenful and grows as the focus approaches its end - never unmounting what
-// has been reached, because the navigator can only move to a node that exists.
+// A rail also mounts only what is reachable: benchmarked under CPU throttling,
+// mounting every tile of a dozen home rails collapses frame rate, so a rail
+// starts with a screenful and grows as focus approaches its end, never
+// unmounting what's already been reached (the navigator can only move to a
+// node that exists).
 
 import { Children, type ReactElement, type ReactNode, useMemo } from 'react';
 import { ScrollView, type StyleProp, type TextStyle } from 'react-native';
@@ -38,44 +29,30 @@ interface RailProps {
   title?: string;
   /** Override the title's type. The home rows run larger than the default h2. */
   titleStyle?: StyleProp<TextStyle>;
-  /** Gap between tiles. */
   gap?: number;
-  /** Side padding. Defaults to the overscan-safe 10-foot gutter, and it is
-   *  applied INSIDE the scroller so the first tile's focus ring is never
-   *  clipped by the viewport edge. */
+  /** Defaults to the overscan-safe 10-foot gutter, applied inside the
+   *  scroller so the first tile's focus ring is never clipped by the
+   *  viewport edge. */
   inset?: number;
   /**
-   * Virtualise this rail: the tile PITCH (its width PLUS the gap after it) and
-   * the row's height, both of which the list needs up front because it positions
-   * its tiles rather than laying them out.
-   *
-   * Opt-in per call site, because it is only worth it where the row is long. A
-   * home row of forty films is the case it exists for; a row of six chips or
-   * four cast faces is cheaper mounted whole than measured, and those rows do
-   * not all agree on a tile width anyway.
+   * Virtualise this rail: pass the tile pitch (its width plus the gap after
+   * it) and the row's height, since the list positions tiles rather than
+   * laying them out. Opt-in per call site — worth it only for long rows; a
+   * short strip (chips, cast faces) is cheaper mounted whole.
    */
   item?: { width: number; height: number };
   /**
-   * Mount every child at once instead of a chunk at a time.
-   *
-   * The growing window is for a RAIL - dozens of posters, of which you only ever
-   * see six, and whose cost is worth deferring. A short strip of controls is not
-   * that: the browse screens' sort + genre chips are one `Rail`, and growing
-   * them meant the strip opened showing only its first `RAIL_CHUNK` children -
-   * four sort chips, a divider, "all genres" and then just TWO genres - with the
-   * rest appearing only once focus had walked to the end. A filter you cannot
-   * see is a filter that does not exist, so those pass `grow={false}`.
+   * Mount every child at once instead of a chunk at a time. The growing
+   * window suits a rail of dozens of posters where only a few are ever
+   * visible; a short strip of controls (e.g. sort + genre chips) should pass
+   * `grow={false}` so it doesn't open showing just its first chunk.
    */
   grow?: boolean;
   children: ReactNode;
 }
 
-/** A screenful and a bit: five tiles fit on the 1920 stage, and the sixth is the
- * one peeking at the edge that tells you the row continues. */
 const RAIL_CHUNK = 8;
 
-/** Vertical room for the focus ring, which is drawn OUTSIDE the tile's box and
- * on a tile that has scaled up. Without it the ring is clipped by the row. */
 const RING_ROOM = 12;
 
 function Rail({
@@ -89,13 +66,13 @@ function Rail({
 }: Readonly<RailProps>) {
   const tiles = useMemo(() => Children.toArray(children), [children]);
   // `grow={false}` asks for the whole strip up front: one chunk big enough to
-  // hold it, so `isNearEnd` never fires and nothing is ever deferred.
+  // hold it, so `isNearEnd` never fires.
   const { count, isNearEnd, grow } = useGrowingCount(
     tiles.length,
     growing ? RAIL_CHUNK : tiles.length,
   );
   // Same rule as <Focusable>: no navigator above means this is a thumb (or a
-  // bare web page), not a remote. See the unscoped return below.
+  // bare web page), not a remote.
   const scoped = useInsideFocusScope();
   const heading = title ? (
     <Txt variant="h2" style={[{ paddingLeft: inset }, titleStyle]}>
@@ -103,13 +80,10 @@ function Rail({
     </Txt>
   ) : null;
 
-  // The virtualised rail. Only the tiles near the viewport exist, so a row of
-  // forty costs what a row of eight costs - and, unlike the growing rail below,
-  // it costs that much for as long as you keep walking rather than accumulating
-  // everything you have passed. The left padding is what keeps the focused tile
-  // off the screen edge: the list translates the whole content and parks the
-  // focused tile at the content's origin, so an inset there is an inset from the
-  // viewport.
+  // Only the tiles near the viewport exist, so a row of forty costs what a
+  // row of eight costs. The list translates the whole content and parks the
+  // focused tile at the content's origin, so the left inset keeps it off the
+  // screen edge.
   if (item) {
     return (
       <Box gap={16}>
@@ -118,26 +92,22 @@ function Rail({
           data={tiles}
           itemWidth={item.width}
           // The pitch is the cell; a tile fills it (every kit tile is width
-          // 100% by default) and the gap is padding inside it - applied by the
-          // cell itself rather than by a wrapper here, so a tile is one view.
+          // 100% by default), and the gap is padding applied by the cell
+          // itself so a tile stays one view.
           renderItem={(tile) => tile as ReactElement}
           gap={gap}
           style={{ height: item.height + RING_ROOM * 2 }}
-          // Both sides. The left is what keeps the focused tile off the edge
-          // (above); the right is what stops the LAST tile sitting flush against
-          // it once the row is walked to its end - the same gutter the unscoped
-          // and non-virtualised rails get from `paddingHorizontal`.
+          // Right padding stops the last tile sitting flush against the edge
+          // once the row is walked to its end.
           contentStyle={{ paddingLeft: inset, paddingRight: inset, paddingVertical: RING_ROOM }}
         />
       </Box>
     );
   }
 
-  // No navigator: the rail is a plain scrolled row. Everything mounts at once -
-  // the growing window exists for the navigator's registration order and is
-  // driven by focus arriving near the end, neither of which exists here - and
-  // that is fine, because the unscoped rails are the short ones (chip strips,
-  // cast faces); a long uniform row should be passing `item` and virtualising.
+  // No navigator: a plain scrolled row. Everything mounts at once — the
+  // unscoped rails are the short ones (chip strips, cast faces); a long
+  // uniform row should pass `item` and virtualise instead.
   if (!scoped) {
     return (
       <Box gap={16}>

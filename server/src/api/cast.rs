@@ -1,18 +1,6 @@
-//! `/api/cast` drive playback on another device: a phone or a browser starts a
-//! title on the TV and then works as its remote (Spotify-Connect shaped, not
-//! Chromecast: the server is the rendezvous, so it works over the tunnel too).
-//!
-//! Two sides talk here. A **sender** lists `/cast/receivers` and posts to
-//! `/cast/receivers/:id/command`. A **receiver** (the TV app) normally lives on
-//! the event socket instead of these routes (see `api::ws`): it attaches there
-//! and reports changes as they happen. `/cast/announce` is its FALLBACK - the
-//! same register + report + ack + collect, for a device whose socket is down.
-//!
-//! Everything requires a session **and** `playback` - the capability that means
-//! "may watch" - so an account that isn't allowed to stream can't drive a TV into
-//! streaming for it. Ids and titles are resolved against the catalog server-side
-//! (never trusted from the body), receiver ids are shape-checked, and display
-//! names are length-capped before they reach anybody else's picker.
+//! `/api/cast`: a sender (phone, browser) drives playback on a receiver (the TV)
+//! with the server as rendezvous. A receiver normally rides the event socket
+//! (`api::ws`); `/cast/announce` is its fallback when that socket is down.
 
 use std::net::SocketAddr;
 
@@ -47,8 +35,6 @@ fn locale(user: &User) -> &'static str {
     user.language.as_deref().and_then(i18n::normalize).unwrap_or(i18n::DEFAULT_LOCALE)
 }
 
-/// Gate every cast route on `playback`. Casting *is* watching, just on another
-/// screen, so it answers to the same capability rather than to a new one.
 fn require_playback(user: &User) -> Result<(), Response> {
     if user.can(Permission::Playback) {
         Ok(())
@@ -65,36 +51,27 @@ fn bad_id(user: &User) -> Response {
 pub struct AnnounceBody {
     #[serde(rename = "receiverId")]
     pub receiver_id: String,
-    /// What the device calls itself ("Salon"). Capped + control-stripped by the
-    /// registry: it lands in other people's pickers.
     #[serde(default)]
     pub name: String,
     #[serde(default)]
     pub platform: String,
-    /// Highest command seq this receiver has applied. Everything up to it leaves
-    /// the inbox; anything above is replayed in the response.
     #[serde(rename = "lastAppliedSeq", default)]
     pub last_applied_seq: u64,
-    /// Absent while the TV sits on its home screen.
     #[serde(default)]
     pub playback: Option<CastPlayback>,
 }
 
+/// `POST /api/cast/announce` response: pending commands (oldest first) and the
+/// heartbeat interval after which the receiver drops off the roster.
 #[derive(Debug, Serialize)]
 pub struct AnnounceReply {
-    /// Commands still to apply, oldest first. Empty on almost every beat.
     pub commands: Vec<CastCommandEnvelope>,
-    /// Seconds after which a silent receiver drops off the roster, so the client
-    /// can pace its heartbeat off the server rather than a hardcoded guess.
     #[serde(rename = "ttlSecs")]
     pub ttl_secs: u64,
 }
 
-/// `POST /api/cast/announce` (Bearer) → `AnnounceReply`.
-///
-/// Register + heartbeat + ack + collect, in one call. The fallback path: a
-/// receiver that cannot hold its event socket open still gets its commands here,
-/// one beat late instead of never.
+/// `POST /api/cast/announce` (Bearer) → `AnnounceReply`. Register, heartbeat, ack
+/// and collect in one call, for a receiver whose event socket is down.
 pub async fn announce(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -110,8 +87,7 @@ pub async fn announce(
     let ip = client_ip(&headers, &addr);
     let network = classify_network(&ip, &settings::local_networks(&state.settings));
 
-    // Resolve the announced item once per title, exactly like the playback ping:
-    // senders must render a title the receiver cannot spoof.
+    // Resolved server-side: senders must render a title the receiver cannot spoof.
     let item = match body.playback.as_ref() {
         Some(pb) if state.cast.wants_item(&body.receiver_id, &pb.item_id) => {
             let id = pb.item_id.clone();
@@ -137,8 +113,6 @@ pub async fn announce(
 
     let commands = match outcome {
         Announced::Ok { commands, changed } => {
-            // The row itself rides the bus, so senders patch their picker in place
-            // instead of every one of them refetching the roster over HTTP.
             if changed {
                 if let Some(row) = state.cast.row(&body.receiver_id) {
                     state.events.publish(ServerEvent::CastReceiverChanged {
@@ -146,7 +120,6 @@ pub async fn announce(
                     });
                 }
             }
-            // The scrub position rides its own tiny event.
             if let Some((position_ms, duration_ms, cast_state)) = position {
                 if !changed && cast_state != CastState::Idle {
                     state.events.publish(ServerEvent::CastPosition {
@@ -159,9 +132,8 @@ pub async fn announce(
             }
             commands
         }
-        // Someone else's device already answers to this id. Refusing (rather than
-        // taking it over) is what stops an account from impersonating another's
-        // TV to collect the commands meant for it.
+        // Refusing a taken id, rather than seizing it, is what stops an account
+        // impersonating another's TV to collect the commands meant for it.
         Announced::Taken => {
             return Err(lerr(locale(&user), StatusCode::CONFLICT, "error.castReceiverTaken"))
         }
@@ -181,22 +153,17 @@ pub async fn announce(
     .into_response())
 }
 
-/// `GET /api/cast/receivers` (Bearer) → `CastReceiver[]`.
-///
-/// Every live receiver on the server, not just the caller's own: a household TV
-/// runs its own profile, and the phone that wants to drive it is signed in as
-/// someone else. The rows carry a display name, the platform and what is on
-/// screen - no address, no account id, nothing a viewer couldn't already read
-/// from the catalog.
+/// `GET /api/cast/receivers` (Bearer) → `CastReceiver[]`. Every live receiver on
+/// the server, not just the caller's own: the TV runs its own profile. The rows
+/// carry no address and no account id.
 pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) -> Result<Response, Response> {
     require_playback(&user)?;
     Ok(Json(state.cast.list()).into_response())
 }
 
-/// `DELETE /api/cast/receivers/:id` (Bearer) → 204. A receiver leaving the
-/// roster on its own (sign-out, app quit) so it doesn't linger for the TTL.
-/// Owner-scoped: naming somebody else's receiver is a no-op, never an error, so
-/// this can't be used to probe (or evict) another account's devices.
+/// `DELETE /api/cast/receivers/:id` (Bearer) → 204. Owner-scoped: naming somebody
+/// else's receiver is a no-op, never an error, so this cannot probe or evict
+/// another account's devices.
 pub async fn unregister(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -217,16 +184,12 @@ pub struct CommandBody {
 
 #[derive(Debug, Serialize)]
 pub struct CommandReply {
-    /// The command's sequence number. A sender can watch for it to be applied.
     pub seq: u64,
 }
 
 /// `POST /api/cast/receivers/:id/command` (Bearer) `{ type, ... }` → `{ seq }`.
-///
-/// Queues one order and pushes it to the receiver's account over the event bus.
-/// A `play` names an item id, so it is checked against the catalog first: a 404
-/// here is the same 404 the item itself would give, and the TV is never handed an
-/// id the server didn't recognize.
+/// A `play` is checked against the catalog first, so the TV is never handed an id
+/// the server did not recognize.
 pub async fn command(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -237,9 +200,8 @@ pub async fn command(
     if !valid_receiver_id(&id) {
         return Err(bad_id(&user));
     }
-    // A set that sent this account away stops taking its orders. `None` here is
-    // "no such receiver", which the enqueue below already answers with a 404 -
-    // keeping the two apart is what stops this being a way to probe the roster.
+    // `None` means "no such receiver" and must stay distinct from a refusal: the
+    // enqueue below answers it with a 404, so this cannot probe the roster.
     if state.cast.may_command(&id, &user.id) == Some(false) {
         return Err(lerr(locale(&user), StatusCode::FORBIDDEN, "error.forbidden"));
     }
@@ -261,9 +223,8 @@ pub async fn command(
         return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.castReceiverGone"));
     };
 
-    // Addressed to the account the receiver is signed into: the TV's own socket
-    // gets it immediately, and no other household's clients ever see it. The
-    // heartbeat reply is the fallback if that socket happens to be down.
+    // Addressed to the account the receiver is signed into, so no other
+    // household's clients ever see it.
     state.events.publish_to(
         &owner,
         ServerEvent::CastCommandIssued {

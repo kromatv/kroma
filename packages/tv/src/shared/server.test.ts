@@ -1,26 +1,12 @@
-// Which servers a TV shell starts with.
+// Which servers a TV shell starts with, decided once per launch: the migration
+// runs BEFORE the list is read (else an upgrading device with a saved server
+// would see an empty list), and the build-time default only seeds when nothing
+// is saved (else a removed appliance address would come back).
 //
-// Small, and it runs exactly once per launch, before anything can be shown. Two
-// things have to be true or the first screen is a server picker on a box that
-// has a server.
-//
-// The migration runs BEFORE the list is read. It moves the old single
-// `kroma.serverUrl` into the multi-server list, and reading first would find an
-// empty list on precisely the installs that have a server saved - every device
-// upgrading from the single-server build.
-//
-// And the build-time default seeds only when nothing is saved. That is what
-// makes a single-server appliance work out of the box: the URL is baked in at
-// deploy time, so a fresh install finds its server without anyone typing an IP
-// with a remote control. Seeding regardless would put the appliance's own
-// address back into the list of someone who had just removed it.
-//
-// Only the second half of that is testable here, and the reason is worth stating
-// rather than working around: `VITE_KROMA_SERVER` is INLINED by Vite at transform
-// time, so under the runner it is the empty value the transform saw and no amount
-// of `stubEnv` or `resetModules` changes it. What IS covered is that a device with
-// servers is left alone, and that a build with no default starts empty - the
-// appliance seeding itself is exercised by building an appliance.
+// `VITE_KROMA_SERVER` is inlined by Vite at transform time, so under the test
+// runner it is always empty and no `stubEnv`/`resetModules` changes that. The
+// appliance-seeding path itself is exercised by building an appliance; this
+// file covers everything around it.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -49,8 +35,8 @@ vi.mock('@kroma/core', () => ({ migrateStorage, loadServers, saveServer }));
 
 type Mod = typeof import('./server');
 
-/** Launch a shell. The module reads its baked-in default once, at module scope,
- *  so each case gets its own instance the way each launch does. */
+// The module reads its baked-in default once, at module scope, so each case
+// needs its own fresh instance the way each real launch does.
 async function launch(): Promise<Mod> {
   vi.resetModules();
   return await import('./server');

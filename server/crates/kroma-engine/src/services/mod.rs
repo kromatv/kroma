@@ -1,9 +1,5 @@
-//! Use-cases / orchestration: the application's domain workflows.
-//!
-//! These modules coordinate the infra adapters and the database to implement
-//! KROMA's behaviours scanning the library, enriching it from TMDB, demo
-//! seeding, live playback/quick-connect session registries, persisted settings,
-//! and the activity feed.
+//! Use-cases / orchestration: the domain workflows that coordinate the infra
+//! adapters and the database.
 
 pub mod auth;
 pub mod backup;

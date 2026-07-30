@@ -1,18 +1,11 @@
-// The NATIVE playback backend: expo-video, which is AVPlayer on Apple TV and
-// Media3/ExoPlayer on Android TV.
+// The NATIVE playback backend: expo-video (AVPlayer on Apple TV, Media3/ExoPlayer
+// on Android TV). Follows BaseTvEngine's direct/master model, with a one-shot
+// direct->master fallback for containers the platform demuxer can't open (e.g.
+// MKV on tvOS).
 //
-// It follows the same direct/master model as the other native engines (see
-// BaseTvEngine): `direct` opens the ORIGINAL file on its own absolute timeline,
-// `master` opens the server's HLS remux anchored at `baseSec` (its clock
-// restarts at 0, so the absolute position is `baseSec + elSec`), with a one-shot
-// direct->master fallback for a file the platform player cannot demux. That is
-// what makes an MKV play on a tvOS device whose AVPlayer has no Matroska
-// demuxer: the direct attempt fails, and the same title comes back remuxed.
-//
-// Unlike AVPlay / mpv / ExoPlayer-over-a-bridge, this player does NOT render to
-// a plane behind the page: its <VideoView> sits in the view tree like any other
-// view, so the chrome transforms it into the settings card exactly as it does an
-// in-page <video>. That is why `kind` is 'video' and `setRect` is absent.
+// Unlike the other native engines, its <VideoView> sits in the view tree instead
+// of rendering to a plane behind the page - hence `kind` is 'video' and `setRect`
+// is absent.
 
 import type { MediaItem } from '@kroma/core';
 import { audioTracksOf } from '@kroma/core';
@@ -24,39 +17,30 @@ import {
 } from '#tv/features/playback/player/baseEngine';
 import type { TvEngine } from '#tv/features/playback/player/engine';
 
-/** How often the player reports its position. The chrome interpolates between
- * reports, so a coarser interval than the frame rate is plenty and costs less. */
+// The chrome interpolates between reports, so a coarser interval than the
+// frame rate is plenty and costs less.
 const TIME_UPDATE_SEC = 0.25;
 
-/** How long a replaced player is kept alive after it stops being the current
- * one. Long enough for React to have re-rendered the surface against its
- * successor, short enough that no one notices the memory. */
+// Long enough for React to have re-rendered the surface onto the successor,
+// short enough that nobody notices the memory.
 const RETIRE_MS = 1000;
 
-/**
- * Stop a player we are done with, then let it go a beat later.
- *
- * Releasing it here and now is what the code used to do, and it is a
- * use-after-free: `<VideoView>` still holds this player as a prop until React
- * re-renders, and handing a RELEASED expo shared object to a native prop throws
- * ("Unable to find the native shared object associated with given JavaScript
- * object"). Thrown mid-commit, React cannot recover - the UI freezes with the
- * film still playing behind it, which is exactly how a seek used to end.
- *
- * So it is paused immediately (no decoding, no bandwidth) and released on a
- * timer, by which time nothing refers to it.
- */
+// Releasing immediately is a use-after-free: <VideoView> still holds this
+// player as a prop until React re-renders, and handing a released expo shared
+// object to a native prop throws mid-commit, freezing the UI with the film
+// still playing behind it. Pause now (no decoding), release on a timer once
+// nothing refers to it.
 function retire(player: VideoPlayer): void {
   try {
     player.pause();
   } catch {
-    // Already gone; the release below is then a no-op too.
+    // no-op: already gone.
   }
   setTimeout(() => {
     try {
       player.release();
     } catch {
-      // Released elsewhere, or the app is tearing down. Either way, done.
+      // no-op: released elsewhere, or the app is tearing down.
     }
   }, RETIRE_MS);
 }
@@ -65,7 +49,6 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   readonly kind = 'video' as const;
   private player: VideoPlayer | null = null;
   private subscriptions: { remove(): void }[] = [];
-  /** Seek requested before the player reported a duration; applied on ready. */
   private pendingSeek: number | null = null;
 
   constructor(opts: EngineOptions) {
@@ -73,34 +56,25 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     this.open(this.sourceUrl(), opts.startSec, true);
   }
 
-  /** The player instance the <VideoView> surface renders. Null until the first
-   * open, and replaced on every re-anchor, so the surface reads it per render. */
+  /** Null until the first open; replaced on every re-anchor. */
   get videoPlayer(): VideoPlayer | null {
     return this.player;
   }
 
-  /**
-   * Point the surface at `url`, from `seekSec`.
-   *
-   * `autoplay` is what the caller wants playback to be doing afterwards, and it
-   * is not always "playing": a seek in master mode is a NEW anchor, which means a
-   * new player, and starting it unconditionally meant that nudging the scrub bar
-   * while paused silently resumed the film. Only the first open, and the
-   * direct->remux fallback of something that was already playing, want it true.
-   */
+  // `autoplay` is what playback should be doing afterwards, not always
+  // "playing" — starting it unconditionally meant a scrub while paused silently
+  // resumed the film.
   private open(url: string, seekSec: number, autoplay: boolean): void {
     this.teardown();
     if (this.destroyed) return;
     const player = createVideoPlayer({ uri: url });
     player.timeUpdateEventInterval = TIME_UPDATE_SEC;
-    // Direct mode carries the file's own absolute timeline, so the resume point
-    // is a seek within it. The master is already anchored server-side at
-    // `baseSec`, so its clock starts at 0 and there is nothing to seek.
+    // Only direct mode needs a seek: master's clock already starts at baseSec.
     this.pendingSeek = this.mode === 'direct' && seekSec > 0 ? seekSec : null;
     this.player = player;
     this.subscribe(player);
-    // Tell the surface BEFORE playing: <VideoView> is still rendering the player
-    // this one replaced, and until React re-renders there is nothing on screen.
+    // Notify the surface before playing: React hasn't re-rendered <VideoView>
+    // onto the new player yet.
     this.listeners.onSurfaceChange?.();
     if (autoplay) player.play();
     this.paused = !autoplay;
@@ -111,11 +85,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
       event: K,
       handler: Parameters<VideoPlayer['addListener']>[1],
     ) => {
-      // Every handler runs only while `player` is still THE player. A direct
-      // attempt that fails is replaced by the remuxed one, and the loser's
-      // in-flight work (AVFoundation reports a failed track load many seconds
-      // later) must not be allowed to write over the winner's position or read a
-      // player we have released.
+      // Guard against a stale player: a failed direct attempt's in-flight
+      // events (AVFoundation can report failure seconds late) must not
+      // overwrite the replacement's state.
       const guarded = (payload: never) => {
         if (this.destroyed || this.player !== player) return;
         (handler as (p: never) => void)(payload);
@@ -127,8 +99,8 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
       this.elSec = payload.currentTime;
       this.listeners.onTime(this.position());
       const duration = this.readNumber(() => player.duration);
-      // In master mode the reported duration is the remaining anchored span, so
-      // the item's own runtime (durSec) stays authoritative.
+      // In master mode the reported duration is the remaining anchored span,
+      // so the item's own runtime (durSec) stays authoritative.
       if (this.mode === 'direct' && duration > 0 && duration !== this.durSec) {
         this.durSec = duration;
         this.listeners.onDuration(duration);
@@ -177,18 +149,16 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     if (retiring) retire(retiring);
   }
 
-  /** Reopen the current mode's source at `absSec`. In master mode that means a
-   * new server anchor; in direct mode a seek within the file. */
+  /** In master mode, re-anchors at `absSec` on the server; in direct mode, seeks
+   * within the file. */
   protected reanchor(absSec: number): void {
     if (this.mode === 'master') {
       this.baseSec = absSec;
       this.elSec = 0;
     }
     const player = this.player;
-    // Re-point the player we already have rather than building another one.
-    // Swapping the whole VideoPlayer means a new native player AND a new
-    // <VideoView> to host it, so the picture blacks out for the length of the
-    // handover; `replace` keeps both and just changes the source.
+    // `replace` keeps the existing player and <VideoView>; swapping the whole
+    // VideoPlayer would black the picture out for the handover.
     if (player && !this.destroyed) {
       this.pendingSeek = this.mode === 'direct' && absSec > 0 ? absSec : null;
       try {
@@ -196,12 +166,10 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
         if (!this.paused) player.play();
         return;
       } catch {
-        // Fall through to a full reopen: a player that will not take a new
-        // source is one we should not keep.
+        // Fall through to a full reopen: a player refusing a new source is one
+        // we should not keep.
       }
     }
-    // Carry the transport state across the swap: a paused player that seeks stays
-    // paused, a playing one keeps playing.
     this.open(this.sourceUrl(), absSec, !this.paused);
   }
 
@@ -220,17 +188,10 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     return this.baseSec + Math.max(0, buffered);
   }
 
-  /**
-   * Read a number off the native player, or 0 if it is no longer there.
-   *
-   * expo-video properties are calls into a native shared object, and once that
-   * object is released the call THROWS ("Unable to find the native shared object
-   * associated with given JavaScript object"). Thrown from an event callback,
-   * that is an unhandled error in the React tree: on Apple TV it did not degrade
-   * the buffer bar, it unmounted the player mid-film and dropped the viewer back
-   * on the home screen. A missing number is worth nothing; the film is worth
-   * everything.
-   */
+  // A released expo-video player throws on property access rather than
+  // returning stale data; thrown from an event callback that used to unmount
+  // the player mid-film and drop the viewer back to the home screen on Apple
+  // TV. Swallow it and report 0.
   private readNumber(read: () => number): number {
     try {
       const value = read();
@@ -249,14 +210,10 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
       this.listeners.onTime(this.position());
       return;
     }
-    // The anchored master is a complete VOD playlist from `baseSec`, so a target
-    // at or after the anchor is a NATIVE seek: instant, inside the stream that is
-    // already open. This engine used to re-anchor for EVERY seek, which tore the
-    // stream down and rebuilt it - seconds of spinner for a ten-second nudge.
-    //
-    // Two cases still need a new anchor: going back before the anchor (not in
-    // this playlist at all), and jumping so far ahead that we would outrun what
-    // the continuous remux has produced, where a native seek just stalls.
+    // The anchored master is a complete VOD playlist from baseSec, so a target
+    // at or after it is a native seek - instant, no re-anchor. Two exceptions
+    // still need one: seeking before the anchor, or far enough ahead to outrun
+    // the remux.
     const here = this.position();
     if (absSec >= this.baseSec && absSec <= here + NATIVE_SEEK_AHEAD) {
       this.elSec = absSec - this.baseSec;
@@ -272,8 +229,8 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     this.rendition = rendition;
     const player = this.player;
     if (!player) return;
-    // Direct mode plays the original file, whose audio tracks the platform
-    // player exposes: switch in place, with no server round trip and no gap.
+    // Direct mode exposes the file's own audio tracks: switch in place, no
+    // server round trip.
     if (this.mode === 'direct') {
       const track = player.availableAudioTracks[rendition];
       if (track) {
@@ -281,13 +238,11 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
         return;
       }
     }
-    // The master carries ONE audio rendition (the server picks it), so changing
-    // track means a new master at the current position.
+    // The master carries one audio rendition, so changing track means a new
+    // master at the current position.
     this.reanchor(this.position());
   }
 
-  /** Whether this item even offers a choice. Used by the chrome to hide the row
-   * rather than show a picker with a single entry. */
   hasMultipleAudioTracks(item: MediaItem): boolean {
     return audioTracksOf(item).length > 1;
   }

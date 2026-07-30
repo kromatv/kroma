@@ -1,7 +1,5 @@
-// Security section: self-service password change (current + new + confirm) with
-// a live strength meter. There is no email-based reset flow the server has no
-// mail service so this is how an account rotates its own password. On success
-// the fields clear.
+// The server has no mail service, so there is no email-based reset flow: this
+// self-service change is how an account rotates its own password.
 
 import { useT } from '@kroma/ui';
 import { useState } from 'react';
@@ -27,7 +25,6 @@ export function SecurityCard() {
   const mismatch = confirm.length > 0 && next !== confirm;
   const valid = current.length > 0 && next.length >= 4 && confirm.length > 0 && !mismatch;
 
-  // Optional event: the form's Enter-key submit passes one, the kit button none.
   const submit = (e?: React.SyntheticEvent) => {
     e?.preventDefault();
     if (!valid) return;

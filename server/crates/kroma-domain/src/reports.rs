@@ -109,17 +109,14 @@ impl ReportStatus {
 pub struct Report {
     pub id: String,
     pub subject_kind: ReportSubjectKind,
-    /// The local catalog id (movie/episode item id, or show id). Deep-links the
-    /// admin queue straight to the title's fiche.
+    // The local catalog id (movie/episode item id, or show id). Deep-links the
+    // admin queue straight to the title's fiche.
     pub subject_id: String,
-    /// Denormalized display title at report time.
     pub subject_title: String,
     pub category: ReportCategory,
-    /// Optional free-text detail from the reporter.
     pub message: Option<String>,
     pub status: ReportStatus,
     pub reported_by: Option<String>,
-    /// Reporter's username, hydrated for the admin queue.
     pub reported_by_name: Option<String>,
     pub resolved_by: Option<String>,
     pub resolved_at: Option<i64>,

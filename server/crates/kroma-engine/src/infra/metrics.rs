@@ -19,13 +19,12 @@ use serde::Serialize;
 use sysinfo::{Disks, System};
 
 use crate::process_started;
-// (process_started now lives at the kroma-engine crate root, seeded from main.)
 
-/// Sampling cadence. 3s still reads as live on the dashboard while halving the
-/// permanent background procfs churn versus the original 1.5s (this loop runs
-/// forever, viewer or not, so it must be near-free on a weak NAS).
+// 3s still reads as live on the dashboard while keeping the permanent
+// background procfs churn low; this loop runs forever, viewer or not, so it
+// must be near-free on a weak NAS.
 const SAMPLE_INTERVAL: Duration = Duration::from_millis(3000);
-/// Ring-buffer length (≈ 6 min at 3s/sample; the dashboard shows the tail).
+// Ring-buffer length (≈ 6 min at 3s/sample; the dashboard shows the tail).
 const HISTORY: usize = 120;
 
 /// Time-series history (oldest → newest). Percentages are 0..100.
@@ -36,7 +35,6 @@ pub struct Series {
     pub cpu_system: Vec<f32>,
     pub ram_kroma: Vec<f32>,
     pub ram_system: Vec<f32>,
-    /// Bandwidth in Mb/s.
     pub bw_local: Vec<f64>,
     pub bw_remote: Vec<f64>,
 }
@@ -53,15 +51,15 @@ pub struct Snapshot {
     pub bw_local_mbps: f64,
     pub bw_remote_mbps: f64,
     pub uptime_secs: u64,
-    /// The sampler's cadence in ms, so the client's chart labels the time axis
-    /// with the server's real interval instead of a hardcoded (drift-prone) one.
+    // So the client's chart labels the time axis with the server's real
+    // interval instead of a hardcoded (drift-prone) one.
     pub sample_interval_ms: u64,
     pub series: Series,
 }
 
-/// Cumulative bytes delivered by the media handlers, split by client network
-/// class. Monotonic; the sampler reads deltas between ticks. Cloning shares the
-/// same atomics (both the [`Metrics`] handle and every [`ByteSink`] point here).
+// Cumulative bytes delivered by the media handlers, split by client network
+// class. Monotonic; the sampler reads deltas between ticks. Cloning shares
+// the same atomics (both the `Metrics` handle and every `ByteSink` point here).
 #[derive(Clone, Default)]
 struct Bytes {
     lan: Arc<AtomicU64>,
@@ -81,7 +79,6 @@ impl ByteSink {
         ByteSink(None)
     }
 
-    /// Record `n` freshly-delivered bytes against this sink's counter.
     pub fn add(&self, n: u64) {
         if let Some(c) = &self.0 {
             c.fetch_add(n, Ordering::Relaxed);
@@ -164,7 +161,6 @@ impl Metrics {
             let pid = sysinfo::get_current_pid().ok();
             let mut sys = System::new();
             let cpus = num_cpus_safe(&mut sys);
-            // Baselines for the per-interval throughput delta.
             let mut last_lan = metrics.bytes.lan.load(Ordering::Relaxed);
             let mut last_wan = metrics.bytes.wan.load(Ordering::Relaxed);
             let mut last_at = Instant::now();
@@ -226,7 +222,6 @@ impl Metrics {
     }
 }
 
-/// Convert a byte count delivered over `dt` seconds into megabits per second.
 fn mbps(bytes: u64, dt: f64) -> f64 {
     (bytes as f64) * 8.0 / dt / 1_000_000.0
 }
@@ -253,8 +248,6 @@ fn num_cpus_safe(sys: &mut System) -> f32 {
         n as f32
     }
 }
-
-// ----- disks (storage page) ---------------------------------------------------
 
 /// One mounted volume's usage.
 #[derive(Clone, Serialize)]
@@ -339,7 +332,6 @@ mod tests {
 
     #[test]
     fn empty_sink_is_a_noop() {
-        // A default/none sink counts nowhere and never panics.
         ByteSink::none().add(9_999);
         ByteSink::default().add(9_999);
     }

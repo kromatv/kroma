@@ -1,8 +1,6 @@
-//! Pipeline stage `metadata`: resolve TMDB metadata (poster/backdrop/overview/
-//! cast/IDs) per movie and show. Wraps [`crate::services::enrich::enrich_one`]
-//! (idempotent: enriched titles are skipped, shows still run their incremental
-//! per-season pass, TMDB misses are recorded `done` so they stop being retried
-//! every run the one thing the detached scan-time enrich can't do).
+//! Pipeline stage `metadata`: resolve TMDB metadata per movie and show, through
+//! [`crate::services::enrich::enrich_one`]. Idempotent, and TMDB misses are
+//! recorded `done` so they stop being retried every run.
 
 use anyhow::Result;
 
@@ -12,8 +10,6 @@ use crate::state::SharedState;
 
 use super::common::stage;
 
-// Nightly + manual. The detached scan-time enrich covers fresh scans; this stage
-// keeps the ledger honest (misses -> done) and is retriable.
 stage! {
     short: "metadata",
     subject_kind: "item",
@@ -23,17 +19,12 @@ stage! {
     triggers: &[],
 }
 
-/// Every movie/loose video + every show, signed by `title:year:pin` (a rename or
-/// a corrected TMDB match re-queues it). Shows also fold in `episode_count` so
-/// gaining a new season / episodes re-queues the show and the fresh episodes get
-/// enriched. Episodes inherit their show's metadata, so they are not enumerated
-/// here.
+// Episodes inherit their show's metadata, so they are not enumerated here.
 fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
     use crate::db::metadata_core::{ITEM, SHOW};
     let mut out = Vec::new();
-    // Folding the operator's pin into the signature is what makes a correction
-    // stick: without it the ledger still considers the element done under its old
-    // `title:year` and the nightly pass would never revisit it.
+    // The operator's pin is part of the signature, or the ledger keeps the element
+    // done under its old `title:year` and a correction never gets revisited.
     let item_pins = crate::db::tmdb_pin::all_for_kind(&state.db, ITEM)?;
     let show_pins = crate::db::tmdb_pin::all_for_kind(&state.db, SHOW)?;
     for i in crate::db::list_items(&state.db, None)? {

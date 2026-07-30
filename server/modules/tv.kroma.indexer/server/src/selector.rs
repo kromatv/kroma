@@ -26,13 +26,10 @@ pub fn is_xpath(sel: &str) -> bool {
 /// `:contains()` emulation.
 pub fn select_all<'a>(scope: ElementRef<'a>, sel: &str) -> Vec<ElementRef<'a>> {
     let (mut clean, contains) = strip_contains(sel);
-    // A selector that is ONLY `:contains("x")` strips to an empty string, which
-    // fails to parse - so it would silently match nothing. This shape is common
-    // and load-bearing: Cardigann login-error checks (`:contains("invalid api
-    // key")`) and freeleech markers are written this way, and a missed login
-    // error means a bad/empty API key reads as "0 results" instead of an error.
-    // In jQuery/Cardigann a bare `:contains` matches ANY element holding the
-    // text, so fall back to the universal selector and let the text filter work.
+    // A selector that is ONLY `:contains("x")` strips to empty, which fails to
+    // parse and would silently match nothing - breaking Cardigann's login-error
+    // / freeleech checks. In jQuery a bare `:contains` matches ANY element
+    // holding the text, so fall back to the universal selector instead.
     if clean.trim().is_empty() && !contains.is_empty() {
         clean = "*".to_string();
     }
@@ -95,8 +92,8 @@ fn normalize_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Split `:contains("term")` (or `:contains(term)`) pseudo-classes out of a
-/// selector, returning the cleaned selector and the required substrings.
+// Splits `:contains("term")` (or `:contains(term)`) pseudo-classes out of a
+// selector, returning the cleaned selector and the required substrings.
 fn strip_contains(sel: &str) -> (String, Vec<String>) {
     let mut clean = String::new();
     let mut terms = Vec::new();
@@ -139,8 +136,8 @@ fn strip_contains(sel: &str) -> (String, Vec<String>) {
     (clean, terms)
 }
 
-/// Remove `:has(...)` pseudo-classes (last-resort fallback for engines that
-/// can't parse them). Best-effort: drops the whole `:has(...)` group.
+// Last-resort fallback for engines that can't parse `:has(...)`. Best-effort:
+// drops the whole `:has(...)` group.
 fn strip_has(sel: &str) -> String {
     let mut out = String::new();
     let mut rest = sel;
@@ -168,7 +165,6 @@ fn strip_has(sel: &str) -> String {
     out
 }
 
-/// Parse an HTML body into a document.
 pub fn parse_document(body: &str) -> Html {
     Html::parse_document(body)
 }
@@ -239,7 +235,6 @@ mod tests {
         assert_eq!(clean, "tr td.name");
         assert_eq!(terms, vec!["Téléchargé".to_string()]);
     }
-    // ----- the two pseudo-class scanners -------------------------------------------
 
     #[test]
     fn contains_terms_are_split_out_of_the_selector() {

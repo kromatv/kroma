@@ -11,9 +11,9 @@ export interface IntroSceneProps {
   tagline: string;
 }
 
-/** Lockup height on screen (vmin); the wheel-O spans the full height. */
+// Lockup height on screen (vmin); the wheel-O spans the full height.
 const LOCKUP_VMIN = 16;
-/** vmin per export unit (the lockup frame is 100 units tall). */
+// vmin per export unit (the lockup frame is 100 units tall).
 const SCALE = LOCKUP_VMIN / KROMA_LOCKUP.height;
 
 /**
@@ -67,7 +67,6 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
         }}
       />
 
-      {/* ambient amber glow */}
       <div
         style={{
           position: 'absolute',
@@ -81,7 +80,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
           animation: glowAnim,
         }}
       />
-      {/* impact flash (synced to 1.30s bass hit) opacity-only, own layer */}
+      {/* Synced to the 1.30s bass hit; opacity-only, own layer. */}
       <div
         style={{
           position: 'absolute',
@@ -96,7 +95,6 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
         }}
       />
 
-      {/* embers */}
       {embers.map(({ anim, ...s }) => (
         <div
           key={anim}
@@ -104,7 +102,6 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
         />
       ))}
 
-      {/* lockup */}
       <div
         style={{
           position: 'relative',
@@ -117,8 +114,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
           backfaceVisibility: 'hidden',
         }}
       >
-        {/* the official lockup: KR + the wheel-O (the animated mark) + MA.
-            Segments ignite clockwise while the wheel spins into place, landing
+        {/* Segments ignite clockwise while the wheel spins into place, landing
             on the 1.27s bass hit; the letterforms reveal on the same hit. */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <svg
@@ -152,7 +148,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
                 animation: 'kroma-shock 1.1s ease-out 1.27s both',
               }}
             />
-            {/* hub glow synced to the .95s beat (the old dot-ignite moment) */}
+            {/* Hub glow synced to the .95s beat. */}
             <div
               style={{
                 position: 'absolute',
@@ -200,7 +196,6 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
           </svg>
         </div>
 
-        {/* tagline */}
         {showTagline ? (
           <div
             style={{

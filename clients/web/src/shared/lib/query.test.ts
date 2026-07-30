@@ -1,15 +1,10 @@
 // The SPA's single TanStack Query client.
 //
-// Every default below is a decision about how the app behaves offline, on
-// back-navigation, and while the session token is being refreshed - and each one
-// is invisible at the call sites that depend on it.
-//
-// The one that matters most is that there is ONE instance. Route loaders prefetch
-// with `queryClient.ensureQueryData` and components then read the same key with
-// `useSuspenseQuery`; that is the same cache entry and therefore one fetch. A
-// second client anywhere makes it two - the loader's work is thrown away, and
-// the page fetches again on mount, which is exactly the waterfall the loader was
-// added to remove.
+// There is ONE instance because route loaders prefetch with
+// `queryClient.ensureQueryData` and components read the same key with
+// `useSuspenseQuery`: same cache entry, one fetch. A second client anywhere
+// would split the cache and re-introduce the waterfall the loader exists to
+// remove.
 
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';

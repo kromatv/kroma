@@ -12,16 +12,10 @@ import {
 import { Section } from '#site/components/section';
 import { m } from '#site/paraglide/messages';
 
-// Capabilities as a spec sheet, not eight identical gradient cards. The cells
-// share hairlines (a `gap-px` grid over a `bg-border` sheet) so the block reads
-// as one instrument panel; the first two span wider than the rest so the eye
-// lands on the acquisition brain and the VPN first.
 interface Feature {
-  /** Stable, language-invariant id: the React key and the cell's identity. */
   id: string;
   Icon: TablerIcon;
   span: string;
-  /** The cell's copy, read from the catalog at render so it follows the locale. */
   title: () => string;
   body: () => string;
   tag: () => string;

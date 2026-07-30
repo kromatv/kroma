@@ -1,7 +1,9 @@
 # Conventions
 
-House rules that aren't obvious from reading a single file. Short on purpose —
-if a rule needs a page to justify, it belongs in a comment next to the code.
+House rules that aren't obvious from reading a single file. Short on purpose.
+
+For how the code itself is written — naming, structure, and when a comment is
+allowed to exist — see [`CODE_STYLE.md`](CODE_STYLE.md).
 
 ## Validate with zod, never by hand
 

@@ -1,15 +1,11 @@
-//! HTTP transport over the system `curl` binary the same no-HTTP-crate approach
-//! as the server's TMDB and LLM adapters, packaged as a crate so the
-//! acquisition stack (Torznab indexers, Transmission/qBittorrent RPC, VPN
-//! checks) shares one transport instead of three private copies.
+//! HTTP transport over the system `curl` binary, shared by the acquisition
+//! stack (Torznab indexers, Transmission/qBittorrent RPC, VPN checks).
 //!
-//! Scope: small request/response exchanges with visible status + headers,
-//! JSON/form/bytes bodies, SOCKS5 proxying and cookie jars. Deliberately NOT
-//! streaming: every payload here (XML feeds, RPC replies, .torrent files) fits
-//! in memory. Response headers are captured via `-D <tmpfile>` because some
-//! protocols carry state there (Transmission's `X-Transmission-Session-Id`
-//! rides a 409 response), which is also why requests never pass `-f`: callers
-//! read [`Response::status`] instead of losing the body on HTTP errors.
+//! Deliberately not streaming: every payload here fits in memory. Response
+//! headers are captured via `-D <tmpfile>` because some protocols carry state
+//! there (Transmission's `X-Transmission-Session-Id` rides a 409 response),
+//! which is also why requests never pass `-f`: callers read
+//! [`Response::status`] instead of losing the body on HTTP errors.
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -149,12 +145,8 @@ impl Fetch {
             cmd.arg("--http2");
         }
         if let Some(proxy) = &self.socks5 {
-            // Force IPv4. Our only SOCKS proxy is the WireGuard-to-SOCKS bridge,
-            // which is IPv4-only (wireproxy can't carry IPv6 traffic). With
-            // remote DNS (`--socks5-hostname`) a dual-stack tracker hostname
-            // otherwise resolves, part of the time, to an AAAA the tunnel can't
-            // route, and the request fails "SOCKS host unreachable". `-4` pins
-            // resolution to A records so the announce reliably rides IPv4.
+            // -4: the only SOCKS proxy (a WireGuard bridge) is IPv4-only, and a
+            // dual-stack host can otherwise resolve to an AAAA the tunnel can't route.
             cmd.arg("-4").arg("--socks5-hostname").arg(proxy);
         }
         if let Some(jar) = &self.cookie_jar {
@@ -209,8 +201,6 @@ fn snippet(body: &[u8]) -> String {
     s
 }
 
-/// Unique-enough temp path for the `-D` header dump (pid + counter; the file
-/// lives milliseconds and is best-effort removed).
 fn header_dump_path() -> PathBuf {
     static SEQ: AtomicU64 = AtomicU64::new(0);
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
@@ -221,10 +211,8 @@ fn run(cmd: Command) -> Result<Response> {
     run_with_stdin(cmd, None)
 }
 
-/// Execute curl, optionally piping `stdin_body` to it (the `--data-binary @-`
-/// path). Writing on this thread is safe because curl streams the request body
-/// before producing a response, so it drains stdin rather than deadlocking on a
-/// full stdout pipe.
+// Writing the body on this thread is safe because curl drains stdin before
+// producing a response, so it never deadlocks on a full stdout pipe.
 fn run_with_stdin(mut cmd: Command, stdin_body: Option<&[u8]>) -> Result<Response> {
     use std::io::Write;
 
@@ -260,8 +248,8 @@ fn run_with_stdin(mut cmd: Command, stdin_body: Option<&[u8]>) -> Result<Respons
     Ok(Response { status, headers, body: out.stdout })
 }
 
-/// Parse the LAST header block of a `-D` dump (with `-L`, curl appends one
-/// block per hop; the final one describes the response whose body we hold).
+// With `-L`, curl appends one header block per hop to the dump; only the
+// final block describes the response whose body we hold.
 fn parse_last_block(raw: &str) -> Result<(u16, Vec<(String, String)>)> {
     let mut status = None;
     let mut headers = Vec::new();
@@ -330,8 +318,6 @@ mod tests {
 
     #[test]
     fn socks5_forces_ipv4() {
-        // The SOCKS bridge is IPv4-only; a proxied request must pass `-4` so a
-        // dual-stack hostname never resolves to an unroutable AAAA.
         let args: Vec<String> = Fetch::new()
             .socks5("socks5://127.0.0.1:25345")
             .base_cmd()
@@ -340,7 +326,6 @@ mod tests {
             .collect();
         assert!(args.contains(&"-4".to_string()), "{args:?}");
         assert!(args.contains(&"--socks5-hostname".to_string()), "{args:?}");
-        // Without a proxy, no forced family.
         let plain: Vec<String> = Fetch::new()
             .base_cmd()
             .get_args()
@@ -351,14 +336,11 @@ mod tests {
 
     #[test]
     fn snippet_trims_and_truncates_long_bodies() {
-        // Leading/trailing whitespace is trimmed.
         assert_eq!(snippet(b"  hi there  "), "hi there");
-        // A body over 200 chars is capped and gets an ellipsis suffix.
         let long = "a".repeat(500);
         let s = snippet(long.as_bytes());
         assert_eq!(s.chars().count(), 203, "200 kept chars + the ... suffix");
         assert!(s.ends_with("..."));
-        // Exactly 200 chars is kept whole (no suffix).
         let exact = "b".repeat(200);
         let s = snippet(exact.as_bytes());
         assert_eq!(s.chars().count(), 200);
@@ -367,7 +349,6 @@ mod tests {
 
     #[test]
     fn parse_last_block_errors_without_a_status_line() {
-        // A header dump with no `HTTP/...` line has no parseable status.
         let err = parse_last_block("Content-Type: text/plain\r\n\r\n").unwrap_err();
         assert!(err.to_string().contains("no HTTP status line"), "{err}");
     }
@@ -379,7 +360,6 @@ mod tests {
         let v: serde_json::Value = resp.json().unwrap();
         assert_eq!(v["a"], 1);
 
-        // Non-JSON body surfaces a "parse JSON" error carrying a body snippet.
         let bad = Response { status: 200, headers: Vec::new(), body: b"not json at all".to_vec() };
         let err = bad.json::<serde_json::Value>().unwrap_err().to_string();
         assert!(err.contains("parse JSON"), "{err}");
@@ -390,7 +370,6 @@ mod tests {
     fn ensure_ok_accepts_2xx() {
         let resp = Response { status: 204, headers: Vec::new(), body: Vec::new() };
         assert!(resp.ensure_ok().is_ok());
-        // The upper bound is exclusive of 300.
         let redirect = Response { status: 300, headers: Vec::new(), body: b"moved".to_vec() };
         assert!(redirect.ensure_ok().is_err());
     }
@@ -407,7 +386,6 @@ mod tests {
             .collect();
         assert!(args.contains(&"X-Test: v".to_string()), "{args:?}");
         assert!(args.contains(&"99".to_string()), "max-time value present: {args:?}");
-        // The jar is passed for both read (-b) and write (-c).
         assert!(args.contains(&"-c".to_string()) && args.contains(&"-b".to_string()), "{args:?}");
         assert!(args.contains(&"/tmp/jar".to_string()), "{args:?}");
     }
@@ -418,15 +396,11 @@ mod tests {
             f.base_cmd().get_args().map(|a| a.to_string_lossy().into_owned()).collect()
         };
         assert!(args(Fetch::new().http2()).contains(&"--http2".to_string()));
-        // Everything else keeps curl's default negotiation.
         assert!(!args(Fetch::new()).contains(&"--http2".to_string()));
     }
 
     #[test]
     fn post_bytes_sends_the_body_over_stdin_not_argv() {
-        // `--data-binary @-` (a literal, not the payload) is what keeps an
-        // encrypted push body intact: as an argv entry it would be truncated at
-        // the first NUL and mangled by any non-UTF-8 byte.
         let args: Vec<String> = {
             let mut cmd = Fetch::new().base_cmd();
             cmd.arg("--data-binary").arg("@-");
@@ -435,9 +409,7 @@ mod tests {
         assert!(args.contains(&"@-".to_string()), "{args:?}");
     }
 
-    /// Round-trips a body containing NULs and every byte value through a real
-    /// curl, proving the stdin path is byte-exact. Uses `file://` so the test
-    /// needs no network: curl writes the request body to the target path.
+    // Uses `file://` so the test needs no network.
     #[test]
     fn post_bytes_round_trips_arbitrary_binary() {
         let body: Vec<u8> = (0u8..=255).collect();
@@ -446,7 +418,6 @@ mod tests {
         let target = dir.join("uploaded.bin");
         let _ = std::fs::remove_file(&target);
 
-        // curl's file:// upload writes the request body verbatim to the path.
         let out = Command::new("curl")
             .args(["-s", "-S", "--upload-file", "-"])
             .arg(format!("file://{}", target.display()))
@@ -473,7 +444,6 @@ mod tests {
         assert_eq!(f.query, vec![("q".to_string(), "hello world".to_string())]);
         assert_eq!(f.headers, vec![("A".to_string(), "b".to_string())]);
         assert_eq!(f.max_time_secs, 5);
-        // The default network budget is 30 seconds, and HTTP/2 is opt-in.
         assert_eq!(Fetch::new().max_time_secs, 30);
         assert!(!Fetch::new().http2);
         assert!(Fetch::new().http2().http2);

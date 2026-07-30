@@ -1,17 +1,6 @@
 //! RFC 8291 Message Encryption for Web Push, over the RFC 8188 `aes128gcm`
-//! content encoding.
-//!
-//! The shape of it: agree a secret with the subscriber's public key (ECDH
-//! P-256), mix in the subscription's `auth` secret via HKDF to get the input
-//! keying material, derive a content key + nonce from that and a random salt,
-//! then AES-128-GCM the payload. The body carries everything the browser needs
-//! to redo the derivation (salt, record size, our ephemeral public key) in front
-//! of the ciphertext.
-//!
-//! Nothing here is negotiable: every constant string, the `\0` separators and
-//! the field widths are wire format. [`encrypt_with`] takes the ephemeral key
-//! and salt as parameters purely so the tests can reproduce the RFC's published
-//! vector exactly a random salt is otherwise the whole point.
+//! content encoding. Every constant string, `\0` separator and field width
+//! below is wire format and not negotiable.
 
 use aes_gcm::aead::Aead;
 use aes_gcm::{Aes128Gcm, KeyInit, Nonce};
@@ -22,24 +11,19 @@ use p256::elliptic_curve::sec1::ToEncodedPoint;
 use p256::{PublicKey, SecretKey};
 use sha2::Sha256;
 
-/// Record size advertised in the header. One record is always enough here:
-/// notification payloads are a few hundred bytes, and a browser's push service
-/// caps a message near 4 KiB anyway.
 const RECORD_SIZE: u32 = 4096;
 
-/// An uncompressed P-256 point: `0x04 || X(32) || Y(32)`.
+// An uncompressed P-256 point: `0x04 || X(32) || Y(32)`.
 const P256_POINT_LEN: usize = 65;
 
-/// GCM tag (16) + the one-byte padding delimiter this encoding appends.
+// GCM tag (16) + the one-byte padding delimiter this encoding appends.
 const OVERHEAD: usize = 17;
 
-/// Largest payload that still fits one [`RECORD_SIZE`] record.
 pub const MAX_PAYLOAD: usize = RECORD_SIZE as usize - OVERHEAD;
 
 /// Encrypt `payload` for a subscriber, with a fresh ephemeral key and salt.
-///
-/// `ua_public` is the subscription's `p256dh` (65 raw bytes) and `auth_secret`
-/// its `auth` (16 raw bytes), both already base64url-decoded.
+/// `ua_public` is the subscription's `p256dh` and `auth_secret` its `auth`,
+/// both already base64url-decoded.
 pub fn encrypt(payload: &[u8], ua_public: &[u8], auth_secret: &[u8]) -> Result<Vec<u8>> {
     let ephemeral = SecretKey::random(&mut rand_core::OsRng);
     let mut salt = [0u8; 16];
@@ -72,9 +56,8 @@ pub fn encrypt_with(
     let shared = diffie_hellman(ephemeral.to_nonzero_scalar(), ua_key.as_affine());
     let ecdh_secret = shared.raw_secret_bytes();
 
-    // RFC 8291 §3.4: the auth secret is the HKDF *salt* here, and both public
-    // keys are bound into the info so a message can't be replayed at another
-    // subscriber.
+    // RFC 8291 §3.4: the auth secret is the HKDF *salt*, and both public keys
+    // go in the info so a message can't be replayed at another subscriber.
     let mut key_info = Vec::with_capacity(14 + P256_POINT_LEN * 2);
     key_info.extend_from_slice(b"WebPush: info\0");
     key_info.extend_from_slice(ua_public);
@@ -121,9 +104,8 @@ mod tests {
     use super::*;
     use crate::b64;
 
-    // RFC 8291 section 5, "Push Message Encryption Example". Every value below is
-    // copied from the RFC; if any of them stops matching, the encoding is wrong
-    // and no browser would decrypt our messages.
+    // Every value below is copied from RFC 8291 §5, "Push Message Encryption
+    // Example".
     const PLAINTEXT: &str = "When I grow up, I want to be a watermelon";
     const UA_PUBLIC: &str =
         "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4";
@@ -159,8 +141,6 @@ WyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
 
     #[test]
     fn the_vector_private_key_yields_the_vector_public_key() {
-        // Guards the key encoding itself (uncompressed SEC1), independently of
-        // the encryption above.
         let public = vector_key().public_key().to_encoded_point(false);
         assert_eq!(b64::encode(public.as_bytes()), AS_PUBLIC);
     }
@@ -183,15 +163,12 @@ WyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
 
     #[test]
     fn a_fresh_encryption_differs_every_time() {
-        // Random salt + ephemeral key per message: two encryptions of the same
-        // payload to the same subscriber must not be byte-identical, or the
-        // (key, nonce) pair would be repeating.
+        // Byte-identical output would mean the (key, nonce) pair is repeating.
         let ua = b64::decode(UA_PUBLIC).unwrap();
         let auth = b64::decode(AUTH).unwrap();
         let a = encrypt(PLAINTEXT.as_bytes(), &ua, &auth).unwrap();
         let b = encrypt(PLAINTEXT.as_bytes(), &ua, &auth).unwrap();
         assert_ne!(a, b);
-        // ...but both are still well-formed and the right length.
         assert_eq!(a.len(), b.len());
         assert_eq!(a.len(), 21 + 65 + PLAINTEXT.len() + OVERHEAD);
     }
@@ -202,7 +179,6 @@ WyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
         let auth = b64::decode(AUTH).unwrap();
         let err = encrypt(&vec![b'x'; MAX_PAYLOAD + 1], &ua, &auth).unwrap_err();
         assert!(err.to_string().contains("cap is"), "{err}");
-        // Exactly at the cap still works.
         assert!(encrypt(&vec![b'x'; MAX_PAYLOAD], &ua, &auth).is_ok());
     }
 
@@ -212,7 +188,6 @@ WyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
         // Right length, not a curve point.
         let err = encrypt(b"hi", &[4u8; 65], &auth).unwrap_err();
         assert!(err.to_string().contains("P-256 point"), "{err}");
-        // Wrong length entirely.
         let err = encrypt(b"hi", &[4u8; 32], &auth).unwrap_err();
         assert!(err.to_string().contains("65 bytes"), "{err}");
     }

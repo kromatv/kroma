@@ -1,27 +1,18 @@
-// <Frost>: the backdrop-blur layer of a glass surface.
+// <Frost>: the backdrop-blur layer of a glass surface. React Native has no
+// backdrop filter, and the kit stays free of platform blur dependencies (see
+// nav-pill), so this layer keeps both true and frosts anyway:
 //
-// Glass in the kit was a translucent wash, and the one thing a wash cannot do
-// is FROST - blur what sits behind it. Two hard facts stand in the way: React
-// Native has no backdrop filter at any prefix, and the kit stays free of
-// platform blur dependencies (see nav-pill). This layer keeps both true and
-// frosts anyway:
+// - Browser targets get the real CSS `backdrop-filter` (see css.web.ts). The
+//   2019 TV WebKits ignore the property outright, so legacy Tizen and webOS
+//   keep the plain wash at zero cost instead of compositing a blur on the CPU.
+// - Native renders whatever blur view the app registered at startup
+//   (`registerFrost(BlurView)` from expo-blur in the TV shell) — the same
+//   inversion as the voice-search and launcher backends. A shell that
+//   registers nothing keeps the wash.
 //
-// - The browser targets get the real CSS `backdrop-filter` (see css.web.ts).
-//   The 2019 TV WebKits ignore the property outright, so the legacy Tizen and
-//   webOS tiers keep the plain wash at zero cost instead of compositing a blur
-//   on the CPU.
-// - Native renders whatever blur view the APP registered at startup -
-//   `registerFrost(BlurView)` from expo-blur in the TV shell - the same
-//   inversion as the voice-search and launcher backends: the dependency lives
-//   in the shell, the kit holds a slot for it. A shell that registers nothing
-//   keeps the wash, which is also the right answer wherever the platform blur
-//   is not worth its frames.
-//
-// The layer is a FIRST CHILD of the surface it frosts, absolutely filled, so
-// the surface's own tint paints over it and the content over both. It clips
-// itself to the surface's corner radius rather than asking the surface for
-// `overflow: hidden`, which would also clip the focus rings of the controls
-// living on it.
+// The layer is a first child of the surface it frosts, absolutely filled, and
+// clips itself to the surface's corner radius rather than asking the surface
+// for `overflow: hidden`, which would also clip its controls' focus rings.
 
 import type { ComponentType } from 'react';
 import { Platform, type StyleProp, View, type ViewStyle } from 'react-native';
@@ -43,10 +34,9 @@ interface FrostBackdropProps {
 let PlatformFrost: ComponentType<FrostBackdropProps> | null = null;
 
 /** Hand the kit the platform's blur view (the TV shell's expo-blur), once, at
- * module scope, before the first render - like every other shell backend.
- * Generic over the component's own props: `ComponentType` is invariant in P
- * (its `propTypes` member sees to that), so naming the props directly would
- * reject expo-blur's <BlurView> over tints the kit never passes. */
+ * module scope, before the first render. Generic over the component's own
+ * props, since `ComponentType` is invariant in `P` and naming the props
+ * directly would reject <BlurView> over tints the kit never passes. */
 function registerFrost<P extends FrostBackdropProps>(component: ComponentType<P>): void {
   PlatformFrost = component as ComponentType<FrostBackdropProps>;
 }
@@ -85,10 +75,8 @@ const FILL = {
   bottom: 0,
   // Never a touch target: the surface underneath owns the press.
   pointerEvents: 'none',
-  // BELOW the surface's content. On the web a positioned element paints over
-  // its static siblings whatever the document order, so without this the blur
-  // sat on top of the very glyphs and labels it shares a card with and smeared
-  // them out (an icon-sized stroke vanishes entirely under blur(12px)).
+  // Below the surface's content: a positioned element on the web paints over
+  // its static siblings regardless of document order.
   zIndex: -1,
 } as const;
 const CLIP = { overflow: 'hidden' } as const;

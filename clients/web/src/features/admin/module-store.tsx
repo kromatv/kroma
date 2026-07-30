@@ -1,9 +1,7 @@
 // The Store section of the admin Modules page: what the configured registry
-// offers for THIS server. The backend enriches every catalog entry with the
-// artifact matching the server's build target, the installed version, an
-// update flag and a compatibility verdict; installing goes through
-// POST /store/install-id, which resolves missing hard dependencies from the
-// same catalog and verifies each download's sha256 before unpacking.
+// offers for THIS server. Installing goes through POST /store/install-id,
+// which resolves missing hard dependencies and verifies each download's
+// sha256 before unpacking.
 
 import { Image } from '@kroma/admin-kit';
 import { Button } from '@kroma/ui/kit';
@@ -20,18 +18,14 @@ export interface RegistryModule {
   version: string;
   description?: string;
   library?: boolean;
-  /** Packaged icon inlined as a data URI by the catalog generator, so it shows
-   *  before the module is downloaded. */
   icon?: string | null;
   minServer?: string | null;
-  /** Download URL of the artifact matching the server's platform, if any. */
   url?: string | null;
   size?: number | null;
   sha256?: string | null;
   installedVersion?: string | null;
   updateAvailable?: boolean;
   compatible: boolean;
-  /** Human-readable blocker when not compatible. */
   reason?: string | null;
 }
 
@@ -109,17 +103,14 @@ function StoreCard({
   );
 }
 
-/** Case-insensitive match of a catalog entry against a search query
- *  (id, name and description all count). */
 function matches(m: RegistryModule, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return [m.id, m.name, m.description ?? ''].some((s) => s.toLowerCase().includes(q));
 }
 
-/** Inline registry-URL editor, shown when the registry is unreachable (and as
- *  the escape hatch to point the Store at any other catalog: a GitHub release,
- *  gh-pages, a NAS...). Saves the `moduleRegistryUrl` setting then refetches. */
+// Also the escape hatch to point the Store at any other catalog (a GitHub
+// release, gh-pages, a NAS...). Saves the `moduleRegistryUrl` setting then refetches.
 function RegistryUrlEditor({
   current,
   onSaved,
@@ -161,10 +152,8 @@ function RegistryUrlEditor({
   );
 }
 
-/** The registry ("Store") section: always visible so the registry state is
- *  never a mystery. Shows the catalog grid with a search box when reachable,
- *  and an explicit error card (failing URL + inline URL editor + how to
- *  publish) when not. */
+/** Always visible so the registry state is never a mystery: the catalog grid
+ * with a search box when reachable, an error card with a URL editor when not. */
 export function StoreSection({
   catalog,
   installedIds,

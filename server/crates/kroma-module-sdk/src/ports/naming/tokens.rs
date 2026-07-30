@@ -4,9 +4,9 @@
 
 use super::NameContext;
 
-/// Characters that may decorate a token inside the braces (`{[Quality Full]}`,
-/// `{-Release Group}`, `{Edition Tags }`); the decoration is emitted only when
-/// the token resolves to a non-empty value, matching Radarr's presets.
+// Characters that may decorate a token inside the braces (`{[Quality Full]}`,
+// `{-Release Group}`); the decoration is emitted only when the token resolves
+// to a non-empty value, matching Radarr's presets.
 const DECO: &[char] = &['[', ']', '(', ')', '-', '_', '.', ' '];
 
 /// Render one `{...}` token (the text between the braces) against `ctx`, peeling
@@ -26,7 +26,6 @@ pub fn resolve_token(inner: &str, ctx: &NameContext) -> String {
     }
 }
 
-/// Resolve the bare token (no decoration) to its value.
 fn resolve_core(inner: &str, ctx: &NameContext) -> String {
     let (name, spec) = match inner.split_once(':') {
         Some((n, s)) => (n, Some(s)),
@@ -88,8 +87,8 @@ fn resolve_core(inner: &str, ctx: &NameContext) -> String {
     }
 }
 
-/// Radarr's CleanTitle: drop apostrophes/quotes and turn the punctuation that
-/// would clutter a filename into spaces, keeping the words.
+// Radarr's CleanTitle: drop apostrophes/quotes and turn the punctuation that
+// would clutter a filename into spaces, keeping the words.
 fn clean_title(title: &str) -> String {
     let mut out = String::with_capacity(title.len());
     for c in title.chars() {
@@ -102,8 +101,8 @@ fn clean_title(title: &str) -> String {
     out.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// "The Matrix" -> "Matrix, The"; titles without a leading article are left
-/// unchanged.
+// "The Matrix" -> "Matrix, The"; titles without a leading article are left
+// unchanged.
 fn title_the(title: &str) -> String {
     for article in ["The ", "A ", "An "] {
         if let Some(rest) = title.strip_prefix(article) {
@@ -113,8 +112,8 @@ fn title_the(title: &str) -> String {
     title.to_string()
 }
 
-/// The first alphanumeric character of the sort title, upper-cased (for
-/// `A/`, `B/`, `0/` folder buckets).
+// The first alphanumeric character of the sort title, upper-cased (for
+// `A/`, `B/`, `0/` folder buckets).
 fn first_character(title: &str) -> String {
     title_the(title)
         .chars()
@@ -123,8 +122,8 @@ fn first_character(title: &str) -> String {
         .unwrap_or_default()
 }
 
-/// Render a `[EN+FR]` language tag with Radarr's include/exclude filter and the
-/// "hide a sole-English audio track" rule (footnote 2 in the token modal).
+// Render a `[EN+FR]` language tag with Radarr's include/exclude filter and the
+// "hide a sole-English audio track" rule (footnote 2 in the token modal).
 fn langs(all: &[String], spec: Option<&str>, keep_sole_english: bool) -> String {
     let mut list: Vec<String> = all.to_vec();
     match spec.filter(|s| !s.is_empty()) {
@@ -155,10 +154,9 @@ fn langs(all: &[String], spec: Option<&str>, keep_sole_english: bool) -> String 
     }
 }
 
-/// Truncate `s` to `max_bytes` bytes including a trailing `...` (Radarr's
-/// `{Token:30}`). A negative width keeps the END of the string (`{Token:-30}`),
-/// with a leading ellipsis. Respects UTF-8 char boundaries. No-op when already
-/// within budget.
+// Truncate `s` to `max_bytes` bytes including a trailing `...` (Radarr's
+// `{Token:30}`). A negative width keeps the END of the string, with a
+// leading ellipsis instead. Respects UTF-8 char boundaries.
 fn truncate(s: &str, max_bytes: i32) -> String {
     let budget = max_bytes.unsigned_abs() as usize;
     if s.len() <= budget {

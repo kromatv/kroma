@@ -1,8 +1,6 @@
-//! Multi-provider LLM configuration persisted in the settings store. The admin
-//! IA page registers several providers (a local Ollama, Claude, OpenRouter, …)
-//! and marks one as the default used for generation. Mirrors `accessors`'
-//! `library_defs`: the list lives under the `llmProviders` settings key, with a
-//! one-time migration from the legacy single-provider flat `llm*` keys.
+//! Multi-provider LLM configuration in the settings store: the list lives under
+//! the `llmProviders` key, with a one-time migration from the legacy
+//! single-provider flat `llm*` keys.
 
 use std::collections::BTreeMap;
 
@@ -13,15 +11,15 @@ use crate::db::Pool;
 
 use super::store::Settings;
 
-/// One configured LLM endpoint. `api_key` is only ever populated server-side
-/// it is never returned to the client (the admin DTO exposes `has_api_key`).
+/// `api_key` is server-side only and is never returned to the client (the admin
+/// DTO exposes `has_api_key` instead).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LlmProvider {
     pub id: String,
     #[serde(default)]
     pub name: String,
-    /// `openai` (OpenAI-compatible / Ollama) | `anthropic` | `openrouter`.
+    // `openai` (OpenAI-compatible / Ollama) | `anthropic` | `openrouter`.
     #[serde(default = "default_kind")]
     pub provider: String,
     #[serde(default)]
@@ -48,16 +46,13 @@ fn default_max_tokens() -> i64 {
     900
 }
 
-/// The configured providers. Parses the persisted `llmProviders` array; when it
-/// is empty, migrates the legacy single-provider flat keys into one provider
-/// (id `"default"`) if any were set, so existing installs keep working.
+/// Falls back to migrating the legacy flat keys into one provider (id `default`).
 pub fn llm_providers(settings: &Settings) -> Vec<LlmProvider> {
     if let Ok(list) = serde_json::from_value::<Vec<LlmProvider>>(settings.get("llmProviders")) {
         if !list.is_empty() {
             return list;
         }
     }
-    // Migration from the flat keys (pre multi-provider installs).
     let base_url = settings.get_str("llmBaseUrl", "");
     let model = settings.get_str("llmModel", "");
     let api_key = settings.get_str("llmApiKey", "");
@@ -77,8 +72,7 @@ pub fn llm_providers(settings: &Settings) -> Vec<LlmProvider> {
     }]
 }
 
-/// The provider used for generation: the one whose id matches
-/// `llmDefaultProvider`, else the first configured (or `None` if there are none).
+/// The provider whose id matches `llmDefaultProvider`, else the first configured.
 pub fn default_provider(settings: &Settings) -> Option<LlmProvider> {
     let providers = llm_providers(settings);
     let default_id = settings.get_str("llmDefaultProvider", "");
@@ -89,11 +83,7 @@ pub fn default_provider(settings: &Settings) -> Option<LlmProvider> {
         .or_else(|| providers.into_iter().next())
 }
 
-/// The configured providers in failover order: the default first, then the rest
-/// in their stored order. Shared by the LLM client's failover chain
-/// ([`crate::infra::llm::from_settings`]) and by subtitle translation, so a primary
-/// that is out of credits / rate-limited / down degrades to the next provider
-/// (e.g. cloud OpenRouter to a local Ollama) everywhere, not just in some features.
+/// Failover order: the default first, then the rest as stored.
 pub fn ordered_providers(settings: &Settings) -> Vec<LlmProvider> {
     let all = llm_providers(settings);
     let default_id = default_provider(settings).map(|p| p.id);
@@ -107,11 +97,9 @@ pub fn ordered_providers(settings: &Settings) -> Vec<LlmProvider> {
     out
 }
 
-/// Persist the full provider set + the global enable flag + default id.
-///
-/// **Secret-merge**: any incoming provider with a blank `api_key` keeps the key
-/// already stored under the same id the client never receives saved keys, so a
-/// plain round-trip would otherwise wipe them.
+/// An incoming provider with a blank `api_key` keeps the key already stored under
+/// the same id: the client never receives saved keys, so a round-trip would
+/// otherwise wipe them.
 pub fn set_llm(
     settings: &Settings,
     pool: &Pool,
@@ -136,9 +124,8 @@ pub fn set_llm(
     patch.insert("llmEnabled".to_string(), json!(enabled));
     patch.insert("llmProviders".to_string(), json!(merged));
     patch.insert("llmDefaultProvider".to_string(), json!(default_id));
-    // Consume the legacy flat keys: once the multi-provider list is authoritative,
-    // a saved-empty list must stay empty. Leaving them set would re-trigger the
-    // one-time migration on the next read and resurrect a deleted provider + key.
+    // Consume the legacy flat keys: left set, they re-trigger the migration on the
+    // next read and resurrect a deleted provider and its key.
     patch.insert("llmBaseUrl".to_string(), json!(""));
     patch.insert("llmModel".to_string(), json!(""));
     patch.insert("llmApiKey".to_string(), json!(""));
@@ -206,13 +193,10 @@ mod tests {
         set_llm(&s, &pool, true, vec![provider("a", "k1"), provider("b", "k2")], "b");
         let list = llm_providers(&s);
         assert_eq!(list.len(), 2);
-        // default_provider resolves to id "b"
         assert_eq!(default_provider(&s).unwrap().id, "b");
-        // ordered_providers puts the default first
         let ordered = ordered_providers(&s);
         assert_eq!(ordered[0].id, "b");
         assert_eq!(ordered[1].id, "a");
-        // flat keys are consumed (cleared)
         assert_eq!(s.get_str("llmModel", "x"), "");
     }
 
@@ -221,7 +205,6 @@ mod tests {
         let pool = test_pool();
         let s = settings(&pool);
         set_llm(&s, &pool, true, vec![provider("a", "k1"), provider("b", "k2")], "nonexistent");
-        // No provider matches "nonexistent" -> first configured.
         assert_eq!(default_provider(&s).unwrap().id, "a");
     }
 
@@ -230,7 +213,6 @@ mod tests {
         let pool = test_pool();
         let s = settings(&pool);
         set_llm(&s, &pool, true, vec![provider("a", "secret-key")], "a");
-        // Re-save the same provider with a BLANK api key -> stored key is retained.
         set_llm(&s, &pool, true, vec![provider("a", "")], "a");
         let list = llm_providers(&s);
         assert_eq!(list.len(), 1);

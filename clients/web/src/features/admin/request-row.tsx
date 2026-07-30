@@ -82,8 +82,6 @@ export function RequestRowView({
       </div>
 
       <div className="flex justify-end gap-1.5">
-        {/* This row is itself a <button>, and a <button> can't be nested inside a
-            button, so the quick approve/deny controls are role="button" spans. */}
         {canReview && req.status === 'pending' ? (
           <>
             {/* biome-ignore lint/a11y/useSemanticElements: cannot be a native <button> because it lives inside the row's <button> */}

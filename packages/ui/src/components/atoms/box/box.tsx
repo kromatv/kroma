@@ -52,8 +52,8 @@ function Spacer() {
 
 const SPACER = { flex: 1 } as const;
 
-/** Every style shorthand <Box> owns. Anything else is a real View prop and is
- * forwarded untouched (onLayout, pointerEvents, testID, accessibility...). */
+// Every style shorthand <Box> owns. Anything else is a real View prop and is
+// forwarded untouched (onLayout, pointerEvents, testID, accessibility...).
 const STYLE_PROPS = new Set([
   'flex',
   'row',
@@ -103,19 +103,13 @@ const STYLE_PROPS = new Set([
   'overflow',
 ]);
 
-/**
- * Split the shorthand props from the real View props, and resolve the first into
- * ONE style object that is shared by identity between every box asking for the
- * same thing (see `sharedBoxStyle` for why that matters so much here).
- *
- * The cache key is built during the split rather than from the finished style:
- * the shorthands are all primitives, there are at most a few per box, and the
- * key is thrown away on a hit - which is the common case - so this is cheaper
- * than resolving the style and hashing that.
- *
- * `STYLE_PROPS` is iterated in ITS order, not the caller's, so `row gap={4}` and
- * `gap={4} row` are one entry rather than two.
- */
+// Splits the shorthand props from the real View props, and resolves the first
+// into one style object shared by identity between every box asking for the
+// same thing (see `sharedBoxStyle`). The cache key is built during the split
+// rather than from the finished style, since the key is thrown away on a hit
+// (the common case), which is cheaper than resolving the style and hashing
+// it. `STYLE_PROPS` is iterated in its own order, not the caller's, so `row
+// gap={4}` and `gap={4} row` are one cache entry rather than two.
 function splitProps(props: Record<string, unknown>): {
   view: Record<string, unknown>;
   layout: ViewStyle;
@@ -144,7 +138,7 @@ function splitProps(props: Record<string, unknown>): {
   return { view, layout: sharedBoxStyle(key, style as BoxStyleProps) };
 }
 
-/** A box with no shorthand at all still must not mint an object per render. */
+// A box with no shorthand at all still must not mint an object per render.
 const EMPTY: ViewStyle = {};
 
 export type { BoxProps };

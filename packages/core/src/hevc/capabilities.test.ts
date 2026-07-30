@@ -4,8 +4,6 @@ import { capabilities, detectCapabilities } from './capabilities';
 type G = Record<string, unknown>;
 const g = globalThis as unknown as G;
 
-// Each test may inject browser/TV globals; strip them all afterwards so the node
-// baseline (no DOM, no MediaSource) is restored.
 afterEach(() => {
   for (const k of ['tizen', 'webOS', 'MediaSource', 'matchMedia', 'document']) {
     delete g[k];
@@ -77,8 +75,7 @@ describe('detectCapabilities (browser detection paths)', () => {
 describe('capabilities (cached)', () => {
   it('memoizes the first detection and ignores later global changes', () => {
     const first = capabilities();
-    expect(capabilities()).toBe(first); // same reference
-    // Turning the runtime "into a TV" after the first call must not change the cache.
+    expect(capabilities()).toBe(first);
     g.tizen = {};
     expect(capabilities()).toBe(first);
     expect(capabilities().source).toBe('videoElement');

@@ -19,7 +19,6 @@ use crate::template;
 pub fn apply(value: &str, filters: &[Filter], ctx: &Context) -> String {
     let mut v = value.to_string();
     for f in filters {
-        // Filter args can be templated.
         let args: Vec<String> = f.args.iter().map(|a| template::render(a, ctx)).collect();
         v = apply_one(&f.name, &v, &args);
     }
@@ -66,10 +65,8 @@ fn apply_one(name: &str, value: &str, args: &[String]) -> String {
     }
 }
 
-// ----- string filters -------------------------------------------------------------
-
-/// Split on a separator and take the element at `index` (negative counts from
-/// the end, Cardigann-style). Out-of-range yields the original value.
+// Split on a separator and take the element at `index` (negative counts from
+// the end, Cardigann-style). Out-of-range yields the original value.
 fn split(value: &str, sep: &str, index: &str) -> String {
     if sep.is_empty() {
         return value.to_string();
@@ -84,8 +81,8 @@ fn split(value: &str, sep: &str, index: &str) -> String {
     }
 }
 
-/// Return the first capture group of `pattern` (or the whole match if the
-/// pattern has no groups), else empty.
+// Returns the first capture group of `pattern` (or the whole match if the
+// pattern has no groups), else empty.
 fn regexp_extract(value: &str, pattern: &str) -> String {
     match regex::Regex::new(pattern) {
         Ok(re) => match re.captures(value) {
@@ -100,8 +97,8 @@ fn regexp_extract(value: &str, pattern: &str) -> String {
     }
 }
 
-/// Keep the value only if it is one of the comma-separated allowed values
-/// (case-insensitive), else empty. Used to whitelist e.g. genres.
+// Keeps the value only if it is one of the comma-separated allowed values
+// (case-insensitive), else empty. Used to whitelist e.g. genres.
 fn validate(value: &str, allowed: &str) -> String {
     let ok = allowed
         .split(',')
@@ -118,8 +115,8 @@ fn valid_filename(value: &str) -> String {
     value.replace(['<', '>', ':', '"', '/', '\\', '|', '?', '*'], "")
 }
 
-/// Strip common Latin diacritics (à->a, é->e, ü->u, ñ->n…). A pragmatic table,
-/// not full Unicode normalization.
+// Strips common Latin diacritics (à->a, é->e, ü->u, ñ->n…). A pragmatic table,
+// not full Unicode normalization.
 fn remove_diacritics(value: &str) -> String {
     value
         .chars()
@@ -155,8 +152,6 @@ fn query_param(value: &str, key: &str) -> String {
     }
     String::new()
 }
-
-// ----- url / html en-/decoding ----------------------------------------------------
 
 fn url_decode(s: &str) -> String {
     let bytes = s.as_bytes();
@@ -252,16 +247,14 @@ fn html_encode(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
-// ----- date handling --------------------------------------------------------------
-
-/// Normalized output for a parsed date: RFC 3339 (the domain layer only needs
-/// *a* parseable timestamp for age display).
+// RFC 3339 (the domain layer only needs *a* parseable timestamp for age
+// display).
 fn to_rfc3339(dt: NaiveDateTime) -> String {
     Utc.from_utc_datetime(&dt).to_rfc3339()
 }
 
-/// `dateparse`/`date`: try each supplied Go layout, then a set of common
-/// formats, then relative parsing.
+// `dateparse`/`date`: try each supplied Go layout, then a set of common
+// formats, then relative parsing.
 fn date_parse(value: &str, layouts: &[String]) -> String {
     let v = value.trim();
     for layout in layouts {
@@ -276,8 +269,8 @@ fn date_parse(value: &str, layouts: &[String]) -> String {
     parse_fuzzy(v).unwrap_or_else(|| value.to_string())
 }
 
-/// `timeago`/`reltime`/`fuzzytime`: relative ("3 hours ago", "yesterday") and
-/// common absolute formats.
+// `timeago`/`reltime`/`fuzzytime`: relative ("3 hours ago", "yesterday") and
+// common absolute formats.
 fn reltime(value: &str) -> String {
     parse_fuzzy(value.trim()).unwrap_or_else(|| value.to_string())
 }
@@ -325,9 +318,9 @@ fn parse_fuzzy(v: &str) -> Option<String> {
     None
 }
 
-/// Parse relative expressions against the local clock: "just now",
-/// "5 minutes ago", "2 hours ago", "yesterday", "today", "3 days ago",
-/// "1 week ago", "2 months ago", "1 year ago".
+// Parses relative expressions against the local clock: "just now",
+// "5 minutes ago", "2 hours ago", "yesterday", "today", "3 days ago",
+// "1 week ago", "2 months ago", "1 year ago".
 fn parse_relative(v: &str) -> Option<NaiveDateTime> {
     let now = Local::now().naive_local();
     let lower = v.to_lowercase();
@@ -372,8 +365,8 @@ fn sub_months(dt: NaiveDateTime, months: i64) -> NaiveDateTime {
         .unwrap_or(dt)
 }
 
-/// Translate a Go reference-time layout ("2006-01-02 15:04:05") into a chrono
-/// `strftime` format. Longest tokens first so `2006` isn't split.
+// Translates a Go reference-time layout ("2006-01-02 15:04:05") into a chrono
+// `strftime` format. Longest tokens first so `2006` isn't split.
 fn go_layout_to_chrono(layout: &str) -> String {
     const SUBS: &[(&str, &str)] = &[
         ("2006", "%Y"),

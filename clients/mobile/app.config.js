@@ -1,10 +1,6 @@
-// The dynamic half of the mobile app's Expo config.
-//
-// app.json still holds everything static and is the file to edit; Expo hands it
-// to this function as `config`, and all that happens here is the one thing a
-// JSON file cannot do - COLLECT the build's own identity (git commit, branch,
-// compile time, repository) so the settings screen can show which build the user
-// is actually running. See ../build-info/index.js.
+// The dynamic half of the mobile app's Expo config; app.json is the static file
+// to edit. This collects the build's identity (git commit, branch, compile time)
+// so the settings screen can show which build the user is running.
 
 const { collectBuildInfo } = require('../build-info');
 

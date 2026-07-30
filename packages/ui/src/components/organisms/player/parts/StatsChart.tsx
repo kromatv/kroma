@@ -1,32 +1,12 @@
-// <StatsChart>: one live chart of the stats panel, with every series that shares
-// its axis.
+// One live chart of the stats panel, with every series sharing its axis. Stays
+// SVG rather than canvas/Skia: a native canvas module would cost Tizen and
+// webOS their renderer to reclaim microseconds (see the render call below for
+// the actual measurement).
 //
-// On the renderer, which is the question this component exists to answer
-// ---------------------------------------------------------------------
-// It draws SVG, and it stays SVG on purpose. The obvious suspicion is that the
-// geometry is the cost, so it was measured: building the point geometry for three
-// 80-sample series takes ~44 us, and at the panel's 2 Hz poll that is 0.09 ms per
-// SECOND of wall clock. There is nothing there to win. A canvas backend would
-// need a web/native pair of this file (React Native has no canvas), and Skia
-// would need a native module, which would cost Tizen and webOS their renderer
-// altogether - both to reclaim microseconds.
-//
-// What actually costs, in order: React reconciling the panel on every poll, and
-// the number of SVG nodes the compositor re-rasterises. So the effort goes there
-// instead - each trace is ONE <Path> rather than the polyline pair it used to be,
-// and StatsPanel keeps its slow-moving text rows out of the poll's render path.
-// The geometry itself is rebuilt every render, uncached, because the measurement
-// above says caching it would buy nothing and cost a staleness bug.
-//
-// On the design
-// -------------
-// Every series in one chart shares one y-axis, which is why grouping is a caller
-// decision and only legal for series that share a unit (see PlayerMeter.chart).
-// The marks follow the house chart specs: 2px traces with round joins, a ~10%
-// area wash, an 8px end dot ringed in the surface colour so "now" is findable
-// where traces cross, and a recessive hairline for a reference level. Identity is
-// never colour alone - each series is direct-labelled with its own value beside a
-// colour key, so the chart still reads in greyscale.
+// Every series in one chart shares one y-axis, so grouping is a caller decision
+// and only legal for series that share a unit (see PlayerMeter.chart). Identity
+// is never colour alone — each series is direct-labelled with its own value
+// beside a colour key, so the chart still reads in greyscale.
 
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
@@ -43,20 +23,18 @@ import {
 } from '../lib/chart-geometry';
 import type { PlayerMeter } from '../types';
 
-/** Plot height. Tall enough for a trend to have a shape, short enough that two
- * charts and twenty text rows still clear a 1080p frame. */
+// Tall enough for a trend to have shape, short enough that two charts and
+// twenty text rows still clear a 1080p frame.
 const PLOT_H = 44;
-/** Vertical inset: half a stroke plus the end dot's ring. */
 const PAD_Y = 6;
-/** Right inset, so the end dot and its ring are never half-drawn at the edge. */
+// So the end dot and its ring are never half-drawn at the edge.
 const DOT_ROOM = 7;
 
-/** The end dot: r=4 (an 8px mark) plus a 2px ring in the surface colour. */
 const DOT_R = 4;
 const DOT_RING = 2;
 
-/** The card colour the ring paints, so a dot stays legible over a trace it
- * crosses. Matches StatsPanel's own background. */
+// The card colour the ring paints, so a dot stays legible over a trace it
+// crosses. Matches StatsPanel's own background.
 const SURFACE = '#0C0C0E';
 
 const TRACE_W = 2;
@@ -77,8 +55,8 @@ export interface StatsChartProps {
   slot: number;
 }
 
-/** What one series contributes, resolved before any geometry so the drawn colour
- * and the legend key can never drift apart. */
+// What one series contributes, resolved before any geometry so the drawn
+// colour and the legend key can never drift apart.
 interface Resolved {
   key: string;
   display: string;
@@ -101,19 +79,15 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
 
   const reference = meters.find((m) => m.reference)?.reference;
 
-  // Built on every render, deliberately unmemoised. The instinct is to cache this
-  // - it is a loop over 80 samples building path strings - so it was measured
-  // first: three series' worth is ~44 us, which at the panel's 2 Hz poll is
-  // 0.09 ms per second of wall clock. There is nothing to save, and a memo keyed
-  // on a hand-rolled signature of the samples would be more code, more to get
-  // wrong, and a stale chart the first time the signature missed something.
+  // Deliberately unmemoised: three series' worth of path-building measures at
+  // ~44us, which at the panel's 2Hz poll is 0.09ms/s of wall clock — not worth a
+  // memo, which would add code and a staleness bug risk for no measurable gain.
   const drawn = draw(series, box, reference?.value);
 
   return (
     <Box gap={6}>
-      {/* Label left, then one direct-labelled value per series beside its colour
-          key. This IS the legend: the value carries identity in text, the dot
-          carries it in colour, and neither is load-bearing on its own. */}
+      {/* This IS the legend: the value carries identity in text, the dot carries
+          it in colour, and neither is load-bearing on its own. */}
       <Box row align="center" between gap={16}>
         <Txt style={CHART_LABEL} color="rgba(244, 243, 240, 0.5)" lines={1}>
           {meters.find((m) => m.chartLabel)?.chartLabel ?? meters.map((m) => m.label).join(' · ')}
@@ -192,15 +166,13 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
   );
 }
 
-/** Palette slot, by position and never cycled past the set. A fourth series has
- * no fourth colour by design (see SERIES_COLORS) - it should have been given its
- * own chart, so if one arrives it repeats the last slot rather than inventing a
- * hue that fails the colourblind checks. */
+// Palette slot, by position and never cycled past the set. A fourth series
+// should have its own chart, so if one arrives it repeats the last slot rather
+// than inventing a hue that fails the colourblind checks.
 function slotColor(at: number): string {
   return SERIES_COLORS[Math.min(at, SERIES_COLORS.length - 1)] as string;
 }
 
-/** Every path string this chart draws, built once per advanced window. */
 function draw(series: readonly Resolved[], box: ChartBox, reference?: number) {
   const extent = extentOf(
     series.map((s) => s.data),
@@ -212,9 +184,9 @@ function draw(series: readonly Resolved[], box: ChartBox, reference?: number) {
       key: s.key,
       color: s.color,
       d,
-      // The area wash goes under a LONE trace only. A pair already has the band
-      // between them carrying the fill, and a second overlapping wash there turns
-      // the plot to mud.
+      // The area wash goes under a LONE trace only: a pair already has the band
+      // between them carrying the fill, and a second wash there turns the plot
+      // to mud.
       area: series.length === 1 ? closeToBaseline(d, box) : '',
       dot: endPoint(s.data, extent, box),
     };
@@ -226,8 +198,8 @@ function draw(series: readonly Resolved[], box: ChartBox, reference?: number) {
   };
 }
 
-/** Close an open trace down to the baseline so one path can be filled as an
- * area - cheaper, and exactly aligned with the line it sits under. */
+// Closes an open trace down to the baseline so one path can be filled as an
+// area — cheaper, and exactly aligned with the line it sits under.
 function closeToBaseline(d: string, box: ChartBox): string {
   const first = /^M([\d.]+) /.exec(d);
   if (!first) return '';

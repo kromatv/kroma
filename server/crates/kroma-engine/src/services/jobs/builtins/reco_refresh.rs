@@ -4,7 +4,7 @@
 
 use super::prelude::*;
 
-/// Nightly: rebuild the recommendation indexes from the current library.
+// Nightly: rebuild the recommendation indexes from the current library.
 pub(super) const SPEC: Builtin = Builtin {
     key: JobKey("recommendations.refresh"),
     category: Category::Recommendations,

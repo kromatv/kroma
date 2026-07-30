@@ -1,10 +1,9 @@
 // The visual vocabulary <TextField> and <TextArea> share.
 //
-// The two atoms are required to be pixel-matched — a form puts them side by
-// side, and a one-line TextArea has to be exactly a TextField tall — so the edge
-// rule, the placeholder wash and the content line are one declaration rather
-// than two that happen to agree today. They were copied, comments included, and
-// a token change would have had to be made in both places to stay true.
+// The two atoms must be pixel-matched — a form puts them side by side, and a
+// one-line TextArea has to be exactly a TextField tall — so the edge rule, the
+// placeholder wash and the content line are one declaration rather than two
+// that could drift apart.
 
 import type { TextStyle } from 'react-native';
 import { colors } from '#ui/lib/tokens';

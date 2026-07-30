@@ -1,10 +1,6 @@
-//! The KROMA brand lockup painted onto a preview card: the wordmark with the
-//! chromatic-wheel O ("KR" + wheel + "MA").
-//!
-//! Mirrors the official lockup export (kroma-lockup-*.svg) but is drawn natively
-//! from tiny-skia primitives + an embedded font, so a card costs no SVG
-//! rasteriser and no system fonts. Everything here only touches the [`Pixmap`]
-//! and the text primitives owned by the parent module.
+//! The KROMA brand lockup painted onto a preview card ("KR" + chromatic wheel +
+//! "MA"). Mirrors the official lockup export (kroma-lockup-*.svg), but drawn
+//! from tiny-skia primitives so a card needs no SVG rasteriser and no system font.
 
 use std::sync::OnceLock;
 
@@ -13,7 +9,6 @@ use tiny_skia::{FillRule, Paint, PathBuilder, Pixmap, Transform};
 
 use super::{draw_text, text_width, TextStyle, MARGIN, WHITE};
 
-/// The wordmark face: Bricolage Grotesque ExtraBold, per the "1b Chroma" logo spec.
 fn font() -> &'static Font {
     static FONT: OnceLock<Font> = OnceLock::new();
     FONT.get_or_init(|| {
@@ -22,8 +17,7 @@ fn font() -> &'static Font {
     })
 }
 
-/// The chromatic wheel's six segment colours, clockwise from 12 o'clock
-/// (corail, ambre, menthe, azur, indigo, violet).
+// Wheel segment colours, in paint order: clockwise from 12 o'clock.
 const WHEEL: [(u8, u8, u8); 6] = [
     (242, 104, 92),
     (244, 182, 66),
@@ -33,9 +27,8 @@ const WHEEL: [(u8, u8, u8); 6] = [
     (168, 85, 247),
 ];
 
-/// Paint the lockup right-aligned to the margin and vertically centred on `cy`:
-/// wheel ~.91em, optically centred on the caps, asymmetric side gaps, -.014em
-/// tracking (all from the official export). `s` scales every metric off the
+/// Paints the lockup right-aligned to the margin and vertically centred on `cy`.
+/// The em ratios come from the official export; `s` scales every metric off the
 /// 640×360 layout (2.0 on the 1280×720 Top Shelf card).
 pub(super) fn paint(pm: &mut Pixmap, cy: f32, s: f32) {
     let f = font();
@@ -58,11 +51,10 @@ pub(super) fn paint(pm: &mut Pixmap, cy: f32, s: f32) {
     draw_text(pm, f, "MA", wx + wheel + gap_r, baseline, &style);
 }
 
-/// Draw the chromatic wheel: six annular sectors (hub/outer radius ratio
-/// 15/44 per the official mark, hub left transparent) at top-left `x,y`,
-/// `size` = wheel diameter in px. Each 60-degree arc is one cubic Bezier
-/// (k = 4/3 tan(15 deg), exact to sub-pixel at card scale).
+// Six annular sectors, hub/outer radius ratio 15/44 per the official mark, `size`
+// being the wheel diameter in px. Each 60-degree arc is one cubic Bezier.
 fn paint_wheel(pm: &mut Pixmap, x: f32, y: f32, size: f32) {
+    // 4/3 tan(15 deg), exact to sub-pixel at card scale.
     const K: f32 = 0.357_264_3;
     let s = size / 88.0;
     let (cx, cy) = (x + size / 2.0, y + size / 2.0);
@@ -117,17 +109,13 @@ mod tests {
     use super::*;
     use crate::api::card::{H, W};
 
-    /// The lockup draws, and it stays inside the card: right-aligned to the
-    /// margin, on the badge row.
     #[test]
     fn lockup_paints_in_the_top_right_corner() {
         let mut pm = Pixmap::new(W, H).expect("pixmap");
         paint(&mut pm, MARGIN + 21.0, 1.0);
         let lit = |x: u32, y: u32| pm.pixel(x, y).is_some_and(|p| p.alpha() > 0);
         assert!((W / 2..W).any(|x| (0..80).any(|y| lit(x, y))), "the lockup drew nothing");
-        // Right-aligned to the margin, so the edge column is never touched.
         assert!(!(0..H).any(|y| lit(W - 1, y)), "the lockup spilled past the margin");
-        // Nor does it reach the bottom half (that belongs to the title artwork).
         assert!(!(0..W).any(|x| (H / 2..H).any(|y| lit(x, y))), "the lockup leaked downward");
     }
 }

@@ -30,8 +30,8 @@ pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 pub struct Vpn {
     data_dir: PathBuf,
     child: tokio::sync::Mutex<Option<Child>>,
-    /// Bumped on every (re)configure so a stale exit-waiter never respawns an
-    /// old generation.
+    // Bumped on every (re)configure so a stale exit-waiter never respawns an
+    // old generation.
     generation: AtomicU64,
 }
 
@@ -158,13 +158,13 @@ impl Vpn {
     }
 }
 
-/// Rewrite a WireGuard config so the tunnel is IPv4-only: drop IPv6 entries from
-/// `Address` and `DNS`, and reduce `AllowedIPs` to IPv4. Everything else (keys,
-/// `Endpoint`, `PersistentKeepalive`) is left untouched. This keeps torrent
-/// traffic on IPv4, which the wireproxy bridge relays reliably (IPv6 peer
-/// connections stall mid-handshake) and which makes trackers hand back IPv4
-/// peers. Guard: if a line has no IPv4 value at all it is kept verbatim, so an
-/// (unusual) IPv6-only config is never left with an empty address.
+// Rewrite a WireGuard config so the tunnel is IPv4-only: drop IPv6 entries from
+// `Address` and `DNS`, and reduce `AllowedIPs` to IPv4. Everything else (keys,
+// `Endpoint`, `PersistentKeepalive`) is left untouched. This keeps torrent
+// traffic on IPv4, which the wireproxy bridge relays reliably (IPv6 peer
+// connections stall mid-handshake) and which makes trackers hand back IPv4
+// peers. Guard: if a line has no IPv4 value at all it is kept verbatim, so an
+// (unusual) IPv6-only config is never left with an empty address.
 fn ipv4_only_wg(config: &str) -> String {
     let is_v4 = |s: &str| !s.contains(':');
     let keep_v4 = |val: &str| -> Option<String> {
@@ -199,8 +199,8 @@ fn pidfile(dir: &std::path::Path) -> PathBuf {
     dir.join("wireproxy.pid")
 }
 
-/// Remember the bridge child's pid so the NEXT process generation can reap it
-/// if this one dies without cleanup (SIGKILL from the supervisor).
+// Remember the bridge child's pid so the NEXT process generation can reap it
+// if this one dies without cleanup (SIGKILL from the supervisor).
 fn record_pid(dir: &std::path::Path, child: &Child) {
     if let Some(pid) = child.id() {
         let _ = std::fs::write(pidfile(dir), pid.to_string());
@@ -268,9 +268,9 @@ impl kroma_module_sdk::ports::VpnProxyPort for VpnProxy {
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VpnAdminView {
-    /// A WireGuard config is stored.
+    // A WireGuard config is stored.
     pub wg_configured: bool,
-    /// The bridge child is currently alive.
+    // The bridge child is currently alive.
     pub bridge_running: bool,
     pub local_port: u16,
     pub status: Option<kroma_module_sdk::ports::VpnStatusView>,

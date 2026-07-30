@@ -2,11 +2,8 @@
 //! ledger against the current catalog, then claim -> process -> record in
 //! batches until the queue is empty or the run is cancelled.
 //!
-//! Concurrency model: this runs on the job's blocking thread (the "dispatcher").
-//! It owns every `pipeline_tasks` write (claims + finishes, always batched into
-//! one transaction) so the many in-memory workers never contend on SQLite's
-//! single writer. The workers only do the heavy ffmpeg / chromaprint / TMDB work
-//! via `stage.process`, which keeps its own established DB-write pattern.
+//! Runs on the job's blocking thread and owns every `pipeline_tasks` write
+//! (batched into one transaction), so workers never contend on SQLite's single writer.
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Mutex;
@@ -21,15 +18,13 @@ use crate::services::jobs::{now_ms, JobContext};
 
 use super::stage::Stage;
 
-/// Tasks claimed + recorded per iteration. Small enough that a cancel is observed
-/// promptly and progress advances smoothly; large enough that the per-batch DB
-/// round-trips are negligible next to the ffmpeg/TMDB work.
+// Small enough that a cancel is observed promptly; large enough that the
+// per-batch DB round-trips are negligible next to the ffmpeg/TMDB work.
 const BATCH: usize = 32;
-/// Poll interval while paused for active playback.
 const PAUSE_POLL_S: u64 = 4;
 
-/// How often the drain logs a progress line (with elapsed + ETA) during a long
-/// run, so a multi-minute stage isn't silent between "in scope" and "finished".
+// How often the drain logs a progress line (with elapsed + ETA) during a long
+// run, so a multi-minute stage isn't silent between "in scope" and "finished".
 const LOG_EVERY_MS: i64 = 10_000;
 
 /// Drain one stage to completion (or cancellation).
@@ -37,11 +32,8 @@ pub fn run(stage: &Stage, ctx: &JobContext) -> Result<()> {
     let pool = &ctx.state.db;
     let started = Instant::now();
 
-    // 0. Reclaim orphans. One-run-per-key guarantees no other drain of this
-    //    stage is live, so any `running` row at this point was stranded by an
-    //    earlier drain that died mid-batch (a claim/finish DB error, a hang, a
-    //    crash). Without this, such rows stay `running` until a server restart:
-    //    `reconcile` deliberately never touches them.
+    // Any `running` row here was stranded by an earlier drain that died
+    // mid-batch; `reconcile` deliberately never touches those, so this must.
     match db::pipeline::reset_running(pool, Some(stage.short)) {
         Ok(0) => {}
         Ok(n) => ctx.warn(format!(
@@ -53,8 +45,6 @@ pub fn run(stage: &Stage, ctx: &JobContext) -> Result<()> {
         }
     }
 
-    // 1. Reconcile: fold the current subject set into the ledger (new/changed ->
-    //    pending, gone -> deleted, transient failures -> retried).
     let subjects = (stage.enumerate)(&ctx.state)?;
     db::pipeline::reconcile(pool, stage.short, stage.subject_kind, &subjects, now_ms())?;
     ctx.info(format!(
@@ -64,12 +54,8 @@ pub fn run(stage: &Stage, ctx: &JobContext) -> Result<()> {
         fmt_dur(started.elapsed()),
     ));
 
-    // 2. Drain. The pending count after reconcile is the progress denominator;
-    //    high-priority enqueues arriving mid-run just extend it (progress is
-    //    clamped so the bar never exceeds 100%). The cleanup below runs whether
-    //    the loop finished, was cancelled, or aborted on a DB error: skipping
-    //    `reset_running` on the error path would leave the whole claimed batch
-    //    sitting `running` until the next drain.
+    // The pending count after reconcile is the progress denominator; enqueues
+    // arriving mid-run just extend it (progress is clamped to 100%).
     let total = pending_count(pool, stage.short)?;
     if total == 0 {
         ctx.info(format!("{}: nothing to do (already up to date)", stage.short));
@@ -79,9 +65,8 @@ pub fn run(stage: &Stage, ctx: &JobContext) -> Result<()> {
 
     let drained = drain_loop(stage, ctx, total);
 
-    // A mid-batch cancel or an aborted loop can leave tasks claimed-but-
-    // unprocessed: flip any leftover `running` for this stage back to `pending`
-    // so they aren't stranded. Runs on the error path too (see above).
+    // A mid-batch cancel or an aborted loop can leave tasks claimed but
+    // unprocessed; reset them to `pending` here regardless of how the loop exited.
     if let Err(e) = db::pipeline::reset_running(pool, Some(stage.short)) {
         ctx.warn(format!("{}: failed to reset leftover running tasks: {e:#}", stage.short));
     }
@@ -96,8 +81,8 @@ pub fn run(stage: &Stage, ctx: &JobContext) -> Result<()> {
     Ok(())
 }
 
-/// The claim -> process -> record loop of [`run`]. Split out so the caller can
-/// guarantee cleanup on every exit path, including a `?` on a DB error here.
+// The claim -> process -> record loop of `run`. Split out so the caller can
+// guarantee cleanup on every exit path, including a `?` on a DB error here.
 fn drain_loop(stage: &Stage, ctx: &JobContext, total: usize) -> Result<()> {
     let pool = &ctx.state.db;
     let drain_started = Instant::now();
@@ -147,7 +132,7 @@ fn drain_loop(stage: &Stage, ctx: &JobContext, total: usize) -> Result<()> {
     Ok(())
 }
 
-/// Human-readable elapsed time (`820 ms` · `4.3 s` · `2 min 05 s` · `1 h 07 min`).
+// Human-readable elapsed time (`820 ms` · `4.3 s` · `2 min 05 s` · `1 h 07 min`).
 fn fmt_dur(d: Duration) -> String {
     let ms = d.as_millis();
     if ms < 1000 {
@@ -165,8 +150,8 @@ fn fmt_dur(d: Duration) -> String {
     }
 }
 
-/// Throttled progress line during a drain: `storyboard: 605/4146, 0 failed ·
-/// 3 min 12 s elapsed · ~18 min 40 s left`.
+// Throttled progress line during a drain: `storyboard: 605/4146, 0 failed ·
+// 3 min 12 s elapsed · ~18 min 40 s left`.
 fn maybe_log_progress(
     ctx: &JobContext,
     short: &str,
@@ -195,16 +180,14 @@ fn maybe_log_progress(
     ));
 }
 
-/// Pending + still-running tasks after reconcile = the drain's denominator.
+// Pending + still-running tasks after reconcile = the drain's denominator.
 fn pending_count(pool: &db::Pool, stage: &str) -> Result<usize> {
     let (pending, running, ..) = db::pipeline::counts(pool, stage)?;
     Ok((pending + running).max(0) as usize)
 }
 
-/// Process a claimed batch on a bounded worker pool, honoring cancellation and
-/// the playback-priority pause. Returns one [`db::pipeline::TaskResult`] per
-/// task actually processed (a cancel mid-batch may leave some unprocessed;
-/// those stay `running` and are reset by the caller).
+// Returns one `TaskResult` per task actually processed; a cancel mid-batch may
+// leave some unprocessed, and those stay `running` until the caller resets them.
 fn process_batch(
     stage: &Stage,
     ctx: &JobContext,
@@ -230,10 +213,8 @@ fn process_batch(
     slots.into_iter().filter_map(|m| m.into_inner().unwrap()).collect()
 }
 
-/// One scoped worker: pull the next task index off the batch until it's drained
-/// (or cancelled), yielding to the pause/playback hold before each item, and
-/// store its [`db::pipeline::TaskResult`] (a panic in `process` is recorded like
-/// a returned `Err` so it can never unwind out of the scope).
+// Pulls the next index off the batch until drained or cancelled; a panic in
+// `process` is caught and recorded like an `Err` so it never unwinds out of scope.
 fn process_task_worker(
     next: &AtomicUsize,
     batch: &[(String, String)],
@@ -272,10 +253,8 @@ fn process_task_worker(
     }
 }
 
-/// Block while heavy work should hold off: the global pipeline pause is set, or
-/// (for a playback-sensitive stage) a stream is live. Logs the hold/resume
-/// transition once per worker (CAS on `paused`). Generalizes the old
-/// markers/storyboards playback-yield to also honor the admin pause switch.
+// Blocks while the global pipeline pause is set, or (for a playback-sensitive
+// stage) a stream is live. Logs the hold/resume transition once per worker.
 fn wait_while_held(ctx: &JobContext, paused: &AtomicBool, pause_for_playback: bool) {
     loop {
         if ctx.cancelled() {
@@ -296,7 +275,7 @@ fn wait_while_held(ctx: &JobContext, paused: &AtomicBool, pause_for_playback: bo
     }
 }
 
-/// The log line for a hold, depending on which side asked for it.
+// The log line for a hold, depending on which side asked for it.
 fn hold_reason(admin_hold: bool) -> &'static str {
     if admin_hold {
         "paused (pipeline held by admin)"
@@ -305,8 +284,7 @@ fn hold_reason(admin_hold: bool) -> &'static str {
     }
 }
 
-/// Publish this stage's counts, throttled to ~1/s (the WS event is cheap but the
-/// count query is a round-trip; no need to spam it every batch).
+// Throttled to ~1/s: the WS event is cheap but the count query is a round-trip.
 fn maybe_emit_stats(stage: &Stage, ctx: &JobContext, last_ms: &mut i64) {
     let now = now_ms();
     if now - *last_ms < 1000 {
@@ -373,9 +351,8 @@ mod tests {
         assert_eq!(pending_count(&pool, "metadata").unwrap(), 0);
     }
 
-    // ----- SharedState-backed helpers (process_batch / worker / wait_while_held /
-    // emit_stats), driven with a trivial in-memory Stage so no ffmpeg/enumerate work
-    // runs. The infinite `run`/`drain_loop` are deliberately NOT exercised. --------
+    // Driven with a trivial in-memory Stage so no ffmpeg/enumerate work runs; the
+    // infinite `run`/`drain_loop` are deliberately not exercised here.
 
     use crate::state::SharedState;
     use crate::test_support;
@@ -392,7 +369,7 @@ mod tests {
     fn process_panic(_ctx: &JobContext, _id: &str) -> Result<()> {
         panic!("kaboom")
     }
-    /// A stage with a caller-chosen `process`; everything else is inert.
+    // A stage with a caller-chosen `process`; everything else is inert.
     fn test_stage(process: fn(&JobContext, &str) -> Result<()>) -> Stage {
         Stage {
             short: "teststage",
@@ -501,16 +478,15 @@ mod tests {
         assert!(msg.contains("\"pending\":1"), "counts: {msg}");
         assert!(msg.contains("\"failed\":1"), "counts: {msg}");
     }
-    // ----- driving a real drain ---------------------------------------------------
 
     use crate::test_support::test_state;
 
-    /// Subjects the synthetic stage reports, and the ids it was asked to
-    /// process. Statics because `Stage` holds plain `fn` pointers, not closures.
+    // Subjects the synthetic stage reports, and the ids it was asked to
+    // process. Statics because `Stage` holds plain `fn` pointers, not closures.
     static SUBJECTS: std::sync::Mutex<Vec<(String, String)>> = std::sync::Mutex::new(Vec::new());
     static PROCESSED: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
     static FAIL_ON: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
-    /// One drain at a time: the statics above are shared state.
+    // One drain at a time: the statics above are shared state.
     static SERIAL: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     fn enumerate_static(_state: &SharedState) -> Result<Vec<(String, String)>> {
@@ -535,7 +511,7 @@ mod tests {
         process: process_static,
     };
 
-    /// Set the subject set, drain once, and return the ids that were processed.
+    // Set the subject set, drain once, and return the ids that were processed.
     fn drain(state: &SharedState, subjects: &[(&str, &str)]) -> Vec<String> {
         *SUBJECTS.lock().unwrap() =
             subjects.iter().map(|(id, sig)| (id.to_string(), sig.to_string())).collect();
@@ -575,11 +551,9 @@ mod tests {
 
     #[test]
     fn a_task_left_running_by_a_dead_drain_is_reclaimed() {
-        // One-run-per-key means no other drain of this stage can be live, so a
-        // `running` row was stranded by one that died mid-batch. `reconcile`
-        // deliberately never touches those, so without this reclaim they stay
-        // running until a server restart - the subject silently never
-        // reprocesses.
+        // One-run-per-key means a `running` row here was stranded by a drain that
+        // died mid-batch; `reconcile` never touches those, so without this reclaim
+        // the subject would silently never reprocess.
         let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
         let state = test_state();
         *FAIL_ON.lock().unwrap() = None;

@@ -1,22 +1,16 @@
 //! The image a PUSH carries.
 //!
-//! A push does not carry the picture, only where to find it: Web Push hands the
-//! service worker a URL, APNs hands a Notification Service Extension one, and
-//! FCM hands Android's own downloader one. All three fetch it AFTER delivery, on
-//! the device's own network, and all three are capped at about four kilobytes of
-//! payload - which is why the bytes themselves can never ride along.
-//!
-//! So the one thing worth deciding here is WHICH rendition to name. The master
-//! is up to 1280 px wide; a lock-screen thumbnail is a fraction of that, and a
-//! phone on mobile data pays for every byte of the difference.
+//! A push carries a URL, not the picture: all three vendors (Web Push, APNs,
+//! FCM) fetch it after delivery, over the device's own network, and cap the
+//! payload at about 4KB. The only decision left is which rendition to name: the
+//! master is up to 1280px, far more than a lock-screen thumbnail needs.
 
 use kroma_domain::Notification;
 
 use crate::infra::image::PUBLIC_PREFIX;
 
-/// Rendition width a push should ask for. Wide enough for Android's big-picture
-/// style and an iOS attachment, far below the stored master. Must be one of the
-/// buckets `GET /api/images/:name?w=` accepts, or the server ignores it.
+// Must be one of the buckets `GET /api/images/:name?w=` accepts, or the server
+// ignores it. Wide enough for Android's big-picture style and an iOS attachment.
 const PUSH_WIDTH: u32 = 780;
 
 /// Point `image_url` at a sized rendition, when it is one of ours.
@@ -36,19 +30,15 @@ pub fn sized_for_push(mut n: Notification) -> Notification {
 
 /// The URL a NATIVE push should name for this notification's art, if any.
 ///
-/// Apple, Google and the relay each fetch the picture from the DEVICE, off this
-/// server's network entirely, so a server-relative `/api/images/…` reaches
-/// nothing. FCM answers 400 to one, which is not `gone` and so used to cost the
-/// device a failure strike on every notification that carried a poster.
+/// Apple, Google and the relay fetch the picture from the DEVICE, off this
+/// server's network, so a server-relative `/api/images/…` reaches nothing; FCM
+/// answers 400 to one, which used to cost a failure strike per notification.
+/// Web Push is the exception and keeps the relative form, resolved against its
+/// own install origin.
 ///
-/// Web Push is the exception and keeps the relative form: the service worker
-/// resolves it against the origin it was installed from, which is us.
-///
-/// `None` when the art is ours and the server has no public address to build an
-/// absolute URL from. Sending the notification without its picture is the honest
-/// outcome — a NAS on a home LAN genuinely cannot be reached by Apple's or
-/// Google's fetchers, and naming a URL they will fail on costs the reader their
-/// registration rather than just the image.
+/// `None` when the art is ours and there is no public address to build an
+/// absolute URL from — sending no picture rather than a URL the vendor will
+/// fail on, which would cost the reader their registration.
 pub fn native_image_url(n: &Notification, public_url: Option<&str>) -> Option<String> {
     let url = n.image_url.as_deref()?;
     if !url.starts_with(PUBLIC_PREFIX) {

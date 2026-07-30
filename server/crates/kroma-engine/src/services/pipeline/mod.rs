@@ -1,18 +1,14 @@
 //! Per-element processing pipeline.
 //!
 //! Turns the heavy monolithic library jobs (marker detection, storyboard
-//! pre-generation, and eventually probe/metadata/embed) into resumable,
-//! incremental, per-subject work tracked in the `pipeline_tasks` ledger
-//! ([`crate::db::pipeline`]). Each **stage** ([`stage::Stage`]) processes one
-//! subject (a file / item / show / season) at a time; the [`dispatcher`] drains a
-//! stage's queue (reconcile -> claim -> process -> record), and a job `SPEC` per
-//! stage (in [`stages`]) plugs the drain into the existing scheduler/console so
-//! it gets cron, manual-run, cancel, progress, logs and `AfterJob`/`LibraryChange`
-//! chaining for free.
+//! pre-generation, eventually probe/metadata/embed) into resumable, incremental,
+//! per-subject work tracked in the `pipeline_tasks` ledger. Each **stage**
+//! ([`stage::Stage`]) processes one subject at a time; the [`dispatcher`] drains
+//! its queue (reconcile -> claim -> process -> record), and a job `SPEC` per
+//! stage (in [`stages`]) plugs it into the existing scheduler/console for free.
 //!
-//! Why: a re-run only does the non-done work (a `done` task with an unchanged
-//! input signature is skipped), failures are individually visible + retriable,
-//! and a freshly added file flows through automatically instead of waiting on the
+//! A re-run only does the non-done work, failures are individually visible and
+//! retriable, and a freshly added file flows through without waiting for the
 //! next whole-library sweep.
 
 pub mod dispatcher;
@@ -21,8 +17,8 @@ pub mod reprocess;
 pub mod stage;
 pub mod stages;
 
-/// Short keys of the stages that ship today, in DAG order. The admin Pipeline
-/// dashboard iterates this to show a card per stage even before any task exists.
+// Short keys of the stages that ship today, in DAG order. The admin Pipeline
+// dashboard iterates this to show a card per stage even before any task exists.
 pub const STAGE_KEYS: &[(&str, &str, &str)] = &[
     // (short, full job key, subject_kind) in DAG order.
     (stages::probe::STAGE.short, stages::probe::STAGE.key, stages::probe::STAGE.subject_kind),

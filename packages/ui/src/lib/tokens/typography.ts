@@ -1,13 +1,6 @@
-// Type roles. THE SOURCE OF TRUTH for both renderers (see gen-token-css.ts).
-//
-// The design authors line height as a RATIO and tracking in `em`, which is what
-// the CSS `font` shorthand wants. React Native has neither: it needs an absolute
-// `lineHeight` and an absolute `letterSpacing` in px. So each role stores the
-// authored ratio/em and derives the pixel values, rather than storing pixels and
-// dividing back (which round-trips lossily: 1.55 would come back as 1.56).
-//
-// The families are loaded per platform but named identically everywhere: a
-// <link> in the TV shells' index.html on web, expo-font on Apple TV / Android TV.
+// Type roles, the source of truth for both renderers (see gen-token-css.ts).
+// Roles store the authored ratio/em and derive the absolute px React Native
+// needs, rather than storing px and dividing back (which round-trips lossily).
 
 import type { TextStyle } from 'react-native';
 
@@ -16,19 +9,15 @@ export const fonts = {
   ui: 'Hanken Grotesk',
 } as const;
 
-/** Tracking as authored, in em. The eyebrow opens up at three metres: the same
- * word has to read as a label rather than as a short line of text, and a
- * television's own chrome tracks its section headings about this wide. */
+/** Tracking as authored, in em. */
 export const tracking = { overline: 0.12, overlineTv: 0.22, display: -0.02 } as const;
 
-/** A role exactly as the design states it. `family` picks the CSS var too. */
 export interface TypeSpec {
   family: keyof typeof fonts;
   weight: '400' | '500' | '600' | '700';
   size: number;
-  /** Unitless line-height ratio (the CSS shorthand's `/ n`). */
+  /** Line height as a multiple of `size`. */
   ratio: number;
-  /** Letter spacing in em; omitted means none. */
   em?: number;
   uppercase?: boolean;
 }
@@ -49,11 +38,8 @@ export const typeSpec = {
     em: tracking.overline,
     uppercase: true,
   },
-  /** The same eyebrow at 10-foot distance ("ACTEUR", "EN VEDETTE", "SAISON 2").
-   * A separate role rather than a size prop because the tracking is not the
-   * phone's scaled up: it is authored wider, and every TV screen that wrote this
-   * style by hand had wandered to a different value. Override `fontSize` on it
-   * freely - <Txt> re-derives the tracking from the authored em. */
+  /** The eyebrow at 10-foot distance: authored wider, not the phone's tracking
+   * scaled up. `fontSize` may be overridden - <Txt> re-derives from the em. */
   overlineTv: {
     family: 'ui',
     weight: '700',
@@ -66,8 +52,6 @@ export const typeSpec = {
 
 export type TypeRole = keyof typeof typeSpec;
 
-/** Round to 2 decimals: React Native accepts fractional px, but a stable value
- * keeps snapshot diffs and the generated CSS quiet. */
 const px = (n: number) => Math.round(n * 100) / 100;
 
 function toStyle(s: TypeSpec): TextStyle {
@@ -81,7 +65,6 @@ function toStyle(s: TypeSpec): TextStyle {
   };
 }
 
-/** The roles as ready-to-spread React Native text styles. */
 export const type = Object.fromEntries(
   Object.entries(typeSpec).map(([k, v]) => [k, toStyle(v)]),
 ) as Record<TypeRole, TextStyle>;

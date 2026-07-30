@@ -34,7 +34,6 @@ describe('coverRect', () => {
     // 1920x1080 art into a 1920x640 hero: no horizontal overflow, 440px vertical.
     const r = coverRect(box, { width: 1920, height: 1080 }, { x: 0.5, y: 0.3 });
     expect(r).toEqual({ left: 0, top: -132, width: 1920, height: 1080 });
-    // 30% of the 440px overflow is hidden above, so the face sits high in frame.
     expect(r && -r.top / (r.height - box.height)).toBeCloseTo(0.3);
   });
 
@@ -44,7 +43,6 @@ describe('coverRect', () => {
   });
 
   it('leaves an exactly-fitting axis alone', () => {
-    // A 16:9 poster into a 16:9 tile overflows on neither axis, so no offset.
     const r = coverRect(
       { width: 328, height: 184.5 },
       { width: 1280, height: 720 },
@@ -60,7 +58,6 @@ describe('coverRect', () => {
       { width: 1600, height: 900 },
       { x: 0.5, y: 0.5 },
     );
-    // Cover a 2:3 tile with a 16:9 still: scale by height, crop the sides.
     expect(r?.height).toBeCloseTo(300);
     expect(r?.width).toBeCloseTo(533.33, 1);
     expect(r?.left).toBeCloseTo(-166.67, 1);

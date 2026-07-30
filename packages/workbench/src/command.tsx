@@ -1,31 +1,5 @@
-// The command palette: ⌘K, and the workbench's one search.
-//
-// The sidebar used to carry a filter field, which meant the only way to reach a
-// component was to first find its section in the tree. A palette inverts that:
-// type three letters from anywhere and the thing you want is one Enter away,
-// which is how everyone already navigates their editor. So the tree went back to
-// being navigation and this became the search.
-//
-// The design is cmdk's - shadcn's command dialog - because that is the shape this
-// interaction has settled on everywhere it appears: an input with a hairline
-// under it, results grouped under quiet headings, a cursor that is a fill rather
-// than a ring, and a footer that says which keys do what. It is rebuilt out of
-// <Box> and <Txt> rather than imported, for the reason nothing here is imported:
-// cmdk is a DOM library, and this palette has to open on an Apple TV too.
-//
-// The two platforms drive it differently, and neither is emulated:
-//
-//   web    - one capture-phase listener on the document owns Up, Down, Enter and
-//            Escape, and the cursor it moves is state in here. Capture, not
-//            bubble, because react-native-web's TextInput calls stopPropagation
-//            on every keydown (its issue #612): a bubble listener goes deaf the
-//            moment the caret lands in the search field, which is always.
-//   native - no document, so no listener. Every result is a <Focusable>, and the
-//            spatial navigator moves between them exactly as it does in the tree.
-//
-// Which is why the cursor fill is web-only: on a television the navigator's own
-// focus wash is already saying the same thing, and two highlights on one row read
-// as a bug.
+// The command palette: ⌘K, and the workbench's one search. Driven by a keyboard
+// cursor on the web and by the spatial navigator on a television.
 
 import {
   Box,
@@ -44,47 +18,31 @@ import { FOCUS_WASH_STRONG, RULE, RULE_TOP } from './chrome';
 import { MONO } from './code';
 import { groupBy, matches, type Story } from './story';
 
-/** The palette drives itself from a keyboard cursor on the web and from the
- * spatial navigator everywhere else. See the header. */
 const WEB = Platform.OS === 'web';
 
-/** Exact row metrics, because the scroll-to-cursor is ARITHMETIC rather than a
- * measurement pass: every row and every heading is pinned to these heights, so
- * the offset of the nth result is a sum instead of a layout race. */
+// Every row and heading is pinned to these heights: the scroll-to-cursor is
+// arithmetic rather than a measurement pass.
 const ROW = 36;
 const HEADING = 26;
 const LIST_PAD = 6;
 const LIST_MAX = 320;
-/** The hairline between two groups. Rendered by the list, so `offsetOf` counts it. */
 const SEPARATOR = 1;
 
-/** One heading and the results under it. */
 interface CommandGroup {
-  /** The atomic level: Foundations, Atoms, Molecules... */
   title: string;
   items: readonly Story[];
 }
 
-/** The stories a query leaves, grouped by atomic level - through the same
- * `groupBy` the sidebar's tree uses, so the two can never disagree about where a
- * component lives. */
 function commandGroups(stories: readonly Story[], query: string): CommandGroup[] {
   const hits = stories.filter((story) => matches(story, query));
   return groupBy(hits, (story) => story.tier).map(({ key, items }) => ({ title: key, items }));
 }
 
-/** The results as one list, which is what the cursor indexes into. Groups are
- * only how they are DRAWN. */
 function flatten(groups: readonly CommandGroup[]): Story[] {
   return groups.flatMap((group) => [...group.items]);
 }
 
-/**
- * Where the nth result sits inside the scroller.
- *
- * Pure, and tested, because it is the difference between a palette you can hold
- * Down on and one whose cursor walks off the bottom edge.
- */
+/** Pixel offset of the nth result inside the scroller. */
 function offsetOf(groups: readonly CommandGroup[], index: number): number {
   let y = LIST_PAD;
   let seen = 0;
@@ -93,19 +51,13 @@ function offsetOf(groups: readonly CommandGroup[], index: number): number {
     if (index < seen + group.items.length) return y + (index - seen) * ROW;
     y += group.items.length * ROW;
     seen += group.items.length;
-    // The hairline drawn BETWEEN groups (see the list below). It is only one
-    // pixel, but this offset is arithmetic rather than a measurement, so an
-    // unaccounted one accumulates: with the kit's five levels a cursor in the
-    // last group is computed 4px above where it sits, which is enough to make
-    // the in-view test wrong at the boundary and jump the scroller.
+    // The hairline drawn between groups: unaccounted, it accumulates and the
+    // in-view test goes wrong at the last group's boundary.
     y += SEPARATOR;
   }
   return y;
 }
 
-/** The glyph a level gets in the results, so a row is identifiable before its
- * name is read. Foundations are the tokens, an atom is one part, a molecule is a
- * few clipped together, an organism is a region, a template is a whole page. */
 const TIER_GLYPH: Record<string, IconName> = {
   Foundations: 'palette',
   Atoms: 'circle-square',
@@ -118,22 +70,16 @@ function glyphFor(tier: string): IconName {
   return TIER_GLYPH[tier] ?? 'square';
 }
 
-/** `⌘` on a Mac, `Ctrl` everywhere else. Read from the browser rather than from
- * the build, because the same bundle is opened on both. */
 function isMac(): boolean {
   const agent = webWindow()?.navigator?.userAgent ?? '';
   return /Mac|iPhone|iPad|iPod/.test(agent);
 }
 
-/** The palette's own accelerator, spelled for the machine reading it. */
+/** `⌘ K` on a Mac, `Ctrl K` everywhere else. */
 function commandHint(): string {
   return isMac() ? '⌘ K' : 'Ctrl K';
 }
 
-/**
- * A keycap. Small, monospaced, and raised off the surface it sits on, which is
- * the one visual convention for "press this" that needs no label.
- */
 function Kbd({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <Box px={6} py={2} radius={6} bg="surface3" style={CAP}>
@@ -144,18 +90,9 @@ function Kbd({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-/**
- * A page-wide accelerator, taken over from whatever has the caret.
- *
- * CAPTURE phase, and that is the whole reason this exists once rather than at
- * each call site: react-native-web's TextInput stops propagation on keydown, so
- * a bubbling listener is deaf for exactly as long as a field is focused - which
- * for a palette's own shortcut is most of the time. This file is where the
- * workbench keeps its one piece of knowledge about that.
- *
- * The event is swallowed as well as handled: a dev tool that asks for ⌘K has to
- * mean it, and Chrome's search-the-address-bar is the competing claim.
- */
+// Capture phase: react-native-web's TextInput stops propagation on keydown, so a
+// bubbling listener is deaf while a field is focused. The event is swallowed too,
+// to beat the browser's own ⌘K.
 function useCaptureKey(match: (event: KeyboardEvent) => boolean, onKey: () => void): void {
   useEffect(() => {
     const document = webDocument();
@@ -176,30 +113,19 @@ const isCommandK = (event: KeyboardEvent): boolean =>
 
 const isEscape = (event: KeyboardEvent): boolean => event.key === 'Escape';
 
-/** ⌘K / Ctrl-K, from anywhere on the page. */
 function useCommandKey(onOpen: () => void): void {
   useCaptureKey(isCommandK, onOpen);
 }
 
-/** Escape, for the transient chrome that is not the palette: the toolbar's menus. */
 function useEscapeKey(onClose: () => void): void {
   useCaptureKey(isEscape, onClose);
 }
 
-/** How many results PageUp / PageDown cover. Eight, which is roughly the
- * scroller's own height, so a page really is a page. */
 const PAGE = 8;
 
-/**
- * How far each key moves the cursor, which is also the set of keys the palette
- * takes over while it is open.
- *
- * Both spellings of the directions: a television names them without the `Arrow`
- * prefix (see lib/focus-remote.web.ts), and the workbench opens on one.
- * `Enter` and `Escape` are in the table with a step of zero so that ONE lookup
- * answers "is this mine?" for every key, rather than a set and a switch that can
- * disagree about which keys the palette swallows.
- */
+// Both spellings of the directions: a television names them without the `Arrow`
+// prefix (see lib/focus-remote.web.ts). Enter and Escape sit here with a zero
+// step so one lookup answers which keys the palette swallows.
 const STEP: Record<string, number> = {
   ArrowUp: -1,
   ArrowDown: 1,
@@ -213,12 +139,9 @@ const STEP: Record<string, number> = {
 
 interface CommandPaletteProps {
   stories: readonly Story[];
-  /** Marked in the results, so the palette says where you already are. */
   selected: string;
   onSelect: (id: string) => void;
   onClose: () => void;
-  /** The window, for the sheet's own width. The palette is not laid out by the
-   *  workbench's three-region layout - it floats over all of it. */
   width: number;
 }
 
@@ -233,13 +156,9 @@ function CommandPalette({
   const [cursor, setCursor] = useState(0);
   const groups = useMemo(() => commandGroups(stories, query), [stories, query]);
   const flat = useMemo(() => flatten(groups), [groups]);
-  // A narrowed query can leave the cursor past the end of the list, and a cursor
-  // pointing at nothing is what makes Enter do nothing at all.
   const at = Math.min(cursor, Math.max(0, flat.length - 1));
 
   const list = useRef<ScrollView>(null);
-  // Neither of these is state: the scroller's offset changes on every frame of a
-  // fling, and re-rendering the palette for it would be absurd.
   const offset = useRef(0);
   const viewport = useRef(LIST_MAX);
 
@@ -252,9 +171,8 @@ function CommandPalette({
     [onSelect, onClose],
   );
 
-  // Keep the cursor on screen, and move the list AS LITTLE AS POSSIBLE: a palette
-  // that recentres on every arrow press makes the whole list flicker past while
-  // you are trying to read one row of it.
+  // Keep the cursor on screen, moving the list as little as possible: recentring
+  // on every arrow press flickers the whole list past the row being read.
   useEffect(() => {
     const y = offsetOf(groups, at);
     const top = offset.current;
@@ -269,19 +187,15 @@ function CommandPalette({
     if (!document) return;
     const onKey = (event: KeyboardEvent) => {
       if (!(event.key in STEP)) return;
-      // Both, and in capture: `preventDefault` stops the page scrolling and the
-      // caret walking, `stopPropagation` keeps the same press from ALSO reaching
-      // the spatial navigator's document listener, which would move focus in the
-      // page behind the palette.
+      // stopPropagation keeps the press from also reaching the spatial
+      // navigator's listener, which would move focus behind the palette.
       event.preventDefault();
       event.stopPropagation();
       if (event.key === 'Escape') return onClose();
       if (event.key === 'Enter') return choose(flat[at]?.id);
       const delta = STEP[event.key] ?? 1;
-      // Wraps, because a list you cannot walk off the end of is one fewer thing
-      // to think about than a list that stops. The `+ length` before the modulo
-      // is what keeps a backwards step off the end negative-free, and PageUp's
-      // eight of them need eight lengths of headroom.
+      // Wraps. The `+ length * PAGE` keeps a backwards step non-negative before
+      // the modulo, with headroom for PageUp's eight.
       setCursor((prev) => {
         if (flat.length === 0) return 0;
         const from = Math.min(prev, flat.length - 1);
@@ -295,11 +209,6 @@ function CommandPalette({
   const sheet = Math.min(640, width - 32);
 
   return (
-    // The scrim is the dismiss target, as it is for the nav drawer, and a
-    // <Focusable> so a remote can reach it too. `justify="flex-start"` with a
-    // top inset rather than dead-centre: a palette that grows and shrinks with
-    // its result count should grow DOWNWARDS from a fixed line, not drift up and
-    // down the window as you type.
     <Box absolute top={0} right={0} bottom={0} left={0} z={40} align="center" style={SCRIM}>
       <Focusable label="Close search" ring={false} onPress={onClose} style={SCRIM_TAP} />
       <Box
@@ -318,15 +227,12 @@ function CommandPalette({
               value={query}
               onChange={(next) => {
                 setQuery(next);
-                // A new query is a new list, and the cursor belongs on its first
-                // result - not wherever it happened to sit in the old one.
                 setCursor(0);
               }}
               onSubmit={() => choose(flat[at]?.id)}
               placeholder="Search components…"
-              // Not "Search components", which is the SIDEBAR button's name: two
-              // controls sharing an accessible name is one an assistive
-              // technology cannot tell you which of them you are in.
+              // Not "Search components": that is the sidebar button's accessible
+              // name, and two controls sharing one is ambiguous to assistive tech.
               label="Search the component list"
               hideLabel
               physicalKeyboard
@@ -403,9 +309,6 @@ function CommandPalette({
   );
 }
 
-/** One result. The name leads, the sub-section trails it dimmed, and the story
- * currently open in the canvas carries an amber dot: the palette should be able
- * to answer "where am I" as well as "where do I want to be". */
 function Row({
   story,
   open,
@@ -433,7 +336,6 @@ function Row({
   );
 }
 
-/** A key or two, then what they do. */
 function Hint({ keys, label }: Readonly<{ keys: readonly string[]; label: string }>) {
   return (
     <Box row align="center" gap={5}>

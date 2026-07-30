@@ -6,16 +6,7 @@ import type { EngineListeners } from './engine';
 import { ExpoVideoEngine } from './expoVideoEngine';
 
 // The native expo-video backend (AVPlayer on Apple TV, Media3 on Android TV),
-// driven against a fake `createVideoPlayer` that records every player it hands
-// out plus the transport calls made on it, with events pushed through the
-// listeners the engine registered.
-//
-// Unlike the three plane backends this one OWNS its player object and replaces
-// it, so most of what is asserted here is about that ownership: which player is
-// current, that a retired one can no longer write over the winner, that a
-// released one's properties never throw into the React tree, and that a
-// re-anchor re-points the player it has rather than building another (a swap
-// blacks the picture out for the length of the handover).
+// driven against a fake `createVideoPlayer` recording the players it hands out.
 
 const { players, FakePlayer } = vi.hoisted(() => {
   interface Sub {
@@ -34,9 +25,7 @@ const { players, FakePlayer } = vi.hoisted(() => {
     pauses = 0;
     released = false;
     replaced: string[] = [];
-    /** Make `replace` reject the new source, so the engine full-reopens. */
     replaceThrows = false;
-    /** Model a released native shared object: every property read throws. */
     throwOnRead = false;
     subs: Sub[] = [];
     private durationValue = 0;
@@ -84,7 +73,6 @@ const { players, FakePlayer } = vi.hoisted(() => {
         },
       };
     }
-    /** Fire an event the way expo-video would, respecting removed subscriptions. */
     emit(event: string, payload: unknown = {}): void {
       for (const sub of this.subs) if (sub.event === event && !sub.removed) sub.handler(payload);
     }
@@ -145,7 +133,6 @@ function make(over: Partial<EngineOptions> = {}) {
   return { e, listeners };
 }
 
-/** The player the surface would render this frame. */
 function current(e: ExpoVideoEngine): Fake {
   return e.videoPlayer as unknown as Fake;
 }
@@ -169,13 +156,13 @@ describe('ExpoVideoEngine construction', () => {
   it('master mode opens the anchored remux at the resume point', () => {
     const { e } = make({ direct: false, startSec: 300, initialRendition: 2 });
     expect(current(e).uri).toBe('master:ev1:false:300:2');
-    // The anchor IS the resume: the master's own clock restarts at 0.
+    // The anchor is the resume: the master's own clock restarts at 0.
     expect(e.position()).toBe(300);
   });
 
   it('tells the surface about the player BEFORE starting it', () => {
-    // <VideoView> is still rendering whatever this player replaced; announcing
-    // late means the picture is missing for a frame.
+    // <VideoView> still renders whatever this player replaced, so announcing
+    // late costs a frame of picture.
     const listeners = mkListeners();
     let playsAtAnnounce = -1;
     listeners.onSurfaceChange = vi.fn(() => {
@@ -213,7 +200,7 @@ describe('ExpoVideoEngine resume seek', () => {
   it('applies the resume seek only once', () => {
     const { e } = make({ direct: true, startSec: 42 });
     current(e).emit('statusChange', { status: 'readyToPlay' });
-    current(e).currentTime = 55; // the viewer scrubbed
+    current(e).currentTime = 55;
     current(e).emit('statusChange', { status: 'readyToPlay' });
     expect(current(e).currentTime).toBe(55);
   });
@@ -245,7 +232,7 @@ describe('ExpoVideoEngine event mapping', () => {
     expect(direct.e.duration()).toBe(5400);
     expect(direct.listeners.onDuration).toHaveBeenCalledWith(5400);
 
-    // The master's duration is the REMAINING anchored span, not the runtime.
+    // The master's duration is the remaining anchored span, not the runtime.
     const master = make({ direct: false, startSec: 300 });
     current(master.e).duration = 12;
     current(master.e).emit('timeUpdate', { currentTime: 1 });
@@ -273,7 +260,7 @@ describe('ExpoVideoEngine event mapping', () => {
 
 describe('ExpoVideoEngine direct -> master fallback', () => {
   it('a file the platform cannot demux comes back remuxed, at the same position', () => {
-    // The tvOS case this exists for: AVFoundation has no Matroska demuxer.
+    // AVFoundation has no Matroska demuxer.
     const { e, listeners } = make({ direct: true });
     current(e).emit('timeUpdate', { currentTime: 90 });
     current(e).emit('statusChange', { status: 'error' });
@@ -312,13 +299,11 @@ describe('ExpoVideoEngine seeking', () => {
     const player = current(e);
     e.seekTo(70);
     expect(player.currentTime).toBe(70);
-    expect(player.replaced).toEqual([]); // same stream, no reload
+    expect(player.replaced).toEqual([]);
     expect(listeners.onTime).toHaveBeenCalledWith(70);
   });
 
   it('master: a seek inside the anchored playlist is native, not a re-anchor', () => {
-    // The regression this guards: re-anchoring EVERY seek tore the stream down
-    // and rebuilt it, so a ten-second nudge cost seconds of spinner.
     const { e, listeners } = make({ direct: false, startSec: 300 });
     const player = current(e);
     e.seekTo(350);
@@ -333,7 +318,7 @@ describe('ExpoVideoEngine seeking', () => {
     edge.e.seekTo(300 + NATIVE_SEEK_AHEAD);
     expect(current(edge.e).replaced).toEqual([]);
 
-    // One second past it we would outrun the continuous remux and stall.
+    // One second past it outruns the continuous remux and stalls.
     const past = make({ direct: false, startSec: 300 });
     past.e.seekTo(300 + NATIVE_SEEK_AHEAD + 1);
     expect(current(past.e).replaced).toEqual(['master:ev1:false:361:0']);
@@ -351,11 +336,10 @@ describe('ExpoVideoEngine seeking', () => {
     const { e, listeners } = make({ direct: false, startSec: 300 });
     const player = current(e);
     e.seekTo(120);
-    // One player for the whole session: a swap would mean a new <VideoView> and
-    // a black frame for the length of the handover.
+    // A swap would mean a new <VideoView> and a black frame for the handover.
     expect(players).toHaveLength(1);
     expect(current(e)).toBe(player);
-    expect(listeners.onSurfaceChange).toHaveBeenCalledTimes(1); // the first open only
+    expect(listeners.onSurfaceChange).toHaveBeenCalledTimes(1);
   });
 
   it('a player that will not take a new source is replaced outright', () => {
@@ -370,7 +354,6 @@ describe('ExpoVideoEngine seeking', () => {
   });
 
   it('a re-anchor while paused does not start the film', () => {
-    // Nudging the scrub bar while paused used to silently resume playback.
     const { e } = make({ direct: false, startSec: 300 });
     const player = current(e);
     e.pause();
@@ -392,8 +375,7 @@ describe('ExpoVideoEngine audio', () => {
   });
 
   it('direct: a track the player does not expose re-opens the source', () => {
-    // NOTE: this re-anchors the DIRECT file, so the same source comes back with
-    // the same track list and the requested rendition is still missing. It is a
+    // Re-anchoring the direct file brings back the same track list, so this is a
     // no-op reload rather than the master fallback the master branch gets.
     const { e } = make({ direct: true });
     const player = current(e);
@@ -426,9 +408,8 @@ describe('ExpoVideoEngine audio', () => {
 
 describe('ExpoVideoEngine player lifetime', () => {
   it('pauses a retired player at once but releases it a beat later', () => {
-    // Releasing it here and now is a use-after-free: <VideoView> still holds it
-    // as a prop until React re-renders, and a released shared object thrown at a
-    // native prop takes the UI down mid-commit.
+    // Releasing it at once is a use-after-free: <VideoView> holds it as a prop
+    // until React re-renders, and a released shared object takes the UI down.
     vi.useFakeTimers();
     const { e } = make({ direct: false, startSec: 300 });
     const first = current(e);
@@ -442,8 +423,7 @@ describe('ExpoVideoEngine player lifetime', () => {
   });
 
   it('a retired player cannot write over the one that replaced it', () => {
-    // AVFoundation reports a failed track load many seconds late; the loser's
-    // events must not move the winner's position or resurrect its errors.
+    // AVFoundation reports a failed track load many seconds late.
     const { e, listeners } = make({ direct: false, startSec: 300 });
     const first = current(e);
     first.replaceThrows = true;
@@ -461,9 +441,8 @@ describe('ExpoVideoEngine player lifetime', () => {
   });
 
   it('reading a released player returns nothing rather than throwing', () => {
-    // A property read on a released shared object throws, and thrown from an
-    // event callback that unmounted the player mid-film. A missing number is
-    // worth nothing; the film is worth everything.
+    // A property read on a released shared object throws, and from an event
+    // callback that would unmount the player mid-film.
     const { e } = make({ direct: false, startSec: 300 });
     current(e).throwOnRead = true;
     expect(() => e.bufferedEnd()).not.toThrow();

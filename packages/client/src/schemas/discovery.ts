@@ -1,19 +1,12 @@
-// Runtime schemas for the discovery / requests / search domain.
-//
-// Mirrors the ts-rs generated wire types (the Rust structs are the single source
-// of truth) but adds runtime validation via `.parse()` and branded ids. The
-// `true satisfies SameKeys<…>` / `Exact<…>` lines are compile-time drift guards:
-// change a Rust struct + rerun `gen:types` and the build breaks here until the
-// schema is updated. See `./accounts` for the pattern this file follows.
+// Runtime schemas for the discovery / requests / search domain, mirroring the
+// ts-rs wire types. Same conventions as `./accounts`.
 
 import { z } from 'zod';
 import { RequestId, UserId } from './ids';
 import { CastMember, CrewMember, MediaItem, Show } from './media';
 
-/** What a request targets mirror of TMDB's movie/tv split (a "show", not "tv"). */
 export const RequestKind = z.enum(['movie', 'show']);
 
-/** A request's lifecycle state (durable DB states + derived acquisition states). */
 export const RequestStatus = z.enum([
   'pending',
   'approved',
@@ -26,7 +19,6 @@ export const RequestStatus = z.enum([
   'denied',
 ]);
 
-/** Status tallies for the admin queue's filter chips. */
 export const RequestCounts = z.object({
   total: z.number(),
   pending: z.number(),
@@ -37,14 +29,12 @@ export const RequestCounts = z.object({
 });
 export type RequestCounts = z.infer<typeof RequestCounts>;
 
-/** One (season, episode) pair, for a request that targets individual episodes. */
 export const EpisodeRef = z.object({
   season: z.number(),
   episode: z.number(),
 });
 export type EpisodeRef = z.infer<typeof EpisodeRef>;
 
-/** One media request, as listed to clients. `Option` fields are `.nullish()`. */
 export const MediaRequest = z.object({
   id: RequestId,
   kind: RequestKind,
@@ -62,11 +52,7 @@ export const MediaRequest = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
   progress: z.number().nullable(),
-  /** TMDB airing status, refreshed by `acquisition.refresh` (show:
-   * "Returning Series"/"Ended"/…; movie: "Released"/…). Null until first refresh. */
   airStatus: z.string().nullable(),
-  /** Next air date (YYYY-MM-DD): a show's next episode or a movie's soonest
-   * availability. Null once nothing more is upcoming. */
   nextAirDate: z.string().nullable(),
 });
 export type MediaRequest = z.infer<typeof MediaRequest>;
@@ -78,14 +64,10 @@ export const RequestsView = z.object({
 });
 export type RequestsView = z.infer<typeof RequestsView>;
 
-/** One wanted item joined with its request's display fields, shared by two feeds:
- * the "coming soon" calendar (`GET /api/requests/calendar`, future-dated,
- * `airDate` always set) and the "missing / wanted" list (`GET
- * /api/requests/missing`, aired/released but not on disk, `airDate` possibly
- * null). `season`/`episode` are set for a show episode, null for a movie. */
+/** Shared by `GET /api/requests/calendar` (future-dated, `airDate` always set)
+ * and `GET /api/requests/missing` (aired but not on disk, `airDate` may be
+ * null). `requestId` is null for a library-scan row nobody requested. */
 export const CalendarEntry = z.object({
-  /** The parent request, or null for a library-scan "missing" row (a library
-   * series with aired episodes not on disk that was never requested). */
   requestId: RequestId.nullable(),
   tmdbId: z.number(),
   kind: RequestKind,
@@ -95,7 +77,6 @@ export const CalendarEntry = z.object({
   season: z.number().nullable(),
   episode: z.number().nullable(),
   airDate: z.string().nullable(),
-  /** `wanted` / `grabbed` a grabbed-but-unaired episode is already secured. */
   status: z.string(),
 });
 export type CalendarEntry = z.infer<typeof CalendarEntry>;
@@ -105,12 +86,10 @@ export const CreateRequestBody = z.object({
   kind: RequestKind,
   tmdbId: z.number(),
   seasons: z.array(z.number()).nullable(),
-  /** For shows: individual episodes to request, unioned with `seasons`. */
   episodes: z.array(EpisodeRef).nullish(),
 });
 export type CreateRequestBody = z.infer<typeof CreateRequestBody>;
 
-/** One TMDB discovery result, flagged against the local catalog + open requests. */
 export const DiscoverEntry = z.object({
   kind: RequestKind,
   tmdbId: z.number(),
@@ -128,7 +107,6 @@ export const DiscoverEntry = z.object({
 });
 export type DiscoverEntry = z.infer<typeof DiscoverEntry>;
 
-/** One season row in a show's discovery detail (drives the season picker). */
 export const DiscoverSeason = z.object({
   season: z.number(),
   name: z.string().nullable(),
@@ -140,7 +118,7 @@ export const DiscoverSeason = z.object({
 });
 export type DiscoverSeason = z.infer<typeof DiscoverSeason>;
 
-/** `GET /api/discover/{movie,tv}/:tmdbId`: the request-flow detail page. */
+/** `GET /api/discover/{movie,tv}/:tmdbId`. */
 export const DiscoverDetail = z.object({
   kind: RequestKind,
   tmdbId: z.number(),
@@ -162,10 +140,7 @@ export const DiscoverDetail = z.object({
   requestId: RequestId.nullable(),
   requestStatus: RequestStatus.nullable(),
   requestProgress: z.number().nullable(),
-  /** TMDB airing status (show/movie), for the "coming soon" badge. */
   airStatus: z.string().nullable(),
-  /** Next air date (YYYY-MM-DD): a show's next episode or a movie's soonest
-   * availability. Null when nothing is upcoming. */
   nextAirDate: z.string().nullable(),
 });
 export type DiscoverDetail = z.infer<typeof DiscoverDetail>;
@@ -178,8 +153,7 @@ export const DiscoverResponse = z.object({
 });
 export type DiscoverResponse = z.infer<typeof DiscoverResponse>;
 
-/** One ranked `GET /api/search` result a `type`-tagged union (movie/episode carry
- * a `MediaItem`, show a `Show`). */
+/** One ranked `GET /api/search` result. */
 export const SearchHit = z.discriminatedUnion('type', [
   z.object({ type: z.literal('movie'), item: MediaItem }),
   z.object({ type: z.literal('show'), show: Show }),
@@ -188,33 +162,29 @@ export const SearchHit = z.discriminatedUnion('type', [
 // drift: runtime-checked (tagged union)
 export type SearchHit = z.infer<typeof SearchHit>;
 
-/** `GET /api/search?q=…` the echoed query plus hits in descending relevance. */
+/** `GET /api/search?q=…`; hits are in descending relevance. */
 export const SearchResponse = z.object({
   query: z.string(),
   results: z.array(SearchHit),
 });
 export type SearchResponse = z.infer<typeof SearchResponse>;
 
-/** One person's provider profile: the biography and life facts shown above
- * their filmography. Everything but the id is optional TMDB fills these in for
- * the best-known names only. */
+/** One person's provider profile; TMDB fills the optional fields in for the
+ * best-known names only. */
 export const PersonDetail = z.object({
   tmdbId: z.number(),
-  /** The provider's spelling of the name (accents a filename may have lost). */
   name: z.string(),
   biography: z.string().nullish(),
-  /** `YYYY-MM-DD`; the age is derived client-side. */
   birthday: z.string().nullish(),
   deathday: z.string().nullish(),
   placeOfBirth: z.string().nullish(),
-  /** TMDB's department vocabulary ("Acting", "Directing", …), translated in the UI. */
   knownFor: z.string().nullish(),
   profileUrl: z.string().nullish(),
   tmdbUrl: z.string(),
 });
 export type PersonDetail = z.infer<typeof PersonDetail>;
 
-/** `GET /api/people/details?name=…` `person` is null whenever the provider has
+/** `GET /api/people/details?name=…`; `person` is null whenever the provider has
  * nothing to say (no key, unknown name, provider down). */
 export const PersonDetailResponse = z.object({
   name: z.string(),
@@ -222,7 +192,7 @@ export const PersonDetailResponse = z.object({
 });
 export type PersonDetailResponse = z.infer<typeof PersonDetailResponse>;
 
-/** `GET /api/people?name=…` every movie + show one person is credited in. */
+/** `GET /api/people?name=…`. */
 export const PersonResponse = z.object({
   name: z.string(),
   results: z.array(SearchHit),

@@ -81,8 +81,6 @@ function ReleaseRow({
   canGrab: boolean;
   busy: boolean;
   onGrab: (release: ScoredReleaseView) => void;
-  /** This row was rejected by the decision engine; grabbing it is a manual
-   * override (shown with a distinct style + tooltip). */
   override?: boolean;
 }>) {
   const t = useT();
@@ -134,7 +132,6 @@ function ReleaseRow({
   );
 }
 
-/** Season/episode tag for a non-movie release (e.g. `S01 pack`, `S01E02`). */
 function targetLabel(r: ScoredReleaseView): string {
   const s = String(r.season ?? 0).padStart(2, '0');
   return r.target === 'season'
@@ -142,7 +139,6 @@ function targetLabel(r: ScoredReleaseView): string {
     : `S${s}E${String(r.episodes?.[0] ?? 0).padStart(2, '0')}`;
 }
 
-/** The secondary metadata line under a release title (indexer, size, seeders…). */
 function ReleaseMeta({ r }: Readonly<{ r: ScoredReleaseView }>) {
   const t = useT();
   return (
@@ -171,7 +167,6 @@ function ReleaseMeta({ r }: Readonly<{ r: ScoredReleaseView }>) {
   );
 }
 
-/** The expandable per-release score breakdown (one row per scoring rule). */
 function ScoreBreakdown({ breakdown }: Readonly<{ breakdown: ScoredReleaseView['breakdown'] }>) {
   return (
     <div className="mt-2 flex flex-col gap-1 border-t border-white/5 pl-[23px] pt-2">

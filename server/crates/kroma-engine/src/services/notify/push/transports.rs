@@ -1,17 +1,14 @@
 //! The per-transport half of a push.
 //!
-//! Each service answers only the three questions the shared delivery loop
-//! cannot: how to turn this notification into a request for THIS device, which
-//! HTTP failures are worth one adjusted retry, and which mean the device is
-//! permanently gone. The loop in the parent module owns everything else, so
-//! adding a transport never duplicates the health bookkeeping that decides when
-//! a device is evicted.
+//! Each service answers only three questions the shared delivery loop cannot:
+//! how to build a request for THIS device, which failures deserve one adjusted
+//! retry, and which mean the device is permanently gone. The loop in the parent
+//! module owns the rest, so adding a transport never touches the shared health
+//! bookkeeping.
 //!
-//! "Gone" is deliberately per-transport and deliberately narrow. Each service
-//! has its own vocabulary for it (410, `BadDeviceToken`, `UNREGISTERED`), and
-//! each also has 400s that mean *we* sent something wrong — treating those as
-//! the device's fault would quietly evict every registered device the first time
-//! a payload or a topic was mis-set.
+//! "Gone" is deliberately narrow and per-transport: each service also has 400s
+//! that mean *we* sent something wrong, and treating those as the device's fault
+//! would evict every registered device the first time a payload was mis-set.
 
 use std::sync::Arc;
 
@@ -69,20 +66,15 @@ pub struct Fcm {
 /// The pieces of a notification every transport needs, extracted once.
 pub struct Outgoing<'a> {
     pub notification: &'a Notification,
-    /// The Web Push body (the notification's own JSON), already serialized.
+    // The Web Push body (the notification's own JSON), already serialized.
     pub web_payload: &'a [u8],
     pub urgency: Urgency,
-    /// The notification's `api` actions as `(id, method, href)`, for the native
-    /// payloads. Only these can be acted on without opening the app; a `link`
-    /// action is just navigation and the tap handler covers it.
+    // The notification's `api` actions as `(id, method, href)` for native
+    // payloads; a `link` action is just navigation, covered by the tap handler.
     pub actions: Vec<(String, String, String)>,
-    /// Where the NATIVE transports should tell the device to fetch the art.
-    ///
-    /// Deliberately not `notification.image_url`: that one is server-relative for
-    /// our own art, which is right for Web Push (the service worker resolves it
-    /// against our origin) and useless to Apple and Google, who fetch from the
-    /// device. `None` when there is no reachable URL to name (see
-    /// [`super::super::art::native_image_url`]).
+    // Deliberately not `notification.image_url`: that's server-relative, right for
+    // Web Push but useless to Apple/Google who fetch from the device. `None` when
+    // there is no reachable URL to name.
     pub native_image: Option<String>,
 }
 
@@ -149,7 +141,7 @@ pub fn build(
     }
 }
 
-/// The transport-facing view of a notification.
+// The transport-facing view of a notification.
 fn alert<'a>(out: &'a Outgoing<'a>) -> kroma_push::Alert<'a> {
     let n = out.notification;
     kroma_push::Alert {
@@ -166,11 +158,8 @@ fn alert<'a>(out: &'a Outgoing<'a>) -> kroma_push::Alert<'a> {
     }
 }
 
-/// The registered action set for this notification, if it has one.
-///
-/// This is what finally makes `push_category` do something: APNs and Android
-/// cannot carry arbitrary buttons, only the name of a set the app registered at
-/// launch, so the notification names one and the client supplies the buttons.
+// Makes `push_category` useful: APNs/Android can't carry arbitrary buttons,
+// only the name of a set registered at launch, so the client supplies them.
 fn push_category(n: &Notification) -> Option<&'static str> {
     n.push_category.map(kroma_domain::PushCategory::as_str)
 }
@@ -178,19 +167,15 @@ fn push_category(n: &Notification) -> Option<&'static str> {
 /// Whether this failure is worth one immediate second attempt, having adjusted
 /// `request` so the retry differs from what just failed.
 ///
-/// The third question a transport answers for the shared loop, and here for the
-/// same reason as the other two: only APNs has such a case today, but keeping it
-/// on this seam is what stops the next one (a stale FCM access token, a rotated
-/// relay key) from landing as another `if sub.transport == …` in the middle of
-/// delivery.
+/// Only APNs needs this today, but keeping it on this seam (rather than another
+/// `if sub.transport == …` in delivery) is what stops the next case — a stale
+/// FCM token, a rotated relay key — from scattering transport checks everywhere.
 pub fn retry(sub: &PushSubscription, request: &mut PushRequest, status: u16, body: &str) -> bool {
     use kroma_domain::PushTransport as T;
     match sub.transport {
         // Which APNs host a token belongs to is a fact about the DEVICE, not a
-        // server-wide preference: one server can hold a TestFlight token and an
-        // Xcode build's token at the same time, so no single setting can be
-        // right for both. Rather than ask an admin to choose wrong, discover it —
-        // the rejection is unambiguous, and the other host is one retry away.
+        // server setting — one server can hold both a TestFlight and an Xcode
+        // token at once, so discover it from the unambiguous rejection instead.
         T::Apns => apns::is_wrong_environment(status, body) && apns::flip_environment(request),
         T::WebPush | T::Fcm | T::Relay => false,
     }
@@ -261,10 +246,9 @@ mod tests {
         }
         assert!(!senders.has_own_credentials());
 
-        // …but the relay still builds, on that very same credential-less server.
-        // That is the whole point of it: a self-hosted install can never hold
-        // Apple's or Google's keys, so if this were skipped too, no self-hosted
-        // server could ever notify a phone.
+        // …but the relay still builds on that same credential-less server: a
+        // self-hosted install can never hold Apple's or Google's keys, so if this
+        // were skipped too, no self-hosted server could ever notify a phone.
         let relayed = build(&senders, &subscription(PushTransport::Relay), &out, 0).unwrap();
         let relayed = relayed.expect("the relay needs no credentials");
         assert_eq!(relayed.url, "https://push.kroma.tv/v1/push");

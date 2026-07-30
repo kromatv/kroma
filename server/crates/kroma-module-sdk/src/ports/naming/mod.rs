@@ -1,27 +1,5 @@
 //! Sonarr/Radarr-style file naming: render a path template against a title's
-//! facts. The token vocabulary + resolution lives in [`tokens`]; this module
-//! owns the [`NameContext`], the five templates, and path assembly.
-//!
-//! Supported tokens (unknown ones render empty):
-//!
-//!   `{Movie Title}` `{Series Title}`             the title
-//!   `{Movie CleanTitle}` `{Movie TitleThe}`      cleaned / "Title, The"
-//!   `{Movie TitleFirstCharacter}`                first character (folder buckets)
-//!   `{Release Year}`                             release year
-//!   `{season:00}` `{episode:00}`                 numbers, zero-padded per spec
-//!   `{Episode Title}`                            episode title
-//!   `{Quality Full}` `{Quality Title}`           Bluray-1080p (+ Proper/Repack)
-//!   `{Resolution}` `{MediaInfo VideoCodec}`      individual quality parts
-//!   `{MediaInfo VideoBitDepth}` `{... VideoDynamicRange}`
-//!   `{MediaInfo AudioCodec}` `{... AudioChannels}`
-//!   `{MediaInfo AudioLanguages}` `{... SubtitleLanguages}`
-//!   `{Release Group}` `{Edition Tags}`          release group / edition
-//!   `{ImdbId}` `{TmdbId}`                         external ids
-//!
-//! String tokens accept a `:N` / `:-N` byte-truncation spec; MediaInfo language
-//! tokens accept a `:EN+DE` include / `-DE` exclude filter. The result is
-//! cleaned (collapsed whitespace, dropped empty `()`/`[]`/dangling ` - `) and
-//! every path component is sanitized for the filesystem.
+//! facts. Unknown tokens render empty; the token vocabulary lives in [`tokens`].
 
 use std::path::PathBuf;
 
@@ -29,9 +7,8 @@ use crate::engine::services::settings::Settings;
 
 mod tokens;
 
-/// The facts a template renders against. Populated at import time (from the
-/// parsed release name) and at bulk-rename time (from the probed streams +
-/// TMDB metadata), so some fields are only present on one of the two paths.
+/// The facts a template renders against; some fields are only populated on one
+/// of the two paths (import from a release name, bulk rename from probed streams).
 #[derive(Debug, Clone, Default)]
 pub struct NameContext {
     pub title: String,
@@ -39,38 +16,24 @@ pub struct NameContext {
     pub season: Option<u32>,
     pub episode: Option<u32>,
     pub episode_title: Option<String>,
-    /// `1080p`, `2160p`, ...
     pub resolution: Option<String>,
-    /// `x265` / `x264`, ... (video codec label).
     pub codec: Option<String>,
-    /// `Bluray`, `WEBDL`, `HDTV`, ...
     pub source: Option<String>,
-    /// A `PROPER` / `REPACK` re-release, reflected in `{Quality Full}`.
     pub proper: bool,
     pub repack: bool,
-    /// Trailing `-GROUP` from the release name.
     pub release_group: Option<String>,
-    /// Best-effort edition label ("Director's Cut", "IMAX", ...).
     pub edition: Option<String>,
-    /// External ids from TMDB.
     pub imdb_id: Option<String>,
     pub tmdb_id: Option<u64>,
-    // --- MediaInfo (from the probed streams; empty at import) ---
     pub audio_codec: Option<String>,
-    /// Channel layout label, e.g. `5.1`.
     pub audio_channels: Option<String>,
-    /// Video bit depth, e.g. `10`.
     pub video_bit_depth: Option<u32>,
-    /// `HDR` / `DV`, or `None` for SDR.
     pub dynamic_range: Option<String>,
-    /// Audio track languages, upper-case 2-letter codes (deduped, in order).
     pub audio_languages: Vec<String>,
-    /// Subtitle track languages.
     pub subtitle_languages: Vec<String>,
 }
 
 impl NameContext {
-    /// `{Quality Full}`: `Source-Resolution` plus a `Proper`/`Repack` suffix.
     fn quality_full(&self) -> String {
         let mut q = self.quality_title();
         if self.proper {
@@ -81,7 +44,6 @@ impl NameContext {
         q.trim().to_string()
     }
 
-    /// `{Quality Title}`: `Source-Resolution`, without the proper/repack tag.
     fn quality_title(&self) -> String {
         match (self.source.as_deref(), self.resolution.as_deref()) {
             (Some(s), Some(r)) => format!("{s}-{r}"),
@@ -92,15 +54,11 @@ impl NameContext {
     }
 }
 
-/// Case transform applied to every rendered path component.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Casing {
-    /// Keep the metadata's natural case (no change).
     #[default]
     Default,
-    /// `THE MATRIX (1999)`.
     Upper,
-    /// `the matrix (1999)`.
     Lower,
 }
 
@@ -130,8 +88,6 @@ impl Casing {
     }
 }
 
-/// The five templates + case transform, resolved from settings (Radarr/Sonarr
-/// defaults).
 #[derive(Debug, Clone)]
 pub struct NamingTemplates {
     pub movie_folder: String,
@@ -169,9 +125,8 @@ impl NamingTemplates {
         }
     }
 
-    /// The same templates resolved through the generic [`HostCtx`] settings seam
-    /// (string accessors only), so an out-of-process module reads them without
-    /// linking the engine's `Settings` type.
+    /// The same templates through the [`HostCtx`] settings seam, so an
+    /// out-of-process module reads them without linking the engine's `Settings`.
     pub fn from_host(host: &dyn crate::host::HostCtx) -> Self {
         let g = |key: &str, default: &str| {
             let v = host.setting_str(key, default);
@@ -191,15 +146,12 @@ impl NamingTemplates {
         }
     }
 
-    /// Render one template, apply the case transform (the path builders then
-    /// sanitize each component for the filesystem).
     fn styled(&self, template: &str, ctx: &NameContext) -> String {
         self.case.apply(&render(template, ctx))
     }
 
-    /// `<movie folder>/<movie file>.<ext>` (folder omitted if its template is
-    /// empty, so files can live at the library root). Every component is
-    /// sanitized for the filesystem.
+    /// `<movie folder>/<movie file>.<ext>`; the folder is omitted when its
+    /// template is empty, so files can live at the library root.
     pub fn movie_rel_path(&self, ctx: &NameContext, ext: &str) -> PathBuf {
         let file = file_component(&self.styled(&self.movie_file, ctx), ext);
         match sanitize(&self.styled(&self.movie_folder, ctx)) {
@@ -221,9 +173,6 @@ impl NamingTemplates {
     }
 }
 
-/// Sanitized `<name>.<ext>` filename; falls back to the extension alone only if
-/// the rendered name is empty (should not happen in practice, title is always
-/// present).
 fn file_component(rendered: &str, ext: &str) -> String {
     let name = sanitize(rendered);
     if name.is_empty() {
@@ -233,8 +182,8 @@ fn file_component(rendered: &str, ext: &str) -> String {
     }
 }
 
-/// Render one template against `ctx`, cleaned (but NOT yet sanitized: the path
-/// builders sanitize each component so separators survive rendering).
+/// Cleaned but NOT sanitized: the path builders sanitize each component, so
+/// separators survive rendering.
 pub fn render(template: &str, ctx: &NameContext) -> String {
     let mut out = String::new();
     let mut chars = template.chars().peekable();
@@ -255,24 +204,20 @@ pub fn render(template: &str, ctx: &NameContext) -> String {
     cleanup(&out)
 }
 
-/// Collapse whitespace, drop empty `()`/`[]` and dangling ` - ` separators left
-/// by missing tokens.
 fn cleanup(s: &str) -> String {
     let mut r = s.split_whitespace().collect::<Vec<_>>().join(" ");
-    // Empty parens/brackets from a missing year, language tag, etc.
     for empty in ["( )", "()", "[ ]", "[]", "- -"] {
         while r.contains(empty) {
             r = r.replace(empty, "-");
         }
     }
     r = r.split_whitespace().collect::<Vec<_>>().join(" ");
-    // Drop empty segments around the ` - ` separator (missing episode title...).
     let joined = r.split(" - ").map(str::trim).filter(|p| !p.is_empty()).collect::<Vec<_>>().join(" - ");
     joined.trim().trim_matches('-').trim().to_string()
 }
 
-/// Quality strings (resolution, codec, source) from a parsed release name, in
-/// the spellings Sonarr/Radarr use (`1080p`, `x265`, `Bluray`).
+/// Resolution, codec and source in the spellings Sonarr/Radarr use (`1080p`,
+/// `x265`, `Bluray`).
 pub fn quality_from_parsed(
     parsed: &crate::scene::ParsedRelease,
 ) -> (Option<String>, Option<String>, Option<String>) {
@@ -299,8 +244,6 @@ pub fn quality_from_parsed(
     (res.map(str::to_string), codec.map(str::to_string), source.map(str::to_string))
 }
 
-/// Resolution label (`1080p`) from a probed pixel width, for library files
-/// whose quality comes from ffprobe rather than a release name.
 pub fn resolution_from_width(width: Option<i64>) -> Option<String> {
     match width? {
         w if w >= 3400 => Some("2160p".into()),
@@ -311,7 +254,6 @@ pub fn resolution_from_width(width: Option<i64>) -> Option<String> {
     }
 }
 
-/// Codec label (`x265`) from a probed video codec name.
 pub fn codec_label(codec: Option<&str>) -> Option<String> {
     match codec?.to_ascii_lowercase().as_str() {
         "hevc" | "h265" | "x265" => Some("x265".into()),
@@ -321,7 +263,7 @@ pub fn codec_label(codec: Option<&str>) -> Option<String> {
     }
 }
 
-/// Channel-count -> layout label (`6` -> `5.1`), Radarr-style.
+/// Channel count to layout label, Radarr-style: `6` -> `5.1`.
 pub fn audio_channels_label(channels: Option<u32>) -> Option<String> {
     Some(
         match channels? {
@@ -338,7 +280,7 @@ pub fn audio_channels_label(channels: Option<u32>) -> Option<String> {
     )
 }
 
-/// Audio codec label in the spelling scene groups use (`eac3` -> `EAC3`).
+/// Audio codec label in the spelling scene groups use: `eac3` -> `EAC3`.
 pub fn audio_codec_label(codec: Option<&str>) -> Option<String> {
     let c = codec?.to_ascii_lowercase();
     if c.is_empty() {
@@ -361,7 +303,7 @@ pub fn audio_codec_label(codec: Option<&str>) -> Option<String> {
     )
 }
 
-/// `HDR` / `DV` label, or `None` for SDR (drives `{MediaInfo VideoDynamicRange}`).
+/// `HDR` / `DV` label, or `None` for SDR.
 pub fn dynamic_range(hdr: bool, dolby_vision: bool) -> Option<String> {
     if dolby_vision {
         Some("DV".into())
@@ -373,7 +315,7 @@ pub fn dynamic_range(hdr: bool, dolby_vision: bool) -> Option<String> {
 }
 
 /// Normalize a stream language tag to a 2-letter upper code (`eng` -> `EN`);
-/// `None` for undefined/unknown so it drops out of the `[EN+FR]` tag.
+/// `None` for undefined/unknown, so it drops out of the `[EN+FR]` tag.
 pub fn lang_code(lang: &str) -> Option<String> {
     let l = lang.trim().to_ascii_lowercase();
     if l.is_empty() || l == "und" || l == "unknown" || l == "mis" || l == "zxx" {
@@ -398,8 +340,7 @@ pub fn lang_code(lang: &str) -> Option<String> {
     )
 }
 
-/// Deduped, order-preserving list of normalized language codes from a stream's
-/// raw language tags.
+/// Deduped and order-preserving.
 pub fn lang_list<'a>(raw: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for tag in raw {
@@ -412,9 +353,8 @@ pub fn lang_list<'a>(raw: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     out
 }
 
-/// Strip filesystem-hostile characters from a rendered path component: the
-/// Windows/SMB-reserved set, control characters, and trailing dots/spaces
-/// (which Windows and SMB shares silently reject).
+/// Strips the Windows/SMB-reserved set, control characters, and trailing
+/// dots/spaces, which Windows and SMB shares silently reject.
 pub fn sanitize(s: &str) -> String {
     let cleaned: String = s
         .chars()
@@ -510,7 +450,6 @@ mod tests {
 
     #[test]
     fn forbidden_chars_removed_from_filename() {
-        // A colon in the title must not survive into the filename component.
         let tpl = NamingTemplates {
             movie_folder: String::new(),
             movie_file: "{Movie Title} ({Release Year})".into(),
@@ -550,7 +489,6 @@ mod tests {
 
     #[test]
     fn sanitize_collapses_control_and_whitespace() {
-        // Control characters become spaces, then runs collapse to one.
         assert_eq!(sanitize("a\tb\nc"), "a b c");
         assert_eq!(sanitize("  many   spaces  "), "many spaces");
         assert_eq!(sanitize(""), "");
@@ -568,7 +506,6 @@ mod tests {
 
         let proper = NameContext { proper: true, ..base.clone() };
         assert_eq!(proper.quality_full(), "Bluray-1080p Proper");
-        // A proper release still reports the bare title without the tag.
         assert_eq!(proper.quality_title(), "Bluray-1080p");
 
         let repack = NameContext { repack: true, ..base.clone() };
@@ -591,7 +528,6 @@ mod tests {
         assert_eq!(empty.quality_title(), "");
         assert_eq!(empty.quality_full(), "");
 
-        // No source/resolution but a proper tag: trims to the bare word.
         let proper_only = NameContext { proper: true, ..Default::default() };
         assert_eq!(proper_only.quality_full(), "Proper");
     }
@@ -637,7 +573,6 @@ mod tests {
         assert_eq!(codec_label(Some("h264")).as_deref(), Some("x264"));
         assert_eq!(codec_label(Some("x264")).as_deref(), Some("x264"));
         assert_eq!(codec_label(Some("AV1")).as_deref(), Some("AV1"));
-        // Unknown codec passes through lowercased.
         assert_eq!(codec_label(Some("VP9")).as_deref(), Some("vp9"));
         assert_eq!(codec_label(None), None);
     }
@@ -652,7 +587,6 @@ mod tests {
         assert_eq!(audio_channels_label(Some(6)).as_deref(), Some("5.1"));
         assert_eq!(audio_channels_label(Some(7)).as_deref(), Some("6.1"));
         assert_eq!(audio_channels_label(Some(8)).as_deref(), Some("7.1"));
-        // Unmapped counts fall back to `N.0`.
         assert_eq!(audio_channels_label(Some(4)).as_deref(), Some("4.0"));
         assert_eq!(audio_channels_label(Some(5)).as_deref(), Some("5.0"));
     }
@@ -670,7 +604,6 @@ mod tests {
         assert_eq!(audio_codec_label(Some("opus")).as_deref(), Some("Opus"));
         assert_eq!(audio_codec_label(Some("mp3")).as_deref(), Some("MP3"));
         assert_eq!(audio_codec_label(Some("vorbis")).as_deref(), Some("Vorbis"));
-        // Unknown codec uppercases.
         assert_eq!(audio_codec_label(Some("wma")).as_deref(), Some("WMA"));
         assert_eq!(audio_codec_label(Some("")), None);
         assert_eq!(audio_codec_label(None), None);
@@ -681,7 +614,6 @@ mod tests {
         assert_eq!(dynamic_range(false, false), None);
         assert_eq!(dynamic_range(true, false).as_deref(), Some("HDR"));
         assert_eq!(dynamic_range(false, true).as_deref(), Some("DV"));
-        // Dolby Vision wins over a plain HDR flag.
         assert_eq!(dynamic_range(true, true).as_deref(), Some("DV"));
     }
 
@@ -694,9 +626,8 @@ mod tests {
         assert_eq!(lang_code("jpn").as_deref(), Some("JA"));
         assert_eq!(lang_code("zho").as_deref(), Some("ZH"));
         assert_eq!(lang_code("nld").as_deref(), Some("NL"));
-        // Unknown 3-letter tag keeps the first two letters, upper-cased.
         assert_eq!(lang_code("swe").as_deref(), Some("SW"));
-        // Single-char tag has no 2-byte slice: falls back to the whole word.
+        // A single-char tag has no 2-byte slice: falls back to the whole word.
         assert_eq!(lang_code("x").as_deref(), Some("X"));
         for junk in ["", "und", "unknown", "mis", "zxx", "  "] {
             assert_eq!(lang_code(junk), None, "{junk:?} should be rejected");
@@ -736,32 +667,25 @@ mod tests {
             quality_from_parsed(&mk(Res::R2160, Codec::Hevc, Source::Remux)),
             (Some("2160p".into()), Some("x265".into()), Some("Remux".into()))
         );
-        // Remaining source variants.
         let hdtv = ParsedRelease { source: Some(Source::Hdtv), ..Default::default() };
         assert_eq!(quality_from_parsed(&hdtv).2.as_deref(), Some("HDTV"));
         let cam = ParsedRelease { source: Some(Source::Cam), ..Default::default() };
         assert_eq!(quality_from_parsed(&cam).2.as_deref(), Some("Cam"));
-        // Nothing parsed => all None.
         assert_eq!(quality_from_parsed(&ParsedRelease::default()), (None, None, None));
     }
 
     #[test]
     fn render_cleans_empty_delimiters() {
         let ctx = NameContext { title: "Show".into(), ..Default::default() };
-        // Empty parens and brackets from missing tokens are dropped.
         assert_eq!(render("{Movie Title} ({Release Year})", &ctx), "Show");
         assert_eq!(render("{Movie Title} [{Resolution}]", &ctx), "Show");
         assert_eq!(render("{Movie Title} ({Release Year}) [{Resolution}]", &ctx), "Show");
-        // The "- -" collapse branch (two empty segments around separators).
         assert_eq!(render("{Movie Title} - {Episode Title} - {Resolution}", &ctx), "Show");
-        // A purely empty render.
         assert_eq!(render("({Release Year})", &NameContext::default()), "");
     }
 
     #[test]
     fn file_component_falls_back_when_name_empty() {
-        // A template that renders empty (no resolution) must not produce a
-        // dangling ".mkv" file; it falls back to "file.mkv".
         let tpl = NamingTemplates {
             movie_folder: String::new(),
             movie_file: "{Resolution}".into(),
@@ -792,7 +716,6 @@ mod tests {
         let p = tpl.episode_rel_path(&ctx, "mkv");
         assert_eq!(p.to_str().unwrap(), "Show/Pilot.mkv");
     }
-    // ----- where the templates come from ------------------------------------------
 
     fn store() -> (kroma_db::Pool, Settings) {
         static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
@@ -813,17 +736,10 @@ mod tests {
 
     #[test]
     fn an_unconfigured_server_names_files_the_same_way_either_default_would() {
-        // There are TWO defaults for these keys and they are not the same
-        // string: the settings store registers `{Title} ({Year})` while this
-        // module declares `{Movie Title} ({Release Year})`. `get_str` prefers
-        // the REGISTERED one, so the constants here never apply on a real
-        // server - they are the fallback for a host that does not know the key
-        // (an out-of-process module reading through a bare `setting_str`).
-        //
-        // That is harmless only because the two spellings are aliases for the
-        // same token, which is what this pins: edit either side and the paths
-        // must still match, or a fresh install starts naming files differently
-        // from a sidecar.
+        // Two defaults exist for these keys: the settings store registers
+        // `{Title} ({Year})` and `get_str` prefers it, while the constants here
+        // only apply to a host that does not know the key. The spellings are
+        // aliases for the same token, and this pins that they stay so.
         let (_pool, settings) = store();
         let from_store = NamingTemplates::from_settings(&settings);
         let from_constants = NamingTemplates {
@@ -849,9 +765,8 @@ mod tests {
 
     #[test]
     fn a_template_an_admin_cleared_falls_back_rather_than_naming_everything_alike() {
-        // An empty template renders to an empty string, so every import in a
-        // library would land on the same path and overwrite the last one. A
-        // blank field means "I did not set this", not "name it nothing".
+        // An empty template renders empty, so every import would land on the
+        // same path and overwrite the last one.
         let (pool, settings) = store();
         for key in [
             "namingMovieFolder",
@@ -863,10 +778,8 @@ mod tests {
             set(&settings, &pool, key, "   ");
         }
 
-        // A cleared field falls back to the CONSTANT, while a field nobody ever
-        // touched falls back to the REGISTERED default - two different strings
-        // for the same two tokens. What has to hold is that both still name the
-        // same file, and that neither is empty.
+        // A cleared field falls back to the CONSTANT, an untouched one to the
+        // REGISTERED default: different strings that must still name one file.
         let cleared = NamingTemplates::from_settings(&settings);
         let (_p2, untouched) = store();
         let fresh = NamingTemplates::from_settings(&untouched);
@@ -891,18 +804,14 @@ mod tests {
 
         let t = NamingTemplates::from_settings(&settings);
         assert_eq!(t.movie_folder, "{Movie Title}");
-        // ...and the case transform comes from the same place, visible in the
-        // path the template actually produces.
         let path = t.movie_rel_path(&movie_ctx(), "mkv");
         assert!(path.starts_with("the matrix"), "{path:?}");
     }
 
     #[test]
     fn a_sidecar_reading_through_the_host_seam_gets_the_same_answers() {
-        // `from_host` exists so an out-of-process module can read the templates
-        // without linking the engine's `Settings` type. If the two drifted, the
-        // same file would be named differently depending on WHICH process
-        // imported it - and that is invisible until two of them disagree.
+        // If the two readers drifted, the same file would be named differently
+        // depending on WHICH process imported it.
         let (pool, settings) = store();
         set(&settings, &pool, "namingMovieFolder", "{Movie Title} [{Release Year}]");
         set(&settings, &pool, "namingCase", "upper");
@@ -933,9 +842,8 @@ mod tests {
         assert!(episode_file.contains("season"), "{episode_file}");
     }
 
-    /// The shared stub, answering `setting_str` out of a REAL settings store -
-    /// which is the whole point here: `from_host` must see the store's own
-    /// registered defaults, not the caller's.
+    // Answers `setting_str` out of a REAL settings store, so `from_host` sees
+    // the store's own registered defaults rather than the caller's.
     fn settings_host(pool: kroma_db::Pool, settings: Settings) -> impl crate::host::HostCtx {
         kroma_module_host::testing::StubHost::with_pool(pool)
             .with_string_settings(move |key, default| settings.get_str(key, default))

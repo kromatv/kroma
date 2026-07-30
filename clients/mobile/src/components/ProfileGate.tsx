@@ -27,7 +27,6 @@ export function ProfileGate({
   onAdd,
 }: Readonly<{
   tiles: GateTile[];
-  /** Freezes every tile while a login is in flight. */
   disabled: boolean;
   error: string | null;
   onAdd(): void;

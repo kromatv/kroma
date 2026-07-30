@@ -5,7 +5,6 @@
 import type { Metadata } from '@kroma/client';
 import type { Translate } from './i18n';
 
-/** Case-insensitive, trimmed name equality (TMDB credit names). */
 function sameName(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
@@ -23,19 +22,14 @@ export function creditsPerson(meta: Metadata | null | undefined, name: string): 
  * they appear in any cast, the distinct crew jobs they held (e.g. `Director`), and
  * the best profile photo found among the matching credits. */
 export interface PersonInvolvement {
-  /** True when the person appears in at least one title's cast. */
   acted: boolean;
-  /** Distinct crew jobs (TMDB strings: `Director`, `Writer`, `Creator`, …), in
-   * first-seen order. */
   jobs: string[];
-  /** Profile photo from the first matching credit that carries one, else null. */
   profileUrl: string | null;
 }
 
 type CastCredit = NonNullable<Metadata['cast']>[number];
 type CrewCredit = NonNullable<Metadata['crew']>[number];
 
-/** Fold one title's cast credits for `name` into the running involvement. */
 function scanCast(acc: PersonInvolvement, cast: readonly CastCredit[], name: string): void {
   for (const c of cast) {
     if (!sameName(c.name, name)) continue;
@@ -44,7 +38,6 @@ function scanCast(acc: PersonInvolvement, cast: readonly CastCredit[], name: str
   }
 }
 
-/** Fold one title's crew credits for `name` into the running involvement. */
 function scanCrew(acc: PersonInvolvement, crew: readonly CrewCredit[], name: string): void {
   for (const c of crew) {
     if (!sameName(c.name, name)) continue;

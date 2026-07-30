@@ -1,15 +1,5 @@
-// The web + desktop runtime-load tier (Module Federation).
-//
-// Uses the Module Federation *runtime* directly (no vite plugin), so the
-// TanStack Start build is untouched. Remotes are DISCOVERED from the backend:
-// `GET /api/modules` lists every installed module, and each one that ships a
-// `feRemote` is loaded from `/modules/<id>/remoteEntry.js` (served same-origin by
-// the Rust server from the module's install dir). Its exposed `KromaModule` is
-// registered into the same ModuleRegistry the compile-time modules use.
-//
-// The Chromium-53 TV tier never runs this (no dynamic import / import maps); TVs
-// stay compile-time bundled. `@module-federation/runtime` is imported inside the
-// browser-only path so it never runs during the SSR shell prerender.
+// The web + desktop runtime-load tier: remotes discovered from `GET /api/modules`,
+// loaded from `/modules/<id>/remoteEntry.js`. The Chromium-53 TV tier stays bundled.
 
 import { sessionToken } from '@kroma/core';
 import type { KromaModule, ModuleManifest, ModuleRegistry } from '@kroma/module-sdk';
@@ -18,17 +8,11 @@ import * as ReactDOM from 'react-dom';
 import { apiBase } from '#web/shared/lib/api';
 
 interface RemoteSpec {
-  /** MF remote name (= module id). */
   name: string;
-  /** Absolute remoteEntry.js URL (same origin as the API). */
   entry: string;
-  /** loadRemote key: `<name>/<exposedKey>`. */
   module: string;
 }
 
-/** Discover installed frontend remotes from the backend module list. Only
- *  enabled modules that ship a `feRemote` are loaded; a disabled module's page
- *  stays gone. */
 async function discoverRemotes(): Promise<RemoteSpec[]> {
   const token = sessionToken();
   const res = await fetch(`${apiBase()}/api/modules`, {
@@ -49,24 +33,19 @@ async function discoverRemotes(): Promise<RemoteSpec[]> {
     });
 }
 
-/** MF remote name for a module id (must be a valid identifier -- no dots). Kept
- *  in sync with each module's vite `federation({ name })`. */
+// Must stay in sync with each module's vite `federation({ name })`.
 function mfName(id: string): string {
   return id.replace(/\W/g, '_');
 }
 
-// The Module Federation runtime is init'd ONCE (shared React singleton); remotes
-// are added incrementally via registerRemotes so a module installed at runtime
-// loads with no page reload. `loadedRemotes` tracks which are already registered.
+// Init'd once (shared React singleton); remotes are added incrementally so a
+// module installed at runtime loads with no page reload.
 let mfReady: Promise<typeof import('@module-federation/runtime')> | null = null;
 const loadedRemotes = new Set<string>();
 const injectedStyles = new Set<string>();
 
-/** Load a runtime module's self-contained stylesheet. Its FE build emits a fixed
- *  `style.css` (Tailwind + KROMA design) next to its remoteEntry, so - unlike a
- *  compile-time module whose classes are in the host build - a runtime `.tar`
- *  module carries its own CSS. Best-effort: a module that ships none just 404s
- *  the link (removed silently to avoid console noise). */
+// A runtime module carries its own CSS next to its remoteEntry; one that ships
+// none just 404s the link, removed silently to avoid console noise.
 function injectRemoteStyles(entry: string): void {
   const href = entry.replace(/remoteEntry\.js(\?.*)?$/, 'style.css');
   if (injectedStyles.has(href)) return;
@@ -107,11 +86,8 @@ function ensureMf(): Promise<typeof import('@module-federation/runtime')> {
   return mfReady;
 }
 
-/** Discover installed frontend remotes and load any not-yet-loaded ones into
- *  `registry`. RE-CALLABLE: after a Store install, calling it again loads just
- *  the new module (`type: 'module'` = ESM remoteEntry). Best-effort; a failed
- *  remote is logged + skipped, never breaking compile-time modules. Returns the
- *  ids newly registered. No-op during SSR / prerender. */
+/** Load any not-yet-loaded frontend remotes into `registry` and return the ids
+ *  newly registered. Re-callable, best-effort, and a no-op during SSR. */
 export async function loadRuntimeRemotes(registry: ModuleRegistry): Promise<string[]> {
   if (typeof window === 'undefined') return [];
   let specs: RemoteSpec[];
@@ -132,8 +108,6 @@ export async function loadRuntimeRemotes(registry: ModuleRegistry): Promise<stri
     return [];
   }
   mf.registerRemotes(fresh.map((s) => ({ name: s.name, entry: s.entry, type: 'module' as const })));
-  // Each runtime remote ships its own stylesheet next to remoteEntry; load it so
-  // the module renders with the full KROMA design regardless of host classes.
   fresh.forEach((s) => {
     injectRemoteStyles(s.entry);
   });
@@ -172,8 +146,8 @@ export function isLoadedRemote(id: string): boolean {
   return loadedRemotes.has(mfName(id));
 }
 
-/** Forget a remote so a later reinstall re-loads it (the loaded MF code stays in
- *  memory, but its module is unregistered from the app registry). */
+/** Forget a remote so a later reinstall re-loads it; the already-loaded MF code
+ *  stays in memory. */
 export function forgetRemote(id: string): void {
   loadedRemotes.delete(mfName(id));
 }

@@ -1,11 +1,6 @@
 //! Pipeline stage `loudness`: EBU R128 measurement of each file's default audio
-//! track (integrated loudness, loudness range, true peak, and the centre
-//! channel alone on 5.1+), persisted with a derived verdict
-//! (`ok` / `highDynamics` / `quietDialog`). Wraps [`crate::infra::loudness`].
-//!
-//! Audio-only decode, but it still READS the whole container so the cost is
-//! dominated by I/O on big remuxes: one file at a time, paused during playback,
-//! and only probed files are in scope (the track layout must be known).
+//! track, persisted with a derived verdict (`ok` / `highDynamics` /
+//! `quietDialog`). Wraps [`crate::infra::loudness`].
 
 use anyhow::Result;
 
@@ -14,10 +9,8 @@ use crate::state::SharedState;
 
 use super::common::stage;
 
-// One decode at a time: the measurement is disk-read-bound, and fanning out would
-// starve any concurrent stream from the same (often network) mount. Nightly (after
-// the 1:00 probe pass has landed fresh files), and chained after `pipeline.probe`
-// so a manual probe drain flows straight into analysis.
+// One decode at a time: the measurement reads the whole container, and fanning
+// out would starve any concurrent stream from the same (often network) mount.
 stage! {
     short: "loudness",
     subject_kind: "file",
@@ -27,23 +20,21 @@ stage! {
     triggers: &[Trigger::AfterJob(JobKey("pipeline.probe"))],
 }
 
-/// Every **probed** file, signed by `mtime:size` (a replaced file re-measures;
-/// unprobed files enter scope once the probe stage lands).
 fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
     crate::db::analyzable_file_sigs(&state.db)
 }
 
 fn process(ctx: &JobContext, file_id: &str) -> Result<()> {
     let Some((abs_path, tracks_json)) = crate::db::loudness_target(&ctx.state.db, file_id)? else {
-        return Ok(()); // file row gone (or un-probed) since enumerate
+        return Ok(());
     };
     if abs_path.starts_with("demo://") {
-        return Ok(()); // demo/seed rows have no real bytes to decode
+        return Ok(()); // seed rows have no real bytes to decode
     }
     let tracks: Vec<kroma_domain::AudioStream> =
         serde_json::from_str(&tracks_json).unwrap_or_default();
     let Some(track) = track_to_measure(&tracks) else {
-        return Ok(()); // no audio at all: nothing to measure
+        return Ok(());
     };
     let result =
         crate::infra::loudness::measure(std::path::Path::new(&abs_path), track.index, track.channels)?;
@@ -63,10 +54,6 @@ fn process(ctx: &JobContext, file_id: &str) -> Result<()> {
     Ok(())
 }
 
-/// The one track worth a full decode: the one playback picks by default, else
-/// the first. Measuring every track would multiply the cost of the pass by the
-/// track count for data nothing reads, and measuring the WRONG one puts a
-/// commentary track's numbers on the item's dialogue verdict.
 fn track_to_measure(tracks: &[kroma_domain::AudioStream]) -> Option<&kroma_domain::AudioStream> {
     tracks.iter().find(|t| t.default).or_else(|| tracks.first())
 }
@@ -92,16 +79,12 @@ mod tests {
 
     #[test]
     fn the_default_track_is_the_one_measured() {
-        // Not the first: a disc rip routinely lists the commentary first, and a
-        // commentary's loudness would sit on the item as its dialogue verdict.
         let tracks = vec![track(0, false), track(1, true), track(2, false)];
         assert_eq!(track_to_measure(&tracks).unwrap().index, 1);
     }
 
     #[test]
     fn with_no_default_marked_the_first_track_stands_in() {
-        // Plenty of containers mark none. Measuring nothing at all would leave
-        // every such file permanently unanalysed.
         let tracks = vec![track(3, false), track(4, false)];
         assert_eq!(track_to_measure(&tracks).unwrap().index, 3);
     }
@@ -111,8 +94,6 @@ mod tests {
         assert!(track_to_measure(&[]).is_none());
     }
 
-    /// Point `file_id`'s row at `abs_path` with `tracks` as its audio layout,
-    /// and mark it probed (which is what puts it in scope at all).
     fn set_target(state: &crate::state::SharedState, file_id: &str, abs: &str, tracks: &str) {
         state
             .db
@@ -130,8 +111,6 @@ mod tests {
 
     #[test]
     fn a_file_that_vanished_between_enumerate_and_process_is_skipped() {
-        // The pass enumerates once and then works through the list; a file
-        // deleted meanwhile must not fail the whole run.
         let state = test_support::test_state();
         let ctx = JobContext::for_test(state);
         assert!(process(&ctx, "no-such-file").is_ok());
@@ -139,16 +118,12 @@ mod tests {
 
     #[test]
     fn a_demo_row_is_skipped_rather_than_decoded() {
-        // The built-in demo catalogue has `demo://` paths and no bytes behind
-        // them. Without this the nightly pass would try to decode every one and
-        // fill the job log with failures on a fresh install.
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");
         set_target(&state, "m1-f", "demo://m1.mkv", r#"[{"index":0,"codec":"aac","default":true}]"#);
 
         let ctx = JobContext::for_test(state.clone());
         assert!(process(&ctx, "m1-f").is_ok());
-        // Nothing was written for it.
         let n: i64 = state
             .db
             .get()
@@ -160,7 +135,6 @@ mod tests {
 
     #[test]
     fn a_file_with_no_audio_track_is_skipped_before_any_decode() {
-        // A silent-video row would otherwise reach ffmpeg with no track to map.
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m2");
         set_target(&state, "m2-f", "/media/m2.mkv", "[]");
@@ -171,8 +145,6 @@ mod tests {
 
     #[test]
     fn enumerate_offers_only_probed_files() {
-        // An un-probed file has no known track layout, so there is nothing to
-        // point the decoder at.
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m3");
         assert!(enumerate(&state).unwrap().iter().all(|(id, _)| id != "m3-f"));

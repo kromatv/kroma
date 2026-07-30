@@ -1,10 +1,8 @@
 // @vitest-environment jsdom
 // Mounting native push at the app root: keeping the grant alive, and routing a
-// tap exactly once.
-//
-// These hooks run unconditionally on every launch, so the thing worth pinning is
-// what they do NOT do - re-register a grant the server never took, and act on
-// the launch tap a second time when the reader switches profile.
+// tap exactly once. The hooks run unconditionally on every launch, so what
+// matters is what they do NOT do — re-register a grant the server never took,
+// or replay the launch tap when the reader switches profile.
 
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -44,14 +42,10 @@ vi.mock('./taps', () => ({ handleTap }));
 
 const { usePushGrantRefresh, usePushTaps } = await import('./usePush');
 
-/** Let the hooks' floating async work settle. */
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-/** A fresh module instance, which is to say a fresh LAUNCH.
- *
- * The cold-start latch deliberately lives for the life of the JS context, so a
- * test about it cannot share one with its neighbours - it would be asserting on
- * whichever test happened to run first. */
+// A fresh module instance, i.e. a fresh launch: the cold-start latch lives for
+// the life of the JS context, so tests about it must not share one.
 async function freshLaunch(): Promise<typeof usePushTaps> {
   vi.resetModules();
   return (await import('./usePush')).usePushTaps;
@@ -76,10 +70,9 @@ describe('keeping the grant alive', () => {
   });
 
   it('registers the replacement, then adopts it, then retires the old row', async () => {
-    // Order is the whole point. Adopting before the server accepts leaves the
-    // phone holding a grant the server has never seen; leaving the old row alive
-    // delivers every notification twice, because it has weeks left and so never
-    // fails its way out of the table.
+    // Adopting before the server accepts would leave the phone holding a grant
+    // the server never saw; leaving the old row alive delivers every
+    // notification twice, since it has weeks left before it expires.
     const commit = vi.fn(async () => undefined);
     refreshGrant.mockResolvedValue({ grant: 'v1.new', previous: 'v1.old', commit });
 
@@ -142,11 +135,9 @@ describe('routing a tap', () => {
   });
 
   it('does NOT act on it again when the hook re-runs', async () => {
-    // `getLastNotificationResponse` is sticky for the life of the JS
-    // context, and this effect re-runs whenever the client changes identity -
-    // which switching profile does. Replaying meant re-POSTing the tap's `api`
-    // action as whichever account was just selected, or yanking the router to an
-    // old notification's screen unprompted.
+    // `getLastNotificationResponse` is sticky for the life of the JS context,
+    // and this effect re-runs on a profile switch; replaying would re-POST the
+    // tap's action under the new account, or navigate unprompted.
     notifications.getLastNotificationResponse.mockReturnValue({ id: 'cold' });
     const taps = await freshLaunch();
 
@@ -171,8 +162,6 @@ describe('routing a tap', () => {
   });
 
   it('does not navigate when the tap has no screen on this app', async () => {
-    // An action that ran in the background, or a link the phone has no route
-    // for - both are handled, neither is a navigation.
     notifications.getLastNotificationResponse.mockReturnValue({ id: 'cold' });
     handleTap.mockResolvedValue(null);
     const taps = await freshLaunch();

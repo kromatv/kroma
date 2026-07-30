@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # A full SonarQube analysis on this machine, in about a minute.
 #
-# The CI scan is the gate, but it takes ~10 minutes and only runs on a push,
-# which is far too slow to iterate against when the goal is zero issues. This
+# The CI scan is the gate but takes ~10 minutes and only runs on a push. This
 # runs the SAME analyzers against a SonarQube Community container, so a rule
 # that would fire in CI fires here first.
 #
@@ -11,20 +10,14 @@
 #   scripts/sonar-local.sh issues   list what it found, newest analysis
 #   scripts/sonar-local.sh down     stop and remove the container
 #
-# Differences from SonarCloud, stated so results are read correctly:
+# Differences from SonarCloud:
 #   * Community edition has no PULL REQUEST analysis, so this scans the whole
-#     tree rather than new code. Expect findings CI never shows you, on files
-#     this branch did not touch - compare against a scan of `main` if in doubt.
-#   * The analyzer versions track the container image, not SonarCloud, so a
-#     brand-new rule may differ. It has agreed with CI on every rule so far.
-#   * `sonar-project.properties` is read as-is except for `sonar.sources`; the
-#     SonarCloud project key and organization are overridden on the command line
-#     rather than edited, so nothing here can change what CI does.
-#   * `sonar.sources=.` (what CI uses) makes the indexer walk `node_modules`,
-#     which bun fills with nested symlinks that loop. It preprocessed 58k files
-#     and stalled. CI gets away with it on a clean runner; here the sources are
-#     narrowed to the directories that actually hold code. The exclusion list
-#     from the properties file still applies on top.
+#     tree rather than new code - compare against a scan of `main` if in doubt.
+#   * Analyzer versions track the container image, not SonarCloud.
+#   * The SonarCloud project key and organization are overridden on the command
+#     line rather than edited, so nothing here can change what CI does.
+#   * `sonar.sources=.` makes the indexer walk `node_modules`, which bun fills
+#     with looping symlinks; the sources below are narrowed to real code dirs.
 set -euo pipefail
 
 CONTAINER=kroma-sonarqube
@@ -62,16 +55,12 @@ scan() {
   [[ -f "$TOKEN_FILE" ]] || die "no token at $TOKEN_FILE - run '$0 up' and follow the instructions"
   curl -sf "$HOST_URL/api/system/status" >/dev/null 2>&1 || die "SonarQube is not up - run '$0 up'"
 
-  # Coverage is optional: a scan is about ISSUES here, and regenerating lcov
-  # costs more than the whole analysis. Passed only when it already exists.
+  # Coverage is optional: regenerating lcov costs more than the whole analysis.
   local coverage=()
   [[ -f "$REPO_ROOT/coverage/lcov.info" ]] && coverage+=("-Dsonar.javascript.lcov.reportPaths=coverage/lcov.info")
 
-  # The directories that hold authored code, listed rather than `.` so the
-  # indexer never descends into a `node_modules` symlink loop (see the header).
-  # Filtered by what actually EXISTS: naming a directory that does not is a hard
-  # "Invalid value of sonar.sources", and this list has to survive a client being
-  # added or removed.
+  # Filtered by what actually EXISTS below: naming a directory that does not is
+  # a hard "Invalid value of sonar.sources".
   local candidates=(
     .github/scripts
     clients/build-info clients/desktop/src clients/desktop/scripts clients/expo-build

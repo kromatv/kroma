@@ -43,15 +43,15 @@ const {
 const fs = require('node:fs');
 const path = require('node:path');
 
-/** Idempotency marker; also where a reader of the Podfile is sent for the why. */
+// Idempotency marker; also where a reader of the Podfile is sent for the why.
 const MARKER = '# tvOS + expo-blur link fixes (plugins/with-tv-blur-link.js)';
 
-/** Anchored on the template's one post_install call, after its closing paren.
- * (A regex over `[^)]*` would stop inside the call's own nested parens.) */
+// Anchored on the template's one post_install call, after its closing paren.
+// (A regex over `[^)]*` would stop inside the call's own nested parens.)
 const ANCHOR = '    :ccache_enabled => ccache_enabled?(podfile_properties),\n    )\n';
 
-/** The env has to be forced before the React pods read it; the template's own
- * `||=` defaults sit above this line and would otherwise win. */
+// The env has to be forced before the React pods read it; the template's own
+// `||=` defaults sit above this line and would otherwise win.
 const ENV_ANCHOR = 'prepare_react_native_project!';
 const ENV_ADDITIONS = `${MARKER}
 ENV['RCT_USE_PREBUILT_RNCORE'] = '0'

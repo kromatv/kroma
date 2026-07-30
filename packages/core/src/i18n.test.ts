@@ -50,8 +50,7 @@ describe('detectLocale', () => {
   });
 
   it('falls back to the default locale when navigator has no supported locale', () => {
-    // Bun provides a navigator.language that varies by machine/CI, so stub it
-    // out to make the fallback deterministic.
+    // Bun's navigator.language varies by machine and CI, so stub it out.
     vi.stubGlobal('navigator', undefined);
     expect(detectLocale('xx')).toBe('fr');
     expect(detectLocale(null as unknown as string)).toBe('fr');
@@ -59,7 +58,7 @@ describe('detectLocale', () => {
 
   it('uses navigator languages when no explicit preference resolves', () => {
     vi.stubGlobal('navigator', { languages: ['de', 'en-US'] });
-    expect(detectLocale(null as unknown as string)).toBe('en'); // de unsupported, en-US -> en
+    expect(detectLocale(null as unknown as string)).toBe('en');
     vi.stubGlobal('navigator', { language: 'fr-CH' });
     expect(detectLocale('xx')).toBe('fr');
   });
@@ -99,7 +98,6 @@ describe('translateIn', () => {
   });
 
   it('falls back to the French default when the locale lacks the key', () => {
-    // `en` has no `item`; French catalog is the fallback.
     expect(translateIn(catalogs, 'en', 'item', { count: 5 })).toBe('5 articles');
   });
 

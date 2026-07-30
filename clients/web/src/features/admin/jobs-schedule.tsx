@@ -1,7 +1,5 @@
-// The "edit schedule" modal for a background job: a cron expression input with
-// common presets, a "manual only" option, and reset-to-default. Posts to
-// `PATCH /api/admin/jobs/:key`; the server validates the cron and 400s on a bad
-// expression, surfaced inline here.
+// The "edit schedule" modal for a background job: cron input with presets, a
+// "manual only" option, and reset-to-default. The server validates the cron.
 
 import { type JobInfo, KromaApiError } from '@kroma/core';
 import { useT } from '@kroma/ui';
@@ -12,13 +10,11 @@ import { useAsyncAction } from '#web/features/admin/shell';
 import { Field, Modal, ModalActions, TextInput } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** Cron strings read best in a monospace, which the kit chip's label is not. */
 const CRON = {
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
   fontSize: 11.5,
   fontWeight: '600',
 } as const;
-/** The reset link's metrics, tinted accent inside a ghost kit button. */
 const RESET_LABEL = { fontSize: 12, fontWeight: '600' } as const;
 
 const PRESETS: { label: string; expr: string }[] = [

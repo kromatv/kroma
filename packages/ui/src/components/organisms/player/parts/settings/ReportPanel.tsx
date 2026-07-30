@@ -9,12 +9,9 @@ import { useT } from '#ui/services/i18n';
 import { panelList } from './panelStyle';
 import { SelectRow } from './select-row';
 
-/** What a report from inside the player can be: a category, and nothing else.
- * Deliberately no free-text field the viewer is mid-film, and the thing being
- * reported is the thing on screen, which the server resolves from the subject
- * id anyway. Details belong to the detail page's report screen. */
+// A category and nothing else: no free-text field mid-film. Details belong to
+// the detail page's report screen.
 interface ReportPanelProps {
-  /** Sends the report. Rejects on failure, which the panel shows in place. */
   onReport: (category: ReportCategory) => Promise<void>;
   onBack: () => void;
 }
@@ -37,8 +34,8 @@ export const ReportPanel = forwardRef<PanelHandle, ReportPanelProps>(function Re
   const focus = useListFocus({ count: REPORT_CATEGORIES.length, onActivate: pick, onBack });
   useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
-  // Sent: the panel becomes its own receipt rather than closing itself. Closing
-  // playback chrome from under the viewer is how you lose track of a film.
+  // The panel becomes its own receipt rather than closing itself: closing
+  // playback chrome from under the viewer loses their place in the film.
   if (state === 'done') {
     return (
       <Box style={panelList}>

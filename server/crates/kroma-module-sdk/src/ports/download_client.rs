@@ -10,24 +10,10 @@ use serde::{Deserialize, Serialize};
 /// A torrent to hand to an engine.
 #[derive(Debug, Clone)]
 pub struct AddTorrentReq<'a> {
-    /// `magnet:` URI or an `http(s)` `.torrent` link (Jackett proxy links).
     pub magnet_or_url: &'a str,
-    /// Download directory. The embedded engine always honors it (the importer
-    /// depends on knowing exactly where data lands); external engines treat it
-    /// as a hint and may fall back to their own default.
     pub download_dir: Option<&'a str>,
-    /// Category/label where the engine supports one ("kroma"), so KROMA's
-    /// torrents are recognizable inside a shared external client.
     pub label: &'a str,
-    /// Download only these file indices (Sonarr/Radarr-style selection, e.g.
-    /// one episode from a season pack). `None` = the whole torrent. Honored by
-    /// the embedded engine; ignored by external clients.
     pub only_files: Option<&'a [usize]>,
-    /// Pre-fetched `.torrent` file bytes. When set, the embedded engine adds
-    /// these directly instead of fetching `magnet_or_url` itself. The caller
-    /// fetches the `.torrent` from the indexer OUTSIDE the VPN tunnel (the
-    /// indexer/Jackett is typically on the LAN, unreachable through a
-    /// `0.0.0.0/0` tunnel), so only peer traffic rides the VPN.
     pub torrent_bytes: Option<&'a [u8]>,
 }
 
@@ -45,26 +31,19 @@ pub enum TorrentState {
 /// A point-in-time view of one torrent inside an engine.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TorrentStatus {
-    /// The engine's own identifier (info-hash hex for every shipped engine).
     pub client_ref: String,
     pub name: String,
     pub info_hash: Option<String>,
-    /// 0..=1.
     pub progress: f64,
     pub state: TorrentState,
     pub down_bps: u64,
     pub up_bps: u64,
-    /// Connected (live) peers, when the engine reports them.
     pub peers: u32,
-    /// Peers discovered from the tracker / DHT (whether or not connected). If
-    /// this is 0 while downloading, the tracker returned nothing (dead torrent
-    /// or the announce failed / was blocked); if it's >0 but `peers` is 0, it's
-    /// a connectivity problem (firewall / proxy).
+    // Seen from tracker/DHT, connected or not. While downloading, 0 means a dead
+    // torrent or a blocked announce; >0 with `peers` at 0 means firewall/proxy.
     pub peers_seen: u32,
     pub size_bytes: u64,
-    /// Directory the torrent's data lives under.
     pub save_path: Option<String>,
-    /// Relative file paths inside `save_path` (what the importer walks).
     pub files: Vec<String>,
     pub error: Option<String>,
 }
@@ -80,16 +59,16 @@ pub struct TorrentFileEntry {
 /// One torrent engine.
 pub trait DownloadClient: Send + Sync {
     fn kind(&self) -> &'static str;
-    /// Reachability probe; returns a human-readable version string.
+    // Reachability probe; returns a human-readable version string.
     fn test(&self) -> anyhow::Result<String>;
-    /// Returns the engine's identifier for the new torrent (`client_ref`).
+    // Returns the engine's identifier for the new torrent (`client_ref`).
     fn add(&self, req: &AddTorrentReq) -> anyhow::Result<String>;
-    /// Fetch the torrent's file list WITHOUT downloading (metadata-only), so
-    /// the caller can analyze/select before committing. `torrent_bytes` are the
-    /// pre-fetched `.torrent` file (fetched outside the VPN); when `None` the
-    /// engine resolves `magnet_or_url` itself. Not every engine can do this
-    /// (external clients don't expose a list-only add) - the default reports it
-    /// as unsupported.
+    // Fetch the torrent's file list WITHOUT downloading (metadata-only), so
+    // the caller can analyze/select before committing. `torrent_bytes` are the
+    // pre-fetched `.torrent` file (fetched outside the VPN); when `None` the
+    // engine resolves `magnet_or_url` itself. Not every engine can do this
+    // (external clients don't expose a list-only add) - the default reports it
+    // as unsupported.
     fn list_files(
         &self,
         _magnet_or_url: &str,
@@ -97,13 +76,13 @@ pub trait DownloadClient: Send + Sync {
     ) -> anyhow::Result<Vec<TorrentFileEntry>> {
         anyhow::bail!("this download client cannot list a torrent's files before adding it")
     }
-    /// `Ok(None)` = the engine no longer knows this torrent.
+    // `Ok(None)` = the engine no longer knows this torrent.
     fn status(&self, client_ref: &str) -> anyhow::Result<Option<TorrentStatus>>;
     fn pause(&self, client_ref: &str) -> anyhow::Result<()>;
     fn resume(&self, client_ref: &str) -> anyhow::Result<()>;
-    /// Force a tracker / DHT re-announce now ("ask more peers"). Best-effort;
-    /// the default is a no-op, overridden by every real engine (the embedded
-    /// one cycles the torrent's live task, external clients call their API).
+    // Force a tracker / DHT re-announce now ("ask more peers"). Best-effort;
+    // the default is a no-op, overridden by every real engine (the embedded
+    // one cycles the torrent's live task, external clients call their API).
     fn reannounce(&self, _client_ref: &str) -> anyhow::Result<()> {
         Ok(())
     }
@@ -113,7 +92,6 @@ pub trait DownloadClient: Send + Sync {
 /// A configured engine, crate-owned mirror of the server's client row.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ClientDef {
-    /// `rqbit` | `transmission` | `qbittorrent`.
     pub kind: String,
     pub url: String,
     pub username: String,
@@ -124,7 +102,6 @@ pub struct ClientDef {
 /// embedded librqbit handle (None when off / not compiled) and a scratch dir for
 /// per-client state (qBittorrent cookie jars).
 pub struct DownloadClientCtx<'a> {
-    /// Opaque embedded-engine handle (only the torrents crate downcasts it).
     pub rqbit: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
     pub state_dir: &'a std::path::Path,
 }
@@ -199,10 +176,10 @@ pub fn magnet_info_hash(uri: &str) -> Option<String> {
 /// torrents crate. Implemented by the Downloads module's `DownloadManager` and
 /// resolved via `kroma_module_host::resolve_port`.
 pub trait DownloadClientHost: Send + Sync {
-    /// Add a download sub-engine by running its `register` fn against the shared
-    /// client registry.
+    // Add a download sub-engine by running its `register` fn against the shared
+    // client registry.
     fn register_engine(&self, register: fn(&mut DownloadClientRegistry));
-    /// Remove a download sub-engine `kind` (its module was disabled).
+    // Remove a download sub-engine `kind` (its module was disabled).
     fn unregister_engine(&self, kind: &str);
 }
 
@@ -210,7 +187,6 @@ pub trait DownloadClientHost: Send + Sync {
 mod tests {
     use super::*;
 
-    /// A no-op engine so the registry has something to build.
     struct Stub;
     impl DownloadClient for Stub {
         fn kind(&self) -> &'static str {
@@ -293,22 +269,18 @@ mod tests {
         let mut reg = DownloadClientRegistry::default();
         assert!(reg.kinds().is_empty());
 
-        // Chainable registration.
         reg.register("rqbit", |_def, _ctx| Ok(Box::new(Stub) as Box<dyn DownloadClient>))
             .register("qbittorrent", |_def, _ctx| Ok(Box::new(Stub) as Box<dyn DownloadClient>));
         let mut kinds = reg.kinds();
         kinds.sort_unstable();
         assert_eq!(kinds, vec!["qbittorrent", "rqbit"]);
 
-        // Build a known kind.
         let engine = reg.build(&def("rqbit"), &ctx()).expect("known kind builds");
         assert_eq!(engine.kind(), "stub");
 
-        // Unknown kind errors with a helpful message.
         let err = reg.build(&def("transmission"), &ctx()).err().unwrap();
         assert!(err.to_string().contains("unknown download client kind"));
 
-        // Unregister removes the kind.
         reg.unregister("rqbit");
         assert_eq!(reg.kinds(), vec!["qbittorrent"]);
         assert!(reg.build(&def("rqbit"), &ctx()).is_err());
@@ -326,7 +298,6 @@ mod tests {
 
     #[test]
     fn default_trait_methods_on_engine() {
-        // list_files is unsupported by default; reannounce is a no-op Ok.
         assert!(Stub.list_files("magnet:?x", None).is_err());
         assert!(Stub.reannounce("ref").is_ok());
     }

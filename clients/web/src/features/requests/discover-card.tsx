@@ -82,8 +82,7 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
             </span>
           ) : null}
 
-          {/* hover request hint (visual only; the click opens the detail where the
-              real request action lives) */}
+          {/* Visual only: the click opens the detail where the real request action lives. */}
           {canRequest ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-2 items-center justify-center gap-1.5 bg-linear-to-t from-black/75 to-transparent pb-3 pt-8 text-[12.5px] font-bold text-white opacity-0 transition-all duration-200 group-hover/card:translate-y-0 group-hover/card:opacity-100 group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100 pointer-coarse:translate-y-0 pointer-coarse:opacity-100">
               <IconPlus size={14} stroke={2.6} />

@@ -1,24 +1,6 @@
-// Which build the kit is, on both bundlers.
-//
-// The stamp under the story tree is the same four lines whichever way the site
-// was built, and getting there takes two entirely different roads: Metro has no
-// `define`, so the identity travels in Expo's `extra` and is read back out of
-// `Constants.expoConfig`; Vite replaces `__KROMA_BUILD__` with a literal object
-// so none of the collector ships.
-//
-// Which means the pair has one job - produce the SAME shape - and each half has
-// one way to fail at it, both of them at import time, both of them fatal:
-//
-//   - The web half names a global that only exists when the define ran. A
-//     `vite preview` of a dist built elsewhere, or any test harness, has no such
-//     name, and reading an undeclared identifier is a ReferenceError rather than
-//     `undefined` - hence the `typeof` guard, and hence a blank page instead of
-//     a missing version string.
-//   - The native half reads through a manifest that may not carry the key, or
-//     may not exist at all.
-//
-// Both degrade to a stamp with nothing in it, and the panel drops the rows it
-// cannot fill.
+// Which build the kit is, on both bundlers: Metro reads Expo's `extra` out of
+// `Constants.expoConfig`, Vite replaces `__KROMA_BUILD__` with a literal object.
+// Both are read at import time, so both must degrade rather than throw.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -35,14 +17,12 @@ import type { BuildInfo } from './buildInfo.types';
 
 type Half = { BUILD: BuildInfo };
 
-/** The native half, as the manifest of a given build presents it. */
 async function metro(config: Record<string, unknown> | null): Promise<Half> {
   expoConfig.value = config;
   vi.resetModules();
   return (await import('./buildInfo')) as Half;
 }
 
-/** The web half, with or without the define having run. */
 async function vite(defined?: BuildInfo): Promise<Half> {
   vi.stubGlobal('__KROMA_BUILD__', defined);
   vi.resetModules();
@@ -78,15 +58,12 @@ describe('the Metro half', () => {
   });
 
   it('falls back to expo.version, which every manifest has', async () => {
-    // A build made before this config existed, or an over-the-air update.
     const { BUILD } = await metro({ version: '0.1.35' });
     expect(BUILD.version).toBe('0.1.35');
   });
 
   it('degrades to nothing when there is no manifest at all', async () => {
     const { BUILD } = await metro(null);
-    // Read at import time, and the kit imports this from its shell - a throw
-    // here is a blank page rather than a missing version string.
     expect(BUILD).toEqual(EMPTY);
   });
 
@@ -96,7 +73,6 @@ describe('the Metro half', () => {
     expect(BUILD.branch).toBeNull();
     expect(BUILD.buildDate).toBeNull();
     expect(BUILD.repository).toBeNull();
-    // The panel drops the rows it cannot fill; '' would render an empty one.
     expect(BUILD.dirty).toBe(false);
   });
 });
@@ -108,9 +84,8 @@ describe('the Vite half', () => {
   });
 
   it('degrades when the define never ran', async () => {
-    // A `vite preview` of a dist built elsewhere, or a test harness. Reading an
-    // UNDECLARED name is a ReferenceError, not undefined, which is what the
-    // `typeof` guard is for.
+    // Reading an UNDECLARED name is a ReferenceError, not undefined, which is what
+    // the `typeof` guard is for.
     const { BUILD } = await vite(undefined);
     expect(BUILD).toEqual(EMPTY);
   });
@@ -134,8 +109,6 @@ describe('the two halves together', () => {
   it('produce the same SHAPE, which is the whole point of the pair', async () => {
     const native = await metro({ version: '0.1.36', extra: { buildInfo: STAMPED } });
     const web = await vite(STAMPED);
-    // The stamp under the story tree is the same four lines whichever bundler
-    // built the site.
     expect(Object.keys(native.BUILD).sort()).toEqual(Object.keys(web.BUILD).sort());
   });
 

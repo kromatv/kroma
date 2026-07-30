@@ -1,13 +1,6 @@
-//! On-device subtitle generation. Two server-side engines, both producing WebVTT
-//! that is cached under `<data>/subs/downloaded/` and recorded in the DB so it
-//! shows in the item's subtitle list next to embedded tracks:
-//! - **transcribe**: in-process Whisper (candle, [`crate::ports::Whisper`]) turns
-//!   the audio into timestamped text. Model size is picked by [`Quality`].
-//! - **translate**: the app's default LLM ([`translate`]) rewrites an existing
-//!   text track into another language.
-//!
-//! Both are long-running + blocking (ffmpeg + model) and report progress through a
-//! [`progress::Handle`] so the player can show a live bar + ETA and cancel.
+//! On-device subtitle generation (Whisper transcription, LLM translation),
+//! producing WebVTT cached under `<data>/subs/downloaded/` and recorded in the
+//! DB. Both engines are blocking and report progress through a [`progress::Handle`].
 
 mod translate;
 
@@ -20,12 +13,9 @@ use crate::services::settings::Settings;
 
 pub use progress::{GenRegistry, Handle};
 
-/// What to generate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GenMode {
-    /// Whisper speech-to-text from an audio track.
     Transcribe,
-    /// LLM translation of an existing subtitle track.
     Translate,
 }
 
@@ -37,8 +27,6 @@ impl GenMode {
         }
     }
 
-    /// The `provider` tag stored on the resulting track (drives the client's "IA"
-    /// badge and the AI-track classification).
     fn provider(self) -> &'static str {
         match self {
             GenMode::Transcribe => "whisper",
@@ -47,8 +35,8 @@ impl GenMode {
     }
 }
 
-/// Whisper model tier (the player's Rapide / Équilibré / Précis selector). Maps to
-/// a multilingual candle model auto-downloaded on first use.
+/// Whisper model tier; maps to a multilingual candle model auto-downloaded on
+/// first use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Quality {
     Fast,
@@ -65,8 +53,8 @@ impl Quality {
         }
     }
 
-    /// HuggingFace repo id for this tier (multilingual variants so spoken-language
-    /// forcing works for non-English content).
+    // Multilingual variants only, so spoken-language forcing works for
+    // non-English content.
     fn model(self) -> &'static str {
         match self {
             Quality::Fast => "openai/whisper-tiny",
@@ -76,29 +64,23 @@ impl Quality {
     }
 }
 
-/// A generation request, resolved server-side (the client never uploads audio or
-/// subtitle text; for `Translate` the endpoint reads/extracts `source_vtt`).
+/// A generation request, resolved server-side: the client never uploads audio or
+/// subtitle text.
 pub struct GenSpec {
     pub mode: GenMode,
-    /// Target language label, e.g. "Français".
+    // Display label, e.g. "Français" - not a language code.
     pub target_lang: String,
-    /// Transcribe only: the spoken language to force (name or code); `None` =
-    /// auto-detect.
+    // Spoken language to force (name or code); `None` auto-detects.
     pub spoken_lang: Option<String>,
-    /// Transcribe only: model tier.
     pub quality: Quality,
-    /// Transcribe only: audio-relative track index.
+    // Audio-relative track index.
     pub audio_track: u32,
-    /// Translate only: the source track's WebVTT text.
     pub source_vtt: Option<String>,
 }
 
-/// Run a generation to completion, caching + recording the WebVTT. Reports stage +
-/// progress through `handle` and bails early when cancelled. `Ok(record)` on
-/// success; `Err(reason)` carries *why* it failed (no LLM provider, an LLM/Whisper
-/// error, an empty result, a write/DB error) so the caller can show it instead of a
-/// blank "generation failed". Blocking - call off the async runtime.
-// Threads the whole generation context (settings, IO, spec, ports); a struct would just move the noise.
+/// Run a generation to completion, caching and recording the WebVTT. `Err` carries
+/// why it failed so the caller can show it instead of a blank "generation failed".
+/// Blocking - call off the async runtime.
 #[allow(clippy::too_many_arguments)]
 pub fn generate(
     settings: &Settings,
@@ -152,8 +134,8 @@ pub fn generate(
     let sub = DownloadedSub {
         id,
         item_id: item_id.to_string(),
-        // Store the ISO code, or `None` for an unrecognized language - never the raw
-        // display label (e.g. "Français"), which is not a valid language code.
+        // The ISO code, or `None` - never the display label, which is not a
+        // valid language code.
         language: lang_to_code(&spec.target_lang).map(str::to_string),
         label: spec.target_lang.clone(),
         provider: provider.to_string(),
@@ -163,8 +145,7 @@ pub fn generate(
     Ok(sub)
 }
 
-/// Deterministic id for a (item, provider, target) triple so re-generating the same
-/// language replaces rather than duplicates.
+// Deterministic, so re-generating the same language replaces rather than duplicates.
 fn stable_id(item_id: &str, provider: &str, target_lang: &str) -> String {
     use std::hash::{Hash, Hasher};
     let mut h = std::collections::hash_map::DefaultHasher::new();
@@ -175,7 +156,7 @@ fn stable_id(item_id: &str, provider: &str, target_lang: &str) -> String {
 }
 
 /// Normalize text to WebVTT (SRT timestamps `,`→`.` + header); a body already
-/// starting with `WEBVTT` is passed through. Used for source tracks fed to translate.
+/// starting with `WEBVTT` is passed through.
 pub fn to_vtt(raw: &str) -> String {
     let text = raw.trim_start_matches('\u{feff}');
     if text.trim_start().starts_with("WEBVTT") {
@@ -194,9 +175,7 @@ pub fn to_vtt(raw: &str) -> String {
     out
 }
 
-/// Map a spoken-language name or code to an ISO 639-1 code for Whisper. Accepts the
-/// French + English names the UI offers, or an already-2-letter code. `None` when
-/// unrecognized (Whisper then auto-detects).
+// `None` when unrecognized, which makes Whisper auto-detect.
 fn lang_to_code(input: &str) -> Option<&'static str> {
     let s = input.trim().to_lowercase();
     let code = match s.as_str() {
@@ -298,7 +277,6 @@ mod tests {
     #[test]
     fn to_vtt_passthrough_after_bom() {
         let with_bom = "\u{feff}WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n";
-        // BOM stripped, already-WEBVTT passes through unchanged.
         assert_eq!(to_vtt(with_bom), "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n");
     }
 
@@ -308,7 +286,6 @@ mod tests {
         assert_ne!(stable_id("a", "whisper", "French"), stable_id("a", "translate", "French"));
         assert!(stable_id("a", "whisper", "French").starts_with("dl"));
     }
-    // ----- generate() end to end --------------------------------------------------
 
     use std::path::PathBuf;
     use std::sync::atomic::AtomicBool;
@@ -317,8 +294,6 @@ mod tests {
     use crate::services::subtitles::progress::GenRegistry;
     use crate::test_support::FakeLlm;
 
-    /// A Whisper port that returns whatever it was given, recording the model
-    /// spec and track it was asked for.
     struct FakeWhisper {
         output: Option<String>,
         asked: std::sync::Mutex<Vec<(String, u32, Option<String>)>>,
@@ -369,8 +344,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let pool = crate::db::init(&dir.join("kroma.db")).unwrap();
-        // `downloaded_subtitles.item_id` is a foreign key, so the generation
-        // needs a real item to hang off.
+        // `downloaded_subtitles.item_id` is a foreign key, so there must be a real item.
         {
             let conn = pool.get().unwrap();
             conn.execute(
@@ -427,13 +401,10 @@ mod tests {
 
         let sub = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None)).unwrap();
         assert_eq!(sub.item_id, "itm-1");
-        // The ISO code is stored, never the display label - "Français" is not a
-        // valid language code and every consumer treats this field as one.
         assert_eq!(sub.language.as_deref(), Some("fr"));
         assert_eq!(sub.label, "Français");
         let written = std::fs::read_to_string(&sub.path).unwrap();
         assert!(written.contains("Bonjour"), "{written}");
-        // ...and it is in the database, so the player can find it.
         let rows = crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id, sub.id);
@@ -441,8 +412,6 @@ mod tests {
 
     #[test]
     fn regenerating_the_same_language_replaces_rather_than_duplicates() {
-        // The id is a stable (item, provider, target) triple for exactly this
-        // reason; without it a user who retries collects duplicate tracks.
         let env = env();
         let llm = FakeLlm::always("1. Bonjour\n");
         llm.configure_settings(&env.settings, &env.pool);
@@ -452,7 +421,6 @@ mod tests {
         assert_eq!(first.id, second.id);
         assert_eq!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().len(), 1);
 
-        // A different target language is a different track.
         let other = run(&env, &spec(GenMode::Translate, "Deutsch"), &FakeWhisper::saying(None)).unwrap();
         assert_ne!(other.id, first.id);
         assert_eq!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().len(), 2);
@@ -480,8 +448,6 @@ mod tests {
 
     #[test]
     fn a_transcription_uses_the_requested_model_track_and_language() {
-        // Getting the audio track wrong is the single most common cause of an
-        // empty transcript, so it has to be passed through exactly.
         let env = env();
         let whisper = FakeWhisper::saying(Some(
             "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nHello there\n\n",
@@ -498,8 +464,6 @@ mod tests {
 
     #[test]
     fn a_whisper_that_produced_nothing_explains_the_usual_causes() {
-        // The user cannot see the server log; the message has to point at the
-        // two things they can actually change.
         let env = env();
         let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(None))
             .unwrap_err();
@@ -509,8 +473,6 @@ mod tests {
 
     #[test]
     fn a_result_too_short_to_be_a_subtitle_is_refused() {
-        // A bare "WEBVTT" header is a successful call that produced nothing, and
-        // caching it would leave a permanently empty track on the item.
         let env = env();
         let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(Some("WEBVTT")))
             .unwrap_err();
@@ -521,7 +483,6 @@ mod tests {
     #[test]
     fn a_failing_translation_surfaces_the_reason_rather_than_a_blank_failure() {
         let env = env();
-        // No provider configured at all.
         let err = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None))
             .unwrap_err();
         assert!(err.contains("admin"), "{err}");

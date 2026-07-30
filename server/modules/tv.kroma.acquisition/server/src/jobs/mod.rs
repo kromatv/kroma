@@ -11,10 +11,6 @@ pub mod search;
 use kroma_module_sdk::engine::services::jobs::JobContext;
 use kroma_module_sdk::host::HostCtx;
 
-/// The acquisition jobs belong to the Acquisition module: they grab + import
-/// torrents. When that module is disabled these jobs no-op (a disabled module
-/// does no background work). Returns true (and logs) when the caller should
-/// skip. Resolves the enabled-state through the `HostCtx` seam.
 fn acquisition_disabled(ctx: &JobContext) -> bool {
     if ctx.state.module_enabled(crate::MODULE_ID) {
         return false;
@@ -23,12 +19,9 @@ fn acquisition_disabled(ctx: &JobContext) -> bool {
     true
 }
 
-/// Declare one acquisition background job in a single place: its [`Builtin`]
-/// `SPEC` (always `Category::Acquisition`) plus a `run` handler that short-
-/// circuits to `Ok(())` when the module is disabled. Every acquisition job
-/// shares that descriptor + guard scaffolding; each handler file supplies only
-/// what differs (key, schedule, triggers, body). `$ctx` binds the [`JobContext`]
-/// in scope for the body.
+/// Declares one acquisition job: builds its [`Builtin`] `SPEC` and a `run`
+/// handler that short-circuits when the module is disabled. `$ctx` binds the
+/// [`JobContext`] in scope for the body.
 macro_rules! acquisition_job {
     (
         key: $key:literal,

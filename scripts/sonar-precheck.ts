@@ -1,37 +1,25 @@
 // A fast, offline stand-in for the SonarCloud rules this repo keeps tripping.
-//
-// The real analysis runs in CI and takes ~10 minutes, which is far too slow to
-// iterate against. Most of what it catches here is not deep dataflow - it is a
-// handful of mechanical patterns that a grep can find in under a second. This
-// covers those, so a Sonar regression is caught before the push rather than
-// after it.
-//
-// It is NOT a replacement for the CI scan, and deliberately covers only rules it
-// can decide from one line with no false positives. Cognitive complexity (S3776)
-// and nested ternaries (S3358) are both left out: the first needs a real metric
-// and the second reads identically to a ternary inside an object literal, so a
-// regex version cried wolf on code Sonar accepts. Anything this misses, CI still
-// gates. Run: `bun run sonar:precheck`.
+// The real analysis runs in CI and takes ~10 minutes; this covers the
+// mechanical, single-line patterns a regex can decide with no false
+// positives, so a regression is caught before the push. NOT a replacement for
+// the CI scan: cognitive complexity (S3776) and nested ternaries (S3358) are
+// left out, since neither can be decided from one line without false
+// positives. Run: `bun run sonar:precheck`.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 
 interface Rule {
-  /** The SonarCloud rule key, so a hit can be looked up. */
   id: string;
   what: string;
-  /** Matched per line. */
   test: RegExp;
-  /** Skip a line that legitimately matches (a comment explaining the rule). */
   unless?: RegExp;
 }
 
 const RULES: Rule[] = [
   {
-    // Only a LITERAL pattern: `replace(/\+/g, '-')` is a `replaceAll('+', '-')`,
-    // while `replace(/[^\x20-\x7E]/g, '')` has no string form and Sonar leaves
-    // it alone. Calibrated against `packages/client/src/identity.ts`, which the
-    // real analysis accepts.
+    // Only a LITERAL pattern: `replace(/[^\x20-\x7E]/g, '')` has no string
+    // form and Sonar leaves it alone.
     id: 'typescript:S7781',
     what: 'prefer String#replaceAll() over a global String#replace() with a literal pattern',
     test: /\.replace\(\/(?:[^\\/[\]().*+?{}|^$\n]|\\[^sSdDwWbBnrtu\n])+\/g\s*,/,
@@ -55,25 +43,18 @@ const RULES: Rule[] = [
 
 const EXTS = new Set(['.ts', '.tsx', '.mts', '.cts']);
 
-/** Sonar analyses tests under a different profile and does not raise these rules
- * there - verified against `worker/grant.test.ts`, which trips two of them and
- * is reported clean. Matching that keeps this tool worth listening to. */
+// Sonar analyses tests under a different profile and does not raise these
+// rules there.
 const IS_TEST = /\.(test|spec)\.[cm]?tsx?$/;
 
-/** This file necessarily contains every pattern it hunts for - in the `test`
- * regexes and in the prose describing them - so it cannot scan itself. */
+// This file necessarily contains every pattern it hunts for, so it cannot
+// scan itself.
 const SELF = 'scripts/sonar-precheck.ts';
 
-/** The files to scan, one per line on stdin.
- *
- * Read rather than derived, so this spawns nothing: a script that shelled out to
- * `git` was itself two Sonar findings (an unpinned PATH lookup and a
- * CLI-argument escape), which is a poor advertisement for a tool whose whole job
- * is keeping the count at zero. The npm script pipes `git diff` in.
- *
- * The caller passes CHANGED files because Sonar gates a PR on its new code:
- * scanning the whole tree reports things the analysis deliberately ignores, and
- * every pattern still standing on `main` is one it has already accepted. */
+// Read from stdin rather than derived, so this spawns nothing: shelling out
+// to `git` was itself two Sonar findings. The caller passes CHANGED files
+// because Sonar gates a PR on its new code; every pattern still standing on
+// `main` is one it has already accepted.
 function filesFromStdin(): string[] {
   const out = readFileSync(0, 'utf8');
   return out

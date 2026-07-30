@@ -1,12 +1,9 @@
-// WebVTT parsing + active-cue lookup, shared by every client's custom subtitle
-// renderer (web SubtitleLayer, TV TvSubtitles). Cross-origin <track> cues never
-// load, so each client fetches the VTT itself and renders cues from these.
+// WebVTT parsing + active-cue lookup for the clients' own subtitle renderers:
+// cross-origin <track> cues never load, so each client parses the VTT itself.
 
-// Text subtitle codecs the server can serve as on-demand WebVTT (image subs like
-// PGS/VobSub cannot be rendered in a <track>).
+// Image subs (PGS/VobSub) are absent because they cannot render in a <track>.
 const TEXT_SUB_CODECS = new Set(['subrip', 'srt', 'ass', 'ssa', 'mov_text', 'webvtt', 'vtt']);
 
-/** Whether a subtitle codec can be served as WebVTT (i.e. rendered as text). */
 export function isTextSubtitle(codec: string): boolean {
   return TEXT_SUB_CODECS.has(codec);
 }
@@ -17,11 +14,8 @@ export interface Cue {
   text: string;
 }
 
-/** Strip WebVTT inline markup (`<i>`, `<c.classname>`, `{...}`) to plain text.
- *
- * UNTIL STABLE, not one pass: removing the inner tag of `<<i>>` leaves `<>`
- * behind, so a single sweep can hand a viewer the very markup it is here to
- * take away. Each pass strictly shortens the string, so this terminates. */
+// Stripped until stable, not in one pass: removing the inner tag of `<<i>>`
+// leaves `<>` on screen. Each pass shortens the string, so this terminates.
 function clean(text: string): string {
   return stripPairs(stripPairs(text, /<[^<>]*>/g), /\{[^{}]*\}/g).trim();
 }
@@ -36,13 +30,12 @@ function stripPairs(text: string, pattern: RegExp): string {
   return out;
 }
 
-/** Parse `HH:MM:SS.mmm` / `MM:SS.mmm` (`,` or `.` ms) to seconds. */
 function parseTs(ts: string): number {
   const parts = ts.replace(',', '.').split(':').map(Number);
   return parts.reduce((acc, p) => acc * 60 + (Number.isFinite(p) ? p : 0), 0);
 }
 
-/** Minimal, fast WebVTT parser → cue list sorted by start time. */
+/** Parses WebVTT into cues sorted by start time. */
 export function parseVtt(raw: string): Cue[] {
   const cues: Cue[] = [];
   for (const block of raw.replaceAll('\r', '').split('\n\n')) {
@@ -61,16 +54,8 @@ export function parseVtt(raw: string): Cue[] {
   return cues.sort((x, y) => x.start - y.start);
 }
 
-/**
- * The active cue's text at time `t`. `hint` is the last returned index an O(1)
- * amortised moving pointer for normal playback (cues advance by one), with a
- * binary search to re-sync after a seek. Returns the text and the new pointer to
- * remember for the next call.
- */
 type CueHit = { text: string; index: number };
 
-/** Walk forward up to 3 cues from `hint` (normal playback advances by one), or
- * `null` when the target isn't in that window. */
 function walkForwardCue(cues: Cue[], t: number, hint: number): CueHit | null {
   for (let i = hint + 1; i < cues.length && i <= hint + 3; i++) {
     const c = cues[i];
@@ -81,7 +66,6 @@ function walkForwardCue(cues: Cue[], t: number, hint: number): CueHit | null {
   return null;
 }
 
-/** Binary search for the cue at `t` (covers seeks / large jumps). */
 function binarySearchCue(cues: Cue[], t: number): CueHit {
   let lo = 0;
   let hi = cues.length - 1;
@@ -96,13 +80,13 @@ function binarySearchCue(cues: Cue[], t: number): CueHit {
   return { text: '', index: Math.max(0, lo - 1) };
 }
 
+/** `hint` is the index this returned last time; passing it back keeps normal
+ *  playback O(1) amortised, and a seek re-syncs with a binary search. */
 export function activeCueText(cues: Cue[], t: number, hint: number): CueHit {
   if (cues.length === 0) return { text: '', index: 0 };
 
   const cur = cues[hint];
-  // Fast path: still inside the current cue.
   if (cur && t >= cur.start && t <= cur.end) return { text: cur.text, index: hint };
-  // Walk forward a few cues (normal playback advances by one).
   if (cur && t > cur.end) {
     const forward = walkForwardCue(cues, t, hint);
     if (forward) return forward;
@@ -112,7 +96,7 @@ export function activeCueText(cues: Cue[], t: number, hint: number): CueHit {
 
 import type { MessageKey } from './i18n';
 
-/** Message key for a generation `stage` (see the server's GenRegistry stages). */
+/** `stage` values come from the server's GenRegistry. */
 export function subtitleStageKey(stage: string): MessageKey {
   switch (stage) {
     case 'model':
@@ -130,7 +114,6 @@ export function subtitleStageKey(stage: string): MessageKey {
   }
 }
 
-/** Human, compact remaining time for a generation ETA ("1 min" / "20 s"). */
 export function subtitleEtaTime(sec: number): string {
   return sec >= 60 ? `${Math.round(sec / 60)} min` : `${Math.max(1, Math.round(sec))} s`;
 }

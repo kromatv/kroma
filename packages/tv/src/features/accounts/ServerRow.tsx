@@ -16,10 +16,8 @@ import type { ServerProbe } from '#tv/app/useServersHealth';
 import { ServerStatusPill } from '#tv/features/accounts/ServerStatus';
 
 /**
- * One server in the add-profile list. Everything but the address comes from the
- * server's own `/api/health` answer (its name, its version, how big its
- * catalogue is, how fast it replied), so the row shows what you are about to
- * connect to instead of a bare IP. Until the first answer lands it renders the
+ * One server in the add-profile list. Everything but the address comes from
+ * the server's own `/api/health` answer; until it lands, renders the
  * saved/host name with a placeholder meta line.
  */
 export function ServerRow({
@@ -30,11 +28,8 @@ export function ServerRow({
   autoFocus,
   onPress,
 }: Readonly<{
-  /** "host" or "host - port N", the one thing known without a probe. */
   address: string;
-  /** Shown until (and if) the server states its own name. */
   fallbackName: string;
-  /** Discovered on the LAN but not saved yet. */
   isNew?: boolean;
   probe?: ServerProbe;
   autoFocus?: boolean;
@@ -77,11 +72,8 @@ export function ServerRow({
   );
 }
 
-/** The list's non-server row ("Ajouter manuellement"): the kit's <ListRow>
- * (icon well + label + hint + chevron), no status (there is nothing to probe
- * yet). ServerRow above stays bespoke: it needs a TWO-line hint (address + the
- * probe's meta line with its no-reflow placeholder), which ListRow's single
- * `hint` cannot express. */
+/** The list's non-server row ("Ajouter manuellement"). ServerRow stays bespoke
+ * because it needs a two-line hint, which ListRow's single `hint` cannot express. */
 export function ActionRow({
   icon,
   title,
@@ -98,12 +90,8 @@ export function ActionRow({
   return <ListRow icon={icon} label={title} hint={sub} autoFocus={autoFocus} onPress={onPress} />;
 }
 
-/**
- * A ghost row, for the seconds where LAN discovery is still looking and nothing
- * is known yet: the list shows the shape of what is coming instead of a hole
- * above "Ajouter manuellement". Deliberately NOT focusable, so the remote walks
- * straight past it.
- */
+/** Placeholder shown while LAN discovery is still looking. Deliberately not
+ * focusable, so the remote walks straight past it. */
 export function ServerRowSkeleton() {
   return (
     <Box style={[ROW, GHOST]}>
@@ -128,8 +116,6 @@ function MetaLine({ meta, pending }: Readonly<{ meta: string | null; pending: bo
   return pending ? <Skeleton w={130} h={8} radius="pill" /> : null;
 }
 
-/** "v0.9.3 - 342 titres - 18 series" from whatever the health answer carried.
- * Null while the server is silent or answered a body this build can't read. */
 function metaOf(probe: ServerProbe | undefined, t: Translate): string | null {
   if (!probe?.online) return null;
   const parts: string[] = [];
@@ -146,7 +132,6 @@ const META = { fontSize: 12.5, fontWeight: '600' as const, letterSpacing: 0.2 };
 
 const FOCUSED = { borderColor: colors.accent };
 
-/** The ghost sits a notch behind the real rows: it is not a choice yet. */
 const GHOST = { opacity: 0.55 };
 
 const ROW = {

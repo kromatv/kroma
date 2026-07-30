@@ -1,15 +1,6 @@
-// The geometry of the segmented seek track.
-//
-// The bar draws one segment per chapter with a gap between them, so a time and a
-// pixel are not related by a single percentage: the gaps carry no time, and each
-// segment is only as wide as its chapter is long. Every place that converts
-// between the two - the playhead, the storyboard preview, and the drag itself -
-// has to use the SAME conversion, or they disagree on screen.
-//
-// They did: the segments were laid out with an equal `flex` each while the
-// playhead was placed at `cur / dur` of the whole track, so with chapters of
-// different lengths (a 96s cold open next to a 53-minute act) the playhead sat
-// nowhere near the end of its own fill.
+// The geometry of the segmented seek track: one segment per chapter with a gap
+// between, so a moment doesn't map to a pixel via a single percentage — every
+// converter (playhead, storyboard preview, drag) must agree on the same mapping.
 
 import { clamp01 } from './fmt';
 
@@ -19,7 +10,6 @@ interface TrackSegment {
   endMs: number;
 }
 
-/** The space between two segments, in px. The track's own `gap`. */
 const SEGMENT_GAP = 4;
 
 const spanOf = (seg: TrackSegment) => Math.max(1, seg.endMs - seg.startMs);

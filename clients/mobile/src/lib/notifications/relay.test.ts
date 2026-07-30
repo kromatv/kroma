@@ -1,10 +1,8 @@
-// The device's half of the relay contract: what leaves the phone, what is kept,
-// and what happens when the network refuses.
-//
-// The security-relevant claim is the first test's: the raw APNs/FCM token goes
-// to the relay and NOWHERE else, and the string handed to a server is the opaque
-// grant. Everything else here protects the stored copy, because that copy is the
-// only thing that can unregister this device.
+// The device's half of the relay contract: what leaves the phone, what is
+// kept, and what happens when the network refuses. The security claim is the
+// first test's — the raw APNs/FCM token goes to the relay and NOWHERE else;
+// everything else here protects the stored grant, the only thing that can
+// unregister this device.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,9 +18,9 @@ vi.mock('#mobile/lib/storage', () => ({
 const { forgetGrant, grantFor, refreshGrant, storedGrant } = await import('./relay');
 
 const DAY = 24 * 60 * 60 * 1000;
-/** Past the refresh window (30 days), so nothing re-mints unasked. */
+// Past the refresh window (30 days), so nothing re-mints unasked.
 const FRESH = () => Date.now() + 90 * DAY;
-/** Inside it. */
+// Inside it.
 const EXPIRING = () => Date.now() + 10 * DAY;
 
 function relayAnswers(...grants: { grant: string; expiresAt: number }[]) {
@@ -35,7 +33,7 @@ function relayAnswers(...grants: { grant: string; expiresAt: number }[]) {
   return fetchMock;
 }
 
-/** Seed a grant as if a previous launch had registered one. */
+// Seed a grant as if a previous launch had registered one.
 function stored(grant: string, expiresAt: number, token = 'DEVICE-TOKEN') {
   store.set('push.grant', JSON.stringify({ transport: 'apns', token, grant, expiresAt }));
 }
@@ -143,10 +141,8 @@ describe('refreshing a grant that is running out', () => {
   });
 
   it('does NOT adopt the new grant until the caller commits', async () => {
-    // The whole point of handing back an uncommitted grant. Storing it here
-    // overwrote the only copy of the old one, so a caller whose `subscribePush`
-    // then failed held a grant the server had never seen - and turning push off
-    // would name it, delete nothing, and leave the phone still buzzing.
+    // Storing the new grant immediately would destroy the only copy of the
+    // old one before the server has actually accepted the replacement.
     stored('v1.old', EXPIRING());
     relayAnswers({ grant: 'v1.new', expiresAt: FRESH() });
 

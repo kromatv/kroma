@@ -1,16 +1,8 @@
 //! A ready-made [`Module`] backed by a module's embedded `module.json` + icon.
 //!
-//! Every compile-time module used to hand-copy the same ~15-line `impl Module`
-//! (parse `module.json`, re-export its `provides`, serve the icon). This collapses
-//! that to one line at the module crate:
-//!
-//! ```ignore
-//! pub const MODULE: EmbeddedModule =
-//!     EmbeddedModule::new(include_str!("../../module.json"), include_bytes!("../../icon.svg"));
-//! ```
-//!
-//! `include_str!`/`include_bytes!` stay at the module crate so their paths resolve
-//! there (a cross-crate `macro_rules!` would resolve them against this crate).
+//! `include_str!`/`include_bytes!` stay at the module crate so their paths
+//! resolve there — a cross-crate `macro_rules!` would resolve them against
+//! this crate instead.
 
 use crate::{Module, ModuleIcon, ModuleManifest};
 
@@ -81,10 +73,9 @@ mod tests {
     use super::*;
     use crate::Registry;
 
-    /// An `EmbeddedModule`'s rich `provides` (the engine `label` / `fields` / `flow`
-    /// UI metadata) must survive registration, so `/api/modules` can drive the
-    /// admin's data-driven add-pickers. Regression guard: the old `register()`
-    /// override flattened every capability back to a bare `(kind, id)`.
+    // Regression guard: the old `register()` override flattened every
+    // capability back to a bare `(kind, id)`, losing the UI metadata that
+    // `/api/modules` needs to drive the admin's add-pickers.
     #[test]
     fn embedded_provides_keep_ui_metadata() {
         const MANIFEST: &str = r#"{

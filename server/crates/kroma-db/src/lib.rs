@@ -147,8 +147,6 @@ impl Drop for PooledConn {
     }
 }
 
-// ----- shared row-mappers / helpers -------------------------------------------
-
 /// Parse a stored `metadata` JSON blob into [`Metadata`]; tolerant of nulls and
 /// stale shapes (returns `None`).
 pub(crate) fn parse_metadata(json: Option<String>) -> Option<Metadata> {
@@ -186,7 +184,7 @@ pub(crate) fn parse_permissions(json: &str) -> Vec<Permission> {
     }
 }
 
-/// Build a [`MediaFile`] from a row selected with [`FILE_COLS`].
+// Build a [`MediaFile`] from a row selected with [`FILE_COLS`].
 fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
     let probed: i64 = r.get(5)?;
     let v_codec: Option<String> = r.get(7)?;
@@ -231,7 +229,7 @@ fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
     })
 }
 
-/// Load every file for one item, ordered best-first (highest resolution).
+// Load every file for one item, ordered best-first (highest resolution).
 fn files_for_item(conn: &Connection, item_id: &str) -> rusqlite::Result<Vec<MediaFile>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT {FILE_COLS} FROM files WHERE item_id = ?1 \
@@ -348,8 +346,8 @@ pub(crate) fn query_by_subject_ids<T>(
     Ok(out)
 }
 
-/// Mirror the representative file into the item's top-level fields (the shared
-/// tail of [`attach_files`] / [`attach_files_batch`]).
+// Mirror the representative file into the item's top-level fields (the shared
+// tail of [`attach_files`] / [`attach_files_batch`]).
 fn apply_files(item: &mut MediaItem, files: Vec<MediaFile>) {
     // Representative = first probed file (files are ordered probed-first,
     // highest-res-first), else the first file.
@@ -481,7 +479,7 @@ mod apply_files_tests {
         }
     }
 
-    /// An item as it comes off the row, before its files are applied.
+    // An item as it comes off the row, before its files are applied.
     fn bare_item() -> MediaItem {
         MediaItem {
             id: "itm".into(),

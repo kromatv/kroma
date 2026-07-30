@@ -1,8 +1,3 @@
-// Active sessions section: the account's signed-in devices (its long-lived
-// access tokens). Each row shows a device label derived from the stored
-// User-Agent, when it was last seen, and a revoke button; the device making the
-// current request is flagged and can't revoke itself here (sign out does that).
-
 import type { SessionInfo } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
@@ -92,7 +87,6 @@ export function SessionsCard() {
   );
 }
 
-/** The list body: loading spinner, empty note, or one row per device. */
 function SessionsBody({
   isPending,
   sessions,

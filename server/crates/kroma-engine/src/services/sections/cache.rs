@@ -17,7 +17,7 @@ type Snapshot = Arc<Vec<(String, Vec<f32>)>>;
 
 pub struct VectorCache {
     snap: RwLock<Snapshot>,
-    /// Last-seen `MAX(item_vectors.updated_at)`; `None` until first load.
+    // Last-seen `MAX(item_vectors.updated_at)`; `None` until first load.
     stamp: RwLock<Option<String>>,
 }
 

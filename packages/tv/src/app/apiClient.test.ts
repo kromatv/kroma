@@ -1,7 +1,5 @@
-// What a television calls itself on the wire. The three runtimes this bundle
-// executes on answer differently, and only one of them - the browser shell - is
-// allowed to say nothing: the other two went out as `KROMA/1 CFNetwork/…` and
-// `okhttp/…`, which the account page could only list as an unknown desktop.
+// Native shells send a User-Agent that names nothing (`KROMA/1 CFNetwork/…`,
+// `okhttp/…`); only the browser shell is allowed to say nothing itself.
 
 import { clientUserAgent } from '@kroma/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -51,7 +49,6 @@ describe('tvIdentity', () => {
 });
 
 describe('makeClient', () => {
-  /** Every request the next client makes, as headers. */
   function recorded(): Headers[] {
     const seen: Headers[] = [];
     vi.stubGlobal(

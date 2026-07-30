@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ALL_KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABEL_KEY } from './keyboardLayoutPref';
 
-/** A Map-backed localStorage stand-in. */
 function fakeStorage(initial: Record<string, string> = {}) {
   const m = new Map(Object.entries(initial));
   return {
@@ -59,7 +58,6 @@ describe('getKeyboardLayoutPref / setKeyboardLayoutPref', () => {
     });
     expect(m.getKeyboardLayoutPref()).toBe('abc');
     expect(() => m.setKeyboardLayoutPref('qwerty')).not.toThrow();
-    // The in-process value holds even when the storage write failed.
     expect(m.getKeyboardLayoutPref()).toBe('qwerty');
   });
 });

@@ -25,25 +25,12 @@ export interface EngineListeners {
   onPlaying(): void;
   onEnded(): void;
   onError(): void;
-  /** Metadata/decoder ready: safe to apply a resume seek and start playback. */
   onReady(): void;
-  /** The audio filter turned out to be undeliverable on this surface (the
-   * device has no DSP, audio is passed through untouched, or the server's
-   * filtered remux failed). The chrome hides the row instead of showing a mode
-   * that is doing nothing. */
   onAudioFilterUnavailable?(): void;
-  /**
-   * The engine swapped the object the surface renders, and the surface must be
-   * re-rendered against the new one.
-   *
-   * Only the native backend fires this. The browser surfaces are stable DOM
-   * elements the engine attaches to (`videoRef`, `objectRef`), so they never
-   * change identity; expo-video's player is a value the engine OWNS and
-   * REPLACES - on the direct→remux fallback, and on every seek of an anchored
-   * master. Without this the `<VideoView>` kept rendering the previous player
-   * after it had been released: the picture went black and stayed black, and
-   * scrubbing an MKV was impossible.
-   */
+  // Only the native backend fires this: expo-video's player is a value the engine replaces (on
+  // the direct→remux fallback, and on every anchored-master seek), unlike the browser engines'
+  // stable DOM elements. Without it the `<VideoView>` kept rendering a released player — a
+  // black, unscrubbable screen.
   onSurfaceChange?(): void;
 }
 
@@ -53,30 +40,20 @@ export interface TvEngine {
   play(): void;
   pause(): void;
   isPaused(): boolean;
-  /** Current position in seconds. */
   position(): number;
-  /** Duration in seconds (0 when unknown). */
   duration(): number;
-  /** End of the buffered range in seconds. */
   bufferedEnd(): number;
-  /** Seek to an ABSOLUTE position in seconds (native + instant on a VOD source). */
   seekTo(absSec: number): void;
-  /** Select an audio rendition by its audio-relative index (`0:a:<index>`). */
   setAudioRendition(rendition: number): void;
-  /** Resize the native video plane to a fraction-rect (or `null` = fullscreen), so
-   *  the chrome can shrink it into the settings card. Only the native engines
-   *  (AVPlay / mpv) implement it; the HTML `<video>` engine omits it
-   *  (the chrome CSS-transforms its element instead). */
+  // Resize the native video plane to a fraction-rect, or `null` for fullscreen. Only AVPlay/mpv
+  // implement it; the HTML `<video>` engine CSS-transforms its element instead.
   setRect?(rect: PlaneRect | null): void;
-  /** Apply the shared audio filter / volume normalizer (§7) in place. Only the
-   *  native engines implement it, each with its own DSP (mpv `af` chain,
-   *  AVPlay via the server's filtered remux); the
-   *  HTML `<video>` engine omits it (the chrome's Web Audio graph taps its
-   *  in-page element instead). */
+  // Apply the shared audio filter in place. Only the native engines implement it, each with its
+  // own DSP; the HTML engine's chrome taps its in-page element with Web Audio instead.
   setAudioFilter?(mode: AudioFilterMode): void;
-  /** Whether {@link setAudioFilter} actually reaches a DSP on this device.
-   *  A backend that cannot know upfront answers optimistically and corrects
-   *  itself later through `onAudioFilterUnavailable`. */
+  // Whether {@link setAudioFilter} actually reaches a DSP here. A backend that can't know
+  // upfront answers optimistically and corrects itself later through
+  // `onAudioFilterUnavailable`.
   audioFilterSupported?(): boolean;
   destroy(): void;
 }
@@ -85,11 +62,9 @@ export interface TvEngine {
  * two backends cannot drift from the engines they actually build. */
 export type Surface = TvEngine['kind'];
 
-/** The audio-relative rendition to select for the chosen track, resolved from a
- * stable identity so a reordered track list still picks the right language.
- *
- * Platform-neutral, so it lives here rather than in either backend half: it was
- * written out twice, and a fix to one copy was invisible to the other build. */
+/** The audio-relative rendition to select for the chosen track, resolved from
+ * a stable identity so a reordered track list still picks the right language.
+ * Platform-neutral, so it lives here rather than in either backend half. */
 export function renditionFor(item: MediaItem, audioIndex: number): number {
   const tracks = audioTracksOf(item);
   const want =
@@ -98,7 +73,7 @@ export function renditionFor(item: MediaItem, audioIndex: number): number {
   return resolveAudioRelativeIndex(tracks, audioTrackId(want));
 }
 
-// ----- Tizen AVPlay typings (not in the TS lib; declared loosely) -------------
+// Tizen AVPlay typings: not in the TS lib, declared loosely.
 
 /** One track from `getTotalTrackInfo()`. `extra_info` is a JSON string. */
 export interface AvplayTrack {
@@ -107,7 +82,6 @@ export interface AvplayTrack {
   extra_info?: string;
 }
 
-/** Native AVPlay event callbacks (all optional). */
 export interface AvplayListeners {
   onbufferingstart?: () => void;
   onbufferingcomplete?: () => void;
@@ -152,14 +126,11 @@ export function avplayAvailable(): boolean {
   return getAvplay() != null;
 }
 
-// ----- Desktop mpv bridge (Tauri) --------------------------------------------
-// The @kroma/desktop shell (a Tauri app, Steam Deck the primary target) runs a
-// native mpv process for video (VA-API hardware decode of HEVC + surround audio)
-// and exposes a tiny command surface + event stream to the webview. We reach it
-// through Tauri's injected `window.__TAURI__` globals (the shell sets
-// `app.withGlobalTauri: true`), so @kroma/tv needs no Tauri dependency and this
-// whole path stays inert in a plain browser (getTauri() → null → the HTML/AVPlay
-// engines are used instead).
+// Desktop mpv bridge (Tauri): the @kroma/desktop shell runs a native mpv
+// process for video and exposes a command surface + event stream to the
+// webview, reached through Tauri's injected `window.__TAURI__` globals — so
+// @kroma/tv needs no Tauri dependency, and this path stays inert in a plain
+// browser (getTauri() → null → the HTML/AVPlay engines are used instead).
 
 /** The slice of Tauri's global API the mpv engine uses. */
 export interface TauriBridge {
@@ -176,10 +147,9 @@ export function getTauri(): TauriBridge | null {
   return t?.core?.invoke && t?.event?.listen ? (t as TauriBridge) : null;
 }
 
-/** Whether to drive playback through the native mpv process. Only the LINUX desktop
- * shell spawns mpv (the Deck's VA-API path); on macOS the WKWebView decodes HEVC via
- * VideoToolbox, so there we use the in-page `<video>` engine and never spawn a second
- * (mpv) window. So mpv is gated to a Tauri shell running on Linux. */
+/** Only the Linux desktop shell spawns mpv (the Deck's VA-API path); on macOS
+ * the WKWebView decodes HEVC via VideoToolbox, so we use the in-page
+ * `<video>` engine there instead of a second window. */
 export function mpvAvailable(): boolean {
   if (getTauri() == null) return false;
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
@@ -188,15 +158,11 @@ export function mpvAvailable(): boolean {
   return '__KROMA_MPV__' in globalThis;
 }
 
-/**
- * The REAL start of an anchored master: the server seeks to the keyframe
- * at-or-before the requested anchor (`-noaccurate_seek`) and reports it via the
- * `X-Hls-Start` header on the playlist. Using the REQUESTED anchor as `baseSec`
- * drifts the absolute clock by up to one GOP (seconds!), which desyncs the
- * progress bar and every absolute-time subtitle cue after a resume/seek/audio
- * switch. The web player has always corrected this; the TV engines must too.
- * Fetching the playlist here also warms the session the engine opens next.
- */
+/** The real start of an anchored master: the server seeks to the keyframe
+ * at-or-before the requested anchor (`-noaccurate_seek`) and reports it via
+ * the `X-Hls-Start` header. Using the requested anchor as `baseSec` would
+ * drift the absolute clock by up to one GOP, desyncing the progress bar and
+ * every subtitle cue after a resume/seek/audio switch. */
 export async function resolveMasterStart(url: string, requested: number): Promise<number> {
   if (requested <= 0.5) return 0;
   try {

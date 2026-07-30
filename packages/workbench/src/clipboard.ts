@@ -1,16 +1,13 @@
-// Copy-to-clipboard, and the confirmation that follows it.
-//
-// Both copy buttons the workbench has - the code block's and the toolbar's
-// share-link - want the same three things: the clipboard if the platform has
-// one, a write, and a tick that reverts on its own. They were written twice,
-// with the second one's comment citing the first as the rule it follows, which
-// is the point at which the rule should just be a function.
+// Copy-to-clipboard, and the confirmation that follows it: the clipboard if
+// the platform has one, a write, and a tick that reverts on its own - shared
+// by the code block's copy button and the toolbar's share-link.
 
 import { webWindow } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** How long the tick stays before the icon goes back to its resting glyph. Long
- * enough to be read, short enough that a second copy is not blocked behind it. */
+// How long the tick stays before the icon goes back to its resting glyph.
+// Long enough to be read, short enough that a second copy is not blocked
+// behind it.
 const CONFIRM_MS = 1200;
 
 /** What the button is currently saying. `failed` exists because a refused write
@@ -19,11 +16,11 @@ const CONFIRM_MS = 1200;
 export type CopyState = 'idle' | 'copied' | 'failed';
 
 export interface Copier {
-  /** False where the platform has no clipboard - a television. Callers render
-   *  NOTHING in that case: a disabled affordance is worse than no affordance. */
+  // False where the platform has no clipboard - a television. Callers render
+  // NOTHING in that case: a disabled affordance is worse than no affordance.
   available: boolean;
-  /** `copied` / `failed` for `CONFIRM_MS` after an attempt, then back to
-   *  `idle`. Call sites index their label, glyph and ink off it. */
+  // `copied` / `failed` for `CONFIRM_MS` after an attempt, then back to
+  // `idle`. Call sites index their label, glyph and ink off it.
   state: CopyState;
   copy: (text: string | undefined) => void;
 }

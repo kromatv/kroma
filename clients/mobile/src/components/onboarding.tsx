@@ -33,7 +33,6 @@ export function ProfileTile({
   busy?: boolean;
   disabled?: boolean;
   offline?: boolean;
-  /** PIN-locked profile: shows a small lock badge on the avatar. */
   locked?: boolean;
   onPress(): void;
 }>) {
@@ -106,12 +105,9 @@ export function CodeCells({
   onChange(next: string): void;
   length?: number;
   masked?: boolean;
-  /** Danger border on every cell (rejected code). */
   error?: boolean;
-  /** Accent border on the next cell to fill. */
   showActive?: boolean;
   editable?: boolean;
-  /** Pull focus back whenever the hidden input blurs (kiosk-style entry). */
   refocusOnBlur?: boolean;
 }>) {
   const inputRef = useRef<TextInput>(null);
@@ -137,22 +133,15 @@ export function CodeCells({
         maxLength={length}
         autoFocus
         editable={editable}
-        // Opt OUT of AutoFill: nothing here is fillable - the masked entry is
-        // a local PIN, and the code comes off the TV's own screen, never out
-        // of an SMS.
+        // Opt out of AutoFill: this is a local PIN, and the code comes off the
+        // TV's own screen, never an SMS.
         textContentType="none"
         autoComplete="off"
-        // No keyboard accessory bar. The tvos fork of React Native counts the
-        // DEFAULT return key type as wanting one (upstream does not), so every
-        // number-pad here grew a toolbar whose button is titled after the enum
-        // - a floating pill reading "Default" over the code cells on iOS 26.
-        // `continue` is the one type its set leaves out, and a number pad
-        // renders no return key, so this changes nothing else (verified in
-        // RCTBaseTextInputView.mm setDefaultInputAccessoryView and on the
-        // simulator). The button served nothing anyway: this field refocuses
-        // on blur, so dismissing the keyboard just bounced it. The cast is for
-        // the fork's .d.ts alone, whose union forgot `continue`; the runtime
-        // maps it (RCTTextInputUtils.mm) and upstream's types have it.
+        // tvOS's RN fork adds a keyboard accessory toolbar whenever the return
+        // key type is the default, titled after the enum ("Default"); `continue`
+        // is the one value it renders without a toolbar. The cast is for the
+        // fork's `.d.ts`, whose union omits `continue` — the runtime (and
+        // upstream's types) support it.
         returnKeyType={'continue' as unknown as ReturnKeyTypeOptions}
         onBlur={() => {
           if (refocusOnBlur) inputRef.current?.focus();

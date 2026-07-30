@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { dispatchRemoteKey, registerTvMediaKeys, resolveRemoteKey } from './remote';
 
-// A minimal KeyboardEvent-shaped stub. resolveRemoteKey reads `key` + `keyCode`;
-// dispatchRemoteKey also reads `repeat` and calls `preventDefault`.
 function ev(p: { key?: string; keyCode?: number; repeat?: boolean }): KeyboardEvent {
   return {
     key: p.key ?? '',
@@ -34,7 +32,6 @@ describe('resolveRemoteKey', () => {
   });
 
   it('prefers the named key over the numeric code', () => {
-    // key 'ArrowUp' present → resolves Up even though keyCode maps to Back.
     expect(resolveRemoteKey(ev({ key: 'ArrowUp', keyCode: 10009 }))).toBe('Up');
   });
 

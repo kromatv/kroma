@@ -7,9 +7,7 @@ import { m } from '#site/paraglide/messages';
 
 interface FLink {
   label: string;
-  /** Canonical internal path (localized on render). */
   to?: string;
-  /** External or anchor URL, used as-is. */
   href?: string;
 }
 

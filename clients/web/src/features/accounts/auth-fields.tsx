@@ -28,7 +28,6 @@ export function RegisterFields({
   const fileRef = useRef<HTMLInputElement>(null);
   const { email, username, password } = values;
 
-  // Revoke the object URL when the preview changes / unmounts.
   useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview);
@@ -43,7 +42,6 @@ export function RegisterFields({
 
   return (
     <>
-      {/* Avatar upload click the tile to choose an image. */}
       <button
         type="button"
         onClick={() => fileRef.current?.click()}

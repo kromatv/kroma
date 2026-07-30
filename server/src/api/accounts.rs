@@ -1,8 +1,6 @@
 //! Accounts, sessions, profile avatar/language, and Quick Connect handlers.
-//!
-//! Auth is by opaque bearer token (see [`crate::services::auth`]). The catalogue/stream
-//! endpoints stay open (LAN trust model); only these per-user routes require a
-//! valid session via the [`AuthUser`] extractor.
+//! Catalogue/stream endpoints stay open (LAN trust model); only these per-user
+//! routes require a valid session via the [`AuthUser`] extractor.
 
 use std::net::SocketAddr;
 
@@ -29,8 +27,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, patch, post};
 use axum::Router;
 
-/// Auth, sessions, profiles, Quick Connect and the user roster. PIN routes live
-/// in [`super::pin`]; invitations in [`super::invites`].
+/// PIN routes live in [`super::pin`]; invitations in [`super::invites`].
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/auth/config", get(auth_config))
@@ -53,18 +50,10 @@ pub fn routes() -> Router<SharedState> {
         )
 }
 
-/// Widest an avatar is ever drawn (the account page's own header), doubled for
-/// retina. Anything above it is a photograph nobody will see at that size.
 const AVATAR_MAX_WIDTH: u32 = 512;
 
-/// Max avatar upload size (raw image bytes).
 pub const MAX_AVATAR_BYTES: usize = 8 * 1024 * 1024;
 
-// ----- auth -------------------------------------------------------------------
-
-/// Minimum accepted password length at register and change. A soft floor (the
-/// PBKDF2 work factor is the real defence), raised from 4 so a trivially short
-/// password can't be set.
 const MIN_PASSWORD_LEN: usize = 8;
 
 #[derive(Debug, Deserialize)]
@@ -72,17 +61,12 @@ pub struct RegisterBody {
     pub email: String,
     pub username: String,
     pub password: String,
-    /// Invitation token. Required for every account after the bootstrap owner
-    /// registration is invite-only (an admin with `users.manage` mints invites).
     #[serde(rename = "inviteToken", default)]
     pub invite_token: Option<String>,
 }
 
-/// `POST /api/auth/register` → `{ token, user }` (also opens a session).
-///
-/// The **first** account ever created is the owner (gets every permission, no
-/// invite needed). After that, registration requires a valid `inviteToken`; the
-/// new account inherits the invite's permissions.
+/// `POST /api/auth/register` → `{ token, user }`. The first account ever created is
+/// the owner; after that a valid `inviteToken` is required and grants its permissions.
 pub async fn register(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -99,17 +83,13 @@ pub async fn register(
         return lerr(loc, StatusCode::BAD_REQUEST, "auth.registerInvalid");
     }
 
-    // How many accounts exist already decides whether this is the bootstrap
-    // owner (no invite needed) or an invite-gated signup.
     let count = match query(&state.db, move |pool| db::user_count(&pool)).await {
         Ok(n) => n,
         Err(resp) => return resp,
     };
 
-    // Reject a duplicate email *before* consuming any invite. Otherwise a typo or
-    // a retry against an already-registered email spends the single-use invite
-    // and locks the invitee out. (The UNIQUE constraint in `create_user` remains
-    // the atomic backstop for the residual check-then-create window.)
+    // Reject a duplicate email before consuming any invite, or a retry spends the
+    // single-use invite. `create_user`'s UNIQUE constraint is the atomic backstop.
     let email_check = email.clone();
     match query(&state.db, move |pool| db::find_user_by_email(&pool, &email_check)).await {
         Ok(Some(_)) => return lerr(loc, StatusCode::CONFLICT, "auth.emailTaken"),
@@ -117,9 +97,8 @@ pub async fn register(
         Err(resp) => return resp,
     }
 
-    // Same for the username taken usernames get a clean 409 instead of a second
-    // account that would make username login ambiguous. Checked before the invite
-    // is consumed, for the same reason as the email pre-check above.
+    // Same for the username, and before the invite too: a duplicate would make
+    // username login ambiguous.
     let username_check = username.clone();
     match query(&state.db, move |pool| db::username_taken(&pool, &username_check, None)).await {
         Ok(true) => return lerr(loc, StatusCode::CONFLICT, "auth.usernameTaken"),
@@ -127,9 +106,6 @@ pub async fn register(
         Err(resp) => return resp,
     }
 
-    // Decide the granted permissions: bootstrap owner → all; otherwise consume
-    // the invite (registration is closed without one). Done after the email check
-    // so the invite is only burned once we know the account can be created.
     let permissions = if count == 0 {
         Permission::all()
     } else {
@@ -155,16 +131,13 @@ pub async fn register(
 
 #[derive(Debug, Deserialize)]
 pub struct LoginBody {
-    /// Email or username the profile picker only knows usernames.
     pub email: String,
     pub password: String,
 }
 
 /// `POST /api/auth/login` → `{ token, user }`. Accepts email or username.
-///
-/// Brute-force guarded per source IP (see [`loginguard`]): after a handful of
-/// consecutive failures the IP is locked out for an escalating cooldown and gets
-/// `429` with a `retryAfter`, so an online password-guessing attack is throttled.
+/// Brute-force guarded per source IP (see [`loginguard`]): consecutive failures
+/// lock the IP out for an escalating cooldown, answered `429` with a `retryAfter`.
 pub async fn login(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -173,7 +146,7 @@ pub async fn login(
     Json(body): Json<LoginBody>,
 ) -> Response {
     let ip = client_ip(&headers, &addr);
-    // Reject while locked out *before* touching the database or hashing.
+    // Reject while locked out before touching the database or hashing.
     if let Some(secs) = loginguard::lock_remaining(&ip) {
         return login_locked(loc, secs);
     }
@@ -190,13 +163,10 @@ pub async fn login(
     if !auth::verify_password(&body.password, &hash) {
         return login_failed(&ip, loc);
     }
-    // A correct login clears the source's failure record.
     loginguard::reset(&ip);
     issue_tokens(state, user, user_agent(&headers)).await
 }
 
-/// The request's `User-Agent`, trimmed empty → `None`. Stored on a device's
-/// access token to label it in the account's session list.
 pub(crate) fn user_agent(headers: &HeaderMap) -> Option<String> {
     headers
         .get(axum::http::header::USER_AGENT)
@@ -205,8 +175,6 @@ pub(crate) fn user_agent(headers: &HeaderMap) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-/// Record a failed login for `ip` and turn it into a response: `429` with a
-/// `retryAfter` once the failure trips a lockout, otherwise the usual `401`.
 fn login_failed(ip: &str, loc: &str) -> Response {
     let locked = loginguard::record_fail(ip);
     if locked > 0 {
@@ -216,8 +184,6 @@ fn login_failed(ip: &str, loc: &str) -> Response {
     }
 }
 
-/// `429 Too Many Requests` carrying a `retryAfter` (seconds) the client surfaces
-/// as a cooldown. Mirrors the PIN lockout shape in [`super::pin`].
 fn login_locked(loc: &str, secs: i64) -> Response {
     (
         StatusCode::TOO_MANY_REQUESTS,
@@ -226,9 +192,8 @@ fn login_locked(loc: &str, secs: i64) -> Response {
         .into_response()
 }
 
-/// A `401` for a dead/expired access token, tagged `tokenInvalid` so the client
-/// can distinguish it from a wrong-PIN 401 (retryable) and send the user to
-/// re-login with their password instead of looping on the PIN screen.
+// Tagged `tokenInvalid` so the client can tell a dead token from a retryable
+// wrong-PIN 401 and send the user to re-login instead of looping on the PIN screen.
 fn token_invalid(loc: &str) -> Response {
     (
         StatusCode::UNAUTHORIZED,
@@ -239,14 +204,12 @@ fn token_invalid(loc: &str) -> Response {
 
 #[derive(Debug, Deserialize, Default)]
 pub struct LogoutBody {
-    /// The device's access token, revoked alongside the session so a full sign-out
-    /// (disconnect) can't be silently re-exchanged.
     #[serde(rename = "accessToken", default)]
     pub access_token: Option<String>,
 }
 
-/// `POST /api/auth/logout` → 204. Revokes the current session (bearer) and, when
-/// provided, the device's access token. No-op for missing/unknown tokens.
+/// `POST /api/auth/logout` → 204. Revokes the bearer session and, when provided, the
+/// device's access token; a no-op for missing or unknown tokens.
 pub async fn logout(
     State(state): State<SharedState>,
     headers: HeaderMap,
@@ -268,9 +231,8 @@ pub struct RelockBody {
 }
 
 /// `POST /api/auth/relock` `{ accessToken }` → 204. Clears the access token's
-/// PIN-verified flag so the next switch-in re-prompts for the PIN. Called by the
-/// client when returning to the profile picker. Unauthenticated by design (it
-/// only *reduces* the token's privilege).
+/// PIN-verified flag so the next switch-in re-prompts. Unauthenticated by design:
+/// it only ever *reduces* the token's privilege.
 pub async fn relock(State(state): State<SharedState>, Json(body): Json<RelockBody>) -> Response {
     let token = body.access_token.trim().to_string();
     if !token.is_empty() {
@@ -283,18 +245,13 @@ pub async fn relock(State(state): State<SharedState>, Json(body): Json<RelockBod
 pub struct ExchangeBody {
     #[serde(rename = "accessToken")]
     pub access_token: String,
-    /// Required only when the account has a PIN and the access token isn't yet
-    /// PIN-verified (a fresh switch-in). Silent refreshes omit it.
     #[serde(default)]
     pub pin: Option<String>,
 }
 
-/// `POST /api/auth/token` `{ accessToken, pin? }` → `{ token, user }`. Exchanges
-/// the long-lived access token for a short-lived session. For a PIN-locked
-/// account whose access token isn't PIN-verified yet, a correct `pin` is required
-/// (rate-limited by the shared PIN guard); a successful PIN marks the token
-/// verified so later silent refreshes skip the prompt until the profile is
-/// switched away (which re-locks it).
+/// `POST /api/auth/token` `{ accessToken, pin? }` → `{ token, user }`. A PIN-locked
+/// account whose token isn't PIN-verified must supply `pin`; a correct one marks
+/// the token verified until the profile is switched away.
 pub async fn exchange_token(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -312,17 +269,13 @@ pub async fn exchange_token(
         Err(resp) => return resp,
     };
 
-    // PIN-locked account, not yet verified on this device → demand the PIN.
     if user.has_pin && !pin_verified {
         if let Err(resp) = enforce_pin_gate(&state, loc, &user, &access, body.pin.as_deref()).await {
             return resp;
         }
     }
 
-    // Best-effort last-seen stamps - the account's, and the device credential's
-    // own, which also re-reads the device's label off this request. A phone is
-    // listed under the User-Agent it signed in with, and that was captured once,
-    // possibly by a build that sent nothing nameable.
+    // Also refreshes the device's label: the UA captured at sign-in may be unnameable.
     let uid = user.id.clone();
     let ua = user_agent(&headers);
     let seen = access.clone();
@@ -347,10 +300,6 @@ pub async fn exchange_token(
     Json(super::dto::SessionResult { token, user }).into_response()
 }
 
-/// Enforce the PIN gate for a PIN-locked account whose access token isn't yet
-/// PIN-verified on this device (token exchange). Returns `Err(resp)` with the
-/// response to send on any lockout / missing / wrong PIN; on success it marks the
-/// access token PIN-verified so later silent refreshes skip the prompt.
 async fn enforce_pin_gate(
     state: &SharedState,
     loc: &str,
@@ -365,11 +314,9 @@ async fn enforce_pin_gate(
     match (supplied_pin, stored.as_deref()) {
         // No PIN hash on record → nothing to gate (treat as verified).
         (_, None) => {}
-        // No PIN supplied → this is a silent refresh / boot probe, NOT a wrong
-        // attempt. Ask for the PIN WITHOUT counting a failure, so background
-        // refreshes can't trip the brute-force lockout. The `pinRequired` flag
-        // lets the client show the PIN screen even if its cached `hasPin` was
-        // stale (a PIN added on another device).
+        // No PIN supplied is a silent refresh, not a wrong attempt: ask for it
+        // without counting a failure, so background refreshes can't trip the
+        // brute-force lockout.
         (None, Some(_)) => {
             return Err((
                 StatusCode::UNAUTHORIZED,
@@ -377,7 +324,6 @@ async fn enforce_pin_gate(
             )
                 .into_response());
         }
-        // A PIN was supplied verify it, and only THEN a wrong one is penalised.
         (Some(pin), Some(hash)) => {
             if !auth::verify_password(pin, hash) {
                 let locked = pin::record_fail(&user.id);
@@ -394,14 +340,13 @@ async fn enforce_pin_gate(
     Ok(())
 }
 
-/// `GET /api/auth/config` → `{ publicUserList, hasAccounts }`. Unauthenticated:
-/// the login gate reads it *before* any credential to decide what to show
-/// register (no accounts yet), the profile picker (roster is public), or a plain
-/// email/password form (roster hidden).
+/// `GET /api/auth/config` → `{ publicUserList, hasAccounts }`. Unauthenticated: the
+/// login gate reads it before any credential to choose between register, the
+/// profile picker, and a plain email/password form.
 pub async fn auth_config(State(state): State<SharedState>) -> Response {
     let has_accounts = match query(&state.db, move |pool| db::user_count(&pool)).await {
         Ok(n) => n > 0,
-        // On a DB error, assume the server is set up don't expose registration.
+        // Fail closed: assume the server is set up, so registration stays hidden.
         Err(_) => true,
     };
     Json(super::dto::AuthConfig {
@@ -411,15 +356,12 @@ pub async fn auth_config(State(state): State<SharedState>) -> Response {
     .into_response()
 }
 
-/// `GET /api/auth/me` (Bearer) → `{ user }`.
 pub async fn me(AuthUser(user): AuthUser) -> Response {
     Json(json!({ "user": user })).into_response()
 }
 
-/// Deserialize helper that distinguishes an **absent** field (leave the value
-/// unchanged) from an explicit `null` (clear it): a missing key stays `None` via
-/// `#[serde(default)]`, `null` becomes `Some(None)`, and a value `Some(Some(v))`.
-/// Lets `PATCH /auth/me` touch only the fields the client actually sent.
+// Distinguishes an absent field (leave unchanged) from an explicit `null` (clear
+// it), so `PATCH /auth/me` touches only the fields the client actually sent.
 fn double_option<'de, T, D>(de: D) -> Result<Option<Option<T>>, D::Error>
 where
     T: Deserialize<'de>,
@@ -430,37 +372,26 @@ where
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateMeBody {
-    /// Preferred UI locale, e.g. `"fr"` | `"en"`. `null` clears it (fall back to
-    /// the device locale). Unknown tags are ignored (left unchanged).
     #[serde(default, deserialize_with = "double_option")]
     pub language: Option<Option<String>>,
-    /// New display name. Absent = unchanged; must be non-empty (can't be cleared).
     #[serde(default, deserialize_with = "double_option")]
     pub username: Option<Option<String>>,
-    /// New account email. Absent = unchanged; must be a valid, unused address
-    /// (can't be cleared). Stored lower-cased.
     #[serde(default, deserialize_with = "double_option")]
     pub email: Option<Option<String>>,
-    /// Preferred audio-track language (ISO code). `null` or empty clears it.
     #[serde(rename = "audioLanguage", default, deserialize_with = "double_option")]
     pub audio_language: Option<Option<String>>,
-    /// Preferred subtitle-track language (ISO code, or the sentinel `"off"`).
-    /// `null` or empty clears it.
     #[serde(rename = "subtitleLanguage", default, deserialize_with = "double_option")]
     pub subtitle_language: Option<Option<String>>,
 }
 
-/// Normalise a playback-language field: trim + lowercase; an empty string clears
-/// it (mapped to `None`). Media languages are free-form ISO codes, so unlike the
-/// UI `language` they're not constrained to the app's catalog.
+// Media languages are free-form ISO codes, so unlike the UI `language` they are
+// not constrained to the app's catalog.
 fn norm_media_lang(v: Option<String>) -> Option<String> {
     v.map(|s| s.trim().to_lowercase()).filter(|s| !s.is_empty())
 }
 
-/// `PATCH /api/auth/me` (Bearer) → `{ user }`. Self-service profile update. Only
-/// the fields present in the body are touched (see [`double_option`]): display
-/// name, email, preferred UI locale and audio/subtitle playback languages. All
-/// persist server-side so they follow the account across devices.
+/// `PATCH /api/auth/me` (Bearer) → `{ user }`. Only the fields present in the body
+/// are touched; all persist server-side so they follow the account across devices.
 pub async fn update_me(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -485,9 +416,6 @@ pub async fn update_me(
     Json(json!({ "user": user })).into_response()
 }
 
-/// Apply the optional display-name change (absent field = no-op). `Err(resp)` is
-/// the response to return: invalid/empty name, a collision with a different
-/// account, or a DB error.
 async fn apply_username(
     state: &SharedState,
     loc: &str,
@@ -499,7 +427,6 @@ async fn apply_username(
     if name.is_empty() {
         return Err(lerr(loc, StatusCode::BAD_REQUEST, "auth.usernameInvalid"));
     }
-    // Reject a collision with a *different* account (a no-op keep is allowed).
     let check = name.clone();
     let self_id = user.id.clone();
     match query(&state.db, move |pool| db::username_taken(&pool, &check, Some(&self_id))).await {
@@ -516,8 +443,6 @@ async fn apply_username(
     Ok(())
 }
 
-/// Apply the optional email change (absent field = no-op). Validated + unique;
-/// `Err(resp)` is the response to return.
 async fn apply_email(
     state: &SharedState,
     loc: &str,
@@ -529,8 +454,6 @@ async fn apply_email(
     if email.is_empty() || !email.contains('@') {
         return Err(lerr(loc, StatusCode::BAD_REQUEST, "auth.emailInvalid"));
     }
-    // Reject a collision with a *different* account (a no-op change to the
-    // caller's own current email is allowed).
     let check = email.clone();
     match query(&state.db, move |pool| db::find_user_by_email(&pool, &check)).await {
         Ok(Some((other, _))) if other.id != user.id => {
@@ -542,9 +465,8 @@ async fn apply_email(
     let uid = user.id.clone();
     let e = email.clone();
     if let Err(resp) = query(&state.db, move |pool| db::set_user_email(&pool, &uid, &e)).await {
-        // The write can still fail on the UNIQUE(email) constraint if a
-        // concurrent request took the address between our check and write.
-        // Re-confirm and surface the clean 409 rather than a generic 500.
+        // A concurrent request can take the address between the check and the
+        // write; re-confirm so the UNIQUE(email) failure surfaces as 409, not 500.
         let check = email.clone();
         let self_id = user.id.clone();
         if let Ok(Some((other, _))) =
@@ -560,11 +482,6 @@ async fn apply_email(
     Ok(())
 }
 
-/// Persist an optional language `value` for `user_id` via the `set` DB setter
-/// (`db::set_user_*_language`), off the async runtime. Echoes the stored `value`
-/// back on success so the caller can mirror it onto the in-memory `User`;
-/// `Err(resp)` is the DB-error response. Shared by the UI/audio/subtitle language
-/// appliers, which differ only in the setter + the field they update.
 async fn store_user_lang<F>(
     state: &SharedState,
     user_id: &str,
@@ -580,9 +497,6 @@ where
     Ok(value)
 }
 
-/// Apply the optional preferred-UI-locale change (absent field = no-op). An
-/// unknown/garbage tag or an explicit `null` both clear it (fall back to the
-/// device locale). `Err(resp)` is the DB-error response to return.
 async fn apply_language(
     state: &SharedState,
     user: &mut User,
@@ -594,8 +508,6 @@ async fn apply_language(
     Ok(())
 }
 
-/// Apply the optional preferred-audio-language change (absent field = no-op).
-/// `Err(resp)` is the DB-error response to return.
 async fn apply_audio_language(
     state: &SharedState,
     user: &mut User,
@@ -607,8 +519,6 @@ async fn apply_audio_language(
     Ok(())
 }
 
-/// Apply the optional preferred-subtitle-language change (absent field = no-op).
-/// `Err(resp)` is the DB-error response to return.
 async fn apply_subtitle_language(
     state: &SharedState,
     user: &mut User,
@@ -622,18 +532,13 @@ async fn apply_subtitle_language(
 
 #[derive(Debug, Deserialize)]
 pub struct ChangePasswordBody {
-    /// The account's current password (verified before the change).
     pub current: String,
-    /// The new password (min length matches registration, see `MIN_PASSWORD_LEN`).
     pub next: String,
 }
 
-/// `PATCH /api/auth/me/password` (Bearer) `{ current, next }` → 204. Self-service
-/// password change: verifies `current` against the stored hash, then replaces it.
-/// There is no email-based reset flow (LAN self-hosted, no mail service), so this
-/// is the way an account rotates its own password. Every OTHER session and
-/// long-lived device token is revoked (a rotation is how a user evicts a stolen
-/// credential), while the caller's own session keeps working.
+/// `PATCH /api/auth/me/password` (Bearer) `{ current, next }` → 204. Every other
+/// session and device token is revoked — a rotation is how a user evicts a stolen
+/// credential — while the caller's own session keeps working.
 pub async fn change_password(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -658,8 +563,7 @@ pub async fn change_password(
     if let Err(resp) = query(&state.db, move |pool| db::set_user_password(&pool, &uid, &hash)).await {
         return resp;
     }
-    // Evict any other (possibly stolen) session/device credential, keeping the
-    // caller's current one. Best-effort: a failure here must not fail the change.
+    // Best-effort: failing to evict the other credentials must not fail the change.
     if let Some(keep) = bearer_from_headers(&headers) {
         let uid = user.id.clone();
         let _ = query(&state.db, move |pool| db::revoke_other_sessions(&pool, &uid, &keep)).await;
@@ -667,11 +571,8 @@ pub async fn change_password(
     StatusCode::NO_CONTENT.into_response()
 }
 
-// ----- session management -----------------------------------------------------
-
 /// `GET /api/auth/me/sessions` (Bearer) → `SessionInfo[]`. The account's live
-/// signed-in devices (its non-expired access tokens), newest first, with the
-/// device making this request flagged `current`.
+/// signed-in devices, newest first, with the calling device flagged `current`.
 pub async fn list_sessions(
     State(state): State<SharedState>,
     headers: HeaderMap,
@@ -682,7 +583,6 @@ pub async fn list_sessions(
         Ok(r) => r,
         Err(resp) => return resp,
     };
-    // The current device is the access token our bearer session was minted from.
     let current_id = match bearer_from_headers(&headers) {
         Some(bearer) => {
             match query(&state.db, move |pool| db::session_device_id(&pool, &bearer)).await {
@@ -705,9 +605,8 @@ pub async fn list_sessions(
     Json(out).into_response()
 }
 
-/// `DELETE /api/auth/me/sessions/:id` (Bearer) → 204. Revoke one of the account's
-/// own devices by its non-secret id, signing it out (its access token and any
-/// live sessions are deleted). `404` if the id isn't one of the caller's devices.
+/// `DELETE /api/auth/me/sessions/:id` (Bearer) → 204. Revokes one of the account's
+/// own devices by its non-secret id. `404` if the id isn't one of the caller's.
 pub async fn revoke_session(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -722,11 +621,6 @@ pub async fn revoke_session(
     }
 }
 
-/// Mint a device access token (90d, PIN-verified) plus its first short-lived
-/// session for `user_id`, storing `user_agent` on the access token. Returns the
-/// `(session_token, access_token)` pair, or `Err(resp)` on a DB error. Shared by
-/// the password-login/register path ([`issue_tokens`]) and Quick Connect
-/// approval ([`quick_authorize`]), which mint the identical token pair.
 async fn mint_device_tokens(
     state: &SharedState,
     user_id: &str,
@@ -734,7 +628,6 @@ async fn mint_device_tokens(
 ) -> Result<(String, String), Response> {
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
 
-    // Access token (device credential, 90d, pin-verified).
     let access = auth::random_token();
     let access_db = access.clone();
     let uid = user_id.to_string();
@@ -748,7 +641,6 @@ async fn mint_device_tokens(
         return Err(resp);
     }
 
-    // Session token (short-lived bearer, 1h), tied to the access token above.
     let token = auth::random_token();
     let token_db = token.clone();
     let uid = user_id.to_string();
@@ -765,19 +657,15 @@ async fn mint_device_tokens(
     Ok((token, access))
 }
 
-/// Mint a long-lived access token + a short-lived session for a freshly
-/// authenticated `user` (password login / register). The access token is
-/// PIN-verified at birth password auth already proved identity, so silent
-/// refreshes work until the profile is switched away and re-locked. `user_agent`
-/// (the device's UA header) is stored on the access token to label it in the
-/// account's session list.
+/// Mints the token pair for a freshly authenticated `user`. The access token is
+/// PIN-verified at birth: password auth already proved identity, so silent
+/// refreshes work until the profile is switched away and re-locked.
 pub(crate) async fn issue_tokens(state: SharedState, user: User, user_agent: Option<String>) -> Response {
     let (token, access) = match mint_device_tokens(&state, &user.id, user_agent).await {
         Ok(pair) => pair,
         Err(resp) => return resp,
     };
 
-    // Best-effort last-seen stamp for the admin members table.
     let uid = user.id.clone();
     let _ = query(&state.db, move |pool| {
         let _ = db::touch_last_seen(&pool, &uid);
@@ -787,15 +675,9 @@ pub(crate) async fn issue_tokens(state: SharedState, user: User, user_agent: Opt
     Json(super::dto::AuthResult { token, access_token: access, user }).into_response()
 }
 
-// ----- profiles ---------------------------------------------------------------
-
-/// `GET /api/users` → `PublicUser[]` for the "Qui regarde ?" picker (no emails).
-///
-/// Gated by the `publicUserList` setting (off by default). When disabled the
-/// roster is *not* enumerable: this returns an empty list rather than every
-/// account, so simply knowing the server URL no longer reveals who has an
-/// account. Clients fall back to a plain email/password login (see
-/// [`auth_config`]).
+/// `GET /api/users` → `PublicUser[]` for the profile picker. Gated by the
+/// `publicUserList` setting (off by default): when disabled this returns an empty
+/// list, so knowing the server URL never reveals who has an account.
 pub async fn list_users(State(state): State<SharedState>) -> Response {
     if !state.settings.get_bool("publicUserList", false) {
         return Json(Vec::<PublicUser>::new()).into_response();
@@ -807,7 +689,6 @@ pub async fn list_users(State(state): State<SharedState>) -> Response {
 }
 
 /// `POST /api/users/avatar` (Bearer, body = raw `image/*`) → `{ avatarUrl }`.
-/// The image is transcoded to WebP and stored in the shared image cache.
 pub async fn upload_avatar(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -837,28 +718,21 @@ pub async fn upload_avatar(
     Json(json!({ "avatarUrl": url })).into_response()
 }
 
-// ----- quick connect ----------------------------------------------------------
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuickInitiateBody {
-    /// Secret of a code the device is rotating away from (its TTL is lapsing).
-    /// Revoked so it can no longer be approved into a session the device that
-    /// rotated will never collect. Absent on the first request.
     pub prev_secret: Option<String>,
 }
 
-/// `POST /api/auth/quickconnect/initiate` (optional body `{ prevSecret? }`) →
-/// `{ code, secret, expiresInSec, authorizeUrl? }`. The device shows `code` (and
-/// a QR of `authorizeUrl` when the server knows the web app URL) and then polls
-/// with `secret`. When rotating an expiring code it passes the old `secret` as
-/// `prevSecret` so the server drops it up front instead of leaving it to lapse.
+/// `POST /api/auth/quickconnect/initiate` → `{ code, secret, expiresInSec,
+/// authorizeUrl? }`. The device shows `code` and polls with `secret`; rotating an
+/// expiring code sends the old secret as `prevSecret` so the server drops it.
 pub async fn quick_initiate(
     State(state): State<SharedState>,
     body: Option<Json<QuickInitiateBody>>,
 ) -> Response {
-    // Rotating away from a previous code: drop it so it stops being approvable,
-    // and delete any tokens it accrued in the gap (approved but not yet polled).
+    // Drop the rotated-away code so it stops being approvable, along with any
+    // tokens it accrued in the gap (approved but never polled for).
     if let Some(Json(QuickInitiateBody { prev_secret: Some(secret) })) = body {
         if let Some(revoked) = state.quickconnect.revoke(&secret) {
             let (token, access) = (revoked.token, revoked.access_token);
@@ -887,8 +761,7 @@ pub struct QuickAuthorizeBody {
 }
 
 /// `POST /api/auth/quickconnect/authorize` (Bearer) `{ code }` → 204. Approves a
-/// device's code for the signed-in user, minting the session the device will
-/// receive on its next poll.
+/// device's code, minting the session it collects on its next poll.
 pub async fn quick_authorize(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -897,10 +770,8 @@ pub async fn quick_authorize(
 ) -> Response {
     let code = body.code.trim().to_string();
 
-    // Mint the device's long-lived access token (pin-verified the approver, who
-    // is already signed in, is vouching for this device) plus its first session.
-    // The paired device isn't the one making this request, so its UA is unknown
-    // here (NULL); it will re-stamp last-seen on use.
+    // PIN-verified: the approver is already signed in and vouches for the device.
+    // That device isn't the caller, so its UA is unknown here (NULL) until use.
     let (token, access) = match mint_device_tokens(&state, &user.id, None).await {
         Ok(pair) => pair,
         Err(resp) => return resp,

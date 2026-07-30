@@ -1,6 +1,5 @@
-// Unified player (§14): ONE chrome for web + TV, styled with Tailwind (both
-// clients @source this dir; legacy-safe flex-only + no /opacity, see ./tw).
-// Barrel for the public surface consumed by the web + TV wrappers.
+// One player chrome for web + TV. Styled with Tailwind, legacy-safe: flex only,
+// no /opacity (see ./tw).
 
 export {
   AUDIO_FILTER_KEY,
@@ -9,10 +8,8 @@ export {
   useAudioFilter,
 } from './lib/audio-filter';
 export { currentChapter, currentChapterIndex, normalizeChapters } from './lib/chapters';
-// NOT `clamp01`: it is the progress atom's, and the kit already exports it. This
-// barrel is what `@kroma/ui` re-exports, so listing it here put the same name on
-// BOTH entry points - the exact overlap kit.ts says the two must never have. The
-// chrome's own files still take it from ./lib/fmt.
+// NOT `clamp01`: the kit already exports it, and `@kroma/ui` re-exports this
+// barrel, so listing it here puts the same name on both entry points.
 export { endsAtClock, pct } from './lib/fmt';
 export {
   buildLeanStats,

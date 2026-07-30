@@ -1,8 +1,5 @@
-// <MediaCard>: the 16:9 landscape rail tile of the 10-foot home.
-//
-// Key art over a deterministic genre gradient, a legibility scrim, the optional
-// watched check and resume bar, and the title block. Focusable, so it is a D-pad
-// stop on a TV and a click target in a browser from the same source.
+// <MediaCard>: the 16:9 landscape rail tile of the 10-foot home. Focusable, so
+// the same source is a D-pad stop on a TV and a click target in a browser.
 
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -13,26 +10,19 @@ import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { gradient } from '#ui/lib/css';
 import { fonts, radius } from '#ui/lib/tokens';
 
-/** Bottom-weighted scrim: the art stays visible while the title stays legible. */
 const CARD_SCRIM = 'linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.75) 100%)';
 
-/** The instant-visible fill behind artwork: a deterministic per-title gradient,
- * so a tile is never blank while the art loads and never blank if it fails. */
+/** The fill behind artwork, so a tile is never blank while the art loads. */
 function tintGradient(tint: readonly [string, string]): string {
-  // `to bottom`, not a tilt. A tilted gradient's iso-lines run diagonally, so its
-  // progress differs across the card's WIDTH - on a 188x282 tile a 10-degree tilt
-  // is a 10.5% difference between the two bottom corners, which reads as a wedge
-  // that is not flush to the left and right edges rather than as a fade.
+  // `to bottom`, not a tilt: a tilted gradient's iso-lines run diagonally, so it
+  // reads as a wedge across the card's width rather than as a fade.
   return `linear-gradient(to bottom, ${tint[0]} 0%, ${tint[1]} 72%)`;
 }
 
 interface MediaCardProps {
   title: string;
-  /** Overline above the title (the genre, or an episode tag). */
   overline?: string;
-  /** Landscape key art. Falls back to the `tint` gradient. */
   art: string | null;
-  /** The two stops of the deterministic per-title gradient. */
   tint: readonly [string, string];
   /** Resume position, 0..1, or null for no bar. */
   progress?: number | null;
@@ -65,15 +55,9 @@ function MediaCard({
       style={{ width, flexShrink: 0, borderRadius: radius.xl }}
     >
       <Box w={width} aspect={16 / 9} radius="xl" overflow="hidden" bg="surface1" shadow="card">
-        {/* Every layer rounds ITSELF, and the parent still clips. Belt and
-            braces, because the braces demonstrably slip: Chrome fails to apply an
-            `overflow: hidden` + `border-radius` clip to a COMPOSITED descendant,
-            and the `<img decoding="async">` below is exactly that. The result was a
-            card that drew as a hard-cornered rectangle - the scrim reaching square
-            into all four corners over rounded artwork - on every tile EXCEPT the
-            focused one, which escaped it only because its focus scale forces Chrome
-            to rasterise the clip. Rounding each layer costs nothing and does not
-            depend on the compositor agreeing with us. */}
+        {/* Every layer rounds itself as well as being clipped by the parent:
+            Chrome fails to apply an `overflow: hidden` + `border-radius` clip to
+            a composited descendant, which the `<img decoding="async">` is. */}
         <Img src={art} background={tintGradient(tint)} radius={radius.xl} position="50% 28%" fill />
         <Box fill radius="xl" style={gradient(CARD_SCRIM)} />
         {watched ? <WatchedBadge /> : null}

@@ -17,7 +17,6 @@ use kroma_module_sdk::ports::{Caps, IndexerEndpoint};
 use crate::store::DefinitionStore;
 use crate::{Caps as EngineCaps, IndexerConfig, Session};
 
-/// `kind` value for a native-engine indexer row.
 pub use kroma_module_sdk::ports::KIND_BUILTIN;
 
 pub fn endpoint_of(row: &IndexerRow) -> IndexerEndpoint {
@@ -28,9 +27,8 @@ pub fn endpoint_of(row: &IndexerRow) -> IndexerEndpoint {
     }
 }
 
-/// Process-wide `t=caps` cache: capabilities are static per indexer, and every
-/// search would otherwise pay an extra round-trip per indexer. Keyed by indexer
-/// id + url (so re-pointing an indexer refreshes).
+// Capabilities are static per indexer, and every search would otherwise pay an
+// extra round-trip; keyed by id + url so re-pointing an indexer refreshes.
 static CAPS_CACHE: Mutex<Option<HashMap<String, Caps>>> = Mutex::new(None);
 
 pub fn indexer_caps(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Caps> {
@@ -77,10 +75,9 @@ pub fn definition_store(host: &dyn HostCtx) -> DefinitionStore {
     DefinitionStore::new(host.data_dir())
 }
 
-/// Process-wide cache of built-in [`Session`]s, keyed so a config change
-/// (url / settings / VPN / FlareSolverr) yields a fresh session. Reusing one
-/// session across a sweep is what makes `requestDelay` throttling + the login
-/// cookie jar persist across the dozens of back-to-back requests a sweep fires.
+// Keyed so a config change (url / settings / VPN / FlareSolverr) yields a fresh
+// session. Reusing one session across a sweep is what makes `requestDelay`
+// throttling + the login cookie jar persist across the sweep's requests.
 static SESSION_CACHE: Mutex<Option<HashMap<String, Arc<Session>>>> = Mutex::new(None);
 
 fn session_key(host: &dyn HostCtx, row: &IndexerRow) -> String {
@@ -100,10 +97,9 @@ pub fn builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<A
     Ok(session)
 }
 
-/// The VPN SOCKS5 URL search traffic should use, when the admin opted indexers
-/// into the tunnel (`acqIndexersUseVpn`) AND a bridge is configured. Checks the
-/// opt-in first so the WireGuard config isn't read on the common (off) path.
 fn vpn_proxy_url(host: &dyn HostCtx) -> Option<String> {
+    // Check the opt-in first so the WireGuard config isn't read on the common
+    // (off) path.
     if host.setting_bool("acqIndexersUseVpn", false) {
         kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::VpnProxyPort>(host)
             .and_then(|p| p.proxy_url(host))

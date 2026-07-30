@@ -5,11 +5,8 @@ import { AvplayEngine } from './avplayEngine';
 import type { EngineOptions } from './baseEngine';
 import type { AvplayApi, AvplayListeners, AvplayTrack, EngineListeners } from './engine';
 
-// The Samsung AVPlay backend, driven against a fake `webapis.avplay` that records
-// every native call, captures the event listener + prepareAsync callbacks, and
-// serves stubbed track info / duration. Asserts the native call sequence, the
-// resume seek, the audio-relative -> AVPlay track-index mapping, the re-anchor
-// stop/close/reopen cycle and the visibility suspend/restore, with no TV.
+// The Samsung AVPlay backend, driven against a fake `webapis.avplay` that
+// records every native call, so none of this needs a TV.
 
 interface FakeAvplay {
   api: AvplayApi;
@@ -158,9 +155,9 @@ describe('AvplayEngine construction', () => {
 
   it('an anchored master resolves its real keyframe start before opening', async () => {
     const { e, lastArgs } = make({ direct: false, startSec: 30 });
-    await tick(); // resolveMasterStart -> fetch -> X-Hls-Start 8
+    await tick(); // the stubbed fetch reports X-Hls-Start 8
     expect(lastArgs('open')).toEqual(['master:sm1:false:30:0']);
-    expect(e.position()).toBe(8); // baseSec corrected to the reported keyframe
+    expect(e.position()).toBe(8);
   });
 });
 
@@ -170,11 +167,9 @@ describe('AvplayEngine prepared (resume + audio mapping)', () => {
     a.setDuration(60000);
     a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
     a.prepareOk();
-    // duration from getDuration (ms -> s)
     expect(listeners.onDuration).toHaveBeenCalledWith(60);
-    // resume seek in ms
     expect(lastArgs('seekTo')).toEqual([30000]);
-    // audio-relative rendition 1 -> the SECOND audio track's index (2)
+    // rendition 1 is the SECOND audio track, whose native index is 2
     expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 2]);
     expect(listeners.onReady).toHaveBeenCalledTimes(1);
   });
@@ -205,7 +200,7 @@ describe('AvplayEngine native listener events', () => {
     expect(listeners.onWaiting).toHaveBeenCalledTimes(1);
     expect(listeners.onPlaying).toHaveBeenCalledTimes(1);
     expect(listeners.onEnded).toHaveBeenCalledTimes(1);
-    // onerror in direct mode triggers the direct->master fallback (buffering shown)
+    // onerror in direct mode triggers the direct->master fallback
     a.listener().onerror?.(new Error('x'));
     expect(listeners.onWaiting).toHaveBeenCalledTimes(2);
   });
@@ -255,12 +250,12 @@ describe('AvplayEngine audio switching', () => {
     a.setTracks([track(1, 'AUDIO'), track(4, 'AUDIO')]);
     e.setAudioRendition(1);
     expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 4]);
-    expect(names()).not.toContain('stop'); // stayed in place
+    expect(names()).not.toContain('stop');
   });
 
   it('falls back to a re-anchor when the track cannot be selected', async () => {
     const { e, names } = make({ direct: true, initialRendition: 0 });
-    // no tracks -> selectNativeAudio returns false -> reanchor
+    // no tracks, so the native selection fails
     e.setAudioRendition(1);
     await tick();
     expect(names()).toContain('stop');
@@ -269,7 +264,7 @@ describe('AvplayEngine audio switching', () => {
 
   it('a master switch re-anchors at the current position with the new track', async () => {
     const { e, a, lastArgs } = make({ direct: false, startSec: 0 });
-    a.listener().oncurrentplaytime?.(25000); // position -> 25
+    a.listener().oncurrentplaytime?.(25000);
     e.setAudioRendition(1);
     await tick();
     expect(lastArgs('open')).toEqual(['master:sm1:false:25:1']);
@@ -295,7 +290,7 @@ describe('AvplayEngine visibility + destroy', () => {
     expect(names()).toContain('close');
     const before = names().length;
     document.dispatchEvent(new Event('visibilitychange'));
-    expect(names()).toHaveLength(before); // listener gone
+    expect(names()).toHaveLength(before);
   });
 });
 
@@ -307,9 +302,9 @@ describe('AvplayEngine audio filter (server-side remux)', () => {
 
   it('enabling the filter mid-play moves a direct source onto the filtered master', async () => {
     const { e, a, lastArgs, listeners } = make({ direct: true, startSec: 0 });
-    a.listener().oncurrentplaytime?.(30000); // playing at 30s
+    a.listener().oncurrentplaytime?.(30000);
     e.setAudioFilter('standard');
-    await tick(); // anchored master resolves its real start first
+    await tick();
     expect(listeners.onWaiting).toHaveBeenCalled();
     expect(lastArgs('open')).toEqual(['master:sm1:false:30:0:standard']);
   });
@@ -320,7 +315,7 @@ describe('AvplayEngine audio filter (server-side remux)', () => {
     e.setAudioFilter('off');
     expect(lastArgs('open')).toEqual(['stream:sm1']);
     a.prepareOk();
-    expect(lastArgs('seekTo')).toEqual([10000]); // resumes where it was
+    expect(lastArgs('seekTo')).toEqual([10000]);
   });
 
   it('a filter change on a real master reloads it with the new mode', () => {

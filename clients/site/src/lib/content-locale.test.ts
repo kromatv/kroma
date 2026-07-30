@@ -23,8 +23,8 @@ describe('parseContentPath', () => {
     });
   });
 
-  // The reason the suffix is matched against the locale list rather than "the last
-  // dotted segment": a version number is part of the name, not a language.
+  // Matched against the locale list, not "the last dotted segment": a version
+  // number is part of the name, not a language.
   it('keeps a trailing segment that is not a locale in the name', () => {
     expect(parseContentPath('../../content/blog/release.2.mdx')).toEqual({
       name: 'release.2',
@@ -46,8 +46,6 @@ describe('pickLocale', () => {
     expect(pickLocale({ en: 'english' }, 'fr')).toBe('english');
   });
 
-  // A document is never hidden for lack of a translation, even when the fallback
-  // language itself is the one that was never written.
   it('serves whatever exists when even the fallback is missing', () => {
     expect(pickLocale({ fr: 'french' }, 'en')).toBe('french');
   });

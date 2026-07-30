@@ -1,9 +1,5 @@
 import type { ReactElement } from 'react';
 // @vitest-environment jsdom
-//
-// The tiles are where the design lives, so this asserts the anatomy the design
-// specifies: aspect ratio, corner radius, focus scale, the scrim, and that the
-// optional watched check and resume bar appear only when asked for.
 
 import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -14,9 +10,7 @@ import { onScreen } from '#ui/testing';
 import { MediaCard, tintGradient } from './media-card';
 import { PosterCard } from './poster-card';
 
-/** Every kit control is a node of the spatial navigator, and a node needs a
- * navigator - the router gives every screen one. A test renders inside the same
- * scope so the tree it mounts is the tree the app mounts. */
+// Every kit control is a node of the spatial navigator, and a node needs one.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 afterEach(() => {
@@ -27,8 +21,6 @@ afterEach(() => {
 const TINT = ['#3A2E4F', '#1B1524'] as const;
 const css = (el: Element) => getComputedStyle(el);
 
-/** The element the kit styles. On the browser targets a control is ONE element,
- * so the tile IS the labelled host. */
 const tile = (label: string) => screen.getByLabelText(label);
 
 describe('tintGradient', () => {

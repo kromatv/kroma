@@ -37,7 +37,6 @@ pub fn download_routes<S: HostCtx + Clone + Send + Sync + 'static>(
         .layer(Extension(db))
 }
 
-/// Run a blocking provider call into the `Result<T, String>` wire envelope.
 async fn blocking_env<T: Send + 'static>(
     job: impl FnOnce() -> anyhow::Result<T> + Send + 'static,
 ) -> Json<Result<T, String>> {
@@ -48,8 +47,6 @@ async fn blocking_env<T: Send + 'static>(
             .and_then(|r| r.map_err(|e| format!("{e:#}"))),
     )
 }
-
-// --- DownloadGrabPort --------------------------------------------------------
 
 async fn grab_h<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
@@ -97,8 +94,6 @@ async fn drop_data_h<S: HostCtx + Clone + Send + Sync + 'static>(
     Json(())
 }
 
-// --- DownloadDbPort ----------------------------------------------------------
-
 async fn completed_h<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
     Extension(db): Extension<Arc<dyn DownloadDbPort>>,
@@ -135,8 +130,6 @@ async fn set_status_h<S: HostCtx + Clone + Send + Sync + 'static>(
 ) -> Json<Result<bool, String>> {
     blocking_env(move || db.set_download_status(&host, &req.id, &req.status, req.error.as_deref())).await
 }
-
-// --- Consumer-side clients ---------------------------------------------------
 
 pub struct DownloadGrabClient {
     resolve: Resolver,
@@ -214,11 +207,7 @@ impl DownloadDbPort for DownloadDbClient {
 
 #[cfg(test)]
 mod tests {
-    // `use super::*` re-exports the parent imports (Arc, HostCtx, the axum
-    // extractors, the ports + wire types, call/call_raw/Resolver).
     use super::*;
-
-    // --- Test doubles ---------------------------------------------------------
 
     use kroma_module_host::testing::StubHost;
 
@@ -348,8 +337,6 @@ mod tests {
         Arc::new(|| None)
     }
 
-    // --- Provider-side handler tests -----------------------------------------
-
     #[tokio::test]
     async fn grab_handler_returns_row() {
         let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
@@ -427,14 +414,11 @@ mod tests {
         assert!(res.unwrap());
     }
 
-    // --- Consumer-side client tests (offline resolver) ------------------------
-
     #[test]
     fn grab_client_offline_behavior() {
         let c = DownloadGrabClient::new(offline());
         assert!(c.grab(&StubHost::new(), GrabSpec::default()).is_err());
         assert!(c.list_files(&StubHost::new(), "magnet:?xt=1").is_err());
-        // A transport hiccup defaults the gate OPEN (grab re-checks authoritatively).
         assert!(c.gate_open());
         // Infallible fire-and-forget calls must not panic when offline.
         let row = sample_download_row("x");
@@ -449,8 +433,6 @@ mod tests {
         assert!(c.mark_download_imported(&StubHost::new(), "id", &["p".to_string()], 0).is_err());
         assert!(c.set_download_status(&StubHost::new(), "id", "done", None).is_err());
     }
-
-    // --- Wire-struct serde ----------------------------------------------------
 
     #[test]
     fn wire_requests_deserialize() {
@@ -476,16 +458,14 @@ mod tests {
             serde_json::from_value(serde_json::json!({ "id": "d1", "status": "done" })).unwrap();
         assert!(ss.error.is_none());
     }
-    // --- A live round trip over the real bridge -----------------------------------
-    //
-    // Everything above drives one side or the other. This mounts the REAL router
-    // on a real port and points a REAL client at it, so the wire itself is under
-    // test: the `/_port/<port>/<method>` paths, the bearer token, the
-    // `Result<T, String>` envelope, and the JSON shape of every boundary type.
-    // Those only ever disagree at runtime, in a sidecar, which is the worst place
-    // to find out.
 
-    /// Serve `router` on an ephemeral port and return a resolver pointing at it.
+    // Everything above drives one side or the other. This mounts the REAL
+    // router on a real port and points a REAL client at it, so the wire
+    // itself is under test: the `/_port/<port>/<method>` paths, the bearer
+    // token, the `Result<T, String>` envelope, and the JSON shape of every
+    // boundary type. Those only ever disagree at runtime, in a sidecar,
+    // which is the worst place to find out.
+
     async fn serve<S: HostCtx + Clone + Send + Sync + 'static>(
         router: Router<S>,
         state: S,
@@ -500,7 +480,7 @@ mod tests {
         Arc::new(move || Some((base.clone(), "test-token".to_string())))
     }
 
-    /// Run a blocking port call off the runtime thread, so the server can answer.
+    // Off the runtime thread so the server (on the same runtime) can answer.
     async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
         tokio::task::spawn_blocking(job).await.unwrap()
     }

@@ -1,17 +1,6 @@
-//! WebAuthn passkeys: register credentials (authenticated, from the account
-//! page) and sign in with them (public, passwordless).
-//!
-//! The relying-party (RP id + origin) is derived per-request from the browser's
-//! `Origin` header, so the same server works across LAN host names and the
-//! optional public HTTPS domain without static config each passkey is bound to
-//! the origin it was created on (a WebAuthn invariant). Browsers only expose the
-//! WebAuthn API in a secure context (HTTPS or localhost), so the web client
-//! gates the UI on that; these handlers just serve the ceremonies.
-//!
-//! The short-lived ceremony state (the challenge webauthn-rs hands back at
-//! "start" and needs again at "finish") is held in-process, keyed by a random
-//! id returned to the client mirrors the login/PIN guards' in-memory model,
-//! fine for a single-binary self-hosted server.
+//! WebAuthn passkeys: register credentials (authenticated) and sign in with them
+//! (public, passwordless). The relying party is derived per-request from the
+//! `Origin` header — each passkey is bound to the origin it was created on.
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
@@ -37,7 +26,7 @@ use crate::i18n::{self, ReqLocale};
 use crate::services::auth;
 use crate::state::SharedState;
 
-/// Passkey routes. The `/auth/me/*` ones self-gate via [`AuthUser`]; the
+/// The `/auth/me/*` routes self-gate via [`AuthUser`]; the
 /// `/auth/passkeys/authenticate/*` pair is public (it *is* the login).
 pub fn routes() -> Router<SharedState> {
     Router::new()
@@ -49,17 +38,10 @@ pub fn routes() -> Router<SharedState> {
         .route("/auth/passkeys/authenticate/finish", post(authenticate_finish))
 }
 
-// ----- in-memory ceremony store -----------------------------------------------
-
-/// How long a started ceremony may sit before it's finished (matches the
-/// authenticator timeout in the challenge).
 const CEREMONY_TTL_SECS: i64 = 300;
 
 enum Ceremony {
-    /// A registration in progress, bound to the account that started it.
     Register { user_id: String, reg: PasskeyRegistration },
-    /// A usernameless (discoverable) authentication in progress. The account is
-    /// only known once the browser returns which credential was used.
     Discover { auth: DiscoverableAuthentication },
 }
 
@@ -75,7 +57,6 @@ fn now() -> i64 {
     time::OffsetDateTime::now_utc().unix_timestamp()
 }
 
-/// Store a started ceremony (pruning expired ones) → its lookup id.
 fn stash(ceremony: Ceremony) -> String {
     let id = auth::random_token();
     if let Ok(mut m) = CEREMONIES.lock() {
@@ -86,24 +67,17 @@ fn stash(ceremony: Ceremony) -> String {
     id
 }
 
-/// Consume a ceremony by id (single-use), or `None` if unknown/expired.
 fn take(id: &str) -> Option<Ceremony> {
     let mut m = CEREMONIES.lock().ok()?;
     let e = m.remove(id)?;
     (e.expires > now()).then_some(e.ceremony)
 }
 
-// ----- relying-party helpers --------------------------------------------------
-
-/// A stable per-account WebAuthn user handle, derived from the account id (which
-/// isn't itself a UUID). Deterministic so re-registration keeps the same handle.
+// Deterministic, so re-registration keeps the same WebAuthn user handle.
 fn user_uuid(user_id: &str) -> Uuid {
     Uuid::new_v5(&Uuid::NAMESPACE_OID, user_id.as_bytes())
 }
 
-/// Build a [`Webauthn`] whose RP id/origin match the request's `Origin`. Errors
-/// as an HTTP response when the header is missing/unusable or the origin isn't a
-/// valid RP (e.g. plain HTTP on a non-local host, which browsers reject anyway).
 fn relying_party(headers: &HeaderMap, loc: &str) -> Result<Webauthn, Response> {
     let origin = headers
         .get(axum::http::header::ORIGIN)
@@ -120,7 +94,6 @@ fn relying_party(headers: &HeaderMap, loc: &str) -> Result<Webauthn, Response> {
         .map_err(|_| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"))
 }
 
-/// Deserialize the stored `Passkey` blobs into `(display id, Passkey)` pairs.
 fn parse_passkeys(blobs: &[String]) -> Vec<(String, Passkey)> {
     blobs
         .iter()
@@ -129,11 +102,8 @@ fn parse_passkeys(blobs: &[String]) -> Vec<(String, Passkey)> {
         .collect()
 }
 
-// ----- registration (authenticated) -------------------------------------------
-
-/// `POST /api/auth/me/passkeys/register/start` (Bearer) → `{ ceremonyId, options }`.
-/// `options` is the WebAuthn creation challenge the browser feeds to
-/// `navigator.credentials.create`.
+/// `POST /api/auth/me/passkeys/register/start` (Bearer) → `{ ceremonyId, options }`,
+/// where `options` feeds `navigator.credentials.create`.
 pub async fn register_start(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -173,16 +143,12 @@ pub async fn register_start(
 pub struct RegisterFinishBody {
     #[serde(rename = "ceremonyId")]
     pub ceremony_id: String,
-    /// Friendly label for the credential (falls back to a default if blank).
     #[serde(default)]
     pub name: String,
-    /// The `PublicKeyCredential` produced by `navigator.credentials.create`.
     pub credential: RegisterPublicKeyCredential,
 }
 
 /// `POST /api/auth/me/passkeys/register/finish` (Bearer) → `{ id, name }`.
-/// Verifies the attestation against the stashed challenge and stores the
-/// credential on the account.
 pub async fn register_finish(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -226,11 +192,8 @@ pub async fn register_finish(
             Ok(ts) => ts,
             Err(resp) => return resp,
         };
-    // Echo the full stored row so the client's list can update without a re-read.
     Json(super::dto::PasskeyInfo { id, name, created_at, last_used: None }).into_response()
 }
-
-// ----- list / remove (authenticated) ------------------------------------------
 
 /// `GET /api/auth/me/passkeys` (Bearer) → `PasskeyInfo[]`, newest first.
 pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) -> Response {
@@ -252,8 +215,8 @@ pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) ->
     }
 }
 
-/// `DELETE /api/auth/me/passkeys/:id` (Bearer) → 204. Removes one of the
-/// account's own passkeys. `404` if the id isn't one of theirs.
+/// `DELETE /api/auth/me/passkeys/:id` (Bearer) → 204, or `404` if the id does
+/// not belong to the caller.
 pub async fn remove(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -267,8 +230,6 @@ pub async fn remove(
         Err(resp) => resp,
     }
 }
-
-// ----- authentication (public, usernameless / discoverable) -------------------
 
 /// `POST /api/auth/passkeys/authenticate/start` → `{ ceremonyId, options }`. No
 /// identifier: the challenge allows any of this server's passkeys, and the
@@ -295,21 +256,16 @@ pub async fn authenticate_start(
 pub struct AuthFinishBody {
     #[serde(rename = "ceremonyId")]
     pub ceremony_id: String,
-    /// The assertion from `navigator.credentials.get`.
     pub credential: PublicKeyCredential,
 }
 
-/// Resolve the account behind a discoverable assertion's user handle (a v5 UUID
-/// derived from the account id), matching against the ids that own passkeys.
 async fn account_for_handle(state: &SharedState, handle: Uuid) -> Option<String> {
     let ids = query(&state.db, |pool| db::passkey_user_ids(&pool)).await.ok()?;
     ids.into_iter().find(|id| user_uuid(id) == handle)
 }
 
 /// `POST /api/auth/passkeys/authenticate/finish` `{ ceremonyId, credential }` →
-/// `{ token, accessToken, user }` (same shape as password login). Identifies the
-/// account from the assertion, verifies it, advances the credential's counter,
-/// and opens a session.
+/// `{ token, accessToken, user }`, the same shape as password login.
 pub async fn authenticate_finish(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -324,8 +280,6 @@ pub async fn authenticate_finish(
         return lerr(loc, StatusCode::BAD_REQUEST, "passkey.ceremonyExpired");
     };
 
-    // The browser tells us which user handle + credential were used; map the
-    // handle back to a local account.
     let Ok((handle, _)) = webauthn.identify_discoverable_authentication(&body.credential) else {
         return lerr(loc, StatusCode::UNAUTHORIZED, "passkey.authFailed");
     };
@@ -333,7 +287,6 @@ pub async fn authenticate_finish(
         return lerr(loc, StatusCode::UNAUTHORIZED, "passkey.authFailed");
     };
 
-    // Load that account's passkeys and verify the assertion against them.
     let uid = user_id.clone();
     let blobs = match query(&state.db, move |pool| db::passkey_credentials(&pool, &uid)).await {
         Ok(v) => v,
@@ -346,8 +299,8 @@ pub async fn authenticate_finish(
         Err(_) => return lerr(loc, StatusCode::UNAUTHORIZED, "passkey.authFailed"),
     };
 
-    // Persist the matched credential's advanced counter (replay defence) + stamp
-    // it used. Best-effort a DB hiccup shouldn't block an otherwise valid login.
+    // Persist the matched credential's advanced counter (replay defence).
+    // Best-effort: a DB hiccup shouldn't block an otherwise valid login.
     let matched = hex::encode(result.cred_id());
     if let Some((id, pk)) = passkeys.iter_mut().find(|(id, _)| *id == matched) {
         let changed = pk.update_credential(&result) == Some(true);
@@ -357,7 +310,6 @@ pub async fn authenticate_finish(
             query(&state.db, move |pool| db::touch_passkey(&pool, &id_db, cred_json.as_deref())).await;
     }
 
-    // Mint the session for the resolved account.
     let user = match query(&state.db, move |pool| db::user_by_id(&pool, &user_id)).await {
         Ok(Some(u)) => u,
         Ok(None) => return lerr(loc, StatusCode::UNAUTHORIZED, "passkey.authFailed"),

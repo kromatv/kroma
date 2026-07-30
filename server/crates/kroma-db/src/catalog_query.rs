@@ -14,20 +14,17 @@ use rusqlite::OptionalExtension;
 
 use kroma_domain::Metadata;
 
-/// Hard cap on rows a single `find_titles` returns (keeps tool results which
-/// re-enter the model's context bounded).
+// Caps a single `find_titles` call so tool results re-entering the model's
+// context stay bounded.
 const MAX_LIMIT: usize = 50;
 const DEFAULT_LIMIT: usize = 25;
 
-/// Movies (sans episodes) + shows unioned into one `(id,title,year,kind,metadata)`
-/// relation. Every query below selects `FROM cat`. Trailing space is intentional
-/// (the per-query `SELECT …` is concatenated after it).
+// Every query below selects `FROM cat`. The trailing space is intentional:
+// the per-query `SELECT …` is concatenated directly after it.
 const CAT_CTE: &str = "WITH cat(id,title,year,kind,metadata) AS (\
     SELECT id,title,year,'movie',metadata FROM items WHERE kind != 'episode' \
     UNION ALL SELECT id,title,year,'show',metadata FROM shows) ";
 
-/// Crew jobs that count as "directed/created by" (matches the deterministic
-/// director collections).
 const DIRECTING_JOBS_SQL: &str = "('Director','Creator')";
 
 /// A title in brief form (one `find_titles` row).
@@ -35,7 +32,6 @@ pub struct TitleBrief {
     pub id: String,
     pub title: String,
     pub year: Option<u32>,
-    /// `"movie"` | `"show"`.
     pub kind: String,
     pub rating: Option<f32>,
     pub genres: Vec<String>,
@@ -61,14 +57,11 @@ pub struct TitleFilter {
     pub genre: Option<String>,
     pub director: Option<String>,
     pub actor: Option<String>,
-    /// Free-text match over title + overview (TMDB keywords aren't persisted).
     pub keyword: Option<String>,
-    /// `"movie"` | `"show"` (synonyms: series/tv → show).
     pub kind: Option<String>,
     pub year_min: Option<u32>,
     pub year_max: Option<u32>,
     pub min_rating: Option<f32>,
-    /// `"rating"` (default) | `"year"` | `"title"`.
     pub sort: Option<String>,
     pub limit: Option<usize>,
 }
@@ -206,8 +199,6 @@ pub fn people_counts(pool: &Pool, role: &str, limit: usize) -> Result<Vec<(Strin
     Ok(rows)
 }
 
-// ----- helpers ----------------------------------------------------------------
-
 fn full_from(id: String, title: String, year: Option<u32>, kind: String, meta: Option<Metadata>) -> TitleFull {
     let Some(m) = meta else {
         return TitleFull {
@@ -234,8 +225,8 @@ fn full_from(id: String, title: String, year: Option<u32>, kind: String, meta: O
     }
 }
 
-/// `ORDER BY` for the requested sort. Unrated titles sink last under `rating`
-/// (SQLite sorts NULL last under `DESC`).
+// `ORDER BY` for the requested sort. Unrated titles sink last under `rating`
+// (SQLite sorts NULL last under `DESC`).
 fn order_clause(sort: Option<&str>) -> &'static str {
     match sort.map(str::trim).unwrap_or("rating") {
         "year" => "ORDER BY cat.year DESC",
@@ -251,7 +242,7 @@ fn normalize_kind(k: &str) -> String {
     }
 }
 
-/// Trim a filter string and treat blank as absent.
+// Trim a filter string and treat blank as absent.
 fn clean(s: &Option<String>) -> Option<String> {
     s.as_deref().map(str::trim).filter(|t| !t.is_empty()).map(str::to_string)
 }
@@ -263,7 +254,7 @@ mod tests {
 
     static SEQ: AtomicU32 = AtomicU32::new(0);
 
-    /// A fresh temp-file DB seeded with a small movies+shows catalog.
+    // A fresh temp-file DB seeded with a small movies+shows catalog.
     fn seeded_pool() -> Pool {
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
         let path = std::env::temp_dir().join(format!("kroma-catq-{}-{n}.db", std::process::id()));

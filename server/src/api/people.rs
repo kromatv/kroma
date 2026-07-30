@@ -22,16 +22,13 @@ use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
-/// `GET /api/people`, `GET /api/people/details`.
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/people", get(person)).route("/people/details", get(details))
 }
 
 #[derive(Debug, Deserialize)]
 pub struct PersonParams {
-    /// The person's name (exact match, case-insensitive).
     pub name: Option<String>,
-    /// Optional library scope.
     pub library: Option<String>,
 }
 
@@ -63,18 +60,13 @@ pub async fn person(
 
 #[derive(Debug, Deserialize)]
 pub struct NameParams {
-    /// The person's name, as a credit spells it.
     pub name: Option<String>,
 }
 
-/// `GET /api/people/details?name=` → [`PersonDetailResponse`]: the biography and
-/// life facts behind a credit, from TMDB.
-///
-/// Never an error when the provider has nothing to say: `person` is simply
-/// `null` (no TMDB key, an unknown name, a provider hiccup). The person page is
-/// the filmography first and the biography second, and it must render either
-/// way. The portrait is cached locally on the way out, so it is served from
-/// `/api/images` with the same `?w=` sizing as every other artwork.
+/// `GET /api/people/details?name=` → [`PersonDetailResponse`]. Never an error:
+/// `person` is `null` for no TMDB key, an unknown name, or a provider hiccup, so
+/// the page can always render with the filmography and just skip the biography.
+/// The portrait is cached locally and served from `/api/images` like other art.
 pub async fn details(
     State(state): State<SharedState>,
     Query(p): Query<NameParams>,
@@ -99,9 +91,6 @@ pub async fn details(
     Ok(Json(PersonDetailResponse { name, person }).into_response())
 }
 
-/// Merge movies + shows into one [`SearchHit`] list, optionally scoped to a single
-/// library, ordered by rating (desc) then year (desc) so a person's most notable
-/// work surfaces first.
 fn collect(movies: Vec<MediaItem>, shows: Vec<Show>, library: Option<&str>) -> Vec<SearchHit> {
     let in_library = |lib: &str| library.is_none_or(|want| lib == want);
 
@@ -122,8 +111,6 @@ fn collect(movies: Vec<MediaItem>, shows: Vec<Show>, library: Option<&str>) -> V
     rows.into_iter().map(|(_, hit)| hit).collect()
 }
 
-/// `(rating, year)` sort key both default to 0 when unknown so unrated/undated
-/// titles sink to the bottom.
 fn sort_key(meta: Option<&Metadata>, year: Option<u32>) -> (f32, i32) {
     let rating = meta.and_then(|m| m.rating).unwrap_or(0.0);
     (rating, year.map(|y| y as i32).unwrap_or(0))

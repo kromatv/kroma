@@ -1,27 +1,14 @@
-// KROMA desktop shell (Steam Deck / macOS / Windows). A thin Tauri window hosting the
-// shared @kroma/tv frontend (built to ../dist).
-//
-// In-process libmpv is the native engine on every desktop OS (the `libmpv` feature,
-// ON by default); all three speak the SAME frontend MpvEngine protocol (`mpv_load` /
-// `mpv_command` + `mpv://…` events):
-//  - macOS: libmpv renders into a native NSView behind the transparent webview (a GL
-//    render shim); decodes HEVC/AV1 + surround the WKWebView can't.
-//  - Windows: libmpv embeds into the window HWND via `--wid` (d3d11/gpu VO).
-//  - Linux (the Deck): libmpv embeds into the GTK window's X11 XID via `--wid`, BUT
-//    only when opted in (KROMA_LINUX_LIBMPV=1) and it initialises; otherwise the
-//    native mpv BINARY over a unix-socket IPC (mpv.rs) is used - its process
-//    isolation + VO fallback ladder is what keeps the fragile Deck GPU stack robust,
-//    so it stays the default and the automatic fallback. See mpv_dispatch.rs.
-// A `--no-default-features` build drops libmpv entirely and uses the in-page <video>
-// (macOS/Windows) or the mpv binary (Linux).
-//
+// KROMA desktop shell (Steam Deck / macOS / Windows): a Tauri window hosting the
+// shared @kroma/tv frontend. In-process libmpv is the default native engine on
+// every OS (feature `libmpv`); Linux falls back to the mpv binary over unix-socket
+// IPC unless KROMA_LINUX_LIBMPV=1 opts in. `--no-default-features` drops libmpv for
+// the in-page <video> (macOS/Windows) or the mpv binary (Linux).
+
 // Prevents an extra console window on Windows in release; a no-op on Linux/macOS.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// Platform-independent core of the three in-process libmpv engines (engine slot,
-// shared init options, observed properties, event pump, command mapping). Compiled
-// whenever at least one of them is, i.e. in any `libmpv` build; a
-// `--no-default-features` build drops it with them.
+// Shared core for the three in-process libmpv engines (init options, observed
+// properties, event pump, command mapping).
 #[cfg(all(
     feature = "libmpv",
     any(target_os = "linux", target_os = "macos", target_os = "windows")
@@ -29,21 +16,18 @@
 #[allow(dead_code)]
 mod libmpv_shared;
 
-// The mpv BINARY IPC runtime (Deck): unix socket, Linux only. Still the default
-// Linux backend (process isolation + VO fallback ladder), and the automatic
-// fallback when the in-process libmpv engine can't come up.
+// mpv binary IPC runtime (Linux): default backend, and the automatic fallback
+// when the in-process libmpv engine can't come up.
 #[cfg(target_os = "linux")]
 #[allow(dead_code)]
 mod mpv;
 
-// Linux playback dispatcher: routes the frontend's mpv commands to the in-process
-// libmpv engine or the mpv binary, whichever is live. Owns the `mpv_*` commands.
+// Routes the frontend's mpv_* commands to whichever Linux backend is live.
 #[cfg(target_os = "linux")]
 mod mpv_dispatch;
 
-// In-process libmpv (Linux, `libmpv` feature): embeds into the GTK window's X11 XID
-// via `--wid`. PRIMARY only when opted in (KROMA_LINUX_LIBMPV=1) + it initialises;
-// else the mpv binary is used. See Cargo.toml + libmpv_linux.rs + mpv_dispatch.rs.
+// In-process libmpv (Linux): embeds into the GTK window's X11 XID via `--wid`.
+// Primary only when opted in (KROMA_LINUX_LIBMPV=1) and it initialises.
 #[cfg(all(target_os = "linux", feature = "libmpv"))]
 #[allow(dead_code)]
 mod libmpv_linux;
@@ -52,60 +36,34 @@ mod libmpv_linux;
 #[cfg(target_os = "linux")]
 mod webview_gpu;
 
-// In-process libmpv (macOS, `libmpv` feature): the chosen native engine, rendering into
-// a native NSView behind the webview via `--wid` (verified). See Cargo.toml.
+// In-process libmpv (macOS): renders into a native NSView behind the webview.
 #[cfg(all(target_os = "macos", feature = "libmpv"))]
 #[allow(dead_code)]
 mod libmpv_mac;
 
-// In-process libmpv (Windows, `libmpv` feature): decodes what WebView2 can't
-// (HEVC without the extension, AV1, MKV, surround), embedded into the window's
-// HWND via `--wid`. Off by default; the default Windows build uses the in-page
-// <video>. See Cargo.toml + libmpv_win.rs.
+// In-process libmpv (Windows): decodes what WebView2 can't (HEVC without the
+// extension, AV1, MKV, surround), embedded into the window's HWND via `--wid`.
 #[cfg(all(target_os = "windows", feature = "libmpv"))]
 #[allow(dead_code)]
 mod libmpv_win;
 
-/// WebKitGTK env fixups applied before the webview initialises (Deck / Linux).
-/// Each var is only set when the user hasn't already pinned an explicit value.
 #[cfg(target_os = "linux")]
 fn prepare_linux_env() {
-    // Choose the WebKitGTK renderer for this boot. GPU (DMABUF) rendering is the
-    // DEFAULT: it once aborted on the Deck ("Could not create default EGL display:
-    // EGL_BAD_PARAMETER" - web process gone, transparent window paints NOTHING),
-    // which is why this used to force software rendering, but fix-appimage.sh has
-    // since removed the poisoned bundled libwayland behind that abort (mpv's
-    // gpu-next now comes up clean), and forcing software instead black-screened the
-    // transform-composited app layer under the transparent window. So webview_gpu.rs
-    // defaults to GPU with a crash guard that auto-reverts a boot that never reaches
-    // the frontend back to software; the profile-menu row is an opt-OUT. An explicit
-    // WEBKIT_DISABLE_DMABUF_RENDERER or KROMA_WEBKIT_DMABUF=1 (WebKit checks the var's
-    // PRESENCE, so exporting "0" cannot re-enable) pins the choice for one session
-    // without touching the stored setting. Compositing stays on either way, so window
-    // transparency (mpv behind the webview) is unaffected.
+    // WebKitGTK GPU (DMABUF) rendering is the default; webview_gpu.rs carries a
+    // crash guard that auto-reverts to software on a boot that never reaches the
+    // frontend. WEBKIT_DISABLE_DMABUF_RENDERER or KROMA_WEBKIT_DMABUF=1 pins the
+    // choice for one session without touching the stored setting.
     webview_gpu::apply_env();
-    // Disabling DMABUF is not enough on some Wayland stacks (verified on the
-    // Steam Deck): WebKitGTK's *native Wayland* backend still can't create an
-    // EGL display ("Could not create default EGL display: EGL_BAD_PARAMETER"),
-    // the web process aborts, and the transparent window shows NOTHING. Pin GTK
-    // to X11 so the webview runs over XWayland instead, whose GLX/EGL path is the
-    // battle-tested one on the Deck (gamescope in Game Mode, KDE in Desktop mode
-    // both provide XWayland). Compositing stays on, so window transparency (mpv
-    // behind the webview) is unaffected - unlike WEBKIT_DISABLE_COMPOSITING_MODE.
-    // This is the webview analog of mpv.rs's "GLX via X11, no EGL" ladder rung.
-    // An explicit GDK_BACKEND (e.g. a user pinning wayland) is respected.
+    // WebKitGTK's native Wayland backend can't create an EGL display on the Deck
+    // ("Could not create default EGL display: EGL_BAD_PARAMETER"), aborting the
+    // web process. Pin GTK to X11 (XWayland) unless the user set GDK_BACKEND.
     if std::env::var_os("GDK_BACKEND").is_none() {
         std::env::set_var("GDK_BACKEND", "x11");
     }
-    // The stock AppRun in Tauri AppImages exports GST_PLUGIN_SYSTEM_PATH(_1_0)
-    // pointing at $APPDIR/usr/lib/gstreamer-1.0 even with bundleMediaFramework
-    // off, where that directory is never created. GStreamer treats the var as
-    // "search ONLY here", so the system plugins are masked: webview audio dies
-    // ("GStreamer element autoaudiosink not found") and the user's
-    // ~/.cache/gstreamer-1.0 registry is rebuilt EMPTY, breaking other
-    // GStreamer apps until cleared (tauri-apps/tauri#15665). Drop the vars
-    // when they point at a missing directory; WebKit's child processes
-    // inherit our env, so they fall back to the system plugin search.
+    // Tauri AppImages export GST_PLUGIN_SYSTEM_PATH(_1_0) at a directory that's
+    // never created when bundleMediaFramework is off; GStreamer then searches
+    // ONLY there and webview audio dies (tauri-apps/tauri#15665). Drop the var
+    // when it points at a missing directory.
     for var in ["GST_PLUGIN_SYSTEM_PATH_1_0", "GST_PLUGIN_SYSTEM_PATH"] {
         if let Some(path) = std::env::var_os(var) {
             let single_path = !path.to_string_lossy().contains(':');

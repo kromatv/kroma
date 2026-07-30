@@ -12,20 +12,16 @@ use chacha20poly1305::{ChaCha20Poly1305, Nonce};
 
 use crate::services::auth::{pbkdf2_sha256, random_bytes};
 
-/// Envelope magic (9 bytes, trailing `\n` so a text viewer shows one line).
+// Trailing `\n` so a text viewer shows the magic as one line.
 const MAGIC: &[u8; 9] = b"KROMABK1\n";
-/// Envelope version.
 const VER: u8 = 1;
-/// KDF id: 1 = PBKDF2-HMAC-SHA256.
 const KDF_PBKDF2: u8 = 1;
-/// PBKDF2 iterations for the backup key (independent of the login KDF).
+// Independent of the login KDF's iteration count.
 const ITERS: u32 = 210_000;
 const SALT_LEN: usize = 16;
 const NONCE_LEN: usize = 12;
-/// Bytes before the ciphertext: magic(9)+ver(1)+kdf(1)+iters(4)+salt(16)+nonce(12).
 const HEADER_LEN: usize = MAGIC.len() + 1 + 1 + 4 + SALT_LEN + NONCE_LEN;
 
-/// True if `bytes` is an encrypted backup envelope.
 pub fn is_encrypted(bytes: &[u8]) -> bool {
     bytes.len() >= MAGIC.len() && &bytes[..MAGIC.len()] == MAGIC
 }
@@ -63,7 +59,6 @@ pub fn open(bytes: &[u8], password: &str) -> anyhow::Result<Option<Vec<u8>>> {
     if !is_encrypted(bytes) || bytes.len() < HEADER_LEN {
         anyhow::bail!("not a KROMA encrypted backup");
     }
-    // Field offsets, past the magic: ver | kdf | iters(4) | salt | nonce.
     let m = MAGIC.len();
     let ver = bytes[m];
     let kdf = bytes[m + 1];

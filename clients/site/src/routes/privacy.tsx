@@ -9,8 +9,8 @@ import { site } from '#site/lib/site';
 import { m } from '#site/paraglide/messages';
 
 export const Route = createFileRoute('/privacy')({
-  // `head` runs outside React, but a message function resolves the ambient locale
-  // on its own, so the same `m.*()` calls work here.
+  // `head` runs outside React, but a message function resolves the ambient
+  // locale on its own, so the same `m.*()` calls work here.
   head: () =>
     seo({
       lang: getLocale(),
@@ -22,9 +22,6 @@ export const Route = createFileRoute('/privacy')({
 });
 
 export function Privacy() {
-  // The policy itself is a document, not UI copy: it lives as MDX per locale under
-  // content/legal (see lib/legal) and only the frame around it is translated as
-  // messages.
   const Policy = getLegalDoc('privacy', useLang());
   return (
     <PageShell
@@ -38,8 +35,6 @@ export function Privacy() {
 
       <div className="prose-kroma mt-12">{Policy ? <Policy /> : null}</div>
 
-      {/* A real contact affordance to close on, rather than a bare mailto in a
-          paragraph, the same channel, made unmissable. */}
       <div className="mt-14">
         <ContactCard
           icon={IconShieldLock}

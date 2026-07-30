@@ -1,26 +1,10 @@
-//! A small, generic i18n engine a framework-agnostic Rust counterpart to
+//! A small, generic i18n engine — a framework-agnostic Rust counterpart to
 //! `@kroma/core`'s `i18n.ts`.
 //!
-//! Nothing here is application-specific: you build an [`I18n`] instance from your
-//! own catalogs, default locale, and plural rules, then translate against it. The
-//! engine provides `{name}` interpolation, CLDR pluralization, locale
+//! Nothing here is application-specific: build an [`I18n`] instance from your
+//! own catalogs, default locale, and plural rules, then translate against it.
+//! Provides `{name}` interpolation, CLDR pluralization, locale
 //! normalization/detection, and a default→raw-key fallback chain.
-//!
-//! ```
-//! use kroma_i18n::I18n;
-//! let i18n = I18n::builder()
-//!     .default_locale("fr")
-//!     .catalog_json("fr", r#"{ "hi": "Salut {name}", "n_item_one": "{count} objet", "n_item": "{count} objets" }"#)
-//!     .catalog_json("en", r#"{ "hi": "Hi {name}" }"#)
-//!     .build()
-//!     .unwrap();
-//!
-//! assert_eq!(i18n.t("en", "hi", &[("name", "Max")]), "Hi Max");
-//! assert_eq!(i18n.t("fr", "n_item", &[("count", "1")]), "1 objet");   // plural: _one
-//! assert_eq!(i18n.t("fr", "n_item", &[("count", "3")]), "3 objets");  // plural: base
-//! // A key missing in `en` falls back to the default locale (`fr`), then the raw key.
-//! assert_eq!(i18n.t("en", "n_item", &[("count", "1")]), "1 objet");
-//! ```
 
 use std::collections::HashMap;
 use std::error::Error;
@@ -33,7 +17,6 @@ pub use plural::{one_other, Category, PluralRule};
 /// build once at startup.
 pub struct I18n {
     default: String,
-    /// Insertion order preserved (default locale first, by convention).
     locales: Vec<Locale>,
     plural: PluralRule,
 }
@@ -54,11 +37,8 @@ pub struct LocaleInfo<'a> {
 /// Why [`Builder::build`] failed.
 #[derive(Debug)]
 pub enum BuildError {
-    /// No `default_locale` was set.
     MissingDefault,
-    /// No catalog was added for the configured default locale.
     DefaultNotLoaded(String),
-    /// A catalog's JSON was not a flat `{ "key": "value" }` object.
     Catalog(String, serde_json::Error),
 }
 
@@ -189,10 +169,8 @@ impl I18n {
         self.lookup(code, key).is_some() || self.lookup(&self.default, key).is_some()
     }
 
-    /// Resolve a requested tag to the supported catalog code that best serves it:
-    /// an **exact** match first (so a regional catalog like `fr-CH` wins if you
-    /// ship one), else the **base language** with the region stripped and case
-    /// normalized (`fr`, `fr_FR`, `fr-CH`, `FR` all → `fr`), else `None`.
+    // An exact match wins first (so a regional catalog like `fr-CH` wins if
+    // shipped), else the base language with region and case normalized.
     fn resolve_code(&self, tag: &str) -> Option<&str> {
         let trimmed = tag.trim();
         if trimmed.is_empty() {
@@ -236,10 +214,8 @@ impl I18n {
         &self.default
     }
 
-    /// Resolve `key` to its plural variant for `count`: `key_<category>` if it
-    /// exists, else `key_other`, else the base `key`. The plural category uses the
-    /// caller's original `tag` (so a custom rule sees `pt_BR` vs `pt_PT`); the
-    /// variant is looked up under the resolved catalog `code`.
+    // The plural category uses the caller's original `tag` (so a custom rule
+    // sees `pt_BR` vs `pt_PT`); the variant is then looked up under `code`.
     fn resolve_plural_key(&self, tag: &str, code: &str, key: &str, count: i64) -> String {
         let variant = format!("{key}_{}", (self.plural)(tag, count).suffix());
         if self.has_key(code, &variant) {
@@ -302,8 +278,8 @@ impl<'a> Translator<'a> {
     }
 }
 
-/// The base language subtag, region stripped and lowercased: `"fr_CH"` → `"fr"`,
-/// `"en-US"` → `"en"`, `"FR"` → `"fr"`.
+// The base language subtag, region stripped and lowercased: `"fr_CH"` → `"fr"`,
+// `"en-US"` → `"en"`, `"FR"` → `"fr"`.
 fn base_language(tag: &str) -> String {
     tag.split(['-', '_']).next().unwrap_or("").to_ascii_lowercase()
 }
@@ -412,13 +388,11 @@ mod tests {
     #[test]
     fn regional_variants_resolve_to_base() {
         let i = fixture();
-        // fr, fr_FR, fr-CH, FR all resolve to the `fr` catalog.
         for tag in ["fr", "fr_FR", "fr-CH", "FR", "fr_CA"] {
             assert_eq!(i.normalize_locale(tag), Some("fr"), "tag {tag}");
             assert_eq!(i.t(tag, "seasons", &[("count", "2")]), "2 saisons", "tag {tag}");
         }
         assert_eq!(i.t("en-GB", "hi", &[("name", "Jo")]), "Hi Jo");
-        // An exact regional catalog wins over the base.
         let r = I18n::builder()
             .default_locale("en")
             .catalog_json("en", r#"{ "color": "color" }"#)
@@ -432,7 +406,6 @@ mod tests {
     #[test]
     fn pluralization_default_one_other() {
         let i = fixture();
-        // Default rule: singular at 1, plural otherwise (all locales).
         assert_eq!(i.t("en", "seasons", &[("count", "1")]), "1 season");
         assert_eq!(i.t("en", "seasons", &[("count", "0")]), "0 seasons");
         assert_eq!(i.t("fr", "seasons", &[("count", "1")]), "1 saison");
@@ -443,8 +416,8 @@ mod tests {
 
     #[test]
     fn plural_rule_is_pluggable() {
-        // No baked-in language table: to make French treat 0 as singular, pass a
-        // rule. Proves the engine is generic without hardcoding CLDR.
+        // No baked-in language table: making French treat 0 as singular takes a
+        // custom rule, proving the engine doesn't hardcode CLDR.
         fn fr_zero_is_one(locale: &str, count: i64) -> Category {
             if locale.starts_with("fr") && count == 0 {
                 Category::One
@@ -465,16 +438,13 @@ mod tests {
     #[test]
     fn fallback_and_translator() {
         let i = fixture();
-        // en missing "lang.fr" → falls back to default (fr) catalog.
         assert_eq!(i.t("en", "lang.fr", &[]), "Français");
-        // Unknown key → raw key.
         assert_eq!(i.t("en", "missing.key", &[]), "missing.key");
         let tr = i.translator("en-US");
         assert_eq!(tr.locale(), "en");
         assert_eq!(tr.t("hi", &[("name", "Sam")]), "Hi Sam");
         assert_eq!(i.translator("xx").locale(), "fr");
     }
-    // ----- the builder's other doors, and locale negotiation ----------------------
 
     #[test]
     fn every_build_error_says_which_catalog_is_wrong() {

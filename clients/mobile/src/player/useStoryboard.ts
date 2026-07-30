@@ -1,14 +1,12 @@
-// Storyboard scrub previews: lazily fetch the sprite-sheet manifest (202 while
-// the server generates it) and resolve a tile for any absolute time.
+// Storyboard scrub previews. The manifest answers 202 while the server is still
+// generating it, hence the poll.
 
 import type { KromaClient, MediaItem, StoryboardManifest } from '@kroma/core';
 import { useEffect, useState } from 'react';
 import type { DownloadEntry } from '#mobile/lib/downloads';
 
 export interface StoryboardTile {
-  /** Sprite sheet URL. */
   sheet: string;
-  /** Pixel offset of the tile inside the sheet. */
   x: number;
   y: number;
   tileW: number;
@@ -21,7 +19,6 @@ export function useStoryboard(
   client: KromaClient,
   item: MediaItem,
   enabled: boolean,
-  /** Offline entry: previews come from its local sprite sidecar. */
   offline?: DownloadEntry,
 ): (absSec: number) => StoryboardTile | null {
   const [manifest, setManifest] = useState<StoryboardManifest | null>(

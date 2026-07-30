@@ -2,8 +2,8 @@ import type { KromaClient, MediaItem } from '@kroma/core';
 import { useCallback, useEffect, useRef } from 'react';
 import { getTauri } from '#tv/features/playback/player/engine';
 
-/** Resolve a canvas JPEG blob's bytes into `done` (null on any failure). Hoisted so
- * the `arrayBuffer().then().catch()` chain doesn't nest inside the canvas callback. */
+// Hoisted so the `arrayBuffer().then().catch()` chain doesn't nest inside
+// the canvas callback.
 function deliverJpegBytes(jpeg: Blob | null, done: (out: Uint8Array | null) => void): void {
   if (!jpeg) {
     done(null);
@@ -15,9 +15,8 @@ function deliverJpegBytes(jpeg: Blob | null, done: (out: Uint8Array | null) => v
     .catch(() => done(null));
 }
 
-/** Draw a poster blob (WebP / JPEG / the generated SVG) onto a canvas and re-encode as
- * JPEG - a raster the OS's NSImage decodes reliably (it can't render SVG at all). Returns
- * the JPEG bytes, or `null` if the image never loaded. */
+// Re-encodes any poster blob (WebP / JPEG / the generated SVG) as JPEG: a
+// raster the OS's NSImage decodes reliably, since it can't render SVG at all.
 function rasterize(blob: Blob, w = 342, h = 513): Promise<Uint8Array | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob);
@@ -46,8 +45,8 @@ function rasterize(blob: Blob, w = 342, h = 513): Promise<Uint8Array | null> {
   });
 }
 
-/** Best-effort poster bytes for the OS widget: prefer the real cached art, falling back
- * to a full-item fetch if the passed item is a lightweight one missing its metadata. */
+// Best-effort poster bytes for the OS widget: prefer the real cached art,
+// falling back to a full-item fetch for a lightweight item missing its metadata.
 async function resolveArtwork(client: KromaClient, item: MediaItem): Promise<number[]> {
   try {
     const full = item.metadata?.posterUrl ? item : await client.item(item.id).catch(() => item);
@@ -59,13 +58,6 @@ async function resolveArtwork(client: KromaClient, item: MediaItem): Promise<num
   }
 }
 
-/**
- * Push the current item + playback progress to the OS "Now Playing" widget (macOS
- * Control Center / the media-key HUD) via the native shell's `set_now_playing` command,
- * and honor its scrubber. Only active on the macOS libmpv shell (which registers the
- * command + MPRemoteCommandCenter); a no-op everywhere else. The poster is fetched +
- * rasterized on item change; play/pause just updates the rate + elapsed time.
- */
 export interface NowPlayingInput {
   client: KromaClient;
   item: MediaItem;
@@ -77,6 +69,9 @@ export interface NowPlayingInput {
   seekTo: (sec: number) => void;
 }
 
+/** Pushes the current item + playback progress to the OS "Now Playing" widget
+ * via the native shell's `set_now_playing` command, and honors its scrubber.
+ * Only active on the macOS libmpv shell; a no-op everywhere else. */
 export function useNowPlaying({
   client,
   item,

@@ -1,8 +1,6 @@
-// A remark plugin that counts the words in a post and injects
-// `export const readingMinutes = N` into the compiled module, so the blog can show
-// a reading estimate without a second `?raw` import of the source (which the MDX
-// plugin claims and returns as a component, not text). Compile-time, so every post
-// carries its own number with no runtime work.
+// A remark plugin that injects `export const readingMinutes = N` into the compiled
+// post, since a second `?raw` import is impossible: the MDX plugin claims the file
+// and returns it as a component, not text.
 
 interface MdastNode {
   type: string;

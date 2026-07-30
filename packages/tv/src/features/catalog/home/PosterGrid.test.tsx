@@ -1,9 +1,5 @@
 import type { ReactElement } from 'react';
 // @vitest-environment jsdom
-//
-// The first screen piece moved onto the universal kit. It renders through
-// react-native-web here exactly as it does in the Tizen / webOS bundles, and
-// compiles to native views on Apple TV / Android TV from the same source.
 
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
@@ -11,9 +7,8 @@ import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-librar
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type GridCard, PosterGrid } from '#tv/features/catalog/home/PosterGrid';
 
-/** Every kit control is a node of the spatial navigator, and a node needs a
- * navigator - the router gives every screen one. A test renders inside the same
- * scope so the tree it mounts is the tree the app mounts. */
+// Every kit control is a node of the spatial navigator; render inside the
+// same scope the router gives a real screen.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 afterEach(() => {
@@ -39,12 +34,8 @@ describe('PosterGrid', () => {
     expect(screen.getByLabelText('Film 0')).toBeTruthy();
   });
 
-  // The point of virtualising: what a 2000-title library costs is what a
-  // screenful costs, and it does not grow as the viewer walks down. It used to
-  // render in chunks of 120 that were never released, so the screen got heavier
-  // the further in you went - and a library is the screen people walk to the end
-  // of. The exact window size is the list's business (a screenful plus the
-  // overscan rows); what this pins is that it is BOUNDED, and far below the data.
+  // What a 2000-title library costs is what a screenful costs; this pins
+  // that the mounted window is bounded and far below the data, not its exact size.
   it('renders a bounded window, not the whole library', () => {
     const { container } = render(<PosterGrid cards={cards(500)} />);
     const mounted = container.querySelectorAll('[role="button"]').length;
@@ -75,9 +66,7 @@ describe('PosterGrid', () => {
 
   it('lays the tiles out at the design column width', () => {
     const { container } = render(<PosterGrid cards={cards(3)} />);
-    // 1792px of content, 8 columns, 24px gaps -> 203px tiles. A virtualised grid
-    // lays its rows out from the item size it was given rather than from a cell
-    // that stretches, so the tile itself carries the width.
+    // 1792px of content, 8 columns, 24px gaps -> 203px tiles.
     const tile = container.querySelector('[role="button"]') as HTMLElement;
     expect(getComputedStyle(tile).width).toBe('203px');
   });

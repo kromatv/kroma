@@ -1,9 +1,6 @@
-// The on-disk side of offline downloads.
-//
-// `sweepOrphans` is the one worth the most care here: it DELETES, it runs
-// unattended at startup, and the files it walks are multi-gigabyte films a
-// viewer chose to keep. Reclaiming a partial nobody points at is the feature;
-// reclaiming one byte more is losing someone's download on a plane.
+// The on-disk side of offline downloads. `sweepOrphans` deserves the most
+// care: it deletes, runs unattended at startup, and the files it walks can be
+// multi-gigabyte downloads a viewer chose to keep.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,7 +20,7 @@ vi.mock('expo-file-system/legacy', () => fs);
 const { DIR, deleteEntryFiles, formatBytes, mediaPath, readIndex, sweepOrphans, writeIndex } =
   await import('./store');
 
-/** The shape sweepOrphans reads: a media file plus whatever sidecars it owns. */
+// The shape sweepOrphans reads: a media file plus whatever sidecars it owns.
 const entry = (id: string, extras: { subs?: string[]; sprite?: string } = {}) =>
   ({
     itemId: id,
@@ -34,7 +31,7 @@ const entry = (id: string, extras: { subs?: string[]; sprite?: string } = {}) =>
     ...(extras.sprite ? { storyboard: { spritePath: extras.sprite } } : null),
   }) as never;
 
-/** Everything deleteAsync was asked to remove, in call order. */
+// Everything deleteAsync was asked to remove, in call order.
 const deleted = () => fs.deleteAsync.mock.calls.map(([uri]) => uri);
 
 beforeEach(() => {
@@ -57,8 +54,6 @@ describe('readIndex', () => {
     await expect(readIndex()).resolves.toEqual([{ itemId: 'a' }]);
   });
 
-  // A first launch has no file, and a half-written one is corrupt. Neither is
-  // an error the app can act on: an empty index means "nothing downloaded".
   it('reads as empty when the manifest is missing or corrupt', async () => {
     fs.readAsStringAsync.mockRejectedValueOnce(new Error('ENOENT'));
     await expect(readIndex()).resolves.toEqual([]);
@@ -94,9 +89,9 @@ describe('sweepOrphans', () => {
     expect(deleted()).toEqual([`${DIR}stray.bin`]);
   });
 
-  // The whole reason `live` exists: a transfer still running has no index entry
-  // yet, so without this its partial file looks exactly like an orphan - and
-  // deleting it mid-flight destroys a download in progress.
+  // `live` exists because a transfer still running has no index entry yet;
+  // without it, deleting the partial file mid-flight destroys a download in
+  // progress.
   it('spares an in-flight transfer and the Android .tmp it stages through', async () => {
     fs.readDirectoryAsync.mockResolvedValueOnce(['live.mp4', 'live.mp4.tmp', 'dead.mp4']);
     await sweepOrphans([], [`${DIR}live.mp4`]);

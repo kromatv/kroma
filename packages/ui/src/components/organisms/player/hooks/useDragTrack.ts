@@ -1,15 +1,7 @@
-// A horizontal track you can drag along: the seek bar, the volume slider.
-//
-// Both of them need the same awkward conversion. The 10-foot screens are
-// authored on a fixed 1920 canvas and scaled to whatever window they land in
-// (see <TvStage>, and the workbench's device frames), so a track that measures
-// itself at 1843pt through `onLayout` is 848px wide under the pointer. Dividing
-// a pointer offset by the LAYOUT width therefore lands at the scale factor times
-// where the user aimed - a press at 70% of the seek bar put the playhead at 32%.
-//
-// So the track measures itself twice: once in canvas units (what everything is
-// drawn in) and once on screen (what the gesture speaks), and the ratio between
-// them turns one into the other.
+// A horizontal track you can drag along (seek bar, volume slider). The 10-foot
+// canvas is authored at a fixed 1920 width and scaled to whatever window it
+// lands in, so the track measures itself both in canvas units and on-screen
+// pixels and uses the ratio to convert a pointer offset correctly.
 
 import { useCallback, useRef, useState } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';

@@ -75,8 +75,6 @@ function GenresPage() {
   );
 }
 
-/** A tappable genre card: library backdrop (or the genre-colour gradient) under
- * a bottom-heavy wash of the genre's signature hue. */
 function GenreTile({
   genre,
   count,

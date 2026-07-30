@@ -6,10 +6,9 @@ use rusqlite::OptionalExtension;
 
 use kroma_domain::{Invite, PublicUser};
 
-/// Create a user with an already-hashed password. The id is random (not derived
-/// from the email) so it isn't guessable. Returns the created [`User`]; the
-/// caller should pre-check the email to surface a clean 409 (the `UNIQUE`
-/// constraint is the hard guard).
+/// The id is random rather than derived from the email, so it isn't guessable.
+/// The caller should pre-check the email to surface a clean 409; the `UNIQUE`
+/// constraint is the hard guard.
 pub fn create_user(
     pool: &Pool,
     email: &str,
@@ -20,7 +19,6 @@ pub fn create_user(
     let conn = pool.get()?;
     let permissions = permissions.to_vec();
     let perms_json = serde_json::to_string(&permissions).unwrap_or_else(|_| "[\"playback\"]".into());
-    // note: pre-existing token primitive used at the db layer to salt the id.
     let id = kroma_primitives::short_hash(&format!("user|{email}|{}", kroma_primitives::random_token()));
     let created_at = now_or_blank();
     conn.execute(
@@ -42,13 +40,10 @@ pub fn create_user(
     })
 }
 
-/// Total number of accounts (used to detect the bootstrap owner registration).
 pub fn user_count(pool: &Pool) -> Result<i64> {
     let conn = pool.get()?;
     Ok(conn.query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0))?)
 }
-
-// ----- invitations ------------------------------------------------------------
 
 fn row_to_invite(r: &Row) -> rusqlite::Result<Invite> {
     let used_at: Option<String> = r.get(5)?;
@@ -62,7 +57,6 @@ fn row_to_invite(r: &Row) -> rusqlite::Result<Invite> {
     })
 }
 
-/// Create a registration invite granting `permissions`, expiring at `expires_at`.
 pub fn create_invite(
     pool: &Pool,
     token: &str,
@@ -80,7 +74,7 @@ pub fn create_invite(
     Ok(())
 }
 
-/// Fetch one invite by token (regardless of state).
+/// Fetch one invite by token, whatever its state.
 pub fn get_invite(pool: &Pool, token: &str) -> Result<Option<Invite>> {
     let conn = pool.get()?;
     let inv = conn
@@ -94,17 +88,13 @@ pub fn get_invite(pool: &Pool, token: &str) -> Result<Option<Invite>> {
 }
 
 /// Atomically consume a valid (unused, unexpired) invite → its granted
-/// permissions. Returns `None` if the token is unknown / used / expired.
+/// permissions. `None` if the token is unknown / used / expired.
 pub fn consume_invite(pool: &Pool, token: &str) -> Result<Option<Vec<Permission>>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
-    // Atomic check-and-consume: the `used_at IS NULL` guard lives in the same
-    // statement that stamps `used_at`, and `RETURNING` hands back the granted
-    // permissions only if this call is the one that flipped the row. Two
-    // concurrent invite-only registrations therefore can't both win a single-use
-    // invite the loser's UPDATE matches no row and yields `None`. (The pool
-    // hands each caller its own WAL connection, so the prior SELECT-then-UPDATE
-    // had a real TOCTOU window.)
+    // `used_at IS NULL` is checked in the same statement that stamps it, and
+    // `RETURNING` only yields to the caller that flipped the row, so two
+    // concurrent registrations can't both win a single-use invite.
     let perms: Option<String> = conn
         .query_row(
             "UPDATE invites SET used_at = ?2 \
@@ -129,15 +119,14 @@ pub fn list_invites(pool: &Pool) -> Result<Vec<Invite>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Revoke (delete) an invite. No-op if unknown.
 pub fn delete_invite(pool: &Pool, token: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute("DELETE FROM invites WHERE token = ?1", params![token])?;
     Ok(())
 }
 
-/// Look up a user by email (case-insensitive), returning the user plus its
-/// stored password hash for verification. `None` if no such email.
+/// Matches the email case-insensitively; the second tuple field is the stored
+/// password hash.
 pub fn find_user_by_email(pool: &Pool, email: &str) -> Result<Option<(User, String)>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
@@ -152,9 +141,9 @@ pub fn find_user_by_email(pool: &Pool, email: &str) -> Result<Option<(User, Stri
     }
 }
 
-/// Look up a user by an identifier that may be either their email
-/// (case-insensitive) or their username, returning the user plus its stored
-/// password hash. Lets the profile picker (which only knows usernames) log in.
+/// `identifier` is either an email (case-insensitive) or a username, so the
+/// profile picker — which only knows usernames — can log in. The second tuple
+/// field is the stored password hash.
 pub fn find_user_by_login(pool: &Pool, identifier: &str) -> Result<Option<(User, String)>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
@@ -170,8 +159,6 @@ pub fn find_user_by_login(pool: &Pool, identifier: &str) -> Result<Option<(User,
     }
 }
 
-/// Fetch a full account by id (e.g. to mint tokens after a passkey assertion
-/// resolves which user signed in). `None` if unknown.
 pub fn user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
     let conn = pool.get()?;
     let user = conn
@@ -184,7 +171,6 @@ pub fn user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
     Ok(user)
 }
 
-/// All users as the public (no-email) shape, for the profile picker.
 pub fn list_users(pool: &Pool) -> Result<Vec<PublicUser>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
@@ -201,9 +187,8 @@ pub fn list_users(pool: &Pool) -> Result<Vec<PublicUser>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Every non-null avatar URL across all users. Uploaded avatars live in the same
-/// `images` dir as the regenerable art cache, so the cache-cleanup job uses this
-/// to avoid trimming them (they can't be re-downloaded).
+/// Uploaded avatars live in the same `images` dir as the regenerable art cache,
+/// so the cleanup job uses this to spare them — they can't be re-downloaded.
 pub fn avatar_urls(pool: &Pool) -> Result<Vec<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT avatar_url FROM users WHERE avatar_url IS NOT NULL")?;
@@ -211,7 +196,6 @@ pub fn avatar_urls(pool: &Pool) -> Result<Vec<String>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Set (or clear) a user's avatar URL.
 pub fn set_user_avatar(pool: &Pool, user_id: &str, avatar_url: Option<&str>) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -221,7 +205,6 @@ pub fn set_user_avatar(pool: &Pool, user_id: &str, avatar_url: Option<&str>) -> 
     Ok(())
 }
 
-/// Set (or clear, with `None`) a user's preferred UI locale.
 pub fn set_user_language(pool: &Pool, user_id: &str, language: Option<&str>) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -231,7 +214,6 @@ pub fn set_user_language(pool: &Pool, user_id: &str, language: Option<&str>) -> 
     Ok(())
 }
 
-/// Set (or clear, with `None`) a user's preferred playback audio language.
 pub fn set_user_audio_language(pool: &Pool, user_id: &str, language: Option<&str>) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -241,8 +223,7 @@ pub fn set_user_audio_language(pool: &Pool, user_id: &str, language: Option<&str
     Ok(())
 }
 
-/// Set (or clear, with `None`) a user's preferred playback subtitle language
-/// (the sentinel `"off"` is a stored value meaning "force subtitles off").
+/// The sentinel `"off"` is a stored value meaning "force subtitles off".
 pub fn set_user_subtitle_language(pool: &Pool, user_id: &str, language: Option<&str>) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -252,12 +233,11 @@ pub fn set_user_subtitle_language(pool: &Pool, user_id: &str, language: Option<&
     Ok(())
 }
 
-/// Whether `username` is already taken by *another* account, checking BOTH the
-/// username column (case-sensitive, as username login resolves) AND the email
-/// column (case-insensitive). Rejecting a username that equals someone's email
-/// closes the ambiguity in `find_user_by_login` (`email = ?1 OR username = ?1`),
-/// where an attacker could otherwise register/rename to a victim's email and
-/// shadow their email login. `exclude_id` skips the caller's own row.
+/// Checks the username column (case-sensitive, as username login resolves) AND
+/// the email column (case-insensitive): a username equal to someone's email
+/// would otherwise shadow that victim's email login through the
+/// `email = ?1 OR username = ?1` in `find_user_by_login`. `exclude_id` skips the
+/// caller's own row.
 pub fn username_taken(pool: &Pool, username: &str, exclude_id: Option<&str>) -> Result<bool> {
     let conn = pool.get()?;
     let taken: i64 = match exclude_id {
@@ -275,9 +255,9 @@ pub fn username_taken(pool: &Pool, username: &str, exclude_id: Option<&str>) -> 
     Ok(taken != 0)
 }
 
-/// Change a user's email. The caller must pre-check for a duplicate to surface a
-/// clean 409; the `UNIQUE COLLATE NOCASE` constraint is the atomic backstop
-/// (a `rusqlite` error here is that collision).
+/// The caller must pre-check for a duplicate to surface a clean 409; the
+/// `UNIQUE COLLATE NOCASE` constraint is the atomic backstop, so a `rusqlite`
+/// error here is that collision.
 pub fn set_user_email(pool: &Pool, user_id: &str, email: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -287,8 +267,6 @@ pub fn set_user_email(pool: &Pool, user_id: &str, email: &str) -> Result<()> {
     Ok(())
 }
 
-/// The stored password hash for a user (for verifying the *current* password on
-/// a self-service change). `None` if the user id is unknown.
 pub fn user_password_hash(pool: &Pool, user_id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let hash = conn
@@ -299,8 +277,6 @@ pub fn user_password_hash(pool: &Pool, user_id: &str) -> Result<Option<String>> 
     Ok(hash)
 }
 
-/// Replace a user's password hash (self-service change; the caller verifies the
-/// current password first).
 pub fn set_user_password(pool: &Pool, user_id: &str, password_hash: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -310,8 +286,7 @@ pub fn set_user_password(pool: &Pool, user_id: &str, password_hash: &str) -> Res
     Ok(())
 }
 
-/// The stored PBKDF2 PIN hash for a user, or `None` when no PIN is set. Used by
-/// `/api/auth/pin/verify` and the set/clear handlers to compare the supplied PIN.
+/// The stored PBKDF2 PIN hash, or `None` when no PIN is set.
 pub fn user_pin_hash(pool: &Pool, user_id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let hash = conn
@@ -323,7 +298,6 @@ pub fn user_pin_hash(pool: &Pool, user_id: &str) -> Result<Option<String>> {
     Ok(hash)
 }
 
-/// Set (or clear, with `None`) a user's PIN hash.
 pub fn set_user_pin(pool: &Pool, user_id: &str, pin_hash: Option<&str>) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -333,9 +307,8 @@ pub fn set_user_pin(pool: &Pool, user_id: &str, pin_hash: Option<&str>) -> Resul
     Ok(())
 }
 
-/// Persist a new session token (expiry as a unix-seconds integer for robust
-/// comparison). `access_token` records the device credential this session was
-/// minted from, so the account's session list can flag the current device.
+/// `access_token` records the device credential this session was minted from,
+/// so the account's session list can flag the current device.
 pub fn create_session(
     pool: &Pool,
     token: &str,
@@ -351,10 +324,9 @@ pub fn create_session(
     Ok(())
 }
 
-/// The non-secret id (`short_hash`) of the device credential a live session was
-/// minted from. Lets the sessions endpoint flag the caller's current device
-/// without exposing (or re-hashing) the raw token in the handler. `None` when
-/// the session predates parent-token tracking.
+/// The non-secret `short_hash` of the device credential a live session was
+/// minted from, so the handler never touches the raw token. `None` when the
+/// session predates parent-token tracking.
 pub fn session_device_id(pool: &Pool, token: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let access = conn
@@ -368,7 +340,7 @@ pub fn session_device_id(pool: &Pool, token: &str) -> Result<Option<String>> {
     Ok(access.map(|t| kroma_primitives::short_hash(&t)))
 }
 
-/// Resolve a session token to its (non-expired) user.
+/// Resolve a session token to its user; expired sessions resolve to `None`.
 pub fn session_user(pool: &Pool, token: &str) -> Result<Option<User>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
@@ -384,18 +356,15 @@ pub fn session_user(pool: &Pool, token: &str) -> Result<Option<User>> {
     }
 }
 
-/// Delete a session (logout). No-op if the token is unknown.
 pub fn delete_session(pool: &Pool, token: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute("DELETE FROM sessions WHERE token = ?1", params![token])?;
     Ok(())
 }
 
-// ----- access tokens (long-lived device credential) ---------------------------
-
-/// Persist a new access token. `pin_verified` is true when it was minted through
-/// a strong check (password login / correct PIN) so the exchange can skip the
-/// PIN on subsequent silent refreshes.
+/// `pin_verified` is true when the token was minted through a strong check
+/// (password login / correct PIN), so the exchange can skip the PIN on
+/// subsequent silent refreshes.
 pub fn create_access_token(
     pool: &Pool,
     token: &str,
@@ -413,19 +382,14 @@ pub fn create_access_token(
     Ok(())
 }
 
-/// One device credential in the account's session list.
 pub struct AccessTokenRow {
-    /// A stable, non-secret id for the token (a short hash) safe to expose to the
-    /// client and to revoke by, without leaking the token itself.
     pub id: String,
-    /// The device's captured User-Agent (may be empty/unknown).
     pub user_agent: Option<String>,
     pub created_at: String,
     pub last_seen: Option<String>,
 }
 
-/// List a user's live (non-expired) device credentials, newest first, each with
-/// a non-secret id (`short_hash(token)`) for display + revocation.
+/// A user's live (non-expired) device credentials, newest first.
 pub fn list_access_tokens(pool: &Pool, user_id: &str) -> Result<Vec<AccessTokenRow>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
@@ -445,14 +409,12 @@ pub fn list_access_tokens(pool: &Pool, user_id: &str) -> Result<Vec<AccessTokenR
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// Revoke one of a user's device credentials by its non-secret id
-/// (`short_hash(token)`), also deleting any live sessions minted from it so the
-/// device is signed out immediately. Returns whether a matching token was found.
-/// Scoped to `user_id` so a caller can only revoke their own devices.
+/// Revoke a device credential by its non-secret `short_hash(token)` id, also
+/// deleting any live sessions minted from it so the device is signed out at
+/// once. Scoped to `user_id`, so a caller can only revoke their own devices.
 pub fn delete_access_token_by_id(pool: &Pool, user_id: &str, id: &str) -> Result<bool> {
     let conn = pool.get()?;
-    // Tokens are opaque and only reversible by hashing, so find the owner's token
-    // whose short-hash matches, then delete it + its sessions.
+    // Tokens are only reversible by hashing, hence the scan for a matching hash.
     let mut stmt =
         conn.prepare("SELECT token FROM access_tokens WHERE user_id = ?1")?;
     let tokens = stmt
@@ -466,16 +428,12 @@ pub fn delete_access_token_by_id(pool: &Pool, user_id: &str, id: &str) -> Result
     Ok(true)
 }
 
-/// Sign the user out of every OTHER credential on a password change: delete all
-/// of the user's short-lived sessions and long-lived device (access) tokens
-/// except the ones the caller is currently using (identified by their live
-/// session `keep_token` and the device it was minted from). A rotated password
-/// thus evicts any stolen session or 90-day device token while the caller stays
-/// signed in. If `keep_token` is unknown, nothing is preserved and everything is
-/// revoked (fail-closed).
+/// Drop every session and device token except `keep_token` and the device it
+/// was minted from, so a rotated password evicts any stolen credential while
+/// the caller stays signed in. An unknown `keep_token` revokes everything
+/// (fail-closed).
 pub fn revoke_other_sessions(pool: &Pool, user_id: &str, keep_token: &str) -> Result<()> {
     let conn = pool.get()?;
-    // The device credential the surviving session was minted from (keep it too).
     let keep_device: Option<String> = conn
         .query_row(
             "SELECT access_token FROM sessions WHERE token = ?1",
@@ -498,8 +456,7 @@ pub fn revoke_other_sessions(pool: &Pool, user_id: &str, keep_token: &str) -> Re
     Ok(())
 }
 
-/// Resolve a (non-expired) access token to its user plus the stored
-/// `pin_verified` flag. `None` when unknown/expired.
+/// The user behind a non-expired access token, plus its `pin_verified` flag.
 pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
@@ -517,11 +474,9 @@ pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)
     }
 }
 
-/// Stamp a device credential as seen now, re-labelling it with `user_agent` when
-/// the caller sent one (an absent header keeps the stored label rather than
-/// blanking it). Called on every token exchange, so a device that has been
-/// renamed, updated, or - as the phone app was - taught to name itself at all
-/// stops reading as the device it was when it first signed in.
+/// Stamp a device credential as seen now, re-labelling it with `user_agent`
+/// when the caller sent one; an absent header keeps the stored label rather
+/// than blanking it.
 pub fn touch_access_token(pool: &Pool, token: &str, user_agent: Option<&str>) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -532,8 +487,6 @@ pub fn touch_access_token(pool: &Pool, token: &str, user_agent: Option<&str>) ->
     Ok(())
 }
 
-/// Mark an access token PIN-verified (after a correct PIN on exchange), so later
-/// silent refreshes for a PIN-locked account skip the prompt.
 pub fn set_access_pin_verified(pool: &Pool, token: &str, verified: bool) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -543,8 +496,8 @@ pub fn set_access_pin_verified(pool: &Pool, token: &str, verified: bool) -> Resu
     Ok(())
 }
 
-/// Re-lock every access token for a user (clear `pin_verified`). Called when the
-/// PIN is set/rotated/cleared so all devices must re-confirm the new state.
+/// Re-lock every device: called when the PIN is set, rotated or cleared, so all
+/// of them must re-confirm the new state.
 pub fn reset_access_pin_verified(pool: &Pool, user_id: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -554,7 +507,6 @@ pub fn reset_access_pin_verified(pool: &Pool, user_id: &str) -> Result<()> {
     Ok(())
 }
 
-/// Delete an access token (device logout / disconnect). No-op if unknown.
 pub fn delete_access_token(pool: &Pool, token: &str) -> Result<()> {
     let conn = pool.get()?;
     conn.execute("DELETE FROM access_tokens WHERE token = ?1", params![token])?;
@@ -569,7 +521,6 @@ mod tests {
 
     static SEQ: AtomicU32 = AtomicU32::new(0);
 
-    /// Far-future expiry (unix seconds) so tokens/invites count as live.
     const FUTURE: i64 = 9_999_999_999;
 
     fn pool() -> Pool {
@@ -594,18 +545,15 @@ mod tests {
         assert_eq!(u.permissions, vec![Permission::Playback, Permission::UsersManage]);
         assert!(!u.has_pin);
 
-        // Email lookup is case-insensitive and returns the stored hash.
         let (found, hash) = find_user_by_email(&p, "alice@example.com").unwrap().unwrap();
         assert_eq!(found.id, u.id);
         assert_eq!(hash, "pw-hash");
         assert!(find_user_by_email(&p, "nobody@x.com").unwrap().is_none());
 
-        // Login accepts email (case-insensitive) OR username.
         assert_eq!(find_user_by_login(&p, "ALICE@example.com").unwrap().unwrap().0.id, u.id);
         assert_eq!(find_user_by_login(&p, "alice").unwrap().unwrap().0.id, u.id);
         assert!(find_user_by_login(&p, "ghost").unwrap().is_none());
 
-        // Fetch by id + list.
         assert_eq!(user_by_id(&p, &u.id).unwrap().unwrap().username, "alice");
         assert!(user_by_id(&p, "missing").unwrap().is_none());
         let list = list_users(&p).unwrap();
@@ -619,10 +567,8 @@ mod tests {
         let p = pool();
         let u = mk_user(&p, "a@b.c", "alice");
         assert!(username_taken(&p, "alice", None).unwrap());
-        // The email column also guards (shadowing another account's email login).
         assert!(username_taken(&p, "a@b.c", None).unwrap());
         assert!(!username_taken(&p, "bob", None).unwrap());
-        // Excluding the owner's own id frees their own username.
         assert!(!username_taken(&p, "alice", Some(&u.id)).unwrap());
         assert!(username_taken(&p, "alice", Some("other-id")).unwrap());
     }
@@ -635,7 +581,6 @@ mod tests {
         set_user_avatar(&p, &u.id, Some("/api/images/av.webp")).unwrap();
         assert_eq!(avatar_urls(&p).unwrap(), vec!["/api/images/av.webp".to_string()]);
         assert_eq!(user_by_id(&p, &u.id).unwrap().unwrap().avatar_url.as_deref(), Some("/api/images/av.webp"));
-        // Clearing removes it from the non-null set.
         set_user_avatar(&p, &u.id, None).unwrap();
         assert!(avatar_urls(&p).unwrap().is_empty());
     }
@@ -651,7 +596,6 @@ mod tests {
         assert_eq!(got.language.as_deref(), Some("fr"));
         assert_eq!(got.audio_language.as_deref(), Some("ja"));
         assert_eq!(got.subtitle_language.as_deref(), Some("off"));
-        // Clearing a preference resets it to NULL.
         set_user_language(&p, &u.id, None).unwrap();
         assert!(user_by_id(&p, &u.id).unwrap().unwrap().language.is_none());
     }
@@ -680,7 +624,6 @@ mod tests {
         set_user_pin(&p, &u.id, Some("pin-hash")).unwrap();
         assert_eq!(user_pin_hash(&p, &u.id).unwrap().as_deref(), Some("pin-hash"));
         assert!(user_by_id(&p, &u.id).unwrap().unwrap().has_pin);
-        // The public list also reflects the PIN state.
         assert!(list_users(&p).unwrap()[0].has_pin);
 
         set_user_pin(&p, &u.id, None).unwrap();
@@ -700,21 +643,17 @@ mod tests {
         assert!(!got.used);
         assert_eq!(list_invites(&p).unwrap().len(), 1);
 
-        // Consuming a live invite yields its permissions and flips it to used.
         let perms = consume_invite(&p, "inv1").unwrap().unwrap();
         assert_eq!(perms, vec![Permission::Playback, Permission::RequestsCreate]);
         assert!(get_invite(&p, "inv1").unwrap().unwrap().used);
-        // A used invite is no longer consumable nor listed.
         assert!(consume_invite(&p, "inv1").unwrap().is_none());
         assert!(list_invites(&p).unwrap().is_empty());
 
-        // Expired invites can't be consumed and aren't listed.
         create_invite(&p, "old", &[Permission::Playback], &owner.id, 1).unwrap();
         assert!(consume_invite(&p, "old").unwrap().is_none());
         assert!(list_invites(&p).unwrap().is_empty());
         assert!(consume_invite(&p, "unknown").unwrap().is_none());
 
-        // Delete drops the row.
         create_invite(&p, "inv2", &[Permission::Playback], &owner.id, FUTURE).unwrap();
         delete_invite(&p, "inv2").unwrap();
         assert!(get_invite(&p, "inv2").unwrap().is_none());
@@ -726,16 +665,13 @@ mod tests {
         let u = mk_user(&p, "a@b.c", "alice");
         create_session(&p, "sess-tok", &u.id, FUTURE, Some("acc-tok")).unwrap();
         assert_eq!(session_user(&p, "sess-tok").unwrap().unwrap().id, u.id);
-        // The device id is short_hash of the minting access token.
         assert_eq!(
             session_device_id(&p, "sess-tok").unwrap(),
             Some(kroma_primitives::short_hash("acc-tok"))
         );
 
-        // Expired sessions resolve to nobody.
         create_session(&p, "old-sess", &u.id, 1, None).unwrap();
         assert!(session_user(&p, "old-sess").unwrap().is_none());
-        // A session with no parent token has no device id.
         assert!(session_device_id(&p, "old-sess").unwrap().is_none());
 
         delete_session(&p, "sess-tok").unwrap();
@@ -752,27 +688,22 @@ mod tests {
         assert_eq!(user.id, u.id);
         assert!(!pin_verified);
 
-        // Flip pin_verified on; reset clears it for every device.
         set_access_pin_verified(&p, "at1", true).unwrap();
         assert!(access_token_user(&p, "at1").unwrap().unwrap().1);
         reset_access_pin_verified(&p, &u.id).unwrap();
         assert!(!access_token_user(&p, "at1").unwrap().unwrap().1);
 
-        // Listing exposes a non-secret id + user agent.
         let rows = list_access_tokens(&p, &u.id).unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].id, kroma_primitives::short_hash("at1"));
         assert_eq!(rows[0].user_agent.as_deref(), Some("Firefox"));
 
-        // A later exchange re-labels the device; a request with no User-Agent
-        // keeps the label it had rather than blanking it.
         touch_access_token(&p, "at1", Some("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)")).unwrap();
         touch_access_token(&p, "at1", None).unwrap();
         let rows = list_access_tokens(&p, &u.id).unwrap();
         assert_eq!(rows[0].user_agent.as_deref(), Some("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)"));
         assert!(rows[0].last_seen.is_some());
 
-        // Expired tokens neither resolve nor list.
         create_access_token(&p, "old-at", &u.id, 1, false, None).unwrap();
         assert!(access_token_user(&p, "old-at").unwrap().is_none());
         assert_eq!(list_access_tokens(&p, &u.id).unwrap().len(), 1);
@@ -790,13 +721,10 @@ mod tests {
         create_session(&p, "sess-alice", &alice.id, FUTURE, Some("at-alice")).unwrap();
 
         let id = kroma_primitives::short_hash("at-alice");
-        // Bob can't revoke Alice's device (scoped to user_id).
         assert!(!delete_access_token_by_id(&p, &bob.id, &id).unwrap());
-        // Alice revokes it: token gone and its session signed out.
         assert!(delete_access_token_by_id(&p, &alice.id, &id).unwrap());
         assert!(access_token_user(&p, "at-alice").unwrap().is_none());
         assert!(session_user(&p, "sess-alice").unwrap().is_none());
-        // Unknown id is a clean false.
         assert!(!delete_access_token_by_id(&p, &alice.id, "deadbeef").unwrap());
     }
 }

@@ -38,14 +38,12 @@ import {
   IconVolLow,
 } from './icons';
 
-/** The focused control lifts and takes the amber ring; the fill brightens too.
- * (Kept for the volume pill, whose wrapper is not a kit atom: the pill holds a
- * button AND a slider, so the focus visuals live on the wrapper.) */
+// Kept for the volume pill, whose wrapper isn't a kit atom (it holds a button
+// AND a slider), so the focus visuals must live on the wrapper itself.
 const FOCUS_POP = { boxShadow: FOCUS_SHADOW, transform: [{ scale: FOCUS_SCALE }] };
 const circleFill = (focused: boolean) => ({
   backgroundColor: focused ? CTRL_ON : CTRL_OFF,
 });
-/** The focused play key steps to the accent's hover fill, as it always did. */
 const PLAY_BRIGHTEN = { backgroundColor: colors.accentHover };
 
 export interface ControlClusterProps {
@@ -67,9 +65,8 @@ export interface ControlClusterProps {
   onVolume: (v: number) => void;
 }
 
-/** Circular control button matching the design (state-driven focus, kit atom in
- * controlled mode: `focused` is ALWAYS passed, so it never becomes a platform /
- * navigator focus target - see ../lib/virtual-focus.ts). */
+// Controlled focus (state-driven, not platform/navigator focus — see
+// ../lib/virtual-focus.ts): `focused` is ALWAYS passed explicitly.
 function Circle({
   id,
   size,
@@ -102,30 +99,24 @@ function Circle({
   );
 }
 
-/** The focused circle brightens its fill, on top of the kit's ring + scale. */
 const BRIGHTEN = { backgroundColor: CTRL_ON };
 
-/** Player state a circular control's glyph can depend on. */
 interface GlyphState {
   pipActive: boolean;
   fullscreen: boolean;
 }
 
-/** The speaker glyph for a level, shared by the volume pill and the bare mute
- * key a narrow row collapses it to - so the two never disagree about what
- * "muted" looks like. */
+// Shared by the volume pill and the bare mute key a narrow row collapses to,
+// so the two never disagree about what "muted" looks like.
 function volumeGlyph(level: number, size: number): ReactNode {
   if (level === 0) return <IconMute size={size} />;
   if (level < 0.5) return <IconVolLow size={size} />;
   return <IconVolHigh size={size} />;
 }
 
-/** Every control except play and volume is the SAME circular button, differing
- * only in accessible label and glyph, so they are a table rather than eight
- * near-identical JSX blocks. Their diameters live in ../lib/metrics, which is
- * also what sizes the row against the stage. `pip` and `fullscreen` swap their
- * glyph with player state, and every glyph is drawn at the row's scale, which is
- * why a glyph is a function of both. */
+// Every control except play and volume is the SAME circular button, differing
+// only in label and glyph — a table instead of eight near-identical JSX blocks.
+// `pip`/`fullscreen` glyphs depend on player state; every glyph draws at scale.
 const CIRCLES: Record<
   Exclude<ControlId, 'play' | 'volume'>,
   { label: MessageKey; glyph: (s: GlyphState, px: Px) => ReactNode }
@@ -151,33 +142,15 @@ const CIRCLES: Record<
 };
 
 /**
- * The middle control row (§4): centered transport (rewind / play / forward) plus
- * the feature-flagged cluster on the right (next / volume / subtitles / audio /
- * settings / cast / pip / fullscreen). `metrics.controls` has already been
- * filtered by the feature flags AND by the width there is, so this only renders
- * what is present (no dead buttons). At full size it is the 10-foot layout of
- * the design (62 / 80 / 62 transport, 56 cluster circles).
+ * The middle control row (§4): centered transport (rewind/play/forward) plus the
+ * feature-flagged cluster (next/volume/subtitles/audio/settings/cast/pip/
+ * fullscreen). Renders exactly `metrics.controls` — already filtered by feature
+ * flags and available width — so it never draws a dead button, and always fits
+ * on one line by shrinking then shedding controls (see ../lib/metrics
+ * `chromeMetrics`); a shed control is reported via `metrics.overflow`.
  *
- * It is also the row that has to survive a browser window, and it does so in
- * one line, always (`metrics`, from ../lib/metrics):
- *
- *  1. Full size, transport centred: the spacer and the cluster share the free
- *     space equally, which is what puts play in the middle of the screen.
- *  2. Tight: the cluster claims `clusterWidth` as its MINIMUM, so flexbox takes
- *     the difference out of the spacer - the transport drifts left of centre
- *     instead of the cluster drawing over it - and every size shrinks together.
- *  3. Narrow: at the point where a circle would stop being tappable the row
- *     gives something up instead of wrapping - first the volume rail, then one
- *     control at a time - and grows back to a comfortable size without it.
- *     Shedding happens in the fitter, so the shed control loses its D-pad stop
- *     with it (see ../lib/nav) rather than becoming an invisible focus trap -
- *     and it is handed to the settings panel as `metrics.overflow`, which is
- *     what keeps a narrow window from LOSING the control it could not draw.
- *
- * Memoized: every prop is stable between playback ticks (the nav machine's
- * callbacks are referentially stable, and `metrics` only changes when the stage
- * is resized), so the row skips the ~4 Hz timeupdate re-renders the rest of the
- * chrome makes.
+ * Memoized: every prop is stable between playback ticks, so the row skips the
+ * ~4 Hz timeupdate re-renders the rest of the chrome makes.
  */
 export const ControlCluster = memo(function ControlCluster({
   focused,
@@ -224,9 +197,8 @@ export const ControlCluster = memo(function ControlCluster({
       );
     }
     if (id === 'volume') {
-      // Too narrow for the rail: the pill collapses to the mute key it is built
-      // around. The level is still the keyboard's (and, on the only stages this
-      // happens on, the device's own volume keys).
+      // Too narrow for the rail: the pill collapses to the mute key it's built
+      // around. The level is still adjustable via the keyboard/remote.
       if (!rail) {
         return (
           <Circle
@@ -279,9 +251,8 @@ export const ControlCluster = memo(function ControlCluster({
       <Box row align="center" gap={px(TRANSPORT_GAP)}>
         {transport.map(render)}
       </Box>
-      {/* `minW`: the cluster's own content width. Without it the box takes half
-          the free space, its (non-shrinking) circles overflow to the LEFT, and
-          the cluster is drawn straight through the transport. */}
+      {/* `minW`: without it the box takes half the free space and its
+          (non-shrinking) circles overflow left, through the transport. */}
       <Box row flex align="center" justify="flex-end" gap={px(CLUSTER_GAP)} minW={clusterWidth}>
         {cluster.map(render)}
       </Box>
@@ -289,7 +260,6 @@ export const ControlCluster = memo(function ControlCluster({
   );
 });
 
-/** Volume as an always-expanded pill (§4b): mute button + inline slider. */
 function VolumeControl({
   focused,
   muted,
@@ -311,15 +281,13 @@ function VolumeControl({
   label: string;
   muteLabel: string;
 }>) {
-  // Measured on the RAIL, not on the row that holds it: the row is 96 wide with
-  // 20 of right padding, so dividing a pointer offset by the row's width put the
-  // level a fifth past the cursor. The two share a left edge, so a `locationX`
-  // taken on the row is still an offset along the rail.
+  // Measured on the RAIL, not the row that holds it: the row has 20px of right
+  // padding, so dividing a pointer offset by the row's width would put the level
+  // a fifth past the cursor. The two share a left edge, so this still works.
   const track = useDragTrack();
   const level = muted ? 0 : volume;
-  // The fill and thumb track the perceptual slider position, not the raw
-  // amplitude, so the handle sits under the pointer while the audio follows the
-  // loudness curve (a linear fader would look wrong against a tapered volume).
+  // Fill and thumb track the perceptual slider position, not raw amplitude, so
+  // the handle sits under the pointer while the audio follows the loudness curve.
   const sliderPos = muted ? 0 : volumeToSlider(volume);
   const volIcon = volumeGlyph(level, px(24));
 
@@ -360,8 +328,7 @@ function VolumeControl({
       style={[circleFill(focused), focused ? FOCUS_POP : null]}
     >
       {/* Controlled at `false`: the PILL carries the focus visuals for the whole
-          volume control, so the button itself never paints one - but it must
-          still opt out of platform focus like everything else in the chrome. */}
+          control, but the button must still opt out of platform focus. */}
       <IconButton variant="ghost" size={size} focused={false} label={muteLabel} onPress={onToggle}>
         {volIcon}
       </IconButton>
@@ -385,9 +352,9 @@ function VolumeControl({
           radius="pill"
           bg="rgba(255, 255, 255, 0.22)"
         >
-          {/* The fill width and thumb offset vary with the volume, so they go
-              through `style` (which bypasses the shared cache) rather than the
-              `w` / `left` shorthands, which would mint a cache entry per level. */}
+          {/* Fill width and thumb offset vary with volume, so they use `style`
+              (bypassing the shared cache) rather than `w`/`left`, which would
+              mint a cache entry per level. */}
           <Box
             absolute
             top={0}

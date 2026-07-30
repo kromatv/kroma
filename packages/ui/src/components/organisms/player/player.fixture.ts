@@ -1,16 +1,6 @@
-// A standing-still player, for the workbench.
-//
-// The player chrome is driven by ONE object: a `PlayerController` the surface
-// implements (an in-page <video> on the web, AVPlay / mpv / ExoPlayer behind a
-// transparent page on a television). That is the right shape for the app - the
-// chrome knows nothing about how playback works - but it is also why several of
-// these components had no story: `<StatsPanel>` and `<SettingsPanel>` cannot
-// render without a controller, and a workbench has no video to play.
-//
-// So this is a controller that does nothing, with plausible numbers in it. Every
-// method is a no-op, which is exactly right for a component gallery: pressing
-// Play in a story should show the pressed state, not start a film that does not
-// exist. Anything a story wants to vary is passed through `fakeController({...})`.
+// A standing-still player controller for the workbench: every method is a
+// no-op with plausible numbers, so a story can render chrome that needs a
+// `PlayerController` without any video to play. Overrides via `fakeController({...})`.
 
 import type { AudioTrack } from '@kroma/core';
 import type { StoryboardTile } from '#ui/services/storyboard';
@@ -51,21 +41,10 @@ const SUBTITLES: PlayerSub[] = [
 
 const QUALITIES: PlayerQuality[] = [{ id: 'auto', label: 'Auto · 2160p HEVC' }];
 
-/**
- * A full snapshot, of the shape the WEB player builds (see
- * clients/web/src/features/playback/web-stats.ts): the headline fields, the
- * transport and client diagnostics in `extra`, and the live series in `meters`.
- *
- * It is the web's because that is the richest producer there is - a native TV
- * plane exposes no decode counters and reports a third of this. Showing the lean
- * version in the workbench meant the panel's own features (grouped blocks,
- * sparklines) had nothing to render, and a component nobody can see is a
- * component nobody maintains. The lean case is a scene of the story instead.
- */
+/** Shaped like the web player's stats (see web-stats.ts): the richest producer,
+ * so grouped blocks and sparklines have real data to render. */
 function fullStats(tick: number): PlayerStats {
-  // A slow wander around plausible values, so the sparklines draw a trace rather
-  // than a flat line. Deterministic in `tick` (the panel polls twice a second),
-  // so two screenshots of the same frame are identical.
+  // Deterministic in `tick` so two screenshots of the same frame are identical.
   const wave = (period: number, phase = 0) => Math.sin(tick / period + phase);
   const buffer = 24.8 + wave(9) * 4.2;
   const bandwidth = 84_000 + wave(7, 1.2) * 12_000;
@@ -102,18 +81,9 @@ function fullStats(tick: number): PlayerStats {
   };
 }
 
-/**
- * The three live series, shaped exactly as the web builder emits them (see
- * web-stats.ts): the two kb/s series share one axis with bandwidth owning the
- * band between them, and buffer gets its own chart plus the low-water line.
- *
- * No colours - the panel assigns those from the validated series palette, and a
- * fixture that pinned its own would stop the workbench showing what ships.
- *
- * Shared with StatsPanel.stories, which had grown a byte-identical copy: two
- * fixtures drifting apart is two different answers to "what does the panel
- * actually look like", which is the one question a workbench exists to answer.
- */
+/** Shaped exactly as the web builder emits (see web-stats.ts). No colours -
+ * the panel assigns those from the validated series palette. Shared with
+ * StatsPanel.stories so the two fixtures cannot drift apart. */
 function liveMeters(at: {
   bandwidth: number;
   bitrate: number;
@@ -146,7 +116,6 @@ function liveMeters(at: {
   ];
 }
 
-/** `H:MM:SS`, for the fixture's position row. */
 function clockOf(sec: number): string {
   const whole = Math.max(0, Math.floor(sec));
   const h = Math.floor(whole / 3600);
@@ -155,15 +124,13 @@ function clockOf(sec: number): string {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-/** The panel polls `getStats()` twice a second; each call advances the fixture's
- * clock, which is what makes the sparklines move in a workbench with no video. */
 function livePlayerStats(): () => PlayerStats {
   let tick = 0;
   return () => fullStats(tick++);
 }
 
 /** The lean end of the range: a native TV plane, which exposes no decode
- * counters and no engine transport at all. */
+ * counters at all. */
 const TV_STATS: PlayerStats = {
   mode: 'Direct play',
   resolution: '3840×2160',
@@ -177,17 +144,11 @@ const TV_STATS: PlayerStats = {
   ],
 };
 
-/**
- * A controller that reports a paused 4K session and ignores every command.
- *
- * Overrides are shallow-merged, so a story says only what it cares about:
- *
- *   fakeController({ playing: true, cur: 1284 })
- */
+/** A controller that reports a paused 4K session and ignores every command.
+ * Overrides are shallow-merged: `fakeController({ playing: true, cur: 1284 })`. */
 function fakeController(over: Partial<PlayerController> = {}): PlayerController {
   const noop = () => undefined;
   return {
-    // clock: a couple of minutes into a 2h44 film
     cur: 164,
     dur: 9840,
     bufEnd: 420,
@@ -235,27 +196,17 @@ function fakeController(over: Partial<PlayerController> = {}): PlayerController 
     fullscreen: false,
     toggleFullscreen: noop,
 
-    // A live snapshot per controller, so each panel on screen keeps its own
-    // rolling history rather than sharing one module-level clock.
     getStats: livePlayerStats(),
     ...over,
   };
 }
 
-/**
- * A storyboard tile at a position, for the seek preview.
- *
- * A real storyboard is ONE sprite sheet holding every thumbnail, and a tile is a
- * window onto it: `offsetX/Y` move the scaled sheet so the wanted frame lands in
- * the window. There is no sheet in a workbench, so each bucket of the film points
- * at a different still used as a single-tile sheet - the shape is identical, and
- * scrubbing changes the picture, which is the behaviour worth seeing.
- *
- * `scale` is display size over source size, and the sheet is drawn at its OWN
- * pixel size and then scaled as a layer: asking the decoder for
- * `sheetWidth * scale` pixels is what silently produces a black preview on a
- * television (see StoryboardThumb).
- */
+/** A storyboard tile at a position, for the seek preview. No real sprite sheet
+ * in a workbench, so each bucket of the film uses a different still as a
+ * single-tile sheet. `scale` is display size over source size: the sheet must
+ * be drawn at its own pixel size and scaled as a layer, not decoded at
+ * `sheetWidth * scale` (that silently produces a black preview on TV; see
+ * StoryboardThumb). */
 function fakeTileAt(sheets: readonly string[], width = 220) {
   const SOURCE_W = 640;
   const SOURCE_H = 360;

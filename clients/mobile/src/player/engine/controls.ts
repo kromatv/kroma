@@ -8,12 +8,9 @@ import { type AudioFilterMode, type EngineCore, NATIVE_SEEK_AHEAD } from './type
 export interface ControlDeps {
   player: VideoPlayer;
   core: EngineCore;
-  /** (Re)load the current mode's source anchored at an absolute position. */
   load(absSec: number): Promise<void>;
   dur: number;
-  /** Whether the source is a downloaded local file (no server to fall back on). */
   localUri?: string;
-  /** Whether the ORIGINAL file is direct-playable, for returning from a filter. */
   directPlayable: boolean;
   setCur(sec: number): void;
   setAudioIndex(index: number): void;
@@ -45,10 +42,9 @@ export function useEngineControls(deps: ControlDeps): Controls {
     setRateState,
   } = deps;
 
-  // Leaving the player must silence audio IMMEDIATELY and deterministically:
-  // with background playback + Now Playing enabled the native player can
-  // outlive both the unmount and the modal dismissal, so every exit path calls
-  // this (back button, up-next navigation, beforeRemove, unmount backstop).
+  // With background playback + Now Playing enabled the native player can
+  // outlive both the unmount and the modal dismissal, so every exit path
+  // (back button, up-next, beforeRemove, unmount) calls this to silence it.
   const shutdown = useCallback(() => {
     core.loadId++;
     try {
@@ -57,11 +53,9 @@ export function useEngineControls(deps: ControlDeps): Controls {
     } catch {
       // Player already released.
     }
-    // Detach the source so the audio session is dropped, not just paused. The
-    // async variant is the reliable one on iOS. A released player throws
-    // SYNCHRONOUSLY here, so the call is made inside a promise chain: that turns
-    // both failure modes into one rejection the `.catch` swallows, instead of
-    // needing a try/catch around a promise as well.
+    // Detach the source so the audio session drops, not just pauses. A
+    // released player throws SYNCHRONOUSLY here, so the call runs inside a
+    // promise chain: both failure modes become one rejection `.catch` swallows.
     void Promise.resolve()
       .then(() => player.replaceAsync(null))
       .catch(() => undefined);
@@ -104,10 +98,10 @@ export function useEngineControls(deps: ControlDeps): Controls {
     [core, seekTo],
   );
 
-  /** Online, audio selection rides the master (path-param rendition),
-   * re-anchored in place; a direct file switches modes to do it. Offline the
-   * downloaded file carries every track, so selection is IN PLACE on the
-   * native player (`index` = ordinal into `localAudio`) - no reload at all. */
+  // Online, audio selection rides the master (path-param rendition),
+  // re-anchored in place; a direct file switches modes to do it. Offline the
+  // file carries every track, so selection is IN PLACE on the native player —
+  // no reload at all.
   const setAudio = useCallback(
     (index: number) => {
       if (localUri) {
@@ -127,8 +121,8 @@ export function useEngineControls(deps: ControlDeps): Controls {
     [core, load, localUri, player, setAudioIndex],
   );
 
-  /** The volume filter is server DSP, so any filter forces the master; turning
-   * it off returns to direct when the file is direct-playable. */
+  // The volume filter is server DSP, so any filter forces the master; turning
+  // it off returns to direct when the file is direct-playable.
   const setFilter = useCallback(
     (f: AudioFilterMode) => {
       if (localUri || f === core.filter) return;

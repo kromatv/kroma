@@ -1,11 +1,4 @@
 // @vitest-environment jsdom
-//
-// The admin console's data hooks and its capability gate.
-//
-// `isAnyAdmin` / `useCap` decide who sees the console at all, so a wrong answer
-// either locks out a moderator or shows management UI to someone who cannot use
-// it. The one that is easy to get wrong is `requests.manage`: a requests
-// moderator holds no users/library/settings rights but still needs the shell.
 
 import type { Permission, User } from '@kroma/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -17,7 +10,6 @@ import { isAnyAdmin, useAsyncAction, useCap, usePoll } from './hooks';
 
 const withPerms = (...permissions: Permission[]) => ({ permissions }) as Pick<User, 'permissions'>;
 
-/** Query provider with retries off, so a rejected fetch settles once. */
 function wrapper(user: User | null = null) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -50,8 +42,7 @@ describe('isAnyAdmin', () => {
       'users.manage',
       'library.manage',
       'settings.manage',
-      // The one worth naming: a requests moderator holds none of the others and
-      // still needs the console shell for the Demandes queue.
+      // A requests moderator holds none of the others and still needs the shell.
       'requests.manage',
     ] as Permission[]) {
       expect(isAnyAdmin(withPerms(cap)), cap).toBe(true);
@@ -105,7 +96,6 @@ describe('useAsyncAction', () => {
       );
     });
     expect(result.current.error).toBe('failed: boom');
-    // Still not busy: the finally has to run on the failure path too.
     expect(result.current.busy).toBe(false);
   });
 
@@ -154,8 +144,7 @@ describe('usePoll', () => {
     expect(result.current.data).toBeNull();
   });
 
-  // Callers put `reload` in effect deps, so a changing identity would re-run
-  // those effects on every render.
+  // Callers put `reload` in effect deps.
   it('keeps a stable reload identity across renders', async () => {
     const { result, rerender } = renderHook(() => usePoll(['admin', 'z'], async () => 1, 60_000), {
       wrapper: wrapper(),

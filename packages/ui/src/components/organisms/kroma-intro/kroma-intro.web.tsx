@@ -6,25 +6,21 @@ import { useIntroExit } from './useIntroExit';
 import { useIntroKeys } from './useIntroKeys';
 
 /**
- * KROMA cinematic brand intro: the bundled intro film (a chromatic light tunnel
- * that lands on the KR-wheel-MA lockup), full-screen with sound, shared by every
- * client. Ships as 4K60 HEVC only every target TV, Android TV, Apple device
- * and HW-decode Chrome plays it; anything without an HEVC decoder (decode/load
- * failure, no supported codec) falls back to the pure-CSS scene in
- * {@link CssIntro}.
+ * KROMA cinematic brand intro: the bundled 4K60 HEVC film, full-screen with
+ * sound, shared by every client. Anything without an HEVC decoder falls back
+ * to the pure-CSS scene in {@link CssIntro}.
  *
- * Browsers block autoplay-with-sound until a user gesture, so playback is tried
+ * Browsers block autoplay-with-sound until a user gesture, so playback tries
  * with sound first and falls back to muted; the first pointer/key interaction
- * then unmutes the film in place, and only rewinds it when it has barely
- * started (so an opening gesture still gets picture and sound together, while a
- * stray click or remote key mid-film cannot restart the intro). There are no
- * on-screen controls it auto-ends with the film, any key / remote button (OK,
- * Back, Space) skips, and a safety timer (armed from the video's own duration
- * once metadata loads) guarantees the intro ends even if playback stalls.
+ * unmutes in place, rewinding only if the film has barely started (so an
+ * early gesture gets picture and sound together, while a late one can't
+ * restart the intro). Any key or remote button skips; a safety timer, armed
+ * from the video's own duration, guarantees the intro ends even if playback
+ * stalls.
  *
- * Framework-free (plain inline styles) so it renders identically on the web SSR
- * shell and on old TV webviews. Mount as a full-screen overlay; `onDone` hands
- * off to the app.
+ * Framework-free (plain inline styles) so it renders identically on the web
+ * SSR shell and on old TV webviews. Mount as a full-screen overlay; `onDone`
+ * hands off to the app.
  */
 export interface KromaIntroProps {
   /** Called once the intro has finished (video ended or skipped). */
@@ -42,21 +38,18 @@ export interface KromaIntroProps {
   lite?: boolean;
 }
 
-/** A solid #0A0A0C poster (2x2 PNG). Without a poster the WebView paints its own
- * placeholder for an un-started <video> - on Android TV a light panel with a
- * centre play glyph, which flashes for a few frames before the film decodes.
- * A matching-black poster keeps the stage black through the load instead. */
+// Solid #0A0A0C: without a poster, Android TV's WebView flashes its own
+// light placeholder (a panel with a play glyph) for a few frames before an
+// un-started <video> decodes.
 const POSTER =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mPg4uIBIgYIBQADhgCBD73RIwAAAABJRU5ErkJggg==';
 
-/** Seconds before the end of the film when the tagline overlay fades in. */
 const TAGLINE_LEAD_S = 2.6;
-/** How long to let the browser pick a source before concluding it has none.
- * Long enough that a slow network is still "loading" (NETWORK_LOADING) rather
- * than sourceless, short enough that the fallback still opens with the sting. */
+// Long enough that a slow network still reads as loading rather than
+// sourceless; short enough that the fallback still opens with the sting.
 const NO_SOURCE_MS = 500;
-/** How far into the film a first gesture still rewinds it to play with sound
- * from the top. Past this the gesture only unmutes. */
+// Past this point in the film, a first gesture only unmutes rather than
+// rewinding to the top.
 const UNMUTE_REWIND_S = 0.4;
 
 export function KromaIntro(props: Readonly<KromaIntroProps>) {

@@ -16,7 +16,6 @@ import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
 
-/** Toggle a single row key in a selection set (returns a fresh set). */
 function toggleKey(prev: Set<string>, key: string): Set<string> {
   const n = new Set(prev);
   if (n.has(key)) n.delete(key);
@@ -24,7 +23,6 @@ function toggleKey(prev: Set<string>, key: string): Set<string> {
   return n;
 }
 
-/** Add or remove a batch of row keys in a set (returns a fresh set). */
 function toggleKeys(prev: Set<string>, keys: string[], pick: boolean): Set<string> {
   const n = new Set(prev);
   for (const k of keys) {
@@ -34,12 +32,10 @@ function toggleKeys(prev: Set<string>, keys: string[], pick: boolean): Set<strin
   return n;
 }
 
-/** State of the "search all" button: idle, in flight, or fired (the grabs run
- * server-side, so "done" only means the batch was started). */
+// The grabs run server-side, so "done" only means the batch was started.
 type SearchAllState = 'idle' | 'busy' | 'done';
 
-/** Fold the flat, title-sorted entries into one group per title (keyed by the
- * request, or the tmdb id for a library-scan gap that has no request yet). */
+// Keyed by the request, or the tmdb id for a library-scan gap with no request yet.
 function groupByTitle(entries: CalendarEntry[]): MissingGroup[] {
   const byKey = new Map<string, MissingGroup>();
   const order: string[] = [];
@@ -75,7 +71,7 @@ export function MissingPage() {
 
   const groups = useMemo(() => groupByTitle(entries ?? []), [entries]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set()); // row keys in flight
+  const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
   const [searchAll, setSearchAll] = useState<SearchAllState>('idle');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: query.queryKey });
@@ -201,8 +197,6 @@ export function MissingPage() {
   );
 }
 
-/** The page's toolbar: "search selected" (only while rows are picked) and
- * "search all". Both are manage-only; a requester just sees the list. */
 function MissingActions({
   canManage,
   selectedCount,
@@ -234,8 +228,6 @@ function MissingActions({
   );
 }
 
-/** "Search all missing": fires one server-side batch, then reads as started
- * (the grabs land asynchronously, the list refreshes a few seconds later). */
 function SearchAllButton({
   state,
   onClick,

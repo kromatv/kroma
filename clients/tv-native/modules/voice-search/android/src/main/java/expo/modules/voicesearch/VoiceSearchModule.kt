@@ -108,12 +108,11 @@ class VoiceSearchModule : Module() {
     override fun onEvent(eventType: Int, params: Bundle?) = Unit
   }
 
-  /** The best transcription in a results bundle, or null when it carries none. */
   private fun best(results: Bundle): String? =
     results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
 
-  /** Free the recogniser: it holds the microphone until destroyed, so every exit
-   * from a session goes through here, including one that ends by itself. */
+  // Free the recogniser: it holds the microphone until destroyed, so every exit
+  // from a session goes through here, including one that ends by itself.
   private fun release() {
     recognizer?.let {
       it.setRecognitionListener(null)

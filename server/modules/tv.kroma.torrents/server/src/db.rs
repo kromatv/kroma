@@ -16,14 +16,11 @@ use rusqlite::{params, Connection, Row};
 // The core persistence surface (catalog, requests, settings, acq tmdb hints, ...)
 // stays in kroma-db; re-exported so `crate::db::get_request` etc. keep resolving.
 pub use kroma_module_sdk::db::*;
-// The `indexers` table + queries moved into the Indexers module crate; the
-// acquisition + queue paths reach them through this same facade.
 // The indexers table is owned by the indexer module; the queue view + acquisition
 // reach it through kroma_module_sdk::ports::IndexerDbPort, not a re-export here.
 
-/// Schema for the download tables this module owns, applied after the core schema
-/// at DB init. `IF NOT EXISTS` DDL only, so it runs harmlessly on every boot.
-/// Copied verbatim out of the old core schema so existing databases keep working.
+// `IF NOT EXISTS` DDL only, so it runs harmlessly on every boot. Copied verbatim
+// out of the old core schema so existing databases keep working.
 pub const MIGRATIONS: &str = "
     -- Download clients (torrent engines). The embedded rqbit engine is seeded
     -- as a row (id='embedded', kind='rqbit') at boot when compiled in, so
@@ -78,16 +75,14 @@ pub const MIGRATIONS: &str = "
     CREATE INDEX IF NOT EXISTS idx_downloads_req    ON downloads(request_id);
 ";
 
-// ----- download clients -----------------------------------------------------------
-
-/// The seeded embedded-engine row id (created at boot when compiled in).
+// The seeded embedded-engine row id (created at boot when compiled in).
 pub const EMBEDDED_CLIENT_ID: &str = "embedded";
 
 /// A stored download-client row (full, including the secret; internal only).
 #[derive(Debug, Clone)]
 pub struct DownloadClientRow {
     pub id: String,
-    /// `rqbit` | `transmission` | `qbittorrent`.
+    // `rqbit` | `transmission` | `qbittorrent`.
     pub kind: String,
     pub name: String,
     pub url: String,
@@ -180,9 +175,6 @@ pub fn delete_download_client(pool: &Pool, id: &str) -> Result<bool> {
     Ok(conn.execute("DELETE FROM download_clients WHERE id = ?1", params![id])? > 0)
 }
 
-// ----- downloads (grab ledger) ----------------------------------------------------
-
-// DownloadRow moved to kroma_module_sdk::ports; re-exported for this crate.
 pub use kroma_module_sdk::ports::DownloadRow;
 
 const DL_COLS: &str = "id, client_id, client_ref, request_id, kind, tmdb_id, title, year, \
@@ -327,9 +319,7 @@ pub fn completed_downloads(conn: &Connection) -> rusqlite::Result<Vec<DownloadRo
 /// One request's live acquisition phase, derived from its download rows.
 pub struct ActiveDownload {
     pub request_id: String,
-    /// A completed grab is being imported (vs still downloading).
     pub importing: bool,
-    /// Mean progress (0..1) across this request's live download rows.
     pub progress: f64,
 }
 
@@ -441,8 +431,8 @@ mod tests {
 
     static SEQ: AtomicU32 = AtomicU32::new(0);
 
-    /// A fresh temp DB with the core schema (via `init`, so the `requests` table
-    /// the downloads FK points at exists) plus this module's own tables applied.
+    // A fresh temp DB with the core schema (via `init`, so the `requests` table
+    // the downloads FK points at exists) plus this module's own tables applied.
     fn test_db() -> Pool {
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
         let path =
@@ -502,7 +492,7 @@ mod tests {
         }
     }
 
-    /// Seed a bare `requests` row so a download's `request_id` FK is satisfiable.
+    // Seeds a bare `requests` row so a download's `request_id` FK is satisfiable.
     fn seed_request(pool: &Pool, id: &str) {
         pool.get()
             .unwrap()

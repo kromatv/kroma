@@ -10,7 +10,6 @@ use serde_json::json;
 use crate::api::test_support::{get, seed_session, send, test_app};
 use crate::model::Permission;
 
-/// A member with only `playback` fails every admin capability gate.
 fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
     let (_id, token) = seed_session(
         &t.state,
@@ -20,8 +19,6 @@ fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
     );
     token
 }
-
-// ----- dashboard --------------------------------------------------------------
 
 #[tokio::test]
 async fn metrics_snapshot_is_admin_only() {
@@ -55,8 +52,6 @@ async fn terminate_session_is_idempotent_for_an_unknown_id() {
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
-// ----- analytics --------------------------------------------------------------
-
 #[tokio::test]
 async fn stats_top_users_and_history_return_their_shapes() {
     let t = test_app();
@@ -82,8 +77,6 @@ async fn stats_are_admin_only() {
         assert_eq!(status, StatusCode::FORBIDDEN, "{uri} should be admin-only");
     }
 }
-
-// ----- storage / settings guards ----------------------------------------------
 
 #[tokio::test]
 async fn cache_clear_requires_settings_manage() {
@@ -178,8 +171,6 @@ async fn settings_put_persists_live_reconfig_keys() {
     assert_eq!(view["view"], json!("transcoder"));
 }
 
-// ----- module store catalog ---------------------------------------------------
-
 #[tokio::test]
 async fn store_catalog_requires_settings_manage() {
     let t = test_app();
@@ -205,9 +196,6 @@ async fn store_catalog_reports_an_unreachable_registry_cleanly() {
     assert!(body["error"].is_string());
 }
 
-/// Serve `body` as `modules.json` on an ephemeral local port and return its URL,
-/// so the store catalog handler can fetch + enrich a *reachable* registry without
-/// the network (exercises `fetch` + `enriched` + `compat_verdict` + `pick_artifact`).
 async fn spawn_registry(body: serde_json::Value) -> String {
     let app = axum::Router::new().route(
         "/modules.json",

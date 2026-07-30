@@ -39,18 +39,18 @@ const path = require('node:path');
 
 const APP_GROUP = 'group.tv.kroma';
 const TARGET = 'KromaTopShelf';
-/** Falls back to the podspecs' floor if the generated app does not state one. */
+// Falls back to the podspecs' floor if the generated app does not state one.
 const FALLBACK_DEPLOYMENT_TARGET = '16.4';
 
 const plistHeader = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">`;
 
-/** The extension's Info.plist. The version pair is baked in as literals at
- * prebuild time, from the same resolved config the app's own plist gets. The
- * ATS exception mirrors the app's own NSAllowsArbitraryLoads: the shelf art
- * is served by the user's local, plain-http media server, and the app's
- * exception does not extend to a separate bundle. */
+// The extension's Info.plist. The version pair is baked in as literals at
+// prebuild time, from the same resolved config the app's own plist gets. The
+// ATS exception mirrors the app's own NSAllowsArbitraryLoads: the shelf art
+// is served by the user's local, plain-http media server, and the app's
+// exception does not extend to a separate bundle.
 const infoPlist = (version, build) => `${plistHeader}
 <dict>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
@@ -93,7 +93,7 @@ const extensionEntitlements = `${plistHeader}
 </plist>
 `;
 
-/** The app's half of the mailbox: entitle it to the group. */
+// The app's half of the mailbox: entitle it to the group.
 function withAppGroup(config) {
   return withEntitlementsPlist(config, (cfg) => {
     const groups = cfg.modResults['com.apple.security.application-groups'] ?? [];
@@ -102,9 +102,9 @@ function withAppGroup(config) {
   });
 }
 
-/** Materialize the extension's files inside the generated ios/ folder: the
- * provider source (copied from targets/top-shelf/, the file this repo keeps),
- * plus the Info.plist and entitlements written from scratch. */
+// Materialize the extension's files inside the generated ios/ folder: the
+// provider source (copied from targets/top-shelf/, the file this repo keeps),
+// plus the Info.plist and entitlements written from scratch.
 function withExtensionFiles(config) {
   return withDangerousMod(config, [
     'ios',
@@ -135,10 +135,10 @@ function withExtensionFiles(config) {
   ]);
 }
 
-/** The extension target itself. `addTarget` does the heavy lifting: product,
- * build configurations, the app-target dependency, and the copy phase that
- * embeds the .appex - the leftovers are its source file and the tvOS build
- * settings the generic defaults do not know. */
+// The extension target itself. `addTarget` does the heavy lifting: product,
+// build configurations, the app-target dependency, and the copy phase that
+// embeds the .appex - the leftovers are its source file and the tvOS build
+// settings the generic defaults do not know.
 function withExtensionTarget(config) {
   return withXcodeProject(config, (cfg) => {
     const proj = cfg.modResults;

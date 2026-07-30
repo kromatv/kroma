@@ -13,8 +13,6 @@ import { resetFocusEntry } from './focus-entry';
 import type { FocusNavHandlers } from './focus-types';
 import { armPressGuard } from './press-guard';
 
-/** True when a real text field owns the keys (it needs its own left/right and
- * Backspace). */
 function inTextField(): boolean {
   const active = document.activeElement;
   return active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
@@ -77,8 +75,8 @@ export function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers)
 
     // No hover-focus: the amber ring moves on D-pad / arrow keys only (a mouse
     // still clicks natively, and clicking focuses the control). Cursor-follow
-    // focus was tried and dropped on request: it fought physical typing and made
-    // the ring jitter across the on-screen keyboard.
+    // focus fights physical typing and makes the ring jitter across the
+    // on-screen keyboard.
     return () => {
       window.removeEventListener('keydown', onKey);
     };

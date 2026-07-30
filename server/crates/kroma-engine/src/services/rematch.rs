@@ -21,11 +21,11 @@ use crate::services::jobs::now_ms;
 use crate::services::settings;
 use crate::state::SharedState;
 
-/// A correction jumps ahead of the nightly backlog (mirrors `pipeline::reprocess`).
+// A correction jumps ahead of the nightly backlog (mirrors `pipeline::reprocess`).
 const HIGH: i64 = 100;
 
-/// How many candidates the picker offers. One TMDB page is 20; more than that and
-/// the right title was never going to be found by scrolling.
+// How many candidates the picker offers. One TMDB page is 20; more than that and
+// the right title was never going to be found by scrolling.
 const MAX_CANDIDATES: usize = 20;
 
 /// Which catalog subject is being rematched. The wire vocabulary is
@@ -46,7 +46,7 @@ impl Subject {
             _ => None,
         }
     }
-    /// The `metadata_core` / `translations` / `tmdb_pin` subject-kind discriminant.
+    // The `metadata_core` / `translations` / `tmdb_pin` subject-kind discriminant.
     fn core_kind(self) -> &'static str {
         match self {
             Subject::Movie => db::metadata_core::ITEM,
@@ -64,7 +64,7 @@ impl Subject {
     }
 }
 
-/// What the catalog knows about the element we are rematching.
+// What the catalog knows about the element we are rematching.
 struct Local {
     title: String,
     year: Option<u32>,
@@ -151,7 +151,7 @@ pub fn candidates(
     })
 }
 
-/// Score every hit against the parsed title/year and sort most-likely first.
+// Score every hit against the parsed title/year and sort most-likely first.
 fn rank(local: &Local, hits: Vec<discover::DiscoverHit>) -> Vec<MatchCandidate> {
     let query = Query { title: &local.title, year: local.year };
     let mut out: Vec<MatchCandidate> = hits
@@ -289,7 +289,6 @@ mod tests {
         h.original_title = String::new();
         assert_eq!(rank(&local, vec![h])[0].original_title, None);
     }
-    // ----- candidates() against a fake TMDB ---------------------------------------
 
     use crate::test_support::{seed_movie, test_state_with_tmdb, FakeTmdb};
 
@@ -301,7 +300,7 @@ mod tests {
         serde_json::json!({ "id": id, "title": title, "release_date": year })
     }
 
-    /// A movie in the catalogue whose parsed title is `title`.
+    // A movie in the catalogue whose parsed title is `title`.
     fn seed_titled(state: &crate::state::SharedState, id: &str, title: &str, year: Option<u32>) {
         seed_movie(state, id);
         let year_sql = year.map(|y| y.to_string()).unwrap_or_else(|| "NULL".into());

@@ -14,7 +14,6 @@ use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
-/// `GET /api/home` + `GET /api/home/featured`.
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/home", get(home)).route("/home/featured", get(featured))
 }
@@ -38,10 +37,9 @@ pub async fn home(
     }
 }
 
-/// `GET /api/home/featured` (Bearer) → `SectionItem | null`. Today's hero pick
-/// for the caller (multi-signal score + daily rotation, see
-/// `services::sections::featured`); `null` when the catalog is empty, or (logged
-/// server-side, never silently) when it cannot be read.
+/// `GET /api/home/featured` (Bearer) → `SectionItem | null`: today's hero pick
+/// (see `services::sections::featured`). `null` means an empty catalog or a
+/// read failure, which is always logged server-side.
 pub async fn featured(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,

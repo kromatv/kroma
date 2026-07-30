@@ -8,10 +8,8 @@ import { BandHeading } from '#site/components/home/heading';
 import { WheelMark } from '#site/components/wheel-mark';
 import { m } from '#site/paraglide/messages';
 
-// The stack a typical *arr setup bolts together, in the order the collapse reads
-// best. Product names are language-invariant; only the one-word job each used to
-// own is localized, so the block reads as "these six things, one server to
-// install" in either language.
+// Product names are language-invariant; only the one-word job each used to own
+// is localized.
 const REPLACED: readonly { id: string; name: string; job: () => string }[] = [
   { id: 'acquisition', name: 'Sonarr · Radarr', job: m.home_one_binary_replaces_acquisition },
   { id: 'indexers', name: 'Prowlarr / Jackett', job: m.home_one_binary_replaces_indexers },
@@ -21,10 +19,8 @@ const REPLACED: readonly { id: string; name: string; job: () => string }[] = [
   { id: 'requests', name: 'Overseerr', job: m.home_one_binary_replaces_requests },
 ];
 
-// The differentiator, made literal: the pile of parts on the left, the single
-// server that replaces it on the right, with what that one server does natively.
 export function OneBinary() {
-  // What the one server does natively, in the order the panel lists them.
+  // Order here is the order the panel lists them.
   const native = [
     m.home_one_binary_native_1(),
     m.home_one_binary_native_2(),
@@ -47,8 +43,7 @@ export function OneBinary() {
         </div>
 
         <div className="mt-14 grid items-center gap-6 lg:grid-cols-[1fr_auto_1fr] lg:gap-8">
-          {/* AVANT, the pile of parts you no longer run. Dimmed and struck to
-              read as "gone", not as a competing feature list. */}
+          {/* Dimmed and struck to read as "gone", not as a competing feature list. */}
           <div className="opacity-80">
             <p className="mb-3 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-dim">
               {m.home_one_binary_before_label()}
@@ -65,13 +60,11 @@ export function OneBinary() {
             </ul>
           </div>
 
-          {/* The collapse: down on a phone, right on desktop. */}
           <div className="flex items-center justify-center text-accent" aria-hidden>
             <IconArrowNarrowDown size={30} stroke={1.5} className="lg:hidden" />
             <IconArrowNarrowRight size={44} stroke={1.5} className="hidden lg:block" />
           </div>
 
-          {/* APRÈS, one panel, lit from the top like the app's raised cards. */}
           <div className="surface-hairline relative overflow-hidden rounded-2xl border border-accent/30 bg-surface-1 p-6 shadow-card">
             <div className="glow-amber pointer-events-none absolute inset-x-0 -top-20 h-44" />
             <div className="relative flex items-center gap-3">

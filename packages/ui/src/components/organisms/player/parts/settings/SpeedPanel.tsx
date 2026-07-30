@@ -6,7 +6,6 @@ import { useT } from '#ui/services/i18n';
 import { panelList } from './panelStyle';
 import { SelectRow } from './select-row';
 
-/** The offered playback rates (§5). */
 export const RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
 interface SpeedPanelProps {

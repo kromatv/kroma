@@ -19,7 +19,6 @@ describe('useGrowingCount', () => {
   });
 
   it('looks ahead by at least two, so a small chunk still grows in time', () => {
-    // A rail renders eight tiles; a quarter of that is two.
     const { result } = renderHook(() => useGrowingCount(40, 8));
     expect(result.current.isNearEnd(5)).toBe(false);
     expect(result.current.isNearEnd(6)).toBe(true);

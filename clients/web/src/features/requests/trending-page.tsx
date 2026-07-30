@@ -1,6 +1,5 @@
-// The full "Films tendance" / "Séries tendance" page: a paginated grid of this
-// week's trending movies OR shows, reached via "Voir tout" on the discover
-// rails. Same DiscoverCard tiles as search; TMDB-gated on requests.create.
+// A paginated grid of this week's trending movies OR shows, reached from the
+// discover rails. TMDB-gated on `requests.create`.
 
 import { hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
@@ -29,8 +28,8 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   const state = useTrendingPage(type, page, canDiscover);
   const title = type === 'movie' ? t('discover.trendingMovies') : t('discover.trendingShows');
 
-  // Paging is the only page-change path, so scroll back to the top right here
-  // rather than in an effect that would only depend on `page` to fire.
+  // Paging is the only page-change path, so the scroll-to-top belongs here
+  // rather than in an effect.
   const go = (next: number) => {
     setPage(Math.min(Math.max(1, next), state.totalPages));
     topRef.current?.scrollIntoView({ block: 'start' });
@@ -56,8 +55,7 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
       ) : (
         <>
           <Body state={state} />
-          {/* Pager persists across page changes: totalPages is retained while the
-              next page loads, and the display page is optimistic (local). */}
+          {/* totalPages is retained while the next page loads. */}
           <Pager page={page} totalPages={state.totalPages} onGo={go} />
         </>
       )}
@@ -65,9 +63,6 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   );
 }
 
-/** The grid area: skeletons while loading, an empty note when TMDB returns
- * nothing, else the poster grid. Split out so the page's own render stays a
- * single (non-nested) permission ternary. */
 function Body({ state }: Readonly<{ state: TrendingPageState }>) {
   const t = useT();
   if (state.loading) {

@@ -1,14 +1,3 @@
-// Edit profile: photo, personal information, preferred playback languages and
-// password, all synced to the account (same PATCH /auth/me + avatar upload as
-// the web client).
-//
-// The photo is the avatar itself - the same tappable identity block as the
-// profile tab, with the badge as the affordance - and the language choices are
-// two rows opening a bottom sheet rather than two walls of chips: eight
-// options twice over pushed the security section a screen and a half down.
-// The sheet they open is <LangPickerSheet>, which offers every language rather
-// than the seven this screen used to hardcode.
-
 import { KromaApiError, LANG_OFF, langName } from '@kroma/core';
 import { Button, Icon, type IconName, Spinner } from '@kroma/ui/kit';
 import * as ImagePicker from 'expo-image-picker';
@@ -32,7 +21,6 @@ import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
-/** A save's outcome, shown in place: amber for done, red for refused. */
 type Note = { text: string; ok: boolean } | null;
 
 function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
@@ -53,9 +41,6 @@ function Message({ note }: Readonly<{ note: Note }>) {
   );
 }
 
-/** A preference row: glyph well, label, the current choice, and the selector
- * mark that says "picks in place" (the profile tab's chevron-right means "goes
- * somewhere"; this opens a sheet). */
 function PrefRow({
   icon,
   label,
@@ -72,9 +57,7 @@ function PrefRow({
         <View style={styles.rowIconBox}>
           <Icon name={icon} size={19} stroke={1.8} color={colors.accent} />
         </View>
-        {/* The label yields, the value does not: "Langue des sous-titres
-            préférée" can lose its tail to an ellipsis, but a choice squeezed
-            to "Franç…" reads as broken. */}
+        {/* The label yields to an ellipsis, the value never does. */}
         <Text numberOfLines={1} style={styles.rowLabel}>
           {label}
         </Text>
@@ -109,17 +92,11 @@ export default function EditProfile() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarNote, setAvatarNote] = useState<Note>(null);
 
-  /** Which preference the sheet is picking for. It also keys the sheet's
-   * title, so one sheet serves both rows. */
   const [picking, setPicking] = useState<'audio' | 'subtitle'>('audio');
   const sheet = useRef<LangPickerRef>(null);
 
   const avatar = client.resolveArt(user?.avatarUrl);
 
-  /** The row's reading of a stored track language - the dub VARIANT included,
-   * because that is the choice that was made: a viewer who picked the VFQ track
-   * reads "Français (Canada)" here, not a "Français" that hides which of the two
-   * dubs the next title will open on. */
   const langLabel = (value: string | null | undefined): string => {
     if (value === LANG_OFF) return t('player.subtitlesOff');
     if (!value) return t('account.noPreference');
@@ -167,10 +144,8 @@ export default function EditProfile() {
     }
   };
 
-  // Through the shared hook, not a hand-rolled PATCH: it normalizes the picked
-  // code (the `none` sentinel is a UI value and must never be stored, and a dub
-  // region has to survive), updates the local user optimistically so the row
-  // changes on tap rather than after the round-trip, and drops a no-op write.
+  // Through the shared hook, not a hand-rolled PATCH: the `none` sentinel is a
+  // UI value and must never be stored.
   const savePref = (code: string | null) => {
     sheet.current?.dismiss();
     (picking === 'audio' ? setAudioPref : setSubtitlePref)(code);
@@ -211,8 +186,6 @@ export default function EditProfile() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          {/* The photo IS the control, like the profile tab's identity block -
-              the badge is the affordance, and it spins while the upload runs. */}
           <View style={styles.identity}>
             <Pressable
               onPress={() => void pickPhoto()}
@@ -344,8 +317,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: 10,
   },
-  /** The rows carry their own padding, so their card holds them edge to edge
-   * the way the profile tab's does. */
   rowCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

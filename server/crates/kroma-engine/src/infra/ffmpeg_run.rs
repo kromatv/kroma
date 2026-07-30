@@ -27,9 +27,8 @@ pub(crate) fn run_capturing_cancellable(
     cancel: &dyn Fn() -> bool,
 ) -> Result<(), String> {
     use std::io::Read;
-    // One slot from the process-wide ffmpeg budget, held until this pass exits, so
-    // the tile fan-out + montage + jpeg + subtitle demux never oversubscribe the
-    // box (see `infra::ffmpeg_gate`). Acquired before spawn; released on return.
+    // One slot from the process-wide ffmpeg budget (see `infra::ffmpeg_gate`),
+    // held until this pass exits.
     let _permit = crate::infra::ffmpeg_gate::acquire();
     cmd.stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
@@ -82,8 +81,6 @@ pub(crate) fn run_capturing_cancellable(
     }
 }
 
-/// A compact, single-line tail of captured stderr for an error/log line (so a
-/// failure shows ffmpeg's own message without flooding the log).
 fn stderr_tail(stderr: &str) -> String {
     let cleaned: String = stderr.split_whitespace().collect::<Vec<_>>().join(" ");
     if cleaned.is_empty() {

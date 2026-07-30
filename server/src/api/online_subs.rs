@@ -20,7 +20,6 @@ use crate::state::SharedState;
 use axum::routing::{delete, get, post};
 use axum::Router;
 
-/// On-device subtitle generation (Whisper) plus management of downloaded tracks.
 /// Authenticated subtitle generation/management endpoints (gated by the session
 /// middleware).
 pub fn routes() -> Router<SharedState> {
@@ -141,10 +140,7 @@ impl kroma_engine::ports::Whisper for WhisperClient {
     }
 }
 
-/// One progress tick of a whisper transcription: on a fresh pooled connection,
-/// push the cancel flag if latched, then read the stage/progress off the shared
-/// coordination row and drive the callbacks. `last_stage` dedups the stage
-/// callback. Best-effort: a connection/query failure just skips this tick.
+// Best-effort: a connection/query failure just skips this tick.
 fn pump_progress(
     pool: &kroma_db::Pool,
     job_id: &str,
@@ -217,24 +213,17 @@ pub async fn capabilities(State(state): State<SharedState>, Path(_id): Path<Stri
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateReq {
-    /// `"transcribe"` (default) | `"translate"`.
     #[serde(default)]
     pub mode: Option<String>,
-    /// Target language label, e.g. "Français".
     pub lang: String,
-    /// Transcribe: spoken language to force (name or code); omit to auto-detect.
     #[serde(default)]
     pub spoken_lang: Option<String>,
-    /// Transcribe: model tier `"fast"` | `"balanced"` (default) | `"accurate"`.
     #[serde(default)]
     pub quality: Option<String>,
-    /// Transcribe: audio-relative track index (default 0).
     #[serde(default)]
     pub audio_track: Option<u32>,
-    /// Translate: the embedded subtitle track index to translate from.
     #[serde(default)]
     pub source_track: Option<usize>,
-    /// Translate: a generated/cached subtitle id to translate from.
     #[serde(default)]
     pub source_sub_id: Option<String>,
 }
@@ -285,12 +274,10 @@ pub async fn generate(State(state): State<SharedState>, Path(id): Path<String>, 
     let handle = state.subtitle_gen.start(&id, mode_label, Some(target_lang.clone()));
     let gen_id = handle.id().to_string();
 
-    // Everything below runs OFF the request path. Translate resolves its source
-    // WebVTT server-side (a cached track, or an embedded text track demuxed with
-    // ffmpeg), which alone can take up to subtitles::TIMEOUT (150s); awaiting it
-    // here would break fire-and-poll (the client would have nothing to poll and a
-    // proxy/browser could time out). So we return the genId now and do ALL source
-    // resolution + model work in a background task, marking the entry failed on error.
+    // Everything below runs OFF the request path: resolving Translate's source
+    // WebVTT (a cached track or an embedded text track via ffmpeg) alone can take
+    // up to `subtitles::TIMEOUT` (150s), and awaiting it here would break
+    // fire-and-poll (nothing to poll, and a proxy/browser could time out).
     let item_id = id.clone();
     let spoken_lang = req.spoken_lang.clone().filter(|s| !s.trim().is_empty());
     let quality = Quality::parse(req.quality.as_deref().unwrap_or("balanced"));
@@ -312,7 +299,6 @@ pub async fn generate(State(state): State<SharedState>, Path(id): Path<String>, 
     (StatusCode::ACCEPTED, Json(GenStarted { gen_id })).into_response()
 }
 
-/// Inputs for the off-request-path subtitle generation task ([`run_generation`]).
 struct GenTask {
     state: SharedState,
     item_id: String,
@@ -327,9 +313,8 @@ struct GenTask {
     handle: subtitles::Handle,
 }
 
-/// The whole generation, done OFF the request path (translate first resolves its
-/// source WebVTT, which alone can take up to subtitles::TIMEOUT). Marks the
-/// registry entry done/failed with the real reason.
+// Marks the registry entry done/failed with the real reason once the model
+// work (or, for Translate, source resolution first) completes.
 async fn run_generation(t: GenTask) {
     let GenTask {
         state,
@@ -394,9 +379,8 @@ async fn run_generation(t: GenTask) {
     .await;
 }
 
-/// Resolve the WebVTT source for a translate request (cached id or embedded track).
-/// Runs in the background task, so the `Err` is a human message recorded on the
-/// generation via `handle.fail`, not an HTTP response.
+// Runs in the background task, so the `Err` becomes a human message recorded
+// via `handle.fail`, not an HTTP response.
 async fn resolve_source(state: &SharedState, item_id: &str, abs: &str, req: &GenerateReq) -> Result<String, String> {
     if let Some(sub_id) = req.source_sub_id.as_deref().filter(|s| !s.trim().is_empty()) {
         let sub_id = sub_id.to_string();

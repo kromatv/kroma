@@ -11,8 +11,6 @@ import { z } from 'zod';
 import { DownloadClientId, IndexerId, ItemId, RequestId } from './ids';
 import { VpnStatusView } from './pipeline';
 
-// ── Download clients ────────────────────────────────────────────────────────
-
 /** One configured download client (password write-only). `kind` is an open
  * string on the wire (`rqbit` | `transmission` | `qbittorrent`). */
 export const DownloadClientView = z.object({
@@ -56,8 +54,6 @@ export const SaveDownloadClientBody = z.object({
 });
 export type SaveDownloadClientBody = z.infer<typeof SaveDownloadClientBody>;
 
-// ── Torrent analysis ────────────────────────────────────────────────────────
-
 /** One file inside an analyzed torrent, with its detected season/episode. */
 export const TorrentFileView = z.object({
   index: z.number(),
@@ -77,8 +73,6 @@ export const TorrentAnalysis = z.object({
   files: z.array(TorrentFileView),
 });
 export type TorrentAnalysis = z.infer<typeof TorrentAnalysis>;
-
-// ── Downloads (queue) ───────────────────────────────────────────────────────
 
 /** One download (grab) in the admin queue. `id` is a download-row id (no brand);
  * `infoHash` is an opaque torrent hash. `localId` is the catalog item once
@@ -122,8 +116,6 @@ export const DownloadsView = z.object({
 });
 export type DownloadsView = z.infer<typeof DownloadsView>;
 
-// ── Grab / manual add ───────────────────────────────────────────────────────
-
 /** `POST /api/requests/:id/grab` body. `guid` is an opaque release id. */
 export const GrabBody = z.object({
   guid: z.string(),
@@ -144,8 +136,6 @@ export const ManualAddBody = z.object({
   detailsUrl: z.string().nullable(),
 });
 export type ManualAddBody = z.infer<typeof ManualAddBody>;
-
-// ── Manual search ───────────────────────────────────────────────────────────
 
 /** One release from a free-text manual indexer search. `guid` is an opaque
  * release id. */
@@ -182,8 +172,6 @@ export const ManualSearchView = z.object({
   indexerErrors: z.array(z.string()),
 });
 export type ManualSearchView = z.infer<typeof ManualSearchView>;
-
-// ── Interactive (scored) search ─────────────────────────────────────────────
 
 /** One score-explanation line. */
 export const ScoreLineView = z.object({
@@ -222,8 +210,6 @@ export const InteractiveSearchView = z.object({
 });
 export type InteractiveSearchView = z.infer<typeof InteractiveSearchView>;
 
-// ── Indexers ────────────────────────────────────────────────────────────────
-
 /** One configured Torznab indexer (API key write-only). `categories` are raw
  * Torznab category numbers. */
 export const IndexerView = z.object({
@@ -234,11 +220,8 @@ export const IndexerView = z.object({
   categories: z.array(z.number()),
   enabled: z.boolean(),
   priority: z.number(),
-  /** `torznab` (external Jackett/Prowlarr) or `builtin` (native Cardigann). */
   kind: z.string(),
-  /** Cardigann definition id (built-in indexers only). */
   definitionId: z.string().nullable(),
-  /** Names of settings that currently hold a value (secrets never returned). */
   configuredSettings: z.array(z.string()),
   lastOkAt: z.number().nullable(),
   lastError: z.string().nullable(),
@@ -271,16 +254,11 @@ export const SaveIndexerBody = z.object({
   categories: z.array(z.number()).nullable(),
   enabled: z.boolean().nullable(),
   priority: z.number().nullable(),
-  /** `builtin` to create a native Cardigann indexer (default `torznab`). */
   kind: z.string().nullable().optional(),
-  /** Cardigann definition id (built-in create). */
   definitionId: z.string().nullable().optional(),
-  /** Per-indexer settings (credentials + toggles). */
   settings: z.record(z.string(), z.string()).nullable().optional(),
 });
 export type SaveIndexerBody = z.infer<typeof SaveIndexerBody>;
-
-// ── Built-in definition catalog ─────────────────────────────────────────────
 
 /** One Cardigann definition in the browse list. */
 export const IndexerDefinitionView = z.object({
@@ -305,7 +283,6 @@ export const IndexerDefinitionSettingView = z.object({
   kind: z.string(),
   label: z.string(),
   default: z.string().nullable(),
-  /** For `select`: ordered [value, label] pairs. */
   options: z.array(z.tuple([z.string(), z.string()])),
 });
 export type IndexerDefinitionSettingView = z.infer<typeof IndexerDefinitionSettingView>;

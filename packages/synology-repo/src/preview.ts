@@ -1,13 +1,9 @@
 #!/usr/bin/env bun
-/**
- * Live-reload preview of the package-source landing page. Edit
- * `landing.template.html` and the browser reloads on save - no .spk or build
- * needed (it renders the template with realistic sample values).
- *
- * Run:  bun run --filter @kroma/synology-repo preview
- *   or: bun packages/synology-repo/src/preview.ts
- * Env:  PORT (default 4321), CATALOG_BETA=true to preview the nightly variant.
- */
+// Live-reload preview of the package-source landing page. Edit `landing.template.html` and the
+// browser reloads on save - no .spk or build needed (it renders the template with realistic
+// sample values). Run: bun run --filter @kroma/synology-repo preview or: bun
+// packages/synology-repo/src/preview.ts Env: PORT (default 4321), CATALOG_BETA=true to preview
+// the nightly variant.
 import { readFileSync, watch } from 'node:fs';
 import { createServer, type ServerResponse } from 'node:http';
 import { join } from 'node:path';

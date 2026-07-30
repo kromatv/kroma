@@ -31,7 +31,6 @@ function JoinPage() {
   const [error, setError] = useState<string | null>(null);
   const { email, username, password } = values;
 
-  // Validate the token up front.
   useEffect(() => {
     if (!invite) {
       setStatus('invalid');

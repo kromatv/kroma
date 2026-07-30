@@ -1,18 +1,11 @@
-// Every glyph the kit can draw — which is all of Tabler.
-//
-// This used to be a sheet of the ~60 icons the app had chosen, and it could show
-// them all at once. Now any Tabler name resolves (see icons/glyphs.ts), so the
-// sheet is a SEARCH: type part of a name and see what exists. That is the
-// question this story is really for — "do we already have an icon for that".
-
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
 import { iconNames } from '#ui/lib/glyph';
 
-/** Rendering thousands of glyphs at once locks the workbench up for seconds, and
- * for far longer on a television, so a page is as much as any view shows. */
+// Rendering thousands of glyphs at once locks the workbench up for seconds,
+// and far longer on a television.
 const PAGE = 120;
 
 export default story({
@@ -31,9 +24,6 @@ export default story({
     ],
   },
   matrix: false,
-  // The sheet wraps, so how many glyphs fit on a line is the canvas's answer and
-  // not a number written here. `max` only stops the run from stretching across a
-  // 4K desk, where a name would sit a hand's width from its glyph.
   width: { min: 480, max: 1000 },
   args: { size: 26, find: '' },
   controls: { size: { min: 12, max: 64, step: 2 } },

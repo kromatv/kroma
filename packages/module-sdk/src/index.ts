@@ -1,13 +1,7 @@
-// @kroma/module-sdk: the frontend module contract. A module package imports the
-// types from here and exports a `KromaModule`; the host builds a `ModuleRegistry`
-// and a `KromaHost`. Mirrors the Rust `kroma-module-sdk` on the server.
+// The frontend module contract. A module package imports its types from here
+// and exports a `KromaModule`; it depends on no other @kroma package, so the
+// re-exports below are that facade.
 
-// --- Host-app surface re-exported for module UIs -----------------------------
-// A module package depends ONLY on @kroma/module-sdk, never on @kroma/core,
-// @kroma/ui or @kroma/admin-kit directly. These re-exports are that facade.
-// (core's `KromaEvents` SSE client is re-exported as `KromaEventStream` to avoid
-// colliding with the SDK's own `KromaEvents` event-map interface above.)
-// The admin UI toolkit: module pages use most of it, so re-export it wholesale.
 export * from '@kroma/admin-kit';
 export type {
   ClientTestResult,
@@ -27,15 +21,10 @@ export type {
   TorrentFileView,
   VpnTestResult,
 } from '@kroma/core';
-// @kroma/core surface: the error formatter, the SSE client (re-exported as
-// KromaEventStream to avoid the KromaEvents event-map interface above), and the
-// shared DTO / view types module pages render.
+// The SSE client is renamed to avoid colliding with the SDK's own `KromaEvents`
+// event-map interface.
 export { apiErrorText, KromaEvents as KromaEventStream } from '@kroma/core';
-// i18n hook from @kroma/ui.
 export { useT } from '@kroma/ui';
-// `EmptyState` is the design system's own now, not an admin-kit copy: there is
-// one in the repo. Re-exported by name (not `export *`) so a module page keeps
-// importing it from this facade and nothing else changes.
 export { EmptyState } from '@kroma/ui/kit';
 export type { EventBus, EventKey } from './bus';
 export { createEventBus } from './bus';

@@ -1,67 +1,28 @@
-// LAN auto-discovery for the KROMA server.
-//
-// Browsers / TV webviews can't browse mDNS from JavaScript. Two strategies,
-// tried in order:
-//   1. Named candidates `http://kroma.local:4040` (works where the client OS
-//      resolves the mDNS `.local` hostname the server advertises: desktop,
-//      mobile; NOT Samsung Tizen).
-//   2. Subnet scan get this device's own LAN IP (Tizen/webOS system API, or a
-//      WebRTC trick) and probe every host on its /24 for `/api/health`. This is
-//      what makes discovery work on a TV with no mDNS resolution.
-// The first server to answer `{ status: "ok" }` wins.
+// LAN auto-discovery for the KROMA server. Browsers and TV webviews cannot
+// browse mDNS from JavaScript, hence the named candidates and the /24 sweep.
 
 export interface DiscoverOptions {
-  /** Named origins probed first. Default: `http://kroma.local:4040`. */
   candidates?: string[];
-  /** Per-probe timeout (ms). Default 2000. */
   timeoutMs?: number;
-  /** Scan the local /24 if the named candidates miss. Default true. */
   scanSubnet?: boolean;
-  /** Server port to scan for. Default 4040. */
   port?: number;
-  /** Max concurrent probes during a subnet scan. Default 48. */
   concurrency?: number;
-  /** This device's LAN IPv4, for platforms whose runtime cannot derive it
-   * (React Native); tried before the built-in per-platform resolvers. */
   localIp?: string;
   fetch?: typeof globalThis.fetch;
-  /**
-   * Ask the network where the servers are, instead of guessing.
-   *
-   * A DNS-SD browse for `_kroma._tcp`, which the server has advertised all
-   * along (server/modules/tv.kroma.mdns) carrying its real host and its real
-   * port. Injected rather than imported, because it is a NATIVE capability and
-   * this package must stay importable by a browser shell that has no such
-   * thing - the native TV app registers it, everything else passes nothing and
-   * keeps the sweep.
-   *
-   * Tried FIRST and trusted: it is the only route that can find a server on a
-   * port the sweep does not scan, on a subnet wider than a /24, or behind a
-   * reverse proxy. The sweep stays as the fallback for networks that block
-   * multicast, which is most hotel and campus wifi.
-   */
   browse?: (timeoutMs: number) => Promise<Array<{ host: string; port: number; name?: string }>>;
-  /** How long to let the browse run. Default 1500. */
   browseMs?: number;
 }
 
 export const DEFAULT_DISCOVERY_CANDIDATES = ['http://kroma.local:4040'];
 
-/** Probe candidates, then (optionally) the local subnet; resolve the first live
- *  KROMA server origin, or `null`. */
 export async function discoverServer(opts: DiscoverOptions = {}): Promise<string | null> {
   const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
   if (!fetchFn) return null;
   const port = opts.port ?? 4040;
 
-  // 1) Ask the network, and try the named candidates AT THE SAME TIME.
-  //
-  // Concurrently rather than in order, which matters on the networks where this
-  // is most likely to disappoint: plenty of wifi blocks multicast outright, and
-  // there the browse contributes nothing but its full timeout. Run alongside,
-  // the worst case is the slower of the two instead of the sum. The browse is
-  // still PREFERRED when it answers - an origin the server published beats one
-  // this file guessed at.
+  // Browse and named candidates run concurrently: wifi that blocks multicast
+  // makes the browse cost its full timeout, so the worst case is the slower of
+  // the two rather than their sum. A browse hit still wins when it answers.
   const named = (opts.candidates ?? DEFAULT_DISCOVERY_CANDIDATES).map(stripTrailingSlash);
   const [announced, namedHit] = await Promise.all([
     browsedOrigins(opts, fetchFn),
@@ -70,7 +31,6 @@ export async function discoverServer(opts: DiscoverOptions = {}): Promise<string
   if (announced.length > 0) return announced[0] ?? null;
   if (namedHit) return namedHit;
 
-  // 2) Subnet scan needs this device's own LAN IP.
   if (opts.scanSubnet !== false) {
     const ip = opts.localIp ?? (await getLocalIPv4());
     if (ip) {
@@ -87,17 +47,8 @@ export async function discoverServer(opts: DiscoverOptions = {}): Promise<string
   return null;
 }
 
-/**
- * What the DNS-SD browse found, as origins that actually answered.
- *
- * The browse hands back a host and a port and stops there, because that is all
- * mDNS knows - whether that port speaks TLS is settled the only honest way, by
- * asking it, which is also what gets an http-to-https redirect right.
- *
- * A browse that throws is a browse that found nothing: this is an accelerator
- * in front of two working fallbacks, and it must never be the reason discovery
- * fails.
- */
+// A browse that throws is a browse that found nothing: it sits in front of two
+// working fallbacks and must never be the reason discovery fails.
 async function browsedOrigins(
   opts: DiscoverOptions,
   fetchFn: typeof globalThis.fetch,
@@ -120,33 +71,14 @@ async function browsedOrigins(
   return resolved.filter((hit) => hit !== null).map((hit) => hit.url);
 }
 
-/** What a typed address turned out to be: the origin that answered, and whether
- *  it did so over TLS. */
 export interface ResolvedOrigin {
   url: string;
   secure: boolean;
 }
 
-/**
- * Work out which scheme a typed address actually speaks.
- *
- * The address box takes `media.example.net` as readily as
- * `https://media.example.net:4040`, because nobody wants to spell out a scheme
- * on a television with a remote. That convenience used to be a silent DECISION:
- * anything without a scheme was assumed to be `http://`, so a server that does
- * have TLS was reached in the clear and nothing on screen ever said so.
- *
- * So both are probed instead - https FIRST, so a server that answers on either
- * is saved as the secure one - and the winner is what gets stored and what the
- * screen reports.
- *
- * An explicit scheme is an instruction, not a hint: it is probed exactly as
- * typed and never quietly swapped for the other one.
- *
- * Returns null when nothing answers, which is not the same as "insecure": the
- * caller still has an address it can save, it just has nothing to promise about
- * it yet.
- */
+/** Resolves which scheme a typed address actually speaks: an address without
+ * one is probed https first; an explicit scheme is honoured as typed. Null
+ * means nothing answered, which is not the same as insecure. */
 export async function resolveServerOrigin(
   address: string,
   opts: { fetch?: typeof globalThis.fetch; timeoutMs?: number; port?: number } = {},
@@ -158,9 +90,8 @@ export async function resolveServerOrigin(
   const timeoutMs = opts.timeoutMs ?? 2500;
 
   const candidates = originCandidates(typed, opts.port ?? 4040);
-  // Probed CONCURRENTLY but resolved by PRIORITY: four candidates one after the
-  // other is four timeouts of waiting, and a server on the standard port must
-  // still beat the same host on 4040 even when 4040 answers first.
+  // Probed concurrently but resolved by priority: the standard port must beat
+  // the same host on 4040 even when 4040 answers first.
   const reached = await Promise.all(
     candidates.map((url) => probeFinalOrigin(fetchFn, url, timeoutMs)),
   );
@@ -168,16 +99,8 @@ export async function resolveServerOrigin(
   return winner ? { url: winner, secure: winner.toLowerCase().startsWith('https://') } : null;
 }
 
-/**
- * Probe an origin and report where the answer ACTUALLY came from.
- *
- * The distinction matters because a server that redirects `http://` to
- * `https://` answers a plain-http probe perfectly well - fetch follows the
- * redirect - and taking the request at face value would file a TLS server under
- * `http://`: the padlock would be missing on a screen that has earned it, and
- * every later call would spend a round trip being redirected. So the final URL
- * decides, not the one that was asked for.
- */
+// The final URL decides, not the requested one: fetch follows an http-to-https
+// redirect, which would otherwise file a TLS server under `http://`.
 async function probeFinalOrigin(
   fetchFn: typeof globalThis.fetch,
   base: string,
@@ -190,8 +113,7 @@ async function probeFinalOrigin(
     if (!res.ok) return null;
     const body = (await res.json()) as HealthBody;
     if (body?.status !== 'ok') return null;
-    // `res.url` is the URL after redirects. Empty on the odd fetch
-    // implementation that omits it, in which case the request stands as asked.
+    // `res.url` is empty on the odd fetch implementation that omits it.
     return originOf(res.url) ?? base;
   } catch {
     return null;
@@ -200,7 +122,6 @@ async function probeFinalOrigin(
   }
 }
 
-/** `https://host:443/api/health` -> `https://host`. Null for anything unparseable. */
 function originOf(url: string | undefined): string | null {
   if (!url) return null;
   try {
@@ -210,29 +131,18 @@ function originOf(url: string | undefined): string | null {
   }
 }
 
-/**
- * Every origin a typed address could plausibly mean, best first.
- *
- * The ambiguity is real and worth spelling out: this project's own server
- * defaults to :4040, while anything behind a reverse proxy answers on the
- * standard 443. A bare `media.example.net` could be either, so both are tried -
- * secure before plain, standard port before 4040.
- *
- * Anything the address states explicitly is honoured rather than second-guessed:
- * a typed scheme is never swapped, and a typed port is never replaced. Only what
- * is MISSING gets guessed at.
- */
+// Every origin a typed address could mean, best first. Only what is missing is
+// guessed at: a typed scheme or port is never swapped.
 function originCandidates(typed: string, defaultPort: number): string[] {
   const hasScheme = /^https?:\/\//i.test(typed);
-  // The authority only: a port lives before the first slash, so a path like
+  // Authority only: a port lives before the first slash, so a path like
   // `host/kroma` must not be mistaken for one.
   const authority = typed.replace(/^https?:\/\//i, '').split('/')[0] ?? '';
   const hasPort = /:\d+$/.test(authority);
 
   if (hasScheme) {
-    // Explicit scheme with an explicit port is a complete instruction. Without a
-    // port, the standard one is meant first - but 4040 is worth a try before
-    // giving up, since that is where this project's server actually lives.
+    // Without a port the standard one is meant first, but 4040 is where this
+    // project's server actually lives.
     return hasPort ? [typed] : [typed, `${typed}:${defaultPort}`];
   }
   if (hasPort) return [`https://${typed}`, `http://${typed}`];
@@ -244,33 +154,22 @@ function originCandidates(typed: string, defaultPort: number): string[] {
   ];
 }
 
-/** One server found by [`discoverServers`]: its origin plus the identity bits
- *  of its `/api/health` answer. */
 export interface DiscoveredServer {
   url: string;
-  /** Admin-configured server name (absent on servers predating it, and on
-   *  servers that classify this client as WAN). */
   name?: string;
   version?: string;
-  /** Stable per-install id (absent on servers predating it). */
   instanceId?: string;
 }
 
-/** The identity two answers must share to be "the same server". Servers mint a
- *  stable `instanceId`; only when talking to one too old to send it do we fall
- *  back to a content fingerprint, which is a guess (two fresh installs are both
- *  "KROMA", same version, 0 libraries) - so the fallback is namespaced and left
- *  deliberately unable to collide with a real id. */
+// The fingerprint fallback (servers too old to send an `instanceId`) is a guess,
+// so it is namespaced and cannot collide with a real id.
 function identityOf(body: HealthBody): string {
   if (body.instanceId) return `id:${body.instanceId}`;
   return `fp:${[body.name, body.version, body.libraries, body.items, body.shows].join('|')}`;
 }
 
-/** Probe candidates AND the whole local subnet; resolve EVERY live KROMA
- *  server. Duplicate answers for the same server (e.g. its mDNS name and its
- *  IP) are collapsed on [`identityOf`], keeping the first origin. Both sweeps
- *  run concurrently: a `.local` candidate that no resolver answers burns its
- *  full timeout, and the subnet has no reason to wait for it. */
+/** Every live KROMA server on the network. Duplicate answers for one server
+ *  (its mDNS name and its IP) collapse on identity, keeping the first origin. */
 export async function discoverServers(opts: DiscoverOptions = {}): Promise<DiscoveredServer[]> {
   const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
   if (!fetchFn) return [];
@@ -288,15 +187,14 @@ export async function discoverServers(opts: DiscoverOptions = {}): Promise<Disco
       opts.concurrency ?? 48,
     );
   };
-  // Announced servers come first, ahead even of the named candidates: an origin
-  // the server chose to publish beats one this file guessed at, and it is the
-  // only one that can carry a non-default port or a TLS front door.
+  // Announced servers come first: a published origin is the only one that can
+  // carry a non-default port or a TLS front door.
   const announced = async () => {
     const origins = await browsedOrigins(opts, fetchFn);
     return probeAll(origins, fetchFn, opts.timeoutMs ?? 2000, Math.max(1, origins.length));
   };
-  // Named candidates stay ahead of the sweep so a friendly `.local` origin wins
-  // over the bare IP for the same server.
+  // Named candidates stay ahead of the sweep so a `.local` origin wins over the
+  // bare IP for the same server.
   const [announcedHits, namedHits, subnetHits] = await Promise.all([
     announced(),
     probeAll(named, fetchFn, opts.timeoutMs ?? 2000, named.length),
@@ -319,8 +217,8 @@ export async function discoverServers(opts: DiscoverOptions = {}): Promise<Disco
   return found;
 }
 
-/** All `http://<prefix>.1..254:<port>` origins for the /24 containing `ip`
- *  (excluding the device's own address). */
+/** Every `http://<prefix>.1..254:<port>` origin in the /24 containing `ip`,
+ *  excluding the device's own address. */
 export function subnetCandidates(ip: string, port = 4040): string[] {
   const m = /^(\d{1,3}\.\d{1,3}\.\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (!m) return [];
@@ -338,9 +236,6 @@ export async function getLocalIPv4(): Promise<string | null> {
   return (await tizenLocalIp()) ?? (await webosLocalIp()) ?? (await webrtcLocalIp());
 }
 
-// ----- per-platform local IP --------------------------------------------------
-
-/** Wrap a resolver so only the first call settles it (later calls are ignored). */
 function once<T>(resolve: (value: T) => void): (value: T) => void {
   let settled = false;
   return (value: T) => {
@@ -442,10 +337,6 @@ function isPrivateIPv4(ip: string): boolean {
   return ip.startsWith('10.') || ip.startsWith('192.168.') || /^172\.(1[6-9]|2\d|3[01])\./.test(ip);
 }
 
-// ----- probing ----------------------------------------------------------------
-
-/** Probe `urls` (≤ `concurrency` at a time); resolve the first that is a live
- *  KROMA server, or `null` when all fail. */
 function raceForServer(
   urls: string[],
   fetchFn: typeof globalThis.fetch,
@@ -483,17 +374,14 @@ function raceForServer(
   });
 }
 
-/** Probe every url (≤ `concurrency` at a time) and collect ALL live servers,
- *  in probe order. Unlike [`raceForServer`] this waits for the full sweep. */
 async function probeAll(
   urls: string[],
   fetchFn: typeof globalThis.fetch,
   timeoutMs: number,
   concurrency: number,
 ): Promise<Array<{ url: string; body: HealthBody }>> {
-  // Results are written into the slot they were claimed from, so probe order
-  // holds by construction: no post-hoc sort, and no dependence on the urls
-  // being unique.
+  // Results go into the slot they were claimed from, so probe order holds
+  // without a sort and without the urls having to be unique.
   const slots: Array<{ url: string; body: HealthBody } | null> = urls.map(() => null);
   let next = 0;
   const worker = async () => {
@@ -527,8 +415,8 @@ async function probeHealth(
   timeoutMs: number,
 ): Promise<HealthBody | null> {
   const ctrl = new AbortController();
-  // Cleared in `finally`: on the throw path (abort, DNS failure, connection
-  // refused) an un-cleared timer stays armed, and a /24 sweep arms 253 of them.
+  // Cleared in `finally`, or a /24 sweep leaves 253 timers armed on the throw
+  // path (abort, DNS failure, connection refused).
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetchFn(`${base}/api/health`, { signal: ctrl.signal });
@@ -553,8 +441,6 @@ async function probe(
 function stripTrailingSlash(url: string): string {
   return url.replace(/(^|[^/])\/+$/, '$1');
 }
-
-// ----- minimal platform typings -----------------------------------------------
 
 interface TizenNetwork {
   ipAddress?: string;

@@ -1,29 +1,13 @@
 #!/usr/bin/env bun
-// Profile the app ON THE TELEVISION.
-//
-// Everything else in this folder measures a proxy. perf-bench.ts throttles a
-// desktop browser, perf-profile.ts profiles the real bundle in headless Chrome -
-// and both were wrong in the same direction, because a developer's laptop is
-// idle 96% of the time doing what makes a Samsung stutter, and CPU throttling
-// distorts exactly the number you came for (it reports one ~1.3s "long task"
-// that is the throttler suspending the renderer, and shows up identically with
-// no input at all). The only honest number comes from the television.
-//
-// Samsung's firmware runs a Chromium with the real DevTools Protocol on it, so
-// this drives THAT: same V8 sampling profiler, same remote-key events the remote
-// sends, and the app's own frame/response instrumentation read back over the
-// same socket.
-//
-// Playwright cannot be used because Tizen exposes only per-PAGE websockets and
-// no browser-level endpoint, so this speaks CDP directly - which is a few dozen
-// lines and removes the dependency besides.
+// Profiles the app on a Tizen television over CDP. Playwright cannot be used:
+// Tizen exposes only per-PAGE websockets, no browser-level endpoint.
 //
 //   ~/tizen-studio/tools/sdb shell 0 debug KromaTV001.KROMA   # prints a port
 //   ~/tizen-studio/tools/sdb forward tcp:<port> tcp:<port>
 //   bun clients/tv-build/perf-tv.ts --port <port> --scenario browse
 //
-// `--serve` is the usual setup: the TV's dev shell points at this machine, so
-// serve the production build on :5174 first (bunx vite preview --host).
+// The TV's dev shell points at this machine, so serve the production build on
+// :5174 first (bunx vite preview --host).
 
 const args = process.argv.slice(2);
 const flag = (name: string, fallback: string): string => {
@@ -34,47 +18,21 @@ const flag = (name: string, fallback: string): string => {
 const PORT = flag('port', '');
 const SCENARIO = flag('scenario', 'browse');
 const RECORD_MS = Number(flag('ms', '12000'));
-/** Gap between presses. A viewer walks a rail at roughly this pace; much faster
- * and the measurement is of key queueing rather than of the app. */
+// Much faster than this and the measurement is of key queueing, not of the app.
 const KEY_MS = Number(flag('keyms', '260'));
 
-/**
- * Take one thing away and measure again.
- *
- * The profile said the television spends 78% of a browse in `(program)` - not in
- * JavaScript at all - which means the cost is in style, layout, paint and
- * compositing, and a CPU profile cannot name it. So instead of guessing which
- * effect is expensive, remove one and watch the frame rate: an ablation is a
- * measurement rather than an opinion, and it runs on the real panel.
- *
- * Every override is `!important` and injected at run time, so nothing needs
- * rebuilding between runs and the app is otherwise untouched.
- */
+// Style overrides injected at run time to remove one visual effect and
+// re-measure; nothing needs rebuilding between runs.
 const ABLATIONS: Record<string, string> = {
   none: '',
-  // Box shadows are rasterised per repaint and the focus ring is one, drawn
-  // large and blurred, moving every press.
   shadows: '*{box-shadow:none !important}',
-  // Every gradient overlay: the card scrims, the genre washes, the two
-  // full-screen veils behind a detail page.
   gradients: '*{background-image:none !important}',
-  // Artwork decode and GPU upload. Hidden rather than removed, so the layout it
-  // causes is still there and only the pixels go.
+  // Hidden rather than removed, so the layout the image causes is still there.
   images: 'img{visibility:hidden !important}',
-  // The focus transition itself: transform, box-shadow and background-color all
-  // animating together for 200ms on every move.
   transitions: '*{transition:none !important;animation:none !important}',
-  // A transform promotes an element to its own compositing layer, which a TV GPU
-  // pays for in memory bandwidth even when the value is 1.
   transforms: '*{transform:none !important}',
-  // Animate ONLY the transform. A transform is composited - the GPU moves an
-  // already-painted layer - while box-shadow and background-color are not: every
-  // frame of those repaints the element and, because the ring is drawn outside
-  // the box and blurred, a good deal around it too.
   'transition-transform-only': '*{transition-property:transform !important}',
-  // The focus ring alone, left static: it still appears, it just does not fade.
   'transition-no-shadow': '*{transition-property:transform,background-color !important}',
-  // Everything at once: the floor this screen could reach.
   all: '*{box-shadow:none !important;background-image:none !important;transition:none !important;animation:none !important;transform:none !important}img{visibility:hidden !important}',
 };
 const ABLATE = flag('ablate', 'none');
@@ -83,8 +41,6 @@ if (!PORT) {
   console.error('--port is required (from `sdb shell 0 debug <appid>`)');
   process.exit(1);
 }
-
-// ----- the smallest CDP client that does the job -------------------------------
 
 interface Page {
   webSocketDebuggerUrl: string;
@@ -109,8 +65,6 @@ let nextId = 1;
 const pending = new Map<number, (result: unknown) => void>();
 socket.addEventListener('message', (event) => {
   const message = JSON.parse(String(event.data)) as { id?: unknown; result?: unknown };
-  // The id is asserted, not assumed: this is parsed off a socket, so the cast
-  // above is a claim about the wire rather than a fact about the value.
   if (typeof message.id !== 'number') return; // an event, not an answer
   pending.get(message.id)?.(message.result);
   pending.delete(message.id);
@@ -122,7 +76,6 @@ function send<T = Record<string, unknown>>(method: string, params: unknown = {})
   return new Promise((settle) => pending.set(id, (result) => settle(result as T)));
 }
 
-/** Evaluate in the page and bring the value back. */
 async function evaluate<T>(expression: string): Promise<T> {
   const answer = await send<{ result?: { value?: T } }>('Runtime.evaluate', {
     expression,
@@ -132,7 +85,6 @@ async function evaluate<T>(expression: string): Promise<T> {
   return answer.result?.value as T;
 }
 
-/** A real key, delivered the way the remote delivers it. */
 const KEYS: Record<string, { code: number; key: string; name: string }> = {
   ArrowUp: { code: 38, key: 'ArrowUp', name: 'Up' },
   ArrowDown: { code: 40, key: 'ArrowDown', name: 'Down' },
@@ -184,8 +136,7 @@ const SCENARIOS: Record<string, () => Promise<void>> = {
     await wait(4000);
     await walk(['ArrowDown', 'ArrowDown', 'ArrowRight', 'ArrowDown'], RECORD_MS - 5000);
   },
-  // The genre picker, and then one genre's grid. Reached through the top nav:
-  // Accueil, Films, Series, Genres.
+  // Three rights along the top nav: Accueil, Films, Series, Genres.
   genres: async () => {
     await press('ArrowUp');
     await wait(600);
@@ -214,8 +165,6 @@ const SCENARIOS: Record<string, () => Promise<void>> = {
   },
   idle: () => wait(RECORD_MS),
 };
-
-// ----- reading the profile ----------------------------------------------------
 
 interface CpuProfileNode {
   id: number;
@@ -262,8 +211,6 @@ function bottomUp(profile: CpuProfile): { label: string; ms: number; pct: number
     .sort((a, b) => b.ms - a.ms);
 }
 
-// ----- the run ----------------------------------------------------------------
-
 const scenario = SCENARIOS[SCENARIO];
 if (!scenario) {
   console.error(`unknown scenario "${SCENARIO}" (have: ${Object.keys(SCENARIOS).join(', ')})`);
@@ -298,8 +245,6 @@ if (css) {
   console.log(`\n    ablated   ${ABLATE}`);
 }
 
-// The app's own instrumentation, which measures the two things a viewer feels:
-// how long a frame took, and how long the ring took to move after a press.
 await evaluate(`(() => { const p = globalThis.KROMA_PERF; p && (p.reset(), p.start()); })()`);
 
 await send('Profiler.enable');

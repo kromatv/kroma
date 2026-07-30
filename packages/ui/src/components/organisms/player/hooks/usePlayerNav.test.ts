@@ -23,11 +23,6 @@ function makeActions(over: Partial<PlayerNavActions> = {}): PlayerNavActions {
   };
 }
 
-/** Render the nav machine; `key` presses a logical remote key inside `act`.
- *
- * The control row is passed in the way `<Player>` passes it - through
- * `controlOrder` - because the hook now takes the row as drawn rather than
- * deriving a second one from the flags. */
 function nav(flags = WEB_FLAGS, playing = false, actions: PlayerNavActions = makeActions()) {
   const view = renderHook(() =>
     usePlayerNav(playing, actions, controlOrder(flags, actions.hasNext)),
@@ -67,17 +62,15 @@ describe('usePlayerNav controls-row navigation', () => {
     expect(result.current.focusedControl).toBe('forward');
     key('Left');
     expect(result.current.focusedControl).toBe('play');
-    // Clamp at the left end.
-    key('Left'); // play -> rewind
-    key('Left'); // rewind, clamp
+    key('Left');
+    key('Left');
     expect(result.current.focusedControl).toBe('rewind');
   });
 
   it('Enter on a control runs its action (Play toggles, Subtitles opens a panel)', () => {
     const { result, key, actions } = nav();
-    key('Enter'); // Play focused
+    key('Enter');
     expect(actions.togglePlay).toHaveBeenCalledTimes(1);
-    // Focus the subtitles control, then OK opens the subtitles panel.
     act(() => result.current.focusControl('subtitles'));
     key('Enter');
     expect(result.current.overlay).toBe('subtitles');
@@ -112,7 +105,7 @@ describe('usePlayerNav progress zone', () => {
   it('◀ ▶ nudge the seek and Enter toggles play', () => {
     const actions = makeActions();
     const { key } = nav(WEB_FLAGS, false, actions);
-    key('Up'); // into progress
+    key('Up');
     key('Left');
     expect(actions.seekNudge).toHaveBeenCalledWith(-1);
     key('Right');
@@ -123,11 +116,11 @@ describe('usePlayerNav progress zone', () => {
 
   it('▼ returns to the controls zone; ▲ hides the chrome', () => {
     const { result, key } = nav();
-    key('Up'); // progress
-    key('Down'); // back to controls
+    key('Up');
+    key('Down');
     expect(result.current.zone).toBe('controls');
-    key('Up'); // progress again
-    key('Up'); // hide
+    key('Up');
+    key('Up');
     expect(result.current.revealed).toBe(false);
   });
 });
@@ -158,7 +151,7 @@ describe('usePlayerNav global + overlay behaviour', () => {
     const { result, key, actions } = nav();
     act(() => result.current.openOverlay('settings'));
     expect(result.current.overlay).toBe('settings');
-    key('Right'); // swallowed, no control move
+    key('Right');
     expect(actions.onExit).not.toHaveBeenCalled();
     key('Back');
     expect(result.current.overlay).toBeNull();
@@ -171,7 +164,6 @@ describe('usePlayerNav global + overlay behaviour', () => {
     expect(result.current.revealed).toBe(false);
     key('Right');
     expect(result.current.revealed).toBe(true);
-    // The key that only revealed did not also move focus off Play.
     expect(result.current.focusedControl).toBe('play');
   });
 });
@@ -199,14 +191,13 @@ describe('usePlayerNav activate() maps every control', () => {
   it('offers the cast control only while a set is live, and hands the film over', () => {
     const actions = makeActions();
     const { result } = nav({ ...WEB_FLAGS, cast: true }, false, actions);
-    // Beside the gear, ahead of the window controls (pip / fullscreen).
     expect(result.current.controls.indexOf('cast')).toBe(
       result.current.controls.indexOf('settings') + 1,
     );
     act(() => result.current.activate('cast'));
     expect(actions.onCast).toHaveBeenCalled();
 
-    // No receiver on the network: no button, and no focus stop to walk into.
+    // No receiver on the network: no button, no focus stop to walk into.
     const { result: none } = nav(WEB_FLAGS, false);
     expect(none.current.controls).not.toContain('cast');
   });

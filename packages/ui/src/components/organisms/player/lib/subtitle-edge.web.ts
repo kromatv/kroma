@@ -1,11 +1,6 @@
-// The subtitle edge treatment, web. The browser takes a comma-separated list of
-// text shadows, so each CEA-708 treatment is drawn as the standard describes it:
-// `uniform` as a four-way stroke, `raised` and `depressed` as a hard offset in
-// opposite directions (which is the whole difference between them), and `shadow`
-// as a soft drop shadow.
-//
-// The background is NOT an edge treatment - it is its own CEA-708 layer, with
-// its own colour and opacity, and lives in subtitle-appearance.ts.
+// The CEA-708 subtitle edge treatments, web: drawn as the standard describes,
+// via comma-separated text shadows. The background is a separate CEA-708 layer
+// (subtitle-appearance.ts), not an edge treatment.
 
 import type { TextStyle } from 'react-native';
 import type { SubEdge } from './subtitle-appearance';

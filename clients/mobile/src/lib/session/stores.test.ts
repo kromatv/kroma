@@ -1,14 +1,8 @@
 // @vitest-environment jsdom
 //
-// The two persisted lists behind a mobile session.
-//
-// Three rules here are load-bearing and none of them are visible from a type.
-// `hydrate` seeds from device storage and must NOT write straight back, or
-// every launch rewrites the keychain with what it just read. `rename` runs off
-// a health probe on every server-picker mount, so an unchanged name has to be a
-// no-op rather than a write plus a re-render. And account identity is the PAIR
-// (server, user): the same person on two servers is two accounts, so a forget
-// keyed on the user alone would sign them out of both.
+// The two persisted lists behind a mobile session. `hydrate` seeds from device
+// storage and must not write straight back; account identity is the pair
+// (server, user), not the user alone.
 
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -37,9 +31,7 @@ describe('sameAccount', () => {
   it('matches only when BOTH the server and the user agree', () => {
     const a = account('https://one', 'u1');
     expect(sameAccount(a, 'https://one', 'u1')).toBe(true);
-    // The same person on another server is a different account.
     expect(sameAccount(a, 'https://two', 'u1')).toBe(false);
-    // And another profile on the same server likewise.
     expect(sameAccount(a, 'https://one', 'u2')).toBe(false);
   });
 });
@@ -68,8 +60,6 @@ describe('useAccountStore', () => {
 
     expect(result.current.accounts).toHaveLength(1);
     expect(result.current.ref.current).toHaveLength(1);
-    // The whole point: this came FROM storage. Writing it back makes every
-    // launch rewrite the keychain with what it just read.
     expect(saveAccounts).not.toHaveBeenCalled();
   });
 
@@ -169,8 +159,6 @@ describe('useServerStore', () => {
     const { result } = renderHook(() => useServerStore());
     act(() => result.current.hydrate([server('https://a', { name: 'Same' })]));
     act(() => result.current.rename('https://a', 'Same'));
-    // This runs off a health probe on every server-picker mount; a pointless
-    // write would re-render the tree each time.
     expect(saveServers).not.toHaveBeenCalled();
   });
 

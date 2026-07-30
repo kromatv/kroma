@@ -1,12 +1,7 @@
 //! Low-level, dependency-light primitives shared across the server's layers:
 //! monotonic-ish wall-clock timestamps, stable short hashes, and random tokens.
-//!
-//! These are pure computations (plus one `/dev/urandom` read) that several layers
-//! need: the persistence layer stamps `created_at`, adapters key caches by
-//! content hash, services mint session tokens. They live here, below `kroma-db`,
-//! so the lower layers don't have to reach up into `services` for a helper.
-//! The former `services::{jobs::now_ms, scan::{now_iso8601, short_hash},
-//! auth::random_*}` re-export from here for backwards compatibility.
+//! `services::{jobs::now_ms, scan::{now_iso8601, short_hash}, auth::random_*}`
+//! re-export these for backwards compatibility.
 
 use sha2::{Digest, Sha256};
 use time::format_description::well_known::Rfc3339;
@@ -34,13 +29,10 @@ pub fn short_hash(input: &str) -> String {
 /// `n` cryptographically-secure random bytes, read from the OS CSPRNG
 /// (`/dev/urandom`, falling back to `/dev/random`).
 ///
-/// Every session/access/invite token, password salt and Quick Connect code is
-/// derived from this, so there is deliberately **no** algorithmic fallback: if
-/// the kernel RNG cannot be read we panic rather than mint predictable secrets.
-/// A clock-seeded stand-in (the previous behaviour) would let an attacker who
-/// can estimate when a token was generated brute-force the seed. On the only
-/// platforms the server targets (Linux NAS / macOS) the device is always
-/// present, so this never triggers in practice.
+/// No algorithmic fallback: every session token and password salt derives
+/// from this, so a clock-seeded stand-in would let an attacker who can
+/// estimate the generation time brute-force the seed. We panic instead of
+/// minting predictable secrets.
 pub fn random_bytes(n: usize) -> Vec<u8> {
     use std::io::Read;
     let mut buf = vec![0u8; n];

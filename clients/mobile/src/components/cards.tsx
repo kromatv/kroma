@@ -20,7 +20,6 @@ import { usePlay } from '#mobile/lib/play';
 import { colors, posterWidth, radius, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
-/** The space between rail tiles; the rail's pitch is tile width plus this. */
 const GAP = 12;
 
 export interface CardModel {
@@ -62,7 +61,6 @@ export const PosterCard = memo(function PosterCard({
   width,
 }: Readonly<{
   card: CardModel;
-  /** A rail tile fills its pitch cell ('100%'); the grid passes its column width. */
   width: number | '100%';
 }>) {
   const router = useRouter();
@@ -108,7 +106,6 @@ export function ContinueCard({
 }: Readonly<{
   entry: ContinueItem;
   client: KromaClient;
-  /** The tile fills its rail cell ('100%'); `artWidth` sizes the fetch. */
   width: number | '100%';
   artWidth: number;
 }>) {
@@ -142,7 +139,6 @@ export function ContinueCard({
   );
 }
 
-/** The resume tile's caption block (title + episode tag), for the rail height. */
 const CONTINUE_TEXT = 42;
 
 export function ContinueRail({

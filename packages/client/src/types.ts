@@ -31,8 +31,6 @@ export interface PlaybackPing {
   positionMs: number;
   durationMs?: number | null;
   state?: 'playing' | 'paused' | 'buffering';
-  /** `direct` (range copy) · `remux` (HLS, video+audio copied) · `transcode`
-   * (HLS, audio re-encoded to AAC video is never transcoded). */
   mode?: 'direct' | 'remux' | 'transcode';
   player?: string;
   device?: string;

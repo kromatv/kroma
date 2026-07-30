@@ -17,13 +17,11 @@ pub struct AdminUser {
     #[serde(rename = "avatarUrl", skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
     pub permissions: Vec<Permission>,
-    /// Derived display role: "Propriétaire" | "Membre" | "Restreint".
     pub role: String,
     #[serde(rename = "createdAt")]
     pub created_at: String,
     #[serde(rename = "lastSeen", skip_serializing_if = "Option::is_none")]
     pub last_seen: Option<String>,
-    /// Whether the user is currently streaming (filled from the playback registry).
     pub online: bool,
 }
 

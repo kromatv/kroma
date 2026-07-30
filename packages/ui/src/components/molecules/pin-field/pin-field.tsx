@@ -96,8 +96,6 @@ function PinField({
   );
 }
 
-/** A dot's edge: amber once entered, red while the code stands rejected, and
- * otherwise the faint outline of a slot still waiting for a digit. */
 function dotEdge(filled: boolean, error: boolean): string {
   if (filled) return colors.accent;
   return error ? colors.danger : 'rgba(255, 255, 255, 0.25)';

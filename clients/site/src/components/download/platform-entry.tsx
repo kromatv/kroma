@@ -6,31 +6,18 @@ import { m } from '#site/paraglide/messages';
 
 export interface PlatformEntryProps {
   icon: IconComponent;
-  /** Device / OS name, e.g. "Samsung (Tizen)". */
   name: string;
-  /** Artifact extensions rendered as monospace badges, e.g. ['.wgt']. */
   artifacts?: readonly string[];
-  /** Flag store/beta channels (TestFlight, Firebase) so expectations are set. */
   beta?: boolean;
-  /** The one-time-setup / heads-up note, typically a <Callout>. */
   setup?: ReactNode;
-  /** A short numbered procedure, when clicking through beats a command. Messages
-   *  with their markers, rendered by the StepList. */
   steps?: readonly string[];
-  /** The representative command, verbatim. Optional (Apple TV needs none). */
   code?: string;
-  /** Caption for that command; defaults to the CodeBlock's own `bash`. */
   codeLabel?: string;
-  /** Trailing prose for this row only (Synology's manual-install fallback). */
   after?: ReactNode;
 }
 
-/**
- * One device inside a family. A row, not a card: an icon tile, the name with its
- * artifact badges, then the one-time setup, the steps or command, and any closing
- * note stacked beneath. Rows share a hairline divider within the family panel,
- * which reads as an edited list rather than a grid of look-alike tiles.
- */
+/** One device inside a family: a row, not a card, sharing a hairline divider
+ *  with its siblings in the family panel. */
 export function PlatformEntry({
   icon: Icon,
   name,

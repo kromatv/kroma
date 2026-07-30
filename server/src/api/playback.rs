@@ -1,9 +1,5 @@
-//! Playback heartbeat + progress endpoints. Clients (web/TV/mobile) `POST
-//! /api/playback/ping` every few seconds while a `<video>` is playing so the
-//! admin dashboard can show live "En cours de lecture" sessions; `POST
-//! /api/playback/stop` ends one cleanly. The `/progress` + `/continue` handlers
-//! persist resume positions per user. All require a session (the catalogue is
-//! public, but a session belongs to a user).
+//! Playback heartbeat + progress endpoints: live sessions for the admin
+//! dashboard, and per-user resume positions. All require a session.
 
 use std::net::SocketAddr;
 
@@ -54,10 +50,8 @@ pub struct PingBody {
     pub position_ms: i64,
     #[serde(rename = "durationMs", default)]
     pub duration_ms: Option<i64>,
-    /// `playing` | `paused`. Defaults to playing.
     #[serde(default = "default_state")]
     pub state: String,
-    /// `direct` | `transcode`. Defaults to direct.
     #[serde(default = "default_mode")]
     pub mode: String,
     #[serde(default)]
@@ -85,8 +79,8 @@ pub async fn ping(
     headers: HeaderMap,
     Json(body): Json<PingBody>,
 ) -> Response {
-    // An admin just terminated this session refuse the heartbeat (410) instead
-    // of recreating it. The client treats 410 as "stop now".
+    // An admin just terminated this session: refuse rather than recreate it. The
+    // client treats 410 as "stop now".
     if state.playback.is_recently_terminated(&body.session_id) {
         return StatusCode::GONE.into_response();
     }
@@ -94,7 +88,6 @@ pub async fn ping(
     let ip = client_ip(&headers, &addr);
     let network = playback::classify_network(&ip, &settings::local_networks(&state.settings));
 
-    // Build the item snapshot only on the first beat of a session.
     let item = if state.playback.contains(&body.session_id) {
         None
     } else {
@@ -115,11 +108,9 @@ pub async fn ping(
         subtitle: body.subtitle,
     };
 
-    // First beat of a session: pre-warm this item's text-subtitle cache in the
-    // background, so the toggle a viewer reaches for mid-film is a disk read
-    // instead of a whole-file demux they must sit through. The per-file lock in
-    // `extract_pending_locked` dedupes against the pipeline stage and the
-    // on-demand endpoint; when everything is already cached this is a few stats.
+    // First beat of a session: pre-warm the text-subtitle cache so a mid-film
+    // toggle is a disk read, not a whole-file demux. `extract_pending_locked`
+    // dedupes against the pipeline stage and the on-demand endpoint.
     if let Some(item) = item.as_ref() {
         if let Some(abs) = item.abs_path.clone() {
             let subs = item.subtitles.clone();
@@ -139,7 +130,6 @@ pub async fn ping(
         item.as_ref(),
     );
 
-    // Keep the user's last-seen fresh (best-effort).
     let uid = user.id.clone();
     let _ = query(&state.db, move |pool| {
         let _ = db::touch_last_seen(&pool, &uid);
@@ -169,9 +159,8 @@ pub async fn stop(
     AuthUser(user): AuthUser,
     Json(body): Json<StopBody>,
 ) -> Response {
-    // Owner-scoped: a viewer ends their OWN session. Naming somebody else's is a
-    // no-op rather than an error, so this cannot be used to discover session ids
-    // either. Admins terminate through the admin route.
+    // Owner-scoped: naming somebody else's session is a no-op rather than an
+    // error, so this cannot be used to probe for session ids.
     if let Some(session) = state.playback.remove_owned(&body.session_id, &user.id) {
         let _ = query(&state.db, move |pool| {
             playback::record(&pool, &session);
@@ -183,8 +172,6 @@ pub async fn stop(
     state.events.publish(ServerEvent::PlaybackStopped { count });
     StatusCode::NO_CONTENT.into_response()
 }
-
-// ----- progress / resume ------------------------------------------------------
 
 #[derive(Debug, Deserialize)]
 pub struct ProgressBody {
@@ -277,7 +264,6 @@ pub async fn next_episode(State(state): State<SharedState>, Path(item_id): Path<
     }
 }
 
-/// How many upcoming episodes to feed the player's "up next" episode rail.
 const UP_NEXT_EPISODES: usize = 20;
 
 /// `GET /api/items/:id/following` → `[MediaItem]`. Up to `UP_NEXT_EPISODES`
@@ -294,8 +280,6 @@ pub async fn following_episodes(
         Err(resp) => resp,
     }
 }
-
-// ----- watched marker ---------------------------------------------------------
 
 /// `PUT /api/watched/:id` (Bearer) → 204. Marks the item watched and clears its
 /// resume position (drops it from "Continue watching").
@@ -329,8 +313,6 @@ pub async fn list_watched(State(state): State<SharedState>, AuthUser(user): Auth
         Err(resp) => resp,
     }
 }
-
-// ----- my list ("Ma liste") ---------------------------------------------------
 
 /// `PUT /api/my-list/:id` (Bearer) → 204. Adds a title to the user's list.
 pub async fn add_to_list(

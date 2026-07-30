@@ -1,8 +1,4 @@
 // @vitest-environment jsdom
-//
-// The design half of voice search, with a fake backend standing in for the
-// microphone: what the panel says, and that every transcript it is handed
-// reaches the query.
 
 import { I18nProvider } from '@kroma/ui';
 import { clearPressGuard } from '@kroma/ui/kit';
@@ -18,9 +14,7 @@ import {
 } from '#tv/app/voiceSearch';
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
 
-/** Every kit control is a node of the spatial navigator, and a node needs a
- * navigator - the router gives every screen one. A test renders inside the same
- * scope so the tree it mounts is the tree the app mounts. */
+// Kit controls are spatial-navigator nodes, and a node needs a navigator scope.
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 afterEach(() => {
@@ -29,7 +23,6 @@ afterEach(() => {
   setVoiceSearchBackend(null);
 });
 
-/** A backend whose "microphone" is whatever the test calls on the props. */
 function fakeBackend(session: (props: VoiceSessionProps) => void = () => {}): VoiceSearchBackend {
   return {
     available: () => true,
@@ -101,8 +94,7 @@ describe('TvVoiceSearch', () => {
   it('closes on cancel', () => {
     const onDone = vi.fn();
     withI18n(<TvVoiceSearch backend={fakeBackend()} onText={() => {}} onDone={onDone} />);
-    // The panel arms the press guard as it opens (the press that opened it must
-    // not fall through), so a test press has to wait it out.
+    // The panel arms the press guard as it opens, so a test press must clear it.
     clearPressGuard();
     fireEvent.click(screen.getByText('Annuler'));
     expect(onDone).toHaveBeenCalledTimes(1);

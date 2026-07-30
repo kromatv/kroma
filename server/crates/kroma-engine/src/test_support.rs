@@ -1,14 +1,11 @@
 //! Reusable `#[cfg(test)]` harness for services that need a full [`SharedState`].
 //!
 //! [`test_state`] builds a minimal, real [`AppState`] over a fresh temp-file
-//! SQLite DB (unique per test, like the kroma-db `#[cfg(test)]` pattern), a no-op
-//! [`Embedder`](crate::ports::Embedder), no TMDB key and no `web_dir`. Nothing here
-//! talks to the network, a module sidecar, or `ffmpeg`; `module_services` is empty
-//! and `module_jobs` is `&[]`, exactly like the binary's `api::test_support`.
+//! SQLite DB, a no-op [`Embedder`](crate::ports::Embedder), no TMDB key and no
+//! `web_dir`. Nothing here talks to the network, a module sidecar, or `ffmpeg`.
 //!
-//! The small `seed_*` helpers insert the catalog rows a service under test reads
-//! (a library, a movie, a show + episode, a pipeline-ledger task) via raw SQL with
-//! test-controlled literals, mirroring the seeding style of the existing db tests.
+//! The `seed_*` helpers insert the catalog rows a service under test reads (a
+//! library, a movie, a show + episode, a pipeline-ledger task) via raw SQL.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -21,17 +18,15 @@ use crate::ports::{Embedder, NoopEmbedder};
 use crate::services::settings::Settings;
 use crate::state::{AppState, SharedState};
 
-/// Monotonic counter making per-test temp paths unique (paired with the pid),
-/// mirroring the kroma-db test harness.
+// Monotonic counter making per-test temp paths unique (paired with the pid).
 static SEQ: AtomicU32 = AtomicU32::new(0);
 
-/// A unique temp data dir for one test (removed + recreated so a rerun is clean).
-///
-/// Cleanup is *not* here: the dir is removed by the `#[cfg(test)]`
-/// [`Drop for AppState`](crate::state::AppState) once the last [`SharedState`]
-/// clone goes, which is the only point that outlives every thread the test hands
-/// the state to. The `remove_dir_all` below stays as the belt-and-braces case for
-/// a dir left by a *previous* run that crashed before its state dropped.
+// A unique temp data dir for one test (removed + recreated so a rerun is
+// clean). Cleanup is *not* here: the dir is removed by the `#[cfg(test)]`
+// `Drop for AppState` once the last `SharedState` clone goes, which is the
+// only point that outlives every thread the test hands the state to. The
+// `remove_dir_all` below is belt-and-braces for a dir left by a previous run
+// that crashed before its state dropped.
 fn unique_data_dir() -> PathBuf {
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
     let dir = std::env::temp_dir().join(format!("kroma-engine-test-{}-{n}", std::process::id()));
@@ -40,9 +35,8 @@ fn unique_data_dir() -> PathBuf {
     dir
 }
 
-/// A minimal [`Config`]: a temp `data_dir`, no media dirs (nothing to scan), no
-/// TMDB key (network features cleanly no-op), no `web_dir`. Same field literal the
-/// binary's `api::test_support::test_config` builds.
+// A minimal Config: a temp `data_dir`, no media dirs (nothing to scan), no
+// TMDB key (network features cleanly no-op), no `web_dir`.
 fn test_config(data_dir: PathBuf) -> Config {
     Config {
         host: "127.0.0.1".into(),
@@ -301,8 +295,8 @@ impl FakeLlm {
     }
 }
 
-/// Read one HTTP request off `stream` and parse its body as JSON. `None` when
-/// the peer sent nothing.
+// Reads one HTTP request off `stream` and parses its body as JSON. `None`
+// when the peer sent nothing.
 fn read_json_request(stream: &std::net::TcpStream) -> Option<serde_json::Value> {
     use std::io::{BufRead, BufReader, Read};
 
@@ -328,7 +322,6 @@ fn read_json_request(stream: &std::net::TcpStream) -> Option<serde_json::Value> 
     Some(serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null))
 }
 
-/// Write a JSON reply with the given status.
 fn write_json_reply(stream: &mut std::net::TcpStream, status: u16, reply: &serde_json::Value) {
     use std::io::Write;
 
@@ -407,8 +400,8 @@ impl Drop for FakeTmdb {
     }
 }
 
-/// Read one HTTP request and return its target (`"/movie/603?api_key=x"`).
-/// `None` when the peer sent nothing.
+// Reads one HTTP request and returns its target (`"/movie/603?api_key=x"`).
+// `None` when the peer sent nothing.
 fn read_request_target(stream: &std::net::TcpStream) -> Option<String> {
     use std::io::{BufRead, BufReader};
 

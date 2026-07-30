@@ -20,9 +20,7 @@ import { requestSearch } from '@kroma/tv';
 import { Linking } from 'react-native';
 import { SiriSearch } from '../../modules/siri-search';
 
-/** The query in a `kroma://search?q=...` link, if that is what this URL is.
- * Hand-parsed rather than through `URL`, which React Native only partly
- * implements. */
+// Hand-parsed rather than through `URL`, which React Native only partly implements.
 function searchInUrl(url: string | null): string | null {
   if (!url) return null;
   const query = /^kroma:\/\/search\/?\?(.*)$/i.exec(url)?.[1];

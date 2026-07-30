@@ -1,24 +1,9 @@
-//! Optional movie/show metadata enrichment via **TMDB** (The Movie Database)
-//! overview, poster, genres, rating, and the TMDB + IMDb IDs.
-//!
-//! Like [`crate::infra::probe`] (which shells out to `ffprobe`), this shells out to
-//! `curl` instead of pulling an HTTP/TLS dependency. That keeps the crate lean
-//! and `rustc 1.81`-friendly and reuses a binary the runtime image already
-//! ships. `--data-urlencode` makes query building safe for titles with spaces,
-//! accents, and `&`.
-//!
-//! A free TMDB API key in `KROMA_TMDB_API_KEY` enables it. With no key the
-//! helpers are inert and the server behaves exactly as before.
-//!
-//! The resolved wire entities ([`crate::domain::metadata::Metadata`] /
-//! `CastMember`) are pure data types and live in the domain layer; this module
-//! is the I/O adapter that produces them: the [`client`] (curl/JSON) and a
-//! process-wide [`cache`].
+//! Optional movie/show metadata enrichment via TMDB, enabled by a key in
+//! `KROMA_TMDB_API_KEY`; inert without one. Shells out to `curl` rather than
+//! pulling an HTTP/TLS dependency, as [`crate::infra::probe`] does `ffprobe`.
 
 mod cache;
 mod client;
-/// The TMDB base override, so tests can point the real client at a fake server.
-/// Test builds only - `client` itself stays private.
 #[cfg(test)]
 pub(crate) use client::test_override;
 mod common;

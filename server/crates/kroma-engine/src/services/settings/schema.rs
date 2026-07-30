@@ -1,6 +1,5 @@
 //! The admin settings-view schema: the grouped, localised rows the console
-//! renders for the `general` / `network` / `transcoder` views, with each row's
-//! current value overlaid from the store and a few computed values from config.
+//! renders, with each row's current value overlaid from the store.
 
 use std::sync::OnceLock;
 
@@ -11,15 +10,11 @@ use crate::i18n;
 
 use super::store::Settings;
 
-/// The running server's version + short git commit + UTC build date, set once at
-/// startup by the server binary. It must come from the binary: this schema lives
-/// in the engine crate, so `env!("CARGO_PKG_VERSION")` here is the ENGINE crate's
-/// version (a stale 0.1.0), not the released server version. Unset (tests) falls
-/// back to the crate version + placeholders.
+// Must come from the server binary: `env!("CARGO_PKG_VERSION")` here would be the
+// engine crate's stale version, not the released server's.
 static BUILD_INFO: OnceLock<(String, String, String)> = OnceLock::new();
 
-/// Record the running server's version, short commit hash, and UTC build date for
-/// the settings view. Call once from the server binary; later calls are ignored.
+/// Call once from the server binary; later calls are ignored.
 pub fn set_build_info(
     version: impl Into<String>,
     commit: impl Into<String>,
@@ -28,8 +23,6 @@ pub fn set_build_info(
     let _ = BUILD_INFO.set((version.into(), commit.into(), built.into()));
 }
 
-/// `"<version> (<commit> · <build date>)"` for the read-only version row, e.g.
-/// `0.1.31 (a1b2c3d · 2026-07-21 20:15 UTC)`.
 fn version_label() -> String {
     let (version, commit, built) = BUILD_INFO.get().cloned().unwrap_or_else(|| {
         (env!("CARGO_PKG_VERSION").to_string(), "unknown".to_string(), "unknown".to_string())
@@ -37,28 +30,24 @@ fn version_label() -> String {
     format!("{version} ({commit} · {built})")
 }
 
-/// One editable (or read-only) setting row.
 #[derive(Debug, Clone, Serialize)]
 pub struct SettingRow {
     pub key: String,
     pub label: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub desc: Option<String>,
-    /// `toggle` | `select` | `text` | `value`.
+    // `toggle` | `select` | `text` | `value`.
     pub kind: &'static str,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub options: Vec<String>,
     pub value: Value,
-    /// Whether the server actually enforces this setting (vs. stored-only).
     pub applied: bool,
-    /// `secret` rows only: whether a value is stored. The value itself never
-    /// leaves the server, so this is the console's only way to tell "set" from
-    /// "empty".
+    // `secret` rows only: whether a value is stored. The value itself never
+    // leaves the server.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configured: Option<bool>,
 }
 
-/// A titled group of rows.
 #[derive(Debug, Clone, Serialize)]
 pub struct SettingGroup {
     pub title: String,
@@ -67,9 +56,8 @@ pub struct SettingGroup {
     pub rows: Vec<SettingRow>,
 }
 
-/// Build the grouped schema for one admin settings view (`general` | `network`
-/// | `transcoder`), with each row's current value overlaid from `settings` and a
-/// few dynamic/computed values injected from `config`.
+/// The grouped schema for one admin settings view; an unknown view yields no
+/// groups.
 pub fn groups(
     view: &str,
     settings: &Settings,
@@ -77,19 +65,16 @@ pub fn groups(
     locale: &str,
 ) -> Vec<SettingGroup> {
     let g = |key: &str| settings.get(key);
-    // Localised label/hint/title shorthands. NB: select `options` are persisted
-    // *values* (the stored setting equals the chosen option string), so they are
-    // intentionally NOT translated only labels, hints, group titles & descs.
+    // Select `options` are persisted *values*, so they are deliberately not
+    // translated — only labels, hints, group titles and descriptions are.
     let t = |key: &str| i18n::t(locale, key, &[]);
     let group = |title: &str, desc: Option<&str>, rows: Vec<SettingRow>| SettingGroup {
         title: t(title),
         desc: desc.map(t),
         rows,
     };
-    // NB: only settings the server actually enforces are surfaced here. Stored-but-
-    // unused controls (theme, timezone, hwAccel, https, …) were removed rather than
-    // shown with a "preference saved only" badge the server is remux-only, so the
-    // hardware-encode controls have nothing to drive.
+    // Only settings the server actually enforces are surfaced, never a stored-but-
+    // unused control shown with a "preference saved only" badge.
     match view {
         "general" => vec![
             group(
@@ -136,8 +121,8 @@ pub fn groups(
             ],
         )],
         "acquisition" => {
-            // Import-target selects offer the configured libraries by name
-            // ("Auto" = first library of the matching kind).
+            // Import-target selects offer the configured libraries by name;
+            // "Auto" means the first library of the matching kind.
             let libs = super::library_defs(settings, config);
             let lib_options = |kind: &str| -> Vec<String> {
                 let mut opts = vec!["Auto".to_string()];
@@ -182,19 +167,8 @@ pub fn groups(
             ),
         ]
         }
-        // NB: there is deliberately no "notifications" view.
-        //
-        // It once held seven credential inputs, then three read-only status
-        // lines, and now nothing — because push has no per-server configuration
-        // left. Browsers work off a VAPID keypair the server mints on first use;
-        // phones are reached through the relay, which needs nothing from the
-        // operator because the app's Apple and Google credentials belong to
-        // whoever publishes the app, not to whoever hosts a server. An unknown
-        // view falls through to `_ => Vec::new()`, which is the honest answer.
-        //
-        // The VPN is global to several flows (torrent downloads + optional
-        // indexer routing), so its toggles live in their own section (the
-        // WireGuard config itself is the dedicated `/admin/vpn` API).
+        // There is deliberately no "notifications" view: push has no per-server
+        // configuration, so it falls through to `_ => Vec::new()`.
         "vpn" => vec![
             group(
                 "admin.acqVpn",
@@ -277,15 +251,12 @@ mod tests {
         let groups = groups("general", &s, &test_config(), "en");
         assert_eq!(groups.len(), 2);
         assert_eq!(find_row(&groups, "serverName").unwrap().value, json!("MyBox"));
-        // version is a computed read-only row: "<server version> (<commit>)". The
-        // build info is unset in tests, so it falls back to the crate version +
-        // "unknown".
+        // Build info is unset in tests, so the row falls back to the crate version.
         let ver = find_row(&groups, "version").unwrap();
         assert_eq!(ver.kind, "value");
         let shown = ver.value.as_str().unwrap();
         assert!(shown.starts_with(env!("CARGO_PKG_VERSION")), "version row: {shown}");
         assert!(shown.contains('('), "version row should include a commit: {shown}");
-        // introDetection is a select with the expected options.
         let intro = find_row(&groups, "introDetection").unwrap();
         assert_eq!(intro.kind, "select");
         assert_eq!(intro.options, vec!["off", "chapters", "fingerprint"]);
@@ -306,14 +277,10 @@ mod tests {
             ]),
         );
 
-        // The notifications view is GONE, not merely empty of inputs: push has
-        // no per-server configuration left. Browsers run off a VAPID keypair the
-        // server mints itself, and phones go through the relay, which needs
-        // nothing from whoever is hosting.
         assert!(groups("notifications", &s, &test_config(), "en").is_empty());
 
-        // And a credential a fork stored via the API must never come back out of
-        // ANY view — not just the one that used to display them.
+        // A credential a fork stored via the API must never come back out of any
+        // view, not just the one that used to display them.
         for view in ["notifications", "general", "network", "transcoder", "acquisition", "vpn"] {
             let wire =
                 serde_json::to_string(&groups(view, &s, &test_config(), "en")).unwrap();
@@ -328,11 +295,9 @@ mod tests {
     fn network_view_public_address_from_port_or_web_url() {
         let pool = test_pool();
         let s = Settings::load(&pool);
-        // No web_url -> ":<port>".
         let groups = groups("network", &s, &test_config(), "en");
         assert_eq!(find_row(&groups, "publicAddress").unwrap().value, json!(":4040"));
         assert_eq!(find_row(&groups, "port").unwrap().value, json!("4040"));
-        // With web_url set.
         let mut cfg = test_config();
         cfg.web_url = Some("https://kroma.example.com".to_string());
         let groups = super::groups("network", &s, &cfg, "en");
@@ -371,7 +336,6 @@ mod tests {
         let vpn = groups("vpn", &s, &cfg, "en");
         assert_eq!(vpn.len(), 1);
         assert!(find_row(&vpn, "vpnKillSwitch").is_some());
-        // Unknown view -> no groups.
         assert!(groups("does-not-exist", &s, &cfg, "en").is_empty());
     }
 

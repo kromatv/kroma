@@ -1,6 +1,5 @@
-//! The API read models for the job console (`list` / `detail` / `info_for`)
-//! split out of [`super`] to keep the manager file focused. `impl JobManager` in
-//! a sibling file; same-module privacy lets it read the manager's private state.
+//! The API read models for the job console, split out of [`super`] to keep the
+//! manager file focused; same-module privacy lets them read its private state.
 
 use time::OffsetDateTime;
 
@@ -10,8 +9,7 @@ use crate::model::{JobDetail, JobInfo};
 use crate::state::SharedState;
 
 impl JobManager {
-    /// All jobs as wire-ready [`JobInfo`], in registration order: the built-ins
-    /// first, then the remote (out-of-process module) jobs.
+    /// In registration order: the built-ins first, then the remote module jobs.
     pub fn list(&self, state: &SharedState) -> Vec<JobInfo> {
         let now = now_local(state);
         let pool = state.db.clone();
@@ -24,7 +22,6 @@ impl JobManager {
             .collect()
     }
 
-    /// One job plus its recent run history.
     pub fn detail(&self, state: &SharedState, job: JobKey) -> Option<JobDetail> {
         let now = now_local(state);
         let pool = state.db.clone();
@@ -33,13 +30,9 @@ impl JobManager {
         Some(JobDetail { info, runs })
     }
 
-    /// Build the wire [`JobInfo`] for one job: static metadata + effective
-    /// schedule + next fire time + live run progress.
     fn info_for(&self, pool: &db::Pool, now: OffsetDateTime, job: JobKey) -> Option<JobInfo> {
         let st = self.schedules.read().unwrap().get(&job).cloned()?;
 
-        // Category + built-in default schedule come from the `'static` SPEC, or,
-        // for a sidecar-contributed job, from its RemoteJob metadata.
         let (category, default_schedule) = match self.jobs.get(&job) {
             Some(b) => (b.category, b.schedule.map(str::to_string)),
             None => {
@@ -49,7 +42,6 @@ impl JobManager {
             }
         };
 
-        // Next scheduled fire, if enabled and on a (valid) schedule.
         let next_run_at = if st.enabled {
             st.schedule
                 .as_deref()
@@ -92,7 +84,6 @@ impl JobManager {
 mod tests {
     use crate::test_support::test_state;
 
-    /// A job key that certainly exists: the nightly cache trim.
     const KNOWN: &str = "cache.cleanup";
 
     #[test]
@@ -107,8 +98,6 @@ mod tests {
     fn names_jobs_by_i18n_key_rather_than_in_english() {
         let state = test_state();
         for info in state.jobs.list(&state) {
-            // The console renders these through the app's catalogs, so a literal
-            // here would be untranslatable English on a French install.
             assert_eq!(info.name, format!("jobs.{}.name", info.key));
             assert_eq!(info.description, format!("jobs.{}.desc", info.key));
         }
@@ -120,8 +109,7 @@ mod tests {
         for info in state.jobs.list(&state) {
             assert!(!info.running);
             assert!(info.run_id.is_none());
-            // None rather than 0/0: the console shows a bar only when there is
-            // progress to show, and 0/0 would render an empty one.
+            // None rather than 0/0: the console renders a bar whenever it has numbers.
             assert!(info.progress_done.is_none());
             assert!(info.progress_total.is_none());
         }
@@ -144,8 +132,6 @@ mod tests {
 
         let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
         assert!(!info.enabled);
-        // The console reads this to decide whether to show a countdown; a stale
-        // "next run" under a disabled job is a promise the scheduler will not keep.
         assert!(info.next_run_at.is_none());
         assert!(info.customized, "an admin touched it");
     }
@@ -154,8 +140,7 @@ mod tests {
     fn an_unparseable_schedule_yields_no_next_run_rather_than_an_error() {
         let state = test_state();
         let job = state.jobs.resolve(KNOWN).unwrap();
-        // `update_schedule` rejects invalid cron, so the only way to hold one is
-        // a schedule of None - which is "no automatic run", not "run always".
+        // `update_schedule` rejects invalid cron, so the only holdable value is None.
         state.jobs.update_schedule(&state.db, job, Some(None), None).unwrap();
 
         let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
@@ -171,8 +156,6 @@ mod tests {
 
         let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
         assert_eq!(info.schedule.as_deref(), Some("0 5 * * *"));
-        // Both are reported so the console can offer "reset to default" without
-        // hardcoding the built-in's cron in the UI.
         assert!(info.default_schedule.is_some());
         assert_ne!(info.schedule, info.default_schedule);
     }
@@ -184,8 +167,6 @@ mod tests {
         let detail = state.jobs.detail(&state, job).expect("a known job has a detail view");
 
         assert_eq!(detail.info.key, KNOWN);
-        // A job that has never run has no runs - not an error, and not a
-        // placeholder row.
         assert!(detail.runs.is_empty());
         assert!(detail.info.last_run.is_none());
     }

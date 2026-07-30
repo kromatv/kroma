@@ -87,11 +87,10 @@ export function Head({
   );
 }
 
-/** Kit-chip label metrics; the console renders its own `Txt` children so the
- * status dot can lead and the count can trail inside the same pill. */
+// The console renders its own `Txt` children so the status dot can lead and
+// the count can trail inside the same pill.
 const CHIP_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 const CHIP_COUNT = { fontSize: 13, fontWeight: '600', opacity: 0.6 } as const;
-/** The blue filter family (element type), painted over the kit's active fill. */
 const BLUE_ACTIVE = { backgroundColor: '#86A8FF' } as const;
 
 /** A filter chip on the kit pill. `tone` picks the active fill (defaults to the

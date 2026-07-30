@@ -1,17 +1,5 @@
-//! Apple Push Notification service.
-//!
-//! The server holds a `.p8` **auth key** (not a certificate): one key per Apple
-//! developer account, valid for every app under it and never expiring, which is
-//! why it is the only sane choice for a self-hosted server. Each request carries
-//! a short-lived ES256 JWT signed with it.
-//!
-//! Two things about APNs are easy to get wrong and expensive to debug:
-//!
-//! - **It is HTTP/2 only.** An HTTP/1.1 request is refused outright, so
-//!   [`PushRequest::http2`] is set and the caller must honour it.
-//! - **Sandbox and production are different hosts, and a token belongs to
-//!   exactly one of them.** A token from a development build is `BadDeviceToken`
-//!   against production and vice versa see [`Environment`].
+//! Apple Push Notification service. The server holds a `.p8` auth key, not a
+//! certificate; each request carries a short-lived ES256 JWT signed with it.
 
 use std::sync::Mutex;
 
@@ -22,19 +10,13 @@ use serde_json::json;
 
 use crate::{jwt, PushRequest, Urgency};
 
-/// Apple caps token generation at one per 20 minutes per key and rejects a token
-/// older than an hour. Refreshing on the hour would race that ceiling, so the
-/// token is reused for 45 minutes: comfortably inside the expiry, comfortably
-/// outside the rate limit.
+// Apple allows one new token per 20 minutes and rejects one older than an
+// hour; 45 minutes stays inside the expiry and outside the rate limit.
 const TOKEN_LIFETIME_SECS: i64 = 45 * 60;
 
-/// Which APNs host a device token belongs to.
-///
-/// This is not a preference: a token minted by a development build (Xcode, a
-/// simulator, a `development` provisioning profile) only exists in the sandbox,
-/// and a TestFlight or App Store build's token only exists in production.
-/// Sending to the wrong one returns `BadDeviceToken`, which reads exactly like a
-/// dead device and is the single most common APNs misconfiguration.
+/// Which APNs host a device token belongs to. A development-build token only
+/// exists in the sandbox; sending it to production returns `BadDeviceToken`,
+/// which reads exactly like a dead device.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Environment {
     Production,
@@ -56,9 +38,8 @@ impl Environment {
         }
     }
 
-    /// Parse the admin setting. Anything unrecognised means production: a server
-    /// that has been configured for real use should not silently start talking
-    /// to the sandbox because of a typo.
+    /// Anything unrecognised means production, so a typo cannot silently point
+    /// a live server at the sandbox.
     pub fn parse(s: &str) -> Environment {
         match s.trim().to_ascii_lowercase().as_str() {
             "sandbox" | "development" | "dev" => Environment::Sandbox,
@@ -70,22 +51,16 @@ impl Environment {
 /// The server's APNs identity: the auth key plus who it belongs to.
 pub struct ApnsKey {
     secret: SecretKey,
-    /// The auth key's id (the `AuthKey_XXXXXXXXXX.p8` suffix), sent as the JWT
-    /// `kid` so Apple knows which of the account's keys signed this.
     key_id: String,
-    /// The 10-character Apple team id, the JWT `iss`.
     team_id: String,
-    /// The app's bundle id, sent as `apns-topic`.
     topic: String,
     environment: Environment,
-    /// The signed token and when it was minted. Cached because Apple rate-limits
-    /// token generation, and because signing per push is pointless work.
     cached: Mutex<Option<(String, i64)>>,
 }
 
 impl std::fmt::Debug for ApnsKey {
-    /// Names the identity, never the key material a `.p8` in a log or a panic
-    /// message is a leaked Apple credential.
+    // Never includes the key material: a `.p8` in a log or panic message is a
+    // leaked Apple credential.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ApnsKey")
             .field("key_id", &self.key_id)
@@ -121,8 +96,6 @@ impl ApnsKey {
         self.environment
     }
 
-    /// The bearer token for `now_secs`, minting a fresh one only when the cached
-    /// one has aged past [`TOKEN_LIFETIME_SECS`].
     fn token(&self, now_secs: i64) -> String {
         let mut cached = self.cached.lock().unwrap();
         if let Some((token, minted_at)) = cached.as_ref() {
@@ -157,7 +130,6 @@ pub fn build_request(
         "alert": { "title": alert.title, "body": alert.body },
         "sound": "default",
         // Lets a Notification Service Extension fetch `imageUrl` and attach it.
-        // Harmless when the app ships no extension: the text still shows.
         "mutable-content": 1,
     });
     if let Some(category) = alert.category {
@@ -202,11 +174,8 @@ pub fn build_request(
 }
 
 /// Whether an APNs response means "this device token is dead, stop sending".
-///
-/// 410 is the documented one. A 400 needs its reason inspected: `BadDeviceToken`
-/// and `DeviceTokenNotForTopic` are permanent for this token, while the other
-/// 400s (a malformed payload, a bad topic) are OUR bug and must not be treated
-/// as the device's fault or a config mistake would silently evict every device.
+/// 410 always is; for 400, only `BadDeviceToken` / `DeviceTokenNotForTopic`
+/// are — other 400s are our bug, not the device's, and must not evict it.
 pub fn is_gone(status: u16, body: &str) -> bool {
     if status == 410 {
         return true;
@@ -221,15 +190,9 @@ pub fn is_gone(status: u16, body: &str) -> bool {
     matches!(reason.as_str(), "BadDeviceToken" | "DeviceTokenNotForTopic" | "Unregistered")
 }
 
-/// Whether this rejection is the one that is indistinguishable from a dead
-/// device but usually isn't: the token was minted against the OTHER host.
-///
-/// Worth separating because the cost of confusing the two is asymmetric. A
-/// development token sent to production comes back `BadDeviceToken`, which
-/// [`is_gone`] reads as "uninstalled" and evicts — so a developer's phone
-/// silently unsubscribes itself on the first push, and nothing about the failure
-/// says why. Retrying against [`flip_environment`] before believing it costs one
-/// request and removes the single most common APNs misconfiguration.
+/// Whether a `BadDeviceToken` rejection is really a wrong-environment token,
+/// not a dead device — [`is_gone`] would otherwise evict it. Retry via
+/// [`flip_environment`] before believing it.
 pub fn is_wrong_environment(status: u16, body: &str) -> bool {
     if status != 400 {
         return false;
@@ -241,11 +204,9 @@ pub fn is_wrong_environment(status: u16, body: &str) -> bool {
         == Some("BadDeviceToken")
 }
 
-/// Point an already-built request at the other APNs host.
-///
-/// Only the host differs between the two: the JWT is signed over the key, team
-/// and topic, none of which are environment-specific, so the token and every
-/// header stay valid. Returns `false` when the URL is not one of ours.
+/// Points an already-built request at the other APNs host; the JWT stays valid
+/// since it signs only the key/team/topic, not the environment. Returns
+/// `false` when the URL isn't ours.
 pub fn flip_environment(request: &mut PushRequest) -> bool {
     let (from, to) = if request.url.starts_with(Environment::Production.host()) {
         (Environment::Production.host(), Environment::Sandbox.host())
@@ -263,7 +224,6 @@ mod tests {
     use super::*;
     use crate::b64;
 
-    /// A throwaway P-256 key in the PEM shape a real `.p8` has.
     fn test_key(environment: Environment) -> ApnsKey {
         use p256::pkcs8::EncodePrivateKey;
         let pem = SecretKey::random(&mut rand_core::OsRng)
@@ -286,7 +246,6 @@ mod tests {
         }
     }
 
-    /// One `api` action, the shape a moderator's Approve button carries.
     const ACTIONS: [(String, String, String); 0] = [];
 
     #[test]
@@ -318,7 +277,6 @@ mod tests {
         assert_eq!(h("apns-push-type"), "alert");
         assert!(h("authorization").starts_with("bearer "));
 
-        // The JWT names the key and the team.
         let token = h("authorization").trim_start_matches("bearer ").to_string();
         let parts: Vec<&str> = token.split('.').collect();
         let header: serde_json::Value =
@@ -338,7 +296,7 @@ mod tests {
         let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
         assert_eq!(body["aps"]["alert"]["title"], "Ready to watch");
         assert_eq!(body["aps"]["alert"]["body"], "Dune is now in your library.");
-        // The registered action set — this is the only way APNs shows buttons.
+        // `category` is the registered action set — the only way APNs shows buttons.
         assert_eq!(body["aps"]["category"], "media_available");
         assert_eq!(body["aps"]["thread-id"], "requests");
         assert_eq!(body["aps"]["mutable-content"], 1);
@@ -380,11 +338,8 @@ mod tests {
             req.headers.iter().find(|(k, _)| k == "authorization").map(|(_, v)| v.clone()).unwrap()
         };
         let first = token_at(1_000);
-        // Apple rate-limits token generation, so a second push moments later must
-        // reuse it rather than sign a new one.
         assert_eq!(token_at(1_500), first);
         assert_eq!(token_at(1_000 + TOKEN_LIFETIME_SECS - 1), first);
-        // Past the window it is refreshed, well before Apple's 1h expiry.
         assert_ne!(token_at(1_000 + TOKEN_LIFETIME_SECS), first);
     }
 
@@ -401,8 +356,6 @@ mod tests {
         assert!(is_gone(400, r#"{"reason":"BadDeviceToken"}"#));
         assert!(is_gone(400, r#"{"reason":"DeviceTokenNotForTopic"}"#));
 
-        // OUR mistakes, not the device's: evicting on these would quietly wipe
-        // every registered device the first time a payload or topic is wrong.
         assert!(!is_gone(400, r#"{"reason":"PayloadTooLarge"}"#));
         assert!(!is_gone(400, r#"{"reason":"BadTopic"}"#));
         assert!(!is_gone(400, r#"{"reason":"MissingTopic"}"#));
@@ -425,17 +378,15 @@ mod tests {
 
     #[test]
     fn the_wrong_environment_is_told_apart_from_a_dead_device() {
-        // Both come back as a 400, and confusing them evicts a live phone.
         let bad_token = r#"{"reason":"BadDeviceToken"}"#;
         assert!(is_wrong_environment(400, bad_token));
-        // `DeviceTokenNotForTopic` is a genuinely wrong app, not a wrong host,
-        // and retrying it elsewhere would only waste a request.
+        // `DeviceTokenNotForTopic` is a genuinely wrong app, not a wrong host.
         assert!(!is_wrong_environment(400, r#"{"reason":"DeviceTokenNotForTopic"}"#));
         assert!(!is_wrong_environment(400, r#"{"reason":"BadCollapseId"}"#));
         // A 410 is Apple's unambiguous "gone"; there is nothing to retry.
         assert!(!is_wrong_environment(410, bad_token));
         assert!(!is_wrong_environment(503, ""));
-        // …and it stays a candidate for eviction if the retry fails too.
+        // It stays a candidate for eviction if the retry fails too.
         assert!(is_gone(400, bad_token));
     }
 
@@ -448,12 +399,9 @@ mod tests {
 
         assert!(flip_environment(&mut request));
         assert_eq!(request.url, "https://api.sandbox.push.apple.com/3/device/DEVICE-TOKEN");
-        // The JWT is signed over the key, team and topic — none of them
-        // environment-specific — so nothing else may be rebuilt.
         assert_eq!(request.headers, headers, "a flip must not re-sign or re-header");
         assert_eq!(request.body, body);
 
-        // And it goes back, so the retry works in either direction.
         assert!(flip_environment(&mut request));
         assert_eq!(request.url, "https://api.push.apple.com/3/device/DEVICE-TOKEN");
 

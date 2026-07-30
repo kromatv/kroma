@@ -1,57 +1,28 @@
-// Trading this phone's push token for a grant, and remembering the result.
-//
-// A KROMA server is self-hosted by anybody; this app is published by the KROMA
-// team. Apple and Google only accept credentials issued to the account that
-// publishes an app, so the server a reader signs into has nothing either service
-// would accept — handing it the raw APNs/FCM token would be handing it something
-// it cannot use.
-//
-// So the token never leaves the phone. It goes to the relay, which holds the
-// app's real credentials, and comes back as a GRANT: an opaque capability to
-// notify THIS device and nothing else. That is what gets registered with the
-// server, and it is all the server ever sees.
-//
-// The grant is then STORED, for two reasons that are easy to miss:
-//
-//   - Unsubscribing names the endpoint to remove. Since what was registered is
-//     the grant and not the token, `endpoint()` has to hand back that same
-//     string — re-minting would produce a different blob and the server would
-//     delete nothing.
-//   - A grant expires. Only the app can mint a replacement (a server has no way
-//     to refresh one it holds), so it refreshes on launch; see `refreshGrant`.
-//
-// See `packages/push-relay/worker/grant.ts` for the other half.
+// A KROMA server is self-hosted and holds no Apple/Google push credentials, so
+// the raw device token never leaves the phone: it is exchanged with the relay
+// for an opaque GRANT (a capability to notify this device only), and the grant
+// is all the server ever registers or sees.
 
 import { z } from 'zod';
 import { loadPref, savePref } from '#mobile/lib/storage';
 
-/** Where grants are minted. A constant, not a setting: pointing a phone's
- * notifications at an arbitrary host is a phishing route, not a feature. */
+// Hard-coded, not a setting: pointing push at an arbitrary host is phishing.
 const RELAY_URL = 'https://push.kroma.tv';
 
-/** Give up rather than hang the settings toggle on a slow network. */
 const TIMEOUT_MS = 10_000;
 
 const PREF_KEY = 'push.grant';
 
-/**
- * Re-mint once a grant is within this of expiring.
- *
- * Generous because the refresh only gets a chance to run when the app is opened:
- * a reader who opens KROMA once a month must still cross the window comfortably
- * before the grant dies and their notifications go quiet.
- */
+// Generous: refresh only runs on app open, and a reader might open KROMA once a month.
 const REFRESH_BEFORE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const GrantResponse = z.object({
   grant: z.string().min(1),
-  /** Epoch millis. */
   expiresAt: z.number(),
 });
 
-/** What is kept on the device. The token is stored alongside so a REPLACED
- * token — a reinstall, a restore onto another handset — is spotted and re-minted
- * rather than silently notifying whatever the old grant pointed at. */
+// The token is stored alongside the grant so a replaced token (reinstall, new
+// handset) is detected and re-minted rather than silently notifying the wrong device.
 const StoredGrant = z.object({
   transport: z.enum(['apns', 'fcm']),
   token: z.string().min(1),
@@ -71,13 +42,9 @@ async function read(): Promise<StoredGrant | null> {
   }
 }
 
-/**
- * Exchange a raw device token for a relay grant.
- *
- * Throws on anything that is not a usable grant — the caller turns that into
- * "push could not be enabled" rather than registering something that will never
- * deliver.
- */
+// Throws on anything that is not a usable grant, so the caller reports "push
+// could not be enabled" rather than registering something that will never
+// deliver.
 async function mint(transport: 'apns' | 'fcm', token: string): Promise<StoredGrant> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -128,28 +95,19 @@ export async function forgetGrant(): Promise<void> {
 
 /** A replacement grant, minted but not yet this device's. */
 export interface GrantRefresh {
-  /** The new grant, to register with the server. */
   grant: string;
-  /** The one it replaces, still registered there. */
   previous: string;
-  /** Adopt the new grant, once the server has accepted it. */
+  // Call only once the server has actually accepted the new grant.
   commit(): Promise<void>;
 }
 
 /**
- * Replace a grant that is approaching its expiry, or `null` when nothing needed
- * doing.
+ * Replace a grant nearing its expiry, or `null` when nothing needed doing.
  *
- * A server cannot do this: it holds a sealed blob and has no idea which device
- * is behind it, so an expiring grant would simply start failing. Only the app
- * holds the device token the relay needs, which is why this runs on launch.
- *
- * The new grant is deliberately NOT stored yet. Storing it here overwrote the
- * only copy of the old one, so a caller whose `subscribePush` then failed was
- * left holding a grant the server had never seen: turning push off would send
- * the server an endpoint it does not have, delete nothing, and leave a phone
- * the reader believes is silent still buzzing. The caller commits once the
- * server has actually taken it.
+ * The new grant is deliberately not stored until the caller commits: storing
+ * it eagerly would overwrite the only copy of the old one before the server
+ * has accepted the replacement, leaving a phone that still buzzes with no way
+ * to unregister it.
  */
 export async function refreshGrant(): Promise<GrantRefresh | null> {
   const stored = await read();

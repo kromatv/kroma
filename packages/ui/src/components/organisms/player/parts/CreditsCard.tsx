@@ -35,10 +35,8 @@ export interface CreditsCardProps {
   onCancel: () => void;
 }
 
-/** The card's own width, at the design's scale. `maxW` keeps it on screen even
- * where the scale has bottomed out: 392 + its margin does not fit a phone-width
- * browser window, and a card that starts off the left edge takes its Play
- * button with it. */
+// `maxW` (used below) keeps the card on screen at the design width: 392 + its
+// margin doesn't fit a phone browser, and an off-screen card takes Play with it.
 const CARD_WIDTH = 392;
 
 const ART_FILL = 'linear-gradient(135deg, rgba(244,182,66,0.16), rgba(20,18,22,0.96))';
@@ -111,10 +109,9 @@ export function CreditsCard({
           {item.subtitle}
         </Txt>
       ) : null}
-      {/* Controlled kit buttons (`focused` is ALWAYS passed): neither may ever
-          become a platform / navigator focus target - see ../lib/virtual-focus.ts.
-          `playFocused` / `cancelFocused` drive the highlight; there is no hover
-          handler here, exactly as before (the nav machine owns this card). */}
+      {/* Controlled kit buttons (`focused` is ALWAYS passed) so neither becomes a
+          platform focus target — see ../lib/virtual-focus.ts. No hover handler:
+          the nav machine owns this card's focus. */}
       <Box row gap={px(12)} mt={px(16)}>
         <Button
           variant="ghost"
@@ -140,14 +137,11 @@ export function CreditsCard({
 }
 
 const GROW = { flex: 1 } as const;
-/** The focused fills the card always had, on top of the kit's ring + scale. */
 const CANCEL_FOCUS = { backgroundColor: 'rgba(255, 255, 255, 0.16)' } as const;
 const PLAY_FOCUS = { backgroundColor: colors.accentHover } as const;
 
 const CARD_SHADOW = { boxShadow: '0 26px 64px rgba(0, 0, 0, 0.62)' };
 
-/** The countdown's size at the design's scale; the style carries the rest, so
- * the number is not written twice. */
 const COUNTDOWN_SIZE = 19;
 const COUNTDOWN = {
   fontFamily: fonts.ui,

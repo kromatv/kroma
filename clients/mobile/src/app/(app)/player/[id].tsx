@@ -27,10 +27,12 @@ import { useStoryboard } from '#mobile/player/useStoryboard';
 import { useSubAppearance } from '#mobile/player/useSubAppearance';
 import { useSubtitles } from '#mobile/player/useSubtitles';
 
-/** Resume from saved progress when meaningfully started and not basically done. */
+const RESUME_MIN_MS = 30_000;
+const RESUME_NEAR_END_RATIO = 0.95;
+
 function resumeSec(positionMs: number | undefined, durationMs: number | null): number {
-  if (!positionMs || positionMs < 30_000) return 0;
-  if (durationMs && positionMs > durationMs * 0.95) return 0;
+  if (!positionMs || positionMs < RESUME_MIN_MS) return 0;
+  if (durationMs && positionMs > durationMs * RESUME_NEAR_END_RATIO) return 0;
   return positionMs / 1000;
 }
 
@@ -49,9 +51,9 @@ function PlayerBody({
   const client = useClient();
   const router = useRouter();
   const prefs = useLangPrefs();
-  // The account's preferred audio language decides the OPENING track when the
-  // file carries it (the TV's openingAudioIndex, same core helper). Offline
-  // keeps the file's default: local ordinals are the native player's business.
+  // The preferred audio language decides the OPENING track when the file carries
+  // it (same as TV). Offline keeps the file's default: local ordinals are the
+  // native player's business.
   const startAudio = localUri ? 0 : (preferredAudioIndex(audioTracksOf(item), prefs.audio) ?? 0);
   const engine = useKromaEngine(client, item, startSec, localUri, startAudio);
   const navigation = useNavigation();
@@ -116,7 +118,6 @@ function PlayerBody({
           ? langCode(subs.tracks.find((s) => s.index === subs.active)?.language)
           : undefined,
     }),
-    // Admin stop: halt the stream on the spot and show the message screen.
     (message) => {
       engine.shutdown();
       setTerminated(message.trim() || '');
@@ -129,7 +130,6 @@ function PlayerBody({
     return navigation.addListener('beforeRemove', () => engine.shutdown());
   }, [navigation, engine]);
 
-  // Autoplay the next episode when playback naturally ends.
   useEffect(() => {
     if (engine.endedNonce === 0 || navigatedRef.current) return;
     navigatedRef.current = true;
@@ -206,8 +206,8 @@ function PlayerBody({
           setCastOpen(false);
           if (!id) return;
           const ok = await cast.playOn(id, item.id, Math.round(engine.cur * 1000));
-          // The phone stops playing what the TV just picked up - two screens on
-          // the same film, one of them in your hand, is nobody's intent.
+          // Stop local playback once the TV picks up the same title, to avoid
+          // two screens playing it at once.
           if (ok) {
             engine.shutdown();
             goBack(router);

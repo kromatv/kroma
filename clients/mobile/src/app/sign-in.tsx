@@ -1,8 +1,5 @@
-// The profile gate, TV-style: every remembered account on this device, across
-// ALL saved servers, on one screen. One tap enters an account (stored device
-// token); PIN-locked profiles get the PIN pad; a stale token falls back to
-// that profile's password. The "+" tile first picks a server (saved or new),
-// then asks for credentials on it. Presentation lives in the shared onboarding
+// The profile gate: every remembered account on this device, across all saved
+// servers, on one screen. Presentation lives in the shared onboarding
 // components; this file owns state, effects and auth calls.
 
 import { apiErrorText, KromaApiError } from '@kroma/core';
@@ -37,9 +34,8 @@ export default function SignIn() {
     const set = new Set(accounts.map((a) => a.serverUrl));
     for (const s of servers) set.add(s.url);
     if (serverUrl) set.add(serverUrl);
-    // Sorted only to keep the probe list (and therefore the effect key) stable
-    // across renders; an explicit comparator so the order can't depend on the
-    // engine's default coercion.
+    // Sorted to keep the probe list, and therefore the effect key, stable
+    // across renders.
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [accounts, servers, serverUrl]);
   const probes = useServerProbes(probeUrls);
@@ -54,20 +50,16 @@ export default function SignIn() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Landing here from /connect after a successful add: open the login form.
   const { phase: phaseParam } = useLocalSearchParams<{ phase?: string }>();
   useEffect(() => {
     if (phaseParam === 'form') setPhase({ kind: 'form' });
   }, [phaseParam]);
 
-  // Face-ID-locked (PIN-less) accounts, so their tiles get the lock badge too.
   const bioLocked = useBiometricLockedKeys(accounts);
 
-  // "Serveurs locaux" stays live while the picker is open (continuous sweep).
   const found = useDiscoveryLoop(phase.kind === 'server');
   const discovered = found.filter((f) => !servers.some((s) => s.url === f.url));
 
-  // Roster of the selected server (public profile list), minus already-saved.
   const roster = useServerRoster(serverUrl);
   const rosterOnly = roster.filter(
     (u) => !accounts.some((a) => a.serverUrl === serverUrl && a.user.id === u.id),

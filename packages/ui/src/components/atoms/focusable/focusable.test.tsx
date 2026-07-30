@@ -26,22 +26,18 @@ afterEach(() => {
   clearPressGuard();
 });
 
-/** The rendered host element for a focusable labelled `label`. */
 const host = (label: string) => screen.getByLabelText(label);
 
-/** The element the ring and the focus scale are painted on. On the browser
- * targets a control is ONE element - the navigator's own view carries the box -
- * so this is the labelled host itself. */
+// On the browser targets a control is one element, so the labelled host is
+// also the element the ring and focus scale paint on.
 const painted = (label: string) => host(label);
 
-/** One remote press, as the browser targets deliver it. */
 function press(key: string) {
   act(() => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
   });
 }
 
-/** A screen: the navigator needs a root, exactly as the router gives it one. */
 function screenWith(children: React.ReactNode) {
   return render(<FocusScope>{children}</FocusScope>);
 }

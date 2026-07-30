@@ -4,21 +4,10 @@
 // `KromaClient` (in ../api) is the public facade that wires them together.
 
 export interface KromaClientOptions {
-  /** Base server origin, e.g. "http://nas.local:4040". No trailing slash. */
   baseUrl: string;
   fetch?: typeof globalThis.fetch;
-  /** Bearer token for per-user endpoints (progress, profile). Optional the
-   * catalogue is public. Can be set later with {@link KromaClient.setAuthToken}. */
   authToken?: string;
-  /** Active UI locale (`"fr"` | `"en"`), sent as `Accept-Language` so the server
-   * localises its responses (admin settings labels, error messages). Change it
-   * later with {@link KromaClient.setLocale}. */
   locale?: string;
-  /** This client's own User-Agent (build it with `clientUserAgent`), sent on
-   * every request so the account's session list can name the device. Native
-   * shells only: in a browser the header is forbidden to scripts and the
-   * attempt is silently dropped, which is correct - the browser's own UA is
-   * already the better answer. */
   userAgent?: string;
 }
 
@@ -38,8 +27,6 @@ export class KromaApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
-    /** Parsed JSON error body when the server sent one (e.g. `{ error,
-     * retryAfter }` from a rate-limited PIN verify). */
     readonly body?: unknown,
   ) {
     super(message);
@@ -64,7 +51,6 @@ export interface RequestContext {
   readonly baseUrl: string;
   readonly fetchFn: typeof globalThis.fetch;
   json<T>(path: string, init?: RequestInit): Promise<T>;
-  /** Authed request returning the raw body as a `Blob` (file downloads). */
   blob(path: string, init?: RequestInit): Promise<Blob>;
 }
 

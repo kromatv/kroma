@@ -1,7 +1,4 @@
-// The player overlay shell: the tap surface that shows and hides the controls
-// (tap to toggle, double-tap the screen edges to skip 10s) and the overlays that
-// stay up regardless. Pure presentation over the Engine; all playback logic
-// lives in engine/.
+// Pure presentation over the Engine; all playback logic lives in engine/.
 
 import { audioTracksOf, type MediaItem } from '@kroma/core';
 import {
@@ -25,16 +22,6 @@ import type { StoryboardTile } from './useStoryboard';
 
 const HIDE_AFTER_MS = 4000;
 
-/**
- * The "stats for nerds" snapshot: the shared lean builder (metadata + engine
- * clock; AVPlayer and ExoPlayer expose no decode counters to JS) plus the
- * phone's own playback rows.
- *
- * A hook of its own because none of it is chrome. It was all inline, so the
- * bandwidth sampler, the label table and the whole snapshot closure were rebuilt
- * on every render of the player - twice a second for the length of a film -
- * while the panel that reads them is usually closed.
- */
 function usePhoneStats(engine: Engine, item: MediaItem): () => PlayerStats {
   const t = useT();
   const filterLabels = audioFilterLabels(t);
@@ -42,12 +29,8 @@ function usePhoneStats(engine: Engine, item: MediaItem): () => PlayerStats {
   if (engine.offline) sourceMode = 'Direct · local';
   else if (engine.mode === 'direct') sourceMode = 'Direct';
 
-  // Download speed, estimated: AVPlayer exposes no network counters to JS, but
-  // the buffered edge advancing IS the download - content-seconds fetched per
-  // wall-second, times the stream's average bytes per content-second (file
-  // size / duration), is bytes per second. Sampled between the panel's polls
-  // and smoothed; a seek's buffer jump is clamped so it reads as a burst, not
-  // a thousand-megabit lie.
+  // AVPlayer exposes no network counters to JS, so download speed is estimated
+  // from the buffered edge advancing, smoothed, with a seek's jump clamped.
   const net = useRef({ at: 0, bufEnd: 0, ema: 0 });
   const file = item.files.find((f) => f.id === item.defaultFileId) ?? item.files[0];
   const avgBytesPerSec =
@@ -136,11 +119,8 @@ export function PlayerChrome({
   appearance: SubtitleAppearance;
   statsOn: boolean;
   onToggleStats(): void;
-  /** Whether the video fills the screen (cover) or letterboxes (contain). */
   fill: boolean;
   onZoom(fill: boolean): void;
-  /** A transient status line for the top pill (subtitle preparing/unavailable);
-   *  gesture notes (zoom) take precedence while present. */
   notice?: string | null;
   onBack(): void;
   onOpenSheet(view?: SheetView): void;
@@ -148,7 +128,6 @@ export function PlayerChrome({
   next?: MediaItem | null;
   onPlayNext?(): void;
   onPip?(): void;
-  /** Hand this playback to a TV (absent when nothing is castable). */
   onCast?(): void;
 }>) {
   const t = useT();
@@ -156,7 +135,6 @@ export function PlayerChrome({
   const [visible, setVisible] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Everything the stats panel needs, and nothing the chrome does.
   const stats = usePhoneStats(engine, item);
 
   const poke = () => {
@@ -181,10 +159,8 @@ export function PlayerChrome({
     return () => clearTimeout(id);
   }, [zoomNote]);
 
-  // The gesture tree is memoized: this component re-renders on every engine
-  // tick, and rebuilding the builders would make GestureDetector re-diff the
-  // native handler config each time. Handlers read the values that churn
-  // through this ref so they always see the current render's state.
+  // The gesture tree is memoized so GestureDetector does not re-diff the native
+  // handler config on every engine tick; churning values reach it via this ref.
   const live = useRef({ visible, fill, engine, onZoom, t, poke });
   live.current = { visible, fill, engine, onZoom, t, poke };
   const gestures = useMemo(() => {
@@ -199,16 +175,12 @@ export function PlayerChrome({
       .numberOfTaps(2)
       .onEnd((e, ok) => {
         if (!ok) return;
-        // Left third rewinds, right third fast-forwards, middle is ignored.
         if (e.x < screenWidth / 3) live.current.engine.skip(-10);
         else if (e.x > (screenWidth * 2) / 3) live.current.engine.skip(10);
         else return;
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         live.current.poke();
       });
-    // Pinch-to-zoom, the YouTube gesture: out fills the screen, in letterboxes.
-    // Binary snap rather than free scaling - the video is either cover or
-    // contain - with a transient pill naming what just happened.
     const pinch = Gesture.Pinch()
       .runOnJS(true)
       .onEnd((e) => {
@@ -251,9 +223,6 @@ export function PlayerChrome({
           <StatsPanel
             controller={{ getStats: stats }}
             onClose={onToggleStats}
-            // Clear of the title bar while the controls are up; pocket width -
-            // the panel is a read-out, not a takeover - and bounded to the
-            // screen so its body scrolls instead of cropping.
             top={(visible ? 64 : 12) + insets.top}
             left={insets.left + 16}
             width={Math.min(460, screenWidth - insets.left - insets.right - 32)}

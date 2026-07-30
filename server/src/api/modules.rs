@@ -33,8 +33,6 @@ struct ListedModule {
     enabled: bool,
 }
 
-/// The modules running on this server, in dependency order, each tagged with its
-/// admin enabled state.
 async fn list(State(state): State<SharedState>) -> impl IntoResponse {
     let mods: Vec<ListedModule> = kroma_module_kernel::manifests(&state)
         .into_iter()
@@ -46,8 +44,6 @@ async fn list(State(state): State<SharedState>) -> impl IntoResponse {
     Json(mods)
 }
 
-/// `GET /api/modules/:id/icon` -> the module's packaged `icon.svg` / `icon.png`
-/// (compile-time or runtime-loaded).
 async fn icon(State(state): State<SharedState>, Path(id): Path<String>) -> impl IntoResponse {
     match kroma_module_kernel::icon(&state, &id) {
         Some((content_type, bytes)) => (

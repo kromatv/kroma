@@ -1,10 +1,5 @@
-// Live transport metrics off whichever MSE engine is actually playing.
-//
-// Everything here reads a counter some other library owns, and every one of
-// those counters is absent, zero or NaN before its first sample - which is
-// exactly the state the stats panel opens in. The rule this pins is that a
-// figure the engine has not measured yet reads as ABSENT (the row is omitted)
-// rather than as a confident zero.
+// The rule pinned here: a figure the engine has not measured yet reads as ABSENT
+// (row omitted), never as a confident zero.
 
 import { describe, expect, it, vi } from 'vitest';
 import { makeFpsSampler, readEngineStats } from './engine-stats';
@@ -44,8 +39,7 @@ describe('readEngineStats', () => {
     });
   });
 
-  // Before the first sample Shaka reports zeros and NaNs. A zero bitrate is not
-  // a measurement, and "0 kb/s" on the panel reads as a stalled stream.
+  // Shaka reports zeros and NaNs until its first sample.
   it('drops the zeros and NaNs an unmeasured engine reports', () => {
     const stats = readEngineStats(
       null,
@@ -68,8 +62,7 @@ describe('readEngineStats', () => {
     });
   });
 
-  // Shaka throws from getStats() until its first load resolves - opening the
-  // panel early must not take the player down with it.
+  // Shaka throws from getStats() until its first load resolves.
   it('survives a Shaka that throws before its first load', () => {
     const shaka = {
       getStats: () => {
@@ -107,7 +100,6 @@ describe('readEngineStats', () => {
 });
 
 describe('makeFpsSampler', () => {
-  /** A <video> reporting a running total of decoded frames. */
   const video = (totalVideoFrames: number) =>
     ({ getVideoPlaybackQuality: () => ({ totalVideoFrames }) }) as unknown as HTMLVideoElement;
 
@@ -125,8 +117,6 @@ describe('makeFpsSampler', () => {
     expect(sample({} as HTMLVideoElement)).toBeUndefined();
   });
 
-  // Below the floor the interval is too short to divide by without the number
-  // jumping around, so the previous answer stands.
   it('ignores a tick that arrives too soon to measure', () => {
     let t = 1000;
     const sample = makeFpsSampler(() => t);
@@ -137,7 +127,6 @@ describe('makeFpsSampler', () => {
     expect(sample(video(30))).toBe(24);
   });
 
-  // Paused: frames stop advancing, and 0 fps would read as a broken decoder.
   it('holds the last value while no frames advance', () => {
     let t = 1000;
     const sample = makeFpsSampler(() => t);
@@ -156,7 +145,6 @@ describe('makeFpsSampler', () => {
     expect(sample(video(60))).toBe(60);
     t += 1000;
     const next = sample(video(90)) as number;
-    // 30fps instantaneous, blended with the 60 it held: between the two.
     expect(next).toBeGreaterThan(30);
     expect(next).toBeLessThan(60);
   });

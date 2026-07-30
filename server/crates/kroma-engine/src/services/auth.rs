@@ -1,36 +1,23 @@
 //! Authentication primitives: password hashing and session tokens.
 //!
-//! Crypto is hand-rolled on top of the `sha2` crate already in the dependency
-//! tree (PBKDF2-HMAC-SHA256), keeping the build lean and 1.81-friendly the
-//! same reasoning that led the project to hand-roll its SQLite pool rather than
-//! pull `r2d2_sqlite` → uuid → rand. Randomness comes from `/dev/urandom`
-//! (the server only ever runs on Unix: Linux NAS / macOS dev).
+//! PBKDF2-HMAC-SHA256 is hand-rolled on top of the `sha2` crate already in the
+//! dependency tree, keeping the build lean. Randomness comes from
+//! `/dev/urandom` (the server only ever runs on Unix: Linux NAS / macOS dev).
 
 use sha2::{Digest, Sha256};
 
-/// PBKDF2 iteration count for newly-hashed passwords. Release builds (every
-/// shipped artifact: Docker, musl, the Synology .spk) use OWASP's current
-/// recommendation for PBKDF2-HMAC-SHA256 (600k). Debug builds (tests + local
-/// dev) use a light factor so the unoptimized hash doesn't make the suite crawl;
-/// this never affects a production binary. The count is stored in each hash
-/// (`pbkdf2$<iters>$…`) and `verify_password` reads it back, so changing it never
-/// invalidates existing hashes: they keep verifying at their original cost and
-/// only pick up the new factor when the password is next changed.
+// OWASP's current recommendation for PBKDF2-HMAC-SHA256 in release builds;
+// debug builds use a lighter factor so tests don't crawl. The count is stored
+// in each hash, so changing it never invalidates existing ones.
 const PBKDF2_ITERS: u32 = if cfg!(debug_assertions) { 20_000 } else { 600_000 };
-/// Salt length in bytes.
 const SALT_LEN: usize = 16;
-/// SHA-256 block size (HMAC).
 const SHA256_BLOCK: usize = 64;
-/// Short-lived session (bearer) token lifetime the client refreshes it from its
-/// access token before/after this lapses (see `/auth/token`).
+// Refreshed from the access token via `/auth/token` before this lapses.
 pub const SESSION_TTL_SECS: i64 = 3600;
-/// Long-lived access-token lifetime (90 days). Stored on the device; exchanged
-/// for session tokens. This is the credential a logout revokes.
+// Exchanged for session tokens; this is the credential a logout revokes.
 pub const ACCESS_TTL_SECS: i64 = 90 * 24 * 3600;
 
-// ----- HMAC / PBKDF2 ----------------------------------------------------------
-
-/// HMAC-SHA256 (RFC 2104) over `msg` keyed by `key`.
+// HMAC-SHA256 (RFC 2104) over `msg` keyed by `key`.
 fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
     let mut k = [0u8; SHA256_BLOCK];
     if key.len() > SHA256_BLOCK {
@@ -62,9 +49,8 @@ fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
     out
 }
 
-/// PBKDF2-HMAC-SHA256 producing a single 32-byte derived key (dkLen == hLen, so
-/// exactly one block is needed INT(i) is always `0x00000001`). `pub(crate)` so
-/// the backup envelope derives its encryption key from the same KDF.
+/// PBKDF2-HMAC-SHA256 producing a single 32-byte derived key (dkLen == hLen,
+/// so exactly one block is needed; INT(i) is always `0x00000001`).
 pub(crate) fn pbkdf2_sha256(password: &[u8], salt: &[u8], iters: u32) -> [u8; 32] {
     let mut block = Vec::with_capacity(salt.len() + 4);
     block.extend_from_slice(salt);
@@ -93,16 +79,8 @@ pub(crate) fn ct_eq(a: &[u8], b: &[u8]) -> bool {
     diff == 0
 }
 
-// ----- randomness -------------------------------------------------------------
-
-// Randomness primitives now live in kroma-primitives (below the persistence layer, so
-// db can mint ids without reaching up into services). Re-exported here so the
-// existing `services::auth::{random_bytes, random_token, random_u32}` paths and
-// the backup envelope salts/nonces keep resolving.
 pub(crate) use kroma_primitives::random_bytes;
 pub use kroma_primitives::{random_token, random_u32};
-
-// ----- password hashing -------------------------------------------------------
 
 /// Hash a plaintext password to the storable form `pbkdf2$<iters>$<salt_hex>$<dk_hex>`.
 pub fn hash_password(password: &str) -> String {

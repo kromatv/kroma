@@ -1,25 +1,15 @@
-// Native mpv backend for the @kroma/desktop shell (Steam Deck the primary target),
-// in one of two source modes (the same shape as the Tizen AVPlay backend):
+// Native mpv backend for the @kroma/desktop shell (Steam Deck the primary
+// target), in one of two source modes (same shape as the Tizen AVPlay
+// backend): `direct` opens the original file and lets mpv demux/decode it via
+// VA-API, with native absolute seeks and in-place (`aid`) track switches;
+// `master` is the server's HLS remux for the rare file mpv can't demux,
+// anchored at `baseSec` so a resume/far seek over a network mount starts fast
+// (a far seek or language switch re-anchors, since the master carries only
+// one audio track).
 //
-//  - `direct`: mpv opens the ORIGINAL file URL (`/api/items/:id/stream`, plain
-//    HTTP Range). mpv demuxes any container and hardware-decodes video + surround
-//    audio via VA-API on the Deck's APU, so the server does nothing but send
-//    bytes. Seeks are native and absolute; audio languages switch IN PLACE via the
-//    `aid` property. This is the default; a load error falls back (once) to the
-//    master at the current position.
-//
-//  - `master`: the server's HLS remux master, for the rare file mpv cannot demux.
-//    Anchored at `baseSec` (server input `-ss`) so a resume / far seek starts fast
-//    over a network mount. The stream restarts at 0, so absolute position is
-//    `baseSec + mpv time-pos`; a nearby seek is native, a far one re-anchors, and
-//    a language switch re-anchors (the master carries only the ONE audio track in
-//    its URL).
-//
-// mpv renders to its OWN native window behind the transparent Tauri UI window
-// (the desktop shell floats the always-on-top web UI over it), the same "video
-// plane behind the page" model AVPlay uses on Tizen. So the player shows no in-page
-// media element for this backend (surface: 'mpv'); the HTML chrome + subtitle
-// overlay sit on top.
+// mpv renders to its own native window behind the transparent Tauri UI
+// window, the same "plane behind the page" model AVPlay uses on Tizen — so
+// this backend shows no in-page media element (surface: 'mpv').
 
 import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
 import {
@@ -36,12 +26,9 @@ import {
 /** A single mpv IPC command: `{"command": args}` (fire-and-forget). */
 type MpvArg = string | number | boolean;
 
-/** `af` chains for the audio filter / volume normalizer (§7), tuned to MATCH the
- * Web Audio compressor in @kroma/ui `audio-filter.ts` so every engine sounds the
- * same: standard = gentle 4:1 leveling + make-up gain (threshold -24 dB = 0.063),
- * night = 8:1 peak clamping (threshold -28 dB = 0.04) with below-unity make-up so
- * it is never louder than off/standard. `lavfi=[...]` is explicit so the bracket
- * body is plain ffmpeg filter syntax on every mpv build. */
+// `af` chains tuned to match the Web Audio compressor in @kroma/ui
+// `audio-filter.ts`, so every engine sounds the same. `lavfi=[...]` is
+// explicit so the bracket body is plain ffmpeg filter syntax on every mpv build.
 const MPV_AF: Record<Exclude<AudioFilterMode, 'off'>, string> = {
   standard: 'lavfi=[acompressor=threshold=0.063:ratio=4:attack=10:release=250:knee=6:makeup=1.4]',
   night: 'lavfi=[acompressor=threshold=0.04:ratio=8:attack=4:release=250:knee=5,volume=0.9]',
@@ -51,13 +38,10 @@ export class MpvEngine extends BaseTvEngine {
   readonly kind = 'mpv';
   private readonly bridge: TauriBridge;
   private cacheSec = 0;
-  /** mpv's own track ids for the audio streams, in file order (from the observed
-   * `track-list`); the array index is the audio-relative rendition. Empty until the
-   * list arrives, then a rendition maps to the RIGHT track even when mpv's ids are
-   * not a simple 1,2,3… (embedded fonts/attachments, cover art, etc. take ids too). */
+  // mpv's own track ids for the audio streams, in file order; the array index
+  // is the audio-relative rendition. Ids aren't always a simple 1,2,3… since
+  // embedded fonts/attachments/cover art take ids too.
   private audioIds: number[] = [];
-  /** Direct mode: absolute position to seek to once the file loads (resume /
-   * fallback hand-off), else null. */
   private pendingSeek: number | null = null;
   private readonly unlisten: Array<() => void> = [];
 
@@ -71,32 +55,25 @@ export class MpvEngine extends BaseTvEngine {
     }
   }
 
-  /** Subscribe to the shell's mpv events and open the source. Called once right
-   * after construction, kept out of the constructor so it holds no async work. */
+  // Kept out of the constructor so it holds no async work; called once right after.
   start(): void {
     void this.subscribe();
     this.open();
   }
 
-  // ----- Tauri command helpers (all fire-and-forget; state comes from events) --
-
-  /** Send one mpv IPC command (`{"command": args}`) to the native process. */
   private cmd(...args: MpvArg[]): void {
     void this.bridge.core.invoke('mpv_command', { args }).catch(() => undefined);
   }
 
-  /** `set_property name value`. */
   private setProp(name: string, value: MpvArg): void {
     this.cmd('set_property', name, value);
   }
 
-  /** Load a URL into mpv (replaces the current file), optionally starting at `start`
-   * seconds so mpv seeks DURING the open (resume) instead of buffering at 0 first. */
+  // `start` lets mpv seek during the open (resume) instead of buffering at 0 first.
   private load(url: string, start = 0): void {
     void this.bridge.core.invoke('mpv_load', { url, start }).catch(() => this.fail());
   }
 
-  /** Subscribe to the observed-property + lifecycle events the shell forwards. */
   private async subscribe(): Promise<void> {
     const on = async (event: string, cb: (payload: unknown) => void) => {
       const un = await this.bridge.event.listen(event, (e) => {
@@ -114,23 +91,20 @@ export class MpvEngine extends BaseTvEngine {
       on('mpv://error', () => this.fatal()),
       on('mpv://exited', () => this.fatal()),
     ]);
-    // mpv may already have died (or never launched: missing binary) BEFORE this
-    // engine subscribed, in which case no event will ever arrive - probe once so a
-    // dead process fails fast instead of leaving an endless spinner. The command
-    // only exists on the Linux shell; elsewhere the invoke rejects and we rely on
-    // the player's load watchdog.
+    // mpv may have died (or never launched) before this engine subscribed, in
+    // which case no event ever arrives — probe once so a dead process fails
+    // fast instead of leaving an endless spinner.
     const status = await this.bridge.core.invoke('mpv_status').catch(() => null);
     if (status === 'dead') this.fatal();
   }
 
-  /** Fail without the direct→master retry: the mpv process itself is unusable. */
+  // Fails without the direct->master retry: the mpv process itself is unusable.
   private fatal(): void {
     if (this.destroyed) return;
     this.fellBack = true;
     this.listeners.onError();
   }
 
-  /** An observed mpv property changed. */
   private onProperty(p: { name: string; data: unknown }): void {
     switch (p.name) {
       case 'time-pos': {
@@ -191,9 +165,6 @@ export class MpvEngine extends BaseTvEngine {
     if (this.audioIds.length) this.selectAudio(this.rendition);
   }
 
-  /** mpv finished loading a file: apply the resume seek + audio track + filter,
-   * announce ready (the hook drives the first play), and resume after a
-   * re-anchor. */
   private onLoaded(): void {
     if (this.mode === 'direct') {
       const target = this.pendingSeek;
@@ -206,8 +177,8 @@ export class MpvEngine extends BaseTvEngine {
     } else {
       this.elSec = 0;
     }
-    // Unconditional (off included): the mpv process outlives engines, so a
-    // leftover `af` from the previous item must be cleared, not inherited.
+    // Unconditional: the mpv process outlives engines, so a leftover `af`
+    // from the previous item must be cleared, not inherited.
     this.applyFilter();
     this.listeners.onDuration(this.durSec);
     this.listeners.onReady();
@@ -217,8 +188,6 @@ export class MpvEngine extends BaseTvEngine {
     }
   }
 
-  /** mpv closed the file: a natural end vs a decode/demux error (which, in direct
-   * mode, retries ONCE as the stream-copy master at the same position). */
   private onEndFile(p: { reason?: string }): void {
     if (this.destroyed) return;
     if (p.reason === 'eof') {
@@ -228,13 +197,12 @@ export class MpvEngine extends BaseTvEngine {
     if (p.reason === 'error') this.fail();
   }
 
-  /** (Re)load the current source. An anchored master first resolves its REAL
-   * start (the keyframe the server actually seeked to) so `baseSec` and every
-   * absolute-time consumer stay honest; direct sources open at once. */
+  // An anchored master first resolves its real start (the keyframe the
+  // server actually seeked to) so `baseSec` stays honest; direct sources
+  // open at once, at the current position, so mpv seeks during load.
   private open(): void {
     const url = this.sourceUrl();
     if (this.mode === 'master' && this.baseSec > 0.5) {
-      // Master: the start offset is baked into the URL (server `-ss`), so just load.
       void resolveMasterStart(url, this.baseSec).then((real) => {
         if (this.destroyed) return;
         this.baseSec = real;
@@ -242,13 +210,9 @@ export class MpvEngine extends BaseTvEngine {
       });
       return;
     }
-    // Direct: open the original file AT the current position so mpv seeks during load
-    // (resume). `pendingSeek` remains as a safety net for mpv builds that ignore `start`.
     this.load(url, this.mode === 'direct' ? this.elSec : 0);
   }
 
-  /** Reopen the current mode's source at `absSec` (master: a new anchor; direct:
-   * a post-load seek, used by the direct→master fallback hand-off too). */
   protected reanchor(absSec: number): void {
     this.resumeOnLoad = !this.paused;
     if (this.mode === 'direct') {
@@ -262,12 +226,9 @@ export class MpvEngine extends BaseTvEngine {
     this.open();
   }
 
-  /** Select the Nth audio track in place. mpv assigns `aid` 1,2,3… to audio
-   * streams in file order, so the audio-relative rendition R maps to `aid` R+1. */
+  // Maps the audio-relative rendition to mpv's own track id via the observed
+  // track-list, falling back to R+1 (mpv's usual numbering) until it arrives.
   private selectAudio(rendition: number): void {
-    // Map the audio-relative rendition to mpv's own audio track id via the observed
-    // track-list; fall back to R+1 (mpv usually numbers audio tracks 1,2,3… in file
-    // order) until the list has arrived.
     const id = this.audioIds[rendition];
     this.setProp('aid', id ?? rendition + 1);
   }
@@ -305,9 +266,8 @@ export class MpvEngine extends BaseTvEngine {
   setAudioRendition(rendition: number): void {
     if (rendition === this.rendition) return;
     this.rendition = rendition;
-    // Direct: an in-place native track switch (picture never stops). Master: the
-    // stream carries only the ONE audio track named in its URL, so reopen it at the
-    // current position with the new track (re-preps in ~1s, resumes there).
+    // Direct: in-place native track switch. Master: the stream carries only
+    // one audio track, so reopen it at the current position.
     if (this.mode === 'direct') {
       this.selectAudio(rendition);
       return;
@@ -315,8 +275,7 @@ export class MpvEngine extends BaseTvEngine {
     this.reanchor(this.position());
   }
 
-  /** Swap the audio filter chain in place (mpv rebuilds its `af` graph live, so
-   * playback never stops); an empty chain restores the untouched path. */
+  // mpv rebuilds its `af` graph live, so playback never stops.
   setAudioFilter(mode: AudioFilterMode): void {
     if (mode === this.filter) return;
     this.filter = mode;
@@ -327,9 +286,8 @@ export class MpvEngine extends BaseTvEngine {
     this.setProp('af', this.filter === 'off' ? '' : MPV_AF[this.filter]);
   }
 
-  /** Shrink/restore the mpv plane by insetting the video with margin ratios (the
-   * mpv window fills the screen behind the page, so a fraction-rect maps straight
-   * to left/top/right/bottom margins; the video letterboxes inside the remainder). */
+  // The mpv window fills the screen behind the page, so a fraction-rect maps
+  // straight to margin ratios; the video letterboxes inside the remainder.
   setRect(rect: PlaneRect | null): void {
     const [l, t, r, b] = rect
       ? [rect.x, rect.y, Math.max(0, 1 - (rect.x + rect.w)), Math.max(0, 1 - (rect.y + rect.h))]

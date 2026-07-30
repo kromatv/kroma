@@ -3,7 +3,6 @@ import type { UpNextData, UpNextItem } from '@kroma/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 
-/** Map a media item to an up-next card (16:9 backdrop, runtime, context line). */
 function toCard(item: MediaItem): UpNextItem {
   const c = kromaClient();
   const isEp = item.season != null && item.episode != null;
@@ -17,7 +16,7 @@ function toCard(item: MediaItem): UpNextItem {
   };
 }
 
-/** Stable empty default so the memo below doesn't recompute for a movie. */
+// Stable empty default so the memo below doesn't recompute for a movie.
 const NO_EPISODES: MediaItem[] = [];
 
 /**
@@ -26,9 +25,8 @@ const NO_EPISODES: MediaItem[] = [];
  */
 export function useWebUpNext(item: MediaItem, following: MediaItem[] = NO_EPISODES): UpNextData {
   const [similar, setSimilar] = useState<MediaItem[]>([]);
-  // Recommend against the SHOW when watching an episode (episodes carry no
-  // embedding of their own, so similar(episodeId) would be empty); a movie
-  // recommends against itself.
+  // Recommend against the SHOW when watching an episode: episodes carry no
+  // embedding of their own, so similar(episodeId) would be empty.
   const recoId = item.showId ?? item.id;
   useEffect(() => {
     let cancelled = false;

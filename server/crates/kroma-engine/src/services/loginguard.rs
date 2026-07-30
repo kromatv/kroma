@@ -1,29 +1,25 @@
 //! In-memory brute-force guard for the password login endpoint, keyed by client IP.
 //!
-//! After [`MAX_FAILS`] consecutive failed logins from one source IP we lock that
-//! source out for a cooldown that doubles on each further breach (capped at
-//! [`MAX_COOLDOWN_SECS`]). An online password-guessing attack is throttled to a
-//! handful of tries per hour, while a legitimate user who fat-fingers a password
-//! a few times is barely affected. A correct login clears the source's counter.
+//! After [`MAX_FAILS`] consecutive failures from one IP, the lockout cooldown
+//! doubles on each further breach (capped at [`MAX_COOLDOWN_SECS`]), throttling
+//! an automated attack while barely affecting a user who mistypes a few times.
 //!
-//! Process-local (resets on restart) and best-effort fine for a single-binary
-//! self-hosted deployment. This is defence-in-depth: the PBKDF2 password hash is
-//! still the real barrier, and a reverse proxy / WAF can add its own limit. It
-//! mirrors the PIN lockout in [`crate::api::pin`], but keyed by IP (login is
-//! unauthenticated) with an escalating rather than fixed window.
+//! Defence-in-depth only: process-local, best-effort, and secondary to the
+//! PBKDF2 hash and any reverse-proxy/WAF limit. Mirrors the PIN lockout in
+//! [`crate::api::pin`], but keyed by IP with an escalating window.
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
 
-/// Failed logins allowed from one IP before the first lockout kicks in.
+// Failed logins allowed from one IP before the first lockout kicks in.
 const MAX_FAILS: u32 = 5;
-/// Base lockout window, applied once [`MAX_FAILS`] is reached.
+// Base lockout window, applied once `MAX_FAILS` is reached.
 const BASE_COOLDOWN_SECS: i64 = 60;
-/// Ceiling for the doubling backoff (1 hour).
+// Ceiling for the doubling backoff (1 hour).
 const MAX_COOLDOWN_SECS: i64 = 60 * 60;
-/// Forget an IP's record after this long with no activity (memory hygiene).
+// Forget an IP's record after this long with no activity (memory hygiene).
 const IDLE_TTL_SECS: i64 = 60 * 60;
-/// Hard cap on tracked IPs; a flood of distinct source IPs is pruned to this.
+// Hard cap on tracked IPs; a flood of distinct source IPs is pruned to this.
 const MAX_ENTRIES: usize = 50_000;
 
 struct Attempt {

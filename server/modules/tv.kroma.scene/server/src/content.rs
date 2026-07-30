@@ -1,28 +1,21 @@
-//! Torrent content classification from its actual file list (the Sonarr/Radarr
-//! approach): parse every file name to tell a movie from a single episode from
-//! a season pack from a multi-season series, and map each video file to its
-//! season/episode so the caller can offer per-file selection.
+//! Torrent content classification from its file list: tell a movie from an
+//! episode, a season pack or a multi-season series, and map each video file to
+//! its season/episode so the caller can offer per-file selection.
 
 use serde::{Deserialize, Serialize};
 
 use crate::parse_release_name;
 
-/// Video container extensions worth treating as content (lowercase, no dot).
 const VIDEO_EXTS: &[&str] = &["mkv", "mp4", "m4v", "mov", "webm", "avi", "ts", "m2ts", "wmv", "flv"];
 
-/// What a torrent holds, overall.
+/// What a torrent holds, overall. `Unknown` means the admin picks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ContentKind {
-    /// One movie (no episode markers).
     Movie,
-    /// A single episode.
     Episode,
-    /// Multiple episodes of ONE season.
     Season,
-    /// Episodes spanning more than one season.
     Series,
-    /// Couldn't tell (mixed / no recognizable structure) - the admin picks.
     Unknown,
 }
 
@@ -38,11 +31,8 @@ impl ContentKind {
     }
 }
 
-/// One file inside a torrent, with its parsed season/episode when it looks like
-/// an episode.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ContentFile {
-    /// Index in the torrent's file list (what `only_files` selects on).
     pub index: usize,
     pub path: String,
     pub size_bytes: u64,
@@ -51,13 +41,10 @@ pub struct ContentFile {
     pub episode: Option<u32>,
 }
 
-/// The classification of a torrent's file list.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TorrentContent {
     pub kind: ContentKind,
-    /// Distinct seasons present, ascending.
     pub seasons: Vec<u32>,
-    /// Every file (video + extras), in torrent order.
     pub files: Vec<ContentFile>,
 }
 
@@ -66,7 +53,6 @@ fn is_video(path: &str) -> bool {
     VIDEO_EXTS.contains(&ext.as_str())
 }
 
-/// The base name of a path (last `/`-separated component), for parsing.
 fn base_name(path: &str) -> &str {
     path.rsplit(['/', '\\']).next().unwrap_or(path)
 }
@@ -74,7 +60,6 @@ fn base_name(path: &str) -> &str {
 /// Classify a torrent from its `(path, size)` file list.
 pub fn classify(files: &[(String, u64)]) -> TorrentContent {
     let mut content_files = Vec::with_capacity(files.len());
-    // Track the largest video with no episode marker (the movie candidate).
     for (index, (path, size)) in files.iter().enumerate() {
         let video = is_video(path);
         let (mut season, mut episode) = (None, None);
@@ -93,7 +78,6 @@ pub fn classify(files: &[(String, u64)]) -> TorrentContent {
         });
     }
 
-    // Episodes = video files carrying an episode number.
     let episode_files: Vec<&ContentFile> =
         content_files.iter().filter(|f| f.is_video && f.episode.is_some()).collect();
     let mut seasons: Vec<u32> = episode_files.iter().filter_map(|f| f.season).collect();
@@ -103,7 +87,6 @@ pub fn classify(files: &[(String, u64)]) -> TorrentContent {
     let video_count = content_files.iter().filter(|f| f.is_video).count();
 
     let kind = if episode_files.is_empty() {
-        // No episode markers: a movie if there's a dominant video, else unknown.
         if video_count >= 1 {
             ContentKind::Movie
         } else {
@@ -156,7 +139,6 @@ mod tests {
         assert_eq!(c.kind, ContentKind::Season);
         assert_eq!(c.seasons, vec![1]);
         assert_eq!(c.files.iter().filter(|f| f.episode.is_some()).count(), 3);
-        // Indices are preserved for only_files selection.
         assert_eq!(c.files[1].index, 1);
         assert_eq!(c.files[1].episode, Some(2));
     }

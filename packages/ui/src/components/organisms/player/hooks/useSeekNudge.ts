@@ -1,54 +1,28 @@
-// Directional seeking on the scrub bar.
-//
-// A press used to be a flat ten seconds, committed immediately. On a two-hour
-// film that is a cursor that barely moves, and holding the direction issued a
-// real seek per repeat - a stutter of re-anchors instead of travel.
-//
-// So the two gestures are told apart, the way a remote's users expect:
-//
-//   TAP   a single press is exactly TAP_STEP, precise and predictable.
-//   HOLD  a press the remote is auto-repeating becomes a continuous scrub whose
-//         SPEED ramps the longer it is held - slow enough at first to stop on a
-//         scene, then fast enough to cross a whole film.
-//
-// The cursor moves the whole time (the scrub bar previews the running target)
-// and exactly ONE real seek is issued, once the presses stop. That matters on
-// the anchored HLS master, where every seek is a new server anchor.
+// Directional seeking on the scrub bar: a TAP moves exactly TAP_STEP, a HELD
+// press ramps into a continuous scrub, and only one real seek fires once presses
+// stop — each seek re-anchors the HLS master, so coalescing them matters.
 
 import { useCallback, useEffect, useRef } from 'react';
 import type { PlayerController } from '../types';
 
-/** One deliberate press. */
 const TAP_STEP = 10;
-/**
- * Media-seconds travelled per real second at the START of a hold.
- *
- * Sized so the first repeat of a held button covers about as much ground as a
- * tap does. Any less and holding the button is SLOWER than pressing it
- * repeatedly, which is the opposite of what a hold is for - the first draft got
- * this wrong (30 s/s over a ~80 ms repeat is 2.4 s a press, against a tap's 10).
- */
+// Sized so the first repeat of a hold covers about as much ground as a tap;
+// any less and holding would be slower than tapping repeatedly.
 const HOLD_BASE = 120;
-/** Exponential growth of the hold speed, per second held. */
 const HOLD_GROWTH = 4;
-/** Speed ceiling, so even a long hold on a long film stays steerable. */
+// So even a long hold on a long film stays steerable.
 const HOLD_MAX = 1800;
-/** Presses closer together than this are the remote auto-repeating, i.e. a hold.
- *  Well above a remote's repeat interval (~100 ms) and well below the pace of
- *  deliberate presses, which must stay exactly TAP_STEP apiece. */
+// Well above a remote's repeat interval (~100 ms) and well below the pace of
+// deliberate presses, which must stay exactly TAP_STEP apiece.
 const REPEAT_MS = 300;
-/** Idle after the last press before the accumulated target is committed. Longer
- *  than REPEAT_MS, so a run of deliberate taps still lands as ONE seek. */
+// Longer than REPEAT_MS, so a run of deliberate taps still lands as ONE seek.
 const COMMIT_MS = 500;
-/** Clamp on the gap between two repeats, so a stalled frame cannot jump. */
+// Clamp on the gap between two repeats, so a stalled frame cannot jump.
 const MAX_TICK_S = 0.25;
 
 interface Burst {
-  /** Absolute target the cursor is currently showing. */
   target: number;
-  /** When the hold began, for the speed ramp. */
   startedAt: number;
-  /** When the last press arrived. */
   lastAt: number;
   dir: -1 | 1;
 }

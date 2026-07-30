@@ -1,7 +1,5 @@
-// Shared scaffold for the onboarding/login surfaces (sign-in, connect and
-// connect-device). ONE brand anchor: the KROMA lockup, same size and same
-// position on every screen and every phase; content swaps beneath it with no
-// motion, so steps feel like one continuous surface instead of new pages.
+// Shared scaffold for the onboarding/login surfaces. The lockup is the one
+// anchor: same size and position on every phase, with content swapping beneath.
 
 import { BackButton } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,18 +19,12 @@ import { boxed, contentWidth, useIsWide } from '#mobile/lib/layout';
 import { colors, SHADE, spacing, type } from '#mobile/lib/theme';
 import { KromaLockup } from './KromaLockup';
 
-/** Full-screen scaffold: ink background, amber wash over the top, the fixed
- * lockup anchor, keyboard avoidance and safe-area padding. */
 export function OnboardingScreen({
   keyboardBehavior,
   onBack,
   children,
 }: Readonly<{
-  /** Android KeyboardAvoidingView behavior override; iOS always pads. */
   keyboardBehavior?: NonNullable<KeyboardAvoidingViewProps['behavior']>;
-  /** Show the app's standard top-left back chevron. For screens whose content
-   *  keeps the keyboard up (the connect code), where a <BackLink> pinned to
-   *  the bottom of the column spends its whole life hidden behind it. */
   onBack?: () => void;
   children: ReactNode;
 }>) {
@@ -83,17 +75,14 @@ export function OnboardingScreen({
   );
 }
 
-/** The content column under the anchor. In narrow windows it is top-aligned
- * so the headline sits at the exact same y on every phase; a <BackLink> inside
- * pins to the bottom. In wide windows the lockup + box group centers
- * vertically instead, with a fixed minHeight so the anchor still lands at the
- * same y per phase. */
+/** The content column under the anchor. Top-aligned when narrow, vertically
+ * centred with a fixed minHeight when wide, so the headline lands at the same y
+ * on every phase either way. */
 export function OnboardingBox({ children }: Readonly<{ children: ReactNode }>) {
   const wide = useIsWide();
   return <View style={wide ? styles.boxWide : styles.box}>{children}</View>;
 }
 
-/** The shared headline (+ optional caption subtitle) typography. */
 export function OnboardingTitle({
   title,
   subtitle,
@@ -106,7 +95,6 @@ export function OnboardingTitle({
   );
 }
 
-/** The quiet "Retour" action, pinned to the bottom of the content column. */
 export function BackLink({ onPress }: Readonly<{ onPress(): void }>) {
   const t = useT();
   return (
@@ -123,8 +111,8 @@ export function BackLink({ onPress }: Readonly<{ onPress(): void }>) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   wash: { position: 'absolute', top: 0, left: 0, right: 0, height: '40%' },
-  /** Above the wash and outside the keyboard-avoiding column, so it neither
-   * tints nor moves when the keyboard does. */
+  // Above the wash and outside the keyboard-avoiding column, so it neither
+  // tints nor moves when the keyboard does.
   back: { position: 'absolute', left: spacing.md, zIndex: 2 },
   body: { flex: 1 },
   inner: {

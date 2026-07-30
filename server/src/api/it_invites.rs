@@ -13,7 +13,6 @@ fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
     token
 }
 
-/// Mint an invite as the owner and return its token.
 async fn mint_invite(t: &crate::api::test_support::TestApp, perms: serde_json::Value) -> String {
     let (status, body) =
         send(&t.app, "POST", "/api/invites", Some(&t.token), Some(json!({ "permissions": perms }))).await;
@@ -27,7 +26,6 @@ async fn invite_create_list_check_and_delete() {
 
     let token = mint_invite(&t, json!(["playback"])).await;
 
-    // It shows up in the pending list.
     let (status, list) = get(&t.app, "/api/invites", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     assert!(list.as_array().unwrap().iter().any(|i| i["token"] == json!(token)));
@@ -37,11 +35,9 @@ async fn invite_create_list_check_and_delete() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(chk["valid"], json!(true));
 
-    // Revoke it.
     let (status, _) = send(&t.app, "DELETE", &format!("/api/invites/{token}"), Some(&t.token), None).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
-    // Now the public check reports it invalid.
     let (_, chk) = get(&t.app, &format!("/api/invites/{token}"), None).await;
     assert_eq!(chk["valid"], json!(false));
 }
@@ -102,7 +98,6 @@ async fn register_requires_a_valid_invite_after_the_owner_exists() {
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 
-    // A garbage token -> 403.
     let (status, _) = send(
         &t.app,
         "POST",
@@ -190,10 +185,8 @@ async fn invite_management_requires_users_manage() {
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
-// ----- the bootstrap owner ------------------------------------------------------
-
-/// A fresh server: no accounts at all. `test_app` seeds an owner, so the very
-/// first-registration path is otherwise unreachable.
+// A fresh server: no accounts at all. `test_app` seeds an owner, so the very
+// first-registration path is otherwise unreachable.
 fn empty_of_accounts(t: &crate::api::test_support::TestApp) {
     t.state.db.get().unwrap().execute("DELETE FROM users", []).unwrap();
 }

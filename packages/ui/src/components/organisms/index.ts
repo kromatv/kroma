@@ -1,13 +1,5 @@
-// The ORGANISMS: a whole, recognisable section of an interface.
-//
-// Where a molecule is one arrangement (a card, a labelled field), an organism is
-// a REGION: it composes molecules and atoms, it usually owns behaviour of its
-// own, and a screen is built by placing a few of them. A rail scrolls and
-// windows its children; a dialog takes the remote hostage and declares a focus
-// scope; the perf HUD samples frames. None of that is styling.
-//
-// The test for adding one: would a designer point at it and call it a part of
-// the page, rather than a control on the page?
+// Organisms: a region of an interface, composing molecules and atoms and owning
+// behaviour of its own.
 
 export type { ConfirmDialogProps, DialogProps } from './dialog';
 export { ConfirmDialog, Dialog, DialogFooter } from './dialog';

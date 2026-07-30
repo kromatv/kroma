@@ -1,25 +1,16 @@
 //! A process-wide cap on how many heavy ffmpeg passes run at once.
 //!
 //! Every CPU-heavy media source (storyboard tiles/montage/jpeg, subtitle
-//! extraction, marker fingerprinting, on-demand storyboard scrubbing) draws from
-//! ONE budget here instead of each subsystem sizing its own worker pool blind to
-//! the others. Before this gate, a single library change fired the storyboard +
-//! subtitles + markers stages concurrently, and storyboard alone fanned each of
-//! its 2 workers out to ~8 tile ffmpeg processes: dozens of ffmpeg on a 2-4 core
-//! NAS, pegging it. The gate collapses that to a small budget of simultaneous
-//! processes so playback and the UI keep a core.
+//! extraction, marker fingerprinting, on-demand storyboard scrubbing) draws
+//! from one budget here instead of each subsystem sizing its own worker pool
+//! blind to the others. The budget is live: [`set_capacity`] is called at
+//! startup from the `mediaConcurrency` admin setting and again whenever it
+//! changes, so an operator can retune it without a restart.
 //!
-//! The budget is live: [`set_capacity`] is called at startup from the
-//! `mediaConcurrency` admin setting and again whenever it changes, so an operator
-//! can throttle (or open up) media processing without a restart, exactly like the
-//! HLS cache budget.
-//!
-//! A hand-rolled counting semaphore (Mutex + Condvar): these callers all run on
-//! blocking threads (the pipeline dispatcher's scoped workers, the blocking
-//! storyboard generate), so a blocking acquire is exactly right and avoids pulling
-//! an async runtime into the leaf process plumbing. No caller holds a permit while
-//! waiting on another (every ffmpeg pass is sequential within an item), so the
-//! single-budget gate cannot deadlock.
+//! A hand-rolled counting semaphore (Mutex + Condvar): every caller runs on a
+//! blocking thread, so a blocking acquire is correct and avoids pulling an
+//! async runtime into the leaf process plumbing. No caller holds a permit
+//! while waiting on another, so the single-budget gate cannot deadlock.
 
 use std::sync::{Condvar, Mutex, OnceLock};
 
@@ -29,9 +20,7 @@ struct Gate {
 }
 
 struct Inner {
-    /// Max ffmpeg passes allowed to run at once (>= 1).
     capacity: usize,
-    /// How many are running right now.
     in_use: usize,
 }
 

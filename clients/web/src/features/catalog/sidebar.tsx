@@ -50,7 +50,6 @@ const NAV: { labelKey: MessageKey; to: string; icon: TablerIcon; exact?: boolean
 export function Sidebar() {
   return (
     <aside className="sticky top-0 hidden h-screen flex-col self-start border-r border-border bg-[#0C0C0E] lg:flex">
-      {/* Fixed header: brand */}
       <div className="shrink-0 px-4.5 pb-2 pt-7">
         <div className="flex items-center justify-between px-2 pb-2">
           <Logo size={24} />
@@ -62,10 +61,8 @@ export function Sidebar() {
   );
 }
 
-/** Scroll region shared by the desktop rail and the mobile drawer: primary nav
- * at the top, account/device block pinned to the bottom via mt-auto. It reads
- * as a fixed footer on a normal window, and scrolls (rather than clipping)
- * when the viewport is too short. */
+// Account/device block is pinned to the bottom via mt-auto: it reads as a fixed
+// footer on a normal window, and scrolls (rather than clipping) when too short.
 function SidebarBody() {
   const t = useT();
   return (
@@ -87,7 +84,6 @@ function SidebarBody() {
         <MissingLink />
         <ModuleNavLinks />
       </nav>
-      {/* Footer block: invite / device / admin / account / device prefs */}
       <div className="mt-auto flex flex-col gap-2.5 pt-6">
         <InviteLink />
         <Link to="/connect" className={itemCls}>
@@ -110,15 +106,10 @@ function SidebarBody() {
   );
 }
 
-/** Compact top bar shown below the `lg` breakpoint: brand + hamburger opening
- * the nav as a left drawer (same SidebarBody as the desktop rail). The drawer
- * closes itself on navigation rather than intercepting each link click. */
 export function MobileTopbar() {
   const t = useT();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  // Close the drawer on navigation: `pathname` is read only in the dep array so
-  // the effect re-runs on each route change (removing it would break that).
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; pathname closes the drawer on navigation
   useEffect(() => setOpen(false), [pathname]);
   return (
@@ -168,7 +159,6 @@ export function MobileTopbar() {
   );
 }
 
-/** "Mes demandes" only for accounts allowed to request media. */
 function RequestsLink() {
   const t = useT();
   const { user } = useAuth();
@@ -181,7 +171,6 @@ function RequestsLink() {
   );
 }
 
-/** "Bientôt disponible" the coming-soon calendar, same gate as requests. */
 function ComingSoonLink() {
   const t = useT();
   const { user } = useAuth();
@@ -194,7 +183,6 @@ function ComingSoonLink() {
   );
 }
 
-/** "Manquants" the wanted / missing list, same gate as requests. */
 function MissingLink() {
   const t = useT();
   const { user } = useAuth();
@@ -207,9 +195,8 @@ function MissingLink() {
   );
 }
 
-/** Client + server versions on one compact line. The client version + commit come
- * from the build-time `virtual:build-info` module (hover for commit/date); the
- * server version is the public `/api/health` endpoint (`…` until it resolves). */
+// Client version + commit come from the build-time `virtual:build-info` module;
+// the server version is the public `/api/health` endpoint.
 function VersionInfo() {
   const t = useT();
   const { data: health } = useQuery(serverQueries.health());
@@ -228,8 +215,6 @@ function VersionInfo() {
   );
 }
 
-/** "Inviter un utilisateur" only for accounts with the `users.manage`
- * permission (registration is invite-only). */
 function InviteLink() {
   const t = useT();
   const { user } = useAuth();
@@ -242,8 +227,6 @@ function InviteLink() {
   );
 }
 
-/** "Serveur" links to the admin console for accounts with any management
- * capability (users / library / settings). */
 function AdminLink() {
   const t = useT();
   const { user } = useAuth();
@@ -269,9 +252,6 @@ function AdminLink() {
   );
 }
 
-/** Nav entries contributed by enabled `section: "library"` modules (each links to
- * its /m/<path> page). Driven by the frontend module registry, capability-gated,
- * so a disabled module's link vanishes with the rest of its system. */
 function ModuleNavLinks() {
   const items = useModuleNav('library');
   return (
@@ -292,7 +272,6 @@ function ModuleNavLinks() {
 const MENU =
   'z-50 min-w-[204px] rounded-xl border border-white/10 bg-[#16161C] p-1.5 shadow-[0_12px_32px_rgba(0,0,0,.45)]';
 
-/** A row inside the account menu. */
 function MenuItem({
   icon,
   label,
@@ -312,8 +291,6 @@ function MenuItem({
   );
 }
 
-/** Current account chip avatar + name; clicking opens a menu (account settings,
- * switch profile, sign out). Renders nothing until a session is hydrated. */
 function UserChip() {
   const t = useT();
   const navigate = useNavigate();

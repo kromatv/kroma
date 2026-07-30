@@ -6,9 +6,8 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
-/** Inline error surface: tinted banner with an icon and a small shake when the
- * message appears or changes, so failures read at a glance instead of as a
- * bare red caption. Renders nothing while `message` is null. */
+/** Tinted banner with a shake on message change; renders nothing while
+ * `message` is null. */
 export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   const shake = useRef(new Animated.Value(0)).current;
   const fade = useRef(new Animated.Value(0)).current;
@@ -64,7 +63,6 @@ export function ErrorView({
   );
 }
 
-/** Clean centered empty state: icon in a soft disc, title, hint, optional CTA. */
 export function EmptyState({
   icon,
   title,

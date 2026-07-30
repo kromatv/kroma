@@ -13,9 +13,7 @@ const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
 export interface BrowseBarProps {
   sort: SortMode;
   onSort: (mode: SortMode) => void;
-  /** Genres offered as filter chips (derived from the shown titles). */
   genres: GenreCount[];
-  /** The active genre, or undefined for "All". */
   genre?: string;
   onGenre: (genre: string | undefined) => void;
 }

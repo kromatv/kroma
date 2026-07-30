@@ -5,12 +5,12 @@ import { EXIT_MS } from './constants';
 import { useIntroExit } from './useIntroExit';
 import { useIntroKeys } from './useIntroKeys';
 
-// The hooks own document/window listeners, so a hook left mounted by one test
-// would keep eating the next one's keys (the skip handler stops propagation).
+// The hooks own document/window listeners, so a hook left mounted by one test would
+// keep eating the next one's keys.
 afterEach(cleanup);
 
-/** Press a key the way a keyboard / TV remote does: from the focused element,
- * so the window capture phase runs before the document listeners. */
+// Dispatched from the focused element, so the window capture phase runs before the
+// document listeners.
 function press(key: string) {
   const e = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
   act(() => {
@@ -58,7 +58,6 @@ describe('useIntroExit', () => {
     act(() => vi.advanceTimersByTime(EXIT_MS * 2));
     expect(onDone).not.toHaveBeenCalled();
 
-    // and the run can end again afterwards
     act(() => result.current.exit());
     act(() => vi.advanceTimersByTime(EXIT_MS));
     expect(onDone).toHaveBeenCalledTimes(1);
@@ -91,8 +90,7 @@ describe('useIntroKeys', () => {
       const e = press(key);
       expect(exit).toHaveBeenCalledTimes(1);
       expect(replay).not.toHaveBeenCalled();
-      // stopImmediatePropagation keeps the skip key away from the unblock
-      // listener: skipping must never restart the intro.
+      // Skipping must never restart the intro.
       expect(unblock).not.toHaveBeenCalled();
       expect(e.defaultPrevented).toBe(true);
     },

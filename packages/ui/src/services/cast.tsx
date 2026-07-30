@@ -35,7 +35,6 @@ import {
   useState,
 } from 'react';
 
-/** How often the interpolated position is recomputed while a TV plays. */
 const TICK_MS = 500;
 
 /** What a sender can do with the TV it is driving. */

@@ -1,14 +1,9 @@
-// Shared presentational primitives for the admin console, matching the
-// "Admin Serveur" design (cards, titled sections, stat cards, toggle/select
-// rows, progress bars, gradient avatars).
-
 import { IconChevronDown } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { resolveImageUrl, useAdminKit } from './context';
 import { avatarGradient, initial } from './format';
 import { Image } from './image';
 
-/** Chart/semantic colors from the design that aren't Tailwind tokens. */
 export const C = {
   accent: '#F4B642',
   green: '#46D08D',
@@ -31,7 +26,6 @@ export function Card({
   );
 }
 
-/** A titled dashboard section with a top divider and an optional right slot. */
 export function Section({
   title,
   right,
@@ -52,9 +46,8 @@ export function Section({
   );
 }
 
-/** A muted "filter" caption (display-only). The chevron hints at a dropdown, so
- * pass `plain` for a static caption (e.g. a "real-time" tag) that isn't a picker
- * a chevron with no menu behind it reads as a broken control. */
+/** Pass `plain` for a caption that is not a picker: a chevron with no menu
+ * behind it reads as a broken control. */
 export function FilterLabel({
   children,
   plain,
@@ -91,7 +84,6 @@ export function StatCard({
   );
 }
 
-/** The 46x26 pill switch from the design. */
 export function Toggle({
   on,
   onChange,
@@ -150,7 +142,6 @@ export function Pill({
   );
 }
 
-/** Gradient avatar with initial fallback (or a cached image when present). */
 export function Avatar({
   name,
   avatarUrl,

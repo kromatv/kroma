@@ -1,12 +1,10 @@
 // Resume persistence + the admin-visible playback session heartbeat, sharing
-// one interval. Progress is saved on a coarser cadence than the ping and again
-// on unmount so a swipe-away never loses more than a few seconds.
+// one interval. Progress saves on a coarser cadence than the ping, and again
+// on unmount, so a swipe-away never loses more than a few seconds.
 //
-// It also listens for the admin TERMINATING this session, both ways the shared
-// service (@kroma/ui services/playback) hears it: the `playback.terminate`
-// event on the live WS bus, and a 410 on the next ping as the fallback. This
-// hook should eventually BE that shared service - it only still exists apart
-// because it also owns the phone's progress persistence.
+// Also listens for the admin TERMINATING this session, the same two ways the
+// shared service (@kroma/ui services/playback) does: the `playback.terminate`
+// event on the live WS bus, and a 410 on the next ping as fallback.
 
 import { KromaApiError, type KromaClient, KromaEvents, type MediaItem } from '@kroma/core';
 import * as Device from 'expo-device';
@@ -36,16 +34,13 @@ function pingMode(s: HeartbeatSnapshot): 'direct' | 'remux' | 'transcode' {
   return s.aac ? 'transcode' : 'remux';
 }
 
-/** Sessions opened by this process so far, so two playbacks started in the same
- * millisecond still get distinct ids. */
+// Sessions opened by this process so far, so two playbacks started in the
+// same millisecond still get distinct ids.
 let sessionSeq = 0;
 
-/** A session id keys ONE row in the server's live "now playing" registry and is
- * never an auth token or a secret, so it needs uniqueness, not unpredictability.
- * Device + clock + counter gives that without a random source (React Native has
- * no `crypto.randomUUID`, and pulling in a native crypto module to name a
- * dashboard row would not be a trade worth making), and the id stays readable in
- * the admin console. */
+// Not a secret and never an auth token, so this needs uniqueness, not
+// unpredictability. React Native has no `crypto.randomUUID`, and pulling in a
+// native crypto module just to name a dashboard row isn't a trade worth making.
 function newSessionId(device: string): string {
   const slug = device.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase();
   return `mob-${slug}-${Date.now().toString(36)}-${(sessionSeq++).toString(36)}`;

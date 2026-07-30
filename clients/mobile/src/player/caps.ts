@@ -1,10 +1,10 @@
-// Static playback capabilities of the two mobile runtimes and the pure
-// direct-vs-master source decision, built on the shared @kroma/core direct-play
-// primitives (same model as packages/core/src/hevc/directplay.ts selectEngine).
+// Static playback capabilities of the two mobile runtimes, and the pure
+// direct-vs-master source decision built on the shared @kroma/core direct-play
+// primitives (same model as the TV engines).
 //
-// iOS drives AVPlayer, Android drives ExoPlayer (both via expo-video). Like the
-// TV engines, the decision is optimistic: a direct attempt that the decoder
-// rejects falls back to the HLS master at the same position (engine.ts).
+// iOS drives AVPlayer, Android drives ExoPlayer (both via expo-video); a
+// direct attempt the decoder rejects falls back to the HLS master at the same
+// position (see engine.ts).
 
 import {
   audioTracksOf,
@@ -17,8 +17,8 @@ import {
 } from '@kroma/core';
 import { Platform } from 'react-native';
 
-/** AVPlayer: HEVC/H264 hardware decode, Dolby (AC3/EAC3) native, no VP9/AV1
- * (AV1 is A17+ only; report false rather than fail opaquely), no DTS/TrueHD. */
+// AVPlayer: HEVC/H264 hardware decode, Dolby (AC3/EAC3) native, no VP9/AV1
+// (AV1 is A17+ only; report false rather than fail opaquely), no DTS/TrueHD.
 export const IOS_CAPS: PlaybackCapabilities = {
   hevc: true,
   hevc10bit: true,
@@ -40,9 +40,9 @@ export const IOS_CAPS: PlaybackCapabilities = {
   source: 'unknown',
 };
 
-/** ExoPlayer: wide container/codec demux; HEVC/VP9 hardware decode is ubiquitous
- * on phones, AV1 is not (pre-2023 SoCs). Dolby/DTS decoders are TV licenses
- * phones usually lack, so surround masters transcode to AAC. */
+// ExoPlayer: wide container/codec demux; HEVC/VP9 hardware decode is
+// ubiquitous on phones, AV1 is not (pre-2023 SoCs). Dolby/DTS decoders are TV
+// licenses phones usually lack, so surround masters transcode to AAC.
 export const ANDROID_CAPS: PlaybackCapabilities = {
   hevc: true,
   hevc10bit: true,
@@ -68,22 +68,19 @@ export function mobileCaps(): PlaybackCapabilities {
   return Platform.OS === 'ios' ? IOS_CAPS : ANDROID_CAPS;
 }
 
-/** Containers AVPlayer demuxes from a plain ranged URL (no MKV, ever). */
+// Containers AVPlayer demuxes from a plain ranged URL (no MKV, ever).
 const IOS_CONTAINERS = new Set(['mp4', 'mov', 'm4v', 'isom']);
-/** Containers ExoPlayer demuxes from a plain ranged URL. */
+// Containers ExoPlayer demuxes from a plain ranged URL.
 const ANDROID_CONTAINERS = new Set(['mp4', 'mov', 'm4v', 'isom', 'mkv', 'webm', 'ts', 'm2ts']);
 
 export interface SourceDecision {
-  /** Open the original file (zero server work); else the HLS remux master. */
   direct: boolean;
-  /** When on the master, whether audio must be transcoded to stereo AAC. */
   aacMaster: boolean;
 }
 
 /** The `?copy=` set for `/download`: codecs this runtime decodes natively AND
- * ffmpeg can stream-copy into fMP4. Tracks in the set keep their original bytes
- * (surround preserved); the server transcodes the rest to stereo AAC so every
- * downloaded track is guaranteed playable offline (no fallback exists there). */
+ * ffmpeg can stream-copy into fMP4. The rest transcode to stereo AAC
+ * server-side, since offline playback has no fallback for an unplayable track. */
 export function downloadCopyCodecs(): string[] {
   const audio = mobileCaps().audio as unknown as Record<string, boolean | undefined>;
   return [...FMP4_COPY_CODECS].filter((codec) => audio[codec] === true);
@@ -98,13 +95,11 @@ export function downloadVideoCodecs(): string[] {
   return (['hevc', 'h264', 'av1', 'vp9'] as const).filter((codec) => caps[codec] === true);
 }
 
-/** Whether the ORIGINAL file can be downloaded raw (byte-identical, zero server
- * work) and still play FULLY offline: container demuxable + video decodable +
- * every audio track strictly decodable. Stricter than {@link decideSource}
- * (which may be optimistic) because offline playback has no master fallback.
- * On iOS a multi-audio file still goes through the remux: AVFoundation only
- * exposes local audio selection for alternate-grouped tracks, which ffmpeg's
- * muxer guarantees and files in the wild do not. */
+/** Whether the ORIGINAL file can be downloaded raw (byte-identical, zero
+ * server work) and still play FULLY offline. Stricter than {@link decideSource}
+ * because offline has no master fallback. On iOS a multi-audio file still goes
+ * through the remux: AVFoundation only exposes local audio selection for
+ * alternate-grouped tracks, which files in the wild do not guarantee. */
 export function canRawDownload(item: MediaItem): boolean {
   const caps = mobileCaps();
   const containers = Platform.OS === 'ios' ? IOS_CONTAINERS : ANDROID_CONTAINERS;

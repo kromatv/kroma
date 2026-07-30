@@ -1,11 +1,7 @@
-//! The home-screen **section generator**: turns the current context (date,
-//! daypart, the viewer's recent history) + the embedding cache + a phrase bank
-//! into an ordered, de-duplicated list of [`Section`]s. The client renders the
-//! result generically all the "what rows, in what order" logic lives here.
-//!
-//! Pipeline per request: refresh the vector cache (if stale) → build context →
-//! emit candidate sections in priority order, each resolved to items, capped,
-//! de-duplicated against earlier rows, and dropped if too thin (quality gate).
+//! The home-screen section generator: context (date, daypart, recent history) +
+//! the embedding cache + a phrase bank into an ordered, de-duplicated list of
+//! [`Section`]s. The client renders the result generically, so all the "what
+//! rows, in what order" logic lives here.
 
 mod cache;
 mod context;
@@ -27,21 +23,14 @@ use crate::state::SharedState;
 
 use context::Context;
 
-/// Items per rail.
 const SECTION_CAP: usize = 20;
-/// Over-fetch margin so a row still fills after cross-row de-duplication.
+// Over-fetch margin so a row still fills after cross-row de-duplication.
 const FETCH: usize = SECTION_CAP + 16;
-/// A row needs at least this many items (after dedupe) to be worth showing.
 const MIN_ITEMS: usize = 5;
-/// Hard cap on rows returned.
 const MAX_SECTIONS: usize = 9;
-/// At most this many *themed* rows in one home (the bank has more than fit).
 const MAX_THEMED: usize = 4;
-/// At most this many *curated editorial* rows in one home (the job makes more;
-/// a daily-rotated window shows a fresh slice each day).
 const MAX_CURATED: usize = 3;
-/// Sentinel: no relevance floor (For You / trending / recently-added rows, which
-/// aren't gated on themed-query similarity).
+// Sentinel for rows that make no similarity claim, so nothing is filtered out.
 const NO_FLOOR: f32 = f32::NEG_INFINITY;
 
 /// Build the ordered, de-duplicated home for one user. Infallible: any step that
@@ -61,45 +50,19 @@ pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str)
     let show_recent = state.settings.get_bool("showRecentHome", true);
     let discretionary_cap = MAX_SECTIONS.saturating_sub(1 + usize::from(show_recent));
 
-    // 1) For You personalized taste centroid (no floor: it reflects your taste
-    //    even loosely, and is always wanted when you have history).
     if !ctx.watched.is_empty() {
         let ranked = state.vectors.for_you(&ctx.watched, FETCH);
         out.push("for-you", i18n::t(locale, "content.forYou", &[]), None, ranked, NO_FLOOR);
     }
 
-    // 2) Because you watched <the last thing>. Genre-guarded: the lexical embedder
-    //    is weakly discriminative item↔item (the catalog clusters in a narrow
-    //    cosine band, so a drama's "nearest" can be a horror film), and this row
-    //    makes a *specific* similarity claim about one seed so require a shared
-    //    genre with it. (No-op when the seed has no genres, or with a discriminative
-    //    backend where the neighbours already share genres.)
     push_because(&mut out, state, pool, &ctx, locale);
-
-    // 2.5) Personalized, LLM-named rows authored by the nightly
-    //      `sections.personalize` job. The model only *names* each row; the items
-    //      come from the embedder resolving its vibe `query`, so they're always
-    //      real catalog titles. Floored like themed rows. Falls through to the
-    //      static bank below when the user has none yet (no LLM / too little
-    //      history).
     push_ai_rows(&mut out, state, pool, user_id, discretionary_cap, floor);
-
-    // 2.6) Editorial curated collections global, same for everyone (director
-    //      spotlights + LLM-curated genre/list/franchise/mood rows from the
-    //      `sections.curate` job). Membership is explicit (resolved ids), so
-    //      NO_FLOOR; a daily-rotated window keeps the home feeling fresh.
     push_curated_rows(&mut out, pool, locale, discretionary_cap);
-
-    // 3) Themed rows eligible phrases, FLOORED: a phrase only becomes a row if
-    //    the library actually has matches above the noise level.
     push_themed_rows(&mut out, state, &ctx, locale, discretionary_cap, floor);
 
-    // 4) Trending in your library (recency-weighted plays) SQL, unscored.
     let trending = unscored(trending_ids(pool, FETCH));
     out.push("trending", i18n::t(locale, "content.trending", &[]), None, trending, NO_FLOOR);
 
-    // 5) Recently added SQL, unscored. Gated by the admin "show recent on home"
-    //    preference (on by default).
     if state.settings.get_bool("showRecentHome", true) {
         let recent = unscored(db::recently_added_ids(pool, FETCH).unwrap_or_default());
         out.push("recent", i18n::t(locale, "content.recentlyAdded", &[]), None, recent, NO_FLOOR);
@@ -114,10 +77,10 @@ pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str)
     sections
 }
 
-/// "Because you watched <the last thing>". Genre-guarded: the lexical embedder is
-/// weakly discriminative item<->item, and this row makes a *specific* similarity
-/// claim about one seed, so require a shared genre with it. (No-op when the seed
-/// has no genres, or with a discriminative backend.)
+// Genre-guarded because the lexical embedder is weakly discriminative item<->item
+// (the catalog clusters in a narrow cosine band, so a drama's nearest can be a
+// horror film) and this row claims a specific resemblance to one seed. No-op when
+// the seed has no genres, or with a discriminative backend.
 fn push_because(out: &mut Builder, state: &SharedState, pool: &Pool, ctx: &Context, locale: &str) {
     if let Some(last) = &ctx.last_played {
         if let Some(title) = last_title(pool, last) {
@@ -128,11 +91,9 @@ fn push_because(out: &mut Builder, state: &SharedState, pool: &Pool, ctx: &Conte
     }
 }
 
-/// Personalized, LLM-named rows authored by the nightly `sections.personalize`
-/// job. The model only *names* each row; the items come from the embedder
-/// resolving its vibe `query`, so they're always real catalog titles. Floored
-/// like themed rows. Empty when the user has none yet (no LLM / too little
-/// history).
+// Authored by the nightly `sections.personalize` job. The model only *names* each
+// row; the items come from the embedder resolving its vibe `query`, so they are
+// always real catalog titles. Empty until the user has enough history.
 fn push_ai_rows(
     out: &mut Builder,
     state: &SharedState,
@@ -152,9 +113,8 @@ fn push_ai_rows(
     }
 }
 
-/// Editorial curated collections global, same for everyone (director spotlights +
-/// LLM-curated genre/list/franchise/mood rows). Membership is explicit (resolved
-/// ids), so `NO_FLOOR`; a daily-rotated window keeps the home feeling fresh.
+// Global, same for everyone. Membership is explicit (resolved ids), hence
+// `NO_FLOOR`; a daily-rotated window keeps the home feeling fresh.
 fn push_curated_rows(out: &mut Builder, pool: &Pool, locale: &str, discretionary_cap: usize) {
     for (key, title, reason, ids) in curated_rows(pool, locale) {
         if out.sections.len() >= discretionary_cap {
@@ -164,8 +124,8 @@ fn push_curated_rows(out: &mut Builder, pool: &Pool, locale: &str, discretionary
     }
 }
 
-/// Themed rows eligible phrases, FLOORED: a phrase only becomes a row if the
-/// library actually has matches above the noise level.
+// Floored: a phrase only becomes a row if the library has matches above the
+// noise level.
 fn push_themed_rows(
     out: &mut Builder,
     state: &SharedState,
@@ -187,16 +147,13 @@ fn push_themed_rows(
     }
 }
 
-/// Wrap SQL-sourced ids (trending / recently-added) as `(id, score)` so they flow
-/// through the same [`Builder::push`]; they carry no similarity, so `NO_FLOOR`.
 fn unscored(ids: Vec<String>) -> Vec<(String, f32)> {
     ids.into_iter().map(|id| (id, 0.0)).collect()
 }
 
-/// [`db::trending_ids`] with the failure *logged* before falling back to empty
-/// (shared with [`featured::pick`]'s trending signal). Swallowing the error made
-/// a broken query indistinguishable from "nobody watched anything": a missing
-/// SQLite `POW()` emptied the Trending row on every request and nothing said so.
+// Logs before falling back to empty: swallowing the error made a broken query
+// indistinguishable from "nobody watched anything", and a missing SQLite `POW()`
+// silently emptied the Trending row on every request.
 fn trending_ids(pool: &Pool, n: usize) -> Vec<String> {
     db::trending_ids(pool, n).unwrap_or_else(|e| {
         tracing::warn!(target: "sections", error = %e, "trending query failed; falling back to no trending items");
@@ -204,9 +161,6 @@ fn trending_ids(pool: &Pool, n: usize) -> Vec<String> {
     })
 }
 
-/// The curated rows to show this request: the top [`MAX_CURATED`] from the
-/// `curated_sections` table, on a daily-rotated offset, localized to `locale`.
-/// Each is `(key, title, reason, member_ids)`.
 fn curated_rows(pool: &Pool, locale: &str) -> Vec<(String, String, Option<String>, Vec<String>)> {
     let all = db::get_curated(pool).unwrap_or_default();
     if all.is_empty() {
@@ -226,14 +180,12 @@ fn curated_rows(pool: &Pool, locale: &str) -> Vec<(String, String, Option<String
         .collect()
 }
 
-/// Pick a locale's string from a `locale -> string` map, falling back requested
-/// -> `en` -> any available.
 fn pick_lang(map: &std::collections::HashMap<String, String>, locale: &str) -> Option<String> {
     map.get(locale).or_else(|| map.get("en")).or_else(|| map.values().next()).cloned()
 }
 
-/// Accumulates sections while enforcing the caps, the quality gate, and the
-/// cross-row de-duplication (a title shows in at most one row).
+// Enforces the caps, the quality gate, and cross-row de-duplication: a title
+// shows in at most one row.
 struct Builder<'a> {
     pool: &'a Pool,
     sections: Vec<Section>,
@@ -241,9 +193,8 @@ struct Builder<'a> {
 }
 
 impl Builder<'_> {
-    /// Resolve scored `ranked` ids into a section; returns whether one was added.
-    /// Items below `floor` are dropped before the count gate, so a row that's all
-    /// weak matches simply never appears.
+    // Items below `floor` are dropped before the count gate, so a row of only
+    // weak matches never appears at all.
     fn push(&mut self, id: &str, title: String, reason: Option<String>, ranked: Vec<(String, f32)>, floor: f32) -> bool {
         if self.sections.len() >= MAX_SECTIONS {
             return false;
@@ -271,7 +222,6 @@ impl Builder<'_> {
     }
 }
 
-/// Title of one item id (for the "Because you watched …" heading).
 fn last_title(pool: &Pool, id: &str) -> Option<String> {
     db::items_by_ids(pool, &[id]).ok()?.into_iter().next().map(|i| i.title)
 }
@@ -431,7 +381,6 @@ mod tests {
         assert!(last_title(&pool, "ghost").is_none());
     }
 
-    // ----- SharedState-backed home build. The no-op embedder yields no semantic
     // rows (for-you / because / ai / themed resolve to nothing), so the assertions
     // target the deterministic SQL-sourced rows (trending, recently-added) + a
     // direct push of a curated row. --------------------------------------------

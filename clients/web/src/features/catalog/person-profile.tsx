@@ -9,7 +9,6 @@ import { useLocale, useT } from '@kroma/ui';
 import { Button, Txt } from '@kroma/ui/kit';
 import { useState } from 'react';
 
-/** kit sm-button label metrics, tinted accent so the toggle reads as a link. */
 const READ_MORE = { fontSize: 13, fontWeight: '700' } as const;
 
 export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null }>) {

@@ -3,8 +3,6 @@ import { Box } from '#ui/components/atoms/box';
 import { Field } from '#ui/components/molecules/field';
 import { Select } from './select';
 
-/** A believable option set: the audio-track picker every surface actually
- * ships, notes and all. */
 const TRACKS = [
   { value: 'truehd', label: 'TrueHD 7.1', note: 'lossless', icon: 'volume' },
   { value: 'dd51', label: 'Dolby Digital 5.1', note: '640 kb/s', icon: 'volume' },

@@ -6,13 +6,10 @@ import { GUTTER, scaler } from '../lib/metrics';
 
 /**
  * Skip-intro pill (§13): a bottom-right "Passer l'intro" button shown only
- * during the detected intro window. Focus is state-driven (controlled kit
- * button - `focused` is ALWAYS passed, see ../lib/virtual-focus.ts), so on
- * focus the scrim pill flips to the primary variant: accent fill, ink label,
- * the kit's ring and scale. The variant swap is what expresses the design's
- * "amber when focused" without a bespoke control.
- * Sits above whatever the bottom chrome is currently showing, so the two never
- * overlap - see `lift`.
+ * during the detected intro window. Focus is state-driven (`focused` is ALWAYS
+ * passed, see ../lib/virtual-focus.ts): on focus the variant swaps from scrim to
+ * primary, giving the design's "amber when focused" without a bespoke control.
+ * Sits above the bottom chrome via `lift`, so the two never overlap.
  */
 export interface SkipIntroButtonProps {
   visible: boolean;
@@ -21,14 +18,9 @@ export interface SkipIntroButtonProps {
   scale?: number;
   /**
    * How high the pill sits above the bottom edge, in real pixels (already
-   * scaled by the caller).
-   *
-   * It is passed in rather than fixed here because the thing it has to clear is
-   * not a constant: the transport grows and shrinks with the stage, and the
-   * up-next peek lifts it 150px further whenever there is a next episode. The
-   * fixed 214 this used to be was right for exactly one of those cases and drew
-   * the pill straight through the seek bar in the others - which is what the
-   * player measures the transport for.
+   * scaled). Passed in because what it must clear isn't constant: the transport
+   * resizes with the stage, and the up-next peek lifts it 150px further — a
+   * fixed value drew the pill through the seek bar in the other case.
    */
   lift: number;
   onSkip: () => void;
@@ -44,10 +36,8 @@ export function SkipIntroButton({
   const t = useT();
   const px = scaler(scale);
   if (!visible) return null;
-  // The gutter is scaled with the rest of the chrome, off the SAME constant:
-  // unscaled, this sat on a 34px margin while the row beneath it had shrunk to
-  // 27, so the two right edges visibly disagreed in any window narrower than
-  // the design.
+  // Scaled off the SAME constant as the row beneath it: unscaled, the two right
+  // edges would disagree below the design width.
   return (
     <Box absolute bottom={lift} right={px(GUTTER)} z={30}>
       <Button

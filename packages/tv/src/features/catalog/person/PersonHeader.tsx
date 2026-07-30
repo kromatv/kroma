@@ -5,28 +5,17 @@ import { Avatar, Box, Chip, Txt } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { TITLE } from '#tv/features/catalog/screenStyle';
 
-/** How much biography fits above the filmography before it has to be asked for.
- * Four lines at this measure is roughly a paragraph's opening; the rest is one
- * click away rather than pushing the posters off the screen. */
+// Clamped so the biography can't push the filmography's poster grid off screen.
 const CLAMP_LINES = 4;
-/** And how much of it "Lire la suite" reveals. Still a clamp, because the header
- * shares the screen with the filmography: an unbounded biography would squeeze
- * the poster grid down to nothing on the people who have the longest ones. */
 const EXPANDED_LINES = 10;
-/** Past this many characters the text is certainly longer than the clamp, so
- * the expander is worth a focus stop. Character-counted on purpose: measuring
- * text costs a layout pass on every target, and being a line out here only ever
- * shows a "Lire la suite" that reveals a little. */
+// Character-counted rather than measured: measuring text costs a layout pass
+// on every target.
 const EXPANDABLE_CHARS = 300;
 
 /**
- * A person's identity block: portrait, roles, name, the life facts the provider
- * knows, and their biography.
- *
- * `detail` arrives after the screen has already drawn (see `usePersonDetail`),
- * so everything it feeds is additive: without it this is exactly the header the
- * screen has always had, and nothing below it moves except by the height the
- * biography takes.
+ * A person's identity block: portrait, roles, name, the life facts the
+ * provider knows, and their biography. `detail` arrives after the screen has
+ * already drawn (see `usePersonDetail`), so everything it feeds is additive.
  */
 export function PersonHeader({
   name,
@@ -36,9 +25,7 @@ export function PersonHeader({
   detail,
 }: Readonly<{
   name: string;
-  /** Localized role chips derived from the library's own credits. */
   roles: string[];
-  /** Portrait: the provider's, else the best photo among the local credits. */
   photo: string | null;
   titleCount: number;
   detail: PersonDetail | null;
@@ -105,8 +92,6 @@ export function PersonHeader({
   );
 }
 
-/** A size down from the kit role: a fact label sits over its value, not over a
- * hero title. */
 const FACT_LABEL = { fontSize: 12 };
 
 const FACT_VALUE = { fontSize: 17, fontWeight: '600' as const };

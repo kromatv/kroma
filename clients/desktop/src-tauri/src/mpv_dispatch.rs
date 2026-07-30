@@ -27,9 +27,8 @@ use crate::mpv;
 mod inproc {
     use std::sync::atomic::{AtomicBool, Ordering};
 
-    /// Set once, at setup, after the in-process engine initialises. Read on every
-    /// command to pick the backend; never flips back (a mid-session engine swap
-    /// would strand the player), so a `SeqCst` bool is enough.
+    // Set once, at setup, after the in-process engine initialises; never flips back
+    // (a mid-session engine swap would strand the player), so `SeqCst` is enough.
     static ACTIVE: AtomicBool = AtomicBool::new(false);
 
     pub fn mark_active() {

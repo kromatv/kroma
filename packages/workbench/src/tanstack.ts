@@ -27,7 +27,6 @@
 // a native build - which has no router and no use for one - never pulls
 // @tanstack/react-router into its bundle to find out it was not needed.
 //
-// ---- what the host has to declare ----
 //
 // Two routes, because the view segment is optional and TanStack does not have
 // optional params:
@@ -50,27 +49,18 @@ import {
 } from './router';
 
 interface TanstackOptions {
-  /**
-   * The route holding just a story, used when the view is the default preview.
-   * Must carry a `$storyId` param.
-   */
+  // The route holding just a story, used when the view is the default preview. Must carry a
+  // `$storyId` param.
   storyRoute?: string;
-  /**
-   * The route holding a story AND a view. Must carry `$storyId` and `$view`.
-   * Navigated to for every tab that is not the preview.
-   */
+  // The route holding a story AND a view. Must carry `$storyId` and `$view`. Navigated to for
+  // every tab that is not the preview.
   viewRoute?: string;
 }
 
-/**
- * Route the workbench through the router the host already has, on real paths.
- *
- *   const router = useMemo(() => tanstackRouter(), []);
- *   defineWorkbench({ stories: STORIES, router });
- *
- * `strict: false` on the reads is what lets one adapter serve both routes -
- * and lets it be mounted under a route tree this package knows nothing about.
- */
+// Route the workbench through the router the host already has, on real paths. const router =
+// useMemo(() => tanstackRouter(), []); defineWorkbench({ stories: STORIES, router }); `strict:
+// false` on the reads is what lets one adapter serve both routes - and lets it be mounted under
+// a route tree this package knows nothing about.
 function tanstackRouter({
   storyRoute = '/story/$storyId',
   viewRoute = '/story/$storyId/$view',

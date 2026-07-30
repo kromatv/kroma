@@ -18,37 +18,32 @@ use super::tools::{ToolBox, ToolCall, ToolDef, Turn};
 use super::LlmClient;
 
 const ANTHROPIC_VERSION: &str = "2023-06-01";
-/// Network budget for one completion (LLMs can be slow, especially local CPU).
+// Network budget for one completion (LLMs can be slow, especially local CPU).
 const MAX_TIME_SECS: &str = "180";
 
-/// A chat-completion wire protocol. Implement this + add a line to
-/// [`provider_for`] to support a new vendor nothing else changes.
+// A chat-completion wire protocol. Implement this + add a line to
+// [`provider_for`] to support a new vendor nothing else changes.
 trait Provider: Send + Sync {
     fn id(&self) -> &'static str;
-    /// Base URL used when the admin leaves it blank; `None` means a base URL is
-    /// required (the OpenAI-compatible case there's no single default host).
+    // `None` means a base URL is required (the OpenAI-compatible case has no
+    // single default host).
     fn default_base(&self) -> Option<&'static str>;
     fn chat_url(&self, base: &str) -> String;
     fn models_url(&self, base: &str) -> String;
     fn headers(&self, api_key: &str) -> Vec<(&'static str, String)>;
     fn chat_body(&self, model: &str, system: &str, user: &str, max_tokens: u32, temperature: f32, reasoning: bool) -> Value;
     fn parse_reply(&self, v: &Value) -> Result<String>;
-    /// Whether the `reasoning` flag actually changes the request (→ a
-    /// reasoning-off retry is worth attempting when a model rejects it).
+    // Whether a reasoning-off retry is worth attempting when a model rejects the flag.
     fn reasoning_applies(&self) -> bool {
         false
     }
 
-    // ----- function calling (default: unsupported) ----------------------------
-
-    /// Whether this provider can do tool/function calling.
     fn supports_tools(&self) -> bool {
         false
     }
-    /// Build a tool-enabled chat request from a running `messages` array (the
-    /// conversation so far user/assistant/tool turns; `system` is applied by
-    /// the provider as it sees fit). Mirrors the vendor request shape, hence the
-    /// arg count.
+    // Build a tool-enabled chat request from a running `messages` array;
+    // `system` is applied by the provider as it sees fit. Mirrors the vendor
+    // request shape, hence the arg count.
     #[allow(clippy::too_many_arguments)]
     fn tools_request(
         &self,
@@ -63,22 +58,18 @@ trait Provider: Send + Sync {
         let _ = (model, system, messages, tools, max_tokens, temperature, reasoning);
         Value::Null
     }
-    /// Parse one assistant turn: final text (if any), requested tool calls, and
-    /// the raw assistant message to echo back into the next request.
     fn parse_turn(&self, v: &Value) -> Result<Turn> {
         let _ = v;
         bail!("provider does not support tool calling")
     }
-    /// Build the conversation message(s) carrying tool results back to the model.
-    /// OpenAI returns one `{role:tool}` message per call; Anthropic returns a
-    /// single `{role:user}` message holding all `tool_result` blocks.
+    // OpenAI returns one `{role:tool}` message per call; Anthropic returns a
+    // single `{role:user}` message holding all `tool_result` blocks.
     fn tool_result_messages(&self, results: &[(ToolCall, String)]) -> Vec<Value> {
         let _ = results;
         Vec::new()
     }
 }
 
-/// OpenAI tool shape: `{type:"function", function:{name, description, parameters}}`.
 fn openai_tool(t: &ToolDef) -> Value {
     json!({
         "type": "function",
@@ -86,13 +77,11 @@ fn openai_tool(t: &ToolDef) -> Value {
     })
 }
 
-/// Anthropic tool shape: `{name, description, input_schema}`.
 fn anthropic_tool(t: &ToolDef) -> Value {
     json!({ "name": t.name, "description": t.description, "input_schema": t.schema })
 }
 
-/// Resolve a provider id to its wire protocol. Unknown ids fall back to the
-/// lenient OpenAI-compatible default.
+// Unknown ids fall back to the lenient OpenAI-compatible default.
 fn provider_for(name: &str) -> Box<dyn Provider> {
     match name.trim().to_ascii_lowercase().as_str() {
         "anthropic" | "claude" => Box::new(Anthropic),
@@ -101,29 +90,24 @@ fn provider_for(name: &str) -> Box<dyn Provider> {
     }
 }
 
-// ----- OpenAI-compatible ------------------------------------------------------
-
-/// The OpenAI chat-completions wire protocol also serves every compatible
-/// server (Ollama, llama.cpp, LM Studio, vLLM) and **OpenRouter**. OpenRouter is
-/// the *same* wire format; only its default base URL and an optional `X-Title`
-/// ranking header differ, so it's a config of this one `impl` rather than a
-/// near-duplicate new trait methods can't silently regress on it.
+// The OpenAI chat-completions wire protocol also serves every compatible
+// server (Ollama, llama.cpp, LM Studio, vLLM) and OpenRouter, which is the
+// same wire format save for its default base URL and an optional `X-Title`
+// ranking header - hence config of this one `impl` rather than a near-duplicate.
 struct OpenAi {
     id: &'static str,
     default_base: Option<&'static str>,
-    /// An extra header sent on every request (OpenRouter's `X-Title`), or none.
     extra_header: Option<(&'static str, &'static str)>,
 }
 
 // `openai()` deliberately mirrors the variant name alongside `openrouter()`.
 #[allow(clippy::self_named_constructors)]
 impl OpenAi {
-    /// Generic OpenAI-compatible endpoint: no universal host (base URL required).
     const fn openai() -> Self {
         Self { id: "openai", default_base: None, extra_header: None }
     }
-    /// OpenRouter (<https://openrouter.ai>) an aggregator giving one key access
-    /// to hundreds of models; identifies KROMA on its usage dashboard via `X-Title`.
+    // OpenRouter (<https://openrouter.ai>): identifies KROMA on its usage
+    // dashboard via `X-Title`.
     const fn openrouter() -> Self {
         Self { id: "openrouter", default_base: Some("https://openrouter.ai/api/v1"), extra_header: Some(("x-title", "KROMA")) }
     }
@@ -231,8 +215,6 @@ impl Provider for OpenAi {
             .collect()
     }
 }
-
-// ----- Anthropic --------------------------------------------------------------
 
 struct Anthropic;
 
@@ -347,8 +329,6 @@ impl Provider for Anthropic {
     }
 }
 
-// ----- the client -------------------------------------------------------------
-
 /// A configured HTTP LLM endpoint (provider + resolved base + model + params).
 pub struct HttpLlm {
     provider: Box<dyn Provider>,
@@ -386,7 +366,6 @@ impl HttpLlm {
         })
     }
 
-    /// Send one chat request and parse the reply.
     fn run(&self, system: &str, user: &str, max_tokens: u32, reasoning: bool) -> Result<String> {
         let body = self.provider.chat_body(&self.model, system, user, max_tokens, self.temperature, reasoning);
         let headers = self.provider.headers(&self.api_key);
@@ -395,10 +374,8 @@ impl HttpLlm {
         self.provider.parse_reply(&v)
     }
 
-    /// One agentic tool-calling pass: call → parse → run any tool calls → feed
-    /// results back → repeat, up to `max_steps`. A tool that errors is reported
-    /// to the model as a JSON `{"error":…}` result (it can recover or pick
-    /// another tool) rather than aborting the loop.
+    // A tool that errors is reported to the model as a JSON `{"error":…}`
+    // result (it can recover or pick another tool) rather than aborting the loop.
     #[allow(clippy::too_many_arguments)]
     fn run_tools_loop(
         &self,
@@ -518,8 +495,7 @@ pub fn list_models(provider: &str, base_url: &str, api_key: &str) -> Result<Vec<
     Ok(ids)
 }
 
-/// Apply the provider's default base when blank; trim a trailing slash. `None`
-/// when blank and the provider has no default (base URL required).
+// `None` when blank and the provider has no default (base URL required).
 fn resolve_base(base_url: &str, default: Option<&str>) -> Option<String> {
     let base = base_url.trim().trim_end_matches('/');
     if base.is_empty() {
@@ -528,8 +504,6 @@ fn resolve_base(base_url: &str, default: Option<&str>) -> Option<String> {
         Some(base.to_string())
     }
 }
-
-// ----- curl transport ---------------------------------------------------------
 
 fn curl_post(url: &str, headers: &[(&str, String)], body: &Value) -> Result<Value> {
     let body = serde_json::to_string(body)?;
@@ -566,9 +540,8 @@ fn run_curl(mut cmd: Command, what: &str) -> Result<Value> {
     })
 }
 
-/// Surface an OpenAI (`{error:{message}}`) or Anthropic (`{type:"error",
-/// error:{message}}`) error body as a Rust error. A present-but-`null` `error`
-/// field (some OpenAI-compatible servers include it on success) is not an error.
+// A present-but-`null` `error` field (some OpenAI-compatible servers include
+// it on success) is not an error.
 fn check_error(v: &Value) -> Result<()> {
     if let Some(err) = v.get("error").filter(|e| !e.is_null()) {
         let msg = err
@@ -592,7 +565,6 @@ mod tests {
         }]
     }
 
-    /// A stand-in tool that echoes its name + args, for the round-trip test.
     struct EchoBox;
     impl ToolBox for EchoBox {
         fn defs(&self) -> Vec<ToolDef> {
@@ -697,9 +669,7 @@ mod tests {
         assert_eq!(body["thinking"]["type"], "adaptive");
     }
 
-    /// One loop step end-to-end against a stand-in tool: parse a tool call, run it
-    /// through the `ToolBox`, and shape the result messages the inner round-trip
-    /// `run_tools_loop` performs (minus the HTTP call).
+    // Simulates the inner round-trip `run_tools_loop` performs, minus the HTTP call.
     #[test]
     fn simulated_round_trip_dispatches_through_toolbox() {
         let tb = EchoBox;

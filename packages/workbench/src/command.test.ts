@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { commandGroups, flatten, offsetOf } from './command';
 import type { Story } from './story';
 
-/** Enough of a story for the palette: a name, a section, a level. */
+// Enough of a story for the palette: a name, a section, a level.
 const at = (name: string, group: string, tier: string) =>
   ({ id: name.toLowerCase(), name, group, tier }) as Story;
 

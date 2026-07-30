@@ -11,17 +11,12 @@
 /** One field in an engine's add-form (mirrors the Rust `ConfigField`). */
 export interface EngineField {
   key: string;
-  /** i18n key (or literal) for the field label. */
   label: string;
-  /** How the value is entered / interpreted. */
   type: 'string' | 'bool' | 'number' | 'select';
   default?: string;
-  /** Choices for `type === 'select'`. */
   options?: string[];
   placeholder?: string;
-  /** Render as a password input; the value is write-only. */
   secret?: boolean;
-  /** Must be non-empty before the form can submit. */
   required?: boolean;
 }
 

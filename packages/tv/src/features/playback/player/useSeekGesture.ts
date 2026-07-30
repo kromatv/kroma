@@ -7,26 +7,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 // exactly.
 
 export interface SeekDeps {
-  /** Total runtime (s), 0 when unknown. */
   duration: () => number;
-  /** Commit a real, clamped seek to an absolute position (s). */
   seekTo: (absSec: number) => void;
 }
 
 export interface SeekGesture {
-  /** Pending absolute target (s) during a drag, else null. */
   preview: number | null;
-  /** Live-preview an absolute position while clicking / dragging the scrub bar. */
   scrub: (absSec: number) => void;
-  /** Commit the current preview (scrub-bar release / click). */
   commit: () => void;
 }
 
 export function useSeekGesture({ duration, seekTo }: SeekDeps): SeekGesture {
   const [preview, setPreview] = useState<number | null>(null);
   const previewRef = useRef<number | null>(null);
-  // Mirror the preview into a ref (read synchronously by the gesture handlers)
-  // whenever we update the state.
+  // Mirrored into a ref so the gesture handlers can read it synchronously.
   const updatePreview = useCallback((v: number | null) => {
     previewRef.current = v;
     setPreview(v);

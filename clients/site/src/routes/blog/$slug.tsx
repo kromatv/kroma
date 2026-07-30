@@ -8,13 +8,8 @@ import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';
 
 export const Route = createFileRoute('/blog/$slug')({
-  // The loader validates the slug and returns only serializable metadata (for the
-  // <head>). The compiled MDX component is NOT returned, it is a function, which
-  // can't cross the SSR→client serialization boundary, the component below reads
-  // it straight from the static import instead.
-  // The loader resolves the post in the AMBIENT locale, so /fr/blog/x gets the
-  // French translation's title and excerpt in its <head> (and falls back to the
-  // default-language file when that post has no translation - see lib/blog).
+  // Returns only serializable metadata: the compiled MDX component is a
+  // function and cannot cross the SSR→client boundary.
   loader: ({ params }) => {
     const post = getPost(params.slug, getLocale());
     if (!post) throw notFound();
@@ -37,13 +32,11 @@ export const Route = createFileRoute('/blog/$slug')({
 });
 
 export function BlogPost() {
-  // `strict: false` so the one component serves both /blog/$slug and
-  // /en/blog/$slug without binding to a single route's params.
+  // `strict: false` so one component serves both /blog/$slug and /en/blog/$slug.
   const slug = useParams({ strict: false }).slug;
   const lang = useLang();
   const post = slug ? getPost(slug, lang) : undefined;
-  // The loader already 404s on an unknown slug, so this is a type guard, not a
-  // path a reader reaches.
+  // The loader already 404s on an unknown slug: a type guard, not a real path.
   if (!post) return null;
   const { Component } = post;
 

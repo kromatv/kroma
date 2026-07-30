@@ -1,9 +1,5 @@
-// The login gate. Rendered as a full-screen overlay by the root layout whenever
-// no session is active, so the catalogue underneath is never usable until a real
-// account is chosen. Visual design follows KROMA.dc.html's "Qui regarde ?" screen
-// (rounded-square gradient avatars, Bricolage headings) while keeping real
-// account semantics: selecting a profile asks for its password, and new accounts
-// are created with email + username + password + an optional uploaded avatar.
+// The login gate, rendered as a full-screen overlay whenever no session is
+// active so the catalogue underneath stays unusable until an account is chosen.
 
 import {
   apiErrorText,
@@ -23,8 +19,6 @@ import { passkeysSupported } from '#web/shared/lib/webauthn';
 import { Otp } from '#web/shared/ui';
 
 type Mode =
-  // `expired` marks a re-login after a remembered profile's session lapsed, so
-  // the form can explain (calmly) why they're being asked to sign in again.
   | { kind: 'pick' }
   | { kind: 'login'; user: PublicUser | null; expired?: boolean }
   | { kind: 'register' }
@@ -32,11 +26,6 @@ type Mode =
 
 export const RADIAL = 'radial-gradient(120% 90% at 50% 0%, #15131C, #0A0A0C 70%)';
 
-/** The full-screen login gate: the "Qui regarde ?" picker / sign-in / register
- * flow. Rendered as page content by the layouts that require a session (the
- * `_app` shell and the admin console) in place of their content while signed
- * out so the URL is preserved and revealed once a session exists and by the
- * dedicated `/login` route. */
 export function LoginGate() {
   const { ready } = useAuth();
   return (
@@ -59,12 +48,11 @@ export function Brand() {
 }
 
 export function Spinner() {
-  // The brand loading state: the chromatic wheel at its 2.6s spinner pace.
   return <Logo markOnly size={40} spin="loading" />;
 }
 
-/** Full-screen loader shown by authenticated layouts while the session hydrates
- * or a redirect to /login is in flight (see {@link useRequireAuth}). */
+/** Shown by authenticated layouts while the session hydrates or a redirect to
+ * /login is in flight (see {@link useRequireAuth}). */
 export function GateLoading() {
   return (
     <div
@@ -81,17 +69,10 @@ export function GateBody() {
   const { client, accounts, login, loginPasskey, register, activate, forget } = useAuth();
   const [profiles, setProfiles] = useState<PublicUser[]>([]);
   const [mode, setMode] = useState<Mode>({ kind: 'pick' });
-  // Whether the profile picker is available (the `publicUserList` setting). When
-  // off there is no roster to return to, so sign-in becomes the root screen.
   const [canPick, setCanPick] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Read the public login-gate config, then decide what to show:
-  //  - no accounts yet        → first-run owner registration
-  //  - roster hidden          → picker of *remembered local accounts* if any,
-  //                             else plain email/password sign-in
-  //  - roster public          → load the profiles for the picker
   // The picker always renders remembered accounts too (see below), so switching
   // profiles works TV-style even with a private roster.
   useEffect(() => {
@@ -237,18 +218,14 @@ export function GateBody() {
     );
   }
 
-  // --- picker ---
   // Remembered local accounts first (one-tap switch, no password), then any
   // public-roster profiles not already remembered (a tap asks for their
-  // password). With a private roster `profiles` is empty, so only the remembered
-  // accounts show enough to switch profiles TV-style without exposing everyone.
+  // password).
   const tiles: {
     id: string;
     username: string;
     avatarUrl: string | null;
     remembered: StoredSession | null;
-    /** Show a lock when entering needs a credential: a PIN-protected remembered
-     * profile, or any not-yet-remembered one (which needs its password). */
     locked: boolean;
   }[] = [
     ...accounts.map((a) => ({
@@ -297,30 +274,23 @@ export function GateBody() {
                   });
                   return;
                 }
-                // Probe with a no-PIN exchange to let the SERVER decide what's
-                // needed rather than trusting the cached `hasPin`. A dead token
-                // can't be rescued by a PIN, so this lets us skip the PIN screen
-                // and go straight to re-login instead of trapping the user there.
+                // Probe with a no-PIN exchange to let the server decide what's
+                // needed, rather than trusting the cached `hasPin`.
                 const r = await activate(acc);
-                if (r.ok) return; // token still live (+ pin-verified) → signed in
+                if (r.ok) return;
                 if (r.needsPin) {
-                  // Live token, PIN required (or wrong-cached state) collect it.
                   setMode({ kind: 'pin', account: acc });
                   return;
                 }
-                // The remembered session is dead (expired/revoked). Send them to
-                // this profile's sign-in form (pre-filled) with a calm "session
-                // expired" note no dead-end PIN prompt or error on the picker.
+                // Dead token: send them to sign-in (pre-filled) instead of a
+                // dead-end PIN prompt.
                 setError(null);
                 setMode({ kind: 'login', user: acc.user, expired: true });
               }}
               className="group flex flex-col items-center gap-3.5 focus:outline-none"
             >
-              {/* Plain rounded avatar + amber ring on hover/focus (the TV app's
-                  focused-tile look), with the amber PIN lock badge in the corner. */}
               <div className="relative w-fit transition-transform duration-200 group-hover:scale-[1.06] group-focus-visible:scale-[1.06]">
-                {/* Shadow/ring live on the avatar element itself so they trace its
-                    exact rounded box (a wrapper div would cast a boxy shadow). */}
+                {/* Shadow/ring live on the avatar itself, not a wrapper, so they trace its rounded box. */}
                 <UserAvatar
                   name={p.username}
                   avatarUrl={p.avatarUrl}
@@ -374,10 +344,6 @@ export function GateBody() {
   );
 }
 
-/** 4-digit PIN entry shown when switching into a PIN-locked remembered profile.
- * Auto-submits on the fourth digit and mirrors the TV app's feedback: a
- * "verifying" spinner, a shake + message on a wrong PIN, and a live cooldown
- * countdown when the server rate-limits (429). */
 function PinEntry({
   account,
   onBack,
@@ -387,8 +353,6 @@ function PinEntry({
   account: StoredSession;
   onBack: () => void;
   onSubmit: (pin: string) => Promise<ActivateResult>;
-  /** Called when the exchange fails because the token is dead (not a wrong PIN),
-   * so the parent can route to a full re-login instead of looping here. */
   onExpired: () => void;
 }>) {
   const t = useT();
@@ -414,8 +378,7 @@ function PinEntry({
     const r = await onSubmit(value);
     setBusy(false);
     if (r.ok) return; // the gate unmounts on success
-    // The token died (expired/revoked) rather than a wrong PIN a PIN can't fix
-    // it, so leave the PIN screen for a full re-login.
+    // Dead token, not a wrong PIN: a PIN can't fix it, so route to a full re-login.
     if (!r.needsPin) {
       onExpired();
       return;
@@ -426,7 +389,6 @@ function PinEntry({
     setShake((s) => s + 1);
   };
 
-  // Status line content: spinner while verifying, else the error / cooldown.
   let status: ReactNode = null;
   if (busy) {
     status = (
@@ -470,7 +432,6 @@ function PinEntry({
         />
       </div>
 
-      {/* Status line: spinner while verifying, else the error / cooldown. */}
       <div className="flex h-5 items-center gap-2">{status}</div>
 
       <Button

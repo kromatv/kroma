@@ -15,7 +15,6 @@ import { useEnv } from '#tv/app/providers/env';
 import { useNav, useParams } from '#tv/app/router';
 import { AuthScreen, artUrl } from '#tv/shared/ui';
 
-/** PINs are a fixed 4 digits; the last digit auto-validates (no OK press). */
 const PIN_LENGTH = 4;
 
 interface HeaderUser {
@@ -24,8 +23,6 @@ interface HeaderUser {
   src?: string | null;
 }
 
-/** The avatar/name header to show: the verified account (verify), else the active
- * profile (set / clear). */
 function resolveHeaderUser(
   intent: 'verify' | 'set' | 'clear',
   account: StoredSession | undefined,
@@ -49,23 +46,14 @@ function resolveHeaderUser(
   return null;
 }
 
-/** The subtitle message key for the current intent (and, for `set`, the step). */
 function pinSubtitle(intent: 'verify' | 'set' | 'clear', hasFirst: boolean): MessageKey {
   if (intent === 'set') return hasFirst ? 'pin.confirmSubtitle' : 'pin.setSubtitle';
   if (intent === 'clear') return 'pin.clearSubtitle';
   return 'pin.verifySubtitle';
 }
 
-/**
- * PIN entry. Three intents share one keypad:
- *  • `verify` unlock a remembered, PIN-protected profile from the picker. Uses
- *    that account's remembered token to call `pinVerify`, then activates it.
- *  • `set` set the active account's PIN (enter, then confirm).
- *  • `clear` remove the active account's PIN (enter the current one).
- *
- * The keypad has no OK button: entering the fourth digit submits automatically,
- * so a completed PIN validates or is rejected the instant it is typed.
- */
+/** PIN entry for the three intents — `verify` (unlock a remembered profile),
+ * `set` and `clear`. There is no OK button: the fourth digit submits. */
 export function TvPin() {
   const nav = useNav();
   const t = useT();
@@ -73,15 +61,14 @@ export function TvPin() {
   const { client: activeClient } = useConnection();
   const { user: activeUser, activate, updateUser } = useAuth();
 
-  // For `verify`, talk to the account's own server. The bearer is minted on
-  // demand by exchanging the account's access token (see `submit`).
+  // For `verify`, talk to the account's own server rather than the active one.
   const verifyClient = useMemo(
     () => (account?.serverUrl ? makeClient(account.serverUrl) : null),
     [account],
   );
 
   const [buffer, setBuffer] = useState('');
-  const [first, setFirst] = useState<string | null>(null); // 'set' confirm step
+  const [first, setFirst] = useState<string | null>(null);
   const [error, setError] = useState<MessageKey | ''>('');
   const [shake, setShake] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -89,7 +76,6 @@ export function TvPin() {
 
   useFocusNav({ onBack: nav.back });
 
-  // Lockout countdown (PIN verify rate-limit).
   useEffect(() => {
     if (cooldown <= 0) return;
     const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
@@ -105,19 +91,17 @@ export function TvPin() {
     setShake((s) => s + 1);
   };
 
-  // `verify` unlock a remembered profile: mint a session bearer from the account's
-  // access token (passing the PIN so a not-yet-pin-verified token doesn't 401 before
-  // we can check it), then pinVerify as the authoritative gate, then activate.
+  // The exchange takes the PIN so a not-yet-verified token doesn't 401
+  // before `pinVerify`, the authoritative gate, can run.
   const runVerify = async (pin: string) => {
     if (!verifyClient || !account) return;
     const sess = await verifyClient.exchangeToken(account.accessToken, pin);
     verifyClient.setAuthToken(sess.token);
     await verifyClient.pinVerify(pin);
-    activate(account); // clears the lock + signs in for this session
+    activate(account);
     nav.home(); // `pin` is allowed while signed in (set/clear), so move on explicitly
   };
 
-  // `set` enter then confirm the active account's PIN.
   const runSetPin = async (pin: string) => {
     if (first == null) {
       setFirst(pin);
@@ -130,16 +114,15 @@ export function TvPin() {
       return;
     }
     const res = await activeClient?.setPin(pin);
-    if (!res) return; // no client (offline) don't fake success
-    updateUser(res.user); // trust the server's returned user (hasPin: true)
+    if (!res) return; // offline: don't fake success
+    updateUser(res.user);
     nav.back();
   };
 
-  // `clear` remove the active account's PIN (enter the current one).
   const runClearPin = async (pin: string) => {
     const res = await activeClient?.clearPin(pin);
-    if (!res) return; // no client (offline) don't fake a disabled PIN
-    updateUser(res.user); // trust the server's returned user (hasPin: false)
+    if (!res) return; // offline: don't fake a disabled PIN
+    updateUser(res.user);
     nav.back();
   };
 
@@ -155,8 +138,6 @@ export function TvPin() {
     }
   };
 
-  // Auto-validation: the PinField reports a full code through `onComplete`, so
-  // a completed PIN validates or is rejected the instant it is typed.
   const submit = async (pin: string) => {
     if (busy || cooldown > 0) return;
     setError('');
@@ -183,9 +164,8 @@ export function TvPin() {
     setBuffer((b) => b.slice(0, -1));
   };
 
-  // Desktop types the PIN with the number-row / numpad; the PinField owns that
-  // capture. On a TV (`physicalKeyboard` false) the on-screen keypad below is
-  // what a remote uses, feeding the same buffer.
+  // The PinField captures a physical keyboard; on a TV the on-screen keypad
+  // below is what a remote uses, feeding the same buffer.
   const { physicalKeyboard } = useEnv();
 
   return (

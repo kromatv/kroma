@@ -1,14 +1,5 @@
-// The performance bench: the app's real rendering path, without the app.
-//
-// A television's cost is rows of artwork and a focus that moves through them,
-// and measuring that used to need a signed-in server, a populated library and a
-// TV on the desk. This mounts the SAME components the browse screens use - the
-// navigator, <Rail>, <MediaCard>, the focus ring and its transition - over
-// generated data, so a number is reproducible on any machine and comparable
-// between two commits.
-//
-// Served by `clients/tv-build/perf-bench.ts`, which drives it with the remote's
-// keys and reads `KROMA_PERF`. Size it with `?rails=8&tiles=20`.
+// The performance bench: the browse screens' real components over generated data.
+// Served by `clients/tv-build/perf-bench.ts`; size it with `?rails=8&tiles=20`.
 
 import {
   Box,
@@ -30,27 +21,11 @@ configureRemote();
 const params = new URLSearchParams(location.search);
 const RAILS = Number(params.get('rails') ?? 8);
 const TILES = Number(params.get('tiles') ?? 20);
-/**
- * Real artwork, because decoding it is most of what a television spends its
- * time on and a bench without images measures the wrong thing. One cached image
- * from a running server, requested once per tile with a cache-buster so each
- * tile really decodes - which is what a browse grid does.
- *
- * `w` is the rendition width the server is asked for (`?w=`), so the two modes
- * that matter can be compared directly: full-size against the displayed size.
- */
+// Cache-busted per tile so each tile actually decodes, instead of reusing one image.
 const ART = params.get('art');
 const WIDTH = params.get('w');
-/**
- * How many looping animations to run alongside the rails (`?loaders=N`).
- *
- * The kit's spinner, skeleton and caret animate forever while something is
- * loading, and on the browser targets they are the one thing that can cost a
- * frame callback EACH: react-native-web has no native animation driver, so an
- * `Animated.loop` there is a JS timer writing an inline style every frame. This
- * is the knob that makes that cost visible - the player's buffering overlay is
- * `?loaders=1` competing with a decode, and a loading browse grid is `?loaders=30`.
- */
+// react-native-web has no native animation driver: each loader is a JS timer writing
+// an inline style every frame, so `?loaders=N` stress-tests that cost.
 const LOADERS = Number(params.get('loaders') ?? 0);
 
 const artFor = (n: number): string | null => {
@@ -59,19 +34,14 @@ const artFor = (n: number): string | null => {
   return sized;
 };
 
-/** A deterministic tint per tile, so runs are comparable. */
 const tint = (n: number): [string, string] => [
   `hsl(${(n * 37) % 360} 30% 24%)`,
   `hsl(${(n * 37) % 360} 30% 12%)`,
 ];
 
-/** Same as the home screen: three rails mount, the rest arrive as focus comes
- * down. The bench measures the app's behaviour, not a stripped version of it. */
+// Same as the home screen: three rails mount, the rest arrive as focus comes down.
 const ROW_CHUNK = 3;
 
-/** The grid, built once as DATA. The bench is synthetic, so a row could be keyed
- * on its position - but building it up front means every tile carries an id, and
- * the render below reads like the real screens it stands in for. */
 const GRID = Array.from({ length: RAILS }, (_, row) => ({
   id: `row-${row}`,
   title: `Row ${row + 1}`,
@@ -87,9 +57,8 @@ function Bench() {
   const { count, isNearEnd, grow } = useGrowingCount(RAILS, ROW_CHUNK);
   return (
     <FocusScope>
-      {/* A screen-sized box around the scroller, exactly as every browse screen
-          has it (`<Box fill>`): without a bounded height a scroller does not
-          clip, and the bench would measure a page that cannot scroll. */}
+      {/* Without a bounded height a scroller does not clip, and the bench would
+          measure a page that cannot scroll. */}
       <Box fill bg="bg">
         <FocusScroll
           style={{ flex: 1, minHeight: 0 }}
@@ -124,7 +93,6 @@ function Bench() {
   );
 }
 
-/** `count` busy rings and pulsing placeholders, running for the whole walk. */
 function Loaders({ count }: Readonly<{ count: number }>) {
   if (count <= 0) return null;
   return (

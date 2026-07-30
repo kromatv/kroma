@@ -24,7 +24,6 @@ function makePad(opts: { mapping?: string; buttons?: ButtonSpec[]; axes?: number
   } as unknown as Gamepad;
 }
 
-/** One bridge frame: calibrate then read, like the tick loop does. */
 function frame(pad: Gamepad, state: PadState): string[] {
   updateCalibration(pad, state);
   return [...activeKeys(pad, state)].sort();

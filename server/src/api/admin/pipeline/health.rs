@@ -19,7 +19,7 @@ use crate::state::SharedState;
 
 use super::{resolve, unknown_stage};
 
-/// Max failed tasks returned for one stage's drill-down.
+// Max failed tasks returned for one stage's drill-down.
 const FAILED_LIMIT: usize = 200;
 
 /// Query for `GET /api/admin/pipeline/elements`.
@@ -87,11 +87,10 @@ pub async fn failed_tasks(
     Ok(Json(json!({ "tasks": tasks })).into_response())
 }
 
-/// Best-effort human titles for a batch of failed tasks, resolved in TWO queries
-/// (items + shows) rather than a per-task catalog lookup (never the heavy
-/// `get_show`). Items resolve to their title; shows to the show title; seasons
-/// (`"{show}#{n}"`) to the show title + `S{n}`; anything unresolved falls back to
-/// the raw id.
+// Best-effort human titles, resolved in TWO batch queries (items + shows)
+// rather than a per-task catalog lookup - never the heavy `get_show`. Seasons
+// (`"{show}#{n}"`) resolve to the show title + `S{n}`; anything unresolved
+// falls back to the raw id.
 fn resolve_titles(pool: &crate::db::Pool, tasks: &mut [PipelineTaskView]) -> anyhow::Result<()> {
     // Candidate ids: item/file/show subjects use their id directly; season
     // subjects ("{show}#{n}") contribute their show id.

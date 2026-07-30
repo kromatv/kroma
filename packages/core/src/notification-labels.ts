@@ -1,16 +1,8 @@
 // How a notification list reads, once: what each preference bucket is called,
-// and which day heading a row falls under.
-//
-// Lives beside `push-labels.ts` for the same reason and on the same argument: a
-// reader should get the same words and the same grouping whichever KROMA they
-// are looking at, and the exhaustive `Record`s below make a new category or a
-// new day heading impossible to add without writing its copy.
-//
-// The grouping helpers are here rather than in either client because they are
-// pure functions of a `Notification` and a clock — no React, no platform. They
-// were written twice, identically, comments included; the DST reasoning below is
-// exactly the kind of thing that must not exist in two places where only one
-// copy gets the fix.
+// and which day heading a row falls under. A reader should get the same words
+// and grouping whichever KROMA client they're looking at; the exhaustive
+// `Record`s below make a new category or day heading impossible to add
+// without writing its copy.
 
 import type { Notification, NotificationCategory } from '@kroma/client';
 import type { MessageKey } from './i18n';

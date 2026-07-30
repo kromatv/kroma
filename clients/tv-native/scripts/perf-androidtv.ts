@@ -33,25 +33,23 @@ const flag = (name: string, fallback: number): number => {
   return at === -1 ? fallback : Number(args[at + 1] ?? fallback);
 };
 
-/** Defaults to this client, overridable (`--package tv.kroma.androidtv`) so a
- * build can be measured against another one on the same device - which is the
- * only honest comparison there is, hardware being the biggest variable here. */
+// Defaults to this client, overridable (`--package tv.kroma.androidtv`) so a
+// build can be measured against another one on the same device - which is the
+// only honest comparison there is, hardware being the biggest variable here.
 const packageAt = args.indexOf('--package');
 const PACKAGE = packageAt === -1 ? 'tv.kroma.tv' : (args[packageAt + 1] ?? 'tv.kroma.tv');
 const ITERATIONS = flag('iterations', 3);
-/** Below this the walk is judged a failure. 0 disables the gate, which is the
- * default: a threshold is only meaningful once it is tied to known hardware. */
+// Below this the walk is judged a failure. 0 disables the gate, which is the
+// default: a threshold is only meaningful once it is tied to known hardware.
 const MIN_FPS = flag('min-fps', 0);
 
 const ANDROID_TOOLS = join(homedir(), 'Library/Android/sdk/platform-tools');
 const ADB = join(ANDROID_TOOLS, 'adb');
 const FLASHLIGHT = join(homedir(), '.flashlight/bin/flashlight');
 
-/**
- * Flashlight shells out to a BARE `adb`, so it needs one on PATH even though
- * every call this file makes is absolute. Without it the run dies in a hundred
- * lines of Node internals whose only real content is `adb: command not found`.
- */
+// Flashlight shells out to a BARE `adb`, so it needs one on PATH even though
+// every call this file makes is absolute. Without it the run dies in a hundred
+// lines of Node internals whose only real content is `adb: command not found`.
 const PATH_WITH_ADB = { ...process.env, PATH: `${ANDROID_TOOLS}:${process.env.PATH ?? ''}` };
 
 function sh(command: string, commandArgs: string[]): string {
@@ -71,9 +69,9 @@ if (devices.length === 0) {
   process.exit(2);
 }
 
-/** The launcher entry, asked of the device rather than hardcoded: the config
- * plugin owns the manifest and renames the activity when it feels like it. TV
- * apps launch from LEANBACK_LAUNCHER, not the phone category. */
+// The launcher entry, asked of the device rather than hardcoded: the config
+// plugin owns the manifest and renames the activity when it feels like it. TV
+// apps launch from LEANBACK_LAUNCHER, not the phone category.
 const activity = sh(ADB, [
   'shell',
   'cmd',

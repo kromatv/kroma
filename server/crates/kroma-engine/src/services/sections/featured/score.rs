@@ -9,7 +9,7 @@ use crate::model::{Metadata, SectionItem, VideoStream};
 /// Milliseconds in a day: the quantum for both the scoring clock and the
 /// rotation (see the module docs on staying stable within a day).
 pub(super) const DAY_MS: i64 = 86_400_000;
-/// Freshness half-life, in days: a title keeps half its freshness this long.
+// Freshness half-life, in days: a title keeps half its freshness this long.
 const HALF_LIFE_DAYS: f64 = 14.0;
 
 // Signal weights (sum to 1.0). Taste is the one signal a title can simply not
@@ -60,11 +60,11 @@ pub(super) fn rank<'a>(
     scored.into_iter().map(|(e, _)| e).collect()
 }
 
-/// One candidate's blended score. The weights are summed **per candidate**: a
-/// signal this entry has no datum for leaves both sides of the ratio, instead of
-/// scoring a zero that every other candidate is compared against (a title with
-/// no embedding yet must not eat a flat `W_TASTE` haircut). `taste_norm` is the
-/// pool's `(lo, spread)`, `None` when the pool has no usable spread to stretch.
+// One candidate's blended score. The weights are summed **per candidate**: a
+// signal this entry has no datum for leaves both sides of the ratio, instead of
+// scoring a zero that every other candidate is compared against (a title with
+// no embedding yet must not eat a flat `W_TASTE` haircut). `taste_norm` is the
+// pool's `(lo, spread)`, `None` when the pool has no usable spread to stretch.
 fn blend(
     e: &SectionItem,
     taste: &HashMap<String, f32>,
@@ -91,13 +91,13 @@ pub(super) fn presentable(e: &SectionItem) -> bool {
     })
 }
 
-/// TMDB rating scaled to 0..1; unrated titles sit at a neutral 0.5.
+// TMDB rating scaled to 0..1; unrated titles sit at a neutral 0.5.
 fn quality(e: &SectionItem) -> f32 {
     meta(e).and_then(|m| m.rating).map_or(0.5, |r| (r / 10.0).clamp(0.0, 1.0))
 }
 
-/// `0.5 ^ (age / half-life)`: 1.0 when just added, 0.5 after two weeks, ~0 for
-/// back-catalog. Unparseable stamps read as ancient (0.0).
+// `0.5 ^ (age / half-life)`: 1.0 when just added, 0.5 after two weeks, ~0 for
+// back-catalog. Unparseable stamps read as ancient (0.0).
 fn freshness(added_at: &str, now_ms: i64) -> f32 {
     let format = time::format_description::well_known::Rfc3339;
     let Ok(ts) = time::OffsetDateTime::parse(added_at, &format) else {
@@ -107,7 +107,7 @@ fn freshness(added_at: &str, now_ms: i64) -> f32 {
     (0.5f64.powf(age_days / HALF_LIFE_DAYS).min(1.0)) as f32
 }
 
-/// Showcase bonus: 4K counts more than HDR; both stack to 1.0.
+// Showcase bonus: 4K counts more than HDR; both stack to 1.0.
 fn cinematic(v: Option<&VideoStream>) -> f32 {
     let Some(v) = v else { return 0.0 };
     let mut score = 0.0;
@@ -126,7 +126,7 @@ pub(super) fn rotation_index(day: u64, user_id: &str, k: usize) -> usize {
     (day.wrapping_add(fnv1a(user_id)) % k.max(1) as u64) as usize
 }
 
-/// FNV-1a 64: tiny, stable, good enough to spread users across rotation slots.
+// FNV-1a 64: tiny, stable, good enough to spread users across rotation slots.
 fn fnv1a(s: &str) -> u64 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in s.bytes() {
@@ -162,7 +162,7 @@ mod tests {
     use super::super::fixtures::{iso, meta, movie, stream, NOW_MS};
     use super::*;
 
-    /// Rank the whole pool (the tests assert on full orderings).
+    // Rank the whole pool (the tests assert on full orderings).
     fn ranked_ids(
         refs: &[&SectionItem],
         taste: &HashMap<String, f32>,
@@ -174,7 +174,7 @@ mod tests {
             .collect()
     }
 
-    /// Two interchangeable titles: same rating, same age, no video, no trend.
+    // Two interchangeable titles: same rating, same age, no video, no trend.
     fn twin(id: &str) -> SectionItem {
         movie(id, Some(meta(Some(7.0), true, true)), &iso(30 * DAY_MS), None)
     }

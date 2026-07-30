@@ -4,8 +4,6 @@ import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Dialog, DialogFooter, type DialogProps } from './dialog';
 
-/** A dialog left permanently open would swallow the workbench's own focus, so
- *  the story ships the trigger that opens it. */
 function Demo(props: Readonly<Omit<DialogProps, 'open' | 'onClose' | 'children'>>) {
   const [open, setOpen] = useState(false);
   return (

@@ -38,10 +38,10 @@ pub fn transcribe(
     }
 }
 
-/// Pick the fastest available inference device. `new_metal`/`new_cuda` exist even
-/// when candle was built WITHOUT that backend (they just return an error), so this
-/// degrades gracefully to CPU the pure-Rust gemm path. Build with
-/// `--features whisper-metal` (Apple Silicon) or `whisper-cuda` to light up the GPU.
+// Pick the fastest available inference device. `new_metal`/`new_cuda` exist even
+// when candle was built WITHOUT that backend (they just return an error), so this
+// degrades gracefully to CPU the pure-Rust gemm path. Build with
+// `--features whisper-metal` (Apple Silicon) or `whisper-cuda` to light up the GPU.
 fn best_device() -> Device {
     match Device::new_metal(0) {
         Ok(d) => {
@@ -129,7 +129,7 @@ fn run(
     Ok(out)
 }
 
-/// The fixed special-token ids that seed and terminate greedy decoding.
+// The fixed special-token ids that seed and terminate greedy decoding.
 struct DecodeSeed {
     sot: u32,
     transcribe: u32,
@@ -138,8 +138,8 @@ struct DecodeSeed {
     lang_tok: Option<u32>,
 }
 
-/// Greedily decode one 30s window into its token sequence (seeded prompt +
-/// argmax until `eot` or `MAX_TOKENS`).
+// Greedily decode one 30s window into its token sequence (seeded prompt +
+// argmax until `eot` or `MAX_TOKENS`).
 fn decode_window(
     model: &mut w::model::Whisper,
     features: &Tensor,
@@ -173,8 +173,8 @@ fn decode_window(
     Ok(tokens)
 }
 
-/// Append cues for one window's tokens: text between two timestamp tokens is a
-/// cue; a timestamp token maps to `(id - ts0) * 0.02` seconds + window `offset`.
+// Append cues for one window's tokens: text between two timestamp tokens is a
+// cue; a timestamp token maps to `(id - ts0) * 0.02` seconds + window `offset`.
 fn emit_segments(out: &mut String, tokens: &[u32], tokenizer: &Tokenizer, ts0: u32, specials: &[u32], offset: f64) {
     let mut start: Option<f64> = None;
     let mut text_ids: Vec<u32> = Vec::new();
@@ -204,8 +204,8 @@ fn fmt_ts(s: f64) -> String {
     format!("{h:02}:{m:02}:{sec:06.3}")
 }
 
-/// Slaney (librosa-compatible) mel filterbank for Whisper: sr=16000, n_fft=400.
-/// Flattened `n_mels * (n_fft/2 + 1)`, matching `audio::pcm_to_mel`'s expectation.
+// Slaney (librosa-compatible) mel filterbank for Whisper: sr=16000, n_fft=400.
+// Flattened `n_mels * (n_fft/2 + 1)`, matching `audio::pcm_to_mel`'s expectation.
 fn mel_filters(n_mels: usize) -> Vec<f32> {
     const SR: f64 = 16000.0;
     const N_FFT: usize = 400;

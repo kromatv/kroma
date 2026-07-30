@@ -1,20 +1,15 @@
-// The declarative settings model. A settings menu is a plain LIST of items;
-// each item is declared once (identity, level, binding, presentation) and
-// <SettingsRows> renders it. Three kinds cover every row:
+// The declarative settings model: a settings menu is a plain list of items,
+// each declared once (identity, level, binding, presentation) and rendered by
+// <SettingsRows>. Three kinds cover every row:
 //
-//  - choice : cycles through the currently-offerable values on OK. The row
-//             hides itself when there is no real choice (fewer than two).
+//  - choice : cycles through the currently-offerable values on OK; hides
+//             itself when there is no real choice (fewer than two).
 //  - toggle : boolean on/off with a colored badge.
-//  - action : fires a handler (quit, sign out, navigate...), optional badge.
+//  - action : fires a handler, optional badge.
 //
-// Conditionality is declarative, never a JSX ternary: an item carries its own
-// platform gate (`available`), a choice hides itself via `options()`, and a
-// screen-local condition is just `cond && item` in the list (falsy entries are
-// skipped). `level` names WHERE a value lives, keeping persistence honest:
-//
-//  - device  : localStorage on this device (settings/store.ts)
-//  - shell   : the hosting desktop shell's config file, applied at boot
-//  - account : synced to the signed-in account by the server
+// `level` names WHERE a value lives: device (localStorage, settings/store.ts),
+// shell (the desktop shell's config file, applied at boot), or account
+// (synced to the signed-in account by the server).
 
 import type { Locale, MessageKey, Translate } from '@kroma/core';
 import type { IconName } from '@kroma/ui/kit';
@@ -31,37 +26,22 @@ export interface RowBadge {
 }
 
 interface BaseItem {
-  /** Stable identity: the React key and the test hook. */
   id: string;
   icon: RowIcon;
   label: MessageKey;
-  /** Platform gate; the row is skipped entirely when false. Default: shown. */
   available?: () => boolean;
 }
 
-/**
- * How a choice is made.
- *
- * `cycle` is the row itself: OK steps to the next value, which is the whole
- * control for the four-answer settings this app grew up with. `list` opens a
- * dialog instead, and exists because one of them stopped being short - the
- * preferred audio language offers every language there is, and cycling to
- * Swedish through a hundred and forty presses is not a control. Roughly: past a
- * screenful, ask for a list.
- */
+/** `cycle` steps to the next value in place; `list` opens a dialog instead,
+ * for a choice too long to cycle through (e.g. the full language list). */
 export type ChoicePick = 'cycle' | 'list';
 
 export interface ChoiceItem extends BaseItem {
   kind: 'choice';
   level: SettingsLevel;
-  /** The values offerable RIGHT NOW, in cycle (or list) order. Handed the
-   *  active translator and locale so an item that sorts its options by their
-   *  NAME can - which alphabetical is, and alphabetical by code is not. */
   options: (t: Translate, locale: Locale) => readonly string[];
   valueLabel: (value: string) => MessageKey;
-  /** Reactive binding - a hook, called by the row component. */
   use: () => readonly [string, (value: string) => void];
-  /** Defaults to `cycle`. */
   pick?: ChoicePick;
 }
 
@@ -107,12 +87,10 @@ export function choiceItem<T extends string>(
   };
 }
 
-/** Declare an on/off setting. */
 export function toggleItem(spec: Omit<ToggleItem, 'kind'>): SettingsItem {
   return { kind: 'toggle', ...spec };
 }
 
-/** Declare an action row. */
 export function actionItem(spec: Omit<ActionItem, 'kind'>): SettingsItem {
   return { kind: 'action', ...spec };
 }

@@ -1,40 +1,27 @@
-// Client-side session persistence. Several things live in `localStorage`:
-//   • the ACTIVE session (token + user, and on TV the server it belongs to) so a
-//     reload / relaunch stays signed in;
-//   • the list of accounts that have signed in on THIS device, so switching back
-//     to one is instant (no password) Netflix-style;
-//   • the list of saved servers (TV is multi-server it remembers several KROMA
-//     servers, each with its own set of profiles).
-//
-// Multi-server is opt-in per record: a `StoredSession.serverUrl` scopes an
-// account to one server. The single-origin web app never sets it (one server),
-// so the de-dupe/forget helpers degrade to "by user id" and web keeps working
-// unchanged. Guarded by `typeof` so it's a no-op during SSR / non-DOM runtimes.
+// Client-side session persistence: the ACTIVE session, the accounts that have
+// signed in on this device (Netflix-style instant switch-back), and the saved
+// KROMA servers (TV is multi-server). Multi-server is opt-in per record: a
+// `StoredSession.serverUrl` scopes an account to one server, and the
+// single-origin web app never sets it, so the de-dupe/forget helpers degrade
+// to "by user id". Guarded by `typeof` so it's a no-op off-DOM (SSR / native).
 
 import type { User } from './types';
 
-const KEY = 'kroma.session'; // active session
-const ACCOUNTS_KEY = 'kroma.accounts'; // remembered sessions on this device
-const SERVERS_KEY = 'kroma.servers'; // saved KROMA servers (TV multi-server)
-const LEGACY_SERVER_KEY = 'kroma.serverUrl'; // pre-multi-server single URL
-const LOCALE_KEY = 'kroma.locale'; // device-level UI locale override
+const KEY = 'kroma.session';
+const ACCOUNTS_KEY = 'kroma.accounts';
+const SERVERS_KEY = 'kroma.servers';
+const LEGACY_SERVER_KEY = 'kroma.serverUrl';
+const LOCALE_KEY = 'kroma.locale';
 
 export interface StoredSession {
-  /** The long-lived device credential (NOT a bearer). Exchanged for a
-   * short-lived in-memory session token via `POST /auth/token`. This is the only
-   * token persisted to disk; the real bearer never touches localStorage. */
   accessToken: string;
   user: User;
-  /** Which server this token is for. Set on multi-server TV; absent on the
-   * single-origin web app (one server, so it never needs scoping). */
   serverUrl?: string;
 }
 
-// ----- in-memory session (bearer) token ---------------------------------------
-// The short-lived bearer obtained by exchanging the access token. Kept in memory
-// only (never persisted) so a stolen localStorage dump can't be replayed as a
-// live session. `kromaClient()` and the shared client read it through here.
-
+// The short-lived bearer obtained by exchanging the access token. Kept in
+// memory only (never persisted) so a stolen localStorage dump can't be
+// replayed as a live session.
 let memorySessionToken: string | undefined;
 
 /** The current in-memory session bearer, or undefined when not (yet) exchanged. */
@@ -47,14 +34,10 @@ export function setSessionToken(token: string | undefined): void {
   memorySessionToken = token;
 }
 
-// ----- shared boot / refresh token exchange -----------------------------------
-// A reload starts from only the persisted access token the in-memory bearer is
-// gone. Several parts of the app then each want to exchange it: the auth provider
-// (to hydrate the user), the data layer (to authorise its first request), and any
-// 401 mid-session. Left uncoordinated these fire several concurrent
-// POST /auth/token calls (and the data layer's requests 401 before the exchange
-// lands). This coalesces overlapping exchanges into ONE in-flight request every
-// caller awaits, so a reload does a single token exchange.
+// A reload starts from only the persisted access token; several parts of the
+// app then each want to exchange it (auth provider, data layer, a mid-session
+// 401), which uncoordinated would fire several concurrent POST /auth/token
+// calls. This coalesces overlapping exchanges into one in-flight request.
 
 /** The shape returned by a session-token exchange (`KromaClient.exchangeToken`). */
 export interface TokenExchange<U = unknown> {
@@ -81,11 +64,8 @@ export function sharedTokenExchange<U>(
 /** A KROMA server the TV remembers, so it can hold profiles from several at once
  * and order the picker by most-recently-used. */
 export interface SavedServer {
-  /** Normalized origin, no trailing slash. */
   url: string;
-  /** Friendly label (server-reported or user-set), if known. */
   name?: string | null;
-  /** For ordering / "most recent". */
   lastUsedAt: number;
 }
 
@@ -102,28 +82,16 @@ export interface SessionStorage {
 
 let installed: SessionStorage | null = null;
 
-/**
- * Install the device store for a platform that has no `localStorage`.
- *
- * React Native has none, so without this every save here was a SILENT no-op and
- * the signed-in profile vanished on relaunch. It is a seam rather than a
- * platform branch because each native client already knows how it wants to
- * persist, and this package must not depend on any of them.
- *
- * Call it once, before the app reads a session.
- */
+/** Install the device store for a platform with no `localStorage` (React
+ * Native has none; without this every save here is a silent no-op). Call it
+ * once, before the app reads a session. */
 export function setSessionStorage(storage: SessionStorage | null): void {
   installed = storage;
 }
 
-/**
- * The device store this platform is using, or null where there is none.
- *
- * Exported because sessions are not the only thing a client persists per device:
- * the TV's own preferences (language, keyboard layout, recent searches) need the
- * same store, and hard-coding `localStorage` in each of them is exactly how they
- * all came to be silently unsaved on React Native.
- */
+/** The device store this platform is using, or null where there is none.
+ * Exported so other per-device state (language, keyboard layout, recent
+ * searches) can share it instead of hard-coding `localStorage`. */
 export function deviceStorage(): SessionStorage | null {
   return storage();
 }
@@ -222,8 +190,6 @@ export function forgetAccount(userId: string, serverUrl?: string): void {
   if (active && matches(active)) clearSession();
 }
 
-// ----- saved servers (TV multi-server) ----------------------------------------
-
 /** Saved KROMA servers, most-recently-used first. */
 export function loadServers(): SavedServer[] {
   return readJson<SavedServer[]>(SERVERS_KEY, [])
@@ -315,8 +281,6 @@ export function migrateStorage(): void {
     /* ignore */
   }
 }
-
-// ----- locale -----------------------------------------------------------------
 
 /** The device-level UI locale override (what the user last picked on THIS
  * device), or null. Used before sign-in and as a fallback when the account has

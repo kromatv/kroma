@@ -1,10 +1,6 @@
-// The design-system showcase: the @kroma/ui workbench as its own website.
-//
-// This is NOT a TV shell. It exists so anyone can open the kit in a browser
-// (or CI can deploy it as a static site) without booting a platform app and
-// remembering `?workbench`. It targets developers' browsers, so none of the
-// TV shells' legacy tiers or CSS down-leveling apply; the react-native-web
-// wiring is the same one every browser target shares.
+// The design-system showcase: the @kroma/ui workbench as its own website, not
+// a TV shell - targets developers' browsers directly, so none of the TV
+// shells' legacy tiers or CSS down-leveling apply.
 
 import { fileURLToPath } from 'node:url';
 import { propDocs } from '@kroma/bundler/props-docs';
@@ -22,31 +18,27 @@ const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const kitDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
-  // Which build the site is, for the line under the story tree. The kit app gets
-  // the same object through Expo's `extra`; see app.config.js. Its own package
-  // version, not the product's: this ships the design system, not the player.
+  // Which build the site is; the kit app gets the same object through Expo's
+  // `extra` (see app.config.js). Its own package version, not the product's.
   define: { __KROMA_BUILD__: JSON.stringify(collectBuildInfo(kitDir)), ...RNW_DEFINE },
-  // The Props tab's data, read by TypeScript's own checker over @kroma/ui at
-  // build time and served as `virtual:kroma-props`. See the plugin for why this
-  // is not a regex in the browser any more.
+  // The Props tab's data, read by TypeScript's checker over @kroma/ui at build
+  // time and served as `virtual:kroma-props`.
   plugins: [react(), propDocs({ tsconfig: `${repoRoot}packages/ui/tsconfig.json` })],
   resolve: webResolve(),
-  // Absolute, not './'. The workbench routes on REAL PATHS (`/story/button`), and
-  // a relative base resolves every asset URL against the current directory - so
-  // `/story/button` would ask for `/story/assets/index.js` and get nothing.
+  // Absolute, not './': the workbench routes on real paths (`/story/button`),
+  // and a relative base would resolve asset URLs against that path instead.
   base: '/',
   server: {
     port: 5180,
     fs: { allow: [repoRoot] },
-    // The story registry is an import.meta.glob over packages/ui, which is
-    // outside this app's watch root: EDITING a story hot-reloads, but ADDING
-    // a brand-new *.stories.tsx needs a dev-server restart to be discovered.
+    // The story registry globs packages/ui, outside this app's watch root:
+    // editing a story hot-reloads, but adding a new *.stories.tsx needs a
+    // dev-server restart to be discovered.
   },
   optimizeDeps: {
-    // Every workspace package, @kroma/workbench above all: left OUT of this list
-    // Vite pre-bundles it into node_modules/.vite/deps and then serves that
-    // CACHE, so an edit to the tool itself does not reach the dev server until
-    // the cache happens to be invalidated. See `KROMA_SOURCE_PACKAGES`.
+    // Workspace packages left OUT of this list get pre-bundled into
+    // node_modules/.vite/deps and served from that cache, so an edit to the
+    // tool itself would not reach the dev server until invalidated.
     exclude: KROMA_SOURCE_PACKAGES,
     include: RNW_OPTIMIZE_INCLUDE,
   },

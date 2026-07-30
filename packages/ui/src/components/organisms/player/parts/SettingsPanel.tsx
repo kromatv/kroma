@@ -98,15 +98,9 @@ interface Entry {
   activate: () => void;
 }
 
-/**
- * The controls a narrow row hands to this panel, as menu rows.
- *
- * `audio` and `subtitles` are deliberately absent: the menu below already lists
- * both, and a second row for the same thing would be the panel disagreeing with
- * itself. Everything else the row can shed is here, which is what makes shedding
- * safe - `chromeMetrics` may drop a button from the transport precisely because
- * this exists.
- */
+// `audio`/`subtitles` are deliberately absent: the menu below already lists
+// both. Everything else the row can shed is here — `chromeMetrics` may drop a
+// transport button precisely because this exists to catch it.
 const OVERFLOW: Partial<Record<ControlId, { icon: ReactNode; label: MessageKey }>> = {
   next: { icon: <IconNext />, label: 'player.nextEpisode' },
   cast: { icon: <IconCast />, label: 'cast.moveToTv' },
@@ -116,8 +110,8 @@ const OVERFLOW: Partial<Record<ControlId, { icon: ReactNode; label: MessageKey }
   forward: { icon: <IconFwd10 />, label: 'player.fwd10' },
 };
 
-/** The overflow section, in the row's own order. Volume is a toggle because
- * that is what activating it does (mute), not a sub-view. */
+// Volume is a toggle here because that's what activating it does (mute), not
+// a sub-view.
 function overflowEntries(at: {
   t: ReturnType<typeof useT>;
   muted: boolean;
@@ -141,23 +135,20 @@ function overflowEntries(at: {
   });
 }
 
-/** The subtitles menu-row value: Off, an AI track's own label, else the language. */
 function subtitleValue(t: ReturnType<typeof useT>, curSub: PlayerSub | null | undefined): string {
   if (!curSub) return t('player.subtitlesOff');
   if (curSub.ai && curSub.label) return curSub.label;
   return langName(t, curSub.language) || t('player.langUnknown');
 }
 
-/** The panel heading: "Settings" on the menu, else the open sub-view's label. */
 function panelTitle(view: View, entries: Entry[], t: ReturnType<typeof useT>): string {
   if (view === 'menu') return t('player.settings');
   return entries.find((e) => e.id === view)?.label ?? '';
 }
 
-/** The menu, as rows. A pure table of what the panel offers, so which rows exist
- * (an engine picker only where there is more than one engine, a filter row only
- * where a DSP can deliver it, the report row only where the host takes reports)
- * is one readable list rather than four conditionals inside a component body. */
+// A pure table of what the panel offers (engine picker only with >1 engine,
+// filter row only where a DSP can deliver it, report row only where the host
+// takes reports) — one readable list rather than four conditionals.
 function menuEntries(at: {
   t: ReturnType<typeof useT>;
   c: PlayerController;
@@ -292,9 +283,8 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
 
   const subValue = subtitleValue(t, curSub);
 
-  // The controls this stage could not fit come FIRST: they are the reason the
-  // panel was opened on a narrow window, and burying them under the quality
-  // picker would make "the cast button disappeared" true in practice.
+  // Overflowed controls come FIRST: they're the reason the panel opened on a
+  // narrow window, and burying them would make "the cast button disappeared" true.
   const moved = overflowEntries({
     t,
     muted: Boolean(c.muted),
@@ -320,10 +310,9 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
   const menuFocus = useListFocus({
     count: entries.length,
     onActivate: (i) => entries[i]?.activate(),
-    // Back at the menu closes the panel, here rather than by declining the key
-    // and trusting the shell to notice: that fall-through never fired on Apple
-    // TV, and a settings panel you cannot leave with the remote's Back button is
-    // a dead end in the middle of a film.
+    // Closes the panel directly rather than declining the key and trusting the
+    // shell: that fall-through never fired on Apple TV, leaving no way to leave
+    // the panel with the remote.
     onBack: onClose,
   });
   useImperativeHandle(
@@ -338,10 +327,9 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
 
   return (
     <>
-      {/* Press-to-close scrim; Back on the D-pad closes the panel and this
-          mirrors it for a pointer (§15). */}
-      {/* The scrim is exactly what the panel leaves behind: `right` rather than
-          a 56% that only agreed with the panel at its design width. */}
+      {/* Press-to-close scrim (mirrors Back for a pointer, §15). `right` matches
+          exactly what the panel leaves behind, not a 56% that only agreed with
+          the panel at its design width. */}
       <Pressable
         {...VIRTUAL_FOCUS}
         accessibilityRole="button"
@@ -377,10 +365,9 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
           <Txt lines={1} variant="h1" style={{ fontSize: px(38), flexShrink: 1 }}>
             {title}
           </Txt>
-          {/* Covering the stage leaves no scrim to tap, and a phone has no Back
-              key - so the way out has to be on the panel. Pointer-only,
-              controlled at `false`: never a platform / navigator focus target
-              (the remote still leaves with Back). */}
+          {/* Covering the stage leaves no scrim to tap and a phone has no Back
+              key, so the way out has to be on the panel. Pointer-only,
+              controlled at `false` (the remote still leaves with Back). */}
           {covers ? (
             <IconButton
               variant="ghost"
@@ -400,10 +387,9 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
           <Box gap={px(12)}>
             {entries.map((e, i) => (
               <Fragment key={e.id}>
-                {/* The moved controls are their own group: an eyebrow over them
-                    and a gap under, so an action and a setting never read as one
-                    undifferentiated list. Both only exist when the transport row
-                    actually handed something over. */}
+                {/* The moved controls are their own group (eyebrow above, gap
+                    below), so an action and a setting never read as one
+                    undifferentiated list. */}
                 {moved.length > 0 && i === 0 ? (
                   <Txt style={[EYEBROW, { fontSize: px(12) }]}>{t('player.movedControls')}</Txt>
                 ) : null}
@@ -493,5 +479,4 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
   );
 });
 
-/** The close X sits at the far end of the header, whatever the title's length. */
 const CLOSE = { marginLeft: 'auto' as const };

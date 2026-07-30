@@ -1,13 +1,6 @@
-//! A tiny XML DOM + CSS-subset selector, for definitions whose response is
-//! `type: xml` (Torznab/Newznab feeds - namespaced `torznab:attr` elements,
-//! `rss > channel > item` rows). `scraper` is HTML-only and mangles namespaced
-//! XML, so those responses are parsed here instead.
-//!
-//! The selector subset is what real XML definitions use: element names, the
-//! descendant (space) and child (`>`) combinators, attribute presence/equality
-//! (`[name=seeders]`, `[href]`), and `:contains(...)`. Namespaced tags/attrs
-//! keep their prefix verbatim (`torznab:attr`), which is exactly how the
-//! definitions reference them.
+//! A tiny XML DOM + CSS-subset selector for `type: xml` definitions (Torznab /
+//! Newznab feeds). `scraper` is HTML-only and mangles namespaced XML, so those
+//! responses are parsed here instead. Namespaced tags keep their prefix verbatim.
 
 use quick_xml::events::Event;
 use quick_xml::Reader;
@@ -66,8 +59,7 @@ impl XmlEl {
     }
 }
 
-/// Parse an XML document into a synthetic root element holding the top-level
-/// nodes as children.
+/// Parses into a synthetic root element holding the top-level nodes as children.
 pub fn parse(body: &str) -> XmlEl {
     let mut reader = Reader::from_str(body);
     reader.config_mut().trim_text(false);
@@ -95,15 +87,13 @@ pub fn parse(body: &str) -> XmlEl {
                 }
             }
             Ok(Event::Text(t)) => {
-                // quick-xml 0.41 emits entities as separate GeneralRef events, so a
-                // Text event now carries literal text only (no `&amp;` to unescape).
+                // quick-xml 0.41 emits entities as separate GeneralRef events, so
+                // Text carries literal text only (nothing to unescape).
                 let s = t.decode().map(|c| c.into_owned()).unwrap_or_default();
                 if !s.trim().is_empty() {
                     push_text(&mut stack, s);
                 }
             }
-            // An entity reference (`&amp;`, `&#38;`, ...) inside text: resolve it and
-            // push as a text node so `.text()` concatenates it back into the value.
             Ok(Event::GeneralRef(r)) => {
                 let s = resolve_entity(&r);
                 if !s.is_empty() {
@@ -127,14 +117,12 @@ pub fn parse(body: &str) -> XmlEl {
     stack.pop().unwrap()
 }
 
-/// Push an element as the last stack frame's child (no-op if the stack is empty).
 fn push_child(stack: &mut [XmlEl], el: XmlEl) {
     if let Some(parent) = stack.last_mut() {
         parent.children.push(XmlNode::Element(el));
     }
 }
 
-/// Push a text node onto the last stack frame (no-op if the stack is empty).
 fn push_text(stack: &mut [XmlEl], s: String) {
     if let Some(parent) = stack.last_mut() {
         parent.children.push(XmlNode::Text(s));
@@ -145,10 +133,6 @@ fn tag_name(raw: &[u8]) -> String {
     String::from_utf8_lossy(raw).into_owned()
 }
 
-/// Resolve a quick-xml `GeneralRef` (the `amp` of `&amp;`, or `#38` of `&#38;`)
-/// to its text by rebuilding the escaped form and running the standard XML
-/// unescaper, which knows the five predefined entities and numeric refs. An
-/// unknown/malformed entity falls back to empty (dropped), as before.
 fn resolve_entity(r: &quick_xml::events::BytesRef) -> String {
     r.decode()
         .ok()
@@ -173,15 +157,11 @@ fn read_attrs(e: &quick_xml::events::BytesStart, reader: &Reader<&[u8]>) -> Vec<
     out
 }
 
-// ----- selection ------------------------------------------------------------------
-
-/// All elements matching `selector` within `scope` (descendants).
 pub fn select_all<'a>(scope: &'a XmlEl, selector: &str) -> Vec<&'a XmlEl> {
     let steps = parse_selector(selector);
     if steps.is_empty() {
         return Vec::new();
     }
-    // Start from the scope's descendant set for the first (descendant) step.
     let mut current: Vec<&XmlEl> = vec![scope];
     for (comb, compound) in &steps {
         let mut next: Vec<&XmlEl> = Vec::new();
@@ -193,7 +173,6 @@ pub fn select_all<'a>(scope: &'a XmlEl, selector: &str) -> Vec<&'a XmlEl> {
     current
 }
 
-/// Append every element reachable from `el` via `comb` that matches `compound`.
 fn collect_step<'a>(el: &'a XmlEl, comb: &Comb, compound: &Compound, next: &mut Vec<&'a XmlEl>) {
     match comb {
         Comb::Descendant => {
@@ -257,7 +236,6 @@ impl Compound {
 }
 
 fn parse_selector(sel: &str) -> Vec<(Comb, Compound)> {
-    // Normalize combinators so `a>b` and `a > b` tokenize the same.
     let spaced = sel.replace('>', " > ");
     let tokens: Vec<&str> = spaced.split_whitespace().collect();
     let mut out: Vec<(Comb, Compound)> = Vec::new();
@@ -276,7 +254,7 @@ fn parse_compound(tok: &str) -> Compound {
     let mut c = Compound::default();
     let chars: Vec<char> = tok.chars().collect();
     let mut i = 0;
-    // Leading tag name (may include a namespace prefix `torznab:attr`).
+    // Leading tag name, namespace prefix included (`torznab:attr`).
     let start = i;
     while i < chars.len() && !matches!(chars[i], '[' | ':') {
         i += 1;
@@ -301,8 +279,6 @@ fn parse_compound(tok: &str) -> Compound {
     c
 }
 
-/// Parse an `[attr]` / `[attr=value]` clause at `chars[i] == '['`, pushing it
-/// onto `c`. Returns the index just past the `]`, or None if unterminated.
 fn parse_attr(chars: &[char], i: usize, c: &mut Compound) -> Option<usize> {
     let close = chars[i..].iter().position(|&x| x == ']').map(|p| i + p)?;
     let inner: String = chars[i + 1..close].iter().collect();
@@ -315,8 +291,6 @@ fn parse_attr(chars: &[char], i: usize, c: &mut Compound) -> Option<usize> {
     Some(close + 1)
 }
 
-/// Parse a `:contains("term")` clause at `chars[i] == ':'`, pushing the term
-/// onto `c`. Terminal: the caller stops after it.
 fn parse_contains(chars: &[char], i: usize, c: &mut Compound) {
     let rest: String = chars[i..].iter().collect();
     if let (Some(open), Some(close)) = (rest.find('('), rest.rfind(')')) {
@@ -357,7 +331,6 @@ mod tests {
         assert_eq!(rows.len(), 2);
         assert_eq!(select_first(rows[0], "title").unwrap().text(), "Obsession 2026 1080p");
         assert_eq!(select_first(rows[0], "guid").unwrap().text(), "abc123");
-        // Entity-unescaped link.
         assert_eq!(select_first(rows[0], "link").unwrap().text(), "https://x/dl?a=1&b=2");
     }
 
@@ -368,18 +341,14 @@ mod tests {
         let seeders = select_first(row, "[name=seeders]").unwrap();
         assert_eq!(seeders.attr("value"), Some("305"));
         assert_eq!(select_first(row, "torznab\\:attr[name=size]").map(|e| e.attr("value").unwrap()), None);
-        // Plain attribute-name match regardless of tag.
         assert_eq!(select_first(row, "[name=size]").unwrap().attr("value"), Some("2314321864"));
     }
 
     #[test]
     fn descendant_vs_child_combinator() {
         let doc = parse(RSS);
-        // Descendant: items found several levels down.
         assert_eq!(select_all(&doc, "channel item").len(), 2);
-        // Child: item is not a direct child of rss, so nothing matches.
         assert!(select_all(&doc, "rss > item").is_empty());
-        // Direct child of channel does match.
         assert_eq!(select_all(&doc, "channel > item").len(), 2);
     }
 
@@ -389,18 +358,14 @@ mod tests {
         let hit = select_all(&doc, "item:contains(Obsession)");
         assert_eq!(hit.len(), 1);
         assert_eq!(select_first(hit[0], "guid").unwrap().text(), "abc123");
-        // A term present in no item.
         assert!(select_all(&doc, "item:contains(Nope)").is_empty());
     }
 
     #[test]
     fn attribute_presence_and_empty_selector() {
         let doc = parse(RSS);
-        // [value] presence: the two torznab:attr elements carry a value attribute.
         assert_eq!(select_all(&doc, "[value]").len(), 2);
-        // An empty selector selects nothing.
         assert!(select_all(&doc, "").is_empty());
-        // Unknown tag -> no match.
         assert!(select_first(&doc, "nonexistent").is_none());
     }
 
@@ -408,15 +373,12 @@ mod tests {
     fn text_flattening_and_cdata() {
         let xml = r#"<root><a>  hello   world  </a><b><![CDATA[raw & data]]></b></root>"#;
         let doc = parse(xml);
-        // Whitespace collapsed.
         assert_eq!(select_first(&doc, "a").unwrap().text(), "hello world");
-        // CDATA carried through literally.
         assert_eq!(select_first(&doc, "b").unwrap().text(), "raw & data");
     }
 
     #[test]
     fn unclosed_elements_collapse_into_tree() {
-        // Missing </item> and </channel>: the parser still yields the elements.
         let xml = r#"<rss><channel><item><title>X 1080p</title>"#;
         let doc = parse(xml);
         let item = select_first(&doc, "item").unwrap();

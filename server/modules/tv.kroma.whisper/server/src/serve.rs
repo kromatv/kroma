@@ -1,9 +1,7 @@
-//! The out-of-process provider side of Whisper transcription: the HTTP route the
-//! whisper `.kmod` serves. Transcription takes minutes and drives live progress +
-//! mid-run cancel on web/TV, which don't fit `kroma-http`'s buffered request/
-//! response. The bridge uses a shared `whisper_jobs` DB row as the channel: this
-//! sidecar WRITES stage/done/total and READS the cancel flag; the core (which
-//! called us) reads progress off the row to drive its callbacks and sets cancel.
+//! The out-of-process provider side of Whisper transcription. Live progress and
+//! mid-run cancel do not fit `kroma-http`'s buffered request/response, so a
+//! shared `whisper_jobs` row is the channel: this sidecar writes stage/done/total
+//! and reads the cancel flag, the calling core does the reverse.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -15,8 +13,7 @@ use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::db::Pool;
 use serde::Deserialize;
 
-/// Create the coordination table if absent (both the sidecar and the core call
-/// this so whichever touches it first wins; `IF NOT EXISTS` makes it idempotent).
+/// Idempotent: both the sidecar and the core call this, whichever runs first.
 pub fn ensure_jobs_table(pool: &Pool) {
     if let Ok(conn) = pool.get() {
         let _ = conn.execute_batch(
@@ -31,7 +28,6 @@ pub fn ensure_jobs_table(pool: &Pool) {
     }
 }
 
-/// The routes the whisper sidecar mounts for the transcription port.
 pub fn whisper_routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new().route("/_port/whisper/transcribe", post(transcribe_h::<S>))
 }
@@ -55,15 +51,11 @@ async fn transcribe_h<S: HostCtx + Clone + Send + Sync + 'static>(
     Json(text)
 }
 
-/// Run one transcription, mirroring stage/progress into the shared row and
-/// honoring the row's cancel flag (a watcher thread polls it into a local flag
-/// the candle engine checks).
 fn run(pool: Pool, req: TranscribeReq) -> Option<String> {
     ensure_jobs_table(&pool);
     let cancel = Arc::new(AtomicBool::new(false));
     let finished = Arc::new(AtomicBool::new(false));
 
-    // Watcher: poll the row's cancel column into the local AtomicBool the engine polls.
     {
         let (pool, cancel, finished, id) =
             (pool.clone(), cancel.clone(), finished.clone(), req.job_id.clone());
@@ -82,7 +74,6 @@ fn run(pool: Pool, req: TranscribeReq) -> Option<String> {
         });
     }
 
-    // Progress sinks: write coarse stage + fine done/total onto the row.
     let stage_pool = pool.clone();
     let stage_id = req.job_id.clone();
     let on_stage = move |stage: &str| {

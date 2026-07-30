@@ -1,15 +1,7 @@
-//! Firebase Cloud Messaging (HTTP v1).
-//!
-//! Android's only path. Unlike APNs, FCM v1 is not signed per request: the
-//! server signs a short-lived assertion with its service-account key, trades it
-//! for an OAuth2 access token, and then bearers that token on every send. The
-//! trade is a network round trip, so the token is cached until it nears expiry
-//! and this module hands the caller BOTH steps as plain requests, keeping the
-//! crate I/O-free like its neighbours.
-//!
-//! The legacy `key=AAAA…` server key is deliberately not supported: Google
-//! turned it off in 2024, and a server built on it would work in testing against
-//! nothing.
+//! Firebase Cloud Messaging (HTTP v1). FCM v1 is not signed per request: a
+//! service-account assertion is traded for a cached OAuth2 access token, and
+//! both steps are handed to the caller as plain requests (the crate does no I/O).
+//! The legacy `key=AAAA…` server key is unsupported — Google turned it off in 2024.
 
 use std::sync::Mutex;
 
@@ -21,15 +13,13 @@ use serde_json::json;
 
 use crate::{jwt, PushRequest, Urgency};
 
-/// Refresh this long before the token actually expires, so a send never races
-/// the boundary and gets a 401 it would have to retry.
+// Refresh this long before the token expires, so a send never races the
+// boundary and gets a 401.
 const REFRESH_MARGIN_SECS: i64 = 5 * 60;
 
-/// The scope FCM sends require.
 const SCOPE: &str = "https://www.googleapis.com/auth/firebase.messaging";
 const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 
-/// The fields KROMA needs from a downloaded service-account JSON.
 #[derive(Debug, Deserialize)]
 struct ServiceAccount {
     project_id: String,
@@ -43,19 +33,17 @@ fn default_token_uri() -> String {
     TOKEN_URL.to_string()
 }
 
-/// The server's FCM identity, parsed from the service-account JSON an operator
-/// pastes into the admin settings.
+/// The server's FCM identity, parsed from a service-account JSON.
 pub struct FcmKey {
     project_id: String,
     client_email: String,
     token_uri: String,
     private_key: RsaPrivateKey,
-    /// The current access token and the unix time it stops being usable.
     cached: Mutex<Option<(String, i64)>>,
 }
 
 impl std::fmt::Debug for FcmKey {
-    /// The project it targets, never the private key.
+    // Never renders the private key.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FcmKey")
             .field("project_id", &self.project_id)
@@ -65,12 +53,10 @@ impl std::fmt::Debug for FcmKey {
 }
 
 impl FcmKey {
-    /// Parse a service-account JSON file's contents.
     pub fn new(service_account_json: &str) -> Result<Self> {
         let account: ServiceAccount = serde_json::from_str(service_account_json)
             .context("FCM credentials are not a service-account JSON")?;
-        // The JSON embeds the PEM with escaped newlines; serde has already
-        // unescaped them, but a hand-pasted value may still carry literal `\n`.
+        // A hand-pasted service account may still carry literal `\n` in the PEM.
         let pem = account.private_key.replace("\\n", "\n");
         let private_key = RsaPrivateKey::from_pkcs8_pem(pem.trim())
             .context("service-account private_key is not a PKCS#8 PEM RSA key")?;
@@ -87,7 +73,7 @@ impl FcmKey {
         &self.project_id
     }
 
-    /// The cached access token, if one is still comfortably valid.
+    /// The cached access token, unless it is inside [`REFRESH_MARGIN_SECS`] of expiry.
     pub fn cached_token(&self, now_secs: i64) -> Option<String> {
         let cached = self.cached.lock().unwrap();
         cached
@@ -125,7 +111,6 @@ impl FcmKey {
         })
     }
 
-    /// Record the token from a successful [`Self::token_request`] reply.
     pub fn store_token(&self, response_body: &str, now_secs: i64) -> Result<String> {
         #[derive(Deserialize)]
         struct TokenReply {
@@ -135,8 +120,8 @@ impl FcmKey {
         }
         let reply: TokenReply =
             serde_json::from_str(response_body).context("FCM token reply is not JSON")?;
-        // Google returns 3600; treat a missing/odd value as one minute so a
-        // broken reply refreshes promptly rather than pinning a stale token.
+        // Treat a missing/odd expiry as one minute so a broken reply refreshes
+        // promptly rather than pinning a stale token.
         let ttl = if reply.expires_in > 0 { reply.expires_in } else { 60 };
         *self.cached.lock().unwrap() = Some((reply.access_token.clone(), now_secs + ttl));
         Ok(reply.access_token)
@@ -163,8 +148,7 @@ pub fn build_request(
     }
 
     // Everything the app needs on tap rides in `data`, which survives both the
-    // foreground and background paths; `notification` only drives what the
-    // system shade draws.
+    // foreground and background paths; `notification` only drives the shade.
     let mut data = json!({ "id": alert.id });
     if let Some(link) = alert.link {
         data["link"] = json!(link);
@@ -174,7 +158,7 @@ pub fn build_request(
     }
     if !alert.actions.is_empty() {
         // Every `data` value must be a string on FCM, so the list travels as
-        // encoded JSON and the app parses it back.
+        // encoded JSON.
         data["actions"] = json!(serde_json::to_string(
             &alert
                 .actions
@@ -193,20 +177,14 @@ pub fn build_request(
         "notification": {
             // Android 8+ requires a channel; the app creates one per category.
             "channel_id": alert.category.unwrap_or("default"),
-            // No `click_action`: it names an intent action an activity must
-            // declare an <intent-filter> for, and the app declares none - so a
-            // tap resolved to nothing at all. Absent, Firebase builds the content
-            // intent from the launcher activity, which is what opens the app and
-            // lets `expo-notifications` hand the tap to the router.
+            // No `click_action`: it names an intent action the app declares no
+            // <intent-filter> for, so a tap resolves to nothing. Absent, Firebase
+            // builds the content intent from the launcher activity.
         },
     });
-    // Deliberately NOT mapped onto Android's `tag` or `collapse_key`, though the
-    // names invite it. `thread_id` means "group these together", which is what it
-    // does on Apple; on Android `tag` REPLACES the shade entry and `collapse_key`
-    // tells FCM to store-and-forward only the most recent - so a season drop of
-    // four episodes showed one row, and a phone that was offline received one
-    // notification instead of four. Grouping on Android is the client's job (a
-    // group key on the channel), not something the payload can ask for.
+    // `thread_id` is deliberately NOT mapped onto Android's `tag` or
+    // `collapse_key`: `tag` replaces the shade entry and `collapse_key` drops all
+    // but the most recent, so four episodes would arrive as one notification.
 
     let message = json!({
         "message": {
@@ -231,11 +209,9 @@ pub fn build_request(
     })
 }
 
-/// Whether an FCM response means "this registration token is dead".
-///
-/// 404 `UNREGISTERED` is the app being uninstalled or the token rotated. A 400
-/// is only terminal when FCM names the token as the invalid argument; a 400
-/// about the payload is our bug and must not evict the device.
+/// Whether an FCM response means the registration token is dead. A 400 is only
+/// terminal when FCM names the token as the invalid argument; a 400 about the
+/// payload is our bug and must not evict the device.
 pub fn is_gone(status: u16, body: &str) -> bool {
     if status == 404 {
         return true;
@@ -246,7 +222,6 @@ pub fn is_gone(status: u16, body: &str) -> bool {
     let Ok(value) = serde_json::from_str::<serde_json::Value>(body) else {
         return false;
     };
-    // The v1 API reports the specific cause in error.details[].errorCode.
     let unregistered = value["error"]["details"]
         .as_array()
         .map(|details| {
@@ -258,7 +233,6 @@ pub fn is_gone(status: u16, body: &str) -> bool {
             })
         })
         .unwrap_or(false);
-    // …but only when the complaint is actually about the token field.
     unregistered
         && value["error"]["message"]
             .as_str()
@@ -299,7 +273,6 @@ mod tests {
         }
     }
 
-    /// One `api` action, the shape a moderator's Approve button carries.
     const ACTIONS: [(String, String, String); 0] = [];
 
     #[test]
@@ -335,10 +308,7 @@ mod tests {
 
         key.store_token(r#"{"access_token":"ya29.abc","expires_in":3600}"#, 1_000).unwrap();
         assert_eq!(key.cached_token(1_000).as_deref(), Some("ya29.abc"));
-        // Still good well inside the window.
         assert_eq!(key.cached_token(3_000).as_deref(), Some("ya29.abc"));
-        // Inside the refresh margin it is treated as spent, so a send never
-        // races the expiry and eats a 401.
         assert!(key.cached_token(1_000 + 3600 - REFRESH_MARGIN_SECS).is_none());
     }
 
@@ -346,7 +316,6 @@ mod tests {
     fn a_token_reply_without_an_expiry_is_treated_as_short_lived() {
         let key = key();
         key.store_token(r#"{"access_token":"t"}"#, 1_000).unwrap();
-        // Not pinned forever: a broken reply refreshes almost immediately.
         assert!(key.cached_token(1_000).is_none());
     }
 
@@ -363,11 +332,9 @@ mod tests {
         assert_eq!(body["message"]["token"], "DEV1");
         assert_eq!(body["message"]["notification"]["title"], "Ready to watch");
         assert_eq!(body["message"]["notification"]["image"], "https://img/p.jpg");
-        // The tap payload rides in `data`, which survives background delivery.
         assert_eq!(body["message"]["data"]["link"], "/movie/ab12");
         assert_eq!(body["message"]["data"]["id"], "n1");
         assert_eq!(body["message"]["data"]["category"], "media_available");
-        // Android 8+ refuses a notification with no channel.
         assert_eq!(body["message"]["android"]["notification"]["channel_id"], "media_available");
     }
 
@@ -408,7 +375,6 @@ mod tests {
             r#"{"error":{"message":"The registration token is not a valid FCM registration token","details":[{"errorCode":"INVALID_ARGUMENT"}]}}"#
         ));
 
-        // A payload complaint is our bug: evicting on it would wipe every device.
         assert!(!is_gone(
             400,
             r#"{"error":{"message":"Invalid JSON payload","details":[{"errorCode":"INVALID_ARGUMENT"}]}}"#

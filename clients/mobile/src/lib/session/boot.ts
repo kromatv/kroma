@@ -16,11 +16,11 @@ interface BootDeps {
   setSignedOut(): void;
 }
 
-/** True once the component unmounted: every await must re-check it. */
+// True once the component unmounted; every `await` must re-check it.
 type Cancelled = () => boolean;
 
-/** Was this 401 the PIN gate rather than a dead credential? A PIN-locked
- * profile answers `{ pinRequired: true }`, which must NOT drop the account. */
+// A PIN-locked profile answers 401 with `{ pinRequired: true }`, which must
+// NOT be treated as a dead credential.
 function isPinGated(err: unknown): boolean {
   return (
     err instanceof KromaApiError &&
@@ -30,15 +30,12 @@ function isPinGated(err: unknown): boolean {
   );
 }
 
-/** The dev rig's server, if one is configured. __DEV__-gated so release builds
- * never bake in the .env.local rig. */
+// __DEV__-gated so release builds never bake in the .env.local rig.
 function devServer(): string | undefined {
   return __DEV__ ? process.env.EXPO_PUBLIC_KROMA_SERVER : undefined;
 }
 
-/** Dev rig (mirrors the TV preview auth): auto sign-in on a fresh app. Returns
- * false when there is nothing configured or the login failed, so the caller
- * falls through to the normal flow. */
+// Mirrors the TV preview auth: dev-only auto sign-in on a fresh app.
 async function devAutoLogin(deps: BootDeps, cancelled: Cancelled): Promise<boolean> {
   const server = devServer();
   const devLogin = __DEV__ ? process.env.EXPO_PUBLIC_KROMA_DEV_LOGIN : undefined;
@@ -55,9 +52,8 @@ async function devAutoLogin(deps: BootDeps, cancelled: Cancelled): Promise<boole
   }
 }
 
-/** A revoked credential is dropped; a network failure keeps the account so the
- * next launch (or a manual switch) can try again. A PIN-gated 401 is NOT a
- * revocation: keep the account so the gate can prompt. */
+// A revoked credential is dropped; a network failure keeps the account so the
+// next launch can retry. A PIN-gated 401 is not a revocation.
 function onResumeFailed(deps: BootDeps, account: MobileAccount, err: unknown): void {
   if (isPinGated(err)) {
     // The gate learned this profile is PIN-locked; reflect it on the stored
@@ -74,7 +70,6 @@ function onResumeFailed(deps: BootDeps, account: MobileAccount, err: unknown): v
   }
 }
 
-/** Exchange the stored device token for a live session, or land on the gate. */
 async function resumeAccount(
   deps: BootDeps,
   account: MobileAccount,

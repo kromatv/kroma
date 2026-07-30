@@ -15,10 +15,8 @@ const SEGMENTS = [
 ] as const;
 
 export interface WheelMarkProps {
-  /** Rendered width/height in px. */
   size?: number;
   className?: string;
-  /** Slowly rotate the wheel (paused under prefers-reduced-motion). */
   spin?: boolean;
 }
 

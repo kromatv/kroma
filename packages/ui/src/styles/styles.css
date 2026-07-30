@@ -43,12 +43,8 @@ button {
 
 /* Amber focus ring visible everywhere, essential for 10-foot TV navigation.
    The ring is a box-shadow, so it already takes whatever corners the control
-   has - which is why this rule must NEVER set border-radius. It used to force
-   `--radius-sm` on anything focused, and that repaints the CONTROL rather than
-   its ring: it rounded a square input's own corners, which then clipped the
-   ::selection band into a pill, and the `border-radius: 0` added to stop that
-   went on to square off every rounded field in the web app the moment it took
-   focus. Neither line is needed once the ring stops touching the radius. */
+   has - which is why this rule must NEVER set border-radius: doing so repaints
+   the CONTROL itself rather than its ring. */
 :focus-visible {
   outline: none;
   box-shadow: var(--ring-focus-sm);

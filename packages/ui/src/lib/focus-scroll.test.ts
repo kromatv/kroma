@@ -1,15 +1,11 @@
 // @vitest-environment jsdom
 //
-// The page's scrolling policy, which is the whole of what <FocusScroll> decides:
-// a row rests `offsetFromStart` below the top edge, and neither end of the
-// content is ever scrolled past. The clamps are not cosmetic - the first one is
-// what makes the home hero come back whole when the focus climbs out of the
-// rails into it.
+// <FocusScroll>'s whole policy: a row rests `offsetFromStart` below the top edge,
+// and neither end of the content is ever scrolled past.
 
 import { describe, expect, it } from 'vitest';
 import { pageOffset } from './focus-scroll';
 
-/** A 1080-tall stage over a page of six screenfuls. */
 const page = { viewport: 1080, content: 6480 };
 
 describe('pageOffset', () => {
@@ -18,8 +14,6 @@ describe('pageOffset', () => {
   });
 
   it('shows the first row whole, offset or not', () => {
-    // The home hero: a 691pt block at the very top of the page. Its buttons sit
-    // near its bottom, and following THEM is what used to leave it cropped.
     expect(pageOffset({ top: 0, offsetFromStart: 120, ...page })).toBe(0);
   });
 

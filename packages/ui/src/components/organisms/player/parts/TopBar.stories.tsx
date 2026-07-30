@@ -21,9 +21,7 @@ export default story({
     dont: ["Don't own focus here; the player's nav machine does, and it tells the bar."],
   },
   matrix: false,
-  // A range rather than 900: the bar is the full width of the player on every
-  // surface it ships to, and the title truncating against the warning pill is
-  // exactly the thing one fixed width would never show.
+  // A range: one fixed width never shows the title truncating against the pill.
   width: { min: 480, max: 1100 },
   args: {
     title: 'Blade Runner 2049',
@@ -32,10 +30,8 @@ export default story({
     backFocused: false,
   },
   render: ({ warn, ...props }) => (
-    // The bar positions itself absolutely against the player surface, so the
-    // story gives it one to sit on: as wide as the canvas allows, and deep
-    // enough that the scrim under the bar is seen fading out rather than being
-    // cut off at the edge of the box.
+    // The bar positions itself absolutely, so the story gives it a surface to
+    // sit on, deep enough to see the scrim fade out.
     <Box minH={200} bg="surface2" radius="lg" overflow="hidden">
       <TopBar {...props} warn={warn || null} onBack={() => {}} />
     </Box>

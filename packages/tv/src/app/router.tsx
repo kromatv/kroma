@@ -14,64 +14,27 @@ import {
 import type { SettingsGroupId } from '#tv/app/settings/registry';
 import { perfHudPrefStore, useStoredPref } from '#tv/app/settings/store';
 
-/**
- * A tiny, type-safe, zero-dependency router for the 10-foot app TanStack-grade
- * DX without the bundle. A TV has no address bar, so this is a *memory* history:
- * an in-memory stack of screens. Add a screen by adding one line to `TvRoutes`;
- * `go`, `reset` and `<TvOutlet>` all become type-checked against it.
- *
- *   const nav = useNav();
- *   nav.go('movie', { item });   // push (params are type-checked per route)
- *   nav.back();                  // pop one screen (Back key / "Retour")
- *   nav.reset('show', { show }); // replace the stack with home → screen (deep links)
- *
- *   <TvOutlet screens={{
- *     home:   () => <TvHome … />,
- *     movie:  ({ item }) => <TvMovieDetail item={item} … />,
- *     show:   ({ show }) => <TvShowDetail show={show} … />,
- *     player: ({ item }) => <TvPlayer item={item} … />,
- *   }} />
- */
+// The screen registry of the in-memory router: a TV has no address bar, so
+// history is a stack. Adding a key here type-checks `go` / `reset` / `<TvOutlet>`.
 export interface TvRoutes {
-  /** Add a (distant) server by address on-screen URL keyboard. */
   connect: undefined;
-  /** Multi-server profile picker (signed out). */
   profiles: undefined;
-  /** Add-a-profile wizard: choose which server to pair on (signed out). */
   addProfile: undefined;
-  /** Quick Connect code / QR against the active server (signed out). */
   quick: undefined;
-  /** Device-level settings reachable while signed out: language, on-screen
-   * keyboard layout, and the desktop shell's GPU/quit extras. */
   deviceSettings: undefined;
-  /** Which build of the client is running: version, commit, branch, build date,
-   * repository. Reachable from device settings and from the profile menu. */
   about: undefined;
-  /** PIN entry: verify a locked profile, or set/clear the active account's PIN. */
   pin: { intent: 'verify' | 'set' | 'clear'; account?: StoredSession };
-  /** Profile menu: the settings groups, PIN, switch profile, sign out. */
   profileMenu: undefined;
-  /** One group of settings (languages / playback / device), opened from a menu. */
   settingsGroup: { group: SettingsGroupId };
   home: undefined;
-  /** Full-screen catalogue grid for one section (Films / Séries / Ma liste). */
   grid: { kind: 'films' | 'series' | 'mylist' };
-  /** Genre picker: every genre in the library. */
   genres: undefined;
-  /** Every title in one genre (selected from the genre picker). */
   genre: { name: string };
-  /** Search with an on-screen keyboard. */
   search: undefined;
-  /** Everything one cast/crew person is credited in (selected from a detail
-   * page's "Distribution" rail). */
   person: { name: string };
   movie: { item: MediaItem };
   show: { show: Show };
   player: { item: MediaItem };
-  /** Report a problem on a title (the detail pages' "Signaler un problème").
-   * `episodes` carries the loaded season of a series, which turns the subject
-   * row on so a viewer can point at the one episode that is broken instead of
-   * the whole show. */
   report: {
     kind: ReportSubjectKind;
     id: string;
@@ -80,7 +43,6 @@ export interface TvRoutes {
   };
 }
 
-/** One episode a report may target: its id and how the subject row names it. */
 export interface ReportEpisode {
   id: string;
   label: string;
@@ -89,32 +51,19 @@ export interface ReportEpisode {
 export type RouteName = keyof TvRoutes;
 export type TvRoute = { [K in RouteName]: { name: K; params: TvRoutes[K] } }[RouteName];
 
-// Call signature: routes with no params omit the second arg `go('home')` vs `go('movie', { item })`.
 type GoArgs<K extends RouteName> = TvRoutes[K] extends undefined
   ? [name: K]
   : [name: K, params: TvRoutes[K]];
 
 export interface TvNav {
-  /** The screen on top of the stack. */
   route: TvRoute;
-  /** Stack depth (1 = home only). */
   depth: number;
-  /** Can we go back? (depth > 1) */
   canGoBack: boolean;
-  /** Push a screen. `go('movie', { item })`. */
   go: <K extends RouteName>(...args: GoArgs<K>) => void;
-  /** Pop one screen (no-op at the root). */
   back: () => void;
-  /** Replace the whole stack with home → screen (deep-link entry point). */
   reset: <K extends RouteName>(...args: GoArgs<K>) => void;
-  /** Replace the whole stack with a single screen (no history). Used by guards
-   * (connect / profiles / home) so there's nothing to "go back" to. */
   replace: <K extends RouteName>(...args: GoArgs<K>) => void;
-  /** Replace just the *current* screen, keeping the history below it. For "up next"
-   * autoplay swap the finished item's player for the next one's, so Back still
-   * returns to where playback was launched (the show/detail), not a stale player. */
   swap: <K extends RouteName>(...args: GoArgs<K>) => void;
-  /** Jump straight back to the root. */
   home: () => void;
 }
 
@@ -122,13 +71,8 @@ const PROFILES = { name: 'profiles', params: undefined } as TvRoute;
 const HOME = { name: 'home', params: undefined } as TvRoute;
 const NavCtx = createContext<TvNav | null>(null);
 
-// Dev-only: the router is in-memory (no address bar), so a Vite HMR full-reload
-// would drop you back on the start screen. Persist the stack to sessionStorage (the
-// same trick TvApp uses for the intro flag) so on-device live-dev keeps your screen
-// across reloads. Route params are plain API JSON (MediaItem/Show), so they survive
-// a JSON round-trip with no refetch; and auth is hydrated synchronously on mount, so
-// the guard doesn't bounce a restored deep route. Compiled out of production builds
-// via IS_DEV; cast to read import.meta.env without vite/client types (as server.ts).
+// Dev-only: the stack is in-memory, so it is mirrored to sessionStorage to survive
+// an HMR full-reload. Compiled out of production builds via IS_DEV.
 const IS_DEV = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
 const DEV_NAV_KEY = 'kroma:dev-nav';
 
@@ -144,35 +88,16 @@ function loadDevStack(): TvRoute[] | null {
   }
 }
 
-/**
- * The route → component registry (the "route tree"), declared once and handed to
- * <TvNavProvider screens={…}>. Each screen reads its own params/data from hooks
- * (useParams / useClient / useAuth / useConnection), so the components take NO
- * props and `<TvOutlet/>` renders them by name TanStack-style.
- */
+/** The route → component registry. Screens take no props; they read their own
+ * params and data from hooks. */
 export type TvScreens = { [K in RouteName]: ComponentType };
 const ScreensCtx = createContext<TvScreens | null>(null);
 
-/**
- * Chrome that outlives the screen under it: the browse screens' top bar.
- *
- * It has to be rendered by the OUTLET rather than by each screen, and the reason
- * is the nav pill's travelling lens. A screen that draws its own bar hands the
- * remote a new <NavPill> on every section change, and a lens with no previous
- * box to leave arrives instead of travelling - so the one animation the design
- * asks for could never play, on any target. Rendered here, one bar survives the
- * swap and the lens moves from the old section to the new one.
- *
- * It stays INSIDE the screen's <FocusScope>: the scope is the spatial tree, and
- * a bar outside it is a bar the remote cannot reach. So the routes that share
- * the chrome also share one scope, and the screen inside it is keyed instead
- * (`entryKey` is what re-decides where focus opens on arrival).
- */
+// Chrome that outlives the screen under it (the browse top bar): the outlet
+// renders one instance across a section change, inside the shared <FocusScope>,
+// which is why the routes sharing it share one scope.
 export interface TvChrome {
-  /** The routes that show it - and therefore share one focus scope. */
   routes: readonly RouteName[];
-  /** Drawn ABOVE the screen in tree order, as the bar always was: the navigator
-   *  moves in tree order and the bar is visually at the top. */
   render: ComponentType;
 }
 const ChromeCtx = createContext<TvChrome | null>(null);
@@ -186,12 +111,8 @@ export function TvNavProvider({
   chrome,
   children,
 }: Readonly<{ screens: TvScreens; chrome?: TvChrome; children: ReactNode }>) {
-  // Start on the profile picker the signed-out home. Adding a server happens
-  // inside the Add-profile wizard, never as the launch screen. The guard advances
-  // to `home` once a session resolves.
   const [stack, setStack] = useState<TvRoute[]>(() => loadDevStack() ?? [PROFILES]);
 
-  // Dev-only: mirror the live stack into sessionStorage so an HMR reload restores it.
   useEffect(() => {
     if (!IS_DEV) return;
     try {
@@ -205,11 +126,8 @@ export function TvNavProvider({
   const go = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
     setStack((s) => [...s, make(name, params)]);
   }, []);
-  // Pop one screen. A no-op at depth 1 is correct by invariant: the bottom of the
-  // stack is always a root (home / profiles), since go / reset / replace / swap all
-  // preserve it so there is genuinely nowhere to go back to. (This is exactly why
-  // "up next" uses swap, not replace: replacing the whole stack would strand you on
-  // a lone player with no way back.)
+  // A no-op at depth 1 is the invariant, not an oversight: the bottom of the stack
+  // is always a root (home / profiles), so there is nowhere to go back to.
   const back = useCallback(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)), []);
   const reset = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
     setStack(name === 'home' ? [HOME] : [HOME, make(name, params)]);
@@ -251,18 +169,15 @@ export function useNav(): TvNav {
   return ctx;
 }
 
-/** Typed access to the current route's params `const { item } = useParams('movie')`. */
+/** Typed access to the current route's params; throws on any other route. */
 export function useParams<K extends RouteName>(name: K): TvRoutes[K] {
   const { route } = useNav();
   if (route.name !== name) throw new Error(`useParams('${name}') called on route '${route.name}'`);
   return route.params as TvRoutes[K];
 }
 
-// --- Client context: the KromaClient every screen needs, provided once at the top. ---
 const ClientCtx = createContext<KromaClient | null>(null);
 
-// Tolerates a null client (during connect, before a server is reached) so the
-// providers can wrap the whole app the `connect` screen never calls useClient().
 export function TvClientProvider({
   client,
   children,
@@ -273,16 +188,13 @@ export function TvClientProvider({
   return <ClientCtx.Provider value={client}>{children}</ClientCtx.Provider>;
 }
 
-/** The KromaClient. Throws if read before a server is reached only the routed
- * screens (rendered once status is `ready`) call it, never the connect screen. */
+/** The KromaClient; throws if read before a server is reached. */
 export function useClient(): KromaClient {
   const c = useContext(ClientCtx);
   if (!c) throw new Error('useClient() called before the server was reached');
   return c;
 }
 
-/** Renders the component registered for the route on top of the stack. Prop-free:
- * the screen reads its own params/data from hooks. `<TvOutlet />`. */
 export function TvOutlet() {
   const { route } = useNav();
   const screens = useContext(ScreensCtx);
@@ -290,30 +202,12 @@ export function TvOutlet() {
   if (!screens) throw new Error('<TvOutlet> must be inside <TvNavProvider screens={…}>');
   const Screen = screens[route.name];
   const Chrome = chrome?.routes.includes(route.name) ? chrome.render : null;
-  // Key the player by item id so an "up next" / recommendation swap - which keeps
-  // the same `player` route on top - REMOUNTS it, starting the new title from a
-  // clean state (engine, resume, progress) instead of inheriting the previous
-  // one's. Other screens keep their instance across same-route navigation.
+  // Keyed by item id so an "up next" swap remounts the player into clean
+  // engine/resume state even though the route itself doesn't change.
   const key = route.name === 'player' ? `player:${route.params.item.id}` : route.name;
-  // The single page landmark: a real <main> in the browser, nothing at all on
-  // the native TVs, which have no such concept (see @kroma/ui lib/landmark).
-  // The key stays on <Screen> so a same-route param swap (e.g. up-next) still
-  // remounts just the screen.
-  //
-  // <Suspense> catches the lazily-loaded player chunk on the first play; its
-  // fallback is a plain themed black fill (fixed inset-0), which reads as the
-  // player fading up rather than a flash. Non-lazy screens never suspend, so
-  // this is invisible for all of browse.
-  // <FocusScope> is what gives a new screen its entry point on Apple TV and
-  // Android TV: the OS focus engine will not invent one, so without it a screen
-  // whose controls do not declare `autoFocus` mounts with focus nowhere and the
-  // remote does nothing at all. On the browser targets it is a plain box, so the
-  // tree is identical on both.
-  //
-  // The screens that share the chrome share ONE scope, so the bar inside it
-  // keeps its instance (see TvChrome); everywhere else the scope is keyed with
-  // the screen, exactly as before. Either way `entryKey` names the screen, so
-  // each arrival re-decides where focus opens.
+  // The focus engine on Apple TV / Android TV invents no entry point on its own;
+  // without <FocusScope> a screen with no `autoFocus` control mounts with focus
+  // nowhere and the remote does nothing.
   const scopeKey = Chrome ? 'chrome' : key;
   return (
     <PageMain>
@@ -323,14 +217,12 @@ export function TvOutlet() {
           <Screen key={key} />
         </FocusScope>
       </Suspense>
-      {/* Outside the scope on purpose: the read-out must survive a screen
-          change, and it is not something the remote can land on. */}
+      {/* Outside the scope on purpose: the remote must not be able to land on it. */}
       <PerfHud enabled={usePerfHud()} />
     </PageMain>
   );
 }
 
-/** Whether the performance read-out is on (a device preference). */
 function usePerfHud(): boolean {
   return useStoredPref(perfHudPrefStore)[0] === 'on';
 }

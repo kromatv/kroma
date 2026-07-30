@@ -1,14 +1,8 @@
-/**
- * The icon subset decides what every client ships, from a scan whose failure
- * mode is silent: miss a name and the app draws a question mark, in production
- * builds only. So what is pinned here is the behaviour that failure would break
- * — that aliases survive, that the fallback is always present, that a renamed
- * target is loud rather than a no-op — rather than the exact icon count, which
- * changes with every screen anybody writes.
- *
- * It runs against the real Tabler install and the real repo, because the whole
- * point of the scan is what it finds in those.
- */
+// The icon subset decides what every client ships; missing a name means the
+// app silently draws a question mark, in production only. So these tests pin
+// the behaviour a broken scan would break — aliases survive, the fallback is
+// always present, a renamed target fails loudly — not the exact icon count.
+// They run against the real Tabler install and the real repo on purpose.
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
@@ -20,7 +14,6 @@ import { kromaUi } from './index';
 const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 const GLYPH_SOURCE = 'packages/ui/src/lib/icons/glyph-source.ts';
 
-/** A slug @kroma/ui's own source writes as a literal, so the scan must find it. */
 const A_NAME_THE_SOURCE_USES = 'help-circle';
 
 const exportNameOf = (slug: string) =>
@@ -29,7 +22,6 @@ const exportNameOf = (slug: string) =>
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join('')}`;
 
-/** Tabler's built ESM directory, resolved the way the plugin resolves it. */
 function tablerEsm(): string {
   const entry = createRequire(join(REPO_ROOT, 'packages/ui/package.json')).resolve(
     '@tabler/icons-react',
@@ -37,13 +29,11 @@ function tablerEsm(): string {
   return join(entry.slice(0, entry.lastIndexOf(`${sep}dist${sep}`)), 'dist', 'esm');
 }
 
-/** Every name Tabler's barrel exports. */
 function tablerNames(): string[] {
   const barrel = readFileSync(join(tablerEsm(), 'tabler-icons-react.mjs'), 'utf8');
   return [...barrel.matchAll(/default as (Icon[A-Za-z0-9]+)/g)].map((m) => m[1] as string);
 }
 
-/** The plugin's `load`, called the way Rollup calls it. */
 function loadGlyphSource(options: Parameters<typeof kromaUi.vite>[0] = { repoRoot: REPO_ROOT }) {
   const plugin = kromaUi.vite(options);
   const notes: string[] = [];
@@ -123,7 +113,6 @@ describe('the vite half', () => {
 });
 
 describe('the module path it is keyed on', () => {
-  /** A repo root with no glyph-source.ts, i.e. what a rename looks like. */
   function rootWithoutTarget() {
     const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-bundler-'));
     mkdirSync(join(dir, 'packages', 'ui', 'src', 'lib', 'icons'), { recursive: true });
@@ -189,7 +178,6 @@ describe('the metro half', () => {
   });
 });
 
-/** A stand-in that records its calls, so the delegation assertions read plainly. */
 function vi_fn() {
   const calls: unknown[][] = [];
   const fn = (_ctx: unknown, name: string, platform: string | null) => {

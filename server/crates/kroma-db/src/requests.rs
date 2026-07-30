@@ -1,15 +1,11 @@
-//! Requests + wanted-ledger persistence, and the tmdbId availability lookups
-//! (which ride the `idx_items_tmdb` / `idx_shows_tmdb` expression indexes the
-//! json_extract expressions here must stay byte-identical to the DDL).
+//! Requests + wanted-ledger persistence, and the tmdbId availability lookups.
 
 use rusqlite::OptionalExtension;
 
 use super::*;
 use kroma_domain::{CalendarEntry, EpisodeRef, MediaRequest, RequestKind, RequestStatus};
 
-/// Columns of the request list SELECT (requester username joined in). `r.episodes`
-/// and the Phase 2 airing columns trail the original set so existing positional
-/// indices never shift.
+// New columns must be appended, never inserted: callers read rows by position.
 const REQUEST_COLS: &str = "r.id, r.kind, r.tmdb_id, r.title, r.year, r.poster_url, r.seasons, \
     r.status, r.requested_by, u.username, r.reviewed_by, r.note, r.created_at, r.updated_at, \
     r.episodes, r.air_status, r.next_air_date, r.last_refresh_at";
@@ -42,7 +38,6 @@ fn row_to_request(r: &Row) -> rusqlite::Result<MediaRequest> {
     })
 }
 
-/// A request to insert (id minted by the caller; timestamps stamped here).
 pub struct NewRequest {
     pub id: String,
     pub kind: RequestKind,
@@ -108,10 +103,8 @@ pub fn get_request(conn: &Connection, id: &str) -> rusqlite::Result<Option<Media
     rows.next().transpose()
 }
 
-/// The open (mergeable) request for a title, if any: a second ask for the same
-/// TMDB id folds into it instead of duplicating the queue. Denied/failed and
-/// fully-available requests are not merge targets (a fresh ask reopens those
-/// as a new row).
+/// The open (mergeable) request for a title, if any. Denied/failed and
+/// fully-available requests are not merge targets.
 pub fn find_open_request(
     conn: &Connection,
     kind: RequestKind,
@@ -127,7 +120,6 @@ pub fn find_open_request(
     rows.next().transpose()
 }
 
-/// The newest request row (any status) for a title, for discover flagging.
 pub fn latest_request_for(
     conn: &Connection,
     kind: RequestKind,
@@ -163,7 +155,7 @@ pub fn set_request_status(
     Ok(n > 0)
 }
 
-/// Replace a request's season subset (merge of a second ask; `None` = whole show).
+/// `None` = the whole show.
 pub fn set_request_seasons(pool: &Pool, id: &str, seasons: Option<&[u32]>, now_ms: i64) -> Result<()> {
     let conn = pool.get()?;
     let json = seasons.map(|s| serde_json::to_string(s).unwrap_or_default());
@@ -174,8 +166,7 @@ pub fn set_request_seasons(pool: &Pool, id: &str, seasons: Option<&[u32]>, now_m
     Ok(())
 }
 
-/// Replace a request's individual-episode subset (merge of a second ask;
-/// `None` = no per-episode ask).
+/// `None` = no per-episode ask.
 pub fn set_request_episodes(
     pool: &Pool,
     id: &str,
@@ -191,11 +182,9 @@ pub fn set_request_episodes(
     Ok(())
 }
 
-/// Store the TMDB airing signals from a refresh pass + stamp `last_refresh_at`
-/// (throttle key). `air_status` / `next_air_date` are set outright (not
-/// COALESCE'd): an ended show clearing its `next_air_date` back to NULL is a
-/// meaningful update. Does not touch `updated_at` (a background metadata sync,
-/// not a user-facing lifecycle change).
+/// Set outright, not COALESCE'd: an ended show clearing `next_air_date` back to
+/// NULL is a meaningful update. Leaves `updated_at` alone — a background sync is
+/// not a lifecycle change.
 pub fn set_request_air(
     pool: &Pool,
     id: &str,
@@ -211,32 +200,27 @@ pub fn set_request_air(
     Ok(())
 }
 
-/// Delete a request (cascades its wanted rows). Returns false when absent.
+/// Cascades its wanted rows. False when absent.
 pub fn delete_request(pool: &Pool, id: &str) -> Result<bool> {
     let conn = pool.get()?;
     Ok(conn.execute("DELETE FROM requests WHERE id = ?1", params![id])? > 0)
 }
-
-// ----- wanted ledger ------------------------------------------------------------
 
 /// One wanted unit: a movie, or one episode of a requested show season.
 #[derive(Debug, Clone)]
 pub struct WantedRow {
     pub id: String,
     pub request_id: String,
-    /// `"movie"` | `"episode"`.
     pub kind: String,
-    /// The movie's TMDB id, or the SHOW's TMDB id for episodes.
+    // The movie's TMDB id, or the SHOW's TMDB id for episodes.
     pub tmdb_id: u64,
     pub imdb_id: Option<String>,
-    /// Search title (movie title or show title).
     pub title: String,
     pub year: Option<u32>,
     pub season: Option<u32>,
     pub episode: Option<u32>,
-    /// `YYYY-MM-DD`; unaired episodes are skipped by search until the date passes.
+    // Unaired episodes (YYYY-MM-DD) are skipped by search until the date passes.
     pub air_date: Option<String>,
-    /// `"wanted"` | `"grabbed"` | `"available"`.
     pub status: String,
     pub last_search_at: Option<i64>,
 }
@@ -261,15 +245,11 @@ fn row_to_wanted(r: &Row) -> rusqlite::Result<WantedRow> {
 const WANTED_COLS: &str =
     "id, request_id, kind, tmdb_id, imdb_id, title, year, season, episode, air_date, status, last_search_at";
 
-/// Column list + placeholders shared by the two `wanted` inserts; append after
-/// an `INSERT INTO` / `INSERT OR IGNORE INTO` verb.
+// Append after an `INSERT INTO` / `INSERT OR IGNORE INTO` verb.
 const WANTED_INSERT_TAIL: &str =
     "wanted (id, request_id, kind, tmdb_id, imdb_id, title, year, season, episode, air_date, status, last_search_at, updated_at) \
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)";
 
-/// Insert `rows` into `wanted` via `sql` (an `INSERT …` / `INSERT OR IGNORE …`
-/// built from [`WANTED_INSERT_TAIL`]), stamping `updated_at = now_ms`. Runs on
-/// the caller's connection/transaction so the whole batch shares one tx.
 fn insert_wanted_rows(conn: &Connection, sql: &str, rows: &[WantedRow], now_ms: i64) -> rusqlite::Result<()> {
     let mut stmt = conn.prepare(sql)?;
     for w in rows {
@@ -292,8 +272,7 @@ fn insert_wanted_rows(conn: &Connection, sql: &str, rows: &[WantedRow], now_ms: 
     Ok(())
 }
 
-/// Replace a request's wanted rows (approval re-materializes from scratch, so a
-/// re-approve after a season merge stays consistent). One transaction.
+/// Replace a request's wanted rows in one transaction.
 pub fn replace_wanted(pool: &Pool, request_id: &str, rows: &[WantedRow], now_ms: i64) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
@@ -303,10 +282,8 @@ pub fn replace_wanted(pool: &Pool, request_id: &str, rows: &[WantedRow], now_ms:
     Ok(())
 }
 
-/// Additively insert wanted rows WITHOUT clearing the request's existing set
-/// (the refresh pass: newly-aired episodes join the ledger without disturbing
-/// grabbed/available rows). `INSERT OR IGNORE` so a row whose deterministic id
-/// already exists is a no-op. One transaction.
+/// Additive: newly-aired episodes join the ledger without disturbing existing
+/// grabbed/available rows, and a duplicate deterministic id is a no-op.
 pub fn insert_wanted(pool: &Pool, rows: &[WantedRow], now_ms: i64) -> Result<()> {
     if rows.is_empty() {
         return Ok(());
@@ -318,9 +295,8 @@ pub fn insert_wanted(pool: &Pool, rows: &[WantedRow], now_ms: i64) -> Result<()>
     Ok(())
 }
 
-/// Fill in an `air_date` TMDB now knows for an existing wanted row that lacked
-/// one. Only updates rows whose `air_date IS NULL` so a known date is never
-/// overwritten; never changes `status`, so a grabbed/available row is untouched.
+/// Only fills a NULL `air_date`, so a known date is never overwritten, and never
+/// touches `status`.
 pub fn set_wanted_air_date(pool: &Pool, id: &str, air_date: &str, now_ms: i64) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -338,15 +314,11 @@ pub fn wanted_for_request(conn: &Connection, request_id: &str) -> rusqlite::Resu
     rows.collect()
 }
 
-/// `SELECT … FROM wanted w JOIN requests r …` shared by the upcoming + missing
-/// views; callers append their own `WHERE`/`ORDER BY`/`LIMIT` and map rows with
-/// [`row_to_calendar_entry`].
+// Callers append their own `WHERE`/`ORDER BY`/`LIMIT` and map rows with `row_to_calendar_entry`.
 const CALENDAR_SELECT: &str = "SELECT w.request_id, w.tmdb_id, r.kind, w.title, w.year, r.poster_url, \
                 w.season, w.episode, w.air_date, w.status \
          FROM wanted w JOIN requests r ON r.id = w.request_id";
 
-/// Map a [`CALENDAR_SELECT`] row into a [`CalendarEntry`] (request-backed rows,
-/// so `request_id` is always present).
 fn row_to_calendar_entry(r: &Row) -> rusqlite::Result<CalendarEntry> {
     let kind: String = r.get(2)?;
     Ok(CalendarEntry {
@@ -363,11 +335,8 @@ fn row_to_calendar_entry(r: &Row) -> rusqlite::Result<CalendarEntry> {
     })
 }
 
-/// Upcoming "coming soon" calendar entries: future-dated wanted rows (a movie's
-/// availability date or a show episode's air date) not yet on disk, joined with
-/// their request's display fields, ascending by date. `requester` limits to one
-/// user's requests (the user-facing page); `None` spans every request (a manager
-/// view). Bounded by `limit`.
+/// Future-dated wanted rows, soonest first. `requester` scopes to one user's
+/// requests; `None` is the manager view spanning every request.
 pub fn upcoming_calendar(
     conn: &Connection,
     today: &str,
@@ -386,12 +355,8 @@ pub fn upcoming_calendar(
     rows.collect()
 }
 
-/// The "missing / wanted" list: aired-or-released wanted rows (a movie past its
-/// availability date, or a show episode past its air date, plus undated rows)
-/// that are still `wanted` (not grabbed / available), joined with their request's
-/// display fields. This is the inverse of [`upcoming_calendar`] (past-due instead
-/// of future). `requester` limits to one user's requests; `None` spans all.
-/// Sorted by title then season/episode. Bounded by `limit`.
+/// The inverse of [`upcoming_calendar`]: aired-or-undated rows still `wanted`.
+/// `requester` scopes to one user's requests; `None` spans all.
 pub fn missing_items(
     conn: &Connection,
     today: &str,
@@ -409,11 +374,8 @@ pub fn missing_items(
     rows.collect()
 }
 
-/// Replace the library-scan "gaps" for one show (Sonarr-style missing episodes:
-/// aired TMDB episodes not on disk), computed by the `library.missing` job. One
-/// transaction: clear the show's rows then insert the current set (empty = the
-/// show is complete, so its rows are simply cleared). `rows` = (season, episode,
-/// air_date). Title + poster are denormalized for the missing view.
+/// Replace one show's library-scan gaps (aired TMDB episodes not on disk) in one
+/// transaction. `rows` = (season, episode, air_date); empty clears the show.
 pub fn replace_show_gaps(
     pool: &Pool,
     show_id: &str,
@@ -448,12 +410,9 @@ pub fn replace_show_gaps(
     Ok(())
 }
 
-/// The library-scan "missing" rows (aired episodes of library shows not on disk),
-/// as [`CalendarEntry`] with `request_id = None` (they are not requests yet). The
-/// missing view unions these with [`missing_items`]; the client turns a
-/// no-request row into a request when the user asks to watch it. Excludes shows
-/// that already have an open request for the same tmdb id (that request's ledger
-/// already tracks them, avoiding a duplicate line). Sorted by title.
+/// Library-scan gaps as [`CalendarEntry`] with `request_id = None` — they are not
+/// requests yet. Shows with an open request for the same tmdb id are excluded,
+/// since that request's ledger already tracks them.
 pub fn library_gaps_list(conn: &Connection, limit: usize) -> rusqlite::Result<Vec<CalendarEntry>> {
     let mut stmt = conn.prepare(
         "SELECT g.tmdb_id, g.title, g.poster_url, g.season, g.episode, g.air_date \
@@ -482,8 +441,8 @@ pub fn library_gaps_list(conn: &Connection, limit: usize) -> rusqlite::Result<Ve
     rows.collect()
 }
 
-/// Wanted rows ready for an automatic search pass: still wanted, aired (or
-/// undated), least-recently-searched first, capped.
+/// Rows ready for an automatic search pass: still wanted, aired or undated,
+/// least-recently-searched first.
 pub fn wanted_searchable(conn: &Connection, today: &str, limit: usize) -> rusqlite::Result<Vec<WantedRow>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT {WANTED_COLS} FROM wanted \
@@ -494,8 +453,6 @@ pub fn wanted_searchable(conn: &Connection, today: &str, limit: usize) -> rusqli
     rows.collect()
 }
 
-/// Chunked `UPDATE wanted SET {set_sql} WHERE id IN (...)` over `ids`. `lead`
-/// are the SET-clause params (`?1`..) that precede the id placeholders.
 fn update_wanted_chunked(
     pool: &Pool,
     ids: &[String],
@@ -528,12 +485,8 @@ pub fn stamp_wanted_searched(pool: &Pool, ids: &[String], now_ms: i64) -> Result
     update_wanted_chunked(pool, ids, "last_search_at = ?1, updated_at = ?1", &[&now_ms])
 }
 
-// ----- availability lookups (metadata_core.tmdb_id, indexed) ---------------------
-
-/// The library movie item carrying this TMDB id, if any. `video` items count:
-/// enrichment resolves both against TMDB's movie namespace. Seeks the real
-/// `metadata_core.tmdb_id` column, joined back to `items` so a stale core row for
-/// a since-deleted item never matches.
+/// `video` items count: enrichment resolves both against TMDB's movie namespace.
+/// Joined back to `items` so a stale core row for a deleted item never matches.
 pub fn movie_item_by_tmdb(conn: &Connection, tmdb_id: u64) -> rusqlite::Result<Option<String>> {
     conn.query_row(
         "SELECT c.subject_id FROM metadata_core c JOIN items i ON i.id = c.subject_id \
@@ -544,7 +497,6 @@ pub fn movie_item_by_tmdb(conn: &Connection, tmdb_id: u64) -> rusqlite::Result<O
     .optional()
 }
 
-/// The library show carrying this TMDB id, if any.
 pub fn show_by_tmdb(conn: &Connection, tmdb_id: u64) -> rusqlite::Result<Option<String>> {
     conn.query_row(
         "SELECT c.subject_id FROM metadata_core c JOIN shows s ON s.id = c.subject_id \
@@ -555,7 +507,6 @@ pub fn show_by_tmdb(conn: &Connection, tmdb_id: u64) -> rusqlite::Result<Option<
     .optional()
 }
 
-/// Every (season, episode) pair present on disk for a show.
 pub fn episodes_present(conn: &Connection, show_id: &str) -> rusqlite::Result<Vec<(u32, u32)>> {
     let mut stmt = conn.prepare(
         "SELECT DISTINCT season, episode FROM items \
@@ -594,7 +545,6 @@ mod tests {
             params![id],
         )
         .unwrap();
-        // Availability now seeks metadata_core.tmdb_id (a real indexed column).
         conn.execute(
             "INSERT INTO metadata_core (subject_kind, subject_id, tmdb_id, updated_at) \
              VALUES ('item', ?1, ?2, 0)",
@@ -626,7 +576,7 @@ mod tests {
         insert_movie_item(&conn, "m1", 603);
         assert_eq!(movie_item_by_tmdb(&conn, 603).unwrap().as_deref(), Some("m1"));
         assert_eq!(movie_item_by_tmdb(&conn, 604).unwrap(), None);
-        // Items without a metadata_core row never match (no tmdb_id to seek).
+        // An item with no metadata_core row has no tmdb_id to seek.
         conn.execute(
             "INSERT INTO items (id, kind, title, container, library, added_at) \
              VALUES ('m2','movie','U','mkv','lib1','now')",
@@ -648,7 +598,6 @@ mod tests {
         assert_eq!(open.status, RequestStatus::Pending);
         drop(conn);
 
-        // Widen the season subset (the duplicate-merge path).
         set_request_seasons(&p, "r1", Some(&[1, 2]), 2000).unwrap();
         let conn = p.get().unwrap();
         assert_eq!(
@@ -657,7 +606,6 @@ mod tests {
         );
         drop(conn);
 
-        // Individual episodes persist and read back alongside the seasons.
         set_request_episodes(&p, "r1", Some(&[EpisodeRef { season: 3, episode: 5 }]), 2100).unwrap();
         let conn = p.get().unwrap();
         assert_eq!(
@@ -666,7 +614,6 @@ mod tests {
         );
         drop(conn);
 
-        // Denied requests are not merge targets.
         set_request_status(&p, "r1", RequestStatus::Denied, Some("boss"), Some("non"), 3000).unwrap();
         let conn = p.get().unwrap();
         assert!(find_open_request(&conn, RequestKind::Show, 1396).unwrap().is_none());
@@ -675,7 +622,6 @@ mod tests {
         assert_eq!(denied.note.as_deref(), Some("non"));
         drop(conn);
 
-        // Wanted rows ride the request row's lifetime (FK cascade).
         let rows = vec![WantedRow {
             id: "w1".into(),
             request_id: "r1".into(),
@@ -709,16 +655,13 @@ mod tests {
         assert_eq!(req.air_status.as_deref(), Some("Returning Series"));
         assert_eq!(req.next_air_date.as_deref(), Some("2026-01-17"));
         assert_eq!(req.last_refresh_at, Some(5000));
-        // updated_at is NOT bumped by a background refresh.
         assert_eq!(req.updated_at, 1000);
         drop(conn);
-        // Ended shows clear next_air_date back to NULL (set outright, not COALESCE).
         set_request_air(&p, "r1", Some("Ended"), None, 6000).unwrap();
         let conn = p.get().unwrap();
         let req = get_request(&conn, "r1").unwrap().unwrap();
         assert_eq!(req.air_status.as_deref(), Some("Ended"));
         assert_eq!(req.next_air_date, None);
-        // Wire stays clean: last_refresh_at is #[serde(skip)].
         let json = serde_json::to_value(&req).unwrap();
         assert!(json.get("lastRefreshAt").is_none());
         assert_eq!(json.get("airStatus").and_then(|v| v.as_str()), Some("Ended"));
@@ -742,27 +685,20 @@ mod tests {
             status: status.into(),
             last_search_at: None,
         };
-        // Seed one grabbed (dated) + one wanted (undated) row.
         replace_wanted(&p, "r1", &[mk("w-e1", 1, Some("2020-01-01"), "grabbed"), mk("w-e2", 2, None, "wanted")], 1000)
             .unwrap();
-        // Refresh: a brand-new aired episode + a would-be duplicate of e1.
         insert_wanted(&p, &[mk("w-e3", 3, Some("2020-01-03"), "wanted"), mk("w-e1", 1, Some("2020-01-01"), "wanted")], 2000)
             .unwrap();
-        // Fill the missing air_date on the existing wanted row e2.
         set_wanted_air_date(&p, "w-e2", "2020-01-02", 2000).unwrap();
-        // The grabbed row must not be overwritten by set_wanted_air_date.
         set_wanted_air_date(&p, "w-e1", "2999-01-01", 2000).unwrap();
 
         let conn = p.get().unwrap();
         let rows = wanted_for_request(&conn, "r1").unwrap();
         assert_eq!(rows.len(), 3, "e3 added; the e1 duplicate was ignored");
         let by_ep = |ep: u32| rows.iter().find(|w| w.episode == Some(ep)).unwrap();
-        // e1 stayed grabbed with its original date (INSERT OR IGNORE + air-date guard).
         assert_eq!(by_ep(1).status, "grabbed");
         assert_eq!(by_ep(1).air_date.as_deref(), Some("2020-01-01"));
-        // e2 gained the newly-known air date.
         assert_eq!(by_ep(2).air_date.as_deref(), Some("2020-01-02"));
-        // e3 is the freshly-added row.
         assert_eq!(by_ep(3).status, "wanted");
     }
 
@@ -795,7 +731,6 @@ mod tests {
         let conn = p.get().unwrap();
         let due = wanted_searchable(&conn, "2026-07-05", 10).unwrap();
         let ids: Vec<&str> = due.iter().map(|w| w.id.as_str()).collect();
-        // Unaired + already-grabbed excluded; never-searched sorts first.
         assert_eq!(ids, vec!["w-undated", "w-aired"]);
         drop(conn);
 
@@ -810,9 +745,8 @@ mod tests {
 
     #[test]
     fn wanted_searchable_gates_unreleased_movies() {
-        // Phase 4: a movie's wanted row carries its release date as air_date
-        // (season/episode NULL). An unreleased movie is monitored (excluded from
-        // search) until its date passes; a released / dateless one is searchable.
+        // A movie's wanted row carries its release date as air_date, with
+        // season/episode NULL.
         let p = pool();
         insert_request(&p, &new_req("m1", RequestKind::Movie, 603, None), 1000).unwrap();
         let mk = |id: &str, air: Option<&str>| WantedRow {
@@ -829,8 +763,7 @@ mod tests {
             status: "wanted".into(),
             last_search_at: None,
         };
-        // One request can only hold its own rows; use three requests so each
-        // movie row is independent.
+        // replace_wanted is per-request, so each movie row needs its own request.
         insert_request(&p, &new_req("m2", RequestKind::Movie, 604, None), 1000).unwrap();
         insert_request(&p, &new_req("m3", RequestKind::Movie, 605, None), 1000).unwrap();
         replace_wanted(&p, "m1", &[mk("m-future", Some("2999-01-01"))], 1000).unwrap();
@@ -841,14 +774,11 @@ mod tests {
         let due = wanted_searchable(&conn, "2026-07-05", 10).unwrap();
         let mut ids: Vec<&str> = due.iter().map(|w| w.id.as_str()).collect();
         ids.sort_unstable();
-        // The unreleased movie is held back; the out / undated ones are searchable.
         assert_eq!(ids, vec!["m-nodate", "m-out"]);
     }
 
     #[test]
     fn missing_items_lists_aired_open_rows_only() {
-        // The missing list = aired/released rows still `wanted`. Unaired (future),
-        // grabbed and available rows are excluded; undated aired rows are included.
         let p = pool();
         insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
         let mk = |id: &str, episode: u32, air: Option<&str>, status: &str| WantedRow {
@@ -883,16 +813,12 @@ mod tests {
         let missing = missing_items(&conn, "2026-07-05", None, 50).unwrap();
         let mut eps: Vec<u32> = missing.iter().filter_map(|e| e.episode).collect();
         eps.sort_unstable();
-        // Only the aired-and-still-wanted rows (ep 1 aired, ep 5 undated).
         assert_eq!(eps, vec![1, 5]);
-        // A different requester's scope excludes them.
         assert!(missing_items(&conn, "2026-07-05", Some("someone-else"), 50).unwrap().is_empty());
     }
 
-    /// A show row, which `library_gaps` references by foreign key.
     fn seed_show(p: &Pool, show_id: &str) {
         let conn = p.get().unwrap();
-        // Idempotent: a test seeding two shows shares one library.
         conn.execute(
             "INSERT OR IGNORE INTO libraries (id, name, kind, path, added_at) \
              VALUES ('lib1','Films','movies','/x','now')",
@@ -906,7 +832,6 @@ mod tests {
         .unwrap();
     }
 
-    /// One missing episode, as `library_missing`'s scan records them.
     fn gap(season: u32, episode: u32, air: &str) -> (u32, u32, Option<String>) {
         (season, episode, Some(air.to_string()))
     }
@@ -919,8 +844,6 @@ mod tests {
         replace_show_gaps(&p, "s1", 1, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
         replace_show_gaps(&p, "s2", 2, "Beta", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
 
-        // Re-scanning one show must not disturb another's rows: the scan walks
-        // shows one at a time and each write is that show's whole truth.
         replace_show_gaps(&p, "s1", 1, "Alpha", None, &[gap(2, 5, "2021-02-02")], 2).unwrap();
         let conn = p.get().unwrap();
         let rows = library_gaps_list(&conn, 50).unwrap();
@@ -935,9 +858,6 @@ mod tests {
         let p = pool();
         seed_show(&p, "s1");
         replace_show_gaps(&p, "s1", 1, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
-        // The episode has since been downloaded, so the show has no gaps left -
-        // and the row has to GO, or the missing view lists an episode that is on
-        // disk.
         replace_show_gaps(&p, "s1", 1, "Alpha", None, &[], 2).unwrap();
         assert!(library_gaps_list(&p.get().unwrap(), 50).unwrap().is_empty());
     }
@@ -952,8 +872,6 @@ mod tests {
         let rows = library_gaps_list(&p.get().unwrap(), 50).unwrap();
         assert_eq!(rows.len(), 1);
         let r = &rows[0];
-        // No request behind them yet - the client turns one into a request when
-        // the user asks to watch it.
         assert!(r.request_id.is_none());
         assert_eq!(r.status, "missing");
         assert_eq!(r.tmdb_id, 42);
@@ -968,8 +886,6 @@ mod tests {
         replace_show_gaps(&p, "s1", 42, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
         insert_request(&p, &new_req("r1", RequestKind::Show, 42, None), 1).unwrap();
 
-        // That request's own ledger already tracks these episodes; listing both
-        // shows the user the same missing episode twice.
         assert!(library_gaps_list(&p.get().unwrap(), 50).unwrap().is_empty());
     }
 
@@ -982,8 +898,6 @@ mod tests {
         assert!(library_gaps_list(&p.get().unwrap(), 50).unwrap().is_empty());
 
         set_request_status(&p, "r1", RequestStatus::Denied, None, None, 2).unwrap();
-        // A denied request tracks nothing, so the episode is missing again - and
-        // the user can ask for it a different way.
         assert_eq!(library_gaps_list(&p.get().unwrap(), 50).unwrap().len(), 1);
     }
 
@@ -992,8 +906,7 @@ mod tests {
         let p = pool();
         seed_show(&p, "s1");
         replace_show_gaps(&p, "s1", 42, "Alpha", None, &[gap(1, 1, "2020-01-01")], 1).unwrap();
-        // tmdb ids are only unique WITHIN a kind, so a movie request numbered 42
-        // says nothing about show 42.
+        // tmdb ids are unique only within a kind.
         insert_request(&p, &new_req("r1", RequestKind::Movie, 42, None), 1).unwrap();
         assert_eq!(library_gaps_list(&p.get().unwrap(), 50).unwrap().len(), 1);
     }
@@ -1019,8 +932,6 @@ mod tests {
         let rows = library_gaps_list(&conn, 50).unwrap();
         let seen: Vec<(String, Option<u32>, Option<u32>)> =
             rows.iter().map(|r| (r.title.clone(), r.season, r.episode)).collect();
-        // Title first, then season, then episode - the order the missing view
-        // renders, so a show's episodes read in sequence.
         assert_eq!(
             seen,
             vec![
@@ -1031,7 +942,6 @@ mod tests {
         );
         assert_eq!(library_gaps_list(&conn, 2).unwrap().len(), 2);
     }
-    // ----- the calendar + the per-user views --------------------------------------
 
     fn seed_user(conn: &Connection, id: &str) {
         conn.execute(
@@ -1075,8 +985,7 @@ mod tests {
 
     #[test]
     fn a_users_own_requests_are_the_only_ones_they_see() {
-        // The requests page is per-account: seeing someone else's asks would
-        // leak what the rest of the household is watching for.
+        // Per-account: seeing another user's asks leaks what the household watches.
         let pool = pool();
         req_by(&pool, "r-ana", 1, RequestStatus::Pending, Some("ana"));
         req_by(&pool, "r-bo", 2, RequestStatus::Pending, Some("bo"));
@@ -1087,14 +996,11 @@ mod tests {
         assert_eq!(ana.len(), 1);
         assert_eq!(ana[0].id, "r-ana");
 
-        // The manager view spans everything, including the pre-accounts row.
         assert_eq!(list_requests(&conn, None).unwrap().len(), 3);
     }
 
     #[test]
     fn the_latest_request_for_a_title_is_the_newest_one() {
-        // Discover flags a title from its most recent request, so an old denial
-        // must not hide a fresh pending ask.
         let pool = pool();
         let mut denied = new_req("r-old", RequestKind::Movie, 603, None);
         denied.status = RequestStatus::Denied;
@@ -1108,15 +1014,12 @@ mod tests {
         assert_eq!(found.0, "r-new");
         assert_eq!(found.1, RequestStatus::Pending);
 
-        // A title nobody asked for has none, and the kind is part of the key.
         assert!(latest_request_for(&conn, RequestKind::Movie, 999).unwrap().is_none());
         assert!(latest_request_for(&conn, RequestKind::Show, 603).unwrap().is_none());
     }
 
     #[test]
     fn the_calendar_shows_only_what_is_still_coming() {
-        // Four filters, and each one is a different way to put a wrong row in
-        // front of the user.
         let pool = pool();
         req_by(&pool, "r-1", 1, RequestStatus::Approved, Some("ana"));
 
@@ -1124,13 +1027,9 @@ mod tests {
             &pool,
             &[
                 wanted_row("w-future", "r-1", Some("2030-01-01"), "wanted"),
-                // Already out: it belongs in "missing", not "coming soon".
                 wanted_row("w-past", "r-1", Some("2020-01-01"), "wanted"),
-                // No date at all: nothing to put on a calendar.
                 wanted_row("w-undated", "r-1", None, "wanted"),
-                // Already here: it arrived, so it is not coming.
                 wanted_row("w-done", "r-1", Some("2030-02-01"), "available"),
-                // In flight, but still dated in the future - it stays.
                 wanted_row("w-grabbed", "r-1", Some("2030-03-01"), "grabbed"),
             ],
             1_000,
@@ -1142,14 +1041,11 @@ mod tests {
         let dates: Vec<&str> =
             out.iter().filter_map(|e| e.air_date.as_deref()).collect();
         assert_eq!(dates, ["2030-01-01", "2030-03-01"], "{out:?}");
-        // Soonest first, so the page reads as a schedule.
         assert!(dates.windows(2).all(|w| w[0] <= w[1]));
     }
 
     #[test]
     fn a_denied_request_drops_off_the_calendar_entirely() {
-        // Its episodes are still dated in the future, but nobody is going to
-        // acquire them - showing them promises something that will not arrive.
         let pool = pool();
         req_by(&pool, "r-denied", 1, RequestStatus::Denied, Some("ana"));
         req_by(&pool, "r-live", 2, RequestStatus::Approved, Some("ana"));
@@ -1186,14 +1082,11 @@ mod tests {
 
         let conn = pool.get().unwrap();
         assert_eq!(upcoming_calendar(&conn, "2026-01-01", Some("ana"), 50).unwrap().len(), 1);
-        // `None` is the manager view, not "no rows".
         assert_eq!(upcoming_calendar(&conn, "2026-01-01", None, 50).unwrap().len(), 2);
     }
 
     #[test]
     fn the_calendar_honours_its_limit() {
-        // The page is bounded; without this a household with a long watchlist
-        // would render hundreds of rows.
         let pool = pool();
         req_by(&pool, "r-1", 1, RequestStatus::Approved, Some("ana"));
         let rows: Vec<WantedRow> = (1..=5)
@@ -1204,7 +1097,6 @@ mod tests {
         let conn = pool.get().unwrap();
         let out = upcoming_calendar(&conn, "2026-01-01", None, 2).unwrap();
         assert_eq!(out.len(), 2);
-        // The limit keeps the SOONEST, not an arbitrary two.
         assert_eq!(out[0].air_date.as_deref(), Some("2030-01-01"));
         assert_eq!(out[1].air_date.as_deref(), Some("2030-01-02"));
     }

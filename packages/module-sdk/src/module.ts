@@ -1,35 +1,26 @@
-// The frontend module contract. A `@kroma/module-<id>` package exports one
-// `KromaModule` describing the routes, nav entries and settings panels it
-// contributes, the API it exports for other modules, and any setup wiring. The
-// `id` must match its backend crate's module id.
+// The frontend module contract: a `@kroma/module-<id>` package exports one
+// `KromaModule`, whose `id` must match its backend crate's module id.
 
 import type { ComponentType } from 'react';
 import type { KromaHost } from './host';
 import type { Dependencies } from './types';
 
-/** A nav entry a module contributes to the host's navigation. */
 export interface NavItem {
-  /** Route path this entry links to (a route the module also registers). */
   to: string;
   label: string;
-  /** Optional icon name, resolved by the host's icon set. */
   icon?: string;
-  /** Which host nav group this belongs to ("library", "admin"). */
   section?: string;
-  /** Capability the account needs; the host hides the entry otherwise. */
   requires?: string;
 }
 
-/** Props every module-provided screen receives. */
 export interface ModuleComponentProps {
   host: KromaHost;
 }
 
-/** A route a module registers under the host's module mount point. */
+/** A route registered under the host's module mount point. */
 export interface RouteDef {
-  /** Path segment under the mount point, e.g. "acquisition". */
   path: string;
-  /** The screen. Wrap in `React.lazy` so each module is its own chunk. */
+  // Wrap in `React.lazy` so each module is its own chunk.
   component: ComponentType<ModuleComponentProps>;
 }
 
@@ -40,27 +31,20 @@ export interface SettingsPanel {
 }
 
 export interface KromaModule<Exports = unknown> {
-  /** Stable id, shared with the backend crate's module manifest. */
   id: string;
   version: string;
-  /** Modules that must be present + set up before this one, as a package.json-
-   *  style `{ id: range }` map (a legacy array is also accepted). Version ranges
-   *  are enforced on the backend; the frontend uses the id for setup ordering. */
+  // Version ranges are enforced on the backend; the frontend uses the id for
+  // setup ordering.
   dependsOn?: Dependencies;
-  /** Soft dependencies (same shape): set up first when present, but not required. */
   optionalDependsOn?: Dependencies;
   routes?: RouteDef[];
   navItems?: NavItem[];
   settingsPanels?: SettingsPanel[];
-  /** The module's own message catalogs, keyed by locale code then message key
-   *  (e.g. `{ en: { title: "Torrents" }, fr: { title: "Torrents" } }`). The host
-   *  resolves a module's `label`s + its `host.i18n.t` against these first, then
-   *  falls back to the core catalogs -- so a module ships its own translations
-   *  without touching the app's typed key union. */
+  // Keyed by locale code then message key. Resolved before the core catalogs,
+  // so a module ships translations without touching the app's typed key union.
   locales?: Record<string, Record<string, string>>;
-  /** A typed API other modules reach via `host.getModuleApi(id)`. Computed once
-   *  at start, in dependency order. */
+  // Reached by other modules via `host.getModuleApi(id)`; computed once at
+  // start, in dependency order.
   exports?: (host: KromaHost) => Exports;
-  /** Imperative wiring: subscribe to events, warm caches. Runs once at start. */
   setup?: (host: KromaHost) => void | Promise<void>;
 }

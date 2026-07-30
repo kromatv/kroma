@@ -6,8 +6,7 @@ import { AdminLayout } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 import { useRequireAuth } from '#web/shared/lib/require-auth';
 
-// Admin console layout + permission gate. Any management capability
-// (users/library/settings) unlocks the console; pages further gate their writes.
+// Any management capability unlocks the console; pages further gate their writes.
 export const Route = createFileRoute('/admin')({
   component: AdminRoute,
 });
@@ -16,8 +15,8 @@ function AdminRoute() {
   const t = useT();
   const { user } = useAuth();
   const { ready } = useRequireAuth();
-  // Signed-out users are redirected to /login (by useRequireAuth); show a loader
-  // until then. The `user` check also narrows it non-null for the checks below.
+  // `useRequireAuth` redirects signed-out users; the `user` check also narrows
+  // it non-null for the checks below.
   if (!ready || !user) return <GateLoading />;
 
   const allowed =

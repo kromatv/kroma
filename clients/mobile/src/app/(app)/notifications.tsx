@@ -1,27 +1,8 @@
-// The notification centre on the phone: what happened while you were away.
-//
-// The same list the browser draws, in the phone's own type and spacing ramp:
-//   * one 48pt tile leads every row, so titles, bodies and times line up down a
-//     single column whether or not a row carries artwork;
-//   * the `event` tints the glyph and nothing else — colour where the eye sorts,
-//     no tinted plates or coloured rows competing with it;
-//   * unread is one amber dot in a gutter that is always reserved, never an
-//     inline dot, which shifts every title it precedes;
-//   * the time sits at the end of the title line, not under the body;
-//   * rows are grouped by day, with the day label pinned while its run scrolls.
-//
-// The list is live: the server pushes each arrival down the socket the app
-// already holds (see lib/notifications), so a notice raised while this screen is
-// open slides in without a pull.
-//
-// Deliberately swipe-to-delete, matching Downloads: a phone list's destructive
-// action belongs under the thumb, not behind a trailing "x" that steals a tap
-// target from the row itself.
-//
-// Like the browser, the row draws no buttons: the whole card is the only
-// control. Approve / Deny live on the push notification itself, where the
-// system draws them (see lib/notifications/push) — this list stays a record of
-// what happened rather than a console.
+// The notification centre on the phone: what happened while you were away,
+// styled after the browser's list. The list is live (server push, see
+// lib/notifications) and swipe-to-delete, matching Downloads. Approve/Deny
+// live on the push notification itself (see lib/notifications/push); this
+// list stays a record rather than a console.
 
 import type { Notification, NotificationEvent } from '@kroma/core';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kroma/core';
@@ -74,9 +55,8 @@ export default function NotificationsScreen() {
       <PageHeader
         title={t('notifications.title')}
         right={
-          // A glyph, not the words: <PageHeader>'s trailing slot is one 40pt
-          // square (it mirrors the back button), and "Mark all as read" was
-          // being cut in half inside it.
+          // A glyph, not the words: PageHeader's trailing slot is a 40pt
+          // square and "Mark all as read" was being cut in half inside it.
           unread > 0 ? (
             <IconButton
               variant="ghost"
@@ -199,15 +179,10 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
   );
 }
 
-/** Where a row goes when it is tapped.
- *
- * The list draws no buttons, so the notification's own `link` is the
- * destination, and a producer that attached navigation only to an action still
- * has somewhere to send you — its first `link` action stands in. Everything is
- * put through `mobileRoute`, which returns null for the screens this app does
- * not have; a row with no phone equivalent stays a message rather than a tap
- * that lands on an error. `api` actions — Approve, Deny — are not a destination
- * and are not offered here at all. */
+// The list draws no buttons, so the notification's own `link` is the
+// destination, falling back to its first `link` action. `mobileRoute` returns
+// null for screens this app doesn't have, and `api` actions (Approve, Deny)
+// are never offered as a destination here.
 function destinationOf(row: Notification): string | null {
   const own = mobileRoute(row.link);
   if (own) return own;
@@ -219,16 +194,10 @@ function destinationOf(row: Notification): string | null {
   return null;
 }
 
-// ---------------------------------------------------------------------------
-// Event vocabulary — the browser's, name for name (see features/notifications)
-// ---------------------------------------------------------------------------
-
-/** The palette's `danger` is a signal red meant for fills; as a 20pt outline on
- * a near-black screen it goes muddy. The web panel lightens it the same way. */
+// The palette's `danger` is a signal red meant for fills; as a 20pt outline on
+// a near-black screen it goes muddy, so it's lightened here.
 const DANGER_INK = '#F87171';
 
-/** The kit resolves any Tabler name, so these are the same glyphs the web panel
- * imports as components, spelled as slugs. */
 const EVENT_GLYPH: Record<string, { name: IconName; color: string }> = {
   'request.submitted': { name: 'inbox', color: colors.accent },
   'request.approved': { name: 'circle-check', color: colors.success },
@@ -248,21 +217,12 @@ const EVENT_GLYPH: Record<string, { name: IconName; color: string }> = {
   custom: { name: 'sparkles', color: colors.textDim },
 };
 
-/** `event` is an open union — a newer server may send one this build has never
- * heard of, and it still has a title and a body worth reading. */
 function eventGlyph(event: NotificationEvent): { name: IconName; color: string } {
   return EVENT_GLYPH[event] ?? { name: 'bell', color: colors.textDim };
 }
 
-// ---------------------------------------------------------------------------
-// Relative time
-// ---------------------------------------------------------------------------
-
-/** Coarse relative time - a notification list wants "5 min ago", never seconds.
- *
- * Spelled with catalog keys rather than `Intl.RelativeTimeFormat`, which the web
- * panel uses: Hermes ships without the full ICU data, so the constructor is
- * simply not there on a phone and the row threw where it stood. */
+// Spelled with catalog keys rather than `Intl.RelativeTimeFormat`: Hermes
+// ships without full ICU data, so the constructor isn't there on a phone.
 function sinceLabel(t: ReturnType<typeof useT>, createdAt: number): string {
   const mins = Math.max(0, Math.round((Date.now() - createdAt) / 60_000));
   if (mins < 1) return t('time.justNow');

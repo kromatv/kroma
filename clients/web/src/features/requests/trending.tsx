@@ -13,7 +13,7 @@ const RAIL_HEADING =
   'flex items-center gap-2 font-display text-[22px] font-bold tracking-[-.02em] text-text';
 const SECTION_TITLE = `mb-4 mt-9 ${RAIL_HEADING}`;
 
-/** DiscoverCard's caption strip under the 2:3 art (title + kind/year lines). */
+// DiscoverCard's caption strip under the 2:3 art (title + kind/year lines).
 const CAPTION_H = 52;
 
 function TrendRail({

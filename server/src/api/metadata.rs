@@ -15,7 +15,6 @@ use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
-/// TMDB-enriched metadata for shows and items.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/shows/{id}/metadata", get(show_metadata))
@@ -64,8 +63,6 @@ pub async fn show_metadata(
     resolve_metadata(state, api_key, Target::Tv, show.title, show.year).await
 }
 
-/// The configured TMDB key, or a ready 503 telling the operator to set it. Shared
-/// by the two metadata handlers.
 fn require_tmdb_key(state: &SharedState) -> Result<String, Response> {
     state.config.tmdb_api_key.clone().ok_or_else(|| {
         json_error(
@@ -75,8 +72,6 @@ fn require_tmdb_key(state: &SharedState) -> Result<String, Response> {
     })
 }
 
-/// Shared tail for the two metadata handlers: run the (blocking) TMDB lookup off
-/// the async runtime and shape the JSON / 404 response.
 async fn resolve_metadata(
     state: SharedState,
     api_key: String,

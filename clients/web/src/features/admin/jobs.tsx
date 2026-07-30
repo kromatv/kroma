@@ -17,14 +17,14 @@ import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
-/** Cron strings read best in a monospace, which the kit chip's label is not. */
+// Cron strings read best in a monospace, which the kit chip's label is not.
 const CRON = {
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
   fontSize: 11.5,
   fontWeight: '600',
 } as const;
 
-/** Live progress pushed over the WS bus, keyed by job key. */
+// Progress pushed over the WS bus, keyed by job key.
 type LiveProgress = Record<string, { done: number; total: number }>;
 
 export function JobsPage() {

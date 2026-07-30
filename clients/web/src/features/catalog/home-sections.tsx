@@ -1,8 +1,6 @@
 // Server-generated home: an ordered list of localized sections (For You,
-// "Because you watched …", themed rows, trending, recently added). The server
-// assembles, orders, de-duplicates and localizes everything, so this is a thin
-// renderer. Per-user, so it loads client-side once a session is hydrated,
-// showing rail skeletons while it loads and nothing once it's empty.
+// "Because you watched …", themed rows, trending, recently added) - this is a
+// thin renderer. Per-user, so it loads client-side once a session is hydrated.
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';

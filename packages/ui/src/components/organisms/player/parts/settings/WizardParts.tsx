@@ -6,9 +6,8 @@ import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus
 import { fonts } from '#ui/lib/tokens';
 
 /**
- * Presentational atoms for the {@link GenerateWizard}, kept out of the wizard so
- * each file stays small. Focus is state-driven (§15): a pointer entering a field
- * calls `onFocus`, and a `focused` boolean draws the ring, never CSS :hover.
+ * Presentational atoms for the {@link GenerateWizard}. Focus is state-driven
+ * (§15): a `focused` boolean draws the ring, never CSS :hover.
  */
 
 const CYCLE_ROW = {
@@ -21,8 +20,7 @@ const CYCLE_ROW = {
   paddingVertical: 18,
 };
 
-/** A ◀ value ▶ cycle field (mode / language / quality / source picking). ▲▼ move
- * between fields, ◀▶ change the focused field's value. */
+/** A ◀ value ▶ cycle field: ▲▼ move between fields, ◀▶ change this one. */
 export function CycleField({
   label,
   value,

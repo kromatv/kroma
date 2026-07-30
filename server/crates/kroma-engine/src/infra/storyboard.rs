@@ -1,20 +1,15 @@
 //! YouTube-style scrub-bar preview "storyboard": one sprite sheet (a mosaic of
 //! evenly-spaced thumbnails) plus a tiny JSON manifest, generated once per file
 //! and cached on disk. The player shows the tile under the cursor via CSS
-//! `background-position` no per-frame work, a single image fetch.
+//! `background-position` - no per-frame work, a single image fetch.
 //!
-//! Generation is fast because it never reads the whole file: each tile is grabbed
-//! by a FAST KEYFRAME SEEK (`-ss <t>` before `-i`, so ffmpeg jumps straight to the
-//! GOP at that timestamp and reads only that), and the tiles are extracted MANY AT
-//! A TIME across a small thread pool. The individual frames are then montaged into
-//! one mosaic (`tile` filter) and encoded to **WebP** (via `cwebp`, like the rest
-//! of KROMA's artwork the smallest format), falling back to JPEG where WebP is
-//! unavailable. The source video is never re-encoded.
-//!
-//! Why not one linear `-skip_frame nokey` pass? That demuxes the entire file to
-//! reach the last keyframe, so a multi-GB film costs minutes (it is bound by the
-//! read of every byte). Seeking reads only the ~240 sampled GOPs, turning a
-//! whole-file read into (tiles / workers) fast seeks.
+//! Generation never reads the whole file: each tile is grabbed by a fast
+//! keyframe seek (`-ss <t>` before `-i`, so ffmpeg jumps straight to the GOP
+//! at that timestamp) across a small thread pool, then montaged into one
+//! sheet and encoded to WebP, falling back to JPEG. A linear
+//! `-skip_frame nokey` pass would instead demux the entire file to reach the
+//! last keyframe, costing minutes on a multi-GB film; seeking only reads the
+//! ~240 sampled GOPs.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -32,56 +27,49 @@ mod extract;
 mod proc;
 mod render;
 
-/// Tile size (true 16:9, BOTH dimensions even so 4:2:0 chroma never coerces the
-/// crop to an odd size which would drift the client's `background-position`).
-/// Kept small on purpose a hover preview is tiny, so 160x90 + WebP makes the
-/// sheet a few hundred KB at most.
+// True 16:9, both dimensions even so 4:2:0 chroma never coerces the crop to
+// an odd size, which would drift the client's `background-position`.
 const TILE_W: u32 = 160;
 const TILE_H: u32 = 90;
-/// Hard cap on grid cells, bounding the sheet size + ffmpeg output (a 3 h film
-/// still fits in a single sheet).
+// Hard cap on grid cells, bounding the sheet size + ffmpeg output (a 3 h film
+// still fits in a single sheet).
 const MAX_TILES: u32 = 240;
-/// Never sample finer than this short clips don't need hundreds of near-identical
-/// tiles.
+// Never sample finer than this; short clips don't need hundreds of
+// near-identical tiles.
 const MIN_INTERVAL: u32 = 2;
-/// Bump to invalidate every cached sheet when the generation parameters change.
+// Bump to invalidate every cached sheet when the generation parameters change.
 const VERSION: u32 = 3;
-/// Max concurrent storyboard ITEMS keeps generation off the HLS remux's back
-/// (and the NAS quiet) when several items are opened at once. Each item also fans
-/// its tiles out over its own worker pool ([`tile_workers`]).
+// Max concurrent storyboard items, keeping generation off the HLS remux's
+// back when several items are opened at once. Each item also fans its tiles
+// out over its own worker pool (`tile_workers`).
 const MAX_CONCURRENT: usize = 2;
-/// After a failed generation, don't retry the same key for this long. The player
-/// polls the manifest every few seconds, and without a cooldown a persistent
-/// failure (offline mount, unreadable file) re-spawned ffmpeg on EVERY poll an
-/// endless churn of doomed processes.
+// After a failed generation, don't retry the same key for this long: the
+// player polls the manifest every few seconds, and without a cooldown a
+// persistent failure would re-spawn ffmpeg on every poll.
 const FAIL_COOLDOWN: Duration = Duration::from_secs(120);
 
 /// What the player needs to map a cursor time → a tile in the sheet.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
-    /// Sprite-sheet URL (`/api/items/:id/storyboard.img?v=<key>`); the `v` busts
-    /// the immutable cache when the source file (its mtime) changes. The on-disk
-    /// format (WebP or JPEG) is internal the route sets the content type.
+    // The `v` query param busts the immutable cache when the source file (its
+    // mtime) changes. The on-disk format (WebP or JPEG) is internal; the
+    // route sets the content type.
     pub url: String,
-    /// Seconds of video between consecutive tiles.
     pub interval: f64,
     pub tile_w: u32,
     pub tile_h: u32,
     pub cols: u32,
     pub rows: u32,
-    /// Number of real tiles (trailing grid cells may be blank padding).
+    // Trailing grid cells beyond this may be blank padding.
     pub count: u32,
-    /// Total media duration (s).
     pub duration: f64,
 }
 
 /// Result of asking for an item's storyboard.
 pub enum Status {
     Ready(Manifest),
-    /// Generating (or just started) poll again shortly.
     Pending,
-    /// No media file or unknown duration nothing to build.
     Unavailable,
 }
 
@@ -123,8 +111,8 @@ impl Storyboard {
         }
     }
 
-    /// Per-(file, mtime) cache key bumping the source remaps the key, so a
-    /// replaced file regenerates instead of serving a stale sheet.
+    // Bumping the source remaps the key, so a replaced file regenerates
+    // instead of serving a stale sheet.
     fn key(abs: &str) -> String {
         let mtime = std::fs::metadata(abs)
             .ok()
@@ -235,7 +223,6 @@ impl Storyboard {
     }
 }
 
-/// `(abs_path, duration_s)` for a playable item, or `None` when either is missing.
 fn playable(item: &MediaItem) -> Option<(String, f64)> {
     let abs = item.abs_path.clone()?;
     let ms = item.duration_ms.filter(|&d| d > 0)?;

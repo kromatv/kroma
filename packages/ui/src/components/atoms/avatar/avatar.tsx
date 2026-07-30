@@ -9,7 +9,6 @@ import { Img } from '#ui/components/atoms/img';
 import { Txt } from '#ui/components/atoms/text';
 import { fonts, radius as radii } from '#ui/lib/tokens';
 
-/** Vivid avatar gradients: one palette across the web and TV profile pickers. */
 const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #F4B642, #E8743B)',
   'linear-gradient(135deg, #3BC9DB, #3B82F6)',
@@ -18,7 +17,6 @@ const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #34D399, #10B981)',
 ] as const;
 
-/** The brand's warm default, first in the palette. */
 const AVATAR_GRADIENT = AVATAR_GRADIENTS[0];
 
 /** Stable gradient for a seed (a user id, a person's name), so a profile keeps
@@ -74,27 +72,17 @@ interface AvatarProps {
   shadow?: boolean;
 }
 
-/** The design's rounded square: the corner is 16% of the disc. */
 const ROUNDNESS = 0.16;
 
-/** A circle is the roundest a square can be - half its own side. Anything past
- *  it would clip nothing further, so `roundness` is capped here rather than
- *  letting a 0.8 draw a shape no platform agrees on. */
+// A circle is the roundest a square can be, half its own side; `roundness` is
+// capped here rather than letting a value past it draw a shape no platform
+// agrees on.
 const CIRCLE = 0.5;
 
-/**
- * How far the padlock badge sits in from the bottom-right, so that it lands
- * INSIDE the shape whatever the corner radius is.
- *
- * The corner is an arc of radius `corner` centred `corner` in from both edges.
- * A badge inset `i` has its outer corner at `√2 · (corner - i)` from that
- * centre, so it stays within the arc while `i >= corner · (1 - 1/√2)`, which is
- * about 0.293 of the radius. A rounded square barely needs it; a circle (corner
- * = size/2) needs ~15% of the size, and 8px is where the badge used to be
- * clipped by its own disc.
- *
- * The floor keeps a little air between the badge and a square-ish corner.
- */
+// Keeps the badge inside the arc of a corner of radius `corner`: a badge
+// inset `i` stays within it while `i >= corner * (1 - 1/√2)` (~0.293 of the
+// radius). The floor keeps a little air between the badge and a square-ish
+// corner.
 function badgeInset(size: number, corner: number): number {
   return Math.round(Math.max(size * 0.08, corner * 0.2929));
 }

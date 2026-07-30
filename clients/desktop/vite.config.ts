@@ -56,11 +56,9 @@ export default defineConfig(
       reportCompressedSize: true,
       rollupOptions: { output: { manualChunks: undefined } },
     },
-    // Keep console.* during dev (on-device debugging over the LAN); strip in builds.
-    // `drop` is a valid runtime esbuild/Vite option, but it is absent from some
-    // resolved `ESBuildOptions` type versions (CI resolves a Vite whose type omits
-    // it, local resolves one that has it), which broke `tsc` on the fresh literal.
-    // Cast to the field type so it compiles either way.
+    // Keep console.* during dev (LAN debugging); strip in builds. `drop` is valid at
+    // runtime but missing from some resolved `ESBuildOptions` type versions (CI vs
+    // local Vite), which broke `tsc` on the fresh literal — cast to the field type.
     esbuild: {
       drop: command === 'build' ? ['console', 'debugger'] : [],
       legalComments: 'none',

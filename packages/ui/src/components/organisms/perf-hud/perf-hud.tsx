@@ -19,8 +19,7 @@ import { Txt } from '#ui/components/atoms/text';
 import { type PerfReport, perfReport, startPerf, stopPerf } from '#ui/lib/perf';
 import { colors, radius } from '#ui/lib/tokens';
 
-/** How often the read-out refreshes. Slow enough to read, fast enough to blame
- * the thing you just did. */
+// Slow enough to read, fast enough to blame the thing you just did.
 const REFRESH_MS = 500;
 
 function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {

@@ -43,8 +43,6 @@ export function BioSwitchRow({
   return (
     <View style={styles.bioRow}>
       <Text style={styles.bioLabel}>{label}</Text>
-      {/* The KIT's switch - same amber track and animated flip as every other
-          surface - in place of the OS one this row used to style by hand. */}
       <Switch checked={value} disabled={disabled} onChange={onChange} />
     </View>
   );

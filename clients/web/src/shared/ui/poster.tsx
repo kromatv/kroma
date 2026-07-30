@@ -7,45 +7,30 @@ import { type ReactElement, useState } from 'react';
 export interface PosterProps {
   title: string;
   genre?: string;
-  /** Two-stop gradient fallback when no artwork is available. */
   colors?: [string, string];
-  /** Real poster artwork (WebP) falls back to the gradient. */
   poster?: string | null;
   progress?: number | null;
-  /** When set, renders the "watched" marker/toggle: true = seen (persistent
-   * check badge), false = unseen (check appears on hover). Omit to hide it. */
   watched?: boolean | null;
-  /** Toggle the watched flag. Required for the marker to be interactive. */
   onToggleWatched?: () => void;
-  /** Fixed tile width in px; omit for the fluid default (`--card-w`, which
-   * scales from phone to desktop). */
   width?: number;
   onClick?: () => void;
 }
 
-/** Poster-rail geometry: the pitch targets the desktop `--card-w` maximum, and
- * the kit rail fits a whole number of tiles into whatever width it gets. */
 const RAIL_TILE = 208;
 const RAIL_GAP = 18;
-/** Vertical room for the tiles' hover lift (6px) + amber ring shadow. */
 const RAIL_PAD = 12;
 
 export interface PosterRailProps<T> {
   data: readonly T[];
-  /** One tile. The cell stretches it to its own width (same `*:w-full!`
-   * override as the poster grids), so tiles need no width prop. */
   renderItem: (item: T, index: number) => ReactElement;
-  /** Extra tile height below the 2:3 artwork (a caption strip). */
   extra?: number;
   onEndReached?: () => void;
 }
 
 /**
- * The design system's `VirtualRail` sized for poster tiles: wheel pan, hover
- * paging arrows and edge fades come from the kit. The pitch is a target - the
- * rail shares its width out into whole cells - so each tile fills its cell and
- * a wrapper caps growth back at the design width on the odd viewport where a
- * cell comes out wider.
+ * `VirtualRail` sized for poster tiles. The pitch is a target: the rail shares
+ * its width into whole cells, and a wrapper caps a wider cell back at the
+ * design width.
  */
 export function PosterRail<T>({
   data,
@@ -69,13 +54,8 @@ export function PosterRail<T>({
 }
 
 /**
- * Poster tile. Hover lifts the card and rings it in amber (KROMA design).
- * When real artwork is present the text overlay is hidden (the poster already
- * carries the title) and only reveals on hover; for gradient placeholders it
- * always shows.
- *
- * The tile is a `<div>` wrapper (not a `<button>`) so the watched toggle can be
- * a real, focusable `<button>` sibling without nesting interactive elements.
+ * The tile wrapper is a `<div>`, not a `<button>`, so the watched toggle can be
+ * a focusable `<button>` sibling without nesting interactive elements.
  */
 export function Poster({
   title,
@@ -133,9 +113,6 @@ export function Poster({
         </div>
       </button>
       {showToggle ? (
-        // The kit disc floats over the card exactly where the old toggle sat;
-        // the wrapper keeps the reveal-on-hover behaviour (persistent when
-        // watched, appearing with the card's hover/focus otherwise).
         <div
           className={`absolute left-2.5 top-2.5 z-2 transition-opacity duration-150 ${
             watched ? '' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'

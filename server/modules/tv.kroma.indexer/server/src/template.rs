@@ -33,8 +33,6 @@ pub fn render(input: &str, ctx: &Context) -> String {
     }
 }
 
-// ----- AST ------------------------------------------------------------------------
-
 #[derive(Debug, Clone)]
 enum Node {
     Text(String),
@@ -58,12 +56,9 @@ enum Term {
     Group(Pipeline),
 }
 
-// ----- lexing into text / action chunks -------------------------------------------
-
 #[derive(Debug)]
 enum Chunk {
     Text(String),
-    /// The trimmed inner body of a `{{ … }}` action.
     Action(String),
 }
 
@@ -82,7 +77,6 @@ fn lex(input: &str) -> Vec<Chunk> {
                 None => break,
             }
         }
-        // Push one UTF-8 char.
         let ch_len = utf8_len(bytes[i]);
         text.push_str(&input[i..i + ch_len]);
         i += ch_len;
@@ -93,10 +87,10 @@ fn lex(input: &str) -> Vec<Chunk> {
     chunks
 }
 
-/// Lex a single `{{ … }}` action starting at the opening `{{` (index `i`),
-/// flushing any pending `text` and appending the action chunk. Returns the
-/// index just past the action to continue from, or `None` when there is no
-/// closing `}}` (the caller should stop).
+// Lexes a single `{{ … }}` action starting at the opening `{{` (index `i`),
+// flushing any pending `text` and appending the action chunk. Returns the
+// index just past the action to continue from, or `None` when there is no
+// closing `}}` (the caller should stop).
 fn lex_action(
     input: &str,
     bytes: &[u8],
@@ -114,7 +108,6 @@ fn lex_action(
     if !text.is_empty() {
         chunks.push(Chunk::Text(std::mem::take(text)));
     }
-    // Find the closing `}}`.
     let Some(rel) = input[j..].find("}}") else {
         // No close: treat the rest as literal text.
         text.push_str(&input[i..]);
@@ -142,8 +135,6 @@ fn utf8_len(b: u8) -> usize {
     }
 }
 
-// ----- parsing chunks into a node tree --------------------------------------------
-
 fn parse(input: &str) -> Result<Vec<Node>, String> {
     let chunks = lex(input);
     let mut pos = 0;
@@ -154,8 +145,8 @@ fn parse(input: &str) -> Result<Vec<Node>, String> {
     Ok(nodes)
 }
 
-/// Parse a sequence of nodes, stopping (without consuming) at `else`/`end`.
-/// Returns the control keyword that stopped it, if any.
+// Parses a sequence of nodes, stopping (without consuming) at `else`/`end`.
+// Returns the control keyword that stopped it, if any.
 fn parse_seq(chunks: &[Chunk], pos: &mut usize) -> Result<(Vec<Node>, Option<String>), String> {
     let mut nodes = Vec::new();
     while *pos < chunks.len() {
@@ -187,40 +178,40 @@ fn parse_seq(chunks: &[Chunk], pos: &mut usize) -> Result<(Vec<Node>, Option<Str
     Ok((nodes, None))
 }
 
-/// Parse an `{{ if COND }}…{{ else }}…{{ end }}` body after its head token was
-/// consumed. `rest` is the condition expression.
+// Parses an `{{ if COND }}…{{ else }}…{{ end }}` body after its head token was
+// consumed. `rest` is the condition expression.
 fn parse_if(chunks: &[Chunk], pos: &mut usize, rest: &str) -> Result<Node, String> {
     let cond = parse_pipeline(rest)?;
     let (then, stop) = parse_seq(chunks, pos)?;
     let mut els = Vec::new();
     if stop.as_deref() == Some("else") {
-        *pos += 1; // consume else
+        *pos += 1;
         let (e, stop2) = parse_seq(chunks, pos)?;
         if stop2.as_deref() != Some("end") {
             return Err("if: missing end".into());
         }
-        *pos += 1; // consume end
+        *pos += 1;
         els = e;
     } else if stop.as_deref() == Some("end") {
-        *pos += 1; // consume end
+        *pos += 1;
     } else {
         return Err("if: missing end".into());
     }
     Ok(Node::If { cond, then, els })
 }
 
-/// Parse a `{{ range EXPR }}…{{ end }}` body after its head token was consumed.
+// Parses a `{{ range EXPR }}…{{ end }}` body after its head token was consumed.
 fn parse_range(chunks: &[Chunk], pos: &mut usize, rest: &str) -> Result<Node, String> {
     let expr = parse_pipeline(rest)?;
     let (body, stop) = parse_seq(chunks, pos)?;
     if stop.as_deref() != Some("end") {
         return Err("range: missing end".into());
     }
-    *pos += 1; // consume end
+    *pos += 1;
     Ok(Node::Range { expr, body })
 }
 
-/// Split the first bareword off an action body (`if and (x) (y)` -> `("if", "and (x) (y)")`).
+// Splits the first bareword off an action body (`if and (x) (y)` -> `("if", "and (x) (y)")`).
 fn split_head(body: &str) -> (&str, &str) {
     let body = body.trim();
     match body.find(char::is_whitespace) {
@@ -229,9 +220,7 @@ fn split_head(body: &str) -> (&str, &str) {
     }
 }
 
-// ----- pipeline parsing -----------------------------------------------------------
-
-/// Tokens inside an action body.
+// Tokens inside an action body.
 #[derive(Debug, Clone, PartialEq)]
 enum Tok {
     Pipe,
@@ -278,9 +267,9 @@ fn tokenize_expr(s: &str) -> Result<Vec<Tok>, String> {
     Ok(toks)
 }
 
-/// Lex a quoted string literal starting at the opening quote `chars[i]`
-/// (either `"` with escapes or a raw `` ` ``). Returns the literal and the
-/// index just past the closing quote.
+// Lexes a quoted string literal starting at the opening quote `chars[i]`
+// (either `"` with escapes or a raw `` ` ``). Returns the literal and the
+// index just past the closing quote.
 fn lex_string(chars: &[char], mut i: usize) -> (String, usize) {
     let quote = chars[i];
     i += 1;
@@ -303,8 +292,8 @@ fn lex_string(chars: &[char], mut i: usize) -> (String, usize) {
     (lit, i)
 }
 
-/// Lex a dotted field (`.A.B` or a bare `.`) starting at `chars[start] == '.'`.
-/// Returns the segments and the index just past the field.
+// Lexes a dotted field (`.A.B` or a bare `.`) starting at `chars[start] == '.'`.
+// Returns the segments and the index just past the field.
 fn lex_field(chars: &[char], start: usize) -> (Vec<String>, usize) {
     let mut i = start + 1;
     while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '_' || chars[i] == '.') {
@@ -316,8 +305,8 @@ fn lex_field(chars: &[char], start: usize) -> (Vec<String>, usize) {
     (segs, i)
 }
 
-/// Lex a bareword (identifier / number / function name) from `chars[start]`.
-/// Returns the word and the index just past it.
+// Lexes a bareword (identifier / number / function name) from `chars[start]`.
+// Returns the word and the index just past it.
 fn lex_word(chars: &[char], start: usize) -> (String, usize) {
     let mut i = start;
     while i < chars.len() && !chars[i].is_whitespace() && !matches!(chars[i], '|' | '(' | ')') {
@@ -337,7 +326,7 @@ fn parse_pipeline(s: &str) -> Result<Pipeline, String> {
     Ok(pipe)
 }
 
-/// Parse commands separated by `|`, consuming until a top-level `)` or the end.
+// Parses commands separated by `|`, consuming until a top-level `)` or the end.
 fn parse_pipeline_toks(toks: &[Tok], pos: &mut usize) -> Result<Pipeline, String> {
     let mut commands = Vec::new();
     commands.push(parse_command(toks, pos)?);
@@ -381,8 +370,6 @@ fn parse_command(toks: &[Tok], pos: &mut usize) -> Result<Command, String> {
     }
     Ok(Command { terms })
 }
-
-// ----- evaluation -----------------------------------------------------------------
 
 fn eval_nodes(nodes: &[Node], ctx: &Context, out: &mut String) {
     for node in nodes {
@@ -496,7 +483,7 @@ fn call_function(name: &str, args: &[Value]) -> Value {
     }
 }
 
-/// Go `and`: the first falsy argument, else the last argument.
+// Go `and`: the first falsy argument, else the last argument.
 fn go_and(args: &[Value]) -> Value {
     for a in args {
         if !a.truthy() {
@@ -506,7 +493,7 @@ fn go_and(args: &[Value]) -> Value {
     args.last().cloned().unwrap_or(Value::Bool(true))
 }
 
-/// Go `or`: the first truthy argument, else the last argument.
+// Go `or`: the first truthy argument, else the last argument.
 fn go_or(args: &[Value]) -> Value {
     for a in args {
         if a.truthy() {
@@ -546,7 +533,7 @@ fn compare(op: &str, a: Option<&Value>, b: Option<&Value>) -> bool {
     }
 }
 
-/// Minimal `printf`: supports `%s`, `%d`, `%v`, and zero-padded `%0Nd`.
+// Minimal `printf`: supports `%s`, `%d`, `%v`, and zero-padded `%0Nd`.
 fn sprintf(format: &str, args: &[Value]) -> String {
     let mut out = String::new();
     let mut chars = format.chars().peekable();
@@ -575,8 +562,8 @@ fn sprintf(format: &str, args: &[Value]) -> String {
     out
 }
 
-/// Format one `%d` conversion: parse `arg` as an integer and apply the width /
-/// zero-pad flags carried in `spec` (e.g. `%04d`, `%10d`).
+// Formats one `%d` conversion: parses `arg` as an integer and applies the
+// width / zero-pad flags carried in `spec` (e.g. `%04d`, `%10d`).
 fn format_d(arg: &str, spec: &str) -> String {
     let n: i64 = arg.parse().unwrap_or(0);
     // Flags/width between '%' and 'd', e.g. "%04d" -> flags_width "04".
@@ -757,12 +744,9 @@ mod tests {
         // An invalid regex in re_replace leaves the input untouched.
         assert_eq!(render(r#"{{ re_replace .Keywords "[" "x" }}"#, &ctx()), "the matrix 1999");
     }
-    // ----- malformed templates degrade to their own source ------------------------
-    //
-    // A definition is community-maintained YAML: it WILL contain typos. Every
-    // one of these would otherwise be a hard error that hides every release from
-    // that tracker, so `render` falls back to the literal source and the broken
-    // bit is visible in the built URL instead.
+    // A definition is community-maintained YAML and will contain typos; each of
+    // these would otherwise be a hard error hiding every release from that
+    // tracker, so `render` falls back to the literal source instead.
 
     #[track_caller]
     fn unchanged(template: &str) {

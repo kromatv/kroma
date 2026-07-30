@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getWebEnginePref, setWebEnginePref } from './engine-pref';
 
-/** A Map-backed localStorage stand-in. */
 function fakeStorage(initial: Record<string, string> = {}) {
   const m = new Map(Object.entries(initial));
   return {

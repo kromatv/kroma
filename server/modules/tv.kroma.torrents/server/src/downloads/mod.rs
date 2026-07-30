@@ -1,8 +1,5 @@
-//! The download manager: owns the embedded torrent engine's lifecycle, builds
-//! engines from client-config rows, records grabs in the downloads ledger and
-//! carries the kill-switch gate. The resident polling loop lives in
-//! [`monitor`]; everything here is synchronous and called from blocking
-//! contexts (jobs, `api::util::blocking`, the monitor's own spawn_blocking).
+//! The download manager: the embedded torrent engine's lifecycle, the grab
+//! ledger and the kill-switch gate. Everything here is blocking.
 
 pub mod monitor;
 
@@ -21,42 +18,21 @@ use kroma_module_sdk::host::{Event, HostCtx};
 use serde_json::json;
 use kroma_module_sdk::primitives::now_ms;
 
-/// The KROMA category/label applied inside external clients.
 pub const LABEL: &str = "kroma";
 
 pub struct DownloadManager {
-    /// The embedded engine, once started (None = failed / not compiled / off).
     rqbit: RwLock<Option<Arc<RqbitEngine>>>,
-    /// Kill-switch gate: closed = no new grabs, active torrents paused. Opens
-    /// at boot (downloads work out of the box) and stays open unless the admin
-    /// explicitly enables the kill switch AND the VPN check keeps failing.
     gate_open: AtomicBool,
-    /// Consecutive failed VPN seal checks. The kill switch only closes the gate
-    /// after a couple in a row, so a transient blip / bridge still starting up
-    /// never slams downloads shut.
     vpn_fail_streak: AtomicU32,
-    /// Latest VPN probe outcome, for the admin banner.
     vpn_status: Mutex<Option<VpnStatusView>>,
-    /// Download refs the kill switch paused (so recovery resumes exactly
-    /// those, never a user-paused torrent).
     paused_by_killswitch: Mutex<Vec<String>>,
-    /// Download refs paused because the embedded engine was disabled in the
-    /// admin UI (resumed on re-enable; never resumes a user-paused torrent).
     paused_by_disable: Mutex<Vec<String>>,
-    /// Scratch dir (qBittorrent cookie jars).
     state_dir: PathBuf,
-    /// Root for per-download output folders of the embedded engine.
     downloads_dir: PathBuf,
-    /// The download sub-engine registry (kind -> factory). Shared + mutable so
-    /// the download-engine sub-modules can register / unregister their kind when
-    /// toggled. Adding a new backend is registering a factory here, not a `match`.
     clients: RwLock<crate::DownloadClientRegistry>,
-    /// Guards [`Self::ensure_monitor`] so the resident loop spawns at most once
-    /// per process even though the module's `on_enable` may fire more than once.
     monitor_started: AtomicBool,
 }
 
-/// Failed VPN checks in a row before the kill switch actually closes the gate.
 const VPN_FAIL_GRACE: u32 = 2;
 
 impl DownloadManager {
@@ -77,10 +53,7 @@ impl DownloadManager {
         })
     }
 
-    /// Seed the embedded engine's download-client row (idempotent; INSERT OR
-    /// IGNORE keeps admin edits) so it exists once the engine is (re)enabled. A
-    /// no-op when the embedded engine is not compiled in. Owned here so the binary
-    /// shell never names the rqbit client row (onion boundary).
+    /// Idempotent; a no-op when the embedded engine is not compiled in.
     pub fn seed_embedded_client(&self, host: &dyn HostCtx) {
         if !crate::RQBIT_COMPILED {
             return;
@@ -101,9 +74,7 @@ impl DownloadManager {
         );
     }
 
-    /// Spawn the resident monitor exactly once per process. The module's
-    /// `on_enable` may fire more than once (boot + re-enable); the loop self-idles
-    /// while the module is disabled, so one long-lived task covers every cycle.
+    /// At most once per process; the loop self-idles while the module is off.
     pub fn ensure_monitor(self: &Arc<Self>, host: Arc<dyn HostCtx>) {
         if self.monitor_started.swap(true, Ordering::SeqCst) {
             return;
@@ -111,17 +82,11 @@ impl DownloadManager {
         self.spawn_monitor(host);
     }
 
-    /// Start (or restart) the embedded engine from current settings. Errors
-    /// are logged, not fatal: external clients keep working without it.
-    ///
-    /// Robust restart: start the NEW session first (ephemeral DHT/peer ports so
-    /// it never collides with the old), swap it in only on success, then stop
-    /// the old. A failed restart therefore leaves the previous engine running
-    /// instead of killing downloads.
+    /// Errors are logged, not fatal. The new session starts before the old one
+    /// stops, so a failed restart leaves the previous engine running.
     pub async fn start_rqbit(&self, host: &dyn HostCtx) {
-        // Hard-off must survive restarts + setting/VPN changes: never bring the
-        // engine up while the embedded client is disabled. (A missing row = first
-        // boot before seeding = treated as enabled.)
+        // Never bring the engine up while the embedded client is disabled; a
+        // missing row means first boot before seeding, treated as enabled.
         if let Ok(conn) = host.db().get() {
             if let Ok(Some(c)) = db::get_download_client(&conn, db::EMBEDDED_CLIENT_ID) {
                 if !c.enabled {
@@ -131,12 +96,9 @@ impl DownloadManager {
                 }
             }
         }
-        // `None` from the proxy port can mean "no VPN" OR "the VPN sidecar is
-        // not answering yet" (it resolves over the port bridge, and sidecars
-        // boot concurrently). While a WireGuard config is stored and the VPN
-        // module enabled, peer traffic must stay sealed: defer the start (the
-        // monitor retries every VPN tick) rather than run on the raw
-        // connection with the banner still showing green.
+        // A missing proxy can also mean the VPN sidecar has not answered yet.
+        // Peer traffic must stay sealed, so defer the start (the monitor
+        // retries) rather than run on the raw connection.
         let proxy = active_proxy_url(host);
         if proxy.is_none() && vpn_sealed_expected(host) {
             tracing::warn!(
@@ -170,11 +132,7 @@ impl DownloadManager {
         self.rqbit.read().unwrap().clone()
     }
 
-    /// Live engine stats (down/up bps, connected/seen peers) per active download
-    /// id, queried straight from the engine. The queue endpoint folds these into
-    /// its polled response so the panel shows speed + peers without the live
-    /// WebSocket event stream (which a tunnel may not carry). Blocking; call off
-    /// the runtime.
+    /// Per download id: down/up bps, peers, peers seen. Blocking.
     pub fn live_stats(&self, host: &dyn HostCtx) -> std::collections::HashMap<String, (u64, u64, u32, u32)> {
         let mut out = std::collections::HashMap::new();
         let Ok(rows) = host.db().get().and_then(|c| Ok(db::active_downloads(&c)?)) else {
@@ -197,19 +155,9 @@ impl DownloadManager {
         out
     }
 
-    /// Re-seed embedded torrents that librqbit's own tracker announce can't feed
-    /// while behind the VPN. librqbit dials trackers via reqwest, whose SOCKS
-    /// support can't traverse the WireGuard-to-SOCKS bridge (it fails
-    /// "host unreachable"), so with a proxy configured its ongoing announce
-    /// yields nothing and a torrent whose swarm it hasn't otherwise discovered
-    /// sits at 0 peers - the exact case of a private, IPv6-only tracker (no DHT
-    /// fallback). We announce ourselves THROUGH the bridge (curl, which does
-    /// traverse it), parse peers (incl. IPv6), and inject them. Only runs with a
-    /// proxy set (direct connections don't have the problem) and only for
-    /// torrents the engine sees no peers for at all (`peers_seen == 0`), so a
-    /// healthy or connecting torrent is never disturbed. Blocking (curl +
-    /// engine); the monitor calls it on its own thread, serialized with its
-    /// status polls so the brief remove/re-add window is never mis-read.
+    /// Announce through the proxy ourselves (curl) and inject the peers, for
+    /// torrents stuck at 0 peers: librqbit dials trackers via reqwest, whose
+    /// SOCKS support cannot traverse the WireGuard-to-SOCKS bridge. Blocking.
     #[cfg(feature = "rqbit")]
     pub fn reseed_stalled(&self, host: &dyn HostCtx) {
         // No proxy => librqbit's own (direct) announce works; nothing to do.
@@ -226,16 +174,12 @@ impl DownloadManager {
                 continue;
             }
             let Ok(Some(status)) = client.status(&row.client_ref) else { continue };
-            // Only reseed a genuinely DEAD grab: no data downloaded, no live peer,
-            // and none ever seen. A reseed is a remove/re-add, which RESETS the
-            // torrent to 0% - so touching one that has ANY progress or ANY peer
-            // would throw away a working download. `progress > 0` is the hard
-            // guard (a torrent that has downloaded a single byte is working).
+            // A reseed is a remove/re-add, which RESETS the torrent to 0%, so
+            // only touch a grab with no progress, no peer and none ever seen.
             if status.progress > 0.0 || status.peers > 0 || status.peers_seen > 0 {
                 continue;
             }
-            // librqbit persists each torrent as `<info_hash>.torrent`, and
-            // client_ref IS the info-hash hex.
+            // librqbit persists `<info_hash>.torrent`; client_ref is that hex.
             let path = session_dir.join(format!("{}.torrent", row.client_ref));
             let Ok(bytes) = std::fs::read(&path) else { continue };
             let peers = crate::announce::tracker_peers(&bytes, Some(&proxy));
@@ -255,22 +199,17 @@ impl DownloadManager {
         }
     }
 
-    /// Without the embedded engine there is nothing to re-seed: the stalled-swarm
-    /// problem above is librqbit's proxied-announce blind spot, and Transmission /
-    /// qBittorrent announce for themselves. Kept as a no-op rather than gating the
-    /// caller, so the monitor's loop reads the same in both builds.
+    /// Transmission and qBittorrent announce for themselves.
     #[cfg(not(feature = "rqbit"))]
     pub fn reseed_stalled(&self, _host: &dyn HostCtx) {}
 
-    /// Fetch a torrent's file list (metadata only, no download) via the
-    /// preferred engine, so the admin can analyze + select before grabbing.
+    /// Metadata only, no download: the admin selects files before grabbing.
     pub fn list_files(&self, host: &dyn HostCtx, magnet_or_url: &str) -> Result<Vec<crate::TorrentFileEntry>> {
         let conn = host.db().get()?;
         let client = db::preferred_download_client(&conn)?
             .ok_or_else(|| anyhow!("no enabled download client"))?;
         drop(conn);
-        // Fetch a `.torrent` link direct (bypass the VPN) for the same reason as
-        // grabbing: a LAN indexer is unreachable through the tunnel.
+        // Direct, bypassing the VPN: a LAN indexer is unreachable via the tunnel.
         let prefetched: Option<Vec<u8>> = (client.kind == "rqbit"
             && magnet_or_url.starts_with("http"))
         .then(|| fetch_torrent_file(magnet_or_url))
@@ -278,7 +217,6 @@ impl DownloadManager {
         self.engine_for(&client)?.list_files(magnet_or_url, prefetched.as_deref())
     }
 
-    /// Build the engine for a stored client row via the sub-engine registry.
     pub fn engine_for(&self, row: &DownloadClientRow) -> Result<Box<dyn DownloadClient>> {
         let def = ClientDef {
             kind: row.kind.clone(),
@@ -295,8 +233,6 @@ impl DownloadManager {
         )
     }
 
-    // ----- kill switch ----------------------------------------------------------
-
     pub fn gate_open(&self) -> bool {
         self.gate_open.load(Ordering::Relaxed)
     }
@@ -305,9 +241,7 @@ impl DownloadManager {
         self.vpn_status.lock().unwrap().clone()
     }
 
-    /// One VPN probe + gate transition. Called by the monitor (~every 60s)
-    /// and by the admin test endpoint. No proxy configured = dormant (gate
-    /// open, no status). Blocking (curl); call off the runtime.
+    /// One probe + gate transition; no proxy configured = dormant. Blocking.
     pub fn vpn_check(&self, host: &dyn HostCtx) -> Option<crate::proxycheck::VpnCheck> {
         let Some(proxy) = active_proxy_url(host) else {
             self.gate_open.store(true, Ordering::Relaxed);
@@ -317,12 +251,10 @@ impl DownloadManager {
         let check_url = host.setting_str("vpnCheckUrl", "https://api.ipify.org");
         let check = crate::proxycheck::check(&proxy, &check_url);
         let sealed = check.sealed();
-        // Opt-in: the kill switch does nothing unless the admin turns it on.
         let kill_switch = host.setting_bool("vpnKillSwitch", false);
         let was_open = self.gate_open.load(Ordering::Relaxed);
 
-        // Track a failure streak so one blip (or the bridge still coming up)
-        // never blocks downloads; only a sustained failure closes the gate.
+        // One blip must not block downloads; only a sustained failure does.
         let streak = if sealed {
             self.vpn_fail_streak.store(0, Ordering::Relaxed);
             0
@@ -351,9 +283,6 @@ impl DownloadManager {
         Some(check)
     }
 
-    /// Close: refuse new grabs, pause every active embedded-engine download
-    /// (external clients guard their own tunnel), remember exactly which rows
-    /// we paused so recovery never resumes a user-paused torrent.
     fn close_gate(&self, host: &dyn HostCtx) {
         self.gate_open.store(false, Ordering::Relaxed);
         tracing::warn!("VPN kill switch engaged: pausing embedded downloads");
@@ -385,9 +314,7 @@ impl DownloadManager {
         }
     }
 
-    /// Hard-stop the embedded engine: drop the session so **all** BitTorrent
-    /// activity ceases (no download, no upload/seed, no DHT, listen sockets
-    /// closed). Idempotent.
+    /// Drops the session: no download, no seed, no DHT. Idempotent.
     pub fn stop_rqbit(&self) {
         if let Some(engine) = self.rqbit.write().unwrap().take() {
             engine.stop();
@@ -395,10 +322,8 @@ impl DownloadManager {
         }
     }
 
-    /// Disable the embedded engine (admin toggle): mark its active downloads
-    /// paused (for the UI) and tear the session down entirely, so nothing is
-    /// left listening or transferring. `start_rqbit` will refuse to come back up
-    /// until it is re-enabled, so this survives restarts.
+    /// `start_rqbit` refuses to come back up until re-enabled, so this survives
+    /// restarts.
     pub fn disable_embedded(&self, host: &dyn HostCtx) {
         let mut held = Vec::new();
         if let Ok(conn) = host.db().get() {
@@ -417,10 +342,7 @@ impl DownloadManager {
         tracing::warn!("embedded engine disabled: session stopped, downloads paused");
     }
 
-    /// Re-enable after [`disable_embedded`]: the caller has already restarted the
-    /// session ([`start_rqbit`], which reloads the persisted torrents), so just
-    /// flip the rows we paused back to active - the monitor reconciles the exact
-    /// status (downloading vs seeding) from the live engine.
+    /// The caller must have restarted the session first.
     pub fn resume_after_enable(&self, host: &dyn HostCtx) {
         let held = std::mem::take(&mut *self.paused_by_disable.lock().unwrap());
         for id in held {
@@ -428,16 +350,8 @@ impl DownloadManager {
         }
     }
 
-    // ----- grabbing ---------------------------------------------------------------
-
-    /// Send one accepted release to the preferred engine and record the grab.
-    /// `wanted_ids` flip to `grabbed`.
-    ///
-    /// This does NO torrent network I/O: it inserts a `queued` row (with an
-    /// empty `client_ref`) and returns immediately, so the HTTP handler never
-    /// blocks on a slow magnet resolve / `.torrent` fetch. Adding it to the
-    /// engine happens in the background via [`Self::activate`]; the monitor
-    /// then picks the row up once it has a `client_ref`.
+    /// Does NO torrent network I/O: the row lands `queued` and the caller runs
+    /// [`Self::activate`] in the background to hand it to the engine.
     pub fn grab(&self, host: &dyn HostCtx, spec: GrabSpec) -> Result<DownloadRow> {
         if !self.gate_open() {
             bail!("downloads are held by the VPN kill switch");
@@ -446,8 +360,6 @@ impl DownloadManager {
             bail!("no magnet or download link");
         }
         let conn = host.db().get()?;
-        // Dedup: refuse a second grab of a torrent already in the queue (same
-        // magnet/URL, not failed/removed). Retrying a failed one is still fine.
         if let Some(existing) = db::active_download_by_url(&conn, spec.magnet_or_url.trim())? {
             bail!("this release is already in the queue (\"{}\", status: {})", existing.title.as_deref().unwrap_or(&existing.release_title), existing.status);
         }
@@ -460,9 +372,7 @@ impl DownloadManager {
             spec.release_title,
             kroma_module_sdk::primitives::random_token()
         ));
-        // The embedded engine downloads into a per-grab folder we choose, so
-        // the importer knows exactly where the data is. External engines use
-        // their own default directory and report it back via status().
+        // External engines use their own directory and report it via status().
         let save_path = (client.kind == "rqbit")
             .then(|| self.downloads_dir.join(&id).to_string_lossy().into_owned());
 
@@ -498,10 +408,8 @@ impl DownloadManager {
         db::insert_download(host.db(), &row)?;
         db::set_wanted_status(host.db(), &spec.wanted_ids, "grabbed", now_ms())?;
         if let Some(req_id) = &row.request_id {
-            // Do NOT persist a `downloading` status on the request: it's a
-            // transient phase derived at read time from the live download
-            // relationship (see api::requests overlay), so it self-heals when
-            // the grab fails or the torrent is deleted. Just nudge listeners.
+            // Deliberately not persisted: `downloading` is derived at read time
+            // from the live download, so it self-heals if the grab fails.
             host.publish(Event::new(
                 "request.updated",
                 json!({ "id": req_id, "status": RequestStatus::Downloading.as_str() }),
@@ -511,9 +419,7 @@ impl DownloadManager {
         Ok(row)
     }
 
-    /// Background phase of a grab: actually hand the torrent to the engine
-    /// (slow: magnet resolve / `.torrent` fetch, up to a couple of minutes) and
-    /// move the row to `downloading`, or mark it `failed` with the error. Safe
+    /// Background phase of a grab: slow (up to a couple of minutes), and safe
     /// to run detached from the request that queued it.
     pub fn activate(&self, host: &dyn HostCtx, row: &DownloadRow) {
         let client = match host.db().get().and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?)) {
@@ -530,13 +436,9 @@ impl DownloadManager {
                 return;
             }
         };
-        // A `.torrent` HTTP link points at the indexer (often local Jackett/
-        // Prowlarr on the LAN). librqbit routes ALL its traffic through the VPN
-        // proxy, and a `0.0.0.0/0` tunnel can't reach a private LAN address, so
-        // its own fetch hangs until the add times out. Fetch the file OURSELVES,
-        // directly (no proxy), and hand the engine the bytes; only peer traffic
-        // then rides the VPN. Magnets have no file to fetch - let the engine
-        // resolve those (via proxied peers).
+        // librqbit routes all its traffic through the VPN proxy and a
+        // `0.0.0.0/0` tunnel can't reach a LAN indexer, so its own `.torrent`
+        // fetch hangs: fetch it ourselves, direct, and hand over the bytes.
         let prefetched = match self.prefetch_torrent(host, row, &client) {
             Ok(p) => p,
             Err(()) => return,
@@ -558,10 +460,6 @@ impl DownloadManager {
         }
     }
 
-    /// Fetch a `.torrent` file ourselves (bypassing the VPN proxy) when the grab
-    /// is an HTTP link on the embedded engine, since librqbit's own fetch would
-    /// hang on a LAN indexer behind a `0.0.0.0/0` tunnel. `Err(())` means the row
-    /// was already marked failed and the caller should abort.
     fn prefetch_torrent(
         &self,
         host: &dyn HostCtx,
@@ -585,8 +483,6 @@ impl DownloadManager {
         }
     }
 
-    /// After the engine accepted the add, reconcile against the row's current
-    /// state: the admin may have removed or paused it while the (slow) add ran.
     fn reconcile_added(
         &self,
         host: &dyn HostCtx,
@@ -602,7 +498,6 @@ impl DownloadManager {
             .map(|r| r.status);
         match current.as_deref() {
             None => {
-                // Removed while adding: drop the orphan torrent.
                 let _ = engine.remove(client_ref, true);
                 tracing::info!(id = %row.id, "torrent add landed after removal; dropped");
             }
@@ -615,9 +510,7 @@ impl DownloadManager {
         }
     }
 
-    /// Dedup by info-hash: the engine returns the SAME ref for identical content
-    /// grabbed from a different URL. If another live row already owns this
-    /// torrent, fail this one (the engine torrent stays for the other).
+    // The engine returns the same ref for identical content from another URL.
     fn reconcile_dedup(&self, host: &dyn HostCtx, row: &DownloadRow, client_ref: &str) {
         let dup = host
             .db()
@@ -636,16 +529,12 @@ impl DownloadManager {
         tracing::info!(release = %row.release_title, hash = %client_ref, "torrent added to engine");
     }
 
-    /// Re-attempt a failed (or removed) grab: drop any half-added torrent from
-    /// the engine, reset the row to `queued`, and return it so the caller can
-    /// re-run [`Self::activate`] in the background. Also re-flips its wanted rows
-    /// so a re-grab covers them again.
+    /// Resets the row to `queued`; the caller re-runs [`Self::activate`].
     pub fn retry(&self, host: &dyn HostCtx, id: &str) -> Result<DownloadRow> {
         let (row, client) = self.row_and_client(host, id)?;
         if !self.gate_open() {
             bail!("downloads are held by the VPN kill switch");
         }
-        // Best-effort: remove a stale/half-added torrent before re-adding.
         if !row.client_ref.is_empty() {
             if let Ok(engine) = self.engine_for(&client) {
                 let _ = engine.remove(&row.client_ref, false);
@@ -657,10 +546,7 @@ impl DownloadManager {
         Ok(row)
     }
 
-    /// Remove the torrent from the engine + delete its downloaded data, but KEEP
-    /// the ledger row (status stays `imported`). Used by the "delete after import"
-    /// option to free the download folder + stop seeding once the file is safely
-    /// in the library (the hardlink/copy there survives). Best-effort.
+    /// Drops the engine torrent and its data but KEEPS the ledger row.
     pub fn drop_data(&self, host: &dyn HostCtx, row: &DownloadRow) {
         if row.client_ref.is_empty() {
             return;
@@ -672,18 +558,15 @@ impl DownloadManager {
                     tracing::warn!(id = %row.id, error = %format!("{e:#}"), "delete-after-import: engine remove failed");
                     return;
                 }
-                // The engine no longer tracks it; blank the ref so pause/resume
-                // and the monitor don't try to poll a gone torrent.
+                // Blank the ref so nothing polls a torrent the engine dropped.
                 let _ = db::set_download_ref(host.db(), &row.id, "");
                 tracing::info!(release = %row.release_title, "deleted torrent + data after import");
             }
         }
     }
 
-    /// Pause/resume/remove one download by row id, mirroring engine + ledger.
-    /// A row with an empty `client_ref` is still being added in the background
-    /// (slow magnet/`.torrent` resolve); we skip the engine call and just move
-    /// the ledger, and `activate()` honors that state when the add lands.
+    /// An empty `client_ref` means the row is still being added: the engine
+    /// call is skipped and `activate()` honors the ledger when the add lands.
     pub fn pause(&self, host: &dyn HostCtx, id: &str) -> Result<()> {
         let (row, client) = self.row_and_client(host, id)?;
         if !row.client_ref.is_empty() {
@@ -696,7 +579,6 @@ impl DownloadManager {
     pub fn resume(&self, host: &dyn HostCtx, id: &str) -> Result<()> {
         let (row, client) = self.row_and_client(host, id)?;
         if row.client_ref.is_empty() {
-            // Not in the engine yet: re-queue so it gets (re)added.
             db::set_download_status(host.db(), id, "queued", None)?;
             return Ok(());
         }
@@ -707,8 +589,7 @@ impl DownloadManager {
 
     pub fn remove(&self, host: &dyn HostCtx, id: &str, delete_data: bool) -> Result<()> {
         let (row, client) = self.row_and_client(host, id)?;
-        // The engine may already have dropped it (or never had it); removal
-        // stays best-effort so the ledger can always be cleaned up.
+        // Best-effort: the ledger must be cleanable even if the engine errors.
         if !row.client_ref.is_empty() {
             if let Ok(engine) = self.engine_for(&client) {
                 if let Err(e) = engine.remove(&row.client_ref, delete_data) {
@@ -720,9 +601,7 @@ impl DownloadManager {
         Ok(())
     }
 
-    /// Pause every KROMA-tracked download that is still active (best-effort per
-    /// row). Only our ledger's torrents are touched, never foreign torrents in a
-    /// shared external client. Returns how many were paused.
+    /// Never touches a foreign torrent in a shared external client.
     pub fn pause_all(&self, host: &dyn HostCtx) -> Result<usize> {
         let rows = {
             let conn = host.db().get()?;
@@ -741,7 +620,6 @@ impl DownloadManager {
         Ok(n)
     }
 
-    /// Resume every KROMA download we previously paused. Returns the count.
     pub fn resume_all(&self, host: &dyn HostCtx) -> Result<usize> {
         let rows = {
             let conn = host.db().get()?;
@@ -760,7 +638,6 @@ impl DownloadManager {
         Ok(n)
     }
 
-    /// Force a tracker/DHT re-announce ("ask more peers") on one download.
     pub fn reannounce(&self, host: &dyn HostCtx, id: &str) -> Result<()> {
         let (row, client) = self.row_and_client(host, id)?;
         if !row.client_ref.is_empty() {
@@ -769,8 +646,6 @@ impl DownloadManager {
         Ok(())
     }
 
-    /// Force a tracker/DHT re-announce ("ask more peers") on every active
-    /// download. Best-effort per row. Returns how many were reannounced.
     pub fn reannounce_all(&self, host: &dyn HostCtx) -> Result<usize> {
         let rows = {
             let conn = host.db().get()?;
@@ -798,30 +673,15 @@ impl DownloadManager {
     }
 }
 
-// GrabSpec moved to kroma_module_sdk::ports; re-exported for this crate.
 pub use kroma_module_sdk::ports::GrabSpec;
 
-// A `GrabSpec` is built from a scored release by the acquisition crate (which
-// owns `ScoredReleaseView` now) or field-by-field for a manual add. This crate
-// only consumes it, so it names no acquisition type.
-
-/// The local SOCKS5 the embedded engine routes torrent peers through, when a
-/// WireGuard config is stored. This is the ONLY VPN path: KROMA runs a
-/// wireproxy bridge (WireGuard in, `socks5://127.0.0.1:<port>` out) and hands
-/// that local URL to librqbit. The SOCKS5 is an internal implementation detail
-/// of routing WireGuard traffic (librqbit only proxies via SOCKS5); it is not
-/// a user-facing option. `None` = no VPN, torrent traffic goes out directly.
+/// The local wireproxy SOCKS5 bridge peers are routed through (librqbit only
+/// proxies via SOCKS5). `None` = no VPN, torrent traffic goes out directly.
 pub fn active_proxy_url(host: &dyn HostCtx) -> Option<String> {
-    // Route torrent traffic through the VPN module's bridge whenever it provides
-    // one, resolved by port so downloads never depends on the VPN crate.
     kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::VpnProxyPort>(host)
         .and_then(|p| p.proxy_url(host))
 }
 
-/// Whether peer traffic is REQUIRED to ride the VPN bridge: the VPN module is
-/// enabled and a WireGuard config is stored. Settings share one namespace (this
-/// module already reads `vpnKillSwitch` / `vpnCheckUrl`), so this stays a
-/// data-level check; the VPN crate is never named.
 fn vpn_sealed_expected(host: &dyn HostCtx) -> bool {
     host.module_enabled("tv.kroma.vpn") && !host.setting_str("vpnWgConfig", "").trim().is_empty()
 }
@@ -831,18 +691,10 @@ fn kbps_setting(host: &dyn HostCtx, key: &str) -> Option<u32> {
     (kbps > 0).then(|| u32::try_from(kbps.saturating_mul(1024)).unwrap_or(u32::MAX))
 }
 
-/// Fetch a `.torrent`'s bytes for a grab. Fetched DIRECTLY (never through the VPN
-/// proxy) so a LAN indexer (Jackett/Prowlarr) stays reachable and the fetch can't
-/// hang behind the tunnel; only the torrent's peer traffic goes through the VPN.
-/// A grab from a built-in Cardigann indexer is fetched through the indexer
-/// module's authenticated-session port (private trackers cookie-gate the
-/// download, so a bare fetch would get the HTML login page); Torznab / manual
-/// grabs fall back to a plain fetch.
 fn fetch_torrent_for(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8>> {
-    // Retry transient transport failures. Trackers behind Cloudflare
-    // intermittently drop the TLS connection (`curl (35) SSL_ERROR_ZERO_RETURN`,
-    // reset, timeout); a fresh attempt almost always succeeds. Content errors
-    // (not a .torrent, empty) are NOT retried - they won't change on a retry.
+    // Trackers behind Cloudflare intermittently drop the TLS connection
+    // (`curl (35) SSL_ERROR_ZERO_RETURN`, reset, timeout) and a fresh attempt
+    // almost always succeeds. Content errors are NOT retried.
     let mut last = None;
     for attempt in 0..3u64 {
         if attempt > 0 {
@@ -860,12 +712,10 @@ fn fetch_torrent_for(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8
     Err(last.unwrap_or_else(|| anyhow!("torrent fetch failed")))
 }
 
-/// One `.torrent` fetch attempt: through the source indexer's authenticated
-/// Cardigann session if it is a built-in indexer, else a plain fetch.
+// Private trackers cookie-gate the download, so a built-in indexer is fetched
+// through its authenticated Cardigann session rather than plainly.
 fn fetch_torrent_once(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8>> {
     if let Some(indexer_id) = &row.indexer_id {
-        // `None` means it is not a built-in Cardigann indexer, so fall through to
-        // a plain fetch. Downloads never names the indexer crate.
         if let Some(port) =
             kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::TorrentFetchPort>(host)
         {
@@ -877,9 +727,6 @@ fn fetch_torrent_once(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u
     fetch_torrent_file(&row.magnet_or_url)
 }
 
-/// A transport-level failure worth retrying (vs a content error that won't
-/// change): any `curl` transport error - SSL, connection reset/refused, empty
-/// reply, timeout - surfaces as "curl exit N".
 fn is_transient_fetch(err: &anyhow::Error) -> bool {
     let msg = format!("{err:#}");
     msg.contains("curl exit")
@@ -905,9 +752,6 @@ fn snippet(body: &[u8]) -> String {
     String::from_utf8_lossy(body).chars().take(120).collect::<String>().replace('\n', " ")
 }
 
-/// The download manager IS the download-client host: engine modules resolve this
-/// port (`kroma_module_sdk::ports::DownloadClientHost`) and register/unregister
-/// their client kind on enable/disable, without depending on this crate.
 impl kroma_module_sdk::ports::DownloadClientHost for DownloadManager {
     fn register_engine(&self, register: fn(&mut crate::DownloadClientRegistry)) {
         let mut reg = self.clients.write().expect("download client registry lock");
@@ -919,9 +763,6 @@ impl kroma_module_sdk::ports::DownloadClientHost for DownloadManager {
     }
 }
 
-/// The download manager's VPN surface, exposed as a port so the VPN module shows
-/// the engine's kill-switch status, runs a seal check and restarts it after a
-/// config change, without depending on this crate.
 #[kroma_module_sdk::host::async_trait]
 impl kroma_module_sdk::ports::DownloadVpnPort for DownloadManager {
     fn vpn_status(&self) -> Option<kroma_module_sdk::ports::VpnStatusView> {
@@ -941,10 +782,6 @@ impl kroma_module_sdk::ports::DownloadVpnPort for DownloadManager {
         self.start_rqbit(host).await;
     }
 }
-
-// --- Cross-module capability ports (resolved by the Acquisition module) ---
-// The grab + ledger surfaces acquisition needs, exposed as SDK ports so it never
-// depends on this crate. Both just forward to the inherent methods / free fns.
 
 impl kroma_module_sdk::ports::DownloadGrabPort for DownloadManager {
     fn grab(&self, host: &dyn HostCtx, spec: GrabSpec) -> Result<DownloadRow> {
@@ -968,9 +805,6 @@ impl kroma_module_sdk::ports::DownloadGrabPort for DownloadManager {
     }
 }
 
-/// The downloads-ledger read/write port (a ZST; the ledger operations are free
-/// functions on the pool). Registered at boot so acquisition's import pass reads
-/// completed rows + flips status without naming this crate.
 pub struct DownloadDb;
 
 impl kroma_module_sdk::ports::DownloadDbPort for DownloadDb {

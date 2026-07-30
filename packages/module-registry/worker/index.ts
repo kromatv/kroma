@@ -1,24 +1,9 @@
-/** KROMA module registry - a Cloudflare Worker at modules.kroma.tv.
- *
- * Serves the machine-readable module catalog (`modules.json`, schema 2) that the
- * in-app Store reads, and a browser landing page listing every `.kmod` module.
- * The catalog is read live from the latest GitHub Release
- * (`releases/latest/download/modules.json`) and edge-cached, so publishing a
- * release is the whole deploy - nothing here redeploys per module.
- *
- * Routes:
- *   GET /modules.json  the catalog (point the Store's registry URL here)
- *   GET /              browser landing page listing every module; bare URL also
- *                      returns the catalog to non-browser clients
- *   GET /all.json      alias of /modules.json
- *   GET /favicon.svg   the brand mark (also answers /favicon.ico)
- */
+// KROMA module registry (modules.kroma.tv): serves the `modules.json` catalog, read live from
+// the latest GitHub Release and edge-cached, plus a landing page.
 import { KROMA_MARK_DATA_URI, KROMA_MARK_SVG } from './brand';
 
 export type Env = {
-  /** owner/repo the catalog is published on. */
   GITHUB_REPO?: string;
-  /** Optional token to dodge anonymous GitHub rate limits. */
   GITHUB_TOKEN?: string;
 };
 
@@ -39,8 +24,8 @@ type ModuleEntry = {
 type Catalog = { schema?: number; generatedAt?: string; modules?: ModuleEntry[] };
 
 export const DEFAULT_REPO = 'maxscharwath/kroma';
-const CACHE_FRESH = 'https://kroma-modules.cache/catalog-fresh'; // 5 min
-const CACHE_STALE = 'https://kroma-modules.cache/catalog-stale'; // 7 days fallback
+const CACHE_FRESH = 'https://kroma-modules.cache/catalog-fresh';
+const CACHE_STALE = 'https://kroma-modules.cache/catalog-stale';
 
 type ExecCtx = { waitUntil(p: Promise<unknown>): void };
 const edgeCache = (): Cache | undefined =>
@@ -103,12 +88,11 @@ const esc = (s: string) =>
   );
 const mb = (n?: number) => (n ? `${(n / 1048576).toFixed(1)} MB` : '');
 
-/** The brand mark, served as a real SVG so the tab icon is the current logo. */
 function favicon(): Response {
   return new Response(KROMA_MARK_SVG, {
     headers: {
       'content-type': 'image/svg+xml',
-      // Short: a brand change must not stay pinned at the edge for a day.
+      // Short, so a brand change is not pinned at the edge for a day.
       'cache-control': 'public, max-age=3600',
     },
   });
@@ -166,19 +150,16 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.replace(/(^|[^/])\/+$/, '$1') || '/';
     if (path === '/ping') return new Response('pong');
-    // Before the catalog load: these must not fall through to the JSON
-    // catch-all below, which used to answer /favicon.ico with 200 + the whole
-    // modules.json (so browsers kept whatever icon they had cached).
+    // Answered before the catalog load, or the JSON catch-all below serves the
+    // whole modules.json for /favicon.ico with a 200.
     if (path === '/favicon.svg' || path === '/favicon.ico') return favicon();
 
     let data: { body: string; catalog: Catalog };
     try {
       data = await loadCatalog(env, (p) => ctx.waitUntil(p));
     } catch (err) {
-      // The detail goes to the worker log, not to the caller: this is a public
-      // endpoint, and `String(err)` on a failed fetch carries the upstream URL
-      // (and whatever a thrown message happens to embed) straight to anyone who
-      // asks.
+      // The detail goes to the log, never to the caller: on a public endpoint,
+      // `String(err)` would hand out the upstream URL.
       console.error('catalog load failed', err);
       return jsonResponse(
         JSON.stringify({ schema: 2, modules: [], error: 'catalog unavailable' }),

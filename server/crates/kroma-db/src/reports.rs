@@ -1,12 +1,9 @@
-//! Problem-report persistence: insert (any user), list newest-first (optionally
-//! scoped to one reporter), triage-status transitions and delete. The list SELECT
-//! joins `users` for the reporter's display name (the admin queue shows it).
+//! Problem-report persistence: insert, list, triage-status transitions, delete.
 
 use super::*;
 use kroma_domain::{Report, ReportCategory, ReportStatus, ReportSubjectKind};
 
-/// Columns of the report list SELECT (reporter username joined in). Positional
-/// order must match [`row_to_report`].
+// Positional order must match [`row_to_report`].
 const REPORT_COLS: &str = "r.id, r.subject_kind, r.subject_id, r.subject_title, r.category, \
     r.message, r.status, r.reported_by, u.username, r.resolved_by, r.resolved_at, \
     r.created_at, r.updated_at";
@@ -32,7 +29,6 @@ fn row_to_report(r: &Row) -> rusqlite::Result<Report> {
     })
 }
 
-/// A report to insert (id minted by the caller; timestamps stamped here).
 pub struct NewReport {
     pub id: String,
     pub subject_kind: ReportSubjectKind,
@@ -63,8 +59,7 @@ pub fn insert_report(pool: &Pool, report: &NewReport, now_ms: i64) -> Result<()>
     Ok(())
 }
 
-/// All reports newest-first, optionally scoped to one reporter (the user-facing
-/// "my reports" list).
+/// All reports newest-first, optionally scoped to one reporter.
 pub fn list_reports(conn: &Connection, only_user: Option<&str>) -> rusqlite::Result<Vec<Report>> {
     let base =
         format!("SELECT {REPORT_COLS} FROM reports r LEFT JOIN users u ON u.id = r.reported_by");
@@ -91,9 +86,8 @@ pub fn get_report(conn: &Connection, id: &str) -> rusqlite::Result<Option<Report
     rows.next().transpose()
 }
 
-/// Transition a report's triage status. Moving to a terminal state records the
-/// acting admin + timestamp; reopening (`Open`) clears both, so the resolver
-/// fields always reflect the current state. Returns false when the id is absent.
+/// A terminal state records the acting admin and timestamp; reopening clears
+/// both. `false` when the id is absent.
 pub fn set_report_status(
     pool: &Pool,
     id: &str,
@@ -113,7 +107,7 @@ pub fn set_report_status(
     Ok(n > 0)
 }
 
-/// Delete a report. Returns false when absent.
+/// `false` when the id is absent.
 pub fn delete_report(pool: &Pool, id: &str) -> Result<bool> {
     let conn = pool.get()?;
     Ok(conn.execute("DELETE FROM reports WHERE id = ?1", params![id])? > 0)
@@ -156,7 +150,6 @@ mod tests {
         let conn = p.get().unwrap();
         let all = list_reports(&conn, None).unwrap();
         assert_eq!(all.len(), 2);
-        // Newest-first.
         assert_eq!(all[0].id, "r2");
         assert_eq!(all[0].category, ReportCategory::Metadata);
         assert_eq!(all[0].status, ReportStatus::Open);
@@ -175,7 +168,6 @@ mod tests {
         insert_report(&p, &new_report("r1", ReportSubjectKind::Movie, ReportCategory::Video), 1000)
             .unwrap();
 
-        // Resolve: records actor + timestamp.
         assert!(set_report_status(&p, "r1", ReportStatus::Resolved, Some(&admin), 5000).unwrap());
         let conn = p.get().unwrap();
         let r = get_report(&conn, "r1").unwrap().unwrap();
@@ -184,7 +176,6 @@ mod tests {
         assert_eq!(r.resolved_at, Some(5000));
         drop(conn);
 
-        // Reopen: clears the resolver fields.
         assert!(set_report_status(&p, "r1", ReportStatus::Open, None, 6000).unwrap());
         let conn = p.get().unwrap();
         let r = get_report(&conn, "r1").unwrap().unwrap();
@@ -193,14 +184,13 @@ mod tests {
         assert_eq!(r.resolved_at, None);
         drop(conn);
 
-        // Unknown id is a no-op.
         assert!(!set_report_status(&p, "ghost", ReportStatus::Dismissed, Some(&admin), 7000).unwrap());
     }
 
     #[test]
     fn list_scopes_to_one_reporter_and_delete_removes() {
         let p = pool();
-        // A real user for the scoped reporter (reported_by FKs users).
+        // reported_by FKs users, so the reporter must be a real account.
         let alice = crate::create_user(&p, "a@test.dev", "alice", "h", &[]).unwrap().id;
         let mut ra = new_report("ra", ReportSubjectKind::Movie, ReportCategory::Other);
         ra.reported_by = Some(alice.clone());

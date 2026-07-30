@@ -1,9 +1,6 @@
-//! The Indexers module as a standalone process (its `.kmod` entrypoint).
-//!
-//! Provides IndexerDbPort / IndexerSearchPort / TorrentFetchPort (served over the
-//! port bridge for torrents + acquisition) and its admin page
-//! (`/api/admin/indexers/*`, reverse-proxied by the core). It consumes TorznabPort
-//! + VpnProxyPort from the sibling sidecars, resolved through the core proxy.
+//! The Indexers module as a standalone process (its `.kmod` entrypoint). Serves
+//! IndexerDbPort / IndexerSearchPort / TorrentFetchPort plus `/api/admin/indexers/*`,
+//! and consumes TorznabPort + VpnProxyPort from the sibling sidecars.
 
 use std::sync::Arc;
 
@@ -20,7 +17,6 @@ async fn main() -> anyhow::Result<()> {
 
     kroma_module_runtime::serve(
         move |host| {
-            // Reach a sibling module's ports through the core reverse-proxy.
             let tz: Arc<dyn TorznabPort> = Arc::new(kroma_port_bridge::TorznabClient::new(
                 host.sibling_resolver("tv.kroma.torznab"),
             ));

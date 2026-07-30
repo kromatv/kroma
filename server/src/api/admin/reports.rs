@@ -62,8 +62,8 @@ fn counts_of(list: &[Report]) -> ReportCounts {
     c
 }
 
-/// Apply the query filters to the full list. Unparseable enum filters match
-/// nothing (a client typo yields an empty result, not the unfiltered list).
+// Unparseable enum filters match nothing: a client typo yields an empty
+// result, not the unfiltered list.
 fn filter_reports(all: Vec<Report>, params: &ListParams) -> Vec<Report> {
     let status = params.status.as_deref().map(|s| ReportStatus::parse(s));
     let category = params.category.as_deref().map(|s| ReportCategory::parse(s));
@@ -102,8 +102,8 @@ pub async fn list(
     Ok(Json(view).into_response())
 }
 
-/// Shared transition: set `status`, publish, return the updated report. A missing
-/// id is a localized 404.
+// Sets `status`, publishes, returns the updated report. A missing id is a
+// localized 404.
 async fn transition(
     state: SharedState,
     user: &User,
@@ -135,11 +135,9 @@ async fn transition(
     }
 }
 
-/// Tell whoever filed the report that it was triaged.
-///
-/// Only the two TERMINAL outcomes are worth a notification: a reopen is internal
-/// churn between moderators, and the reporter would just see their closed report
-/// flap. Reports filed anonymously have nobody to tell.
+// Only the two TERMINAL outcomes are worth a notification: a reopen is internal
+// churn between moderators, and the reporter would just see their closed report
+// flap. Reports filed anonymously have nobody to tell.
 async fn notify_reporter(state: &SharedState, report: &Report) {
     let (event, key) = match report.status {
         ReportStatus::Resolved => (NotificationEvent::ReportResolved, "resolved"),
@@ -166,7 +164,6 @@ async fn notify_reporter(state: &SharedState, report: &Report) {
     .await;
 }
 
-/// The client route a report's subject lives at.
 fn subject_route(report: &Report) -> &'static str {
     match report.subject_kind {
         ReportSubjectKind::Show => "show",

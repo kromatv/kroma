@@ -14,13 +14,10 @@ use kroma_module_sdk::db as db;
 use kroma_module_sdk::ports::naming;
 use kroma_module_sdk::ports::DownloadRow;
 
-/// The facts import needs about a title, from the request, the download row, or
-/// (last resort) the parsed release name.
 struct ImportMeta {
     kind: RequestKind,
     title: String,
     year: Option<u32>,
-    /// The download's known TMDB id (0 when unknown), for `{TmdbId}`.
     tmdb_id: Option<u64>,
 }
 
@@ -31,10 +28,6 @@ pub struct ImportSummary {
     pub failed: usize,
 }
 
-/// After a successful import: fulfill the linked request directly (no fragile
-/// tmdbId round-trip) and record the known tmdbId against every file we wrote, so
-/// enrichment adopts the real id instead of guessing from the filename (and the
-/// movie/show resolves its poster + shows as in-library in Discover).
 fn finalize_import<S: HostCtx>(state: &S, row: &DownloadRow, written: &[String]) {
     if let Some(req_id) = row.request_id.as_deref() {
         if let Err(e) = kroma_module_sdk::engine::services::requests::on_download_imported(state, req_id) {
@@ -44,22 +37,15 @@ fn finalize_import<S: HostCtx>(state: &S, row: &DownloadRow, written: &[String])
     if row.tmdb_id != 0 {
         record_file_tmdb(state, row.tmdb_id, written);
     }
-    // Optionally free the download folder + stop seeding now that it's imported.
     if state.setting_bool("acqDeleteAfterImport", false) {
         crate::downloads(state).drop_data(state, row);
     }
 }
 
-/// Pin the download's known TMDB id to every path we just wrote, keyed by the
-/// canonical absolute path the scanner will index it under. Path-keyed rather
-/// than by a recomputed logical id: the import knows exactly where it placed the
-/// file, so the hint can never orphan on a title-parse difference. Works for
-/// movies and episodes alike (a show adopts the id via any episode file).
 fn record_file_tmdb<S: HostCtx>(state: &S, tmdb_id: u64, written: &[String]) {
     for path in written {
-        // Match the scanner's key: it canonicalizes and stores the real path in
-        // `files.abs_path`. `canonicalize` succeeds here (the file exists) and
-        // yields the same string, so the enrichment join lines up.
+        // Keyed by canonical path to match the scanner's `files.abs_path`, so the
+        // enrichment join lines up regardless of title-parse differences.
         let key = std::fs::canonicalize(path)
             .map(|p| p.to_string_lossy().into_owned())
             .unwrap_or_else(|_| path.clone());
@@ -161,15 +147,12 @@ fn import_one<S: HostCtx>(state: &S, row: &DownloadRow) -> Result<Vec<String>> {
     Ok(written)
 }
 
-/// Naming context for a movie: quality/group/proper parsed from the file name
-/// (the streams are not probed yet, so MediaInfo tokens fill in at scan time).
 fn movie_ctx(meta: &ImportMeta, src: &Path) -> naming::NameContext {
     let parsed = kroma_module_sdk::scene::parse_release_name(stem_of(src));
     let ctx = base_ctx(meta, &parsed);
     naming::NameContext { title: meta.title.clone(), year: meta.year, ..ctx }
 }
 
-/// Naming context for one episode.
 fn episode_ctx(
     meta: &ImportMeta,
     season: u32,
@@ -186,8 +169,6 @@ fn episode_ctx(
     }
 }
 
-/// The quality/group/edition/dynamic-range/id fields common to both, from the
-/// parsed release name + the resolved metadata.
 fn base_ctx(meta: &ImportMeta, parsed: &kroma_module_sdk::scene::ParsedRelease) -> naming::NameContext {
     let (resolution, codec, source) = naming::quality_from_parsed(parsed);
     naming::NameContext {
@@ -207,9 +188,6 @@ fn ext_of(path: &Path) -> &str {
     path.extension().and_then(|e| e.to_str()).unwrap_or("mkv")
 }
 
-/// Resolve the title/year/kind to name the import by: the request first (most
-/// authoritative), then the download row's own denormalized fields (manual
-/// add), then the parsed release name (bare magnet, no metadata).
 fn resolve_meta<S: HostCtx>(state: &S, row: &DownloadRow) -> Result<ImportMeta> {
     let kind = if row.kind == "movie" { RequestKind::Movie } else { RequestKind::Show };
     let tmdb_id = (row.tmdb_id != 0).then_some(row.tmdb_id);
@@ -235,8 +213,6 @@ fn stem_of(path: &Path) -> &str {
     path.file_stem().and_then(|s| s.to_str()).unwrap_or_default()
 }
 
-/// The library folder new files go into: the configured library (by name) or
-/// the first one whose kind matches, falling back to any library.
 fn target_library_root<S: HostCtx>(state: &S, kind: RequestKind) -> Result<PathBuf> {
     let def = target_library_def(state, kind)?;
     let folder = def.folders.first().ok_or_else(|| anyhow!("library {} has no folder", def.name))?;
@@ -262,8 +238,6 @@ fn target_library_def<S: HostCtx>(state: &S, kind: RequestKind) -> Result<Librar
     Ok(def.clone())
 }
 
-/// Hardlink into place, copying when the library lives on another filesystem.
-/// An existing destination counts as already imported.
 fn place(src: &Path, dest: &Path) -> Result<()> {
     if dest.exists() {
         return Ok(());
@@ -271,26 +245,20 @@ fn place(src: &Path, dest: &Path) -> Result<()> {
     if let Some(parent) = dest.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    // 1) Hard link: instant, but only within one filesystem AND subvolume.
     if std::fs::hard_link(src, dest).is_ok() {
         return Ok(());
     }
-    // 2) Reflink (FICLONE): an instant copy-on-write clone across subvolumes of
-    //    one Btrfs/XFS filesystem - exactly the Synology case (download dir under
-    //    @appdata, library in a media shared folder = same volume, different
-    //    subvolume), where the hard link fails and DSM's old kernel won't reflink
-    //    through std::fs::copy. Falls through on a plain copy filesystem.
+    // Reflink (FICLONE): a copy-on-write clone across subvolumes of one Btrfs/XFS
+    // filesystem — the Synology case, where hard link fails and DSM's old kernel
+    // won't reflink through std::fs::copy.
     #[cfg(target_os = "linux")]
     if try_reflink(src, dest).is_ok() {
         return Ok(());
     }
-    // 3) Full byte copy: different filesystems, or no CoW support.
     std::fs::copy(src, dest)?;
     Ok(())
 }
 
-/// Attempt a reflink (`FICLONE`) clone of `src` into a fresh `dest`. Cleans up
-/// the empty destination on failure so the caller's copy fallback starts clean.
 #[cfg(target_os = "linux")]
 fn try_reflink(src: &Path, dest: &Path) -> std::io::Result<()> {
     let src_f = std::fs::File::open(src)?;
@@ -299,13 +267,13 @@ fn try_reflink(src: &Path, dest: &Path) -> std::io::Result<()> {
         Ok(()) => Ok(()),
         Err(e) => {
             drop(dest_f);
+            // Clean up so the caller's copy fallback starts from a fresh destination.
             let _ = std::fs::remove_file(dest);
             Err(e.into())
         }
     }
 }
 
-/// Video files under a download folder, `sample` files excluded.
 fn video_files(root: &Path) -> Result<Vec<PathBuf>> {
     let mut out = Vec::new();
     for entry in walkdir::WalkDir::new(root).max_depth(6).into_iter().flatten() {

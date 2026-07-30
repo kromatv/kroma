@@ -1,8 +1,7 @@
-// One LLM provider, rendered as an inline expandable card (mirrors the admin
-// Libraries pattern): collapsed header shows name + type + default badge +
-// model·host; expanded reveals the editable fields (provider type, base URL,
-// API key, searchable model picker, advanced) and per-card Test / Set default /
-// Remove. Backed by /api/admin/llm* each card probes its own in-progress values.
+// One LLM provider, rendered as an inline expandable card: collapsed header
+// shows name + type + default badge + model·host; expanded reveals the
+// editable fields and per-card Test / Set default / Remove. Backed by
+// /api/admin/llm*.
 import type { KromaClient, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Icon, Button as KitButton, Txt } from '@kroma/ui/kit';
@@ -29,11 +28,10 @@ import {
 } from '#web/features/admin/ui';
 import { SearchSelect } from './search-select';
 
-/** The kit sm-button label metrics, tinted danger for the destructive action. */
 const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
-/** Editable provider the view fields plus a transient `apiKey` ('' = keep the
- *  stored secret) and `hasApiKey` (whether one is stored server-side). */
+// `apiKey` is a transient field ('' = keep the stored secret); `hasApiKey`
+// reports whether one is stored server-side.
 export type ProviderForm = {
   id: string;
   name: string;
@@ -47,7 +45,6 @@ export type ProviderForm = {
   reasoning: boolean;
 };
 
-/** Default base URL per provider (blank = the user must supply one). */
 const PROVIDER_BASE: Record<string, string> = {
   openrouter: 'https://openrouter.ai/api/v1',
   anthropic: '',
@@ -62,10 +59,8 @@ const MODEL_PLACEHOLDER: Record<string, string> = {
   openrouter: 'qwen/qwen-2.5-7b-instruct',
 };
 
-/** Per-provider field layout each provider exposes a different set of settings,
- *  so the form adapts: where the base URL lives, whether a key is required, and
- *  which generation controls apply (temperature is OpenAI-only; reasoning is
- *  Anthropic-only). Unknown providers fall back to the openai layout. */
+// Temperature is OpenAI-only, reasoning is Anthropic-only; unknown providers
+// fall back to the openai layout.
 type Spec = {
   baseUrl: 'required' | 'advanced';
   apiKey: 'required' | 'optional';
@@ -113,7 +108,6 @@ function ProviderHeader({
 }>) {
   const t = useT();
   return (
-    // Collapsed header click to expand
     <button
       type="button"
       onClick={onToggle}

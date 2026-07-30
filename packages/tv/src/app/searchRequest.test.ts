@@ -1,13 +1,11 @@
-// The door a search comes through from outside the app (Siri on Apple TV).
-//
-// The timing is the whole point of these: Siri launches a cold app to handle a
-// request, so a query routinely exists before anything is listening for it.
+// Siri launches a cold app to handle a request, so a query routinely exists
+// before anything is listening for it.
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { onSearchRequest, requestSearch, takePendingSearch } from '#tv/app/searchRequest';
 
 afterEach(() => {
-  takePendingSearch(); // leave no request behind for the next test
+  takePendingSearch();
 });
 
 describe('searchRequest', () => {

@@ -1,8 +1,5 @@
-// <Logo>: the KROMA brand lockup, on every target.
-//
-// Drawn entirely from the official export's outlines: "KR" + the chromatic wheel
-// as the O + "MA". No webfont involved, so it renders identically offline and on
-// a TV that has never seen a Google Font.
+// The KROMA lockup drawn from outlines, not a webfont, so it renders identically
+// offline and on a TV that has never seen a Google Font.
 
 import { Box } from '#ui/components/atoms/box';
 import { Wheel } from '#ui/components/atoms/wheel';
@@ -12,12 +9,10 @@ import { colors } from '#ui/lib/tokens';
 import type { WheelSpin } from '#ui/lib/wheel-paths';
 
 interface LogoProps {
-  /** Lockup height (= the wheel-O diameter); with `markOnly`, the wheel diameter. */
+  /** Lockup height, which is also the wheel-O diameter. */
   size?: number;
-  /** Show only the chromatic wheel, without the KR MA letters. */
   markOnly?: boolean;
   spin?: WheelSpin;
-  /** Letter colour. Defaults to the body text token. */
   color?: string;
 }
 

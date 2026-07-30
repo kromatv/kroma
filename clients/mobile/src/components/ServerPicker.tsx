@@ -24,7 +24,6 @@ export function ServerPicker({
 }: Readonly<{
   saved: SavedServerRow[];
   discovered: FoundServerRow[];
-  /** A connection is in flight: freezes the discovered rows. */
   busy: boolean;
   error: string | null;
   onPickSaved(url: string): void;

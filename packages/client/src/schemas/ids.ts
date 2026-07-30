@@ -1,18 +1,13 @@
 // Branded id types nominal `string`s so a `UserId` can never be passed where an
-// `ItemId` is expected (or a raw string where an id is). Each brand is a zod
-// schema whose `z.infer` gives the branded TS type. Turn a raw string into a
-// brand with `UserId.of(s)` (a real zod parse the single, validated boundary),
-// or `UserId.parse(s)` directly — `.of` is just the ergonomic alias.
+// `ItemId` is expected. Turn a raw string into a brand with `UserId.of(s)`, an
+// alias for `UserId.parse(s)`.
 
 import { z } from 'zod';
 
-/** A branded-string id: a zod schema with an `.of(s)` helper that parses a raw
- * string into the brand (real validation, never a bare `as` assertion). The
- * paired `export type X = ReturnType<typeof X.of>` gives the branded TS type. */
 function brandedId<const B extends string>(_brand: B) {
   const schema = z.string().brand<B>();
   // `parse` does the real validation; the assertion only re-applies the brand
-  // the compiler can't see through the generic `B`. Callers get a branded value.
+  // the compiler can't see through the generic `B`.
   const of = (s: string) => schema.parse(s) as z.infer<typeof schema>;
   return Object.assign(schema, { of });
 }

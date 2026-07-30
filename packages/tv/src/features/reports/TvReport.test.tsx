@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 //
-// The report screen inside the app it actually runs in: the memory router, the
-// navigation guard, and the detail screen that opens it. Mounted this way on
-// purpose the screen itself was never what closed it, the routing around it was,
-// and only a test that includes the routing can catch that.
+// The report screen inside the app it actually runs in: the memory router,
+// the navigation guard, and the detail screen that opens it. Mounted this
+// way on purpose — the screen itself was never what closed it, the routing
+// around it was, and only a test that includes the routing can catch that.
 
 import type { KromaClient } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';
@@ -29,8 +29,8 @@ afterEach(() => {
   clearPressGuard();
 });
 
-/** Every screen we do not exercise renders its own name, so a stray redirect
- * shows up as the wrong name on screen rather than as an empty tree. */
+// Every screen we do not exercise renders its own name, so a stray redirect
+// shows up as the wrong name on screen rather than as an empty tree.
 function stubScreens(): TvScreens {
   const stub = (name: string) => () => <div>{`screen:${name}`}</div>;
   return {
@@ -56,9 +56,9 @@ function stubScreens(): TvScreens {
   };
 }
 
-/** TvApp's guard, verbatim in shape: the redirect is applied from an effect
- * AFTER the screen has mounted, which is what made a missing allow-list entry
- * look like a screen that closes itself. */
+// TvApp's guard, verbatim in shape: the redirect is applied from an effect
+// after the screen has mounted, which is what made a missing allow-list
+// entry look like a screen that closes itself.
 function Guard({ signedIn }: Readonly<{ signedIn: boolean }>) {
   const nav = useNav();
   useEffect(() => {
@@ -68,7 +68,6 @@ function Guard({ signedIn }: Readonly<{ signedIn: boolean }>) {
   return <TvOutlet />;
 }
 
-/** Hands the live nav out to the test, the way a screen would use it. */
 function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
   const nav = useNav();
   onReady(nav);
@@ -101,7 +100,6 @@ function mountApp(client: Partial<KromaClient> = {}) {
   return { nav: () => nav, createReport };
 }
 
-/** Open the report screen the way a film's detail page does. */
 function openReport(app: ReturnType<typeof mountApp>) {
   act(() => {
     app.nav().go('report', { kind: 'movie', id: 'm1', title: 'Blade Runner 2049' });

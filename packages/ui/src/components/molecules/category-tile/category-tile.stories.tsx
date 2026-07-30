@@ -4,8 +4,8 @@ import { tintGradient } from '#ui/components/molecules/media-card';
 import { stillArt } from '#ui/lib/sample-art';
 import { CategoryTile, categoryTileVariants } from './category-tile';
 
-/** Three categories with their own hues, the way the genre screen derives them
- *  from the name. The kit does not decide the colours; the screen does. */
+// Three categories with their own hues, the way the genre screen derives them
+// from the name. The kit does not decide the colours; the screen does.
 const CATEGORIES = [
   {
     label: 'Science fiction',

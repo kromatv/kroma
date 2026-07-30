@@ -14,10 +14,9 @@ use crate::infra::llm::ToolBox;
 use crate::services::llm::CatalogTools;
 use crate::state::SharedState;
 
-/// Max model turns in the suggestion tool loop (a few `find_titles`, then the
-/// JSON reply smaller than curate's catalog-wide pass).
+// A few `find_titles` calls then the JSON reply; smaller than curate's
+// catalog-wide pass.
 const MAX_TOOL_STEPS: usize = 12;
-/// Minimum members for a suggestion section to be worth showing.
 const MIN_MEMBERS: usize = 4;
 
 /// A generated suggestion: a localized one-line reason per language + resolved
@@ -55,10 +54,8 @@ pub fn suggest_for(state: &SharedState, seed_id: &str, max_tokens: u32) -> Resul
         .map(|m| m.trim().to_string())
         .filter(|m| !m.is_empty() && m != seed_id && seen.insert(m.clone()))
         .collect();
-    // Resolve against the real catalog (movies *and* shows) and gate on the
-    // resolved count the model can echo titles or stale/invented ids, which
-    // would otherwise pass the raw-count gate, get cached as terminal, then be
-    // silently dropped at hydration, leaving the rail permanently empty.
+    // Gate on the resolved count, not the raw one: an invented/stale id would
+    // otherwise pass, get cached as terminal, and vanish silently at hydration.
     let refs: Vec<&str> = claimed.iter().map(String::as_str).collect();
     let ids: Vec<String> =
         crate::db::entities_by_ids(pool, &refs)?.iter().map(|e| e.id().to_string()).collect();
@@ -74,8 +71,7 @@ pub fn suggest_for(state: &SharedState, seed_id: &str, max_tokens: u32) -> Resul
     Ok(Some(Suggestion { reasons, ids }))
 }
 
-/// (system, user) prompt: describe the seed, ask for library titles a fan would
-/// enjoy, members returned as catalog ids from the tools.
+// Members come back as catalog ids resolved from the tools, not free text.
 fn build_prompt(s: &TitleFull) -> (String, String) {
     let reason_fields =
         i18n::SUPPORTED_LOCALES.iter().map(|l| format!("\"{l}\":string")).collect::<Vec<_>>().join(",");
@@ -112,8 +108,8 @@ fn build_prompt(s: &TitleFull) -> (String, String) {
     (system, user)
 }
 
-/// One suggestion object as the model returned it. `reason` is a locale-keyed
-/// object (`{"en":…,"fr":…}`) over the supported languages.
+// `reason` is a locale-keyed object (`{"en":…,"fr":…}`) over the supported
+// languages, as the model returns it.
 #[derive(Deserialize, Default)]
 #[serde(default)]
 struct Spec {
@@ -121,7 +117,7 @@ struct Spec {
     members: Vec<String>,
 }
 
-/// Parse the outermost JSON object from a (possibly fenced / prefixed) reply.
+// Parses the outermost object, tolerating a fenced / prefixed reply.
 fn parse(text: &str) -> Option<Spec> {
     let start = text.find('{')?;
     let end = text.rfind('}')?;
@@ -303,11 +299,10 @@ mod tests {
         // retries on Err, so a missing seed must not become a permanent retry.
         assert!(suggest_for(&state, "itm_nope", 512).unwrap().is_none());
     }
-    // ----- suggest_for, against a fake tool-calling model --------------------------
 
     use crate::test_support::{seed_movie, FakeLlm};
 
-    /// A model reply in the shape `parse` expects.
+    // A model reply in the shape `parse` expects.
     fn reply(members: &[&str]) -> String {
         let list = members.iter().map(|m| format!("\"{m}\"")).collect::<Vec<_>>().join(",");
         format!(r#"{{"reason":{{"en":"Because they rhyme."}},"members":[{list}]}}"#)

@@ -40,8 +40,7 @@ describe('sv', () => {
   });
 
   it('matches a compound rule against a value that came from the defaults', () => {
-    // `size` is not passed, so it defaults to md; the rule requires sm and must
-    // therefore NOT fire. The reverse case is covered above.
+    // `size` defaults to md, so the rule requiring sm must not fire.
     expect(button({ variant: 'ghost' })).not.toContainEqual({ borderWidth: 1 });
   });
 
@@ -61,7 +60,6 @@ describe('sv', () => {
 
   it('returns the SAME array for the same combination, so a re-render is identity-equal', () => {
     expect(button({ variant: 'ghost' })).toBe(button({ variant: 'ghost' }));
-    // Spelling out a default resolves to the same combination as omitting it.
     expect(button()).toBe(button({ variant: 'primary', size: 'md' }));
     expect(button({ variant: 'ghost' })).not.toBe(button());
   });

@@ -1,15 +1,10 @@
-// Browser-side WebAuthn plumbing. The server speaks the webauthn-rs JSON shape
-// (binary fields as base64url strings); the `navigator.credentials` API speaks
-// ArrayBuffers. These helpers convert between the two and drive the two
-// ceremonies, so the card/login code just deals with plain client calls.
-//
-// WebAuthn is only available in a secure context (HTTPS or localhost); callers
-// must gate their UI on `passkeysSupported()` first.
+// Browser-side WebAuthn plumbing: the server speaks the webauthn-rs JSON shape
+// (binary fields as base64url), `navigator.credentials` speaks ArrayBuffers.
+// WebAuthn needs a secure context, so callers gate on `passkeysSupported()`.
 
 import type { WebAuthnCredential, WebAuthnOptions } from '@kroma/core';
 import { bytesToBase64Url } from '#web/shared/lib/base64url';
 
-/** Whether the browser can run a WebAuthn ceremony here. */
 export function passkeysSupported(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -19,7 +14,6 @@ export function passkeysSupported(): boolean {
   );
 }
 
-/** base64url string → bytes. */
 function decode(s: string): Uint8Array {
   const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
   const bin = atob((s + pad).replaceAll('-', '+').replaceAll('_', '/'));
@@ -28,9 +22,6 @@ function decode(s: string): Uint8Array {
   return out;
 }
 
-/** Convert the server's `publicKey` options (base64url binary fields) into the
- * ArrayBuffer form `navigator.credentials` expects. Handles both the creation
- * (`user.id`, `excludeCredentials`) and request (`allowCredentials`) shapes. */
 function toBufferOptions(
   publicKey: Record<string, unknown>,
 ): PublicKeyCredentialCreationOptions & PublicKeyCredentialRequestOptions {
@@ -48,7 +39,7 @@ function toBufferOptions(
   return pk as unknown as PublicKeyCredentialCreationOptions & PublicKeyCredentialRequestOptions;
 }
 
-/** Run the registration ceremony → the credential JSON to send to `finish`. */
+/** Runs the registration ceremony; the result is the JSON `finish` expects. */
 export async function createPasskey(options: WebAuthnOptions): Promise<WebAuthnCredential> {
   const publicKey = toBufferOptions(options.publicKey);
   const cred = (await navigator.credentials.create({ publicKey })) as PublicKeyCredential | null;
@@ -67,7 +58,7 @@ export async function createPasskey(options: WebAuthnOptions): Promise<WebAuthnC
   };
 }
 
-/** Run the authentication ceremony → the assertion JSON to send to `finish`. */
+/** Runs the authentication ceremony; the result is the JSON `finish` expects. */
 export async function getPasskey(options: WebAuthnOptions): Promise<WebAuthnCredential> {
   const publicKey = toBufferOptions(options.publicKey);
   const cred = (await navigator.credentials.get({ publicKey })) as PublicKeyCredential | null;

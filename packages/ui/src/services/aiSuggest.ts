@@ -7,7 +7,6 @@
 import type { KromaClient, Section } from '@kroma/core';
 import { useEffect, useState } from 'react';
 
-/** Re-poll cadence + ceiling while the model is still generating (×6s ≈ 72s). */
 const POLL_MS = 6000;
 const MAX_POLLS = 12;
 

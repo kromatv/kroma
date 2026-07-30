@@ -24,7 +24,6 @@ import { formatBytes, relativeSeen } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
-/** The add-folder affordance keeps its dashed outline on the kit's ghost. */
 const DASHED = {
   borderWidth: 1,
   borderColor: 'rgba(255, 255, 255, 0.2)',

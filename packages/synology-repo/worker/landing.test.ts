@@ -24,9 +24,8 @@ const catalog = (entries: Entry[]): Catalog => ({
 });
 
 describe('renderLanding branding', () => {
-  // Regression: the mark used to be fetched from /icon.png, which the worker
-  // proxied from the repo behind a 24h edge cache. That kept serving the
-  // pre-rebrand logo long after the assets changed, so it is now bundled.
+  // A proxied /icon.png sat behind a 24h edge cache and kept serving the
+  // pre-rebrand logo.
   it('inlines the brand mark instead of fetching /icon.png', () => {
     const html = renderLanding(catalog([entry()]), 'https://pkg.kroma.tv');
     expect(html).toMatch(/rel="icon" href="data:image\/svg\+xml/);
@@ -39,9 +38,9 @@ describe('renderLanding', () => {
   it('renders the package-source URL, version, size and a row per entry', () => {
     const html = renderLanding(catalog([entry()]), 'https://pkg.kroma.tv');
     expect(html).toContain('<code class="url">https://pkg.kroma.tv/</code>');
-    expect(html).toContain('1.0.0-abc'); // version derived from spk name
-    expect(html).toContain('2.0 MB'); // 2097152 bytes
-    expect(html).toContain('2026-07-01'); // published day only
+    expect(html).toContain('1.0.0-abc');
+    expect(html).toContain('2.0 MB');
+    expect(html).toContain('2026-07-01');
     expect(html).toContain('https://dl/kroma-1.0.0.spk');
     expect(html).toContain('Latest stable');
   });
@@ -50,7 +49,7 @@ describe('renderLanding', () => {
     const html = renderLanding(catalog([entry({ channel: 'nightly' })]), 'https://pkg.kroma.tv');
     expect(html).toContain('No stable release published yet.');
     expect(html).toContain('<h2>Nightly</h2>');
-    expect(html).toContain('nightly'); // channel tag on the row
+    expect(html).toContain('nightly');
   });
 
   it('omits the nightly section when there is no nightly entry', () => {
@@ -67,14 +66,14 @@ describe('renderLanding', () => {
         desc: 'd',
         arch: 'x86_64',
         firmware: '7.0-40000',
-        size: 5242880, // 5 MB
+        size: 5242880,
         md5: 'x',
         beta: false,
       },
     });
     const html = renderLanding(catalog([withInfo]), 'https://pkg.kroma.tv');
     expect(html).toContain('5.0 MB');
-    expect(html).toContain('>1.0.0<'); // sidecar version
+    expect(html).toContain('>1.0.0<');
   });
 
   it('HTML-escapes untrusted-looking version/url text', () => {

@@ -13,10 +13,7 @@ import { launcherBackend } from '#tv/app/launcher';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 
-/** The server-composited 16:9 "card" (backdrop + KROMA logo + "Reprendre" badge +
- * resume bar) - the same vignette the Tizen Smart Hub tiles use. Public endpoint,
- * so the launcher can fetch it without the app's auth. `v` busts the launcher's
- * image cache when the art changes. */
+// A public endpoint, so a launcher can fetch it without the app's auth.
 function cardArt(c: ContinueItem, client: KromaClient): string {
   const progress = c.durationMs ? c.positionMs / c.durationMs : 0;
   const params = new URLSearchParams({ label: 'Reprendre', v: c.item.addedAt });
@@ -24,12 +21,8 @@ function cardArt(c: ContinueItem, client: KromaClient): string {
   return `${client.baseUrl}/api/items/${encodeURIComponent(c.item.id)}/card?${params}`;
 }
 
-/** Shape the launcher backend's Watch Next row consumes (see WatchNext.kt in the
- * native TV app's `tv-launcher` module, and the Top Shelf extension's
- * ContentProvider.swift). `imageUrl` is the composited vignette for launchers
- * that show raw tiles (Android, Tizen); `backdropUrl` is the clean full-size
- * art for launchers that draw their own chrome - Top Shelf adds the title and
- * a progress bar itself, so a baked-in bar would show twice there. */
+// `backdropUrl` is the clean art for Top Shelf, which draws its own title and
+// progress bar and would otherwise show two.
 function toWatchNext(items: ContinueItem[], client: KromaClient) {
   return items.map((c) => {
     const it = c.item;
@@ -39,8 +32,8 @@ function toWatchNext(items: ContinueItem[], client: KromaClient) {
       subtitle: it.episodeTitle ?? (it.year ? String(it.year) : ''),
       imageUrl: cardArt(c, client),
       backdropUrl: client.backdropFor(it) ?? undefined,
-      // For an episode: launchers link the card to the SHOW (kroma://show/<id>),
-      // because the movie catalogue cannot resolve an episode id (launcher-links).
+      // Launchers link an episode card to the SHOW: the movie catalogue cannot
+      // resolve an episode id.
       showId: it.showId ?? undefined,
       progressMs: Math.round(c.positionMs),
       durationMs: Math.round(c.durationMs ?? 0),
@@ -52,14 +45,11 @@ function toWatchNext(items: ContinueItem[], client: KromaClient) {
 
 interface Continue {
   items: ContinueItem[];
-  /** Re-fetch (e.g. the home screen calls this on mount, after the player closes). */
   refresh: () => void;
 }
 
 const ContinueCtx = createContext<Continue | null>(null);
 
-/** "Reprendre" (continue watching) per-user. Re-fetched on sign-in and whenever
- * the home screen asks. Mounted inside the auth + connection providers. */
 export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { user } = useAuth();
   const { client } = useConnection();
@@ -80,12 +70,8 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
     refresh();
   }, [refresh]);
 
-  // Mirror the list into the Android TV / Google TV launcher's system "Continue
-  // watching" (Watch Next) row, so it shows on the platform home even when the
-  // app is closed. No-op on a television with no launcher backend registered.
-  // Guard on the serialized payload: this effect re-runs on every `items`/render
-  // churn, and pushing the SAME list repeatedly raced the native sync into
-  // duplicate rows - only push when the content actually changed.
+  // Pushing the same list twice races the native launcher sync into duplicate
+  // rows, so guard on the serialized payload.
   const lastPushed = useRef<string>('');
   useEffect(() => {
     const launcher = launcherBackend();

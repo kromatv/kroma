@@ -9,8 +9,6 @@ import { kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { discoverQueries } from '#web/shared/lib/queries';
 
-/** Value that only updates after it stops changing for `ms` — debounces the
- * search box so a keystroke burst issues a single query. */
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -24,7 +22,6 @@ export interface DiscoverSearchState {
   loading: boolean;
   local: SearchHit[];
   discover: DiscoverEntry[];
-  /** The user can see + use the TMDB section. */
   canDiscover: boolean;
 }
 
@@ -75,8 +72,7 @@ export interface TrendingState {
 }
 
 /** This week's trending movies + shows, for the browse-first empty state.
- * Fetched once when `enabled` (the user can discover); flagged against the
- * library + open requests the same as search results. */
+ * Fetched once when `enabled` (the user can discover). */
 export function useTrending(enabled: boolean): TrendingState {
   const { data, isFetching } = useQuery({
     queryKey: ['discover', 'trending', 'all'],
@@ -93,9 +89,8 @@ export interface TrendingPageState {
   totalPages: number;
 }
 
-/** One page of trending titles for a single kind (`movie` | `tv`), backing the
- * full "trending movies" / "trending shows" pages. `keepPreviousData` retains
- * the prior page (and its total) while the next one loads. */
+/** One page of trending titles for a single kind (`movie` | `tv`).
+ * `keepPreviousData` retains the prior page (and its total) while the next loads. */
 export function useTrendingPage(
   type: 'movie' | 'tv',
   page: number,

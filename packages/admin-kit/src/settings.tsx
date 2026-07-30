@@ -16,19 +16,12 @@ interface SettingsViewProps {
   view: string;
   titleKey: MessageKey;
   subtitleKey: MessageKey;
-  /** Render only the setting groups (no page header), to embed under another
-   * page (e.g. the VPN section below its config card). */
   embedded?: boolean;
 }
 
-/** Return a copy of `groups` with the row keyed by `key` set to `value` (the rest
- * shared by reference). Hoisted out of the component so the map chain doesn't nest
- * callbacks too deeply.
- *
- * A `secret` row records only WHETHER it now holds a value: the server never
- * sends one back, and keeping the pasted key in component state would put a
- * signing key in the React tree for the rest of the session — and back into the
- * textarea it was typed into. */
+// A `secret` row records only WHETHER it now holds a value, not the value
+// itself: the server never sends one back, and keeping it in state would put
+// a signing key in the React tree for the rest of the session.
 function applySetting(groups: SettingGroup[], key: string, value: unknown): SettingGroup[] {
   const applied = (r: SettingRow): SettingRow =>
     r.kind === 'secret' ? { ...r, value: '', configured: Boolean(value) } : { ...r, value };
@@ -123,8 +116,7 @@ function Row({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknow
   );
 }
 
-/** A setting's stored value (untyped `serde_json::Value`) as editable text; an
- * object would otherwise stringify to "[object Object]". */
+// An object would otherwise stringify to "[object Object]".
 function asText(v: unknown): string {
   if (v == null) return '';
   if (typeof v === 'string') return v;
@@ -153,17 +145,10 @@ function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: un
   );
 }
 
-/**
- * A write-only credential: a PEM key or a service-account JSON.
- *
- * Multi-line, because both are. It starts empty every time — the server does not
- * send stored secrets back — so the only states are "there is one" and "there
- * isn't", and typing replaces rather than edits.
- *
- * Blur commits only a NON-EMPTY value, so leaving the field alone can never wipe
- * a working key by accident. Removing one is therefore deliberate: that is what
- * the Clear button is for.
- */
+// A write-only credential (PEM key or service-account JSON): starts empty
+// every time, since the server never sends a stored secret back, and blur
+// commits only a non-empty value so leaving the field alone can never wipe a
+// working key by accident. Removing one is the Clear button's job.
 function SecretInput({
   configured,
   onCommit,

@@ -1,6 +1,6 @@
-//! Recommendation rows backed by content embeddings (see [`crate::db::vectors`]).
-//! Read-only. "For You" is Bearer-scoped to the caller (it reads their watch
-//! history); "similar" is public (similarity doesn't depend on the user).
+//! Read-only recommendation rows backed by content embeddings. "For You" is
+//! Bearer-scoped to the caller because it reads their watch history; "similar"
+//! and "themed" are public.
 
 use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Response};
@@ -16,7 +16,6 @@ use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
-/// Similar-items, themed rows and the personalized "For You" feed.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/items/{id}/similar", get(similar))
@@ -24,11 +23,9 @@ pub fn routes() -> Router<SharedState> {
         .route("/for-you", get(for_you))
 }
 
-/// Titles per row.
 const ROW_LEN: usize = 30;
 
-/// `GET /api/for-you` (Bearer) → `MediaItem[]` content-based picks from the
-/// caller's watch history. Empty until they've watched something embeddable.
+/// `GET /api/for-you` — empty until the caller has watched something embeddable.
 pub async fn for_you(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -46,7 +43,6 @@ pub async fn for_you(
     }
 }
 
-/// `GET /api/items/:id/similar` → `MediaItem[]` "more like this" for a title.
 pub async fn similar(
     State(state): State<SharedState>,
     ReqLocale(locale): ReqLocale,
@@ -70,9 +66,8 @@ pub struct ThemedParams {
     q: String,
 }
 
-/// `GET /api/themed?q=…` → `MediaItem[]` zero-shot themed row: embeds the
-/// free-text phrase with the process-wide embedder and returns the nearest
-/// titles. Public. Empty `q` → empty row (no implicit "everything").
+/// `GET /api/themed?q=…` — a zero-shot themed row from the nearest titles to the
+/// free-text phrase. An empty `q` yields an empty row, never "everything".
 pub async fn themed(
     State(state): State<SharedState>,
     ReqLocale(locale): ReqLocale,
@@ -82,7 +77,7 @@ pub async fn themed(
     if q.is_empty() {
         return Json(Vec::<MediaItem>::new()).into_response();
     }
-    // Embed + search together on the blocking pool thread (embedding is CPU work).
+    // Embed and search together on the blocking pool: embedding is CPU work.
     let embedder = state.embedder.clone();
     match query(&state.db, move |pool| {
         let vec = embedder.embed(&q);

@@ -34,8 +34,8 @@ pub(super) fn find_marker(stem: &str) -> Option<Marker> {
     None
 }
 
-/// Try to match Form 1 (`SxxEyy` with an optional multi-episode tail) starting
-/// at byte `i`. Returns the marker when the bytes at `i` form a valid one.
+// Try to match Form 1 (`SxxEyy` with an optional multi-episode tail) starting
+// at byte `i`. Returns the marker when the bytes at `i` form a valid one.
 fn match_sxxeyy(b: &[u8], i: usize) -> Option<Marker> {
     if b[i] != b's' {
         return None;
@@ -79,8 +79,8 @@ fn match_sxxeyy(b: &[u8], i: usize) -> Option<Marker> {
     })
 }
 
-/// Try to match Form 2 (`NxNN`, e.g. `1x02`) starting at byte `i`. The season is
-/// bounded and must not be preceded by an alphanumeric (to avoid resolutions).
+// Try to match Form 2 (`NxNN`, e.g. `1x02`) starting at byte `i`. The season is
+// bounded and must not be preceded by an alphanumeric (to avoid resolutions).
 fn match_nxnn(b: &[u8], i: usize) -> Option<Marker> {
     if !b[i].is_ascii_digit() {
         return None;
@@ -107,12 +107,12 @@ fn match_nxnn(b: &[u8], i: usize) -> Option<Marker> {
     })
 }
 
-/// Guard against resolutions / wild numbers being read as season/episode.
+// Guard against resolutions / wild numbers being read as season/episode.
 fn plausible(season: u32, episode: u32) -> bool {
     season <= 100 && episode <= 9999
 }
 
-/// Read a run of ASCII digits from `start`; returns (count, parsed value).
+// Read a run of ASCII digits from `start`; returns (count, parsed value).
 fn read_digits(b: &[u8], start: usize) -> (usize, u32) {
     let mut n = 0;
     while start + n < b.len() && b[start + n].is_ascii_digit() {

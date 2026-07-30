@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { availableEngines, ENGINE_LABEL_KEY, type EnginePref } from './enginePref';
 
-/** A Map-backed localStorage stand-in. */
 function fakeStorage(initial: Record<string, string> = {}) {
   const m = new Map(Object.entries(initial));
   return {
@@ -61,7 +60,6 @@ describe('getEnginePref / setEnginePref', () => {
     });
     expect(m.getEnginePref()).toBe('auto');
     expect(() => m.setEnginePref('mpv')).not.toThrow();
-    // The in-process value holds even when the storage write failed.
     expect(m.getEnginePref()).toBe('mpv');
   });
 });

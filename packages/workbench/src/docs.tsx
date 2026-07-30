@@ -13,8 +13,8 @@ import type { Story } from './story';
 
 type Mark = 'plain' | 'bold' | 'code';
 
-/** One pass over the prose, splitting out the marked spans in order. Anything
- * unclosed stays literal, so a stray backtick cannot eat the paragraph. */
+// One pass over the prose, splitting out the marked spans in order. Anything unclosed stays
+// literal, so a stray backtick cannot eat the paragraph.
 function segments(text: string): { text: string; mark: Mark }[] {
   const out: { text: string; mark: Mark }[] = [];
   for (const part of text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)) {
@@ -42,8 +42,8 @@ interface RichTextProps extends TxtProps {
   children: string;
 }
 
-/** <Txt> that understands the two inline marks. Nested <Txt> is React Native's
- * own rich-text mechanism, so this composes instead of parsing. */
+// <Txt> that understands the two inline marks. Nested <Txt> is React Native's own rich-text
+// mechanism, so this composes instead of parsing.
 function RichText({ children, ...txt }: Readonly<RichTextProps>) {
   return (
     <Txt {...txt}>
@@ -67,7 +67,7 @@ function RichText({ children, ...txt }: Readonly<RichTextProps>) {
   );
 }
 
-/** One imperative line of guidance, ticked or crossed. */
+// One imperative line of guidance, ticked or crossed.
 function GuidelineRow({ text, good }: Readonly<{ text: string; good: boolean }>) {
   return (
     <Box row gap={10} align="flex-start">
@@ -99,10 +99,9 @@ function Guidelines({
   );
 }
 
-/** The call site the current controls describe, as code. Booleans render as
- * bare props when on and disappear when off, strings quote, numbers brace:
- * the way the line would actually be written. Long calls break one prop per
- * line, the way the formatter would break them. */
+// The call site the current controls describe, as code. Booleans render as bare props when on
+// and disappear when off, strings quote, numbers brace: the way the line would actually be
+// written. Long calls break one prop per line, the way the formatter would break them.
 function snippet(story: Story, args: Record<string, unknown>): string {
   const name = story.name.replace(/[^A-Za-z0-9]/g, '');
   const props: string[] = [];

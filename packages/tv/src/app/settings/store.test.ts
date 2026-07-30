@@ -3,11 +3,8 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { reactivePref, useStoredPref } from './store';
 
-// jsdom no longer ships a Storage implementation, and Node's own global
-// `localStorage` is undefined unless the runtime was started with
-// --localstorage-file. The store's contract is "persist through
-// window.localStorage", so the test provides the storage rather than skipping
-// the assertion that it is actually written to.
+// jsdom ships no Storage implementation, so this test provides one rather than
+// skipping the assertion that the store actually persists to it.
 class MemoryStorage {
   private data = new Map<string, string>();
   getItem = (k: string) => this.data.get(k) ?? null;

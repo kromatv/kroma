@@ -16,7 +16,7 @@ use crate::state::SharedState;
 use axum::routing::{get, post};
 use axum::Router;
 
-/// Storage usage + cache maintenance. Paths are relative to the `/api/admin` nest.
+/// Paths are relative to the `/api/admin` nest.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/storage", get(storage))
@@ -86,12 +86,9 @@ pub async fn clear_cache(
         Ok(freed)
     })
     .await?;
-    // The pipeline's skip logic is keyed on input signatures, not output presence,
-    // so wiping these dirs would otherwise leave the ledger `done` and the outputs
-    // gone forever. Re-queue the stages whose durable outputs we just deleted:
-    // storyboards regenerate from local video (kick it now, it's gate-bounded);
-    // TMDB art re-downloads on the next metadata run (re-queued, not forced, so a
-    // disk-clear never stampedes TMDB).
+    // The pipeline skips on input signatures, not output presence, so without a
+    // re-queue the ledger stays `done` and the deleted outputs never come back.
+    // Metadata is re-queued rather than forced so a disk-clear never stampedes TMDB.
     let now = crate::services::jobs::now_ms();
     let _ = query(&state.db, move |pool| {
         db::pipeline::requeue_stage(&pool, "storyboard", now)?;
@@ -104,9 +101,8 @@ pub async fn clear_cache(
 }
 
 /// `POST /api/admin/cache/reset-metadata` → drop every resolved TMDB metadata
-/// (DB JSON, season casts and title embeddings) and the in-memory lookup cache,
-/// forcing a full re-fetch on the next enrichment run. Does NOT delete on-disk
-/// images use `clear_cache` for that. Returns how many rows were cleared.
+/// row and the in-memory lookup cache, forcing a full re-fetch. On-disk images
+/// survive; `clear_cache` is what removes those.
 pub async fn reset_metadata(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -115,23 +111,19 @@ pub async fn reset_metadata(
     let now = crate::services::jobs::now_ms();
     let (items, shows) = query(&state.db, move |pool| {
         let cleared = db::reset_all_metadata(&pool)?;
-        // The metadata signature (`title:year`) is unchanged by a reset, and the
-        // embed signature is just the model dim, so neither stage would re-run on
-        // its own leaving metadata NULL and embeddings gone forever. Re-queue both
-        // ledgers so the enrich + embed actually happen again.
+        // A reset changes neither stage's signature, so without a re-queue
+        // neither would ever run again.
         db::pipeline::requeue_stage(&pool, "metadata", now)?;
         db::pipeline::requeue_stage(&pool, "embed", now)?;
         Ok(cleared)
     })
     .await?;
     state.metadata_cache.clear();
-    // Kick the re-enrich now (this is a deliberate destructive action); `embed`
-    // chains after `metadata` via its `AfterJob` trigger.
+    // `embed` chains after `metadata` via its `AfterJob` trigger.
     let _ = state.jobs.trigger(state.clone(), crate::services::jobs::JobKey("pipeline.metadata"), "reset-metadata");
     Ok(Json(json!({ "items": items, "shows": shows })).into_response())
 }
 
-/// Recursive `(bytes, file_count)` of a directory tree (zero if missing).
 fn dir_stats(path: &Path) -> (u64, u64) {
     walkdir::WalkDir::new(path)
         .into_iter()
@@ -141,7 +133,6 @@ fn dir_stats(path: &Path) -> (u64, u64) {
         .fold((0u64, 0u64), |(bytes, count), m| (bytes + m.len(), count + 1))
 }
 
-/// Remove a directory's contents (keeping the directory itself).
 fn clear_dir(path: &Path) {
     if let Ok(entries) = std::fs::read_dir(path) {
         for entry in entries.flatten() {

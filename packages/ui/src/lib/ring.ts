@@ -8,11 +8,8 @@ export interface RingProps {
   value: number;
   /** Outer diameter. */
   size?: number;
-  /** Stroke width. */
   stroke?: number;
-  /** Unfilled track colour. */
   track?: string;
-  /** Filled (progress) colour. */
   fill?: string;
 }
 

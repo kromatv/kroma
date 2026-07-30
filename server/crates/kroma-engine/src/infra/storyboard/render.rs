@@ -1,6 +1,5 @@
-//! Storyboard render orchestration: turn a duration into a sampling plan, drive
-//! the tile extraction, montage the frames into one mosaic, and encode the sheet
-//! (WebP preferred, JPEG fallback) alongside its manifest.
+//! Storyboard render orchestration: sampling plan, tile extraction, montage,
+//! and the encoded sheet (WebP preferred, JPEG fallback) plus its manifest.
 
 use std::path::Path;
 use std::process::Command;
@@ -13,16 +12,12 @@ use super::extract::{extract_tiles, use_hwaccel};
 use super::proc::{finalize, run_capturing, unique_tmp, Cancel, TMP_SEQ};
 use super::{Manifest, Plan, Storyboard, TILE_H, TILE_W, playable};
 
-/// WebP quality (0–100) for the sheet. Low is fine the tiles are tiny and only
-/// previewed on hover, so this trades invisible quality for a much smaller file.
+// Low on purpose: the tiles are tiny and only previewed on hover.
 const WEBP_QUALITY: &str = "58";
-/// Wall-clock ceiling for a local step (the montage / a JPEG encode). Generous a
-/// stalled disk is killed, not hung on.
 const TIMEOUT: Duration = Duration::from_secs(600);
 
-/// Render the sheet for `(abs, dur_s)` and publish it + the manifest atomically
-/// (sheet first, so a reader that sees the manifest always finds the sheet).
-/// `Ok(())` on success; `Err(reason)` carries the first failing step's cause.
+/// Publishes the sheet before the manifest, so a reader that sees the manifest
+/// always finds the sheet.
 pub(super) fn generate(abs: &str, dir: &Path, key: &str, item_id: &str, dur_s: f64, cancel: Cancel) -> std::result::Result<(), String> {
     std::fs::create_dir_all(dir)
         .map_err(|e| format!("could not create the cache dir {}: {e}", dir.display()))?;
@@ -50,12 +45,8 @@ pub(super) fn generate(abs: &str, dir: &Path, key: &str, item_id: &str, dur_s: f
     }
 }
 
-/// Extract every tile via a parallel keyframe seek, montage them into one mosaic,
-/// then encode to WebP (preferred) or JPEG. `Ok(ext)` is the produced extension;
-/// `Err(reason)` reports which step failed and why.
 fn render(abs: &str, dir: &Path, key: &str, plan: &Plan, hwaccel: bool, cancel: Cancel) -> std::result::Result<&'static str, String> {
-    // Per-run scratch dir for the individual tile frames; removed once the sheet
-    // is built (so a crash mid-generation can't leave hundreds of stray PNGs).
+    // Per-run scratch dir, so a crash mid-generation leaves no stray PNGs.
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
     let scratch = dir.join(format!(".sb-{key}-{}-{seq}", std::process::id()));
     std::fs::create_dir_all(&scratch)
@@ -65,8 +56,6 @@ fn render(abs: &str, dir: &Path, key: &str, plan: &Plan, hwaccel: bool, cancel: 
     res
 }
 
-/// The body of [`render`], with `scratch` guaranteed to exist and be cleaned up
-/// by the caller regardless of outcome.
 fn render_into(
     abs: &str,
     dir: &Path,
@@ -77,16 +66,13 @@ fn render_into(
     cancel: Cancel,
 ) -> std::result::Result<&'static str, String> {
     extract_tiles(abs, scratch, plan, hwaccel, cancel)?;
-    // A cancel during tile extraction stops the workers early; bail before the
-    // (now-pointless) montage/encode so we don't publish a half-sampled sheet.
+    // Bail before the montage so a half-sampled sheet is never published.
     if cancel() {
         return Err("cancelled".to_string());
     }
     let mosaic = scratch.join("mosaic.png");
     montage(scratch, plan, &mosaic)?;
 
-    // Prefer WebP (smallest; cwebp → ffmpeg libwebp), fall back to JPEG. Both are
-    // local encodes of the mosaic no more video reads.
     let webp = unique_tmp(&dir.join(format!("{key}.webp")));
     if crate::infra::image::encode_webp_quality(&mosaic, &webp, WEBP_QUALITY) && webp.exists() {
         return if finalize(&webp, &dir.join(format!("{key}.webp"))) {
@@ -104,13 +90,10 @@ fn render_into(
     }
 }
 
-/// Lay the extracted `px_<NNNN>.png` tiles into one `cols x rows` mosaic (local,
-/// no video reads). `Err` carries ffmpeg's captured cause.
 fn montage(scratch: &Path, plan: &Plan, out: &Path) -> std::result::Result<(), String> {
     let mut cmd = Command::new("ffmpeg");
-    // `-threads 1`: assembling one mosaic frame from local PNGs is cheap, so cap
-    // the decoder pool rather than let it grab every core (the ffmpeg gate bounds
-    // how many run, this bounds each one's footprint).
+    // `-threads 1`: one mosaic frame from local PNGs is cheap; bound each run's
+    // footprint rather than let the decoder pool grab every core.
     cmd.args(["-v", "error", "-nostdin", "-threads", "1", "-y", "-start_number", "0", "-i"])
         .arg(scratch.join("px_%04d.png"))
         .args(["-frames:v", "1", "-vf", &format!("tile={}x{}", plan.cols, plan.rows)])
@@ -123,9 +106,6 @@ fn montage(scratch: &Path, plan: &Plan, out: &Path) -> std::result::Result<(), S
     }
 }
 
-/// Encode the (already-built) PNG mosaic to JPEG the universal fallback when no
-/// WebP encoder is present. Cheap + local (no video re-read). `Err` carries
-/// ffmpeg's captured stderr.
 fn png_to_jpeg(png: &Path, out: &Path) -> std::result::Result<(), String> {
     let mut cmd = Command::new("ffmpeg");
     // `-threads 1`: a single-frame JPEG encode is trivial; keep it off every core.
@@ -161,9 +141,8 @@ impl Storyboard {
 mod tests {
     use super::*;
 
-    /// End-to-end generation against a real clip. Ignored by default (needs
-    /// ffmpeg + writes temp files); run with
-    /// `cargo test --bin kroma-server -- --ignored storyboard_generates`.
+    // Needs ffmpeg + writes temp files; run with
+    // `cargo test --bin kroma-server -- --ignored storyboard_generates`.
     #[test]
     #[ignore]
     fn storyboard_generates_a_consistent_sheet() {

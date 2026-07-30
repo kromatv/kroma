@@ -11,20 +11,16 @@ use crate::db::{self, Pool};
 use crate::services::sections::math::{dot, normalize};
 use crate::services::sections::VectorCache;
 
-/// Minimum distinct watched titles (with embeddings) before clustering is worth
-/// it below this the home falls back to the static themed bank.
+/// Below this the home falls back to the static themed bank.
 pub const MIN_WATCHED: usize = 5;
 
-/// One taste group.
+/// One taste group. Every list is ordered most-representative first: `ids` and
+/// `titles` nearest-to-centroid, `genres` and `keywords` most-common.
 #[derive(Debug, Clone)]
 pub struct Cluster {
-    /// Member item ids, nearest-to-centroid first.
     pub ids: Vec<String>,
-    /// Example titles (nearest-first), for the LLM prompt.
     pub titles: Vec<String>,
-    /// Dominant genres across members (most common first).
     pub genres: Vec<String>,
-    /// Dominant keyword tags across members (most common first).
     pub keywords: Vec<String>,
 }
 
@@ -47,13 +43,11 @@ pub fn cluster(pool: &Pool, vectors: &VectorCache, watched: &[String], k: usize)
     let k = k.clamp(1, vecs.len());
     let assignments = kmeans(&vecs, k);
 
-    // Group member indices by cluster.
     let mut groups: Vec<Vec<usize>> = vec![Vec::new(); k];
     for (i, &c) in assignments.iter().enumerate() {
         groups[c].push(i);
     }
 
-    // Resolve metadata once for every member.
     let all_ids: Vec<&str> = vecs.iter().map(|(id, _)| id.as_str()).collect();
     let items = db::items_by_ids(pool, &all_ids).unwrap_or_default();
     let meta: HashMap<&str, &crate::model::MediaItem> = items.iter().map(|it| (it.id.as_str(), it)).collect();
@@ -78,12 +72,11 @@ pub fn cluster(pool: &Pool, vectors: &VectorCache, watched: &[String], k: usize)
         let (genres, keywords) = aggregate_tags(&ids, &meta);
         clusters.push(Cluster { ids, titles, genres, keywords });
     }
-    // Biggest taste groups first.
     clusters.sort_by_key(|b| std::cmp::Reverse(b.ids.len()));
     clusters
 }
 
-/// Tally genres + keywords across a cluster's members; most-common first.
+// Tally genres + keywords across a cluster's members; most-common first.
 fn aggregate_tags(ids: &[String], meta: &HashMap<&str, &crate::model::MediaItem>) -> (Vec<String>, Vec<String>) {
     let mut genres: HashMap<String, usize> = HashMap::new();
     let mut keywords: HashMap<String, usize> = HashMap::new();
@@ -102,17 +95,15 @@ fn aggregate_tags(ids: &[String], meta: &HashMap<&str, &crate::model::MediaItem>
 
 fn top_n(counts: HashMap<String, usize>, n: usize) -> Vec<String> {
     let mut v: Vec<(String, usize)> = counts.into_iter().collect();
-    // Count desc, then name for a stable tiebreak.
+    // Name breaks a count tie, so the order is stable run to run.
     v.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
     v.into_iter().take(n).map(|(k, _)| k).collect()
 }
 
-// ----- k-means (cosine / dot on pre-normalized vectors) -----------------------
-
 const KMEANS_ITERS: usize = 12;
 
-/// Assign each vector to one of `k` clusters. Deterministic seeding (evenly
-/// spaced picks) so the same history yields the same grouping run to run.
+// Assign each vector to one of `k` clusters. Deterministic seeding (evenly
+// spaced picks) so the same history yields the same grouping run to run.
 fn kmeans(vecs: &[(String, Vec<f32>)], k: usize) -> Vec<usize> {
     let n = vecs.len();
     let dim = vecs[0].1.len();
@@ -130,8 +121,8 @@ fn kmeans(vecs: &[(String, Vec<f32>)], k: usize) -> Vec<usize> {
     assign
 }
 
-/// Assign each vector to its nearest centroid (max dot product). Returns whether
-/// any assignment changed this pass (the k-means convergence signal).
+// Assign each vector to its nearest centroid (max dot product). Returns whether
+// any assignment changed this pass (the k-means convergence signal).
 fn assign_clusters(
     vecs: &[(String, Vec<f32>)],
     centroids: &[Vec<f32>],
@@ -151,8 +142,8 @@ fn assign_clusters(
     changed
 }
 
-/// Recompute each centroid as the (normalized) mean of its assigned members.
-/// Empty clusters keep their previous centroid.
+// Recompute each centroid as the (normalized) mean of its assigned members.
+// Empty clusters keep their previous centroid.
 fn recompute_centroids(
     vecs: &[(String, Vec<f32>)],
     assign: &[usize],
@@ -276,11 +267,10 @@ mod tests {
         let watched: Vec<String> = (0..3).map(|i| format!("id{i}")).collect();
         assert!(cluster(&pool, &cache, &watched, 3).is_empty());
     }
-    // ----- cluster() against a real pool + cache ----------------------------------
 
     use crate::test_support::{seed_library, seed_movie, test_state};
 
-    /// Two well-separated blobs in 2-D, plus the metadata each title carries.
+    // Two well-separated blobs in 2-D, plus the metadata each title carries.
     fn seed_taste_library(state: &crate::state::SharedState) {
         seed_library(state, "lib-movies", "movies");
         // Blob A: four thrillers. Blob B: three comedies.

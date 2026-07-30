@@ -10,14 +10,8 @@ import type {
 } from '#tv/app/settings/items';
 import { ChoicePicker } from './ChoicePicker';
 
-/**
- * Render a settings menu from a declarative item list (see settings/items.ts).
- * Falsy entries (inline `cond && item`) and unavailable items are skipped, and
- * a choice row with fewer than two options hides itself. Each row is its own
- * component, so an item's `use()` hook lives in a stable component instance
- * and a parent's early return can never break hook order (the old React #300
- * switch-profile crash).
- */
+/** Each row is its own component so an item's `use()` hook sits in a stable
+ * instance and an early return cannot break hook order (React #300). */
 export function SettingsRows({ items }: Readonly<{ items: readonly SettingsEntry[] }>) {
   const visible = items.filter(
     (item): item is Exclude<SettingsEntry, false | null | undefined> =>
@@ -26,10 +20,8 @@ export function SettingsRows({ items }: Readonly<{ items: readonly SettingsEntry
   return (
     <>
       {visible.map((item, index) => {
-        // The FIRST rendered row is the screen's focus entry point. Without one,
-        // tvOS picks by its own geometry (roughly the top-left-most control) and
-        // lands somewhere nobody chose; the web engine just takes what happens to
-        // be first in the DOM. Naming it makes both engines agree.
+        // First rendered row is the focus entry point: tvOS picks by geometry,
+        // the web engine by DOM order.
         const first = index === 0;
         if (item.kind === 'choice') return <ChoiceRow key={item.id} item={item} first={first} />;
         if (item.kind === 'toggle') return <ToggleRow key={item.id} item={item} first={first} />;
@@ -56,8 +48,8 @@ function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean
   const locale = useLocale();
   const [value, set] = item.use();
   const [picking, setPicking] = useState(false);
-  // Memoised because a language row's options are ~190 names put through a
-  // collator, and this list re-renders whenever any pref on the menu changes.
+  // A language row's options are ~190 names through a collator, and this list
+  // re-renders whenever any pref on the menu changes.
   const options = useMemo(() => item.options(t, locale), [item, t, locale]);
   if (options.length < 2) return null;
 

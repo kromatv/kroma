@@ -1,6 +1,5 @@
-// Account tab, kept deliberately simple: identity (tap to edit), one card of
-// destinations (downloads / quick connect / settings), quiet sign-out.
-// Everything else lives in dedicated pages.
+// Account tab: identity, one card of destination rows, sign-out. Everything
+// else lives in dedicated pages.
 
 import { Button, Icon, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';

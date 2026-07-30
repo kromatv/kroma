@@ -11,15 +11,15 @@ import { type NativeModule, requireOptionalNativeModule } from 'expo';
  *  whether the port speaks TLS, and guessing is what `resolveServerOrigin`
  *  exists to avoid. */
 export interface BrowsedServer {
-  /** The advertised instance name ("KROMA"), for a picker with two servers. */
+  // The advertised instance name ("KROMA"), for a picker with two servers.
   name: string;
   host: string;
   port: number;
 }
 
 declare class ServerDiscoveryNativeModule extends NativeModule {
-  /** Browse `_kroma._tcp` for `timeoutMs`, then answer with everything that
-   * resolved. Never rejects: a network that cannot multicast answers empty. */
+  // Browse `_kroma._tcp` for `timeoutMs`, then answer with everything that
+  // resolved. Never rejects: a network that cannot multicast answers empty.
   browse(timeoutMs: number): Promise<BrowsedServer[]>;
 }
 

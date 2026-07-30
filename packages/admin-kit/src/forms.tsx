@@ -24,8 +24,8 @@ import {
   FIELD_TYPE_LG,
 } from './field';
 
-/** The two steps a field comes in: the one a form full of them uses, and the
- * roomier one for a screen whose form IS the screen (sign-in, register). */
+// md: a form full of fields. lg: a screen whose form IS the screen (sign-in,
+// register).
 type FieldSize = 'md' | 'lg';
 const BOX: Record<FieldSize, string> = { md: FIELD_BOX, lg: FIELD_BOX_LG };
 const TYPE: Record<FieldSize, string> = { md: FIELD_TYPE, lg: FIELD_TYPE_LG };
@@ -33,8 +33,6 @@ const TYPE: Record<FieldSize, string> = { md: FIELD_TYPE, lg: FIELD_TYPE_LG };
 export interface SelectOption {
   value: string;
   label: ReactNode;
-  /** Plain-text form for typeahead + the trigger when selected (defaults to
-   * `label` when it is a string). Required when `label` is not a string. */
   text?: string;
   disabled?: boolean;
 }
@@ -44,12 +42,9 @@ export interface OptionSelectProps {
   onChange: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;
-  /** Extra classes for the trigger chip (e.g. width). */
   className?: string;
-  /** Accessible label when there's no visible <label> wrapping the control. */
   ariaLabel?: string;
   disabled?: boolean;
-  /** Stretch the trigger to fill its container. */
   block?: boolean;
 }
 
@@ -119,8 +114,8 @@ export function Select({
   options: string[];
   onChange?: (v: string) => void;
 }>) {
-  // Keep the current value selectable even if it isn't in the list (empty values
-  // aren't valid Radix items, so they just fall through to the placeholder).
+  // Keep the current value selectable even if it isn't in the list (empty
+  // values aren't valid Radix items, so they fall through to the placeholder).
   const all = value && !options.includes(value) ? [value, ...options] : options;
   return (
     <OptionSelect
@@ -152,11 +147,8 @@ export function TextInput({
   Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'size'> & {
     value: string;
     onChange?: (v: string) => void;
-    /** React 19 carries a ref through as a plain prop. */
     ref?: Ref<HTMLInputElement>;
-    /** `lg` for a screen whose form IS the screen. See FieldSize. */
     size?: FieldSize;
-    /** Monospace, for a value that is data rather than prose. See FIELD_MONO. */
     mono?: boolean;
   }
 >) {
@@ -171,25 +163,19 @@ export function TextInput({
   );
 }
 
-/** Does this browser size a textarea to its content on its own? Chromium does
- * (`field-sizing`); the others still need the measure below. Read once, and
- * guarded for the server render, where there is no CSS object at all. */
+// Whether this browser sizes a textarea to its own content (`field-sizing`,
+// Chromium only); others still need the measure below. Guarded for the
+// server render, where there is no CSS object at all.
 const FIELD_SIZING =
   typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
     ? CSS.supports('field-sizing', 'content')
     : false;
 
 /**
- * The multi-line entry: {@link TextInput}'s field, `rows` tall, GROWING with
- * what is typed into it (shadcn's `field-sizing-content` behaviour) so a
- * three-line note is never written through a two-line slot with the top of it
- * scrolled out of sight. `rows` is the floor it opens at; `autoSize={false}`
- * pins it there.
- *
- * Same shape as the input - a controlled `value` plus a plain-string `onChange`
- * - and every other textarea attribute (`disabled`, `maxLength`, `spellCheck`,
- * `onBlur`, `aria-*`) passes straight through, so a screen never has to drop
- * back to a raw element for one of them and hand-roll the box again.
+ * {@link TextInput}'s multi-line sibling: `rows` tall, growing with content
+ * (shadcn's `field-sizing-content`) so text is never scrolled out of sight.
+ * `rows` is the floor; `autoSize={false}` pins it there. Same pass-through
+ * shape as TextInput for every other textarea attribute.
  */
 export function TextArea({
   value,
@@ -205,33 +191,20 @@ export function TextArea({
   Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'onChange' | 'rows'> & {
     value: string;
     onChange?: (v: string) => void;
-    /** The floor, in lines: the height an empty field opens at. */
     rows?: number;
-    /** Grow with the content. On by default - turn it off for a field whose
-     *  height is part of a fixed layout. */
     autoSize?: boolean;
-    /** The corner grip. Defaults to off while the field sizes itself (dragging
-     *  a box that is about to resize itself reads as a bug) and to `y`
-     *  otherwise. */
     resize?: 'y' | 'none';
-    /** `lg` for a screen whose form IS the screen. See FieldSize. */
     size?: FieldSize;
-    /** Monospace, a size down: for a value that is data rather than prose (an
-     *  API key, a JSON blob), where the character grid is what makes it
-     *  readable. */
     mono?: boolean;
   }
 >) {
   const box = useRef<HTMLTextAreaElement>(null);
 
-  // The browsers without `field-sizing`. Height back to `auto` FIRST, so the
-  // element reports the height of its content rather than the height we last
-  // gave it - that is the difference between a field that grows and one that
-  // grows and never shrinks again. `rows` still bounds it from below, because
-  // `auto` IS the intrinsic height `rows` asks for.
-  //
-  // `value` is the effect's TRIGGER rather than something it reads: the measure
-  // has to run after the text that changed has rendered.
+  // Browsers without `field-sizing`: reset height to `auto` FIRST so the
+  // element reports the height of its content, not what we last set - the
+  // difference between growing and never shrinking again. `value` is the
+  // effect's trigger, not something it reads, since the measure must run
+  // after the changed text has rendered.
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   useEffect(() => {
     const el = box.current;
@@ -241,8 +214,7 @@ export function TextArea({
   }, [value, autoSize]);
 
   // An auto-sizing box manages its own height, so it defaults to no grip; the
-  // caller can still ask for one. Spelled out rather than nested, so the default
-  // and the choice read as two decisions instead of one expression.
+  // caller can still ask for one.
   const defaultResize = autoSize ? 'none' : 'y';
   const grip = (resize ?? defaultResize) === 'none' ? 'resize-none' : 'resize-y';
   return (
@@ -276,17 +248,17 @@ export function Modal({
 }>) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      {/* Dimmed backdrop as a real control: a native click-to-dismiss surface with
-       * built-in keyboard support, rendered as a sibling (not a wrapper) so the
-       * dialog's own interactive content stays valid. */}
+      {/* Dimmed backdrop as a real control: click-to-dismiss with built-in
+          keyboard support, a sibling rather than a wrapper so the dialog's
+          own interactive content stays valid. */}
       <button
         type="button"
         aria-label="Close"
         className="absolute inset-0 bg-black/60"
         onClick={onClose}
       />
-      {/* An inside-click lands on the dialog (relative, above the backdrop) and so
-       * never reaches the backdrop button no stopPropagation needed. */}
+      {/* An inside click lands on the dialog (relative, above the backdrop),
+          so it never reaches the backdrop button - no stopPropagation needed. */}
       <div
         className="relative w-full max-w-115 rounded-2xl border border-border bg-surface-1 p-6 shadow-pop"
         role="dialog"

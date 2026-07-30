@@ -5,14 +5,9 @@
 // moment it is imported).
 
 /**
- * Translate a server link into this app's route, or `null` when there is no
- * screen for it.
- *
- * Links are written by the server for the web app's routes, and the two clients
- * do not name screens alike: the browser watches at `/watch/:id`, the phone at
- * `/player/:id`; the browser has a console, the phone has none. Anything with no
- * phone equivalent returns null, and the row simply does not navigate rather
- * than pushing a route that would render an error.
+ * Translates a server link (written for the web app's routes) into this app's
+ * route, or `null` when the phone has no matching screen — e.g. `/watch/:id`
+ * on the web maps to `/player/:id` here.
  */
 export function mobileRoute(link: string | undefined | null): string | null {
   if (!link) return null;

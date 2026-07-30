@@ -48,10 +48,9 @@ fn require(user: &User, perm: Permission) -> Result<(), Response> {
     }
 }
 
-/// The request-tied search + grab routes are core (a moderator drives them from
-/// the request page), but the feature they call into lives in the Acquisition
-/// module. Gate them on it so disabling Acquisition removes search / grab
-/// everywhere, not only the module's own admin routes: 404 when it is off.
+// The request-tied search + grab routes are core, but the feature they call into
+// lives in the Acquisition module. Gate them on it so disabling Acquisition
+// removes search/grab everywhere, not just the module's own admin routes.
 fn require_acquisition(state: &SharedState, user: &User) -> Result<(), Response> {
     if kroma_engine::modules::module_enabled(&state.settings, "tv.kroma.acquisition") {
         Ok(())
@@ -60,10 +59,6 @@ fn require_acquisition(state: &SharedState, user: &User) -> Result<(), Response>
     }
 }
 
-/// Manager-only gate shared by the acquisition-backed request routes (search /
-/// auto-search / grab): require `requests.manage`, require the Acquisition module
-/// be enabled, then resolve its search port. Returns the port, or the first
-/// failing gate's response.
 fn require_acquisition_port(
     state: &SharedState,
     user: &User,
@@ -73,18 +68,14 @@ fn require_acquisition_port(
     acquisition_search(state, user)
 }
 
-/// Shared prologue for the request-listing routes (`list` / `calendar` /
-/// `missing`): require `requests.create`, then decide whether the caller sees
-/// everyone's requests (a `requests.manage` holder, unless `?mine=true`) and hand
-/// back that flag plus the caller's id for scoping the query.
 fn list_scope(user: &User, params: &ListParams) -> Result<(bool, String), Response> {
     require(user, Permission::RequestsCreate)?;
     let all = user.can(Permission::RequestsManage) && !params.mine.unwrap_or(false);
     Ok((all, user.id.clone()))
 }
 
-/// Run a blocking service call whose failures are user-relevant (bad TMDB id,
-/// unknown request...): surface the message as a 400 instead of a mute 500.
+// Failures here are usually user-relevant (bad TMDB id, unknown request...), so
+// surface the message as a 400 instead of a mute 500.
 async fn service<T, F>(f: F) -> Result<T, Response>
 where
     F: FnOnce() -> anyhow::Result<T> + Send + 'static,
@@ -114,7 +105,6 @@ fn counts_of(list: &[MediaRequest]) -> RequestCounts {
 
 #[derive(Debug, Deserialize)]
 pub struct ListParams {
-    /// Force own-requests-only for a manager (the user-facing page).
     #[serde(default)]
     mine: Option<bool>,
 }
@@ -138,11 +128,10 @@ pub async fn list(
     Ok(Json(view).into_response())
 }
 
-/// Overlay the transient acquisition phase straight from the download
-/// relationship: a request with a live grab shows `downloading` (or `importing`
-/// once a grab completed) + its progress, instead of its stored `approved`.
-/// Deriving it here (rather than persisting a status) means it self-heals the
-/// moment the torrent fails or is deleted.
+// A request with a live grab shows `downloading` (or `importing` once the grab
+// completes) instead of its stored `approved`. Deriving this here rather than
+// persisting a status means it self-heals the moment the torrent fails or is
+// deleted.
 fn overlay_active_downloads(
     conn: &rusqlite::Connection,
     requests: &mut [MediaRequest],
@@ -194,10 +183,9 @@ pub async fn missing(
         let conn = pool.get()?;
         let scope = if all { None } else { Some(uid.as_str()) };
         let mut entries = db::missing_items(&conn, &today, scope, 500)?;
-        // Library-scan gaps: shows in the library with aired episodes not on disk
-        // that were never requested (the `library.missing` job fills these). They
-        // are library-wide, not request-scoped, and the query already excludes any
-        // show that already has a live request (so no duplicate line).
+        // Library-scan gaps: shows with aired episodes not on disk that were never
+        // requested (the `library.missing` job fills these). Library-wide, not
+        // request-scoped; the query already excludes shows with a live request.
         entries.extend(db::library_gaps_list(&conn, 500)?);
         Ok(entries)
     })
@@ -258,10 +246,6 @@ pub async fn auto_search_one(
     }
 }
 
-/// Pick the best grabbable release from an interactive-search view (opaque JSON
-/// the acquisition sidecar returned): the highest-scoring release that carries a
-/// grabbable link and was not rejected by the decision engine. Returns
-/// `(guid, indexerId, title)`.
 fn best_release(view: &serde_json::Value) -> Option<(String, String, String)> {
     view.get("releases")?
         .as_array()?
@@ -305,7 +289,6 @@ pub async fn remove(
     let uid = user.id.clone();
     let id_for_event = id.clone();
 
-    /// What the delete attempt found, so each case maps to its own status.
     enum Outcome {
         Deleted,
         NotFound,
@@ -340,7 +323,6 @@ pub async fn remove(
     }
 }
 
-/// `POST /api/requests/:id/approve` (requests.manage).
 pub async fn approve(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -392,8 +374,6 @@ pub async fn grab(
     Ok(Json(json!({ "ok": true, "id": id })).into_response())
 }
 
-/// Resolve the acquisition module's search port (its sidecar), or a localized
-/// "module disabled" 404 when it isn't installed / running.
 fn acquisition_search(
     state: &SharedState,
     user: &User,
@@ -408,7 +388,6 @@ pub struct DenyBody {
     note: Option<String>,
 }
 
-/// `POST /api/requests/:id/deny` (requests.manage).
 pub async fn deny(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -427,8 +406,8 @@ pub async fn deny(
 
 #[cfg(test)]
 mod route_tests {
-    /// `/requests/calendar` (static) must coexist with `/requests/{id}` (param):
-    /// building the router panics on a real matchit conflict, so this is enough.
+    // `/requests/calendar` (static) must coexist with `/requests/{id}` (param):
+    // building the router panics on a real matchit conflict, so this is enough.
     #[test]
     fn router_builds_without_conflict() {
         let _r = super::routes();

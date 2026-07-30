@@ -1,16 +1,8 @@
-//! The media digest: "what's new in the library", batched.
-//!
-//! Per-item notification would be a disaster here a first import or a big
-//! re-scan inserts thousands of rows, and nobody wants four thousand pushes. So
-//! new media is the one event that is NOT emitted at its source. Instead a
-//! watermark in `settings` records how far we have reported, and this collapses
-//! everything since into one notification per audience:
-//!
-//! - new films → a single "N new titles" to everyone,
-//! - new episodes → one per show, and only to that show's followers.
-//!
-//! The watermark is seeded (not reported) on the first run, so adopting this
-//! feature on an existing library is silent.
+//! The media digest: "what's new in the library", batched via a watermark in
+//! `settings` rather than emitted per-item (a big re-scan would mean thousands
+//! of pushes). New films become one "N new titles" to everyone; new episodes
+//! become one per show, to that show's followers. The watermark is seeded, not
+//! reported, on the first run, so adopting this on an existing library is silent.
 
 use std::collections::BTreeMap;
 
@@ -23,24 +15,19 @@ use kroma_domain::{
 
 use crate::db;
 
-/// Setting holding the ISO-8601 `added_at` we have already reported through.
+// Setting holding the ISO-8601 `added_at` we have already reported through.
 pub const WATERMARK_KEY: &str = "notifications.digest.since";
 
-/// Most rows one digest run will look at. A bigger burst than this still gets
-/// reported (the count is capped, the watermark still advances), it just doesn't
-/// come into memory all at once.
+// Rows per run; a bigger burst still gets reported across multiple runs (the
+// watermark still advances) rather than loaded into memory at once.
 const MAX_SCAN: usize = 5_000;
 
 /// What a run did, for the job log.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct DigestSummary {
-    /// New movies rolled into the "N new titles" notification.
     pub movies: usize,
-    /// Shows that gained at least one episode.
     pub shows: usize,
-    /// Notifications actually delivered (audiences x preferences).
     pub sent: usize,
-    /// True when this run only seeded the watermark and deliberately stayed quiet.
     pub seeded: bool,
 }
 
@@ -87,7 +74,7 @@ fn set_watermark<S: HostCtx>(state: &S, value: &str) {
     )]));
 }
 
-/// Partition the additions into standalone titles and episodes grouped by show.
+// Partitions the additions into standalone titles and episodes grouped by show.
 fn split(added: Vec<AddedTitle>) -> (Vec<AddedTitle>, BTreeMap<String, Vec<AddedTitle>>) {
     let mut movies = Vec::new();
     let mut episodes: BTreeMap<String, Vec<AddedTitle>> = BTreeMap::new();
@@ -103,8 +90,8 @@ fn split(added: Vec<AddedTitle>) -> (Vec<AddedTitle>, BTreeMap<String, Vec<Added
     (movies, episodes)
 }
 
-/// One "new in the library" notification to everyone. A single new film names
-/// itself and links straight to it; a batch reports the count and opens the list.
+// A single new film names itself and links straight to it; a batch reports the
+// count and opens the list.
 fn announce_movies<S: HostCtx>(state: &S, movies: &[AddedTitle]) -> usize {
     let Some(newest) = movies.first() else {
         return 0;
@@ -142,7 +129,7 @@ fn announce_movies<S: HostCtx>(state: &S, movies: &[AddedTitle]) -> usize {
     super::emit(state, &Audience::Everyone, &spec)
 }
 
-/// One notification per show, to its followers only.
+// One notification per show, to its followers only.
 fn announce_episodes<S: HostCtx>(state: &S, show_id: &str, eps: &[AddedTitle]) -> usize {
     let Some(newest) = eps.first() else {
         return 0;
@@ -175,8 +162,8 @@ mod tests {
     use crate::test_support;
     use kroma_domain::ParamValue;
 
-    /// A state with one account and one library, so digest runs have somewhere to
-    /// read from and someone to tell.
+    // A state with one account and one library, so digest runs have somewhere to
+    // read from and someone to tell.
     fn seeded() -> (crate::state::SharedState, String) {
         let state = test_support::test_state();
         let user = kroma_db::create_user(&state.db, "ana@test.dev", "Ana", "h", &[]).unwrap().id;
@@ -191,9 +178,8 @@ mod tests {
         (state, user)
     }
 
-    /// Insert a catalogue row directly. `rusqlite` is not a dependency of this
-    /// crate (persistence lives in `kroma-db`), so the literals below are
-    /// interpolated they are test constants, never input.
+    // `rusqlite` isn't a dependency of this crate, so this interpolates raw SQL;
+    // the literals are test constants, never external input.
     fn add_movie(state: &crate::state::SharedState, id: &str, title: &str, added_at: &str) {
         let conn = state.db.get().unwrap();
         conn.execute_batch(&format!(
@@ -365,9 +351,8 @@ mod tests {
         assert_eq!(movies.len(), 1);
         assert!(shows.is_empty());
     }
-    // ----- episodes: one arrival per SHOW, not per file ----------------------------
 
-    /// A show plus a follower, so an episode announcement has an audience.
+    // A show plus a follower, so an episode announcement has an audience.
     fn add_show(state: &crate::state::SharedState, show_id: &str, title: &str, follower: &str) {
         let conn = state.db.get().unwrap();
         conn.execute_batch(&format!(
@@ -396,7 +381,7 @@ mod tests {
         .unwrap();
     }
 
-    /// The notification bodies a user was sent, newest first.
+    // The notification bodies a user was sent, newest first.
     fn bodies(state: &crate::state::SharedState, user: &str) -> Vec<String> {
         let conn = state.db.get().unwrap();
         db::notifications::list_notifications(&conn, user, 20, false)
@@ -406,11 +391,8 @@ mod tests {
             .collect()
     }
 
-    /// Adopt the library so the next run reports only what is genuinely new.
-    ///
-    /// Needs a title present: the watermark is the newest `added_at`, so
-    /// adopting an EMPTY library leaves it empty and the next run seeds again
-    /// (see `an_empty_library_keeps_seeding_until_it_has_something`).
+    // Needs a title present: the watermark is the newest `added_at`, so adopting
+    // an EMPTY library leaves it empty and the next run seeds again.
     fn adopt(state: &crate::state::SharedState) {
         add_movie(state, "baseline", "Baseline", "2020-01-01T00:00:00Z");
         let seeded = run(state).unwrap();
@@ -419,12 +401,9 @@ mod tests {
 
     #[test]
     fn an_empty_library_keeps_seeding_until_it_has_something() {
-        // Worth stating because it decides what happens to the FIRST title ever
-        // added: the watermark is the newest `added_at`, so an empty library
-        // adopts "" and the next run is another adoption. The first film is
-        // therefore adopted silently rather than announced - which is the right
-        // end of the trade (a fresh install should not notify about its own
-        // import), but it is not obvious from the code.
+        // The watermark is the newest `added_at`, so an empty library adopts ""
+        // and the next run adopts again; the first film is therefore silent by
+        // design, not a bug - a fresh install should not notify about its own import.
         let (state, user) = seeded();
         assert!(run(&state).unwrap().seeded);
         assert_eq!(state.setting_str(WATERMARK_KEY, ""), "");

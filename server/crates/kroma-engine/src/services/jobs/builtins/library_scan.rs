@@ -4,7 +4,7 @@
 
 use super::prelude::*;
 
-/// Manual + debounced library-watch: rescan the media folders for changes.
+// Manual + debounced library-watch: rescan the media folders for changes.
 pub(super) const SPEC: Builtin = Builtin {
     key: JobKey("library.scan"),
     category: Category::Library,

@@ -8,7 +8,7 @@ import { createCallable } from 'react-call';
 import { FIELD, Field, Modal, ModalActions, TextInput, Toggle } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** "KROMABK1\n" the encrypted-backup envelope magic (see services/backup/crypto). */
+// "KROMABK1\n": the encrypted-backup envelope magic (see services/backup/crypto).
 const KROMA_MAGIC = [0x4b, 0x52, 0x4f, 0x4d, 0x41, 0x42, 0x4b, 0x31, 0x0a];
 
 /** Read a file's first bytes to tell an encrypted `.kroma` from a plain archive,
@@ -22,7 +22,6 @@ export async function isEncryptedFile(file: File): Promise<boolean> {
   }
 }
 
-/** The server returns a localized message in the JSON error body surface it. */
 function errMessage(e: unknown, fallback: string): string {
   const body = (e as { body?: { error?: unknown } })?.body;
   return typeof body?.error === 'string' ? body.error : fallback;
@@ -32,7 +31,6 @@ function ErrorLine({ text }: Readonly<{ text: string }>) {
   return <p className="mb-2 text-[13px] font-semibold text-[#E8536A]">{text}</p>;
 }
 
-/** A label + description on the left, control on the right (for toggles). */
 function ToggleRow({
   label,
   hint,

@@ -1,14 +1,9 @@
 // What happens when someone taps a push.
 //
-// Two paths, and the difference matters: tapping the notification BODY opens the
-// app at the linked screen, while tapping an action BUTTON may not open the app
-// at all (`opensAppToForeground: false`) — a moderator approving a request from
-// the lock screen expects the request approved, not the app launched.
-//
-// The buttons themselves come from the category the app registered (APNs can
-// only show pre-registered actions), but what each one DOES rides in the
-// payload. So the phone runs exactly the call the web row's button would,
-// instead of reconstructing an id out of the link.
+// A body tap opens the app at the linked screen; an action-button tap may not
+// (`opensAppToForeground: false`) — approving a request from the lock screen
+// must not launch the app. APNs only shows pre-registered button labels, so
+// what each button does rides in the payload instead.
 
 import type { KromaClient } from '@kroma/core';
 import type * as Notifications from 'expo-notifications';
@@ -16,7 +11,6 @@ import { z } from 'zod';
 
 import { mobileRoute } from './route';
 
-/** One action button's effect, as the server sent it. */
 export const PushAction = z.object({
   id: z.string().min(1),
   method: z.string().min(1).catch('POST'),
@@ -24,18 +18,14 @@ export const PushAction = z.object({
 });
 export type PushAction = z.infer<typeof PushAction>;
 
-/**
- * Actions arrive as an array on iOS and as an encoded string on Android (every
- * FCM `data` value must be a string), so both shapes are accepted. A malformed
- * button is dropped rather than failing the whole payload: the tap should still
- * open the app at its link.
- */
+// Every FCM `data` value must be a string, so Android sends actions as an
+// encoded string while iOS sends an array; a malformed button is dropped
+// rather than failing the whole payload.
 const PushActions = z
   .union([z.string().transform(jsonOrNull), z.unknown()])
   .pipe(z.array(z.unknown()).catch([]))
   .transform((list) => list.flatMap((e) => PushAction.safeParse(e).data ?? []));
 
-/** The fields KROMA puts on a push, whichever service delivered it. */
 export const PushData = z.object({
   id: z.string().min(1).optional().catch(undefined),
   link: z.string().min(1).optional().catch(undefined),
@@ -75,11 +65,10 @@ export async function handleTap(
   if (action) {
     try {
       await client.runNotificationAction(action);
-      return null; // decided in the background; nothing to open
+      return null;
     } catch {
-      // It did not land (offline, or already reviewed by someone else). Fall
-      // through and open the app so it can be done by hand, rather than
-      // silently swallowing the tap.
+      // Offline, or already reviewed by someone else: open the app so it can
+      // be finished by hand rather than silently swallowing the tap.
     }
   }
 

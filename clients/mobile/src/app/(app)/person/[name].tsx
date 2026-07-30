@@ -14,7 +14,6 @@ import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { colors } from '#mobile/lib/theme';
 
-/** Portrait width asked of the image cache: a 92pt avatar on a 3x screen. */
 const PORTRAIT_W = 280;
 
 export default function PersonPage() {
@@ -30,9 +29,8 @@ export default function PersonPage() {
     queryFn: () => client.personCredits(person),
     staleTime: 10 * 60_000,
   });
-  // A separate query on purpose: the biography is a provider lookup, and it must
-  // never hold up (or take down with it) the filmography, which the library
-  // already knows.
+  // A separate query on purpose: the biography is a provider lookup and must
+  // never hold up the filmography, which the library already knows.
   const profile = useQuery({
     queryKey: ['person-details', person],
     queryFn: () => client.personDetails(person),

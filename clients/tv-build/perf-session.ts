@@ -1,18 +1,12 @@
 #!/usr/bin/env bun
-// Print a signed-in TV session as JSON, for perf-profile.ts to seed.
-//
-// Profiling the browse screens needs a populated home, which needs an account.
-// Rather than driving the sign-in flow (which is a different thing to measure,
-// and slow), this registers a throwaway profile against a running dev server and
-// prints exactly the localStorage the TV app boots from.
+// Print a signed-in TV session as the localStorage the TV app boots from:
 //
 //   bun clients/tv-build/perf-profile.ts \
 //     --session "$(bun clients/tv-build/perf-session.ts)"
 //
 // Registration is invite-only after the first account, so an existing owner's
-// token is needed to mint one (KROMA_ADMIN_TOKEN); with no invite this falls
-// back to registering as the first account, which is what a fresh dev server
-// wants.
+// token (KROMA_ADMIN_TOKEN) is needed to mint one; with no invite this falls
+// back to registering as the first account.
 
 const SERVER = process.env.KROMA_SERVER ?? 'http://localhost:4040';
 const ADMIN = process.env.KROMA_ADMIN_TOKEN ?? '';
@@ -27,7 +21,6 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
 const json = { 'content-type': 'application/json' };
 
-/** Sign in if the profile already exists, otherwise create it. */
 async function session(): Promise<{ accessToken: string; user: unknown }> {
   try {
     return await api('/auth/login', {

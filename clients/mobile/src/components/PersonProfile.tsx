@@ -1,8 +1,7 @@
 // Who a person is, above their filmography: portrait, life facts, biography.
 //
-// Everything here comes from the metadata provider (`GET /api/people/details`)
-// and is therefore optional: with nothing to show the component renders nothing
-// at all and the grid keeps its old, header-less look.
+// Data comes from `GET /api/people/details` and is optional — with nothing to
+// show, the component renders nothing and the grid keeps its header-less look.
 
 import { type PersonDetail, personFacts } from '@kroma/core';
 import { useState } from 'react';
@@ -11,8 +10,6 @@ import { Avatar } from '#mobile/components/Avatar';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { colors, spacing, type } from '#mobile/lib/theme';
 
-/** Lines of biography shown before "Lire la suite". Three is about a phone's
- * worth of context without pushing every poster below the fold. */
 const CLAMP_LINES = 3;
 
 export function PersonProfile({
@@ -22,10 +19,8 @@ export function PersonProfile({
   roles,
 }: Readonly<{
   detail: PersonDetail | null;
-  /** Portrait URL, already resolved (provider's, else a credit's). */
   photo: string | null;
   name: string;
-  /** Localized roles from the library's own credits ("Acteur - Réalisateur"). */
   roles: string[];
 }>) {
   const t = useT();

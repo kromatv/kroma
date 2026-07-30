@@ -4,6 +4,5 @@
 declare module 'virtual:kroma-props' {
   import type { PropDoc } from '@kroma/workbench';
 
-  /** Component name -> its props, read by TypeScript's checker at build time. */
   export const PROPS: Record<string, readonly PropDoc[]>;
 }

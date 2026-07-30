@@ -1,7 +1,5 @@
-// PIN card: set / change / remove the account's 4-digit profile-lock PIN. The
-// PIN gates switching into this profile on a shared device (mainly the TV app);
-// it's not the login credential. Uses the existing `setPin`/`clearPin` endpoints,
-// which verify the current PIN when one is already set.
+// Set / change / remove the account's profile-lock PIN, which gates switching
+// into this profile on a shared device. It is not the login credential.
 
 import { useT } from '@kroma/ui';
 import { IconLock } from '@tabler/icons-react';
@@ -10,7 +8,6 @@ import { Panel, StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { Button, Otp } from '#web/shared/ui';
 
-/** A labelled masked 4-digit PIN field (shared/ui Otp). */
 function PinField({
   label,
   value,
@@ -44,7 +41,7 @@ export function PinCard() {
     setConfirm('');
   };
 
-  // Optional event: the form's Enter-key submit passes one, the kit button none.
+  // The event is optional: the form's Enter submit passes one, the button none.
   const submit = (e?: React.SyntheticEvent) => {
     e?.preventDefault();
     if (pin.length !== 4 || (hasPin && current.length !== 4)) return;

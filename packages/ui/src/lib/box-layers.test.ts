@@ -4,7 +4,6 @@ import { splitBoxLayers } from './box-layers';
 
 describe('splitBoxLayers', () => {
   it('sends the props the parent lays out to the box and the rest to the face', () => {
-    // A keyboard key: the row distributes it, the face paints it.
     const { box, face } = splitBoxLayers({
       height: 52,
       flex: 1,
@@ -17,8 +16,7 @@ describe('splitBoxLayers', () => {
       backgroundColor: 'rgba(255, 255, 255, 0.05)',
       borderRadius: 16,
       alignItems: 'center',
-      // Fills the box it was split from, without zeroing the basis of a control
-      // that sizes itself from its content.
+      // flexGrow, not flex: it must not zero the basis of a self-sizing control.
       flexGrow: 1,
     });
   });

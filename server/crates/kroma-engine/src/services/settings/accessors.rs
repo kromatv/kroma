@@ -107,8 +107,6 @@ pub fn metadata_language(settings: &Settings, config: &crate::config::Config) ->
     }
 }
 
-// ----- remote access (managed Cloudflare Tunnel connector) --------------------
-
 /// Whether the managed `cloudflared` connector is enabled (off by default). When
 /// on and a token is stored, the server supervises the tunnel (see
 /// the `kroma-remote` crate). Installs with their own tunnel leave this off.
@@ -148,8 +146,6 @@ pub fn set_remote_config(
     settings.set_patch(pool, patch);
 }
 
-// ----- library definitions (persisted, multi-folder) --------------------------
-
 /// A named, runtime-editable library spanning one or more scan folders. Persisted
 /// in the settings store under the `libraries` key, seeded from `KROMA_MEDIA_DIRS`
 /// on first run.
@@ -157,7 +153,7 @@ pub fn set_remote_config(
 pub struct LibraryDef {
     pub id: String,
     pub name: String,
-    /// `movies` | `shows` | `mixed` | "" (auto-detect from contents).
+    // `movies` | `shows` | `mixed` | "" (auto-detect from contents).
     #[serde(default)]
     pub kind: String,
     pub folders: Vec<String>,
@@ -248,7 +244,7 @@ mod tests {
         Settings::load(pool)
     }
 
-    /// A Config with explicit fields (avoids reading the process env).
+    // A Config with explicit fields (avoids reading the process env).
     fn test_config() -> crate::config::Config {
         crate::config::Config {
             host: "0.0.0.0".to_string(),

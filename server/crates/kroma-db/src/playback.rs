@@ -63,8 +63,7 @@ pub fn delete_progress(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> 
 /// first, each carried as a full [`MediaItem`] so clients render normal cards.
 pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>> {
     let conn = pool.get()?;
-    // 1) The resumable item ids + their progress. The JOIN drops any orphan
-    //    progress row whose item no longer exists.
+    // The JOIN drops any orphan progress row whose item no longer exists.
     let mut stmt = conn.prepare(
         "SELECT p.item_id,p.position_ms,p.duration_ms,p.updated_at \
          FROM progress p JOIN items i ON i.id = p.item_id \
@@ -79,15 +78,14 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
         .collect::<rusqlite::Result<Vec<_>>>()?;
     drop(stmt);
 
-    // 2) Hydrate all ids in one batched pass (files + markers included).
     let ids: Vec<&str> = rows.iter().map(|(id, _, _, _)| id.as_str()).collect();
     let items = items_by_ids_ordered(&conn, &ids)?;
     let mut by_id: std::collections::HashMap<String, MediaItem> =
         items.into_iter().map(|i| (i.id.clone(), i)).collect();
 
-    // 3) Episodes carry no poster of their own, so a Continue tile would fall
-    //    back to a placeholder. Borrow the parent show's artwork (keeping any
-    //    episode-specific still as the backdrop) one query for all shows.
+    // Episodes carry no poster of their own, so a Continue tile would fall back
+    // to a placeholder. Borrow the parent show's artwork (keeping any
+    // episode-specific still as the backdrop) one query for all shows.
     let show_ids: Vec<String> = by_id
         .values()
         .filter(|i| i.kind == Kind::Episode)
@@ -131,8 +129,6 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
     Ok(out)
 }
 
-// ----- watched (explicit "seen" marker, independent of resume position) -------
-
 /// Mark an item as watched for a user, and drop any resume position so it leaves
 /// "Continue watching". Idempotent (re-marking just refreshes `watched_at`).
 pub fn mark_watched(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
@@ -167,8 +163,6 @@ pub fn list_watched(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
     let rows = stmt.query_map(params![user_id], |r| r.get::<_, String>(0))?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
-
-// ----- my list ("Ma liste" user bookmarks, synced across clients) -----------
 
 /// Add a title to the user's list. Idempotent (re-adding refreshes `added_at`).
 pub fn add_to_list(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
@@ -310,7 +304,7 @@ pub fn show_progress_one(pool: &Pool, user_id: &str, show_id: &str) -> Result<Op
     Ok(if pct > 0 { Some(pct) } else { None })
 }
 
-/// Map a row of `item_id,position_ms,duration_ms,updated_at` to a [`ProgressEntry`].
+// Map a row of `item_id,position_ms,duration_ms,updated_at` to a [`ProgressEntry`].
 fn row_to_progress(r: &Row) -> rusqlite::Result<ProgressEntry> {
     Ok(ProgressEntry {
         item_id: r.get(0)?,
@@ -319,8 +313,6 @@ fn row_to_progress(r: &Row) -> rusqlite::Result<ProgressEntry> {
         updated_at: r.get(3)?,
     })
 }
-
-// ----- continue a series / next episode ---------------------------------------
 
 /// The episode to play to CONTINUE a show, for a user: the most-recent in-progress
 /// episode (resume), else the first unwatched episode in order, else the first.
@@ -343,7 +335,7 @@ pub fn up_next_episode(
         return Ok(None);
     }
 
-    // 1) Resume: the most-recently-updated in-progress episode of this show.
+    // Resume: the most-recently-updated in-progress episode of this show.
     let mut rs = conn.prepare(
         "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
          WHERE p.user_id = ?1 AND i.show_id = ?2 AND p.position_ms > 15000 \
@@ -362,9 +354,9 @@ pub fn up_next_episode(
             None => (episodes[0].clone(), false),
         }
     } else {
-        // 2) The episode AFTER the last (highest, by season/episode) watched one
-        //    so finishing E2 continues at E3 even if an earlier episode is unwatched
-        //    (Plex/Netflix "on deck"). Caught up / nothing watched → the first.
+        // The episode AFTER the last (highest, by season/episode) watched one, so
+        // finishing E2 continues at E3 even if an earlier episode is unwatched
+        // (Plex/Netflix "on deck"). Caught up / nothing watched → the first.
         let mut ws = conn.prepare(
             "SELECT w.item_id FROM watched w JOIN items i ON i.id = w.item_id \
              WHERE w.user_id = ?1 AND i.show_id = ?2",
@@ -433,8 +425,8 @@ mod tests {
 
     static SEQ: AtomicU32 = AtomicU32::new(0);
 
-    /// Fresh DB with one user and one movie item `m1` (so `progress` which has an
-    /// items FK can be seeded).
+    // Fresh DB with one user and one movie item `m1` (so `progress` which has an
+    // items FK can be seeded).
     fn pool_with_user() -> (Pool, String) {
         let n = SEQ.fetch_add(1, Ordering::Relaxed);
         let path = std::env::temp_dir().join(format!("kroma-watched-{}-{n}.db", std::process::id()));
@@ -584,7 +576,7 @@ mod tests {
         assert!(following_episodes(&pool, "e1", 0).unwrap().is_empty()); // n == 0
     }
 
-    /// Insert a movie item so `progress`'s items FK is satisfied.
+    // Insert a movie item so `progress`'s items FK is satisfied.
     fn seed_movie(pool: &Pool, id: &str) {
         pool.get()
             .unwrap()
@@ -723,7 +715,7 @@ mod tests {
         assert_eq!(meta.backdrop_url.as_deref(), Some("episode-still.jpg"));
     }
 
-    /// Show `sid` with `n` episodes `{prefix}1..{prefix}n`.
+    // Show `sid` with `n` episodes `{prefix}1..{prefix}n`.
     fn seed_show(pool: &Pool, sid: &str, prefix: &str, n: i64) {
         let conn = pool.get().unwrap();
         conn.execute(

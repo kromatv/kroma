@@ -1,10 +1,5 @@
-// The web app's frontend module registry.
-//
-// Adding a module is one import + one register() line (the compile-time tier
-// that ships today and works on every target, including the Chromium-53 TVs). A
-// future runtime-load tier (Module Federation, web + desktop only) would
-// register remotely-loaded modules here too, behind this same registry API - so
-// nothing downstream changes.
+// The web app's frontend module registry: adding a module is one import plus one
+// register() line.
 
 import { acquisitionModule } from '@kroma/module-acquisition';
 import { indexerModule } from '@kroma/module-indexer';
@@ -20,5 +15,4 @@ moduleRegistry.register(torrentsModule);
 moduleRegistry.register(vpnModule);
 moduleRegistry.register(remoteModule);
 moduleRegistry.register(acquisitionModule);
-// Single-file (codegen) modules register themselves via the generated roster.
 for (const m of generatedModules) moduleRegistry.register(m);

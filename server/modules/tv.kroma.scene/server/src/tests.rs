@@ -89,8 +89,6 @@ fn proper_repack_flags_and_group_edge_cases() {
     assert_eq!(r.title, "Spider-Man");
 }
 
-// ----- decision engine -------------------------------------------------------
-
 fn profile() -> Profile {
     Profile {
         resolution: Res::R1080,
@@ -197,8 +195,6 @@ fn required_keywords_and_priority_tiebreak() {
     assert_eq!(boosted.score, base.score + 25);
 }
 
-// ----- parser edge branches --------------------------------------------------
-
 #[test]
 fn source_codec_and_group_edge_branches() {
     // "WEB" then "RIP" split across tokens resolves to WEBRip.
@@ -227,8 +223,6 @@ fn source_codec_and_group_edge_branches() {
     assert_eq!(d.resolution, Some(Res::R1080));
     assert_eq!((d.season, d.episode), (None, None));
 }
-
-// ----- scoring branch coverage -----------------------------------------------
 
 fn res_delta(s: &Scored) -> i32 {
     s.breakdown.iter().find(|l| l.rule == "resolution").unwrap().delta

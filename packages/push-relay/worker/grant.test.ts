@@ -5,13 +5,13 @@ import { b64url, fromB64url } from './jwt';
 const SECRET = 'a-test-sealing-secret-that-is-long-enough';
 const NOW = 1_800_000_000;
 
-/** Mirrors the IV width `grant.ts` prepends to the sealed bytes. */
+// Mirrors the IV width `grant.ts` prepends to the sealed bytes.
 const IV_BYTES = 12;
 
 const grantFor = (token: string, exp = NOW + GRANT_TTL_SECS) =>
   seal(SECRET, { t: 'apns', d: token, e: exp });
 
-/** The sealed half of `v1.<blob>`. */
+// The sealed half of `v1.<blob>`.
 const blobOf = (grant: string): string => grant.split('.')[1] ?? '';
 
 describe('grants', () => {

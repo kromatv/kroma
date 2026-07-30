@@ -26,18 +26,11 @@ interface TxtProps extends Omit<TextProps, 'style' | 'role'> {
   lines?: number;
 }
 
-/**
- * A `style` that resizes the text carries two absolutes with it that were sized
- * for the ROLE's font size, not for the new one.
- *
- * `lineHeight` is the one that breaks visibly: web only spills the glyph out of
- * the line box, but native React Native CLIPS it (the PIN keypad's 28px digits
- * lost their tops to `body`'s 25px line). `letterSpacing` breaks quietly, which
- * is worse - an overline resized from 11px to 13px kept 11px's tracking and read
- * as a tighter eyebrow, so every 10-foot screen wrote the whole style by hand
- * instead. Both are re-derived from what the role AUTHORS (a ratio and an em),
- * and only when the caller has not stated them.
- */
+// A style that resizes the text carries two absolutes sized for the role's
+// original font size. `lineHeight` breaks visibly — React Native clips text
+// that overflows it, unlike the web — and `letterSpacing` breaks quietly,
+// drifting from the role's authored tracking. Both are re-derived from what
+// the role authors (a ratio and an em), only when the caller hasn't stated them.
 function sizeFix(variant: TypeRole, style: StyleProp<TextStyle>): TextStyle | null {
   if (!style) return null;
   const flat = StyleSheet.flatten(style);

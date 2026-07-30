@@ -26,9 +26,9 @@ interface FakeFile {
 }
 
 const fs = vi.hoisted(() => ({
-  /** Directories whose writes never land, however they report. */
+  // Directories whose writes never land, however they report.
   lying: new Set<string>(),
-  /** Directories that throw on any access at all. */
+  // Directories that throw on any access at all.
   refusing: new Set<string>(),
   files: new Map<string, FakeFile>(),
   created: [] as string[],
@@ -85,14 +85,10 @@ vi.mock('expo-file-system', () => {
 const setSessionStorage = vi.hoisted(() => vi.fn());
 vi.mock('@kroma/core', () => ({ setSessionStorage }));
 
-/**
- * Boot the app's storage, from scratch.
- *
- * The store is a module-scope singleton - one per process, as one launch has -
- * so each case re-imports the module. Without that, a key written by an earlier
- * test is still in memory for the next, and "starts empty" passes or fails on
- * whatever ran before it.
- */
+// The store is a module-scope singleton - one per process, as one launch has -
+// so each case re-imports the module. Without that, a key written by an earlier
+// test is still in memory for the next, and "starts empty" passes or fails on
+// whatever ran before it.
 async function launch(): Promise<void> {
   vi.resetModules();
   const { hydrateSessionStorage } = await import('./storage');
@@ -103,7 +99,6 @@ const DOC = '/documents/kroma';
 const CACHE = '/caches/kroma';
 const FILE = 'kroma-session.json';
 
-/** The store the app was handed. */
 function store() {
   const installed = setSessionStorage.mock.calls.at(-1)?.[0];
   if (!installed) throw new Error('no session store was installed');
@@ -114,7 +109,6 @@ function store() {
   };
 }
 
-/** What is on disk in a given directory, parsed. */
 const onDisk = (dir: string) => {
   const raw = fs.files.get(`${dir}/${FILE}`)?.contents;
   return raw == null ? null : (JSON.parse(raw) as Record<string, string>);

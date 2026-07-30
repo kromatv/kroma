@@ -1,22 +1,11 @@
-// <Img>: the artwork surface, with a built-in fade.
+// <Img>: the artwork surface, with a built-in fade-in and cross-fade on `src`
+// change; `background` shows instantly as the fallback so the surface is never
+// blank.
 //
-// - Fade-in on load: art starts transparent and eases to full opacity once
-//   decoded, so a tile or a hero never pops in.
-// - Cross-fade on `src` change: the previously loaded image is held underneath
-//   while the new one loads, then the new one fades in over it. That is what
-//   makes the browse screens' ambient backdrop swap cleanly.
-// - `background` (usually a deterministic genre gradient) shows instantly and
-//   stays as the fallback, so the surface is never blank.
-//
-// ONE file for both worlds. The leaf element is the only thing that differs and
-// it differs for a real reason: on the web a true <img> keeps `loading="lazy"`,
-// `fetchpriority` and `object-position`, which a 1000-poster grid on a TV needs
-// and which react-native-web's Image (a div with a background-image) cannot
-// give; natively, the leaf is drawn by the registered image backend (see
-// lib/image-backend), which is React Native's own <Image> unless an app swaps in
-// something better for its platform. Everything above the leaf (the container,
-// the placeholder, the cross-fade timing, the cover maths) is shared, which is
-// what keeps every target pixel-identical.
+// One file for both platforms: the leaf element differs (a real `<img>` on
+// web for `loading`/`fetchpriority`/`object-position`; the registered image
+// backend natively) but everything above it — container, placeholder,
+// cross-fade timing, cover maths — is shared.
 
 import { safeImageUrl } from '@kroma/core';
 import {
@@ -41,16 +30,14 @@ import { gradient } from '#ui/lib/css';
 import { imageBackend } from '#ui/lib/image-backend';
 import { absoluteFill } from '#ui/lib/tokens';
 
-/* ------------------------------------------------------------------ props -- */
-
 export interface ImgProps {
   /** Already-sized artwork URL. This component never rewrites it. */
   src: string | null;
   /** Accessibility text. Empty (the default) marks the artwork decorative. */
   alt?: string;
-  /** Fade duration in ms, for both the load-in and the cross-fade on `src` change. */
+  /** Applies to both the load-in fade and the cross-fade on `src` change. */
   duration?: number;
-  /** How the art fills its box. Default `cover`. */
+  /** Defaults to `cover`. */
   fit?: 'cover' | 'contain';
   /** CSS object-position, e.g. `'50% 28%'` (heroes favour the upper third).
    *  Only has a visible effect when `fit` is `cover` AND the art's aspect ratio
@@ -68,44 +55,26 @@ export interface ImgProps {
    *  instead of lazily. Web only, and at most one image per screen. */
   priority?: boolean;
   /**
-   * Never hold the previous image underneath while the next one loads; just fade
-   * the new one in over the background. The cross-fade paints TWO full-size
-   * layers at once, which for a small tile is nothing and for a FULL-SCREEN
-   * decorative backdrop is the browse grid's worst frame - it swaps on every
-   * focus settle, and a television recomposites two 1080p layers for the length
-   * of the fade. Off (cross-fading) by default, because for foreground artwork
-   * the double layer is exactly the point.
+   * Skip holding the previous image underneath while the next one loads; just
+   * fade the new one in over the background. Off by default — a full-screen
+   * backdrop that swaps on every focus settle would otherwise recomposite two
+   * full-size layers for the length of the fade.
    */
   noCrossFade?: boolean;
   onLoad?: () => void;
   onError?: () => void;
 }
 
-/** Fade default. */
 export const IMG_FADE_MS = 400;
 
-/* ------------------------------------------------------ cross-fade state --- */
-
 interface CrossFade {
-  /** The current `src` has decoded and can be revealed. */
   loaded: boolean;
-  /** The current `src` failed; show the background instead. */
   errored: boolean;
-  /** The previous, still fully loaded image held underneath while the incoming
-   *  one decodes. Null once the fade has finished, or when there is nothing to
-   *  fade from (first load, or clearing to no art). */
   under: string | null;
   markLoaded: () => void;
   markErrored: () => void;
 }
 
-/**
- * The load-in / cross-fade state machine.
- *
- * Platform-neutral on purpose: it holds no element ref and touches no DOM, so
- * the two leaf renderers below differ only in HOW they display a layer, never in
- * WHEN. That is what keeps a hero swap looking identical on Apple TV and Tizen.
- */
 function useCrossFade(src: string | null, duration: number): CrossFade {
   const [shown, setShown] = useState<string | null>(src);
   const [loaded, setLoaded] = useState(false);
@@ -113,11 +82,9 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
   const [under, setUnder] = useState<string | null>(null);
   const loadedSrc = useRef<string | null>(null);
 
-  // Adjusted during render rather than in an effect: a post-commit update would
-  // paint one frame of the new (transparent) image over nothing, which reads as
-  // a flicker. Promote the last fully-loaded image to the underlay and start the
-  // incoming one at opacity 0. Clearing to null (or to the same url) drops the
-  // underlay, so we never cross-fade from stale art.
+  // Adjusted during render, not in an effect: a post-commit update would paint
+  // one frame of the new (transparent) image over nothing, which reads as a
+  // flicker.
   if (shown !== src) {
     const prev = loadedSrc.current;
     setUnder(src && prev && prev !== src ? prev : null);
@@ -148,8 +115,6 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
   };
 }
 
-/* ---------------------------------------------------------- the component -- */
-
 interface Size {
   width: number;
   height: number;
@@ -172,23 +137,19 @@ function Img({
   onLoad,
   onError,
 }: Readonly<ImgProps>) {
-  // Checked HERE, once, rather than at each of the leaves below: artwork URLs
-  // come from whichever server the client is signed into, and `under` is just an
-  // earlier `src`, so sanitising ahead of the cross-fade covers both layers.
+  // Sanitised once here, rather than at each leaf below, so it also covers
+  // `under` (an earlier `src`) ahead of the cross-fade.
   const src = safeImageUrl(requested);
   const cross = useCrossFade(src, duration);
   const { loaded, errored, markLoaded, markErrored } = cross;
-  // Dropping the underlay is the whole of "no cross-fade": the new image still
-  // fades in, there is just never a second layer held beneath it.
   const under = noCrossFade ? null : cross.under;
   const [box, setBox] = useState<Size | null>(null);
   const [natural, setNatural] = useState<Size | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const focal = useMemo(() => parsePosition(position), [position]);
 
-  // The browser has object-position; React Native does not, so the native leaf
-  // measures the box and the artwork and places the cover rectangle itself.
-  // `contain` never overflows, so it needs no focal maths at all.
+  // React Native has no object-position, so the native leaf places the cover
+  // rectangle itself; `contain` never overflows, so it needs no focal maths.
   const rect = !IS_WEB && fit === 'cover' ? coverRect(box, natural, focal) : null;
 
   const onBoxLayout = (e: LayoutChangeEvent) => {
@@ -232,14 +193,11 @@ function Img({
     );
   }
 
-  // With a known cover rectangle the geometry is already exact, so the image is
-  // stretched into it; before that we fall back to a plain centred cover.
   const layer = rect ? { position: 'absolute' as const, ...rect } : absoluteFill;
   const mode = rect ? ('stretch' as const) : fit;
   const backend = imageBackend();
-  // A backend that fades itself (expo-image) is left alone; one that does not
-  // (React Native's <Image>) is cross-faded here, so the timing is the design's
-  // either way.
+  // A backend that fades itself (expo-image) is left alone; one that doesn't
+  // (React Native's <Image>) is cross-faded here instead.
   const leaf = (uri: string, animated: boolean) =>
     backend.render({
       uri,
@@ -270,8 +228,6 @@ function Img({
   );
 }
 
-/** Every argument the web leaf needs. One object, because the alternative is a
- * dozen positional parameters. */
 interface WebLayersArgs {
   src: string | null;
   under: string | null;
@@ -288,18 +244,11 @@ interface WebLayersArgs {
   onError: () => void;
 }
 
-/**
- * The web leaves: the outgoing image held underneath, and the incoming one
- * fading in over it.
- *
- * A plain function rather than a component, deliberately. It returns the same
- * two elements <Img> used to return inline, so the tree, the keys and the style
- * identities are unchanged - a component here would add a layer to the most
- * instantiated primitive in the kit for nothing.
- */
+// A plain function, not a component: it returns the same elements <Img> used
+// to return inline, so the tree, keys and style identities are unchanged.
 function webLayers(at: Readonly<WebLayersArgs>): ReactNode {
-  // Fill with the four longhands, not the `inset` shorthand, which old webOS
-  // Chromium 53 does not know and would drop from an inline style.
+  // Four longhands, not the `inset` shorthand, which old webOS Chromium 53
+  // does not know and would drop from an inline style.
   const layer: CSSProperties = {
     position: 'absolute',
     top: 0,
@@ -310,12 +259,8 @@ function webLayers(at: Readonly<WebLayersArgs>): ReactNode {
     height: '100%',
     objectFit: at.fit,
     objectPosition: at.position,
-    // The image rounds ITSELF, rather than trusting the container to clip it.
-    // Chrome does not reliably apply an `overflow: hidden` + `border-radius`
-    // clip to a COMPOSITED descendant, and an <img> is exactly that - so a
-    // rounded card drew square artwork into all four corners, and looked like a
-    // hard-edged rectangle with a scrim painted across it. The container still
-    // clips; this just stops the result depending on whether it does.
+    // Chrome doesn't reliably clip a border-radius on a composited descendant,
+    // and an <img> is exactly that — so the image rounds itself too.
     borderRadius: at.radius,
   };
   return (

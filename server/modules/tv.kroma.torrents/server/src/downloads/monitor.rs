@@ -18,14 +18,14 @@ use super::DownloadManager;
 const ACTIVE_TICK: Duration = Duration::from_secs(5);
 const IDLE_TICK: Duration = Duration::from_secs(30);
 const VPN_CHECK_EVERY: Duration = Duration::from_secs(60);
-/// How often to retry bringing the embedded engine up while it isn't running
-/// (a boot deferral: the VPN sidecar wasn't answering yet). Short, so the engine
-/// starts within seconds of the VPN resolving instead of a VPN-check away.
+// How often to retry bringing the embedded engine up while it isn't running (a
+// boot deferral: the VPN sidecar wasn't answering yet). Short, so the engine
+// starts within seconds of the VPN resolving instead of a VPN-check away.
 const START_RETRY: Duration = Duration::from_secs(6);
-/// How often to re-seed peer-starved embedded torrents from our own proxied
-/// tracker announce (see `DownloadManager::reseed_stalled`). Slow: each pass
-/// removes+re-adds the stalled torrents, so it must give injected peers time to
-/// connect before trying again.
+// How often to re-seed peer-starved embedded torrents from our own proxied
+// tracker announce (see `DownloadManager::reseed_stalled`). Slow: each pass
+// removes+re-adds the stalled torrents, so it must give injected peers time to
+// connect before trying again.
 const RESEED_EVERY: Duration = Duration::from_secs(120);
 
 fn human_bytes(n: u64) -> String {
@@ -45,8 +45,8 @@ impl DownloadManager {
         tokio::spawn(async move { manager.monitor_loop(host).await });
     }
 
-    /// The monitor's forever-loop: idle while disabled, self-heal a deferred
-    /// engine start, then poll on a fast (active) / slow (idle) cadence.
+    // Idle while disabled, self-heal a deferred engine start, then poll on a
+    // fast (active) / slow (idle) cadence.
     async fn monitor_loop(self: Arc<Self>, host: Arc<dyn HostCtx>) {
         let mut last_vpn_check = std::time::Instant::now() - VPN_CHECK_EVERY;
         // Start the reseed clock at "now" (not in the past): give the add-time
@@ -93,15 +93,14 @@ impl DownloadManager {
         }
     }
 
-    /// True while the embedded engine is compiled in but not yet running (a boot
-    /// deferral we keep retrying).
+    // True while the embedded engine is compiled in but not yet running (a boot
+    // deferral we keep retrying).
     fn awaiting_engine(&self) -> bool {
         crate::RQBIT_COMPILED && self.rqbit().is_none()
     }
 
-    /// One blocking poll pass: optional VPN probe + reseed, then `tick`. Same
-    /// thread as `tick`, so the remove/re-add window a reseed opens is never
-    /// observed by a concurrent poll.
+    // Optional VPN probe + reseed, then `tick`. Same thread as `tick`, so the
+    // remove/re-add window a reseed opens is never observed by a concurrent poll.
     fn poll_once(&self, host: &dyn HostCtx, vpn_due: bool, reseed_due: bool) -> bool {
         if vpn_due {
             let _ = self.vpn_check(host);
@@ -112,8 +111,7 @@ impl DownloadManager {
         self.tick(host)
     }
 
-    /// One poll pass. Returns whether anything is still active (drives the tick
-    /// cadence).
+    // Returns whether anything is still active (drives the tick cadence).
     fn tick(&self, host: &dyn HostCtx) -> bool {
         let rows = match host.db().get().and_then(|c| Ok(db::active_downloads(&c)?)) {
             Ok(rows) => rows,
@@ -140,8 +138,8 @@ impl DownloadManager {
         true
     }
 
-    /// Poll one ledger row's engine and mirror its state. Returns whether the
-    /// row just completed (so the caller chains the import job).
+    // Returns whether the row just completed (so the caller chains the import
+    // job).
     fn process_row(&self, host: &dyn HostCtx, row: &db::DownloadRow) -> bool {
         // Still being added in the background (grab enqueues, then activate()
         // fills the ref). Nothing to poll yet.
@@ -190,8 +188,8 @@ impl DownloadManager {
         }
     }
 
-    /// Mirror a fresh engine status into the ledger + publish progress. Returns
-    /// whether the row just completed.
+    // Mirrors a fresh engine status into the ledger + publishes progress.
+    // Returns whether the row just completed.
     fn apply_status(&self, host: &dyn HostCtx, row: &db::DownloadRow, status: &crate::TorrentStatus) -> bool {
         // Visibility for "stuck at 0%": show what the swarm looks like. peers=0 &
         // seen=0 -> the tracker returned nothing (dead torrent / announce

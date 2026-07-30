@@ -5,10 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PlayerController } from '../types';
 import { useSeekNudge } from './useSeekNudge';
 
-/** Mirrors the hook's own tap step, so the expectations read as intent. */
 const TAP_STEP = 10;
 
-/** Only the four members the hook reads; the rest of the controller is inert. */
 function makeController(over: Partial<PlayerController> = {}) {
   return {
     cur: 100,
@@ -22,7 +20,6 @@ function makeController(over: Partial<PlayerController> = {}) {
   };
 }
 
-/** The last absolute target the cursor was moved to. */
 function lastTarget(c: { scrubPreview: ReturnType<typeof vi.fn> }): number {
   const calls = c.scrubPreview.mock.calls;
   return calls[calls.length - 1]?.[0] as number;
@@ -41,7 +38,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** Advance both the fake clock and `Date.now`, which the ramp reads. */
+// The ramp reads `Date.now`, so both clocks have to move.
 function advance(ms: number) {
   now += ms;
   act(() => {
@@ -72,7 +69,7 @@ describe('useSeekNudge taps', () => {
     advance(400);
     act(() => result.current(1));
 
-    // Three taps continue from each other rather than from the playhead.
+    // 130, not 110: the taps continue from each other, not from the playhead.
     expect(lastTarget(c)).toBe(130);
     expect(c.scrubCommit).not.toHaveBeenCalled();
     advance(600);
@@ -85,7 +82,7 @@ describe('useSeekNudge hold', () => {
     const c = makeController();
     const { result } = renderHook(() => useSeekNudge(c));
 
-    act(() => result.current(1)); // the opening tap
+    act(() => result.current(1));
     const steps: number[] = [];
     let prev = lastTarget(c);
     for (let i = 0; i < 8; i++) {
@@ -96,11 +93,9 @@ describe('useSeekNudge hold', () => {
       prev = next;
     }
 
-    // Strictly growing, and by the end far beyond a tap's ten seconds.
     for (let i = 1; i < steps.length; i++) {
       expect(steps[i]).toBeGreaterThan(steps[i - 1] as number);
     }
-    // And a held button never travels LESS per press than tapping would.
     expect(steps[steps.length - 1]).toBeGreaterThan(TAP_STEP);
   });
 
@@ -114,8 +109,7 @@ describe('useSeekNudge hold', () => {
     }
     const heldDistance = lastTarget(held) - 100;
 
-    // ~1 s held. Tapping thirteen times would have moved 130 s and taken far
-    // longer to do; a hold has to be worth reaching for.
+    // ~1 s held; tapping thirteen times would have moved only 130 s.
     expect(heldDistance).toBeGreaterThan(200);
   });
 
@@ -132,7 +126,6 @@ describe('useSeekNudge hold', () => {
 
     advance(80);
     act(() => result.current(-1));
-    // The opposite direction is a fresh gesture: one precise step back.
     expect(lastTarget(c)).toBe(fast - 10);
   });
 });

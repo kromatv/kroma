@@ -110,11 +110,9 @@ fn blank_query_is_empty() {
     assert!(e.search("   ", 5).is_empty());
 }
 
-// ----- the language cache, through the real reindex path -------------------------
-
 use crate::test_support::{seed_movie, test_state};
 
-/// Store a localized row for `subject_id`, as the enrichment pass would.
+// Store a localized row for `subject_id`, as the enrichment pass would.
 fn put_translation(state: &crate::state::SharedState, kind: &str, id: &str, lang: &str, data: serde_json::Value) {
     state
         .db
@@ -131,7 +129,7 @@ fn put_translation(state: &crate::state::SharedState, kind: &str, id: &str, lang
         .unwrap();
 }
 
-/// Give a movie its file title and the core metadata the indexer reads.
+// Give a movie its file title and the core metadata the indexer reads.
 fn seed_titled_movie(state: &crate::state::SharedState, id: &str, file_title: &str) {
     seed_movie(state, id);
     // Titles here carry apostrophes on purpose (a French title is the point),

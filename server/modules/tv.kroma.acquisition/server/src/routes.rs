@@ -25,7 +25,6 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
         .route("/acquisition/add", post(manual_add::<S>))
 }
 
-/// Acquisition access: the requests moderator or a settings admin.
 fn require_acquisition<S: HostCtx>(state: &S, user: &User) -> Result<(), Response> {
     if user.can(Permission::RequestsManage) || user.can(Permission::SettingsManage) {
         Ok(())
@@ -112,7 +111,6 @@ pub async fn manual_add<S: HostCtx + Clone + Send + Sync + 'static>(
         return Err(json_error(StatusCode::BAD_REQUEST, "kind must be movie, episode or season"));
     }
     let title = body.title.as_deref().map(str::trim).filter(|s| !s.is_empty()).map(str::to_string);
-    // A readable release label (magnet dn=, else the title, else "manual").
     let release_title = magnet_display_name(&magnet)
         .or_else(|| title.clone())
         .unwrap_or_else(|| "manual".to_string());
@@ -144,7 +142,6 @@ pub async fn manual_add<S: HostCtx + Clone + Send + Sync + 'static>(
     }
 }
 
-/// Best-effort human name from a magnet's `dn=` parameter.
 fn magnet_display_name(magnet: &str) -> Option<String> {
     let idx = magnet.find("dn=")?;
     let raw: String = magnet[idx + 3..].chars().take_while(|&c| c != '&').collect();

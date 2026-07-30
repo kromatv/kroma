@@ -1,7 +1,3 @@
-// Shared building blocks for the movie / series detail pages: the cinematic
-// hero (backdrop, layered gradient, big title, meta badges) and the circular
-// cast rail. The Netflix-style action block lives in DetailActions.tsx.
-
 import type { CastMember } from '@kroma/core';
 import { posterColors, sizedImageUrl } from '@kroma/core';
 import { BackButton, PersonCard, tintGradient } from '@kroma/ui/kit';
@@ -28,9 +24,8 @@ export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-/** Backdrop hero with a 5-stop shade into the page, back button and a bottom
- * overlay carrying the display title, an optional context line and meta row.
- * When `scrollY` is provided the artwork stretches elastically on pull-down. */
+/** Backdrop hero shading into the page. Given `scrollY`, the artwork stretches
+ * elastically on pull-down. */
 export function DetailHero({
   art,
   seed,
@@ -52,12 +47,11 @@ export function DetailHero({
   const gutters = useGutters();
   const { width, height: windowH } = useWindowDimensions();
   // Capped against the window height too: on a landscape phone a width-driven
-  // hero would fill the whole ~390pt viewport.
+  // hero would fill the whole viewport.
   const height = Math.min(width * 0.62, 460, Math.round(windowH * 0.72));
 
   const stretch = useAnimatedStyle(() => {
-    // Only overscroll (y < 0) stretches: scale from the top anchor with the
-    // gap halved away, the classic elastic-header recipe.
+    // Only overscroll (y < 0) stretches.
     const y = Math.min(scrollY?.value ?? 0, 0);
     return {
       transform: [{ translateY: y / 2 }, { scale: 1 - y / height }],
@@ -93,9 +87,7 @@ export function DetailHero({
   );
 }
 
-/** Circular cast photos with an initials fallback when no photo exists;
- * tapping a member opens their credits page. The tile is the kit's
- * <PersonCard> at its phone size - the TV's detail page draws the same one. */
+/** Circular cast photos; tapping a member opens their credits page. */
 export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
   const client = useClient();
   const router = useRouter();

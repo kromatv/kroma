@@ -48,10 +48,8 @@ describe('EpisodeRow', () => {
     row();
     expect(screen.getByText('Pilot')).toBeTruthy();
     expect(screen.getByText(/Jack wakes in the jungle/)).toBeTruthy();
-    // The episode number and the runtime live on the still.
     expect(screen.getByText('Episode 1')).toBeTruthy();
     expect(screen.getByText('45min')).toBeTruthy();
-    // A known runtime also says when the episode would end.
     expect(screen.getByText(/ends at/)).toBeTruthy();
   });
 
@@ -69,7 +67,7 @@ describe('EpisodeRow', () => {
 
   it('turns the toggle into "Watched" once the episode is seen, and says so in a pill', () => {
     row({ watched: true });
-    // The button and the title pill both carry the watched word.
+    // The button and the title pill both carry the word.
     expect(screen.getAllByText('Watched').length).toBeGreaterThanOrEqual(2);
   });
 

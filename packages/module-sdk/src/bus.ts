@@ -1,7 +1,5 @@
-// A typed, in-process event bus for loose coupling between modules. This is the
-// frontend counterpart to the backend's open `ModuleEvent` envelope: modules
-// declare their events by merging into `KromaEvents` (see contracts.ts), then
-// emit/subscribe with full type-checking.
+// A typed, in-process event bus between modules. Modules declare their events by
+// merging into `KromaEvents` (see contracts.ts).
 
 import type { KromaEvents } from './contracts';
 
@@ -9,21 +7,20 @@ export type EventKey = Extract<keyof KromaEvents, string>;
 
 export interface EventBus {
   emit<K extends EventKey>(key: K, payload: KromaEvents[K]): void;
-  /** Subscribe; returns an unsubscribe function. */
   on<K extends EventKey>(key: K, handler: (payload: KromaEvents[K]) => void): () => void;
 }
 
 type AnyHandler = (payload: never) => void;
 
-/** A minimal synchronous event bus. */
+/** Dispatch is synchronous: `emit` returns once every handler has run. */
 export function createEventBus(): EventBus {
   const handlers = new Map<string, Set<AnyHandler>>();
   return {
     emit(key, payload) {
       const set = handlers.get(key);
       if (!set) return;
-      // Snapshot: a handler may (un)subscribe during dispatch; every handler
-      // subscribed when emit began still fires exactly once.
+      // A handler may (un)subscribe during dispatch; every handler subscribed
+      // when emit began still fires exactly once.
       const snapshot = Array.from(set);
       for (const handler of snapshot) (handler as (p: typeof payload) => void)(payload);
     },

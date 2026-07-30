@@ -65,7 +65,7 @@ function PlatformSearch({ value, onChange, placeholder, children }: Readonly<Sea
   );
 }
 
-/** The only television here whose own keyboard is worth more than ours. */
+// The only television here whose own keyboard is worth more than ours.
 const appleSearchShell: SearchShell = {
   available: () => NativeSearchView !== null,
   Shell: PlatformSearch,
@@ -76,8 +76,8 @@ const appleSearchShell: SearchShell = {
 export const nativeSearchShell: SearchShell | null =
   Platform.OS === 'ios' ? appleSearchShell : null;
 
-/** tvOS hands the results the full width and expects the app to keep its own
- * content off the overscan edge. The system chrome above (the field, the keys,
- * the rule under them) sits 80pt in, and the results scroller adds the last 20
- * of that itself, so this is what is left to make the two line up. */
+// tvOS hands the results the full width and expects the app to keep its own
+// content off the overscan edge. The system chrome above (the field, the keys,
+// the rule under them) sits 80pt in, and the results scroller adds the last 20
+// of that itself, so this is what is left to make the two line up.
 const EDGE = 60;

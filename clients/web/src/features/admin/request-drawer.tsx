@@ -23,7 +23,7 @@ import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import { seasonsSummary } from '#web/features/requests/status';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** RN style for a kit button that shares the row like the old `flex-1` CTAs. */
+// Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
 
 interface SearchState {
@@ -261,16 +261,9 @@ function ModerationButtons({
   );
 }
 
-/**
- * The moderation drawer, as an imperative callable: open it with
- * `RequestDrawer.call({ req, canReview, onApprove, onDeny, onDelete })`. Its root
- * is mounted once by `AdminModalHosts`, so the queue page carries no open-state.
- * The displayed request stays live off the shared requests query (same key as
- * the queue), so WS/action-driven reloads refresh the open drawer; the drawer
- * closes itself when its request leaves the list (e.g. after a delete). The
- * caller's actions run through the `onApprove`/`onDeny`/`onDelete` callbacks so
- * the queue's toast + list refresh keep working while the drawer is open.
- */
+// Open with `RequestDrawer.call({ req, canReview, onApprove, onDeny, onDelete })`.
+// Actions run through those callbacks so the queue's toast + list refresh keep
+// working while the drawer is open; it closes itself when the request leaves the list.
 export const RequestDrawer = createCallable<
   {
     req: MediaRequest;
@@ -297,9 +290,8 @@ export const RequestDrawer = createCallable<
   const [search, setSearch] = useState<SearchState>({ busy: false, view: null, error: null });
   const [grabbed, setGrabbed] = useState<GrabbedState>(null);
 
-  // Slide in on mount, slide out on close: mount at the off-screen transform,
-  // flip to `open` on the next frame, and (via the 300ms unmounting delay) keep
-  // the node mounted while `call.ended` animates it back out.
+  // Mount at the off-screen transform, flip to `open` next frame; the 300ms
+  // unmounting delay keeps the node mounted while `call.ended` animates it out.
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setEntered(true));
