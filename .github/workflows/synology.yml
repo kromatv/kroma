@@ -219,9 +219,15 @@ jobs:
             echo "using the cached ffmpeg-arm64"
             exit 0
           fi
+          # `xz -t` is part of the fetch, not a separate step: the primary has
+          # served an HTML error page WITH HTTP 200 (2026-07-31, coming back
+          # from an outage), which -f waves through and tar then dies on -
+          # before the fallback was ever consulted. A fetch only counts when
+          # what arrived is actually an xz archive.
           fetch() {
             curl -fSL --connect-timeout 20 --retry 3 --retry-delay 4 --retry-all-errors \
-              --proto '=https' --proto-redir '=https' "$1" -o ff.tar.xz
+              --proto '=https' --proto-redir '=https' "$1" -o ff.tar.xz \
+              && xz -t ff.tar.xz 2>/dev/null
           }
           if ! fetch "$FFMPEG_URL"; then
             echo "primary ffmpeg source unreachable, trying the fallback"

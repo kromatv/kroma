@@ -38,6 +38,12 @@ export default defineConfig({
       prerender: {
         enabled: true,
         crawlLinks: true,
+        // The prerenderer fetches pages from its own just-started local
+        // server, and CI has lost that race twice in one day (connect
+        // ETIMEDOUT/ECONNREFUSED on the first page). A failed page gets
+        // retried instead of failing the build.
+        retryCount: 3,
+        retryDelay: 1000,
         // Two kinds of crawled href are not a page: in-page anchors and the
         // trailing-slash twin of a path already queued. The FIRST spelling of
         // a twin wins, not the slashless one: the route tree spells a
