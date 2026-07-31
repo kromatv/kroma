@@ -4,11 +4,11 @@
 import { isTizenRuntime, isWebOsRuntime, type MessageKey } from '@kroma/core';
 import { Platform } from 'react-native';
 import { reactivePref } from '#tv/app/settings/store';
-import { mpvAvailable } from '#tv/features/playback/player/engine';
+import { mpvAvailable, shakaAvailable } from '#tv/features/playback/player/engine';
 
-export type EnginePref = 'auto' | 'avplay' | 'webview' | 'remux' | 'mpv';
+export type EnginePref = 'auto' | 'avplay' | 'webview' | 'shaka' | 'remux' | 'mpv';
 
-const ALL: readonly EnginePref[] = ['auto', 'avplay', 'webview', 'remux', 'mpv'];
+const ALL: readonly EnginePref[] = ['auto', 'avplay', 'webview', 'shaka', 'remux', 'mpv'];
 
 export const enginePrefStore = reactivePref('kroma:engine', ALL, 'auto');
 
@@ -28,10 +28,13 @@ export function availableEngines(): EnginePref[] {
   // Native clients have one player (expo-video: AVPlayer / Media3); the only
   // choice is the original file or the server's remux.
   if (Platform.OS !== 'web') return ['auto', 'remux'];
+  // The legacy tier ships without Shaka (see shakaAvailable), so the pref only
+  // appears where picking it can change anything.
+  const shaka: EnginePref[] = shakaAvailable() ? ['shaka'] : [];
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  if (isTizenRuntime(ua)) return ['auto', 'avplay', 'remux'];
-  if (isWebOsRuntime(ua)) return ['auto', 'webview', 'remux'];
-  const list: EnginePref[] = ['auto', 'webview', 'remux'];
+  if (isTizenRuntime(ua)) return ['auto', 'avplay', ...shaka, 'remux'];
+  if (isWebOsRuntime(ua)) return ['auto', 'webview', ...shaka, 'remux'];
+  const list: EnginePref[] = ['auto', 'webview', ...shaka, 'remux'];
   if (mpvAvailable()) list.splice(1, 0, 'mpv');
   return list;
 }
@@ -40,6 +43,7 @@ export const ENGINE_LABEL_KEY: Record<EnginePref, MessageKey> = {
   auto: 'playbackEngine.auto',
   avplay: 'playbackEngine.avplay',
   webview: 'playbackEngine.webview',
+  shaka: 'playbackEngine.shaka',
   remux: 'playbackEngine.remux',
   mpv: 'playbackEngine.mpv',
 };

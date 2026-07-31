@@ -1,4 +1,4 @@
-// This build's identity, gathered by app.config.js (see
+// This build's identity, gathered by app.config.ts (see
 // clients/expo-build/build-info.js) and read back from the Expo manifest —
 // nothing here runs git or touches the filesystem. Git-derived fields are
 // nullable when the build was made outside a checkout.

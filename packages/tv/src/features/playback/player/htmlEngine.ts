@@ -13,6 +13,20 @@ import {
 
 type HlsInstance = import('hls.js').default;
 
+// The slice of the Shaka Player API this engine touches, typed structurally so
+// Shaka's generated namespace types stay out of the program (the web client's
+// video-engine does the same).
+interface ShakaPlayerLike {
+  attach(media: HTMLMediaElement): Promise<void>;
+  load(uri: string, startTime?: number | null): Promise<void>;
+  destroy(): Promise<void>;
+  configure(config: Record<string, unknown>): boolean;
+}
+interface ShakaStatic {
+  Player: { new (): ShakaPlayerLike; isBrowserSupported(): boolean };
+  polyfill: { installAll(): void };
+}
+
 export interface HtmlOptions {
   video: HTMLVideoElement;
   client: KromaClient;
@@ -20,6 +34,11 @@ export interface HtmlOptions {
   direct: boolean;
   /** Request the AAC renditions of the master (MSE can't decode AC3). */
   masterAac: boolean;
+  /** Drive the MSE master through Shaka Player rather than hls.js — the default
+   * everywhere Shaka ships, like the web client; `false` is the `remux`
+   * preference's explicit hls.js. Native HLS (Safari/WKWebView, legacy webOS)
+   * still wins over both. */
+  masterShaka: boolean;
   /** Bypass MSE/hls.js: legacy webOS engines (Chromium < 99) cannot decode HEVC
    * through MSE, but the TV's media pipeline plays HLS natively. */
   forceNativeHls?: boolean;
@@ -37,6 +56,7 @@ export class HtmlEngine implements TvEngine {
   private baseSec: number;
   private rendition: number;
   private hls: HlsInstance | null = null;
+  private shaka: ShakaPlayerLike | null = null;
   private destroyed = false;
   private readonly cleanupEvents: () => void;
 
@@ -129,18 +149,61 @@ export class HtmlEngine implements TvEngine {
         v.preload = 'auto';
         return;
       }
-      void import('hls.js').then(({ default: Hls }) => {
-        if (this.destroyed) return;
-        if (!Hls.isSupported()) {
-          v.src = url;
-          v.preload = 'auto';
-          return;
-        }
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: false, startPosition: 0 });
-        this.hls = hls;
-        hls.loadSource(url);
-        hls.attachMedia(v);
+      if (this.opts.masterShaka) {
+        this.attachShaka(url);
+        return;
+      }
+      this.attachHls(url);
+    });
+  }
+
+  private attachShaka(url: string): void {
+    // Spelled inline (not shakaAvailable()) so the legacy IIFE build, which
+    // defines the global and inlines dynamic imports, folds this to `if (true)`
+    // and drops the unreachable import below: Shaka never reaches a bundle
+    // whose engines cannot run it.
+    if ((globalThis as { __KROMA_LEGACY_TIER__?: boolean }).__KROMA_LEGACY_TIER__) {
+      this.attachHls(url);
+      return;
+    }
+    void import('shaka-player/dist/shaka-player.compiled.js').then((mod) => {
+      if (this.destroyed) return;
+      const shaka = (mod as unknown as { default: ShakaStatic }).default;
+      shaka.polyfill.installAll();
+      // A TV Chromium Shaka rejects still plays the same master through hls.js.
+      if (!shaka.Player.isBrowserSupported()) {
+        this.attachHls(url);
+        return;
+      }
+      const player = new shaka.Player();
+      this.shaka = player;
+      // Buffer far ahead: Shaka's default bufferingGoal is only 10s, too stingy
+      // for the server's readrate-1.5 remux (the web client's numbers).
+      player.configure({
+        streaming: { bufferingGoal: 120, bufferBehind: 60, rebufferingGoal: 4 },
       });
+      // Shaka reports the same relative clock as hls.js, so `baseSec` applies
+      // unchanged.
+      player
+        .attach(this.v)
+        .then(() => player.load(url))
+        .catch(() => undefined);
+    });
+  }
+
+  private attachHls(url: string): void {
+    const v = this.v;
+    void import('hls.js').then(({ default: Hls }) => {
+      if (this.destroyed) return;
+      if (!Hls.isSupported()) {
+        v.src = url;
+        v.preload = 'auto';
+        return;
+      }
+      const hls = new Hls({ enableWorker: true, lowLatencyMode: false, startPosition: 0 });
+      this.hls = hls;
+      hls.loadSource(url);
+      hls.attachMedia(v);
     });
   }
 
@@ -149,6 +212,8 @@ export class HtmlEngine implements TvEngine {
     this.baseSec = absSec;
     this.hls?.destroy();
     this.hls = null;
+    void this.shaka?.destroy();
+    this.shaka = null;
     this.v.removeAttribute('src');
     this.attachMaster();
     if (wasPlaying) this.v.addEventListener('canplay', () => this.play(), { once: true });
@@ -210,6 +275,8 @@ export class HtmlEngine implements TvEngine {
     this.cleanupEvents();
     this.hls?.destroy();
     this.hls = null;
+    void this.shaka?.destroy();
+    this.shaka = null;
     this.v.removeAttribute('src');
     this.v.load();
   }

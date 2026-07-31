@@ -28,14 +28,15 @@
 // ContentProvider.swift), which duplicate it because the extension compiles
 // outside the module's pod.
 
-const {
+import fs from 'node:fs';
+import path from 'node:path';
+import type { ConfigPlugin } from 'expo/config-plugins';
+import {
+  createRunOncePlugin,
+  withDangerousMod,
   withEntitlementsPlist,
   withXcodeProject,
-  withDangerousMod,
-  createRunOncePlugin,
-} = require('expo/config-plugins');
-const fs = require('node:fs');
-const path = require('node:path');
+} from 'expo/config-plugins';
 
 const APP_GROUP = 'group.tv.kroma';
 const TARGET = 'KromaTopShelf';
@@ -51,7 +52,7 @@ const plistHeader = `<?xml version="1.0" encoding="UTF-8"?>
 // ATS exception mirrors the app's own NSAllowsArbitraryLoads: the shelf art
 // is served by the user's local, plain-http media server, and the app's
 // exception does not extend to a separate bundle.
-const infoPlist = (version, build) => `${plistHeader}
+const infoPlist = (version: string, build: string) => `${plistHeader}
 <dict>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleDisplayName</key><string>KROMA</string>
@@ -94,19 +95,20 @@ const extensionEntitlements = `${plistHeader}
 `;
 
 // The app's half of the mailbox: entitle it to the group.
-function withAppGroup(config) {
-  return withEntitlementsPlist(config, (cfg) => {
-    const groups = cfg.modResults['com.apple.security.application-groups'] ?? [];
-    cfg.modResults['com.apple.security.application-groups'] = [...new Set([...groups, APP_GROUP])];
+const withAppGroup: ConfigPlugin = (config) =>
+  withEntitlementsPlist(config, (cfg) => {
+    const groups = cfg.modResults['com.apple.security.application-groups'];
+    cfg.modResults['com.apple.security.application-groups'] = [
+      ...new Set([...(Array.isArray(groups) ? groups : []), APP_GROUP]),
+    ];
     return cfg;
   });
-}
 
 // Materialize the extension's files inside the generated ios/ folder: the
 // provider source (copied from targets/top-shelf/, the file this repo keeps),
 // plus the Info.plist and entitlements written from scratch.
-function withExtensionFiles(config) {
-  return withDangerousMod(config, [
+const withExtensionFiles: ConfigPlugin = (config) =>
+  withDangerousMod(config, [
     'ios',
     (cfg) => {
       const src = path.join(
@@ -133,16 +135,20 @@ function withExtensionFiles(config) {
       return cfg;
     },
   ]);
-}
 
 // The extension target itself. `addTarget` does the heavy lifting: product,
 // build configurations, the app-target dependency, and the copy phase that
 // embeds the .appex - the leftovers are its source file and the tvOS build
 // settings the generic defaults do not know.
-function withExtensionTarget(config) {
-  return withXcodeProject(config, (cfg) => {
+// The slices of the `xcode` package's untyped project hash this plugin reads.
+type NativeTarget = { name?: string };
+type BuildConfiguration = { buildSettings?: Record<string, string> };
+
+const withExtensionTarget: ConfigPlugin = (config) =>
+  withXcodeProject(config, (cfg) => {
     const proj = cfg.modResults;
-    const targets = proj.hash.project.objects.PBXNativeTarget ?? {};
+    const targets: Record<string, NativeTarget | undefined> =
+      proj.hash.project.objects.PBXNativeTarget ?? {};
 
     // Prebuild without --clean re-runs every mod on the existing project; a
     // second addTarget would mint a duplicate, so presence is the guard.
@@ -156,10 +162,11 @@ function withExtensionTarget(config) {
 
     // The app's own deployment target, so the extension never claims to run
     // somewhere its host does not.
-    const configurations = proj.pbxXCBuildConfigurationSection();
+    const configurations: Record<string, BuildConfiguration | undefined> =
+      proj.pbxXCBuildConfigurationSection();
     const deploymentTarget =
       Object.values(configurations).find((c) => c?.buildSettings?.TVOS_DEPLOYMENT_TARGET)
-        ?.buildSettings.TVOS_DEPLOYMENT_TARGET ?? FALLBACK_DEPLOYMENT_TARGET;
+        ?.buildSettings?.TVOS_DEPLOYMENT_TARGET ?? FALLBACK_DEPLOYMENT_TARGET;
 
     const target = proj.addTarget(TARGET, 'app_extension', TARGET, `${appBundleId}.TopShelf`);
     proj.addBuildPhase(
@@ -191,8 +198,8 @@ function withExtensionTarget(config) {
     }
     return cfg;
   });
-}
 
-const withTopShelf = (config) => withExtensionTarget(withExtensionFiles(withAppGroup(config)));
+const withTopShelf: ConfigPlugin = (config) =>
+  withExtensionTarget(withExtensionFiles(withAppGroup(config)));
 
-module.exports = createRunOncePlugin(withTopShelf, 'kroma-top-shelf', '1.0.0');
+export default createRunOncePlugin(withTopShelf, 'kroma-top-shelf', '1.0.0');

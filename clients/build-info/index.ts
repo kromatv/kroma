@@ -1,7 +1,7 @@
 // Build metadata (commit, date, repo) collected in Node and baked into the bundle,
 // since a TV or phone has no git and no filesystem to read at runtime.
 //
-// Loaded by an Expo `app.config.js` via Node's own type stripping, not Expo's
+// Loaded by an Expo `app.config.ts` via Node's own type stripping, not Expo's
 // TypeScript path — keep this file erasable-syntax-only: no enums, no namespaces,
 // no parameter properties.
 
@@ -65,7 +65,7 @@ export function productVersion(repoRoot: string): string | null {
 
 /**
  * Collect the metadata for the client rooted at `projectRoot` (from an
- * app.config.js, pass `__dirname`). A nullish `overrides.version` is ignored, so
+ * app.config.ts, pass `__dirname`). A nullish `overrides.version` is ignored, so
  * a caller can pass one through unconditionally.
  */
 export function collectBuildInfo(

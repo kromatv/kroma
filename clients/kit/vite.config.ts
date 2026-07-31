@@ -19,7 +19,7 @@ const kitDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
   // Which build the site is; the kit app gets the same object through Expo's
-  // `extra` (see app.config.js). Its own package version, not the product's.
+  // `extra` (see app.config.ts). Its own package version, not the product's.
   define: { __KROMA_BUILD__: JSON.stringify(collectBuildInfo(kitDir)), ...RNW_DEFINE },
   // The Props tab's data, read by TypeScript's checker over @kroma/ui at build
   // time and served as `virtual:kroma-props`.

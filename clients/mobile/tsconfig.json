@@ -2,6 +2,9 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // Stated because auto-inclusion does not pick @types/node up here: `node`
+    // for app.config.ts and the plugins, which run in Node at prebuild time.
+    "types": ["node", "react"],
     // `#mobile/*` mirrors the repo's per-package alias convention (`#tv/*` in
     // packages/tv, `#web/*` in clients/web), so a module is named by what it is
     // rather than by how far up the tree it sits. Declared in package.json
@@ -32,5 +35,9 @@
       "react-native": ["./node_modules/react-native"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  // metro.config.ts imports the untyped CommonJS factory in clients/expo-build,
+  // and including it would pull that whole file into this strict program. The
+  // rest re-states the expo base's exclude list, which this field replaces.
+  "exclude": ["node_modules", "metro.config.ts", "android", "ios"]
 }

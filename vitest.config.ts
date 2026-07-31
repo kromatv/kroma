@@ -76,7 +76,7 @@ const include = [
   // collected from mobile and tv-native.
   'clients/mobile/src/**/*.test.ts',
   'clients/tv-native/src/**/*.test.ts',
-  // Not a client: runs in Node at build time, required by an Expo app.config.js.
+  // Not a client: runs in Node at build time, required by an Expo app.config.ts.
   'clients/build-info/**/*.test.ts',
   'clients/tizen/src/**/*.test.ts',
   'clients/kit/src/**/*.test.ts',

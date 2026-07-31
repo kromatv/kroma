@@ -67,42 +67,42 @@ describe('getEnginePref / setEnginePref', () => {
 describe('availableEngines', () => {
   it('offers avplay + remux on Tizen', () => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (SMART-TV; Tizen 6.0)' });
-    expect(availableEngines()).toEqual(['auto', 'avplay', 'remux']);
+    expect(availableEngines()).toEqual(['auto', 'avplay', 'shaka', 'remux']);
   });
 
   it('offers webview + remux on webOS', () => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Web0S; LG)' });
-    expect(availableEngines()).toEqual(['auto', 'webview', 'remux']);
+    expect(availableEngines()).toEqual(['auto', 'webview', 'shaka', 'remux']);
   });
 
   it('falls back to webview + remux on an unknown platform', () => {
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh)' });
-    expect(availableEngines()).toEqual(['auto', 'webview', 'remux']);
+    expect(availableEngines()).toEqual(['auto', 'webview', 'shaka', 'remux']);
   });
 
   it('inserts mpv on a Linux Tauri desktop shell', () => {
     vi.stubGlobal('__TAURI__', tauri);
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) Tauri' });
-    expect(availableEngines()).toEqual(['auto', 'mpv', 'webview', 'remux']);
+    expect(availableEngines()).toEqual(['auto', 'mpv', 'webview', 'shaka', 'remux']);
   });
 
   it('inserts mpv on a macOS Tauri shell that flagged libmpv', () => {
     vi.stubGlobal('__TAURI__', tauri);
     vi.stubGlobal('__KROMA_MPV__', true);
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X) Tauri' });
-    expect(availableEngines()).toEqual(['auto', 'mpv', 'webview', 'remux']);
+    expect(availableEngines()).toEqual(['auto', 'mpv', 'webview', 'shaka', 'remux']);
   });
 
   it('does NOT insert mpv on a Tauri Android shell', () => {
     vi.stubGlobal('__TAURI__', tauri);
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Linux; Android 12) Tauri' });
-    expect(availableEngines()).toEqual(['auto', 'webview', 'remux']);
+    expect(availableEngines()).toEqual(['auto', 'webview', 'shaka', 'remux']);
   });
 });
 
 describe('ENGINE_LABEL_KEY', () => {
   it('maps every engine to its i18n label key', () => {
-    const engines: EnginePref[] = ['auto', 'avplay', 'webview', 'remux', 'mpv'];
+    const engines: EnginePref[] = ['auto', 'avplay', 'webview', 'shaka', 'remux', 'mpv'];
     for (const e of engines) {
       expect(ENGINE_LABEL_KEY[e]).toBe(`playbackEngine.${e}`);
     }

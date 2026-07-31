@@ -16,12 +16,13 @@
 // build here, with a message saying what to look at, instead of quietly
 // producing an app that Siri cannot talk to.
 
-const {
+import type { ConfigPlugin } from 'expo/config-plugins';
+import {
+  createRunOncePlugin,
+  withAppDelegate,
   withEntitlementsPlist,
   withInfoPlist,
-  withAppDelegate,
-  createRunOncePlugin,
-} = require('expo/config-plugins');
+} from 'expo/config-plugins';
 
 // The intents KROMA answers. Both carry the spoken title.
 const INTENTS = ['INSearchForMediaIntent', 'INPlayMediaIntent'];
@@ -34,25 +35,25 @@ const HANDLER = `
   }
 `;
 
-function withSiriEntitlement(config) {
-  return withEntitlementsPlist(config, (cfg) => {
+const withSiriEntitlement: ConfigPlugin = (config) =>
+  withEntitlementsPlist(config, (cfg) => {
     cfg.modResults['com.apple.developer.siri'] = true;
     return cfg;
   });
-}
 
-function withIntentsSupported(config) {
-  return withInfoPlist(config, (cfg) => {
+const withIntentsSupported: ConfigPlugin = (config) =>
+  withInfoPlist(config, (cfg) => {
     // NSUserActivityTypes is what makes the OS offer these intents to the app;
     // the app is a media app, so both are always supported.
-    const existing = cfg.modResults.NSUserActivityTypes ?? [];
-    cfg.modResults.NSUserActivityTypes = [...new Set([...existing, ...INTENTS])];
+    const existing = cfg.modResults.NSUserActivityTypes;
+    cfg.modResults.NSUserActivityTypes = [
+      ...new Set([...(Array.isArray(existing) ? existing : []), ...INTENTS]),
+    ];
     return cfg;
   });
-}
 
-function withIntentHandler(config) {
-  return withAppDelegate(config, (cfg) => {
+const withIntentHandler: ConfigPlugin = (config) =>
+  withAppDelegate(config, (cfg) => {
     let contents = cfg.modResults.contents;
     if (contents.includes('KromaMediaIntents.handler')) return cfg;
 
@@ -84,9 +85,8 @@ function withIntentHandler(config) {
     cfg.modResults.contents = `${contents.slice(0, classEnd)}\n${HANDLER}${contents.slice(classEnd)}`;
     return cfg;
   });
-}
 
-const withSiriIntents = (config) =>
+const withSiriIntents: ConfigPlugin = (config) =>
   withIntentHandler(withIntentsSupported(withSiriEntitlement(config)));
 
-module.exports = createRunOncePlugin(withSiriIntents, 'kroma-siri-intents', '1.0.0');
+export default createRunOncePlugin(withSiriIntents, 'kroma-siri-intents', '1.0.0');

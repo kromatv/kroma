@@ -211,7 +211,7 @@ jobs:
       # APK that no television will show.
       - name: Prebuild the Android project
         run: |
-          # Monotonic versionCode: minutes since 2020 (read by app.config.js).
+          # Monotonic versionCode: minutes since 2020 (read by app.config.ts).
           export KROMA_VERSION_CODE=$(( ( $(date -u +%s) - 1577836800 ) / 60 ))
           bun run --filter '@kroma/tv-native' prebuild -- --platform android
 

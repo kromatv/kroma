@@ -27,7 +27,7 @@ import { join } from 'node:path';
 
 // Yes, `.mobile` on the television app - it is the PRODUCT's id, not the phone
 // app's: one App Store record carries both platforms and Apple requires them to
-// share it (see ../app.config.js). Android keeps `tv.kroma.tv`.
+// share it (see ../app.config.ts). Android keeps `tv.kroma.tv`.
 const BUNDLE_ID = 'tv.kroma.mobile';
 
 // macOS key codes for the directions the remote sends.

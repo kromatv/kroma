@@ -41,6 +41,7 @@
     "plugins": [
       "expo-router",
       "@kesha-antonov/react-native-background-downloader",
+      "./plugins/with-mmkv-pin",
       [
         "expo-secure-store",
         {

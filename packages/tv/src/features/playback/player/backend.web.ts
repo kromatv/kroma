@@ -21,6 +21,7 @@ import {
   type EngineListeners,
   mpvAvailable,
   type Surface,
+  shakaAvailable,
   type TvEngine,
 } from '#tv/features/playback/player/engine';
 import { HtmlEngine } from '#tv/features/playback/player/htmlEngine';
@@ -39,6 +40,9 @@ function manualEngine(pref: EnginePref, tizenNative: boolean): Engine | null {
   if (pref === 'avplay' && tizenNative) return 'avplay';
   if (pref === 'webview') return 'video-direct';
   if (pref === 'remux') return 'video-remux';
+  // Forces the master even for a direct-play-able file, like the web client's
+  // `shaka` preference; which MSE library plays it is the plan's `masterShaka`.
+  if (pref === 'shaka') return 'video-remux';
   if (pref === 'mpv' && mpvAvailable()) return 'mpv';
   return null;
 }
@@ -94,6 +98,7 @@ export interface EnginePlan {
   avplayDirect: boolean;
   direct: boolean;
   masterAac: boolean;
+  masterShaka: boolean;
   playbackMode: 'direct' | 'remux' | 'transcode';
   deviceLabel: string;
   rebuildKey: string;
@@ -148,6 +153,9 @@ export function planEngine(item: MediaItem, env: PlayEnv, pref: EnginePref): Eng
   const useAvplay = eng === 'avplay';
   const avplayDirect = useAvplay && avplayDirectPlayable(item);
   const direct = eng === 'video-direct';
+  // Shaka drives the MSE master wherever it ships, like the web client; only
+  // the explicit `remux` preference keeps hls.js.
+  const masterShaka = shakaAvailable() && pref !== 'remux';
   return {
     eng,
     surface: surfaceFor(useMpv, useAvplay),
@@ -158,6 +166,7 @@ export function planEngine(item: MediaItem, env: PlayEnv, pref: EnginePref): Eng
     // Env-aware: Safari's native HLS decodes AC3/E-AC3 so its master is stream-copied
     // (5.1 kept); Chromium/webOS MSE can't, so `selectEngine` marks those AAC.
     masterAac: decision.aacMaster,
+    masterShaka,
     playbackMode: playbackModeFor({
       useMpv,
       useAvplay,
@@ -168,7 +177,7 @@ export function planEngine(item: MediaItem, env: PlayEnv, pref: EnginePref): Eng
     deviceLabel: deviceLabelFor(useMpv),
     // Every flag that reaches an engine constructor, so the hook rebuilds on
     // exactly those and nothing else.
-    rebuildKey: [eng, direct, avplayDirect, decision.aacMaster].join(':'),
+    rebuildKey: [eng, direct, avplayDirect, decision.aacMaster, masterShaka].join(':'),
   };
 }
 
@@ -187,7 +196,7 @@ export function createTvEngine(args: {
   listeners: EngineListeners;
 }): TvEngine | null {
   const {
-    plan: { eng, avplayDirect, direct, masterAac: aacMaster },
+    plan: { eng, avplayDirect, direct, masterAac: aacMaster, masterShaka },
     client,
     item,
     durationSec,
@@ -232,6 +241,7 @@ export function createTvEngine(args: {
     item,
     direct,
     masterAac: aacMaster,
+    masterShaka,
     forceNativeHls,
     initialRendition: rendition,
     durationSec,

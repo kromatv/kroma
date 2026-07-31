@@ -16,7 +16,7 @@ name: Release Apple TV beta channel
 #
 # It ships the SAME app record as the phone: App Store Connect 6793457018 carries
 # iOS and tvOS as two platforms of one listing (a universal purchase), which is
-# why both sign as `tv.kroma.mobile` - see clients/tv-native/app.config.js.
+# why both sign as `tv.kroma.mobile` - see clients/tv-native/app.config.ts.
 #
 # Stable tags or an explicit manual run, never a nightly: a TestFlight build
 # number is spent for good, and a nightly that burned one would also mail every
@@ -134,7 +134,7 @@ jobs:
       # appletvos, device family 3, a tvOS Podfile. Without it this produces an
       # iPhone project that the tvOS profile cannot sign.
       #
-      # Version and build number reach the project through app.config.js rather
+      # Version and build number reach the project through app.config.ts rather
       # than a stamping script, because that file already had to compute them for
       # Android. KROMA_VERSION pins the plain x.y.z App Store Connect will accept
       # (its default source, server/Cargo.toml, is not what the caller resolved
@@ -164,7 +164,7 @@ jobs:
           # every manifest untouched. Without them in the key, a cache hit
           # skips prebuild and silently rebuilds the OLD project: the arm64
           # fix would have been cached straight over.
-          key: ios-tvnative-v2-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/tv-native/package.json', 'clients/tv-native/app.config.js', 'clients/tv-native/plugins/**') }}
+          key: ios-tvnative-v2-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/tv-native/package.json', 'clients/tv-native/app.config.ts', 'clients/tv-native/plugins/**') }}
 
       # The build number is minutes-since-2020, so a restored project carries
       # the one from the run that cached it and App Store Connect would refuse

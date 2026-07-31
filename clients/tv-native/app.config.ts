@@ -20,12 +20,13 @@
 // `tv.kroma.tv`, because Play has no such notion and the two APKs are two apps.
 // Splitting them again means two separate App Store listings, not a rename.
 
-const { collectBuildInfo, productVersion } = require('../build-info');
-const path = require('node:path');
+import path from 'node:path';
+import type { ConfigContext, ExpoConfig } from 'expo/config';
+import { collectBuildInfo, productVersion } from '../build-info';
 
 const repoRoot = path.join(__dirname, '..', '..');
 
-module.exports = function tvNativeAppConfig({ config }) {
+export default function tvNativeAppConfig({ config }: ConfigContext): Partial<ExpoConfig> {
   return {
     ...config,
     // The product version, for the same reason the About screen reports it: a
@@ -55,4 +56,4 @@ module.exports = function tvNativeAppConfig({ config }) {
       buildInfo: collectBuildInfo(__dirname, { version: productVersion(repoRoot) }),
     },
   };
-};
+}

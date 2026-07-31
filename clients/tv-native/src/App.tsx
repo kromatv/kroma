@@ -35,7 +35,7 @@ import { hydrateSessionStorage } from './lib/storage';
 import { nativeVoiceSearch } from './lib/voice-search';
 
 // Which build this is. The browser shells get it from a Vite `define`; Metro has
-// no such thing, so the identity travels in Expo's `extra` (see app.config.js)
+// no such thing, so the identity travels in Expo's `extra` (see app.config.ts)
 // and the shell hands it over here - at module scope, before the first render,
 // like the backends below.
 setBuildInfo(Constants.expoConfig?.extra?.buildInfo ?? {});

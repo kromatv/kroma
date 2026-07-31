@@ -257,7 +257,7 @@ jobs:
           # every manifest untouched. Without them in the key, a cache hit
           # skips prebuild and silently rebuilds the OLD project: the arm64
           # fix would have been cached straight over.
-          key: ios-mobile-v2-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/mobile/package.json', 'clients/mobile/app.json', 'clients/mobile/app.config.js', 'clients/mobile/plugins/**') }}
+          key: ios-mobile-v2-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/mobile/package.json', 'clients/mobile/app.json', 'clients/mobile/app.config.ts', 'clients/mobile/plugins/**') }}
 
       # AFTER the cache, deliberately. This rewrites app.json with a build
       # number derived from the clock, so hashing it would change the cache key

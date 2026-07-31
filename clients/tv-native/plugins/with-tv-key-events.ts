@@ -10,7 +10,8 @@
 // The other half is packages/ui/src/lib/focus-remote.ts, which reads those
 // per-view events. Neither half is any use alone.
 
-const { withMainApplication, createRunOncePlugin } = require('expo/config-plugins');
+import type { ConfigPlugin } from 'expo/config-plugins';
+import { createRunOncePlugin, withMainApplication } from 'expo/config-plugins';
 
 const FLAGS_IMPORT = 'import com.facebook.react.internal.featureflags.ReactNativeFeatureFlags';
 const DEFAULTS_IMPORT =
@@ -34,7 +35,7 @@ const OVERRIDE = `
     // Android TV: without this the remote never reaches JS. Fabric routes key
     // presses through JSKeyDispatcher to per-view onKeyDown, and only when this
     // flag is on; the legacy onHWKeyEvent path useTVEventHandler listens to is
-    // not emitted by the Fabric root at all. See plugins/with-tv-key-events.js.
+    // not emitted by the Fabric root at all. See plugins/with-tv-key-events.ts.
     val flagsReadBeforeOverride =
       ReactNativeFeatureFlags.dangerouslyForceOverride(
         object : ReactNativeNewArchitectureFeatureFlagsDefaults() {
@@ -47,8 +48,8 @@ const OVERRIDE = `
       Log.w("KROMA", "TV key events: flags read before override: " + flagsReadBeforeOverride)
     }`;
 
-function withTvKeyEvents(config) {
-  return withMainApplication(config, (cfg) => {
+const withTvKeyEvents: ConfigPlugin = (config) =>
+  withMainApplication(config, (cfg) => {
     let contents = cfg.modResults.contents;
     // Idempotent: prebuild without --clean re-runs plugins over an already-patched file.
     if (contents.includes('enableKeyEvents')) return cfg;
@@ -75,6 +76,5 @@ function withTvKeyEvents(config) {
     cfg.modResults.contents = contents.replace(LOAD_ANCHOR, `${LOAD_ANCHOR}${OVERRIDE}`);
     return cfg;
   });
-}
 
-module.exports = createRunOncePlugin(withTvKeyEvents, 'kroma-tv-key-events', '1.0.0');
+export default createRunOncePlugin(withTvKeyEvents, 'kroma-tv-key-events', '1.0.0');

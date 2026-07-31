@@ -3,8 +3,9 @@
 // is (git commit, branch, compile time, repository). Reports the kit's OWN
 // package version, not the product's - the two move independently.
 
-const { collectBuildInfo } = require('../build-info');
+import type { ConfigContext, ExpoConfig } from 'expo/config';
+import { collectBuildInfo } from '../build-info';
 
-module.exports = function kitAppConfig({ config }) {
+export default function kitAppConfig({ config }: ConfigContext): Partial<ExpoConfig> {
   return { ...config, extra: { ...config.extra, buildInfo: collectBuildInfo(__dirname) } };
-};
+}

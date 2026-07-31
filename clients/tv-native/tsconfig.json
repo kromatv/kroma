@@ -3,12 +3,12 @@
   "compilerOptions": {
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["react"],
+    "types": ["node", "react"],
     // DOM is in `lib` even though this is a native app: the shared @kroma/ui
     // source it compiles carries the web half of every platform split (an <img>
     // for the artwork leaf, an <audio> for the show theme), and those branches
     // must still TYPECHECK here even though `Platform.OS` never reaches them.
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "include": ["src", "index.ts", "babel.config.ts"]
+  "include": ["src", "index.ts", "babel.config.ts", "app.config.ts", "plugins"]
 }

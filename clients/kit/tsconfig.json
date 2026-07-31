@@ -12,5 +12,5 @@
     // even though `Platform.OS` never reaches them in a Metro bundle.
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "include": ["src", "index.js", "vite.config.ts"]
+  "include": ["src", "index.js", "vite.config.ts", "app.config.ts"]
 }

@@ -72,6 +72,19 @@ describe('planEngine', () => {
     expect(planEngine(PLAIN_MP4, env(), 'remux').eng).toBe('video-remux');
   });
 
+  it('drives the master through Shaka by default; only the remux pref keeps hls.js', () => {
+    webviewPlays({ 'video/mp4': 'probably' });
+    expect(planEngine(MKV, env(), 'auto').masterShaka).toBe(true);
+    expect(planEngine(MKV, env(), 'remux').masterShaka).toBe(false);
+  });
+
+  it('the shaka preference forces the master even for a direct-playable file', () => {
+    webviewPlays({ 'video/mp4': 'probably' });
+    const plan = planEngine(PLAIN_MP4, env(), 'shaka');
+    expect(plan.eng).toBe('video-remux');
+    expect(plan.masterShaka).toBe(true);
+  });
+
   describe('on Samsung Tizen', () => {
     function tizen() {
       vi.stubGlobal('webapis', { avplay: { play: () => {} } });

@@ -8,16 +8,16 @@
 // behaves as if the TV never existed.
 
 const path = require('node:path');
+const { createRequire } = require('node:module');
 
 function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   const workspaceRoot = path.resolve(projectRoot, '../..');
   // Resolved FROM THE CLIENT: this factory lives outside any client and has no
-  // node_modules of its own to resolve expo from.
-  const { getDefaultConfig } = require(
-    require.resolve('expo/metro-config', {
-      paths: [projectRoot],
-    }),
-  );
+  // node_modules of its own to resolve expo from. createRequire rather than
+  // require.resolve's `paths` option, which Node quietly ignores when this file
+  // arrives through the ESM loader (metro.config.ts imports it).
+  const clientRequire = createRequire(path.join(projectRoot, 'package.json'));
+  const { getDefaultConfig } = clientRequire('expo/metro-config');
   const config = getDefaultConfig(projectRoot);
 
   config.watchFolders = [workspaceRoot];
@@ -59,7 +59,7 @@ function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   // What the kit needs a bundler to know, shared with the Vite shells: today,
   // the icon subset (@kroma/ui otherwise ships all 6167 Tabler glyphs, because
   // they resolve by name).
-  const { kromaUi } = require(require.resolve('@kroma/ui/bundler', { paths: [projectRoot] }));
+  const { kromaUi } = clientRequire('@kroma/ui/bundler');
   return kromaUi.metro(config, { repoRoot: workspaceRoot, icons: ui.icons });
 }
 

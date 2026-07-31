@@ -35,16 +35,13 @@
 // and a hand-edit there is lost on the next run (which is how these fixes
 // vanished the first time).
 
-const {
-  createRunOncePlugin,
-  withDangerousMod,
-  withPodfileProperties,
-} = require('expo/config-plugins');
-const fs = require('node:fs');
-const path = require('node:path');
+import fs from 'node:fs';
+import path from 'node:path';
+import type { ConfigPlugin } from 'expo/config-plugins';
+import { createRunOncePlugin, withDangerousMod, withPodfileProperties } from 'expo/config-plugins';
 
 // Idempotency marker; also where a reader of the Podfile is sent for the why.
-const MARKER = '# tvOS + expo-blur link fixes (plugins/with-tv-blur-link.js)';
+const MARKER = '# tvOS + expo-blur link fixes (plugins/with-tv-blur-link.ts)';
 
 // Anchored on the template's one post_install call, after its closing paren.
 // (A regex over `[^)]*` would stop inside the call's own nested parens.)
@@ -81,16 +78,16 @@ const POST_INSTALL_ADDITIONS = `
     end
 `;
 
-function withTvBlurLink(config) {
-  config = withPodfileProperties(config, (config) => {
+const withTvBlurLink: ConfigPlugin = (config) => {
+  const withProperties = withPodfileProperties(config, (cfg) => {
     // RN core + Expo pods from source, one set of compiler flags (fact 1).
-    config.modResults.EXPO_USE_PRECOMPILED_MODULES = 'false';
-    return config;
+    cfg.modResults.EXPO_USE_PRECOMPILED_MODULES = 'false';
+    return cfg;
   });
-  return withDangerousMod(config, [
+  return withDangerousMod(withProperties, [
     'ios',
-    (config) => {
-      const podfile = path.join(config.modRequest.platformProjectRoot, 'Podfile');
+    (cfg) => {
+      const podfile = path.join(cfg.modRequest.platformProjectRoot, 'Podfile');
       const src = fs.readFileSync(podfile, 'utf8');
       if (!src.includes(MARKER)) {
         if (!src.includes(ANCHOR) || !src.includes(ENV_ANCHOR)) {
@@ -105,9 +102,9 @@ function withTvBlurLink(config) {
             .replace(ANCHOR, `${ANCHOR}${POST_INSTALL_ADDITIONS}`),
         );
       }
-      return config;
+      return cfg;
     },
   ]);
-}
+};
 
-module.exports = createRunOncePlugin(withTvBlurLink, 'with-tv-blur-link', '1.0.0');
+export default createRunOncePlugin(withTvBlurLink, 'with-tv-blur-link', '1.0.0');
