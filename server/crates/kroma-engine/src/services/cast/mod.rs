@@ -4,8 +4,10 @@
 //!
 //! Security invariants: a receiver id is bound to the account that first announced
 //! it, so nobody can impersonate the living-room TV to intercept its commands;
-//! a command leaves the inbox only once acked, so a lost push is applied exactly
-//! once; roster and inboxes are bounded; nothing served is privileged.
+//! everything is scoped to that account — only its own sessions see, pick up, or
+//! drive the set, so a stranger signed into the same server cannot touch it; a
+//! command leaves the inbox only once acked, so a lost push is applied exactly
+//! once; roster and inboxes are bounded.
 
 mod registry;
 

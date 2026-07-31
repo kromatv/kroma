@@ -57,7 +57,8 @@ pub enum Announced {
     Full,
 }
 
-// The account is kept off the wire type: the roster is readable by every viewer.
+// The account id is kept off the wire type: rows leave the server, and the
+// username already names the profile.
 struct ControllerEntry {
     view: CastController,
     user_id: String,
@@ -67,11 +68,12 @@ struct Receiver {
     id: String,
     name: String,
     platform: String,
-    // Sticky for the receiver's lifetime; gates re-announce and unregister,
-    // never who may command it.
+    // Sticky for the receiver's lifetime; scopes everything — who sees this set,
+    // who may command it, who may re-announce or unregister it.
     user_id: String,
     username: String,
-    // `LAN` | `WAN`, never the IP: the roster is readable by every viewer.
+    // `LAN` | `WAN`, never the IP: the row still travels to every device of the
+    // account.
     network: String,
     playback: Option<CastPlayback>,
     // Resolved server-side, so senders render a title they cannot spoof.
@@ -256,7 +258,8 @@ impl Registry {
     }
 
     /// `controller_id` is minted by the caller per socket, never by the client,
-    /// so the identity a television shows cannot be forged.
+    /// so the identity a television shows cannot be forged. Owner-scoped like
+    /// commanding: another account's set cannot be picked up at all.
     pub fn attach_controller(
         &self,
         receiver_id: &str,
@@ -267,7 +270,7 @@ impl Registry {
         avatar_url: Option<&str>,
     ) -> Option<CastReceiver> {
         let mut map = self.inner.write().unwrap();
-        let entry = map.get_mut(receiver_id).filter(|r| r.live())?;
+        let entry = map.get_mut(receiver_id).filter(|r| r.live() && r.user_id == user_id)?;
         // Picking a set up again is deliberate, so it clears an earlier kick.
         entry.kicked.remove(user_id);
         let view = CastController {
@@ -306,20 +309,22 @@ impl Registry {
         Some(entry.view())
     }
 
-    pub fn detach_controller(&self, controller_id: &str) -> Vec<CastReceiver> {
+    /// Returns each changed row with the account it belongs to, so the caller can
+    /// address the update to that account's sockets and no others.
+    pub fn detach_controller(&self, controller_id: &str) -> Vec<(String, CastReceiver)> {
         let mut map = self.inner.write().unwrap();
         let mut changed = Vec::new();
         for receiver in map.values_mut() {
             if receiver.controllers.remove(controller_id).is_some() {
-                changed.push(receiver.view());
+                changed.push((receiver.user_id.clone(), receiver.view()));
             }
         }
         changed
     }
 
-    /// Scoped to `receiver_id` on purpose: the roster is readable by every viewer
-    /// and carries controller ids, so removing by controller id alone would let
-    /// any set evict somebody else's remote.
+    /// Scoped to `receiver_id` on purpose: rows carry controller ids to every
+    /// device of the account, so removing by controller id alone would let one
+    /// set evict a remote attached to another.
     pub fn kick_controller(
         &self,
         receiver_id: &str,
@@ -332,11 +337,13 @@ impl Registry {
         Some((entry.view(), gone.user_id))
     }
 
-    /// Whether `user_id` may send this set an order. `None` when there is no such
-    /// live receiver: the caller answers 404, so this cannot probe the roster.
+    /// Whether `user_id` may send this set an order: only the account the receiver
+    /// is signed into. `None` for a receiver that is absent, dead, *or* another
+    /// account's — the caller answers all three with a 404, so somebody else's
+    /// TV is indistinguishable from no TV at all.
     pub fn may_command(&self, receiver_id: &str, user_id: &str) -> Option<bool> {
         let map = self.inner.read().unwrap();
-        let entry = map.get(receiver_id).filter(|r| r.live())?;
+        let entry = map.get(receiver_id).filter(|r| r.live() && r.user_id == user_id)?;
         Some(!entry.kicked.contains(user_id))
     }
 
@@ -366,11 +373,18 @@ impl Registry {
             .is_none_or(|item| item.id != item_id)
     }
 
-    /// Queue a command and hand back its seq. `None` when the receiver is gone;
-    /// the caller answers 404.
-    pub fn enqueue(&self, receiver_id: &str, command: CastCommand) -> Option<CastCommandEnvelope> {
+    /// Queue a command and hand back its seq. `None` when the receiver is gone or
+    /// not `user_id`'s; the caller answers 404. The owner check is repeated here,
+    /// under the same lock as the write, so a set that changes hands between an
+    /// authorization check and the enqueue can never receive the order.
+    pub fn enqueue(
+        &self,
+        receiver_id: &str,
+        user_id: &str,
+        command: CastCommand,
+    ) -> Option<CastCommandEnvelope> {
         let mut map = self.inner.write().unwrap();
-        let entry = map.get_mut(receiver_id).filter(|r| r.live())?;
+        let entry = map.get_mut(receiver_id).filter(|r| r.live() && r.user_id == user_id)?;
         let seq = entry.next_seq;
         entry.next_seq += 1;
         while entry.inbox.len() >= MAX_INBOX {
@@ -384,13 +398,15 @@ impl Registry {
         Some(envelope)
     }
 
-    pub fn list(&self) -> Vec<CastReceiver> {
+    /// The live receivers signed into `user_id`'s account — the only ones that
+    /// account may see or drive. Another household's TV never appears here.
+    pub fn list(&self, user_id: &str) -> Vec<CastReceiver> {
         let mut v: Vec<CastReceiver> = self
             .inner
             .read()
             .unwrap()
             .values()
-            .filter(|r| r.live())
+            .filter(|r| r.live() && r.user_id == user_id)
             .map(Receiver::view)
             .collect();
         v.sort_by(|a, b| a.name.cmp(&b.name));
@@ -422,11 +438,14 @@ impl Registry {
         }
     }
 
-    fn reap(&self) -> Vec<String> {
+    fn reap(&self) -> Vec<(String, String)> {
         let mut map = self.inner.write().unwrap();
-        let gone: Vec<String> =
-            map.iter().filter(|(_, r)| !r.live()).map(|(id, _)| id.clone()).collect();
-        for id in &gone {
+        let gone: Vec<(String, String)> = map
+            .iter()
+            .filter(|(_, r)| !r.live())
+            .map(|(id, r)| (id.clone(), r.user_id.clone()))
+            .collect();
+        for (id, _) in &gone {
             map.remove(id);
         }
         gone
@@ -439,8 +458,8 @@ impl Registry {
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(REAP_INTERVAL).await;
-                for receiver_id in reg.reap() {
-                    events.publish(ServerEvent::CastReceiverGone { receiver_id });
+                for (receiver_id, owner) in reg.reap() {
+                    events.publish_to(&owner, ServerEvent::CastReceiverGone { receiver_id });
                 }
             }
         });
@@ -562,7 +581,7 @@ mod tests {
         assert!(!reg.wants_item("tv-salon-01", "it1"));
         assert!(reg.wants_item("tv-salon-01", "it2"));
 
-        let list = reg.list();
+        let list = reg.list("u1");
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].name, "Salon");
         let np = list[0].now_playing.as_ref().expect("now playing");
@@ -572,11 +591,24 @@ mod tests {
     }
 
     #[test]
+    fn another_account_never_sees_nor_drives_a_receiver() {
+        let reg = Registry::new();
+        announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
+
+        assert!(reg.list("u2").is_empty(), "the roster is scoped to the signed-in account");
+        // `None`, not `Some(false)`: the caller answers 404, so a stranger cannot
+        // even learn the id exists.
+        assert_eq!(reg.may_command("tv-salon-01", "u2"), None);
+        assert!(reg.attach_controller("tv-salon-01", "sock-x", "iPhone", "u2", "bob", None).is_none());
+        assert_eq!(reg.may_command("tv-salon-01", "u1"), Some(true));
+    }
+
+    #[test]
     fn going_idle_clears_the_title() {
         let reg = Registry::new();
         announce_ok(&reg, beat("tv-salon-01", 0, Some(playing("it1", 10))), "u1", Some(item("it1")));
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
-        assert!(reg.list()[0].now_playing.is_none());
+        assert!(reg.list("u1")[0].now_playing.is_none());
         assert!(reg.wants_item("tv-salon-01", "it1"));
     }
 
@@ -601,16 +633,16 @@ mod tests {
             reg.announce(beat("tv-9999-xxxx", 0, None), "u1", "Alice", "LAN".into(), None),
             Announced::Full
         ));
-        assert_eq!(reg.list().len(), MAX_RECEIVERS);
+        assert_eq!(reg.list("u1").len(), MAX_RECEIVERS);
     }
 
     #[test]
     fn commands_replay_until_they_are_acked() {
         let reg = Registry::new();
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
-        let first = reg.enqueue("tv-salon-01", CastCommand::Pause).expect("queued");
+        let first = reg.enqueue("tv-salon-01", "u1", CastCommand::Pause).expect("queued");
         let second = reg
-            .enqueue("tv-salon-01", CastCommand::Seek { position_ms: 5000 })
+            .enqueue("tv-salon-01", "u1", CastCommand::Seek { position_ms: 5000 })
             .expect("queued");
         assert_eq!((first.seq, second.seq), (1, 2));
 
@@ -620,7 +652,7 @@ mod tests {
         assert_eq!(pending.len(), 1);
         assert_eq!(pending[0].seq, 2);
         assert!(announce_ok(&reg, beat("tv-salon-01", 2, None), "u1", None).is_empty());
-        assert_eq!(reg.enqueue("tv-salon-01", CastCommand::Stop).unwrap().seq, 3);
+        assert_eq!(reg.enqueue("tv-salon-01", "u1", CastCommand::Stop).unwrap().seq, 3);
     }
 
     #[test]
@@ -628,7 +660,7 @@ mod tests {
         let reg = Registry::new();
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
         for _ in 0..(MAX_INBOX + 5) {
-            reg.enqueue("tv-salon-01", CastCommand::Pause);
+            reg.enqueue("tv-salon-01", "u1", CastCommand::Pause);
         }
         let pending = announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
         assert_eq!(pending.len(), MAX_INBOX);
@@ -638,7 +670,7 @@ mod tests {
     #[test]
     fn commands_for_an_unknown_or_dead_receiver_are_refused() {
         let reg = Registry::new();
-        assert!(reg.enqueue("tv-ghost-01", CastCommand::Pause).is_none());
+        assert!(reg.enqueue("tv-ghost-01", "u1", CastCommand::Pause).is_none());
         assert!(reg.owner_of("tv-ghost-01").is_none());
 
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
@@ -646,9 +678,9 @@ mod tests {
             let mut map = reg.inner.write().unwrap();
             map.get_mut("tv-salon-01").unwrap().last_seen = Instant::now() - Duration::from_secs(120);
         }
-        assert!(reg.enqueue("tv-salon-01", CastCommand::Pause).is_none());
-        assert!(reg.list().is_empty());
-        assert_eq!(reg.reap(), vec!["tv-salon-01".to_string()]);
+        assert!(reg.enqueue("tv-salon-01", "u1", CastCommand::Pause).is_none());
+        assert!(reg.list("u1").is_empty());
+        assert_eq!(reg.reap(), vec![("tv-salon-01".to_string(), "u1".to_string())]);
         assert!(reg.reap().is_empty());
     }
 
@@ -657,9 +689,9 @@ mod tests {
         let reg = Registry::new();
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
         assert!(!reg.remove_owned("tv-salon-01", "u2"));
-        assert_eq!(reg.list().len(), 1);
+        assert_eq!(reg.list("u1").len(), 1);
         assert!(reg.remove_owned("tv-salon-01", "u1"));
-        assert!(reg.list().is_empty());
+        assert!(reg.list("u1").is_empty());
         assert!(!reg.remove_owned("tv-salon-01", "u1"));
     }
 
@@ -686,7 +718,7 @@ mod tests {
         ann.name = format!("  Sa\u{7}lon{}  ", "x".repeat(200));
         ann.platform = "tv\nOS".into();
         announce_ok(&reg, ann, "u1", None);
-        let row = &reg.list()[0];
+        let row = &reg.list("u1")[0];
         assert!(!row.name.contains('\u{7}'), "control chars are stripped: {:?}", row.name);
         assert!(row.name.len() <= MAX_NAME);
         assert_eq!(row.platform, "tvOS");
@@ -715,7 +747,7 @@ mod tests {
             reg.attach(hello(), "u1", "Alice", "LAN".into()),
             Announced::Ok { .. }
         ));
-        assert_eq!(reg.list().len(), 1);
+        assert_eq!(reg.list("u1").len(), 1);
 
         let change = reg.set_state("tv-salon-01", Some(playing("it1", 0)), Some(item("it1")));
         assert!(matches!(change, Some(StateChange::Row(_))));
@@ -740,7 +772,7 @@ mod tests {
             reg.set_state("tv-salon-01", None, None),
             Some(StateChange::Row(_))
         ));
-        assert!(reg.list()[0].now_playing.is_none());
+        assert!(reg.list("u1")[0].now_playing.is_none());
 
         assert!(matches!(reg.set_state("tv-salon-01", None, None), Some(StateChange::Nothing)));
         assert!(reg.set_state("tv-ghost-01", None, None).is_none());
@@ -755,8 +787,8 @@ mod tests {
             "Alice",
             "LAN".into(),
         );
-        reg.enqueue("tv-salon-01", CastCommand::Pause);
-        reg.enqueue("tv-salon-01", CastCommand::Stop);
+        reg.enqueue("tv-salon-01", "u1", CastCommand::Pause);
+        reg.enqueue("tv-salon-01", "u1", CastCommand::Stop);
         reg.ack("tv-salon-01", 1);
         let pending = announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
         assert_eq!(pending.len(), 1);
@@ -768,26 +800,25 @@ mod tests {
         }
         reg.touch("tv-salon-01");
         assert!(reg.reap().is_empty());
-        assert_eq!(reg.list().len(), 1);
+        assert_eq!(reg.list("u1").len(), 1);
     }
 
     #[test]
     fn a_kicked_remote_stops_being_obeyed_until_it_picks_the_set_up_again() {
         let reg = Registry::new();
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
-        reg.attach_controller("tv-salon-01", "sock-b", "iPad", "u2", "bob", None).expect("attached");
+        reg.attach_controller("tv-salon-01", "sock-b", "iPad", "u1", "alice", None).expect("attached");
 
-        assert_eq!(reg.may_command("tv-salon-01", "u2"), Some(true));
+        assert_eq!(reg.may_command("tv-salon-01", "u1"), Some(true));
         reg.kick_controller("tv-salon-01", "sock-b").expect("kicked");
 
-        assert_eq!(reg.may_command("tv-salon-01", "u2"), Some(false));
+        assert_eq!(reg.may_command("tv-salon-01", "u1"), Some(false));
+
+        reg.attach_controller("tv-salon-01", "sock-c", "iPad", "u1", "alice", None).expect("attached");
         assert_eq!(reg.may_command("tv-salon-01", "u1"), Some(true));
 
-        reg.attach_controller("tv-salon-01", "sock-c", "iPad", "u2", "bob", None).expect("attached");
-        assert_eq!(reg.may_command("tv-salon-01", "u2"), Some(true));
-
         // Not a 403: the caller answers 404, so this cannot probe which ids exist.
-        assert_eq!(reg.may_command("tv-ghost-01", "u2"), None);
+        assert_eq!(reg.may_command("tv-ghost-01", "u1"), None);
     }
 
     #[test]
@@ -800,26 +831,27 @@ mod tests {
             .expect("attached");
         assert_eq!(row.controllers.len(), 1);
         let row = reg
-            .attach_controller("tv-salon-01", "sock-b", "Chrome", "u2", "bob", None)
+            .attach_controller("tv-salon-01", "sock-b", "Chrome", "u1", "alice", None)
             .expect("attached");
         assert_eq!(
             row.controllers.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
             vec!["Chrome", "iPhone"],
             "listed in a stable order, so the TV's list does not reshuffle"
         );
-        assert!(row.controllers.iter().any(|c| c.username == "bob"));
 
         assert!(reg.attach_controller("tv-salon-01", "sock-a", "iPhone", "u1", "alice", None).is_none());
 
         let (row, owner) = reg.kick_controller("tv-salon-01", "sock-b").expect("kicked");
-        assert_eq!(owner, "u2");
+        assert_eq!(owner, "u1");
         assert_eq!(row.controllers.len(), 1);
         assert_eq!(row.controllers[0].name, "iPhone");
         assert!(reg.kick_controller("tv-salon-01", "sock-b").is_none());
 
         let rows = reg.detach_controller("sock-a");
         assert_eq!(rows.len(), 1);
-        assert!(rows[0].controllers.is_empty());
+        let (owner, row) = &rows[0];
+        assert_eq!(owner, "u1");
+        assert!(row.controllers.is_empty());
         assert!(reg.detach_controller("sock-a").is_empty());
     }
 
@@ -831,7 +863,7 @@ mod tests {
         reg.attach_controller("tv-salon-01", "sock-a", "iPhone", "u1", "alice", None).expect("attached");
 
         assert!(reg.kick_controller("tv-chambre-02", "sock-a").is_none());
-        assert_eq!(reg.list().iter().flat_map(|r| &r.controllers).count(), 1);
+        assert_eq!(reg.list("u1").iter().flat_map(|r| &r.controllers).count(), 1);
     }
 
     #[test]
@@ -846,8 +878,9 @@ mod tests {
         assert_eq!(row.controllers.len(), 1, "one device, one row");
         assert_eq!(row.controllers[0].id, "sock-new");
 
+        // A different device of the same account is a second remote, not a replay.
         let row = reg
-            .attach_controller("tv-salon-01", "sock-bob", "iPhone", "u2", "bob", None)
+            .attach_controller("tv-salon-01", "sock-ipad", "iPad", "u1", "alice", None)
             .expect("attached");
         assert_eq!(row.controllers.len(), 2);
     }
@@ -874,7 +907,7 @@ mod tests {
             reg.attach_controller("tv-salon-01", "sock-flood", "Phone flood", "u1", "alice", None)
                 .is_none()
         );
-        assert_eq!(reg.list()[0].controllers.len(), MAX_CONTROLLERS);
+        assert_eq!(reg.list("u1")[0].controllers.len(), MAX_CONTROLLERS);
     }
 
     #[test]
@@ -889,16 +922,17 @@ mod tests {
         let reg = Registry::new();
         announce_ok(&reg, beat("tv-salon-01", 0, None), "u1", None);
         let seek = reg
-            .enqueue("tv-salon-01", CastCommand::Seek { position_ms: -5 })
+            .enqueue("tv-salon-01", "u1", CastCommand::Seek { position_ms: -5 })
             .unwrap();
         assert_eq!(seek.command, CastCommand::Seek { position_ms: 0 });
         let skip = reg
-            .enqueue("tv-salon-01", CastCommand::Skip { delta_ms: i64::MIN })
+            .enqueue("tv-salon-01", "u1", CastCommand::Skip { delta_ms: i64::MIN })
             .unwrap();
         assert_eq!(skip.command, CastCommand::Skip { delta_ms: -MAX_SKIP_MS });
         let play = reg
             .enqueue(
                 "tv-salon-01",
+                "u1",
                 CastCommand::Play { item_id: "it1".into(), position_ms: i64::MAX },
             )
             .unwrap();

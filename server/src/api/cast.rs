@@ -115,19 +115,23 @@ pub async fn announce(
         Announced::Ok { commands, changed } => {
             if changed {
                 if let Some(row) = state.cast.row(&body.receiver_id) {
-                    state.events.publish(ServerEvent::CastReceiverChanged {
-                        receiver: Box::new(row),
-                    });
+                    state.events.publish_to(
+                        &user.id,
+                        ServerEvent::CastReceiverChanged { receiver: Box::new(row) },
+                    );
                 }
             }
             if let Some((position_ms, duration_ms, cast_state)) = position {
                 if !changed && cast_state != CastState::Idle {
-                    state.events.publish(ServerEvent::CastPosition {
-                        receiver_id: body.receiver_id.clone(),
-                        position_ms,
-                        duration_ms,
-                        state: cast_state,
-                    });
+                    state.events.publish_to(
+                        &user.id,
+                        ServerEvent::CastPosition {
+                            receiver_id: body.receiver_id.clone(),
+                            position_ms,
+                            duration_ms,
+                            state: cast_state,
+                        },
+                    );
                 }
             }
             commands
@@ -153,12 +157,12 @@ pub async fn announce(
     .into_response())
 }
 
-/// `GET /api/cast/receivers` (Bearer) → `CastReceiver[]`. Every live receiver on
-/// the server, not just the caller's own: the TV runs its own profile. The rows
-/// carry no address and no account id.
+/// `GET /api/cast/receivers` (Bearer) → `CastReceiver[]`. Only the receivers
+/// signed into the caller's own account: casting is scoped to where you are
+/// connected, so nobody browses — let alone drives — another household's TVs.
 pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) -> Result<Response, Response> {
     require_playback(&user)?;
-    Ok(Json(state.cast.list()).into_response())
+    Ok(Json(state.cast.list(&user.id)).into_response())
 }
 
 /// `DELETE /api/cast/receivers/:id` (Bearer) → 204. Owner-scoped: naming somebody
@@ -171,7 +175,7 @@ pub async fn unregister(
 ) -> Result<Response, Response> {
     require_playback(&user)?;
     if state.cast.remove_owned(&id, &user.id) {
-        state.events.publish(ServerEvent::CastReceiverGone { receiver_id: id });
+        state.events.publish_to(&user.id, ServerEvent::CastReceiverGone { receiver_id: id });
     }
     Ok(StatusCode::NO_CONTENT.into_response())
 }
@@ -188,8 +192,10 @@ pub struct CommandReply {
 }
 
 /// `POST /api/cast/receivers/:id/command` (Bearer) `{ type, ... }` → `{ seq }`.
-/// A `play` is checked against the catalog first, so the TV is never handed an id
-/// the server did not recognize.
+/// Owner-scoped: only the account the receiver is signed into may drive it, and
+/// anybody else's receiver answers exactly like a missing one. A `play` is
+/// checked against the catalog first, so the TV is never handed an id the server
+/// did not recognize.
 pub async fn command(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -200,10 +206,13 @@ pub async fn command(
     if !valid_receiver_id(&id) {
         return Err(bad_id(&user));
     }
-    // `None` means "no such receiver" and must stay distinct from a refusal: the
-    // enqueue below answers it with a 404, so this cannot probe the roster.
-    if state.cast.may_command(&id, &user.id) == Some(false) {
-        return Err(lerr(locale(&user), StatusCode::FORBIDDEN, "error.forbidden"));
+    // `None` covers absent, dead and foreign alike; answering all three with the
+    // same 404 keeps the roster unprobable. Only a kick — which already implies
+    // the set is the caller's own — is a refusal.
+    match state.cast.may_command(&id, &user.id) {
+        Some(true) => {}
+        Some(false) => return Err(lerr(locale(&user), StatusCode::FORBIDDEN, "error.forbidden")),
+        None => return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.castReceiverGone")),
     }
     if let CastCommand::Play { item_id, .. } = &body.command {
         let wanted = item_id.clone();
@@ -216,17 +225,14 @@ pub async fn command(
         }
     }
 
-    let Some(owner) = state.cast.owner_of(&id) else {
-        return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.castReceiverGone"));
-    };
-    let Some(envelope) = state.cast.enqueue(&id, body.command) else {
+    let Some(envelope) = state.cast.enqueue(&id, &user.id, body.command) else {
         return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.castReceiverGone"));
     };
 
-    // Addressed to the account the receiver is signed into, so no other
-    // household's clients ever see it.
+    // Addressed to the caller's own account — the only one the receiver can
+    // belong to here — so no other household's clients ever see it.
     state.events.publish_to(
-        &owner,
+        &user.id,
         ServerEvent::CastCommandIssued {
             receiver_id: id,
             seq: envelope.seq,

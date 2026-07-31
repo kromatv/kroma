@@ -193,7 +193,7 @@ async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
     // immediately, rather than leaving a dead set offerable until its TTL expires.
     if let Some(id) = receiver {
         if state.cast.remove_owned(&id, &who.id) {
-            state.events.publish(ServerEvent::CastReceiverGone { receiver_id: id });
+            state.events.publish_to(&who.id, ServerEvent::CastReceiverGone { receiver_id: id });
         }
     }
     if controlling {
@@ -225,11 +225,13 @@ fn cast_hello(
     }
     *receiver = Some(receiver_id.clone());
     if let Some(row) = state.cast.row(&receiver_id) {
-        state.events.publish(ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+        state
+            .events
+            .publish_to(&who.id, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
     }
 }
 
-async fn cast_state(state: &SharedState, id: String, playback: Option<CastPlayback>) {
+async fn cast_state(state: &SharedState, owner: &str, id: String, playback: Option<CastPlayback>) {
     let item = match playback.as_ref() {
         Some(pb) if state.cast.wants_item(&id, &pb.item_id) => {
             let pool = state.db.clone();
@@ -244,23 +246,30 @@ async fn cast_state(state: &SharedState, id: String, playback: Option<CastPlayba
     };
     match state.cast.set_state(&id, playback, item) {
         Some(StateChange::Row(row)) => {
-            state.events.publish(ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+            state
+                .events
+                .publish_to(owner, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
         }
         Some(StateChange::Position { position_ms, duration_ms, state: transport }) => {
-            state.events.publish(ServerEvent::CastPosition {
-                receiver_id: id,
-                position_ms,
-                duration_ms,
-                state: transport,
-            });
+            state.events.publish_to(
+                owner,
+                ServerEvent::CastPosition {
+                    receiver_id: id,
+                    position_ms,
+                    duration_ms,
+                    state: transport,
+                },
+            );
         }
         Some(StateChange::Nothing) | None => {}
     }
 }
 
 fn release_controller(state: &SharedState, controller_id: &str) {
-    for row in state.cast.detach_controller(controller_id) {
-        state.events.publish(ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+    for (owner, row) in state.cast.detach_controller(controller_id) {
+        state
+            .events
+            .publish_to(&owner, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
     }
 }
 
@@ -278,7 +287,7 @@ async fn handle_client(
         }
         ClientMessage::CastState { playback } => {
             let Some(id) = receiver.clone() else { return };
-            cast_state(state, id, playback).await;
+            cast_state(state, &who.id, id, playback).await;
         }
         ClientMessage::CastAck { seq } => {
             if let Some(id) = receiver.as_deref() {
@@ -292,6 +301,8 @@ async fn handle_client(
             // One socket drives one set: picking another releases the first.
             release_controller(state, controller_id);
             *controlling = true;
+            // Refused silently for another account's set: only the account a
+            // receiver is signed into may pick it up.
             if let Some(row) =
                 state.cast.attach_controller(
                     &receiver_id,
@@ -302,7 +313,9 @@ async fn handle_client(
                     who.avatar_url.as_deref(),
                 )
             {
-                state.events.publish(ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+                state
+                    .events
+                    .publish_to(&who.id, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
             }
         }
         ClientMessage::CastRelease => {
@@ -315,7 +328,9 @@ async fn handle_client(
             let Some((row, user_id)) = state.cast.kick_controller(&id, &controller_id) else {
                 return;
             };
-            state.events.publish(ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+            state
+                .events
+                .publish_to(&who.id, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
             state
                 .events
                 .publish_to(&user_id, ServerEvent::CastKicked { receiver_id: id });

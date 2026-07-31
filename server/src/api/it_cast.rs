@@ -1,6 +1,6 @@
 //! Integration tests for the cast surface (`src/api/cast.rs`): a receiver
 //! announcing itself, a sender listing + driving it, and the refusals that keep
-//! the feature honest (no capability, no such receiver, someone else's id, an
+//! the feature honest (no capability, no such receiver, someone else's TV, an
 //! item that doesn't exist).
 
 use axum::http::StatusCode;
@@ -38,7 +38,7 @@ async fn a_receiver_announces_and_a_sender_drives_it() {
     assert_eq!(list[0]["username"], "owner");
     assert!(list[0]["nowPlaying"].is_null());
     // The roster carries nothing privileged - no address, no account id, and no
-    // per-reader flag (which is what lets one row be broadcast to everyone).
+    // per-reader flag (everything a caller is shown is its own).
     assert!(list[0].get("ip").is_none());
     assert!(list[0].get("userId").is_none());
     assert!(list[0].get("mine").is_none());
@@ -93,7 +93,7 @@ async fn a_receiver_leaves_the_roster_when_it_says_so() {
 }
 
 #[tokio::test]
-async fn another_account_cannot_take_over_a_receiver_id() {
+async fn another_account_cannot_see_take_over_or_drive_a_receiver() {
     let t = test_app();
     let (_, bob) = seed_session(&t.state, "bob@test.dev", "bob", &[Permission::Playback]);
     send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
@@ -109,15 +109,29 @@ async fn another_account_cannot_take_over_a_receiver_id() {
     let (_, list) = get(&t.app, "/api/cast/receivers", Some(&t.token)).await;
     assert_eq!(list.as_array().map(Vec::len), Some(1));
 
-    // He CAN see it and drive it: any TV on the server is castable, whichever
-    // profile it runs. The row names the profile it belongs to.
+    // He cannot even see it: casting is scoped to the account a receiver is
+    // signed into, so a stranger's session on the same server offers nothing.
     let (_, list) = get(&t.app, "/api/cast/receivers", Some(&bob)).await;
-    assert_eq!(list[0]["username"], "owner");
+    assert_eq!(list.as_array().map(Vec::len), Some(0));
+
+    // And driving it answers exactly like a receiver that does not exist, so the
+    // roster cannot be probed by id.
     let (status, _) = send(
         &t.app,
         "POST",
         "/api/cast/receivers/tv-salon-01/command",
         Some(&bob),
+        Some(json!({ "type": "pause" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    // The owner still drives it.
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/cast/receivers/tv-salon-01/command",
+        Some(&t.token),
         Some(json!({ "type": "pause" })),
     )
     .await;
