@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, FocusScroll, Grid, Hint, PosterCard, Txt } from '@kroma/ui/kit';
+import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Txt } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 
 /** One result, already reduced to what a poster needs. */
@@ -36,7 +36,7 @@ export function TvSearchResults({
   const columns = Math.max(2, Math.floor((width + GAP) / (POSTER + GAP)));
 
   return (
-    <FocusScroll style={RESULTS_SCROLL} offsetFromStart={80}>
+    <FocusScroll style={s.scroll} offsetFromStart={80}>
       {header}
       <Box row wrap align="center" gap={14} mb={18}>
         <Txt style={{ fontSize: 15, fontWeight: '700', letterSpacing: 0.6 }} color="textMuted">
@@ -77,4 +77,6 @@ export function TvSearchResults({
 const GAP = 24;
 const POSTER = 277;
 
-const RESULTS_SCROLL = { flex: 1, minHeight: 0 } as const;
+const s = styles({
+  scroll: { flex: true, minH: 0 },
+});

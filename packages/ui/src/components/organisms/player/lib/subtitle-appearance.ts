@@ -1,6 +1,7 @@
 import { deviceStorage } from '@kroma/core';
 import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
+import type { ColorValue } from '#ui/core';
 import { edgeStyle } from './subtitle-edge';
 
 /**
@@ -63,7 +64,7 @@ export const SUB_COLORS = [
   '#FFFF00',
   '#FF00FF',
   '#00FFFF',
-];
+] as const satisfies readonly ColorValue[];
 
 /** CEA-708 order, also the order ◀▶ steps through them. The single source of
  * truth: a treatment missing here would compile but be unreachable. */
@@ -123,7 +124,7 @@ const LEGACY_COLOR: Record<string, string> = {
 function colour(v: unknown, fallback: string): string {
   if (typeof v !== 'string') return fallback;
   const mapped = LEGACY_COLOR[v] ?? v;
-  return SUB_COLORS.includes(mapped) ? mapped : fallback;
+  return (SUB_COLORS as readonly string[]).includes(mapped) ? mapped : fallback;
 }
 
 /** Bring a stored choice onto the current model, mapping retired option names

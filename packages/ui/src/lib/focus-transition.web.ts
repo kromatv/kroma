@@ -7,8 +7,8 @@
 // cost a third of the frame rate on a Samsung LS03D, so the ring does not fade.
 
 import { useCallback, useState } from 'react';
+import { motion } from '#ui/core/tokens';
 import { ease } from './ease';
-import { motion } from './tokens';
 
 const DURATION = `${motion.duration.base}ms`;
 const TIMING = ease.out.css;

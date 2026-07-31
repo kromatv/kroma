@@ -1,9 +1,9 @@
 // Whole-surface states: what a screen shows instead of content while it is
 // loading, empty, or broken, plus the inline error banner forms use.
 
-import { Button, Icon, Spinner } from '@kroma/ui/kit';
+import { Button, Icon, Spinner, styles } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Text, View } from 'react-native';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 /** Tinted banner with a shake on message change; renders nothing while
@@ -26,18 +26,18 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   }, [message, fade, shake]);
   if (!message) return null;
   return (
-    <Animated.View style={[styles.box, { opacity: fade, transform: [{ translateX: shake }] }]}>
+    <Animated.View style={[s.box, { opacity: fade, transform: [{ translateX: shake }] }]}>
       <Icon name="alert-circle" size={17} stroke={2} color={colors.danger} />
-      <Text style={styles.boxText}>{message}</Text>
+      <Text style={s.boxText}>{message}</Text>
     </Animated.View>
   );
 }
 
 export function Loading({ label }: Readonly<{ label?: string }>) {
   return (
-    <View style={styles.center}>
+    <View style={s.center}>
       <Spinner size={36} color={colors.textDim} />
-      {label ? <Text style={[styles.centerText, styles.loadingLabel]}>{label}</Text> : null}
+      {label ? <Text style={[s.centerText, s.loadingLabel]}>{label}</Text> : null}
     </View>
   );
 }
@@ -52,10 +52,10 @@ export function ErrorView({
   onRetry?: () => void;
 }>) {
   return (
-    <View style={styles.center}>
-      <Text style={styles.centerText}>{message}</Text>
+    <View style={s.center}>
+      <Text style={s.centerText}>{message}</Text>
       {onRetry && retryLabel ? (
-        <View style={styles.retry}>
+        <View style={s.retry}>
           <Button variant="glass" label={retryLabel} onPress={onRetry} />
         </View>
       ) : null}
@@ -77,12 +77,12 @@ export function EmptyState({
   onAction?: () => void;
 }>) {
   return (
-    <View style={styles.emptyBox}>
-      <View style={styles.emptyDisc}>{icon}</View>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      {hint ? <Text style={styles.emptyHint}>{hint}</Text> : null}
+    <View style={s.emptyBox}>
+      <View style={s.emptyDisc}>{icon}</View>
+      <Text style={s.emptyTitle}>{title}</Text>
+      {hint ? <Text style={s.emptyHint}>{hint}</Text> : null}
       {actionLabel && onAction ? (
-        <View style={styles.emptyAction}>
+        <View style={s.emptyAction}>
           <Button variant="glass" label={actionLabel} onPress={onAction} />
         </View>
       ) : null}
@@ -90,43 +90,33 @@ export function EmptyState({
   );
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   box: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    row: true,
+    align: 'center',
     gap: 10,
-    backgroundColor: 'rgba(229, 57, 53, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(229, 57, 53, 0.35)',
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 10,
+    px: spacing.sm,
+    py: 10,
+    bg: 'danger/12',
+    radius: radius.md,
+    border: 'danger/35',
   },
-  boxText: { ...type.caption, color: '#FF8A80', flex: 1, fontWeight: '600' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  boxText: { ...type.caption, flex: true, color: '#FF8A80', fontWeight: '600' },
+  center: { flex: true, center: true, p: spacing.lg },
   centerText: { ...type.caption, textAlign: 'center' },
-  loadingLabel: { marginTop: spacing.md },
-  retry: { marginTop: spacing.md, minWidth: 160 },
+  loadingLabel: { mt: spacing.md },
+  retry: { minW: 160, mt: spacing.md },
   emptyBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
+    flex: true,
+    center: true,
+    gap: 6,
+    p: spacing.xl,
     // Optical centering: a mathematically centered block reads too low, so
     // bias it upward toward the ~45% line.
-    paddingBottom: 150,
-    gap: 6,
+    pb: 150,
   },
-  emptyDisc: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
+  emptyDisc: { center: true, w: 84, h: 84, mb: spacing.sm, bg: 'surface2', radius: 42 },
   emptyTitle: { ...type.section, textAlign: 'center' },
-  emptyHint: { ...type.caption, textAlign: 'center', maxWidth: 300, lineHeight: 20 },
-  emptyAction: { marginTop: spacing.md, minWidth: 180 },
+  emptyHint: { ...type.caption, maxW: 300, textAlign: 'center', lineHeight: 20 },
+  emptyAction: { minW: 180, mt: spacing.md },
 });

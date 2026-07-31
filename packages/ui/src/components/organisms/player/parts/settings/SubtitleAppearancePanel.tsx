@@ -17,10 +17,10 @@ import {
   subtitleWindowStyle,
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { styles, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
-import { colors, fonts } from '#ui/lib/tokens';
 import { useT } from '#ui/services/i18n';
-import { pill, pillLabel, rowStyle, valueLabel, valueRow, valueRowOn } from './panelStyle';
+import { panel, rowStyle } from './panelStyle';
 
 interface SubtitleAppearancePanelProps {
   appearance: SubtitleAppearance;
@@ -167,7 +167,7 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
           center
           radius={14}
           borderWidth={1}
-          border="rgba(255, 255, 255, 0.06)"
+          border="white/6"
           px={20}
           py={16}
           mb={18}
@@ -212,9 +212,9 @@ function AppearanceRow({
   children: ReactNode;
 }>) {
   return (
-    <Box onPointerEnter={onFocus} style={rowStyle(valueRow, valueRowOn, focused)}>
+    <Box onPointerEnter={onFocus} style={rowStyle(panel.valueRow, panel.valueRowOn, focused)}>
       <Box row align="center" between mb={11}>
-        <Txt style={valueLabel}>{label}</Txt>
+        <Txt style={panel.valueLabel}>{label}</Txt>
         <Box row align="center" gap={16}>
           <Arrow glyph="◀" label="prev" dim={!focused} onPress={onDec} />
           <Arrow glyph="▶" label="next" dim={!focused} onPress={onInc} />
@@ -250,8 +250,8 @@ function Arrow({
 
 function Choice({ label }: Readonly<{ label: string }>) {
   return (
-    <Box row align="center" center px={14} style={pill} accessibilityRole="text">
-      <Txt style={pillLabel} color="rgba(244, 243, 240, 0.92)">
+    <Box row align="center" center px={14} style={panel.pill} accessibilityRole="text">
+      <Txt style={panel.pillLabel} color="text/92">
         {label}
       </Txt>
     </Box>
@@ -274,14 +274,9 @@ function Seg<V extends string>({
             onPress={() => onPick(o.v)}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
-            style={{
-              ...pill,
-              flex: 1,
-              alignItems: 'center',
-              ...(on ? { backgroundColor: colors.accent } : null),
-            }}
+            style={[panel.pill, s.segCell, on ? s.segOn : null]}
           >
-            <Txt style={pillLabel} color={on ? 'accentInk' : 'rgba(244, 243, 240, 0.7)'}>
+            <Txt style={panel.pillLabel} color={on ? 'accentInk' : 'text/70'}>
               {o.label}
             </Txt>
           </Pressable>
@@ -292,6 +287,7 @@ function Seg<V extends string>({
 }
 
 function Swatches({ value, onPick }: Readonly<{ value: string; onPick: (color: string) => void }>) {
+  const { colors } = useTheme();
   return (
     <Box row gap={14}>
       {SUB_COLORS.map((c) => (
@@ -308,7 +304,8 @@ function Swatches({ value, onPick }: Readonly<{ value: string; onPick: (color: s
             radius="pill"
             bg={c}
             style={{
-              boxShadow: c === value ? '0 0 0 2px #F4B642' : '0 0 0 1px rgba(255, 255, 255, 0.2)',
+              boxShadow:
+                c === value ? `0 0 0 2px ${colors.accent}` : '0 0 0 1px rgba(255, 255, 255, 0.2)',
             }}
           />
         </Pressable>
@@ -321,18 +318,22 @@ function Meter({ value }: Readonly<{ value: number }>) {
   return (
     <Box row align="center" gap={14}>
       <Box flex>
-        <Progress value={value / 100} trackColor="rgba(255, 255, 255, 0.14)" rounded />
+        <Progress value={value / 100} trackColor="white/14" rounded />
       </Box>
-      <Txt style={METER_VALUE}>{`${value}%`}</Txt>
+      <Txt style={s.meterValue}>{`${value}%`}</Txt>
     </Box>
   );
 }
 
-const METER_VALUE = {
-  minWidth: 52,
-  textAlign: 'right' as const,
-  fontFamily: fonts.ui,
-  fontWeight: '700' as const,
-  fontSize: 14,
-  fontVariant: ['tabular-nums' as const],
-};
+const s = styles({
+  meterValue: {
+    minW: 52,
+    textAlign: 'right',
+    font: 'ui',
+    fontWeight: '700',
+    fontSize: 14,
+    fontVariant: ['tabular-nums'],
+  },
+  segCell: { flex: 1, align: 'center' },
+  segOn: { bg: 'accent' },
+});

@@ -11,8 +11,8 @@ import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-librar
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
+import { colors, radius, typeSpec } from '#ui/core/tokens';
 import { clearPressGuard } from '#ui/lib/press-guard';
-import { colors, radius } from '#ui/lib/tokens';
 import { onScreen } from '#ui/testing';
 import { AVATAR_GRADIENTS, Avatar, gradientFor, initialsOf } from './avatar';
 import { Badge } from './badge';
@@ -21,6 +21,7 @@ import { Chip } from './chip';
 import { Icon } from './icon';
 import { IconButton } from './icon-button';
 import { clamp01, Progress } from './progress';
+import { Skeleton } from './skeleton';
 import { Txt } from './text';
 import { TextArea } from './text-area';
 import { TextField } from './text-field';
@@ -313,10 +314,65 @@ describe('Progress', () => {
     expect(clamp01(0.42)).toBe(0.42);
   });
 
-  it('sizes the fill to the value', () => {
+  it('sizes the fill to the value, as the inset it eases', () => {
     const { container } = render(<Progress value={0.25} />);
     const fill = container.querySelector('[role="progressbar"] > *') as HTMLElement;
-    expect(css(fill).width).toBe('25%');
+    expect(css(fill).left).toBe('0px');
+    expect(css(fill).right).toBe('75%');
+  });
+});
+
+describe('Skeleton', () => {
+  const lines = (container: HTMLElement) => [...(disc(container).children as never as Element[])];
+
+  it('is one washed block by default, sized by the layout shorthands', () => {
+    const { container } = render(<Skeleton w={220} h={22} />);
+    const block = disc(container);
+    expect(css(block).width).toBe('220px');
+    expect(css(block).height).toBe('22px');
+    expect(css(block).borderTopLeftRadius).toBe(`${radius.sm}px`);
+    expect(block.children).toHaveLength(0);
+  });
+
+  it('stands a text run in the exact height the real text will take', () => {
+    const { container } = render(<Skeleton shape="text" variant="body" lines={3} />);
+    const { size, ratio } = typeSpec.body;
+    const lineHeight = Math.round(size * ratio);
+    const bar = Math.round(size * 0.7);
+    const leading = lineHeight - bar;
+    const block = disc(container);
+    // Bars plus gaps plus half a leading at each end: three lines of `body`.
+    expect(css(block).paddingTop).toBe(`${leading / 2}px`);
+    expect(css(block).gap).toBe(`${leading}px`);
+    expect(lines(container)).toHaveLength(3);
+    expect(css(lines(container)[0] as Element).height).toBe(`${bar}px`);
+  });
+
+  it('leaves the last line of a paragraph short, and a lone line full', () => {
+    const many = render(<Skeleton shape="text" lines={3} />);
+    expect(css(lines(many.container)[2] as Element).width).toBe('60%');
+    expect(css(lines(many.container)[0] as Element).width).not.toBe('60%');
+    cleanup();
+    const one = render(<Skeleton shape="text" lines={1} />);
+    expect(css(lines(one.container)[0] as Element).width).not.toBe('60%');
+  });
+
+  it('takes the card ratios for poster and still, and a diameter for circle', () => {
+    const poster = render(<Skeleton shape="poster" w={140} />);
+    expect(css(disc(poster.container)).aspectRatio).toBe(`${2 / 3} / 1`);
+    cleanup();
+    const still = render(<Skeleton shape="still" w={240} />);
+    expect(css(disc(still.container)).aspectRatio).toBe(`${16 / 9} / 1`);
+    cleanup();
+    const avatar = render(<Skeleton shape="circle" size={42} />);
+    expect(css(disc(avatar.container)).width).toBe('42px');
+    expect(css(disc(avatar.container)).height).toBe('42px');
+    expect(css(disc(avatar.container)).borderTopLeftRadius).toBe(`${radius.pill}px`);
+  });
+
+  it('lets a caller override the shape it was handed', () => {
+    const { container } = render(<Skeleton shape="poster" w={140} radius="pill" />);
+    expect(css(disc(container)).borderTopLeftRadius).toBe(`${radius.pill}px`);
   });
 });
 

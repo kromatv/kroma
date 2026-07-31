@@ -6,9 +6,9 @@
 
 import type { CastReceiver } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 import { SheetTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
@@ -54,7 +54,7 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
       ) : (
         // Shown even with devices already listed: the roster is live, so a
         // second receiver can still appear below.
-        <View style={styles.searchingRow}>
+        <View style={s.searchingRow}>
           <Searching />
         </View>
       )}
@@ -68,12 +68,12 @@ function NoDevices() {
   const t = useT();
 
   return (
-    <View style={styles.empty}>
-      <View style={styles.emptyDisc}>
+    <View style={s.empty}>
+      <View style={s.emptyDisc}>
         <Icon name="device-tv" size={34} stroke={1.4} color={colors.textDim} />
       </View>
-      <Text style={styles.emptyTitle}>{t('cast.noDevices')}</Text>
-      <Text style={styles.emptyHint}>{t('cast.noDevicesHint')}</Text>
+      <Text style={s.emptyTitle}>{t('cast.noDevices')}</Text>
+      <Text style={s.emptyHint}>{t('cast.noDevicesHint')}</Text>
       <Searching />
     </View>
   );
@@ -94,9 +94,9 @@ function Searching() {
   }, [pulse]);
 
   return (
-    <View style={styles.searching}>
-      <Animated.View style={[styles.searchingDot, { opacity: pulse }]} />
-      <Text style={styles.searchingLabel}>{t('cast.searching')}</Text>
+    <View style={s.searching}>
+      <Animated.View style={[s.searchingDot, { opacity: pulse }]} />
+      <Text style={s.searchingLabel}>{t('cast.searching')}</Text>
     </View>
   );
 }
@@ -123,16 +123,16 @@ function DeviceRow({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >
       <Icon name={icon} size={24} stroke={1.8} color={selected ? colors.accent : colors.text} />
-      <View style={styles.rowText}>
-        <Text numberOfLines={1} style={[styles.rowName, selected && { color: colors.accent }]}>
+      <View style={s.rowText}>
+        <Text numberOfLines={1} style={[s.rowName, selected && { color: colors.accent }]}>
           {name}
         </Text>
-        <Text numberOfLines={1} style={styles.rowDetail}>
+        <Text numberOfLines={1} style={s.rowDetail}>
           {detail}
         </Text>
       </View>
@@ -141,48 +141,33 @@ function DeviceRow({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 56,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.md,
-  },
-  rowText: { flex: 1 },
-  rowName: { ...type.body, color: colors.text, fontWeight: '600' },
-  rowDetail: { ...type.caption, color: colors.textDim },
-  empty: { paddingTop: spacing.md, paddingBottom: spacing.lg, gap: 6, alignItems: 'center' },
-  searchingRow: { alignItems: 'center' },
-  emptyDisc: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: colors.surfaceHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  emptyTitle: { ...type.section, color: colors.text, textAlign: 'center' },
+const s = styles({
+  row: { row: true, align: 'center', gap: spacing.sm, minH: 56, px: spacing.sm, radius: radius.md },
+  rowText: { flex: true },
+  rowName: { ...type.body, color: 'text', fontWeight: '600' },
+  rowDetail: { ...type.caption, color: 'textMuted' },
+  empty: { align: 'center', gap: 6, pt: spacing.md, pb: spacing.lg },
+  searchingRow: { align: 'center' },
+  emptyDisc: { center: true, w: 84, h: 84, mb: spacing.sm, bg: 'surface3', radius: 42 },
+  emptyTitle: { ...type.section, color: 'text', textAlign: 'center' },
   emptyHint: {
     ...type.caption,
-    color: colors.textDim,
+    maxW: 300,
+    color: 'textMuted',
     textAlign: 'center',
-    maxWidth: 300,
     lineHeight: 20,
   },
   searching: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    row: true,
+    align: 'center',
     gap: 8,
-    marginTop: spacing.md,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
+    px: 14,
+    py: 8,
+    mt: spacing.md,
     // The surfaces around it are `surfaceRaised`; a pill in the same fill is no pill.
-    backgroundColor: colors.surfaceHigh,
+    bg: 'surface3',
+    radius: radius.pill,
   },
-  searchingDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
-  searchingLabel: { ...type.small, color: colors.textDim },
+  searchingDot: { w: 7, h: 7, bg: 'accent', radius: 4 },
+  searchingLabel: { ...type.small, color: 'textMuted' },
 });

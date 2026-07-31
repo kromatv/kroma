@@ -4,12 +4,15 @@ import {
   Avatar,
   Box,
   Chip,
-  colors,
   Focusable,
   FocusRegion,
   Hint,
   Icon,
+  type IconProps,
   StatusDot,
+  type StyleDecl,
+  styles,
+  svFor,
   Txt,
   useFocusNav,
 } from '@kroma/ui/kit';
@@ -39,7 +42,7 @@ export function TvProfiles() {
 
   const tiles = useMemo<Tile[]>(() => {
     const nameFor = (url: string) =>
-      servers.find((s) => s.url === norm(url))?.name ||
+      servers.find((entry) => entry.url === norm(url))?.name ||
       hostOf(norm(url)) ||
       (activeServerName ?? 'KROMA');
     return accounts.map((a) => ({
@@ -83,7 +86,7 @@ export function TvProfiles() {
       {/* No own scroll or clip: the page (AuthScreen) scrolls, so the focus zoom
           and the amber ring are never cropped. Gutters keep the edge tiles'
           rings clear. */}
-      <FocusRegion style={PROFILE_ROW}>
+      <FocusRegion style={s.profileRow}>
         {tiles.map(({ key, account, serverName }, index) => {
           const up = health[norm(account.serverUrl ?? '')]?.online;
           const offline = up === false;
@@ -134,17 +137,9 @@ export function TvProfiles() {
             autoFocus={tiles.length === 0}
             focusScale={1.07}
             ring={false}
-            style={ADD_TILE}
-            focusedStyle={{ borderColor: colors.accent }}
+            sv={addTile}
           >
-            {({ focused }) => (
-              <Icon
-                name="plus"
-                size={46}
-                stroke={1.6}
-                color={focused ? 'accent' : 'rgba(255, 255, 255, 0.35)'}
-              />
-            )}
+            {({ slots }) => <Icon name="plus" {...slots.glyph} />}
           </Focusable>
           <Txt style={{ fontSize: 18, fontWeight: '500' }} color="rgba(244, 243, 240, 0.5)">
             {t('profiles.addProfile')}
@@ -171,39 +166,42 @@ export function TvProfiles() {
         gap={4}
         mt={24}
         color="rgba(244, 243, 240, 0.4)"
-        textStyle={NAV_HINT}
+        textStyle={s.navHint}
       />
     </AuthScreen>
   );
 }
 
-const ADD_TILE = {
-  width: 146,
-  height: 146,
-  alignItems: 'center' as const,
-  justifyContent: 'center' as const,
-  borderRadius: 24,
-  borderWidth: 2,
-  borderStyle: 'dashed' as const,
-  borderColor: 'rgba(255, 255, 255, 0.18)',
-};
+const addTile = svFor<{ root: StyleDecl; glyph: Pick<IconProps, 'color' | 'size' | 'stroke'> }>()({
+  slots: {
+    root: {
+      w: 146,
+      h: 146,
+      center: true,
+      radius: 24,
+      borderStyle: 'dashed',
+      border: 'white/18',
+      borderWidth: 2,
+      _focus: { borderColor: 'accent' },
+    },
+    glyph: { color: 'white/35', size: 46, stroke: 1.6, _focus: { color: 'accent' } },
+  },
+});
 
-// Type only. Anything that lays the ROW out (the margin above it) goes on the
-// <Hint> itself: `textStyle` reaches the words alone, so a margin here drops the
-// words below the chevrons instead of moving the whole line.
-const NAV_HINT = {
-  fontWeight: '600' as const,
-  letterSpacing: 0.42,
-};
-
-const PROFILE_ROW = {
-  flexDirection: 'row' as const,
-  flexWrap: 'wrap' as const,
-  justifyContent: 'center' as const,
-  alignItems: 'flex-start' as const,
-  gap: 28,
-  width: '100%' as const,
-  maxWidth: 1100,
-  paddingHorizontal: 24,
-  paddingVertical: 16,
-};
+const s = styles({
+  // Type only. Anything that lays the ROW out (the margin above it) goes on the
+  // <Hint> itself: `textStyle` reaches the words alone, so a margin here drops
+  // the words below the chevrons instead of moving the whole line.
+  navHint: { fontWeight: '600', letterSpacing: 0.42 },
+  profileRow: {
+    row: true,
+    wrap: true,
+    justify: 'center',
+    align: 'flex-start',
+    gap: 28,
+    w: '100%',
+    maxW: 1100,
+    px: 24,
+    py: 16,
+  },
+});

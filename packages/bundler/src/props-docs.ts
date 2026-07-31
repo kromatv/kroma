@@ -22,6 +22,9 @@
 // to see; the checker is used only to enumerate WHICH props exist, which is the
 // part it is uniquely good at.
 
+import { createHash } from 'node:crypto';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { API } from 'typescript/unstable/async';
 
 /** One documented prop, as the workbench's panel shows it. Mirrors
@@ -103,11 +106,11 @@ async function componentPropsOf(
   if (!component) return null;
   const type = await checker.getTypeAtLocation((statement as { name?: unknown }).name as never);
   if (!type) return null;
-  const props: PropDoc[] = [];
-  for (const symbol of await checker.getPropertiesOfType(type)) {
-    const doc = await propDocOf(symbol, textOf);
-    if (doc) props.push(doc);
-  }
+  // Every prop in flight at once: the checker is an RPC channel, and awaiting
+  // one round-trip per prop is what made this plugin show up in build timings.
+  const symbols = await checker.getPropertiesOfType(type);
+  const docs = await Promise.all(symbols.map((symbol) => propDocOf(symbol, textOf)));
+  const props = docs.filter((doc): doc is PropDoc => doc !== null);
   return props.length ? { component, props } : null;
 }
 
@@ -131,30 +134,90 @@ export async function readPropDocs(
 
     // Each declaring file's text, fetched once. An inherited prop is declared in
     // the file its interface lives in, not in the component's, so this is keyed
-    // by the DECLARATION's path rather than by the component's.
-    const texts = new Map<string, string>();
-    const textOf = async (path: string): Promise<string> => {
-      const hit = texts.get(path);
-      if (hit !== undefined) return hit;
-      const text = (await program.getSourceFile(path))?.text ?? '';
-      texts.set(path, text);
-      return text;
+    // by the DECLARATION's path rather than by the component's. The map holds
+    // PROMISES so concurrent lookups of one path share a single fetch.
+    const texts = new Map<string, Promise<string>>();
+    const textOf: TextOf = (path) => {
+      let hit = texts.get(path);
+      if (!hit) {
+        hit = program.getSourceFile(path).then((file) => file?.text ?? '');
+        texts.set(path, hit);
+      }
+      return hit;
     };
 
+    // Everything in flight at once: the checker is an RPC channel, so the cost
+    // model is round-trips, not work.
+    const names = (await program.getSourceFileNames()).filter(include);
+    const files = await Promise.all(names.map((name) => program.getSourceFile(name)));
+    const found = await Promise.all(
+      files.flatMap((file) =>
+        (file?.statements ?? []).map((statement) => componentPropsOf(statement, checker, textOf)),
+      ),
+    );
+
     const out: PropDocs = {};
-    for (const fileName of await program.getSourceFileNames()) {
-      if (!include(fileName)) continue;
-      const file = await program.getSourceFile(fileName);
-      if (!file) continue;
-      for (const statement of file.statements ?? []) {
-        const found = await componentPropsOf(statement, checker, textOf);
-        if (found) out[found.component] = found.props;
-      }
+    for (const entry of found) {
+      if (entry) out[entry.component] = entry.props;
     }
     return out;
   } finally {
     api.close();
   }
+}
+
+// Bumped when the extraction logic changes shape, so a stale cache from an
+// older plugin cannot serve.
+const CACHE_VERSION = 1;
+
+async function statLine(path: string): Promise<string> {
+  const s = await stat(path).catch(() => null);
+  return s ? `${path}:${s.mtimeMs}:${s.size}` : `${path}:absent`;
+}
+
+// The nearest lockfile above the project: a dependency bump can change an
+// inherited prop's type (ViewProps and friends), and this is the cheap signal
+// for it.
+async function lockfileOf(root: string): Promise<string> {
+  for (let dir = root; ; ) {
+    const candidate = join(dir, 'bun.lock');
+    const s = await stat(candidate).catch(() => null);
+    if (s) return candidate;
+    const up = dirname(dir);
+    if (up === dir) return candidate;
+    dir = up;
+  }
+}
+
+/** A hash of everything the docs are derived from: the scanned sources' paths,
+ *  sizes and mtimes, the tsconfig, and the lockfile. Cheap enough to run per
+ *  build - a directory walk, no file reads. Walks `src` only: the package root
+ *  holds a node_modules whose workspace symlinks recurse into each other. */
+async function fingerprint(tsconfig: string, include: (fileName: string) => boolean) {
+  const root = dirname(tsconfig);
+  const src = join(root, 'src');
+  const entries = await readdir(src, { recursive: true });
+  const sources = entries
+    .map((entry) => join(src, entry))
+    .filter((path) => /\.tsx?$/.test(path) && include(path))
+    .sort((a, b) => (a < b ? -1 : 1));
+  const lines = await Promise.all([tsconfig, await lockfileOf(root), ...sources].map(statLine));
+  return createHash('sha256')
+    .update(`${CACHE_VERSION}\n${lines.join('\n')}`)
+    .digest('hex');
+}
+
+const cacheFile = (hash: string): string =>
+  join(process.cwd(), 'node_modules', '.cache', 'kroma', `props-docs-${hash}.json`);
+
+async function readCache(hash: string): Promise<string | null> {
+  return readFile(cacheFile(hash), 'utf8').catch(() => null);
+}
+
+async function writeCache(hash: string, json: string): Promise<void> {
+  const path = cacheFile(hash);
+  await mkdir(dirname(path), { recursive: true }).catch(() => {});
+  await writeFile(path, json).catch(() => {});
 }
 
 // The module a host imports to get the docs. Virtual: nothing is written to disk, so there is
@@ -190,10 +253,20 @@ export function propDocs(options: PropDocsOptions): import('vite').Plugin {
   return {
     name: 'kroma:props-docs',
     resolveId: (id) => (id === VIRTUAL ? RESOLVED : null),
+    // Cached on disk against a fingerprint of the scanned sources: opening the
+    // checker costs seconds, and most builds change no component. A source edit
+    // moves the fingerprint and the build recomputes.
     async load(id) {
       if (id !== RESOLVED) return null;
+      // A cache failure must never fail the build: no hash simply means
+      // recompute, exactly as if the cache did not exist.
+      const hash = await fingerprint(options.tsconfig, include).catch(() => null);
+      const cached = hash ? await readCache(hash) : null;
+      if (cached) return `export const PROPS = ${cached};`;
       const docs = await readPropDocs(options.tsconfig, include);
-      return `export const PROPS = ${JSON.stringify(docs)};`;
+      const json = JSON.stringify(docs);
+      if (hash) await writeCache(hash, json);
+      return `export const PROPS = ${json};`;
     },
     // Editing a prop's type or its doc comment refreshes the panel, rather than
     // needing the dev server restarted - which is the difference between the

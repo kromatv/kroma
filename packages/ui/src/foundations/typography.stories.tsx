@@ -7,7 +7,7 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
-import { mobileType, type TypeRole, type as typeRoles } from '#ui/lib/tokens';
+import { mobileType, type TypeRole, type as typeRoles } from '#ui/core/tokens';
 
 const ROLES: TypeRole[] = ['hero', 'h1', 'h2', 'title', 'body', 'label', 'meta', 'overline'];
 

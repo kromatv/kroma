@@ -4,6 +4,7 @@
 
 import { audioTracksOf, langCode, type MediaItem, preferredAudioIndex } from '@kroma/core';
 import { useCast } from '@kroma/ui';
+import { styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
@@ -18,7 +19,6 @@ import { useT } from '#mobile/lib/i18n';
 import { useLangPrefs } from '#mobile/lib/langPrefs';
 import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { colors } from '#mobile/lib/theme';
 import { useKromaEngine } from '#mobile/player/engine';
 import { useHeartbeat } from '#mobile/player/heartbeat';
 import { PlayerChrome } from '#mobile/player/PlayerChrome';
@@ -164,7 +164,7 @@ function PlayerBody({
   }
 
   return (
-    <View style={styles.stage}>
+    <View style={s.stage}>
       <VideoView
         ref={viewRef}
         player={engine.player}
@@ -292,6 +292,6 @@ export default function PlayerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  stage: { flex: 1, backgroundColor: colors.bg },
+const s = styles({
+  stage: { flex: true, bg: 'bg' },
 });

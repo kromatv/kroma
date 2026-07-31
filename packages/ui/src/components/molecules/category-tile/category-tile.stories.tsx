@@ -1,17 +1,24 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { tintGradient } from '#ui/components/molecules/media-card';
+import type { ColorValue } from '#ui/core';
 import { stillArt } from '#ui/lib/sample-art';
 import { CategoryTile, categoryTileVariants } from './category-tile';
 
 // Three categories with their own hues, the way the genre screen derives them
 // from the name. The kit does not decide the colours; the screen does.
-const CATEGORIES = [
+const CATEGORIES: readonly {
+  label: string;
+  meta: string;
+  accent: ColorValue;
+  tint: readonly [string, string];
+  wash: string;
+}[] = [
   {
     label: 'Science fiction',
     meta: '128 titles',
     accent: '#86A8FF',
-    tint: ['#2A3358', '#12141F'] as const,
+    tint: ['#2A3358', '#12141F'],
     wash: 'linear-gradient(0deg, rgba(18,20,31,0.92) 0%, rgba(18,20,31,0.55) 45%, rgba(18,20,31,0.08) 100%)',
   },
   {

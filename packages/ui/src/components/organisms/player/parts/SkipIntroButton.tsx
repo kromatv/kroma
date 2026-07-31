@@ -1,8 +1,13 @@
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
-import { colors } from '#ui/lib/tokens';
+import { sv } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import { GUTTER, scaler } from '../lib/metrics';
+
+// The scrim variant carries a 1px border and primary none; pinning the border on
+// the focused state too keeps the pill's box from shifting a pixel when focus
+// lands.
+const skipPill = sv({ base: { _focus: { border: 'accent' } } });
 
 /**
  * Skip-intro pill (§13): a bottom-right "Passer l'intro" button shown only
@@ -46,13 +51,8 @@ export function SkipIntroButton({
         onPress={onSkip}
         label={t('player.skipIntro')}
         iconRight="chevron-right"
-        // The scrim variant carries a 1px border and primary none; pinning the
-        // border on the focused state too keeps the pill's box from shifting a
-        // pixel when focus lands.
-        style={focused ? FOCUS_EDGE : null}
+        style={skipPill(undefined, { focus: focused }).root}
       />
     </Box>
   );
 }
-
-const FOCUS_EDGE = { borderWidth: 1, borderColor: colors.accent } as const;

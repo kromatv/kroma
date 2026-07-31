@@ -6,8 +6,7 @@
 // and identifiers anyway. Everything here renders through <Txt>, so it works
 // on every target the kit does, television included.
 
-import { Box, Icon, Txt, type TxtProps } from '@kroma/ui/kit';
-import { colors } from '@kroma/ui/tokens';
+import { Box, Icon, styles, Txt, type TxtProps } from '@kroma/ui/kit';
 import { MONO } from './code';
 import type { Story } from './story';
 
@@ -30,13 +29,10 @@ function segments(text: string): { text: string; mark: Mark }[] {
   return out;
 }
 
-const BOLD = { fontWeight: '700' } as const;
-const CODE = {
-  fontFamily: MONO,
-  fontSize: 13,
-  color: colors.accent,
-  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-} as const;
+const s = styles({
+  bold: { fontWeight: '700' },
+  code: { fontFamily: MONO, fontSize: 13, color: 'accent', bg: 'white/6' },
+});
 
 interface RichTextProps extends TxtProps {
   children: string;
@@ -57,7 +53,7 @@ function RichText({ children, ...txt }: Readonly<RichTextProps>) {
             key={at}
             variant={txt.variant}
             color={txt.color}
-            style={segment.mark === 'bold' ? BOLD : CODE}
+            style={segment.mark === 'bold' ? s.bold : s.code}
           >
             {segment.text}
           </Txt>

@@ -10,7 +10,7 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import { LANG_OFF, langOptions, offeredLang } from '@kroma/core';
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -110,9 +110,9 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
         android_keyboardInputMode="adjustResize"
         onDismiss={() => setQuery('')}
       >
-        <View style={styles.header}>
+        <View style={s.header}>
           <SheetTitle>{title}</SheetTitle>
-          <View style={styles.searchBox}>
+          <View style={s.searchBox}>
             <Icon name="search" size={17} stroke={2} color={colors.textFaint} />
             <BottomSheetTextInput
               value={query}
@@ -127,7 +127,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
               autoCorrect={false}
               autoCapitalize="none"
               returnKeyType="search"
-              style={styles.searchInput}
+              style={s.searchInput}
             />
             {query ? (
               <Pressable
@@ -149,7 +149,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
           ref={list}
           // @gorhom only applies its own flex on Android (ScrollableContainer.android);
           // iOS needs it explicit or the list overflows the sheet.
-          style={styles.listBox}
+          style={s.listBox}
           data={shown}
           keyExtractor={(row) => row.value ?? 'none'}
           getItemLayout={(_, index) => ({
@@ -159,10 +159,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
           })}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={[
-            styles.list,
-            { paddingBottom: Math.max(insets.bottom, spacing.md) },
-          ]}
+          contentContainerStyle={[s.list, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}
           renderItem={({ item, index }) => (
             <LangRow
               row={item}
@@ -171,7 +168,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
               onPress={() => onPick(item.value)}
             />
           )}
-          ListEmptyComponent={<Text style={styles.empty}>{t('search.noResults')}</Text>}
+          ListEmptyComponent={<Text style={s.empty}>{t('search.noResults')}</Text>}
         />
       </BottomSheetModal>
     );
@@ -190,16 +187,16 @@ function LangRow({
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
       style={({ pressed }) => [
-        styles.row,
-        ruled && styles.ruled,
+        s.row,
+        ruled && s.ruled,
         pressed && { backgroundColor: colors.surfaceHigh },
       ]}
     >
-      <Text numberOfLines={1} style={[styles.rowLabel, active && styles.rowLabelActive]}>
+      <Text numberOfLines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
         {row.label}
       </Text>
       {active ? <Icon name="check" size={17} stroke={2.4} color={colors.accent} /> : null}
-      {row.code && !active ? <Text style={styles.rowCode}>{row.code.toUpperCase()}</Text> : null}
+      {row.code && !active ? <Text style={s.rowCode}>{row.code.toUpperCase()}</Text> : null}
     </Pressable>
   );
 }
@@ -210,40 +207,35 @@ function fold(text: string): string {
   return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-  },
+const s = styles({
+  header: { px: spacing.md, pt: spacing.sm, pb: spacing.sm },
   searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    row: true,
+    align: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    h: 44,
+    px: spacing.sm,
+    bg: 'surface1',
+    radius: radius.md,
+    border: 'border',
   },
-  searchInput: { ...type.body, flex: 1, color: colors.text, padding: 0 },
-  listBox: { flex: 1 },
-  list: { paddingHorizontal: spacing.sm },
+  searchInput: { ...type.body, flex: true, p: 0, color: 'text' },
+  listBox: { flex: true },
+  list: { px: spacing.sm },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: ROW_HEIGHT,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
+    row: true,
+    between: true,
+    align: 'center',
     gap: spacing.md,
+    h: ROW_HEIGHT,
+    px: spacing.md,
+    radius: radius.md,
   },
   // Border must be inset, not additive, or it breaks the fixed ROW_HEIGHT
   // getItemLayout relies on.
-  ruled: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  rowLabel: { ...type.body, color: colors.text, fontWeight: '500', flexShrink: 1 },
-  rowLabelActive: { color: colors.accent, fontWeight: '800' },
-  rowCode: { ...type.small, color: colors.textFaint, letterSpacing: 0.5 },
-  empty: { ...type.caption, textAlign: 'center', paddingVertical: spacing.lg },
+  ruled: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'border' },
+  rowLabel: { ...type.body, shrink: 1, color: 'text', fontWeight: '500' },
+  rowLabelActive: { color: 'accent', fontWeight: '800' },
+  rowCode: { ...type.small, color: 'textDim', letterSpacing: 0.5 },
+  empty: { ...type.caption, py: spacing.lg, textAlign: 'center' },
 });

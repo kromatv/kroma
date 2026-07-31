@@ -10,11 +10,11 @@
 // since neither driver can animate a background colour natively.
 
 import { useEffect, useRef } from 'react';
-import { Animated, Platform, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Animated, Platform, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
+import { sharedStyle, styles, sv } from '#ui/core';
+import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
-import { sv } from '#ui/lib/sv';
-import { colors, motion, radius } from '#ui/lib/tokens';
 import { useControllable } from '#ui/lib/use-controllable';
 
 const WEB = Platform.OS === 'web';
@@ -23,38 +23,53 @@ const FLIP_MS = motion.duration.fast;
 const EASE_CSS = ease.out.css;
 const EASE_NATIVE = ease.out.native;
 
+// The hairline is INSIDE the declared width (React Native sizes border-box) and
+// the padding inside that, so the thumb's run is the width less both. Leaving
+// the edge out of it parked the thumb 2px past the padding at the ON end, and
+// the gap stopped matching the OFF end.
+const edge = 1;
+
+const track = {
+  sm: { w: 46, h: 28, pad: 3, thumb: 20 },
+  tv: { w: 64, h: 36, pad: 4, thumb: 26 },
+} as const;
+
+// Static per size, so the animation needs no measurement pass.
+const travelOf = (size: SwitchSize) =>
+  track[size].w - 2 * edge - 2 * track[size].pad - track[size].thumb;
+
 const switchVariants = sv({
   base: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
+    row: true,
+    align: 'center',
+    radius: 'pill',
     // The OFF colours live on the base and the amber is a layer over them, so
     // the state change is a crossfade rather than a repaint. `overflow` keeps
     // the fill layer's corners inside the pill.
-    backgroundColor: 'rgba(255, 255, 255, 0.10)',
-    borderColor: colors.borderStrong,
+    bg: 'white/10',
+    border: 'borderStrong',
     overflow: 'hidden',
+    // The off wash and the hairline both come up under a pointer. Brightening
+    // the wash cannot be mistaken for the state: the amber on-fill is a layer
+    // that covers the track entirely (see `s.fill`), so this only ever lifts
+    // the off colour.
+    _hover: { bg: 'white/18', border: 'white/32' },
+    _disabled: { opacity: 0.5 },
   },
   variants: {
     size: {
-      sm: { width: 46, height: 28, padding: 3 },
-      tv: { width: 64, height: 36, padding: 4 },
+      sm: { w: track.sm.w, h: track.sm.h, p: track.sm.pad },
+      tv: { w: track.tv.w, h: track.tv.h, p: track.tv.pad },
     },
     /** Styleless on purpose: the checked look is the crossfade layers below,
      * which a static style can't describe — but `checked` is still the
      * component's axis, and the workbench matrix reads the axes from here. */
-    checked: { true: {}, false: {} },
+    checked: { true: {} },
   },
-  defaults: { size: 'sm', checked: 'false' },
+  defaults: { size: 'sm', checked: false },
 });
 
-const THUMB = { sm: 20, tv: 26 } as const;
-// Track less its padding less the thumb, static per size so the animation
-// needs no measurement pass.
-const TRAVEL = { sm: 46 - 3 * 2 - 20, tv: 64 - 4 * 2 - 26 } as const;
-
-type SwitchSize = keyof typeof THUMB;
+type SwitchSize = keyof typeof track;
 
 interface SwitchProps extends Omit<FocusableProps, 'children' | 'onPress' | 'style'> {
   /** Present: you own the state (controlled). Absent: the switch runs itself
@@ -81,10 +96,11 @@ function Switch({
       {...focusProps}
       disabled={disabled}
       onPress={() => setChecked(!checked)}
-      style={switchVariants({ size }, disabled ? DISABLED : null, style)}
-      hoveredStyle={HOVERED}
+      sv={switchVariants}
+      vars={{ size, checked }}
+      style={style}
     >
-      <Flip on={checked} travel={TRAVEL[size]} thumb={THUMB[size]} />
+      <Flip on={checked} travel={travelOf(size)} thumb={track[size].thumb} />
     </Focusable>
   );
 }
@@ -104,8 +120,8 @@ interface SwitchFaceProps {
  */
 function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) {
   return (
-    <View style={[...switchVariants({ size }), style]}>
-      <Flip on={checked} travel={TRAVEL[size]} thumb={THUMB[size]} />
+    <View style={[switchVariants({ size }).root, style]}>
+      <Flip on={checked} travel={travelOf(size)} thumb={track[size].thumb} />
     </View>
   );
 }
@@ -115,15 +131,15 @@ function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) 
 // happening. One value drives both the fill and the slide, so neither can
 // arrive before the other.
 function Flip({ on, travel, thumb }: Readonly<{ on: boolean; travel: number; thumb: number }>) {
-  const face = { width: thumb, height: thumb, borderRadius: radius.pill };
+  const face = sharedStyle(`switch:thumb:${thumb}`, { w: thumb, h: thumb, radius: 'pill' });
   if (WEB) {
     return (
       <>
-        <View style={[styles.fill, TRANSITION_OPACITY as ViewStyle, { opacity: on ? 1 : 0 }]} />
+        <View style={[s.fill, TRANSITION_OPACITY as ViewStyle, { opacity: on ? 1 : 0 }]} />
         <View
           style={[
             face,
-            styles.thumb,
+            s.thumb,
             TRANSITION_TRANSFORM as ViewStyle,
             { transform: [{ translateX: on ? travel : 0 }] },
           ]}
@@ -153,22 +169,11 @@ function FlipNative({
   const slide = flip.interpolate({ inputRange: [0, 1], outputRange: [0, travel] });
   return (
     <>
-      <Animated.View style={[styles.fill, { opacity: flip }]} />
-      <Animated.View style={[face, styles.thumb, { transform: [{ translateX: slide }] }]} />
+      <Animated.View style={[s.fill, { opacity: flip }]} />
+      <Animated.View style={[face, s.thumb, { transform: [{ translateX: slide }] }]} />
     </>
   );
 }
-
-const DISABLED = { opacity: 0.5 } as const;
-
-// The off wash and the hairline both come up under a pointer. Brightening the
-// wash can't be mistaken for the state: the amber on-fill is a layer that
-// covers the track entirely (see `styles.fill`), so this only ever lifts the
-// off colour.
-const HOVERED = {
-  backgroundColor: 'rgba(255, 255, 255, 0.18)',
-  borderColor: 'rgba(255, 255, 255, 0.32)',
-} as const;
 
 // react-native-web understands these CSS-only props; React Native's types do
 // not, hence the casts at the use sites.
@@ -183,17 +188,9 @@ const TRANSITION_TRANSFORM = {
   transitionTimingFunction: EASE_CSS,
 };
 
-const styles = StyleSheet.create({
-  fill: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: colors.accent,
-    borderRadius: radius.pill,
-  },
-  thumb: { backgroundColor: colors.text },
+const s = styles({
+  fill: { fill: true, bg: 'accent', radius: 'pill' },
+  thumb: { bg: 'text' },
 });
 
 export type { SwitchFaceProps, SwitchProps, SwitchSize };

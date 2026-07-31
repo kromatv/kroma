@@ -26,10 +26,10 @@ import {
 } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { Icon, type IconName } from '#ui/components/atoms/icon';
+import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
+import { type StyleDecl, styles, svFor } from '#ui/core';
 import { ease } from '#ui/lib/ease';
-import { colors } from '#ui/lib/tokens';
 
 const WEB = Platform.OS === 'web';
 
@@ -259,7 +259,7 @@ function WebLens({ rect, chase }: Readonly<{ rect: LensRect | null; chase: boole
       top={6}
       bottom={6}
       radius="pill"
-      bg={colors.accentSoft}
+      bg="accentSoft"
       style={
         {
           left: box.x,
@@ -307,11 +307,48 @@ function NativeLens({ rect, chase }: Readonly<{ rect: LensRect | null; chase: bo
   }, [rect, chase, left, width, shown]);
 
   if (!last.current && !rect) return null;
-  return <Animated.View style={[styles.lens, { left, width, opacity: shown }]} />;
+  return <Animated.View style={[s.lens, { left, width, opacity: shown }]} />;
 }
 
 /** A kit glyph by name, or a host's own component handed the item's current ink. */
 type NavPillIcon = IconName | ((ink: string) => ReactNode);
+
+// `color` is required rather than picked straight off IconProps: an item's ink
+// is also handed to a host's own glyph component, which takes a string.
+const navPillItemVariants = svFor<{
+  root: StyleDecl;
+  label: StyleDecl;
+  icon: { color: string } & Pick<IconProps, 'size' | 'stroke'>;
+}>()({
+  slots: {
+    root: { row: true, align: 'center', radius: 'pill' },
+    label: { fontWeight: '700', letterSpacing: 0.2, color: 'textMuted' },
+    icon: { color: 'textMuted', stroke: 1.9 },
+  },
+  variants: {
+    size: {
+      tv: { root: { gap: 9, px: 18, py: 11 }, label: { fontSize: 18 }, icon: { size: 26 } },
+      sm: {
+        root: { gap: 6, px: 12, py: 10 },
+        // Capped: a long locale label ("Rechercher") otherwise swallows the row.
+        label: { fontSize: 12, maxW: 92, shrink: 1 },
+        icon: { size: 22 },
+      },
+    },
+    /** Under the lens: the current section, or the one a slide is previewing.
+     *  It stays amber while focused, so only an unlit item brightens. */
+    lit: {
+      true: { label: { color: 'accentBright' }, icon: { color: 'accentBright' } },
+      false: {
+        label: { _focus: { color: 'text' } },
+        icon: { _focus: { color: 'text' } },
+      },
+    },
+    /** The active item already wears the lens, so it takes no focus wash on top. */
+    active: { true: {}, false: { root: { _focus: { bg: 'white/10' } } } },
+  },
+  defaults: { size: 'tv', lit: false, active: false },
+});
 
 interface NavPillItemProps
   extends Omit<FocusableProps, 'children' | 'onPress' | 'label' | 'style'> {
@@ -332,7 +369,6 @@ function NavPillItem({
   ...focus
 }: Readonly<NavPillItemProps>) {
   const { size, labels, claim, release, enrol, withdraw, hover } = useContext(Context);
-  const metrics = METRICS[size];
   const id = useId();
   const rect = useRef<LensRect | null>(null);
   const onLayout = useCallback(
@@ -371,78 +407,34 @@ function NavPillItem({
         onPress={onPress}
         label={label}
         focusScale={1.04}
-        style={metrics.item}
-        focusedStyle={active ? null : FOCUSED}
+        sv={navPillItemVariants}
+        vars={{ size, lit, active }}
       >
-        {({ focused }) => {
-          const ink = inkOf(lit, focused);
-          return (
-            <>
-              {typeof icon === 'string' ? (
-                <Icon name={icon} size={metrics.icon} stroke={1.9} color={ink} />
-              ) : (
-                icon(ink)
-              )}
-              {labels === 'all' || (labels === 'active' && active) ? (
-                <Txt style={metrics.label} color={ink} lines={1}>
-                  {label}
-                </Txt>
-              ) : null}
-            </>
-          );
-        }}
+        {(state) => (
+          <>
+            {typeof icon === 'string' ? (
+              <Icon name={icon} {...state.slots.icon} />
+            ) : (
+              icon(state.slots.icon.color)
+            )}
+            {labels === 'all' || (labels === 'active' && active) ? (
+              <Txt style={state.slots.label} lines={1}>
+                {label}
+              </Txt>
+            ) : null}
+          </>
+        )}
       </Focusable>
     </Box>
   );
 }
 
-function inkOf(lit: boolean, focused: boolean): string {
-  if (lit) return colors.accentBright;
-  return focused ? colors.text : colors.textMuted;
-}
+const PILL_FILL = 'surface1/78';
+const BACKDROP_FILL = 'surface1/55';
 
-const PILL_FILL = 'rgba(18, 18, 22, 0.78)';
-const BACKDROP_FILL = 'rgba(18, 18, 22, 0.55)';
-
-const METRICS = {
-  tv: {
-    item: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 9,
-      paddingHorizontal: 18,
-      paddingVertical: 11,
-      borderRadius: 999,
-    },
-    icon: 26,
-    label: { fontSize: 18, fontWeight: '700', letterSpacing: 0.2 },
-  },
-  sm: {
-    item: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      borderRadius: 999,
-    },
-    icon: 22,
-    // Capped: a long locale label ("Rechercher") otherwise swallows the row.
-    label: { fontSize: 12, fontWeight: '700', letterSpacing: 0.2, maxWidth: 92, flexShrink: 1 },
-  },
-} as const;
-
-const FOCUSED = { backgroundColor: 'rgba(255, 255, 255, 0.10)' };
-
-const styles = {
-  lens: {
-    position: 'absolute',
-    top: 6,
-    bottom: 6,
-    borderRadius: 999,
-    backgroundColor: colors.accentSoft,
-  },
-} as const;
+const s = styles({
+  lens: { absolute: true, top: 6, bottom: 6, radius: 'pill', bg: 'accentSoft' },
+});
 
 export type { NavPillIcon, NavPillItemProps, NavPillLabels, NavPillProps, NavPillSize };
 export { NavPill, NavPillItem };

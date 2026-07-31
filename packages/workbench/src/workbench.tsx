@@ -1,9 +1,18 @@
-import { Box, configureRemote, Focusable, FocusScope, Txt } from '@kroma/ui/kit';
+import {
+  Box,
+  configureRemote,
+  Focusable,
+  FocusScope,
+  setTheme,
+  styles,
+  sv,
+  Txt,
+} from '@kroma/ui/kit';
 import type { ColorToken } from '@kroma/ui/tokens';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { Matrix, stageWidth, ViewportFrame, type ViewportName } from './canvas';
-import { FOCUS_WASH, RULE, RULE_TOP, TAB, TAB_ACTIVE } from './chrome';
+import { RULE, RULE_TOP, TAB } from './chrome';
 import { CodeBlock } from './code';
 import { CommandPalette, useCommandKey } from './command';
 import { RichText, snippet } from './docs';
@@ -12,6 +21,7 @@ import { Panel } from './panel';
 import { pathRouter, type View, type WorkbenchRouter } from './router';
 import { Sidebar } from './sidebar';
 import type { Story } from './story';
+import { PREVIEW_THEMES } from './themes';
 import { Toolbar, type ToolbarLens } from './toolbar';
 
 interface WorkbenchProps {
@@ -62,6 +72,15 @@ function useStageView(story: Story | undefined) {
   const [rotate, setRotate] = useState(false);
   const [surface, setSurface] = useState<ColorToken>('bg');
   const [full, setFull] = useState(false);
+  const [theme, setThemeId] = useState('kroma');
+
+  // The state change is also the re-render that makes every style re-resolve.
+  const pickTheme = useCallback((next: string) => {
+    const chosen = PREVIEW_THEMES.find((candidate) => candidate.id === next);
+    if (!chosen) return;
+    setTheme(chosen.theme);
+    setThemeId(chosen.id);
+  }, []);
 
   // An effect rather than derived state so switching frame by hand is not
   // undone on the next render.
@@ -76,7 +95,18 @@ function useStageView(story: Story | undefined) {
     setRotate(false);
   }, []);
 
-  return { viewport, rotate, surface, full, setRotate, setSurface, setFull, pickViewport };
+  return {
+    viewport,
+    rotate,
+    surface,
+    full,
+    theme,
+    setRotate,
+    setSurface,
+    setFull,
+    pickViewport,
+    pickTheme,
+  };
 }
 
 function WorkbenchShell({
@@ -110,7 +140,8 @@ function WorkbenchShell({
   const args = useMemo(() => ({ ...story?.args, ...edits[story?.id ?? ''] }), [story, edits]);
 
   const stage = useStageView(story);
-  const { viewport, rotate, surface, full, setRotate, setSurface, setFull, pickViewport } = stage;
+  const { viewport, rotate, surface, full, theme, setRotate, setSurface, setFull, pickViewport } =
+    stage;
 
   const select = useCallback(
     (id: string) => {
@@ -181,6 +212,8 @@ function WorkbenchShell({
               onViewport={pickViewport}
               surface={surface}
               onSurface={setSurface}
+              theme={theme}
+              onTheme={stage.pickTheme}
               rotate={rotate}
               onRotate={setRotate}
               full={full}
@@ -244,7 +277,7 @@ function NavDrawer({ onClose, children }: Readonly<{ onClose: () => void; childr
     // column stretches its children on the cross axis only.
     <Box absolute top={0} right={0} bottom={0} left={0} row z={35}>
       {children}
-      <Focusable label="Close component list" ring={false} onPress={onClose} style={SCRIM} />
+      <Focusable label="Close component list" ring={false} onPress={onClose} style={s.scrim} />
     </Box>
   );
 }
@@ -255,7 +288,7 @@ function StoryHeading({ story, layout }: Readonly<{ story: Story; layout: Workbe
       <Txt variant="overline" color="accent">
         {story.group}
       </Txt>
-      <Txt variant="title" style={layout.mode === 'compact' ? TITLE_COMPACT : TITLE} lines={1}>
+      <Txt variant="title" style={layout.mode === 'compact' ? s.titleCompact : s.title} lines={1}>
         {story.name}
       </Txt>
     </Box>
@@ -312,10 +345,8 @@ function Tabs({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={TAB_ROW}
-      // `flexGrow` keeps the rule under the tabs running the full width of the
-      // canvas when the tabs themselves do not fill it.
-      contentContainerStyle={TAB_ROW_BODY}
+      style={s.tabRow}
+      contentContainerStyle={s.tabRowBody}
     >
       <Box row grow={1} gap={4} px={Math.max(0, layout.gutter - 12)} mt={14} style={RULE}>
         {tabs.map((tab) => {
@@ -326,15 +357,15 @@ function Tabs({
               label={tab.name}
               ring={false}
               onPress={() => onView(tab.target)}
-              style={[TAB, active && TAB_ACTIVE]}
-              focusedStyle={FOCUS_WASH}
+              sv={canvasTab}
+              vars={{ active }}
             >
               {({ focused }) => (
                 <Box row align="center" gap={7}>
                   {tab.demo ? (
                     <Box w={5} h={5} radius="pill" bg={tabInk(active, focused, 'accent')} />
                   ) : null}
-                  <Txt variant="meta" color={tabInk(active, focused, 'text')} style={TAB_LABEL}>
+                  <Txt variant="meta" color={tabInk(active, focused, 'text')} style={s.tabLabel}>
                     {tab.name}
                   </Txt>
                 </Box>
@@ -354,19 +385,19 @@ function CodeBar({
 }: Readonly<{ code: string; defaultOpen: boolean; layout: WorkbenchLayout }>) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <Box style={CODE_BAR}>
+    <Box style={[RULE_TOP, s.codeBar]}>
       <Focusable
         label={open ? 'Hide code' : 'Show code'}
         ring={false}
         onPress={() => setOpen((prev) => !prev)}
-        style={[CODE_TOGGLE, { paddingHorizontal: layout.gutter }]}
-        focusedStyle={FOCUS_WASH}
+        sv={codeToggle}
+        style={{ paddingHorizontal: layout.gutter }}
       >
         <Box row align="center" gap={8}>
           <Txt variant="overline" color={open ? 'accent' : 'textDim'}>
             Code
           </Txt>
-          <Txt variant="meta" color="textDim" style={CODE_HINT}>
+          <Txt variant="meta" color="textDim" style={s.codeHint}>
             {open ? '▾' : '▸'}
           </Txt>
         </Box>
@@ -386,16 +417,25 @@ function tabInk(active: boolean, focused: boolean, selected: ColorToken): ColorT
   return focused ? 'textMuted' : 'textDim';
 }
 
-const TITLE = { fontSize: 24 } as const;
-const TITLE_COMPACT = { fontSize: 20 } as const;
 const SHOT_PAD = 32;
-const SCRIM = { flex: 1, backgroundColor: 'rgba(10, 10, 12, 0.6)' } as const;
-const TAB_ROW = { flexGrow: 0, flexShrink: 0 } as const;
-const TAB_ROW_BODY = { flexGrow: 1 } as const;
-const TAB_LABEL = { fontSize: 13.5, fontWeight: '600' } as const;
-const CODE_BAR = { ...RULE_TOP, maxHeight: 320 } as const;
-const CODE_TOGGLE = { paddingVertical: 12 } as const;
-const CODE_HINT = { fontSize: 10 } as const;
+const s = styles({
+  title: { fontSize: 24 },
+  titleCompact: { fontSize: 20 },
+  scrim: { flex: true, bg: 'bg/60' },
+  tabRow: { grow: 0, shrink: 0 },
+  // `flexGrow` keeps the rule under the tabs running the full width of the
+  // canvas when the tabs themselves do not fill it.
+  tabRowBody: { grow: 1 },
+  tabLabel: { fontSize: 13.5, fontWeight: '600' },
+  codeBar: { maxH: 320 },
+  codeHint: { fontSize: 10 },
+});
+const canvasTab = sv({
+  base: { ...TAB, _focus: { bg: 'white/6' } },
+  variants: { active: { true: { borderBottomColor: 'accent' } } },
+  defaults: { active: false },
+});
+const codeToggle = sv({ base: { py: 12, _focus: { bg: 'white/6' } } });
 
 // Built once: an adapter is a hook, and a fresh one per render would remount
 // its state.

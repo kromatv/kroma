@@ -8,6 +8,7 @@ import {
   IconButton,
   PersonCard,
   Rail,
+  styles,
   Txt,
 } from '@kroma/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
@@ -21,21 +22,12 @@ export function EndsAtHint({ runtimeMs }: Readonly<{ runtimeMs?: number | null }
   return (
     <Box row align="center" gap={9} mt={12}>
       <Icon name="clock" size={16} stroke={1.8} color="accent" />
-      <Txt style={SECTION_LABEL_SM} color="rgba(244, 243, 240, 0.55)">
+      <Txt style={s.sectionLabelSm} color="rgba(244, 243, 240, 0.55)">
         {t('content.endsAt', { time: at })}
       </Txt>
     </Box>
   );
 }
-
-const SECTION_LABEL_SM = { fontSize: 15, fontWeight: '600' as const };
-
-const SECTION_LABEL = {
-  fontSize: 15,
-  fontWeight: '700' as const,
-  letterSpacing: 0.6,
-  textTransform: 'uppercase' as const,
-};
 
 /** Top-billed cast. Shows the real TMDB headshot when present, else a
  * per-position gradient with initials. Each face opens that person's titles. */
@@ -46,7 +38,7 @@ export function CastRow({ cast }: Readonly<{ cast?: CastMember[] | null }>) {
   if (!cast || cast.length === 0) return null;
   return (
     <Box mt={32} gap={16}>
-      <Txt style={SECTION_LABEL} color="rgba(244, 243, 240, 0.55)">
+      <Txt style={s.sectionLabel} color="rgba(244, 243, 240, 0.55)">
         {t('content.cast')}
       </Txt>
       <Rail inset={6} gap={24}>
@@ -129,6 +121,16 @@ export function ThemeButton({
     />
   );
 }
+
+const s = styles({
+  sectionLabelSm: { fontSize: 15, fontWeight: '600' },
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+});
 
 // Cast-circle gradients, cycled by position so adjacent faces never share a colour.
 const CAST_GRADIENTS = [...AVATAR_GRADIENTS, 'linear-gradient(135deg, #FBBF24, #F97316)'];

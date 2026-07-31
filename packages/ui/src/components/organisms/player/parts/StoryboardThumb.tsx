@@ -7,10 +7,13 @@
 
 import { Image } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import type { StoryboardTile } from '#ui/services/storyboard';
 
-const TILE_SHADOW = { boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)' };
+const s = styles({
+  tileShadow: { boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)' },
+});
 const TILE_VIGNETTE = 'radial-gradient(120% 120% at 50% 35%, transparent, rgba(0,0,0,0.5))';
 
 export function StoryboardThumb({ tile }: Readonly<{ tile: StoryboardTile }>) {
@@ -23,7 +26,7 @@ export function StoryboardThumb({ tile }: Readonly<{ tile: StoryboardTile }>) {
       borderWidth={2}
       border="rgba(255, 255, 255, 0.3)"
       bg="#000000"
-      style={TILE_SHADOW}
+      style={s.tileShadow}
     >
       <Image
         source={{ uri: tile.sheet }}

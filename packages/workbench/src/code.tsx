@@ -1,7 +1,7 @@
 // A small TSX syntax highlighter and code block: renders via <Txt>/<Box> so
 // it works on web and Apple TV without an HTML-emitting dependency.
 
-import { Box, Icon, IconButton, type IconName, Txt } from '@kroma/ui/kit';
+import { Box, Icon, IconButton, type IconName, styles, Txt } from '@kroma/ui/kit';
 import { type ColorToken, colors, radius } from '@kroma/ui/tokens';
 import { useCallback, useMemo } from 'react';
 import { Platform, ScrollView } from 'react-native';
@@ -167,30 +167,30 @@ function CodeBlock({ code, numbers, copy = true, maxHeight = 320 }: Readonly<Cod
   // not shove its code sideways one digit at a time.
   const digits = String(rows.length).length;
   return (
-    <Box bg="surface2" radius="md" style={[FRAME, { maxHeight }]}>
+    <Box bg="surface2" radius="md" style={[s.frame, { maxHeight }]}>
       {copy ? <CopyButton code={trimmed} /> : null}
-      <ScrollView style={SCROLL_Y} contentContainerStyle={[BODY, copy && BODY_COPY]}>
+      <ScrollView style={s.scrollY} contentContainerStyle={[s.body, copy && s.bodyCopy]}>
         <Box row>
           {showNumbers ? (
-            <Box style={GUTTER_COL}>
+            <Box style={s.gutterCol}>
               {rows.map((_, at) => (
                 // Line order is fixed for a given snippet, so the index IS the
                 // identity.
                 // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                <Txt key={at} style={GUTTER} color="textDim">
+                <Txt key={at} style={s.gutter} color="textDim">
                   {String(at + 1).padStart(digits, ' ')}
                 </Txt>
               ))}
             </Box>
           ) : null}
-          <ScrollView horizontal style={SCROLL_X} contentContainerStyle={CODE_COL}>
+          <ScrollView horizontal style={s.scrollX} contentContainerStyle={s.codeCol}>
             {/* One column sized to the LONGEST line: every shorter line then
                 fits inside it untouched, which is what keeps them unwrapped
                 without a web-only `white-space` override. */}
-            <Box style={CODE_LINES}>
+            <Box style={s.codeLines}>
               {rows.map((row, at) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                <Txt key={at} style={LINE}>
+                <Txt key={at} style={s.line}>
                   {row.length === 0
                     ? ' '
                     : row.map((token, index) => (
@@ -220,87 +220,69 @@ function CopyButton({ code }: Readonly<{ code: string }>) {
   if (!available) return null;
 
   return (
-    <Box absolute style={COPY_SLOT}>
+    <Box absolute style={s.copySlot}>
       <IconButton
         variant="ghost"
         size={COPY_BOX}
         radius={radius.sm}
-        label={COPY_LABEL[state]}
+        label={COPY_FACE[state].label}
         ring={false}
         focusScale={1}
-        focusedStyle={COPY_FOCUS}
+        states={COPY_STATES}
         onPress={onPress}
       >
         {/* The stateful glyph rides in as a child: the confirmation is the icon
             itself turning into a tick, in its own ink. */}
-        <Icon name={COPY_GLYPH[state]} size={15} color={COPY_INK[state]} />
+        <Icon name={COPY_FACE[state].glyph} size={15} color={COPY_FACE[state].ink} />
       </IconButton>
     </Box>
   );
 }
 
-const FRAME = { borderWidth: 1, borderColor: colors.border, overflow: 'hidden' } as const;
-// Hug the content: the cap lives on the frame's maxHeight, and a ScrollView that
-// grows would stretch a two-line snippet to fill it.
-const SCROLL_Y = { flexGrow: 0 } as const;
-// The sideways scroller, by contrast, must be CLAMPED to the width left beside
-// the gutter - that clamp is what it scrolls within. `minWidth: 0` is what lets
-// a flex child shrink under its (very wide) content on the web targets.
-const SCROLL_X = { flex: 1, minWidth: 0 } as const;
-const BODY = { padding: 14 } as const;
-// Fill the scroller when the code is narrower than the frame.
-const CODE_COL = { flexGrow: 1 } as const;
-// Clearance for the copy button floating over the top-right corner.
-const BODY_COPY = { paddingRight: 44 } as const;
-// The gutter is a fixed column, so the separator is what tells you the numbers
-// are parked rather than scrolled off with the code.
-const GUTTER_COL = {
-  paddingRight: 12,
-  marginRight: 12,
-  borderRightWidth: 1,
-  borderRightColor: colors.border,
-} as const;
-// Never shrink to the frame: shrinking is what would re-wrap the long lines.
-const CODE_LINES = { flexShrink: 0 } as const;
-// `lineHeight` is shared with GUTTER, and neither column adds row spacing of its
-// own, which is what keeps a number level with its line.
-const LINE = { fontFamily: MONO, fontSize: 12.5, lineHeight: 19 } as const;
+const s = styles({
+  frame: { border: 'border', overflow: 'hidden' },
+  // Hug the content: the cap lives on the frame's maxHeight, and a ScrollView
+  // that grows would stretch a two-line snippet to fill it.
+  scrollY: { grow: 0 },
+  // The sideways scroller, by contrast, must be CLAMPED to the width left
+  // beside the gutter - that clamp is what it scrolls within. `minW: 0` is what
+  // lets a flex child shrink under its (very wide) content on the web targets.
+  scrollX: { flex: true, minW: 0 },
+  body: { p: 14 },
+  // Fill the scroller when the code is narrower than the frame.
+  codeCol: { grow: 1 },
+  // Clearance for the copy button floating over the top-right corner.
+  bodyCopy: { pr: 44 },
+  // The gutter is a fixed column, so the separator is what tells you the
+  // numbers are parked rather than scrolled off with the code.
+  gutterCol: { pr: 12, mr: 12, borderRightWidth: 1, borderRightColor: 'border' },
+  // Never shrink to the frame: shrinking is what would re-wrap the long lines.
+  codeLines: { shrink: 0 },
+  // `lineHeight` is shared with `gutter`, and neither column adds row spacing of
+  // its own, which is what keeps a number level with its line.
+  line: { fontFamily: MONO, fontSize: 12.5, lineHeight: 19 },
+  gutter: { fontFamily: MONO, fontSize: 11.5, lineHeight: 19, opacity: 0.6 },
+  copySlot: { top: 6, right: 6, z: 1 },
+});
 // One style array per token KIND, built once: a hundred-line snippet is
 // ~1500 spans, and `CodeBlock` re-renders on any shell state change (a
 // slider drag is one per frame), so building those arrays inline costs
 // thousands of allocations and as many styleq cache misses per unrelated
 // state change.
 const INK_STYLE = Object.fromEntries(
-  Object.entries(INK).map(([kind, color]) => [kind, [LINE, { color }]]),
-) as Record<TokenKind, [typeof LINE, { color: string }]>;
-const GUTTER = {
-  fontFamily: MONO,
-  fontSize: 11.5,
-  lineHeight: 19,
-  opacity: 0.6,
-} as const;
-const COPY_SLOT = { top: 6, right: 6, zIndex: 1 } as const;
+  Object.entries(INK).map(([kind, color]) => [kind, [s.line, { color }]]),
+) as Record<TokenKind, [typeof s.line, { color: string }]>;
 // The box around the 15pt glyph.
 const COPY_BOX = 29;
-// A notch up from the chrome's FOCUS_WASH: the button floats over a lifted
-// surface, where the plain wash reads as nothing at all.
-const COPY_FOCUS = { backgroundColor: 'rgba(255, 255, 255, 0.08)' } as const;
-// Indexed rather than nested ternaries: three states, three lookups, and the
+// A notch up from the ghost variant's own focus wash: this button floats over a
+// lifted surface, where that wash reads as nothing at all.
+const COPY_STATES = { focus: { bg: 'white/8' } } as const;
+// Indexed rather than nested ternaries: three states, one lookup, and the
 // failure is SAID rather than left looking like the press did nothing.
-const COPY_LABEL: Record<CopyState, string> = {
-  idle: 'Copy code',
-  copied: 'Copied',
-  failed: 'Could not copy',
-};
-const COPY_GLYPH: Record<CopyState, IconName> = {
-  idle: 'copy',
-  copied: 'check',
-  failed: 'alert-triangle',
-};
-const COPY_INK: Record<CopyState, ColorToken> = {
-  idle: 'textDim',
-  copied: 'success',
-  failed: 'danger',
+const COPY_FACE: Record<CopyState, { label: string; glyph: IconName; ink: ColorToken }> = {
+  idle: { label: 'Copy code', glyph: 'copy', ink: 'textDim' },
+  copied: { label: 'Copied', glyph: 'check', ink: 'success' },
+  failed: { label: 'Could not copy', glyph: 'alert-triangle', ink: 'danger' },
 };
 
 export type { CodeBlockProps, Token, TokenKind };

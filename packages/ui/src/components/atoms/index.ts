@@ -34,7 +34,7 @@ export type { ProgressProps } from './progress';
 export { clamp01, Progress } from './progress';
 export type { ProgressRingProps } from './progress-ring';
 export { ProgressRing } from './progress-ring';
-export type { SkeletonProps } from './skeleton';
+export type { SkeletonProps, SkeletonShape } from './skeleton';
 export { Skeleton } from './skeleton';
 export type { SpinnerProps } from './spinner';
 export { Spinner } from './spinner';

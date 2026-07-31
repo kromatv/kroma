@@ -9,6 +9,7 @@ import {
   type Show,
   sizedImageUrl,
 } from '@kroma/core';
+import { styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -19,7 +20,7 @@ import { PageHeader } from '#mobile/components/PageHeader';
 import { Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, SHADE, shade, spacing, type } from '#mobile/lib/theme';
+import { radius, SHADE, shade, spacing, type } from '#mobile/lib/theme';
 
 interface GenreTileModel {
   name: string;
@@ -73,7 +74,7 @@ export default function Genres() {
         numColumns={cols}
         keyExtractor={(g) => g.name}
         columnWrapperStyle={{ gap: 12 }}
-        contentContainerStyle={styles.grid}
+        contentContainerStyle={s.grid}
         renderItem={({ item: tile }) => (
           <Pressable
             onPress={() => router.push(`/genre/${encodeURIComponent(tile.name)}` as never)}
@@ -81,7 +82,7 @@ export default function Genres() {
               { width: tileW, height: tileW * 0.62, opacity: pressed ? 0.8 : 1 },
             ]}
           >
-            <View style={styles.tile}>
+            <View style={s.tile}>
               <LinearGradient colors={tile.gradient} style={StyleSheet.absoluteFill} />
               {tile.art ? (
                 <FadeImage uri={tile.art} seed={tile.name} style={StyleSheet.absoluteFill} />
@@ -91,11 +92,11 @@ export default function Genres() {
                 locations={[0, 0.45, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              <View style={styles.tileCountPill}>
-                <Text style={styles.tileCountText}>{tile.count}</Text>
+              <View style={s.tileCountPill}>
+                <Text style={s.tileCountText}>{tile.count}</Text>
               </View>
-              <View style={styles.tileText}>
-                <Text numberOfLines={1} style={styles.tileName}>
+              <View style={s.tileText}>
+                <Text numberOfLines={1} style={s.tileName}>
                   {tile.name}
                 </Text>
               </View>
@@ -107,29 +108,11 @@ export default function Genres() {
   );
 }
 
-const styles = StyleSheet.create({
-  grid: { paddingHorizontal: spacing.md, paddingBottom: spacing.xl, gap: 12 },
-  tile: {
-    flex: 1,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
-  tileText: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 10,
-  },
-  tileName: { ...type.section, fontSize: 16, fontWeight: '800', flexShrink: 1 },
-  tileCountPill: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(10, 10, 12, 0.6)',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  tileCountText: { ...type.small, color: colors.text },
+const s = styles({
+  grid: { gap: 12, px: spacing.md, pb: spacing.xl },
+  tile: { flex: true, bg: 'surface1', radius: radius.lg, overflow: 'hidden' },
+  tileText: { absolute: true, right: 12, bottom: 10, left: 12 },
+  tileName: { ...type.section, shrink: 1, fontSize: 16, fontWeight: '800' },
+  tileCountPill: { absolute: true, top: 8, right: 8, px: 8, py: 2, bg: 'bg/60', radius: 999 },
+  tileCountText: { ...type.small, color: 'text' },
 });

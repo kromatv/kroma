@@ -9,11 +9,12 @@ import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { IconAi } from '#ui/components/organisms/player/parts/icons';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
-import { fonts, radius } from '#ui/lib/tokens';
+import { styles } from '#ui/core';
+import { radius } from '#ui/core/tokens';
 import { useT } from '#ui/services/i18n';
 import { GenerateWizard } from './GenerateWizard';
 import type { SubtitleGenBundle } from './gen';
-import { panelList } from './panelStyle';
+import { panel } from './panelStyle';
 import { SelectRow } from './select-row';
 
 interface SubtitlesPanelProps {
@@ -71,7 +72,7 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
 
   return (
     <Box>
-      <Box style={panelList}>
+      <Box style={panel.panelList}>
         <SelectRow
           label={t('player.subtitlesOff')}
           selected={current == null}
@@ -160,9 +161,7 @@ function AiBadge() {
       bg="rgba(124, 92, 255, 0.18)"
     >
       <IconAi size={11} color="#B7A6FF" />
-      <Txt style={{ fontFamily: fonts.ui, fontWeight: '700', fontSize: 10, color: '#B7A6FF' }}>
-        IA
-      </Txt>
+      <Txt style={s.aiBadgeLabel}>IA</Txt>
     </Box>
   );
 }
@@ -198,37 +197,30 @@ function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel:
       p={16}
     >
       <Box row align="center" gap={14}>
-        <Txt style={{ flex: 1, fontFamily: fonts.ui, fontWeight: '600', fontSize: 16 }}>
-          {gen.lang ?? ''}
-        </Txt>
+        <Txt style={s.genLang}>{gen.lang ?? ''}</Txt>
         <AiBadge />
         <TrashButton label={t('player.subGenCancel')} onPress={onCancel} />
       </Box>
       <Box row align="center" between mt={8}>
         <Box row align="center" gap={8}>
           {!err ? <Box w={6} h={6} radius="pill" bg="#8B7FF0" /> : null}
-          <Txt style={{ fontFamily: fonts.ui, fontSize: 13 }} color={err ? '#E8536A' : '#9A8FF0'}>
+          <Txt style={s.genStage} color={err ? '#E8536A' : '#9A8FF0'}>
             {err
               ? (gen.error ?? t(subtitleStageKey(gen.stage)))
               : `${engine} · ${t(subtitleStageKey(gen.stage))}`}
           </Txt>
         </Box>
-        <Txt style={PCT} color="#B3A9F5">
+        <Txt style={s.pct} color="#B3A9F5">
           {err ? '' : `${pct} %`}
         </Txt>
       </Box>
       {!err ? (
         <>
           <Box mt={6}>
-            <Progress
-              value={gen.progress}
-              color="#7C6FF5"
-              trackColor="rgba(255, 255, 255, 0.1)"
-              rounded
-            />
+            <Progress value={gen.progress} color="#7C6FF5" trackColor="white/10" rounded />
           </Box>
           {gen.etaSec != null ? (
-            <Txt style={ETA} color="rgba(255, 255, 255, 0.4)">
+            <Txt style={s.eta} color="white/40">
               {t('player.subEta', { time: subtitleEtaTime(gen.etaSec) })}
             </Txt>
           ) : null}
@@ -238,11 +230,10 @@ function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel:
   );
 }
 
-const PCT = {
-  fontFamily: fonts.ui,
-  fontSize: 13,
-  fontWeight: '700' as const,
-  fontVariant: ['tabular-nums' as const],
-};
-
-const ETA = { fontFamily: fonts.ui, fontSize: 12, marginTop: 6 };
+const s = styles({
+  pct: { font: 'ui', fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  eta: { font: 'ui', fontSize: 12, mt: 6 },
+  aiBadgeLabel: { font: 'ui', fontWeight: '700', fontSize: 10, color: '#B7A6FF' },
+  genLang: { flex: 1, font: 'ui', fontWeight: '600', fontSize: 16 },
+  genStage: { font: 'ui', fontSize: 13 },
+});

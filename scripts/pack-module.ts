@@ -27,6 +27,10 @@ const root = join(import.meta.dir, '..');
 const outDir = join(root, 'dist/modules');
 const modulesRoot = join(root, 'server/modules');
 
+const crateName = /\[package\][\s\S]*?name\s*=\s*"([^"]+)"/;
+const binName = /\[\[bin\]\][\s\S]*?name\s*=\s*"([^"]+)"/;
+const kmodFeatures = /\[package\.metadata\.kmod\][\s\S]*?features\s*=\s*\[([^\]]*)\]/;
+
 /** Every module (any dir with a module.json). Modules with a `[[bin]]` pack a
  * native sidecar; those without pack as a "library" module (manifest + FE only,
  * no spawned process, e.g. the release-name parser, whose code is co-linked). */
@@ -51,11 +55,10 @@ export function crateAndBin(moduleDir: string): {
   const cargoPath = join(moduleDir, 'server/Cargo.toml');
   // A module may have no server crate at all (pure FE); then it's library-only.
   const cargo = existsSync(cargoPath) ? readFileSync(cargoPath, 'utf8') : '';
-  const pkg = cargo.match(/\[package\][\s\S]*?name\s*=\s*"([^"]+)"/)?.[1] ?? '';
+  const pkg = crateName.exec(cargo)?.[1] ?? '';
   // A `[[bin]]` means a native sidecar; its absence => a library module (no binary).
-  const bin = cargo.match(/\[\[bin\]\][\s\S]*?name\s*=\s*"([^"]+)"/)?.[1] ?? null;
-  const featBlock =
-    cargo.match(/\[package\.metadata\.kmod\][\s\S]*?features\s*=\s*\[([^\]]*)\]/)?.[1] ?? '';
+  const bin = binName.exec(cargo)?.[1] ?? null;
+  const featBlock = kmodFeatures.exec(cargo)?.[1] ?? '';
   const features = [...featBlock.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
   return { pkg, bin, features };
 }

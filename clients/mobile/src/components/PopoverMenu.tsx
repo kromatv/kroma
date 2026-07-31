@@ -2,14 +2,13 @@
 // from the trigger's position, with a press-through backdrop. Pure RN Animated,
 // reusable for any small option list (seasons, sort, ...).
 
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import { useEffect, useRef } from 'react';
 import {
   Animated,
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -73,10 +72,10 @@ export function PopoverMenu({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      <Pressable style={s.backdrop} onPress={onClose} />
       <Animated.View
         style={[
-          styles.menu,
+          s.menu,
           {
             left,
             top,
@@ -94,14 +93,11 @@ export function PopoverMenu({
                 item.onPress();
                 onClose();
               }}
-              style={({ pressed }) => [
-                styles.row,
-                pressed && { backgroundColor: colors.surfaceHigh },
-              ]}
+              style={({ pressed }) => [s.row, pressed && { backgroundColor: colors.surfaceHigh }]}
             >
-              <Text style={[styles.label, item.active && styles.labelActive]}>{item.label}</Text>
-              <View style={styles.right}>
-                {item.detail ? <Text style={styles.detail}>{item.detail}</Text> : null}
+              <Text style={[s.label, item.active && s.labelActive]}>{item.label}</Text>
+              <View style={s.right}>
+                {item.detail ? <Text style={s.detail}>{item.detail}</Text> : null}
                 {item.active ? (
                   <Icon name="check" size={16} stroke={2.4} color={colors.accent} />
                 ) : null}
@@ -114,33 +110,33 @@ export function PopoverMenu({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.25)' },
+const s = styles({
+  backdrop: { flex: true, bg: 'black/25' },
   menu: {
-    position: 'absolute',
-    width: MENU_WIDTH,
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: radius.lg,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
+    absolute: true,
+    w: MENU_WIDTH,
+    px: 6,
+    py: 6,
+    bg: 'surface2',
+    radius: radius.lg,
     transformOrigin: 'top left',
-    shadowColor: '#000',
+    shadowColor: 'black',
     shadowOpacity: 0.45,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },
     elevation: 12,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 46,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.sm,
+    row: true,
+    between: true,
+    align: 'center',
     gap: spacing.sm,
+    minH: 46,
+    px: spacing.sm,
+    radius: radius.sm,
   },
-  label: { ...type.body, color: colors.text },
-  labelActive: { fontWeight: '800', color: colors.accent },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  label: { ...type.body, color: 'text' },
+  labelActive: { fontWeight: '800', color: 'accent' },
+  right: { row: true, align: 'center', gap: 8 },
   detail: { ...type.small },
 });

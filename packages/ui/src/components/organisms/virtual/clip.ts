@@ -7,7 +7,7 @@
 // have drifted: a tile's focus treatment is one design decision, so the bleed
 // that has to clear it is one number.
 
-import { StyleSheet, type ViewStyle } from 'react-native';
+import { styles } from '#ui/core';
 
 // How far outside the list the clip box reaches. A tile grows when it takes
 // focus (1.05, a 4px amber ring, a 28px drop shadow), and the box that clips
@@ -27,16 +27,16 @@ export const OVERSCAN = 2;
 // box: it's inset negatively by the focus bleed and padded back by the same
 // amount, so the content area is exactly the list while the clip reaches
 // `FOCUS_BLEED` past it. Absolute, so growing it costs the page no space.
-export const clipStyles = StyleSheet.create({
+export const clipStyles = styles({
   clip: {
-    position: 'absolute',
+    absolute: true,
     top: -FOCUS_BLEED,
     right: -FOCUS_BLEED,
     bottom: -FOCUS_BLEED,
     left: -FOCUS_BLEED,
-    padding: FOCUS_BLEED,
+    p: FOCUS_BLEED,
     overflow: 'hidden',
-  } satisfies ViewStyle,
+  },
 
   // The same box, but flush at the top — for a vertical list, which always has
   // chrome directly above it. The bleed is a hole in the clip, and upwards
@@ -47,14 +47,14 @@ export const clipStyles = StyleSheet.create({
   // parks the focused row at the content origin. Sideways and below, the
   // bleed is kept: nothing of the app's sits there.
   column: {
-    position: 'absolute',
+    absolute: true,
     top: 0,
     right: -FOCUS_BLEED,
     bottom: -FOCUS_BLEED,
     left: -FOCUS_BLEED,
-    paddingRight: FOCUS_BLEED,
-    paddingBottom: FOCUS_BLEED,
-    paddingLeft: FOCUS_BLEED,
+    pr: FOCUS_BLEED,
+    pb: FOCUS_BLEED,
+    pl: FOCUS_BLEED,
     overflow: 'hidden',
-  } satisfies ViewStyle,
+  },
 });

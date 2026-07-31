@@ -1,7 +1,7 @@
 // Native (Apple TV / Android TV) brand intro, played via expo-video. No CSS
 // fallback: unlike the browser shells, a native TV always has an HEVC decoder.
 
-import { colors, holdInput } from '@kroma/ui/kit';
+import { holdInput, styles } from '@kroma/ui/kit';
 import { EXIT_MS, SAFETY_SLACK_MS } from '@kroma/ui/kit/organisms/kroma-intro';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -138,7 +138,7 @@ function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDon
   return (
     // Not `box-none`: a touch on the intro belongs to the intro, and would
     // otherwise land on the app underneath.
-    <View style={styles.stage}>
+    <View style={s.stage}>
       <VideoView
         player={player}
         style={StyleSheet.absoluteFill}
@@ -148,15 +148,12 @@ function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDon
         nativeControls={false}
         accessibilityLabel="KROMA"
       />
-      <Animated.View pointerEvents="none" style={[styles.veil, { opacity: veil }]} />
+      <Animated.View pointerEvents="none" style={[s.veil, { opacity: veil }]} />
     </View>
   );
 }
 
-// Spelled out: this react-native copy's types have no `absoluteFillObject` to spread.
-const FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as const;
-
-const styles = StyleSheet.create({
-  stage: { ...FILL, zIndex: 9999, backgroundColor: colors.bg },
-  veil: { ...FILL, backgroundColor: colors.bg },
+const s = styles({
+  stage: { fill: true, z: 9999, bg: 'bg' },
+  veil: { fill: true, bg: 'bg' },
 });

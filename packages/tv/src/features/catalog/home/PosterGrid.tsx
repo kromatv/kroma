@@ -1,4 +1,4 @@
-import { PosterCard, VirtualGrid } from '@kroma/ui/kit';
+import { PosterCard, styles, VirtualGrid } from '@kroma/ui/kit';
 import { memo } from 'react';
 
 export interface GridCard {
@@ -34,9 +34,9 @@ function PosterGridImpl({ cards }: Readonly<{ cards: GridCard[] }>) {
       data={cards}
       columns={COLUMNS}
       itemHeight={ROW_HEIGHT}
-      style={GRID_VIEWPORT}
-      contentStyle={GRID_CONTENT}
-      rowStyle={ROW}
+      style={s.viewport}
+      contentStyle={s.content}
+      rowStyle={s.row}
       renderItem={(c, index) => (
         <PosterCard
           // The grid's entry point. tvOS picks by geometry and the web engine by
@@ -62,13 +62,13 @@ function PosterGridImpl({ cards }: Readonly<{ cards: GridCard[] }>) {
 // tracks the focused tile); an unchanged `cards` array must skip this subtree.
 export const PosterGrid = memo(PosterGridImpl);
 
-// The grid owns the remaining height and is also what clips (see
-// <VirtualGrid>): padding here would inset the clip and shave the rows.
-const GRID_VIEWPORT = { flex: 1, minHeight: 0 } as const;
-
-// Padding belongs on the content, not the viewport. `paddingTop` gives a
-// focused row's ring and scale room to grow inside the clip, since
-// <VirtualGrid> clips flush at its top.
-const GRID_CONTENT = { paddingHorizontal: 64, paddingTop: 32 } as const;
-
-const ROW = { gap: GAP } as const;
+const s = styles({
+  // The grid owns the remaining height and is also what clips (see
+  // <VirtualGrid>): padding here would inset the clip and shave the rows.
+  viewport: { flex: true, minH: 0 },
+  // Padding belongs on the content, not the viewport. `pt` gives a focused
+  // row's ring and scale room to grow inside the clip, since <VirtualGrid>
+  // clips flush at its top.
+  content: { px: 64, pt: 32 },
+  row: { gap: GAP },
+});

@@ -231,7 +231,7 @@ describe('posterBlob', () => {
     const { client, calls } = makeClient(undefined, { authToken: 'tok' });
     const blob = await client.posterBlob({
       id: ItemId.of('i1'),
-      metadata: { posterUrl: 'https://image.tmdb.org/p.jpg' } as any,
+      metadata: { posterUrl: 'https://image.tmdb.org/p.jpg' } as never,
     });
     expect(blob).toBeInstanceOf(Blob);
     expect(calls[0]?.url).toBe('https://image.tmdb.org/p.jpg');
@@ -244,7 +244,7 @@ describe('posterBlob', () => {
     await expect(
       client.posterBlob({
         id: ItemId.of('i1'),
-        metadata: { posterUrl: 'https://img/x.jpg' } as any,
+        metadata: { posterUrl: 'https://img/x.jpg' } as never,
       }),
     ).rejects.toThrow('poster 404');
   });
@@ -253,7 +253,7 @@ describe('posterBlob', () => {
     const { client, calls } = makeClient();
     await client.posterBlob({
       id: ItemId.of('i1'),
-      metadata: { posterUrl: '/api/images/p.webp' } as any,
+      metadata: { posterUrl: '/api/images/p.webp' } as never,
     });
     expect(calls[0]?.url).toBe('http://kroma.test/api/images/p.webp');
   });
@@ -286,18 +286,18 @@ describe('URL builders (pure, no request)', () => {
     expect(c.resolveArt('/api/images/x.webp')).toBe('http://kroma.test/api/images/x.webp');
     expect(c.resolveArt('https://cdn/x.jpg')).toBe('https://cdn/x.jpg');
     expect(c.resolveArt(null)).toBeNull();
-    expect(c.posterFor({ id: 'i1', metadata: { posterUrl: '/api/p.webp' } as any })).toBe(
+    expect(c.posterFor({ id: 'i1', metadata: { posterUrl: '/api/p.webp' } as never })).toBe(
       'http://kroma.test/api/p.webp',
     );
     expect(c.posterFor({ id: 'i2', metadata: null })).toBe('http://kroma.test/api/items/i2/poster');
-    expect(c.showPosterFor({ id: 's1', metadata: null } as any)).toBe(
+    expect(c.showPosterFor({ id: 's1', metadata: null } as never)).toBe(
       'http://kroma.test/api/shows/s1/poster',
     );
-    expect(c.backdropFor({ metadata: { backdropUrl: '/api/b.webp' } as any })).toBe(
+    expect(c.backdropFor({ metadata: { backdropUrl: '/api/b.webp' } as never })).toBe(
       'http://kroma.test/api/b.webp',
     );
     expect(c.backdropFor({ metadata: null })).toBeNull();
-    expect(c.themeFor({ metadata: { themeUrl: '/api/t.mp3' } as any })).toBe(
+    expect(c.themeFor({ metadata: { themeUrl: '/api/t.mp3' } as never })).toBe(
       'http://kroma.test/api/t.mp3',
     );
     expect(c.themeFor({ metadata: null })).toBeNull();
@@ -350,8 +350,8 @@ describe('delegating methods issue the expected request', () => {
     ['deleteLibrary', (c) => c.deleteLibrary('x'), 'DELETE', '/admin/libraries/x'],
     ['scanLibrary', (c) => c.scanLibrary('x'), 'POST', '/admin/libraries/x/scan'],
     ['adminNaming', (c) => c.adminNaming(), 'GET', '/admin/organize/naming'],
-    ['namingSample', (c) => c.namingSample({} as any), 'POST', '/admin/organize/sample'],
-    ['saveNaming', (c) => c.saveNaming({} as any), 'PUT', '/admin/organize/naming'],
+    ['namingSample', (c) => c.namingSample({} as never), 'POST', '/admin/organize/sample'],
+    ['saveNaming', (c) => c.saveNaming({} as never), 'PUT', '/admin/organize/naming'],
     ['organizePreview', (c) => c.organizePreview(), 'GET', '/admin/organize/preview'],
     ['organizeApply', (c) => c.organizeApply(), 'POST', '/admin/organize/apply'],
   ];
@@ -370,7 +370,7 @@ describe('delegating methods issue the expected request', () => {
   const others: Array<[string, (c: KromaClient) => unknown]> = [
     ['downloadedSubtitles', (c) => c.downloadedSubtitles('i1')],
     ['subtitleCapabilities', (c) => c.subtitleCapabilities('i1')],
-    ['generateSubtitle', (c) => c.generateSubtitle('i1', {} as any)],
+    ['generateSubtitle', (c) => c.generateSubtitle('i1', {} as never)],
     ['subtitleGenerations', (c) => c.subtitleGenerations('i1')],
     ['cancelGeneration', (c) => c.cancelGeneration('i1', 'g1')],
     ['deleteSubtitle', (c) => c.deleteSubtitle('i1', 'd1')],
@@ -380,12 +380,12 @@ describe('delegating methods issue the expected request', () => {
     ['passkeyRegisterStart', (c) => c.passkeyRegisterStart()],
     [
       'passkeyRegisterFinish',
-      (c) => c.passkeyRegisterFinish({ ceremonyId: 'c', name: 'n', credential: {} as any }),
+      (c) => c.passkeyRegisterFinish({ ceremonyId: 'c', name: 'n', credential: {} as never }),
     ],
     ['listPasskeys', (c) => c.listPasskeys()],
     ['deletePasskey', (c) => c.deletePasskey('p1')],
     ['passkeyAuthStart', (c) => c.passkeyAuthStart()],
-    ['passkeyAuthFinish', (c) => c.passkeyAuthFinish({ ceremonyId: 'c', credential: {} as any })],
+    ['passkeyAuthFinish', (c) => c.passkeyAuthFinish({ ceremonyId: 'c', credential: {} as never })],
     ['pinVerify', (c) => c.pinVerify('1234')],
     ['setPin', (c) => c.setPin('1234')],
     ['clearPin', (c) => c.clearPin('1234')],
@@ -417,23 +417,23 @@ describe('delegating methods issue the expected request', () => {
     ['getMissing', (c) => c.getMissing()],
     ['searchAllMissing', (c) => c.searchAllMissing()],
     ['autoSearchRequest', (c) => c.autoSearchRequest('r1')],
-    ['createRequest', (c) => c.createRequest({} as any)],
+    ['createRequest', (c) => c.createRequest({} as never)],
     ['deleteRequest', (c) => c.deleteRequest('r1')],
     ['approveRequest', (c) => c.approveRequest('r1')],
     ['denyRequest', (c) => c.denyRequest('r1')],
     ['searchReleases', (c) => c.searchReleases('r1')],
-    ['grabRelease', (c) => c.grabRelease('r1', {} as any)],
+    ['grabRelease', (c) => c.grabRelease('r1', {} as never)],
     ['adminIndexers', (c) => c.adminIndexers()],
-    ['createIndexer', (c) => c.createIndexer({} as any)],
-    ['updateIndexer', (c) => c.updateIndexer('x', {} as any)],
+    ['createIndexer', (c) => c.createIndexer({} as never)],
+    ['updateIndexer', (c) => c.updateIndexer('x', {} as never)],
     ['deleteIndexer', (c) => c.deleteIndexer('x')],
     ['testIndexer', (c) => c.testIndexer('x')],
     ['adminIndexerDefinitions', (c) => c.adminIndexerDefinitions()],
     ['indexerDefinitionDetail', (c) => c.indexerDefinitionDetail('x')],
     ['syncIndexerDefinitions', (c) => c.syncIndexerDefinitions()],
     ['adminDownloadClients', (c) => c.adminDownloadClients()],
-    ['createDownloadClient', (c) => c.createDownloadClient({} as any)],
-    ['updateDownloadClient', (c) => c.updateDownloadClient('x', {} as any)],
+    ['createDownloadClient', (c) => c.createDownloadClient({} as never)],
+    ['updateDownloadClient', (c) => c.updateDownloadClient('x', {} as never)],
     ['deleteDownloadClient', (c) => c.deleteDownloadClient('x')],
     ['testDownloadClient', (c) => c.testDownloadClient('x')],
     ['adminDownloads', (c) => c.adminDownloads()],
@@ -447,9 +447,9 @@ describe('delegating methods issue the expected request', () => {
     ['removeDownload', (c) => c.removeDownload('x')],
     ['manualSearch', (c) => c.manualSearch('q')],
     ['analyzeTorrent', (c) => c.analyzeTorrent('magnet:?x')],
-    ['manualAdd', (c) => c.manualAdd({} as any)],
+    ['manualAdd', (c) => c.manualAdd({} as never)],
     ['adminVpn', (c) => c.adminVpn()],
-    ['saveVpn', (c) => c.saveVpn({} as any)],
+    ['saveVpn', (c) => c.saveVpn({} as never)],
     ['testVpn', (c) => c.testVpn()],
     ['adminBrowseFolders', (c) => c.adminBrowseFolders()],
     ['adminServer', (c) => c.adminServer()],
@@ -490,11 +490,11 @@ describe('delegating methods issue the expected request', () => {
     ['retryElementStage', (c) => c.retryElementStage('item', 'i1', 's')],
     ['showProcessing', (c) => c.showProcessing('s1')],
     ['adminLlm', (c) => c.adminLlm()],
-    ['saveLlm', (c) => c.saveLlm({} as any)],
-    ['llmModels', (c) => c.llmModels({} as any)],
-    ['testLlm', (c) => c.testLlm({} as any)],
+    ['saveLlm', (c) => c.saveLlm({} as never)],
+    ['llmModels', (c) => c.llmModels({} as never)],
+    ['testLlm', (c) => c.testLlm({} as never)],
     ['adminRemote', (c) => c.adminRemote()],
-    ['saveRemote', (c) => c.saveRemote({} as any)],
+    ['saveRemote', (c) => c.saveRemote({} as never)],
     ['logs', (c) => c.logs()],
     ['storyboard', (c) => c.storyboard('i1')],
   ];

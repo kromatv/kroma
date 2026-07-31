@@ -2,8 +2,8 @@
 // biometric switch row and the step-at-a-time masked PIN wizard. All state
 // and auth calls stay in the route (app/(app)/profile-pin.tsx).
 
-import { Button, Spinner, Switch } from '@kroma/ui/kit';
-import { StyleSheet, Text, View } from 'react-native';
+import { Button, Spinner, Switch, styles } from '@kroma/ui/kit';
+import { Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 import { CodeCells } from './onboarding';
@@ -19,10 +19,10 @@ export function LockCard({
   children: React.ReactNode;
 }>) {
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.card}>
-        <Text style={styles.sub}>{sub}</Text>
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>{title}</Text>
+      <View style={s.card}>
+        <Text style={s.sub}>{sub}</Text>
         {children}
       </View>
     </View>
@@ -41,8 +41,8 @@ export function BioSwitchRow({
   onChange(next: boolean): void;
 }>) {
   return (
-    <View style={styles.bioRow}>
-      <Text style={styles.bioLabel}>{label}</Text>
+    <View style={s.bioRow}>
+      <Text style={s.bioLabel}>{label}</Text>
       <Switch checked={value} disabled={disabled} onChange={onChange} />
     </View>
   );
@@ -66,8 +66,8 @@ export function PinWizard({
 }>) {
   const t = useT();
   return (
-    <View style={styles.wizard}>
-      <Text style={styles.wizardSub}>{subtitle}</Text>
+    <View style={s.wizard}>
+      <Text style={s.wizardSub}>{subtitle}</Text>
       <CodeCells value={pin} masked editable={!busy} onChange={onChange} />
       {busy ? <Spinner size={24} color={colors.textDim} /> : null}
       <ErrorBanner message={error} />
@@ -76,30 +76,13 @@ export function PinWizard({
   );
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   section: { gap: spacing.xs },
-  sectionTitle: {
-    ...type.small,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
+  sectionTitle: { ...type.small, mb: 2, textTransform: 'uppercase', letterSpacing: 1 },
+  card: { gap: spacing.md, p: spacing.md, bg: 'surface1', radius: radius.md, border: 'border' },
   sub: { ...type.caption },
-  bioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  bioLabel: { ...type.body, fontWeight: '500', flexShrink: 1 },
-  wizard: { padding: spacing.md, paddingTop: spacing.xl, gap: spacing.lg },
-  wizardSub: { ...type.body, textAlign: 'center', color: colors.textDim },
+  bioRow: { row: true, between: true, align: 'center', gap: spacing.md },
+  bioLabel: { ...type.body, shrink: 1, fontWeight: '500' },
+  wizard: { gap: spacing.lg, p: spacing.md, pt: spacing.xl },
+  wizardSub: { ...type.body, textAlign: 'center', color: 'textMuted' },
 });

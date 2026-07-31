@@ -12,8 +12,9 @@
 // a thumb's gesture, and a D-pad synopsis wants a screen of its own.
 
 import { useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 import { Txt, type TxtProps } from '#ui/components/atoms/text';
+import { styles } from '#ui/core';
 
 interface ExpandableTextProps extends Pick<TxtProps, 'variant' | 'color' | 'style'> {
   children: string;
@@ -62,7 +63,7 @@ function ExpandableText({
       <Txt
         accessible={false}
         variant={variant}
-        style={[style, styles.ghost]}
+        style={[style, s.ghost]}
         onLayout={(event) => setFull(event.nativeEvent.layout.height)}
       >
         {children}
@@ -75,23 +76,16 @@ function ExpandableText({
         <Txt
           variant="meta"
           color={hovered ? 'accent' : 'text'}
-          style={styles.more}
+          style={s.more}
         >{`… ${moreLabel}`}</Txt>
       ) : null}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  ghost: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    opacity: 0,
-    pointerEvents: 'none',
-  },
-  more: { fontWeight: '700', marginTop: 2 },
+const s = styles({
+  ghost: { absolute: true, left: 0, right: 0, top: 0, opacity: 0, pointerEvents: 'none' },
+  more: { fontWeight: '700', mt: 2 },
 });
 
 export type { ExpandableTextProps };

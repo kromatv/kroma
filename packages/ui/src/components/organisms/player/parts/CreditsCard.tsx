@@ -4,8 +4,8 @@ import { Img } from '#ui/components/atoms/img';
 import { clamp01 } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { Txt } from '#ui/components/atoms/text';
+import { styles, sv, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
-import { colors, fonts } from '#ui/lib/tokens';
 import { useT } from '#ui/services/i18n';
 import { scaler } from '../lib/metrics';
 
@@ -42,6 +42,9 @@ const CARD_WIDTH = 392;
 const ART_FILL = 'linear-gradient(135deg, rgba(244,182,66,0.16), rgba(20,18,22,0.96))';
 const VIGNETTE = 'radial-gradient(120% 120% at 50% 25%, transparent, rgba(0,0,0,0.5))';
 
+const cancelFill = sv({ base: { _focus: { bg: 'white/16' } } });
+const playFill = sv({ base: { flex: 1, _focus: { bg: 'accentHover' } } });
+
 /**
  * Credits autoplay card (§11): a bottom-right card that surfaces during the
  * closing credits with the next episode, a draining amber countdown ring around
@@ -62,6 +65,7 @@ export function CreditsCard({
   onCancel,
 }: Readonly<CreditsCardProps>) {
   const t = useT();
+  const theme = useTheme();
   const px = scaler(scale);
   const progress = total > 0 ? clamp01(secondsLeft / total) : 0;
   const ring = px(54);
@@ -75,10 +79,10 @@ export function CreditsCard({
       maxW="100%"
       radius={px(20)}
       borderWidth={1}
-      border="rgba(255, 255, 255, 0.12)"
+      border="white/12"
       bg="rgba(16, 16, 20, 0.9)"
       p={px(20)}
-      style={CARD_SHADOW}
+      style={s.cardShadow}
     >
       <Box h={px(150)} mb={px(16)} radius={px(14)} overflow="hidden">
         <Img src={item.posterUrl ?? null} background={ART_FILL} fill />
@@ -90,22 +94,22 @@ export function CreditsCard({
               size={ring}
               stroke={px(6)}
               track="rgba(255, 255, 255, 0.14)"
-              fill={colors.accent}
+              fill={theme.colors.accent}
             />
           </Box>
           <Box w={px(42)} h={px(42)} center radius="pill" bg="#101014">
-            <Txt style={[COUNTDOWN, { fontSize: px(COUNTDOWN_SIZE) }]}>{String(secondsLeft)}</Txt>
+            <Txt style={[s.countdown, { fontSize: px(COUNTDOWN_SIZE) }]}>{String(secondsLeft)}</Txt>
           </Box>
         </Box>
       </Box>
-      <Txt style={EYEBROW} color="rgba(244, 243, 240, 0.5)">
+      <Txt style={s.eyebrow} color="text/50">
         {t('player.nextEpisode')}
       </Txt>
-      <Txt lines={1} style={TITLE}>
+      <Txt lines={1} style={s.title}>
         {item.title}
       </Txt>
       {item.subtitle ? (
-        <Txt style={SUBTITLE} color="accent">
+        <Txt style={s.subtitle} color="accent">
           {item.subtitle}
         </Txt>
       ) : null}
@@ -117,7 +121,7 @@ export function CreditsCard({
           variant="ghost"
           size="sm"
           focused={cancelFocused}
-          focusedStyle={CANCEL_FOCUS}
+          style={cancelFill(undefined, { focus: cancelFocused }).root}
           onPress={onCancel}
           label={t('player.cancel')}
         />
@@ -126,44 +130,32 @@ export function CreditsCard({
           size="sm"
           icon="player-play-filled"
           focused={playFocused}
-          focusedStyle={PLAY_FOCUS}
           onPress={onPlay}
           label={t('player.playNow')}
-          style={GROW}
+          style={playFill(undefined, { focus: playFocused }).root}
         />
       </Box>
     </Box>
   );
 }
 
-const GROW = { flex: 1 } as const;
-const CANCEL_FOCUS = { backgroundColor: 'rgba(255, 255, 255, 0.16)' } as const;
-const PLAY_FOCUS = { backgroundColor: colors.accentHover } as const;
-
-const CARD_SHADOW = { boxShadow: '0 26px 64px rgba(0, 0, 0, 0.62)' };
-
 const COUNTDOWN_SIZE = 19;
-const COUNTDOWN = {
-  fontFamily: fonts.ui,
-  fontWeight: '700' as const,
-  color: '#FFFFFF',
-  fontVariant: ['tabular-nums' as const],
-};
 
-const EYEBROW = {
-  fontFamily: fonts.ui,
-  fontSize: 11,
-  fontWeight: '700' as const,
-  letterSpacing: 1.76,
-  textTransform: 'uppercase' as const,
-};
-
-const TITLE = {
-  marginTop: 4,
-  fontFamily: fonts.display,
-  fontSize: 19,
-  lineHeight: 23,
-  fontWeight: '700' as const,
-};
-
-const SUBTITLE = { marginTop: 3, fontFamily: fonts.ui, fontSize: 13, fontWeight: '600' as const };
+const s = styles({
+  cardShadow: { boxShadow: '0 26px 64px rgba(0, 0, 0, 0.62)' },
+  countdown: {
+    font: 'ui',
+    fontWeight: '700',
+    color: 'white',
+    fontVariant: ['tabular-nums'],
+  },
+  eyebrow: {
+    font: 'ui',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.76,
+    textTransform: 'uppercase',
+  },
+  title: { mt: 4, font: 'display', fontSize: 19, lineHeight: 23, fontWeight: '700' },
+  subtitle: { mt: 3, font: 'ui', fontSize: 13, fontWeight: '600' },
+});

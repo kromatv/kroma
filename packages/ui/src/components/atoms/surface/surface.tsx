@@ -6,51 +6,40 @@
 // owns rather than something each screen re-derives.
 
 import type { ReactNode } from 'react';
-import { StyleSheet } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
-import { sv } from '#ui/lib/sv';
-import { colors, radius, shadow } from '#ui/lib/tokens';
+import { sv, useTheme, type Variant } from '#ui/core';
 
 const surfaceVariants = sv({
-  base: { borderRadius: radius.lg },
+  base: { radius: 'lg' },
   variants: {
     tone: {
       /** The default card: one step up from the page. */
-      plain: { backgroundColor: colors.surface1 },
+      plain: { bg: 'surface1' },
       /** Two steps up, for a panel sitting ON a card. */
-      raised: { backgroundColor: colors.surface2 },
+      raised: { bg: 'surface2' },
       /** No fill, just an edge. For grouping without adding weight. */
-      outline: {
-        backgroundColor: 'transparent',
-        borderWidth: 1,
-        borderColor: colors.border,
-      },
+      outline: { bg: 'transparent', border: 'border' },
       /** Over artwork, where a solid fill would hide the image. */
-      glass: {
-        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-        borderWidth: 1,
-        borderColor: colors.borderStrong,
-      },
+      glass: { bg: 'white/6', border: 'borderStrong' },
     },
     pad: {
       none: {},
-      sm: { padding: 12 },
-      md: { padding: 20 },
-      lg: { padding: 28 },
+      sm: { p: 12 },
+      md: { p: 20 },
+      lg: { p: 28 },
     },
     elevated: {
       // `shadow.card` is a CSS box-shadow string; React Native 0.76+ takes it
-      // through the `boxShadow` style, which is how <Box> applies it too.
-      true: { boxShadow: shadow.card },
-      false: {},
+      // through the `boxShadow` style, which is what the `shadow` shorthand sets.
+      true: { shadow: 'card' },
     },
   },
-  defaults: { tone: 'plain', pad: 'md', elevated: 'false' },
+  defaults: { tone: 'plain', pad: 'md', elevated: false },
 });
 
-type SurfaceTone = 'plain' | 'raised' | 'outline' | 'glass';
-type SurfacePad = 'none' | 'sm' | 'md' | 'lg';
+type SurfaceTone = Variant<typeof surfaceVariants, 'tone'>;
+type SurfacePad = Variant<typeof surfaceVariants, 'pad'>;
 
 interface SurfaceProps extends Omit<BoxProps, 'bg' | 'children'> {
   tone?: SurfaceTone;
@@ -68,14 +57,17 @@ function Surface({
   children,
   ...box
 }: Readonly<SurfaceProps>) {
-  const flat = surfaceVariants({ tone, pad, elevated: elevated ? 'true' : 'false' }, style);
+  const defaultRadius = useTheme().radius.lg;
+  const { root } = surfaceVariants({ tone, pad, elevated });
   // Glass frosts what sits behind it (see <Frost>); the other tones are
-  // opaque, where a backdrop blur has nothing to do.
-  const frostRadius = StyleSheet.flatten(flat)?.borderRadius;
+  // opaque, where a backdrop blur has nothing to do. The radius is read off the
+  // resolved slot rather than flattened out of the whole style prop: the
+  // caller's own `style` cannot move a backdrop it does not know about.
+  const frostRadius = root.borderRadius;
   return (
-    <Box {...box} style={flat}>
+    <Box {...box} style={[root, style]}>
       {tone === 'glass' ? (
-        <Frost radius={typeof frostRadius === 'number' ? frostRadius : radius.lg} />
+        <Frost radius={typeof frostRadius === 'number' ? frostRadius : defaultRadius} />
       ) : null}
       {children}
     </Box>

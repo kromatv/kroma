@@ -2,16 +2,9 @@
 // screens: profile tiles for the "Who's watching?" gate and the segmented
 // code cells (PIN pad, Quick Connect code).
 
-import { Icon, Spinner } from '@kroma/ui/kit';
+import { Icon, Spinner, styles } from '@kroma/ui/kit';
 import { useRef } from 'react';
-import {
-  Pressable,
-  type ReturnKeyTypeOptions,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, type ReturnKeyTypeOptions, Text, TextInput, View } from 'react-native';
 import { colors, radius, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
 
@@ -40,26 +33,26 @@ export function ProfileTile({
     <Pressable
       onPress={onPress}
       disabled={disabled || offline}
-      style={({ pressed }) => [styles.tile, (pressed || offline) && { opacity: 0.6 }]}
+      style={({ pressed }) => [s.tile, (pressed || offline) && { opacity: 0.6 }]}
     >
       <View>
         <Avatar uri={avatarUri} name={name} size={TILE_AVATAR} />
         {locked && !busy ? (
-          <View style={styles.lockBadge}>
+          <View style={s.lockBadge}>
             <Icon name="lock" size={13} stroke={2.2} color={colors.text} />
           </View>
         ) : null}
         {busy ? (
-          <View style={styles.tileBusy}>
+          <View style={s.tileBusy}>
             <Spinner size={24} color={colors.text} />
           </View>
         ) : null}
       </View>
-      <Text numberOfLines={1} style={styles.tileName}>
+      <Text numberOfLines={1} style={s.tileName}>
         {name}
       </Text>
       {caption ? (
-        <Text numberOfLines={1} style={[styles.tileCaption, offline && { color: colors.danger }]}>
+        <Text numberOfLines={1} style={[s.tileCaption, offline && { color: colors.danger }]}>
           {caption}
         </Text>
       ) : null}
@@ -69,14 +62,11 @@ export function ProfileTile({
 
 export function AddTile({ label, onPress }: Readonly<{ label: string; onPress(): void }>) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.tile, pressed && { opacity: 0.6 }]}
-    >
-      <View style={styles.addCircle}>
+    <Pressable onPress={onPress} style={({ pressed }) => [s.tile, pressed && { opacity: 0.6 }]}>
+      <View style={s.addCircle}>
         <Icon name="plus" size={30} stroke={2.2} color={colors.textDim} />
       </View>
-      <Text numberOfLines={1} style={[styles.tileName, { color: colors.textDim }]}>
+      <Text numberOfLines={1} style={[s.tileName, { color: colors.textDim }]}>
         {label}
       </Text>
     </Pressable>
@@ -112,17 +102,17 @@ export function CodeCells({
 }>) {
   const inputRef = useRef<TextInput>(null);
   return (
-    <Pressable onPress={() => inputRef.current?.focus()} style={styles.pinRow}>
+    <Pressable onPress={() => inputRef.current?.focus()} style={s.pinRow}>
       {Array.from({ length }, (_, i) => (
         <View
           key={`cell-${String(i)}`}
           style={[
-            styles.pinCell,
-            showActive && i === value.length && styles.pinCellActive,
-            error && styles.pinCellError,
+            s.pinCell,
+            showActive && i === value.length && s.pinCellActive,
+            error && s.pinCellError,
           ]}
         >
-          <Text style={styles.pinDigit}>{cellText(value, i, masked)}</Text>
+          <Text style={s.pinDigit}>{cellText(value, i, masked)}</Text>
         </View>
       ))}
       <TextInput
@@ -146,7 +136,7 @@ export function CodeCells({
         onBlur={() => {
           if (refocusOnBlur) inputRef.current?.focus();
         }}
-        style={styles.pinInput}
+        style={s.pinInput}
         caretHidden
       />
     </Pressable>
@@ -170,56 +160,52 @@ export function PinPad({
   );
 }
 
-const styles = StyleSheet.create({
-  tile: { alignItems: 'center', gap: 6, width: 96 },
+const s = styles({
+  tile: { align: 'center', gap: 6, w: 96 },
   tileBusy: {
-    position: 'absolute',
+    absolute: true,
     top: 0,
-    left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: TILE_AVATAR / 2,
-    backgroundColor: 'rgba(10, 10, 12, 0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    left: 0,
+    center: true,
+    bg: 'bg/55',
+    radius: TILE_AVATAR / 2,
   },
   lockBadge: {
-    position: 'absolute',
+    absolute: true,
     right: -2,
     bottom: -2,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.surfaceHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
+    center: true,
+    w: 26,
+    h: 26,
+    bg: 'surface3',
+    radius: 13,
+    border: 'bg',
     borderWidth: 2.5,
-    borderColor: colors.bg,
   },
-  tileName: { ...type.caption, color: colors.text, fontWeight: '600', marginTop: 2 },
-  tileCaption: { ...type.small, marginTop: -2 },
+  tileName: { ...type.caption, mt: 2, color: 'text', fontWeight: '600' },
+  tileCaption: { ...type.small, mt: -2 },
   addCircle: {
-    width: TILE_AVATAR,
-    height: TILE_AVATAR,
-    borderRadius: TILE_AVATAR / 2,
+    center: true,
+    w: TILE_AVATAR,
+    h: TILE_AVATAR,
+    radius: TILE_AVATAR / 2,
+    border: 'borderStrong',
     borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  pinRow: { flexDirection: 'row', justifyContent: 'center', gap: 12 },
+  pinRow: { row: true, justify: 'center', gap: 12 },
   pinCell: {
-    width: 52,
-    height: 60,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    center: true,
+    w: 52,
+    h: 60,
+    bg: 'surface1',
+    radius: radius.md,
+    border: 'borderStrong',
     borderWidth: 1.5,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  pinCellActive: { borderColor: colors.accent },
-  pinCellError: { borderColor: colors.danger },
-  pinDigit: { fontSize: 30, color: colors.text, fontWeight: '800' },
-  pinInput: { position: 'absolute', opacity: 0, width: 1, height: 1 },
+  pinCellActive: { borderColor: 'accent' },
+  pinCellError: { borderColor: 'danger' },
+  pinDigit: { fontSize: 30, color: 'text', fontWeight: '800' },
+  pinInput: { absolute: true, w: 1, h: 1, opacity: 0 },
 });

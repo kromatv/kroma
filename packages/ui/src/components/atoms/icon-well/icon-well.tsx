@@ -3,29 +3,23 @@
 
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { sv } from '#ui/lib/sv';
-import { colors, radius } from '#ui/lib/tokens';
+import { sv, type Variant } from '#ui/core';
 
-type IconWellSize = 'sm' | 'tv';
-type IconWellTone = 'neutral' | 'accent';
+type IconWellSize = Variant<typeof iconWellVariants, 'size'>;
+type IconWellTone = Variant<typeof iconWellVariants, 'tone'>;
 
 const iconWellVariants = sv({
   slots: {
-    root: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0,
-      borderRadius: radius.xl,
-    },
+    root: { center: true, shrink: 0, radius: 'xl' },
   },
   variants: {
     size: {
-      sm: { root: { width: 34, height: 34 } },
-      tv: { root: { width: 42, height: 42 } },
+      sm: { root: { w: 34, h: 34 } },
+      tv: { root: { w: 42, h: 42 } },
     },
     tone: {
-      neutral: { root: { backgroundColor: 'rgba(255, 255, 255, 0.06)' } },
-      accent: { root: { backgroundColor: colors.accentSoft } },
+      neutral: { root: { bg: 'white/6' } },
+      accent: { root: { bg: 'accentSoft' } },
     },
   },
   defaults: { size: 'tv', tone: 'neutral' },

@@ -46,7 +46,7 @@ describe('toMovieView / toShowView', () => {
       ],
       metadata: { posterUrl: '/api/p.webp', backdropUrl: null },
       video: null,
-    } as any;
+    } as never;
     const v = toMovieView(client, item);
     expect(v.poster).toBe('http://kroma.test/api/p.webp');
     expect(v.stream).toBe('http://kroma.test/api/items/i1/stream');
@@ -61,7 +61,7 @@ describe('toMovieView / toShowView', () => {
     const show = {
       id: 's1',
       metadata: { posterUrl: '/api/sp.webp', backdropUrl: '/api/sb.webp' },
-    } as any;
+    } as never;
     const sv = toShowView(client, show);
     expect(sv.poster).toBe('http://kroma.test/api/sp.webp');
     expect(sv.backdrop).toBe('http://kroma.test/api/sb.webp');

@@ -1,6 +1,7 @@
 // Spacing, radii and the 10-foot design canvas. Numbers (not "16px" strings) so
 // they are valid React Native style values; the CSS generator appends the unit.
 
+import type { TokenOf } from './registry';
 /** Every TV screen is authored against this fixed canvas and scaled to fit by
  * `<TvStage>`. It is what makes the layout pixel-identical on a 1080p Tizen
  * panel, a 4K Apple TV (1920x1080 points) and an Android TV (960x540 dp). */
@@ -27,6 +28,13 @@ export const radius = {
   '2xl': 22,
   pill: 999,
 } as const;
+
+/** Radii a theme adds. Augment it and the name is legal wherever a radius is
+ *  written — the `radius:` shorthand, <Box radius> (see `ColorRegistry`). */
+// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+export interface RadiusRegistry {}
+
+export type RadiusToken = TokenOf<typeof radius, RadiusRegistry>;
 
 /** Layout gutters. `tv` is the 10-foot side padding (overscan-safe on every
  * panel we ship to). */

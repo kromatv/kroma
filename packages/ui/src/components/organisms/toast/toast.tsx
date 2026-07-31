@@ -12,8 +12,8 @@ import { Animated, Platform } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
+import { type ColorToken, styles } from '#ui/core';
 import { hasGlyph } from '#ui/lib/icons/glyphs';
-import { colors, fonts, radius } from '#ui/lib/tokens';
 
 const DEFAULT_MS = 4500;
 // Never stack more than this: a column of notices is a wall, not a message.
@@ -103,7 +103,7 @@ export function Toaster({ placement = 'top-right', inset = 32 }: Readonly<Toaste
       // A notice never takes the remote, and never eats a tap meant for what is
       // underneath it.
       pointerEvents="none"
-      style={top ? undefined : FULL_WIDTH}
+      style={top ? undefined : s.fullWidth}
     >
       {entries.map((entry) => (
         <ToastCard key={entry.id} entry={entry} onDone={() => dismiss(entry.id)} />
@@ -111,8 +111,6 @@ export function Toaster({ placement = 'top-right', inset = 32 }: Readonly<Toaste
     </Box>
   );
 }
-
-const FULL_WIDTH = { width: '100%' } as const;
 
 function ToastCard({ entry, onDone }: Readonly<{ entry: Entry; onDone: () => void }>) {
   const appear = useRef(new Animated.Value(0)).current;
@@ -146,7 +144,7 @@ function ToastCard({ entry, onDone }: Readonly<{ entry: Entry; onDone: () => voi
         ],
       }}
     >
-      <Box row align="center" gap={14} px={20} py={16} radius="xl" style={CARD}>
+      <Box row align="center" gap={14} px={20} py={16} radius="xl" style={s.card}>
         {entry.icon ? (
           // A NAMED glyph gets the kit's well; anything else (an avatar) is
           // already a finished round thing and is drawn as it comes.
@@ -155,7 +153,7 @@ function ToastCard({ entry, onDone }: Readonly<{ entry: Entry; onDone: () => voi
             h={40}
             center
             radius="pill"
-            style={typeof entry.icon === 'string' ? WELL : undefined}
+            style={typeof entry.icon === 'string' ? s.well : undefined}
           >
             {typeof entry.icon === 'string' && hasGlyph(entry.icon) ? (
               <Icon name={entry.icon} size={22} stroke={1.9} color={wellTone(entry.tone)} />
@@ -164,12 +162,12 @@ function ToastCard({ entry, onDone }: Readonly<{ entry: Entry; onDone: () => voi
             )}
           </Box>
         ) : null}
-        <Box style={TEXT}>
-          <Txt lines={1} style={MESSAGE}>
+        <Box style={s.text}>
+          <Txt lines={1} style={s.message}>
             {entry.message}
           </Txt>
           {entry.detail ? (
-            <Txt lines={1} style={DETAIL} color="textMuted">
+            <Txt lines={1} style={s.detail} color="textMuted">
               {entry.detail}
             </Txt>
           ) : null}
@@ -179,24 +177,25 @@ function ToastCard({ entry, onDone }: Readonly<{ entry: Entry; onDone: () => voi
   );
 }
 
-const CARD = {
-  backgroundColor: colors.overlay,
-  borderWidth: 1,
-  borderColor: colors.border,
-  borderRadius: radius.xl,
-  maxWidth: 520,
-  // The lift that separates a notice from the picture behind it. Web-only: the
-  // native shadow props cost a rasterisation pass a TV does not need to spend.
-  ...(Platform.OS === 'web' ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
-} as const;
-
-function wellTone(tone: ToastOptions['tone']): string {
-  if (tone === 'success') return colors.success;
-  if (tone === 'accent') return colors.accent;
-  return colors.text;
+function wellTone(tone: ToastOptions['tone']): ColorToken {
+  if (tone === 'success') return 'success';
+  if (tone === 'accent') return 'accent';
+  return 'text';
 }
 
-const WELL = { backgroundColor: 'rgba(255, 255, 255, 0.08)' } as const;
-const TEXT = { minWidth: 0, flexShrink: 1 } as const;
-const MESSAGE = { fontFamily: fonts.ui, fontSize: 17, fontWeight: '600' as const };
-const DETAIL = { fontFamily: fonts.ui, fontSize: 14, marginTop: 2 };
+const s = styles({
+  fullWidth: { w: '100%' },
+  card: {
+    bg: 'overlay',
+    border: 'border',
+    radius: 'xl',
+    maxW: 520,
+    // The lift that separates a notice from the picture behind it. Web-only: the
+    // native shadow props cost a rasterisation pass a TV does not need to spend.
+    ...(Platform.OS === 'web' ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
+  },
+  well: { bg: 'white/8' },
+  text: { minW: 0, shrink: 1 },
+  message: { font: 'ui', fontSize: 17, fontWeight: '600' },
+  detail: { font: 'ui', fontSize: 14, mt: 2 },
+});

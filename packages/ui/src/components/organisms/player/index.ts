@@ -16,7 +16,7 @@ export {
   type LeanStatsInput,
   type LeanStatsVideoHandle,
 } from './lib/lean-stats';
-export { SEEK_BAR } from './lib/style';
+export { type SeekBarPaint, seekBar } from './lib/style';
 export {
   DEFAULT_SUB_APPEARANCE,
   migrateAppearance,

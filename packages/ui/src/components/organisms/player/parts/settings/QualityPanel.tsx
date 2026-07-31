@@ -3,7 +3,7 @@ import { Box } from '#ui/components/atoms/box';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { PlayerQuality } from '#ui/components/organisms/player/types';
-import { panelList } from './panelStyle';
+import { panel } from './panelStyle';
 import { SelectRow } from './select-row';
 
 interface QualityPanelProps {
@@ -32,7 +32,7 @@ export const QualityPanel = forwardRef<PanelHandle, QualityPanelProps>(function 
   useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   return (
-    <Box style={panelList}>
+    <Box style={panel.panelList}>
       {qualities.map((q, i) => (
         <SelectRow
           key={q.id}

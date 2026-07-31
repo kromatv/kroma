@@ -1,6 +1,6 @@
 import { posterColors, type SectionItem } from '@kroma/core';
 import { useAiSuggest, useT } from '@kroma/ui';
-import { Box, MediaCard, ProgressRing, Rail, Txt } from '@kroma/ui/kit';
+import { Box, MediaCard, ProgressRing, Rail, styles, Txt } from '@kroma/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
 // The "Suggestions IA" rail on a TV detail screen. `useAiSuggest` polls the
@@ -10,14 +10,16 @@ import { useClient, useNav } from '#tv/app/router';
 // `item.width` is the tile pitch, not the card width: same recipe as TvHome's ROW_TILE.
 const ROW_TILE = { width: 300 + 24, height: Math.round((300 * 9) / 16) };
 
-const LABEL = {
-  fontWeight: '700' as const,
-  fontSize: 15,
-  lineHeight: 18,
-  letterSpacing: 0.6,
-  textTransform: 'uppercase' as const,
-  color: 'rgba(244, 243, 240, 0.55)',
-};
+const s = styles({
+  label: {
+    fontWeight: '700',
+    fontSize: 15,
+    lineHeight: 18,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: 'text/55',
+  },
+});
 
 export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
   const t = useT();
@@ -27,16 +29,16 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
 
   const card = (e: SectionItem) => {
     if (e.type === 'show') {
-      const s = e.show;
+      const show = e.show;
       return (
         <MediaCard
-          key={s.id}
-          title={s.title}
-          overline={s.metadata?.genres?.[0] ?? t('content.series')}
-          art={client.backdropFor(s) ?? client.showPosterFor(s)}
-          tint={posterColors(s.id)}
+          key={show.id}
+          title={show.title}
+          overline={show.metadata?.genres?.[0] ?? t('content.series')}
+          art={client.backdropFor(show) ?? client.showPosterFor(show)}
+          tint={posterColors(show.id)}
           width={300}
-          onPress={() => go('show', { show: s })}
+          onPress={() => go('show', { show })}
         />
       );
     }
@@ -57,7 +59,7 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
   if (section && section.items.length > 0) {
     return (
       <Box mt={40} gap={16}>
-        <Txt style={LABEL}>{section.title}</Txt>
+        <Txt style={s.label}>{section.title}</Txt>
         {section.reason ? (
           <Txt style={{ fontSize: 16, lineHeight: 22, maxWidth: 680 }} color="textMuted">
             {section.reason}
@@ -76,7 +78,7 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
   if (pending) {
     return (
       <Box mt={40} gap={16}>
-        <Txt style={LABEL}>{t('content.aiSuggestions')}</Txt>
+        <Txt style={s.label}>{t('content.aiSuggestions')}</Txt>
         <Box row align="center" gap={16}>
           <ProgressRing
             value={progress}

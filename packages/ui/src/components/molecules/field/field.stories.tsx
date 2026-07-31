@@ -11,6 +11,11 @@ export default story({
   docs: 'THE text entry. There is no second input component to choose between - `<TextField>` exists behind this one as the control it renders, and is not exported, because a screen that reaches past the label also tends to lose the hint and the error. One `type` prop wires the platform correctly (keyboard, autofill, masking) and `password` grows its reveal eye. The rule the molecule enforces: an error **replaces** the help text instead of stacking below it, because two lines of small text under a field is the start of a broken form. On a television the entry renders the value plus a caret and the on-screen keyboard does the typing; where a real keyboard exists, `physicalKeyboard` makes it a live input.',
   usage: `<Field label="Email" type="email" icon="mail" onChange={setEmail} />
 
+// A whole form: the schema decides the errors, useForm binds them. See the
+// sign-in demo below.
+const form = useForm({ schema, defaultValues: { email: '' }, t: useT() });
+<Field label="Email" type="email" {...form.field('email')} />
+
 // A control that is not a text entry - the label, hint and error still apply:
 <Field label="PIN" error={wrong ? 'Incorrect PIN' : undefined}>
   <PinField onComplete={verify} />

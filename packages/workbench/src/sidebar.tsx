@@ -5,11 +5,11 @@
 // Everything is a `Focusable` rather than a link, so the same tree works with a
 // mouse in a browser and a D-pad on a television.
 
-import { Box, Focusable, Icon, IconButton, Txt } from '@kroma/ui/kit';
-import { colors, radius, shadow } from '@kroma/ui/tokens';
+import { Box, Focusable, Icon, IconButton, styles, sv, Txt } from '@kroma/ui/kit';
+import { radius } from '@kroma/ui/tokens';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
-import { FOCUS_WASH, RULE_TOP } from './chrome';
+import { RULE_TOP } from './chrome';
 import { commandHint, Kbd } from './command';
 import type { WorkbenchLayout } from './layout';
 import { groupBy, type Story } from './story';
@@ -84,7 +84,7 @@ function Sidebar({
 }: Readonly<SidebarProps>) {
   const tiers = useMemo(() => tree(stories), [stories]);
   // Folded state is per branch and lives here rather than in the shell: it is how
-  // the LIST is being read, not part of what the workbench is showing, and it
+  // the s.list is being read, not part of what the workbench is showing, and it
   // should survive changing story (which it does - the drawer remounts, a column
   // does not).
   const [open, setOpen] = useState(() => revealPath(tiers, selected));
@@ -113,13 +113,13 @@ function Sidebar({
       shrink={0}
       // A drawer floats over the canvas, so it carries the elevation that says
       // so; a column is part of the page and is only ruled off from it.
-      style={onClose ? DRAWER : BORDER}
+      style={onClose ? s.drawer : s.border}
     >
       <Brand brand={brand} title={title} count={stories.length} onClose={onClose} />
       <Box px={12} pb={10}>
         <SearchButton onPress={onSearch} />
       </Box>
-      <ScrollView style={SCROLL} contentContainerStyle={LIST}>
+      <ScrollView style={s.scroll} contentContainerStyle={s.list}>
         {tiers.map((tier) => {
           const tierOpen = open.has(tier.tier);
           return (
@@ -177,10 +177,10 @@ function Brand({
     <Box row align="center" gap={10} px={16} pt={16} pb={14}>
       {brand}
       <Box>
-        <Txt variant="meta" color="accent" style={BRAND}>
+        <Txt variant="meta" color="accent" style={s.brand}>
           {title}
         </Txt>
-        <Txt variant="meta" color="textDim" style={TALLY}>
+        <Txt variant="meta" color="textDim" style={s.tally}>
           {`${count} components`}
         </Txt>
       </Box>
@@ -193,7 +193,6 @@ function Brand({
           label="Close component list"
           ring={false}
           focusScale={1}
-          focusedStyle={FOCUS_WASH}
           onPress={onClose}
         >
           <Icon name="x" size={16} color="textMuted" />
@@ -208,15 +207,9 @@ function Brand({
 // field-shaped button carrying `⌘ K` teaches the shortcut to everyone who ever clicks it.
 function SearchButton({ onPress }: Readonly<{ onPress: () => void }>) {
   return (
-    <Focusable
-      label="Search components"
-      ring={false}
-      onPress={onPress}
-      style={SEARCH}
-      focusedStyle={SEARCH_FOCUS}
-    >
+    <Focusable label="Search components" ring={false} onPress={onPress} sv={searchButton}>
       <Icon name="search" size={15} color="textDim" />
-      <Txt variant="meta" color="textDim" style={SEARCH_INK}>
+      <Txt variant="meta" color="textDim" style={s.searchInk}>
         Search
       </Txt>
       <Box flex />
@@ -290,29 +283,26 @@ function Branch({
       label={`${open ? 'Collapse' : 'Expand'} ${label}`}
       ring={false}
       onPress={onPress}
-      style={[ITEM, { marginLeft: 8 + depth * INDENT }]}
-      focusedStyle={FOCUS_WASH}
+      sv={treeRow}
+      vars={{ kind: depth === 0 ? 'tier' : 'group' }}
+      style={{ marginLeft: 8 + depth * INDENT }}
     >
-      <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} color="textDim" />
-      <Txt
-        variant="meta"
-        color={depth === 0 ? 'text' : 'textMuted'}
-        style={depth === 0 ? TIER_INK : GROUP_INK}
-        lines={1}
-      >
-        {label}
-      </Txt>
-      <Box flex />
-      <Txt variant="meta" color="textDim" style={COUNT}>
-        {count}
-      </Txt>
+      {({ slots }) => (
+        <>
+          <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} color="textDim" />
+          <Txt variant="meta" style={slots.label} lines={1}>
+            {label}
+          </Txt>
+          <Box flex />
+          <Txt variant="meta" color="textDim" style={s.count}>
+            {count}
+          </Txt>
+        </>
+      )}
     </Focusable>
   );
 }
 
-// A story. The open one is FILLED - amber, with ink to match - rather than tinted: the sidebar
-// is read at a glance from across a desk, and a 16% wash was not enough to find your place in
-// sixty rows.
 function Leaf({
   story,
   active,
@@ -324,21 +314,21 @@ function Leaf({
       label={story.name}
       ring={false}
       onPress={onPress}
-      style={[ITEM, { marginLeft: 8 + depth * INDENT }, active && ITEM_ACTIVE]}
-      focusedStyle={active ? undefined : FOCUS_WASH}
+      sv={treeRow}
+      vars={{ active }}
+      style={{ marginLeft: 8 + depth * INDENT }}
     >
-      {/* The rail every leaf hangs off. It is what keeps a folded branch's
-          children reading as children once the chevron above them is scrolled
-          out of sight. */}
-      <Box w={1} h={16} bg={active ? 'transparent' : 'border'} mr={7} shrink={0} />
-      <Txt
-        variant="body"
-        color={active ? 'accentInk' : 'textMuted'}
-        style={active ? LEAF_INK_ACTIVE : LEAF_INK}
-        lines={1}
-      >
-        {story.name}
-      </Txt>
+      {({ slots }) => (
+        <>
+          {/* The rail every leaf hangs off. It is what keeps a folded branch's
+              children reading as children once the chevron above them is scrolled
+              out of sight. */}
+          <Box w={1} h={16} bg={active ? 'transparent' : 'border'} mr={7} shrink={0} />
+          <Txt variant="body" style={slots.label} lines={1}>
+            {story.name}
+          </Txt>
+        </>
+      )}
     </Focusable>
   );
 }
@@ -346,47 +336,69 @@ function Leaf({
 // How far one level of the tree steps in.
 const INDENT = 12;
 
-const SCROLL = { flex: 1 } as const;
-const LIST = { paddingBottom: 32, paddingRight: 10 } as const;
-const BORDER = { borderRightWidth: 1, borderRightColor: colors.border } as const;
-const DRAWER = {
-  borderRightWidth: 1,
-  borderRightColor: colors.borderStrong,
-  boxShadow: shadow.pop,
-};
 // The 16pt glyph in the box the old padded shape came to.
 const CLOSE_BOX = 30;
-const BRAND = { fontWeight: '700', fontSize: 13 } as const;
-const TALLY = { fontSize: 10.5 } as const;
-const SEARCH = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 9,
-  paddingHorizontal: 10,
-  paddingVertical: 8,
-  borderRadius: radius.sm,
-  borderWidth: 1,
-  borderColor: colors.border,
-  backgroundColor: colors.surface2,
-} as const;
-const SEARCH_FOCUS = { borderColor: colors.borderStrong } as const;
-const SEARCH_INK = { fontSize: 12.5 } as const;
+
+const s = styles({
+  scroll: { flex: true },
+  list: { pb: 32, pr: 10 },
+  // A drawer floats over the canvas and carries the elevation that says so; a
+  // column is part of the page and is only ruled off from it.
+  border: { borderRightWidth: 1, borderRightColor: 'border' },
+  drawer: { borderRightWidth: 1, borderRightColor: 'borderStrong', shadow: 'pop' },
+  brand: { fontWeight: '700', fontSize: 13 },
+  tally: { fontSize: 10.5 },
+  searchInk: { fontSize: 12.5 },
+  count: { fontSize: 10.5 },
+});
+const searchButton = sv({
+  base: {
+    row: true,
+    align: 'center',
+    gap: 9,
+    px: 10,
+    py: 8,
+    radius: 'sm',
+    border: 'border',
+    bg: 'surface2',
+    _focus: { border: 'borderStrong' },
+  },
+});
 // One row shape for every node of the tree, so a branch and a leaf sit on the
 // same rhythm and only their indent tells them apart.
-const ITEM = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-  paddingHorizontal: 8,
-  paddingVertical: 6,
-  borderRadius: radius.sm,
-} as const;
-const ITEM_ACTIVE = { backgroundColor: colors.accent } as const;
-const TIER_INK = { fontSize: 11.5, letterSpacing: 0.5, textTransform: 'uppercase' } as const;
-const GROUP_INK = { fontSize: 12 } as const;
-const LEAF_INK = { fontSize: 13.5 } as const;
-const LEAF_INK_ACTIVE = { fontSize: 13.5, fontWeight: '700' } as const;
-const COUNT = { fontSize: 10.5 } as const;
+const treeRow = sv({
+  slots: {
+    root: {
+      row: true,
+      align: 'center',
+      gap: 6,
+      px: 8,
+      py: 6,
+      radius: 'sm',
+      _focus: { bg: 'white/6' },
+    },
+    label: { fontSize: 13.5, color: 'textMuted' },
+  },
+  variants: {
+    kind: {
+      tier: {
+        label: { fontSize: 11.5, letterSpacing: 0.5, textTransform: 'uppercase', color: 'text' },
+      },
+      group: { label: { fontSize: 12 } },
+      story: {},
+    },
+    // The open story is FILLED - amber, with ink to match - rather than tinted:
+    // the sidebar is read at a glance from across a desk, and a 16% wash was not
+    // enough to find your place in sixty rows.
+    active: {
+      true: {
+        root: { bg: 'accent', _focus: { bg: 'accent' } },
+        label: { color: 'accentInk', fontWeight: '700' },
+      },
+    },
+  },
+  defaults: { kind: 'story', active: false },
+});
 
 export type { SidebarProps, TreeGroup, TreeTier };
 export { revealPath, Sidebar, tree };

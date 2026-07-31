@@ -2,9 +2,9 @@
 // Long-press (or tap when done) removes the download.
 
 import type { MediaItem } from '@kroma/core';
-import { Icon, IconButton } from '@kroma/ui/kit';
+import { Icon, IconButton, styles } from '@kroma/ui/kit';
 import { useMemo } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { colors } from '#mobile/lib/theme';
@@ -58,9 +58,9 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   if (state.status === 'downloading') glyph = <ProgressRing progress={state.progress} />;
   else if (state.status === 'paused')
     glyph = (
-      <View style={styles.pausedBox}>
+      <View style={s.pausedBox}>
         <ProgressRing progress={Math.max(0.02, state.progress)} />
-        <View pointerEvents="none" style={styles.pausedGlyph}>
+        <View pointerEvents="none" style={s.pausedGlyph}>
           <Icon name="player-pause-filled" size={11} color={colors.textDim} />
         </View>
       </View>
@@ -68,7 +68,7 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   else if (state.status === 'queued') glyph = <ProgressRing progress={-1} />;
   else if (state.status === 'done')
     glyph = (
-      <View style={styles.doneBadge}>
+      <View style={s.doneBadge}>
         <Icon name="check" size={size - 6} stroke={2.4} color={colors.accentInk} />
       </View>
     );
@@ -80,23 +80,8 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   );
 }
 
-const styles = StyleSheet.create({
-  pausedBox: { alignItems: 'center', justifyContent: 'center' },
-  pausedGlyph: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  doneBadge: {
-    width: RING - 6,
-    height: RING - 6,
-    borderRadius: (RING - 6) / 2,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+const s = styles({
+  pausedBox: { center: true },
+  pausedGlyph: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
+  doneBadge: { center: true, w: RING - 6, h: RING - 6, bg: 'accent', radius: (RING - 6) / 2 },
 });

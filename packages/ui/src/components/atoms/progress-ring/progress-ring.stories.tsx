@@ -1,16 +1,29 @@
 import { story } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
 import { ProgressRing } from './progress-ring';
 
 export default story({
   name: 'ProgressRing',
   group: 'State',
-  docs: 'The progress ring, in SVG. It replaces a CSS conic-gradient, which exists neither on Apple TV nor in old television browsers.',
+  docs: 'The progress ring, in SVG. It replaces a CSS conic-gradient, which exists neither on Apple TV nor in old television browsers. The arc eases to each new value rather than jumping to it; `indeterminate` spins a quarter arc for work whose share is unknown.',
   matrix: false,
-  args: { value: 0.62, size: 64, stroke: 6 },
+  args: { value: 0.62, size: 64, stroke: 6, indeterminate: false },
   controls: {
     value: { min: 0, max: 1, step: 0.05 },
     size: { min: 24, max: 160, step: 8 },
     stroke: { min: 2, max: 16, step: 1 },
   },
   render: (props) => <ProgressRing {...props} />,
+  scenes: [
+    {
+      name: 'Determinate and indeterminate',
+      docs: 'The same ring answering a known share, and answering "still working".',
+      render: ({ value, size, stroke }) => (
+        <Box row align="center" gap={32}>
+          <ProgressRing value={value} size={size} stroke={stroke} />
+          <ProgressRing size={size} stroke={stroke} indeterminate />
+        </Box>
+      ),
+    },
+  ],
 });

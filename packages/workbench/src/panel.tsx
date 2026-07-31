@@ -1,11 +1,10 @@
 // The inspector: what a story says about itself, and what you can change. It is a
 // column beside the canvas, or a dock under it that collapses to its tab row.
 
-import { Box, Focusable, Icon, IconButton, type IconName, Txt } from '@kroma/ui/kit';
-import { colors } from '@kroma/ui/tokens';
+import { Box, Focusable, Icon, IconButton, type IconName, styles, sv, Txt } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { ScrollView } from 'react-native';
-import { FOCUS_WASH, RULE, RULE_TOP, TAB, TAB_ACTIVE } from './chrome';
+import { RULE, RULE_TOP, TAB } from './chrome';
 import { CodeBlock, MONO } from './code';
 import { Controls } from './controls';
 import { Guidelines, RichText } from './docs';
@@ -55,15 +54,15 @@ function PropTable({ props }: Readonly<{ props: readonly PropDoc[] }>) {
           style={at === props.length - 1 ? undefined : RULE}
         >
           <Box row align="baseline" gap={8} wrap>
-            <Txt variant="meta" style={PROP_NAME}>
+            <Txt variant="meta" style={s.propName}>
               {prop.name}
             </Txt>
             {prop.optional ? null : (
-              <Txt variant="meta" color="danger" style={PROP_REQUIRED}>
+              <Txt variant="meta" color="danger" style={s.propRequired}>
                 required
               </Txt>
             )}
-            <Txt variant="meta" color="textDim" style={PROP_TYPE} lines={1}>
+            <Txt variant="meta" color="textDim" style={s.propType} lines={1}>
               {prop.type}
             </Txt>
           </Box>
@@ -151,7 +150,7 @@ function Panel({ story, args, onChange, onReset, showControls, layout }: Readonl
       shrink={0}
       w={docked ? undefined : layout.panelWidth}
       h={docked && shown ? layout.panelHeight : undefined}
-      style={docked ? RULE_TOP : SIDE}
+      style={docked ? RULE_TOP : s.side}
     >
       <Box row align="center" style={RULE}>
         {collapsible ? <Handle open={shown} onPress={() => setOpen((prev) => !prev)} /> : null}
@@ -168,7 +167,7 @@ function Panel({ story, args, onChange, onReset, showControls, layout }: Readonl
         ))}
       </Box>
       {shown ? (
-        <ScrollView style={SCROLL} contentContainerStyle={docked ? DOCK_BODY : SIDE_BODY}>
+        <ScrollView style={s.scroll} contentContainerStyle={docked ? s.dockBody : s.sideBody}>
           {active?.id === 'adjust' ? (
             // Rendered here rather than inside `tabsFor`, which would capture the
             // args of whichever render first opened the panel.
@@ -197,23 +196,21 @@ function TabButton({
   onPress,
 }: Readonly<{ tab: Tab; active: boolean; onPress: () => void }>) {
   return (
-    <Focusable
-      label={tab.name}
-      ring={false}
-      onPress={onPress}
-      style={[TAB, TAB_ROW, active && TAB_ACTIVE]}
-      focusedStyle={FOCUS_WASH}
-    >
-      <Icon name={tab.glyph} size={14} color={active ? 'accent' : 'textDim'} />
-      <Txt variant="meta" color={active ? 'text' : 'textDim'} lines={1} style={TAB_INK}>
-        {tab.name}
-      </Txt>
-      {tab.count === undefined ? null : (
-        <Box px={5} shrink={0} radius="pill" bg={active ? 'accentSoft' : 'surface2'}>
-          <Txt variant="meta" color={active ? 'accent' : 'textDim'} style={BADGE}>
-            {tab.count}
+    <Focusable label={tab.name} ring={false} onPress={onPress} sv={tabButton} vars={{ active }}>
+      {({ slots }) => (
+        <>
+          <Icon name={tab.glyph} size={14} color={active ? 'accent' : 'textDim'} />
+          <Txt variant="meta" lines={1} style={slots.label}>
+            {tab.name}
           </Txt>
-        </Box>
+          {tab.count === undefined ? null : (
+            <Box px={5} shrink={0} radius="pill" bg={active ? 'accentSoft' : 'surface2'}>
+              <Txt variant="meta" color={active ? 'accent' : 'textDim'} style={s.badge}>
+                {tab.count}
+              </Txt>
+            </Box>
+          )}
+        </>
       )}
     </Focusable>
   );
@@ -228,8 +225,7 @@ function Handle({ open, onPress }: Readonly<{ open: boolean; onPress: () => void
       label={open ? 'Hide the inspector' : 'Show the inspector'}
       ring={false}
       focusScale={1}
-      focusedStyle={FOCUS_WASH}
-      style={HANDLE}
+      style={s.handle}
       onPress={onPress}
     >
       <Icon name={open ? 'chevron-down' : 'chevron-up'} size={15} color="textMuted" />
@@ -237,27 +233,40 @@ function Handle({ open, onPress }: Readonly<{ open: boolean; onPress: () => void
   );
 }
 
-const SCROLL = { flex: 1 } as const;
-const SIDE = { borderLeftWidth: 1, borderLeftColor: colors.border } as const;
-const SIDE_BODY = { padding: 16, paddingBottom: 56 } as const;
-const DOCK_BODY = { paddingHorizontal: 20, paddingVertical: 18, paddingBottom: 32 } as const;
-// Fills the height of the tab row beside it.
-const HANDLE = { height: 37 } as const;
-// `minWidth: 0` is what lets the label truncate; without it a flex item refuses to
+const s = styles({
+  scroll: { flex: true },
+  side: { borderLeftWidth: 1, borderLeftColor: 'border' },
+  sideBody: { p: 16, pb: 56 },
+  dockBody: { px: 20, py: 18, pb: 32 },
+  // Fills the height of the tab row beside it.
+  handle: { h: 37 },
+  badge: { fontSize: 10.5, fontFamily: MONO, lineHeight: 16 },
+  propName: { fontFamily: MONO, fontSize: 12.5, fontWeight: '700' },
+  propType: { fontFamily: MONO, fontSize: 11.5, shrink: 1 },
+  propRequired: { fontSize: 10, letterSpacing: 0.3, textTransform: 'uppercase' },
+});
+// `minW: 0` is what lets the label truncate; without it a flex item refuses to
 // shrink below its content and the row spills.
-const TAB_ROW = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 7,
-  flexShrink: 1,
-  minWidth: 0,
-} as const;
-const TAB_INK = { fontSize: 12.5, fontWeight: '600', flexShrink: 1 } as const;
-const BADGE = { fontSize: 10.5, fontFamily: MONO, lineHeight: 16 } as const;
+const tabButton = sv({
+  slots: {
+    root: {
+      ...TAB,
+      row: true,
+      align: 'center',
+      gap: 7,
+      shrink: 1,
+      minW: 0,
+      _focus: { bg: 'white/6' },
+    },
+    label: { fontSize: 12.5, fontWeight: '600', shrink: 1, color: 'textDim' },
+  },
+  variants: {
+    active: {
+      true: { root: { borderBottomColor: 'accent' }, label: { color: 'text' } },
+    },
+  },
+  defaults: { active: false },
+});
 
 export type { PanelProps, TabId };
 export { Panel, tabsFor };
-
-const PROP_NAME = { fontFamily: MONO, fontSize: 12.5, fontWeight: '700' } as const;
-const PROP_TYPE = { fontFamily: MONO, fontSize: 11.5, flexShrink: 1 } as const;
-const PROP_REQUIRED = { fontSize: 10, letterSpacing: 0.3, textTransform: 'uppercase' } as const;

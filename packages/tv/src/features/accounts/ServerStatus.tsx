@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, StatusDot, Txt } from '@kroma/ui/kit';
+import { Box, StatusDot, styles, Txt } from '@kroma/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 
 /** The dot plus the round-trip time, rather than a bare "En ligne": on a LAN
@@ -15,11 +15,13 @@ export function ServerStatusPill({ probe }: Readonly<{ probe?: ServerProbe }>) {
   return (
     <Box row align="center" gap={8} shrink={0}>
       <StatusDot online={online} />
-      <Txt style={LABEL} color={online === false ? 'danger' : 'rgba(244, 243, 240, 0.55)'}>
+      <Txt style={s.label} color={online === false ? 'danger' : 'rgba(244, 243, 240, 0.55)'}>
         {label}
       </Txt>
     </Box>
   );
 }
 
-const LABEL = { fontSize: 13, fontWeight: '600' as const, letterSpacing: 0.26 };
+const s = styles({
+  label: { fontSize: 13, fontWeight: '600', letterSpacing: 0.26 },
+});

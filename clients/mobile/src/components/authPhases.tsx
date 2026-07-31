@@ -1,7 +1,7 @@
 // Presentation only; auth calls and phase switching stay in sign-in.
 
-import { Button, Spinner } from '@kroma/ui/kit';
-import { StyleSheet, Text, View } from 'react-native';
+import { Button, Spinner, styles } from '@kroma/ui/kit';
+import { Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { colors, spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
@@ -16,10 +16,10 @@ function IdentityHeader({
   subtitle,
 }: Readonly<{ identity: Identity; subtitle?: string }>) {
   return (
-    <View style={styles.identity}>
+    <View style={s.identity}>
       <Avatar uri={identity.avatarUri} name={identity.name} size={72} />
-      <Text style={styles.name}>{identity.name}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <Text style={s.name}>{identity.name}</Text>
+      {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -118,8 +118,8 @@ export function CredentialsPhase({
   );
 }
 
-const styles = StyleSheet.create({
-  identity: { alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
-  name: { ...type.heading, marginTop: 6 },
-  subtitle: { ...type.caption, textAlign: 'center', marginTop: 4 },
+const s = styles({
+  identity: { align: 'center', gap: spacing.xs, mb: spacing.xs },
+  name: { ...type.heading, mt: 6 },
+  subtitle: { ...type.caption, mt: 4, textAlign: 'center' },
 });

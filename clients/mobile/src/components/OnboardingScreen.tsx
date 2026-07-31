@@ -1,7 +1,7 @@
 // Shared scaffold for the onboarding/login surfaces. The lockup is the one
 // anchor: same size and position on every phase, with content swapping beneath.
 
-import { BackButton } from '@kroma/ui/kit';
+import { BackButton, styles } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import {
@@ -9,7 +9,6 @@ import {
   type KeyboardAvoidingViewProps,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -32,14 +31,14 @@ export function OnboardingScreen({
   const insets = useSafeAreaInsets();
   const wide = useIsWide();
   return (
-    <View style={styles.screen}>
+    <View style={s.screen}>
       <LinearGradient
         colors={[colors.accentSoft, SHADE.transparent]}
-        style={styles.wash}
+        style={s.wash}
         pointerEvents="none"
       />
       {onBack ? (
-        <View style={[styles.back, { top: insets.top + 8 }]}>
+        <View style={[s.back, { top: insets.top + 8 }]}>
           <BackButton
             variant="ghost"
             size={40}
@@ -51,21 +50,21 @@ export function OnboardingScreen({
       ) : null}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : keyboardBehavior}
-        style={styles.body}
+        style={s.body}
       >
         {/* KeyboardAvoidingView owns its own bottom padding, so the safe-area
             spacing lives on an inner view it never touches. */}
         <View
           style={[
-            styles.inner,
-            wide && styles.innerCentered,
+            s.inner,
+            wide && s.innerCentered,
             {
               paddingTop: insets.top + (wide ? 16 : 56),
               paddingBottom: insets.bottom + 16,
             },
           ]}
         >
-          <View style={styles.brand}>
+          <View style={s.brand}>
             <KromaLockup height={36} />
           </View>
           {children}
@@ -80,7 +79,7 @@ export function OnboardingScreen({
  * on every phase either way. */
 export function OnboardingBox({ children }: Readonly<{ children: ReactNode }>) {
   const wide = useIsWide();
-  return <View style={wide ? styles.boxWide : styles.box}>{children}</View>;
+  return <View style={wide ? s.boxWide : s.box}>{children}</View>;
 }
 
 export function OnboardingTitle({
@@ -88,9 +87,9 @@ export function OnboardingTitle({
   subtitle,
 }: Readonly<{ title: string; subtitle?: string | null }>) {
   return (
-    <View style={styles.titleBlock}>
-      <Text style={styles.headline}>{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+    <View style={s.titleBlock}>
+      <Text style={s.headline}>{title}</Text>
+      {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -101,32 +100,28 @@ export function BackLink({ onPress }: Readonly<{ onPress(): void }>) {
     <Pressable
       onPress={onPress}
       hitSlop={8}
-      style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.6 }]}
+      style={({ pressed }) => [s.backLink, pressed && { opacity: 0.6 }]}
     >
-      <Text style={styles.backLinkText}>{t('common.back')}</Text>
+      <Text style={s.backLinkText}>{t('common.back')}</Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  wash: { position: 'absolute', top: 0, left: 0, right: 0, height: '40%' },
+const s = styles({
+  screen: { flex: true, bg: 'bg' },
+  wash: { absolute: true, top: 0, right: 0, left: 0, h: '40%' },
   // Above the wash and outside the keyboard-avoiding column, so it neither
   // tints nor moves when the keyboard does.
-  back: { position: 'absolute', left: spacing.md, zIndex: 2 },
-  body: { flex: 1 },
-  inner: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    ...boxed(contentWidth.form),
-  },
-  innerCentered: { justifyContent: 'center' },
-  brand: { alignItems: 'center', marginBottom: 48 },
-  box: { flex: 1, gap: spacing.md },
-  boxWide: { minHeight: 320, gap: spacing.md },
-  titleBlock: { marginBottom: spacing.sm },
+  back: { absolute: true, left: spacing.md, z: 2 },
+  body: { flex: true },
+  inner: { flex: true, px: spacing.lg, ...boxed(contentWidth.form) },
+  innerCentered: { justify: 'center' },
+  brand: { align: 'center', mb: 48 },
+  box: { flex: true, gap: spacing.md },
+  boxWide: { gap: spacing.md, minH: 320 },
+  titleBlock: { mb: spacing.sm },
   headline: { ...type.display, fontSize: 28, textAlign: 'center' },
-  subtitle: { ...type.caption, textAlign: 'center', marginTop: 6 },
-  backLink: { alignSelf: 'center', padding: spacing.sm, marginTop: 'auto' },
-  backLinkText: { ...type.caption, color: colors.textDim, fontWeight: '600' },
+  subtitle: { ...type.caption, mt: 6, textAlign: 'center' },
+  backLink: { self: 'center', p: spacing.sm, mt: 'auto' },
+  backLinkText: { ...type.caption, color: 'textMuted', fontWeight: '600' },
 });

@@ -1,9 +1,9 @@
 // Account tab: identity, one card of destination rows, sign-out. Everything
 // else lives in dedicated pages.
 
-import { Button, Icon, Txt } from '@kroma/ui/kit';
+import { Button, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '#mobile/components/Avatar';
 import { formatBytes, useDownloads } from '#mobile/lib/downloads';
@@ -24,17 +24,14 @@ function Row({
   onPress(): void;
 }>) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-    >
-      <View style={styles.rowIconLabel}>
-        <View style={styles.rowIconBox}>{icon}</View>
-        <Text style={styles.rowLabel}>{label}</Text>
+    <Pressable onPress={onPress} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
+      <View style={s.rowIconLabel}>
+        <View style={s.rowIconBox}>{icon}</View>
+        <Text style={s.rowLabel}>{label}</Text>
       </View>
-      <View style={styles.rowRight}>
+      <View style={s.rowRight}>
         {value ? (
-          <Text numberOfLines={1} style={styles.rowValue}>
+          <Text numberOfLines={1} style={s.rowValue}>
             {value}
           </Text>
         ) : null}
@@ -57,24 +54,24 @@ export default function Profile() {
     <ScrollView
       // Horizontal insets on the frame keep the centered column clear of the
       // landscape notch; the body's own padding stays the visual gutter.
-      style={[styles.screen, { paddingLeft: insets.left, paddingRight: insets.right }]}
-      contentContainerStyle={[styles.body, { paddingTop: insets.top + spacing.xl }]}
+      style={[s.screen, { paddingLeft: insets.left, paddingRight: insets.right }]}
+      contentContainerStyle={[s.body, { paddingTop: insets.top + spacing.xl }]}
     >
       <Pressable
         onPress={() => router.push('/edit-profile' as never)}
-        style={({ pressed }) => [styles.identity, pressed && { opacity: 0.85 }]}
+        style={({ pressed }) => [s.identity, pressed && { opacity: 0.85 }]}
       >
         <View>
           <Avatar uri={avatar} name={user?.username} size={96} />
-          <View style={styles.editBadge}>
+          <View style={s.editBadge}>
             <Icon name="pencil" size={13} stroke={1.8} color={colors.accentInk} />
           </View>
         </View>
-        <Text style={styles.username}>{user?.username}</Text>
-        {user?.email ? <Text style={styles.email}>{user.email}</Text> : null}
+        <Text style={s.username}>{user?.username}</Text>
+        {user?.email ? <Text style={s.email}>{user.email}</Text> : null}
       </Pressable>
 
-      <View style={styles.card}>
+      <View style={s.card}>
         <Row
           icon={<Icon name="users" size={19} stroke={2} color={colors.accent} />}
           label={t('nav.changeProfile')}
@@ -104,9 +101,9 @@ export default function Profile() {
       </View>
 
       {/* The kit ghost inks text-colored; the danger reading comes via children. */}
-      <Button variant="ghost" style={styles.signOut} onPress={() => void signOut()}>
+      <Button variant="ghost" style={s.signOut} onPress={() => void signOut()}>
         <Icon name="logout" size={18} stroke={1.8} color="danger" />
-        <Txt color="danger" style={styles.signOutText}>
+        <Txt color="danger" style={s.signOutText}>
           {t('auth.logout')}
         </Txt>
       </Button>
@@ -114,59 +111,41 @@ export default function Profile() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  body: {
-    padding: spacing.md,
-    paddingBottom: TAB_BAR_CLEARANCE,
-    gap: spacing.md,
-    ...boxed(contentWidth.reading),
-  },
-  identity: { alignItems: 'center', marginBottom: spacing.md, gap: 3 },
+const s = styles({
+  screen: { flex: true, bg: 'bg' },
+  body: { gap: spacing.md, p: spacing.md, pb: TAB_BAR_CLEARANCE, ...boxed(contentWidth.reading) },
+  identity: { align: 'center', gap: 3, mb: spacing.md },
   editBadge: {
-    position: 'absolute',
+    absolute: true,
     right: -2,
     bottom: -2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+    center: true,
+    w: 28,
+    h: 28,
+    bg: 'accent',
+    radius: 14,
+    border: 'bg',
     borderWidth: 3,
-    borderColor: colors.bg,
   },
-  username: { ...type.heading, marginTop: spacing.sm },
+  username: { ...type.heading, mt: spacing.sm },
   email: { ...type.caption },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
+  card: { px: 6, py: 4, bg: 'surface1', radius: radius.lg },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 54,
-    paddingHorizontal: spacing.sm,
+    row: true,
+    between: true,
+    align: 'center',
     gap: spacing.md,
-    borderRadius: radius.md,
+    minH: 54,
+    px: spacing.sm,
+    radius: radius.md,
   },
-  rowPressed: { backgroundColor: colors.surfaceRaised },
-  rowIconLabel: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 1 },
-  rowIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  rowPressed: { bg: 'surface2' },
+  rowIconLabel: { row: true, align: 'center', shrink: 1, gap: 12 },
+  rowIconBox: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: 10 },
   rowLabel: { ...type.body, fontWeight: '500' },
-  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
-  rowValue: { ...type.caption, flexShrink: 1 },
-  signOut: { marginTop: spacing.sm },
+  rowRight: { row: true, align: 'center', shrink: 1, gap: 8 },
+  rowValue: { ...type.caption, shrink: 1 },
+  signOut: { mt: spacing.sm },
   // No `...type.body` here: the app ramp bakes the default ink, which would
   // sit after Txt's own danger colour and win.
   signOutText: { fontWeight: '700' },

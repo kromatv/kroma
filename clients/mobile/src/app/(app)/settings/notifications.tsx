@@ -10,10 +10,10 @@ import {
   NOTIFICATION_CATEGORY_LABEL,
   PUSH_BLOCKER_LABEL,
 } from '@kroma/core';
-import { Switch } from '@kroma/ui/kit';
+import { Switch, styles } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
@@ -74,50 +74,50 @@ export default function NotificationSettings() {
   return (
     <Screen padded={false}>
       <PageHeader title={t('notifications.settings')} />
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.card}>
-          <View style={styles.pushRow}>
-            <View style={styles.pushText}>
-              <Text style={styles.rowLabel}>{t('push.title')}</Text>
-              <Text style={styles.hint}>{t('push.description')}</Text>
+      <ScrollView contentContainerStyle={s.body}>
+        <View style={s.card}>
+          <View style={s.pushRow}>
+            <View style={s.pushText}>
+              <Text style={s.rowLabel}>{t('push.title')}</Text>
+              <Text style={s.hint}>{t('push.description')}</Text>
             </View>
             {blocker ? null : (
               <Pressable
                 onPress={() => toggle.mutate()}
                 disabled={toggle.isPending}
-                style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+                style={({ pressed }) => [s.action, pressed && s.actionPressed]}
               >
                 {toggle.isPending ? (
                   <ActivityIndicator color={colors.text} size="small" />
                 ) : (
-                  <Text style={styles.actionLabel}>
+                  <Text style={s.actionLabel}>
                     {subscribed ? t('push.disable') : t('push.enable')}
                   </Text>
                 )}
               </Pressable>
             )}
           </View>
-          {blocker ? <Text style={styles.notice}>{t(PUSH_BLOCKER_LABEL[blocker])}</Text> : null}
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {blocker ? <Text style={s.notice}>{t(PUSH_BLOCKER_LABEL[blocker])}</Text> : null}
+          {error ? <Text style={s.error}>{error}</Text> : null}
         </View>
 
-        <Text style={styles.group}>{t('notifications.settings')}</Text>
-        <View style={styles.card}>
-          <View style={styles.headerRow}>
-            <Text style={styles.headerSpacer} />
-            <Text style={styles.headerCell}>{t('notifications.channelInApp')}</Text>
-            <Text style={styles.headerCell}>{t('notifications.channelPush')}</Text>
+        <Text style={s.group}>{t('notifications.settings')}</Text>
+        <View style={s.card}>
+          <View style={s.headerRow}>
+            <Text style={s.headerSpacer} />
+            <Text style={s.headerCell}>{t('notifications.channelInApp')}</Text>
+            <Text style={s.headerCell}>{t('notifications.channelPush')}</Text>
           </View>
           {prefs.data?.categories.map((pref) => (
-            <View key={pref.category} style={styles.row}>
-              <Text style={styles.rowLabel}>{t(NOTIFICATION_CATEGORY_LABEL[pref.category])}</Text>
-              <View style={styles.cell}>
+            <View key={pref.category} style={s.row}>
+              <Text style={s.rowLabel}>{t(NOTIFICATION_CATEGORY_LABEL[pref.category])}</Text>
+              <View style={s.cell}>
                 <Switch
                   checked={pref.inApp}
                   onChange={(inApp) => setPref(pref.category, { inApp })}
                 />
               </View>
-              <View style={styles.cell}>
+              <View style={s.cell}>
                 <Switch checked={pref.push} onChange={(push) => setPref(pref.category, { push })} />
               </View>
             </View>
@@ -128,54 +128,37 @@ export default function NotificationSettings() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: { padding: spacing.md, gap: spacing.sm, ...boxed(contentWidth.reading) },
+const s = styles({
+  body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },
   group: {
     ...type.small,
+    px: 4,
+    mt: spacing.md,
+    mb: 2,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginTop: spacing.md,
-    marginBottom: 2,
-    paddingHorizontal: 4,
   },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  pushRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  pushText: { flex: 1, gap: 2 },
-  hint: { ...type.small, color: colors.textFaint },
-  notice: {
-    ...type.small,
-    color: colors.textFaint,
-    marginTop: spacing.sm,
-    lineHeight: 18,
-  },
-  error: { ...type.small, color: '#ff8080', marginTop: spacing.sm },
-  action: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
-    minWidth: 88,
-    alignItems: 'center',
-  },
+  card: { px: 12, py: 8, bg: 'surface1', radius: radius.lg },
+  pushRow: { row: true, align: 'flex-start', gap: spacing.sm },
+  pushText: { flex: true, gap: 2 },
+  hint: { ...type.small, color: 'textDim' },
+  notice: { ...type.small, mt: spacing.sm, color: 'textDim', lineHeight: 18 },
+  error: { ...type.small, mt: spacing.sm, color: '#ff8080' },
+  action: { align: 'center', minW: 88, px: 14, py: 8, bg: 'accentSoft', radius: radius.md },
   actionPressed: { opacity: 0.7 },
-  actionLabel: { ...type.small, color: colors.accent, fontWeight: '600' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', paddingBottom: 6 },
-  headerSpacer: { flex: 1 },
+  actionLabel: { ...type.small, color: 'accent', fontWeight: '600' },
+  headerRow: { row: true, align: 'center', pb: 6 },
+  headerSpacer: { flex: true },
   headerCell: {
     ...type.small,
-    color: colors.textFaint,
-    width: 64,
+    w: 64,
+    color: 'textDim',
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     fontSize: 10,
   },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  rowLabel: { ...type.body, color: colors.text, flex: 1 },
-  cell: { width: 64, alignItems: 'center' },
+  row: { row: true, align: 'center', py: 10 },
+  rowLabel: { ...type.body, flex: true, color: 'text' },
+  cell: { align: 'center', w: 64 },
 });

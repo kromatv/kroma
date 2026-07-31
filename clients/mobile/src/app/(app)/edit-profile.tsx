@@ -1,16 +1,8 @@
 import { KromaApiError, LANG_OFF, langName } from '@kroma/core';
-import { Button, Icon, type IconName, Spinner } from '@kroma/ui/kit';
+import { Button, Icon, type IconName, Spinner, styles } from '@kroma/ui/kit';
 import * as ImagePicker from 'expo-image-picker';
 import { useRef, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { Avatar } from '#mobile/components/Avatar';
 import { type LangPickerRef, LangPickerSheet } from '#mobile/components/LangPickerSheet';
 import { PageHeader } from '#mobile/components/PageHeader';
@@ -25,8 +17,8 @@ type Note = { text: string; ok: boolean } | null;
 
 function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={s.section}>
+      <Text style={s.sectionTitle}>{title}</Text>
       {children}
     </View>
   );
@@ -35,9 +27,7 @@ function Section({ title, children }: Readonly<{ title: string; children: React.
 function Message({ note }: Readonly<{ note: Note }>) {
   if (!note) return null;
   return (
-    <Text style={[styles.message, { color: note.ok ? colors.accent : colors.danger }]}>
-      {note.text}
-    </Text>
+    <Text style={[s.message, { color: note.ok ? colors.accent : colors.danger }]}>{note.text}</Text>
   );
 }
 
@@ -51,19 +41,19 @@ function PrefRow({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      style={({ pressed }) => [s.row, pressed && s.rowPressed]}
     >
-      <View style={styles.rowIconLabel}>
-        <View style={styles.rowIconBox}>
+      <View style={s.rowIconLabel}>
+        <View style={s.rowIconBox}>
           <Icon name={icon} size={19} stroke={1.8} color={colors.accent} />
         </View>
         {/* The label yields to an ellipsis, the value never does. */}
-        <Text numberOfLines={1} style={styles.rowLabel}>
+        <Text numberOfLines={1} style={s.rowLabel}>
           {label}
         </Text>
       </View>
-      <View style={styles.rowRight}>
-        <Text numberOfLines={1} style={styles.rowValue}>
+      <View style={s.rowRight}>
+        <Text numberOfLines={1} style={s.rowValue}>
           {value}
         </Text>
         <Icon name="selector" size={16} stroke={2} color={colors.textFaint} />
@@ -185,8 +175,8 @@ export default function EditProfile() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <View style={styles.identity}>
+        <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
+          <View style={s.identity}>
             <Pressable
               onPress={() => void pickPhoto()}
               disabled={avatarBusy}
@@ -195,7 +185,7 @@ export default function EditProfile() {
               style={({ pressed }) => [pressed && { opacity: 0.85 }]}
             >
               <Avatar uri={avatar} name={user?.username} size={104} />
-              <View style={styles.editBadge}>
+              <View style={s.editBadge}>
                 {avatarBusy ? (
                   <Spinner size={14} thickness={2} color={colors.accentInk} />
                 ) : (
@@ -203,15 +193,15 @@ export default function EditProfile() {
                 )}
               </View>
             </Pressable>
-            <Text style={styles.photoHint}>{t('account.photoHint')}</Text>
+            <Text style={s.photoHint}>{t('account.photoHint')}</Text>
             <Message note={avatarNote} />
           </View>
 
           <Section title={t('account.sectionInfo')}>
-            <View style={styles.card}>
-              <Text style={styles.fieldLabel}>{t('auth.username')}</Text>
+            <View style={s.card}>
+              <Text style={s.fieldLabel}>{t('auth.username')}</Text>
               <TextField icon="user" value={username} onChangeText={setUsername} />
-              <Text style={styles.fieldLabel}>{t('auth.email')}</Text>
+              <Text style={s.fieldLabel}>{t('auth.email')}</Text>
               <TextField
                 icon="mail"
                 value={email}
@@ -223,14 +213,14 @@ export default function EditProfile() {
                 onPress={() => void saveInfo()}
                 loading={savingInfo}
                 disabled={!username.trim() || !email.trim()}
-                style={styles.submit}
+                style={s.submit}
               />
               <Message note={infoNote} />
             </View>
           </Section>
 
           <Section title={t('account.sectionPrefs')}>
-            <View style={styles.rowCard}>
+            <View style={s.rowCard}>
               <PrefRow
                 icon="volume"
                 label={t('account.audioLanguage')}
@@ -247,12 +237,12 @@ export default function EditProfile() {
           </Section>
 
           <Section title={t('account.sectionSecurity')}>
-            <View style={styles.card}>
-              <Text style={styles.fieldLabel}>{t('account.currentPassword')}</Text>
+            <View style={s.card}>
+              <Text style={s.fieldLabel}>{t('account.currentPassword')}</Text>
               <TextField icon="lock" value={current} onChangeText={setCurrent} secureTextEntry />
-              <Text style={styles.fieldLabel}>{t('account.newPassword')}</Text>
+              <Text style={s.fieldLabel}>{t('account.newPassword')}</Text>
               <TextField icon="lock" value={next} onChangeText={setNext} secureTextEntry />
-              <Text style={styles.fieldLabel}>{t('account.confirmPassword')}</Text>
+              <Text style={s.fieldLabel}>{t('account.confirmPassword')}</Text>
               <TextField icon="lock" value={confirm} onChangeText={setConfirm} secureTextEntry />
               <Button
                 variant="glass"
@@ -260,7 +250,7 @@ export default function EditProfile() {
                 onPress={() => void savePassword()}
                 loading={savingPassword}
                 disabled={!current || next.length < 4}
-                style={styles.submit}
+                style={s.submit}
               />
               <Message note={passwordNote} />
             </View>
@@ -279,75 +269,42 @@ export default function EditProfile() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl * 2,
-    gap: spacing.lg,
-    ...boxed(contentWidth.form),
-  },
-  identity: { alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+const s = styles({
+  body: { gap: spacing.lg, p: spacing.md, pb: spacing.xl * 2, ...boxed(contentWidth.form) },
+  identity: { align: 'center', gap: spacing.xs, mt: spacing.xs },
   editBadge: {
-    position: 'absolute',
+    absolute: true,
     right: -2,
     bottom: -2,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+    center: true,
+    w: 30,
+    h: 30,
+    bg: 'accent',
+    radius: 15,
+    border: 'bg',
     borderWidth: 3,
-    borderColor: colors.bg,
   },
-  photoHint: { ...type.small, textAlign: 'center', marginTop: 2 },
+  photoHint: { ...type.small, mt: 2, textAlign: 'center' },
   section: { gap: spacing.xs },
-  sectionTitle: {
-    ...type.small,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 2,
-    paddingLeft: 2,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: 10,
-  },
-  rowCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
+  sectionTitle: { ...type.small, pl: 2, mb: 2, textTransform: 'uppercase', letterSpacing: 1 },
+  card: { gap: 10, p: spacing.md, bg: 'surface1', radius: radius.lg, border: 'border' },
+  rowCard: { px: 6, py: 4, bg: 'surface1', radius: radius.lg, border: 'border' },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 54,
-    paddingHorizontal: spacing.sm,
+    row: true,
+    between: true,
+    align: 'center',
     gap: spacing.md,
-    borderRadius: radius.md,
+    minH: 54,
+    px: spacing.sm,
+    radius: radius.md,
   },
-  rowPressed: { backgroundColor: colors.surfaceRaised },
-  rowIconLabel: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  rowIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowLabel: { ...type.body, fontWeight: '500', flexShrink: 1 },
-  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  rowPressed: { bg: 'surface2' },
+  rowIconLabel: { flex: true, row: true, align: 'center', gap: 12 },
+  rowIconBox: { center: true, w: 34, h: 34, bg: 'accentSoft', radius: 10 },
+  rowLabel: { ...type.body, shrink: 1, fontWeight: '500' },
+  rowRight: { row: true, align: 'center', shrink: 0, gap: 8 },
   rowValue: { ...type.caption },
-  fieldLabel: { ...type.caption, marginTop: 2 },
-  submit: { marginTop: 4 },
+  fieldLabel: { ...type.caption, mt: 2 },
+  submit: { mt: 4 },
   message: { ...type.caption, textAlign: 'center' },
 });

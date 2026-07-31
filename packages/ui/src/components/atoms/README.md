@@ -9,7 +9,7 @@ nothing usable.
 - It owns ONE visual idea.
 - It composes nothing but React Native hosts (`View`, `Text`, `Image`) and other
   atoms.
-- It knows about [tokens](../../lib/tokens) and about focus. It knows nothing
+- It knows about [tokens](../../core/tokens) and about focus. It knows nothing
   about the app: no server, no router, no feature names, no copy.
 
 **What does not**

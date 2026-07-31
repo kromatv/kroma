@@ -7,12 +7,12 @@ import { Modal, Platform, Pressable, StyleSheet, type View } from 'react-native'
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Txt } from '#ui/components/atoms/text';
+import { styles } from '#ui/core';
 import { useFocusNav } from '#ui/lib/focus-nav';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
-import { colors } from '#ui/lib/tokens';
 
 interface DialogProps {
   open: boolean;
@@ -82,7 +82,7 @@ function DialogSurface({
   useFocusNav({ onBack: onClose });
   const backdrop = useRef<View>(null);
   const panel = (
-    <Box flex center bg={colors.overlay} p={64}>
+    <Box flex center bg="overlay" p={64}>
       {/* Web only: on a TV, Back/Menu is the platform's way out and an extra
           Pressable is one more thing for the D-pad to land on. */}
       {onClose && Platform.OS === 'web' ? (
@@ -122,7 +122,7 @@ function DialogSurface({
     </Box>
   );
   return trapped ? (
-    <FocusScope style={FILL} bridge={bridge}>
+    <FocusScope style={s.fill} bridge={bridge}>
       {panel}
     </FocusScope>
   ) : (
@@ -130,19 +130,15 @@ function DialogSurface({
   );
 }
 
-const FILL = { flex: 1 } as const;
-
 const FOCUS_SCOPE = { focusScope: '' } as const;
 
-const FOOTER_ROW = {
-  flexDirection: 'row' as const,
-  justifyContent: 'flex-end' as const,
-  gap: 12,
-  marginTop: 8,
-};
+const s = styles({
+  fill: { flex: true },
+  footerRow: { row: true, justify: 'flex-end', gap: 12, mt: 8 },
+});
 
 function DialogFooter({ children }: Readonly<{ children: ReactNode }>) {
-  return <FocusRegion style={FOOTER_ROW}>{children}</FocusRegion>;
+  return <FocusRegion style={s.footerRow}>{children}</FocusRegion>;
 }
 
 interface ConfirmDialogProps extends Omit<DialogProps, 'footer' | 'children'> {

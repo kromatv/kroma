@@ -16,6 +16,7 @@
 
 import type { ComponentType } from 'react';
 import { Platform, type StyleProp, View, type ViewStyle } from 'react-native';
+import { styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
 
 const WEB = Platform.OS === 'web';
@@ -54,7 +55,7 @@ function Frost({ amount = 12, radius = 0, tint = 'dark' }: Readonly<FrostProps>)
   if (WEB) {
     // backdrop-filter clips to its own element's rounded border box, so the
     // radius alone bounds the frost; `overflow` stays untouched.
-    return <View style={[FILL, shape, backdropBlur(amount)]} />;
+    return <View style={[s.fill, shape, backdropBlur(amount)]} />;
   }
   if (!PlatformFrost) return null;
   return (
@@ -62,24 +63,22 @@ function Frost({ amount = 12, radius = 0, tint = 'dark' }: Readonly<FrostProps>)
       // expo-blur's 0-100 scale: about four steps to the CSS pixel.
       intensity={Math.min(100, amount * 4)}
       tint={tint}
-      style={[FILL, CLIP, shape]}
+      style={[s.fill, s.clip, shape]}
     />
   );
 }
 
-const FILL = {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  // Never a touch target: the surface underneath owns the press.
-  pointerEvents: 'none',
-  // Below the surface's content: a positioned element on the web paints over
-  // its static siblings regardless of document order.
-  zIndex: -1,
-} as const;
-const CLIP = { overflow: 'hidden' } as const;
+const s = styles({
+  fill: {
+    fill: true,
+    // Never a touch target: the surface underneath owns the press.
+    pointerEvents: 'none',
+    // Below the surface's content: a positioned element on the web paints over
+    // its static siblings regardless of document order.
+    z: -1,
+  },
+  clip: { overflow: 'hidden' },
+});
 
 export type { FrostBackdropProps, FrostProps };
 export { Frost, registerFrost };

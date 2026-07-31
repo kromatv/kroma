@@ -3,7 +3,7 @@
 // arrive — is a backend the shell registers; see `#tv/app/voiceSearch`.
 
 import { useLocale, useT } from '@kroma/ui';
-import { Box, Button, colors, Dialog, DialogFooter, Icon, Txt } from '@kroma/ui/kit';
+import { Box, Button, colors, Dialog, DialogFooter, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing } from 'react-native';
 import type { VoiceSearchBackend } from '#tv/app/voiceSearch';
@@ -85,7 +85,7 @@ function Pulse({ children }: Readonly<{ children: React.ReactNode }>) {
     <Box style={{ width: CIRCLE, height: CIRCLE, alignItems: 'center', justifyContent: 'center' }}>
       <Animated.View
         style={[
-          HALO,
+          s.halo,
           {
             opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
             transform: [
@@ -110,10 +110,6 @@ function Pulse({ children }: Readonly<{ children: React.ReactNode }>) {
   );
 }
 
-const HALO = {
-  position: 'absolute' as const,
-  width: CIRCLE,
-  height: CIRCLE,
-  borderRadius: CIRCLE / 2,
-  backgroundColor: '#F2B442',
-};
+const s = styles({
+  halo: { absolute: true, w: CIRCLE, h: CIRCLE, radius: CIRCLE / 2, bg: 'accentWash' },
+});

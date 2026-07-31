@@ -24,6 +24,7 @@ import {
   MediaCard,
   qualityTone,
   Rail,
+  styles,
   Txt,
   tintGradient,
   useFocusNav,
@@ -47,36 +48,24 @@ const ROW_CHUNK = 3;
 const HERO_VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 5%, transparent 60%)`;
 const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 48%)`;
 
-// The design sizes the hero with viewport units and clamps; on the fixed
-// 1920x1080 stage those resolve to the constants below.
-const PAGE_SCROLL = { flex: 1, minHeight: 0 } as const;
-
-// Padding belongs on the content, not the scroller box.
-const PAGE_CONTENT = { paddingBottom: 40 } as const;
-
-const HERO_ACTIONS = { flexDirection: 'row' as const, gap: 18 };
-
 const HERO_HEIGHT = 691;
 const HERO_EMPTY_HEIGHT = 432;
-const HERO_TITLE = {
-  fontSize: 82,
-  lineHeight: 79,
-  fontWeight: '700' as const,
-  letterSpacing: -1.64,
-};
-
-const FEATURED_LABEL = { fontSize: 14 };
 
 // What one home tile occupies, so the row can be virtualised: a <MediaCard>
 // at its default 328 width, 16:9, plus the 24px gap after it.
 const ROW_TILE = { width: 328 + 24, height: Math.round((328 * 9) / 16) };
 
-const ROW_TITLE = {
-  fontSize: 28,
-  lineHeight: 30,
-  fontWeight: '700' as const,
-  letterSpacing: -0.56,
-};
+// The design sizes the hero with viewport units and clamps; on the fixed
+// 1920x1080 stage those resolve to the values below.
+const s = styles({
+  pageScroll: { flex: true, minH: 0 },
+  // Padding belongs on the content, not the scroller box.
+  pageContent: { pb: 40 },
+  heroActions: { row: true, gap: 18 },
+  heroTitle: { fontSize: 82, lineHeight: 79, fontWeight: '700', letterSpacing: -1.64 },
+  featuredLabel: { fontSize: 14 },
+  rowTitle: { fontSize: 28, lineHeight: 30, fontWeight: '700', letterSpacing: -0.56 },
+});
 
 interface Row {
   key: string;
@@ -156,18 +145,18 @@ export function TvHome() {
   const entryCard = useCallback(
     (key: string, e: SectionItem): React.ReactNode => {
       if (e.type === 'show') {
-        const s = e.show;
+        const show = e.show;
         return (
           <MediaCard
-            key={`${key}-${s.id}`}
-            title={s.title}
-            overline={s.metadata?.genres?.[0] ?? t('content.series')}
-            art={client.backdropFor(s, TILE_W) ?? client.showPosterFor(s, TILE_W)}
-            tint={posterColors(s.id)}
-            watched={isWatched(s.id)}
-            progress={s.progress == null ? null : s.progress / 100}
+            key={`${key}-${show.id}`}
+            title={show.title}
+            overline={show.metadata?.genres?.[0] ?? t('content.series')}
+            art={client.backdropFor(show, TILE_W) ?? client.showPosterFor(show, TILE_W)}
+            tint={posterColors(show.id)}
+            watched={isWatched(show.id)}
+            progress={show.progress == null ? null : show.progress / 100}
             width={330}
-            onPress={() => onSelectShow(s)}
+            onPress={() => onSelectShow(show)}
           />
         );
       }
@@ -249,19 +238,20 @@ export function TvHome() {
           title: t('nav.series'),
           cards: shows
             .slice(0, RAIL_LIMIT)
-            .map((s) => (
+            .map((show) => (
               <MediaCard
-                key={s.id}
-                title={s.title}
+                key={show.id}
+                title={show.title}
                 overline={
-                  s.metadata?.genres?.[0] ?? t('content.seasonCount', { count: s.seasonCount })
+                  show.metadata?.genres?.[0] ??
+                  t('content.seasonCount', { count: show.seasonCount })
                 }
-                art={client.backdropFor(s, TILE_W) ?? client.showPosterFor(s, TILE_W)}
-                tint={posterColors(s.id)}
-                watched={isWatched(s.id)}
-                progress={s.progress == null ? null : s.progress / 100}
+                art={client.backdropFor(show, TILE_W) ?? client.showPosterFor(show, TILE_W)}
+                tint={posterColors(show.id)}
+                watched={isWatched(show.id)}
+                progress={show.progress == null ? null : show.progress / 100}
                 width={330}
-                onPress={() => onSelectShow(s)}
+                onPress={() => onSelectShow(show)}
               />
             )),
         }
@@ -290,7 +280,7 @@ export function TvHome() {
 
   return (
     <Box fill bg="bg" overflow="hidden">
-      <FocusScroll style={PAGE_SCROLL} contentStyle={PAGE_CONTENT} offsetFromStart={120}>
+      <FocusScroll style={s.pageScroll} contentStyle={s.pageContent} offsetFromStart={120}>
         {/* A permanent slot for the hero row: it arrives from the server after
             the first rails have already mounted, and the navigator orders rows
             by the order they mount. */}
@@ -307,10 +297,10 @@ export function TvHome() {
               <Box fill pointerEvents="none" style={gradient(HERO_VEIL_HORIZONTAL)} />
               <Box fill pointerEvents="none" style={gradient(HERO_VEIL_VERTICAL)} />
               <Box absolute left={64} bottom={36} z={2} maxW={820}>
-                <Txt variant="overlineTv" style={FEATURED_LABEL} color="accent">
+                <Txt variant="overlineTv" style={s.featuredLabel} color="accent">
                   {t('content.featured')}
                 </Txt>
-                <Txt variant="hero" style={[HERO_TITLE, { marginTop: 16, marginBottom: 14 }]}>
+                <Txt variant="hero" style={[s.heroTitle, { marginTop: 16, marginBottom: 14 }]}>
                   {hero.type === 'show' ? hero.show.title : hero.item.title}
                 </Txt>
                 <Box row wrap align="center" gap={12} mb={14}>
@@ -340,7 +330,7 @@ export function TvHome() {
                 ) : null}
                 {/* The hero's two actions are one row: Left and Right move
                   between them, Up and Down leave for the bar or the rails. */}
-                <FocusRegion style={HERO_ACTIONS}>
+                <FocusRegion style={s.heroActions}>
                   <Button
                     size="tv"
                     // Home's entry point: the hero's own action, which is what the
@@ -374,7 +364,7 @@ export function TvHome() {
           // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the slot - see <FocusSlot>.
           <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
             <Box mb={8} mt={18}>
-              <Rail title={row.title} titleStyle={ROW_TITLE} gap={24} item={ROW_TILE}>
+              <Rail title={row.title} titleStyle={s.rowTitle} gap={24} item={ROW_TILE}>
                 {row.cards}
               </Rail>
             </Box>

@@ -2,12 +2,12 @@
 // ones are swipe-to-delete rows.
 
 import { episodeTag, formatRuntime, type MediaItem } from '@kroma/core';
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -24,9 +24,9 @@ import { colors, radius, spacing, type } from '#mobile/lib/theme';
 function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
   return (
     <View>
-      <FadeImage uri={uri} seed={seed} radius={radius.sm} style={styles.thumb} />
-      <View style={styles.playBadge}>
-        <View style={styles.playCircle}>
+      <FadeImage uri={uri} seed={seed} radius={radius.sm} style={s.thumb} />
+      <View style={s.playBadge}>
+        <View style={s.playCircle}>
           <Icon name="player-play-filled" size={15} />
         </View>
       </View>
@@ -56,23 +56,23 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
             swipeRef.current?.close();
             void downloads.remove(item.id);
           }}
-          style={styles.deleteAction}
+          style={s.deleteAction}
         >
           <Icon name="trash" size={22} stroke={2} />
-          <Text style={styles.deleteLabel}>{t('common.delete')}</Text>
+          <Text style={s.deleteLabel}>{t('common.delete')}</Text>
         </Pressable>
       )}
     >
       <Pressable
         onPress={() => router.push(`/player/${item.id}` as never)}
-        style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surface }]}
+        style={({ pressed }) => [s.row, pressed && { backgroundColor: colors.surface }]}
       >
         <RowArt uri={entry.backdropUrl ?? entry.posterUrl} seed={item.id} />
-        <View style={styles.text}>
-          <Text numberOfLines={2} style={styles.rowTitle}>
+        <View style={s.text}>
+          <Text numberOfLines={2} style={s.rowTitle}>
             {item.showTitle ?? item.metadata?.title ?? item.title}
           </Text>
-          <Text numberOfLines={1} style={styles.rowSub}>
+          <Text numberOfLines={1} style={s.rowSub}>
             {sub}
           </Text>
         </View>
@@ -135,21 +135,21 @@ function ActiveRow({
     ]);
   };
   return (
-    <Pressable onPress={showOptions} style={styles.row}>
+    <Pressable onPress={showOptions} style={s.row}>
       <RowArt uri={client.backdropFor(item) ?? client.posterFor(item)} seed={item.id} />
-      <View style={styles.text}>
-        <Text numberOfLines={2} style={styles.rowTitle}>
+      <View style={s.text}>
+        <Text numberOfLines={2} style={s.rowTitle}>
           {item.showTitle ?? item.metadata?.title ?? item.title}
         </Text>
-        <Text numberOfLines={1} style={styles.rowSub}>
+        <Text numberOfLines={1} style={s.rowSub}>
           {activeLabel(t, progress, mode)}
         </Text>
       </View>
-      <View style={styles.ringBox}>
+      <View style={s.ringBox}>
         {mode === 'paused' ? (
-          <View style={styles.pausedRing}>
+          <View style={s.pausedRing}>
             <ProgressRing progress={Math.max(0.02, progress)} size={36} />
-            <View pointerEvents="none" style={styles.pausedRingGlyph}>
+            <View pointerEvents="none" style={s.pausedRingGlyph}>
               <Icon name="player-pause-filled" size={12} color={colors.textDim} />
             </View>
           </View>
@@ -167,16 +167,16 @@ function LegendItem({
   label,
 }: Readonly<{ color?: string; outlined?: boolean; label: string }>) {
   return (
-    <View style={styles.legendItem}>
+    <View style={s.legendItem}>
       <View
         style={[
-          styles.legendDot,
+          s.legendDot,
           outlined
             ? { borderWidth: 1.5, borderColor: colors.borderStrong }
             : { backgroundColor: color },
         ]}
       />
-      <Text style={styles.legendText}>{label}</Text>
+      <Text style={s.legendText}>{label}</Text>
     </View>
   );
 }
@@ -197,13 +197,13 @@ function StorageMeter() {
   const app = downloads.totalBytes;
   const other = Math.max(0, total - free - app);
   return (
-    <View style={styles.meter}>
-      <View style={styles.meterTrack}>
-        <View style={[styles.meterFill, { flex: other / total }]} />
+    <View style={s.meter}>
+      <View style={s.meterTrack}>
+        <View style={[s.meterFill, { flex: other / total }]} />
         {app > 0 ? (
           <View
             style={[
-              styles.meterFill,
+              s.meterFill,
               // A film on a terabyte of flash is a fraction of a pixel; a
               // download that exists must stay visible.
               { flex: app / total, minWidth: 6, backgroundColor: colors.accent },
@@ -212,7 +212,7 @@ function StorageMeter() {
         ) : null}
         <View style={{ flex: free / total }} />
       </View>
-      <View style={styles.meterLegend}>
+      <View style={s.meterLegend}>
         {app > 0 ? (
           <LegendItem color={colors.accent} label={`KROMA · ${formatBytes(app)}`} />
         ) : null}
@@ -243,12 +243,12 @@ export default function Downloads() {
           data={downloads.entries}
           keyExtractor={(e) => e.itemId}
           renderItem={({ item }) => <DownloadRow entry={item} />}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={s.list}
           ListHeaderComponent={
             downloads.downloading.length > 0 ||
             downloads.paused.length > 0 ||
             downloads.queuedItems.length > 0 ? (
-              <View style={styles.activeBlock}>
+              <View style={s.activeBlock}>
                 {downloads.downloading.map(({ item, progress }) => (
                   <ActiveRow key={item.id} item={item} progress={progress} mode="downloading" />
                 ))}
@@ -274,82 +274,26 @@ export default function Downloads() {
   );
 }
 
-const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
-    gap: 4,
-    ...boxed(contentWidth.reading),
-  },
-  activeBlock: { gap: 4, marginBottom: spacing.sm },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 8,
-    borderRadius: radius.md,
-    backgroundColor: colors.bg,
-  },
-  thumb: { width: 130, height: 73 },
-  playBadge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(10, 10, 12, 0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: { flex: 1, gap: 3 },
+const s = styles({
+  list: { gap: 4, px: spacing.md, pb: spacing.xl, ...boxed(contentWidth.reading) },
+  activeBlock: { gap: 4, mb: spacing.sm },
+  row: { row: true, align: 'center', gap: 12, p: 8, bg: 'bg', radius: radius.md },
+  thumb: { w: 130, h: 73 },
+  playBadge: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
+  playCircle: { center: true, w: 32, h: 32, bg: 'bg/55', radius: 16 },
+  text: { flex: true, gap: 3 },
   rowTitle: { ...type.body, fontWeight: '600' },
   rowSub: { ...type.small },
-  ringBox: { paddingRight: 4 },
-  pausedRing: { alignItems: 'center', justifyContent: 'center' },
-  pausedRingGlyph: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteAction: {
-    width: 92,
-    marginLeft: 8,
-    borderRadius: radius.md,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  deleteLabel: { ...type.small, color: colors.text, fontWeight: '700' },
-  meter: { marginTop: spacing.lg, paddingHorizontal: 8, gap: 10 },
-  meterTrack: {
-    flexDirection: 'row',
-    height: 8,
-    borderRadius: 999,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceRaised,
-    gap: 2,
-  },
-  meterFill: { borderRadius: 999, backgroundColor: colors.borderStrong },
-  meterLegend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    columnGap: spacing.md,
-    rowGap: 6,
-  },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { ...type.small, color: colors.textDim },
+  ringBox: { pr: 4 },
+  pausedRing: { center: true },
+  pausedRingGlyph: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
+  deleteAction: { center: true, gap: 4, w: 92, ml: 8, bg: 'danger', radius: radius.md },
+  deleteLabel: { ...type.small, color: 'text', fontWeight: '700' },
+  meter: { gap: 10, px: 8, mt: spacing.lg },
+  meterTrack: { row: true, gap: 2, h: 8, bg: 'surface2', radius: 999, overflow: 'hidden' },
+  meterFill: { bg: 'borderStrong', radius: 999 },
+  meterLegend: { row: true, wrap: true, justify: 'center', columnGap: spacing.md, rowGap: 6 },
+  legendItem: { row: true, align: 'center', gap: 6 },
+  legendDot: { w: 8, h: 8, radius: 4 },
+  legendText: { ...type.small, color: 'textMuted' },
 });

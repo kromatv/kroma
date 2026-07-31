@@ -21,13 +21,13 @@
 import { act, renderHook } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { motion } from '#ui/core/tokens';
 import { ease } from './ease';
 import { useFocusScale, usePressScale } from './focus-transition';
 import {
   useFocusScale as useFocusScaleWeb,
   usePressScale as usePressScaleWeb,
 } from './focus-transition.web';
-import { motion } from './tokens';
 
 afterEach(() => {
   vi.restoreAllMocks();

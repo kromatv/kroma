@@ -16,8 +16,8 @@ import { SpatialNavigationNode } from 'react-tv-space-navigation';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Txt } from '#ui/components/atoms/text';
+import { type StyleDecl, styles, svFor } from '#ui/core';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
-import { colors, radius } from '#ui/lib/tokens';
 
 const ROWS = [
   ['1', '2', '3'],
@@ -28,6 +28,32 @@ const ROWS = [
 // A keyboard glyph rather than an icon: unlike the arrows, it has no emoji
 // presentation to fall into on tvOS.
 const DELETE = '⌫';
+
+type KeyKind = 'digit' | 'delete';
+
+const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
+  slots: {
+    root: {
+      w: 88,
+      h: 72,
+      center: true,
+      radius: '2xl',
+      bg: 'white/6',
+      // A key under the cursor lifts its own wash rather than borrowing the
+      // amber: on a PIN pad, amber says "this is where Enter goes".
+      _hover: { bg: 'white/12' },
+      _focus: { bg: 'accentSoft' },
+    },
+    label: { fontWeight: '700', color: 'text', _focus: { color: 'accent' } },
+  },
+  variants: {
+    kind: {
+      digit: { label: { fontSize: 28 } },
+      delete: { label: { fontSize: 22 } },
+    },
+  },
+  defaults: { kind: 'digit' },
+});
 
 interface KeypadProps {
   onDigit: (digit: string) => void;
@@ -40,7 +66,7 @@ interface KeypadProps {
 }
 
 function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<KeypadProps>) {
-  const key = (label: string, onPress: () => void, fontSize = 28) => (
+  const key = (label: string, onPress: () => void, kind: KeyKind = 'digit') => (
     <Focusable
       key={label}
       onPress={onPress}
@@ -49,25 +75,20 @@ function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<Keyp
       autoFocus={autoFocus && label === '1'}
       focusScale={1.08}
       ring={false}
-      style={KEY}
-      focusedStyle={FOCUSED}
-      hoveredStyle={HOVERED}
+      sv={keypadVariants}
+      vars={{ kind }}
     >
-      {({ focused }) => (
-        <Txt style={{ fontSize, fontWeight: '700' }} color={focused ? 'accent' : 'text'}>
-          {label}
-        </Txt>
-      )}
+      {(state) => <Txt style={state.slots.label}>{label}</Txt>}
     </Focusable>
   );
   return (
-    <FocusColumn grid style={PAD}>
+    <FocusColumn grid style={s.pad}>
       {ROWS.map((row) => (
-        <FocusRegion key={row.join('')} style={PAD_ROW}>
+        <FocusRegion key={row.join('')} style={s.padRow}>
           {row.map((d) => key(d, () => onDigit(d)))}
         </FocusRegion>
       ))}
-      <FocusRegion style={PAD_ROW}>
+      <FocusRegion style={s.padRow}>
         {/* The spacer keeps 0 under the centre column with no OK key - in the
             LAYOUT through the box, and in the NAVIGATOR through the node, which
             occupies the row's first index without ever taking focus. */}
@@ -75,29 +96,16 @@ function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<Keyp
           <Box w={88} h={72} />
         </SpatialNavigationNode>
         {key('0', () => onDigit('0'))}
-        {key(DELETE, onDelete, 22)}
+        {key(DELETE, onDelete, 'delete')}
       </FocusRegion>
     </FocusColumn>
   );
 }
 
-const PAD = { gap: 13 };
-const PAD_ROW = { flexDirection: 'row' as const, gap: 13 };
-
-const KEY = {
-  height: 72,
-  width: 88,
-  alignItems: 'center' as const,
-  justifyContent: 'center' as const,
-  borderRadius: radius['2xl'],
-  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-};
-
-const FOCUSED = { backgroundColor: colors.accentSoft };
-
-// A key under the cursor lifts its own wash rather than borrowing the amber:
-// on a PIN pad, amber says "this is where Enter goes".
-const HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.12)' };
+const s = styles({
+  pad: { gap: 13 },
+  padRow: { row: true, gap: 13 },
+});
 
 export type { KeypadProps };
 export { Keypad };

@@ -2,10 +2,10 @@
 // The surrounding <Screen> already pads the top safe area (Dynamic Island /
 // status bar), so the header adds only its own breathing room.
 
-import { BackButton } from '@kroma/ui/kit';
+import { BackButton, styles } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
 import { spacing, type } from '#mobile/lib/theme';
@@ -14,7 +14,7 @@ export function PageHeader({ title, right }: Readonly<{ title: string; right?: R
   const t = useT();
   const router = useRouter();
   return (
-    <View style={[styles.header, { paddingTop: 6 }]}>
+    <View style={[s.header, { paddingTop: 6 }]}>
       <BackButton
         variant="ghost"
         size={40}
@@ -22,23 +22,23 @@ export function PageHeader({ title, right }: Readonly<{ title: string; right?: R
         label={t('common.back')}
         onPress={() => goBack(router)}
       />
-      <Text numberOfLines={1} style={styles.title}>
+      <Text numberOfLines={1} style={s.title}>
         {title}
       </Text>
-      <View style={styles.side}>{right}</View>
+      <View style={s.side}>{right}</View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
+    row: true,
+    between: true,
+    align: 'center',
     gap: spacing.sm,
+    px: spacing.md,
+    pb: spacing.sm,
   },
-  side: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { ...type.heading, flex: 1, textAlign: 'center' },
+  side: { center: true, w: 40, h: 40 },
+  title: { ...type.heading, flex: true, textAlign: 'center' },
 });

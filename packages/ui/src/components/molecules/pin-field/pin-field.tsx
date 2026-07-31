@@ -9,8 +9,8 @@
 
 import { useEffect, useRef } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
+import type { ColorValue } from '#ui/core';
 import { webWindow } from '#ui/lib/dom';
-import { colors } from '#ui/lib/tokens';
 import { useCompleteOnce } from '#ui/lib/use-complete-once';
 import { useControllable } from '#ui/lib/use-controllable';
 
@@ -87,7 +87,7 @@ function PinField({
             h={dot}
             radius="pill"
             borderWidth={2}
-            bg={filled ? colors.accent : 'transparent'}
+            bg={filled ? 'accent' : 'transparent'}
             border={dotEdge(filled, error)}
           />
         );
@@ -96,9 +96,9 @@ function PinField({
   );
 }
 
-function dotEdge(filled: boolean, error: boolean): string {
-  if (filled) return colors.accent;
-  return error ? colors.danger : 'rgba(255, 255, 255, 0.25)';
+function dotEdge(filled: boolean, error: boolean): ColorValue {
+  if (filled) return 'accent';
+  return error ? 'danger' : 'white/25';
 }
 
 export type { PinFieldProps };

@@ -8,9 +8,15 @@ import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
+import { styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
-import { CONTENT_LINE as CONTENT, edgeColor, NO_OUTLINE, PLACEHOLDER } from '#ui/lib/field-shell';
-import { colors, radius as radii } from '#ui/lib/tokens';
+import {
+  CONTENT_LINE as CONTENT,
+  edgeColor,
+  fieldRing,
+  NO_OUTLINE,
+  PLACEHOLDER,
+} from '#ui/lib/field-shell';
 import { useControllable } from '#ui/lib/use-controllable';
 
 type TextFieldType = 'text' | 'email' | 'password' | 'url' | 'search' | 'number';
@@ -24,7 +30,7 @@ const TYPE_PROPS: Record<TextFieldType, Partial<TextInputProps>> = {
   number: { keyboardType: 'numeric', inputMode: 'numeric' },
 };
 
-interface TextFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
+interface TextFieldProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'> {
   value?: string;
   defaultValue?: string;
   onChange?: (next: string) => void;
@@ -40,6 +46,10 @@ interface TextFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   invalid?: boolean;
   label?: string;
   textStyle?: StyleProp<TextStyle>;
+  /** The amber focus ring. Off for an entry flattened into other chrome (a
+   *  command palette's search row), where the surrounding sheet is the focus
+   *  surface and a ring would outline the wrong shape. */
+  ring?: boolean;
 }
 
 function TextField({
@@ -57,8 +67,10 @@ function TextField({
   invalid = false,
   label,
   textStyle,
+  ring = true,
   ...box
 }: Readonly<TextFieldProps>) {
+  const theme = useTheme();
   const [value, setValue] = useControllable(valueProp, defaultValue, onChange);
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
@@ -79,7 +91,14 @@ function TextField({
       // here, and a drag stolen by a surrounding list never releases here.
       onStartShouldSetResponder={() => physicalKeyboard}
       onResponderRelease={() => input.current?.focus()}
-      style={[{ borderColor: edgeColor(focused, invalid) }, box.style]}
+      // The same amber ring every other control wears, rather than a 1px edge
+      // recolour: a field is a focus target like any other and must read as one
+      // from three metres.
+      style={[
+        { borderColor: edgeColor(focused, invalid) },
+        focused && ring ? fieldRing() : null,
+        box.style,
+      ]}
     >
       {/* The well is fixed at the entry's content height so a leading icon can
           never set the row height. */}
@@ -106,8 +125,8 @@ function TextField({
           spellCheck={false}
           secureTextEntry={masked}
           {...keyboardProps}
-          selectionColor={colors.accent}
-          style={[INPUT, NO_OUTLINE, { color: colors.text }, textStyle]}
+          selectionColor={theme.colors.accent}
+          style={[s.input, NO_OUTLINE, { color: theme.colors.text }, textStyle]}
         />
       ) : (
         <Box row align="center" flex gap={2} h={CONTENT}>
@@ -127,13 +146,13 @@ function TextField({
               width, the button is absolutely positioned over it - because in
               flow its padding set the row height. */}
           <Box w={CONTENT} />
-          <Box absolute style={REVEAL_SLOT}>
+          <Box absolute style={s.revealSlot}>
             <Focusable
               label={revealed ? 'Hide password' : 'Show password'}
               ring={false}
               onPress={() => setRevealed((prev) => !prev)}
-              style={REVEAL}
-              hoveredStyle={REVEAL_HOVERED}
+              style={s.reveal}
+              states={REVEAL_STATES}
             >
               <Icon
                 name={revealed ? 'eye-off' : 'eye'}
@@ -150,19 +169,14 @@ function TextField({
   );
 }
 
-const INPUT = {
-  flex: 1,
-  minWidth: 0,
-  minHeight: CONTENT,
-  borderWidth: 0,
-  backgroundColor: 'transparent',
-  padding: 0,
-} as const;
-
 const REVEAL_SIZE = 20;
-const REVEAL_SLOT = { right: 22, top: 0, bottom: 0, justifyContent: 'center' } as const;
-const REVEAL = { padding: 4, margin: -4, borderRadius: radii.md } as const;
-const REVEAL_HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.1)' } as const;
+const REVEAL_STATES = { hover: { bg: 'white/10' } } as const;
+
+const s = styles({
+  input: { flex: true, minW: 0, minH: CONTENT, borderWidth: 0, bg: 'transparent', p: 0 },
+  revealSlot: { right: 22, top: 0, bottom: 0, justify: 'center' },
+  reveal: { p: 4, m: -4, radius: 'md' },
+});
 
 export type { TextFieldProps, TextFieldType };
 export { TextField };

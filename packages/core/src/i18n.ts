@@ -4,8 +4,11 @@ import {
   type LocaleOf,
   type MessageKeyOf,
 } from './i18n-engine';
+
 import en from './locales/en.json';
 import fr from './locales/fr.json';
+
+export { interpolate } from './i18n-engine';
 
 export const i18n = createI18n({ fr, en }, 'fr');
 

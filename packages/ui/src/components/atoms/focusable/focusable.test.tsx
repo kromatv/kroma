@@ -13,10 +13,10 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { colors, ring } from '#ui/core/tokens';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
 import { armPressGuard, clearPressGuard } from '#ui/lib/press-guard';
-import { colors, ring } from '#ui/lib/tokens';
 import { Focusable } from './focusable';
 
 beforeAll(() => configureRemote());
@@ -24,6 +24,9 @@ beforeAll(() => configureRemote());
 afterEach(() => {
   cleanup();
   clearPressGuard();
+  // input-source is module state: a test that swept the pointer would otherwise
+  // leave the next one thinking a cursor is driving.
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 });
 
 const host = (label: string) => screen.getByLabelText(label);
@@ -167,10 +170,8 @@ describe('Focusable on react-native-web', () => {
     expect(screen.getByTestId('state').textContent).toBe('on');
   });
 
-  it('applies focusedStyle from the design tokens', () => {
-    screenWith(
-      <Focusable label="Chip" autoFocus focusedStyle={{ backgroundColor: colors.accentSoft }} />,
-    );
+  it('applies a focus state layer from the design tokens', () => {
+    screenWith(<Focusable label="Chip" autoFocus states={{ focus: { bg: 'accentSoft' } }} />);
     expect(painted('Chip').style.backgroundColor.replace(/\s+/g, ' ')).toBe(colors.accentSoft);
   });
 
@@ -178,11 +179,11 @@ describe('Focusable on react-native-web', () => {
   // tests because a control renders through two entirely different elements
   // depending on whether a navigator is mounted above it, and the mouse has to
   // be heard through both - the second is the one clients/web actually renders.
-  it('applies hoveredStyle while a pointer rests on a navigator node', () => {
+  it('applies a hover state layer while a pointer rests on a navigator node', () => {
     // The navigator's own view is a plain <View>, so the hover arrives as
     // React's enter/leave pair - derived from `pointerover`/`pointerout`, which
     // is what the events below dispatch.
-    screenWith(<Focusable label="Survol" hoveredStyle={{ backgroundColor: colors.accentSoft }} />);
+    screenWith(<Focusable label="Survol" states={{ hover: { bg: 'accentSoft' } }} />);
     expect(painted('Survol').style.backgroundColor).toBe('');
 
     fireEvent.pointerOver(host('Survol'));
@@ -214,11 +215,11 @@ describe('Focusable on react-native-web', () => {
     expect(painted('Tuile').style.transform).toBe('scale(1)');
   });
 
-  it('applies hoveredStyle on a page with no navigator at all', () => {
+  it('applies a hover state layer on a page with no navigator at all', () => {
     // No <FocusScope>: the plain pressable form, which is every kit control on
     // clients/web. Nothing can focus it and no finger will press it, so the
     // hover is the ONLY answer a cursor gets there.
-    render(<Focusable label="Nu" hoveredStyle={{ backgroundColor: colors.accentSoft }} />);
+    render(<Focusable label="Nu" states={{ hover: { bg: 'accentSoft' } }} />);
     expect(painted('Nu').style.backgroundColor).toBe('');
 
     // A Pressable listens for the hover itself (react-native-web's useHover),
@@ -228,5 +229,43 @@ describe('Focusable on react-native-web', () => {
 
     fireEvent.pointerLeave(host('Nu'));
     expect(painted('Nu').style.backgroundColor).toBe('');
+  });
+});
+
+describe('focus visibility', () => {
+  it('rings a focus the keys drove', () => {
+    screenWith(
+      <FocusRegion>
+        <Focusable autoFocus label="Keyed" />
+      </FocusRegion>,
+    );
+    expect(painted('Keyed').style.boxShadow.replace(/\s+/g, ' ')).toBe(ring.focusLift);
+  });
+
+  it('does not park the ring on a control the cursor merely swept', () => {
+    // The navigator focuses on mouse-enter once a pointer has moved, and never
+    // blurs on leave because its model keeps exactly one owner. Without
+    // :focus-visible semantics the amber ring stays on whatever the cursor
+    // passed last, which reads as a selection nobody made.
+    fireEvent.mouseMove(window);
+    screenWith(
+      <FocusRegion>
+        <Focusable autoFocus label="Swept" />
+      </FocusRegion>,
+    );
+    expect(painted('Swept').style.boxShadow).toBe('');
+  });
+
+  it('restores the ring as soon as a key is pressed', () => {
+    fireEvent.mouseMove(window);
+    screenWith(
+      <FocusRegion>
+        <Focusable autoFocus label="Un" />
+        <Focusable label="Deux" />
+      </FocusRegion>,
+    );
+    expect(painted('Un').style.boxShadow).toBe('');
+    press('ArrowRight');
+    expect(painted('Deux').style.boxShadow.replace(/\s+/g, ' ')).toBe(ring.focusLift);
   });
 });

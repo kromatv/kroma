@@ -11,15 +11,15 @@ import {
 } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
+import { styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import { fieldSizing } from '#ui/lib/css';
-import { CONTENT_LINE, edgeColor, NO_OUTLINE, PLACEHOLDER } from '#ui/lib/field-shell';
-import { colors } from '#ui/lib/tokens';
+import { CONTENT_LINE, edgeColor, fieldRing, NO_OUTLINE, PLACEHOLDER } from '#ui/lib/field-shell';
 import { useControllable } from '#ui/lib/use-controllable';
 
 const WEB = Platform.OS === 'web';
 
-interface TextAreaProps extends Omit<BoxProps, 'children' | 'onChange'> {
+interface TextAreaProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'> {
   value?: string;
   defaultValue?: string;
   onChange?: (next: string) => void;
@@ -34,6 +34,9 @@ interface TextAreaProps extends Omit<BoxProps, 'children' | 'onChange'> {
   /** A caller setting a bigger font here should set `lineHeight` with it: that
    *  is what `rows` counts. */
   textStyle?: StyleProp<TextStyle>;
+  /** The amber focus ring. Off for an entry flattened into other chrome, where
+   *  the surrounding sheet is the focus surface. */
+  ring?: boolean;
 }
 
 function TextArea({
@@ -49,8 +52,10 @@ function TextArea({
   invalid = false,
   label,
   textStyle,
+  ring = true,
   ...box
 }: Readonly<TextAreaProps>) {
+  const theme = useTheme();
   const [value, setValue] = useControllable(valueProp, defaultValue, onChange);
   const [focused, setFocused] = useState(false);
   const [content, setContent] = useState(0);
@@ -73,7 +78,11 @@ function TextArea({
       // cannot summon the caret.
       onStartShouldSetResponder={() => physicalKeyboard}
       onResponderRelease={() => input.current?.focus()}
-      style={[{ borderColor: edgeColor(focused, invalid) }, box.style]}
+      style={[
+        { borderColor: edgeColor(focused, invalid) },
+        focused && ring ? fieldRing() : null,
+        box.style,
+      ]}
     >
       {physicalKeyboard ? (
         <TextInput
@@ -89,7 +98,7 @@ function TextArea({
           autoFocus={autoFocus}
           autoCorrect={false}
           autoCapitalize="sentences"
-          selectionColor={colors.accent}
+          selectionColor={theme.colors.accent}
           // Native only: the browser has `field-sizing`, and the callback there
           // would cost a state write per keystroke for the same layout.
           onContentSizeChange={
@@ -98,9 +107,9 @@ function TextArea({
               : undefined
           }
           style={[
-            ENTRY,
+            s.entry,
             NO_OUTLINE,
-            { color: colors.text, minHeight: min, maxHeight: max },
+            { color: theme.colors.text, minHeight: min, maxHeight: max },
             textStyle,
             growth(autoSize, min, grown),
           ]}
@@ -132,19 +141,21 @@ function growth(autoSize: boolean, min: number, grown: number): StyleProp<TextSt
 const LINE = CONTENT_LINE;
 const lines = (n: number) => n * LINE;
 
-const ENTRY = {
-  flex: 1,
-  width: '100%',
-  minWidth: 0,
-  borderWidth: 0,
-  backgroundColor: 'transparent',
-  padding: 0,
-  // Pinned to the kit's line so `rows` means the same height on every platform,
-  // not whatever leading the platform font brought.
-  lineHeight: LINE,
-  // Text starts at the top of the box on Android, where the default is centred.
-  textAlignVertical: 'top',
-} as const;
+const s = styles({
+  entry: {
+    flex: true,
+    w: '100%',
+    minW: 0,
+    borderWidth: 0,
+    bg: 'transparent',
+    p: 0,
+    // Pinned to the kit's line so `rows` means the same height on every platform,
+    // not whatever leading the platform font brought.
+    lineHeight: LINE,
+    // Text starts at the top of the box on Android, where the default is centred.
+    textAlignVertical: 'top',
+  },
+});
 
 export type { TextAreaProps };
 export { TextArea };

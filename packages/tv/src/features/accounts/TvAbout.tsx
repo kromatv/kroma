@@ -1,6 +1,6 @@
 import { commitLabel, formatBuildDate, repoLabel } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Box, Hint, ListRow, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Hint, ListRow, styles, Txt, useFocusNav } from '@kroma/ui/kit';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 import { useNav } from '#tv/app/router';
@@ -79,7 +79,7 @@ function Fact({
       disabled
       label={label}
       trailing={
-        <Txt color="textDim" style={mono ? MONO_VALUE : VALUE}>
+        <Txt color="textDim" style={mono ? s.monoValue : s.value}>
           {value}
         </Txt>
       }
@@ -87,14 +87,16 @@ function Fact({
   );
 }
 
-const VALUE = { fontSize: 16, fontWeight: '600' as const };
-// Native takes one font family name (a CSS-style list resolves to nothing
-// and silently falls back); the browser shells take the list.
-const MONO_VALUE = {
-  fontSize: 16,
-  fontFamily: Platform.select({
-    ios: 'Menlo',
-    android: 'monospace',
-    default: "ui-monospace, 'SF Mono', Menlo, monospace",
-  }),
-};
+const s = styles({
+  value: { fontSize: 16, fontWeight: '600' },
+  // Native takes one font family name (a CSS-style list resolves to nothing
+  // and silently falls back); the browser shells take the list.
+  monoValue: {
+    fontSize: 16,
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: "ui-monospace, 'SF Mono', Menlo, monospace",
+    }),
+  },
+});

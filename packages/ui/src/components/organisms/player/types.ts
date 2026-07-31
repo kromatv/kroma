@@ -1,4 +1,5 @@
 import type { AudioTrack } from '@kroma/core';
+import type { ColorValue } from '#ui/core';
 
 /**
  * The unified player contract. ONE `<Player>` chrome (packages/ui/src/player)
@@ -94,7 +95,7 @@ export interface PlayerMeter {
   /** Stroke colour for the trace (CSS colour). Defaults to the series palette
    *  slot for this meter's position, which is what a builder should usually let
    *  happen - the palette is validated as a set. */
-  color?: string;
+  color?: ColorValue;
   /**
    * Meters sharing a `chart` id are drawn on ONE axis, in the order given.
    *

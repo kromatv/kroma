@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type LoopKind, useLoop } from './loop';
 import { useLoop as useLoopWeb } from './loop.web';
 
-const KINDS: LoopKind[] = ['spin', 'pulse', 'blink'];
+const KINDS: LoopKind[] = ['spin', 'sweep', 'pulse', 'blink'];
 
 function webLoop(kind: LoopKind, ms: number, active?: boolean) {
   return renderHook(() => useLoopWeb(kind, ms, active)).result.current;
@@ -52,6 +52,23 @@ describe('the native half', () => {
     // Down to the floor and back, each leg half the stated duration.
     const [legs] = sequence.mock.calls[0] ?? [];
     expect(legs).toHaveLength(2);
+    unmount();
+  });
+
+  it('travels the sweep on `left`, which a percentage transform cannot express', () => {
+    const { result, unmount } = renderHook(() => useLoop('sweep', 800));
+    const style = result.current as { width: string; left: unknown };
+    expect(style.width).toBe('40%');
+    expect(style.left).toBeTypeOf('object');
+    unmount();
+  });
+
+  it('drives the sweep on the JS thread, `left` being no native-driver property', () => {
+    const timing = vi.spyOn(Animated, 'timing');
+    const { unmount } = renderHook(() => useLoop('sweep', 800));
+    for (const [, config] of timing.mock.calls) {
+      expect(config).toMatchObject({ useNativeDriver: false });
+    }
     unmount();
   });
 
@@ -126,7 +143,7 @@ describe('the web half', () => {
 });
 
 describe('the two halves together', () => {
-  it('answer all three kinds', () => {
+  it('answer every kind', () => {
     for (const kind of KINDS) {
       const { result, unmount } = renderHook(() => useLoop(kind, 800));
       expect(result.current).not.toBeNull();

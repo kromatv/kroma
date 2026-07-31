@@ -5,6 +5,7 @@ import {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
+import { styles } from '@kroma/ui/kit';
 import { type ReactNode, useMemo } from 'react';
 import {
   type StyleProp,
@@ -14,7 +15,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 const MIN_HEIGHT = 320;
 
@@ -42,33 +43,25 @@ export function SheetBody({
   const minHeight = useSheetMinHeight();
   const body = useMemo(
     () =>
-      StyleSheet.flatten([
-        styles.body,
-        { minHeight, paddingBottom: insets.bottom + spacing.md },
-        style,
-      ]),
+      StyleSheet.flatten([s.body, { minHeight, paddingBottom: insets.bottom + spacing.md }, style]),
     [minHeight, insets.bottom, style],
   );
   return <BottomSheetView style={body}>{children}</BottomSheetView>;
 }
 
 export function SheetTitle({ children }: Readonly<{ children: ReactNode }>) {
-  return <Text style={styles.title}>{children}</Text>;
+  return <Text style={s.title}>{children}</Text>;
 }
 
-const styles = StyleSheet.create({
-  surface: {
-    backgroundColor: colors.surfaceRaised,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-  },
-  grabber: { backgroundColor: colors.textFaint, width: 40 },
-  body: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
-  title: { ...type.title, color: colors.text, marginBottom: spacing.md },
+const s = styles({
+  surface: { bg: 'surface2', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
+  grabber: { w: 40, bg: 'textDim' },
+  body: { px: spacing.md, pt: spacing.sm },
+  title: { ...type.title, mb: spacing.md, color: 'text' },
 });
 
 export const sheetChrome = {
   backdropComponent: SheetBackdrop,
-  backgroundStyle: styles.surface,
-  handleIndicatorStyle: styles.grabber,
+  backgroundStyle: s.surface,
+  handleIndicatorStyle: s.grabber,
 };

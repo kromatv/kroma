@@ -1,9 +1,9 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Button, Icon } from '@kroma/ui/kit';
+import { Button, Icon, styles } from '@kroma/ui/kit';
 import { useRef } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { type DownloadState, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
@@ -77,7 +77,7 @@ export function DetailActions({
   const { playOn } = useCast();
   const devices = useRef<BottomSheetModal>(null);
   return (
-    <View style={styles.actions}>
+    <View style={s.actions}>
       <Button icon="player-play-filled" label={playLabel} onPress={onPlay} />
       <Pressable
         onPress={() => {
@@ -106,67 +106,62 @@ export function DetailActions({
             ]);
           } else if (state.status === 'done') void downloads.remove(item.id);
         }}
-        style={({ pressed }) => [styles.downloadBar, pressed && { opacity: 0.85 }]}
+        style={({ pressed }) => [s.downloadBar, pressed && { opacity: 0.85 }]}
       >
         {(state.status === 'downloading' || state.status === 'paused') && state.progress > 0 ? (
           <View
-            style={[styles.downloadBarFill, { width: `${Math.round(state.progress * 100)}%` }]}
+            style={[s.downloadBarFill, { width: `${Math.round(state.progress * 100)}%` }]}
             pointerEvents="none"
           />
         ) : null}
         {barIcon(state)}
-        <Text style={[styles.downloadBarLabel, bar.done && { color: colors.accent }]}>
-          {bar.label}
-        </Text>
+        <Text style={[s.downloadBarLabel, bar.done && { color: colors.accent }]}>{bar.label}</Text>
       </Pressable>
-      <View style={styles.secondaryRow}>
+      <View style={s.secondaryRow}>
         <Pressable
           onPress={onToggleList}
-          style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
           {inList ? (
             <Icon name="check" size={24} stroke={2.4} color={colors.accent} />
           ) : (
             <Icon name="plus" size={24} stroke={2.2} />
           )}
-          <Text numberOfLines={1} style={[styles.secondaryLabel, inList && styles.secondaryActive]}>
+          <Text numberOfLines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
             {t('nav.myList')}
           </Text>
         </Pressable>
         {onToggleWatched ? (
           <Pressable
             onPress={onToggleWatched}
-            style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
             {watched ? (
               <Icon name="eye-check" size={24} stroke={1.8} color={colors.accent} />
             ) : (
               <Icon name="eye" size={24} stroke={1.8} />
             )}
-            <Text
-              numberOfLines={1}
-              style={[styles.secondaryLabel, watched && styles.secondaryActive]}
-            >
+            <Text numberOfLines={1} style={[s.secondaryLabel, watched && s.secondaryActive]}>
               {t('content.watched')}
             </Text>
           </Pressable>
         ) : null}
         <Pressable
           onPress={() => devices.current?.present()}
-          style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
           <Icon name="cast" size={24} stroke={1.8} />
-          <Text numberOfLines={1} style={styles.secondaryLabel}>
+          <Text numberOfLines={1} style={s.secondaryLabel}>
             {t('cast.title')}
           </Text>
         </Pressable>
         {onReport ? (
           <Pressable
             onPress={onReport}
-            style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
             <Icon name="flag" size={24} stroke={1.8} />
-            <Text numberOfLines={1} style={styles.secondaryLabel}>
+            <Text numberOfLines={1} style={s.secondaryLabel}>
               {t('reports.sheet')}
             </Text>
           </Pressable>
@@ -186,34 +181,28 @@ export function DetailActions({
   );
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   actions: { gap: spacing.sm },
   downloadBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    row: true,
+    center: true,
     gap: 10,
-    minHeight: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
+    minH: 48,
+    bg: 'surface2',
+    radius: radius.md,
     overflow: 'hidden',
   },
-  downloadBarLabel: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  downloadBarLabel: { color: 'text', fontSize: 15, fontWeight: '700' },
   downloadBarFill: {
-    position: 'absolute',
-    left: 0,
+    absolute: true,
     top: 0,
     bottom: 0,
-    backgroundColor: colors.accentSoft,
-    borderRadius: radius.md,
+    left: 0,
+    bg: 'accentSoft',
+    radius: radius.md,
   },
-  secondaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.lg,
-    marginTop: spacing.xs,
-  },
-  secondary: { alignItems: 'center', gap: 5, width: 84, paddingVertical: 2 },
-  secondaryLabel: { ...type.small, color: colors.textDim },
-  secondaryActive: { color: colors.accent },
+  secondaryRow: { row: true, justify: 'center', gap: spacing.lg, mt: spacing.xs },
+  secondary: { align: 'center', gap: 5, w: 84, py: 2 },
+  secondaryLabel: { ...type.small, color: 'textMuted' },
+  secondaryActive: { color: 'accent' },
 });

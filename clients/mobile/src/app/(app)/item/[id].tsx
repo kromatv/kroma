@@ -11,10 +11,10 @@ import {
   sizedImageUrl,
   type Translate,
 } from '@kroma/core';
-import { Chip } from '@kroma/ui/kit';
+import { Chip, styles } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { MediaRail, movieCard } from '#mobile/components/cards';
 import { CastRail, DetailActions, DetailHero, MetaBadge } from '#mobile/components/detail';
@@ -23,7 +23,7 @@ import { useT } from '#mobile/lib/i18n';
 import { SplitColumns, useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
-import { colors, posterWidth, spacing, type } from '#mobile/lib/theme';
+import { posterWidth, spacing, type } from '#mobile/lib/theme';
 
 function episodeContext(media: MediaItem): string | undefined {
   if (media.kind !== 'episode' || !media.showTitle) return undefined;
@@ -55,11 +55,11 @@ function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
   const rating = media.metadata?.rating;
   return (
     <>
-      {media.year ? <Text style={styles.metaText}>{media.year}</Text> : null}
-      {runtime ? <Text style={styles.metaText}>{runtime}</Text> : null}
+      {media.year ? <Text style={s.metaText}>{media.year}</Text> : null}
+      {runtime ? <Text style={s.metaText}>{runtime}</Text> : null}
       {badge ? <MetaBadge>{badge}</MetaBadge> : null}
       {media.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
-      {rating ? <Text style={styles.rating}>★ {rating.toFixed(1)}</Text> : null}
+      {rating ? <Text style={s.rating}>★ {rating.toFixed(1)}</Text> : null}
     </>
   );
 }
@@ -125,7 +125,7 @@ export default function ItemDetail() {
 
   return (
     <Animated.ScrollView
-      style={styles.screen}
+      style={s.screen}
       contentContainerStyle={{ paddingBottom: spacing.xl }}
       onScroll={onScroll}
       scrollEventThrottle={16}
@@ -141,7 +141,7 @@ export default function ItemDetail() {
 
       {/* Tablets: actions column beside the overview column. */}
       <SplitColumns
-        style={[styles.body, gutters.style]}
+        style={[s.body, gutters.style]}
         left={
           <DetailActions
             playLabel={playLabel(t, device?.name, resumeSec)}
@@ -160,7 +160,7 @@ export default function ItemDetail() {
               <ExpandableText>{media.metadata.overview}</ExpandableText>
             ) : null}
             {media.metadata?.genres?.length ? (
-              <View style={styles.genreRow}>
+              <View style={s.genreRow}>
                 {media.metadata.genres.slice(0, 4).map((genre) => (
                   <Chip
                     key={genre}
@@ -191,10 +191,10 @@ export default function ItemDetail() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  body: { paddingTop: spacing.md, gap: spacing.md },
-  metaText: { ...type.caption, color: colors.text, fontWeight: '600' },
-  rating: { ...type.caption, color: colors.accent, fontWeight: '700' },
-  genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+const s = styles({
+  screen: { flex: true, bg: 'bg' },
+  body: { gap: spacing.md, pt: spacing.md },
+  metaText: { ...type.caption, color: 'text', fontWeight: '600' },
+  rating: { ...type.caption, color: 'accent', fontWeight: '700' },
+  genreRow: { row: true, wrap: true, gap: 8 },
 });

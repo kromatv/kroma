@@ -5,7 +5,8 @@ import { Icon } from '#ui/components/atoms/icon';
 import { SwitchFace } from '#ui/components/atoms/switch';
 import { Txt } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
-import { menuLabel, menuRow, menuValue, rowOn, rowStyle } from './panelStyle';
+import { styles } from '#ui/core';
+import { panel, rowStyle } from './panelStyle';
 
 /**
  * A settings main-menu row: leading icon + label (+ current value), then a
@@ -49,18 +50,18 @@ export function MenuRow({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={toggle ? { checked: Boolean(on) } : undefined}
-      style={[...rowStyle(menuRow, rowOn, focused), style]}
+      style={[...rowStyle(panel.menuRow, panel.rowOn, focused), style]}
     >
       {icon}
       <Box flex style={{ minWidth: 0 }}>
-        <Txt style={menuLabel}>{label}</Txt>
-        {!toggle && value != null ? <Txt style={menuValue}>{value}</Txt> : null}
+        <Txt style={panel.menuLabel}>{label}</Txt>
+        {!toggle && value != null ? <Txt style={panel.menuValue}>{value}</Txt> : null}
       </Box>
       {/* The KIT's switch face, not a lookalike: the row is the control (see the
           header), so it renders the atom's visuals without its `Focusable`.
           `size="tv"`: this panel is read from a sofa. */}
       {toggle ? (
-        <SwitchFace checked={Boolean(on)} size="tv" style={NO_SHRINK} />
+        <SwitchFace checked={Boolean(on)} size="tv" style={s.noShrink} />
       ) : (
         <Icon name="chevron-right" size={23} stroke={2.2} />
       )}
@@ -68,4 +69,6 @@ export function MenuRow({
   );
 }
 
-const NO_SHRINK = { flexShrink: 0 } as const;
+const s = styles({
+  noShrink: { shrink: 0 },
+});

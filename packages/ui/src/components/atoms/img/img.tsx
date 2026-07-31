@@ -25,10 +25,10 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import { absoluteFill } from '#ui/core/tokens';
 import { coverRect, parsePosition } from '#ui/lib/cover-rect';
 import { gradient } from '#ui/lib/css';
 import { imageBackend } from '#ui/lib/image-backend';
-import { absoluteFill } from '#ui/lib/tokens';
 
 export interface ImgProps {
   /** Already-sized artwork URL. This component never rewrites it. */

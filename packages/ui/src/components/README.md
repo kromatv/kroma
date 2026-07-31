@@ -6,7 +6,7 @@ level without reading the app.
 
 | Level | Where | What earns a place |
 | --- | --- | --- |
-| 1. Tokens | [`src/lib/tokens/`](../lib/tokens) | A raw value that cannot be decomposed: `#F4B642`, `16`, `Hanken Grotesk`. |
+| 1. Tokens | [`src/core/tokens/`](../core/tokens) | A raw value that cannot be decomposed: `#F4B642`, `16`, `Hanken Grotesk`. |
 | 2. Atoms | [`atoms/`](./atoms) | One indivisible control. Break it down and it stops being useful. |
 | 3. Molecules | [`molecules/`](./molecules) | A few atoms bonded into one arrangement the design names. |
 | 4. Organisms | [`organisms/`](./organisms) | A whole region of a screen, usually owning behaviour. |
@@ -42,7 +42,7 @@ Three doors, in the order you should reach for them:
 ```tsx
 import { Button, ListRow, Rail } from '@kroma/ui/kit';        // 1. the flat barrel
 import { Button } from '@kroma/ui/kit/atoms/button';          // 2. one component
-import { colors } from '#ui/lib/tokens';                      // 3. inside the kit only
+import { colors } from '#ui/core/tokens';                      // 3. inside the kit only
 ```
 
 1. **`@kroma/ui/kit`** re-exports all four component levels flat. App code should

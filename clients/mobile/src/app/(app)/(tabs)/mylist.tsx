@@ -2,10 +2,10 @@
 // catalogues, in the order the server returned them (newest first).
 
 import { ItemId, type MediaItem, type Show, ShowId } from '@kroma/core';
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
 import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
@@ -58,16 +58,16 @@ export default function MyList() {
 
   const header = (
     <View style={{ paddingTop: insets.top + spacing.sm }}>
-      <View style={styles.titleRow}>
-        <Text style={styles.title}>{t('nav.myList')}</Text>
-        <Text style={styles.count}>{cards.length}</Text>
+      <View style={s.titleRow}>
+        <Text style={s.title}>{t('nav.myList')}</Text>
+        <Text style={s.count}>{cards.length}</Text>
       </View>
       <View style={{ height: spacing.sm }} />
     </View>
   );
 
   return (
-    <View style={styles.screen}>
+    <View style={s.screen}>
       <PosterGrid
         cards={cards}
         gutters={gutters}
@@ -86,9 +86,9 @@ export default function MyList() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  titleRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: spacing.sm },
+const s = styles({
+  screen: { flex: true, bg: 'bg' },
+  titleRow: { row: true, align: 'baseline', gap: 10, mb: spacing.sm },
   title: { ...type.display, fontSize: 30 },
   count: { ...type.caption },
 });

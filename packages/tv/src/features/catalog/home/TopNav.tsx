@@ -10,6 +10,7 @@ import {
   Spinner,
   StatusDot,
   shade,
+  styles,
   Txt,
 } from '@kroma/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
@@ -71,7 +72,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
       />
       {/* One full-width focus band: a TV moves focus in a straight line, so a
           band is what makes the centred pill reachable by Up from anywhere. */}
-      <FocusRegion style={BAND}>
+      <FocusRegion style={s.band}>
         {/* For pointer users; the remote's Back key works regardless. */}
         <Box row align="center" gap={16}>
           {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
@@ -82,7 +83,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
           {/* Renders only while a phone or browser is driving this set. */}
           <CastRemotes />
           <ConnectionStatus online={online} label={t('connection.reconnecting')} />
-          <Txt style={CLOCK}>{clock}</Txt>
+          <Txt style={s.clock}>{clock}</Txt>
           {user ? (
             <Focusable
               onPress={() => nav.go('profileMenu')}
@@ -105,19 +106,6 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   );
 }
 
-const BAND = {
-  width: '100%',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-} as const;
-
-const CLOCK = {
-  fontSize: 17,
-  fontWeight: '600' as const,
-  fontVariant: ['tabular-nums' as const],
-  textShadow: '0 1px 4px rgba(0, 0, 0, 0.6)',
-};
-
 function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: string }>) {
   if (online) return <StatusDot online overArt />;
   return (
@@ -125,11 +113,20 @@ function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: 
       <Box absolute>
         <Spinner size={34} thickness={2} color="rgba(229, 57, 53, 0.8)" />
       </Box>
-      <Box w={28} h={28} center radius="pill" bg="danger" style={OFFLINE_BADGE}>
+      <Box w={28} h={28} center radius="pill" bg="danger" style={s.offlineBadge}>
         <Icon name="wifi-off" size={16} stroke={2.2} color="#FFFFFF" />
       </Box>
     </Box>
   );
 }
 
-const OFFLINE_BADGE = { boxShadow: '0 2px 8px rgba(0, 0, 0, 0.6)' } as const;
+const s = styles({
+  band: { w: '100%', align: 'center', justify: 'space-between' },
+  clock: {
+    fontSize: 17,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+    textShadow: '0 1px 4px rgba(0, 0, 0, 0.6)',
+  },
+  offlineBadge: { boxShadow: '0 2px 8px rgba(0, 0, 0, 0.6)' },
+});

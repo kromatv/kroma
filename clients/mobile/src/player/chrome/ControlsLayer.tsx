@@ -7,12 +7,12 @@
 // rather than importing them.
 
 import { audioTracksOf, episodeTag, formatTimecode, type MediaItem } from '@kroma/core';
-import { fonts, Icon, IconButton, type IconName, Spinner } from '@kroma/ui/kit';
+import { fonts, Icon, IconButton, type IconName, Spinner, styles } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
-import { absoluteFill, colors, spacing } from '#mobile/lib/theme';
+import { colors, spacing } from '#mobile/lib/theme';
 import type { Engine } from '#mobile/player/engine';
 import { ScrubBar } from '#mobile/player/ScrubBar';
 import type { SheetView } from '#mobile/player/TrackSheet';
@@ -61,20 +61,20 @@ export function ControlsLayer({
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <View style={styles.scrim} pointerEvents="none" />
+      <View style={s.scrim} pointerEvents="none" />
       <LinearGradient
         colors={['rgba(0,0,0,0.65)', 'rgba(0,0,0,0)']}
-        style={styles.scrimTop}
+        style={s.scrimTop}
         pointerEvents="none"
       />
       <LinearGradient
         colors={['rgba(10,10,12,0)', 'rgba(10,10,12,0.85)']}
-        style={styles.scrimBottom}
+        style={s.scrimBottom}
         pointerEvents="none"
       />
       <View
         style={[
-          styles.topBar,
+          s.topBar,
           {
             paddingTop: insets.top + 6,
             paddingLeft: Math.max(insets.left, spacing.md),
@@ -88,19 +88,19 @@ export function ControlsLayer({
         </IconButton>
         {/* Beside the back button, like the TV bar: the title reads from the
             corner, not the centre of the picture. */}
-        <View style={styles.titleBox}>
-          <Text numberOfLines={1} style={styles.title}>
+        <View style={s.titleBox}>
+          <Text numberOfLines={1} style={s.title}>
             {title}
           </Text>
           {sub ? (
-            <Text numberOfLines={1} style={styles.subtitle}>
+            <Text numberOfLines={1} style={s.subtitle}>
               {sub}
             </Text>
           ) : null}
         </View>
       </View>
 
-      <View style={styles.centerRow} pointerEvents="box-none">
+      <View style={s.centerRow} pointerEvents="box-none">
         <IconButton
           size={56}
           icon="rewind-backward-10"
@@ -143,7 +143,7 @@ export function ControlsLayer({
 
       <View
         style={[
-          styles.bottomBar,
+          s.bottomBar,
           {
             paddingBottom: Math.max(insets.bottom, 12),
             paddingLeft: Math.max(insets.left, spacing.md),
@@ -153,8 +153,8 @@ export function ControlsLayer({
       >
         <ScrubRow engine={engine} onInteract={poke} tileFor={tileFor} item={item} />
         {/* Icon-only: labels ride on accessibility, not the row itself. */}
-        <View style={styles.actionsRow}>
-          <View style={styles.actionsGroup}>
+        <View style={s.actionsRow}>
+          <View style={s.actionsGroup}>
             {audioCount > 1 ? (
               <RowShortcut
                 icon="wave-sine"
@@ -169,7 +169,7 @@ export function ControlsLayer({
             />
             <RowShortcut icon="gauge" label={t('player.speed')} onPress={() => open('speed')} />
           </View>
-          <View style={styles.actionsGroup}>
+          <View style={s.actionsGroup}>
             {next && onPlayNext ? (
               <RowShortcut
                 icon="player-track-next"
@@ -238,37 +238,26 @@ function ScrubRow({
           onInteract();
         }}
       />
-      <View style={styles.timeRow}>
-        <Text style={styles.time}>{formatTimecode(engine.cur)}</Text>
-        <Text style={styles.time}>{formatTimecode(engine.dur)}</Text>
+      <View style={s.timeRow}>
+        <Text style={s.time}>{formatTimecode(engine.cur)}</Text>
+        <Text style={s.time}>{formatTimecode(engine.dur)}</Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  scrim: { ...absoluteFill, backgroundColor: 'rgba(10, 10, 12, 0.22)' },
-  scrimTop: { position: 'absolute', top: 0, left: 0, right: 0, height: 120 },
-  scrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 160 },
-  topBar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  titleBox: { flex: 1, minWidth: 0 },
-  title: { fontFamily: fonts.display, color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
-  subtitle: { color: 'rgba(244, 243, 240, 0.6)', fontSize: 12, fontWeight: '500', marginTop: 1 },
-  centerRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 40,
-  },
-  bottomBar: { paddingHorizontal: spacing.md },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  actionsGroup: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  time: { color: 'rgba(244, 243, 240, 0.5)', fontSize: 12, fontVariant: ['tabular-nums'] },
+const s = styles({
+  scrim: { fill: true, bg: 'bg/22' },
+  scrimTop: { absolute: true, top: 0, right: 0, left: 0, h: 120 },
+  scrimBottom: { absolute: true, right: 0, bottom: 0, left: 0, h: 160 },
+  topBar: { row: true, align: 'center', gap: 12 },
+  titleBox: { flex: true, minW: 0 },
+  title: { fontFamily: fonts.display, color: 'white', fontSize: 17, fontWeight: '700' },
+  subtitle: { mt: 1, color: 'text/60', fontSize: 12, fontWeight: '500' },
+  centerRow: { flex: true, row: true, center: true, gap: 40 },
+  bottomBar: { px: spacing.md },
+  actionsRow: { row: true, between: true, align: 'center', mt: 10 },
+  actionsGroup: { row: true, align: 'center', gap: 12 },
+  timeRow: { row: true, between: true, mt: 6 },
+  time: { color: 'text/50', fontSize: 12, fontVariant: ['tabular-nums'] },
 });

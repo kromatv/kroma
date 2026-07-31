@@ -1,8 +1,9 @@
 // Shared <Icon> logic: the default size and outline weight, and turning a palette
 // token into a colour. Which component draws a name lives in icons/glyphs.ts.
 
+import { color as resolveColor, themeVersion } from '#ui/core';
+import type { ColorToken } from '#ui/core/tokens';
 import { type Glyph, glyphFor, type IconName } from '#ui/lib/icons/glyphs';
-import { type ColorToken, colors } from './tokens';
 
 export type { Glyph, IconName } from '#ui/lib/icons/glyphs';
 export { hasGlyph, iconNames } from '#ui/lib/icons/glyphs';
@@ -56,14 +57,22 @@ export function splitAlpha(color: string): { color: string; opacity: number } {
 }
 
 // Icons re-render on every focus move, and the input space is the palette plus a
-// handful of raw strings, so memoising outright stays bounded.
+// handful of raw strings, so memoising outright stays bounded. A theme swap
+// clears it, since the names resolve through the active palette.
 const paints = new Map<string, { color: string; opacity: number }>();
 
-function paintFor(color: string): { color: string; opacity: number } {
-  const hit = paints.get(color);
+let paintsAt = -1;
+
+function paintFor(authored: string): { color: string; opacity: number } {
+  const at = themeVersion();
+  if (paintsAt !== at) {
+    paints.clear();
+    paintsAt = at;
+  }
+  const hit = paints.get(authored);
   if (hit) return hit;
-  const paint = splitAlpha(color);
-  paints.set(color, paint);
+  const paint = splitAlpha(resolveColor(authored));
+  paints.set(authored, paint);
   return paint;
 }
 
@@ -73,7 +82,7 @@ export function resolveIcon({
   color = 'text',
   stroke = DEFAULT_ICON_STROKE,
 }: Readonly<IconProps>): ResolvedIcon {
-  const paint = paintFor((colors as Record<string, string>)[color] ?? color);
+  const paint = paintFor(color);
   return {
     Glyph: glyphFor(name),
     size,

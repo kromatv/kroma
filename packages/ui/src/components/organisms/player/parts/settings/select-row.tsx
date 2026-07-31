@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
-import { rowOn, rowStyle, selectLabel, selectRow, selectSub } from './panelStyle';
+import { panel, rowStyle } from './panelStyle';
 
 function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>) {
   if (node == null) return null;
@@ -47,12 +47,12 @@ export function SelectRow({
       onPointerEnter={onFocus}
       accessibilityRole="button"
       accessibilityState={{ selected: Boolean(selected) }}
-      style={rowStyle(selectRow, rowOn, focused)}
+      style={rowStyle(panel.selectRow, panel.rowOn, focused)}
     >
       {leading}
       <Box flex style={{ minWidth: 0 }}>
-        <Line node={label} style={selectLabel} />
-        <Line node={sub} style={selectSub} />
+        <Line node={label} style={panel.selectLabel} />
+        <Line node={sub} style={panel.selectSub} />
       </Box>
       {trailing}
       {selected ? <IconOk size={24} color="accent" /> : null}

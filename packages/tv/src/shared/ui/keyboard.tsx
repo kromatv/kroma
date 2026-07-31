@@ -6,12 +6,15 @@
 
 import {
   Button,
-  colors,
   Focusable,
   FocusColumn,
   FocusRegion,
   Icon,
   type IconName,
+  type IconProps,
+  type StyleDecl,
+  styles,
+  svFor,
   Txt,
   useHardwareKeys,
   webWindow,
@@ -36,15 +39,15 @@ function usePhysicalTyping(value: string, onChange: (next: string) => void) {
       if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
       const t = e.target;
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
-      const s = stateRef.current;
+      const state = stateRef.current;
       if (e.key === 'Backspace') {
         e.preventDefault();
-        s.onChange(s.value.slice(0, -1));
+        state.onChange(state.value.slice(0, -1));
         return;
       }
       if (e.key.length === 1) {
         e.preventDefault();
-        s.onChange(s.value + e.key);
+        state.onChange(state.value + e.key);
       }
     };
     w.addEventListener('keydown', onKey);
@@ -56,9 +59,9 @@ function usePhysicalTyping(value: string, onChange: (next: string) => void) {
   // instead (a no-op on browser shells, already covered above).
   useHardwareKeys(
     useCallback((key: string) => {
-      const s = stateRef.current;
-      if (key === 'Backspace') s.onChange(s.value.slice(0, -1));
-      else if (key.length === 1) s.onChange(s.value + key);
+      const state = stateRef.current;
+      if (key === 'Backspace') state.onChange(state.value.slice(0, -1));
+      else if (key.length === 1) state.onChange(state.value + key);
     }, []),
   );
 }
@@ -72,10 +75,36 @@ function useLayout<T>(derive: (layout: KeyboardLayoutPref) => T): T {
   return useMemo(() => derive(layout), [derive, layout]);
 }
 
-const KEY_FACE = { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 16 } as const;
+// The focused key: the URL keyboard tints amber, the search keyboard fills solid
+// for a stronger 10-foot cue at its larger size.
+const keyFace = svFor<{
+  root: StyleDecl;
+  glyph: Pick<IconProps, 'color' | 'stroke'>;
+  label: StyleDecl;
+}>()({
+  slots: {
+    root: { center: true, radius: 16, bg: 'white/5' },
+    glyph: { color: 'text', stroke: 1.8 },
+    label: { color: 'text' },
+  },
+  variants: {
+    tone: {
+      url: {
+        root: { _focus: { bg: 'accent/18' } },
+        glyph: { _focus: { color: 'accent' } },
+        label: { _focus: { color: 'accent' } },
+      },
+      search: {
+        root: { _focus: { bg: 'accent' } },
+        glyph: { _focus: { color: 'accentInk' } },
+        label: { _focus: { color: 'accentInk' } },
+      },
+    },
+  },
+});
 
-// `focusFill` is what the focused key becomes: the URL keyboard tints amber,
-// the search keyboard fills solid for a stronger 10-foot cue at its larger size.
+type KeyTone = 'url' | 'search';
+
 function Key({
   label,
   icon,
@@ -83,8 +112,7 @@ function Key({
   onPress,
   style,
   textStyle,
-  focusFill,
-  focusInk,
+  tone,
   autoFocus,
 }: Readonly<{
   label?: string;
@@ -93,8 +121,7 @@ function Key({
   onPress: () => void;
   style?: ViewStyle;
   textStyle?: TextStyle;
-  focusFill: string;
-  focusInk: string;
+  tone: KeyTone;
   autoFocus?: boolean;
 }>) {
   return (
@@ -104,21 +131,15 @@ function Key({
       autoFocus={autoFocus}
       focusScale={1.08}
       ring={false}
-      style={[KEY_FACE, { alignItems: 'center', justifyContent: 'center' }, style]}
-      focusedStyle={{ backgroundColor: focusFill }}
+      sv={keyFace}
+      vars={{ tone }}
+      style={style}
     >
-      {({ focused }) =>
+      {({ slots }) =>
         icon ? (
-          <Icon
-            name={icon}
-            size={iconSize ?? 24}
-            stroke={1.8}
-            color={focused ? focusInk : 'text'}
-          />
+          <Icon name={icon} size={iconSize ?? 24} {...slots.glyph} />
         ) : (
-          <Txt style={[{ fontWeight: '700' }, textStyle]} color={focused ? focusInk : 'text'}>
-            {label}
-          </Txt>
+          <Txt style={[slots.label, s.keyLabel, textStyle]}>{label}</Txt>
         )
       }
     </Focusable>
@@ -152,16 +173,17 @@ export function OnScreenKeyboard({
   );
 }
 
-const URL_FOCUS_FILL = 'rgba(244, 182, 66, 0.18)';
 // Module scope, not the render body: this hands the same style identity to
 // ~40 keys on every keystroke instead of rebuilding it each time.
-const URL_KEY: ViewStyle = { height: 52, flex: 1 };
-const URL_KEY_TEXT: TextStyle = { fontSize: 20 };
-const URL_CLEAR_KEY: ViewStyle = { height: 52, flex: 2 };
-const URL_CLEAR_TEXT: TextStyle = { fontSize: 16 };
-const URL_SUBMIT: ViewStyle = { height: 52, flex: 3 };
-
-const KEY_ROW = { flexDirection: 'row' as const, gap: 12 };
+const s = styles({
+  keyLabel: { fontWeight: '700' },
+  urlKey: { h: 52, flex: 1 },
+  urlKeyText: { fontSize: 20 },
+  urlClearKey: { h: 52, flex: 2 },
+  urlClearText: { fontSize: 16 },
+  urlSubmit: { h: 52, flex: 3 },
+  keyRow: { row: true, gap: 12 },
+});
 
 function UrlKeyboard({
   value,
@@ -184,42 +206,39 @@ function UrlKeyboard({
     // row was last left.
     <FocusColumn grid style={{ gap: 12 }}>
       {rows.map((row, rowIndex) => (
-        <FocusRegion key={row.join('')} style={KEY_ROW}>
+        <FocusRegion key={row.join('')} style={s.keyRow}>
           {row.map((k, keyIndex) => (
             <Key
               key={k}
               label={k}
               autoFocus={rowIndex === 0 && keyIndex === 0}
               onPress={() => press(k)}
-              style={URL_KEY}
-              textStyle={URL_KEY_TEXT}
-              focusFill={URL_FOCUS_FILL}
-              focusInk="accent"
+              style={s.urlKey}
+              textStyle={s.urlKeyText}
+              tone="url"
             />
           ))}
         </FocusRegion>
       ))}
       {/* Declared as a row: a plain box would make Left/Right do nothing
           between these three controls. */}
-      <FocusRegion style={KEY_ROW}>
+      <FocusRegion style={s.keyRow}>
         <Key
           label="⌧"
           onPress={() => onChange('')}
-          style={URL_CLEAR_KEY}
-          textStyle={URL_CLEAR_TEXT}
-          focusFill={URL_FOCUS_FILL}
-          focusInk="accent"
+          style={s.urlClearKey}
+          textStyle={s.urlClearText}
+          tone="url"
         />
         <Key
           label="."
           onPress={() => onChange(`${value}.`)}
-          style={URL_KEY}
-          textStyle={URL_KEY_TEXT}
-          focusFill={URL_FOCUS_FILL}
-          focusInk="accent"
+          style={s.urlKey}
+          textStyle={s.urlKeyText}
+          tone="url"
         />
         {onSubmit ? (
-          <Button variant="primary" onPress={onSubmit} label={submitLabel} style={URL_SUBMIT} />
+          <Button variant="primary" onPress={onSubmit} label={submitLabel} style={s.urlSubmit} />
         ) : null}
       </FocusRegion>
     </FocusColumn>
@@ -254,26 +273,10 @@ function SearchKeyboard({
 }: Readonly<{ value: string; onChange: (next: string) => void; onClose?: () => void }>) {
   const { letterRows, lastRow, wide, face, text, rowGap, icon } = useLayout(searchLook);
   const key = (id: string, label: string, onPress: () => void) => (
-    <Key
-      key={id}
-      label={label}
-      onPress={onPress}
-      style={face}
-      textStyle={text}
-      focusFill={colors.accent}
-      focusInk="accentInk"
-    />
+    <Key key={id} label={label} onPress={onPress} style={face} textStyle={text} tone="search" />
   );
   const glyph = (id: string, icon: IconName, size: number, onPress: () => void) => (
-    <Key
-      key={id}
-      icon={icon}
-      iconSize={size}
-      onPress={onPress}
-      style={face}
-      focusFill={colors.accent}
-      focusInk="accentInk"
-    />
+    <Key key={id} icon={icon} iconSize={size} onPress={onPress} style={face} tone="search" />
   );
   const letter = (l: string) => key(l, l, () => onChange(value + l.toLowerCase()));
   // <FocusRegion>, not a plain box: without declared rows, every key is a

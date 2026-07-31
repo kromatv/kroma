@@ -20,9 +20,9 @@ import { SpatialNavigationNode, SpatialNavigationView } from 'react-tv-space-nav
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
 import { VirtualRail } from '#ui/components/organisms/virtual';
+import { gutter } from '#ui/core/tokens';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusRail } from '#ui/lib/focus-scroll';
-import { gutter } from '#ui/lib/tokens';
 import { useGrowingCount } from '#ui/lib/use-growing-count';
 
 interface RailProps {

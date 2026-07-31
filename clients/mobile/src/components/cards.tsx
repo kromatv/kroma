@@ -11,13 +11,13 @@ import {
   type Show,
   sizedImageUrl,
 } from '@kroma/core';
-import { VirtualRail } from '@kroma/ui/kit';
+import { styles, VirtualRail } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
-import { colors, posterWidth, radius, type } from '#mobile/lib/theme';
+import { posterWidth, radius, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
 const GAP = 12;
@@ -127,14 +127,14 @@ export function ContinueCard({
           radius={radius.sm}
           style={{ width, aspectRatio: 16 / 9 }}
         />
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${frac * 100}%` }]} />
+        <View style={s.progressTrack}>
+          <View style={[s.progressFill, { width: `${frac * 100}%` }]} />
         </View>
       </View>
-      <Text numberOfLines={1} style={styles.cardTitle}>
+      <Text numberOfLines={1} style={s.cardTitle}>
         {item.showTitle ?? item.metadata?.title ?? item.title}
       </Text>
-      {tag ? <Text style={styles.cardSub}>{tag}</Text> : null}
+      {tag ? <Text style={s.cardSub}>{tag}</Text> : null}
     </Pressable>
   );
 }
@@ -165,21 +165,9 @@ export function ContinueRail({
   );
 }
 
-const styles = StyleSheet.create({
-  cardTitle: { ...type.caption, color: colors.text, marginTop: 6 },
-  cardSub: { ...type.small, marginTop: 1 },
-  progressTrack: {
-    position: 'absolute',
-    left: 6,
-    right: 6,
-    bottom: 6,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(244, 243, 240, 0.3)',
-  },
-  progressFill: {
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.accent,
-  },
+const s = styles({
+  cardTitle: { ...type.caption, mt: 6, color: 'text' },
+  cardSub: { ...type.small, mt: 1 },
+  progressTrack: { absolute: true, right: 6, bottom: 6, left: 6, h: 3, bg: 'text/30', radius: 2 },
+  progressFill: { h: 3, bg: 'accent', radius: 2 },
 });

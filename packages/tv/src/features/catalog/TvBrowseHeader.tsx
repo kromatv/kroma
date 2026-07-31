@@ -8,7 +8,7 @@ import {
   type SortMode,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Box, Chip, Divider, qualityTone, Rail, Txt } from '@kroma/ui/kit';
+import { Badge, Box, Chip, Divider, qualityTone, Rail, styles, Txt } from '@kroma/ui/kit';
 import { memo } from 'react';
 import type { CatalogEntry } from '#tv/features/catalog/home/AmbientBackdrop';
 
@@ -29,14 +29,12 @@ function entryBadge(e: CatalogEntry): string | null {
   return e.kind === 'movie' ? qualityBadge(e.item) : qualityBadgeForVideo(e.item.video);
 }
 
-// The design's clamp(30px, 4.8vh, 46px), resolved: on the fixed 1920x1080 stage
-// a viewport unit would mean something different on each of the four targets.
-const ECHO_TITLE = {
-  fontSize: 46,
-  lineHeight: 48,
-  fontWeight: '700' as const,
-  letterSpacing: -0.92,
-};
+const s = styles({
+  // The design's clamp(30px, 4.8vh, 46px), resolved: on the fixed 1920x1080
+  // stage a viewport unit would mean something different on each of the four
+  // targets.
+  echoTitle: { fontSize: 46, lineHeight: 48, fontWeight: '700', letterSpacing: -0.92 },
+});
 
 /** Fixed height, so the grid never reflows as the focus echo swaps titles. */
 export function BrowseHeader({
@@ -72,7 +70,7 @@ function FocusEcho({ entry }: Readonly<{ entry: CatalogEntry }>) {
     entry.kind === 'show' ? t('content.seasonCount', { count: entry.item.seasonCount }) : null;
   return (
     <Box mt={8} gap={6}>
-      <Txt variant="hero" style={[ECHO_TITLE, { maxWidth: 960 }]} lines={1}>
+      <Txt variant="hero" style={[s.echoTitle, { maxWidth: 960 }]} lines={1}>
         {entry.item.title}
       </Txt>
       <Box row align="center" gap={10}>

@@ -7,8 +7,8 @@ import { Img } from '#ui/components/atoms/img';
 import { Progress } from '#ui/components/atoms/progress';
 import { Txt } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
+import { styles, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
-import { fonts, radius } from '#ui/lib/tokens';
 
 const CARD_SCRIM = 'linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.75) 100%)';
 
@@ -45,6 +45,7 @@ function MediaCard({
   onFocus,
   autoFocus,
 }: Readonly<MediaCardProps>) {
+  const { radius } = useTheme();
   return (
     <Focusable
       onPress={onPress}
@@ -62,8 +63,8 @@ function MediaCard({
         <Box fill radius="xl" style={gradient(CARD_SCRIM)} />
         {watched ? <WatchedBadge /> : null}
         <Box absolute left={18} right={18} bottom={16} gap={5}>
-          {overline ? <Txt style={OVERLINE}>{overline}</Txt> : null}
-          <Txt style={TITLE} lines={2}>
+          {overline ? <Txt style={s.overline}>{overline}</Txt> : null}
+          <Txt style={s.title} lines={2}>
             {title}
           </Txt>
         </Box>
@@ -77,23 +78,24 @@ function MediaCard({
   );
 }
 
-const OVERLINE = {
-  fontFamily: fonts.ui,
-  fontWeight: '700' as const,
-  fontSize: 12,
-  lineHeight: 14,
-  letterSpacing: 1.2,
-  textTransform: 'uppercase' as const,
-  color: 'rgba(255, 255, 255, 0.65)',
-};
-
-const TITLE = {
-  fontFamily: fonts.display,
-  fontWeight: '700' as const,
-  fontSize: 24,
-  lineHeight: 25,
-  color: '#FFFFFF',
-};
+const s = styles({
+  overline: {
+    font: 'ui',
+    fontWeight: '700',
+    fontSize: 12,
+    lineHeight: 14,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: 'white/65',
+  },
+  title: {
+    font: 'display',
+    fontWeight: '700',
+    fontSize: 24,
+    lineHeight: 25,
+    color: 'white',
+  },
+});
 
 export type { MediaCardProps };
 export { CARD_SCRIM, MediaCard, tintGradient };

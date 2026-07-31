@@ -9,9 +9,50 @@ import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
 import { Dialog } from '#ui/components/organisms/dialog';
+import { sv } from '#ui/core';
 import { FocusColumn } from '#ui/lib/focus-scope';
-import { colors, radius } from '#ui/lib/tokens';
 import { useControllable } from '#ui/lib/use-controllable';
+
+// The trigger wears <TextField>'s well, so a form reads as one family.
+const triggerVariants = sv({
+  slots: {
+    root: {
+      row: true,
+      align: 'center',
+      gap: 14,
+      px: 22,
+      py: 12,
+      radius: '2xl',
+      border: 'borderStrong',
+      _hover: { bg: 'white/6' },
+    },
+    ink: { shrink: 1 },
+  },
+  variants: {
+    invalid: { true: { root: { border: 'danger' } } },
+    filled: { true: { ink: { color: 'text' } }, false: { ink: { color: 'textDim' } } },
+  },
+  defaults: { invalid: false, filled: false },
+});
+
+const optionVariants = sv({
+  slots: {
+    root: {
+      row: true,
+      align: 'center',
+      gap: 12,
+      px: 14,
+      py: 12,
+      radius: 'md',
+      _hover: { bg: 'white/8' },
+    },
+    ink: { shrink: 1 },
+  },
+  variants: {
+    chosen: { true: { ink: { color: 'text' } }, false: { ink: { color: 'textMuted' } } },
+  },
+  defaults: { chosen: false },
+});
 
 interface SelectOption {
   value: string;
@@ -64,15 +105,20 @@ function Select({
         label={`${label}: ${current?.label ?? placeholder}`}
         disabled={disabled}
         onPress={() => setOpen(true)}
-        style={[TRIGGER, { borderColor: invalid ? colors.danger : colors.borderStrong }, style]}
-        hoveredStyle={TRIGGER_HOVERED}
+        sv={triggerVariants}
+        vars={{ invalid, filled: current !== undefined }}
+        style={style}
       >
-        {current?.icon ? <Icon name={current.icon} size={18} color="textMuted" /> : null}
-        <Txt variant="body" color={current ? 'text' : 'textDim'} lines={1} style={TRIGGER_INK}>
-          {current?.label ?? placeholder}
-        </Txt>
-        <Box flex />
-        <Icon name="chevron-down" size={16} color="textDim" />
+        {(state) => (
+          <>
+            {current?.icon ? <Icon name={current.icon} size={18} color="textMuted" /> : null}
+            <Txt variant="body" lines={1} style={state.slots.ink}>
+              {current?.label ?? placeholder}
+            </Txt>
+            <Box flex />
+            <Icon name="chevron-down" size={16} color="textDim" />
+          </>
+        )}
       </Focusable>
 
       <Dialog open={open} onClose={close} title={label} width={560}>
@@ -97,45 +143,27 @@ function Option({
   onPress,
 }: Readonly<{ option: SelectOption; chosen: boolean; onPress: () => void }>) {
   return (
-    <Focusable label={option.label} onPress={onPress} style={ROW} hoveredStyle={ROW_HOVERED}>
-      {option.icon ? <Icon name={option.icon} size={18} color="textMuted" /> : null}
-      <Txt variant="body" color={chosen ? 'text' : 'textMuted'} lines={1} style={ROW_INK}>
-        {option.label}
-      </Txt>
-      <Box flex />
-      {option.note ? (
-        <Txt variant="meta" color="textDim">
-          {option.note}
-        </Txt>
-      ) : null}
-      <Box w={18} align="center">
-        {chosen ? <Icon name="check" size={16} color="accent" /> : null}
-      </Box>
+    <Focusable label={option.label} onPress={onPress} sv={optionVariants} vars={{ chosen }}>
+      {(state) => (
+        <>
+          {option.icon ? <Icon name={option.icon} size={18} color="textMuted" /> : null}
+          <Txt variant="body" lines={1} style={state.slots.ink}>
+            {option.label}
+          </Txt>
+          <Box flex />
+          {option.note ? (
+            <Txt variant="meta" color="textDim">
+              {option.note}
+            </Txt>
+          ) : null}
+          <Box w={18} align="center">
+            {chosen ? <Icon name="check" size={16} color="accent" /> : null}
+          </Box>
+        </>
+      )}
     </Focusable>
   );
 }
-
-const TRIGGER = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 14,
-  paddingHorizontal: 22,
-  paddingVertical: 12,
-  borderRadius: radius['2xl'],
-  borderWidth: 1,
-} as const;
-const TRIGGER_INK = { flexShrink: 1 } as const;
-const TRIGGER_HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.06)' } as const;
-const ROW = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 12,
-  paddingHorizontal: 14,
-  paddingVertical: 12,
-  borderRadius: radius.md,
-} as const;
-const ROW_INK = { flexShrink: 1 } as const;
-const ROW_HOVERED = { backgroundColor: 'rgba(255, 255, 255, 0.08)' } as const;
 
 export type { SelectOption, SelectProps };
 export { Select };

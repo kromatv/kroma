@@ -2,11 +2,11 @@
 // build of the app this actually is.
 
 import { formatBuildDate, LOCALES } from '@kroma/core';
-import { Icon, type IconName } from '@kroma/ui/kit';
+import { Icon, type IconName, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { buildInfo, commitLabel, repoLabel } from '#mobile/lib/buildInfo';
@@ -30,8 +30,8 @@ export default function Settings() {
   return (
     <Screen padded={false}>
       <PageHeader title={t('nav.settings')} />
-      <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.card}>
+      <ScrollView contentContainerStyle={s.body}>
+        <View style={s.card}>
           <Row
             label={t('account.uiLanguage')}
             value={localeLabel ? t(localeLabel) : locale}
@@ -46,15 +46,15 @@ export default function Settings() {
           />
         </View>
 
-        <Text style={styles.group}>{t('nav.server')}</Text>
-        <View style={styles.card}>
+        <Text style={s.group}>{t('nav.server')}</Text>
+        <View style={s.card}>
           <Row label={t('nav.server')} value={serverUrl?.replace(/^https?:\/\//, '')} />
           {/* Plain "Version": the group heading above already says which side. */}
           <Row label={t('about.version')} value={health.data ? `v${health.data.version}` : '…'} />
         </View>
 
-        <Text style={styles.group}>{t('about.title')}</Text>
-        <View style={styles.card}>
+        <Text style={s.group}>{t('about.title')}</Text>
+        <View style={s.card}>
           <Row label={t('about.version')} value={`v${buildInfo.version}`} />
           {/* Git-derived fields are absent in a build made outside a checkout
               (a source tarball); each row hides itself when its value is empty. */}
@@ -89,21 +89,18 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
   if (!value) return null;
   const body: ReactNode = (
     <>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <View style={styles.rowRight}>
-        <Text numberOfLines={1} style={mono ? styles.rowValueMono : styles.rowValue}>
+      <Text style={s.rowLabel}>{label}</Text>
+      <View style={s.rowRight}>
+        <Text numberOfLines={1} style={mono ? s.rowValueMono : s.rowValue}>
           {value}
         </Text>
         {icon ? <Icon name={icon} size={16} stroke={2.2} color={colors.textFaint} /> : null}
       </View>
     </>
   );
-  if (!onPress) return <View style={styles.row}>{body}</View>;
+  if (!onPress) return <View style={s.row}>{body}</View>;
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
       {body}
     </Pressable>
   );
@@ -111,34 +108,29 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
 
 const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
-const styles = StyleSheet.create({
-  body: { padding: spacing.md, gap: spacing.sm, ...boxed(contentWidth.reading) },
+const s = styles({
+  body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },
   group: {
     ...type.small,
+    px: 4,
+    mt: spacing.md,
+    mb: 2,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginTop: spacing.md,
-    marginBottom: 2,
-    paddingHorizontal: 4,
   },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
+  card: { px: 6, py: 4, bg: 'surface1', radius: radius.lg },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 52,
-    paddingHorizontal: spacing.sm,
+    row: true,
+    between: true,
+    align: 'center',
     gap: spacing.md,
-    borderRadius: radius.md,
+    minH: 52,
+    px: spacing.sm,
+    radius: radius.md,
   },
-  rowPressed: { backgroundColor: colors.surfaceRaised },
+  rowPressed: { bg: 'surface2' },
   rowLabel: { ...type.body, fontWeight: '500' },
-  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
-  rowValue: { ...type.caption, flexShrink: 1 },
-  rowValueMono: { ...type.caption, flexShrink: 1, fontFamily: MONO },
+  rowRight: { row: true, align: 'center', shrink: 1, gap: 8 },
+  rowValue: { ...type.caption, shrink: 1 },
+  rowValueMono: { ...type.caption, shrink: 1, fontFamily: MONO },
 });

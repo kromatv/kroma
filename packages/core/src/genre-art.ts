@@ -115,7 +115,7 @@ export function genreColors(name: string): [string, string] {
 }
 
 /** The genre's vivid accent colour (caption bar / highlights). */
-export function genreAccent(name: string): string {
+export function genreAccent(name: string): `hsl(${string})` {
   return `hsl(${genreHue(name)}, 82%, 62%)`;
 }
 

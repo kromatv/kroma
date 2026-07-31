@@ -4,9 +4,12 @@
 
 import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, gradient, Hint, shade, Txt } from '@kroma/ui/kit';
+import { Box, gradient, Hint, shade, styles, Txt } from '@kroma/ui/kit';
 
-const HINT = { fontSize: 13, fontWeight: '600' as const };
+const s = styles({
+  hint: { fontSize: 13, fontWeight: '600' },
+  hintKey: { fontSize: 13, fontWeight: '700' },
+});
 
 /** `strength` matches the design: Home fades from 0.8, the grids from 0.85
  * (they have a denser field of tiles running under the strip). */
@@ -28,10 +31,10 @@ export function HintBar({
       pointerEvents="none"
       style={gradient(`linear-gradient(0deg, ${shade(strength)}, transparent)`)}
     >
-      <Hint text={t(browseKey)} size={13} gap={3} color="textDim" textStyle={HINT} />
-      <Hint text={t('content.hintRows')} size={13} gap={3} color="textDim" textStyle={HINT} />
-      <Txt style={HINT} color="textDim">
-        <Txt style={{ ...HINT, fontWeight: '700' }} color="accent">
+      <Hint text={t(browseKey)} size={13} gap={3} color="textDim" textStyle={s.hint} />
+      <Hint text={t('content.hintRows')} size={13} gap={3} color="textDim" textStyle={s.hint} />
+      <Txt style={s.hint} color="textDim">
+        <Txt style={s.hintKey} color="accent">
           {t('content.hintOk')}
         </Txt>
         {` ${t('content.hintOpen')}`}

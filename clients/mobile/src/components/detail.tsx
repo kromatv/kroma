@@ -1,6 +1,6 @@
 import type { CastMember } from '@kroma/core';
 import { posterColors, sizedImageUrl } from '@kroma/core';
-import { BackButton, PersonCard, tintGradient } from '@kroma/ui/kit';
+import { BackButton, PersonCard, styles, tintGradient } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -11,15 +11,15 @@ import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { colors, SHADE, spacing, type } from '#mobile/lib/theme';
+import { SHADE, spacing, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
 export { DetailActions } from './DetailActions';
 
 export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <View style={styles.badge}>
-      <Text style={styles.badgeText}>{children}</Text>
+    <View style={s.badge}>
+      <Text style={s.badgeText}>{children}</Text>
     </View>
   );
 }
@@ -68,7 +68,7 @@ export function DetailHero({
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
-      <View style={[styles.back, { top: insets.top + 6, left: gutters.left }]}>
+      <View style={[s.back, { top: insets.top + 6, left: gutters.left }]}>
         <BackButton
           size={40}
           hitSlop={12}
@@ -76,12 +76,12 @@ export function DetailHero({
           onPress={() => goBack(router)}
         />
       </View>
-      <View style={[styles.heroText, { left: gutters.left, right: gutters.right }]}>
-        {context ? <Text style={styles.context}>{context}</Text> : null}
-        <Text numberOfLines={2} style={styles.heroTitle}>
+      <View style={[s.heroText, { left: gutters.left, right: gutters.right }]}>
+        {context ? <Text style={s.context}>{context}</Text> : null}
+        <Text numberOfLines={2} style={s.heroTitle}>
           {title}
         </Text>
-        {meta ? <View style={styles.metaRow}>{meta}</View> : null}
+        {meta ? <View style={s.metaRow}>{meta}</View> : null}
       </View>
     </View>
   );
@@ -97,7 +97,7 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={[styles.castRail, gutters.style]}
+      contentContainerStyle={[s.castRail, gutters.style]}
     >
       {cast.slice(0, 15).map((member) => (
         <PersonCard
@@ -114,28 +114,19 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
   );
 }
 
-const styles = StyleSheet.create({
-  back: { position: 'absolute', zIndex: 2 },
-  heroText: {
-    position: 'absolute',
-    bottom: spacing.sm,
-    gap: 6,
-  },
-  context: { ...type.caption, color: colors.accent, fontWeight: '700' },
+const s = styles({
+  back: { absolute: true, z: 2 },
+  heroText: { absolute: true, bottom: spacing.sm, gap: 6 },
+  context: { ...type.caption, color: 'accent', fontWeight: '700' },
   heroTitle: {
     ...type.display,
     fontSize: 32,
-    textShadowColor: 'rgba(10, 10, 12, 0.85)',
+    textShadowColor: 'bg/85',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
   },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  badge: {
-    backgroundColor: 'rgba(28, 28, 34, 0.85)',
-    borderRadius: 7,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  badgeText: { fontSize: 12, fontWeight: '600', color: colors.text },
+  metaRow: { row: true, wrap: true, align: 'center', gap: 8 },
+  badge: { px: 8, py: 3, bg: 'surface2/85', radius: 7 },
+  badgeText: { fontSize: 12, fontWeight: '600', color: 'text' },
   castRail: { gap: 12 },
 });

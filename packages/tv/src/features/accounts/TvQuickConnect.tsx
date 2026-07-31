@@ -1,6 +1,6 @@
 import type { AuthResult, KromaClient, MessageKey, QuickConnectInit } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Spinner, SvgXml, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Spinner, SvgXml, styles, Txt, useFocusNav } from '@kroma/ui/kit';
 // Static import on purpose: Metro has no code splitting, and a dynamic `import()`
 // throws "Expected HMRClient.setup() call at startup" without the dev server.
 import qrcode from 'qrcode-generator';
@@ -155,7 +155,7 @@ export function TvQuickConnect() {
             <Txt style={{ fontSize: 17, fontWeight: '700' }}>{t('nav.connectDevice')}</Txt>
             {t('connect.orInAppSuffix')}
           </Txt>
-          <Txt style={CODE} color="accent">
+          <Txt style={s.code} color="accent">
             {info.code}
           </Txt>
           <Box
@@ -197,11 +197,13 @@ function connectUrl(client: KromaClient, code: string, serverUrl?: string | null
   }
 }
 
-const CODE = {
-  fontSize: 96,
-  lineHeight: 96,
-  fontWeight: '700' as const,
-  letterSpacing: 8,
-  marginTop: 20,
-  fontVariant: ['tabular-nums' as const],
-};
+const s = styles({
+  code: {
+    fontSize: 96,
+    lineHeight: 96,
+    fontWeight: '700',
+    letterSpacing: 8,
+    mt: 20,
+    fontVariant: ['tabular-nums'],
+  },
+});

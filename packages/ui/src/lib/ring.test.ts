@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ringGeometry } from './ring';
+import { RING_BUSY_ARC, ringGeometry } from './ring';
 
 describe('ringGeometry', () => {
   it('insets the radius by half the stroke so the ring is not clipped', () => {
@@ -18,6 +18,16 @@ describe('ringGeometry', () => {
   it('hides half at the midpoint', () => {
     const g = ringGeometry({ value: 0.5 });
     expect(g.dashOffset).toBeCloseTo(g.circumference / 2);
+  });
+
+  it('draws an empty ring when no value is given at all', () => {
+    const g = ringGeometry({});
+    expect(g.dashOffset).toBeCloseTo(g.circumference);
+  });
+
+  it('leaves three quarters hidden for the indeterminate arc', () => {
+    const g = ringGeometry({ value: RING_BUSY_ARC });
+    expect(g.dashOffset).toBeCloseTo(g.circumference * 0.75);
   });
 
   it('clamps a value the caller has not sanitised', () => {

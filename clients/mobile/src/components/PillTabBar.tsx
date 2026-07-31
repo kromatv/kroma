@@ -2,7 +2,7 @@
 // the iOS/Android backdrop split. Screens scroll underneath, padding by
 // TAB_BAR_CLEARANCE.
 
-import { NavPill, NavPillItem } from '@kroma/ui/kit';
+import { NavPill, NavPillItem, styles } from '@kroma/ui/kit';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 // expo-router vendors react-navigation and does not re-export this type from its root.
@@ -14,14 +14,11 @@ import { CastMiniBar } from '#mobile/components/cast/CastMiniBar';
 export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTabBarProps>) {
   const insets = useSafeAreaInsets();
   return (
-    <View
-      pointerEvents="box-none"
-      style={[styles.dock, { bottom: Math.max(insets.bottom, 12) + 8 }]}
-    >
+    <View pointerEvents="box-none" style={[s.dock, { bottom: Math.max(insets.bottom, 12) + 8 }]}>
       {/* Renders nothing when not casting. */}
       <CastMiniBar />
       {/* Unclipped wrapper: the pill itself clips the blur. */}
-      <View style={styles.shadow}>
+      <View style={s.shadow}>
         <NavPill
           size="sm"
           // Null is the slide ending - nothing to feel there.
@@ -63,11 +60,11 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
   );
 }
 
-const styles = StyleSheet.create({
-  dock: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+const s = styles({
+  dock: { absolute: true, right: 0, left: 0, align: 'center' },
   shadow: {
-    borderRadius: 999,
-    shadowColor: '#000',
+    radius: 999,
+    shadowColor: 'black',
     shadowOpacity: 0.35,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },

@@ -6,8 +6,8 @@
 // bezier as a string, Animated as an Easing. Declared together so they can
 // never drift apart.
 
+import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
-import { motion } from '#ui/lib/tokens';
 
 // Short, because this is a cursor moving rather than a transition, and long
 // enough to read as movement rather than a cut.

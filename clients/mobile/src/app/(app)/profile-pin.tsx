@@ -2,9 +2,9 @@
 // Face ID / Touch ID.
 
 import { apiErrorText } from '@kroma/core';
-import { Button } from '@kroma/ui/kit';
+import { Button, styles } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { BioSwitchRow, LockCard, PinWizard } from '#mobile/components/profileLock';
 import { ErrorBanner, Screen } from '#mobile/components/ui';
@@ -21,7 +21,7 @@ import {
   setBiometricLockEnabled,
   setBiometricUnlockEnabled,
 } from '#mobile/lib/storage';
-import { colors, spacing, type } from '#mobile/lib/theme';
+import { spacing, type } from '#mobile/lib/theme';
 
 type After = 'new' | 'remove' | 'bio';
 
@@ -198,13 +198,13 @@ export default function ProfilePin() {
     <Screen padded={false}>
       <PageHeader title={t('account.profileLock')} />
       {step.kind === 'menu' ? (
-        <View style={styles.body}>
+        <View style={s.body}>
           <LockCard
             title={t('account.pin')}
             sub={hasPin ? t('account.pinSubSet') : t('account.pinSub')}
           >
             {hasPin ? (
-              <View style={styles.buttons}>
+              <View style={s.buttons}>
                 <Button
                   label={t('account.changePin')}
                   onPress={() => begin({ kind: 'current', after: 'new' })}
@@ -238,7 +238,7 @@ export default function ProfilePin() {
             </LockCard>
           ) : null}
 
-          {saved ? <Text style={styles.saved}>{t('account.profileSaved')}</Text> : null}
+          {saved ? <Text style={s.saved}>{t('account.profileSaved')}</Text> : null}
           <ErrorBanner message={error} />
         </View>
       ) : (
@@ -258,8 +258,8 @@ export default function ProfilePin() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: { padding: spacing.md, gap: spacing.lg, ...boxed(contentWidth.form) },
+const s = styles({
+  body: { gap: spacing.lg, p: spacing.md, ...boxed(contentWidth.form) },
   buttons: { gap: 10 },
-  saved: { ...type.caption, color: colors.accent, textAlign: 'center' },
+  saved: { ...type.caption, color: 'accent', textAlign: 'center' },
 });

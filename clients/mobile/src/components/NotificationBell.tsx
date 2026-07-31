@@ -1,9 +1,9 @@
-import { Icon, IconButton } from '@kroma/ui/kit';
+import { Icon, IconButton, styles } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useUnreadCount } from '#mobile/lib/notifications';
-import { colors, type } from '#mobile/lib/theme';
+import { type } from '#mobile/lib/theme';
 
 export function NotificationBell() {
   const t = useT();
@@ -22,9 +22,9 @@ export function NotificationBell() {
       <View>
         <Icon name="bell" size={22} stroke={2} />
         {unread > 0 ? (
-          <View style={styles.badge}>
+          <View style={s.badge}>
             {/* Past nine the pill starts outgrowing the bell. */}
-            <Text style={styles.count}>{unread > 9 ? '9+' : unread}</Text>
+            <Text style={s.count}>{unread > 9 ? '9+' : unread}</Text>
           </View>
         ) : null}
       </View>
@@ -32,24 +32,17 @@ export function NotificationBell() {
   );
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   badge: {
-    position: 'absolute',
+    absolute: true,
     top: -5,
     right: -7,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.accent,
+    center: true,
+    h: 16,
+    minW: 16,
+    px: 4,
+    bg: 'accent',
+    radius: 8,
   },
-  count: {
-    ...type.small,
-    fontSize: 10,
-    lineHeight: 14,
-    fontWeight: '800',
-    color: colors.accentInk,
-  },
+  count: { ...type.small, fontSize: 10, lineHeight: 14, fontWeight: '800', color: 'accentInk' },
 });

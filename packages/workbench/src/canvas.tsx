@@ -1,8 +1,8 @@
 // Where the component being inspected renders: inside a device viewport, and as
 // a variant matrix derived from the component's `sv`.
 
-import { Box, type IconName, Txt } from '@kroma/ui/kit';
-import { CANVAS, type ColorToken, colors, radius, shadow } from '@kroma/ui/tokens';
+import { Box, type IconName, styles, Txt } from '@kroma/ui/kit';
+import { CANVAS, type ColorToken, colors, radius } from '@kroma/ui/tokens';
 import { useCallback, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { ScrollView } from 'react-native';
@@ -128,15 +128,15 @@ function ViewportFrame({
     // the card. Never scaled up, as with a device frame.
     return (
       <ScrollView
-        style={SCROLL}
-        contentContainerStyle={[STAGE_AREA, { padding: Math.round(inset * 0.75) }]}
+        style={s.scroll}
+        contentContainerStyle={[s.stageArea, { padding: Math.round(inset * 0.75) }]}
       >
         <Box
           bg={surface}
           radius="xl"
           p={inset + pad}
           align="flex-start"
-          style={STAGE}
+          style={s.stage}
           onLayout={onLayout}
         >
           {/* See `stageWidth`. */}
@@ -174,7 +174,7 @@ function ViewportFrame({
           bg="surface3"
           p={BEZEL}
           radius={radius.lg + BEZEL}
-          style={[CASE, { transform: [{ scale }], borderWidth: hairline(scale) }]}
+          style={[s.case, { transform: [{ scale }], borderWidth: hairline(scale) }]}
         >
           <Box
             w={device.width}
@@ -183,7 +183,7 @@ function ViewportFrame({
             overflow="hidden"
             p={pad}
             radius="lg"
-            style={[SCREEN, { borderWidth: hairline(scale) }]}
+            style={[s.screen, { borderWidth: hairline(scale) }]}
           >
             {children}
           </Box>
@@ -214,7 +214,7 @@ function Staged({
   const sized = <Box w={stage.width}>{children}</Box>;
   if (!stage.scroll) return sized;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator style={SCROLL_X}>
+    <ScrollView horizontal showsHorizontalScrollIndicator style={s.scrollX}>
       {sized}
     </ScrollView>
   );
@@ -236,7 +236,7 @@ function Caption({
   const orientation = size.width > size.height ? 'landscape' : 'portrait';
   return (
     <Box row align="center" px={Math.round(inset * 0.75)} pt={12}>
-      <Txt variant="meta" color="textDim" style={CAPTION}>
+      <Txt variant="meta" color="textDim" style={s.caption}>
         {captionText([
           label,
           `${size.width} × ${size.height}`,
@@ -265,7 +265,7 @@ function Fit({ available, children }: Readonly<{ available: number; children: Re
   return (
     <Box gap={scaled ? 10 : 0} align="flex-start">
       {scaled ? (
-        <Txt variant="meta" color="textDim" style={CAPTION}>
+        <Txt variant="meta" color="textDim" style={s.caption}>
           {captionText([
             'Fit',
             `${Math.round(wanted)} × ${Math.round(natural.height)}`,
@@ -276,12 +276,12 @@ function Fit({ available, children }: Readonly<{ available: number; children: Re
       <Box
         w={scaled ? Math.round(wanted * scale) : undefined}
         h={scaled && natural.height ? Math.round(natural.height * scale) : undefined}
-        style={SCALED_BOX}
+        style={s.scaledBox}
       >
         {/* Measured here, transformed one level in: measuring the transformed
             node loops, since rnw's `onLayout` is post-transform. Unstretched
             (`alignSelf`) so it reports the natural width, not the scaled one. */}
-        <Box onLayout={measure} style={MEASURE}>
+        <Box onLayout={measure} style={s.measure}>
           <Box style={scaled ? { transform: [{ scale }], transformOrigin: '0 0' } : undefined}>
             {children}
           </Box>
@@ -290,24 +290,6 @@ function Fit({ available, children }: Readonly<{ available: number; children: Re
     </Box>
   );
 }
-
-const CAPTION = { fontSize: 11, opacity: 0.75 } as const;
-const SCALED_BOX = { overflow: 'visible' } as const;
-const MEASURE = { alignSelf: 'flex-start' } as const;
-
-const SCROLL = { flex: 1 } as const;
-// `alignSelf: stretch` so the scroller takes the stage's width and scrolls
-// within it; hugging its content it would grow and overflow the card.
-const SCROLL_X = { flexGrow: 0, flexShrink: 1, alignSelf: 'stretch' } as const;
-const STAGE_AREA = { alignItems: 'stretch' } as const;
-const STAGE = {
-  borderWidth: 1,
-  borderColor: colors.borderStrong,
-  minHeight: 220,
-  alignSelf: 'stretch',
-} as const;
-const CASE = { borderColor: colors.borderStrong, boxShadow: shadow.pop } as const;
-const SCREEN = { borderColor: colors.border } as const;
 
 interface MatrixProps {
   rows: readonly MatrixRow[];
@@ -339,7 +321,7 @@ function Matrix({ rows, args, render }: Readonly<MatrixProps>) {
             {row.options.map((option) => (
               <Box key={String(option)} gap={10} align="flex-start">
                 {render({ ...args, [row.group]: option })}
-                <Txt variant="meta" color="textDim" style={CELL_LABEL}>
+                <Txt variant="meta" color="textDim" style={s.cellLabel}>
                   {String(option)}
                 </Txt>
               </Box>
@@ -351,7 +333,20 @@ function Matrix({ rows, args, render }: Readonly<MatrixProps>) {
   );
 }
 
-const CELL_LABEL = { fontSize: 11.5 } as const;
+const s = styles({
+  caption: { fontSize: 11, opacity: 0.75 },
+  scaledBox: { overflow: 'visible' },
+  measure: { self: 'flex-start' },
+  scroll: { flex: true },
+  // `self: stretch` so the scroller takes the stage's width and scrolls within
+  // it; hugging its content it would grow and overflow the card.
+  scrollX: { grow: 0, shrink: 1, self: 'stretch' },
+  stageArea: { align: 'stretch' },
+  stage: { border: 'borderStrong', minH: 220, self: 'stretch' },
+  case: { borderColor: 'borderStrong', shadow: 'pop' },
+  screen: { borderColor: 'border' },
+  cellLabel: { fontSize: 11.5 },
+});
 
 export type { MatrixProps, Viewport, ViewportFrameProps, ViewportName };
 export { canRotate, frameSize, hairline, Matrix, SURFACES, stageWidth, VIEWPORTS, ViewportFrame };

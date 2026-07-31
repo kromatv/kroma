@@ -1,14 +1,7 @@
-import { Chip, Icon, IconButton } from '@kroma/ui/kit';
+import { Chip, Icon, IconButton, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import {
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '#mobile/components/Avatar';
 import {
@@ -36,16 +29,16 @@ function DownloadsGlyph() {
   if (pending === 0) return <Icon name="download" size={22} stroke={2} />;
   const progress = downloads.downloading[0]?.progress ?? -1;
   return (
-    <View style={styles.dlGlyph}>
+    <View style={s.dlGlyph}>
       <ProgressRing progress={progress} size={26} stroke={2.5} />
       {progress >= 0 ? (
-        <View pointerEvents="none" style={styles.dlArrow}>
+        <View pointerEvents="none" style={s.dlArrow}>
           <Icon name="download" size={12} stroke={2.6} />
         </View>
       ) : null}
       {pending > 1 ? (
-        <View style={styles.dlCount}>
-          <Text style={styles.dlCountText}>{pending}</Text>
+        <View style={s.dlCount}>
+          <Text style={s.dlCountText}>{pending}</Text>
         </View>
       ) : null}
     </View>
@@ -60,11 +53,11 @@ function HomeHeader() {
   const gutters = useGutters();
   const avatar = client.resolveArt(user?.avatarUrl);
   return (
-    <View style={[styles.header, { paddingTop: insets.top + spacing.sm }, gutters.style]}>
-      <View style={styles.brandRow}>
+    <View style={[s.header, { paddingTop: insets.top + spacing.sm }, gutters.style]}>
+      <View style={s.brandRow}>
         <KromaLockup height={20} />
       </View>
-      <View style={styles.headerActions}>
+      <View style={s.headerActions}>
         <CastIconButton />
         <IconButton
           variant="ghost"
@@ -99,7 +92,7 @@ function CategoryChips() {
     { label: t('nav.genres'), route: '/genres' },
   ];
   return (
-    <View style={[styles.chips, gutters.style]}>
+    <View style={[s.chips, gutters.style]}>
       {chips.map((chip) => (
         <Chip
           key={chip.route}
@@ -179,7 +172,7 @@ export default function Home() {
 
   return (
     <ScrollView
-      style={styles.screen}
+      style={s.screen}
       refreshControl={
         <RefreshControl
           refreshing={home.isRefetching}
@@ -215,44 +208,26 @@ export default function Home() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.sm,
-  },
-  brandRow: { flexDirection: 'row', alignItems: 'center' },
+const s = styles({
+  screen: { flex: true, bg: 'bg' },
+  header: { row: true, between: true, align: 'center', pt: spacing.sm },
+  brandRow: { row: true, align: 'center' },
   // The buttons carry their own 40pt targets, so this gap spaces glyphs, not
   // touch areas.
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dlGlyph: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
-  dlArrow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  headerActions: { row: true, align: 'center', gap: 6 },
+  dlGlyph: { center: true, w: 26, h: 26 },
+  dlArrow: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
   dlCount: {
-    position: 'absolute',
+    absolute: true,
     top: -5,
     right: -8,
-    minWidth: 15,
-    height: 15,
-    borderRadius: 8,
-    paddingHorizontal: 3,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+    center: true,
+    h: 15,
+    minW: 15,
+    px: 3,
+    bg: 'accent',
+    radius: 8,
   },
-  dlCountText: { color: colors.accentInk, fontSize: 10, fontWeight: '700' },
-  chips: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: spacing.md,
-  },
+  dlCountText: { color: 'accentInk', fontSize: 10, fontWeight: '700' },
+  chips: { row: true, gap: 8, mt: spacing.md },
 });

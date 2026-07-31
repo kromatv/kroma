@@ -3,7 +3,7 @@ import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Txt } from '#ui/components/atoms/text';
-import { fonts } from '#ui/lib/tokens';
+import { styles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import { CHART_WINDOW } from '../lib/chart-geometry';
 import type { PlayerController, PlayerMeter, PlayerStats } from '../types';
@@ -81,14 +81,14 @@ export function StatsPanel({
       maxH={maxHeight}
       radius={14}
       borderWidth={1}
-      border="rgba(255, 255, 255, 0.1)"
-      bg={CARD}
+      border="white/10"
+      bg="bg/94"
       px={PANEL_PAD}
       py={18}
       gap={16}
     >
       <Box row align="center" between gap={24}>
-        <Txt style={PANEL_TITLE} color="rgba(244, 243, 240, 0.5)">
+        <Txt style={sx.panelTitle} color="text/50">
           {t('stats.title')}
         </Txt>
         {/* Pointer-only: `focused={false}` keeps this out of the focus
@@ -105,13 +105,13 @@ export function StatsPanel({
         />
       </Box>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={BODY}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={sx.body}>
         <SummaryBlock headline={summary.headline} pairs={summary.pairs} />
 
         {charts.length > 0 ? (
           <Box row={!stackCharts} gap={stackCharts ? 12 : COL_GAP} align="stretch">
             {charts.map((group) => (
-              <Box key={group.id} grow={1} shrink={1} style={stackCharts ? null : CHART_CELL}>
+              <Box key={group.id} grow={1} shrink={1} style={stackCharts ? null : sx.chartCell}>
                 <StatsChart
                   meters={group.meters}
                   history={historyRef.current}
@@ -139,11 +139,11 @@ function SummaryBlockView({ headline, pairs }: Readonly<{ headline?: string; pai
   if (!headline && pairs.length === 0) return null;
   return (
     <Box gap={8}>
-      {headline ? <Txt style={HEADLINE}>{headline}</Txt> : null}
+      {headline ? <Txt style={sx.headline}>{headline}</Txt> : null}
       {pairs.length > 0 ? (
         <Box row wrap gap={PAIR_GAP} align="center">
           {pairs.map((pair) => (
-            <Txt key={pair} style={SUMMARY_PAIR} color="rgba(244, 243, 240, 0.62)">
+            <Txt key={pair} style={sx.summaryPair} color="textMuted">
               {pair}
             </Txt>
           ))}
@@ -161,7 +161,7 @@ const SummaryBlock = memo(
 function GroupGridView({ groups }: Readonly<{ groups: [string, [string, string][]][] }>) {
   if (groups.length === 0) return null;
   return (
-    <Box row wrap gap={COL_GAP} align="flex-start" style={TOP_RULE}>
+    <Box row wrap gap={COL_GAP} align="flex-start" style={sx.topRule}>
       {groups.map(([title, rows]) => (
         <StatBlock key={title} title={title} rows={rows} />
       ))}
@@ -188,8 +188,8 @@ function sameGroups(
 function StatBlock({ title, rows }: Readonly<{ title: string; rows: [string, string][] }>) {
   if (rows.length === 0) return null;
   return (
-    <Box gap={8} style={COLUMN}>
-      <Txt style={BLOCK_TITLE} color="rgba(244, 243, 240, 0.38)">
+    <Box gap={8} style={sx.column}>
+      <Txt style={sx.blockTitle} color="text/38">
         {title}
       </Txt>
       {rows.map(([label, value]) => (
@@ -202,10 +202,10 @@ function StatBlock({ title, rows }: Readonly<{ title: string; rows: [string, str
 function StatRow({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <Box row between gap={16}>
-      <Txt style={STAT_LABEL} color="rgba(244, 243, 240, 0.5)">
+      <Txt style={sx.statLabel} color="text/50">
         {label}
       </Txt>
-      <Txt style={STAT_VALUE} color="rgba(244, 243, 240, 0.82)">
+      <Txt style={sx.statValue} color="text/82">
         {value}
       </Txt>
     </Box>
@@ -284,50 +284,35 @@ const PANEL_PAD = 22;
 const COL_GAP = 26;
 const PAIR_GAP = 14;
 
-const CARD = 'rgba(10, 10, 12, 0.94)';
-
-// flexBasis is kept under a third of the inner width (724px): at exactly a
-// third, sub-pixel rounding tips the third column onto its own line.
-const COLUMN = { flexBasis: 200, flexGrow: 1, flexShrink: 1, minWidth: 180 } as const;
-const CHART_CELL = { flexBasis: 0, minWidth: 0 } as const;
-const BODY = { gap: 16 } as const;
-const TOP_RULE = {
-  borderTopWidth: 1,
-  borderTopColor: 'rgba(255, 255, 255, 0.08)',
-  paddingTop: 16,
-};
-
-const HEADLINE = {
-  fontFamily: fonts.ui,
-  fontSize: 17,
-  fontWeight: '700' as const,
-  color: '#F4F3F0',
-};
-
-const SUMMARY_PAIR = { fontFamily: fonts.ui, fontSize: 12, fontWeight: '500' as const };
-
-const BLOCK_TITLE = {
-  fontFamily: fonts.ui,
-  fontSize: 10,
-  fontWeight: '700' as const,
-  letterSpacing: 1.4,
-  textTransform: 'uppercase' as const,
-};
-
-const PANEL_TITLE = {
-  fontFamily: fonts.ui,
-  fontSize: 11,
-  fontWeight: '700' as const,
-  letterSpacing: 1.76,
-  textTransform: 'uppercase' as const,
-};
-
-const STAT_LABEL = { fontFamily: fonts.ui, fontSize: 13, fontWeight: '500' as const };
-
-const STAT_VALUE = {
-  fontFamily: fonts.ui,
-  fontSize: 13,
-  fontWeight: '500' as const,
-  textAlign: 'right' as const,
-  fontVariant: ['tabular-nums' as const],
-};
+const sx = styles({
+  // flexBasis is kept under a third of the inner width (724px): at exactly a
+  // third, sub-pixel rounding tips the third column onto its own line.
+  column: { flexBasis: 200, grow: 1, shrink: 1, minW: 180 },
+  chartCell: { flexBasis: 0, minW: 0 },
+  body: { gap: 16 },
+  topRule: { borderTopWidth: 1, borderTopColor: 'white/8', pt: 16 },
+  headline: { font: 'ui', fontSize: 17, fontWeight: '700', color: 'text' },
+  summaryPair: { font: 'ui', fontSize: 12, fontWeight: '500' },
+  blockTitle: {
+    font: 'ui',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  panelTitle: {
+    font: 'ui',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.76,
+    textTransform: 'uppercase',
+  },
+  statLabel: { font: 'ui', fontSize: 13, fontWeight: '500' },
+  statValue: {
+    font: 'ui',
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+});

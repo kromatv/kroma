@@ -2,7 +2,13 @@
 // The third state matters — "not known yet" must not look like "down".
 
 import { Box } from '#ui/components/atoms/box';
-import { colors } from '#ui/lib/tokens';
+import type { ColorValue } from '#ui/core';
+
+/** What one status reads as: the dot's fill and its optional halo. */
+interface Look {
+  bg: ColorValue;
+  glow: string | null;
+}
 
 interface StatusDotProps {
   /** `undefined` means not probed yet. */
@@ -31,9 +37,9 @@ function lookOf(online?: boolean) {
   return online ? UP : DOWN;
 }
 
-const PENDING = { bg: 'rgba(255, 255, 255, 0.25)', glow: null };
-const UP = { bg: colors.success, glow: '0 0 7px rgba(70, 208, 141, 0.75)' };
-const DOWN = { bg: colors.danger, glow: '0 0 7px rgba(229, 57, 53, 0.75)' };
+const PENDING: Look = { bg: 'white/25', glow: null };
+const UP: Look = { bg: 'success', glow: '0 0 7px rgba(70, 208, 141, 0.75)' };
+const DOWN: Look = { bg: 'danger', glow: '0 0 7px rgba(229, 57, 53, 0.75)' };
 
 const ART_RING = '0 0 0 2px rgba(0, 0, 0, 0.4)';
 

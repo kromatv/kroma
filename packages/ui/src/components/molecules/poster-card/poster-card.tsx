@@ -10,8 +10,8 @@ import { Progress } from '#ui/components/atoms/progress';
 import { Txt } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { tintGradient } from '#ui/components/molecules/media-card';
+import { styles, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
-import { fonts, radius } from '#ui/lib/tokens';
 
 // Steeper than the rail tile's scrim: a poster is taller, so the fade has
 // further to travel before it reaches the title.
@@ -54,6 +54,7 @@ function PosterCard({
   onFocus,
   autoFocus,
 }: Readonly<PosterCardProps>) {
+  const { radius } = useTheme();
   return (
     <Focusable
       onPress={onPress}
@@ -71,7 +72,7 @@ function PosterCard({
         <Box fill radius="lg" style={gradient(POSTER_SCRIM)} />
         {watched ? <WatchedBadge size={26} /> : null}
         <Box absolute left={14} right={14} bottom={12}>
-          <Txt style={TITLE} lines={2}>
+          <Txt style={s.title} lines={2}>
             {title}
           </Txt>
         </Box>
@@ -85,13 +86,15 @@ function PosterCard({
   );
 }
 
-const TITLE = {
-  fontFamily: fonts.display,
-  fontWeight: '700' as const,
-  fontSize: 18,
-  lineHeight: 19,
-  color: '#FFFFFF',
-};
+const s = styles({
+  title: {
+    font: 'display',
+    fontWeight: '700',
+    fontSize: 18,
+    lineHeight: 19,
+    color: 'white',
+  },
+});
 
 export type { PosterCardProps };
 export { POSTER_SCRIM, PosterCard };

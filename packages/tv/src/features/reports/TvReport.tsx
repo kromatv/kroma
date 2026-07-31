@@ -1,7 +1,7 @@
 import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
 import { apiErrorText } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, Field, ListRow, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Button, Field, ListRow, styles, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -88,7 +88,7 @@ export function TvReport() {
     return (
       <AuthScreen>
         <Box w="100%" maxW={720} gap={20}>
-          <Txt variant="h1" style={HEADING}>
+          <Txt variant="h1" style={s.heading}>
             {t('report.message')}
           </Txt>
           <Field
@@ -123,7 +123,7 @@ export function TvReport() {
     <AuthScreen>
       <Box w="100%" maxW={720} gap={24}>
         <Box gap={6}>
-          <Txt variant="h1" style={HEADING}>
+          <Txt variant="h1" style={s.heading}>
             {t('report.title')}
           </Txt>
           <Txt lines={1} style={{ fontSize: 17, fontWeight: '600' }} color="accent">
@@ -171,4 +171,6 @@ export function TvReport() {
   );
 }
 
-const HEADING = { fontSize: 34, fontWeight: '600' as const };
+const s = styles({
+  heading: { fontSize: 34, fontWeight: '600' },
+});

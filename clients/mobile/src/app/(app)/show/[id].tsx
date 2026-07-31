@@ -3,7 +3,7 @@
 // components/showEpisodes.tsx.
 
 import { sizedImageUrl } from '@kroma/core';
-import { Button, Chip } from '@kroma/ui/kit';
+import { Button, Chip, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -17,7 +17,7 @@ import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
-import { colors, spacing, type } from '#mobile/lib/theme';
+import { spacing, type } from '#mobile/lib/theme';
 
 export default function ShowDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -87,7 +87,7 @@ export default function ShowDetail() {
 
   return (
     <Animated.ScrollView
-      style={styles.screen}
+      style={s.screen}
       contentContainerStyle={{ paddingBottom: spacing.xl }}
       onScroll={onScroll}
       scrollEventThrottle={16}
@@ -99,12 +99,10 @@ export default function ShowDetail() {
         title={title}
         meta={
           <>
-            {show.year ? <Text style={styles.metaText}>{show.year}</Text> : null}
-            <Text style={styles.metaText}>
-              {t('content.seasonCount', { count: show.seasonCount })}
-            </Text>
+            {show.year ? <Text style={s.metaText}>{show.year}</Text> : null}
+            <Text style={s.metaText}>{t('content.seasonCount', { count: show.seasonCount })}</Text>
             {show.metadata?.rating ? (
-              <Text style={styles.rating}>★ {show.metadata.rating.toFixed(1)}</Text>
+              <Text style={s.rating}>★ {show.metadata.rating.toFixed(1)}</Text>
             ) : null}
             {show.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
           </>
@@ -128,7 +126,7 @@ export default function ShowDetail() {
               <ExpandableText>{show.metadata.overview}</ExpandableText>
             ) : null}
             {show.metadata?.genres?.length ? (
-              <View style={styles.genreRow}>
+              <View style={s.genreRow}>
                 {show.metadata.genres.slice(0, 4).map((genre) => (
                   <Chip
                     key={genre}
@@ -143,7 +141,7 @@ export default function ShowDetail() {
               size="sm"
               icon="flag"
               label={t('report.action')}
-              style={styles.reportRow}
+              style={s.reportRow}
               onPress={() =>
                 router.push(
                   `/report/${show.id}?kind=show&title=${encodeURIComponent(title)}` as never,
@@ -155,13 +153,13 @@ export default function ShowDetail() {
 
         const episodesPane = (
           <>
-            <View style={[styles.tabsRow, wide ? styles.tabsRowWide : gutterPad]}>
-              <View style={styles.tabActive}>
-                <Text style={styles.tabActiveText}>{t('content.episodes')}</Text>
+            <View style={[s.tabsRow, wide ? s.tabsRowWide : gutterPad]}>
+              <View style={s.tabActive}>
+                <Text style={s.tabActiveText}>{t('content.episodes')}</Text>
               </View>
             </View>
 
-            <View style={[styles.seasonHeader, !wide && gutterPad]}>
+            <View style={[s.seasonHeader, !wide && gutterPad]}>
               <Button
                 ref={seasonButtonRef}
                 variant="glass"
@@ -178,7 +176,7 @@ export default function ShowDetail() {
               <SeasonDownload episodes={season?.episodes ?? []} />
             </View>
 
-            <View style={[styles.episodes, !wide && gutterPad]}>
+            <View style={[s.episodes, !wide && gutterPad]}>
               {(season?.episodes ?? []).map((ep) => (
                 <EpisodeRow
                   key={ep.id}
@@ -192,13 +190,13 @@ export default function ShowDetail() {
         );
 
         return wide ? (
-          <View style={[styles.split, gutterPad]}>
-            <View style={styles.splitInfo}>{info}</View>
-            <View style={styles.splitEpisodes}>{episodesPane}</View>
+          <View style={[s.split, gutterPad]}>
+            <View style={s.splitInfo}>{info}</View>
+            <View style={s.splitEpisodes}>{episodesPane}</View>
           </View>
         ) : (
           <>
-            <View style={[styles.body, gutterPad]}>{info}</View>
+            <View style={[s.body, gutterPad]}>{info}</View>
             {episodesPane}
           </>
         );
@@ -227,40 +225,25 @@ export default function ShowDetail() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  body: { paddingTop: spacing.md, gap: spacing.md },
-  metaText: { ...type.caption, color: colors.text, fontWeight: '600' },
-  rating: { ...type.caption, color: colors.accent, fontWeight: '700' },
-  genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  reportRow: { alignSelf: 'flex-start' },
+const s = styles({
+  screen: { flex: true, bg: 'bg' },
+  body: { gap: spacing.md, pt: spacing.md },
+  metaText: { ...type.caption, color: 'text', fontWeight: '600' },
+  rating: { ...type.caption, color: 'accent', fontWeight: '700' },
+  genreRow: { row: true, wrap: true, gap: 8 },
+  reportRow: { self: 'flex-start' },
   tabsRow: {
-    flexDirection: 'row',
-    marginTop: spacing.lg,
+    row: true,
+    mt: spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: 'border',
   },
-  tabActive: {
-    borderBottomWidth: 3,
-    borderBottomColor: colors.accent,
-    paddingBottom: 8,
-  },
+  tabActive: { pb: 8, borderBottomWidth: 3, borderBottomColor: 'accent' },
   tabActiveText: { ...type.section, fontSize: 16 },
-  seasonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
+  seasonHeader: { row: true, between: true, align: 'center', mt: spacing.md, mb: spacing.sm },
   episodes: { gap: 4 },
-  split: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.lg,
-    paddingTop: spacing.md,
-  },
+  split: { row: true, align: 'flex-start', gap: spacing.lg, pt: spacing.md },
   splitInfo: { flex: 2, gap: spacing.md },
   splitEpisodes: { flex: 3 },
-  tabsRowWide: { marginTop: 0 },
+  tabsRowWide: { mt: 0 },
 });

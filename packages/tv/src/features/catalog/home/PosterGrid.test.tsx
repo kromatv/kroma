@@ -61,7 +61,7 @@ describe('PosterGrid', () => {
   it('converts the percentage progress the card carries into a 0..1 bar', () => {
     const { container } = render(<PosterGrid cards={cards(1, { progress: 40 })} />);
     const fill = container.querySelector('[role="progressbar"] > *') as HTMLElement;
-    expect(getComputedStyle(fill).width).toBe('40%');
+    expect(getComputedStyle(fill).right).toBe('60%');
   });
 
   it('lays the tiles out at the design column width', () => {

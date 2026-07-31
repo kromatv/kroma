@@ -1,32 +1,46 @@
 // The cast rail's tile, on both distances.
 //
-// `ring={false}` is deliberate: the focus ring is drawn on the photo instead, so
-// a lit circle reads as a face being pointed at rather than a form field.
+// The focus ring is drawn on the photo instead of around the tile, which is why
+// the card draws none of its own: a lit circle reads as a face being pointed at
+// rather than a form field.
 
-import { Avatar } from '#ui/components/atoms/avatar';
+import { Avatar, type AvatarProps } from '#ui/components/atoms/avatar';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { Txt } from '#ui/components/atoms/text';
-import { sv } from '#ui/lib/sv';
-import { radius, ring } from '#ui/lib/tokens';
+import { Txt, type TxtProps } from '#ui/components/atoms/text';
+import { type StyleDecl, svFor } from '#ui/core';
 
 type PersonCardSize = 'sm' | 'tv';
 
-const personCardVariants = sv({
+const personCardVariants = svFor<{
+  root: StyleDecl;
+  face: StyleDecl;
+  name: StyleDecl;
+  role: StyleDecl;
+  // Required, or a props slot whose keys are all optional collapses back into a
+  // style slot; the base carries the `tv` metrics every option inherits.
+  photo: Required<Pick<AvatarProps, 'size'>>;
+  caption: Required<Pick<TxtProps, 'lines'>>;
+}>()({
   slots: {
-    root: { alignItems: 'center', flexShrink: 0 },
-    name: { fontWeight: '600', textAlign: 'center' },
+    root: { align: 'center', shrink: 0, _press: { opacity: 0.7 } },
+    face: { radius: 'pill', _focus: { ring: 'focusLift' } },
+    name: { fontWeight: '600', textAlign: 'center', color: 'text', _focus: { color: 'accent' } },
     role: { fontWeight: '500', textAlign: 'center' },
+    photo: { size: 120 },
+    caption: { lines: 1 },
   },
   variants: {
     size: {
       sm: {
-        root: { width: 92, gap: 5 },
+        root: { w: 92, gap: 5 },
         name: { fontSize: 11, lineHeight: 14 },
         role: { fontSize: 10 },
+        photo: { size: 84 },
+        caption: { lines: 2 },
       },
       tv: {
-        root: { width: 120, gap: 6 },
+        root: { w: 120, gap: 6 },
         name: { fontSize: 16 },
         role: { fontSize: 14 },
       },
@@ -34,9 +48,6 @@ const personCardVariants = sv({
   },
   defaults: { size: 'tv' },
 });
-
-const FACE = { sm: 84, tv: 120 } as const;
-const NAME_LINES = { sm: 2, tv: 1 } as const;
 
 interface PersonCardProps {
   name: string;
@@ -57,33 +68,32 @@ function PersonCard({
   label,
   onPress,
 }: Readonly<PersonCardProps>) {
-  const s = personCardVariants({ size });
   return (
     <Focusable
       onPress={onPress}
       label={label ?? name}
       focusScale={1.06}
       ring={false}
-      style={s.root}
-      pressedStyle={PRESSED}
+      sv={personCardVariants}
+      vars={{ size }}
     >
-      {({ focused }) => (
+      {(state) => (
         <>
-          <Box radius="pill" style={focused ? RING : null}>
+          <Box style={state.slots.face}>
             <Avatar
               name={name}
               src={photo ?? null}
               gradient={gradient}
-              size={FACE[size]}
               circle
               shadow={false}
+              {...state.slots.photo}
             />
           </Box>
-          <Txt lines={NAME_LINES[size]} style={s.name} color={focused ? 'accent' : 'text'}>
+          <Txt style={state.slots.name} {...state.slots.caption}>
             {name}
           </Txt>
           {role ? (
-            <Txt lines={1} style={s.role} color="textDim">
+            <Txt lines={1} style={state.slots.role} color="textDim">
               {role}
             </Txt>
           ) : null}
@@ -92,9 +102,6 @@ function PersonCard({
     </Focusable>
   );
 }
-
-const RING = { boxShadow: ring.focusLift, borderRadius: radius.pill } as const;
-const PRESSED = { opacity: 0.7 } as const;
 
 export type { PersonCardProps, PersonCardSize };
 export { PersonCard, personCardVariants };

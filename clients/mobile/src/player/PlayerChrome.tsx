@@ -8,6 +8,7 @@ import {
   StatsPanel,
   type SubtitleAppearance,
 } from '@kroma/ui';
+import { styles } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -214,8 +215,8 @@ export function PlayerChrome({
         <CueLine cue={cue} bottom={(visible ? 110 : 40) + insets.bottom} appearance={appearance} />
 
         {(zoomNote ?? notice) ? (
-          <View style={[styles.zoomNote, { top: insets.top + 18 }]} pointerEvents="none">
-            <Text style={styles.zoomNoteText}>{zoomNote ?? notice}</Text>
+          <View style={[s.zoomNote, { top: insets.top + 18 }]} pointerEvents="none">
+            <Text style={s.zoomNoteText}>{zoomNote ?? notice}</Text>
           </View>
         ) : null}
 
@@ -265,14 +266,7 @@ export function PlayerChrome({
   );
 }
 
-const styles = StyleSheet.create({
-  zoomNote: {
-    position: 'absolute',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(10, 10, 12, 0.8)',
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-  },
-  zoomNoteText: { color: '#F4F3F0', fontSize: 12, fontWeight: '600' },
+const s = styles({
+  zoomNote: { absolute: true, self: 'center', px: 14, py: 7, bg: 'bg/80', radius: 999 },
+  zoomNoteText: { color: 'text', fontSize: 12, fontWeight: '600' },
 });

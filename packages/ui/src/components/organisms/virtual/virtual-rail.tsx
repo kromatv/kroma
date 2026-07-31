@@ -14,11 +14,11 @@ import {
   type NativeSyntheticEvent,
   Platform,
   ScrollView,
-  StyleSheet,
   View,
   type ViewStyle,
 } from 'react-native';
 import { SpatialNavigationView } from 'react-tv-space-navigation';
+import { styles } from '#ui/core';
 import { maskImage } from '#ui/lib/css';
 import { webDocument } from '#ui/lib/dom';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -241,7 +241,7 @@ function VirtualRail<T>({
   const row = scoped ? (
     <SpatialNavigationView direction="horizontal">{tiles}</SpatialNavigationView>
   ) : (
-    <View style={styles.row}>{tiles}</View>
+    <View style={s.row}>{tiles}</View>
   );
 
   return (
@@ -262,7 +262,7 @@ function VirtualRail<T>({
           scrollEventThrottle={32}
           // The full row's width from the first frame: the scroll RANGE must not
           // grow with the mounted window, or a hard fling bounces off its end.
-          contentContainerStyle={[styles.row, contentStyle, { minWidth: count * pitch }]}
+          contentContainerStyle={[s.row, contentStyle, { minWidth: count * pitch }]}
         >
           {row}
         </ScrollView>
@@ -335,7 +335,7 @@ function MovingRow({
       <View
         pointerEvents={pointerEvents}
         style={[
-          styles.row,
+          s.row,
           style,
           {
             transform: [{ translateX: -offset }],
@@ -354,15 +354,15 @@ function MovingRow({
   return (
     <Animated.View
       pointerEvents={pointerEvents}
-      style={[styles.row, style, { transform: [{ translateX: slide }] }]}
+      style={[s.row, style, { transform: [{ translateX: slide }] }]}
     >
       {children}
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center' },
+const s = styles({
+  row: { row: true, align: 'center' },
 });
 
 export type { VirtualRailProps };

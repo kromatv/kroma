@@ -3,13 +3,14 @@ import { useT } from '@kroma/ui';
 import {
   Badge,
   Box,
-  colors,
   Focusable,
   Icon,
   type IconName,
   IconWell,
   ListRow,
   Skeleton,
+  styles,
+  sv,
   Txt,
 } from '@kroma/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
@@ -46,18 +47,17 @@ export function ServerRow({
       autoFocus={autoFocus}
       focusScale={1.02}
       ring={false}
-      style={ROW}
-      focusedStyle={FOCUSED}
+      sv={serverRow}
     >
       <IconWell name="server-2" />
-      <Box flex gap={3} style={MIN_0}>
+      <Box flex gap={3} style={s.min0}>
         <Box row align="center" gap={9}>
-          <Txt lines={1} style={TITLE}>
+          <Txt lines={1} style={s.title}>
             {name}
           </Txt>
           {isNew ? <Badge tone="info">{t('addProfile.new')}</Badge> : null}
         </Box>
-        <Txt lines={1} style={SUB} color="textDim">
+        <Txt lines={1} style={s.sub} color="textDim">
           {address}
         </Txt>
         {/* Fixed height: the meta line arrives one probe late, and the list must
@@ -94,9 +94,9 @@ export function ActionRow({
  * focusable, so the remote walks straight past it. */
 export function ServerRowSkeleton() {
   return (
-    <Box style={[ROW, GHOST]}>
+    <Box style={serverRow({ ghost: true }).root}>
       <Skeleton w={42} h={42} radius="xl" />
-      <Box flex gap={8} style={MIN_0}>
+      <Box flex gap={8} style={s.min0}>
         <Skeleton w={172} h={13} radius="pill" />
         <Skeleton w={108} h={10} radius="pill" />
       </Box>
@@ -108,7 +108,7 @@ export function ServerRowSkeleton() {
 function MetaLine({ meta, pending }: Readonly<{ meta: string | null; pending: boolean }>) {
   if (meta) {
     return (
-      <Txt lines={1} style={META} color="rgba(244, 243, 240, 0.42)">
+      <Txt lines={1} style={s.meta} color="rgba(244, 243, 240, 0.42)">
         {meta}
       </Txt>
     );
@@ -125,23 +125,26 @@ function metaOf(probe: ServerProbe | undefined, t: Translate): string | null {
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
-const MIN_0 = { minWidth: 0 };
-const TITLE = { fontSize: 19, fontWeight: '700' as const };
-const SUB = { fontSize: 14, fontWeight: '500' as const };
-const META = { fontSize: 12.5, fontWeight: '600' as const, letterSpacing: 0.2 };
+const s = styles({
+  min0: { minW: 0 },
+  title: { fontSize: 19, fontWeight: '700' },
+  sub: { fontSize: 14, fontWeight: '500' },
+  meta: { fontSize: 12.5, fontWeight: '600', letterSpacing: 0.2 },
+});
 
-const FOCUSED = { borderColor: colors.accent };
-
-const GHOST = { opacity: 0.55 };
-
-const ROW = {
-  flexDirection: 'row' as const,
-  alignItems: 'center' as const,
-  gap: 16,
-  borderRadius: 15,
-  borderWidth: 1,
-  borderColor: 'rgba(255, 255, 255, 0.08)',
-  backgroundColor: 'rgba(255, 255, 255, 0.03)',
-  paddingHorizontal: 20,
-  paddingVertical: 16,
-};
+const serverRow = sv({
+  base: {
+    row: true,
+    align: 'center',
+    gap: 16,
+    px: 20,
+    py: 16,
+    radius: 15,
+    bg: 'white/3',
+    border: 'border',
+    _focus: { border: 'accent' },
+  },
+  variants: {
+    ghost: { true: { opacity: 0.55 }, false: {} },
+  },
+});

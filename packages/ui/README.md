@@ -18,13 +18,14 @@ tile.
 
 ```
 src/
-  lib/tokens/       LEVEL 1  the raw values every other level is made of
+  core/             the styling engine: the vocabulary, `sv`, themes (see "Styling")
+  core/tokens/      LEVEL 1  the raw values every other level is made of
   components/atoms/         LEVEL 2  indivisible controls: Button, Txt, Icon, Switch...
   ui/molecules/     LEVEL 3  named arrangements: PosterCard, Field, ListRow...
   ui/organisms/     LEVEL 4  whole regions that behave: Rail, Dialog, Virtual...
   ui/templates/     LEVEL 5  page skeletons with no data: TvStage
                     LEVEL 6  pages are NOT here - they live in the app packages
-  lib/              the variant helper, the focus engine, pure maths
+  lib/              the focus engine, pure maths
   icons/            the icon set, resolved from Tabler by name (see "Icons")
   workbench/        the component atelier: stories, demos, controls, matrix
   player/           the unified player chrome (a family of organisms)
@@ -74,25 +75,9 @@ Both tiers are re-exported flat, so a consumer writes
 tier something is in. The split is for the people editing the kit, not for the
 people using it.
 
-**Variants are declared once, at the top of the file, with `sv`.** `sv` is to
-React Native styles what `cva` is to Tailwind class strings: a declarative map
-from props to styles, with compound variants and defaults.
-
-```tsx
-const button = sv({
-  base: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.md },
-  variants: {
-    variant: { primary: { backgroundColor: colors.accent }, ghost: {} },
-    size: { md: { paddingHorizontal: 28 }, lg: { paddingHorizontal: 38 } },
-  },
-  compound: [{ when: { variant: 'ghost', size: 'lg' }, style: { borderWidth: 1 } }],
-  defaults: { variant: 'primary', size: 'md' },
-});
-```
-
-**The caller's `style` always wins.** `sv(props, ...overrides)` appends the
-overrides last, which is what `cn()` does for class names: a one-off tweak at a
-call site never has to fight the component.
+**The design is declared once, at the top of the file, with `sv`.** The whole
+styling engine — the vocabulary, recipes, interaction states, themes — has its
+own section below ("Styling").
 
 **Props carry their documentation.** Every non-obvious prop has a JSDoc line
 saying what it is FOR, not what it is. `focusScale` does not say "the focus
@@ -103,19 +88,128 @@ components take it directly where a host node is useful.
 
 ---
 
-## Layout: `<Box>`
+## Styling
 
-React Native has no `className`, and a screen written as a `StyleSheet` lookup
-table reads terribly. `<Box>` takes the design's vocabulary directly:
+React Native has no `className`, so the kit has its own engine (`src/core`),
+built the way Tailwind 4 builds utilities: **one vocabulary, defined as data,
+resolved against a theme**. Everything below speaks it — `<Box>` props, recipe
+layers, `styles()` declarations.
+
+### The vocabulary
 
 ```tsx
 <Box row center gap={12} px={64} py={24} bg="surface1" radius="lg" flex>
 ```
 
+Layout shorthands (`row`, `center`, `gap`, `p/px/pt…`, `w/h`, `absolute`,
+`fill`, `z`…) expand to React Native longhands. Colour takes a token name, a
+`/NN` alpha suffix (`'accent/45'`, `'white/12'`), or any raw CSS colour;
+`radius` and `shadow` take token names; `ring: 'focusLift'` is the focus
+treatment, derived from the theme's accent; declarations (not `<Box>`, which is
+a View) additionally take `text: 'label'` — a whole type role, spread under the
+layer so longhands beside it win — and `font: 'ui' | 'display'`.
+
 Sizes are plain numbers, deliberately. Every TV screen is authored against the
 fixed 1920x1080 canvas (see below), so a number IS the design's px value: there
-is no scale to memorise, and it matches how the design specifies values. Only
-what genuinely IS a token (colour, radius, elevation) takes a token name.
+is no scale to memorise. Only what genuinely IS a token (colour, radius,
+elevation, type) takes a name.
+
+The whole vocabulary is one rule table in `core/shorthands.ts`; **adding a
+shorthand is adding a row**, and the `satisfies` link to `BoxStyleProps` makes
+forgetting one a compile error.
+
+### Recipes: `sv`
+
+`sv` is to React Native styles what `cva` is to Tailwind class strings: the
+component's design as a declarative map, compiled once, resolved to frozen,
+cached style objects.
+
+```tsx
+const chipVariants = sv({
+  base: { row: true, center: true, radius: 'pill', _hover: { bg: 'white/16' } },
+  variants: {
+    tone: { neutral: { bg: 'white/10' }, accent: { bg: 'accentSoft' } },
+    size: { sm: { py: 6, px: 12 }, tv: { py: 9, px: 18 } },
+    active: { true: { bg: 'accent' } },      // boolean: `false` is the base look
+  },
+  compound: [{ when: { tone: 'accent', active: true }, style: { border: 'accentWash/45' } }],
+  defaults: { tone: 'neutral', size: 'sm', active: false },
+});
+```
+
+- **Interaction states live inside the layer they change**, under a `_` prefix:
+  `_hover`, `_focus`, `_press`, `_disabled`. A variant's `_hover` beats the
+  base's, so a variant cannot be given a rest fill and forgotten in the state
+  tables. `<Focusable sv={...} vars={...}>` owns the live state and resolves
+  the recipe against it.
+- **Slots** name the parts of a multi-part component. `slots: { root, label,
+  icon }` paints them all per variant; `svFor<{ root: StyleDecl; icon:
+  Pick<IconProps, 'color'> }>()` types a slot that feeds a component's PROPS,
+  so a typo in a glyph colour is a compile error.
+- **Types derive from the recipe.** `VariantProps<typeof chipVariants>` is the
+  props slice (cva-style); `Variant<typeof chipVariants, 'size'>` is one
+  group's union. Add an option and every consumer's type follows — there is no
+  second list.
+- **The workbench reads the recipe.** Controls and the variant matrix derive
+  from `options`/`defaults`; add a variant and it appears with no story edit.
+
+**The caller's `style` always wins.** Components place it after the resolved
+`root`, so a one-off tweak at a call site never has to fight the component.
+
+### `styles()` — the rest
+
+For shapes that are not a variant of anything, `styles()` is `StyleSheet.create`
+in the kit's vocabulary: named, registered, theme-aware, one lowercase binding.
+
+```tsx
+const s = styles({
+  row: { row: true, align: 'center', gap: 6, px: 8, radius: 'sm' },
+  label: { text: 'meta', color: 'textMuted' },
+});
+```
+
+### Themes
+
+Every token group — colours, radius, shadows, fonts, type roles, motion — lives
+in one live store. `KROMA` is the default; a theme is created by restating any
+slice of it, and everything derived (type roles from specs + families, the
+focus ring from the accent) re-derives:
+
+```tsx
+import { createTheme, setTheme, ThemeProvider, useTheme } from '@kroma/ui/kit';
+
+const ocean = createTheme({
+  colors: { accent: '#3FB6F2', accentHover: '#66C6F5' },
+  fonts: { display: 'Clash Display' },
+  radius: { lg: 18 },
+});
+
+setTheme(ocean);                      // boot-time, before mount
+<ThemeProvider theme={ocean}>…        // or runtime: remounts the subtree
+```
+
+Nothing re-resolves eagerly: recipes, `styles()` and `<Box>` all key their
+caches on the theme version and rebuild lazily on next use, so a swap costs one
+rebuild per recipe actually rendered.
+
+**New token names stay typed everywhere.** Token unions are `keyof` the base
+table plus an augmentable registry, so a name added once is immediately legal —
+and autocompleted — in `bg`, `border`, `color`, `/NN` alpha, `radius`, `font`:
+
+```ts
+declare module '@kroma/ui/tokens/colors' {
+  interface ColorRegistry { brand: string }
+}
+createTheme({ colors: { brand: '#6C5CE7' } });   // → bg="brand", 'brand/40', …
+```
+
+(`RadiusRegistry`, `ShadowRegistry`, `FontRegistry`, `TypeRoleRegistry` do the
+same for their groups.) Inside the kit no augmentation is needed: add the value
+to `core/tokens/*` and the union already includes it.
+
+For a token a style cannot carry (an `ActivityIndicator` colour, a chart
+paint), read `useTheme()` in components — it subscribes — or `activeTheme()`
+at call time elsewhere. Never capture either into a module constant.
 
 ---
 
@@ -243,19 +337,19 @@ hand-written map is a small change, local to `glyphs.ts`.
 
 ## Tokens
 
-`src/lib/tokens/*.ts` is the **single source of truth** for the design.
-`bun run tokens:gen` generates the CSS custom properties the web and desktop
-clients consume (`src/styles/tokens/*.css`) from it. CI runs `bun run
-tokens:check`, which regenerates and fails on any diff, so the two cannot drift.
+`src/core/tokens/*.ts` is the **single source of truth** for the design; it is
+also what builds the default theme (see "Styling: Themes"). `bun run tokens:gen`
+generates the CSS custom properties the web and desktop clients consume
+(`src/styles/tokens/*.css`) from it. CI runs `bun run tokens:check`, which
+regenerates and fails on any diff, so the two cannot drift.
 
 Never edit the generated CSS.
 
-```ts
-colors.accent      // #F4B642, the single warm amber
-colors.bg          // #0A0A0C, the deep charcoal page
-type.hero          // 66px / 700, Bricolage Grotesque
-radius.lg          // 13, posters and cards
-```
+Components never import token VALUES for styling — the vocabulary carries them
+by name (`bg="accent"`, `radius="lg"`, `text: 'hero'`), which is what lets a
+theme reach every declaration. What legitimately imports from
+`#ui/core/tokens` is the non-style residue: `motion` timings, the `CANVAS`
+geometry, `gutter`, the chart palettes.
 
 ### Two form factors
 
@@ -355,6 +449,9 @@ primitive, and the two bundlers spell it differently, so this is one of the kit'
 `.web` splits: `registry.ts` uses Metro's `require.context`, `registry.web.ts`
 uses Vite's `import.meta.glob`. Every state is a deep link
 (`?workbench&story=button&view=matrix`).
+
+**The toolbar switches themes.** KROMA plus two accent restatements (Ocean,
+Ember) — a control that stays amber under Ocean is bypassing the vocabulary.
 
 **One screen, three widths.** The workbench is also the kit's own responsive
 test: `workbench/layout.ts` is a pure function of the window, and the regions

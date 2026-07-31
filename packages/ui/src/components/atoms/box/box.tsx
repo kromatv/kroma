@@ -9,7 +9,8 @@
 
 import type { ReactNode, Ref } from 'react';
 import { type StyleProp, View, type ViewProps, type ViewStyle } from 'react-native';
-import { type BoxStyleProps, sharedBoxStyle } from '#ui/lib/box-style';
+import { BOX_STYLE_PROPS, type BoxStyleProps, styles } from '#ui/core';
+import { sharedBoxStyle } from '#ui/lib/box-style';
 
 interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
   children?: ReactNode;
@@ -47,95 +48,48 @@ function Column({ children, ...props }: Readonly<BoxProps>) {
 
 /** Pushes whatever follows it to the far end of a <Row>. */
 function Spacer() {
-  return <View style={SPACER} />;
+  return <View style={s.spacer} />;
 }
 
-const SPACER = { flex: 1 } as const;
+const s = styles({ spacer: { flex: true } });
 
 // Every style shorthand <Box> owns. Anything else is a real View prop and is
-// forwarded untouched (onLayout, pointerEvents, testID, accessibility...).
-const STYLE_PROPS = new Set([
-  'flex',
-  'row',
-  'wrap',
-  'center',
-  'align',
-  'justify',
-  'self',
-  'shrink',
-  'grow',
-  'gap',
-  'between',
-  'w',
-  'h',
-  'minW',
-  'minH',
-  'maxW',
-  'maxH',
-  'aspect',
-  'fill',
-  'absolute',
-  'top',
-  'right',
-  'bottom',
-  'left',
-  'z',
-  'p',
-  'px',
-  'py',
-  'pt',
-  'pr',
-  'pb',
-  'pl',
-  'm',
-  'mx',
-  'my',
-  'mt',
-  'mr',
-  'mb',
-  'ml',
-  'bg',
-  'radius',
-  'border',
-  'borderWidth',
-  'shadow',
-  'opacity',
-  'overflow',
-]);
+// forwarded untouched (onLayout, pointerEvents, testID, accessibility...). The
+// list lives with the resolver so `sv`'s `style()` reads the same one.
+const STYLE_PROPS = BOX_STYLE_PROPS;
 
 // Splits the shorthand props from the real View props, and resolves the first
 // into one style object shared by identity between every box asking for the
 // same thing (see `sharedBoxStyle`). The cache key is built during the split
 // rather than from the finished style, since the key is thrown away on a hit
-// (the common case), which is cheaper than resolving the style and hashing
-// it. `STYLE_PROPS` is iterated in its own order, not the caller's, so `row
-// gap={4}` and `gap={4} row` are one cache entry rather than two.
+// (the common case), which is cheaper than resolving the style and hashing it.
+// Sorting the handful of parts canonicalises the caller's prop order, so `row
+// gap={4}` and `gap={4} row` are one cache entry rather than two — and costs
+// less than a second pass over the whole vocabulary.
 function splitProps(props: Record<string, unknown>): {
   view: Record<string, unknown>;
   layout: ViewStyle;
 } {
   const style: Record<string, unknown> = {};
   const view: Record<string, unknown> = {};
-  let any = false;
+  const parts: string[] = [];
   for (const key of Object.keys(props)) {
-    if (STYLE_PROPS.has(key)) {
-      style[key] = props[key];
-      any = true;
-    } else view[key] = props[key];
-  }
-  if (!any) return { view, layout: EMPTY };
-  let key = '';
-  for (const name of STYLE_PROPS) {
-    const value = style[name];
+    const value = props[key];
+    if (!STYLE_PROPS.has(key)) {
+      view[key] = value;
+      continue;
+    }
+    style[key] = value;
     if (value === undefined) continue;
     // A transform is an array of objects; everything else is a primitive. The
     // primitive side is named explicitly so String() never meets an object.
     const primitive =
       typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-    const part = primitive ? String(value) : JSON.stringify(value);
-    key += `${name}:${part};`;
+    parts.push(`${key}:${primitive ? String(value) : JSON.stringify(value)}`);
   }
-  return { view, layout: sharedBoxStyle(key, style as BoxStyleProps) };
+  if (parts.length === 0) return { view, layout: EMPTY };
+  parts.sort((a, b) => (a < b ? -1 : 1));
+  return { view, layout: sharedBoxStyle(parts.join(';'), style as BoxStyleProps) };
 }
 
 // A box with no shorthand at all still must not mint an object per render.

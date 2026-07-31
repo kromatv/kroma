@@ -6,6 +6,7 @@
 // and into CSS alike. No color-mix()/oklch(): those cannot be expressed in RN,
 // and the old webOS tier could not parse them either.
 
+import type { TokenOf } from './registry';
 export const colors = {
   /* Surfaces: deep cinematic charcoal */
   bg: '#0A0A0C',
@@ -30,6 +31,10 @@ export const colors = {
   accentHover: '#FFC862',
   accentBright: '#FFD262',
   accentInk: '#0A0A0C',
+  /** The soft-amber base. A different hue from `accent` (244, 182, 66): every
+   *  wash, glow and edge in the accent family is built on this one, so it is a
+   *  token rather than eight hand-written rgba() literals. */
+  accentWash: '#F2B442',
   accentSoft: 'rgba(242, 180, 66, 0.16)',
   /** The lit step of `accentSoft`: a pointer resting on a toggle that is already
    *  ON. It has to stay AMBER - the white wash the idle controls hover with
@@ -51,7 +56,19 @@ export const colors = {
   dangerHover: '#EF5350',
 } as const;
 
-export type ColorToken = keyof typeof colors;
+/**
+ * Names a theme adds to the palette, Tailwind-4 style: augment it once and the
+ * name is legal everywhere a colour is written — `bg`, `border`, `color`, the
+ * `/NN` alpha suffix — with the value supplied through `createTheme`.
+ *
+ *   declare module '@kroma/ui/tokens/colors' {
+ *     interface ColorRegistry { brand: string }
+ *   }
+ */
+// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+export interface ColorRegistry {}
+
+export type ColorToken = TokenOf<typeof colors, ColorRegistry>;
 
 /**
  * Chart series colours, in assignment order.
@@ -101,4 +118,16 @@ export const SHADE = {
  * veil gradients whose stops fall between {@link SHADE}'s three. */
 export function shade(alpha: number): string {
   return `rgba(10, 10, 12, ${alpha})`;
+}
+
+/** A colour that is not `#RGB`/`#RRGGBB` is returned untouched rather than
+ *  guessed at, so `withAlpha('transparent', 0.5)` is a no-op. */
+export function withAlpha(value: string, alpha: number): string {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value)?.[1];
+  if (!hex) return value;
+  const full = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
+  const r = Number.parseInt(full.slice(0, 2), 16);
+  const g = Number.parseInt(full.slice(2, 4), 16);
+  const b = Number.parseInt(full.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${Number(alpha.toFixed(4))})`;
 }

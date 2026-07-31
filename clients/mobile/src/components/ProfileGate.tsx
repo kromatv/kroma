@@ -2,7 +2,8 @@
 // profile tiles. Presentation only; every tile's action arrives prebuilt from
 // the sign-in screen.
 
-import { ScrollView, StyleSheet } from 'react-native';
+import { styles } from '@kroma/ui/kit';
+import { ScrollView } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { spacing } from '#mobile/lib/theme';
 import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
@@ -35,7 +36,7 @@ export function ProfileGate({
   return (
     <OnboardingBox>
       <OnboardingTitle title={t('auth.whoWatching')} />
-      <ScrollView contentContainerStyle={styles.grid} style={styles.scroll}>
+      <ScrollView contentContainerStyle={s.grid} style={s.scroll}>
         {tiles.map((tile) => (
           <ProfileTile
             key={tile.key}
@@ -56,14 +57,14 @@ export function ProfileGate({
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flexGrow: 0 },
+const s = styles({
+  scroll: { grow: 0 },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    row: true,
+    wrap: true,
+    justify: 'center',
     gap: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    pt: spacing.md,
+    pb: spacing.sm,
   },
 });

@@ -8,18 +8,18 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
 import { Txt } from '#ui/components/atoms/text';
+import type { ColorValue } from '#ui/core';
+import { sv } from '#ui/core';
 import { gradient } from '#ui/lib/css';
-import { sv } from '#ui/lib/sv';
-import { fonts, radius as radii } from '#ui/lib/tokens';
 
 const categoryTileVariants = sv({
   slots: {
-    frame: { flexShrink: 0, padding: 6, borderRadius: radii.xl },
-    label: { fontFamily: fonts.display, fontWeight: '700', color: '#FFFFFF' },
+    frame: { shrink: 0, p: 6, radius: 'xl' },
+    label: { font: 'display', fontWeight: '700', color: 'white' },
     meta: {
-      fontFamily: fonts.ui,
+      font: 'ui',
       fontWeight: '600',
-      color: 'rgba(255, 255, 255, 0.72)',
+      color: 'white/72',
       fontVariant: ['tabular-nums'],
     },
   },
@@ -40,7 +40,7 @@ interface CategoryTileProps extends Omit<FocusableProps, 'children' | 'style' | 
   art?: string | null;
   background?: string;
   wash?: string;
-  accent?: string;
+  accent?: ColorValue;
   size?: CategoryTileSize;
   width?: number;
   aspect?: number;

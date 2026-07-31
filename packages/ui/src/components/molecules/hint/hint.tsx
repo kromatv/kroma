@@ -1,5 +1,5 @@
 import type { StyleProp, TextStyle } from 'react-native';
-import type { ColorToken } from '#ui/lib/tokens';
+import type { ColorToken } from '#ui/core';
 // <Hint>: the row that tells you what the remote does. Translations carry only
 // the words and a `{left}`-style token where a key belongs; the tokens become
 // kit icons, because tvOS renders the geometric arrow code points with emoji

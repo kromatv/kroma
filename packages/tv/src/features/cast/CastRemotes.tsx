@@ -3,13 +3,14 @@ import {
   Avatar,
   Box,
   Button,
-  colors,
   Dialog,
   DialogFooter,
   Focusable,
   FocusColumn,
   Icon,
   ListRow,
+  styles,
+  sv,
   Txt,
 } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
@@ -39,12 +40,10 @@ export function CastRemotes() {
         onPress={() => setOpen(true)}
         label={t('cast.remotes')}
         focusScale={1.08}
-        style={CHIP_FOCUS}
+        sv={chip}
       >
-        <Box row align="center" gap={8} h={36} px={12} radius="pill" style={CHIP}>
-          <Icon name="cast" size={19} stroke={2} color="accent" />
-          <Txt style={COUNT}>{count}</Txt>
-        </Box>
+        <Icon name="cast" size={19} stroke={2} color="accent" />
+        <Txt style={s.count}>{count}</Txt>
       </Focusable>
 
       <Dialog
@@ -61,7 +60,7 @@ export function CastRemotes() {
       >
         {/* A column: <FocusRegion> is horizontal and lays several rows out side
             by side, the second landing outside the panel. */}
-        <FocusColumn style={LIST}>
+        <FocusColumn style={s.list}>
           {controllers.map((remote, i) => (
             <ListRow
               key={remote.id}
@@ -81,7 +80,7 @@ export function CastRemotes() {
               trailing={
                 <Box row align="center" gap={8}>
                   <Icon name="plug-off" size={20} stroke={2} color="textMuted" />
-                  <Txt color="textMuted" style={ACTION}>
+                  <Txt color="textMuted" style={s.action}>
                     {t('cast.disconnect')}
                   </Txt>
                 </Box>
@@ -94,20 +93,21 @@ export function CastRemotes() {
   );
 }
 
-const CHIP_FOCUS = { borderRadius: 999 } as const;
+const chip = sv({
+  base: {
+    row: true,
+    align: 'center',
+    gap: 8,
+    h: 36,
+    px: 12,
+    radius: 'pill',
+    bg: 'black/45',
+    border: 'accent',
+  },
+});
 
-const CHIP = {
-  backgroundColor: 'rgba(0, 0, 0, 0.45)',
-  borderWidth: 1,
-  borderColor: colors.accent,
-} as const;
-
-const COUNT = {
-  fontSize: 16,
-  fontWeight: '700' as const,
-  fontVariant: ['tabular-nums' as const],
-};
-
-const LIST = { gap: 8 } as const;
-
-const ACTION = { fontSize: 15, fontWeight: '600' as const };
+const s = styles({
+  count: { fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  list: { gap: 8 },
+  action: { fontSize: 15, fontWeight: '600' },
+});

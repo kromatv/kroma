@@ -10,6 +10,7 @@ import {
   Rail,
   Row,
   Spacer,
+  styles,
   Txt,
   useFocusNav,
 } from '@kroma/ui/kit';
@@ -109,7 +110,7 @@ export function TvShowDetail() {
   const theme = useThemeAudio(client.themeFor(show));
 
   const activeSeason = useMemo(
-    () => detail?.seasons.find((s) => s.number === season) ?? detail?.seasons[0] ?? null,
+    () => detail?.seasons.find((entry) => entry.number === season) ?? detail?.seasons[0] ?? null,
     [detail, season],
   );
   const firstEpisode = activeSeason?.episodes[0] ?? null;
@@ -154,7 +155,7 @@ export function TvShowDetail() {
       // the header rather than to the rows below it, which is why the scaffold
       // takes it as a prop (see TvDetailScaffold).
       actions={
-        <FocusRegion style={ACTION_ROW}>
+        <FocusRegion style={s.actionRow}>
           <Button
             size="lg"
             autoFocus
@@ -195,12 +196,12 @@ export function TvShowDetail() {
       <EndsAtHint runtimeMs={playTarget?.durationMs} />
 
       {error ? (
-        <Txt variant="title" color="textMuted" style={STATUS}>
+        <Txt variant="title" color="textMuted" style={s.status}>
           {t('content.loadEpisodesFailed', { error })}
         </Txt>
       ) : null}
       {!detail && !error ? (
-        <Txt variant="title" color="textMuted" style={STATUS}>
+        <Txt variant="title" color="textMuted" style={s.status}>
           {t('content.loadingEpisodes')}
         </Txt>
       ) : null}
@@ -214,19 +215,19 @@ export function TvShowDetail() {
       <FocusSlot>
         {detail && detail.seasons.length > 1 ? (
           <Box row align="center" gap={18} mt={30}>
-            <Txt style={SEASON_LABEL} color="textMuted">
+            <Txt style={s.seasonLabel} color="textMuted">
               {t('content.seasonsHeader')}
             </Txt>
             <Rail inset={12} gap={10}>
-              {detail.seasons.map((s) => (
+              {detail.seasons.map((entry) => (
                 <Chip
-                  key={s.number}
+                  key={entry.number}
                   variant="surface"
                   focusScale={1.05}
-                  active={s.number === activeSeason?.number}
-                  label={t('content.season', { number: s.number })}
-                  onPress={() => setSeason(s.number)}
-                  style={SEASON_CHIP}
+                  active={entry.number === activeSeason?.number}
+                  label={t('content.season', { number: entry.number })}
+                  onPress={() => setSeason(entry.number)}
+                  style={s.seasonChip}
                 />
               ))}
             </Rail>
@@ -246,10 +247,10 @@ export function TvShowDetail() {
             {/* The design's header line: the label, how far through the season
                 you are, and the remote legend pushed to the column's far edge. */}
             <Row gap={18} wrap maxW={EPISODE_COLUMN_W}>
-              <Txt style={EPISODES_LABEL} color="rgba(244, 243, 240, 0.55)">
+              <Txt style={s.episodesLabel} color="rgba(244, 243, 240, 0.55)">
                 {t('content.episodesHeader')}
               </Txt>
-              <Txt style={EPISODES_PROGRESS} color="rgba(244, 243, 240, 0.34)">
+              <Txt style={s.episodesProgress} color="rgba(244, 243, 240, 0.34)">
                 {t('content.episodesWatched', {
                   watched: activeSeason.episodes.filter((ep) => watched.has(ep.id)).length,
                   count: activeSeason.episodes.length,
@@ -261,7 +262,7 @@ export function TvShowDetail() {
                 size={14}
                 gap={4}
                 color="rgba(244, 243, 240, 0.3)"
-                textStyle={EPISODES_HINT}
+                textStyle={s.episodesHint}
               />
             </Row>
             <EpisodeGrid
@@ -286,15 +287,17 @@ export function TvShowDetail() {
   );
 }
 
-const STATUS = { marginTop: 24, fontWeight: '400' as const };
-const SEASON_LABEL = { fontSize: 15, fontWeight: '700' as const, letterSpacing: 0.6 };
-const SEASON_CHIP = { paddingVertical: 9, paddingHorizontal: 20, borderWidth: 0 } as const;
-const EPISODES_LABEL = {
-  fontSize: 15,
-  fontWeight: '700' as const,
-  letterSpacing: 0.6,
-  textTransform: 'uppercase' as const,
-};
-const EPISODES_PROGRESS = { fontSize: 15, fontWeight: '500' as const };
-const EPISODES_HINT = { fontWeight: '600' as const };
-const ACTION_ROW = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 16 };
+const s = styles({
+  status: { mt: 24, fontWeight: '400' },
+  seasonLabel: { fontSize: 15, fontWeight: '700', letterSpacing: 0.6 },
+  seasonChip: { py: 9, px: 20, borderWidth: 0 },
+  episodesLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  episodesProgress: { fontSize: 15, fontWeight: '500' },
+  episodesHint: { fontWeight: '600' },
+  actionRow: { row: true, align: 'center', gap: 16 },
+});

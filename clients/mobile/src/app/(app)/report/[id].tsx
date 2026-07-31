@@ -3,18 +3,10 @@
 // flow (POST /api/reports).
 
 import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
-import { Button, Icon } from '@kroma/ui/kit';
+import { Button, Icon, styles } from '@kroma/ui/kit';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen, TextField } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
@@ -63,29 +55,29 @@ export default function ReportProblem() {
     <Screen padded={false}>
       <PageHeader title={t('report.title')} />
       {state === 'done' ? (
-        <View style={styles.done}>
-          <View style={styles.doneBadge}>
+        <View style={s.done}>
+          <View style={s.doneBadge}>
             <Icon name="check" size={30} stroke={2.4} color={colors.accentInk} />
           </View>
-          <Text style={styles.doneText}>{t('report.submitted')}</Text>
+          <Text style={s.doneText}>{t('report.submitted')}</Text>
         </View>
       ) : (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1 }}
         >
-          <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
             {title ? (
-              <View style={styles.subjectRow}>
+              <View style={s.subjectRow}>
                 <Icon name="flag" size={16} stroke={1.8} color={colors.accent} />
-                <Text numberOfLines={1} style={styles.subject}>
+                <Text numberOfLines={1} style={s.subject}>
                   {title}
                 </Text>
               </View>
             ) : null}
 
-            <Text style={styles.group}>{t('report.category')}</Text>
-            <View style={styles.cards}>
+            <Text style={s.group}>{t('report.category')}</Text>
+            <View style={s.cards}>
               {CATEGORIES.map((c) => {
                 const active = category === c.key;
                 return (
@@ -93,16 +85,16 @@ export default function ReportProblem() {
                     key={c.key}
                     onPress={() => setCategory(c.key)}
                     style={({ pressed }) => [
-                      styles.card,
-                      active && styles.cardActive,
+                      s.card,
+                      active && s.cardActive,
                       pressed && !active && { backgroundColor: colors.surfaceRaised },
                     ]}
                   >
-                    <View style={styles.cardText}>
-                      <Text style={[styles.cardLabel, active && { color: colors.accent }]}>
+                    <View style={s.cardText}>
+                      <Text style={[s.cardLabel, active && { color: colors.accent }]}>
                         {t(c.label as never)}
                       </Text>
-                      <Text style={styles.cardHint}>{t(c.hint as never)}</Text>
+                      <Text style={s.cardHint}>{t(c.hint as never)}</Text>
                     </View>
                     {active ? (
                       <Icon name="check" size={18} stroke={2.4} color={colors.accent} />
@@ -112,7 +104,7 @@ export default function ReportProblem() {
               })}
             </View>
 
-            <Text style={styles.group}>{t('report.message')}</Text>
+            <Text style={s.group}>{t('report.message')}</Text>
             <TextField
               icon="message-2"
               value={message}
@@ -120,9 +112,9 @@ export default function ReportProblem() {
               placeholder={t('report.messagePlaceholder')}
               multiline
               numberOfLines={4}
-              style={styles.message}
+              style={s.message}
             />
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={s.error}>{error}</Text> : null}
             <Button
               label={t('report.submit')}
               onPress={() => void submit()}
@@ -136,42 +128,30 @@ export default function ReportProblem() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 2 },
-  subjectRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.xs },
-  subject: { ...type.caption, color: colors.text, fontWeight: '600', flexShrink: 1 },
-  group: {
-    ...type.small,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: spacing.sm,
-  },
+const s = styles({
+  body: { gap: spacing.sm, p: spacing.md, pb: spacing.xl * 2 },
+  subjectRow: { row: true, align: 'center', gap: 8, mb: spacing.xs },
+  subject: { ...type.caption, shrink: 1, color: 'text', fontWeight: '600' },
+  group: { ...type.small, mt: spacing.sm, textTransform: 'uppercase', letterSpacing: 1 },
   cards: { gap: 8 },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    row: true,
+    between: true,
+    align: 'center',
     gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
+    p: spacing.md,
+    bg: 'surface1',
+    radius: radius.md,
+    border: 'transparent',
     borderWidth: 1.5,
-    borderColor: 'transparent',
   },
-  cardActive: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  cardText: { flex: 1, gap: 2 },
+  cardActive: { bg: 'accentSoft', borderColor: 'accent' },
+  cardText: { flex: true, gap: 2 },
   cardLabel: { ...type.body, fontWeight: '700' },
   cardHint: { ...type.small },
-  message: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },
-  error: { color: colors.danger, fontSize: 13 },
-  done: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-  doneBadge: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  message: { minH: 96, pt: 12, textAlignVertical: 'top' },
+  error: { color: 'danger', fontSize: 13 },
+  done: { flex: true, center: true, gap: spacing.md },
+  doneBadge: { center: true, w: 68, h: 68, bg: 'accent', radius: 34 },
   doneText: { ...type.section, textAlign: 'center' },
 });

@@ -10,9 +10,9 @@ import {
   type SortMode,
   sortTitles,
 } from '@kroma/core';
-import { Chip, Icon } from '@kroma/ui/kit';
+import { Chip, Icon, styles } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
@@ -75,15 +75,15 @@ export function CatalogueScreen<T extends MediaItem | Show>({
 
   const header = (
     <View style={{ paddingTop: insets.top + spacing.sm }}>
-      <View style={styles.titleRow}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.count}>{cards.length}</Text>
+      <View style={s.titleRow}>
+        <Text style={s.title}>{title}</Text>
+        <Text style={s.count}>{cards.length}</Text>
       </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.chipRow, gutters.style]}
-        style={[styles.chipStrip, { marginLeft: -gutters.left, marginRight: -gutters.right }]}
+        contentContainerStyle={[s.chipRow, gutters.style]}
+        style={[s.chipStrip, { marginLeft: -gutters.left, marginRight: -gutters.right }]}
       >
         {SORT_MODES.map((mode) => (
           <Chip
@@ -98,8 +98,8 @@ export function CatalogueScreen<T extends MediaItem | Show>({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.chipRow, gutters.style]}
-          style={[styles.chipStrip, { marginLeft: -gutters.left, marginRight: -gutters.right }]}
+          contentContainerStyle={[s.chipRow, gutters.style]}
+          style={[s.chipStrip, { marginLeft: -gutters.left, marginRight: -gutters.right }]}
         >
           <Chip
             label={t('browse.allGenres')}
@@ -121,7 +121,7 @@ export function CatalogueScreen<T extends MediaItem | Show>({
   );
 
   return (
-    <View style={styles.screen}>
+    <View style={s.screen}>
       <PosterGrid
         cards={cards}
         gutters={gutters}
@@ -139,13 +139,13 @@ export function CatalogueScreen<T extends MediaItem | Show>({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  titleRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10, marginBottom: spacing.sm },
+const s = styles({
+  screen: { flex: true, bg: 'bg' },
+  titleRow: { row: true, align: 'baseline', gap: 10, mb: spacing.sm },
   title: { ...type.display, fontSize: 30 },
   count: { ...type.caption },
   // Bleed the strips back out over the grid's gutters; the inline margins /
   // paddings mirror the live gutter widths.
-  chipStrip: { marginBottom: spacing.sm },
+  chipStrip: { mb: spacing.sm },
   chipRow: { gap: 8 },
 });

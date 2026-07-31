@@ -4,53 +4,30 @@
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
-import { sv } from '#ui/lib/sv';
-import { colors, fonts } from '#ui/lib/tokens';
+import { sv, type Variant } from '#ui/core';
 
-type BadgeTone = '4K' | 'HDR' | 'H.265' | 'success' | 'info' | 'neutral';
+type BadgeTone = Variant<typeof badgeVariants, 'tone'>;
 
 const badgeVariants = sv({
   slots: {
-    root: { alignSelf: 'flex-start', borderRadius: 6 },
-    label: { fontFamily: fonts.ui, fontWeight: '700' },
+    root: { self: 'flex-start', radius: 6 },
+    label: { font: 'ui', fontWeight: '700' },
   },
   variants: {
-    /** Each tone is a tinted wash of its own hue at 16%, which is why the
-     * backgrounds are literal rgba rather than a token: they are derived
-     * colours, and no target can compute color-mix() (old webOS cannot,
-     * React Native cannot). */
+    /** Each tone is a tinted wash of its own hue at 16% — the `/NN` alpha
+     * suffix, resolved at declaration time because no target can compute
+     * color-mix() (old webOS cannot, React Native cannot). */
     tone: {
-      '4K': { root: { backgroundColor: colors.accentSoft }, label: { color: colors.accent } },
-      HDR: {
-        root: { backgroundColor: 'rgba(199, 146, 234, 0.16)' },
-        label: { color: colors.hdr },
-      },
-      'H.265': {
-        root: { backgroundColor: 'rgba(95, 211, 196, 0.16)' },
-        label: { color: colors.h265 },
-      },
-      success: {
-        root: { backgroundColor: 'rgba(70, 208, 141, 0.16)' },
-        label: { color: colors.success },
-      },
-      info: {
-        root: { backgroundColor: 'rgba(134, 168, 255, 0.16)' },
-        label: { color: colors.info },
-      },
-      neutral: {
-        root: { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
-        label: { color: 'rgba(244, 243, 240, 0.85)' },
-      },
+      '4K': { root: { bg: 'accentSoft' }, label: { color: 'accent' } },
+      HDR: { root: { bg: 'hdr/16' }, label: { color: 'hdr' } },
+      'H.265': { root: { bg: 'h265/16' }, label: { color: 'h265' } },
+      success: { root: { bg: 'success/16' }, label: { color: 'success' } },
+      info: { root: { bg: 'info/16' }, label: { color: 'info' } },
+      neutral: { root: { bg: 'white/8' }, label: { color: 'text/85' } },
     },
     size: {
-      sm: {
-        root: { paddingVertical: 4, paddingHorizontal: 9 },
-        label: { fontSize: 11, letterSpacing: 0.44 },
-      },
-      tv: {
-        root: { paddingVertical: 5, paddingHorizontal: 11, borderRadius: 7 },
-        label: { fontSize: 13, letterSpacing: 0.26 },
-      },
+      sm: { root: { py: 4, px: 9 }, label: { fontSize: 11, letterSpacing: 0.44 } },
+      tv: { root: { py: 5, px: 11, radius: 7 }, label: { fontSize: 13, letterSpacing: 0.26 } },
     },
   },
   defaults: { tone: '4K', size: 'sm' },
@@ -66,7 +43,7 @@ function qualityTone(badge: string): BadgeTone {
 
 interface BadgeProps {
   tone?: BadgeTone;
-  size?: 'sm' | 'tv';
+  size?: Variant<typeof badgeVariants, 'size'>;
   children?: ReactNode;
 }
 

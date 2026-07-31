@@ -6,12 +6,13 @@ import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Txt } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
+import { styles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import { useListFocus } from '../hooks/useListFocus';
 import { audioFilterLabels } from '../lib/audio-filter';
 import { PANEL_MAX, scaler } from '../lib/metrics';
 import type { ControlId, PanelHandle } from '../lib/nav';
-import { EYEBROW, PANEL } from '../lib/style';
+import { playerStyle } from '../lib/style';
 import type { SubtitleAppearance } from '../lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '../lib/virtual-focus';
 import type { AudioFilterMode, PlayerController, PlayerQuality, PlayerSub } from '../types';
@@ -345,7 +346,7 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
         }}
       />
       <ScrollView
-        style={[PANEL, { width: width ?? '44%', maxWidth: PANEL_MAX }]}
+        style={[playerStyle.panel, { width: width ?? '44%', maxWidth: PANEL_MAX }]}
         contentContainerStyle={{ paddingHorizontal: px(58), paddingVertical: px(56) }}
         showsVerticalScrollIndicator={false}
       >
@@ -376,7 +377,7 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
               glyph={px(20)}
               focused={false}
               hitSlop={6}
-              style={CLOSE}
+              style={s.close}
               onPress={onClose}
               label={t('common.close')}
             />
@@ -391,7 +392,9 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
                     below), so an action and a setting never read as one
                     undifferentiated list. */}
                 {moved.length > 0 && i === 0 ? (
-                  <Txt style={[EYEBROW, { fontSize: px(12) }]}>{t('player.movedControls')}</Txt>
+                  <Txt style={[playerStyle.eyebrow, { fontSize: px(12) }]}>
+                    {t('player.movedControls')}
+                  </Txt>
                 ) : null}
                 <MenuRow
                   icon={e.icon}
@@ -479,4 +482,6 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
   );
 });
 
-const CLOSE = { marginLeft: 'auto' as const };
+const s = styles({
+  close: { ml: 'auto' },
+});

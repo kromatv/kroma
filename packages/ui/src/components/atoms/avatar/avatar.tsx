@@ -7,7 +7,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { Img } from '#ui/components/atoms/img';
 import { Txt } from '#ui/components/atoms/text';
-import { fonts, radius as radii } from '#ui/lib/tokens';
+import { styles, useTheme } from '#ui/core';
 
 const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #F4B642, #E8743B)',
@@ -98,6 +98,7 @@ function Avatar({
   locked = false,
   shadow = true,
 }: Readonly<AvatarProps>) {
+  const { fonts } = useTheme();
   // Clamped, and a non-finite value falls back on the design's default: a corner
   // of NaN renders a square on the web and throws on Android.
   const asked = Number.isFinite(roundness) ? roundness : ROUNDNESS;
@@ -113,7 +114,7 @@ function Avatar({
     // No `overflow="hidden"`: `Img` already clips the art to `corner` itself, and
     // clipping HERE cropped the padlock badge against the disc's own corner - the
     // rounder the avatar, the more of the badge the arc cut away.
-    <Box w={size} h={size} radius={corner} center style={shadow ? SHADOW : null}>
+    <Box w={size} h={size} radius={corner} center style={shadow ? s.shadow : null}>
       <Img src={src} background={fill} radius={corner} fill alt={name} />
       {src ? null : (
         <Txt
@@ -136,8 +137,8 @@ function Avatar({
           w={badge}
           h={badge}
           center
-          radius={radii.pill}
-          bg="rgba(10, 10, 12, 0.8)"
+          radius="pill"
+          bg="bg/80"
         >
           <Icon name="lock" size={Math.max(14, size * 0.11)} color="accent" />
         </Box>
@@ -146,7 +147,7 @@ function Avatar({
   );
 }
 
-const SHADOW = { boxShadow: '0 16px 40px rgba(0, 0, 0, 0.45)' } as const;
+const s = styles({ shadow: { boxShadow: '0 16px 40px rgba(0, 0, 0, 0.45)' } });
 
 export type { AvatarProps };
 export { AVATAR_GRADIENT, AVATAR_GRADIENTS, Avatar, gradientFor, initialsOf };

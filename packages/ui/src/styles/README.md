@@ -7,7 +7,7 @@ native apps never load any of it — they consume the TypeScript tokens directly
 styles.css        the global stylesheet: `import '@kroma/ui/styles.css'`, once
 tailwind.css      the Tailwind v4 entry: tokens mapped onto utilities
 fonts.css         the two families
-tokens/*.css      GENERATED from src/lib/tokens — never edit
+tokens/*.css      GENERATED from src/core/tokens — never edit
 ```
 
 ## tokens/ is generated

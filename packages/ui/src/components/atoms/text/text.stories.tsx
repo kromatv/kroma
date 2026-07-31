@@ -1,5 +1,5 @@
 import { story } from '@kroma/workbench/story';
-import { type TypeRole, type as typeRoles } from '#ui/lib/tokens';
+import { type TypeRole, type as typeRoles } from '#ui/core/tokens';
 import { Txt } from './text';
 
 const ROLES = Object.keys(typeRoles) as TypeRole[];

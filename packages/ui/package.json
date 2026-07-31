@@ -13,8 +13,9 @@
     "./testing": "./src/testing.tsx",
     "./bundler": "./bundler/index.ts",
     "./workbench-config": "./src/workbench-config.tsx",
-    "./tokens": "./src/lib/tokens/index.ts",
-    "./tokens/colors": "./src/lib/tokens/colors.ts",
+    "./tokens": "./src/core/tokens/index.ts",
+    "./tokens/colors": "./src/core/tokens/colors.ts",
+    "./tokens/*": "./src/core/tokens/*.ts",
     "./fonts": "./src/assets/fonts.ts",
     "./styles.css": "./src/styles/styles.css",
     "./fonts.css": "./src/styles/fonts.css",
@@ -50,6 +51,7 @@
     "react-native": "npm:react-native-tvos@0.86.0-2",
     "react-native-web": "^0.21.2",
     "typescript": "^7.0.2",
+    "zod": "^4.4.3",
     "@kroma/workbench": "workspace:*"
   },
   "peerDependenciesMeta": {

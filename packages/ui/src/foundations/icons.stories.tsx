@@ -2,6 +2,7 @@ import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
+import { styles } from '#ui/core';
 import { iconNames } from '#ui/lib/glyph';
 
 // Rendering thousands of glyphs at once locks the workbench up for seconds,
@@ -43,7 +44,7 @@ export default story({
           {shown.map((name) => (
             <Box key={name} w={104} align="center" gap={8}>
               <Icon name={name} size={size} />
-              <Txt variant="meta" color="textDim" lines={1} style={CAPTION}>
+              <Txt variant="meta" color="textDim" lines={1} style={s.caption}>
                 {name}
               </Txt>
             </Box>
@@ -59,4 +60,6 @@ export default story({
   },
 });
 
-const CAPTION = { textAlign: 'center' } as const;
+const s = styles({
+  caption: { textAlign: 'center' },
+});

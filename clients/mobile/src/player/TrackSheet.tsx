@@ -12,10 +12,10 @@ import {
 } from '@kroma/core';
 import type { SubtitleAppearance } from '@kroma/ui';
 import { AUDIO_FILTER_KEY, SUB_COLORS } from '@kroma/ui';
-import { Chip, Icon, type IconName, SwitchFace } from '@kroma/ui/kit';
+import { Chip, Icon, type IconName, SwitchFace, styles } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useLangPrefs } from '#mobile/lib/langPrefs';
 import { colors, spacing, type } from '#mobile/lib/theme';
@@ -52,14 +52,14 @@ function Row({
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
-        styles.row,
-        selected && styles.rowOn,
+        s.row,
+        selected && s.rowOn,
         pressed && { backgroundColor: colors.surfaceHigh },
-        disabled && styles.rowDisabled,
+        disabled && s.rowDisabled,
       ]}
     >
-      <Text style={[styles.rowLabel, selected && styles.rowLabelOn]}>{label}</Text>
-      {note ? <Text style={styles.rowNote}>{note}</Text> : null}
+      <Text style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Text>
+      {note ? <Text style={s.rowNote}>{note}</Text> : null}
       {selected ? <Icon name="check" size={17} stroke={2.4} color={colors.accent} /> : null}
     </Pressable>
   );
@@ -86,19 +86,19 @@ function MenuRow({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={toggle ? { checked: Boolean(on) } : undefined}
-      style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: colors.surfaceHigh }]}
+      style={({ pressed }) => [s.menuRow, pressed && { backgroundColor: colors.surfaceHigh }]}
     >
       <Icon name={icon} size={20} stroke={1.8} color={colors.textDim} />
-      <View style={styles.menuText}>
-        <Text style={styles.menuLabel}>{label}</Text>
+      <View style={s.menuText}>
+        <Text style={s.menuLabel}>{label}</Text>
         {!toggle && value ? (
-          <Text numberOfLines={1} style={styles.menuValue}>
+          <Text numberOfLines={1} style={s.menuValue}>
             {value}
           </Text>
         ) : null}
       </View>
       {toggle ? (
-        <SwitchFace checked={Boolean(on)} style={styles.noShrink} />
+        <SwitchFace checked={Boolean(on)} style={s.noShrink} />
       ) : (
         <Icon name="chevron-right" size={18} stroke={2.2} color={colors.textFaint} />
       )}
@@ -108,21 +108,18 @@ function MenuRow({
 
 function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
   return (
-    <Pressable
-      onPress={onBack}
-      style={({ pressed }) => [styles.subHeader, pressed && { opacity: 0.7 }]}
-    >
+    <Pressable onPress={onBack} style={({ pressed }) => [s.subHeader, pressed && { opacity: 0.7 }]}>
       <Icon name="chevron-left" size={20} stroke={2.4} color={colors.text} />
-      <Text style={styles.subTitle}>{title}</Text>
+      <Text style={s.subTitle}>{title}</Text>
     </Pressable>
   );
 }
 
 function ChipGroup({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
-    <View style={styles.chipGroup}>
-      <Text style={styles.group}>{label}</Text>
-      <View style={styles.chipRow}>{children}</View>
+    <View style={s.chipGroup}>
+      <Text style={s.group}>{label}</Text>
+      <View style={s.chipRow}>{children}</View>
     </View>
   );
 }
@@ -178,7 +175,7 @@ function SheetMenu(
   }>,
 ) {
   return (
-    <View style={styles.menuList}>
+    <View style={s.menuList}>
       <MenuRow
         icon="badge-4k"
         label={at.t('player.quality')}
@@ -433,9 +430,9 @@ export function TrackSheet({
                 key={color}
                 onPress={() => onAppearance({ color })}
                 style={[
-                  styles.swatch,
+                  s.swatch,
                   { backgroundColor: color },
-                  appearance.color === color && styles.swatchOn,
+                  appearance.color === color && s.swatchOn,
                 ]}
               />
             ))}
@@ -508,59 +505,38 @@ function qualityBadge(item: MediaItem): string {
   return parts.length ? ` · ${parts.join(' ')}` : '';
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   menuList: { gap: 2 },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    minHeight: 54,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: 14,
-  },
-  menuText: { flex: 1, minWidth: 0 },
-  menuLabel: { ...type.body, color: colors.text, fontWeight: '700' },
-  menuValue: { ...type.small, marginTop: 1 },
-  noShrink: { flexShrink: 0 },
-  subHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 10,
-    marginBottom: spacing.xs,
-  },
-  subTitle: { ...type.section, color: colors.text },
+  menuRow: { row: true, align: 'center', gap: 14, minH: 54, px: spacing.md, py: 8, radius: 14 },
+  menuText: { flex: true, minW: 0 },
+  menuLabel: { ...type.body, color: 'text', fontWeight: '700' },
+  menuValue: { ...type.small, mt: 1 },
+  noShrink: { shrink: 0 },
+  subHeader: { row: true, align: 'center', gap: 8, px: spacing.sm, py: 10, mb: spacing.xs },
+  subTitle: { ...type.section, color: 'text' },
   group: {
     ...type.small,
-    color: colors.accent,
+    mb: spacing.xs,
+    color: 'accent',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: spacing.xs,
   },
-  chipGroup: { paddingHorizontal: spacing.sm, marginBottom: spacing.md },
-  chipRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', alignItems: 'center' },
+  chipGroup: { px: spacing.sm, mb: spacing.md },
+  chipRow: { row: true, wrap: true, align: 'center', gap: 8 },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: 14,
+    row: true,
+    between: true,
+    align: 'center',
     gap: spacing.sm,
+    minH: 48,
+    px: spacing.md,
+    radius: 14,
   },
-  rowOn: { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+  rowOn: { bg: 'white/10' },
   rowDisabled: { opacity: 0.45 },
-  rowLabel: { ...type.body, color: colors.textDim, flexShrink: 1 },
-  rowLabelOn: { color: colors.text, fontWeight: '600' },
-  rowNote: { ...type.small, color: colors.textFaint },
-  swatch: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  swatchOn: { borderColor: colors.accent },
+  rowLabel: { ...type.body, shrink: 1, color: 'textMuted' },
+  rowLabelOn: { color: 'text', fontWeight: '600' },
+  rowNote: { ...type.small, color: 'textDim' },
+  swatch: { w: 30, h: 30, radius: 15, border: 'transparent', borderWidth: 2 },
+  swatchOn: { borderColor: 'accent' },
 });

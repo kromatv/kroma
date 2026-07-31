@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { GROUP_ORDER, orderStories, type Story, slug, story, TIER_ORDER, tierFor } from './story';
 
 const variants = sv({
-  base: { borderRadius: 4 },
+  slots: { root: { borderRadius: 4 } },
   variants: {
     variant: { primary: {}, ghost: {} },
     size: { sm: {}, lg: {} },
@@ -26,11 +26,11 @@ describe('sv introspection', () => {
       block: ['true', 'false'],
     });
     expect(variants.defaults).toEqual({ variant: 'ghost', size: 'lg', block: 'false' });
-    expect(variants.config.base).toEqual({ borderRadius: 4 });
+    expect(variants.slots).toEqual(['root']);
   });
 
   it('still resolves styles', () => {
-    expect(variants({ variant: 'primary' })).toEqual([{ borderRadius: 4 }, {}, {}, {}]);
+    expect(variants({ variant: 'primary' }).root).toEqual({ borderRadius: 4 });
   });
 });
 
@@ -60,6 +60,16 @@ describe('story()', () => {
     expect(block?.control).toEqual({ kind: 'boolean' });
     expect(built.args.block).toBe(false);
     expect(built.matrix.find((row) => row.group === 'block')?.options).toEqual([false, true]);
+  });
+
+  it('reads a group that only declares `true` as a boolean too: off is the base look', () => {
+    const lone = sv({ base: {}, variants: { open: { true: { opacity: 0.5 } } } });
+    const s = story({ name: 'Lone', group: 'Media', variants: lone, render: () => null });
+    expect(s.controls.find((control) => control.key === 'open')?.control).toEqual({
+      kind: 'boolean',
+    });
+    expect(s.matrix.find((row) => row.group === 'open')?.options).toEqual([false, true]);
+    expect(s.args.open).toBe(false);
   });
 
   it('seeds args from the variant defaults', () => {

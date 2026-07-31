@@ -5,7 +5,7 @@
 // needs to satisfy `Easing.bezier`'s four positional parameters in one place.
 
 import { Easing, type EasingFunction } from 'react-native';
-import { motion } from '#ui/lib/tokens';
+import { motion } from '#ui/core/tokens';
 
 type Curve = keyof typeof motion.bezier;
 

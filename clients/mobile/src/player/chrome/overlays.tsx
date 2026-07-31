@@ -2,12 +2,12 @@
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
 import { type SubtitleAppearance, withOpacity } from '@kroma/ui';
-import { Button, Icon, Spinner } from '@kroma/ui/kit';
-import { Platform, Pressable, StyleSheet, Text, type TextStyle, View } from 'react-native';
+import { Button, Icon, Spinner, styles } from '@kroma/ui/kit';
+import { Platform, Pressable, Text, type TextStyle, View } from 'react-native';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
-import { absoluteFill, colors, radius } from '#mobile/lib/theme';
+import { colors, radius } from '#mobile/lib/theme';
 
 // Phone scale; the shared appearance model's px are 10-foot numbers.
 const CUE_SIZE: Record<SubtitleAppearance['size'], number> = { sm: 13, md: 17, lg: 21, xl: 26 };
@@ -60,15 +60,15 @@ export function CueLine({
 }: Readonly<{ cue: string; bottom: number; appearance: SubtitleAppearance }>) {
   if (!cue) return null;
   return (
-    <View style={[styles.cueBox, { bottom }]}>
-      <Text style={[styles.cueText, cueStyle(appearance)]}>{cue}</Text>
+    <View style={[s.cueBox, { bottom }]}>
+      <Text style={[s.cueText, cueStyle(appearance)]}>{cue}</Text>
     </View>
   );
 }
 
 export function BufferingSpinner() {
   return (
-    <View style={styles.centerOverlay} pointerEvents="none">
+    <View style={s.centerOverlay} pointerEvents="none">
       <Spinner size={40} color={colors.text} />
     </View>
   );
@@ -84,7 +84,7 @@ export function SkipIntroButton({
       variant="scrim"
       size="sm"
       label={t('player.skipIntro')}
-      style={[styles.skipIntro, { bottom }]}
+      style={[s.skipIntro, { bottom }]}
       onPress={onPress}
     />
   );
@@ -103,11 +103,11 @@ export function UpNextCard({
   const client = useClient();
   const thumb = sizedImageUrl(client.backdropFor(next) ?? client.posterFor(next), 320);
   return (
-    <Pressable onPress={onPlayNext} style={[styles.upNext, { bottom }]}>
-      <FadeImage uri={thumb} seed={next.id} radius={6} style={styles.upNextThumb} />
-      <View style={styles.upNextText}>
-        <Text style={styles.upNextLabel}>{t('player.nextEpisode')}</Text>
-        <Text numberOfLines={1} style={styles.upNextTitle}>
+    <Pressable onPress={onPlayNext} style={[s.upNext, { bottom }]}>
+      <FadeImage uri={thumb} seed={next.id} radius={6} style={s.upNextThumb} />
+      <View style={s.upNextText}>
+        <Text style={s.upNextLabel}>{t('player.nextEpisode')}</Text>
+        <Text numberOfLines={1} style={s.upNextTitle}>
           {next.episodeTitle ?? next.title}
         </Text>
       </View>
@@ -116,34 +116,26 @@ export function UpNextCard({
   );
 }
 
-const styles = StyleSheet.create({
-  centerOverlay: { ...absoluteFill, alignItems: 'center', justifyContent: 'center' },
-  cueBox: { position: 'absolute', left: 40, right: 40, alignItems: 'center' },
-  cueText: {
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  skipIntro: { position: 'absolute', right: 32 },
+const s = styles({
+  centerOverlay: { fill: true, center: true },
+  cueBox: { absolute: true, right: 40, left: 40, align: 'center' },
+  cueText: { px: 10, py: 4, radius: 6, overflow: 'hidden', fontWeight: '600', textAlign: 'center' },
+  skipIntro: { absolute: true, right: 32 },
   upNext: {
-    position: 'absolute',
+    absolute: true,
     right: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
+    row: true,
+    align: 'center',
     gap: 10,
-    backgroundColor: 'rgba(10, 10, 12, 0.85)',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.md,
-    padding: 8,
-    paddingRight: 14,
-    maxWidth: 320,
+    maxW: 320,
+    p: 8,
+    pr: 14,
+    bg: 'bg/85',
+    radius: radius.md,
+    border: 'borderStrong',
   },
-  upNextThumb: { width: 84, height: 47 },
-  upNextText: { flexShrink: 1 },
-  upNextLabel: { color: colors.accent, fontSize: 11, fontWeight: '700' },
-  upNextTitle: { color: colors.text, fontSize: 13, fontWeight: '600', marginTop: 2 },
+  upNextThumb: { w: 84, h: 47 },
+  upNextText: { shrink: 1 },
+  upNextLabel: { color: 'accent', fontSize: 11, fontWeight: '700' },
+  upNextTitle: { mt: 2, color: 'text', fontSize: 13, fontWeight: '600' },
 });

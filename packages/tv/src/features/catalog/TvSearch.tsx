@@ -1,7 +1,7 @@
 import type { SearchHit } from '@kroma/core';
 import { posterColors, qualityBadge, qualityBadgeForVideo } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { BackButton, Box, Chip, Field, IconButton, Txt, useFocusNav } from '@kroma/ui/kit';
+import { BackButton, Box, Chip, Field, IconButton, styles, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
@@ -59,14 +59,14 @@ export function TvSearch() {
   const toHit = useCallback(
     (hit: SearchHit): SearchResult => {
       if (hit.type === 'show') {
-        const s = hit.show;
+        const show = hit.show;
         return {
-          id: s.id,
-          title: s.title,
-          badge: qualityBadgeForVideo(s.video),
-          poster: client.showPosterFor(s, RESULT_W),
-          colors: posterColors(s.id),
-          onOpen: () => nav.go('show', { show: s }),
+          id: show.id,
+          title: show.title,
+          badge: qualityBadgeForVideo(show.video),
+          poster: client.showPosterFor(show, RESULT_W),
+          colors: posterColors(show.id),
+          onOpen: () => nav.go('show', { show }),
         };
       }
       const m = hit.item; // movie | episode both navigate to the item detail
@@ -93,8 +93,8 @@ export function TvSearch() {
         .filter((m) => match(m.title, m.metadata?.genres))
         .map((m) => toHit({ type: 'movie', item: m }));
       const sh = shows
-        .filter((s) => match(s.title, s.metadata?.genres))
-        .map((s) => toHit({ type: 'show', show: s }));
+        .filter((show) => match(show.title, show.metadata?.genres))
+        .map((show) => toHit({ type: 'show', show }));
       return [...mv, ...sh];
     },
     [movies, shows, toHit],
@@ -124,7 +124,7 @@ export function TvSearch() {
 
   const recentPills = recent.length ? (
     <Box mt={28} gap={12} style={{ minHeight: 0 }}>
-      <Txt style={RECENT_LABEL} color="textDim">
+      <Txt style={s.recentLabel} color="textDim">
         {t('search.recent')}
       </Txt>
       <Box row wrap gap={10}>
@@ -226,7 +226,10 @@ export function TvSearch() {
 const RESULTS_WIDTH = 1180;
 // The scroller's own horizontal padding, which the grid does not get to use.
 const RESULTS_PADDING = 40;
-const RECENT_LABEL = { fontSize: 13, fontWeight: '700' as const, letterSpacing: 0.52 };
+
+const s = styles({
+  recentLabel: { fontSize: 13, fontWeight: '700', letterSpacing: 0.52 },
+});
 
 // The results grid draws 277pt posters, served from the server's 320 bucket.
 const RESULT_W = 320;

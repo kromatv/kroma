@@ -2,7 +2,7 @@
 // type the 4-digit code, then authorize that device into this account (mirror
 // of the web flow, POST /auth/quickconnect/authorize).
 
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -17,7 +17,7 @@ import { ErrorBanner } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { absoluteFill, colors, radius, spacing, type } from '#mobile/lib/theme';
+import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 // expo-camera is a NATIVE module and expo-router imports every route at boot:
 // a static import would crash the whole app on a binary built before the
@@ -106,8 +106,8 @@ export default function ConnectDevice() {
     <OnboardingScreen keyboardBehavior="height" onBack={() => goBack(router)}>
       <OnboardingBox>
         {state === 'done' ? (
-          <View style={styles.center}>
-            <View style={styles.doneBadge}>
+          <View style={s.center}>
+            <View style={s.doneBadge}>
               <Icon name="check" size={34} stroke={2.4} color={colors.accentInk} />
             </View>
             <OnboardingTitle
@@ -118,9 +118,9 @@ export default function ConnectDevice() {
         ) : (
           <>
             <OnboardingTitle title={t('connect.title')} subtitle={t('connect.codePrompt')} />
-            <View style={styles.center}>
+            <View style={s.center}>
               {camera ? (
-                <View style={styles.cameraBox}>
+                <View style={s.cameraBox}>
                   {cameraOn ? (
                     <>
                       <camera.CameraView
@@ -129,18 +129,18 @@ export default function ConnectDevice() {
                         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                         onBarcodeScanned={({ data }) => onScanned(data)}
                       />
-                      <View style={styles.cameraFrame} pointerEvents="none" />
+                      <View style={s.cameraFrame} pointerEvents="none" />
                     </>
                   ) : (
                     <Pressable
                       onPress={() => void enableCamera()}
                       style={({ pressed }) => [
-                        styles.cameraOff,
+                        s.cameraOff,
                         pressed && { backgroundColor: colors.surfaceHigh },
                       ]}
                     >
                       <Icon name="scan" size={34} stroke={1.8} color={colors.accent} />
-                      <Text style={styles.cameraOffLabel}>{t('connect.scanTvQr')}</Text>
+                      <Text style={s.cameraOffLabel}>{t('connect.scanTvQr')}</Text>
                     </Pressable>
                   )}
                 </View>
@@ -163,44 +163,20 @@ export default function ConnectDevice() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: { alignItems: 'center', gap: spacing.md },
-  cameraBox: {
-    width: 176,
-    height: 176,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceRaised,
-  },
-  cameraOff: {
-    ...absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingHorizontal: spacing.md,
-  },
-  cameraOffLabel: {
-    ...type.caption,
-    color: colors.accent,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
+const s = styles({
+  center: { align: 'center', gap: spacing.md },
+  cameraBox: { w: 176, h: 176, bg: 'surface2', radius: radius.lg, overflow: 'hidden' },
+  cameraOff: { fill: true, center: true, gap: 10, px: spacing.md },
+  cameraOffLabel: { ...type.caption, color: 'accent', fontWeight: '700', textAlign: 'center' },
   cameraFrame: {
-    position: 'absolute',
+    absolute: true,
     top: 16,
-    left: 16,
     right: 16,
     bottom: 16,
+    left: 16,
+    radius: radius.md,
+    border: 'accent',
     borderWidth: 2,
-    borderColor: colors.accent,
-    borderRadius: radius.md,
   },
-  doneBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  doneBadge: { center: true, w: 72, h: 72, bg: 'accent', radius: 36 },
 });

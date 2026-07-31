@@ -110,12 +110,13 @@ interface Story {
   guidelines: { do: readonly string[]; dont: readonly string[] };
 }
 
-// A two-option group of these is the `sv` spelling of a boolean prop, so it is
-// surfaced as a boolean rather than a dropdown of strings.
+// A group of these is the `sv` spelling of a boolean prop, so it is surfaced as
+// a boolean rather than a dropdown of strings. Usually just `true`: a recipe
+// only declares the option that paints something, and off is the base look.
 const BOOLEAN_OPTIONS = new Set(['true', 'false']);
 
 function isBooleanGroup(options: readonly string[]): boolean {
-  return options.length === 2 && options.every((option) => BOOLEAN_OPTIONS.has(option));
+  return options.length > 0 && options.every((option) => BOOLEAN_OPTIONS.has(option));
 }
 
 function resolveSpec(spec: ControlSpec): Control {

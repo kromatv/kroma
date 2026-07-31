@@ -1,12 +1,12 @@
 import { formatRuntime, type MediaItem, type ProgressEntry, sizedImageUrl } from '@kroma/core';
-import { Button, Icon } from '@kroma/ui/kit';
+import { Button, Icon, styles } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
-import { absoluteFill, colors, radius, type } from '#mobile/lib/theme';
+import { colors, radius, type } from '#mobile/lib/theme';
 import { DownloadButton } from './DownloadButton';
 import { FadeImage } from './FadeImage';
 import { ProgressRing } from './ProgressRing';
@@ -23,11 +23,9 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
   if (episodes.length === 0) return null;
   if (done === episodes.length) {
     return (
-      <View style={styles.seasonDl}>
+      <View style={s.seasonDl}>
         <Icon name="check" size={16} stroke={2.4} color={colors.accent} />
-        <Text style={[styles.seasonDlLabel, { color: colors.accent }]}>
-          {t('offline.downloaded')}
-        </Text>
+        <Text style={[s.seasonDlLabel, { color: colors.accent }]}>{t('offline.downloaded')}</Text>
       </View>
     );
   }
@@ -70,24 +68,24 @@ export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: num
   return (
     <Pressable
       onPress={() => void play(next.id)}
-      style={({ pressed }) => [styles.upNextCard, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [s.upNextCard, pressed && { opacity: 0.85 }]}
     >
       <View>
         <FadeImage
           uri={sizedImageUrl(client.backdropFor(next), 480)}
           seed={next.id}
           radius={radius.sm}
-          style={styles.upNextThumb}
+          style={s.upNextThumb}
         />
         {frac > 0 ? (
-          <View style={styles.upNextTrack}>
-            <View style={[styles.upNextFill, { width: `${frac * 100}%` }]} />
+          <View style={s.upNextTrack}>
+            <View style={[s.upNextFill, { width: `${frac * 100}%` }]} />
           </View>
         ) : null}
       </View>
-      <View style={styles.upNextText}>
-        <Text style={styles.upNextLabel}>{t('content.upNext')}</Text>
-        <Text numberOfLines={2} style={styles.upNextTitle}>
+      <View style={s.upNextText}>
+        <Text style={s.upNextLabel}>{t('content.upNext')}</Text>
+        <Text numberOfLines={2} style={s.upNextTitle}>
           {next.episode != null ? `${next.episode}. ` : ''}
           {next.episodeTitle ?? next.title}
         </Text>
@@ -117,37 +115,37 @@ export function EpisodeRow({
     <Pressable
       onPress={() => void play(episode.id)}
       onLongPress={() => router.push(`/item/${episode.id}` as never)}
-      style={({ pressed }) => [styles.episode, pressed && { backgroundColor: colors.surface }]}
+      style={({ pressed }) => [s.episode, pressed && { backgroundColor: colors.surface }]}
     >
       <View>
         <FadeImage
           uri={sizedImageUrl(client.backdropFor(episode), 480)}
           seed={episode.id}
           radius={radius.sm}
-          style={styles.epThumb}
+          style={s.epThumb}
         />
-        <View style={styles.epPlayBadge}>
-          <View style={styles.epPlayCircle}>
+        <View style={s.epPlayBadge}>
+          <View style={s.epPlayCircle}>
             <Icon name="player-play-filled" size={15} />
           </View>
         </View>
         {frac > 0 ? (
-          <View style={styles.epProgressTrack}>
-            <View style={[styles.epProgressFill, { width: `${frac * 100}%` }]} />
+          <View style={s.epProgressTrack}>
+            <View style={[s.epProgressFill, { width: `${frac * 100}%` }]} />
           </View>
         ) : null}
       </View>
-      <View style={styles.epText}>
-        <View style={styles.epTitleRow}>
-          <Text numberOfLines={1} style={styles.epTitle}>
+      <View style={s.epText}>
+        <View style={s.epTitleRow}>
+          <Text numberOfLines={1} style={s.epTitle}>
             {episode.episode != null ? `${episode.episode}. ` : ''}
             {episode.episodeTitle ?? episode.title}
           </Text>
           {watched ? <Icon name="check" size={14} stroke={2.4} color={colors.success} /> : null}
         </View>
-        {runtime ? <Text style={styles.epMeta}>{runtime}</Text> : null}
+        {runtime ? <Text style={s.epMeta}>{runtime}</Text> : null}
         {overview ? (
-          <Text numberOfLines={2} style={styles.epOverview}>
+          <Text numberOfLines={2} style={s.epOverview}>
             {overview}
           </Text>
         ) : null}
@@ -157,66 +155,33 @@ export function EpisodeRow({
   );
 }
 
-const styles = StyleSheet.create({
-  seasonDl: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  seasonDlLabel: { ...type.caption, color: colors.text, fontWeight: '600' },
+const s = styles({
+  seasonDl: { row: true, align: 'center', gap: 8 },
+  seasonDlLabel: { ...type.caption, color: 'text', fontWeight: '600' },
   upNextCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    row: true,
+    align: 'center',
     gap: 12,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: 8,
-    paddingRight: 16,
+    p: 8,
+    pr: 16,
+    bg: 'surface1',
+    radius: radius.md,
   },
-  upNextThumb: { width: 120, height: 68 },
-  upNextTrack: {
-    position: 'absolute',
-    left: 5,
-    right: 5,
-    bottom: 5,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(244, 243, 240, 0.3)',
-  },
-  upNextFill: { height: 3, borderRadius: 2, backgroundColor: colors.accent },
-  upNextText: { flex: 1, gap: 2 },
-  upNextLabel: { ...type.small, color: colors.accent, fontWeight: '700' },
+  upNextThumb: { w: 120, h: 68 },
+  upNextTrack: { absolute: true, right: 5, bottom: 5, left: 5, h: 3, bg: 'text/30', radius: 2 },
+  upNextFill: { h: 3, bg: 'accent', radius: 2 },
+  upNextText: { flex: true, gap: 2 },
+  upNextLabel: { ...type.small, color: 'accent', fontWeight: '700' },
   upNextTitle: { ...type.body, fontWeight: '600' },
-  episode: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 8,
-    borderRadius: radius.md,
-    alignItems: 'center',
-  },
-  epThumb: { width: 140, height: 79 },
-  epPlayBadge: {
-    ...absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  epPlayCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(10, 10, 12, 0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  epProgressTrack: {
-    position: 'absolute',
-    left: 5,
-    right: 5,
-    bottom: 5,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(244, 243, 240, 0.3)',
-  },
-  epProgressFill: { height: 3, borderRadius: 2, backgroundColor: colors.accent },
-  epText: { flex: 1, gap: 3 },
-  epOverview: { ...type.small, color: colors.textDim, lineHeight: 17, fontWeight: '400' },
-  epTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  epTitle: { ...type.body, fontWeight: '600', flexShrink: 1 },
+  episode: { row: true, align: 'center', gap: 12, p: 8, radius: radius.md },
+  epThumb: { w: 140, h: 79 },
+  epPlayBadge: { fill: true, center: true },
+  epPlayCircle: { center: true, w: 34, h: 34, bg: 'bg/55', radius: 17 },
+  epProgressTrack: { absolute: true, right: 5, bottom: 5, left: 5, h: 3, bg: 'text/30', radius: 2 },
+  epProgressFill: { h: 3, bg: 'accent', radius: 2 },
+  epText: { flex: true, gap: 3 },
+  epOverview: { ...type.small, color: 'textMuted', lineHeight: 17, fontWeight: '400' },
+  epTitleRow: { row: true, align: 'center', gap: 6 },
+  epTitle: { ...type.body, shrink: 1, fontWeight: '600' },
   epMeta: { ...type.small },
 });

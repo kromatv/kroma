@@ -10,6 +10,7 @@
 // the rounded clip of the view it sits in, so an unrounded blur pane would
 // poke out of the panel's rounded corners.
 
+import { styles } from '@kroma/ui/kit';
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import {
@@ -48,7 +49,7 @@ export function PlayerPanel({
 
   if (!visible) return null;
 
-  const corners = landscape ? styles.leftCorners : styles.topCorners;
+  const corners = landscape ? s.leftCorners : s.topCorners;
   return (
     <Modal
       visible
@@ -57,14 +58,14 @@ export function PlayerPanel({
       onRequestClose={onRequestClose ?? onClose}
       supportedOrientations={['portrait', 'landscape', 'landscape-left', 'landscape-right']}
     >
-      <View style={landscape ? styles.overlayRow : styles.overlayColumn}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+      <View style={landscape ? s.overlayRow : s.overlayColumn}>
+        <Pressable style={s.backdrop} onPress={onClose} />
         <View
           style={[
             corners,
             landscape
               ? [
-                  styles.sidePanel,
+                  s.sidePanel,
                   {
                     width: Math.min(400, width * 0.46),
                     paddingTop: insets.top + spacing.sm,
@@ -72,22 +73,15 @@ export function PlayerPanel({
                     paddingRight: Math.max(insets.right, spacing.md),
                   },
                 ]
-              : [
-                  styles.bottomPanel,
-                  { minHeight, paddingBottom: Math.max(insets.bottom, spacing.md) },
-                ],
+              : [s.bottomPanel, { minHeight, paddingBottom: Math.max(insets.bottom, spacing.md) }],
           ]}
         >
           <BlurView
             tint="dark"
             intensity={Platform.OS === 'ios' ? 60 : 0}
-            style={[
-              StyleSheet.absoluteFill,
-              corners,
-              Platform.OS !== 'ios' && styles.androidPanelBg,
-            ]}
+            style={[StyleSheet.absoluteFill, corners, Platform.OS !== 'ios' && s.androidPanelBg]}
           />
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
             {children}
           </ScrollView>
         </View>
@@ -96,23 +90,23 @@ export function PlayerPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  overlayRow: { flex: 1, flexDirection: 'row' },
-  overlayColumn: { flex: 1, flexDirection: 'column', justifyContent: 'flex-end' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.45)' },
+const s = styles({
+  overlayRow: { flex: true, row: true },
+  overlayColumn: { flex: true, justify: 'flex-end', flexDirection: 'column' },
+  backdrop: { flex: true, bg: 'black/45' },
   // Applied to the panel and to the blur inside it — see the file note above.
   leftCorners: {
+    overflow: 'hidden',
     borderTopLeftRadius: radius.xl,
     borderBottomLeftRadius: radius.xl,
-    overflow: 'hidden',
   },
   topCorners: {
+    overflow: 'hidden',
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
-    overflow: 'hidden',
   },
-  sidePanel: { height: '100%', paddingLeft: spacing.md },
-  bottomPanel: { maxHeight: '70%', paddingHorizontal: spacing.md, paddingTop: spacing.sm },
-  androidPanelBg: { backgroundColor: 'rgba(18, 18, 22, 0.97)' },
-  scroll: { paddingBottom: spacing.md, paddingTop: spacing.xs },
+  sidePanel: { h: '100%', pl: spacing.md },
+  bottomPanel: { maxH: '70%', px: spacing.md, pt: spacing.sm },
+  androidPanelBg: { bg: 'surface1/97' },
+  scroll: { pt: spacing.xs, pb: spacing.md },
 });

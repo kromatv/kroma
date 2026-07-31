@@ -3,8 +3,8 @@
 // off the JS thread on every platform.
 
 import { Animated } from 'react-native';
+import { useTheme } from '#ui/core';
 import { useLoop } from '#ui/lib/loop';
-import { colors, radius } from '#ui/lib/tokens';
 
 interface SpinnerProps {
   size?: number;
@@ -17,8 +17,9 @@ const SPIN_MS = 900;
 function Spinner({
   size = 28,
   thickness = Math.max(2, Math.round(size / 10)),
-  color = colors.accent,
+  color,
 }: Readonly<SpinnerProps>) {
+  const theme = useTheme();
   const spin = useLoop('spin', SPIN_MS);
 
   return (
@@ -28,11 +29,11 @@ function Spinner({
         {
           width: size,
           height: size,
-          borderRadius: radius.pill,
+          borderRadius: theme.radius.pill,
           borderWidth: thickness,
           // Three faint quadrants leave one visible arc: the spinner is the turn.
           borderColor: 'rgba(255, 255, 255, 0.14)',
-          borderTopColor: color,
+          borderTopColor: color ?? theme.colors.accent,
         },
         spin,
       ]}

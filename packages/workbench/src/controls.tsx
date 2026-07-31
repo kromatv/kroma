@@ -6,7 +6,7 @@
 // `Field`s, so the panel is D-pad navigable and the whole workbench runs on
 // an actual television, next to the components it is inspecting.
 
-import { Box, Chip, Divider, Field, Switch, Txt } from '@kroma/ui/kit';
+import { Box, Chip, Divider, Field, Switch, style, Txt } from '@kroma/ui/kit';
 import type { Control, ResolvedControl } from './story';
 
 // Beyond this many options a row of chips stops being scannable and turns
@@ -118,7 +118,7 @@ function ControlRow({ name, control, value, onChange }: Readonly<ControlRowProps
           // draws none - it only carries it as the accessible name.
           label={name}
           hideLabel
-          entry={{ py: 10, radius: 'md', bg: 'surface2', textStyle: TEXT_INPUT }}
+          entry={{ py: 10, radius: 'md', bg: 'surface2', textStyle: textInput }}
         />
       ) : null}
       {control.kind === 'select' ? (
@@ -193,7 +193,7 @@ function Controls({ controls, args, onChange, onReset }: Readonly<ControlsProps>
   );
 }
 
-const TEXT_INPUT = { fontSize: 15, fontWeight: '600' as const };
+const textInput = style({ fontSize: 15, fontWeight: '600' });
 
 export type { ControlsProps };
 export { ControlRow, Controls, MAX_CHIPS };

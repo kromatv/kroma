@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { boxStyle, color } from './box-style';
-import { colors, radius, shadow } from './tokens';
+import { boxStyle, color } from '#ui/core';
+import { colors, radius, shadow } from '#ui/core/tokens';
 
 describe('boxStyle flex shorthands', () => {
   it('turns `flex` into flex: 1 but keeps an explicit factor', () => {
@@ -89,5 +89,30 @@ describe('boxStyle position', () => {
 
   it('lets explicit insets refine a fill', () => {
     expect(boxStyle({ fill: true, top: 24 }).top).toBe(24);
+  });
+});
+
+describe('color() alpha syntax', () => {
+  it("reads Tailwind's /NN as a percentage of opacity", () => {
+    expect(color('white/12')).toBe('rgba(255, 255, 255, 0.12)');
+    expect(color('white/20')).toBe('rgba(255, 255, 255, 0.2)');
+    expect(color('black/50')).toBe('rgba(0, 0, 0, 0.5)');
+  });
+
+  it('applies it to palette tokens too', () => {
+    // bg is #0A0A0C — the scrim wash the player already used, spelled once.
+    expect(color('bg/55')).toBe('rgba(10, 10, 12, 0.55)');
+    expect(color('accent/45')).toBe('rgba(244, 182, 66, 0.45)');
+  });
+
+  it('leaves a bare token and a raw colour alone', () => {
+    expect(color('accent')).toBe('#F4B642');
+    expect(color('rgba(1, 2, 3, 0.5)')).toBe('rgba(1, 2, 3, 0.5)');
+    expect(color('#123456')).toBe('#123456');
+  });
+
+  it('does not mistake a CSS slash for an alpha', () => {
+    expect(color('rgb(255 0 0 / 50%)')).toBe('rgb(255 0 0 / 50%)');
+    expect(color('white/nope')).toBe('white/nope');
   });
 });

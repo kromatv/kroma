@@ -3,17 +3,25 @@
 // needs, rather than storing px and dividing back (which round-trips lossily).
 
 import type { TextStyle } from 'react-native';
+import type { TokenOf } from './registry';
 
 export const fonts = {
   display: 'Bricolage Grotesque',
   ui: 'Hanken Grotesk',
 } as const;
 
+/** Families a theme adds. Augment it and the name is legal wherever a family is
+ *  written — a `font:` shorthand, a role's `family` (see `ColorRegistry`). */
+// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+export interface FontRegistry {}
+
+export type FontToken = TokenOf<typeof fonts, FontRegistry>;
+
 /** Tracking as authored, in em. */
 export const tracking = { overline: 0.12, overlineTv: 0.22, display: -0.02 } as const;
 
 export interface TypeSpec {
-  family: keyof typeof fonts;
+  family: FontToken;
   weight: '400' | '500' | '600' | '700';
   size: number;
   /** Line height as a multiple of `size`. */
@@ -50,21 +58,36 @@ export const typeSpec = {
   },
 } as const satisfies Record<string, TypeSpec>;
 
-export type TypeRole = keyof typeof typeSpec;
+/** Roles a theme adds. Augment it and the name is legal wherever a role is
+ *  written — a recipe's `text:` shorthand, <Txt variant> (see `ColorRegistry`). */
+// biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
+export interface TypeRoleRegistry {}
+
+export type TypeRole = TokenOf<typeof typeSpec, TypeRoleRegistry>;
 
 const px = (n: number) => Math.round(n * 100) / 100;
 
-function toStyle(s: TypeSpec): TextStyle {
-  return {
-    fontFamily: fonts[s.family],
-    fontWeight: s.weight,
-    fontSize: s.size,
-    lineHeight: Math.round(s.size * s.ratio),
-    ...(s.em === undefined ? null : { letterSpacing: px(s.size * s.em) }),
-    ...(s.uppercase ? { textTransform: 'uppercase' as const } : null),
-  };
+/**
+ * Derives the finished text styles from the authored specs against a set of
+ * families. Parameterised because a theme can restate either side: `createTheme`
+ * re-derives, so a swapped display font reaches every role that names it.
+ */
+export function toType(
+  spec: Readonly<Record<string, TypeSpec>>,
+  families: Readonly<Record<string, string>>,
+): Record<string, TextStyle> {
+  const out: Record<string, TextStyle> = {};
+  for (const [role, s] of Object.entries(spec)) {
+    out[role] = {
+      fontFamily: families[s.family as string] ?? (s.family as string),
+      fontWeight: s.weight,
+      fontSize: s.size,
+      lineHeight: Math.round(s.size * s.ratio),
+      ...(s.em === undefined ? null : { letterSpacing: px(s.size * s.em) }),
+      ...(s.uppercase ? { textTransform: 'uppercase' as const } : null),
+    };
+  }
+  return out;
 }
 
-export const type = Object.fromEntries(
-  Object.entries(typeSpec).map(([k, v]) => [k, toStyle(v)]),
-) as Record<TypeRole, TextStyle>;
+export const type = toType(typeSpec, fonts) as Record<TypeRole, TextStyle>;

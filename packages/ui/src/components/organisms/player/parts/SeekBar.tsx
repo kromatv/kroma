@@ -1,18 +1,21 @@
 import { formatTimecode } from '@kroma/core';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
+import { styles, sv, themed } from '#ui/core';
 import { gradient } from '#ui/lib/css';
-import { fonts } from '#ui/lib/tokens';
+import { suppressSelection } from '#ui/lib/drag-select';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import { useDragTrack } from '../hooks/useDragTrack';
 import { clamp01 } from '../lib/fmt';
 import { scaler } from '../lib/metrics';
 import { msAtOffset, offsetAt, SEGMENT_GAP } from '../lib/seek-track';
-import { SEEK_BAR } from '../lib/style';
+import { seekBar } from '../lib/style';
 import type { Chapter } from '../types';
 import { StoryboardThumb } from './StoryboardThumb';
+
+const seekTrack = sv({ base: { _focus: { ring: 'focusWash' } } });
 
 export interface SeekBarProps {
   cur: number;
@@ -57,7 +60,7 @@ export function SeekBar({
   const px = scaler(scale);
   // Built per scale, not per tick: this bar re-renders ~4 Hz and is not memoized,
   // so a fresh array would miss the style cache four times a second.
-  const s = useMemo(() => styles(scale), [scale]);
+  const sized = useMemo(() => scaled(scale), [scale]);
   // The track measures itself rather than reading a DOM rect, so the same drag
   // maths runs on a TV; PanResponder is the one gesture API both renderers have.
   const track = useDragTrack();
@@ -86,12 +89,18 @@ export function SeekBar({
     [dur, segs, track.offsetOf, track.width],
   );
 
+  const endSelectionBlock = useRef(NOOP);
+  // A drag cut short by an unmount (chrome auto-hide, route change) would
+  // otherwise leave the document unselectable for the rest of the session.
+  useEffect(() => () => endSelectionBlock.current(), []);
+
   const pan = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (e: GestureResponderEvent) => {
+          endSelectionBlock.current = suppressSelection();
           track.measure();
           const sec = secAt(e.nativeEvent.locationX);
           if (sec == null) return;
@@ -107,12 +116,16 @@ export function SeekBar({
           setHoverSec(sec);
         },
         onPanResponderRelease: () => {
+          endSelectionBlock.current();
+          endSelectionBlock.current = NOOP;
           if (!dragging.current) return;
           dragging.current = false;
           setHoverSec(null);
           onScrubCommit();
         },
         onPanResponderTerminate: () => {
+          endSelectionBlock.current();
+          endSelectionBlock.current = NOOP;
           dragging.current = false;
           setHoverSec(null);
         },
@@ -141,17 +154,15 @@ export function SeekBar({
       {/* The chapter title is the one string of unbounded length here, so it
           shrinks and truncates rather than growing into the runtime. */}
       <Box row align="baseline" between gap={px(12)} mb={px(13)}>
-        <Txt lines={1} style={s.timeShrink}>
+        <Txt lines={1} style={sized.timeShrink}>
           {elapsed}
           {chapterLabel ? (
-            <Txt style={s.timeMuted} color="rgba(244, 243, 240, 0.5)">{` · ${chapterLabel}`}</Txt>
+            <Txt style={sized.timeMuted} color="text/50">{` · ${chapterLabel}`}</Txt>
           ) : null}
         </Txt>
-        <Txt lines={1} style={s.time} color="rgba(244, 243, 240, 0.5)">
+        <Txt lines={1} style={sized.time} color="text/50">
           {total}
-          {endsAt ? (
-            <Txt style={s.timeMuted} color="rgba(244, 243, 240, 0.38)">{` · ${endsAt}`}</Txt>
-          ) : null}
+          {endsAt ? <Txt style={sized.timeMuted} color="text/38">{` · ${endsAt}`}</Txt> : null}
         </Txt>
       </Box>
 
@@ -166,7 +177,7 @@ export function SeekBar({
         accessibilityRole="adjustable"
         accessibilityLabel="progress"
         accessibilityValue={{ min: 0, max: Math.round(dur), now: Math.round(shown) }}
-        style={focused ? FOCUSED_TRACK : null}
+        style={seekTrack(undefined, { focus: focused }).root}
       >
         {/* The varying offset rides the transform via `style`, never a shorthand
             prop: a shorthand mints a permanent sharedBoxStyle entry per pixel. */}
@@ -182,14 +193,14 @@ export function SeekBar({
             style={{ transform: [{ translateX: previewX - previewHalf }] }}
           >
             {previewTile ? <StoryboardThumb tile={previewTile} /> : null}
-            <Box radius="md" bg="rgba(0, 0, 0, 0.8)" px={px(12)} py={px(4)}>
-              <Txt style={s.stamp}>{formatTimecode(previewSec)}</Txt>
+            <Box radius="md" bg="black/80" px={px(12)} py={px(4)}>
+              <Txt style={sized.stamp}>{formatTimecode(previewSec)}</Txt>
             </Box>
           </Box>
         ) : null}
 
         {/* segmented track */}
-        <View ref={track.ref} onLayout={track.onLayout} {...pan.panHandlers} style={s.track}>
+        <View ref={track.ref} onLayout={track.onLayout} {...pan.panHandlers} style={sized.track}>
           {segs.map((seg) => {
             const span = Math.max(1, seg.endMs - seg.startMs);
             const played = clamp01((shownMs - seg.startMs) / span);
@@ -204,7 +215,7 @@ export function SeekBar({
                 h="100%"
                 radius="pill"
                 overflow="hidden"
-                bg={SEEK_BAR.track}
+                bg={seekBar().track}
                 pointerEvents="none"
               >
                 {/* Insets vary per tick, so they bypass the shared cache via `style`.
@@ -212,13 +223,13 @@ export function SeekBar({
                 <Box
                   fill
                   radius="pill"
-                  bg={SEEK_BAR.buffered}
+                  bg={seekBar().buffered}
                   style={{ right: `${(1 - buffed) * 100}%` }}
                 />
                 <Box
                   fill
                   radius="pill"
-                  style={[PLAYED_FILL, { right: `${(1 - played) * 100}%` }]}
+                  style={[playedFill(), { right: `${(1 - played) * 100}%` }]}
                 />
               </Box>
             );
@@ -236,7 +247,7 @@ export function SeekBar({
             bg="#FFFFFF"
             pointerEvents="none"
             style={[
-              PLAYHEAD,
+              playheadShadow(),
               {
                 transform: [{ translateX: playheadX - px(16) / 2 }, { translateY: -px(16) / 2 }],
               },
@@ -252,43 +263,32 @@ const TIME_SIZE = 18;
 const STAMP_SIZE = 14;
 const TRACK_HEIGHT = 6;
 
-const TIME = {
-  fontFamily: fonts.ui,
-  fontWeight: '600' as const,
-  color: '#F4F3F0',
-  fontVariant: ['tabular-nums' as const],
-};
-const MUTED = { fontWeight: '500' as const };
-const SHRINK = { flexShrink: 1 };
-const FOCUSED_TRACK = { boxShadow: '0 0 0 4px rgba(242, 180, 66, 0.28)' };
-const TRACK = {
-  position: 'relative' as const,
-  flexDirection: 'row' as const,
-  alignItems: 'center' as const,
-  flex: 1,
-  gap: SEGMENT_GAP,
-};
-const PLAYED_FILL = gradient(
-  `linear-gradient(90deg, ${SEEK_BAR.played[0]}, ${SEEK_BAR.played[1]})`,
+const playedFill = themed(() =>
+  gradient(`linear-gradient(90deg, ${seekBar().played[0]}, ${seekBar().played[1]})`),
 );
-const PLAYHEAD = {
-  boxShadow: `0 0 0 4px ${SEEK_BAR.playheadHalo}, 0 2px 8px rgba(0, 0, 0, 0.6)`,
-};
-const STAMP = {
-  fontFamily: fonts.ui,
-  fontWeight: '700' as const,
-  color: '#FFFFFF',
-  fontVariant: ['tabular-nums' as const],
-};
 
-function styles(scale: number) {
+const playheadShadow = themed(() => ({
+  boxShadow: `0 0 0 4px ${seekBar().playheadHalo}, 0 2px 8px rgba(0, 0, 0, 0.6)`,
+}));
+
+const s = styles({
+  time: { font: 'ui', fontWeight: '600', color: 'text', fontVariant: ['tabular-nums'] },
+  muted: { fontWeight: '500' },
+  shrink: { shrink: 1 },
+  track: { position: 'relative', row: true, align: 'center', flex: true, gap: SEGMENT_GAP },
+  stamp: { font: 'ui', fontWeight: '700', color: 'white', fontVariant: ['tabular-nums'] },
+});
+
+function scaled(scale: number) {
   const px = scaler(scale);
   const time = { fontSize: px(TIME_SIZE) };
   return {
-    time: [TIME, time],
-    timeMuted: [TIME, time, MUTED],
-    timeShrink: [TIME, time, SHRINK],
-    stamp: [STAMP, { fontSize: px(STAMP_SIZE) }],
-    track: [TRACK, { height: px(TRACK_HEIGHT) }],
+    time: [s.time, time],
+    timeMuted: [s.time, time, s.muted],
+    timeShrink: [s.time, time, s.shrink],
+    stamp: [s.stamp, { fontSize: px(STAMP_SIZE) }],
+    track: [s.track, { height: px(TRACK_HEIGHT) }],
   };
 }
+
+const NOOP = () => {};

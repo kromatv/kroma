@@ -6,10 +6,10 @@
 
 import type { Notification, NotificationEvent } from '@kroma/core';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kroma/core';
-import { Icon, IconButton, type IconName } from '@kroma/ui/kit';
+import { Icon, IconButton, type IconName, styles } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -83,7 +83,7 @@ export default function NotificationsScreen() {
         <SectionList
           sections={sections}
           keyExtractor={(n) => n.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={s.list}
           stickySectionHeadersEnabled
           refreshControl={
             <RefreshControl
@@ -92,9 +92,7 @@ export default function NotificationsScreen() {
               tintColor={colors.textDim}
             />
           }
-          renderSectionHeader={({ section }) => (
-            <Text style={styles.dayLabel}>{section.title}</Text>
-          )}
+          renderSectionHeader={({ section }) => <Text style={s.dayLabel}>{section.title}</Text>}
           renderItem={({ item }) => <NotificationRow row={item} />}
         />
       )}
@@ -136,7 +134,7 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
       rightThreshold={40}
       renderRightActions={() => (
         <Pressable
-          style={styles.deleteAction}
+          style={s.deleteAction}
           onPress={() => {
             swipe.current?.close();
             void remove();
@@ -150,27 +148,27 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
     >
       <Pressable
         onPress={() => void open()}
-        style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+        style={({ pressed }) => [s.row, pressed && s.rowPressed]}
       >
         {/* The gutter is here on every row, empty or not, so nothing shifts. */}
-        <View style={styles.gutter}>{unread ? <View style={styles.dot} /> : null}</View>
+        <View style={s.gutter}>{unread ? <View style={s.dot} /> : null}</View>
 
         {poster ? (
-          <FadeImage uri={poster} seed={row.id} radius={radius.md} style={styles.tile} />
+          <FadeImage uri={poster} seed={row.id} radius={radius.md} style={s.tile} />
         ) : (
-          <View style={[styles.tile, styles.tilePlate]}>
+          <View style={[s.tile, s.tilePlate]}>
             <Icon name={glyph.name} size={20} stroke={1.8} color={glyph.color} />
           </View>
         )}
 
-        <View style={styles.body}>
-          <View style={styles.titleRow}>
-            <Text numberOfLines={1} style={[styles.title, !unread && styles.titleRead]}>
+        <View style={s.body}>
+          <View style={s.titleRow}>
+            <Text numberOfLines={1} style={[s.title, !unread && s.titleRead]}>
               {row.title}
             </Text>
-            <Text style={styles.time}>{sinceLabel(t, row.createdAt)}</Text>
+            <Text style={s.time}>{sinceLabel(t, row.createdAt)}</Text>
           </View>
-          <Text numberOfLines={2} style={styles.text}>
+          <Text numberOfLines={2} style={s.text}>
             {row.body}
           </Text>
         </View>
@@ -232,53 +230,31 @@ function sinceLabel(t: ReturnType<typeof useT>, createdAt: number): string {
   return t('time.daysAgo', { n: Math.round(hours / 24) });
 }
 
-const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.xl,
-    ...boxed(contentWidth.reading),
-  },
+const s = styles({
+  list: { px: spacing.sm, pb: spacing.xl, ...boxed(contentWidth.reading) },
   dayLabel: {
     ...type.small,
-    color: colors.textFaint,
-    fontWeight: '600',
+    px: spacing.sm,
+    pt: spacing.md,
+    pb: 6,
     // Opaque: it is pinned while its own run scrolls underneath it.
-    backgroundColor: colors.bg,
-    paddingHorizontal: spacing.sm,
-    paddingTop: spacing.md,
-    paddingBottom: 6,
+    bg: 'bg',
+    color: 'textDim',
+    fontWeight: '600',
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 10,
-    paddingRight: spacing.sm,
-    paddingLeft: 6,
-    borderRadius: radius.md,
-  },
+  row: { row: true, align: 'flex-start', py: 10, pr: spacing.sm, pl: 6, radius: radius.md },
   // No unread wash: the dot carries it, and a tinted row under every unread
   // notification turns a backlog into one solid block.
-  rowPressed: { backgroundColor: colors.surface },
-  gutter: { width: 6, height: 48, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
-  tile: { width: 48, height: 48, borderRadius: radius.md, marginRight: 12 },
-  tilePlate: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  body: { flex: 1, minWidth: 0 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  title: { ...type.body, color: colors.text, fontWeight: '700', flex: 1, minWidth: 0 },
-  titleRead: { color: colors.textDim },
-  time: { ...type.small, color: colors.textFaint, fontWeight: '500', paddingTop: 2 },
-  text: { ...type.caption, color: colors.textDim, lineHeight: 18, marginTop: 1 },
-  deleteAction: {
-    width: 72,
-    marginLeft: spacing.xs,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.danger,
-  },
+  rowPressed: { bg: 'surface1' },
+  gutter: { center: true, w: 6, h: 48, mr: 8 },
+  dot: { w: 6, h: 6, bg: 'accent', radius: 3 },
+  tile: { w: 48, h: 48, mr: 12, radius: radius.md },
+  tilePlate: { center: true, bg: 'wash' },
+  body: { flex: true, minW: 0 },
+  titleRow: { row: true, align: 'flex-start', gap: 8 },
+  title: { ...type.body, flex: true, minW: 0, color: 'text', fontWeight: '700' },
+  titleRead: { color: 'textMuted' },
+  time: { ...type.small, pt: 2, color: 'textDim', fontWeight: '500' },
+  text: { ...type.caption, mt: 1, color: 'textMuted', lineHeight: 18 },
+  deleteAction: { center: true, w: 72, ml: spacing.xs, bg: 'danger', radius: radius.md },
 });

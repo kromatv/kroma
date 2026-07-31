@@ -10,13 +10,13 @@ import {
 import { Box } from '#ui/components/atoms/box';
 import { cellWidth } from '#ui/components/atoms/grid';
 import { Txt } from '#ui/components/atoms/text';
+import { styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { ease } from '#ui/lib/ease';
-import { fonts } from '#ui/lib/tokens';
 import { useT } from '#ui/services/i18n';
 import { useGridFocus } from '../hooks/useGridFocus';
 import type { PanelHandle } from '../lib/nav';
-import { EYEBROW } from '../lib/style';
+import { playerStyle } from '../lib/style';
 import { VIRTUAL_FOCUS } from '../lib/virtual-focus';
 import { IconCollapse } from './icons';
 import { UP_NEXT_COLUMNS, UP_NEXT_GAP, UpNextCard, type UpNextItem } from './UpNextCard';
@@ -161,7 +161,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
         accessibilityRole="button"
         accessibilityLabel={t('player.back')}
         pointerEvents={open ? 'auto' : 'none'}
-        style={[SCRIM_BOX, SCRIM, { opacity: open ? 1 : 0 }]}
+        style={[s.scrimBox, SCRIM, { opacity: open ? 1 : 0 }]}
       />
       <Animated.View
         onLayout={(e) => {
@@ -169,7 +169,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
           setSheetHeight((prev) => (prev === h ? prev : h));
         }}
         style={[
-          SHEET_BOX,
+          s.sheetBox,
           SHEET_FILL,
           {
             transform: [
@@ -198,7 +198,9 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
         >
           {shown.map((sec) => (
             <Box key={sec.id} mb={32}>
-              {grouped ? <Txt style={[EYEBROW, { marginBottom: 14 }]}>{sec.title}</Txt> : null}
+              {grouped ? (
+                <Txt style={[playerStyle.eyebrow, { marginBottom: 14 }]}>{sec.title}</Txt>
+              ) : null}
               <Box
                 row
                 wrap
@@ -255,24 +257,19 @@ function CardCell({
   );
 }
 
-const SCRIM_BOX = {
-  position: 'absolute' as const,
-  top: 0,
-  right: 0,
-  bottom: 0,
-  left: 0,
-  zIndex: 43,
-};
-
-const SHEET_BOX = {
-  position: 'absolute' as const,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  height: `${SHEET_FRACTION * 100}%` as const,
-  zIndex: 45,
-  overflow: 'hidden' as const,
-};
+const s = styles({
+  scrimBox: { fill: true, z: 43 },
+  sheetBox: {
+    absolute: true,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    h: `${SHEET_FRACTION * 100}%`,
+    z: 45,
+    overflow: 'hidden',
+  },
+  sheetTitle: { font: 'display', fontSize: 22, fontWeight: '700' },
+});
 
 function SheetHeader({
   open,
@@ -287,7 +284,7 @@ function SheetHeader({
       accessibilityLabel={title}
     >
       <Box row align="center" gap={14} px={56} pt={28} pb={18}>
-        <Txt style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: '700' }}>{title}</Txt>
+        <Txt style={s.sheetTitle}>{title}</Txt>
         <Box style={{ transform: [{ rotate: open ? '0deg' : '180deg' }] }}>
           <Chevron />
         </Box>

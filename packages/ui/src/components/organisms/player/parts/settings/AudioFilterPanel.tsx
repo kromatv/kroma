@@ -6,7 +6,7 @@ import { audioFilterLabels } from '#ui/components/organisms/player/lib/audio-fil
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { AudioFilterMode } from '#ui/components/organisms/player/types';
 import { useT } from '#ui/services/i18n';
-import { panelHint, panelList } from './panelStyle';
+import { panel } from './panelStyle';
 import { SelectRow } from './select-row';
 
 interface AudioFilterPanelProps {
@@ -33,7 +33,7 @@ export const AudioFilterPanel = forwardRef<PanelHandle, AudioFilterPanelProps>(
 
     return (
       <Box>
-        <Box style={panelList}>
+        <Box style={panel.panelList}>
           {MODES.map((m, i) => (
             <SelectRow
               key={m}
@@ -45,7 +45,7 @@ export const AudioFilterPanel = forwardRef<PanelHandle, AudioFilterPanelProps>(
             />
           ))}
         </Box>
-        <Txt style={panelHint}>{t('player.audioFilterHint')}</Txt>
+        <Txt style={panel.panelHint}>{t('player.audioFilterHint')}</Txt>
       </Box>
     );
   },

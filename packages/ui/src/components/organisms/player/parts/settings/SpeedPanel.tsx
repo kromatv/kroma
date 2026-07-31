@@ -3,7 +3,7 @@ import { Box } from '#ui/components/atoms/box';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { useT } from '#ui/services/i18n';
-import { panelList } from './panelStyle';
+import { panel } from './panelStyle';
 import { SelectRow } from './select-row';
 
 export const RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
@@ -29,7 +29,7 @@ export const SpeedPanel = forwardRef<PanelHandle, SpeedPanelProps>(function Spee
   useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   return (
-    <Box style={panelList}>
+    <Box style={panel.panelList}>
       {RATES.map((r, i) => (
         <SelectRow
           key={r}

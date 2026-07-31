@@ -4,10 +4,11 @@
 // same samples), sized to the row's own height so it doesn't wash out the title.
 
 import { useEffect, useRef } from 'react';
-import { Animated, Platform, Pressable, StyleSheet, type ViewStyle } from 'react-native';
+import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
 import { Icon } from '#ui/components/atoms/icon';
+import { styles } from '#ui/core';
+import { SHADE, shade } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
-import { colors, radius, SHADE, shade, shadow } from '#ui/lib/tokens';
 import { FOCUS_BLEED } from './clip';
 import { EASE_NATIVE, FADE, SETTLE_MS } from './rail-motion';
 
@@ -117,9 +118,9 @@ export function RailEdge({
     <Animated.View
       pointerEvents={shown && arrow ? 'box-none' : 'none'}
       style={[
-        styles.edge,
+        s.edge,
         { width: width + FOCUS_BLEED },
-        start ? styles.edgeStart : styles.edgeEnd,
+        start ? s.edgeStart : s.edgeEnd,
         // Web already masked the edge away; painting a scrim here would recreate
         // the artefact the mask avoids.
         WEB ? null : scrimStyle(start, width),
@@ -133,11 +134,11 @@ export function RailEdge({
         accessibilityLabel={start ? 'Scroll left' : 'Scroll right'}
         onPress={onPress}
         style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
-          styles.arrow,
+          s.arrow,
           { opacity: arrow ? 1 : 0 } as ViewStyle,
           FADE as ViewStyle,
-          hovered ? styles.arrowHover : null,
-          pressed ? styles.arrowPressed : null,
+          hovered ? s.arrowHover : null,
+          pressed ? s.arrowPressed : null,
         ]}
       >
         <Icon name={start ? 'chevron-left' : 'chevron-right'} size={24} color="text" />
@@ -146,39 +147,23 @@ export function RailEdge({
   );
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   // Sized to the row's own height, not the clip's, so a native scrim doesn't
   // bleed into the title above the rail.
-  edge: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    zIndex: 2,
-  },
+  edge: { absolute: true, top: 0, bottom: 0, justify: 'center', z: 2 },
   // Pulled out by FOCUS_BLEED and padded back in, so the strip covers the clip
   // edge while the button stays on the row.
-  edgeStart: {
-    left: -FOCUS_BLEED,
-    alignItems: 'flex-start',
-    paddingLeft: FOCUS_BLEED + EDGE_INSET,
-  },
-  edgeEnd: {
-    right: -FOCUS_BLEED,
-    alignItems: 'flex-end',
-    paddingRight: FOCUS_BLEED + EDGE_INSET,
-  },
+  edgeStart: { left: -FOCUS_BLEED, align: 'flex-start', pl: FOCUS_BLEED + EDGE_INSET },
+  edgeEnd: { right: -FOCUS_BLEED, align: 'flex-end', pr: FOCUS_BLEED + EDGE_INSET },
   arrow: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    boxShadow: shadow.card,
+    w: 44,
+    h: 44,
+    radius: 'pill',
+    center: true,
+    bg: 'white/12',
+    border: 'borderStrong',
+    shadow: 'card',
   },
-  arrowHover: { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
-  arrowPressed: { backgroundColor: 'rgba(255, 255, 255, 0.28)', transform: [{ scale: 0.94 }] },
+  arrowHover: { bg: 'white/20' },
+  arrowPressed: { bg: 'white/28', transform: [{ scale: 0.94 }] },
 });

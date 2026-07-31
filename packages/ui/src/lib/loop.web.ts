@@ -7,9 +7,13 @@
 
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 
-export type LoopKind = 'spin' | 'pulse' | 'blink';
+export type LoopKind = 'spin' | 'sweep' | 'pulse' | 'blink';
 
 const PULSE_LOW = 0.55;
+
+// Two fifths of the track, travelling from just off one end to just off the
+// other: 250% of the segment's own width is 100% of its parent's.
+const SWEEP_WIDTH = '40%';
 
 /** react-native-web's keyframe extension, absent from React Native's style types. */
 type CssLoop = ViewStyle & {
@@ -27,6 +31,14 @@ const KEYFRAMES: Record<LoopKind, CssLoop> = {
       { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } },
     ],
     animationTimingFunction: 'linear',
+    animationIterationCount: 'infinite',
+  },
+  sweep: {
+    width: SWEEP_WIDTH,
+    animationKeyframes: [
+      { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'translateX(250%)' } },
+    ],
+    animationTimingFunction: 'ease-in-out',
     animationIterationCount: 'infinite',
   },
   pulse: {

@@ -3,9 +3,9 @@
 
 import { Box } from '#ui/components/atoms/box';
 import { Wheel } from '#ui/components/atoms/wheel';
+import { useTheme } from '#ui/core';
 import { KROMA_KR_PATH, KROMA_LOCKUP, KROMA_MA_PATH } from '#ui/lib/lockup-paths';
 import { Path, Svg } from '#ui/lib/svg';
-import { colors } from '#ui/lib/tokens';
 import type { WheelSpin } from '#ui/lib/wheel-paths';
 
 interface LogoProps {
@@ -16,7 +16,9 @@ interface LogoProps {
   color?: string;
 }
 
-function Logo({ size = 24, markOnly = false, spin, color = colors.text }: Readonly<LogoProps>) {
+function Logo({ size = 24, markOnly = false, spin, color }: Readonly<LogoProps>) {
+  const theme = useTheme();
+  const fill = color ?? theme.colors.text;
   if (markOnly) return <Wheel size={size} spin={spin} />;
   const s = size / KROMA_LOCKUP.height;
   return (
@@ -26,7 +28,7 @@ function Logo({ size = 24, markOnly = false, spin, color = colors.text }: Readon
         height={size}
         viewBox={`0 0 ${KROMA_LOCKUP.krWidth} ${KROMA_LOCKUP.height}`}
       >
-        <Path d={KROMA_KR_PATH} fill={color} />
+        <Path d={KROMA_KR_PATH} fill={fill} />
       </Svg>
       <Box ml={KROMA_LOCKUP.gapLeft * s} mr={KROMA_LOCKUP.gapRight * s}>
         <Wheel size={size} spin={spin} />
@@ -36,7 +38,7 @@ function Logo({ size = 24, markOnly = false, spin, color = colors.text }: Readon
         height={size}
         viewBox={`${KROMA_LOCKUP.maX} 0 ${KROMA_LOCKUP.maWidth} ${KROMA_LOCKUP.height}`}
       >
-        <Path d={KROMA_MA_PATH} fill={color} />
+        <Path d={KROMA_MA_PATH} fill={fill} />
       </Svg>
     </Box>
   );

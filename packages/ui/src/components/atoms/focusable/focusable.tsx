@@ -32,6 +32,15 @@ import {
   SpatialNavigationFocusableView,
   type SpatialNavigationNodeRef,
 } from 'react-tv-space-navigation';
+import {
+  type AnySv,
+  activeTheme,
+  normalize,
+  type StyleDecl,
+  type SvStateName,
+  sharedStyle,
+  stabilise,
+} from '#ui/core';
 import { splitBoxLayers } from '#ui/lib/box-layers';
 import { focusSettled, markFocusSettled } from '#ui/lib/focus-entry';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -39,10 +48,10 @@ import { useFocusReport } from '#ui/lib/focus-report';
 import { useRevealOnFocus } from '#ui/lib/focus-scroll';
 import { useFocusScale, usePressScale } from '#ui/lib/focus-transition';
 import { UNFOCUSABLE } from '#ui/lib/focus-types';
+import { useFocusVisible } from '#ui/lib/focus-visible';
 import { inputHeld } from '#ui/lib/input-gate';
 import { markFocus } from '#ui/lib/perf';
 import { pressGuardActive } from '#ui/lib/press-guard';
-import { ring } from '#ui/lib/tokens';
 
 const WEB = Platform.OS === 'web';
 
@@ -55,12 +64,31 @@ const flat = (style: StyleProp<ViewStyle>[]): NavigatorStyle =>
 
 type NavigatorViewProps = ComponentProps<typeof SpatialNavigationFocusableView>['viewProps'];
 
-interface FocusState {
+/**
+ * What a child render function is handed.
+ *
+ * `slots` is the recipe resolved against the live interaction state, so a child
+ * spends finished values rather than re-deriving them from booleans: an <Icon>
+ * gets `{...s.icon}` where it used to get `color={ink(focused)}` out of a lookup
+ * table beside the component.
+ */
+interface FocusState<R extends AnySv = AnySv> {
   focused: boolean;
   pressed: boolean;
+  hovered: boolean;
+  /** The recipe resolved against the live state. Empty when no `sv` was given. */
+  slots: ReturnType<R>;
 }
 
-interface FocusableProps {
+interface FocusableProps<R extends AnySv = AnySv> {
+  /**
+   * The component's recipe. <Focusable> owns the interaction state, so it is the
+   * only place that can resolve one: it paints the `root` slot on itself and
+   * hands the rest to `children`.
+   */
+  sv?: R;
+  /** The variant picks to resolve `sv` with, typed to the recipe's own groups. */
+  vars?: Parameters<R>[0];
   onPress?: () => void;
   onLongPress?: () => void;
   onFocus?: () => void;
@@ -72,30 +100,79 @@ interface FocusableProps {
    *  focus states from this prop. */
   focused?: boolean;
   hitSlop?: number | Insets;
+  /** Reachable by the remote, but painting no interaction state: a control that
+   *  is busy rather than unavailable. A spinner already says what is happening,
+   *  and a hover highlight would promise a press that is not being taken. */
+  inert?: boolean;
   focusScale?: number;
   ring?: boolean;
   style?: StyleProp<ViewStyle>;
-  focusedStyle?: StyleProp<ViewStyle>;
-  pressedStyle?: StyleProp<ViewStyle>;
-  hoveredStyle?: StyleProp<ViewStyle>;
-  children?: ReactNode | ((state: FocusState) => ReactNode);
+  /**
+   * One-off state layers, in the recipe vocabulary, merged over whatever `sv`
+   * resolves. What `style` is to the rest state, this is to the others.
+   */
+  states?: Partial<Record<SvStateName, StyleDecl>>;
+  children?: ReactNode | ((state: FocusState<R>) => ReactNode);
   label?: string;
   ref?: Ref<ComponentRef<typeof View>>;
 }
 
-// A module constant object is one styleq cache entry rather than a fresh miss on
-// every focused render.
-const FOCUS_RING = { boxShadow: ring.focusLift } as const;
+/** Resolves the recipe for one value of `pressed`, which is the only part of the
+ *  state the outer render cannot see - a Pressable reports it from inside. */
+type Resolve = (pressed: boolean) => ReturnType<AnySv>;
+
+function coat(decl: StyleDecl | undefined): ViewStyle | undefined {
+  return decl ? (stabilise(normalize(decl as Record<string, unknown>)) as ViewStyle) : undefined;
+}
+
+const NO_SLOTS = Object.freeze({ root: undefined }) as unknown as ReturnType<AnySv>;
+
+/** What `next` changes about `base`, so a state coat can be layered over a
+ *  caller's own style without reasserting everything underneath it. */
+function deltaOf(base: object | undefined, next: object | undefined): ViewStyle | null {
+  if (!base || !next || base === next) return null;
+  const out: Record<string, unknown> = {};
+  let any = false;
+  for (const [key, value] of Object.entries(next)) {
+    if ((base as Record<string, unknown>)[key] === value) continue;
+    out[key] = value;
+    any = true;
+  }
+  return any ? (Object.freeze(out) as ViewStyle) : null;
+}
+
+/**
+ * `[a, b]` that keeps its identity while `a` and `b` keep theirs.
+ *
+ * This is NOT about styleq's cache: styleq walks arrays transparently and keys
+ * its WeakMap on each LEAF style object, so a fresh wrapper around stable leaves
+ * still hits. What it protects is `splitBoxLayers`, which <Focusable> memoises
+ * on this value and which does a full flatten plus two allocations on the native
+ * path - that would otherwise re-run on every render.
+ *
+ * The common cases cost nothing: no recipe hands back `b` untouched, and no
+ * caller style hands back `a`, neither needing an array at all.
+ */
+function usePair(a: StyleProp<ViewStyle>, b: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
+  return useMemo(() => {
+    if (a == null) return b;
+    return b == null ? a : [a, b];
+  }, [a, b]);
+}
+
+// Shared by identity per theme rather than minted per focused render: styleq
+// keys its cache on the object, and the ring follows the theme's accent.
+const focusRing = () => sharedStyle('focusable:ring', { boxShadow: activeTheme().ring.focusLift });
 
 function touchForm(at: {
   boxRef: (view: View | null) => void;
   label: string | undefined;
   style: FocusableProps['style'];
-  focusedStyle: FocusableProps['focusedStyle'];
+  focusedStyle: ViewStyle | undefined;
   animated: FocusableProps['style'];
   showRing: boolean;
-  pressedStyle: FocusableProps['pressedStyle'];
-  hoveredStyle: FocusableProps['hoveredStyle'];
+  pressedStyle: StyleProp<ViewStyle>;
+  hoveredStyle: ViewStyle | undefined;
   onPress: () => void;
   onLongPress: FocusableProps['onLongPress'];
   onHoverIn: FocusableProps['onHoverIn'];
@@ -103,10 +180,12 @@ function touchForm(at: {
   hitSlop: FocusableProps['hitSlop'];
   controlled: boolean;
   focused: boolean;
+  focusVisible: boolean;
   hovered: boolean;
+  resolve: Resolve;
   children: FocusableProps['children'];
 }): ReactNode {
-  const lit = at.controlled && at.focused;
+  const lit = at.controlled && at.focusVisible;
   // Hover goes UNDER the focus coats: a control the cursor is over and the
   // remote is on is a focused control, not a doubly-lit one.
   const hover = at.hovered ? at.hoveredStyle : null;
@@ -115,7 +194,7 @@ function touchForm(at: {
         at.style,
         hover,
         lit ? at.focusedStyle : null,
-        lit && at.showRing ? FOCUS_RING : null,
+        lit && at.showRing ? focusRing() : null,
         at.animated,
       ]
     : [at.style, hover, at.animated];
@@ -134,7 +213,12 @@ function touchForm(at: {
     >
       {(pressed) =>
         typeof at.children === 'function'
-          ? at.children({ focused: at.controlled ? at.focused : false, pressed })
+          ? at.children({
+              focused: at.controlled ? at.focused : false,
+              pressed,
+              hovered: at.hovered,
+              slots: at.resolve(pressed),
+            })
           : at.children
       }
     </TouchPressable>
@@ -145,10 +229,11 @@ function navigatorForm(at: {
   entry: RefObject<SpatialNavigationNodeRef | null>;
   layers: ReturnType<typeof splitBoxLayers> | null;
   style: FocusableProps['style'];
-  focusedStyle: FocusableProps['focusedStyle'];
+  focusedStyle: ViewStyle | undefined;
   animated: FocusableProps['style'];
   showRing: boolean;
   focused: boolean;
+  focusVisible: boolean;
   hovered: boolean;
   press: () => void;
   pointerPress: () => void;
@@ -156,19 +241,20 @@ function navigatorForm(at: {
   handleBlur: () => void;
   setBox: (view: View | null) => void;
   label: string | undefined;
-  pressedStyle: FocusableProps['pressedStyle'];
-  hoveredStyle: FocusableProps['hoveredStyle'];
+  pressedStyle: StyleProp<ViewStyle>;
+  hoveredStyle: ViewStyle | undefined;
   onHoverIn: () => void;
   onHoverOut: () => void;
   onLongPress: FocusableProps['onLongPress'];
   hitSlop: FocusableProps['hitSlop'];
+  resolve: Resolve;
   children: FocusableProps['children'];
 }): ReactNode {
   const painted = [
     at.layers ? at.layers.face : at.style,
     at.hovered ? at.hoveredStyle : null,
-    at.focused ? at.focusedStyle : null,
-    at.showRing && at.focused ? FOCUS_RING : null,
+    at.focusVisible ? at.focusedStyle : null,
+    at.showRing && at.focusVisible ? focusRing() : null,
     at.animated,
   ];
 
@@ -197,7 +283,12 @@ function navigatorForm(at: {
       {({ isFocused }: { isFocused: boolean }) => {
         const render = (pressed: boolean) =>
           typeof at.children === 'function'
-            ? at.children({ focused: isFocused, pressed })
+            ? at.children({
+                focused: isFocused,
+                pressed,
+                hovered: at.hovered,
+                slots: at.resolve(pressed),
+              })
             : at.children;
         if (WEB) return <>{render(false)}</>;
         return (
@@ -215,7 +306,9 @@ function navigatorForm(at: {
   );
 }
 
-function Focusable({
+function Focusable<R extends AnySv = AnySv>({
+  sv: recipe,
+  vars,
   onPress,
   onLongPress,
   onFocus,
@@ -225,19 +318,26 @@ function Focusable({
   disabled = false,
   focused: controlledFocus,
   hitSlop,
+  inert = false,
   focusScale = 1,
   ring: showRing = true,
   style,
-  focusedStyle,
-  pressedStyle,
-  hoveredStyle,
+  states,
   children,
   label,
   ref,
-}: Readonly<FocusableProps>) {
+}: Readonly<FocusableProps<R>>) {
   const [selfFocused, setSelfFocused] = useState(false);
+  // Whether the focus is one the viewer asked for, in the browser's own
+  // `:focus-visible` sense. The navigator focuses on mouse-enter once a pointer
+  // has moved (react-tv-space-navigation FocusableView.tsx) and never blurs on
+  // leave, because its model keeps exactly one owner - so a swept cursor would
+  // otherwise leave the amber ring parked on whatever it passed last. Hover has
+  // its own reading; the ring is the remote's.
+
   const controlled = controlledFocus !== undefined;
   const focused = controlled ? controlledFocus : selfFocused;
+  const focusVisible = useFocusVisible(focused);
   const scoped = useInsideFocusScope();
 
   const [hovered, setHovered] = useState(false);
@@ -325,10 +425,64 @@ function Focusable({
     press();
   }, [press]);
 
+  // The recipe, resolved against the live state.
+  //
+  // `pressed` is the one flag the outer render cannot see - a Pressable reports
+  // it from inside - so the pressed answer is a function rather than a value,
+  // and it is only ever built if something actually presses. The rest state is
+  // computed once and reused, because it is what the outer render paints with
+  // and what every unpressed child asks for.
+  // Whether anything downstream can report a press, so a recipe's `_press` is
+  // only resolved where it can land: the browser's navigator path renders the
+  // view directly and never presses, and a pointerless television mounts a
+  // plain view rather than a Pressable.
+  const canPress = WEB ? controlled || !scoped : !Platform.isTV || TV_HAS_POINTER;
+  // Normalised once per distinct set, and NOT registered: these are coats over
+  // whatever the recipe resolved, so they have to stay plain styles the render
+  // forms can compose.
+  const coats = useMemo(
+    () => ({ focus: coat(states?.focus), hover: coat(states?.hover), press: coat(states?.press) }),
+    [states],
+  );
+  const focusedStyle = coats.focus;
+  const hoveredStyle = coats.hover;
+  const pressedStyle = coats.press;
+
+  const lit = !inert;
+  const rest: ReturnType<AnySv> = recipe
+    ? recipe(vars as never, { hover: lit && hovered, focus: focusVisible, press: false, disabled })
+    : NO_SLOTS;
+  const resolve: Resolve = (pressed: boolean) =>
+    pressed && lit && recipe
+      ? recipe(vars as never, { hover: hovered, focus: focusVisible, press: true, disabled })
+      : rest;
+
+  // The recipe paints the control itself through its `root` slot, under the
+  // caller's own `style` so a one-off override still wins.
+  //
+  // `root` is identity-stable per combination, so it is handed over AS IS when
+  // there is no caller style - the common case.
+  const root = recipe ? (rest.root as StyleProp<ViewStyle>) : undefined;
+  const painted = usePair(root, style);
+  // The press coat rides the `pressedStyle` channel, which is the only one that
+  // can see a Pressable's own state. Skipped entirely where nothing can report a
+  // press: the browser targets render the navigator's view directly, and a
+  // pointerless television never mounts a Pressable at all.
+  // Only what the press ADDS, not the whole root: the press coat lands after the
+  // caller's `style`, so re-applying the resolved root there would revert a
+  // one-off override (a `radius={12}` snapping back to the recipe's pill) for as
+  // long as the finger is down.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `rest` already keys on every input `resolve` reads
+  const pressDelta = useMemo(
+    () => (recipe && canPress ? deltaOf(rest.root, resolve(true).root) : null),
+    [recipe, canPress, rest],
+  );
+  const paintedPressed = pressDelta ?? pressedStyle;
+
   // Native renders the control as two views, so the half of the style that says
   // how the parent places this control has to ride on the outer one; the web
   // targets have a single view and keep the style whole.
-  const layers = useMemo(() => (WEB ? null : splitBoxLayers(style)), [style]);
+  const layers = useMemo(() => (WEB ? null : splitBoxLayers(painted)), [painted]);
 
   // A disabled control is not a node at all, so the remote walks straight past
   // it rather than stopping on something that does nothing.
@@ -338,9 +492,11 @@ function Focusable({
         accessibilityRole="button"
         accessibilityLabel={label}
         aria-disabled
-        style={[style, focused ? focusedStyle : null, animated]}
+        style={[painted, focused ? focusedStyle : null, animated]}
       >
-        {typeof children === 'function' ? children({ focused, pressed: false }) : children}
+        {typeof children === 'function'
+          ? children({ focused, pressed: false, hovered, slots: rest as ReturnType<R> })
+          : children}
       </Animated.View>
     );
   }
@@ -352,11 +508,11 @@ function Focusable({
     return touchForm({
       boxRef: setBox,
       label,
-      style,
+      style: painted,
       focusedStyle,
       animated,
       showRing,
-      pressedStyle,
+      pressedStyle: paintedPressed,
       hoveredStyle,
       onPress: press,
       onLongPress,
@@ -365,7 +521,9 @@ function Focusable({
       hitSlop,
       controlled,
       focused,
+      focusVisible,
       hovered,
+      resolve,
       children,
     });
   }
@@ -376,11 +534,12 @@ function Focusable({
   const node = navigatorForm({
     entry,
     layers,
-    style,
+    style: painted,
     focusedStyle,
     animated,
     showRing,
     focused,
+    focusVisible,
     hovered,
     press,
     pointerPress,
@@ -388,12 +547,13 @@ function Focusable({
     handleBlur,
     setBox,
     label,
-    pressedStyle,
+    pressedStyle: paintedPressed,
     hoveredStyle,
     onHoverIn: hoverIn,
     onHoverOut: hoverOut,
     onLongPress,
     hitSlop,
+    resolve,
     children,
   });
 

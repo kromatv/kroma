@@ -536,6 +536,7 @@
         "react-native": "npm:react-native-tvos@0.86.0-2",
         "react-native-web": "^0.21.2",
         "typescript": "^7.0.2",
+        "zod": "^4.4.3",
       },
       "peerDependencies": {
         "expo-video": "~57.0.1",

@@ -2,9 +2,9 @@
 // clients so the choice follows the user everywhere.
 
 import { LOCALES, type Locale } from '@kroma/core';
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
@@ -36,16 +36,16 @@ export default function LanguageSettings() {
   return (
     <Screen padded={false}>
       <PageHeader title={t('account.uiLanguage')} />
-      <View style={styles.body}>
-        <Text style={styles.hint}>{t('account.uiLanguageDesc')}</Text>
-        <View style={styles.card}>
+      <View style={s.body}>
+        <Text style={s.hint}>{t('account.uiLanguageDesc')}</Text>
+        <View style={s.card}>
           {LOCALES.map((l) => (
             <Pressable
               key={l.code}
               onPress={() => void pick(l.code)}
-              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+              style={({ pressed }) => [s.row, pressed && s.rowPressed]}
             >
-              <Text style={[styles.rowLabel, locale === l.code && { fontWeight: '700' }]}>
+              <Text style={[s.rowLabel, locale === l.code && { fontWeight: '700' }]}>
                 {t(l.labelKey)}
               </Text>
               {locale === l.code ? (
@@ -59,23 +59,11 @@ export default function LanguageSettings() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: { padding: spacing.md, gap: spacing.sm, ...boxed(contentWidth.reading) },
-  hint: { ...type.caption, paddingHorizontal: 4, marginBottom: spacing.xs },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 52,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.md,
-  },
-  rowPressed: { backgroundColor: colors.surfaceRaised },
+const s = styles({
+  body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },
+  hint: { ...type.caption, px: 4, mb: spacing.xs },
+  card: { px: 6, py: 4, bg: 'surface1', radius: radius.lg },
+  row: { row: true, between: true, align: 'center', minH: 52, px: spacing.sm, radius: radius.md },
+  rowPressed: { bg: 'surface2' },
   rowLabel: { ...type.body },
 });

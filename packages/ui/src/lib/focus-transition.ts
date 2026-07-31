@@ -6,8 +6,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated } from 'react-native';
+import { motion } from '#ui/core/tokens';
 import { ease } from './ease';
-import { motion } from './tokens';
 
 const EASE = ease.out.native;
 

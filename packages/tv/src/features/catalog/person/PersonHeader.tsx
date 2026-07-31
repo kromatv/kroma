@@ -1,7 +1,7 @@
 import type { PersonDetail } from '@kroma/core';
 import { personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Avatar, Box, Chip, Txt } from '@kroma/ui/kit';
+import { Avatar, Box, Chip, styles, Txt } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { TITLE } from '#tv/features/catalog/screenStyle';
 
@@ -57,10 +57,10 @@ export function PersonHeader({
           <Box row wrap gap={40} mt={6}>
             {facts.map((f) => (
               <Box key={f.key} gap={3}>
-                <Txt variant="overlineTv" style={FACT_LABEL} color="rgba(244, 243, 240, 0.45)">
+                <Txt variant="overlineTv" style={s.factLabel} color="rgba(244, 243, 240, 0.45)">
                   {f.label}
                 </Txt>
-                <Txt style={FACT_VALUE}>{f.value}</Txt>
+                <Txt style={s.factValue}>{f.value}</Txt>
               </Box>
             ))}
           </Box>
@@ -70,7 +70,7 @@ export function PersonHeader({
           <Box gap={10} mt={6} style={{ maxWidth: 1180 }}>
             <Txt
               lines={expanded ? EXPANDED_LINES : CLAMP_LINES}
-              style={BIOGRAPHY}
+              style={s.biography}
               color="rgba(244, 243, 240, 0.78)"
             >
               {biography}
@@ -92,8 +92,8 @@ export function PersonHeader({
   );
 }
 
-const FACT_LABEL = { fontSize: 12 };
-
-const FACT_VALUE = { fontSize: 17, fontWeight: '600' as const };
-
-const BIOGRAPHY = { fontSize: 18, lineHeight: 27 };
+const s = styles({
+  factLabel: { fontSize: 12 },
+  factValue: { fontSize: 17, fontWeight: '600' },
+  biography: { fontSize: 18, lineHeight: 27 },
+});

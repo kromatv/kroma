@@ -5,7 +5,7 @@ import { clamp01 } from '#ui/components/atoms/progress';
 
 export interface RingProps {
   /** Fill fraction, 0..1 (clamped). */
-  value: number;
+  value?: number;
   /** Outer diameter. */
   size?: number;
   stroke?: number;
@@ -26,7 +26,7 @@ export interface RingGeometry {
 }
 
 export function ringGeometry({
-  value,
+  value = 0,
   size = 22,
   stroke = 2.5,
   track = 'rgba(255, 255, 255, 0.12)',
@@ -50,3 +50,9 @@ export function ringGeometry({
 
 /** SVG draws an arc from 3 o'clock; the design starts it at 12. */
 export const RING_ROTATION = '-90deg';
+
+/** What an indeterminate ring draws instead of a fill: a quarter of the
+ *  circumference, spun rather than grown. */
+export const RING_BUSY_ARC = 0.25;
+
+export const RING_SPIN_MS = 900;

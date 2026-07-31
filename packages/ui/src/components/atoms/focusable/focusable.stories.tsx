@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
-import { colors } from '#ui/lib/tokens';
+import { colors } from '#ui/core/tokens';
 import { Focusable } from './focusable';
 
 const DEMO = {

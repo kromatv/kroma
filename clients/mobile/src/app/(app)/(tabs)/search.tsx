@@ -2,11 +2,11 @@
 // as a poster grid.
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
 import { FadeImage } from '#mobile/components/FadeImage';
@@ -36,7 +36,7 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
     <Pressable
       onPress={() => router.push(`/item/${item.id}` as never)}
       style={({ pressed }) => [
-        styles.suggestRow,
+        s.suggestRow,
         gutters.style,
         pressed && { backgroundColor: colors.surface },
       ]}
@@ -45,16 +45,16 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
         uri={sizedImageUrl(client.backdropFor(item) ?? client.posterFor(item), 480)}
         seed={item.id}
         radius={radius.sm}
-        style={styles.suggestThumb}
+        style={s.suggestThumb}
       />
-      <Text numberOfLines={2} style={styles.suggestTitle}>
+      <Text numberOfLines={2} style={s.suggestTitle}>
         {item.metadata?.title ?? item.title}
       </Text>
       <Pressable
         onPress={() => void play(item.id)}
         hitSlop={8}
         style={({ pressed }) => [
-          styles.suggestPlay,
+          s.suggestPlay,
           pressed && { borderColor: colors.text, backgroundColor: colors.surfaceRaised },
         ]}
       >
@@ -107,7 +107,7 @@ export default function Search() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <SuggestedRow item={item} />}
         ListHeaderComponent={
-          <Text style={[styles.suggestHeader, gutters.style]}>{t('content.forYou')}</Text>
+          <Text style={[s.suggestHeader, gutters.style]}>{t('content.forYou')}</Text>
         }
         contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
         keyboardShouldPersistTaps="handled"
@@ -116,9 +116,9 @@ export default function Search() {
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + spacing.sm }]}>
-      <View style={[styles.inputBox, gutters.style]}>
-        <Text style={styles.pageTitle}>{t('nav.search')}</Text>
+    <View style={[s.screen, { paddingTop: insets.top + spacing.sm }]}>
+      <View style={[s.inputBox, gutters.style]}>
+        <Text style={s.pageTitle}>{t('nav.search')}</Text>
         <TextField
           icon="search"
           value={query}
@@ -133,29 +133,13 @@ export default function Search() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  inputBox: {
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
+const s = styles({
+  screen: { flex: true, bg: 'bg' },
+  inputBox: { gap: spacing.sm, pb: spacing.md },
   pageTitle: { ...type.display, fontSize: 30 },
-  suggestHeader: { ...type.section, marginBottom: spacing.sm },
-  suggestRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 6,
-  },
-  suggestThumb: { width: 130, height: 73 },
-  suggestTitle: { ...type.body, fontWeight: '600', flex: 1 },
-  suggestPlay: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1.5,
-    borderColor: colors.textDim,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  suggestHeader: { ...type.section, mb: spacing.sm },
+  suggestRow: { row: true, align: 'center', gap: 12, py: 6 },
+  suggestThumb: { w: 130, h: 73 },
+  suggestTitle: { ...type.body, flex: true, fontWeight: '600' },
+  suggestPlay: { center: true, w: 38, h: 38, radius: 19, border: 'textMuted', borderWidth: 1.5 },
 });

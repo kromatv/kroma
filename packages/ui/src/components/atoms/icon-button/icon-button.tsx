@@ -1,78 +1,85 @@
 // <IconButton>: a round, icon-only control (the theme-song mute, a close button,
 // a player transport key). Same focus behaviour as <Button>, no label.
 
-import type { ReactNode } from 'react';
-import type { ViewStyle } from 'react-native';
-import { Focusable, type FocusableProps, type FocusState } from '#ui/components/atoms/focusable';
+import { type ReactNode, useMemo } from 'react';
+import { StyleSheet, type ViewStyle } from 'react-native';
+import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
-import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { sv } from '#ui/lib/sv';
-import { colors, radius } from '#ui/lib/tokens';
+import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
+import { type StyleDecl, svFor, useTheme, type Variant } from '#ui/core';
 
-const iconButtonVariants = sv({
-  base: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
+/** How the button is filled. */
+export type IconButtonVariant = Variant<typeof iconButtonVariants, 'variant'>;
+
+/**
+ * The whole design, including every state it can be in.
+ *
+ * The hover fill is one step short of the press fill throughout, so hover ->
+ * press reads as a single escalation; on a page with no focus scope, hover is
+ * the only feedback a cursor gets. Because both live in the option they belong
+ * to, a variant cannot be given a rest fill and forgotten in the state tables -
+ * which is exactly what used to happen.
+ */
+const iconButtonVariants = svFor<{ root: StyleDecl; icon: Pick<IconProps, 'color'> }>()({
+  slots: {
+    root: { center: true, radius: 'pill' },
+    icon: { color: 'text' },
   },
   variants: {
     variant: {
       /** Translucent fill with a hairline border: the default over artwork. */
       glass: {
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.2)',
+        root: {
+          bg: 'white/12',
+          border: 'white/20',
+          _hover: { bg: 'white/18' },
+          _press: { bg: 'white/22' },
+        },
       },
-      ghost: { backgroundColor: 'transparent' },
-      primary: { backgroundColor: colors.accent },
+      ghost: {
+        root: {
+          bg: 'transparent',
+          _hover: { bg: 'white/6' },
+          _focus: { bg: 'white/6' },
+          _press: { bg: 'white/8' },
+        },
+      },
+      primary: {
+        root: { bg: 'accent', _hover: { bg: 'accentHover' }, _press: { bg: 'accentHover' } },
+        icon: { color: 'accentInk' },
+      },
       /** A dark wash instead of a light one: the control that floats OVER
        *  artwork it must not brighten (a back button on a detail hero, the
        *  skip-intro corner of the player). */
       scrim: {
-        backgroundColor: 'rgba(10, 10, 12, 0.55)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.12)',
+        root: {
+          bg: 'bg/55',
+          border: 'white/12',
+          _hover: { bg: 'rgba(28, 28, 34, 0.6)' },
+          _press: { bg: 'rgba(40, 40, 48, 0.65)' },
+        },
+      },
+    },
+    /** The pressed state of a toggle: the same recipe as
+     *  <Button variant="outline" active>. */
+    active: {
+      true: {
+        root: { bg: 'accentSoft', borderColor: 'accentWash/45', _hover: { bg: 'accentSoftHover' } },
+        icon: { color: 'accent' },
+      },
+    },
+    /** The 10-foot treatment for a bare corner control (a back button) whose
+     *  focus has to read from three metres: fills solid accent and flips the
+     *  glyph to ink. */
+    focusFill: {
+      true: {
+        root: { _focus: { bg: 'accent', border: 'accent' } },
+        icon: { _focus: { color: 'accentInk' } },
       },
     },
   },
-  defaults: { variant: 'glass' },
+  defaults: { variant: 'glass', active: false, focusFill: false },
 });
-
-/** How the button is filled. Named once, because the pressed-state table below
- * has to cover exactly these and a second spelling could drift from it. */
-export type IconButtonVariant = 'glass' | 'ghost' | 'primary' | 'scrim';
-
-// The brightened fill a finger gets: the touch reading of the focus state.
-const PRESSED: Record<IconButtonVariant, ViewStyle> = {
-  glass: { backgroundColor: 'rgba(255, 255, 255, 0.22)' },
-  ghost: { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
-  primary: { backgroundColor: colors.accentHover },
-  scrim: { backgroundColor: 'rgba(40, 40, 48, 0.65)' },
-};
-
-// One step short of `PRESSED` so hover → press reads as a single escalation;
-// on a page with no focus scope, this is the only feedback a cursor gets.
-const HOVERED: Record<'glass' | 'ghost' | 'primary' | 'scrim', ViewStyle> = {
-  glass: { backgroundColor: 'rgba(255, 255, 255, 0.18)' },
-  ghost: { backgroundColor: 'rgba(255, 255, 255, 0.06)' },
-  primary: { backgroundColor: colors.accentHover },
-  scrim: { backgroundColor: 'rgba(28, 28, 34, 0.6)' },
-};
-
-// The pressed state of a toggle: the same recipe as <Button variant="outline" active>.
-const ACTIVE: ViewStyle = {
-  backgroundColor: colors.accentSoft,
-  borderColor: 'rgba(242, 180, 66, 0.45)',
-};
-
-const ACTIVE_HOVERED: ViewStyle = { backgroundColor: colors.accentSoftHover };
-
-// The 10-foot treatment for a bare corner control (a back button) whose focus
-// has to read from three metres: fills solid accent and flips the glyph to ink.
-const FOCUS_FILL: ViewStyle = {
-  backgroundColor: colors.accent,
-  borderColor: colors.accent,
-};
 
 interface IconButtonProps extends Omit<FocusableProps, 'children' | 'focusScale'> {
   /** The glyph. Omit it and pass `children` instead for richer content (a
@@ -103,60 +110,58 @@ function IconButton({
   focusFill = false,
   radius: cornerRadius,
   style,
-  focusedStyle,
+  states,
   focusScale = 1.04,
   children,
   ...focusProps
 }: Readonly<IconButtonProps>) {
   const glyphSize = glyph ?? Math.round(size * 0.4);
-  // Most specific first: a focus fill flips to ink, an active toggle tints
-  // accent, a primary fill is always ink.
-  const ink = (focused: boolean) => {
-    if (focusFill && focused) return 'accentInk';
-    if (active) return 'accent';
-    return variant === 'primary' ? 'accentInk' : 'text';
-  };
+  const theme = useTheme();
+  // Memoised, not inlined: <Focusable> keys its own style memo on this value,
+  // and a fresh array per render re-runs the box/face split on every frame of
+  // every icon button on screen.
+  const box = useMemo(() => [metrics(size, cornerRadius), style], [size, cornerRadius, style]);
   // The translucent coats frost what sits behind them (see <Frost>). The
   // content may be a render function, so the layer rides along either way.
   const frost =
     variant === 'glass' || variant === 'scrim' ? (
-      <Frost radius={cornerRadius ?? radius.pill} />
+      <Frost radius={cornerRadius ?? theme.radius.pill} />
     ) : null;
-  const content =
-    children ??
-    (icon
-      ? ({ focused }: FocusState) => <Icon name={icon} size={glyphSize} color={ink(focused)} />
-      : null);
   return (
     <Focusable
       {...focusProps}
       focusScale={focusScale}
-      pressedStyle={PRESSED[variant]}
-      hoveredStyle={active ? ACTIVE_HOVERED : HOVERED[variant]}
-      focusedStyle={[focusedStyle, focusFill ? FOCUS_FILL : null]}
-      style={iconButtonVariants(
-        { variant },
-        { width: size, height: size },
-        active ? ACTIVE : null,
-        cornerRadius === undefined ? null : { borderRadius: cornerRadius },
-        style,
-      )}
+      states={states}
+      sv={iconButtonVariants}
+      vars={{ variant, active, focusFill }}
+      style={box}
     >
-      {typeof content === 'function' ? (
-        (state: FocusState) => (
-          <>
-            {frost}
-            {content(state)}
-          </>
-        )
-      ) : (
+      {(state) => (
         <>
           {frost}
-          {content}
+          {children ?? (icon ? <Icon name={icon} size={glyphSize} {...state.slots.icon} /> : null)}
         </>
       )}
     </Focusable>
   );
+}
+
+/** One object per (diameter, radius) pair, shared by identity across every icon
+ *  button asking for the same box. */
+const boxes = new Map<string, ViewStyle>();
+
+function metrics(size: number, radius?: number): ViewStyle {
+  const key = `${size}:${radius ?? ''}`;
+  const hit = boxes.get(key);
+  if (hit) return hit;
+  const made = StyleSheet.create({
+    box:
+      radius === undefined
+        ? { width: size, height: size }
+        : { width: size, height: size, borderRadius: radius },
+  }).box as ViewStyle;
+  boxes.set(key, made);
+  return made;
 }
 
 export type { IconButtonProps };

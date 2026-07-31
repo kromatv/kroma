@@ -1,7 +1,8 @@
 // Typed text. In CSS, `body { color; font-family }` cascades into every
 // descendant; in React Native it does NOT, so a bare <Text> would render as
 // black 14px system font. Every string in the app goes through this component,
-// which resolves a design type role and a palette colour.
+// which resolves a design type role and a palette colour — both off the active
+// theme, so a swap repaints every string.
 
 import {
   Text as RNText,
@@ -10,8 +11,7 @@ import {
   type TextProps,
   type TextStyle,
 } from 'react-native';
-import { color as resolveColor } from '#ui/lib/box-style';
-import { type ColorToken, type TypeRole, type as typeRoles, typeSpec } from '#ui/lib/tokens';
+import { activeTheme, type ColorToken, sharedStyle, type TypeRole } from '#ui/core';
 
 interface TxtProps extends Omit<TextProps, 'style' | 'role'> {
   /** Design type role. Defaults to `body`. (Named `variant`, not `role`, which
@@ -35,7 +35,7 @@ function sizeFix(variant: TypeRole, style: StyleProp<TextStyle>): TextStyle | nu
   if (!style) return null;
   const flat = StyleSheet.flatten(style);
   const size = flat?.fontSize;
-  const spec = typeSpec[variant];
+  const spec = activeTheme().typeSpec[variant];
   if (typeof size !== 'number' || size === spec.size) return null;
   const em = 'em' in spec ? spec.em : undefined;
   return {
@@ -47,11 +47,14 @@ function sizeFix(variant: TypeRole, style: StyleProp<TextStyle>): TextStyle | nu
 }
 
 function Txt({ variant = 'body', color = 'text', style, lines, ...rest }: Readonly<TxtProps>) {
+  // Shared by identity per (colour, theme): a fresh `{ color }` per render
+  // would be a styleq miss for every string on the screen.
+  const ink = sharedStyle(`txt:${color}`, { color });
   return (
     <RNText
       {...rest}
       numberOfLines={lines}
-      style={[typeRoles[variant], { color: resolveColor(color) }, style, sizeFix(variant, style)]}
+      style={[activeTheme().type[variant], ink, style, sizeFix(variant, style)]}
     />
   );
 }

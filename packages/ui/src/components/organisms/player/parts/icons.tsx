@@ -2,7 +2,7 @@
 // rather than the drawing, so the chrome asks for "the rewind glyph".
 
 import { Icon, type IconName } from '#ui/components/atoms/icon';
-import type { ColorToken } from '#ui/lib/tokens';
+import type { ColorToken } from '#ui/core';
 
 type P = Readonly<{ size?: number; stroke?: number; color?: ColorToken | (string & {}) }>;
 

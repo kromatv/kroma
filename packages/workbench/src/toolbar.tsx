@@ -1,14 +1,26 @@
 // The canvas toolbar: one menu per lens (viewport, surface, host-added) that
 // applies to whatever story is open.
 
-import { Box, Focusable, Icon, IconButton, type IconName, Txt, webWindow } from '@kroma/ui/kit';
-import { type ColorToken, colors, radius, shadow } from '@kroma/ui/tokens';
+import {
+  Box,
+  type ColorValue,
+  Focusable,
+  Icon,
+  IconButton,
+  type IconName,
+  styles,
+  sv,
+  Txt,
+  webWindow,
+} from '@kroma/ui/kit';
+import { type ColorToken, colors, radius } from '@kroma/ui/tokens';
 import { type ReactNode, useCallback, useState } from 'react';
 import { canRotate, SURFACES, VIEWPORTS, type ViewportName } from './canvas';
-import { FOCUS_WASH, FOCUS_WASH_STRONG, RULE } from './chrome';
+import { RULE } from './chrome';
 import { type CopyState, useCopy } from './clipboard';
 import { useEscapeKey } from './command';
 import type { WorkbenchLayout } from './layout';
+import { PREVIEW_THEMES } from './themes';
 
 interface ToolbarProps {
   lenses?: readonly ToolbarLens[];
@@ -16,6 +28,8 @@ interface ToolbarProps {
   onViewport: (next: ViewportName) => void;
   surface: ColorToken;
   onSurface: (next: ColorToken) => void;
+  theme: string;
+  onTheme: (next: string) => void;
   rotate: boolean;
   onRotate: (next: boolean) => void;
   full: boolean;
@@ -28,7 +42,7 @@ interface Choice<T extends string> {
   value: T;
   label: string;
   glyph?: IconName;
-  swatch?: string;
+  swatch?: ColorValue;
   note?: string;
 }
 
@@ -48,6 +62,14 @@ const SURFACE_LABEL: Record<string, string> = {
   surface2: 'Raised',
 };
 
+// The accent IS the identity here: the swatch is how you tell the themes apart
+// before committing to one.
+const THEMES: Choice<string>[] = PREVIEW_THEMES.map(({ id, label, theme }) => ({
+  value: id,
+  label,
+  swatch: theme.colors.accent as ColorValue,
+}));
+
 /** A lens the host app adds to the toolbar, drawn after the built-ins and
  * behaving exactly like them. */
 interface ToolbarLens {
@@ -65,6 +87,8 @@ function Toolbar({
   onViewport,
   surface,
   onSurface,
+  theme,
+  onTheme,
   rotate,
   onRotate,
   full,
@@ -101,7 +125,7 @@ function Toolbar({
           label="Close menu"
           ring={false}
           onPress={close}
-          style={[SCRIM, { height: layout.height }]}
+          style={[s.scrim, { height: layout.height }]}
         />
       ) : null}
       <Box row align="center" gap={4} px={layout.gutter - 8} py={5} bg="bg" z={2}>
@@ -136,6 +160,15 @@ function Toolbar({
           choices={surfaces}
           value={surface}
           onChange={(next) => onSurface(next as ColorToken)}
+          terse={terse}
+        />
+        <Lens
+          {...lens('theme')}
+          name="Theme"
+          glyph="color-swatch"
+          choices={THEMES}
+          value={theme}
+          onChange={onTheme}
           terse={terse}
         />
         {lenses?.map((host) => (
@@ -194,20 +227,24 @@ function Lens<T extends string>({
         label={`${name}: ${current?.label ?? value}`}
         ring={false}
         onPress={onOpen}
-        style={[TRIGGER, open && TRIGGER_OPEN]}
-        focusedStyle={open ? undefined : FOCUS_WASH}
+        sv={lensTrigger}
+        vars={{ open }}
       >
-        <Face choice={current} fallback={glyph} on={open} />
-        {terse ? null : (
-          <Txt variant="meta" color={open ? 'text' : 'textMuted'} style={TRIGGER_INK}>
-            {current?.label ?? value}
-          </Txt>
+        {({ slots }) => (
+          <>
+            <Face choice={current} fallback={glyph} on={open} />
+            {terse ? null : (
+              <Txt variant="meta" style={slots.label}>
+                {current?.label ?? value}
+              </Txt>
+            )}
+            <Icon
+              name={open ? 'chevron-up' : 'chevron-down'}
+              size={13}
+              color={open ? 'textMuted' : 'textDim'}
+            />
+          </>
         )}
-        <Icon
-          name={open ? 'chevron-up' : 'chevron-down'}
-          size={13}
-          color={open ? 'textMuted' : 'textDim'}
-        />
       </Focusable>
       {open ? (
         <Menu onClose={onClose}>
@@ -247,7 +284,7 @@ function Face({
 function Menu({ onClose, children }: Readonly<{ onClose: () => void; children: ReactNode }>) {
   useEscapeKey(onClose);
   return (
-    <Box absolute top="100%" left={0} mt={6} minW={186} z={2} style={PANEL} bg="surface2" p={5}>
+    <Box absolute top="100%" left={0} mt={6} minW={186} z={2} style={s.panel} bg="surface2" p={5}>
       {children}
     </Box>
   );
@@ -265,26 +302,24 @@ function Item({
   onPress: () => void;
 }>) {
   return (
-    <Focusable
-      label={choice.label}
-      ring={false}
-      onPress={onPress}
-      style={ITEM}
-      focusedStyle={FOCUS_WASH_STRONG}
-    >
-      <Face choice={choice} fallback={fallback} on={chosen} />
-      <Txt variant="meta" color={chosen ? 'text' : 'textMuted'} style={ITEM_INK}>
-        {choice.label}
-      </Txt>
-      <Box flex />
-      {choice.note ? (
-        <Txt variant="meta" color="textDim" style={ITEM_NOTE}>
-          {choice.note}
-        </Txt>
-      ) : null}
-      <Box w={14} align="center">
-        {chosen ? <Icon name="check" size={14} color="accent" /> : null}
-      </Box>
+    <Focusable label={choice.label} ring={false} onPress={onPress} sv={menuItem} vars={{ chosen }}>
+      {({ slots }) => (
+        <>
+          <Face choice={choice} fallback={fallback} on={chosen} />
+          <Txt variant="meta" style={slots.label}>
+            {choice.label}
+          </Txt>
+          <Box flex />
+          {choice.note ? (
+            <Txt variant="meta" color="textDim" style={s.itemNote}>
+              {choice.note}
+            </Txt>
+          ) : null}
+          <Box w={14} align="center">
+            {chosen ? <Icon name="check" size={14} color="accent" /> : null}
+          </Box>
+        </>
+      )}
     </Focusable>
   );
 }
@@ -304,7 +339,6 @@ function IconTool({
       label={label}
       ring={false}
       focusScale={1}
-      focusedStyle={active ? undefined : FOCUS_WASH}
       onPress={onPress}
     >
       <Icon name={glyph} size={16} color={active ? 'accent' : 'textMuted'} />
@@ -322,73 +356,80 @@ function CopyLink() {
         variant="ghost"
         size={TOOL_BOX}
         radius={radius.sm}
-        label={LINK_LABEL[state]}
+        label={LINK_FACE[state].label}
         ring={false}
         focusScale={1}
-        focusedStyle={FOCUS_WASH}
         onPress={onPress}
       >
-        <Icon name={LINK_GLYPH[state]} size={16} color={LINK_INK[state]} />
+        <Icon name={LINK_FACE[state].glyph} size={16} color={LINK_FACE[state].ink} />
       </IconButton>
       <Sep />
     </>
   );
 }
 
-const LINK_LABEL: Record<CopyState, string> = {
-  idle: 'Copy a link to this story',
-  copied: 'Link copied',
-  failed: 'Could not copy the link',
-};
-const LINK_GLYPH: Record<CopyState, IconName> = {
-  idle: 'link',
-  copied: 'check',
-  failed: 'alert-triangle',
-};
-const LINK_INK: Record<CopyState, ColorToken> = {
-  idle: 'textMuted',
-  copied: 'success',
-  failed: 'danger',
+const LINK_FACE: Record<CopyState, { label: string; glyph: IconName; ink: ColorToken }> = {
+  idle: { label: 'Copy a link to this story', glyph: 'link', ink: 'textMuted' },
+  copied: { label: 'Link copied', glyph: 'check', ink: 'success' },
+  failed: { label: 'Could not copy the link', glyph: 'alert-triangle', ink: 'danger' },
 };
 
 function Sep() {
   return <Box w={1} h={18} mx={5} bg="border" />;
 }
 
-const TRIGGER = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 7,
-  paddingHorizontal: 9,
-  paddingVertical: 7,
-  borderRadius: radius.sm,
-  borderWidth: 1,
-  borderColor: 'transparent',
-} as const;
-const TRIGGER_OPEN = {
-  backgroundColor: colors.surface2,
-  borderColor: colors.borderStrong,
-} as const;
-const TRIGGER_INK = { fontSize: 12.5, fontWeight: '600' } as const;
+const lensTrigger = sv({
+  slots: {
+    root: {
+      row: true,
+      align: 'center',
+      gap: 7,
+      px: 9,
+      py: 7,
+      radius: 'sm',
+      border: 'transparent',
+      _focus: { bg: 'white/6' },
+    },
+    label: { fontSize: 12.5, fontWeight: '600', color: 'textMuted' },
+  },
+  variants: {
+    open: {
+      true: {
+        root: { bg: 'surface2', border: 'borderStrong', _focus: { bg: 'surface2' } },
+        label: { color: 'text' },
+      },
+    },
+  },
+  defaults: { open: false },
+});
 const TOOL_BOX = 32;
-// `right: 0` keeps the scrim inside the canvas column, which must never scroll sideways.
-const SCRIM = { position: 'absolute', top: 0, right: 0, left: 0, zIndex: 1 } as const;
-const PANEL = {
-  borderWidth: 1,
-  borderColor: colors.borderStrong,
-  borderRadius: radius.md,
-  boxShadow: shadow.pop,
-} as const;
-const ITEM = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 9,
-  height: 32,
-  paddingHorizontal: 8,
-  borderRadius: radius.sm,
-} as const;
-const ITEM_INK = { fontSize: 12.5, fontWeight: '600' } as const;
-const ITEM_NOTE = { fontSize: 11 } as const;
+const s = styles({
+  // `right: 0` keeps the scrim inside the canvas column, which must never scroll
+  // sideways.
+  scrim: { absolute: true, top: 0, right: 0, left: 0, z: 1 },
+  panel: { border: 'borderStrong', radius: 'md', shadow: 'pop' },
+  itemNote: { fontSize: 11 },
+});
+// A row in an OPEN menu: the surface underneath is already lifted, where the
+// chrome's plain focus wash reads as nothing.
+const menuItem = sv({
+  slots: {
+    root: {
+      row: true,
+      align: 'center',
+      gap: 9,
+      h: 32,
+      px: 8,
+      radius: 'sm',
+      _focus: { bg: 'white/7' },
+    },
+    label: { fontSize: 12.5, fontWeight: '600', color: 'textMuted' },
+  },
+  variants: {
+    chosen: { true: { label: { color: 'text' } } },
+  },
+  defaults: { chosen: false },
+});
 
 export type { Choice, ToolbarLens, ToolbarProps };
 export { FRAMES, Toolbar };

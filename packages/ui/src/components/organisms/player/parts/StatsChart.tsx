@@ -10,8 +10,9 @@
 
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
+import { type ColorValue, styles } from '#ui/core';
+import { SERIES_COLORS } from '#ui/core/tokens';
 import { Circle, Line, Path, Svg } from '#ui/lib/svg';
-import { fonts, SERIES_COLORS } from '#ui/lib/tokens';
 import {
   bandPath,
   type ChartBox,
@@ -60,7 +61,7 @@ export interface StatsChartProps {
 interface Resolved {
   key: string;
   display: string;
-  color: string;
+  color: ColorValue;
   data: readonly number[];
   band: boolean;
 }
@@ -89,14 +90,14 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
       {/* This IS the legend: the value carries identity in text, the dot carries
           it in colour, and neither is load-bearing on its own. */}
       <Box row align="center" between gap={16}>
-        <Txt style={CHART_LABEL} color="rgba(244, 243, 240, 0.5)" lines={1}>
+        <Txt style={sx.chartLabel} color="text/50" lines={1}>
           {meters.find((m) => m.chartLabel)?.chartLabel ?? meters.map((m) => m.label).join(' · ')}
         </Txt>
         <Box row align="center" gap={14} shrink={0}>
           {series.map((s) => (
             <Box key={s.key} row align="center" gap={6}>
               {series.length > 1 ? <Box w={7} h={7} radius="pill" bg={s.color} /> : null}
-              <Txt style={CHART_VALUE} color="rgba(244, 243, 240, 0.82)">
+              <Txt style={sx.chartValue} color="text/82">
                 {s.display}
               </Txt>
             </Box>
@@ -158,7 +159,7 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
       </Svg>
 
       {reference ? (
-        <Txt style={CHART_FOOT} color="rgba(244, 243, 240, 0.38)">
+        <Txt style={sx.chartFoot} color="text/38">
           {reference.label}
         </Txt>
       ) : null}
@@ -169,8 +170,8 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
 // Palette slot, by position and never cycled past the set. A fourth series
 // should have its own chart, so if one arrives it repeats the last slot rather
 // than inventing a hue that fails the colourblind checks.
-function slotColor(at: number): string {
-  return SERIES_COLORS[Math.min(at, SERIES_COLORS.length - 1)] as string;
+function slotColor(at: number): ColorValue {
+  return SERIES_COLORS[Math.min(at, SERIES_COLORS.length - 1)] as ColorValue;
 }
 
 function draw(series: readonly Resolved[], box: ChartBox, reference?: number) {
@@ -211,23 +212,19 @@ export const STATS_CHART_HEIGHT = PLOT_H;
 
 export type { Extent } from '../lib/chart-geometry';
 
-const CHART_LABEL = {
-  fontFamily: fonts.ui,
-  fontSize: 10,
-  fontWeight: '700' as const,
-  letterSpacing: 1.4,
-  textTransform: 'uppercase' as const,
-};
-
-const CHART_VALUE = {
-  fontFamily: fonts.ui,
-  fontSize: 13,
-  fontWeight: '600' as const,
-  fontVariant: ['tabular-nums' as const],
-};
-
-const CHART_FOOT = {
-  fontFamily: fonts.ui,
-  fontSize: 10,
-  fontWeight: '500' as const,
-};
+const sx = styles({
+  chartLabel: {
+    font: 'ui',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  chartValue: {
+    font: 'ui',
+    fontSize: 13,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  chartFoot: { font: 'ui', fontSize: 10, fontWeight: '500' },
+});

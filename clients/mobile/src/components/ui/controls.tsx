@@ -1,14 +1,7 @@
 // The text entry. Buttons and chips are the kit's own (@kroma/ui/kit).
 
-import { Icon, type IconName } from '@kroma/ui/kit';
-import {
-  type StyleProp,
-  StyleSheet,
-  TextInput,
-  type TextInputProps,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { Icon, type IconName, styles } from '@kroma/ui/kit';
+import { type StyleProp, TextInput, type TextInputProps, View, type ViewStyle } from 'react-native';
 import { colors, radius, spacing } from '#mobile/lib/theme';
 
 /** `style` lands on the icon well, not the inner `TextInput`, so call sites
@@ -20,9 +13,9 @@ export function TextField({
   ...props
 }: Readonly<Omit<TextInputProps, 'style'> & { icon?: IconName; style?: StyleProp<ViewStyle> }>) {
   return (
-    <View style={[styles.inputWell, multiline && styles.inputWellMultiline, style]}>
+    <View style={[s.inputWell, multiline && s.inputWellMultiline, style]}>
       {icon ? (
-        <View style={[styles.inputIcon, multiline && styles.inputIconMultiline]}>
+        <View style={[s.inputIcon, multiline && s.inputIconMultiline]}>
           <Icon name={icon} size={18} stroke={1.8} color={colors.textFaint} />
         </View>
       ) : null}
@@ -32,33 +25,26 @@ export function TextField({
         autoCorrect={false}
         multiline={multiline}
         {...props}
-        style={styles.inputInner}
+        style={s.inputInner}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   inputWell: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    row: true,
+    align: 'center',
     gap: 10,
-    minHeight: 48,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
+    minH: 48,
+    px: spacing.md,
+    bg: 'surface1',
+    radius: radius.md,
+    border: 'border',
   },
   // A growing entry reads from its first line, so its glyph pins to the top.
-  inputWellMultiline: { alignItems: 'flex-start', paddingVertical: 12 },
-  inputIcon: { width: 20, alignItems: 'center' },
-  inputIconMultiline: { paddingTop: 2 },
-  inputInner: {
-    flex: 1,
-    minWidth: 0,
-    color: colors.text,
-    fontSize: 15,
-    paddingVertical: 0,
-  },
+  inputWellMultiline: { align: 'flex-start', py: 12 },
+  inputIcon: { align: 'center', w: 20 },
+  inputIconMultiline: { pt: 2 },
+  inputInner: { flex: true, minW: 0, py: 0, color: 'text', fontSize: 15 },
 });

@@ -1,7 +1,7 @@
 // The strip above the tab bar while this phone is driving a TV.
 
 import { useCast } from '@kroma/ui';
-import { Icon } from '@kroma/ui/kit';
+import { Icon, styles } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -27,22 +27,22 @@ export function CastMiniBar() {
   return (
     <Pressable
       onPress={() => router.push('/cast' as never)}
-      style={({ pressed }) => [styles.bar, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [s.bar, pressed && { opacity: 0.85 }]}
       accessibilityRole="button"
       accessibilityLabel={t('cast.playingOn', { device: active.name })}
     >
       {poster ? (
-        <Image source={{ uri: poster }} style={styles.poster} contentFit="cover" />
+        <Image source={{ uri: poster }} style={s.poster} contentFit="cover" />
       ) : (
-        <View style={[styles.poster, styles.posterFallback]}>
+        <View style={[s.poster, s.posterFallback]}>
           <Icon name="device-tv" size={18} stroke={1.8} color={colors.textDim} />
         </View>
       )}
-      <View style={styles.text}>
-        <Text numberOfLines={1} style={styles.title}>
+      <View style={s.text}>
+        <Text numberOfLines={1} style={s.title}>
           {title}
         </Text>
-        <Text numberOfLines={1} style={styles.device}>
+        <Text numberOfLines={1} style={s.device}>
           {t('cast.playingOn', { device: active.name })}
         </Text>
       </View>
@@ -50,7 +50,7 @@ export function CastMiniBar() {
         <Pressable
           onPress={() => void send({ type: isPlaying ? 'pause' : 'resume' })}
           hitSlop={10}
-          style={({ pressed }) => [styles.transport, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [s.transport, pressed && { opacity: 0.7 }]}
           accessibilityRole="button"
           accessibilityLabel={t(isPlaying ? 'player.pause' : 'player.play')}
         >
@@ -63,45 +63,34 @@ export function CastMiniBar() {
       ) : null}
       {/* A hairline of progress along the bottom edge: enough to say how far in
           the TV is without spending a row on it. */}
-      <View style={styles.track} pointerEvents="none">
-        <View style={[styles.fill, { width: `${progress * 100}%` }]} />
+      <View style={s.track} pointerEvents="none">
+        <View style={[s.fill, { width: `${progress * 100}%` }]} />
       </View>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const s = styles({
   bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    row: true,
+    align: 'center',
     gap: spacing.sm,
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.xs,
-    paddingRight: spacing.sm,
-    height: 56,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceHigh,
+    h: 56,
+    pr: spacing.sm,
+    mx: spacing.md,
+    mb: spacing.xs,
+    bg: 'surface3',
+    radius: radius.md,
+    border: 'border',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
     overflow: 'hidden',
   },
-  poster: { width: 40, height: 56 },
-  posterFallback: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  text: { flex: 1, gap: 1 },
-  title: { ...type.body, color: colors.text, fontWeight: '600' },
-  device: { ...type.small, color: colors.accent },
-  transport: { padding: 4 },
-  track: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 2,
-    backgroundColor: colors.border,
-  },
-  fill: { height: 2, backgroundColor: colors.accent },
+  poster: { w: 40, h: 56 },
+  posterFallback: { center: true, bg: 'surface1' },
+  text: { flex: true, gap: 1 },
+  title: { ...type.body, color: 'text', fontWeight: '600' },
+  device: { ...type.small, color: 'accent' },
+  transport: { p: 4 },
+  track: { absolute: true, right: 0, bottom: 0, left: 0, h: 2, bg: 'border' },
+  fill: { h: 2, bg: 'accent' },
 });

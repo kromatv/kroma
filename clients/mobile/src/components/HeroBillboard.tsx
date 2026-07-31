@@ -3,7 +3,7 @@
 
 import type { SectionItem } from '@kroma/core';
 import { sizedImageUrl } from '@kroma/core';
-import { Button } from '@kroma/ui/kit';
+import { Button, styles } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -12,7 +12,7 @@ import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, SHADE, spacing, type } from '#mobile/lib/theme';
+import { radius, SHADE, spacing, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
 export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
@@ -61,7 +61,7 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
     : Math.min(Math.round(w * 1.42), Math.round(height * 0.72));
 
   return (
-    <View style={[styles.wrap, { width: w, height: h }]}>
+    <View style={[s.wrap, { width: w, height: h }]}>
       <Pressable onPress={() => router.push(detailRoute as never)} style={StyleSheet.absoluteFill}>
         <FadeImage uri={art} seed={id} radius={radius.xl} style={StyleSheet.absoluteFill} />
         <LinearGradient
@@ -70,28 +70,23 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
           style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
         />
       </Pressable>
-      <View style={styles.content} pointerEvents="box-none">
-        <Text numberOfLines={2} style={styles.title}>
+      <View style={s.content} pointerEvents="box-none">
+        <Text numberOfLines={2} style={s.title}>
           {title}
         </Text>
         {genres.length > 0 ? (
-          <Text numberOfLines={1} style={styles.genres}>
+          <Text numberOfLines={1} style={s.genres}>
             {genres.join('  ·  ')}
           </Text>
         ) : null}
-        <View style={styles.buttons}>
-          <Button
-            icon="player-play-filled"
-            label={t('player.play')}
-            style={styles.cta}
-            onPress={play}
-          />
+        <View style={s.buttons}>
+          <Button icon="player-play-filled" label={t('player.play')} style={s.cta} onPress={play} />
           <Button
             variant="outline"
             active={inList}
             icon={inList ? 'check' : 'plus'}
             label={t('nav.myList')}
-            style={styles.cta}
+            style={s.cta}
             onPress={() => toggleList.mutate()}
           />
         </View>
@@ -100,32 +95,25 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: { alignSelf: 'center', marginTop: spacing.sm },
+const s = styles({
+  wrap: { self: 'center', mt: spacing.sm },
   content: {
-    position: 'absolute',
-    left: spacing.md,
+    absolute: true,
     right: spacing.md,
     bottom: spacing.md,
-    alignItems: 'center',
+    left: spacing.md,
+    align: 'center',
     gap: 8,
   },
   title: {
     ...type.display,
     fontSize: 28,
     textAlign: 'center',
-    textShadowColor: 'rgba(10, 10, 12, 0.85)',
+    textShadowColor: 'bg/85',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 10,
   },
-  genres: { ...type.caption, color: colors.text },
-  buttons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 6,
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 480,
-  },
-  cta: { flex: 1 },
+  genres: { ...type.caption, color: 'text' },
+  buttons: { row: true, self: 'center', gap: 10, w: '100%', maxW: 480, mt: 6 },
+  cta: { flex: true },
 });

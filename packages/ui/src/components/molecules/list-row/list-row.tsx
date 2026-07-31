@@ -1,4 +1,3 @@
-import type { StyleProp, ViewStyle } from 'react-native';
 // <ListRow>: one focusable row of a menu or a settings list.
 //
 // This shape was written three times before it moved here: the TV profile menu,
@@ -12,48 +11,63 @@ import type { StyleProp, ViewStyle } from 'react-native';
 // sub-lines) and was drawing its own, four points larger.
 
 import type { ReactNode } from 'react';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { Icon, type IconName } from '#ui/components/atoms/icon';
+import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { IconWell } from '#ui/components/atoms/icon-well';
 import { Txt } from '#ui/components/atoms/text';
-import { sv } from '#ui/lib/sv';
-import { colors, radius } from '#ui/lib/tokens';
+import { type StyleDecl, svFor } from '#ui/core';
 
-const listRowVariants = sv({
+type ListRowSize = 'sm' | 'tv';
+
+const listRowVariants = svFor<{
+  root: StyleDecl;
+  label: StyleDecl;
+  hint: StyleDecl;
+  chevron: Pick<IconProps, 'color' | 'size'>;
+}>()({
   slots: {
     root: {
-      width: '100%',
-      flexDirection: 'row',
-      alignItems: 'center',
-      borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+      w: '100%',
+      row: true,
+      align: 'center',
+      radius: 'xl',
+      border: 'border',
+      bg: 'white/3',
+      // A solid amber edge rather than a fill, which is why the row draws no
+      // ring: a row is wide, and a filled one at the top of a list reads as
+      // "selected forever" instead of "focused".
+      _focus: { border: 'accent' },
     },
     label: { fontWeight: '700' },
     hint: {},
+    chevron: { color: 'textDim' },
   },
   variants: {
     size: {
       sm: {
-        root: { gap: 12, paddingHorizontal: 14, paddingVertical: 11 },
+        root: { gap: 12, px: 14, py: 11 },
         label: { fontSize: 15 },
         hint: { fontSize: 13 },
+        chevron: { size: 17 },
       },
       tv: {
-        root: { gap: 16, paddingHorizontal: 20, paddingVertical: 16 },
+        root: { gap: 16, px: 20, py: 16 },
         label: { fontSize: 18 },
         hint: { fontSize: 15 },
+        chevron: { size: 20 },
       },
     },
+    /** Whether the row leads anywhere. The step before the amber edge, and only
+     *  a row that does something on press takes it: a settings list is full of
+     *  rows that only display. */
+    pressable: {
+      true: { root: { _hover: { bg: 'white/7', border: 'borderStrong' } } },
+    },
   },
-  defaults: { size: 'tv' },
+  defaults: { size: 'tv', pressable: false },
 });
-
-const GLYPH = { sm: 17, tv: 20 } as const;
-
-type ListRowSize = keyof typeof GLYPH;
 
 interface ListRowProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
   /** Leading glyph. Omit it and the row starts at the label. */
@@ -82,7 +96,6 @@ function ListRow({
   style,
   ...focusProps
 }: Readonly<ListRowProps>) {
-  const s = listRowVariants({ size });
   return (
     <Focusable
       {...focusProps}
@@ -90,35 +103,27 @@ function ListRow({
       label={label}
       focusScale={1.02}
       ring={false}
-      style={[s.root, style]}
-      focusedStyle={FOCUSED}
-      hoveredStyle={onPress ? HOVERED : null}
+      sv={listRowVariants}
+      vars={{ size, pressable: onPress !== undefined }}
+      style={style}
     >
-      {leading ?? (icon ? <IconWell name={icon} size={size} /> : null)}
-      <Box flex gap={2}>
-        <Txt style={s.label}>{label}</Txt>
-        {hint ? (
-          <Txt color="textDim" style={s.hint}>
-            {hint}
-          </Txt>
-        ) : null}
-      </Box>
-      {trailing ??
-        (onPress ? <Icon name="chevron-right" size={GLYPH[size]} color="textDim" /> : null)}
+      {(state) => (
+        <>
+          {leading ?? (icon ? <IconWell name={icon} size={size} /> : null)}
+          <Box flex gap={2}>
+            <Txt style={state.slots.label}>{label}</Txt>
+            {hint ? (
+              <Txt color="textDim" style={state.slots.hint}>
+                {hint}
+              </Txt>
+            ) : null}
+          </Box>
+          {trailing ?? (onPress ? <Icon name="chevron-right" {...state.slots.chevron} /> : null)}
+        </>
+      )}
     </Focusable>
   );
 }
-
-// Focus is a solid amber edge rather than a fill: a row is wide, and a filled
-// one at the top of a list reads as "selected forever" instead of "focused".
-const FOCUSED = { borderColor: colors.accent } as const;
-
-// The step before that edge; only a row that actually does something on
-// press lights, since a settings list is full of rows that only display.
-const HOVERED = {
-  backgroundColor: 'rgba(255, 255, 255, 0.07)',
-  borderColor: colors.borderStrong,
-} as const;
 
 export type { ListRowProps, ListRowSize };
 export { ListRow, listRowVariants };

@@ -7,6 +7,7 @@
 // the FACE: background, radius, padding, and the control's own children.
 
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { styles } from '#ui/core';
 
 /** The props that describe the control's box in its parent, not its face. */
 const BOX_PROPS = new Set([
@@ -41,10 +42,12 @@ const BOX_PROPS = new Set([
   'zIndex',
 ]);
 
-/** Makes the face fill the box it was split from. Growing (rather than `flex: 1`,
- * which would zero the basis) keeps a control that sizes itself from its content
- * sizing itself from its content: there is no free space to grow into. */
-const FACE_FILL = { flexGrow: 1 } as const;
+const s = styles({
+  /** Makes the face fill the box it was split from. Growing (rather than `flex: 1`,
+   * which would zero the basis) keeps a control that sizes itself from its content
+   * sizing itself from its content: there is no free space to grow into. */
+  faceFill: { grow: 1 },
+});
 
 /**
  * One authored control style as the two views it has to drive on native.
@@ -69,5 +72,5 @@ export function splitBoxLayers(style: StyleProp<ViewStyle>): {
     }
   }
   if (!boxed) return { face: style };
-  return { box: box as ViewStyle, face: [face as ViewStyle, FACE_FILL] };
+  return { box: box as ViewStyle, face: [face as ViewStyle, s.faceFill] };
 }

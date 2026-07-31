@@ -3,12 +3,12 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
-import { colors } from '#ui/lib/tokens';
+import { colors } from '#ui/core/tokens';
 
 export default story({
   name: 'Colors',
   group: 'Foundations',
-  docs: 'Every color token in the design system. The source is packages/ui/src/lib/tokens/colors.ts, which also generates the CSS variables for the browser targets.',
+  docs: 'Every color token in the design system. The source is packages/ui/src/core/tokens/colors.ts, which also generates the CSS variables for the browser targets.',
   matrix: false,
   width: { min: 480, max: 1000 },
   render: () => (

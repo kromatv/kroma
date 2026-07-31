@@ -13,6 +13,7 @@ import {
   CategoryTile,
   FocusRegion,
   FocusScroll,
+  styles,
   Txt,
   tintGradient,
   useFocusNav,
@@ -45,13 +46,13 @@ export function TvGenres() {
       </Box>
 
       {genres.length ? (
-        <FocusScroll style={GENRE_SCROLL} contentStyle={GENRE_CONTENT} offsetFromStart={120}>
+        <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
           {/* The field wraps on screen, so it must be declared as a grid: a
               single row would leave Up/Down nowhere to go. One region per
               visible line, matching what the eye sees. */}
           {lines(genres, GENRE_COLUMNS).map((line, row) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the line's identity.
-            <FocusRegion key={row} style={GENRE_LINE}>
+            <FocusRegion key={row} style={s.line}>
               {line.map((g, column) => {
                 const pick = showcases.get(g.name);
                 return (
@@ -113,23 +114,18 @@ function GenreCard({
 // the shape before anything is laid out.
 const GENRE_COLUMNS = 5;
 
-const GENRE_LINE = { flexDirection: 'row' as const, gap: 12 };
-
 function lines<T>(items: readonly T[], size: number): T[][] {
   const out: T[][] = [];
   for (let at = 0; at < items.length; at += size) out.push(items.slice(at, at + size));
   return out;
 }
 
-const GENRE_SCROLL = { flex: 1, minHeight: 0 } as const;
-
-// Padding belongs on the content, not the scroller box: on the box it would
-// pad the viewport and clip the last row instead of the list.
-const GENRE_CONTENT = {
-  paddingHorizontal: 64,
-  paddingTop: 8,
-  paddingBottom: 72,
-  gap: 12,
-} as const;
-
 const CARD_W = 320;
+
+const s = styles({
+  line: { row: true, gap: 12 },
+  scroll: { flex: true, minH: 0 },
+  // Padding belongs on the content, not the scroller box: on the box it would
+  // pad the viewport and clip the last row instead of the list.
+  content: { px: 64, pt: 8, pb: 72, gap: 12 },
+});

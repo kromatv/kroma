@@ -17,9 +17,8 @@ import { type ReactNode, useMemo, useRef } from 'react';
 import { TextInput } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
+import { styles, sv } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
-import { sv } from '#ui/lib/sv';
-import { colors, radius as radii } from '#ui/lib/tokens';
 import { useCompleteOnce } from '#ui/lib/use-complete-once';
 import { useControllable } from '#ui/lib/use-controllable';
 
@@ -29,40 +28,33 @@ const REGEXP_ONLY_DIGITS_AND_CHARS = '^[a-zA-Z0-9]+$';
 
 const otpVariants = sv({
   slots: {
-    slot: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      backgroundColor: colors.surface2,
-      borderColor: colors.borderStrong,
-    },
-    char: { fontWeight: '600', color: colors.text },
+    slot: { center: true, bg: 'surface2', border: 'borderStrong' },
+    char: { fontWeight: '600', color: 'text' },
   },
   variants: {
     size: {
-      md: { slot: { width: 52, height: 60, borderRadius: radii.lg }, char: { fontSize: 26 } },
-      tv: { slot: { width: 72, height: 84, borderRadius: radii.xl }, char: { fontSize: 38 } },
+      md: { slot: { w: 52, h: 60, radius: 'lg' }, char: { fontSize: 26 } },
+      tv: { slot: { w: 72, h: 84, radius: 'xl' }, char: { fontSize: 38 } },
     },
     /** `active` is the slot the next character lands in, and the only one with a caret. */
     state: {
       empty: {},
       filled: {},
-      active: { slot: { borderColor: colors.accent, backgroundColor: colors.accentSoft } },
+      active: { slot: { borderColor: 'accent', bg: 'accentSoft' } },
     },
     invalid: {
-      true: { slot: { borderColor: colors.danger } },
-      false: {},
+      true: { slot: { borderColor: 'danger' } },
     },
   },
   compound: [
     // A rejected code keeps its red edge even under the caret, so the field
     // does not look like it has forgotten the error the moment it is retried.
     {
-      when: { state: 'active', invalid: 'true' },
-      style: { slot: { borderColor: colors.danger } },
+      when: { state: 'active', invalid: true },
+      style: { slot: { borderColor: 'danger' } },
     },
   ],
-  defaults: { size: 'md', state: 'empty', invalid: 'false' },
+  defaults: { size: 'md', state: 'empty', invalid: false },
 });
 
 type OtpSize = 'md' | 'tv';
@@ -175,7 +167,7 @@ function OtpField({
           spellCheck={false}
           accessibilityLabel={label}
           caretHidden
-          style={ENTRY}
+          style={s.entry}
         />
       ) : null}
       {slots.map((slot, at) => (
@@ -219,7 +211,7 @@ function Slot({
   mask,
 }: Readonly<{ slot: OtpSlot; size: OtpSize; invalid: boolean; mask: boolean }>) {
   const state = slotState(slot);
-  const s = otpVariants({ size, state, invalid: invalid ? 'true' : 'false' });
+  const s = otpVariants({ size, state, invalid });
   return (
     <Box style={s.slot}>
       {slot.char == null ? null : <Txt style={s.char}>{mask ? '•' : slot.char}</Txt>}
@@ -229,24 +221,26 @@ function Slot({
 }
 
 function Separator() {
-  return <Box w={12} h={2} radius="pill" bg={colors.borderStrong} />;
+  return <Box w={12} h={2} radius="pill" bg="borderStrong" />;
 }
 
 // Off-screen, not `display: none`: it has to stay focusable to receive the
 // paste, the autofill and the keystrokes.
-const ENTRY = {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  width: '100%',
-  height: '100%',
-  opacity: 0,
-  padding: 0,
-  borderWidth: 0,
-  outlineWidth: 0,
-  color: 'transparent',
-  zIndex: 1,
-} as const;
+const s = styles({
+  entry: {
+    absolute: true,
+    left: 0,
+    top: 0,
+    w: '100%',
+    h: '100%',
+    opacity: 0,
+    p: 0,
+    borderWidth: 0,
+    outlineWidth: 0,
+    color: 'transparent',
+    z: 1,
+  },
+});
 
 export type { OtpFieldProps, OtpSize, OtpSlot };
 export {

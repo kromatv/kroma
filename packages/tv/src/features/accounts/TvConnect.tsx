@@ -1,6 +1,16 @@
 import { type ResolvedOrigin, resolveServerOrigin } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, Field, Hint, Icon, type IconName, Txt, useFocusNav } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  Field,
+  Hint,
+  Icon,
+  type IconName,
+  styles,
+  Txt,
+  useFocusNav,
+} from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
@@ -119,7 +129,7 @@ export function TvConnect() {
               focusScale={1.05}
               label={discovering ? t('common.detecting') : t('connect.detect')}
               onPress={discover}
-              style={DETECT}
+              style={s.detect}
             />
           }
         />
@@ -148,8 +158,10 @@ export function TvConnect() {
   );
 }
 
-const DETECT = { flexShrink: 0, backgroundColor: 'transparent', paddingHorizontal: 16 } as const;
-const SCHEME_TEXT = { fontSize: 14, fontWeight: '600' } as const;
+const s = styles({
+  detect: { shrink: 0, bg: 'transparent', px: 16 },
+  schemeText: { fontSize: 14, fontWeight: '600' },
+});
 
 // Plain HTTP is `accent`, not `danger`: an unencrypted server on a home LAN
 // is the normal case here.
@@ -172,7 +184,7 @@ function SchemeBadge({
   return (
     <Box row align="center" justify="center" gap={6} mb={16}>
       <Icon name={icon} size={16} color={color} />
-      <Txt style={SCHEME_TEXT} color={color}>
+      <Txt style={s.schemeText} color={color}>
         {text}
       </Txt>
     </Box>

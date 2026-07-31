@@ -2,8 +2,8 @@ import { memo, type ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
+import { styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
-import { fonts } from '#ui/lib/tokens';
 import { useT } from '#ui/services/i18n';
 import { GUTTER, scaler } from '../lib/metrics';
 
@@ -71,15 +71,11 @@ export const TopBar = memo(function TopBar({
           line) rather than pushing the warning pill and the host's own actions
           off the right edge of a narrow window. */}
       <Box shrink={1} minW={0}>
-        <Txt lines={1} style={[TITLE, { fontSize: px(TITLE_SIZE) }]}>
+        <Txt lines={1} style={[s.title, { fontSize: px(TITLE_SIZE) }]}>
           {title}
         </Txt>
         {subtitle ? (
-          <Txt
-            lines={1}
-            style={[SUBTITLE, { fontSize: px(SUBTITLE_SIZE) }]}
-            color="rgba(244, 243, 240, 0.6)"
-          >
+          <Txt lines={1} style={[s.subtitle, { fontSize: px(SUBTITLE_SIZE) }]} color="text/60">
             {subtitle}
           </Txt>
         ) : null}
@@ -91,11 +87,7 @@ export const TopBar = memo(function TopBar({
             // title does: a codec notice is a sentence, and it wraps to two
             // lines sooner than it crowds out what is playing.
             <Box shrink={1} radius="pill" bg="accentSoft" px={px(14)} py={px(8)}>
-              <Txt
-                lines={2}
-                style={{ fontFamily: fonts.ui, fontSize: px(WARN_SIZE), fontWeight: '600' }}
-                color="accent"
-              >
+              <Txt lines={2} style={[s.warn, { fontSize: px(WARN_SIZE) }]} color="accent">
                 {warn}
               </Txt>
             </Box>
@@ -113,9 +105,8 @@ const TITLE_SIZE = 19;
 const SUBTITLE_SIZE = 13;
 const WARN_SIZE = 13;
 
-const TITLE = {
-  fontFamily: fonts.display,
-  fontWeight: '700' as const,
-  color: '#FFFFFF',
-};
-const SUBTITLE = { fontFamily: fonts.ui, fontWeight: '500' as const };
+const s = styles({
+  title: { font: 'display', fontWeight: '700', color: 'white' },
+  subtitle: { font: 'ui', fontWeight: '500' },
+  warn: { font: 'ui', fontWeight: '600' },
+});

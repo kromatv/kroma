@@ -17,7 +17,7 @@ needs computing, one of those three cannot read it.
 **Who consumes what**
 
 - The universal kit and the native apps import the TypeScript directly:
-  `import { colors, radius } from '#ui/lib/tokens'`.
+  `import { colors, radius } from '#ui/core/tokens'`.
 - The web and desktop shells consume the generated CSS variables.
 - Outside the package, `@kroma/ui/tokens` is the public door.
 

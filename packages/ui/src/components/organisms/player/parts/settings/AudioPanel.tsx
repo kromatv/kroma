@@ -6,7 +6,7 @@ import { Txt } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { useT } from '#ui/services/i18n';
-import { panelEmpty, panelList } from './panelStyle';
+import { panel } from './panelStyle';
 import { SelectRow } from './select-row';
 
 interface AudioPanelProps {
@@ -33,11 +33,11 @@ export const AudioPanel = forwardRef<PanelHandle, AudioPanelProps>(function Audi
   useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   if (tracks.length === 0) {
-    return <Txt style={panelEmpty}>{t('player.noAudioTracks')}</Txt>;
+    return <Txt style={panel.panelEmpty}>{t('player.noAudioTracks')}</Txt>;
   }
 
   return (
-    <Box style={panelList}>
+    <Box style={panel.panelList}>
       {tracks.map((a, i) => {
         const ch = channelLabel(a.channels);
         const codec = a.codec.toUpperCase();

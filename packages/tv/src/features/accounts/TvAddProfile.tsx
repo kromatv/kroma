@@ -1,6 +1,6 @@
 import { normalizeServerUrl as norm } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, FocusColumn, Hint, Spinner, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, FocusColumn, Hint, Spinner, styles, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
@@ -50,10 +50,11 @@ export function TvAddProfile() {
       isNew,
     });
     const out = localUrls.map((url) => {
-      const saved = servers.find((s) => s.url === url);
+      const saved = servers.find((entry) => entry.url === url);
       return of(url, saved, !saved);
     });
-    for (const s of servers.filter((sv) => !localUrls.includes(sv.url))) out.push(of(s.url, s));
+    for (const other of servers.filter((entry) => !localUrls.includes(entry.url)))
+      out.push(of(other.url, other));
     return out;
   }, [discovered, servers]);
 
@@ -81,7 +82,7 @@ export function TvAddProfile() {
         </Txt>
 
         <Box row align="center" gap={10} mb={12}>
-          <Txt variant="overlineTv" style={SECTION} color="rgba(244, 243, 240, 0.42)">
+          <Txt variant="overlineTv" style={s.section} color="rgba(244, 243, 240, 0.42)">
             {t('addProfile.availableServers')}
           </Txt>
           {discovering ? <Spinner size={13} thickness={2} /> : null}
@@ -90,7 +91,7 @@ export function TvAddProfile() {
           {/* The navigator orders a group's children by registration order, not
               position, so this group holds the servers' place above "Ajouter
               manuellement" — keys are list positions for the same reason. */}
-          <FocusColumn style={LIST}>
+          <FocusColumn style={s.list}>
             {entries.map((e, index) => {
               const probe = health[e.url];
               return (
@@ -131,5 +132,7 @@ export function TvAddProfile() {
   );
 }
 
-const LIST = { gap: 12 };
-const SECTION = { fontSize: 12 };
+const s = styles({
+  list: { gap: 12 },
+  section: { fontSize: 12 },
+});

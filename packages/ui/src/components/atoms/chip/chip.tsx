@@ -1,80 +1,68 @@
-import type { StyleProp, ViewStyle } from 'react-native';
 // <Chip>: the pill filter / selector (language codes, audio formats, genres,
 // recent searches). Focusable, so the same component is a click target in the
 // browser and a D-pad stop on a TV.
 
 import type { ReactNode } from 'react';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { Icon, type IconName } from '#ui/components/atoms/icon';
+import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
-import { sv } from '#ui/lib/sv';
-import { colors, fonts, radius } from '#ui/lib/tokens';
+import { type StyleDecl, svFor } from '#ui/core';
 
-const chipVariants = sv({
+/**
+ * The whole design, including every state it can be in.
+ *
+ * A chip carries no focus scale, so the hover wash each variant declares is all
+ * a cursor has to go on where there is no focus scope.
+ */
+const chipVariants = svFor<{
+  root: StyleDecl;
+  label: StyleDecl;
+  icon: Pick<IconProps, 'color' | 'size'>;
+}>()({
   slots: {
-    root: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingVertical: 6,
-      paddingHorizontal: 14,
-      borderRadius: radius.pill,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    label: { fontFamily: fonts.ui, fontWeight: '600' },
+    root: { row: true, align: 'center', gap: 8, py: 6, px: 14, radius: 'pill', border: 'border' },
+    label: { font: 'ui', fontWeight: '600' },
+    icon: { color: 'text' },
   },
   variants: {
-    active: {
-      true: { root: { backgroundColor: colors.accent } },
-      false: { root: { backgroundColor: 'rgba(255, 255, 255, 0.07)' } },
-    },
-    /** `subtle` is the strip that floats over the browse screens' ambient art:
-     *  a fainter wash, no border, and muted text so it recedes until focused. */
     variant: {
-      solid: { label: { color: colors.text } },
+      solid: {
+        root: { bg: 'white/7', _hover: { bg: 'white/13' } },
+        label: { color: 'text' },
+      },
+      /** `subtle` is the strip that floats over the browse screens' ambient art:
+       *  a fainter wash, no border, and muted text so it recedes until focused. */
       subtle: {
-        root: { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 0 },
-        label: { color: colors.textMuted },
+        root: { bg: 'white/8', borderWidth: 0, _hover: { bg: 'white/14' } },
+        label: { color: 'textMuted' },
+        icon: { color: 'textMuted' },
       },
       /** An opaque raised chip, for strips that sit on the page rather than over
        *  artwork (the season picker on a series detail screen). */
       surface: {
-        root: { backgroundColor: colors.surface2, borderWidth: 0 },
-        label: { color: colors.textMuted },
+        root: { bg: 'surface2', borderWidth: 0, _hover: { bg: 'surface3' } },
+        label: { color: 'textMuted' },
+        icon: { color: 'textMuted' },
+      },
+    },
+    /** Declared after `variant` so the accent fill and ink beat whatever idle
+     *  colours the variant declared. A filled chip hovers up the amber ladder
+     *  rather than back down to a white wash. */
+    active: {
+      true: {
+        root: { bg: 'accent', _hover: { bg: 'accentHover' } },
+        label: { color: 'accentInk' },
+        icon: { color: 'accentInk' },
       },
     },
     size: {
-      sm: { label: { fontSize: 13 } },
-      tv: { root: { paddingVertical: 10, paddingHorizontal: 22 }, label: { fontSize: 18 } },
+      sm: { label: { fontSize: 13 }, icon: { size: 15 } },
+      tv: { root: { py: 10, px: 22 }, label: { fontSize: 18 }, icon: { size: 17 } },
     },
   },
-  compound: [
-    // The active accent - fill and ink - wins over whatever idle colours the
-    // variant declared: every variant sets its own resting background, and
-    // variant styles merge after the `active` group's.
-    {
-      when: { active: 'true' },
-      style: {
-        root: { backgroundColor: colors.accent },
-        label: { color: colors.accentInk },
-      },
-    },
-  ],
-  defaults: { active: 'false', size: 'sm', variant: 'solid' },
+  defaults: { variant: 'solid', active: false, size: 'sm' },
 });
-
-// A chip carries no focus scale, so on a page with no focus scope this hover
-// wash is all a cursor has to go on.
-const HOVERED = {
-  solid: { backgroundColor: 'rgba(255, 255, 255, 0.13)' },
-  subtle: { backgroundColor: 'rgba(255, 255, 255, 0.14)' },
-  surface: { backgroundColor: colors.surface3 },
-} as const;
-
-// An active chip is a solid accent fill, so it hovers up the amber ladder
-// like every other filled control rather than back down to a white wash.
-const HOVERED_ACTIVE = { backgroundColor: colors.accentHover } as const;
 
 interface ChipProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
   active?: boolean;
@@ -97,28 +85,21 @@ function Chip({
   style,
   ...focusProps
 }: Readonly<ChipProps>) {
-  // `subtle` and `surface` both recede until focused, so their idle label is
-  // muted; the default solid chip carries full-strength text. The label reads
-  // its ink from the slot; the glyph needs the same colour as a prop.
-  const idle = variant === 'solid' ? colors.text : colors.textMuted;
-  const s = chipVariants({ active: active ? 'true' : 'false', size, variant });
   return (
     <Focusable
       {...focusProps}
       label={label}
-      style={[s.root, style]}
-      hoveredStyle={active ? HOVERED_ACTIVE : HOVERED[variant]}
+      sv={chipVariants}
+      vars={{ active, size, variant }}
+      style={style}
     >
-      {icon ? (
-        <Icon
-          name={icon}
-          size={size === 'tv' ? 17 : 15}
-          stroke={2}
-          color={active ? colors.accentInk : idle}
-        />
-      ) : null}
-      {label === undefined ? null : <Txt style={s.label}>{label}</Txt>}
-      {children}
+      {(state) => (
+        <>
+          {icon ? <Icon name={icon} stroke={2} {...state.slots.icon} /> : null}
+          {label === undefined ? null : <Txt style={state.slots.label}>{label}</Txt>}
+          {children}
+        </>
+      )}
     </Focusable>
   );
 }

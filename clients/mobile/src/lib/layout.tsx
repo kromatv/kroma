@@ -2,15 +2,10 @@
 // window width (useIsWide), never the device class — iPadOS windows resize
 // freely, so a narrow floating window must collapse back to single-column.
 
+import { styles } from '@kroma/ui/kit';
 import * as Device from 'expo-device';
 import { type ReactNode, useMemo } from 'react';
-import {
-  type StyleProp,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { type StyleProp, useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from './theme';
 
@@ -96,14 +91,14 @@ export function SplitColumns({
     );
   }
   return (
-    <View style={[style, styles.splitRow]}>
-      <View style={[styles.splitCol, { flex: leftFlex }]}>{left}</View>
-      <View style={[styles.splitCol, { flex: rightFlex }]}>{right}</View>
+    <View style={[style, s.splitRow]}>
+      <View style={[s.splitCol, { flex: leftFlex }]}>{left}</View>
+      <View style={[s.splitCol, { flex: rightFlex }]}>{right}</View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  splitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.lg },
+const s = styles({
+  splitRow: { row: true, align: 'flex-start', gap: spacing.lg },
   splitCol: { gap: spacing.md },
 });

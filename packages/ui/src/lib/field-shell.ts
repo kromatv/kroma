@@ -6,13 +6,23 @@
 // that could drift apart.
 
 import type { TextStyle } from 'react-native';
-import { colors } from '#ui/lib/tokens';
+import { activeTheme, styles } from '#ui/core';
 
 /** The field's edge. Focus wins over invalid: while you are fixing the value,
  * the field should look like the thing you are working in, not like a failure. */
 export function edgeColor(focused: boolean, invalid: boolean): string {
+  const { colors } = activeTheme();
   if (focused) return colors.accent;
   return invalid ? colors.danger : colors.borderStrong;
+}
+
+/** A focused field wears the same amber ring as every other control, rather
+ *  than a 1px edge recolour: a field is a focus target like any other and has
+ *  to read as one from three metres. */
+const shell = styles({ ring: { ring: 'focusLift' } });
+
+export function fieldRing(): TextStyle {
+  return shell.ring;
 }
 
 export const PLACEHOLDER = 'rgba(244, 243, 240, 0.3)';

@@ -18,6 +18,7 @@ import type { LayoutChangeEvent, View, ViewStyle } from 'react-native';
 import { Animated, Dimensions, Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Spinner } from '#ui/components/atoms/spinner';
+import { styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { ease } from '#ui/lib/ease';
 import { useLocale, useT } from '#ui/services/i18n';
@@ -385,7 +386,7 @@ export function Player(props: Readonly<PlayerProps>) {
         onLongPress={input.onStageLongPress}
         nativeID={STAGE_ID}
         style={[
-          STAGE,
+          s.stage,
           settingsShrink ? { backgroundColor: '#000000', boxShadow: STAGE_SHADOW } : null,
           stage.style,
         ]}
@@ -427,7 +428,7 @@ export function Player(props: Readonly<PlayerProps>) {
           radius={24}
           opacity={nativeShrink ? 1 : 0}
           pointerEvents="none"
-          style={MASK_SURROUND}
+          style={s.maskSurround}
         />
       ) : null}
 
@@ -570,16 +571,10 @@ export function Player(props: Readonly<PlayerProps>) {
 
 const STAGE_ID = 'kroma-player-stage';
 
-const STAGE = {
-  position: 'absolute' as const,
-  top: 0,
-  right: 0,
-  bottom: 0,
-  left: 0,
-  zIndex: 2,
-  overflow: 'hidden' as const,
-};
-
 const STAGE_SHADOW = '0 20px 50px rgba(0, 0, 0, 0.55)';
-const MASK_SURROUND = { boxShadow: '0 0 0 100vmax #000' };
 const BOTTOM_SCRIM = gradient('linear-gradient(0deg, rgba(0,0,0,0.82), transparent)');
+
+const s = styles({
+  stage: { fill: true, z: 2, overflow: 'hidden' },
+  maskSurround: { boxShadow: '0 0 0 100vmax #000' },
+});

@@ -16,8 +16,8 @@
 import { useEffect, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
+import { styles } from '#ui/core';
 import { type PerfReport, perfReport, startPerf, stopPerf } from '#ui/lib/perf';
-import { colors, radius } from '#ui/lib/tokens';
 
 // Slow enough to read, fast enough to blame the thing you just did.
 const REFRESH_MS = 500;
@@ -37,7 +37,7 @@ function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {
 
   if (!enabled || !report) return null;
   return (
-    <Box absolute style={PANEL} pointerEvents="none">
+    <Box absolute style={s.panel} pointerEvents="none">
       <Row label="FPS" value={String(report.fps)} bad={report.fps < 45} />
       <Row label="WORST" value={`${report.worstFrame} ms`} bad={report.worstFrame > 50} />
       <Row label="JANK" value={String(report.jankyFrames)} bad={report.jankyFrames > 0} />
@@ -53,31 +53,31 @@ function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {
 function Row({ label, value, bad }: Readonly<{ label: string; value: string; bad: boolean }>) {
   return (
     <Box row between gap={16}>
-      <Txt style={LABEL} color="textDim">
+      <Txt style={s.label} color="textDim">
         {label}
       </Txt>
-      <Txt style={VALUE} color={bad ? 'danger' : 'success'}>
+      <Txt style={s.value} color={bad ? 'danger' : 'success'}>
         {value}
       </Txt>
     </Box>
   );
 }
 
-const PANEL = {
-  top: 24,
-  right: 24,
-  zIndex: 999,
-  minWidth: 260,
-  gap: 4,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderRadius: radius.md,
-  backgroundColor: 'rgba(10, 10, 12, 0.86)',
-  borderWidth: 1,
-  borderColor: colors.border,
-} as const;
-
-const LABEL = { fontSize: 13, fontWeight: '700' as const, letterSpacing: 1 };
-const VALUE = { fontSize: 15, fontWeight: '700' as const, fontVariant: ['tabular-nums' as const] };
+const s = styles({
+  panel: {
+    top: 24,
+    right: 24,
+    z: 999,
+    minW: 260,
+    gap: 4,
+    py: 12,
+    px: 16,
+    radius: 'md',
+    bg: 'bg/86',
+    border: 'border',
+  },
+  label: { fontSize: 13, fontWeight: '700', letterSpacing: 1 },
+  value: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
+});
 
 export { PerfHud };

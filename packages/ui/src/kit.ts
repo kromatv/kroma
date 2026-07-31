@@ -6,8 +6,38 @@ export * from './components/atoms';
 export * from './components/molecules';
 export * from './components/organisms';
 export * from './components/templates';
-export type { Align, BoxStyleProps, Justify, Spacing } from './lib/box-style';
-export { boxStyle, color } from './lib/box-style';
+export type {
+  AnySv,
+  BoxStyleProps,
+  ColorValue,
+  Resolved,
+  StyleDecl,
+  SvState,
+  Theme,
+  ThemeOverrides,
+  ThemeTokens,
+  Variant,
+  VariantProps,
+  VariantSource,
+} from './core';
+export {
+  activeTheme,
+  boxStyle,
+  color,
+  createTheme,
+  KROMA,
+  onThemeChange,
+  setTheme,
+  sharedStyle,
+  style,
+  styles,
+  sv,
+  svFor,
+  ThemeProvider,
+  themeVersion,
+  useTheme,
+} from './core';
+export * from './core/tokens';
 export type { Rect } from './lib/cover-rect';
 export { coverRect, parsePosition } from './lib/cover-rect';
 export { backdropBlur, bgPosition, bgSize, gradient, promote } from './lib/css';
@@ -20,6 +50,15 @@ export { FocusColumn, FocusRegion, FocusScope } from './lib/focus-scope';
 export type { FocusScrollProps } from './lib/focus-scroll';
 export { FocusLine, FocusRail, FocusScroll, FocusSlot } from './lib/focus-scroll';
 export type { FocusNavHandlers } from './lib/focus-types';
+export type {
+  FieldErrors,
+  Form,
+  FormOptions,
+  StandardSchemaV1,
+  TextBinding,
+  ToggleBinding,
+} from './lib/form';
+export { msg, useForm } from './lib/form';
 export {
   DEFAULT_ICON_SIZE,
   DEFAULT_ICON_STROKE,
@@ -45,21 +84,7 @@ export type { ReportCategoryMeta } from './lib/report-categories';
 export { REPORT_CATEGORIES } from './lib/report-categories';
 export type { RingGeometry, RingProps } from './lib/ring';
 export { RING_ROTATION, ringGeometry } from './lib/ring';
-export type {
-  CompoundVariant,
-  SlotStyles,
-  Slots,
-  SlotVariantGroups,
-  SvConfig,
-  SvFn,
-  SvSlotsConfig,
-  SvSlotsFn,
-  VariantProps,
-  VariantSource,
-} from './lib/sv';
-export { sv } from './lib/sv';
 export { SvgXml } from './lib/svg';
-export * from './lib/tokens';
 export type { GrowingCount } from './lib/use-growing-count';
 export { useGrowingCount } from './lib/use-growing-count';
 export type { WheelSpin } from './lib/wheel-paths';

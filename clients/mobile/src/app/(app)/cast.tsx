@@ -4,11 +4,11 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { formatTimecode, type MediaItem, sizedImageUrl } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Icon, type IconName } from '@kroma/ui/kit';
+import { Icon, type IconName, styles } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { TrackPickerSheet } from '#mobile/components/cast/TrackPickerSheet';
 import { EmptyState, Screen } from '#mobile/components/ui';
@@ -43,7 +43,7 @@ function RemoteActions({
 }>) {
   const t = useT();
   return (
-    <View style={styles.actions}>
+    <View style={s.actions}>
       {playing.audioTracks.length > 1 ? (
         <Wide
           icon="wave-sine"
@@ -83,17 +83,17 @@ function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
   return (
     <>
       {art ? (
-        <Image source={{ uri: art }} style={styles.art} contentFit="cover" transition={200} />
+        <Image source={{ uri: art }} style={s.art} contentFit="cover" transition={200} />
       ) : (
-        <View style={[styles.art, styles.artFallback]}>
+        <View style={[s.art, s.artFallback]}>
           <Icon name="device-tv" size={40} stroke={1.4} color={colors.textFaint} />
         </View>
       )}
-      <Text numberOfLines={2} style={styles.title}>
+      <Text numberOfLines={2} style={s.title}>
         {item?.metadata?.title ?? item?.title ?? ''}
       </Text>
       {item?.showTitle ? (
-        <Text numberOfLines={1} style={styles.subtitle}>
+        <Text numberOfLines={1} style={s.subtitle}>
           {item.showTitle}
         </Text>
       ) : null}
@@ -131,9 +131,9 @@ export default function CastRemoteScreen() {
   return (
     <Screen>
       <Header title={active.name} onBack={() => goBack(router)} />
-      <Pressable onPress={() => devices.current?.present()} style={styles.deviceRow}>
+      <Pressable onPress={() => devices.current?.present()} style={s.deviceRow}>
         <Icon name="cast" size={18} stroke={1.8} color={playing ? colors.accent : colors.textDim} />
-        <Text style={[styles.deviceText, !playing && styles.deviceTextIdle]}>
+        <Text style={[s.deviceText, !playing && s.deviceTextIdle]}>
           {t(playing ? 'cast.playingOn' : 'cast.connectedTo', {
             device: `${active.name} · ${active.username}`,
           })}
@@ -142,19 +142,19 @@ export default function CastRemoteScreen() {
       </Pressable>
 
       {playing ? (
-        <ScrollView contentContainerStyle={styles.body}>
+        <ScrollView contentContainerStyle={s.body}>
           <RemoteArtwork item={item} />
 
-          <View style={styles.scrub}>
+          <View style={s.scrub}>
             <ScrubBar
               cur={positionMs / 1000}
               dur={durationMs / 1000}
               buffered={0}
               onSeek={(abs) => void send({ type: 'seek', positionMs: Math.round(abs * 1000) })}
             />
-            <View style={styles.times}>
-              <Text style={styles.time}>{formatTimecode(positionMs / 1000)}</Text>
-              <Text style={styles.time}>
+            <View style={s.times}>
+              <Text style={s.time}>{formatTimecode(positionMs / 1000)}</Text>
+              <Text style={s.time}>
                 {durationMs
                   ? `-${formatTimecode(Math.max(0, (durationMs - positionMs) / 1000))}`
                   : ''}
@@ -162,7 +162,7 @@ export default function CastRemoteScreen() {
             </View>
           </View>
 
-          <View style={styles.transport}>
+          <View style={s.transport}>
             <Round
               icon="rewind-backward-10"
               label={t('player.back10')}
@@ -254,14 +254,14 @@ function labelOf(tracks: { index: number; label: string }[], index?: number | nu
 
 function Header({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
   return (
-    <View style={styles.header}>
+    <View style={s.header}>
       <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button">
         <Icon name="chevron-down" size={26} stroke={2} />
       </Pressable>
-      <Text numberOfLines={1} style={styles.headerTitle}>
+      <Text numberOfLines={1} style={s.headerTitle}>
         {title}
       </Text>
-      <View style={styles.headerSpacer} />
+      <View style={s.headerSpacer} />
     </View>
   );
 }
@@ -277,7 +277,7 @@ function Round({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.round, big && styles.roundBig, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [s.round, big && s.roundBig, pressed && { opacity: 0.7 }]}
     >
       <Icon name={icon} size={big ? 34 : 26} stroke={1.8} color={colors.text} />
     </Pressable>
@@ -294,14 +294,14 @@ function Wide({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.wide, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [s.wide, pressed && { opacity: 0.75 }]}
     >
       <Icon name={icon} size={20} stroke={1.8} color={colors.text} />
-      <Text numberOfLines={1} style={styles.wideLabel}>
+      <Text numberOfLines={1} style={s.wideLabel}>
         {label}
       </Text>
       {value ? (
-        <Text numberOfLines={1} style={styles.wideValue}>
+        <Text numberOfLines={1} style={s.wideValue}>
           {value}
         </Text>
       ) : null}
@@ -309,63 +309,34 @@ function Wide({
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  headerTitle: { ...type.heading, color: colors.text, flex: 1 },
-  headerSpacer: { width: 26 },
-  body: { gap: spacing.md, paddingBottom: spacing.xl },
-  deviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  deviceText: { ...type.caption, color: colors.accent, flex: 1 },
-  deviceTextIdle: { color: colors.textDim },
-  art: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-  },
-  artFallback: { alignItems: 'center', justifyContent: 'center' },
-  title: { ...type.title, color: colors.text },
-  subtitle: { ...type.caption, color: colors.textDim, marginTop: -spacing.sm },
+const s = styles({
+  header: { row: true, align: 'center', gap: spacing.sm, py: spacing.sm },
+  headerTitle: { ...type.heading, flex: true, color: 'text' },
+  headerSpacer: { w: 26 },
+  body: { gap: spacing.md, pb: spacing.xl },
+  deviceRow: { row: true, align: 'center', gap: spacing.xs, py: spacing.xs, mb: spacing.sm },
+  deviceText: { ...type.caption, flex: true, color: 'accent' },
+  deviceTextIdle: { color: 'textMuted' },
+  art: { w: '100%', aspect: 16 / 9, bg: 'surface1', radius: radius.md },
+  artFallback: { center: true },
+  title: { ...type.title, color: 'text' },
+  subtitle: { ...type.caption, mt: -spacing.sm, color: 'textMuted' },
   scrub: { gap: 6 },
-  times: { flexDirection: 'row', justifyContent: 'space-between' },
-  time: { ...type.small, color: colors.textDim, fontVariant: ['tabular-nums'] },
-  transport: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  round: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceRaised,
-  },
-  roundBig: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.surfaceHigh },
+  times: { row: true, between: true },
+  time: { ...type.small, color: 'textMuted', fontVariant: ['tabular-nums'] },
+  transport: { row: true, center: true, gap: spacing.lg, py: spacing.sm },
+  round: { center: true, w: 56, h: 56, bg: 'surface2', radius: 28 },
+  roundBig: { w: 76, h: 76, bg: 'surface3', radius: 38 },
   actions: { gap: spacing.xs },
   wide: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    row: true,
+    align: 'center',
     gap: spacing.sm,
-    minHeight: 52,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
+    minH: 52,
+    px: spacing.md,
+    bg: 'surface2',
+    radius: radius.md,
   },
-  wideLabel: { ...type.body, color: colors.text, flex: 1 },
-  wideValue: { ...type.caption, color: colors.textDim, maxWidth: '45%' },
+  wideLabel: { ...type.body, flex: true, color: 'text' },
+  wideValue: { ...type.caption, maxW: '45%', color: 'textMuted' },
 });

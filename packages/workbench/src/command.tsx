@@ -7,14 +7,15 @@ import {
   Focusable,
   Icon,
   type IconName,
+  styles,
+  sv,
   Txt,
   webDocument,
   webWindow,
 } from '@kroma/ui/kit';
-import { colors, radius, shadow } from '@kroma/ui/tokens';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, ScrollView } from 'react-native';
-import { FOCUS_WASH_STRONG, RULE, RULE_TOP } from './chrome';
+import { RULE, RULE_TOP } from './chrome';
 import { MONO } from './code';
 import { groupBy, matches, type Story } from './story';
 
@@ -82,8 +83,8 @@ function commandHint(): string {
 
 function Kbd({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Box px={6} py={2} radius={6} bg="surface3" style={CAP}>
-      <Txt variant="meta" color="textMuted" style={CAP_INK}>
+    <Box px={6} py={2} radius={6} bg="surface3" style={s.cap}>
+      <Txt variant="meta" color="textMuted" style={s.capInk}>
         {children}
       </Txt>
     </Box>
@@ -209,8 +210,8 @@ function CommandPalette({
   const sheet = Math.min(640, width - 32);
 
   return (
-    <Box absolute top={0} right={0} bottom={0} left={0} z={40} align="center" style={SCRIM}>
-      <Focusable label="Close search" ring={false} onPress={onClose} style={SCRIM_TAP} />
+    <Box absolute top={0} right={0} bottom={0} left={0} z={40} align="center" style={s.scrim}>
+      <Focusable label="Close search" ring={false} onPress={onClose} style={s.scrimTap} />
       <Box
         w={sheet}
         mt={96}
@@ -244,8 +245,11 @@ function CommandPalette({
                 radius: 0,
                 bg: 'transparent',
                 borderWidth: 0,
+                // The sheet is the focus surface: the palette opens focused, and
+                // a field ring here outlines a row the dialog's corners clip.
+                ring: false,
                 gap: 10,
-                textStyle: INPUT,
+                textStyle: s.input,
               }}
             />
           </Box>
@@ -262,7 +266,7 @@ function CommandPalette({
           <ScrollView
             ref={list}
             style={{ maxHeight: LIST_MAX }}
-            contentContainerStyle={LIST}
+            contentContainerStyle={s.list}
             onScroll={(event) => {
               offset.current = event.nativeEvent.contentOffset.y;
             }}
@@ -300,7 +304,7 @@ function CommandPalette({
           <Hint keys={['↑', '↓']} label="navigate" />
           <Hint keys={['↵']} label="select" />
           <Box flex />
-          <Txt variant="meta" color="textDim" style={TALLY}>
+          <Txt variant="meta" color="textDim" style={s.tally}>
             {`${flat.length} of ${stories.length}`}
           </Txt>
         </Box>
@@ -320,18 +324,22 @@ function Row({
       label={story.name}
       ring={false}
       onPress={onPress}
-      style={[ITEM, cursor && FOCUS_WASH_STRONG]}
-      focusedStyle={FOCUS_WASH_STRONG}
+      sv={paletteRow}
+      vars={{ cursor, open }}
     >
-      <Icon name={glyphFor(story.tier)} size={15} color={open ? 'accent' : 'textDim'} />
-      <Txt variant="meta" color={cursor || open ? 'text' : 'textMuted'} style={NAME} lines={1}>
-        {story.name}
-      </Txt>
-      <Box flex />
-      <Txt variant="meta" color="textDim" style={GROUP} lines={1}>
-        {story.group}
-      </Txt>
-      {open ? <Box w={5} h={5} radius="pill" bg="accent" /> : null}
+      {({ slots }) => (
+        <>
+          <Icon name={glyphFor(story.tier)} size={15} color={open ? 'accent' : 'textDim'} />
+          <Txt variant="meta" style={slots.name} lines={1}>
+            {story.name}
+          </Txt>
+          <Box flex />
+          <Txt variant="meta" color="textDim" style={s.group} lines={1}>
+            {story.group}
+          </Txt>
+          {open ? <Box w={5} h={5} radius="pill" bg="accent" /> : null}
+        </>
+      )}
     </Focusable>
   );
 }
@@ -342,35 +350,46 @@ function Hint({ keys, label }: Readonly<{ keys: readonly string[]; label: string
       {keys.map((key) => (
         <Kbd key={key}>{key}</Kbd>
       ))}
-      <Txt variant="meta" color="textDim" style={HINT}>
+      <Txt variant="meta" color="textDim" style={s.hint}>
         {label}
       </Txt>
     </Box>
   );
 }
 
-const SCRIM = { backgroundColor: 'rgba(10, 10, 12, 0.72)' } as const;
-const SCRIM_TAP = { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 } as const;
-const LIST = { padding: LIST_PAD } as const;
-const INPUT = { fontSize: 15, fontWeight: '500' as const };
-const ITEM = {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 10,
-  height: ROW,
-  paddingHorizontal: 8,
-  borderRadius: radius.sm,
-} as const;
-const NAME = { fontSize: 13.5, fontWeight: '600' } as const;
-const GROUP = { fontSize: 11.5 } as const;
-const HINT = { fontSize: 11.5 } as const;
-const TALLY = { fontSize: 11.5, fontFamily: MONO } as const;
-const CAP = {
-  borderWidth: 1,
-  borderColor: colors.border,
-  boxShadow: shadow.card,
-} as const;
-const CAP_INK = { fontSize: 10.5, fontFamily: MONO, lineHeight: 14 } as const;
+const s = styles({
+  scrim: { bg: 'bg/72' },
+  scrimTap: { fill: true },
+  list: { p: LIST_PAD },
+  input: { fontSize: 15, fontWeight: '500' },
+  group: { fontSize: 11.5 },
+  hint: { fontSize: 11.5 },
+  tally: { fontSize: 11.5, fontFamily: MONO },
+  cap: { border: 'border', shadow: 'card' },
+  capInk: { fontSize: 10.5, fontFamily: MONO, lineHeight: 14 },
+});
+// The sheet is a lifted surface, where the chrome's plain focus wash reads as
+// nothing; the keyboard cursor wears the same coat as focus, since only one of
+// the two drives at a time.
+const paletteRow = sv({
+  slots: {
+    root: {
+      row: true,
+      align: 'center',
+      gap: 10,
+      h: ROW,
+      px: 8,
+      radius: 'sm',
+      _focus: { bg: 'white/7' },
+    },
+    name: { fontSize: 13.5, fontWeight: '600', color: 'textMuted' },
+  },
+  variants: {
+    cursor: { true: { root: { bg: 'white/7' }, name: { color: 'text' } } },
+    open: { true: { name: { color: 'text' } } },
+  },
+  defaults: { cursor: false, open: false },
+});
 
 export type { CommandGroup, CommandPaletteProps };
 export {

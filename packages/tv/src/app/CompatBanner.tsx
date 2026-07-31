@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, Icon, Txt } from '@kroma/ui/kit';
+import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
 import { CLIENT_BUILD } from '#tv/app/clientBuild';
 import { useConnection } from '#tv/app/providers/connection';
 
@@ -28,7 +28,7 @@ export function CompatBanner() {
       accessibilityRole="alert"
     >
       <Icon name="alert-triangle" size={22} color="#FFFFFF" />
-      <Txt style={LINE} color="#FFFFFF">
+      <Txt style={s.line} color="#FFFFFF">
         {t('compat.serverOutdated', {
           server: serverVersion ?? '?',
           client: CLIENT_BUILD.version,
@@ -40,4 +40,6 @@ export function CompatBanner() {
 
 const WARN_BG = '#8A5A00';
 
-const LINE = { fontSize: 17, fontWeight: '600' as const, textAlign: 'center' as const };
+const s = styles({
+  line: { fontSize: 17, fontWeight: '600', textAlign: 'center' },
+});

@@ -1,21 +1,21 @@
 import type { GenQuality, SubCapabilities } from '@kroma/core';
 import { GEN_LANGS, GEN_QUALITIES } from '@kroma/core';
 import { forwardRef, useImperativeHandle, useState } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Txt } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
-import { FOCUS_SHADOW_SM } from '#ui/components/organisms/player/lib/style';
+
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
+import { type ColorValue, sharedStyle, styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
-import { colors } from '#ui/lib/tokens';
 import { useT } from '#ui/services/i18n';
 import type { SubtitleGenRequest } from './gen';
-import { panelEmpty } from './panelStyle';
+import { panel } from './panelStyle';
 import { CycleField } from './WizardParts';
 
 type Mode = 'transcribe' | 'translate';
@@ -145,7 +145,11 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
         mb={14}
         radius={14}
         onPointerEnter={focus.hover(0)}
-        style={focus.index === 0 ? { boxShadow: FOCUS_SHADOW_SM } : null}
+        style={
+          focus.index === 0
+            ? sharedStyle('generate-wizard:tabs-ring', { ring: 'focusGlowSm' })
+            : null
+        }
       >
         <ModeTab
           on={mode === 'transcribe'}
@@ -175,7 +179,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
           />
         ) : null}
         {mode === 'translate' && curSource == null ? (
-          <Txt style={panelEmpty}>{t('player.subNoSource')}</Txt>
+          <Txt style={panel.panelEmpty}>{t('player.subNoSource')}</Txt>
         ) : null}
         {mode === 'transcribe' ? (
           <>
@@ -199,7 +203,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
         ) : null}
       </Box>
 
-      <Txt style={BACKGROUND_HINT} color="rgba(244, 243, 240, 0.4)">
+      <Txt style={s.backgroundHint} color="text/40">
         {t('player.subGenBackground')}
       </Txt>
 
@@ -215,22 +219,19 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
         disabled={noSource}
         onHoverIn={focus.hover(at('start'))}
         onPress={start}
-        style={START_BUTTON}
+        style={s.startButton}
       />
     </Box>
   );
 });
 
-const START_BUTTON = { marginTop: 4 };
-
-const BACKGROUND_HINT = {
-  marginHorizontal: 2,
-  marginTop: 12,
-  marginBottom: 4,
-  fontWeight: '500' as const,
-  fontSize: 14,
-  lineHeight: 22,
-};
+const s = styles({
+  startButton: { mt: 4 },
+  backgroundHint: { mx: 2, mt: 12, mb: 4, fontWeight: '500', fontSize: 14, lineHeight: 22 },
+  modeDisabled: { bg: 'white/4' },
+  modeOn: { bg: 'accent' },
+  modeOff: { bg: 'white/5' },
+});
 
 function ModeTab({
   on,
@@ -259,16 +260,8 @@ function ModeTab({
   );
 }
 
-function modeTone(enabled: boolean, on: boolean) {
-  if (!enabled) {
-    return {
-      box: { backgroundColor: 'rgba(255, 255, 255, 0.04)' },
-      ink: 'rgba(244, 243, 240, 0.4)',
-    };
-  }
-  if (on) return { box: { backgroundColor: colors.accent }, ink: colors.accentInk };
-  return {
-    box: { backgroundColor: 'rgba(255, 255, 255, 0.05)' },
-    ink: 'rgba(244, 243, 240, 0.75)',
-  };
+function modeTone(enabled: boolean, on: boolean): { box: ViewStyle; ink: ColorValue } {
+  if (!enabled) return { box: s.modeDisabled, ink: 'text/40' };
+  if (on) return { box: s.modeOn, ink: 'accentInk' };
+  return { box: s.modeOff, ink: 'text/75' };
 }

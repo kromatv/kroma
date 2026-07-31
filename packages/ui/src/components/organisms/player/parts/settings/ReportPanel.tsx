@@ -6,7 +6,7 @@ import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { REPORT_CATEGORIES } from '#ui/lib/report-categories';
 import { useT } from '#ui/services/i18n';
-import { panelList } from './panelStyle';
+import { panel } from './panelStyle';
 import { SelectRow } from './select-row';
 
 // A category and nothing else: no free-text field mid-film. Details belong to
@@ -38,14 +38,14 @@ export const ReportPanel = forwardRef<PanelHandle, ReportPanelProps>(function Re
   // playback chrome from under the viewer loses their place in the film.
   if (state === 'done') {
     return (
-      <Box style={panelList}>
+      <Box style={panel.panelList}>
         <Txt style={{ fontSize: 22, fontWeight: '600' }}>{t('report.submitted')}</Txt>
       </Box>
     );
   }
 
   return (
-    <Box style={panelList}>
+    <Box style={panel.panelList}>
       {REPORT_CATEGORIES.map((c, i) => (
         <SelectRow
           key={c.key}

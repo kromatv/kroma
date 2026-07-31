@@ -1,9 +1,11 @@
 import type { MessageKey } from '@kroma/core';
-import { memo, type ReactNode, useCallback, useMemo } from 'react';
+import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { colors } from '#ui/lib/tokens';
+import { styles, sv } from '#ui/core';
+import { suppressSelection } from '#ui/lib/drag-select';
+import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useT } from '#ui/services/i18n';
 import { useDragTrack } from '../hooks/useDragTrack';
 import { clamp01, sliderToVolume, volumeToSlider } from '../lib/fmt';
@@ -19,7 +21,7 @@ import {
   VOLUME_RAIL,
 } from '../lib/metrics';
 import type { ControlId } from '../lib/nav';
-import { CTRL_OFF, CTRL_ON, FOCUS_SCALE, FOCUS_SHADOW } from '../lib/style';
+import { FOCUS_SCALE } from '../lib/style';
 import {
   IconAudioTrack,
   IconBack10,
@@ -38,13 +40,16 @@ import {
   IconVolLow,
 } from './icons';
 
-// Kept for the volume pill, whose wrapper isn't a kit atom (it holds a button
-// AND a slider), so the focus visuals must live on the wrapper itself.
-const FOCUS_POP = { boxShadow: FOCUS_SHADOW, transform: [{ scale: FOCUS_SCALE }] };
-const circleFill = (focused: boolean) => ({
-  backgroundColor: focused ? CTRL_ON : CTRL_OFF,
+const circleFill = sv({ base: { _focus: { bg: 'white/22' } } });
+const playFill = sv({ base: { _focus: { bg: 'accentHover' } } });
+// The volume pill's wrapper isn't a kit atom (it holds a button AND a slider),
+// so its focus visuals live on the wrapper itself.
+const volumePill = sv({
+  base: {
+    bg: 'white/12',
+    _focus: { bg: 'white/22', ring: 'focusGlow', transform: [{ scale: FOCUS_SCALE }] },
+  },
 });
-const PLAY_BRIGHTEN = { backgroundColor: colors.accentHover };
 
 export interface ControlClusterProps {
   focused: ControlId | null;
@@ -84,12 +89,13 @@ function Circle({
   onFocus: (id: ControlId) => void;
   children: ReactNode;
 }>) {
+  const lit = useFocusVisible(focused);
   return (
     <IconButton
       variant="glass"
       size={size}
       focused={focused}
-      focusedStyle={BRIGHTEN}
+      style={circleFill(undefined, { focus: lit }).root}
       label={label}
       onPress={() => onActivate(id)}
       onHoverIn={() => onFocus(id)}
@@ -98,8 +104,6 @@ function Circle({
     </IconButton>
   );
 }
-
-const BRIGHTEN = { backgroundColor: CTRL_ON };
 
 interface GlyphState {
   pipActive: boolean;
@@ -131,7 +135,7 @@ const CIRCLES: Record<
   pip: {
     label: 'player.pip',
     glyph: ({ pipActive }, px) => (
-      <IconPip size={px(23)} color={pipActive ? colors.accent : '#FFFFFF'} />
+      <IconPip size={px(23)} color={pipActive ? 'accent' : '#FFFFFF'} />
     ),
   },
   fullscreen: {
@@ -171,6 +175,9 @@ export const ControlCluster = memo(function ControlCluster({
   const cluster = controls.filter((c) => !isTransport(c));
 
   const glyphState: GlyphState = { pipActive, fullscreen };
+  // Keyed on WHICH control holds the focus: the selection moves within the
+  // cluster, so the modality has to be re-read on every move.
+  const lit = useFocusVisible(focused);
 
   const render = (id: ControlId) => {
     const on = focused === id;
@@ -183,15 +190,15 @@ export const ControlCluster = memo(function ControlCluster({
           variant="primary"
           size={px(CONTROL_SIZE.play)}
           focused={on}
-          focusedStyle={PLAY_BRIGHTEN}
+          style={playFill(undefined, { focus: lit && on }).root}
           label={playing ? t('player.pause') : t('player.play')}
           onPress={() => onActivate(id)}
           onHoverIn={() => onFocus(id)}
         >
           {playing ? (
-            <IconPause size={px(33)} color={colors.accentInk} />
+            <IconPause size={px(33)} color="accentInk" />
           ) : (
-            <IconPlay size={px(35)} color={colors.accentInk} />
+            <IconPlay size={px(35)} color="accentInk" />
           )}
         </IconButton>
       );
@@ -281,6 +288,7 @@ function VolumeControl({
   label: string;
   muteLabel: string;
 }>) {
+  const lit = useFocusVisible(focused);
   // Measured on the RAIL, not the row that holds it: the row has 20px of right
   // padding, so dividing a pointer offset by the row's width would put the level
   // a fifth past the cursor. The two share a left edge, so this still works.
@@ -300,16 +308,30 @@ function VolumeControl({
     [onVolume, track.offsetOf, track.width],
   );
 
+  const endSelectionBlock = useRef(NOOP);
+  // A drag cut short by an unmount (chrome auto-hide, route change) would
+  // otherwise leave the document unselectable for the rest of the session.
+  useEffect(() => () => endSelectionBlock.current(), []);
+
   const pan = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (e: GestureResponderEvent) => {
+          endSelectionBlock.current = suppressSelection();
           track.measure();
           setAt(e.nativeEvent.locationX);
         },
         onPanResponderMove: (e: GestureResponderEvent) => setAt(e.nativeEvent.locationX),
+        onPanResponderRelease: () => {
+          endSelectionBlock.current();
+          endSelectionBlock.current = NOOP;
+        },
+        onPanResponderTerminate: () => {
+          endSelectionBlock.current();
+          endSelectionBlock.current = NOOP;
+        },
       }),
     [setAt, track.measure],
   );
@@ -325,7 +347,7 @@ function VolumeControl({
       radius="pill"
       overflow="hidden"
       onPointerEnter={onFocus}
-      style={[circleFill(focused), focused ? FOCUS_POP : null]}
+      style={volumePill(undefined, { focus: lit }).root}
     >
       {/* Controlled at `false`: the PILL carries the focus visuals for the whole
           control, but the button must still opt out of platform focus. */}
@@ -350,7 +372,7 @@ function VolumeControl({
           h={px(6)}
           w="100%"
           radius="pill"
-          bg="rgba(255, 255, 255, 0.22)"
+          bg="white/22"
         >
           {/* Fill width and thumb offset vary with volume, so they use `style`
               (bypassing the shared cache) rather than `w`/`left`, which would
@@ -372,7 +394,7 @@ function VolumeControl({
             radius="pill"
             bg="#FFFFFF"
             style={[
-              THUMB,
+              s.thumb,
               // Half its own size, so the handle stays centred on the level at
               // whatever scale the row is drawn.
               {
@@ -387,4 +409,8 @@ function VolumeControl({
   );
 }
 
-const THUMB = { boxShadow: '0 1px 4px rgba(0, 0, 0, 0.5)' };
+const s = styles({
+  thumb: { boxShadow: '0 1px 4px rgba(0, 0, 0, 0.5)' },
+});
+
+const NOOP = () => {};

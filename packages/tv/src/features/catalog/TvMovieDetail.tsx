@@ -1,6 +1,6 @@
 import { formatRuntime, qualityBadge } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, FocusRegion, useFocusNav } from '@kroma/ui/kit';
+import { Button, FocusRegion, styles, useFocusNav } from '@kroma/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -49,7 +49,7 @@ export function TvMovieDetail() {
       // the header rather than to the rows below it, which is why the scaffold
       // takes it as a prop (see TvDetailScaffold).
       actions={
-        <FocusRegion style={ACTION_ROW}>
+        <FocusRegion style={s.actionRow}>
           <Button
             size="lg"
             autoFocus
@@ -72,4 +72,6 @@ export function TvMovieDetail() {
   );
 }
 
-const ACTION_ROW = { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 16 };
+const s = styles({
+  actionRow: { row: true, align: 'center', gap: 16 },
+});

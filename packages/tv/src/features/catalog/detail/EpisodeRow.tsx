@@ -22,6 +22,7 @@ import {
   Progress,
   Row,
   radius,
+  styles,
   Txt,
   tintGradient,
 } from '@kroma/ui/kit';
@@ -57,7 +58,7 @@ function episodeStill(at: {
         radius={radius.lg}
         position="50% 30%"
         fill
-        style={at.watched ? DIMMED : undefined}
+        style={at.watched ? s.dimmed : undefined}
       />
       <Box fill pointerEvents="none" radius="lg" style={gradient(CARD_SCRIM)} />
       <Box
@@ -75,12 +76,12 @@ function episodeStill(at: {
       </Box>
       {at.tag ? (
         <Box absolute top={10} left={10} px={9} py={4} radius={7} bg={CHIP_BG}>
-          <Txt style={TAG_CHIP}>{at.tag}</Txt>
+          <Txt style={s.tagChip}>{at.tag}</Txt>
         </Box>
       ) : null}
       {at.runtime ? (
         <Box absolute bottom={11} right={11} px={8} py={3} radius={6} bg={CHIP_BG}>
-          <Txt style={RUNTIME_CHIP}>{at.runtime}</Txt>
+          <Txt style={s.runtimeChip}>{at.runtime}</Txt>
         </Box>
       ) : null}
       {at.watched ? (
@@ -142,14 +143,14 @@ export function EpisodeRow({
   const lit = action != null;
 
   return (
-    <Box style={[ROW, watched ? ROW_WATCHED : null, lit ? ROW_LIT : null]}>
+    <Box style={[s.row, watched ? s.rowWatched : null, lit ? s.rowLit : null]}>
       <Frost radius={20} />
       <Row gap={26}>
         {episodeStill({ episode, still, watched, action, tag, runtime, progress, inProgress })}
 
         <Box flex={1} gap={8}>
           <Row gap={12} wrap>
-            <Txt variant="h2" lines={1} style={TITLE}>
+            <Txt variant="h2" lines={1} style={s.title}>
               {title}
             </Txt>
             {watched ? (
@@ -166,13 +167,13 @@ export function EpisodeRow({
           {endsAt ? (
             <Row gap={9}>
               <Icon name="clock" size={14} stroke={1.8} color="accent" />
-              <Txt style={ENDS_AT} color="textDim">
+              <Txt style={s.endsAt} color="textDim">
                 {t('content.endsAtShort', { time: endsAt })}
               </Txt>
             </Row>
           ) : null}
           {synopsis ? (
-            <Txt lines={3} style={SYNOPSIS} color={lit ? SYNOPSIS_LIT : SYNOPSIS_DIM}>
+            <Txt lines={3} style={s.synopsis} color={lit ? SYNOPSIS_LIT : SYNOPSIS_DIM}>
               {synopsis}
             </Txt>
           ) : null}
@@ -184,7 +185,7 @@ export function EpisodeRow({
               active
               icon="player-play-filled"
               label={inProgress ? t('player.resume') : t('player.play')}
-              style={ACTION_BTN}
+              style={s.actionBtn}
               onPress={onPlay}
               onFocus={focusAction('play')}
               onBlur={blurAction('play')}
@@ -194,7 +195,7 @@ export function EpisodeRow({
               active={watched}
               icon="check"
               label={watched ? t('content.watched') : t('content.markWatched')}
-              style={ACTION_BTN}
+              style={s.actionBtn}
               onPress={onToggleWatched}
               onFocus={focusAction('seen')}
               onBlur={blurAction('seen')}
@@ -203,7 +204,7 @@ export function EpisodeRow({
               variant="outline"
               icon="alert-triangle"
               label={t('report.actionShort')}
-              style={ACTION_BTN}
+              style={s.actionBtn}
               onPress={onReport}
               onFocus={focusAction('report')}
               onBlur={blurAction('report')}
@@ -215,51 +216,36 @@ export function EpisodeRow({
   );
 }
 
-// <Frost> blurs the artwork behind the card: CSS backdrop-filter on the
-// browser tiers, the shell's registered blur view on Apple TV.
-const ROW = {
-  padding: 18,
-  borderRadius: 20,
-  backgroundColor: 'rgba(255, 255, 255, 0.025)',
-  borderWidth: 1,
-  borderColor: 'rgba(255, 255, 255, 0.05)',
-} as const;
-const ROW_LIT = {
-  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  borderColor: 'rgba(255, 255, 255, 0.12)',
-} as const;
-const ROW_WATCHED = { borderColor: 'rgba(242, 180, 66, 0.22)' } as const;
-
-const DIMMED = { opacity: 0.55 } as const;
-
-const ACTION_BTN = { paddingVertical: 12, paddingHorizontal: 19, borderRadius: 11 } as const;
-
 const CHIP_BG = 'rgba(10, 10, 12, 0.68)';
 const SEEN_BG = 'rgba(10, 10, 12, 0.72)';
-const TAG_CHIP = {
-  fontSize: 12,
-  lineHeight: 15,
-  fontWeight: '700' as const,
-  letterSpacing: 0.72,
-  textTransform: 'uppercase' as const,
-};
-const RUNTIME_CHIP = {
-  fontSize: 12,
-  lineHeight: 15,
-  fontWeight: '700' as const,
-  color: 'rgba(244, 243, 240, 0.9)',
-  fontVariant: ['tabular-nums' as const],
-};
-
-const TITLE = { flexShrink: 1 };
-const ENDS_AT = { fontSize: 15, fontWeight: '500' as const };
-// Measure is the design's, not the card's: on the full-width card an
-// unclamped recap ran as one screen-wide line.
-const SYNOPSIS = {
-  fontSize: 16,
-  lineHeight: 23,
-  fontWeight: '400' as const,
-  maxWidth: 660,
-};
 const SYNOPSIS_DIM = 'rgba(244, 243, 240, 0.6)';
 const SYNOPSIS_LIT = 'rgba(244, 243, 240, 0.78)';
+
+const s = styles({
+  // <Frost> blurs the artwork behind the card: CSS backdrop-filter on the
+  // browser tiers, the shell's registered blur view on Apple TV.
+  row: { p: 18, radius: 20, bg: 'white/2.5', border: 'white/5' },
+  rowLit: { bg: 'white/6', borderColor: 'white/12' },
+  rowWatched: { borderColor: 'accentWash/22' },
+  dimmed: { opacity: 0.55 },
+  actionBtn: { py: 12, px: 19, radius: 11 },
+  tagChip: {
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '700',
+    letterSpacing: 0.72,
+    textTransform: 'uppercase',
+  },
+  runtimeChip: {
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '700',
+    color: 'text/90',
+    fontVariant: ['tabular-nums'],
+  },
+  title: { shrink: 1 },
+  endsAt: { fontSize: 15, fontWeight: '500' },
+  // Measure is the design's, not the card's: on the full-width card an
+  // unclamped recap ran as one screen-wide line.
+  synopsis: { fontSize: 16, lineHeight: 23, fontWeight: '400', maxW: 660 },
+});
