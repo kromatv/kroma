@@ -165,18 +165,27 @@ jobs:
       # moving tag swaps rustc underneath and invalidates the cached target dir.
       RUST_IMAGE: messense/rust-musl-cross:aarch64-musl@sha256:ecae5dd62d1c938c14f8071d36c16fa699860aace03bfb5284fb1216474d2643
       FFMPEG_URL: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz
+      # Same stance as build.sh's amd64 pair: the primary stays first, and BtbN's
+      # GPL static build (different machine, different network) only decides
+      # whether an outage of the primary costs a nightly.
+      FFMPEG_FALLBACK_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # Same warm-target rationale as the .spk cache above, per-arch key.
+      # ffmpeg-arm64 rides along (v2 bump so it starts being saved): the static
+      # tarball comes from a host that goes down for whole days, and a cached
+      # copy turns that outage into a non-event.
       - name: Cache cargo registry + aarch64 target
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             .cargo-registry
             server/target/aarch64-unknown-linux-musl
-          key: synology-arm64-v1-${{ hashFiles('server/Cargo.lock') }}
+            ffmpeg-arm64
+          key: synology-arm64-v2-${{ hashFiles('server/Cargo.lock') }}
           restore-keys: |
+            synology-arm64-v2-
             synology-arm64-v1-
 
       # Mirrors clients/synology/build.sh step 2: server/ -> /home/rust/src
@@ -197,15 +206,35 @@ jobs:
         if: always()
         run: sudo chown -R "$(id -u):$(id -g)" server/target .cargo-registry || true
 
+      # Mirrors build.sh's fetch_ffmpeg, which this step predated: without
+      # --connect-timeout a host accepting no connections was retried at ~135 s
+      # per attempt (an outage burned 24 minutes and failed anyway), and without
+      # the fallback that outage cost the whole payload. Extraction goes through
+      # `find` because the two archives disagree on layout (root vs bin/), and
+      # the arch check is by inspection - an arm64 binary cannot run here.
       - name: Fetch static ffmpeg/ffprobe (arm64)
         run: |
           set -euo pipefail
-          # johnvansickle.com intermittently 4xx/5xxs (has 415'd mid-release);
-          # --retry-all-errors so even an HTTP 415 is retried, not just connects.
-          curl -fSL --retry 5 --retry-delay 4 --retry-all-errors \
-            --proto '=https' --proto-redir '=https' "$FFMPEG_URL" -o ff.tar.xz
-          mkdir -p ffmpeg-arm64
-          tar xJf ff.tar.xz -C ffmpeg-arm64 --strip-components=1
+          if [ -x ffmpeg-arm64/ffmpeg ] && [ -x ffmpeg-arm64/ffprobe ]; then
+            echo "using the cached ffmpeg-arm64"
+            exit 0
+          fi
+          fetch() {
+            curl -fSL --connect-timeout 20 --retry 3 --retry-delay 4 --retry-all-errors \
+              --proto '=https' --proto-redir '=https' "$1" -o ff.tar.xz
+          }
+          if ! fetch "$FFMPEG_URL"; then
+            echo "primary ffmpeg source unreachable, trying the fallback"
+            fetch "$FFMPEG_FALLBACK_URL" || { echo "both ffmpeg sources failed"; exit 1; }
+          fi
+          mkdir -p ffx ffmpeg-arm64
+          tar xJf ff.tar.xz -C ffx
+          for tool in ffmpeg ffprobe; do
+            found="$(find ffx -type f -name "$tool" -perm -u+x -print -quit)"
+            [ -n "$found" ] || { echo "$tool missing from the ffmpeg archive"; exit 1; }
+            file "$found" | grep -qiE 'aarch64|arm' || { echo "$tool is not an arm64 binary"; exit 1; }
+            install -m755 "$found" "ffmpeg-arm64/$tool"
+          done
 
       - name: Stage the arm64 payload
         run: |

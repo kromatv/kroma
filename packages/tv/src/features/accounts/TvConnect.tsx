@@ -1,17 +1,7 @@
 import { type ResolvedOrigin, resolveServerOrigin } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import {
-  Box,
-  Button,
-  Field,
-  Hint,
-  Icon,
-  type IconName,
-  styles,
-  Txt,
-  useFocusNav,
-} from '@kroma/ui/kit';
-import { useEffect, useState } from 'react';
+import { Box, Field, Hint, Icon, type IconName, styles, Txt, useFocusNav } from '@kroma/ui/kit';
+import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
@@ -24,7 +14,7 @@ import { AuthScreen, KromaMark, OnScreenKeyboard } from '#tv/shared/ui';
 export function TvConnect() {
   const nav = useNav();
   const t = useT();
-  const { addServer, discover, discovered, discovering } = useConnection();
+  const { addServer, discovered } = useConnection();
   const { physicalKeyboard } = useEnv();
   const [value, setValue] = useState('');
   useFocusNav({ onBack: nav.back, resetKey: discovered.length });
@@ -42,13 +32,17 @@ export function TvConnect() {
   }, [discovered]);
 
   // Only one of http and https is safe to put a password into, so the
-  // address is probed and the scheme shown rather than left implicit.
-  const [resolved, setResolved] = useState<ResolvedOrigin | null>(null);
+  // address is probed and the scheme shown rather than left implicit. The
+  // result is tagged with the address it answers for, so a submit can tell a
+  // finished probe from a stale one.
+  const [probe, setProbe] = useState<{ address: string; origin: ResolvedOrigin | null } | null>(
+    null,
+  );
   const [probing, setProbing] = useState(false);
 
   useEffect(() => {
     const address = value.trim();
-    setResolved(null);
+    setProbe(null);
     if (!address) {
       setProbing(false);
       return;
@@ -60,7 +54,7 @@ export function TvConnect() {
       resolveServerOrigin(address)
         .then((hit) => {
           if (cancelled) return;
-          setResolved(hit);
+          setProbe({ address, origin: hit });
           setProbing(false);
         })
         .catch(() => {
@@ -73,14 +67,31 @@ export function TvConnect() {
     };
   }, [value]);
 
-  const submit = () => {
+  const submitting = useRef(false);
+  const submit = async () => {
     const address = value.trim();
-    if (!address) return;
-    // Fallback lets a server that isn't up yet still be saved, without a
-    // promise that it's secure.
-    const url = resolved?.url ?? (/^https?:\/\//i.test(address) ? address : `http://${address}`);
-    addServer(url);
-    nav.go('quick');
+    if (!address || submitting.current) return;
+    submitting.current = true;
+    try {
+      // Enter must not lose to the debounce: when the badge has not answered
+      // for THIS address yet, probe now and wait for it rather than guess.
+      let hit = probe;
+      if (hit?.address !== address) {
+        setProbing(true);
+        const origin = await resolveServerOrigin(address).catch(() => null);
+        hit = { address, origin };
+        setProbe(hit);
+        setProbing(false);
+      }
+      // Only a validated origin proceeds: the old http:// fallback saved
+      // addresses that then failed on the very next screen. The badge below
+      // says why Enter stayed put.
+      if (!hit.origin) return;
+      addServer(hit.origin.url);
+      nav.go('quick');
+    } finally {
+      submitting.current = false;
+    }
   };
 
   return (
@@ -122,19 +133,9 @@ export function TvConnect() {
             bg: '#0F0F13',
             textStyle: { fontSize: 20, fontWeight: '600' },
           }}
-          trailing={
-            <Button
-              variant="glass"
-              size="sm"
-              focusScale={1.05}
-              label={discovering ? t('common.detecting') : t('connect.detect')}
-              onPress={discover}
-              style={s.detect}
-            />
-          }
         />
 
-        {value.trim() ? <SchemeBadge probing={probing} resolved={resolved} /> : null}
+        {value.trim() ? <SchemeBadge probing={probing} probe={probe} /> : null}
 
         <OnScreenKeyboard
           value={value}
@@ -159,16 +160,19 @@ export function TvConnect() {
 }
 
 const s = styles({
-  detect: { shrink: 0, bg: 'transparent', px: 16 },
   schemeText: { fontSize: 14, fontWeight: '600' },
 });
 
 // Plain HTTP is `accent`, not `danger`: an unencrypted server on a home LAN
-// is the normal case here.
+// is the normal case here. A probe that ANSWERED nothing is `danger`, because
+// it is also what keeps Enter from proceeding.
 function SchemeBadge({
   probing,
-  resolved,
-}: Readonly<{ probing: boolean; resolved: ResolvedOrigin | null }>) {
+  probe,
+}: Readonly<{
+  probing: boolean;
+  probe: { address: string; origin: ResolvedOrigin | null } | null;
+}>) {
   const t = useT();
   let icon: IconName = 'help-circle';
   let color = 'textDim';
@@ -176,10 +180,14 @@ function SchemeBadge({
   if (probing) {
     icon = 'radar';
     text = t('connect.schemeChecking');
-  } else if (resolved) {
-    icon = resolved.secure ? 'lock' : 'lock-open';
-    color = resolved.secure ? 'success' : 'accent';
-    text = t(resolved.secure ? 'connect.schemeSecure' : 'connect.schemeInsecure');
+  } else if (probe?.origin) {
+    icon = probe.origin.secure ? 'lock' : 'lock-open';
+    color = probe.origin.secure ? 'success' : 'accent';
+    text = t(probe.origin.secure ? 'connect.schemeSecure' : 'connect.schemeInsecure');
+  } else if (probe) {
+    icon = 'alert-circle';
+    color = 'danger';
+    text = t('connect.unreachable');
   }
   return (
     <Box row align="center" justify="center" gap={6} mb={16}>
