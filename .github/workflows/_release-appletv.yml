@@ -315,6 +315,25 @@ jobs:
           path: .derived/tvnative
           key: dd-tvnative-v1-${{ env.XCODE_VERSION }}-${{ github.run_id }}
 
+      - name: Validate for the App Store
+        # Runs on every candidate, upload or not: v0.1.35's .ipa archived,
+        # signed and exported perfectly and was then rejected AT UPLOAD (90502,
+        # a plist key only App Store validation checks) - with the promote step
+        # first to learn it. --validate-app runs those same checks without
+        # claiming a build number or notifying a tester, so a green candidate
+        # now means "TestFlight would take this".
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          IPA: out/KROMA-appletv-${{ inputs.version }}.ipa
+          PLATFORM: tvos
+          MODE: validate
+        run: .github/scripts/upload-to-testflight.sh
+
       - name: Upload to TestFlight
         # A CANDIDATE build compiles the .ipa and stops there - that is what the
         # gate needs to know. Distribution is a deploy-time act, not a

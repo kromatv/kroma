@@ -415,6 +415,22 @@ jobs:
           path: .derived/mobile
           key: dd-mobile-v1-${{ env.XCODE_VERSION }}-${{ github.run_id }}
 
+      - name: Validate for the App Store
+        # See the Apple TV job: every candidate proves it would be accepted,
+        # without claiming a build number - the 90502 class of rejection only
+        # ever surfaced at promote time before.
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          IPA: out/KROMA-mobile-${{ inputs.version }}.ipa
+          PLATFORM: ios
+          MODE: validate
+        run: .github/scripts/upload-to-testflight.sh
+
       - name: Upload to TestFlight
         # See the Apple TV job: candidates build, they do not distribute.
         # `targets` says what to BUILD; it must not also mean "ship it".

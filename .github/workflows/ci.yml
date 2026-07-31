@@ -1,6 +1,7 @@
 name: CI
 
-# Every push/PR proves the WHOLE client fleet builds in PRODUCTION mode:
+# Every push/PR proves the client fleet it can affect builds in PRODUCTION
+# mode (the `changes` job skips the halves a change cannot touch):
 #  - web SPA
 #  - Samsung Tizen bundle
 #  - LG webOS bundle - BOTH tiers: modern (Chrome 99+) AND legacy (Chromium
@@ -15,10 +16,22 @@ name: CI
 # shell factory (clients/tv-build/shell.ts) strips console/debugger on build,
 # and KROMA_TV_DEVICE (on-device dev HMR) is never set in CI.
 
+# Docs-only changes build nothing and check nothing; skip the run entirely.
+# (No branch protection requires these checks, so a skipped run blocks nobody.)
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
 
 # Cancel superseded runs on the same ref (e.g. rapid pushes to a PR).
 concurrency:
@@ -32,6 +45,44 @@ env:
   BUN_VERSION: '1.3.14'
 
 jobs:
+  # Which half of the fleet the change can actually touch. `rust` gates the
+  # server job (a JS-only PR pays no clippy+test), `fleet` gates the client
+  # builds (a server-only PR pays no vite/gradle/tauri). `quality` stays
+  # unconditional: it is the cheap always-green check, and its inputs (biome,
+  # vitest, tokens) span too much of the tree to be worth a filter.
+  changes:
+    name: Detect relevant changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    outputs:
+      rust: ${{ steps.f.outputs.rust }}
+      fleet: ${{ steps.f.outputs.fleet }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: f
+        with:
+          filters: |
+            rust:
+              - 'server/**'
+              # kroma-engine include_str!s these catalogs at compile time.
+              - 'packages/core/src/locales/**'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/ci.yml'
+            fleet:
+              - 'clients/**'
+              - 'packages/**'
+              # bun patches change what an install produces.
+              - 'patches/**'
+              - 'bun.lock'
+              - 'package.json'
+              - 'tsconfig.base.json'
+              # desktop-shell compiles Rust under the repo toolchain pin.
+              - 'rust-toolchain.toml'
+              - '.github/workflows/ci.yml'
+
   quality:
     name: Typecheck + unit tests + lint
     runs-on: ubuntu-latest
@@ -67,6 +118,8 @@ jobs:
 
   clients:
     name: Client / ${{ matrix.name }}
+    needs: changes
+    if: needs.changes.outputs.fleet == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -117,6 +170,8 @@ jobs:
   # first. The Apple TV half needs a macOS runner and is not built here.
   tv-native:
     name: Native TV app (Android compile)
+    needs: changes
+    if: needs.changes.outputs.fleet == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -150,6 +205,8 @@ jobs:
 
   desktop-shell:
     name: Desktop shell (cargo check, Linux/mpv path)
+    needs: changes
+    if: needs.changes.outputs.fleet == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
@@ -205,6 +262,8 @@ jobs:
 
   server:
     name: Server (Rust) clippy + test
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:

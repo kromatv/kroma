@@ -17,6 +17,8 @@ on:
       - 'packages/tv/**'
       - 'packages/core/**'
       - 'packages/ui/**'
+      # The desktop frontend builds through @kroma/bundler.
+      - 'packages/bundler/**'
       - '.github/workflows/desktop-autoupdate.yml'
   workflow_dispatch:
 
@@ -30,7 +32,7 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 5
     outputs:
       version: ${{ steps.v.outputs.version }}
     steps:
@@ -48,7 +50,7 @@ jobs:
     permissions:
       contents: write # delete + recreate the rolling desktop-latest release
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 5
     outputs:
       release_id: ${{ steps.mk.outputs.result }}
     steps:
@@ -245,7 +247,7 @@ jobs:
     permissions:
       contents: write # flip the draft pre-release to published
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 5
     steps:
       - name: Publish the pre-release (serve latest.json)
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

@@ -9,10 +9,22 @@ name: Sonar
 # SonarCloud (Administration > Analysis Method) - SonarCloud rejects a CI scan
 # while Automatic Analysis owns the branch.
 
+# Docs-only changes carry no analyzable code and no coverage delta; skip the
+# scan (SonarCloud's gate is not a required check, so nothing blocks).
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
 
 concurrency:
   group: sonar-${{ github.ref }}

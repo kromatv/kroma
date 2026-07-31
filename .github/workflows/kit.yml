@@ -22,6 +22,8 @@ on:
       - 'clients/kit/**'
       - 'packages/ui/**'
       - 'packages/core/**'
+      # vite.config.ts imports @kroma/bundler/props-docs.
+      - 'packages/bundler/**'
       - 'clients/tv-build/rnw.ts'
       - '.github/workflows/kit.yml'
   pull_request:
@@ -29,6 +31,7 @@ on:
       - 'clients/kit/**'
       - 'packages/ui/**'
       - 'packages/core/**'
+      - 'packages/bundler/**'
       - 'clients/tv-build/rnw.ts'
       - '.github/workflows/kit.yml'
   workflow_dispatch:
@@ -65,7 +68,7 @@ jobs:
           fi
           git fetch --no-tags --depth=1 origin "$last" 2>/dev/null || true
           # An unfetchable sha (force-push, expired) errors the diff -> deploy.
-          if git diff --quiet "$last" HEAD -- clients/kit packages/ui packages/core clients/tv-build/rnw.ts .github/workflows/kit.yml 2>/dev/null; then
+          if git diff --quiet "$last" HEAD -- clients/kit packages/ui packages/core packages/bundler clients/tv-build/rnw.ts .github/workflows/kit.yml 2>/dev/null; then
             echo "::notice::ui.kroma.tv is already serving this tree (last deployed $last); skipping."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else

@@ -55,6 +55,30 @@ name: Build & Release
 on:
   push:
     branches: [main]
+    # A candidate build only matters when it can change a promoted artifact.
+    # Docs, the Cloudflare-hosted showcases (kit + site are in no release
+    # artifact) and sibling workflows that build none of the fleet skip the
+    # whole run. Promotion stays correct: deploy.yml takes an explicit run id,
+    # and these paths change no promoted bytes. synology.yml is deliberately
+    # NOT ignored - the .spk on a Release comes from the synology run at the
+    # SAME sha as the candidate, so an .spk-pipeline change still needs a
+    # candidate here to be promotable.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
+      - 'clients/kit/**'
+      - 'clients/site/**'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/sonar.yml'
+      - '.github/workflows/codeql.yml'
+      - '.github/workflows/kit.yml'
+      - '.github/workflows/tv-web.yml'
+      - '.github/workflows/repo-worker.yml'
+      - '.github/workflows/desktop-autoupdate.yml'
+      - '.github/workflows/apple-signing-doctor.yml'
+      - '.github/workflows/deploy.yml'
   schedule:
     - cron: '0 3 * * *' # nightly, 03:00 UTC
   workflow_dispatch:
@@ -110,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read # only reads the repo and uploads run artifacts
-    timeout-minutes: 45
+    timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}

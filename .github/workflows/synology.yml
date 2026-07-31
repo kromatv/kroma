@@ -60,12 +60,14 @@ jobs:
     needs: changes
     permissions:
       contents: read
-    # `always()` so a SKIPPED changes job (tag / dispatch) still lets the tag
-    # and dispatch legs run; a main push only builds when relevant files changed.
+    # `always()` so the SKIPPED changes job (dispatch) still lets the dispatch
+    # leg run; a main push only builds when relevant files changed. The old
+    # `github.ref == 'refs/heads/main'` clause is gone: it was true on EVERY
+    # main push, which made the changes gate dead code and cold-built the .spk
+    # for TV-only and docs commits.
     if: >-
       always() && !cancelled()
-      && (github.ref == 'refs/heads/main'
-          || github.event_name == 'workflow_dispatch'
+      && (github.event_name == 'workflow_dispatch'
           || needs.changes.outputs.relevant == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -152,10 +154,11 @@ jobs:
     needs: changes
     permissions:
       contents: read
+    # Same gate as `build` above: dispatch always, main pushes only on
+    # relevant changes.
     if: >-
       always() && !cancelled()
-      && (github.ref == 'refs/heads/main'
-          || github.event_name == 'workflow_dispatch'
+      && (github.event_name == 'workflow_dispatch'
           || needs.changes.outputs.relevant == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 45

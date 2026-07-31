@@ -3,11 +3,23 @@ name: Security scan
 # Static analysis (CodeQL) for the JS/TS surface + a RustSec advisory audit of the
 # Cargo dependency graph. Runs on pushes/PRs to main and weekly (catches new CVEs
 # on unchanged code).
+# Docs-only changes reach neither analyzer (CodeQL scans JS/TS, cargo-audit
+# reads Cargo.lock); the weekly schedule keeps full coverage of unchanged code.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/**'
+      - 'LICENSE'
   schedule:
     - cron: '0 6 * * 1' # Monday 06:00 UTC
 
