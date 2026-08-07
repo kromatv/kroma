@@ -23,9 +23,7 @@ import type {
   StorageInfo,
   TopUser,
 } from '../types';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 export function adminServer(ctx: RequestContext): Promise<ServerInfo> {
   return ctx.json<ServerInfo>('/admin/server');
@@ -461,44 +459,5 @@ export function testLlm(
     method: 'POST',
     headers: JSON_HEADERS,
     body: JSON.stringify(probe),
-  });
-}
-
-/** Live state of the supervised `cloudflared` child; never carries the token. */
-export interface RemoteConnectorStatus {
-  running: boolean;
-  connecting: boolean;
-  since?: string | null;
-  lastError?: string | null;
-  binaryFound: boolean;
-  binaryVersion?: string | null;
-  logs: string[];
-}
-
-export interface RemoteAccessView {
-  enabled: boolean;
-  url: string;
-  hasToken: boolean;
-  status: RemoteConnectorStatus;
-}
-
-/** A blank/omitted `token` keeps the stored one; an empty field never wipes it. */
-export interface RemoteAccessSave {
-  enabled: boolean;
-  url: string;
-  token?: string;
-}
-
-export function adminRemote(ctx: RequestContext): Promise<RemoteAccessView> {
-  return ctx.json<RemoteAccessView>('/admin/remote');
-}
-
-/** Returns before the connector has reacted: the server reconciles `enabled`
- *  asynchronously, so the returned status may still be the old one. */
-export function saveRemote(ctx: RequestContext, body: RemoteAccessSave): Promise<RemoteAccessView> {
-  return ctx.json<RemoteAccessView>('/admin/remote', {
-    method: 'PUT',
-    headers: JSON_HEADERS,
-    body: JSON.stringify(body),
   });
 }

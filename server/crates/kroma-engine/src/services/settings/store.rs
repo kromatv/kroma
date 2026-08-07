@@ -112,7 +112,13 @@ fn defaults() -> BTreeMap<String, Value> {
     // (module ids are not known at compile time, so they can't be allow-listed).
     m.insert("moduleStates".into(), json!({}));
     // Empty = the built-in catalog (modules.json on this repo's GitHub Releases).
+    // This is the OFFICIAL slot: it stays pinned first and wins on an id clash.
     m.insert("moduleRegistryUrl".into(), json!(""));
+    // Operator-added registries beyond the official one, as
+    // `[{ "name": str, "url": str, "enabled": bool }]`. Validated on read (see
+    // api/admin/store/registries.rs): the list is operator input pointing at
+    // third-party catalogs of native code.
+    m.insert("moduleRegistries".into(), json!([]));
     m.insert("uiLanguage".into(), json!("Français"));
     // Empty → the env-configured `KROMA_TMDB_LANGUAGE` (default "en-US").
     m.insert("tmdbLanguage".into(), json!(""));

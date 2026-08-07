@@ -1,10 +1,25 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import worker, { DEFAULT_REPO } from './index';
+import { DEFAULT_REPO } from './config';
+import worker, { type Env } from './index';
 
-type Ctx = { waitUntil: (p: Promise<unknown>) => void };
-const ctx = (): Ctx => ({ waitUntil: vi.fn() });
+const ctx = () => ({
+  waitUntil: vi.fn(),
+  passThroughOnException: vi.fn(),
+  props: {},
+});
 const req = (path: string, init?: RequestInit) =>
   new Request(`https://modules.kroma.tv${path}`, init);
+
+const TEMPLATE =
+  '<!doctype html><html><head><link rel="kroma-modules" href="/modules.json" />' +
+  '<script id="kroma-catalog" type="application/json">"__CATALOG__"</script></head>' +
+  '<body><div id="root"></div></body></html>';
+
+const assets = (body = TEMPLATE, status = 200): Env['ASSETS'] => ({
+  fetch: async () => new Response(body, { status }),
+});
 
 const CATALOG = {
   schema: 2,
@@ -16,7 +31,7 @@ const CATALOG = {
       version: '1.0.0',
       description: 'A <demo> module',
       minServer: '0.1.0',
-      dependsOn: ['tv.kroma.base'],
+      dependsOn: { 'tv.kroma.base': '^1.0.0' },
       icon: 'https://cdn/icon.png',
       size: 3145728,
       artifacts: [{ target: 'wasm32', url: 'https://dl/a.kmod', size: 1, sha256: 'x' }],
@@ -60,17 +75,53 @@ describe('module-registry worker', () => {
     expect(await res.json()).toEqual(CATALOG);
   });
 
-  it('renders an HTML landing page for a browser Accept header', async () => {
+  it('injects the catalog into the built page for a browser', async () => {
     stubFetchOk(CATALOG);
-    const res = await worker.fetch(req('/', { headers: { accept: 'text/html' } }), {}, ctx());
+    const res = await worker.fetch(
+      req('/', { headers: { accept: 'text/html' } }),
+      { ASSETS: assets() },
+      ctx(),
+    );
     expect(res.headers.get('content-type')).toContain('text/html');
     const html = await res.text();
-    expect(html).toContain('KROMA modules');
-    expect(html).toContain('1 module available');
-    expect(html).toContain('needs tv.kroma.base');
-    expect(html).toContain('3.0 MB');
-    expect(html).toContain('&lt;demo&gt;');
-    expect(html).toContain('server ≥ 0.1.0');
+    expect(html).not.toContain('__CATALOG__');
+    expect(html).toContain('"tv.kroma.demo"');
+    expect(html).toContain('rel="kroma-modules"');
+  });
+
+  // The catalog lands inside a <script> tag, and its text is third-party: a
+  // description carrying `</script>` must not break out of the tag.
+  it('escapes catalog text against script breakout before injecting', async () => {
+    stubFetchOk({
+      schema: 2,
+      modules: [{ id: 'x', name: 'x', version: '1', description: '</script><script>boom' }],
+    });
+    const res = await worker.fetch(
+      req('/', { headers: { accept: 'text/html' } }),
+      { ASSETS: assets() },
+      ctx(),
+    );
+    const html = await res.text();
+    expect(html).not.toContain('</script><script>boom');
+    expect(html).toContain('\\u003c/script>');
+  });
+
+  it('falls back to a minimal discoverable page without built assets', async () => {
+    stubFetchOk(CATALOG);
+    const res = await worker.fetch(req('/', { headers: { accept: 'text/html' } }), {}, ctx());
+    const html = await res.text();
+    expect(html).toContain('rel="kroma-modules"');
+    expect(html).toContain('https://modules.kroma.tv/modules.json');
+  });
+
+  it('passes hashed site assets through untouched', async () => {
+    stubFetchOk(CATALOG);
+    const res = await worker.fetch(
+      req('/assets/app-abc123.js'),
+      { ASSETS: assets('console.log(1)') },
+      ctx(),
+    );
+    expect(await res.text()).toBe('console.log(1)');
   });
 
   it('returns the raw catalog JSON to a non-browser client at /', async () => {
@@ -125,8 +176,8 @@ describe('module-registry worker', () => {
     expect(DEFAULT_REPO).toBe('maxscharwath/kroma');
   });
 
-  // Without this, an unmatched path falls through to the JSON catch-all, so
-  // /favicon.ico would answer 200 application/json and browsers would keep
+  // Without this, an unmatched path would fall through to the JSON catch-all,
+  // so /favicon.ico would answer 200 application/json and browsers would keep
   // showing whatever icon they had cached.
   it('serves the brand mark at /favicon.svg and /favicon.ico, not the catalog', async () => {
     for (const p of ['/favicon.svg', '/favicon.ico']) {
@@ -138,14 +189,11 @@ describe('module-registry worker', () => {
     }
   });
 
-  it('puts the brand mark in the landing page head and heading', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(JSON.stringify(CATALOG), { status: 200 })),
-    );
-    const res = await worker.fetch(req('/', { headers: { accept: 'text/html' } }), {}, ctx());
-    const html = await res.text();
-    expect(html).toMatch(/rel="icon" href="data:image\/svg\+xml/);
-    expect(html).toMatch(/<h1><svg[^>]*aria-label="KROMA"/);
+  // The REAL template must carry what the worker and the server rely on: the
+  // injection placeholder and the autodiscovery tag.
+  it('ships the placeholder and discovery link in the site template', () => {
+    const html = readFileSync(join(__dirname, '..', 'index.html'), 'utf8');
+    expect(html).toContain('__CATALOG__');
+    expect(html).toContain('rel="kroma-modules"');
   });
 });

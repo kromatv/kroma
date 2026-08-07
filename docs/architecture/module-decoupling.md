@@ -37,7 +37,7 @@ Module-specific code currently living in core:
 | `server/src` (shell) | the download admin routes (`api/admin/downloads.rs`, `download_clients.rs`), `api/requests.rs` -> `state.downloads.activate`, the hardcoded roster in `modules/mod.rs` |
 
 Plus a layout wart: `kroma-downloads` lives in `server/crates/` though it is the
-Downloads module backend; it belongs under `server/modules/`.
+Downloads module backend; it belongs under `modules/`.
 
 ## 3. Target layers
 
@@ -49,7 +49,7 @@ Dependencies point inward only (outer may depend on inner, never the reverse):
   │   builds AppState + module services, registers them, mounts  │  only via the
   │   the generated roster. No module named in hand-written code. │  generated roster
   ├─────────────────────────────────────────────────────────────┤
-  │ ADAPTERS (modules)  server/modules/tv.kroma.*                 │  depend on: core-
+  │ ADAPTERS (modules)  modules/tv.kroma.*                 │  depend on: core-
   │   downloads, indexer, vpn, remote, acquisition, engines, ...  │  foundations +
   │   each owns: routes, lifecycle, DTOs, DB schema, events,      │  ports + (peer
   │   services, and its impls of shared port traits.             │  modules) contracts
@@ -87,7 +87,7 @@ Dependencies point inward only (outer may depend on inner, never the reverse):
   + ports only.
 - **modules**: each owns its full vertical and depends on foundations + ports +
   (for peer calls) `kroma-contracts`. `kroma-downloads` moves under
-  `server/modules/tv.kroma.torrents/server` (or its own module dir).
+  `modules/tv.kroma.torrents/server` (or its own module dir).
 
 ## 4. Generic mechanisms
 
@@ -159,7 +159,7 @@ recommended), vs each module publishing its own tiny `*-contract` crate.
   manifest-only / server-module / lifecycle-only). Compile-time Rust crates link
   at build time, so this is a BUILD-time manifest, not a runtime data file (only
   WASM/`.tar` modules load from the data dir at runtime, which already works).
-- `scripts/gen-modules.ts` reads `modules.toml` and generates, into
+- `bun run modules gen` reads `modules.toml` and generates, into
   `kroma-modules-generated`: the manifest `register_all`, the `server_modules<S>()`
   roster, and the crate's Cargo deps.
 - The generic kernel drivers (`mount_admin`, `apply_enabled_states`, resolve/order)
@@ -180,7 +180,7 @@ recommended), vs each module publishing its own tiny `*-contract` crate.
 | download admin routes | server/src/api/admin | kroma-downloads (module) |
 | `api/requests.rs` -> `state.downloads.activate` | server/src | via `DownloadPort` |
 | hardcoded roster | server/src/modules/mod.rs | generated (modules.toml) |
-| `kroma-downloads` crate | server/crates | server/modules/tv.kroma.torrents |
+| `kroma-downloads` crate | server/crates | modules/tv.kroma.torrents |
 
 ## 6. Sequenced migration (each phase compiles + is a commit)
 
@@ -201,7 +201,7 @@ recommended), vs each module publishing its own tiny `*-contract` crate.
   by ports). `kroma-engine` depends on foundations + ports only.
 - **F. Config-driven roster.** `modules.toml` + codegen; kernel drivers to a crate;
   delete `server/src/modules/`; purge `server/src` of module refs; move
-  `kroma-downloads` under `server/modules/`.
+  `kroma-downloads` under `modules/`.
 - **G. Enforcement.** A test / CI check that fails if any core crate's Cargo.toml
   names a module crate, or `server/src` names a module type. Makes the boundary
   permanent.
@@ -219,7 +219,7 @@ Each phase is independently shippable and leaves the app working.
   `requests` core; revisit.)
 - **E4 Scope/order:** run phases A..G in order over multiple sessions, or
   prioritize a subset first?
-- **E5 kroma-downloads location:** move under `server/modules/tv.kroma.torrents`
+- **E5 kroma-downloads location:** move under `modules/tv.kroma.torrents`
   now (rename/move) or after the dependency inversion (Phase E)?
 
 ## 8. Risks

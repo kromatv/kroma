@@ -2,9 +2,7 @@
 // server takes the user from the session and ignores any id that says otherwise.
 
 import type { Notification, NotificationPrefs, NotificationsView, SubscribeBody } from '../types';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** Newest-first, with the unread tally. */
 export function listNotifications(ctx: RequestContext): Promise<NotificationsView> {

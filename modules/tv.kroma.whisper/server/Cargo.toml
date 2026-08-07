@@ -1,0 +1,78 @@
+# This module is its own cargo workspace: it builds standalone, outside the
+# server tree, and is packed into a `.kmod` on its own. Package metadata and
+# dependency versions are explicit here rather than inherited.
+[workspace]
+
+[package]
+name = "kroma-whisper"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "In-process Whisper subtitle transcription (candle, no external whisper.cpp)"
+license = "MIT"
+
+[[bin]]
+# The module's `.kmod` entrypoint: a provider sidecar serving transcription over
+# HTTP with progress/cancel via a shared DB row (see src/bin/module.rs).
+name = "kroma-module-whisper"
+path = "src/bin/module.rs"
+
+[package.metadata.kmod]
+# The packed `.kmod` bundles the real candle inference backend (metal auto-enables
+# on Apple-Silicon via the target dep); without it transcribe() is a no-op stub.
+features = ["local"]
+
+[features]
+# Off by default: the public `transcribe()` compiles to a stub returning None.
+# `local` pulls in the candle inference graph (the only real backend).
+local = ["dep:candle-core", "dep:candle-nn", "dep:candle-transformers", "dep:tokenizers", "dep:tracing"]
+
+# GPU acceleration for local dev builds (never the musl single binary). Each
+# widens what the CPU pure-Rust `local` build CAN use; the engine picks the
+# device at runtime and falls back to CPU. See kroma-server's whisper-* features.
+metal = ["local", "candle-core/metal", "candle-nn/metal", "candle-transformers/metal"]
+cuda = ["local", "candle-core/cuda", "candle-nn/cuda", "candle-transformers/cuda"]
+accelerate = ["local", "candle-core/accelerate", "candle-nn/accelerate", "candle-transformers/accelerate"]
+
+[dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
+# The `.kmod` binary: the out-of-process runtime + axum for the transcription route.
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+axum = { version = "0.8", features = ["macros", "ws"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+anyhow = "1"
+serde_json = "1"
+tracing = { version = "0.1", optional = true }
+# CPU-only pure-Rust backends by default so the musl single binary keeps linking.
+candle-core = { version = "0.11", default-features = false, optional = true }
+candle-nn = { version = "0.11", default-features = false, optional = true }
+candle-transformers = { version = "0.11", default-features = false, optional = true }
+tokenizers = { version = "0.23", default-features = false, features = ["onig"], optional = true }
+
+# Apple-Silicon dev builds light up the Metal GPU automatically (no explicit
+# --features metal): gated on the target OS so the Linux/musl build never pulls
+# Metal in. Inert until `local` actually pulls candle.
+[target.'cfg(target_os = "macos")'.dependencies]
+candle-core = { version = "0.11", default-features = false, features = ["metal"], optional = true }
+candle-nn = { version = "0.11", default-features = false, features = ["metal"], optional = true }
+candle-transformers = { version = "0.11", default-features = false, features = ["metal"], optional = true }
+
+# The profile `bun run modules:pack` builds this sidecar with: release + `panic =
+# "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
+# speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
+# process and the supervisor respawns it. Defined per module because a profile is
+# only honoured at a workspace root, and each module is now its own workspace.
+# Mirrors server/Cargo.toml's [profile.release]. A profile is only honoured at a
+# workspace root, and this module is its own workspace, so `inherits = "release"`
+# below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen
+# units, unstripped.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.release-kmod]
+inherits = "release"
+panic = "abort"

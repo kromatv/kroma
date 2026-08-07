@@ -136,15 +136,21 @@ pub async fn apply_enabled_states(state: &SharedState) {
     }
 }
 
-/// The admin routers of every backend module, each behind its enabled-gate,
-/// merged into one router for the `/api/admin` subtree.
+/// The admin routers of every backend module, each behind its enabled-gate and
+/// nested under `/m/<id>`, merged into one router for the `/api/admin` subtree.
+///
+/// The mount is the module's id for the same reason the out-of-process proxy
+/// uses it: a module declares no paths, so it can neither collide with a core
+/// route nor shadow another module, and an in-process module and a sidecar are
+/// reachable at the same URL.
 pub fn mount_admin(state: SharedState) -> Router<SharedState> {
     let mut router = Router::new();
     for module in &registry().servers {
         // axum rejects route_layer on an empty router, so skip lifecycle-only
         // modules that contribute no routes.
         if let Some(routes) = module.admin_routes(&state) {
-            router = router.merge(module_scope(state.clone(), module.id(), routes));
+            let id = module.id();
+            router = router.nest(&format!("/m/{id}"), module_scope(state.clone(), id, routes));
         }
     }
     router

@@ -1,4 +1,4 @@
-// Runtime schemas for the pipeline / jobs / naming / VPN / LLM domain.
+// Runtime schemas for the pipeline / jobs / LLM domain.
 //
 // Mirrors the ts-rs generated wire types (the Rust structs are the single source
 // of truth) with runtime validation and branded ids. The `true satisfies
@@ -143,95 +143,6 @@ export const PipelineView = z.object({
   paused: z.boolean(),
 });
 export type PipelineView = z.infer<typeof PipelineView>;
-
-/** Example rendered names for the live preview. */
-export const SampleNames = z.object({
-  movie: z.string(),
-  episode: z.string(),
-});
-export type SampleNames = z.infer<typeof SampleNames>;
-
-/** The five naming templates plus the global case transform. */
-export const NamingTemplatesView = z.object({
-  movieFolder: z.string(),
-  movieFile: z.string(),
-  seriesFolder: z.string(),
-  seasonFolder: z.string(),
-  episodeFile: z.string(),
-  case: z.string(),
-});
-export type NamingTemplatesView = z.infer<typeof NamingTemplatesView>;
-
-/** `GET /api/admin/organize/naming` current templates + a rendered sample. */
-export const NamingView = z.object({
-  templates: NamingTemplatesView,
-  sample: SampleNames,
-});
-export type NamingView = z.infer<typeof NamingView>;
-
-/** One file the rename tool would move. */
-export const OrganizeMove = z.object({
-  title: z.string(),
-  kind: z.string(),
-  from: z.string(),
-  to: z.string(),
-});
-export type OrganizeMove = z.infer<typeof OrganizeMove>;
-
-/** `GET /api/admin/organize/preview`. */
-export const OrganizePlan = z.object({
-  moves: z.array(OrganizeMove),
-  totalFiles: z.number(),
-  matching: z.number(),
-});
-export type OrganizePlan = z.infer<typeof OrganizePlan>;
-
-/** `POST /api/admin/organize/apply` result. */
-export const OrganizeResult = z.object({
-  moved: z.number(),
-  failed: z.number(),
-  errors: z.array(z.string()),
-});
-export type OrganizeResult = z.infer<typeof OrganizeResult>;
-
-/** `POST /api/admin/acquisition/analyze` body. */
-export const AnalyzeBody = z.object({
-  magnetOrUrl: z.string(),
-});
-export type AnalyzeBody = z.infer<typeof AnalyzeBody>;
-
-/** The kill switch's view of the tunnel. */
-export const VpnStatusView = z.object({
-  connected: z.boolean(),
-  exitIp: z.string().nullable(),
-  paused: z.boolean(),
-});
-export type VpnStatusView = z.infer<typeof VpnStatusView>;
-
-/** `POST /api/admin/vpn/test` a live probe through (and around) the proxy. */
-export const VpnTestResult = z.object({
-  sealed: z.boolean(),
-  proxiedIp: z.string().nullable(),
-  directIp: z.string().nullable(),
-  error: z.string().nullable(),
-});
-export type VpnTestResult = z.infer<typeof VpnTestResult>;
-
-/** `GET /api/admin/vpn` the VPN configuration card's state. */
-export const VpnAdminView = z.object({
-  wgConfigured: z.boolean(),
-  bridgeRunning: z.boolean(),
-  localPort: z.number(),
-  status: VpnStatusView.nullable(),
-});
-export type VpnAdminView = z.infer<typeof VpnAdminView>;
-
-/** `PUT /api/admin/vpn` body. `wgConfig` is write-only. */
-export const SaveVpnBody = z.object({
-  wgConfig: z.string().nullable(),
-  localPort: z.number().nullable(),
-});
-export type SaveVpnBody = z.infer<typeof SaveVpnBody>;
 
 /** One configured provider as shown to the admin (API key never returned). */
 export const LlmProviderView = z.object({

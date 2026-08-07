@@ -1,0 +1,38 @@
+# This module is its own cargo workspace: it builds standalone, outside the
+# server tree, and is packed into a `.kmod` on its own. Package metadata and
+# dependency versions are explicit here rather than inherited.
+[workspace]
+
+[package]
+name = "kroma-scene"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Release-name parsing and the acquisition decision engine (pure, zero I/O)"
+license = "MIT"
+
+[dependencies]
+# Pure parser/scorer: only needs the low manifest layer for its MODULE const, so
+# the SDK facade can re-export it (kroma_module_sdk::scene) to consumer modules.
+kroma-module-manifest = { path = "../../../server/crates/kroma-module-manifest" }
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+
+# The profile `bun run modules:pack` builds this sidecar with: release + `panic =
+# "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
+# speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
+# process and the supervisor respawns it. Defined per module because a profile is
+# only honoured at a workspace root, and each module is now its own workspace.
+# Mirrors server/Cargo.toml's [profile.release]. A profile is only honoured at a
+# workspace root, and this module is its own workspace, so `inherits = "release"`
+# below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen
+# units, unstripped.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.release-kmod]
+inherits = "release"
+panic = "abort"

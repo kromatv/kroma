@@ -74,28 +74,28 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(pipeline::routes())
         .merge(backup::routes());
     router = router.merge(kroma_module_kernel::mount_admin(state.clone()));
-    // Out-of-process modules with admin routes: anything not matched above is
-    // reverse-proxied to the sidecar that owns the path's first segment (from its
-    // manifest `adminPrefixes`), so a converted module's `/api/admin/<prefix>/*`
-    // still works. Non-module unmatched paths get the proxy's 404. Explicit
-    // wildcard routes rather than a `.fallback`: axum 0.8's `nest` drops the
-    // nested router's fallback, and its matchit allows a param route to overlap
-    // the static ones above (statics win), which 0.7 forbade.
+    // Out-of-process modules with admin routes: `/api/admin/m/<id>/*` is
+    // reverse-proxied to that module's sidecar. The mount is the module's id, so
+    // it needs no declaration and two modules cannot claim the same path.
+    // Explicit wildcard routes rather than a `.fallback`: axum 0.8's `nest`
+    // drops the nested router's fallback, and its matchit allows a param route
+    // to overlap the static ones above (statics win), which 0.7 forbade.
     router
-        .route("/{seg}", axum::routing::any(admin_module_proxy))
-        .route("/{seg}/{*rest}", axum::routing::any(admin_module_proxy))
+        .route("/m/{id}", axum::routing::any(admin_module_proxy))
+        .route("/m/{id}/{*rest}", axum::routing::any(admin_module_proxy))
 }
 
-// Reverse-proxy an unmatched `/api/admin/<seg>/*` to the module sidecar owning
-// `<seg>`; 404 otherwise.
+// Reverse-proxy `/api/admin/m/<id>/*` to module `<id>`'s sidecar; 404 when no
+// such module is running. The sidecar sees the path below its own mount, so it
+// serves the same routes whether or not the core still proxies to it.
 async fn admin_module_proxy(
     Extension(sup): Extension<Arc<Supervisor>>,
     OriginalUri(uri): OriginalUri,
     req: Request,
 ) -> Response {
-    let rest = uri.path().strip_prefix("/api/admin/").unwrap_or_default();
-    let seg = rest.split('/').next().unwrap_or_default();
-    match sup.admin_route_port(seg) {
+    let tail = uri.path().strip_prefix("/api/admin/m/").unwrap_or_default();
+    let (id, rest) = tail.split_once('/').unwrap_or((tail, ""));
+    match sup.port_of(id) {
         Some(port) => {
             let query = uri.query().map(|q| format!("?{q}")).unwrap_or_default();
             kroma_module_supervisor::proxy_to(port, &format!("/{rest}{query}"), req).await

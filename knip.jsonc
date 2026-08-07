@@ -59,7 +59,6 @@
       // sibling `vite.config.ts` files, and invoked as `bun ../tv-build/x.ts`
       // from package scripts and from the store/perf docs.
       "entry": [
-        "scripts/**/*.ts",
         "clients/tv-build/**/*.{ts,tsx}",
         "clients/expo-build/**/*.{ts,js}",
         "clients/tv-frame.vite.ts"
@@ -79,6 +78,10 @@
         "src/**/*.native.{ts,tsx}",
         // CLI helpers run by name (`bun packages/<pkg>/src/gen-spk-info.ts`).
         "src/{backfill-info,gen-spk-info}.ts",
+        // Repo tooling: one CLI entry (`bun run modules <cmd>`) and a filter
+        // reading stdin (`bun run sonar:precheck`).
+        "src/cli.ts",
+        "src/precheck.ts",
         "scripts/*.ts"
       ]
     },
@@ -100,7 +103,7 @@
       ]
     },
 
-    "server/modules/*/ui": {
+    "modules/*/ui": {
       "entry": ["src/index.{ts,tsx}"]
     }
   }

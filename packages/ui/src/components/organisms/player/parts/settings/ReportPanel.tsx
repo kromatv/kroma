@@ -1,5 +1,5 @@
 import type { ReportCategory } from '@kroma/core';
-import { forwardRef, useImperativeHandle, useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
@@ -23,13 +23,22 @@ export const ReportPanel = forwardRef<PanelHandle, ReportPanelProps>(function Re
   const t = useT();
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'failed'>('idle');
 
+  // In-flight is a ref, not `state`: a press reads it at press time, whereas
+  // `state` is whatever the last committed render closed over. After a failure
+  // that difference drops the viewer's retry if they press before React has
+  // re-rendered.
+  const sending = useRef(false);
   const pick = (i: number) => {
     const category = REPORT_CATEGORIES[i]?.key;
-    if (!category || state === 'busy' || state === 'done') return;
+    if (!category || sending.current || state === 'done') return;
+    sending.current = true;
     setState('busy');
     onReport(category)
       .then(() => setState('done'))
-      .catch(() => setState('failed'));
+      .catch(() => setState('failed'))
+      .finally(() => {
+        sending.current = false;
+      });
   };
   const focus = useListFocus({ count: REPORT_CATEGORIES.length, onActivate: pick, onBack });
   useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);

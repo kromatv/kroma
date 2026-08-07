@@ -3,7 +3,7 @@
 // route; a disabled or unknown module renders the not-found state, so turning a
 // module off makes its pages vanish just like its nav.
 
-import type { KromaHost } from '@kroma/module-sdk';
+import { type KromaHost, ModuleScope } from '@kroma/module-sdk';
 import { Suspense, useMemo } from 'react';
 import { useModuleHostValue, useModuleRoute, useModuleT } from '#web/modules/ModuleHostProvider';
 
@@ -38,7 +38,9 @@ export function ModuleRouteOutlet({ path }: Readonly<{ path: string }>) {
   const Panel = route.component;
   return (
     <Suspense fallback={<ModuleMessage text="Loading..." />}>
-      <Panel host={scopedHost} />
+      <ModuleScope id={route.moduleId}>
+        <Panel host={scopedHost} />
+      </ModuleScope>
     </Suspense>
   );
 }

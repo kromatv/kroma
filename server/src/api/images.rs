@@ -184,13 +184,27 @@ pub async fn item_card(
         .await?
         .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
 
-    // Prefer the 16:9 backdrop; fall back to the poster. Both must be locally
-    // cached (a `/api/images/<hash>.webp` path) to composite.
+    // An episode's own metadata holds only its w300 still (in `backdropUrl`),
+    // which upscales badly and has no title logo: art and logo come from the
+    // show instead, so an episode card looks like a movie card.
+    let show_meta = match (item.kind, item.show_id.clone()) {
+        (Kind::Episode, Some(show_id)) => {
+            query(&state.db, move |pool| db::show_metadata(&pool, &show_id)).await?
+        }
+        _ => None,
+    };
+    let show_meta = show_meta.as_ref();
+
+    // Prefer the 16:9 backdrop; fall back to the episode still, then the
+    // poster. All must be locally cached (a `/api/images/<hash>.webp` path)
+    // to composite.
     let meta = item.metadata.as_ref();
-    let webp = meta
+    let webp = show_meta
         .and_then(|m| m.backdrop_url.as_deref())
         .and_then(cache_name)
+        .or_else(|| meta.and_then(|m| m.backdrop_url.as_deref()).and_then(cache_name))
         .or_else(|| meta.and_then(|m| m.poster_url.as_deref()).and_then(cache_name))
+        .or_else(|| show_meta.and_then(|m| m.poster_url.as_deref()).and_then(cache_name))
         .map(str::to_string);
     let Some(webp) = webp else {
         return Err(json_error(StatusCode::NOT_FOUND, "no artwork for card"));
@@ -199,6 +213,7 @@ pub async fn item_card(
     // Optional title-treatment logo (cached PNG → bounded overlay PNG).
     let logo = meta
         .and_then(|m| m.logo_url.as_deref())
+        .or_else(|| show_meta.and_then(|m| m.logo_url.as_deref()))
         .and_then(cache_name)
         .map(str::to_string);
 

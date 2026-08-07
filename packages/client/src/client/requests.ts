@@ -10,9 +10,7 @@ import type {
   MediaRequest,
   RequestsView,
 } from '../types';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** Own requests, or everyone's for a `requests.manage` holder. Pass
  * `mine: true` to force own-only (the user-facing "Mes demandes" page). */

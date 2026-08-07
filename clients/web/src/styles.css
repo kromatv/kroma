@@ -14,7 +14,7 @@
 @source "../../../packages/admin-kit/src/**/*.{ts,tsx}";
 @source "../../../packages/ui/src/components/**/*.{ts,tsx}";
 @source "../../../packages/ui/src/player/**/*.{ts,tsx}";
-@source "../../../server/modules/*/ui/src/**/*.{ts,tsx}";
+@source "../../../modules/*/ui/src/**/*.{ts,tsx}";
 
 @layer base {
   html,

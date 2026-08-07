@@ -49,6 +49,8 @@ jobs:
           filters: |
             relevant:
               - 'server/**'
+              # The server binary path-deps scene, whisper and vector from here.
+              - 'modules/**'
               - 'clients/web/**'
               - 'clients/synology/**'
               - 'packages/**'
@@ -198,8 +200,8 @@ jobs:
         run: |
           mkdir -p .cargo-registry
           docker run --rm \
-            -v "$PWD/server":/home/rust/src \
-            -v "$PWD/packages":/home/rust/packages \
+            -v "$PWD":/home/rust/repo \
+            -w /home/rust/repo/server \
             -v "$PWD/.cargo-registry":/root/.cargo/registry \
             "$RUST_IMAGE" \
             cargo build --release --locked --target "$TARGET" --features whisper-local

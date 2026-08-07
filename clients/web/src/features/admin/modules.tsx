@@ -1,290 +1,176 @@
-// Admin "Modules" page, backed by /api/admin/modules and /api/admin/store.
+// Admin "Modules" page: an app-store view over /api/admin/modules and
+// /api/admin/store. Discover / Installed / Updates tabs with live per-module
+// install progress off the `module.op.*` stream, a detail drawer per module,
+// and registry management in its own drawer.
 
-import { Image } from '@kroma/admin-kit';
-import { sessionToken } from '@kroma/core';
-import { moduleIconUrl } from '@kroma/module-sdk';
-import { Button, Txt } from '@kroma/ui/kit';
-import { useRef, useState } from 'react';
-import { type AdminModule, adminApi } from '#web/features/admin/module-api';
-import { ModuleConfigForm } from '#web/features/admin/module-config-form';
-import { ModuleDeps } from '#web/features/admin/module-deps';
-import {
-  installFromStore,
-  installSummary,
-  type RegistryModule,
-  type StoreCatalog,
-  StoreSection,
-} from '#web/features/admin/module-store';
-import { Denied, useCap, usePoll } from '#web/features/admin/shell';
-import { Card, Pill, Toggle } from '#web/features/admin/ui';
-import { useModuleSettingsPanels, useRefreshModules } from '#web/modules/ModuleHostProvider';
-import { apiBase } from '#web/shared/lib/api';
+import { Button, PageHeader, SegmentedControl } from '@kroma/admin-kit';
+import { useT } from '@kroma/ui';
+import { IconSearch, IconUpload, IconWorld } from '@tabler/icons-react';
+import { useMemo, useRef, useState } from 'react';
+import { installBundle, message, updateModules } from '#web/features/admin/module-api';
+import { useModuleData } from '#web/features/admin/module-data';
+import { ModuleDetailDrawer } from '#web/features/admin/module-detail';
+import { InstallModal } from '#web/features/admin/module-install';
+import { InstalledList } from '#web/features/admin/module-installed';
+import { useStoreOps } from '#web/features/admin/module-ops';
+import { RegistriesDrawer } from '#web/features/admin/module-registries';
+import { StoreGrid } from '#web/features/admin/module-store';
+import { UpdatesList } from '#web/features/admin/module-updates';
+import { Denied, useAsyncAction, useCap } from '#web/features/admin/shell';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '#web/shared/ui/input-group';
 
-const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
-
-async function installBundle(file: File): Promise<void> {
-  const token = sessionToken();
-  const res = await fetch(`${apiBase()}/api/admin/store/install`, {
-    method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: file,
-  });
-  if (!res.ok) {
-    throw new Error((await res.text()) || `install failed (${res.status})`);
-  }
-}
+type Tab = 'discover' | 'installed' | 'updates';
 
 export function ModulesAdminPage() {
-  const canManage = useCap('settings.manage');
-  const refreshModules = useRefreshModules();
-  const { data, reload } = usePoll(
-    ['admin', 'modules'],
-    () => adminApi<AdminModule[]>('/modules'),
-    30000,
-  );
-  // Undefined while loading or if the registry is unreachable; the Store
-  // section hides itself then.
-  const { data: catalog, reload: reloadCatalog } = usePoll(
-    ['admin', 'store', 'catalog'],
-    () => adminApi<StoreCatalog>('/store/catalog'),
-    300000,
-  );
+  if (!useCap('settings.manage')) return <Denied />;
+  return <ModulesInner />;
+}
+
+function ModulesInner() {
+  const t = useT();
+  const { modules, catalog, refreshAll } = useModuleData();
+  const { activeByModule } = useStoreOps();
+  const [tab, setTab] = useState<Tab>('discover');
+  const [query, setQuery] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  if (!canManage) return <Denied />;
-  const modules = data ?? [];
-  const installedIds = new Set(modules.map((m) => m.id));
-  const registryById = new Map((catalog?.modules ?? []).map((m) => [m.id, m]));
+  const upload = useAsyncAction();
+  const updating = useAsyncAction();
 
-  const installFromRegistry = async (id: string) => {
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const report = await installFromStore(id);
-      setNotice(installSummary(report));
-      await refreshModules();
-      reloadCatalog();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
+  const installed = modules ?? [];
+  const updates = useMemo(
+    () => (catalog?.modules ?? []).filter((m) => m.updateAvailable && m.compatible),
+    [catalog],
+  );
+
+  const openDetail = (id: string) => {
+    void ModuleDetailDrawer.call({ id }).then((c) => {
+      if (c) void refreshAll();
+    });
   };
 
-  const toggle = async (id: string, enabled: boolean) => {
-    try {
-      await adminApi(`/modules/${encodeURIComponent(id)}/enabled`, {
-        method: 'POST',
-        body: JSON.stringify({ enabled }),
-      });
-    } catch (e) {
-      console.error('[modules] failed to toggle', id, e);
-    }
-    // Re-snapshots the whole module host, so the sidebar nav, the /admin/<id>
-    // route and contributed panels follow the toggle without a page reload.
-    await refreshModules();
+  const requestInstall = async (id: string) => {
+    if (await InstallModal.call({ id })) void refreshAll();
   };
 
-  const onPick = async (file: File | undefined) => {
+  const runUpdate = (ids?: string[]) =>
+    void updating.run(async () => {
+      const result = await updateModules(ids);
+      await refreshAll();
+      if (result.failed.length > 0) {
+        throw new Error(result.failed.map((f) => `${f.id}: ${f.error}`).join(' · '));
+      }
+    }, message);
+
+  const onPick = (file: File | undefined) => {
     if (!file) return;
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
+    void upload.run(async () => {
       await installBundle(file);
-      await refreshModules();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
+      await refreshAll();
+    }, message);
   };
 
-  const uninstall = async (id: string) => {
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    try {
-      await adminApi(`/store/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      await refreshModules();
-      reloadCatalog();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const tabs: { value: Tab; label: string }[] = [
+    { value: 'discover', label: t('admin.modulesTabDiscover') },
+    { value: 'installed', label: `${t('admin.modulesTabInstalled')} · ${installed.length}` },
+    {
+      value: 'updates',
+      label:
+        updates.length > 0
+          ? `${t('admin.modulesTabUpdates')} · ${updates.length}`
+          : t('admin.modulesTabUpdates'),
+    },
+  ];
 
-  return (
-    <div className="flex flex-col gap-6 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Modules</h1>
-          <p className="text-sm text-muted">
-            Install modules from the registry (dependencies and checksums handled for you), or
-            upload a .kmod file.
-          </p>
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".kmod,.tar"
-          className="hidden"
-          onChange={(e) => void onPick(e.target.files?.[0])}
-        />
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => fileRef.current?.click()}
-          className="shrink-0 rounded border border-border px-3 py-1.5 text-xs font-semibold text-muted hover:text-text disabled:opacity-50"
-        >
-          {busy ? 'Working...' : 'Upload .kmod'}
-        </button>
-      </div>
-
-      {(error || notice) && (
-        <p className={`text-xs font-semibold ${error ? 'text-danger' : 'text-success'}`}>
-          {error ?? notice}
-        </p>
-      )}
-
-      <StoreSection
-        catalog={catalog}
-        installedIds={installedIds}
-        busy={busy}
-        onInstall={(id) => void installFromRegistry(id)}
-        onReload={() => reloadCatalog()}
-      />
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-dim">
-          Installed ({modules.length})
-        </h2>
-        <div className="grid gap-3 md:grid-cols-2">
-          {modules.map((m) => (
-            <InstalledCard
-              key={m.id}
-              module={m}
-              all={modules}
-              registry={registryById.get(m.id)}
-              busy={busy}
-              onSaved={reload}
-              onToggle={(v) => void toggle(m.id, v)}
-              onUpdate={() => void installFromRegistry(m.id)}
-              onUninstall={() => void uninstall(m.id)}
-            />
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function InstalledCard({
-  module: m,
-  all,
-  registry,
-  busy,
-  onSaved,
-  onToggle,
-  onUpdate,
-  onUninstall,
-}: Readonly<{
-  module: AdminModule;
-  all: AdminModule[];
-  registry: RegistryModule | undefined;
-  busy: boolean;
-  onSaved: () => void;
-  onToggle: (enabled: boolean) => void;
-  onUpdate: () => void;
-  onUninstall: () => void;
-}>) {
-  const update = registry?.updateAvailable && registry.compatible ? registry : undefined;
-  return (
-    <Card className="p-4">
-      <div className="flex items-start gap-3">
-        <Image
-          src={moduleIconUrl(m.id, apiBase())}
-          fit="cover"
-          className="mt-0.5 h-8 w-8 shrink-0 rounded-lg"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate font-semibold text-text">{m.name}</span>
-            <Toggle on={m.enabled} onChange={onToggle} />
-          </div>
-          <div className="text-[11px] text-dim">
-            {m.id} · v{m.version}
-            {update && (
-              <span className="ml-1.5 font-semibold text-accent">v{update.version} available</span>
-            )}
-          </div>
-          {m.description && <p className="mt-1 text-xs text-muted">{m.description}</p>}
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {(m.provides ?? []).map((c) => (
-              <Pill key={`${c.kind}:${c.id}`} bg="rgba(255,255,255,.06)">
-                {c.kind}:{c.id}
-              </Pill>
-            ))}
-          </div>
-          <ModuleDeps module={m} all={all} />
-          <ModuleSettings module={m} onSaved={onSaved} />
-          {(update || m.removable) && (
-            <div className="mt-3 flex items-center gap-2">
-              {update && (
-                <Button
-                  variant="outline"
-                  active
-                  size="sm"
-                  label={`Update to v${update.version}`}
-                  onPress={onUpdate}
-                  disabled={busy}
-                />
-              )}
-              {m.removable && (
-                <Button variant="ghost" size="sm" onPress={onUninstall} disabled={busy}>
-                  <Txt color="danger" style={DANGER_LABEL}>
-                    Uninstall
-                  </Txt>
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function ModuleSettings({
-  module,
-  onSaved,
-}: Readonly<{ module: AdminModule; onSaved: () => void }>) {
-  const { host, panels } = useModuleSettingsPanels(module.id);
-  const fields = module.config ?? [];
-  if (panels.length === 0 && fields.length === 0) return null;
   return (
     <>
-      {host &&
-        panels.map((p) => {
-          const Panel = p.component;
-          return (
-            <div key={p.id} className="mt-3 border-t border-border pt-3">
-              <Panel host={host} />
-            </div>
-          );
-        })}
-      {fields.length > 0 && (
-        <ModuleConfigForm
-          moduleId={module.id}
-          fields={fields}
-          values={module.configValues}
-          onSaved={onSaved}
-        />
+      <PageHeader
+        title={t('admin.modulesTitle')}
+        subtitle={t('admin.modulesSub')}
+        action={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              label={t('admin.modulesRegistries')}
+              icon={IconWorld}
+              onClick={() =>
+                void RegistriesDrawer.call({}).then((c) => {
+                  if (c) void refreshAll();
+                })
+              }
+            />
+            <Button
+              variant="secondary"
+              label={t('admin.modulesUpload')}
+              icon={IconUpload}
+              onClick={() => fileRef.current?.click()}
+              loading={upload.busy}
+            />
+          </div>
+        }
+      />
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".kmod,.tar"
+        className="hidden"
+        onChange={(e) => {
+          onPick(e.target.files?.[0]);
+          e.target.value = '';
+        }}
+      />
+      {upload.error && (
+        <p className="mt-3 break-words text-xs font-semibold text-danger">{upload.error}</p>
       )}
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <SegmentedControl value={tab} options={tabs} onChange={setTab} />
+        {tab !== 'updates' && (
+          <InputGroup className="h-9 w-64">
+            <InputGroupAddon>
+              <IconSearch size={15} />
+            </InputGroupAddon>
+            <InputGroupInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('admin.modulesSearch')}
+              className="text-[13px]"
+            />
+          </InputGroup>
+        )}
+      </div>
+
+      <div className="mt-5">
+        {tab === 'discover' && (
+          <StoreGrid
+            catalog={catalog}
+            query={query}
+            active={activeByModule}
+            onOpen={openDetail}
+            onInstall={(id) => void requestInstall(id)}
+            onUpdate={(id) => runUpdate([id])}
+          />
+        )}
+        {tab === 'installed' && (
+          <InstalledList
+            modules={modules}
+            catalog={catalog}
+            query={query}
+            onOpen={openDetail}
+            onChanged={() => void refreshAll()}
+          />
+        )}
+        {tab === 'updates' && (
+          <UpdatesList
+            updates={updates}
+            active={activeByModule}
+            busy={updating.busy}
+            error={updating.error}
+            onUpdateAll={() => runUpdate()}
+            onUpdate={(id) => runUpdate([id])}
+            onOpen={openDetail}
+          />
+        )}
+      </div>
     </>
   );
 }

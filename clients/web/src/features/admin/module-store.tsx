@@ -1,240 +1,189 @@
-// The Store section of the admin Modules page: what the configured registry
-// offers for THIS server. Installing goes through POST /store/install-id,
-// which resolves missing hard dependencies and verifies each download's
-// sha256 before unpacking.
+// The Discover tab of the Modules page: every module the configured registries
+// offer, enriched with this server's verdict. A card opens the detail drawer;
+// its action installs (through the plan dialog), updates, or shows the
+// installed state, and a live `module.op.*` stream replaces the action with a
+// download/install progress bar.
 
-import { Image } from '@kroma/admin-kit';
-import { Button } from '@kroma/ui/kit';
-import { IconSearch } from '@tabler/icons-react';
-import { type ReactNode, useState } from 'react';
-import { adminApi } from '#web/features/admin/module-api';
-import { Card } from '#web/features/admin/ui';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '#web/shared/ui/input-group';
+import { Button, Card, CardSkeleton, formatBytes, Image, ProgressBar } from '@kroma/admin-kit';
+import type { StoreCatalog, StoreModule } from '@kroma/core';
+import { useT } from '@kroma/ui';
+import { EmptyState } from '@kroma/ui/kit';
+import { IconCircleCheckFilled } from '@tabler/icons-react';
+import { matchesQuery } from '#web/features/admin/module-api';
+import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
 
-/** One catalog entry, enriched server-side (GET /api/admin/store/catalog). */
-export interface RegistryModule {
-  id: string;
-  name: string;
-  version: string;
-  description?: string;
-  library?: boolean;
-  icon?: string | null;
-  minServer?: string | null;
-  url?: string | null;
-  size?: number | null;
-  sha256?: string | null;
-  installedVersion?: string | null;
-  updateAvailable?: boolean;
-  compatible: boolean;
-  reason?: string | null;
+/** Compact live progress: the phase label above a thin bar. */
+export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
+  const t = useT();
+  const pct = opPct(op);
+  const label = t(PHASE_KEY[op.phase]);
+  return (
+    <div className="w-28 shrink-0">
+      <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-dim">
+        <span>{label}</span>
+        {pct !== null && op.phase === 'download' && <span>{pct}%</span>}
+      </div>
+      <ProgressBar pct={runningPct(op.phase, pct)} height={4} />
+    </div>
+  );
 }
 
-/** The enriched catalog response. `error` is set (with an empty module list)
- *  when the registry could not be fetched; `registryUrl` is always present. */
-export interface StoreCatalog {
-  schema: number;
-  serverVersion: string;
-  target: string;
-  registryUrl: string;
-  error?: string | null;
-  modules: RegistryModule[];
-}
-
-/** What POST /store/install-id reports back: everything actually installed,
- *  auto-installed dependencies included, in install order. */
-export interface InstallReport {
-  requested: string;
-  installed: { id: string; name: string; version: string }[];
-}
-
-/** Install/update a module (and its missing deps) from the registry. */
-export function installFromStore(id: string): Promise<InstallReport> {
-  return adminApi<InstallReport>('/store/install-id', {
-    method: 'POST',
-    body: JSON.stringify({ id }),
-  });
-}
-
-/** Human summary of an install report: "Installed Acquisition 0.1.0 (+ 2
- *  dependencies: Downloads 0.1.0, Indexers 0.1.0)". */
-export function installSummary(report: InstallReport): string {
-  const requested = report.installed.find((m) => m.id === report.requested);
-  const deps = report.installed.filter((m) => m.id !== report.requested);
-  const head = requested ? `Installed ${requested.name} ${requested.version}` : 'Installed';
-  if (deps.length === 0) return head;
-  const list = deps.map((d) => `${d.name} ${d.version}`).join(', ');
-  return `${head} (+ ${deps.length} ${deps.length === 1 ? 'dependency' : 'dependencies'}: ${list})`;
+function CardAction({
+  m,
+  op,
+  onInstall,
+  onUpdate,
+}: Readonly<{
+  m: StoreModule;
+  op: OpModule | undefined;
+  onInstall: () => void;
+  onUpdate: () => void;
+}>) {
+  const t = useT();
+  if (op) return <OpProgress op={op} />;
+  if (!m.compatible) {
+    return (
+      <span className="shrink-0 rounded bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-dim">
+        {t('admin.modulesIncompatible')}
+      </span>
+    );
+  }
+  if (m.installedVersion && m.updateAvailable) {
+    return (
+      <Button variant="primary" size="sm" label={t('admin.modulesUpdate')} onClick={onUpdate} />
+    );
+  }
+  if (m.installedVersion) {
+    return (
+      <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-success">
+        <IconCircleCheckFilled size={15} />
+        {t('admin.modulesInstalled')}
+      </span>
+    );
+  }
+  return (
+    <Button variant="secondary" size="sm" label={t('admin.modulesInstall')} onClick={onInstall} />
+  );
 }
 
 function StoreCard({
   m,
-  busy,
+  op,
+  onOpen,
   onInstall,
-}: Readonly<{ m: RegistryModule; busy: boolean; onInstall: (id: string) => void }>) {
+  onUpdate,
+}: Readonly<{
+  m: StoreModule;
+  op: OpModule | undefined;
+  onOpen: () => void;
+  onInstall: () => void;
+  onUpdate: () => void;
+}>) {
+  const t = useT();
   return (
-    <Card className="flex items-start gap-3 p-4">
-      {m.icon ? (
-        <Image src={m.icon} fit="cover" className="mt-0.5 h-9 w-9 shrink-0 rounded-lg" />
-      ) : (
-        <div className="mt-0.5 h-9 w-9 shrink-0 rounded-lg bg-white/5" />
-      )}
+    <Card className={`flex items-start gap-3 p-4 ${m.compatible ? '' : 'opacity-70'}`}>
+      <button type="button" onClick={onOpen} aria-label={m.name} className="shrink-0">
+        {m.icon ? (
+          <Image src={m.icon} fit="cover" className="mt-0.5 h-10 w-10 rounded-xl" />
+        ) : (
+          <div className="mt-0.5 h-10 w-10 rounded-xl bg-white/5" />
+        )}
+      </button>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate font-semibold text-text">{m.name}</span>
-          <Button
-            variant="outline"
-            active
-            size="sm"
-            label="Install"
-            onPress={() => onInstall(m.id)}
-            disabled={busy || !m.compatible}
-          />
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onOpen}
+            className="truncate text-left font-semibold text-text transition-colors hover:text-accent"
+          >
+            {m.name}
+          </button>
+          <CardAction m={m} op={op} onInstall={onInstall} onUpdate={onUpdate} />
         </div>
-        <div className="text-[11px] text-dim">
-          {m.id} · v{m.version}
-          {m.size ? <> · {Math.trunc(m.size / 1024)} KB</> : null}
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-dim">
+          <span>v{m.version}</span>
+          {m.size ? <span>· {formatBytes(m.size)}</span> : null}
+          <span>·</span>
+          <span className={m.source === 'Official' ? 'font-semibold text-accent' : ''}>
+            {m.source === 'Official' ? t('admin.modulesOfficial') : m.source}
+          </span>
+          {m.library && <span>· {t('admin.modulesLibraryChip')}</span>}
+          {m.installedVersion && m.updateAvailable && (
+            <span className="font-semibold text-accent">
+              · {t('admin.modulesUpdateChip', { version: m.version })}
+            </span>
+          )}
         </div>
-        {m.description && <p className="mt-1 text-xs text-muted">{m.description}</p>}
+        {m.description && <p className="mt-1 line-clamp-2 text-xs text-muted">{m.description}</p>}
         {!m.compatible && m.reason && (
-          <p className="mt-1 text-xs font-semibold text-danger">{m.reason}</p>
+          <p className="mt-1 text-[11px] font-semibold text-danger">{m.reason}</p>
         )}
       </div>
     </Card>
   );
 }
 
-function matches(m: RegistryModule, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  return [m.id, m.name, m.description ?? ''].some((s) => s.toLowerCase().includes(q));
-}
-
-// Also the escape hatch to point the Store at any other catalog (a GitHub
-// release, gh-pages, a NAS...). Saves the `moduleRegistryUrl` setting then refetches.
-function RegistryUrlEditor({
-  current,
-  onSaved,
-}: Readonly<{ current: string; onSaved: () => void }>) {
-  const [url, setUrl] = useState(current);
-  const [saving, setSaving] = useState(false);
-  const save = async () => {
-    setSaving(true);
-    try {
-      await adminApi('/settings', {
-        method: 'PUT',
-        body: JSON.stringify({ moduleRegistryUrl: url.trim() }),
-      });
-      onSaved();
-    } finally {
-      setSaving(false);
-    }
-  };
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <InputGroup className="h-9 min-w-72 flex-1">
-        <InputGroupInput
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://.../modules.json"
-          className="text-[12px]"
-        />
-      </InputGroup>
-      <Button
-        variant="outline"
-        active
-        size="sm"
-        label={saving ? 'Saving...' : 'Save & retry'}
-        onPress={() => void save()}
-        loading={saving}
-        disabled={!url.trim()}
-      />
-    </div>
-  );
-}
-
-/** Always visible so the registry state is never a mystery: the catalog grid
- * with a search box when reachable, an error card with a URL editor when not. */
-export function StoreSection({
+/** The merged catalog grid; loading, blackout and no-match states included so
+ * the registry state is never a mystery. Per-registry status lives in the
+ * Registries drawer. */
+export function StoreGrid({
   catalog,
-  installedIds,
-  busy,
+  query,
+  active,
+  onOpen,
   onInstall,
-  onReload,
+  onUpdate,
 }: Readonly<{
   catalog: StoreCatalog | null | undefined;
-  installedIds: Set<string>;
-  busy: boolean;
+  query: string;
+  active: Map<string, OpModule & { op: string }>;
+  onOpen: (id: string) => void;
   onInstall: (id: string) => void;
-  onReload: () => void;
+  onUpdate: (id: string) => void;
 }>) {
-  const [query, setQuery] = useState('');
+  const t = useT();
   if (!catalog) {
     return (
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-dim">Registry</h2>
-        <p className="text-xs text-muted">Loading the module registry...</p>
-      </section>
-    );
-  }
-  if (catalog.error) {
-    return (
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-dim">Registry</h2>
-        <Card className="flex flex-col gap-3 p-4">
-          <p className="text-sm font-semibold text-danger">Module registry unreachable</p>
-          <p className="break-all text-xs text-muted">{catalog.error}</p>
-          <p className="text-xs text-muted">
-            The default registry is the <code className="text-dim">modules.json</code> attached to
-            this project's GitHub Releases; it exists once a release is published (tag{' '}
-            <code className="text-dim">vX.Y.Z</code>). You can also point the Store at any other
-            catalog URL:
-          </p>
-          <RegistryUrlEditor current={catalog.registryUrl} onSaved={onReload} />
-        </Card>
-      </section>
-    );
-  }
-  const available = catalog.modules.filter((m) => !installedIds.has(m.id));
-  const shown = available.filter((m) => matches(m, query));
-  let body: ReactNode;
-  if (available.length === 0) {
-    body = (
-      <p className="text-xs text-muted">
-        Every module from the registry ({catalog.modules.length}) is installed.
-      </p>
-    );
-  } else if (shown.length === 0) {
-    body = <p className="text-xs text-muted">No module matches "{query.trim()}".</p>;
-  } else {
-    body = (
       <div className="grid gap-3 md:grid-cols-2">
-        {shown.map((m) => (
-          <StoreCard key={m.id} m={m} busy={busy} onInstall={onInstall} />
-        ))}
+        <CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
       </div>
+    );
+  }
+  // Only a total blackout is an error here: with several registries configured,
+  // one unreachable host still leaves a usable catalog, and its failure is
+  // reported on its row in the Registries drawer.
+  if (catalog.modules.length === 0 && catalog.error) {
+    return (
+      <Card className="flex flex-col gap-2 p-5">
+        <p className="text-sm font-semibold text-danger">{t('admin.modulesCatalogError')}</p>
+        <p className="break-all text-xs text-muted">{catalog.error}</p>
+        <p className="text-xs text-muted">{t('admin.modulesCatalogErrorHint')}</p>
+      </Card>
+    );
+  }
+  const shown = catalog.modules
+    .filter((m) => matchesQuery(m, query))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (shown.length === 0) {
+    return (
+      <EmptyState icon="search" title={t('admin.modulesEmptySearch', { query: query.trim() })} />
     );
   }
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-dim">
-          Available in the registry ({available.length})
-        </h2>
-        {available.length > 0 && (
-          <InputGroup className="h-9 w-64">
-            <InputGroupAddon>
-              <IconSearch size={15} />
-            </InputGroupAddon>
-            <InputGroupInput
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search modules..."
-              className="text-[13px]"
-            />
-          </InputGroup>
-        )}
-      </div>
-      {body}
-    </section>
+    <div className="grid gap-3 md:grid-cols-2">
+      {shown.map((m) => (
+        <StoreCard
+          key={m.id}
+          m={m}
+          op={active.get(m.id)}
+          onOpen={() => onOpen(m.id)}
+          onInstall={() => onInstall(m.id)}
+          onUpdate={() => onUpdate(m.id)}
+        />
+      ))}
+    </div>
   );
 }

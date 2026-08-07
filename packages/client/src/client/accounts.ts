@@ -15,9 +15,7 @@ import {
   User,
   validate,
 } from '../schemas';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** Create an account and open a session. After the first (owner) account,
  * `inviteToken` is required registration is invite-only. Does NOT set the

@@ -21,7 +21,6 @@ import {
   IconChevronRight,
   IconClockBolt,
   IconDatabase,
-  IconFileText,
   IconFlag,
   IconInbox,
   IconLayoutDashboard,
@@ -67,15 +66,22 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   const kit = useMemo(() => ({ client, user, apiBase: apiBase() }), [client, user]);
   const { data: serverInfo } = usePoll(['admin', 'server'], () => client.adminServer(), 15000);
 
-  // Skip the high-frequency per-line job.log/job.progress/download.progress
-  // frames (the jobs page streams those itself); coalesce the rest to one
-  // refresh per window, since e.g. an enrich pass emits one item.updated per title.
+  // Skip the high-frequency per-line frames (the pages that want them stream
+  // those themselves); coalesce the rest to one refresh per window, since e.g.
+  // an enrich pass emits one item.updated per title. Compared as plain strings:
+  // download.progress is a module's frame, not part of core's union.
   useEffect(() => {
+    const highFrequency = new Set([
+      'job.log',
+      'job.progress',
+      'download.progress',
+      'module.op.progress',
+      'module.op.done',
+    ]);
     let pending: ReturnType<typeof setTimeout> | null = null;
     const ev = new KromaEvents(apiBase(), {
       onEvent: (e) => {
-        if (e.type === 'job.log' || e.type === 'job.progress' || e.type === 'download.progress')
-          return;
+        if (highFrequency.has(e.type)) return;
         if (pending) return;
         pending = setTimeout(() => {
           pending = null;
@@ -152,12 +158,6 @@ const NAV_GROUPS: { labelKey: MessageKey; section: string; items: NavItem[] }[] 
         labelKey: 'admin.navLibraries',
         cap: 'library.manage',
         icon: IconLibrary,
-      },
-      {
-        to: '/admin/naming',
-        labelKey: 'admin.navNaming',
-        cap: 'library.manage',
-        icon: IconFileText,
       },
       {
         to: '/admin/transcoder',

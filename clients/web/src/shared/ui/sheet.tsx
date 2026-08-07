@@ -24,9 +24,13 @@ export function Sheet({
     >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[18px] data-[state=open]:animate-[fade-in_.2s_ease]" />
+        {/* Resting transform via `transform` (not the tailwind translate
+            utilities, which emit the CSS `translate` property): the pop-in
+            keyframes animate `transform`, and the two would stack into a
+            double offset while the animation plays. */}
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[min(900px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-surface-1 shadow-pop focus:outline-none data-[state=open]:animate-[pop-in_.22s_var(--ease-spring)]"
+          className="fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[min(900px,calc(100%-2rem))] [transform:translate(-50%,-50%)] overflow-y-auto rounded-2xl border border-border bg-surface-1 shadow-pop focus:outline-none data-[state=open]:animate-[pop-in_.22s_var(--ease-spring)]"
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
           {children}

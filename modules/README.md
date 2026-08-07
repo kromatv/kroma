@@ -1,123 +1,144 @@
-# Authoring a KROMA module
+# Modules
 
-KROMA is a modular player: the core is playback + catalog, and everything else
-(downloads, indexers, requests, dashboards, ...) is a **module**. A module has a
-stable **reverse-DNS id** (e.g. `tv.kroma.notes`) that joins its backend and
-frontend halves, a `module.json` manifest, and it registers itself with zero
-hand-wiring. Pick the shape that fits, then use the commands below.
+KROMA's core is playback + catalog. Everything else — downloads, indexers,
+acquisition, VPN, transcription, embeddings, discovery, remote access — is a
+**module**: a separate program with a reverse-DNS id (`tv.kroma.torrents`) that
+the server installs, spawns and reverse-proxies.
 
-## Which shape?
+Modules are **not** compiled into the server. `roster.yaml` is empty on purpose:
+this is the zero-module base build. A module reaches users as a `.kmod` bundle
+installed from Admin → Modules, either from a registry or by upload.
 
-| Shape | Use it for | Where | Runtime install? |
-|-------|-----------|-------|------------------|
-| **Single-file** (codegen) | most modules: a manifest + a page (+ optional backend items) | `modules/<name>.module.md` | no (compiled in) |
-| **Crate** (hand-written) | a domain module with a substantial backend and a bundled page | `server/modules/<id>/{be,fe}` | no (compiled in) |
-| **WASM** (runtime) | a module you install into a running server with no rebuild | `wasm-modules/<id>/{be,fe}` | **yes** |
+## Layout
 
-Start with **single-file** unless you specifically need the other two.
-
-## 1. Single-file module (the default)
+Every module is one directory here, and it is **its own cargo workspace** — it
+builds standalone, with its own `Cargo.lock`, outside the server tree:
 
 ```
-bun run modules:new tv.kroma.notes     # scaffold modules/notes.module.md
-# edit the file: YAML frontmatter (manifest) + a ```tsx page (+ optional ```svg / ```rust / ```sql)
-bun run modules:gen                     # expand it into server/modules/<id>/ + register it
-bun run modules:validate                # schema-check every manifest
-bun run modules:check                   # CI gate: manifests valid + generated output in sync
+modules/<id>/
+  module.json      manifest: id, version, minServer, dependsOn, provides, config
+  server/          the Rust backend — a [[bin]] makes it a spawned sidecar
+  ui/              the React frontend (a KromaModule: pages, nav, settings)
+  locales/         en.json, fr.json — this module's own catalog
+  icon.svg
+  README.md
 ```
 
-One `.module.md` holds the manifest (frontmatter) and its fenced blocks:
-`` ```tsx `` (the page, required), `` ```svg `` (packaged icon), `` ```rust ``
-(extra backend items -- the registry entry `pub const MODULE` is generated for
-you; do not redefine it), `` ```sql `` (migrations). `modules:gen` writes the
-generated crate + package and updates the aggregator rosters, so nothing is
-hand-wired. See `modules/hello.module.md` for a complete example. Generated
-output is committed -- re-run `modules:gen` after editing and commit the result;
-`modules:check` fails if it drifts (e.g. a generated file was hand-edited instead
-of its `.module.md` source). `id`s and derived crate names must be unique, and
-`version` must be semver -- `modules:gen` errors early otherwise.
+`modules/<name>.module.md` single-file sources live here too, alongside the
+directories they expand into.
 
-## 2. Hand-written crate module
+## Build one
 
-Look at `server/modules/tv.kroma.torrents/` (backend + frontend) as the template. Each
-crate exports one `pub const MODULE`; `embedded_module!()` finds the module's
-`module.json` + `icon.<ext>` (or none) at compile time, so it is one line:
+Each command works from the module's own directory, because nothing above it is
+consulted:
+
+```bash
+cd modules/tv.kroma.remote/server
+cargo build            # or check / test / clippy — a normal, standalone crate
+```
+
+To produce the installable bundle, from the repo root:
+
+```bash
+bun run modules:pack modules/tv.kroma.remote   # -> dist/modules/<id>.kmod (+ .sha256)
+bun run modules:pack                           # every module
+```
+
+`modules:pack` compiles the `[[bin]]` with the `release-kmod` profile (release +
+`panic = "abort"`: a sidecar aborts and the supervisor respawns it, which drops
+the unwinding tables for ~11% smaller binaries), builds the `ui/` remote if there
+is one, and packs `module.json` + the `module` binary + the icon + `fe/` into a
+zstd tarball.
+
+Every module workspace shares one build directory (`target/kmod`), so the
+dependency graph they have in common — axum, tokio, candle, librqbit — compiles
+once rather than once per module. Cargo holds an exclusive lock on it, so module
+builds run in sequence.
+
+A `.kmod` carries a **native** binary, so it must match the server's platform.
+Cross-compile with `KMOD_TARGET`, which also suffixes the bundle with the triple:
+
+```bash
+KMOD_TARGET=x86_64-unknown-linux-musl bun run modules:pack
+```
+
+Declare cargo features the bundle needs in the manifest, not on the command
+line — `modules:pack` reads them:
+
+```toml
+[package.metadata.kmod]
+features = ["rqbit"]
+```
+
+A module with **no `[[bin]]`** is a *library module*: manifest + frontend only,
+no spawned process. Its Rust code is co-linked into whatever uses it
+(`tv.kroma.scene`, the release-name parser, is one).
+
+## Write one
+
+Two shapes. Start with the first.
+
+### Single-file (codegen)
+
+One file holds the manifest and every part of the module:
+
+```bash
+bun run modules:new tv.kroma.notes     # scaffolds modules/notes.module.md
+bun run modules:gen                    # expands it into modules/tv.kroma.notes/
+```
+
+The file is YAML frontmatter (the manifest) plus fenced blocks: ` ```tsx ` the
+page (required), ` ```rust ` extra backend items, ` ```sql ` migrations,
+` ```svg ` the icon, ` ```locale.en `/` ```locale.fr ` the catalogs. The registry
+entry `pub const MODULE` is generated — do not write one.
+
+**Generated output is committed.** Re-run `modules:gen` after editing the source
+and commit the result; never hand-edit a generated file. `modules:check` fails on
+drift.
+
+### Hand-written crate
+
+For a substantial backend. Use `modules/tv.kroma.torrents/` as the template. The
+crate exports one `pub const MODULE`, which the macro fills in from the manifest
+and icon at compile time:
 
 ```rust
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 ```
 
-Register the backend by adding the module to `modules/roster.yaml` (its `id` +
-`crate`, plus `serverModule: true` when it ships one) and running
-`bun run modules:gen`, which regenerates the `kroma-modules-generated` aggregator.
-For a compiled-in frontend, add it to `clients/web/src/modules/registry.ts`. A
-module that also owns admin routes + start/stop lifecycle implements
-`ServerModule` in its OWN `server/` crate (see `tv.kroma.torrents`).
+A sidecar's whole `main()` is one `serve` call — the runtime opens the shared
+SQLite, builds the out-of-process host, applies migrations, runs `on_enable` and
+serves the module's admin routes on the port the supervisor assigned:
 
-## 3. WASM runtime module (install with no rebuild)
-
-Look at `wasm-modules/tv.kroma.hellowasm/`: a `server/` extism guest (exports
-`handle_http`, proxied at `/api/plugin/<id>/*`), a `ui/` Module Federation remote
-(the page), `module.json` (with `feRemote`), and `icon.svg`.
-
-```
-bun run modules:pack                    # -> dist/modules/<id>.kmod
-# then upload the .kmod in Admin -> Modules (Install a module)
+```rust
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    kroma_module_runtime::serve_one(
+        |host| host.register_service(kroma_remote::RemoteAccess::new(host.data_dir().into())),
+        kroma_remote::server_module::<RemoteHost>(),
+    )
+    .await
+}
 ```
 
-`.kmod` is a gzip-compressed tar of `module.json` + `module.wasm` + `icon` +
-`fe/`. (`bun run modules:wasm` still emits a raw `.tar`; the install endpoint
-auto-detects gzip, so both install the same way.)
+Depend on **`kroma-module-sdk`** and, for a sidecar, **`kroma-module-runtime`** —
+never on core crates directly. The SDK re-exports the surface a module is allowed
+to touch, plus pure library modules like `kroma_module_sdk::scene`. In this repo
+they are path deps back into `server/crates/`.
 
-The server unpacks it into `<data>/modules/<id>/`, loads it live, serves its page
-same-origin, and it survives restarts. A WASM module is sandboxed
-request/response logic (capabilities + HTTP) -- it cannot be a live background
-service (those stay compiled in).
+### Frontend
 
-## Folder layout
-
-A module folder is:
-
-```
-<id>/
-  module.json      # manifest: id, deps, capabilities, config, feRemote
-  server/          # Rust backend (an EmbeddedModule `MODULE` const, + extras)
-  ui/              # React frontend (a KromaModule: pages, nav, settings)
-  locales/         # en.json, fr.json (this module's translations)
-  icon.svg
-  README.md
-```
-
-## Pages + sections
-
-Build the frontend module with `defineModule(manifest, { locales, pages })`: it
-takes `id` / `version` / `dependsOn` from the manifest, so you never restate
-them. Each `pages[]` entry is one screen -- a `path` + `component`, plus an
-optional `nav` when it should appear in a sidebar. The nav URL is **derived**
-from the page's `section` + `path` (`section` in an admin group -> `/admin/<path>`,
-otherwise `/<path>`), so the route and its link can never drift and there is no
-`m/` segment to write.
-
-`section` places the link in a named nav group: **admin** groups `management |
-media | acquisition | system | maintenance` (or `admin` for the generic "Module
-pages" group), or `library` for the main sidebar. `icon` is a name (e.g.
-`download`, `antenna`; see `clients/web/src/modules/module-icons.ts`), `requires`
-gates it by capability.
+`defineModule` takes id / version / dependsOn from the manifest, so they are
+never restated. Each page is a `path` + `component`; the nav URL is **derived**
+from `section` + `path`, so a route and its link cannot drift:
 
 ```ts
-import { defineModule } from '@kroma/module-sdk';
-import { lazy } from 'react';
-import manifest from '../../module.json';
-
 export const torrentsModule = defineModule(manifest, {
-  locales: import.meta.glob<Record<string, string>>('../../locales/*.json', {
-    eager: true,
-    import: 'default',
-  }),
+  locales: import.meta.glob('../../locales/*.json', { eager: true, import: 'default' }),
   pages: [
     {
-      path: 'downloads', // -> /admin/downloads (section is an admin group)
+      path: 'downloads', // -> /admin/downloads
       component: lazy(() => import('./DownloadsPage')),
       nav: { label: 'nav.title', icon: 'download', section: 'acquisition', requires: 'library.manage' },
     },
@@ -125,29 +146,50 @@ export const torrentsModule = defineModule(manifest, {
 });
 ```
 
-## i18n
+`section` picks the nav group: an admin group (`management | media | acquisition
+| system | maintenance`, or `admin` for the generic one) or `library` for the
+main sidebar. `icon` is a name from `clients/web/src/modules/module-icons.ts`;
+`requires` gates the link by capability.
 
-Ship `locales/{en,fr}.json` and pass them as the module's `locales`. `label`s and
-`host.i18n.t(key)` resolve against the module's OWN catalog first, then the core
-catalogs -- no change to the app's typed key union. (Single-file modules: use
-` ```locale.en ` / ` ```locale.fr ` blocks.)
+Every user-visible string is a key. Ship `locales/{en,fr}.json`; they resolve
+against the module's own catalog first, then the core ones.
 
-## Dependencies
+## Runtime contract
 
-`dependsOn` is a hard dependency (a bare id, `"id@^1.0"`, or `{ id, version }`
-with a semver range enforced on the backend). `optionalDependsOn` is ordered
-first when present but not required. `requires: [{ kind, id? }]` is a capability
-dependency satisfied by any providing module. Status is shown per module in
-Admin > Modules.
+The supervisor scans `<data>/modules/*`, spawns each enabled module as its own
+process on a free localhost port, and reverse-proxies `/api/module/<id>/*` to it.
+A module opens the shared SQLite **directly** (WAL, so multi-process is fine) and
+calls back into the core over the token-authed `/api/_host/*` API for settings,
+events and jobs. It owns its own tables.
 
-## Conventions
+- **`dependsOn`** — hard dependency: a bare id, `"id@^1.0"`, or `{ id, version }`.
+  Enforced on the backend; the Store installs missing ones automatically.
+- **`optionalDependsOn`** — ordered first when present, not required.
+- **`requires: [{ kind, id? }]`** — a *capability* dependency, satisfied by any
+  module whose `provides` declares that kind.
+- **`minServer`** — a bare version or a range, enforced at install **and** at
+  spawn, so a stale bundle fails with a clear message instead of proxy errors.
 
-- **id**: reverse-DNS, `^[a-z0-9]+(\.[a-z0-9-]+)+$` (e.g. `tv.kroma.notes`). It is
-  the join key across backend/frontend and the schema enforces it.
-- **`MODULE`**: every compiled-in module crate exports one `pub const MODULE`.
-- **`provides`**: a manifest's `provides` (capabilities) is a *declaration* for
-  introspection (`GET /api/modules`) + capability deps; the concrete dispatch is
-  a sub-engine registry (e.g. `DownloadClientRegistry`).
-- Manifests are validated against `modules/module.schema.json` by
-  `bun run modules:validate` (covers `server/modules/*`, `wasm-modules/*`, and
-  `modules/*.module.md`).
+`provides` is a declaration for introspection and capability deps; the concrete
+dispatch is a sub-engine registry (`DownloadClientRegistry` and friends).
+
+## Publish one
+
+`bun run modules:pack` output is directly installable — upload the `.kmod` in
+Admin → Modules.
+
+To serve modules to others, host a catalog: `bun run modules registry` emits a
+`modules.json` index of per-target artifacts with checksums, which any static
+host can serve. Operators add it under Admin → Modules → Registries. See
+[`docs/module-registries.md`](../docs/module-registries.md).
+
+## Checks
+
+```bash
+bun run modules:validate   # every manifest against module.schema.json
+bun run modules:gen        # expand single-file sources + regenerate aggregators
+bun run modules:check      # CI gate: valid + generated output in sync
+```
+
+`id` must be reverse-DNS (`^[a-z0-9]+(\.[a-z0-9-]+)+$`) and unique; `version`
+must be semver. Both are checked before anything is generated.

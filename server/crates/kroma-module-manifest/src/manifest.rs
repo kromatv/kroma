@@ -218,8 +218,6 @@ pub struct ModuleManifest {
     pub config: Vec<ConfigField>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fe_remote: Option<FeRemote>,
-    #[serde(default, rename = "adminPrefixes", skip_serializing_if = "Vec::is_empty")]
-    pub admin_prefixes: Vec<String>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub library: bool,
 }
@@ -241,7 +239,6 @@ impl ModuleManifest {
             permissions: Vec::new(),
             config: Vec::new(),
             fe_remote: None,
-            admin_prefixes: Vec::new(),
             library: false,
         }
     }

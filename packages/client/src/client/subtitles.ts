@@ -1,9 +1,7 @@
 // On-device subtitle generation: transcribe the audio (Whisper) or translate an
 // existing track (LLM), poll live progress, cancel, and delete generated tracks.
 
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** A generated + cached subtitle, with its WebVTT URL (relative to the server). */
 export interface DownloadedSub {

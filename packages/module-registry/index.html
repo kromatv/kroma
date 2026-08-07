@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KROMA Modules</title>
+    <meta
+      name="description"
+      content="The module registry for KROMA: downloads, indexers, VPN, transcription and more, installed straight from your server's admin."
+    />
+    <link rel="icon" href="/favicon.svg" />
+    <!-- Autodiscovery: KROMA servers follow this tag when they are handed the
+         site URL instead of the raw catalog (see docs/module-registries.md). -->
+    <link rel="kroma-modules" href="/modules.json" />
+    <!-- The worker replaces the placeholder with the live catalog at the edge;
+         the vite dev server leaves it, and the app falls back to fetching. -->
+    <script id="kroma-catalog" type="application/json">"__CATALOG__"</script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

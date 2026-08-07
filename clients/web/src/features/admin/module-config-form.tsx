@@ -4,6 +4,7 @@
 // stringified values the old text-only form sent).
 
 import type { ConfigField } from '@kroma/module-sdk';
+import { useT } from '@kroma/ui';
 import { Button } from '@kroma/ui/kit';
 import { type ReactNode, useId, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
@@ -39,6 +40,7 @@ export function ModuleConfigForm({
   values: Record<string, unknown>;
   onSaved: () => void;
 }>) {
+  const t = useT();
   const [draft, setDraft] = useState<Record<string, ConfigValue>>(() =>
     Object.fromEntries(fields.map((f) => [f.key, initial(f, values[f.key])])),
   );
@@ -68,7 +70,7 @@ export function ModuleConfigForm({
           variant="outline"
           active
           size="sm"
-          label={saving ? 'Saving...' : 'Save'}
+          label={t('common.save')}
           onPress={() => void save()}
           loading={saving}
         />
@@ -121,6 +123,8 @@ function Field({
     control = (
       <input
         id={id}
+        type={field.secret ? 'password' : 'text'}
+        placeholder={field.placeholder}
         className={inputCls}
         value={String(value ?? '')}
         onChange={(e) => onChange(e.target.value)}

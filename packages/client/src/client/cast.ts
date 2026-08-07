@@ -5,9 +5,7 @@
 // casting is watching, just on another screen.
 
 import type { CastAnnounceBody, CastAnnounceReply, CastCommand, CastReceiver } from '../types';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** Register + heartbeat + ack, in one call (a receiver). The reply carries any
  * command this receiver still has to apply, so a TV whose event socket dropped

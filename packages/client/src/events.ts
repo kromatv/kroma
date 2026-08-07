@@ -40,39 +40,31 @@ export type ServerEvent =
   // Addressed: the server sends these only to sockets signed in as the
   // recipient, so receiving one always means "this is yours".
   | { type: 'notification.created'; id: string; unread: number }
-  | { type: 'notification.read'; unread: number }
-  | {
-      type: 'download.progress';
-      id: string;
-      requestId: string | null;
-      progress: number;
-      downBps: number;
-      upBps: number;
-      peers: number;
-      peersSeen: number;
-      state: string;
-    }
-  | { type: 'download.completed'; id: string; title: string }
-  | { type: 'vpn.status'; connected: boolean; exitIp: string | null; paused: boolean };
+  | { type: 'notification.read'; unread: number };
 
-export interface KromaEventsOptions {
+// Module-emitted frames (`vpn.status`, `download.progress`, ...) ride the same
+// socket but are NOT part of this union: core does not model module events.
+// A module declares its own frame types in its package and a listener that
+// wants them widens the socket: `new KromaEvents<ServerEvent | TheirEvent>()`.
+
+export interface KromaEventsOptions<E extends { type: string } = ServerEvent> {
   token?: () => string | undefined;
-  onEvent?: (event: ServerEvent) => void;
+  onEvent?: (event: E) => void;
   onOpen?: () => void;
   onClose?: () => void;
   WebSocketImpl?: typeof WebSocket;
   maxBackoffMs?: number;
 }
 
-export class KromaEvents {
+export class KromaEvents<E extends { type: string } = ServerEvent> {
   private readonly url: string;
-  private readonly opts: KromaEventsOptions;
+  private readonly opts: KromaEventsOptions<E>;
   private ws: WebSocket | null = null;
   private closed = false;
   private retry = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(baseUrl: string, opts: KromaEventsOptions = {}) {
+  constructor(baseUrl: string, opts: KromaEventsOptions<E> = {}) {
     this.url = `${baseUrl.replace(/^http/i, 'ws').replace(/(^|[^/])\/+$/, '$1')}/api/events`;
     this.opts = opts;
   }
@@ -121,7 +113,7 @@ export class KromaEvents {
     ws.onmessage = (ev: MessageEvent) => {
       if (typeof ev.data !== 'string') return;
       try {
-        this.opts.onEvent?.(JSON.parse(ev.data) as ServerEvent);
+        this.opts.onEvent?.(JSON.parse(ev.data) as E);
       } catch {
         /* ignore malformed frames */
       }

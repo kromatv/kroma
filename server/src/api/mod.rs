@@ -60,6 +60,8 @@ mod it_playback;
 #[cfg(test)]
 mod it_cast;
 #[cfg(test)]
+mod it_images;
+#[cfg(test)]
 mod it_invites;
 #[cfg(test)]
 mod it_admin;

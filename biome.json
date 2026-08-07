@@ -19,6 +19,7 @@
       "!clients/web/src/styles.css",
       "!clients/site/src/styles.css",
       "!packages/ui/src/styles/tailwind.css",
+      "!packages/module-registry/src/styles.css",
       "!packages/tv/src/tv.css",
       "!clients/mobile/google-services.json"
     ]

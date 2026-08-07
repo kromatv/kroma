@@ -2,9 +2,7 @@
 // candidates, then pin the right one. Both endpoints need `library.manage`.
 
 import { MatchCandidates } from '../schemas';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** Route vocabulary for a rematch: the catalog's split, not TMDB's `tv`. */
 export type RematchKind = 'movie' | 'show';

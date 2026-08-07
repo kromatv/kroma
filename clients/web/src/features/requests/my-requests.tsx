@@ -1,5 +1,12 @@
 import { Image } from '@kroma/admin-kit';
-import { KromaEvents, type MediaRequest, posterColors, sizedImageUrl } from '@kroma/core';
+import {
+  KromaEvents,
+  type MediaRequest,
+  posterColors,
+  type ServerEvent,
+  sizedImageUrl,
+} from '@kroma/core';
+import type { DownloadProgressEvent } from '@kroma/module-torrents/schemas';
 import { useLocale, useT } from '@kroma/ui';
 import { Button, EmptyState, IconButton } from '@kroma/ui/kit';
 import { IconCalendarClock } from '@tabler/icons-react';
@@ -29,7 +36,7 @@ export function MyRequestsPage() {
 
   const lastReloadRef = useRef(0);
   useEffect(() => {
-    const ev = new KromaEvents(apiBase(), {
+    const ev = new KromaEvents<ServerEvent | DownloadProgressEvent>(apiBase(), {
       onEvent: (e) => {
         if (e.type === 'request.updated') {
           const now = Date.now();

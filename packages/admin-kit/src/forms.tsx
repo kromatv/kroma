@@ -3,6 +3,7 @@
 // modal scaffold, labelled fields, and the modal action footer. Self-contained
 // (own copy of the styled select) so the kit needs no app import.
 
+import * as Dialog from '@radix-ui/react-dialog';
 import * as RSelect from '@radix-ui/react-select';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import {
@@ -236,38 +237,46 @@ export function TextArea({
   );
 }
 
-/** Centered modal overlay (click-outside to close). */
+/** Centered modal on Radix Dialog: portalled to the body, scroll-locked,
+ * focus-trapped, Esc + click-outside call `onClose`. z-70 so it always stacks
+ * above a [`Drawer`] (z-60); Radix's layer stack keeps dismissal routed to
+ * the topmost surface either way. `width` caps the dialog width in px (460 by
+ * default); it still shrinks to the viewport on small screens. */
 export function Modal({
   title,
   children,
   onClose,
+  width = 460,
 }: Readonly<{
   title: string;
   children: ReactNode;
   onClose: () => void;
+  width?: number;
 }>) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      {/* Dimmed backdrop as a real control: click-to-dismiss with built-in
-          keyboard support, a sibling rather than a wrapper so the dialog's
-          own interactive content stays valid. */}
-      <button
-        type="button"
-        aria-label="Close"
-        className="absolute inset-0 bg-black/60"
-        onClick={onClose}
-      />
-      {/* An inside click lands on the dialog (relative, above the backdrop),
-          so it never reaches the backdrop button - no stopPropagation needed. */}
-      <div
-        className="relative w-full max-w-115 rounded-2xl border border-border bg-surface-1 p-6 shadow-pop"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="mb-4 font-display text-[20px] font-bold">{title}</div>
-        {children}
-      </div>
-    </div>
+    <Dialog.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-70 bg-black/60 data-[state=open]:animate-[fade-in_.2s_ease]" />
+        {/* Resting transform via `transform` (not the tailwind translate
+            utilities, which emit the CSS `translate` property): the pop-in
+            keyframes animate `transform: translate(-50%,-50%) scale(…)`, and
+            the two properties would otherwise stack into a double offset
+            while the animation plays. */}
+        <Dialog.Content
+          aria-describedby={undefined}
+          style={{ width: `min(${width}px, calc(100% - 3rem))` }}
+          className="fixed left-1/2 top-1/2 z-71 max-h-[85vh] [transform:translate(-50%,-50%)] overflow-y-auto rounded-2xl border border-border bg-surface-1 p-6 shadow-pop focus:outline-none data-[state=open]:animate-[pop-in_.22s_var(--ease-spring)]"
+        >
+          <Dialog.Title className="mb-4 font-display text-[20px] font-bold">{title}</Dialog.Title>
+          {children}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 
-function brandedId<const B extends string>(_brand: B) {
+export function brandedId<const B extends string>(_brand: B) {
   const schema = z.string().brand<B>();
   // `parse` does the real validation; the assertion only re-applies the brand
   // the compiler can't see through the generic `B`.
@@ -29,9 +29,6 @@ export type ReportId = ReturnType<typeof ReportId.of>;
 
 export const IndexerId = brandedId('IndexerId');
 export type IndexerId = ReturnType<typeof IndexerId.of>;
-
-export const DownloadClientId = brandedId('DownloadClientId');
-export type DownloadClientId = ReturnType<typeof DownloadClientId.of>;
 
 export const JobRunId = brandedId('JobRunId');
 export type JobRunId = ReturnType<typeof JobRunId.of>;

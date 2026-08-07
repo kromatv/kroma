@@ -16,11 +16,12 @@ path = "src/main.rs"
 # while everything still links into this one binary. All existing entry points
 # (`cargo build` from server/, CI, the Synology docker build) are unchanged.
 [workspace]
-# Shared infra crates live under crates/. Self-contained domain *modules* live
-# under modules/<id>/server (paired with their frontend at modules/<id>/ui, their
-# translations at modules/<id>/locales, and a shared modules/<id>/module.json).
-# Modules sit under server/ because cargo refuses members outside the workspace root.
-members = ["crates/*", "modules/*/server"]
+# Shared infra crates live under crates/. Modules are NOT members: each one is
+# its own workspace at <repo>/modules/<id>, built and packed on its own (see
+# modules/README.md). The three named below are reached as ordinary path deps,
+# which cargo allows across workspace roots even though members must be
+# hierarchically below this file.
+members = ["crates/*"]
 
 # Shared package metadata. Every member (and the root package above) inherits
 # these via `edition.workspace = true` etc. Versions stay per-crate: the libs
@@ -128,7 +129,7 @@ kroma-push = { path = "crates/kroma-push" }
 # Re-exports the manifest layer + the engine/host/domain/http surface modules use.
 kroma-module-sdk = { path = "crates/kroma-module-sdk" }
 # Generated aggregator: registers every single-file (codegen) module. Owned by
-# scripts/gen-modules.ts; run `bun run modules:gen` after adding a *.module.md.
+# @kroma/module-tools; run `bun run modules:gen` after adding a *.module.md.
 kroma-modules-generated = { path = "crates/kroma-modules-generated" }
 kroma-config = { path = "crates/kroma-config" }
 kroma-primitives = { path = "crates/kroma-primitives" }
@@ -140,19 +141,15 @@ kroma-module-host = { path = "crates/kroma-module-host" }
 # The server-side module kernel: the compile-time composition root (registers
 # every module's manifest + collects their ServerModule behaviors).
 kroma-module-kernel = { path = "crates/kroma-module-kernel" }
-kroma-scene = { path = "modules/tv.kroma.scene/server" }
-kroma-torznab = { path = "modules/tv.kroma.torznab/server" }
-kroma-indexer = { path = "modules/tv.kroma.indexer/server" }
-kroma-remote = { path = "modules/tv.kroma.remote/server" }
-kroma-vpn = { path = "modules/tv.kroma.vpn/server" }
-kroma-transmission = { path = "modules/tv.kroma.engine.transmission/server" }
-kroma-qbittorrent = { path = "modules/tv.kroma.engine.qbittorrent/server" }
-kroma-torrent = { path = "modules/tv.kroma.torrents/server" }
-kroma-acquisition = { path = "modules/tv.kroma.acquisition/server" }
-kroma-whisper = { path = "modules/tv.kroma.whisper/server" }
-kroma-vector = { path = "modules/tv.kroma.vector/server" }
-kroma-mdns = { path = "modules/tv.kroma.mdns/server" }
 kroma-engine = { path = "crates/kroma-engine" }
+# The only three modules the server tree still LINKS, reached across the
+# workspace boundary at <repo>/modules/<id>/server. Every other module is
+# reached at runtime over HTTP by the supervisor and is named nowhere here.
+# scene is a pure library module the SDK re-exports; whisper and vector back the
+# `whisper-*` / `semantic-embeddings` features below.
+kroma-scene = { path = "../modules/tv.kroma.scene/server" }
+kroma-whisper = { path = "../modules/tv.kroma.whisper/server" }
+kroma-vector = { path = "../modules/tv.kroma.vector/server" }
 
 [features]
 # Feature knobs are unchanged for callers (`cargo build`, CI, the Synology .spk),
@@ -295,12 +292,3 @@ opt-level = 3
 lto = true
 codegen-units = 1
 strip = true
-
-# The profile `bun run modules:pack` builds each `.kmod` sidecar with: release +
-# `panic = "abort"`. Dropping the unwinding tables makes the binaries ~11% smaller
-# at NO speed cost (opt-level stays 3). Safe for sidecars specifically: a panic
-# aborts the module process and the supervisor respawns it (the core binary keeps
-# the default unwinding `release` profile). Builds into target/release-kmod/.
-[profile.release-kmod]
-inherits = "release"
-panic = "abort"

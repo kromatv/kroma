@@ -1,0 +1,96 @@
+# This module is its own cargo workspace: it builds standalone, outside the
+# server tree, and is packed into a `.kmod` on its own. Package metadata and
+# dependency versions are explicit here rather than inherited.
+[workspace]
+
+[package]
+name = "kroma-torrent"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "DownloadClient trait + torrent engines (embedded librqbit, Transmission, qBittorrent)"
+license = "MIT"
+
+[[bin]]
+# The module's `.kmod` entrypoint: an out-of-process sidecar that hosts the
+# downloads vertical + the co-located torrent engines (see src/bin/module.rs).
+name = "kroma-module-torrents"
+path = "src/bin/module.rs"
+
+[package.metadata.kmod]
+# The packed `.kmod` bundles the embedded librqbit engine (modules:pack reads
+# this to add `--features rqbit`).
+features = ["rqbit"]
+
+[features]
+# The embedded librqbit engine. Off = the "rqbit" client kind compiles as a
+# stub reporting "not compiled"; Transmission/qBittorrent (plain curl) remain.
+rqbit = ["dep:librqbit", "tokio/rt-multi-thread"]
+
+[dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
+# The `.kmod` binary only (guarded to the bin's use): the out-of-process runtime,
+# the cross-module port bridges, and the sibling torrent-engine modules co-hosted
+# in this process so they register their kind into the shared DownloadManager.
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+kroma-port-bridge = { path = "../../../server/crates/kroma-port-bridge" }
+kroma-transmission = { path = "../../tv.kroma.engine.transmission/server" }
+kroma-qbittorrent = { path = "../../tv.kroma.engine.qbittorrent/server" }
+# The download manager + monitor (formerly the kroma-downloads crate) live here now,
+# so the module owns its whole backend and nothing download-related sits in crates/.
+# The admin routes (queue / clients / organize) moved into this crate need the
+# axum router + extractors, exactly like the vpn / indexer module crates.
+axum = { version = "0.8", features = ["macros", "ws"] }
+# The module owns its `downloads` / `download_clients` tables now (schema + typed
+# queries), so it talks to SQLite directly through the pool kroma-db hands out.
+rusqlite = { version = "0.40", features = ["bundled"] }
+# The organize vertical (moved out of the core kroma-engine crate) lives here: it
+# orchestrates the app (kroma-engine) and parses release names via kroma-scene. The
+# db facade re-exports the indexers table from kroma-indexer for the queue view.
+# The acquisition vertical is its own crate (kroma-acquisition), which deps THIS one.
+sha1 = "0.10"
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+# Pinned to an exact 9.x release: 9.x's HTTP tracker client honors the tracker's
+# `peers6` (IPv4-only in 8.x), which is REQUIRED for IPv6-only private swarms
+# (private = no DHT, so the tracker is the only peer source). 9.x moved the socks
+# proxy into `connect: ConnectionOptions{proxy_url}` and the listen port into
+# `listen: ListenerOptions`. default-features off drops native-tls (openssl) and
+# the HTTP API; rust-tls keeps the musl single binary linking. Exact-pinned (not
+# a range) because this is an -rc: a new rc could shift the API under us.
+librqbit = { version = "=9.0.0-rc.0", optional = true, default-features = false, features = ["rust-tls"] }
+# The async admin routes + downloads monitor need spawn_blocking + timers
+# unconditionally (independent of the embedded engine); the `rqbit` feature layers
+# on the multi-thread runtime the librqbit session drives.
+tokio = { version = "1", features = ["rt", "time"] }
+
+[dev-dependencies]
+# The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
+kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
+# The engine_probe example only: session logs for swarm diagnostics.
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[[example]]
+name = "engine_probe"
+required-features = ["rqbit"]
+
+# The profile `bun run modules:pack` builds this sidecar with: release + `panic =
+# "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
+# speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
+# process and the supervisor respawns it. Defined per module because a profile is
+# only honoured at a workspace root, and each module is now its own workspace.
+# Mirrors server/Cargo.toml's [profile.release]. A profile is only honoured at a
+# workspace root, and this module is its own workspace, so `inherits = "release"`
+# below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen
+# units, unstripped.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.release-kmod]
+inherits = "release"
+panic = "abort"

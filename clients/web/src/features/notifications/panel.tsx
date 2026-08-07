@@ -29,7 +29,6 @@ import {
   IconInbox,
   IconLoader2,
   IconPlayerPlayFilled,
-  IconPlugConnectedX,
   IconServerBolt,
   IconSparkles,
   IconX,
@@ -376,7 +375,6 @@ const EVENT_META: Record<(typeof KNOWN_NOTIFICATION_EVENTS)[number], EventMeta> 
   'download.imported': { icon: IconDownload, fg: 'text-h265' },
   'download.failed': { icon: IconAlertTriangle, fg: 'text-red-400' },
   'system.job.failed': { icon: IconServerBolt, fg: 'text-red-400' },
-  'system.vpn.down': { icon: IconPlugConnectedX, fg: 'text-red-400' },
   'system.disk.low': { icon: IconDatabase, fg: 'text-accent' },
   'system.test': { icon: IconBellRinging, fg: 'text-accent' },
   // A module's own event has no vocabulary this app can read, so it stays neutral.

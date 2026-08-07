@@ -1,6 +1,6 @@
 {
-  // KROMA module registry. Deploy from this directory:
-  //   bunx wrangler deploy
+  // KROMA module registry. Deploy from the package root (builds the site first):
+  //   bun run deploy        (or `bun run deploy:modules` at the repo root)
   // Optional (lifts anonymous GitHub API rate limits):
   //   bunx wrangler secret put GITHUB_TOKEN
   "$schema": "node_modules/wrangler/config-schema.json",
@@ -14,6 +14,10 @@
   "vars": {
     "GITHUB_REPO": "maxscharwath/kroma"
   },
+  // The React site, built by `bun run build` in the package root. The worker
+  // runs first for every request: it owns the catalog routes and injects the
+  // catalog into index.html; hashed assets pass through to this directory.
+  "assets": { "directory": "../dist", "binding": "ASSETS", "run_worker_first": true },
   // Served at https://modules.kroma.tv/ (bare URL = catalog for the Store,
   // HTML for browsers; /modules.json is the stable registry URL). Requires the
   // kroma.tv zone on this Cloudflare account.

@@ -198,11 +198,16 @@ pub fn show_title(pool: &Pool, id: &str) -> Result<Option<String>> {
 
 /// `metadata.posterUrl`, when enrichment found one.
 pub fn show_poster_art(pool: &Pool, id: &str) -> Result<Option<String>> {
+    Ok(show_metadata(pool, id)?.and_then(|m| m.poster_url))
+}
+
+/// The show's full enrichment metadata, when one is stored.
+pub fn show_metadata(pool: &Pool, id: &str) -> Result<Option<Metadata>> {
     let conn = pool.get()?;
     let raw: Option<Option<String>> = conn
         .query_row("SELECT metadata FROM shows WHERE id = ?1", params![id], |r| r.get(0))
         .ok();
-    Ok(parse_metadata(raw.flatten()).and_then(|m| m.poster_url))
+    Ok(parse_metadata(raw.flatten()))
 }
 
 pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {

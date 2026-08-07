@@ -67,9 +67,11 @@ if [ "${SKIP_RUST:-}" != "1" ]; then
   say "Cross-compiling kroma-server → $TARGET (Docker: $RUST_IMAGE)"
   # `whisper-local`: in-process Whisper (candle) so the .spk transcribes with no
   # external binary; the pure-Rust CPU backend still links on musl.
-  # `packages/` is mounted because i18n.rs `include_str!`s the shared locale
-  # catalogs at ../../packages/core/src/locales/*.json, outside server/.
-  docker run --rm -v "$ROOT/server":/home/rust/src -v "$ROOT/packages":/home/rust/packages \
+  # The WHOLE repo is mounted, not server/ alone: i18n.rs `include_str!`s the
+  # shared locale catalogs at ../../packages/core/src/locales/*.json, and the
+  # server path-deps three modules at ../modules/<id>/server — both outside
+  # server/, so anything narrower leaves a path dangling.
+  docker run --rm -v "$ROOT":/home/rust/repo -w /home/rust/repo/server \
     -v "$CACHE/cargo":/root/.cargo/registry \
     "$RUST_IMAGE" cargo build --release --target "$TARGET" --features whisper-local
 fi

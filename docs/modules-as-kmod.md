@@ -1,6 +1,6 @@
 # Modules as `.kmod` — out-of-process module architecture
 
-Goal: every module in `server/modules/*` ships as an installable `.kmod` file and
+Goal: every module in `modules/*` ships as an installable `.kmod` file and
 runs **out of the base `kroma-server` build** — native, fast, simple to author, and
 easy to fetch from a registry.
 
@@ -37,11 +37,14 @@ it, supervises it, and reverse-proxies its HTTP.**
   `module.json` + `module` (the binary) + `icon` + `fe/` into a zstd `.kmod`
   (per-target via `KMOD_TARGET`; sidecar bundles are suffixed with the triple)
   plus a `.sha256` sidecar.
-- **Registry + Store (shipped)**: `scripts/gen-registry.ts` builds a catalog
+- **Registry + Store (shipped)**: `bun run modules registry` builds a catalog
   (schema 2: per-target `artifacts` with `sha256`, `dependsOn`, `minServer`);
   the release workflow packs every target, attaches the `.kmod`s + the catalog
   (`modules.json`) to the GitHub Release, and the server's default registry is
-  `releases/latest/download/modules.json` (overridable via `moduleRegistryUrl`).
+  `https://modules.kroma.tv/modules.json`, the registry worker
+  (`packages/module-registry`) that serves the release catalog with edge
+  caching, a browsable page, and a `<link rel="kroma-modules">` autodiscovery
+  tag (overridable via `moduleRegistryUrl`).
   The in-app Store (Admin -> Modules) browses the catalog enriched with this
   server's verdict (matching artifact, installed version, update flag,
   compatibility + reason), installs/updates by id with automatic hard-dependency
@@ -77,8 +80,12 @@ generic `ServerModule<S: HostCtx>` behind `RemoteHost`.
 3. **Core → module direct calls** — `api/requests.rs`, `discover.rs`,
    `online_subs.rs` call module functions in-process (active downloads, transcribe,
    interactive search); these become proxied/port calls.
-4. **Zero-module base build** — drop every module from `roster.yaml` / the
-   generated aggregator / the binary deps once each is converted.
+4. **Zero-module base build** — `roster.yaml` and the generated aggregator are
+   empty, and modules now live at `modules/<id>`, each its own cargo workspace
+   outside `server/`. Three are still linked into the binary and are what is
+   left of this item: `kroma-scene` (a pure library the SDK re-exports) and
+   `kroma-whisper` / `kroma-vector` (behind the `whisper-*` and
+   `semantic-embeddings` features).
 5. **More per-platform binaries**: the release matrix currently packs
    `x86_64-unknown-linux-musl` (static: covers the .spk, Docker and any x86_64
    Linux host) and the store picks per-target artifacts from the catalog;

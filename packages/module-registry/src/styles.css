@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+
+/* The KROMA registry palette: near-black product surfaces, amber accent,
+   mint for capabilities. Named to avoid shadowing Tailwind's own scales. */
+@theme {
+  --color-page: #0b0b0e;
+  --color-surface: #121216;
+  --color-surface-2: #17171c;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.14);
+  --color-ink: #f4f3f0;
+  --color-ink-muted: rgba(244, 243, 240, 0.66);
+  --color-ink-dim: rgba(244, 243, 240, 0.42);
+  --color-amber: #f4b642;
+  --color-amber-ink: #171106;
+  --color-mint: #46d08d;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-page);
+  background-image:
+    radial-gradient(900px 420px at 18% -8%, rgba(99, 102, 241, 0.16), transparent 62%),
+    radial-gradient(900px 420px at 82% -8%, rgba(244, 182, 66, 0.1), transparent 62%);
+  background-repeat: no-repeat;
+}

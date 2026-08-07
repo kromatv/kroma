@@ -3,9 +3,7 @@
 // (resolve / dismiss / reopen / delete).
 
 import type { CreateReportBody, Report, ReportsView } from '../types';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** Filters for the admin triage queue. */
 export interface ReportQuery {

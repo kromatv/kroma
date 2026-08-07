@@ -2,9 +2,16 @@ import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
-import { FolderPicker } from '#web/features/admin/folder-picker';
+import { FolderField } from '#web/features/admin/folder-picker';
 import { useAsyncAction } from '#web/features/admin/shell';
-import { Field, Modal, ModalActions, SegmentedControl, TextInput } from '#web/features/admin/ui';
+import {
+  Field,
+  Modal,
+  ModalActions,
+  SegmentedControl,
+  TextInput,
+  Toggle,
+} from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { confirmDialog } from '#web/shared/ui';
 
@@ -38,6 +45,33 @@ export function LibraryTypeSelect({
   );
 }
 
+function FolderListEditor({
+  folders,
+  onChange,
+}: Readonly<{ folders: string[]; onChange: (folders: string[]) => void }>) {
+  const t = useT();
+  return (
+    <div className="flex flex-col gap-2">
+      {folders.map((path) => (
+        <FolderField
+          key={path}
+          value={path}
+          placeholder={t('admin.addFolder')}
+          onChange={(next) => onChange(folders.map((p) => (p === path ? next : p)))}
+          onClear={() => onChange(folders.filter((p) => p !== path))}
+        />
+      ))}
+      <FolderField
+        value=""
+        placeholder={t('admin.addFolder')}
+        onChange={(path) => {
+          if (!folders.includes(path)) onChange([...folders, path]);
+        }}
+      />
+    </div>
+  );
+}
+
 export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   const t = useT();
   const { client } = useAuth();
@@ -59,7 +93,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   };
 
   return (
-    <Modal title={t('admin.addLibrary')} onClose={() => call.end(false)}>
+    <Modal title={t('admin.addLibrary')} width={600} onClose={() => call.end(false)}>
       <Field label={t('admin.name')}>
         <TextInput
           value={name}
@@ -72,7 +106,12 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
         <LibraryTypeSelect value={kind} onChange={setKind} />
       </Field>
       <Field label={t('admin.firstFolder')}>
-        <FolderPicker value={folder} onChange={setFolder} />
+        <FolderField
+          value={folder}
+          onChange={setFolder}
+          placeholder={t('admin.chooseFolder')}
+          onClear={() => setFolder('')}
+        />
       </Field>
       <ModalActions
         onCancel={() => call.end(false)}
@@ -93,12 +132,14 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
     const t = useT();
     const { client } = useAuth();
     const [name, setName] = useState(lib.name);
+    const [kind, setKind] = useState<LibKind>(() => normalizeLibKind(lib.kind));
+    const [folders, setFolders] = useState(lib.folders);
     const [autoScan, setAutoScan] = useState(lib.autoScan);
     const { busy, run } = useAsyncAction();
 
     const save = () =>
       run(async () => {
-        await client.updateLibrary(lib.id, { name: name.trim(), autoScan });
+        await client.updateLibrary(lib.id, { name: name.trim(), kind, folders, autoScan });
         call.end(true);
       });
     const remove = async () => {
@@ -117,19 +158,27 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
     };
 
     return (
-      <Modal title={t('admin.manageLibrary', { name: lib.name })} onClose={() => call.end(false)}>
+      <Modal
+        title={t('admin.manageLibrary', { name: lib.name })}
+        width={600}
+        onClose={() => call.end(false)}
+      >
         <Field label={t('admin.name')}>
           <TextInput value={name} onChange={setName} className="w-full" />
         </Field>
-        <label className="mb-4 flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            checked={autoScan}
-            onChange={(e) => setAutoScan(e.target.checked)}
-            className="h-4 w-4 accent-(--kroma-accent)"
-          />
-          <span className="text-[14px] font-semibold">{t('admin.autoScan')}</span>
-        </label>
+        <Field label={t('admin.libraryType')}>
+          <LibraryTypeSelect value={kind} onChange={setKind} />
+        </Field>
+        <Field label={t('admin.scannedFolders')}>
+          <FolderListEditor folders={folders} onChange={setFolders} />
+        </Field>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <div className="text-[14px] font-bold">{t('admin.autoScan')}</div>
+            <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.autoScanHint')}</div>
+          </div>
+          <Toggle on={autoScan} onChange={setAutoScan} />
+        </div>
         <ModalActions
           onCancel={() => call.end(false)}
           cancelLabel={t('common.cancel')}
@@ -138,6 +187,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
           }}
           confirmLabel={busy ? t('common.saving') : t('common.save')}
           busy={busy}
+          disabled={!name.trim()}
           destructive={{
             label: t('common.delete'),
             onClick: () => {

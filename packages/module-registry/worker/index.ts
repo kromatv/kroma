@@ -1,37 +1,28 @@
-// KROMA module registry (modules.kroma.tv): serves the `modules.json` catalog, read live from
-// the latest GitHub Release and edge-cached, plus a landing page.
-import { KROMA_MARK_DATA_URI, KROMA_MARK_SVG } from './brand';
+// KROMA module registry (modules.kroma.tv): a Hono worker serving the
+// `modules.json` catalog, read live from the latest GitHub Release and
+// edge-cached, plus the React site built to ../dist (Worker static assets).
+// The site's index.html carries a `__CATALOG__` placeholder the worker fills
+// at the edge, so the page paints without a second request, and a
+// `<link rel="kroma-modules">` tag, so the bare origin works as a registry
+// URL in Admin -> Modules.
+import { Hono } from 'hono';
+import { KROMA_MARK_SVG } from './brand';
+import { DEFAULT_REPO } from './config';
 
 export type Env = {
   GITHUB_REPO?: string;
   GITHUB_TOKEN?: string;
+  ASSETS?: { fetch(request: Request): Promise<Response> };
 };
 
-type Artifact = { target?: string; url: string; size: number; sha256: string };
-type ModuleEntry = {
-  id: string;
-  name: string;
-  version: string;
-  description?: string;
-  minServer?: string;
-  dependsOn?: string[];
-  icon?: string;
-  artifacts?: Artifact[];
-  url?: string;
-  size?: number;
-  sha256?: string;
-};
-type Catalog = { schema?: number; generatedAt?: string; modules?: ModuleEntry[] };
-
-export const DEFAULT_REPO = 'maxscharwath/kroma';
 const CACHE_FRESH = 'https://kroma-modules.cache/catalog-fresh';
 const CACHE_STALE = 'https://kroma-modules.cache/catalog-stale';
+const UNAVAILABLE = JSON.stringify({ schema: 2, modules: [], error: 'catalog unavailable' });
 
-type ExecCtx = { waitUntil(p: Promise<unknown>): void };
 const edgeCache = (): Cache | undefined =>
   (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default;
 
-async function fetchCatalog(env: Env): Promise<{ body: string; catalog: Catalog }> {
+async function fetchUpstream(env: Env): Promise<string> {
   const repo = env.GITHUB_REPO || DEFAULT_REPO;
   const headers: Record<string, string> = { 'user-agent': 'kroma-module-registry' };
   if (env.GITHUB_TOKEN) headers.authorization = `Bearer ${env.GITHUB_TOKEN}`;
@@ -40,34 +31,31 @@ async function fetchCatalog(env: Env): Promise<{ body: string; catalog: Catalog 
     redirect: 'follow',
   });
   if (!res.ok) throw new Error(`modules.json ${res.status}`);
-  const body = await res.text();
-  return { body, catalog: JSON.parse(body) as Catalog };
+  return res.text();
 }
 
+/** The catalog body, or `null` when neither upstream nor the stale edge copy
+ * can produce one. The failure detail goes to the log, never to the caller:
+ * on a public endpoint, `String(err)` would hand out the upstream URL. */
 async function loadCatalog(
   env: Env,
   waitUntil: (p: Promise<unknown>) => void,
-): Promise<{ body: string; catalog: Catalog }> {
+): Promise<string | null> {
   const cache = edgeCache();
   const hit = await cache?.match(CACHE_FRESH);
-  if (hit) {
-    const body = await hit.text();
-    return { body, catalog: JSON.parse(body) as Catalog };
-  }
+  if (hit) return hit.text();
   try {
-    const { body, catalog } = await fetchCatalog(env);
+    const body = await fetchUpstream(env);
     if (cache) {
       waitUntil(cache.put(CACHE_FRESH, jsonResponse(body, 300)));
       waitUntil(cache.put(CACHE_STALE, jsonResponse(body, 604800)));
     }
-    return { body, catalog };
+    return body;
   } catch (err) {
     const stale = await cache?.match(CACHE_STALE);
-    if (stale) {
-      const body = await stale.text();
-      return { body, catalog: JSON.parse(body) as Catalog };
-    }
-    throw err;
+    if (stale) return stale.text();
+    console.error('catalog load failed', err);
+    return null;
   }
 }
 
@@ -81,104 +69,71 @@ function jsonResponse(body: string, maxAge: number): Response {
   });
 }
 
-const esc = (s: string) =>
-  s.replace(
-    /[&<>"]/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
-  );
-const mb = (n?: number) => (n ? `${(n / 1048576).toFixed(1)} MB` : '');
+// A catalog string is about to land inside a <script> tag: `</script>` (or a
+// sneaky `<!--`) in third-party module text must not break out of it.
+const inline = (json: string) => json.replaceAll('<', String.raw`\u003c`);
 
-function favicon(): Response {
-  return new Response(KROMA_MARK_SVG, {
+async function landing(
+  origin: string,
+  catalog: string,
+  asset: Response | undefined,
+): Promise<Response> {
+  // No built site (mid-deploy, tests without a stub): a minimal page that
+  // still points tooling and people at the catalog.
+  const html = asset?.ok
+    ? (await asset.text()).replace('"__CATALOG__"', inline(catalog))
+    : `<!doctype html><html lang="en"><head><meta charset="utf-8" /><title>KROMA Modules</title>
+<link rel="kroma-modules" href="${origin}/modules.json" /></head>
+<body><p>KROMA module registry. Catalog: <a href="${origin}/modules.json">modules.json</a></p></body></html>`;
+  return new Response(html, {
     headers: {
-      'content-type': 'image/svg+xml',
-      // Short, so a brand change is not pinned at the edge for a day.
-      'cache-control': 'public, max-age=3600',
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'public, max-age=300',
     },
   });
 }
 
-function landing(catalog: Catalog, origin: string, repo: string): string {
-  const mods = catalog.modules ?? [];
-  const rows = mods
-    .map((m) => {
-      const targets = (m.artifacts ?? []).map((a) => a.target || 'any').join(', ');
-      const deps = (m.dependsOn ?? []).length
-        ? `<div class="deps">needs ${(m.dependsOn ?? []).map(esc).join(', ')}</div>`
-        : '';
-      const icon = m.icon ? `<img src="${esc(m.icon)}" alt="" />` : '<div class="noicon"></div>';
-      return `<div class="mod">
-      ${icon}
-      <div class="body">
-        <div class="row1"><span class="name">${esc(m.name)}</span> <code>${esc(m.version)}</code></div>
-        <div class="desc">${esc(m.description ?? '')}</div>
-        <div class="meta"><code>${esc(m.id)}</code> · ${esc(targets)}${m.minServer ? ` · server ≥ ${esc(m.minServer)}` : ''} · ${mb(m.size)}</div>
-        ${deps}
-      </div>
-    </div>`;
-    })
-    .join('\n');
-  return `<!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>KROMA modules</title>
-<link rel="icon" href="${KROMA_MARK_DATA_URI}" />
-<style>
-  :root { color-scheme: light dark; }
-  h1 { display:flex; align-items:center; gap:14px; }
-  h1 svg { width:38px; height:38px; flex:0 0 auto; }
-  body { font: 16px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 6vh auto; padding: 0 20px; }
-  h1 { font-size: 1.7rem; } code { background: rgba(127,127,127,.18); padding: .1em .4em; border-radius: 5px; font-size: .85em; }
-  .url { display:block; margin:.6em 0 1.6em; padding:.8em 1em; border-radius:10px; background:rgba(127,127,127,.12); font-family:ui-monospace,monospace; word-break:break-all; }
-  .mod { display:flex; gap:14px; padding:14px 0; border-bottom:1px solid rgba(127,127,127,.2); }
-  .mod img, .mod .noicon { width:48px; height:48px; border-radius:11px; flex:0 0 auto; background:rgba(127,127,127,.15); }
-  .row1 .name { font-weight:600; } .desc { opacity:.85; } .meta { font-size:.82em; opacity:.65; margin-top:.2em; } .deps { font-size:.8em; opacity:.6; }
-  footer { margin-top:3em; font-size:.85em; opacity:.6; }
-  a { color: inherit; }
-</style></head><body>
-<h1>${KROMA_MARK_SVG}KROMA modules</h1>
-<p>The module store for KROMA. Add this URL as a registry in <b>Admin → Modules</b>, or browse below.</p>
-<code class="url">${origin}/modules.json</code>
-<p>${mods.length} module${mods.length === 1 ? '' : 's'} available${catalog.generatedAt ? ` · updated ${esc(catalog.generatedAt.slice(0, 10))}` : ''}.</p>
-${rows || '<p>No modules published yet.</p>'}
-<footer>Served live from <a href="https://github.com/${esc(repo)}/releases">github.com/${esc(repo)}</a> · JSON: <a href="${origin}/modules.json">modules.json</a></footer>
-</body></html>`;
-}
+// Non-strict routing so `/modules.json/` still matches `/modules.json`.
+const app = new Hono<{ Bindings: Env }>({ strict: false });
 
-export default {
-  async fetch(request: Request, env: Env, ctx: ExecCtx): Promise<Response> {
-    const url = new URL(request.url);
-    const path = url.pathname.replace(/(^|[^/])\/+$/, '$1') || '/';
-    if (path === '/ping') return new Response('pong');
-    // Answered before the catalog load, or the JSON catch-all below serves the
-    // whole modules.json for /favicon.ico with a 200.
-    if (path === '/favicon.svg' || path === '/favicon.ico') return favicon();
+app.get('/ping', (c) => c.text('pong'));
 
-    let data: { body: string; catalog: Catalog };
-    try {
-      data = await loadCatalog(env, (p) => ctx.waitUntil(p));
-    } catch (err) {
-      // The detail goes to the log, never to the caller: on a public endpoint,
-      // `String(err)` would hand out the upstream URL.
-      console.error('catalog load failed', err);
-      return jsonResponse(
-        JSON.stringify({ schema: 2, modules: [], error: 'catalog unavailable' }),
-        60,
-      );
-    }
+// Answered without a catalog load, or the JSON catch-all below would serve
+// the whole modules.json for /favicon.ico with a 200. Short cache, so a brand
+// change is not pinned at the edge for a day.
+app.on('GET', ['/favicon.svg', '/favicon.ico'], (c) =>
+  c.body(KROMA_MARK_SVG, 200, {
+    'content-type': 'image/svg+xml',
+    'cache-control': 'public, max-age=3600',
+  }),
+);
 
-    if (path === '/modules.json' || path === '/all.json') return jsonResponse(data.body, 300);
+app.on('GET', ['/modules.json', '/all.json'], async (c) => {
+  const catalog = await loadCatalog(c.env, (p) => c.executionCtx.waitUntil(p));
+  return catalog ? jsonResponse(catalog, 300) : jsonResponse(UNAVAILABLE, 60);
+});
 
-    const wantsHtml =
-      request.method === 'GET' && (request.headers.get('accept') ?? '').includes('text/html');
-    if (wantsHtml) {
-      return new Response(landing(data.catalog, url.origin, env.GITHUB_REPO || DEFAULT_REPO), {
-        headers: {
-          'content-type': 'text/html; charset=utf-8',
-          'cache-control': 'public, max-age=300',
-        },
-      });
-    }
-    return jsonResponse(data.body, 300);
-  },
-};
+// Everything else: hashed site assets pass through; a browser gets the page
+// with the catalog injected; any other client gets the catalog itself (the
+// bare origin is a valid registry URL).
+app.all('*', async (c) => {
+  const url = new URL(c.req.url);
+  if (url.pathname !== '/') {
+    const asset = await c.env.ASSETS?.fetch(c.req.raw);
+    if (asset && asset.status !== 404) return asset;
+  }
+  const wantsHtml = c.req.method === 'GET' && (c.req.header('accept') ?? '').includes('text/html');
+  const loading = loadCatalog(c.env, (p) => c.executionCtx.waitUntil(p));
+  if (wantsHtml) {
+    // The page template and the catalog it embeds load concurrently.
+    const [catalog, asset] = await Promise.all([
+      loading,
+      c.env.ASSETS?.fetch(new Request(`${url.origin}/index.html`)),
+    ]);
+    return landing(url.origin, catalog ?? UNAVAILABLE, asset);
+  }
+  const catalog = await loading;
+  return catalog ? jsonResponse(catalog, 300) : jsonResponse(UNAVAILABLE, 60);
+});
+
+export default app;

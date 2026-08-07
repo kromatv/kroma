@@ -1,9 +1,7 @@
 // Admin library management (folders / scans).
 
 import type { AdminLibrary } from '../types';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** Libraries with folders, size and item counts (requires an admin capability). */
 export function adminLibraries(ctx: RequestContext): Promise<{ libraries: AdminLibrary[] }> {

@@ -22,7 +22,6 @@ export const KNOWN_NOTIFICATION_EVENTS = [
   'download.imported',
   'download.failed',
   'system.job.failed',
-  'system.vpn.down',
   'system.disk.low',
   'system.test',
   'custom',

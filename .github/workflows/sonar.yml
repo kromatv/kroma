@@ -96,6 +96,10 @@ jobs:
           filters: |
             rust:
               - 'server/**'
+              # Modules are their own cargo workspaces at the repo root, so
+              # `server/**` does not cover them and their Rust would otherwise
+              # never be measured on a module-only PR.
+              - 'modules/**'
               # kroma-engine include_str!s these catalogs at compile time.
               - 'packages/core/src/locales/**'
 
@@ -120,6 +124,9 @@ jobs:
         if: steps.rustgate.outputs.run == 'true'
         with:
           workspaces: server
+          # The module workspaces' instrumented artifacts (they build into the
+          # shared target/kmod dir; see @kroma/module-tools).
+          cache-directories: ${{ github.workspace }}/target/kmod
           shared-key: server-coverage
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -141,7 +148,36 @@ jobs:
         timeout-minutes: 25
         run: cargo llvm-cov --workspace --lcov --output-path lcov.info
 
+      # `--workspace` above stops at server/: modules are their own workspaces
+      # now, so without this every modules/** source Sonar still analyses reports
+      # 0% (scene, torznab, mdns, the engines and the un-excluded half of indexer
+      # / acquisition / vector — see sonar.coverage.exclusions). lcov records are
+      # self-contained, so appending each module's report to the server's is a
+      # valid single report. Its own step and budget: if the module half runs
+      # long it must not take the server's coverage down with it.
+      - name: Rust coverage (modules, appended to server/lcov.info)
+        if: steps.rustgate.outputs.run == 'true'
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          # Not `set -e`: a module that fails to instrument must still leave the
+          # ones that succeeded (and the server's own report) in place.
+          bun run modules cargo llvm-cov --lcov --output-path lcov.info || true
+          for f in modules/*/server/lcov.info; do
+            if [ -s "$f" ]; then cat "$f" >> server/lcov.info; fi
+          done
+          echo "lcov records: $(grep -c '^SF:' server/lcov.info || true)"
+
       # --- Analysis -----------------------------------------------------------
+      # The scanner follows symlinks while indexing, and bun leaves a symlink
+      # farm in every workspace's node_modules pointing back into the root
+      # store - so the walk re-entered the root node_modules once per workspace
+      # (5.5M files, 7+ min of preprocessing). Everything that needs those links
+      # (install, coverage) has already run, and the analyzers resolve imports
+      # through the root node_modules, which stays intact.
+      - name: Prune workspace node_modules symlinks (scan walk)
+        run: find clients modules packages -path '*node_modules*' -type l -delete
+
       - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703 # v5.3.2
         env:

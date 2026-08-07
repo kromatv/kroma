@@ -12,7 +12,7 @@ export function usePoll<T>(
   key: QueryKey,
   fn: () => Promise<T>,
   intervalMs: number,
-): { data: T | null; reload: () => void } {
+): { data: T | null; reload: () => Promise<void> } {
   const queryClient = useQueryClient();
   const { data } = useQuery({
     queryKey: key,
@@ -24,8 +24,10 @@ export function usePoll<T>(
   // Callers put `reload` in effect deps, so its identity must stay stable.
   const keyRef = useRef(key);
   keyRef.current = key;
+  // Returns the refetch so a caller that must not show stale rows can await it;
+  // ignoring it is fine and is what most call sites do.
   const reload = useCallback(
-    () => void queryClient.invalidateQueries({ queryKey: keyRef.current }),
+    () => queryClient.invalidateQueries({ queryKey: keyRef.current }),
     [queryClient],
   );
   return { data: data ?? null, reload };

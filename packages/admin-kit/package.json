@@ -13,6 +13,7 @@
   "dependencies": {
     "@kroma/core": "workspace:*",
     "@kroma/ui": "workspace:*",
+    "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-select": "^2.3.7",
     "@tabler/icons-react": "^3.44.0",
     "@tanstack/react-query": "^5.101.2",

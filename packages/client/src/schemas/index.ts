@@ -12,4 +12,5 @@ export * from './notifications';
 export * from './pipeline';
 export * from './reports';
 export * from './rules';
+export * from './store';
 export * from './validate';

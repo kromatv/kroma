@@ -96,29 +96,33 @@ jobs:
       # the cross legs) so a re-run doesn't rebuild candle from scratch.
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          workspaces: server
+          workspaces: |
+            server
+            . -> target/kmod
           key: kmod-${{ matrix.target }}
 
       # Cross legs: compile every sidecar binary in the proven musl toolchain
-      # image. Mirrors clients/synology/build.sh: server/ -> /home/rust/src
-      # (WORKDIR), packages/ -> /home/rust/packages (kroma-i18n `include_str!`s
-      # the shared locale catalogs from outside server/), cargo registry cached.
+      # image. The WHOLE repo is mounted (not server/ + packages/ separately):
+      # each module is its own workspace under modules/<id>, it path-deps the SDK
+      # back under server/crates, and kroma-i18n `include_str!`s the shared locale
+      # catalogs from packages/ — so only one mount keeps every relative path
+      # resolving. The build plan's manifest paths are repo-root relative.
       - name: Cross-compile sidecar binaries (container)
         if: matrix.image != ''
         run: |
           set -euo pipefail
-          bun run scripts/kmod-build-plan.ts > /tmp/kmod-build.sh
+          bun run modules plan > /tmp/kmod-build.sh
           echo "=== build plan ==="; cat /tmp/kmod-build.sh
           mkdir -p "$HOME/.cargo/registry"
           docker run --rm \
-            -v "$PWD/server":/home/rust/src \
-            -v "$PWD/packages":/home/rust/packages \
+            -v "$PWD":/home/rust/repo \
             -v "$HOME/.cargo/registry":/root/.cargo/registry \
             -v /tmp/kmod-build.sh:/tmp/kmod-build.sh:ro \
+            -w /home/rust/repo \
             "${{ matrix.image }}" \
             bash -euo pipefail /tmp/kmod-build.sh
 
-      # The container runs as root and leaves root-owned files in server/target
+      # The container runs as root and leaves root-owned files in target/kmod
       # AND in the mounted ~/.cargo/registry; rust-cache's post-save step then
       # died on the registry half ("tar: ../../../.cargo/registry/...: Cannot
       # open: Permission denied" -> exit 2 -> "Failed to save"), so the cache
@@ -127,24 +131,21 @@ jobs:
       # must be handed back before anything tries to read or save them.
       - name: Fix target ownership (container leg)
         if: always() && matrix.image != ''
-        run: sudo chown -R "$(id -u):$(id -g)" server/target "$HOME/.cargo" || true
+        run: sudo chown -R "$(id -u):$(id -g)" target "$HOME/.cargo" || true
 
-      # The native leg gets the same treatment the container legs already had:
-      # build all nine binaries in ONE cargo invocation, then pack them.
-      #
-      # modules:pack compiles per module when it has to, which meant nine
-      # sequential `cargo build` calls - and with `lto = true` and
-      # `codegen-units = 1` each of those links single-threaded, so the nine ran
-      # one after another while the runner's other cores sat idle. This leg was
-      # the slowest of the three (8.7 minutes in packing alone) purely because it
-      # never went through the build plan.
+      # The native leg runs the same plan. Now that each module is its own
+      # workspace there is no single invocation that selects them all, so the
+      # plan is one `cargo build` per module against a SHARED CARGO_TARGET_DIR:
+      # the common dep graph (axum, tokio, candle, librqbit) is still compiled
+      # once, but cargo holds an exclusive lock on that dir, so the final links
+      # run in sequence instead of overlapping the way one invocation allowed.
       - name: Build every sidecar binary (native leg)
         if: matrix.image == ''
         run: |
           set -euo pipefail
-          bun run scripts/kmod-build-plan.ts > /tmp/kmod-build.sh
+          bun run modules plan > /tmp/kmod-build.sh
           echo "=== build plan ==="; cat /tmp/kmod-build.sh
-          (cd server && bash -euo pipefail /tmp/kmod-build.sh)
+          bash -euo pipefail /tmp/kmod-build.sh
 
       # Stage + zstd-pack each binary (and build its vite frontend) into
       # dist/modules/<id>-<target>.kmod (+ a .sha256 sidecar each).
@@ -199,7 +200,7 @@ jobs:
           else
             REF="v${{ inputs.version }}"
           fi
-          bun run scripts/gen-registry.ts \
+          bun run modules registry \
             --base "https://github.com/${{ github.repository }}/releases/download/$REF"
           cp dist/registry/catalog.json dist/registry/modules.json
 

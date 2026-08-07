@@ -3,16 +3,18 @@
 // plus the reverse edges (who depends on this module).
 
 import { depEntries } from '@kroma/module-sdk';
+import { useT } from '@kroma/ui';
 import type { AdminModule } from '#web/features/admin/module-api';
 
-type DepState = 'ok' | 'missing' | 'disabled' | 'optional';
+export type DepState = 'ok' | 'missing' | 'disabled' | 'optional';
 
-function depState(target: AdminModule | undefined, optional: boolean): DepState {
+export function depState(target: AdminModule | undefined, optional: boolean): DepState {
   if (!target) return optional ? 'optional' : 'missing';
   return target.enabled ? 'ok' : 'disabled';
 }
 
-function DepChip({ label, state }: Readonly<{ label: string; state: DepState }>) {
+export function DepChip({ label, state }: Readonly<{ label: string; state: DepState }>) {
+  const t = useT();
   const cls: Record<DepState, string> = {
     ok: 'text-success',
     missing: 'text-danger',
@@ -21,9 +23,9 @@ function DepChip({ label, state }: Readonly<{ label: string; state: DepState }>)
   };
   const suffix: Record<DepState, string> = {
     ok: '',
-    missing: ' (missing)',
-    disabled: ' (disabled)',
-    optional: ' (optional)',
+    missing: ` (${t('admin.modulesMissingSuffix')})`,
+    disabled: ` (${t('admin.modulesDisabledSuffix')})`,
+    optional: ` (${t('admin.modulesOptionalSuffix')})`,
   };
   return (
     <span className={`rounded bg-white/5 px-2 py-0.5 text-[11px] ${cls[state]}`}>
@@ -51,6 +53,7 @@ function dependents(module: AdminModule, all: AdminModule[]): AdminModule[] {
 /** A module's dependency status in both directions: what it depends on
  * (colored by whether each is satisfied), plus what depends on it. */
 export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all: AdminModule[] }>) {
+  const t = useT();
   const byId = new Map(all.map((m) => [m.id, m]));
   const deps = [
     ...depEntries(module.dependsOn).map((d) => ({ ...d, optional: false })),
@@ -63,7 +66,9 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
     <div className="mt-2 flex flex-col gap-1.5">
       {(deps.length > 0 || reqs.length > 0) && (
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-dim">Depends on</span>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-dim">
+            {t('admin.modulesDependsOn')}
+          </span>
           <div className="flex flex-wrap gap-1.5">
             {deps.map((d) => {
               const state = depState(byId.get(d.id), d.optional);
@@ -95,7 +100,7 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
       {requiredBy.length > 0 && (
         <div className="flex flex-col gap-1">
           <span className="text-[10px] font-bold uppercase tracking-wide text-dim">
-            Required by
+            {t('admin.modulesRequiredBy')}
           </span>
           <div className="flex flex-wrap gap-1.5">
             {requiredBy.map((d) => (

@@ -1,5 +1,4 @@
 import * as accounts from './client/accounts';
-import * as acquisition from './client/acquisition';
 import * as admin from './client/admin';
 import {
   KromaApiError,
@@ -15,9 +14,9 @@ import type { DiscoverType } from './client/discovery';
 import * as discovery from './client/discovery';
 import * as library from './client/library';
 import * as media from './client/media';
+import { type ModuleApi, moduleApi } from './client/module-api';
 import * as moduleRegistry from './client/modules';
 import * as notifications from './client/notifications';
-import * as organize from './client/organize';
 import * as playback from './client/playback';
 import type { RematchKind } from './client/rematch';
 import * as rematch from './client/rematch';
@@ -37,24 +36,15 @@ import type {
   CastAnnounceReply,
   CastCommand,
   CastReceiver,
-  ClientTestResult,
   ContinueItem,
   CreateReportBody,
   CreateRequestBody,
   DiscoverDetail,
   DiscoverResponse,
-  DownloadClientsView,
-  DownloadClientView,
-  DownloadsView,
   ElementProcessing,
   GrabBody,
   Health,
   HistoryStats,
-  IndexerDefinitionDetailView,
-  IndexerDefinitionsView,
-  IndexersView,
-  IndexerTestResult,
-  IndexerView,
   InteractiveSearchView,
   Invite,
   InviteCreated,
@@ -65,20 +55,14 @@ import type {
   Library,
   LlmAdminConfig,
   LogsView,
-  ManualAddBody,
-  ManualSearchView,
   MatchCandidates,
   MediaItem,
   MediaRequest,
   Metadata,
   MetricsSnapshot,
   ModuleInfo,
-  NamingTemplatesView,
-  NamingView,
   NotificationPrefs,
   NotificationsView,
-  OrganizePlan,
-  OrganizeResult,
   PasskeyInfo,
   Permission,
   PersonDetailResponse,
@@ -95,10 +79,6 @@ import type {
   Report,
   ReportsView,
   RequestsView,
-  SampleNames,
-  SaveDownloadClientBody,
-  SaveIndexerBody,
-  SaveVpnBody,
   SearchResponse,
   Section,
   SectionItem,
@@ -109,27 +89,18 @@ import type {
   ShowDetail,
   StorageInfo,
   SubscribeBody,
-  SyncDefinitionsResult,
   TopUser,
-  TorrentAnalysis,
   UpNext,
   User,
-  VpnAdminView,
-  VpnTestResult,
 } from './types';
 
 export type { AccountPatch, WebAuthnCredential, WebAuthnOptions } from './client/accounts';
-export type {
-  AdminFsEntry,
-  AdminFsList,
-  RemoteAccessSave,
-  RemoteAccessView,
-  RemoteConnectorStatus,
-} from './client/admin';
+export type { AdminFsEntry, AdminFsList } from './client/admin';
 export type { KromaClientOptions } from './client/base';
 export { apiErrorText, KromaApiError } from './client/base';
 export type { DiscoverType } from './client/discovery';
 export type { HlsAudioFilter, StoryboardManifest } from './client/media';
+export type { ModuleApi } from './client/module-api';
 export type { ReportQuery } from './client/reports';
 export type {
   DownloadedSub,
@@ -197,6 +168,13 @@ export class KromaClient {
   /** Whether a bearer token is currently set (does not validate it). */
   get hasAuth(): boolean {
     return Boolean(this.authToken);
+  }
+
+  /** The admin API of one module, addressed by its id. A module's routes are
+   *  its own: they live under `/api/admin/m/<id>`, so they are not part of this
+   *  facade and cannot collide with a core route. */
+  module(id: string): ModuleApi {
+    return moduleApi(this.ctx, id);
   }
 
   /** For the one caller that cannot send a header: the event socket, which carries it as a subprotocol. */
@@ -681,107 +659,6 @@ export class KromaClient {
     return notifications.testPush(this.ctx);
   }
 
-  adminNaming(): Promise<NamingView> {
-    return organize.adminNaming(this.ctx);
-  }
-  namingSample(templates: NamingTemplatesView): Promise<SampleNames> {
-    return organize.namingSample(this.ctx, templates);
-  }
-  saveNaming(templates: NamingTemplatesView): Promise<void> {
-    return organize.saveNaming(this.ctx, templates);
-  }
-  organizePreview(): Promise<OrganizePlan> {
-    return organize.organizePreview(this.ctx);
-  }
-  organizeApply(): Promise<OrganizeResult> {
-    return organize.organizeApply(this.ctx);
-  }
-
-  adminIndexers(): Promise<IndexersView> {
-    return acquisition.adminIndexers(this.ctx);
-  }
-  createIndexer(body: SaveIndexerBody): Promise<IndexerView> {
-    return acquisition.createIndexer(this.ctx, body);
-  }
-  updateIndexer(id: string, body: SaveIndexerBody): Promise<IndexerView> {
-    return acquisition.updateIndexer(this.ctx, id, body);
-  }
-  deleteIndexer(id: string): Promise<void> {
-    return acquisition.deleteIndexer(this.ctx, id);
-  }
-  testIndexer(id: string): Promise<IndexerTestResult> {
-    return acquisition.testIndexer(this.ctx, id);
-  }
-  adminIndexerDefinitions(): Promise<IndexerDefinitionsView> {
-    return acquisition.adminIndexerDefinitions(this.ctx);
-  }
-  indexerDefinitionDetail(id: string): Promise<IndexerDefinitionDetailView> {
-    return acquisition.indexerDefinitionDetail(this.ctx, id);
-  }
-  syncIndexerDefinitions(): Promise<SyncDefinitionsResult> {
-    return acquisition.syncIndexerDefinitions(this.ctx);
-  }
-  adminDownloadClients(): Promise<DownloadClientsView> {
-    return acquisition.adminDownloadClients(this.ctx);
-  }
-  createDownloadClient(body: SaveDownloadClientBody): Promise<DownloadClientView> {
-    return acquisition.createDownloadClient(this.ctx, body);
-  }
-  updateDownloadClient(id: string, body: SaveDownloadClientBody): Promise<DownloadClientView> {
-    return acquisition.updateDownloadClient(this.ctx, id, body);
-  }
-  deleteDownloadClient(id: string): Promise<void> {
-    return acquisition.deleteDownloadClient(this.ctx, id);
-  }
-  testDownloadClient(id: string): Promise<ClientTestResult> {
-    return acquisition.testDownloadClient(this.ctx, id);
-  }
-  adminDownloads(): Promise<DownloadsView> {
-    return acquisition.adminDownloads(this.ctx);
-  }
-  pauseDownload(id: string): Promise<void> {
-    return acquisition.pauseDownload(this.ctx, id);
-  }
-  resumeDownload(id: string): Promise<void> {
-    return acquisition.resumeDownload(this.ctx, id);
-  }
-  retryDownload(id: string): Promise<void> {
-    return acquisition.retryDownload(this.ctx, id);
-  }
-  reannounceDownload(id: string): Promise<void> {
-    return acquisition.reannounceDownload(this.ctx, id);
-  }
-  pauseAllDownloads(): Promise<{ count: number }> {
-    return acquisition.pauseAllDownloads(this.ctx);
-  }
-  resumeAllDownloads(): Promise<{ count: number }> {
-    return acquisition.resumeAllDownloads(this.ctx);
-  }
-  reannounceDownloads(): Promise<{ count: number }> {
-    return acquisition.reannounceDownloads(this.ctx);
-  }
-  removeDownload(id: string, opts?: { deleteData?: boolean }): Promise<void> {
-    return acquisition.removeDownload(this.ctx, id, opts);
-  }
-  manualSearch(query: string): Promise<ManualSearchView> {
-    return acquisition.manualSearch(this.ctx, query);
-  }
-  analyzeTorrent(magnetOrUrl: string): Promise<TorrentAnalysis> {
-    return acquisition.analyzeTorrent(this.ctx, magnetOrUrl);
-  }
-  manualAdd(body: ManualAddBody): Promise<{ id: string }> {
-    return acquisition.manualAdd(this.ctx, body);
-  }
-  adminVpn(): Promise<VpnAdminView> {
-    return acquisition.adminVpn(this.ctx);
-  }
-  saveVpn(body: SaveVpnBody): Promise<{ wgConfigured: boolean }> {
-    return acquisition.saveVpn(this.ctx, body);
-  }
-  testVpn(): Promise<VpnTestResult> {
-    return acquisition.testVpn(this.ctx);
-  }
-
   adminLibraries(): Promise<{ libraries: AdminLibrary[] }> {
     return library.adminLibraries(this.ctx);
   }
@@ -960,12 +837,5 @@ export class KromaClient {
   }
   testLlm(probe: admin.LlmProbe): Promise<{ ok: boolean; message: string }> {
     return admin.testLlm(this.ctx, probe);
-  }
-
-  adminRemote(): Promise<admin.RemoteAccessView> {
-    return admin.adminRemote(this.ctx);
-  }
-  saveRemote(body: admin.RemoteAccessSave): Promise<admin.RemoteAccessView> {
-    return admin.saveRemote(this.ctx, body);
   }
 }

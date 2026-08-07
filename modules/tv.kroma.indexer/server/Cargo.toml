@@ -1,0 +1,68 @@
+# This module is its own cargo workspace: it builds standalone, outside the
+# server tree, and is packed into a `.kmod` on its own. Package metadata and
+# dependency versions are explicit here rather than inherited.
+[workspace]
+
+[package]
+name = "kroma-indexer"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Native Cardigann indexer engine: runs Jackett/Prowlarr YAML definitions directly (no external Torznab aggregator)"
+license = "MIT"
+
+[[bin]]
+name = "kroma-module-indexer"
+path = "src/bin/module.rs"
+
+[dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+kroma-port-bridge = { path = "../../../server/crates/kroma-port-bridge" }
+# The module now owns its admin orchestration + routes (over the HostCtx seam):
+# it needs the DB rows, wire DTOs, shared helpers, the Torznab engine, and axum.
+# The module owns its `indexers` table now (schema + typed queries), so it talks
+# to SQLite directly through the pool kroma-db hands out.
+rusqlite = { version = "0.40", features = ["bundled"] }
+axum = { version = "0.8", features = ["macros", "ws"] }
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+scraper = "0.27"
+quick-xml = "0.41"
+regex = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+indexmap = { version = "2", features = ["serde"] }
+# XPath selectors (libxml2, C). A minority of definitions use `selector`s in
+# XPath; the engine falls back to a clear error when they are hit without this
+# feature, so the default build stays pure-Rust and musl-friendly.
+libxml = { version = "0.3", optional = true }
+
+[features]
+default = []
+xpath = ["dep:libxml"]
+
+[dev-dependencies]
+# The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
+kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
+
+# The profile `bun run modules:pack` builds this sidecar with: release + `panic =
+# "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
+# speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
+# process and the supervisor respawns it. Defined per module because a profile is
+# only honoured at a workspace root, and each module is now its own workspace.
+# Mirrors server/Cargo.toml's [profile.release]. A profile is only honoured at a
+# workspace root, and this module is its own workspace, so `inherits = "release"`
+# below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen
+# units, unstripped.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.release-kmod]
+inherits = "release"
+panic = "abort"

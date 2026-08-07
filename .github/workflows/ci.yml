@@ -18,7 +18,12 @@ name: CI
 
 # Docs-only changes build nothing and check nothing; skip the run entirely.
 # (No branch protection requires these checks, so a skipped run blocks nobody.)
+#
+# workflow_dispatch exists to re-warm the rust caches: they save only from main
+# (see the rust-cache comments below), so once evicted they stay dead until a
+# rust-touching push lands on main. A manual run on main rebuilds and saves them.
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:
@@ -57,16 +62,24 @@ jobs:
       contents: read
     timeout-minutes: 5
     outputs:
-      rust: ${{ steps.f.outputs.rust }}
-      fleet: ${{ steps.f.outputs.fleet }}
+      # A manual dispatch has no diff to filter on; it exists to re-warm the
+      # caches, so it runs everything.
+      rust: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.f.outputs.rust }}
+      fleet: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.f.outputs.fleet }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
         id: f
+        if: github.event_name != 'workflow_dispatch'
         with:
           filters: |
             rust:
               - 'server/**'
+              # Modules are their own cargo workspaces at the repo root now, so
+              # they are NOT covered by `server/**` — without this a module-only
+              # change would skip clippy and its tests entirely.
+              - 'modules/**'
+              - 'packages/module-tools/**'
               # kroma-engine include_str!s these catalogs at compile time.
               - 'packages/core/src/locales/**'
               - 'rust-toolchain.toml'
@@ -74,6 +87,8 @@ jobs:
             fleet:
               - 'clients/**'
               - 'packages/**'
+              # clients/web bundles the modules/*/ui workspaces at build time.
+              - 'modules/*/ui/**'
               # bun patches change what an install produces.
               - 'patches/**'
               - 'bun.lock'
@@ -281,13 +296,24 @@ jobs:
         with:
           components: clippy, rustfmt
 
+      # Only to drive the per-module cargo runs below (`bun run modules cargo`);
+      # no `bun install` needed, the script imports nothing from node_modules.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
       # One stable entry (shared-key), written only from main: PRs used to save a
       # ~1.4 GB copy each, and four of them alone exceeded half the 10 GB repo
       # cache quota - which evicted the .spk/module/desktop caches and forced
       # cold builds everywhere. See the same pattern in sonar.yml/release.yml.
+      # The shared build dir the module workspaces compile into goes through
+      # `cache-directories`, NOT a second `workspaces` entry: there is no cargo
+      # manifest at the repo root, so a `. -> target/kmod` entry made the
+      # action's `cargo metadata` call fail on every run.
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: server
+          cache-directories: ${{ github.workspace }}/target/kmod
           shared-key: server
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -303,6 +329,18 @@ jobs:
 
       - name: test
         run: cargo test --workspace
+
+      # Modules are NOT members of the workspace above (each is its own, at
+      # modules/<id>/server), so the two gates above do not reach them. These
+      # run the same checks per module against one shared target dir. Run from
+      # the repo root, not server/.
+      - name: clippy (modules)
+        working-directory: ${{ github.workspace }}
+        run: bun run modules:clippy
+
+      - name: test (modules)
+        working-directory: ${{ github.workspace }}
+        run: bun run modules:test
 
       # Domain purity is now enforced by the compiler, not a grep: the entities +
       # pure rules live in the `kroma-domain` crate (crates/kroma-domain), which

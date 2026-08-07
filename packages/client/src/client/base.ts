@@ -3,6 +3,10 @@
 // playback, library, admin) as thin functions over a {@link RequestContext};
 // `KromaClient` (in ../api) is the public facade that wires them together.
 
+/** Header set for every JSON-bodied request; `sendApiRequest` adds auth and
+ * locale itself but never a content type. */
+export const JSON_HEADERS = { 'content-type': 'application/json' };
+
 export interface KromaClientOptions {
   baseUrl: string;
   fetch?: typeof globalThis.fetch;

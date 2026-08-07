@@ -1,9 +1,7 @@
 // Playback progress / resume + live-session heartbeats.
 
 import type { ContinueItem, MediaItem, PlaybackPing, ProgressEntry, UpNext } from '../types';
-import type { RequestContext } from './base';
-
-const JSON_HEADERS = { 'content-type': 'application/json' };
+import { JSON_HEADERS, type RequestContext } from './base';
 
 /** All of the user's saved positions. */
 export function progress(ctx: RequestContext): Promise<ProgressEntry[]> {

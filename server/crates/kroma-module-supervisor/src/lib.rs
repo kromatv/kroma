@@ -1,8 +1,11 @@
 //! The core side of the out-of-process module system: spawns each installed
 //! module's binary, reverse-proxies to it, and serves the `/api/_host/*` callback API.
 
+mod discover;
+
+use std::borrow::Cow;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, RwLock};
 
@@ -40,6 +43,77 @@ pub struct Supervisor {
     cfg: SupervisorConfig,
     procs: RwLock<HashMap<String, Proc>>,
     manifests_cache: RwLock<Option<Vec<Value>>>,
+    // Short-TTL catalog cache: the admin flow sweeps EVERY registry from the
+    // catalog view, the plan dialog (once per opt-in toggle) and the install
+    // itself in quick succession; within the TTL they share one fetch.
+    catalog_cache: RwLock<HashMap<String, (std::time::Instant, Value)>>,
+    // Built once each: constructing a client parses the whole root certificate
+    // store, and the catalog path builds one per registry in the list.
+    catalog_client: std::sync::OnceLock<reqwest::Client>,
+    artifact_client: std::sync::OnceLock<reqwest::Client>,
+}
+
+// A registry catalog is a small JSON index (the first-party one is a few kB);
+// anything approaching this is a misconfigured or hostile host, not a catalog.
+const MAX_CATALOG_BYTES: u64 = 4 * 1024 * 1024;
+const CATALOG_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
+/// Ceiling on an installable `.kmod`: a sidecar binary plus a small frontend
+/// bundle. The upload route bounds its body with this too, so a bundle that can
+/// be uploaded can also be fetched by URL.
+pub const MAX_BUNDLE_BYTES: u64 = 64 * 1024 * 1024;
+const ARTIFACT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300);
+// Long enough to cover one admin interaction (plan, toggle, install), short
+// enough that a freshly published catalog shows up on the next page visit.
+const CATALOG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(15);
+
+/// Byte-progress callback for a bounded fetch: `(received, total)` where
+/// `total` is the advisory Content-Length when the server sent one.
+pub type FetchProgress<'a> = &'a (dyn Fn(u64, Option<u64>) + Send + Sync);
+
+/// Read a response body with a hard ceiling, enforced as it arrives.
+///
+/// Content-Length is advisory (absent under chunked encoding), so the header
+/// check is only an early exit; the running total is what actually bounds it.
+async fn fetch_bounded(
+    client: &reqwest::Client,
+    url: &str,
+    max_bytes: u64,
+    on_progress: Option<FetchProgress<'_>>,
+) -> anyhow::Result<Vec<u8>> {
+    let mut response = client.get(url).send().await?.error_for_status()?;
+    let total = response.content_length();
+    if let Some(len) = total {
+        if len > max_bytes {
+            anyhow::bail!("response is {len} bytes (max {max_bytes})");
+        }
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) = response.chunk().await? {
+        body.extend_from_slice(&chunk);
+        if body.len() as u64 > max_bytes {
+            anyhow::bail!("response exceeds {max_bytes} bytes");
+        }
+        if let Some(progress) = on_progress {
+            progress(body.len() as u64, total);
+        }
+    }
+    Ok(body)
+}
+
+/// Follow redirects, but never from https down to http: the catalog carries
+/// both an artifact URL and the checksum that vouches for it, so a downgrade
+/// would hand an on-path attacker each half and make the verification empty.
+fn no_downgrade() -> reqwest::redirect::Policy {
+    reqwest::redirect::Policy::custom(|attempt| {
+        let came_from_https = attempt.previous().iter().any(|u| u.scheme() == "https");
+        if came_from_https && attempt.url().scheme() != "https" {
+            return attempt.error("redirect from https to http refused");
+        }
+        if attempt.previous().len() > 10 {
+            return attempt.stop();
+        }
+        attempt.follow()
+    })
 }
 
 impl Supervisor {
@@ -48,6 +122,9 @@ impl Supervisor {
             cfg,
             procs: RwLock::new(HashMap::new()),
             manifests_cache: RwLock::new(None),
+            catalog_cache: RwLock::new(HashMap::new()),
+            catalog_client: std::sync::OnceLock::new(),
+            artifact_client: std::sync::OnceLock::new(),
         })
     }
 
@@ -115,23 +192,6 @@ impl Supervisor {
         &self.cfg.host_token
     }
 
-    /// The port of the running module claiming the admin-route segment `seg`
-    /// (via its manifest's `adminPrefixes`).
-    pub fn admin_route_port(&self, seg: &str) -> Option<u16> {
-        for m in self.installed_manifests() {
-            let owns = m
-                .get("adminPrefixes")
-                .and_then(Value::as_array)
-                .is_some_and(|a| a.iter().any(|p| p.as_str() == Some(seg)));
-            if owns {
-                if let Some(id) = m.get("id").and_then(Value::as_str) {
-                    return self.port_of(id);
-                }
-            }
-        }
-        None
-    }
-
     /// Spawn a module process on a free localhost port; a no-op if already
     /// running, an error if the module ships no binary.
     pub fn spawn(&self, id: &str) -> anyhow::Result<u16> {
@@ -194,51 +254,57 @@ impl Supervisor {
         }
     }
 
+    fn staged_manifest(
+        &self,
+        staging: &Path,
+        expected_id: Option<&str>,
+    ) -> anyhow::Result<(String, Value)> {
+        let manifest: Value =
+            serde_json::from_str(&std::fs::read_to_string(staging.join("module.json"))?)?;
+        let id = manifest
+            .get("id")
+            .and_then(Value::as_str)
+            .ok_or_else(|| anyhow::anyhow!("module.json has no id"))?
+            .to_string();
+        validate_id(&id)?;
+        if let Some(expected) = expected_id {
+            if expected != id {
+                anyhow::bail!(
+                    "bundle declares id '{id}' but it was offered as '{expected}'; refusing to install"
+                );
+            }
+        }
+        if self.cfg.reserved_ids.iter().any(|r| r == &id) {
+            anyhow::bail!(
+                "'{id}' is built into this server and can't be installed as a module (this build compiles it in)"
+            );
+        }
+        let min_server = manifest.get("minServer").and_then(Value::as_str);
+        if !kroma_module_manifest::server_satisfies(min_server, &self.cfg.server_version) {
+            anyhow::bail!(
+                "'{id}' requires KROMA server {} but this server is {}; update the server first",
+                min_server.unwrap_or("?"),
+                self.cfg.server_version,
+            );
+        }
+        Ok((id, manifest))
+    }
+
     /// Unpack a `.kmod` bundle under `<modules_dir>/<id>/` and spawn it,
     /// returning the module's manifest JSON.
-    pub fn install(&self, bytes: &[u8]) -> anyhow::Result<Value> {
-        // `.kmod` is a zstd tar; gzip (legacy) and raw tar are also accepted,
-        // dispatched by magic bytes.
-        let mut decompressed = Vec::new();
-        let tar_bytes: &[u8] = if bytes.starts_with(&[0x28, 0xb5, 0x2f, 0xfd]) {
-            let mut dec = ruzstd::StreamingDecoder::new(bytes)?;
-            std::io::Read::read_to_end(&mut dec, &mut decompressed)?;
-            &decompressed
-        } else if bytes.starts_with(&[0x1f, 0x8b]) {
-            std::io::Read::read_to_end(
-                &mut flate2::read::GzDecoder::new(bytes),
-                &mut decompressed,
-            )?;
-            &decompressed
-        } else {
-            bytes
-        };
+    ///
+    /// `expected_id` must be set whenever the bundle was chosen through a
+    /// catalog: the id inside the bundle decides which directory is REPLACED,
+    /// so without this a registry could advertise one id and ship a bundle that
+    /// overwrites another — including a module the official registry owns.
+    pub fn install(&self, bytes: &[u8], expected_id: Option<&str>) -> anyhow::Result<Value> {
+        let tar_bytes = decompressed_tar(bytes)?;
 
         let staging = self.cfg.modules_dir.join(format!(".staging-{}", rand::random::<u32>()));
         std::fs::create_dir_all(&staging)?;
         let result = (|| {
-            unpack_validated(tar_bytes, &staging)?;
-            let manifest: Value =
-                serde_json::from_str(&std::fs::read_to_string(staging.join("module.json"))?)?;
-            let id = manifest
-                .get("id")
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow::anyhow!("module.json has no id"))?
-                .to_string();
-            validate_id(&id)?;
-            if self.cfg.reserved_ids.iter().any(|r| r == &id) {
-                anyhow::bail!(
-                    "'{id}' is built into this server and can't be installed as a module (this build compiles it in)"
-                );
-            }
-            let min_server = manifest.get("minServer").and_then(Value::as_str);
-            if !kroma_module_manifest::server_satisfies(min_server, &self.cfg.server_version) {
-                anyhow::bail!(
-                    "'{id}' requires KROMA server {} but this server is {}; update the server first",
-                    min_server.unwrap_or("?"),
-                    self.cfg.server_version,
-                );
-            }
+            unpack_validated(&tar_bytes, &staging)?;
+            let (id, manifest) = self.staged_manifest(&staging, expected_id)?;
             self.stop(&id);
             let dest = self.dir(&id);
             let _ = std::fs::remove_dir_all(&dest);
@@ -265,23 +331,95 @@ impl Supervisor {
         result
     }
 
-    /// Download a `.kmod` and install it. A direct URL with no published
-    /// checksum still installs, but whenever `expected_sha256` is known the
-    /// bytes must match it.
-    pub async fn install_from_url(
+    /// Download a `.kmod` artifact, streaming byte progress to `on_progress`,
+    /// and verify it against the published checksum before returning the bytes.
+    /// A blank/absent `expected_sha256` skips verification (the caller decides
+    /// whether that is acceptable; registry installs never allow it).
+    pub async fn download_artifact(
         &self,
         url: &str,
         expected_sha256: Option<&str>,
-    ) -> anyhow::Result<Value> {
-        let bytes = reqwest::get(url).await?.error_for_status()?.bytes().await?;
+        on_progress: FetchProgress<'_>,
+    ) -> anyhow::Result<Vec<u8>> {
+        let bytes =
+            fetch_bounded(self.artifact_client(), url, MAX_BUNDLE_BYTES, Some(on_progress)).await?;
         if let Some(expected) = expected_sha256.map(str::trim).filter(|s| !s.is_empty()) {
             verify_sha256(&bytes, expected)?;
         }
-        self.install(&bytes)
+        Ok(bytes)
     }
 
+    /// Fetch and parse a registry catalog.
+    ///
+    /// A catalog URL is operator-supplied and may point at a third-party host,
+    /// so the request is bounded on both axes: a total timeout (an unresponsive
+    /// host must not hang the admin page) and a size cap read BEFORE parsing (a
+    /// schema cannot reject bytes it has not read).
+    ///
+    /// The URL may also be a registry's WEBSITE rather than the JSON itself:
+    /// when the body isn't JSON, a `<link rel="kroma-modules" href="…">` tag
+    /// names the catalog (see [`discover`]), so an operator can paste
+    /// `https://modules.example.com` and people clicking the same URL get a
+    /// page.
     pub async fn fetch_catalog(&self, url: &str) -> anyhow::Result<Value> {
-        Ok(reqwest::get(url).await?.error_for_status()?.json().await?)
+        if let Some((at, value)) = self.catalog_cache.read().unwrap().get(url) {
+            if at.elapsed() < CATALOG_CACHE_TTL {
+                return Ok(value.clone());
+            }
+        }
+        let value = self.fetch_catalog_uncached(url).await?;
+        let mut cache = self.catalog_cache.write().unwrap();
+        cache.retain(|_, (at, _)| at.elapsed() < CATALOG_CACHE_TTL);
+        cache.insert(url.to_string(), (std::time::Instant::now(), value.clone()));
+        Ok(value)
+    }
+
+    async fn fetch_catalog_uncached(&self, url: &str) -> anyhow::Result<Value> {
+        let body = fetch_bounded(self.catalog_client(), url, MAX_CATALOG_BYTES, None).await?;
+        if let Ok(value) = serde_json::from_slice(&body) {
+            return Ok(value);
+        }
+        let href = discover::catalog_href(&String::from_utf8_lossy(&body)).ok_or_else(|| {
+            anyhow::anyhow!("not a catalog, and the page declares no kroma-modules link")
+        })?;
+        let base = reqwest::Url::parse(url)?;
+        let resolved = base.join(&href)?;
+        // The discovered link inherits the operator's trust in the SITE, not
+        // more: it must be https, or stay on the exact origin the operator
+        // typed (which also keeps the loopback URL the test harness points the
+        // official slot at working).
+        let same_origin = resolved.scheme() == base.scheme()
+            && resolved.host() == base.host()
+            && resolved.port_or_known_default() == base.port_or_known_default();
+        if resolved.scheme() != "https" && !same_origin {
+            anyhow::bail!("the page's kroma-modules link must be https (got '{resolved}')");
+        }
+        let body =
+            fetch_bounded(self.catalog_client(), resolved.as_str(), MAX_CATALOG_BYTES, None)
+                .await?;
+        Ok(serde_json::from_slice(&body)?)
+    }
+
+    fn catalog_client(&self) -> &reqwest::Client {
+        self.catalog_client.get_or_init(|| {
+            reqwest::Client::builder()
+                .timeout(CATALOG_TIMEOUT)
+                .redirect(no_downgrade())
+                .build()
+                .unwrap_or_default()
+        })
+    }
+
+    // https_only: the artifact produces an executable, and a redirect from https
+    // to http would otherwise undo the caller's scheme check.
+    fn artifact_client(&self) -> &reqwest::Client {
+        self.artifact_client.get_or_init(|| {
+            reqwest::Client::builder()
+                .timeout(ARTIFACT_TIMEOUT)
+                .https_only(true)
+                .build()
+                .unwrap_or_default()
+        })
     }
 
     /// Sidecars are plain child processes that survive their parent, so a
@@ -301,32 +439,43 @@ impl Supervisor {
         Ok(())
     }
 
+    /// Start one installed module, applying the same gates as boot: a stray
+    /// `.kmod` for a built-in id never spawns (it would duplicate the in-core
+    /// module), `minServer` is enforced, and a library module (no binary) is a
+    /// successful no-op. This is what the admin enable toggle drives, so
+    /// enabling a runtime module brings its process up without a restart.
+    pub fn start_installed(&self, id: &str) -> anyhow::Result<()> {
+        let manifest = self
+            .installed_manifests()
+            .into_iter()
+            .find(|m| m.get("id").and_then(Value::as_str) == Some(id))
+            .ok_or_else(|| anyhow::anyhow!("'{id}' is not installed"))?;
+        if self.cfg.reserved_ids.iter().any(|r| r == id) {
+            anyhow::bail!("'{id}' shadows a built-in module; not spawning");
+        }
+        let min_server = manifest.get("minServer").and_then(Value::as_str);
+        if !kroma_module_manifest::server_satisfies(min_server, &self.cfg.server_version) {
+            anyhow::bail!(
+                "'{id}' requires KROMA server {} but this server is {}",
+                min_server.unwrap_or("?"),
+                self.cfg.server_version,
+            );
+        }
+        if !self.has_binary(id) {
+            return Ok(());
+        }
+        self.spawn(id)?;
+        Ok(())
+    }
+
     pub fn spawn_enabled(&self, host: &dyn HostCtx) {
         for manifest in self.installed_manifests() {
             let Some(id) = manifest.get("id").and_then(Value::as_str) else { continue };
-            // A stray `.kmod` for a built-in id must never spawn a process that
-            // duplicates the in-core module.
-            if self.cfg.reserved_ids.iter().any(|r| r == id) {
-                tracing::warn!(module = %id, "installed module shadows a built-in; not spawning");
+            if !host.module_enabled(id) {
                 continue;
             }
-            let min_server = manifest.get("minServer").and_then(Value::as_str);
-            if !kroma_module_manifest::server_satisfies(min_server, &self.cfg.server_version) {
-                tracing::warn!(
-                    module = %id,
-                    requires = min_server.unwrap_or("?"),
-                    server = %self.cfg.server_version,
-                    "installed module requires a newer server; not spawning"
-                );
-                continue;
-            }
-            if !self.has_binary(id) {
-                continue;
-            }
-            if host.module_enabled(id) {
-                if let Err(e) = self.spawn(id) {
-                    tracing::warn!(module = %id, error = %format!("{e:#}"), "module spawn failed");
-                }
+            if let Err(e) = self.start_installed(id) {
+                tracing::warn!(module = %id, error = %format!("{e:#}"), "module not spawned");
             }
         }
     }
@@ -378,6 +527,21 @@ fn sanitized_entry(raw: &std::path::Path) -> Option<PathBuf> {
     let allowed = matches!(rel.as_ref(), "module.json" | "module" | "icon.svg" | "icon.png")
         || rel.starts_with("fe/");
     allowed.then_some(safe)
+}
+
+// `.kmod` is a zstd tar; gzip (legacy) and raw tar are also accepted,
+// dispatched by magic bytes.
+fn decompressed_tar(bytes: &[u8]) -> anyhow::Result<Cow<'_, [u8]>> {
+    let mut out = Vec::new();
+    if bytes.starts_with(&[0x28, 0xb5, 0x2f, 0xfd]) {
+        std::io::Read::read_to_end(&mut ruzstd::StreamingDecoder::new(bytes)?, &mut out)?;
+        return Ok(Cow::Owned(out));
+    }
+    if bytes.starts_with(&[0x1f, 0x8b]) {
+        std::io::Read::read_to_end(&mut flate2::read::GzDecoder::new(bytes), &mut out)?;
+        return Ok(Cow::Owned(out));
+    }
+    Ok(Cow::Borrowed(bytes))
 }
 
 fn unpack_validated(tar_bytes: &[u8], dest: &std::path::Path) -> anyhow::Result<()> {

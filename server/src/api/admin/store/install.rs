@@ -1,102 +1,61 @@
-//! Install-by-id with automatic dependency resolution: resolve a module's hard
-//! `dependsOn` closure against what is already present (compiled-in + runtime
-//! installed) and the registry catalog, plan missing or out-of-range deps
-//! first, then download + checksum-verify + install everything in dependency
-//! order. All-or-nothing per module: a failed dep aborts before its dependents
-//! are touched.
+//! Install execution: download + checksum-verify + install a resolved plan in
+//! dependency order (see [`super::plan`] for the resolution itself), plus the
+//! batch update path. All-or-nothing per module: a failed dep aborts before
+//! its dependents are touched. Every operation streams `module.op.*` progress
+//! frames (see [`super::events`]).
 
-use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
 use kroma_module_supervisor::Supervisor;
+use serde::Serialize;
 use serde_json::{json, Value};
 
 use super::catalog::{self, CatalogModule};
+use super::events::Op;
+use super::plan::{plan_brief, root_list, Planned, Planner, SERVER_VERSION};
+use super::registries;
 use crate::state::SharedState;
 
-// This server's version, checked against each entry's `minServer`.
-const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-/// Update every runtime-installed module to the newest COMPATIBLE catalog
-/// version. Called at boot (opt-out via the `moduleAutoUpdate` setting) so a
-/// server `.spk` update alone keeps the modules current instead of leaving the
-/// admin to update each one by hand. Best-effort: a catalog-fetch or per-module
-/// install failure is logged and skipped. `install_with_deps` stops the old
-/// process, swaps the files, and respawns, so a running module updates in place.
-/// Returns `(id, from, to)` for each module actually updated.
-pub async fn auto_update(state: &SharedState, sup: &Supervisor) -> Vec<(String, String, String)> {
-    let mut updated = Vec::new();
-    let modules = match catalog::fetch(sup, &catalog::registry_url(state)).await {
-        Ok(m) => m,
-        Err(e) => {
-            tracing::warn!(error = %format!("{e:#}"), "module auto-update: catalog fetch failed");
-            return updated;
-        }
-    };
-    let by_id: HashMap<&str, &CatalogModule> =
-        modules.iter().map(|m| (m.id.as_str(), m)).collect();
-    for manifest in sup.installed_manifests() {
-        let (Some(id), Some(cur)) = (
-            manifest.get("id").and_then(Value::as_str),
-            manifest.get("version").and_then(Value::as_str),
-        ) else {
-            continue;
-        };
-        let Some(entry) = by_id.get(id) else { continue };
-        if !kroma_module_manifest::is_newer(&entry.version, cur) {
-            continue;
-        }
-        if !kroma_module_manifest::server_satisfies(entry.min_server.as_deref(), SERVER_VERSION) {
-            tracing::info!(
-                module = id,
-                requires = entry.min_server.as_deref().unwrap_or("?"),
-                "module update needs a newer server; skipped (update the server first)"
-            );
-            continue;
-        }
-        let to = entry.version.clone();
-        match install_with_deps(state, sup, id).await {
-            Ok(_) => {
-                tracing::info!(module = id, from = cur, to = %to, "auto-updated module");
-                updated.push((id.to_string(), cur.to_string(), to));
-            }
-            Err(e) => {
-                tracing::warn!(module = id, error = %format!("{e:#}"), "module auto-update failed")
-            }
-        }
-    }
-    updated
-}
-
-/// Resolve, download and install `root_id` plus any missing hard dependencies,
-/// dependencies first. Returns the report the Store UI shows: everything that
-/// was actually installed, deps included.
+/// Resolve, download and install `root_id` (plus opted-in optional extras and
+/// any missing hard dependencies), dependencies first. Returns the report the
+/// Store UI shows: everything actually installed, deps included.
 pub async fn install_with_deps(
     state: &SharedState,
-    sup: &Supervisor,
+    sup: &Arc<Supervisor>,
     root_id: &str,
+    include: &[String],
 ) -> Result<Value> {
-    let modules = catalog::fetch(sup, &catalog::registry_url(state)).await?;
-    let by_id: HashMap<&str, &CatalogModule> =
-        modules.iter().map(|m| (m.id.as_str(), m)).collect();
-    // Everything already on this server (compiled-in roster + installed .kmod),
-    // with its version: a satisfied dependency is not reinstalled.
-    let present: HashMap<String, String> =
-        kroma_module_kernel::manifests(state).into_iter().map(|m| (m.id, m.version)).collect();
+    let modules = registries::fetch_merged(state, sup).await?;
+    let mut planner = Planner::new(state, &modules);
+    planner.roots(&root_list(root_id, include))?;
+    let op = Op::begin(state, "install", root_id, plan_brief(&planner.plan));
+    match run_plan(sup, &op, &planner.plan).await {
+        Ok(installed) => {
+            op.finish(None);
+            Ok(json!({ "op": op.id(), "requested": root_id, "installed": installed }))
+        }
+        Err(e) => {
+            op.finish(Some(&format!("{e:#}")));
+            Err(e)
+        }
+    }
+}
 
-    let mut plan: Vec<&CatalogModule> = Vec::new();
-    let mut planned: HashSet<String> = HashSet::new();
-    let mut stack: Vec<String> = Vec::new();
-    plan_install(root_id, true, &by_id, &present, &mut plan, &mut planned, &mut stack)?;
-
+/// Download + verify + install every planned module in dependency order,
+/// streaming progress on `op`. Blocking work (unpack + spawn) runs off the
+/// async runtime.
+async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Result<Vec<Value>> {
     let mut installed = Vec::new();
-    for entry in plan {
+    for p in plan {
+        let entry = p.entry;
         let artifact = catalog::pick_artifact(entry)
             .ok_or_else(|| anyhow!("'{}' has no build for this server's platform", entry.id))?;
         // Registry installs download and run native code, so harden the transport:
         // require HTTPS (no cleartext artifact fetch) and a published sha256 (the
-        // catalog generator always emits one). `install_from_url` verifies the
-        // bytes against it before anything is written or spawned.
+        // catalog generator always emits one). The bytes are verified against it
+        // before anything is written or spawned.
         if !artifact.url.starts_with("https://") {
             bail!("'{}' artifact URL must be https (got '{}')", entry.id, artifact.url);
         }
@@ -108,78 +67,147 @@ pub async fn install_with_deps(
             .ok_or_else(|| {
                 anyhow!("'{}' has no published sha256 checksum; refusing to install", entry.id)
             })?;
-        let manifest = sup
-            .install_from_url(&artifact.url, Some(sha))
-            .await
-            .map_err(|e| anyhow!("installing '{}' failed: {e:#}", entry.id))?;
+        let bytes = {
+            // Throttled: one frame per ~1% (floor 64 KiB), plus the final byte count.
+            let last = AtomicU64::new(0);
+            let on_progress = |received: u64, total: Option<u64>| {
+                let step = total.map_or(512 * 1024, |t| (t / 100).max(64 * 1024));
+                let done = total == Some(received);
+                if !done && received < last.load(Ordering::Relaxed) + step {
+                    return;
+                }
+                last.store(received, Ordering::Relaxed);
+                op.download(&entry.id, received, total);
+            };
+            sup.download_artifact(&artifact.url, Some(sha), &on_progress)
+                .await
+                .map_err(|e| anyhow!("downloading '{}' failed: {e:#}", entry.id))?
+        };
+        op.installing(&entry.id);
+        let manifest = {
+            let sup = sup.clone();
+            let expected = entry.id.clone();
+            tokio::task::spawn_blocking(move || sup.install(&bytes, Some(&expected)))
+                .await
+                .map_err(|_| anyhow!("install task panicked"))?
+                .map_err(|e| anyhow!("installing '{}' failed: {e:#}", entry.id))?
+        };
+        op.done(&entry.id, &entry.version);
         installed.push(json!({
             "id": manifest.get("id"),
             "name": manifest.get("name"),
             "version": manifest.get("version"),
         }));
     }
-    Ok(json!({ "requested": root_id, "installed": installed }))
+    Ok(installed)
 }
 
-// Post-order walk of the hard-dependency graph, so dependencies land in the
-// plan before their dependents. A dependency already present at a satisfying
-// version is skipped; one that is missing (or installed outside the declared
-// range) is planned from the catalog. `is_root` bypasses that shortcut so an
-// explicit install/update of an already-installed module still proceeds.
-fn plan_install<'a>(
-    id: &str,
-    is_root: bool,
-    by_id: &HashMap<&str, &'a CatalogModule>,
-    present: &HashMap<String, String>,
-    plan: &mut Vec<&'a CatalogModule>,
-    planned: &mut HashSet<String>,
-    stack: &mut Vec<String>,
-) -> Result<()> {
-    if planned.contains(id) {
-        return Ok(());
-    }
-    if stack.iter().any(|s| s == id) {
-        bail!("dependency cycle in the registry involving '{id}'");
-    }
-    let entry = *by_id.get(id).ok_or_else(|| {
-        if is_root {
-            anyhow!("'{id}' is not in the registry")
-        } else {
-            anyhow!("dependency '{id}' is neither installed nor in the registry")
-        }
-    })?;
-    // Fail fast with the precise blocker instead of a partial install.
-    if !kroma_module_manifest::server_satisfies(entry.min_server.as_deref(), SERVER_VERSION) {
-        bail!(
-            "'{id}' requires KROMA server {} (this server is {SERVER_VERSION}); update the server first",
-            entry.min_server.as_deref().unwrap_or("?"),
-        );
-    }
-    if catalog::pick_artifact(entry).is_none() {
-        bail!("'{id}' has no build for this server's platform");
-    }
-    stack.push(id.to_string());
-    for (dep_id, range) in &entry.depends_on {
-        let satisfied = present.get(dep_id).is_some_and(|installed| {
-            range.as_deref().is_none_or(|r| kroma_module_manifest::range_matches(r, installed))
-        });
-        if satisfied {
+#[derive(Serialize)]
+pub struct UpdatedModule {
+    pub id: String,
+    pub from: String,
+    pub to: String,
+}
+
+#[derive(Serialize)]
+pub struct FailedUpdate {
+    pub id: String,
+    pub error: String,
+}
+
+/// `POST /store/update`'s wire shape, straight off the type.
+#[derive(Serialize)]
+pub struct UpdateOutcome {
+    pub updated: Vec<UpdatedModule>,
+    pub failed: Vec<FailedUpdate>,
+}
+
+/// Update every runtime-installed module (or the `only` subset) to the newest
+/// compatible catalog version, off ONE catalog fetch. One `module.op.*` stream
+/// covers the whole batch. `Err` only when the catalog itself is unreachable.
+pub async fn update_all(
+    state: &SharedState,
+    sup: &Arc<Supervisor>,
+    only: Option<&[String]>,
+) -> Result<UpdateOutcome> {
+    let modules = registries::fetch_merged(state, sup).await?;
+    let by_id: std::collections::HashMap<&str, &CatalogModule> =
+        modules.iter().map(|m| (m.id.as_str(), m)).collect();
+    let mut outcome = UpdateOutcome { updated: Vec::new(), failed: Vec::new() };
+    let mut targets: Vec<(&CatalogModule, String)> = Vec::new();
+    for manifest in sup.installed_manifests() {
+        let (Some(id), Some(cur)) = (
+            manifest.get("id").and_then(Value::as_str),
+            manifest.get("version").and_then(Value::as_str),
+        ) else {
+            continue;
+        };
+        if only.is_some_and(|ids| !ids.iter().any(|x| x == id)) {
             continue;
         }
-        // The catalog's copy must itself satisfy the declared range, or the
-        // auto-install would produce a combination the dependent rejects.
-        if let (Some(range), Some(dep_entry)) = (range.as_deref(), by_id.get(dep_id.as_str())) {
-            if !kroma_module_manifest::range_matches(range, &dep_entry.version) {
-                bail!(
-                    "'{id}' needs {dep_id}@{range} but the registry has {}",
-                    dep_entry.version,
-                );
+        let Some(entry) = by_id.get(id) else { continue };
+        if !kroma_module_manifest::is_newer(&entry.version, cur) {
+            continue;
+        }
+        if !kroma_module_manifest::server_satisfies(entry.min_server.as_deref(), SERVER_VERSION) {
+            outcome.failed.push(FailedUpdate {
+                id: id.to_string(),
+                error: format!(
+                    "requires KROMA server {} (this server is {SERVER_VERSION}); update the server first",
+                    entry.min_server.as_deref().unwrap_or("?"),
+                ),
+            });
+            continue;
+        }
+        targets.push((entry, cur.to_string()));
+    }
+    if targets.is_empty() {
+        return Ok(outcome);
+    }
+    let brief = Value::Array(targets.iter().map(|(e, _)| super::plan::entry_brief(e)).collect());
+    let op = Op::begin(state, "update", "", brief);
+    for (entry, from) in targets {
+        // Re-plan per module: an earlier update may have pulled a dependency
+        // this one no longer needs to.
+        let mut planner = Planner::new(state, &modules);
+        let result = match planner.roots(&[entry.id.as_str()]) {
+            Ok(()) => run_plan(sup, &op, &planner.plan).await.map(|_| ()),
+            Err(e) => Err(e),
+        };
+        match result {
+            Ok(()) => outcome.updated.push(UpdatedModule {
+                id: entry.id.clone(),
+                from,
+                to: entry.version.clone(),
+            }),
+            Err(e) => {
+                outcome.failed.push(FailedUpdate { id: entry.id.clone(), error: format!("{e:#}") })
             }
         }
-        plan_install(dep_id, false, by_id, present, plan, planned, stack)?;
     }
-    stack.pop();
-    planned.insert(id.to_string());
-    plan.push(entry);
-    Ok(())
+    let error =
+        (!outcome.failed.is_empty()).then(|| format!("{} update(s) failed", outcome.failed.len()));
+    op.finish(error.as_deref());
+    Ok(outcome)
+}
+
+/// Boot-time auto-update (opt-out via the `moduleAutoUpdate` setting), so a
+/// server update alone keeps the modules current instead of leaving the admin
+/// to update each one by hand. Best-effort: failures are logged and skipped.
+pub async fn auto_update(state: &SharedState, sup: &Arc<Supervisor>) -> Vec<UpdatedModule> {
+    match update_all(state, sup, None).await {
+        Ok(outcome) => {
+            for f in &outcome.failed {
+                tracing::warn!(module = %f.id, error = %f.error, "module auto-update failed");
+            }
+            for u in &outcome.updated {
+                tracing::info!(module = %u.id, from = %u.from, to = %u.to, "auto-updated module");
+            }
+            outcome.updated
+        }
+        Err(e) => {
+            tracing::warn!(error = %format!("{e:#}"), "module auto-update: catalog fetch failed");
+            Vec::new()
+        }
+    }
 }
