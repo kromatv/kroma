@@ -1,5 +1,6 @@
 import type { SessionInfo } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button } from '@kroma/ui/kit';
 import {
   IconDeviceDesktop,
   IconDeviceMobile,
@@ -13,7 +14,6 @@ import { relativeSeen } from '#web/shared/lib/adminFormat';
 import { kromaClient } from '#web/shared/lib/api';
 import { type DeviceKind, deviceInfo } from '#web/shared/lib/device';
 import { userQueries } from '#web/shared/lib/queries';
-import { Button } from '#web/shared/ui';
 
 const DEVICE_ICON: Record<DeviceKind, typeof IconDeviceDesktop> = {
   tv: IconDeviceTv,

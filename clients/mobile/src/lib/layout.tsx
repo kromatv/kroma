@@ -2,10 +2,10 @@
 // window width (useIsWide), never the device class — iPadOS windows resize
 // freely, so a narrow floating window must collapse back to single-column.
 
-import { styles } from '@kroma/ui/kit';
+import { Box, styles } from '@kroma/ui/kit';
 import * as Device from 'expo-device';
 import { type ReactNode, useMemo } from 'react';
-import { type StyleProp, useWindowDimensions, View, type ViewStyle } from 'react-native';
+import { type StyleProp, useWindowDimensions, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from './theme';
 
@@ -62,7 +62,7 @@ export function MaxWidth({
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
 }>) {
-  return <View style={[boxed(max), style]}>{children}</View>;
+  return <Box style={[boxed(max), style]}>{children}</Box>;
 }
 
 /** Side-by-side columns in wide windows; below the breakpoint, left and right
@@ -84,17 +84,17 @@ export function SplitColumns({
   const wide = useIsWide();
   if (!wide) {
     return (
-      <View style={style}>
+      <Box style={style}>
         {left}
         {right}
-      </View>
+      </Box>
     );
   }
   return (
-    <View style={[style, s.splitRow]}>
-      <View style={[s.splitCol, { flex: leftFlex }]}>{left}</View>
-      <View style={[s.splitCol, { flex: rightFlex }]}>{right}</View>
-    </View>
+    <Box style={[style, s.splitRow]}>
+      <Box style={[s.splitCol, { flex: leftFlex }]}>{left}</Box>
+      <Box style={[s.splitCol, { flex: rightFlex }]}>{right}</Box>
+    </Box>
   );
 }
 

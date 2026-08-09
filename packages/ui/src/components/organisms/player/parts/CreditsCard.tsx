@@ -86,7 +86,7 @@ export function CreditsCard({
     >
       <Box h={px(150)} mb={px(16)} radius={px(14)} overflow="hidden">
         <Img src={item.posterUrl ?? null} background={ART_FILL} fill />
-        <Box fill pointerEvents="none" style={gradient(VIGNETTE)} />
+        <Box fill style={[s.vignette, gradient(VIGNETTE)]} />
         <Box absolute left={px(14)} bottom={px(14)} w={ring} h={ring} center>
           <Box absolute>
             <ProgressRing
@@ -143,6 +143,7 @@ const COUNTDOWN_SIZE = 19;
 
 const s = styles({
   cardShadow: { boxShadow: '0 26px 64px rgba(0, 0, 0, 0.62)' },
+  vignette: { pointerEvents: 'none' },
   countdown: {
     font: 'ui',
     fontWeight: '700',

@@ -1,18 +1,15 @@
 import { normalizeServerUrl as norm, type StoredSession } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
+  AddTile,
   Avatar,
   Box,
   Chip,
   Focusable,
   FocusRegion,
   Hint,
-  Icon,
-  type IconProps,
   StatusDot,
-  type StyleDecl,
   styles,
-  svFor,
   Txt,
   useFocusNav,
 } from '@kroma/ui/kit';
@@ -21,7 +18,7 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
 import { useServersHealth } from '#tv/app/useServersHealth';
-import { AuthScreen, artUrl, hostOf, KromaMark } from '#tv/shared/ui';
+import { AuthScreen, artUrl, GATE_MARK, hostOf, KromaMark } from '#tv/shared/ui';
 
 interface Tile {
   key: string;
@@ -71,7 +68,7 @@ export function TvProfiles() {
   return (
     <AuthScreen>
       <Box mb={28}>
-        <KromaMark size={34} />
+        <KromaMark size={GATE_MARK} />
       </Box>
       <Txt
         variant="hero"
@@ -129,21 +126,13 @@ export function TvProfiles() {
           );
         })}
 
-        <Box w={150} align="center" gap={12}>
-          <Focusable
-            onPress={() => nav.go('addProfile')}
+        <Box w={150} align="center">
+          <AddTile
             label={t('profiles.addProfile')}
+            onPress={() => nav.go('addProfile')}
             // Entry point only when there is no profile to land on.
             autoFocus={tiles.length === 0}
-            focusScale={1.07}
-            ring={false}
-            sv={addTile}
-          >
-            {({ slots }) => <Icon name="plus" {...slots.glyph} />}
-          </Focusable>
-          <Txt style={{ fontSize: 18, fontWeight: '500' }} color="rgba(244, 243, 240, 0.5)">
-            {t('profiles.addProfile')}
-          </Txt>
+          />
         </Box>
       </FocusRegion>
 
@@ -171,22 +160,6 @@ export function TvProfiles() {
     </AuthScreen>
   );
 }
-
-const addTile = svFor<{ root: StyleDecl; glyph: Pick<IconProps, 'color' | 'size' | 'stroke'> }>()({
-  slots: {
-    root: {
-      w: 146,
-      h: 146,
-      center: true,
-      radius: 24,
-      borderStyle: 'dashed',
-      border: 'white/18',
-      borderWidth: 2,
-      _focus: { borderColor: 'accent' },
-    },
-    glyph: { color: 'white/35', size: 46, stroke: 1.6, _focus: { color: 'accent' } },
-  },
-});
 
 const s = styles({
   // Type only. Anything that lays the ROW out (the margin above it) goes on the

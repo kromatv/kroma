@@ -3,8 +3,8 @@
 
 import { hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState } from '@kroma/ui/kit';
-import { IconArrowLeft, IconFlame } from '@tabler/icons-react';
+import { Box, Button, EmptyState, Icon, Row, Txt } from '@kroma/ui/kit';
+import { IconArrowLeft } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -13,11 +13,13 @@ import {
   useTrendingPage,
 } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
 
 // Same auto-fill poster grid as the catalogue (see cards.tsx GRID).
 const GRID =
   'mt-8 grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
+
+const PAGE_COUNT = { fontVariant: ['tabular-nums' as const] };
 
 export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   const t = useT();
@@ -45,9 +47,10 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
         {t('discover.back')}
       </Link>
 
-      <h1 className={`flex items-center gap-2.5 ${PAGE_TITLE}`}>
-        <IconFlame size={26} stroke={2} className="text-accent" />
-        {title}
+      {/* Not <PageHeader>: it has no slot for a glyph inside the title. */}
+      <h1 className="flex items-center gap-2.5">
+        <Icon name="flame" size={26} stroke={2} color="accent" />
+        <Txt variant="h1">{title}</Txt>
       </h1>
 
       {!canDiscover ? (
@@ -67,9 +70,9 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
   const t = useT();
   if (state.loading) {
     return (
-      <div className="mt-8">
+      <Box mt={32}>
         <SkeletonRow count={12} />
-      </div>
+      </Box>
     );
   }
   if (state.entries.length === 0) {
@@ -92,7 +95,7 @@ function Pager({
   const t = useT();
   if (totalPages <= 1) return null;
   return (
-    <div className="mt-10 flex items-center justify-center gap-4">
+    <Row justify="center" gap={16} mt={40}>
       <Button
         variant="glass"
         size="sm"
@@ -101,9 +104,9 @@ function Pager({
         onPress={() => onGo(page - 1)}
         disabled={page <= 1}
       />
-      <span className="text-[13.5px] font-semibold tabular-nums text-dim">
+      <Txt variant="meta" color="textDim" style={PAGE_COUNT}>
         {t('discover.pageOf', { page: String(page), total: String(totalPages) })}
-      </span>
+      </Txt>
       <Button
         variant="glass"
         size="sm"
@@ -112,6 +115,6 @@ function Pager({
         onPress={() => onGo(page + 1)}
         disabled={page >= totalPages}
       />
-    </div>
+    </Row>
   );
 }

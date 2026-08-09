@@ -30,3 +30,7 @@ ruzstd = "0.7"
 # Verify a downloaded .kmod against its catalog sha256 before installing.
 sha2 = { workspace = true }
 hex = { workspace = true }
+
+# SIGTERM to a sidecar so it can run its shutdown hooks before being killed.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

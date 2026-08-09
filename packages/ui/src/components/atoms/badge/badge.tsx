@@ -23,6 +23,8 @@ const badgeVariants = sv({
       'H.265': { root: { bg: 'h265/16' }, label: { color: 'h265' } },
       success: { root: { bg: 'success/16' }, label: { color: 'success' } },
       info: { root: { bg: 'info/16' }, label: { color: 'info' } },
+      danger: { root: { bg: 'danger/16' }, label: { color: 'danger' } },
+      warning: { root: { bg: 'accentSoft' }, label: { color: 'accent' } },
       neutral: { root: { bg: 'white/8' }, label: { color: 'text/85' } },
     },
     size: {

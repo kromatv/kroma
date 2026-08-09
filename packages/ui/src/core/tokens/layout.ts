@@ -29,6 +29,13 @@ export const radius = {
   pill: 999,
 } as const;
 
+/** The radius of a box nested inside another, given the space between their
+ *  edges: corners are concentric only when the inner one is the outer minus
+ *  the inset. */
+export function nestedRadius(outer: number, inset: number): number {
+  return Math.max(0, outer - inset);
+}
+
 /** Radii a theme adds. Augment it and the name is legal wherever a radius is
  *  written — the `radius:` shorthand, <Box radius> (see `ColorRegistry`). */
 // biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design

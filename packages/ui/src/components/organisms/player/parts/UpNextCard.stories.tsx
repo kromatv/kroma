@@ -16,7 +16,7 @@ const ROW = Array.from({ length: UP_NEXT_COLUMNS }, (_, at) => ({
 
 export default story({
   name: 'UpNextCard',
-  group: 'Media',
+  group: 'Player',
   docs: 'One candidate in the up-next sheet: a 16:9 still, the title, and the kind of thing it is. With no still it falls back to a deterministic amber-into-charcoal gradient derived from the id, so the same episode always gets the same placeholder rather than flickering between reloads.',
   usage: `<UpNextCard item={next} focused={nav.at === index} onActivate={play} onFocus={focus} />`,
   guidelines: {

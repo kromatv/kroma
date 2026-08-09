@@ -1,6 +1,7 @@
 // Admin console: server identity, live sessions, metrics/storage, users,
 // settings and watch stats.
 
+import { NotificationImages } from '../schemas';
 import type {
   AdminOverview,
   AdminUsers,
@@ -235,6 +236,11 @@ export function uploadNotificationImage(
     headers: { 'content-type': file.type || 'application/octet-stream' },
     body: file,
   });
+}
+
+/** Images previously uploaded for notifications, newest first. */
+export async function listNotificationImages(ctx: RequestContext): Promise<NotificationImages> {
+  return NotificationImages.parse(await ctx.json('/admin/notifications/images'));
 }
 
 export function adminJobs(ctx: RequestContext): Promise<JobsView> {

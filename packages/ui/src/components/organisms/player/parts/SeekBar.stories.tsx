@@ -85,7 +85,7 @@ function Scrubbable({
 
 export default story({
   name: 'SeekBar',
-  group: 'Media',
+  group: 'Player',
   docs: 'The progress bar, aware of what it is scrubbing through. Each chapter is its OWN segment with its own played fill and buffered zone, so the shape of the film is visible before you touch it — and the intro and credits segments are tinted, which is what makes "skip the recap" a target rather than a guess. With no chapter data it degrades to one continuous segment rather than disappearing. `seekPreview` is the pending scrub position: the bar shows where you are *going*, while playback stays where it is.',
   usage: `<SeekBar
   cur={controller.cur}

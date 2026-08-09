@@ -79,9 +79,6 @@ const KIND_META: Record<string, KindMeta> = {
 export const kindMeta = (k: string): KindMeta => KIND_META[k] ?? FILM_KIND;
 
 /** Deterministic poster gradient from a seed (shown behind / until a real poster
- *  loads), mirroring the design's placeholder. */
-export function posterGrad(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + (seed.codePointAt(i) ?? 0)) % 360;
-  return `radial-gradient(120% 90% at 30% 16%, hsla(${(h + 22) % 360},60%,46%,.5), transparent 62%), linear-gradient(155deg, hsl(${h} 42% 27%), hsl(${(h + 30) % 360} 48% 10%))`;
-}
+ *  loads). The shared helper, so the pipeline rows and the dashboard compute the
+ *  SAME hue for the same title. */
+export { posterGradient as posterGrad } from '#web/shared/lib/adminFormat';

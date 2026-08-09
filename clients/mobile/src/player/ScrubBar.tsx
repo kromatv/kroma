@@ -4,11 +4,10 @@
 
 import { formatTimecode } from '@kroma/core';
 import { seekBar } from '@kroma/ui';
-import { styles } from '@kroma/ui/kit';
+import { Box, styles, Txt } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
-import { Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { radius } from '#mobile/lib/theme';
 import type { StoryboardTile } from './useStoryboard';
@@ -73,7 +72,7 @@ export function ScrubBar({
 
   return (
     <GestureDetector gesture={gesture}>
-      <View
+      <Box
         style={s.touch}
         onLayout={(e) => {
           widthRef.current = e.nativeEvent.layout.width;
@@ -81,9 +80,9 @@ export function ScrubBar({
         }}
       >
         {active ? (
-          <View style={[s.previewBox, { left: previewLeft - THUMB_W / 2 }]}>
+          <Box style={[s.previewBox, { left: previewLeft - THUMB_W / 2 }]}>
             {tile ? (
-              <View style={[s.thumb, { width: THUMB_W, height: thumbH }]}>
+              <Box style={[s.thumb, { width: THUMB_W, height: thumbH }]}>
                 <Image
                   source={{ uri: tile.sheet }}
                   contentFit="fill"
@@ -95,15 +94,15 @@ export function ScrubBar({
                     height: tile.sheetH * scale,
                   }}
                 />
-              </View>
+              </Box>
             ) : null}
-            <View style={s.bubble}>
-              <Text style={s.bubbleText}>{formatTimecode(shown)}</Text>
-            </View>
-          </View>
+            <Box style={s.bubble}>
+              <Txt style={s.bubbleText}>{formatTimecode(shown)}</Txt>
+            </Box>
+          </Box>
         ) : null}
-        <View style={[s.track, { backgroundColor: paint.track }]}>
-          <View
+        <Box style={[s.track, { backgroundColor: paint.track }]}>
+          <Box
             style={[s.buffered, { backgroundColor: paint.buffered, width: `${bufFrac * 100}%` }]}
           />
           <LinearGradient
@@ -115,12 +114,10 @@ export function ScrubBar({
           {dur > 0
             ? (markers ?? [])
                 .filter((m) => m > 0 && m < dur)
-                .map((m) => (
-                  <View key={m} style={[s.markerTick, { left: `${(m / dur) * 100}%` }]} />
-                ))
+                .map((m) => <Box key={m} style={[s.markerTick, { left: `${(m / dur) * 100}%` }]} />)
             : null}
-        </View>
-        <View
+        </Box>
+        <Box
           style={[
             s.knob,
             {
@@ -132,7 +129,7 @@ export function ScrubBar({
             },
           ]}
         />
-      </View>
+      </Box>
     </GestureDetector>
   );
 }

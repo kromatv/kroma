@@ -32,7 +32,7 @@
   "dependencies": {
     "@kroma/core": "workspace:*",
     "@tabler/icons-react": "^3.44.0",
-    "@tabler/icons-react-native": "^3.45.0",
+    "@tabler/icons-react-native": "^3.46.0",
     "react-native-svg": "^15.15.5",
     "react-tv-space-navigation": "6.0.0-beta1"
   },
@@ -44,8 +44,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-native": "npm:react-native-tvos@0.86.0-2",

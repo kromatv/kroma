@@ -1,30 +1,14 @@
-// The brand mark stays from the shared design system (pure SVG, no styling deps).
-export { Logo } from '@kroma/ui/kit';
-export { Avatar, AvatarFallback, AvatarImage } from '#web/shared/ui/avatar';
-export type { BadgeProps, BadgeTone } from '#web/shared/ui/badge';
-export { Badge } from '#web/shared/ui/badge';
-export type { ButtonProps, ButtonSize, ButtonVariant } from '#web/shared/ui/button';
-export { Button } from '#web/shared/ui/button';
-export type { ChipProps } from '#web/shared/ui/chip';
-export { Chip } from '#web/shared/ui/chip';
-export type { ConfirmProps } from '#web/shared/ui/confirm';
-export { ConfirmDialog, confirmDialog } from '#web/shared/ui/confirm';
-export type { OtpProps } from '#web/shared/ui/otp';
-export { Otp } from '#web/shared/ui/otp';
-export { EmptyState, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui/page';
+export type { ImageProps } from '#web/shared/ui/image';
+export { Image } from '#web/shared/ui/image';
+export { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui/page';
 export type { PosterProps, PosterRailProps } from '#web/shared/ui/poster';
 export { Poster, PosterRail } from '#web/shared/ui/poster';
-export type { SelectOption, SelectProps } from '#web/shared/ui/select';
-export { Select } from '#web/shared/ui/select';
-export { Sheet } from '#web/shared/ui/sheet';
 export {
   CardSkeleton,
   DetailSkeleton,
   PageSkeleton,
-  PosterSkeleton,
   RailSkeleton,
   Skeleton,
   SkeletonRow,
-  SkeletonText,
   TableSkeleton,
 } from '#web/shared/ui/skeleton';

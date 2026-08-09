@@ -704,7 +704,7 @@ pub async fn upload_avatar(
 
     let data_dir = state.config.data_dir.clone();
     let bytes = body.to_vec();
-    let url = match blocking(move || Ok(crate::infra::image::store_upload(&data_dir, &bytes, Some(AVATAR_MAX_WIDTH)))).await {
+    let url = match blocking(move || Ok(crate::infra::image::store_upload(&data_dir, &bytes, Some(AVATAR_MAX_WIDTH), ""))).await {
         Ok(Some(u)) => u,
         Ok(None) => return lerr(loc, StatusCode::UNSUPPORTED_MEDIA_TYPE, "error.imageUnreadable"),
         Err(resp) => return resp,

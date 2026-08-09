@@ -102,3 +102,46 @@ export function hasGenre(item: Sortable, genre: string): boolean {
   const want = genre.trim();
   return (item.metadata?.genres ?? []).some((g) => g.trim() === want);
 }
+
+/** Every fast-scroll bucket, in rail order: digits and symbols first, matching
+ * where `localeCompare` files them. */
+export const TITLE_LETTERS: readonly string[] = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+
+// The combining-marks range, not `\p{M}`: this module ships to the legacy
+// webOS tier, whose engine cannot parse unicode property escapes.
+const foldChar = (ch: string): string =>
+  ch
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+/** The fast-scroll bucket a title files under: its first letter or digit,
+ * uppercased with diacritics folded ('É' → 'E'). Digit-led and symbol-only
+ * titles bucket under '#', mirroring how `localeCompare` orders them. */
+export function titleLetter(title: string): string {
+  for (const ch of title) {
+    const c = foldChar(ch).charAt(0);
+    if (c >= 'A' && c <= 'Z') return c;
+    if (c >= '0' && c <= '9') return '#';
+  }
+  return '#';
+}
+
+export interface LetterMark {
+  letter: string;
+  index: number;
+}
+
+/** The first index of each bucket present in a title-sorted list, in list
+ * order, so a fast-scroll rail can jump straight to `items[mark.index]`. */
+export function letterMarks(items: readonly Sortable[]): LetterMark[] {
+  const marks: LetterMark[] = [];
+  const seen = new Set<string>();
+  items.forEach((item, index) => {
+    const letter = titleLetter(item.title);
+    if (seen.has(letter)) return;
+    seen.add(letter);
+    marks.push({ letter, index });
+  });
+  return marks;
+}

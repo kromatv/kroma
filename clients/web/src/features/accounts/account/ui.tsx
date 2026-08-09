@@ -1,12 +1,11 @@
 // Shared building blocks for the account settings page (`/account`), styled to
 // the KROMA "Mon profil" design: overline sections separated by hairlines, flat
-// dark panels, uppercase field labels with amber focus, and icon-led preference
-// rows. Also exports the small async-save state machine every section reuses.
+// dark panels and icon-led preference rows. Also exports the small async-save
+// state machine every section reuses.
 
-import { FIELD_GROUP } from '@kroma/admin-kit';
 import { apiErrorText, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** A page section: an uppercase overline separated from the previous section by
@@ -29,30 +28,6 @@ export function Panel({
     <div className={`rounded-xl border border-border bg-surface-1 shadow-card ${className}`}>
       {children}
     </div>
-  );
-}
-
-/** A labelled input: uppercase 11px label over a dark field with an optional
- * leading adornment (icon or `@`) and an amber focus ring. */
-export function LabeledInput({
-  label,
-  leading,
-  className = '',
-  ...rest
-}: Readonly<{ label: string; leading?: ReactNode } & InputHTMLAttributes<HTMLInputElement>>) {
-  return (
-    <label className={`flex flex-col gap-2 ${className}`}>
-      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-dim">{label}</span>
-      <div className={FIELD_GROUP}>
-        {leading}
-        <input
-          // The bordered box above is the field; it takes the border and ring.
-          data-focus-ring="off"
-          className="min-w-0 flex-1 bg-transparent py-3 text-[14.5px] font-semibold text-text outline-none placeholder:text-dim"
-          {...rest}
-        />
-      </div>
-    </label>
   );
 }
 

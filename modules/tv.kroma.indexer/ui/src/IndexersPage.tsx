@@ -3,26 +3,29 @@
 // TMDB id support) and an add/edit modal. Structure mirrors the libraries page.
 
 import {
-  AddEngineModal,
+  addEngine,
   apiErrorText,
-  Button,
-  Card,
   Denied,
-  EmptyState,
   type EngineCapability,
-  HeaderAction,
-  IconButton,
   type MessageKey,
-  PageHeader,
-  Pill,
-  TableSkeleton,
-  Toggle,
+  ModuleFailed,
+  ModuleLoading,
   useCap,
   useEnabledEngines,
   usePoll,
   useT,
 } from '@kroma/module-sdk';
-import { IconAntenna, IconPencil } from '@tabler/icons-react';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  IconButton,
+  PageHeader,
+  Surface,
+  Switch,
+  TableSkeleton,
+} from '@kroma/ui/kit';
+import { IconAntenna } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useIndexerApi } from './api';
 import {
@@ -42,10 +45,13 @@ export default function IndexersPage() {
   const engines = useEnabledEngines('indexer-engine');
   const [tests, setTests] = useState<Record<string, TestState>>({});
 
-  const { data, reload } = usePoll(['admin', 'indexers'], () => indexerApi.list(), 30000);
+  const { data, failed, reload } = usePoll(['admin', 'indexers'], () => indexerApi.list(), 30000);
 
   if (!canManage) return <Denied />;
-  const indexers = data?.indexers ?? [];
+  // Before the first answer there is no list to be empty: an empty state here
+  // would read as "you have no indexers", which is a claim we cannot make yet.
+  if (!data) return failed ? <ModuleFailed retry={reload} /> : <ModuleLoading />;
+  const indexers = data.indexers;
 
   const toggle = (ix: IndexerView, enabled: boolean) => {
     indexerApi
@@ -85,7 +91,7 @@ export default function IndexersPage() {
 
   // Generic engine (e.g. Torznab): the shared field form over the engine's schema.
   const openAddEngine = async (engine: EngineCapability) => {
-    const changed = await AddEngineModal.call({
+    const changed = await addEngine({
       engines: [engine],
       title: t('indexers.addTitle'),
       onSubmit: (kind, v) =>
@@ -112,10 +118,12 @@ export default function IndexersPage() {
     engines.length > 0 ? (
       <div className="flex items-center gap-2">
         {engines.map((engine) => (
-          <HeaderAction
+          <Button
             key={engine.id}
+            variant="primary"
+            icon="plus"
             label={t((engine.label ?? engine.id) as MessageKey)}
-            onClick={() =>
+            onPress={() =>
               engine.flow === 'definition' ? void openPicker() : void openAddEngine(engine)
             }
           />
@@ -177,7 +185,7 @@ function IndexerCard({
 }>) {
   const t = useT();
   return (
-    <Card className="p-5">
+    <Surface elevated border="border">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3.5">
           <span className="flex h-11 w-11 flex-[0_0_44px] items-center justify-center rounded-xl border border-border-strong bg-surface-2 text-accent">
@@ -186,41 +194,39 @@ function IndexerCard({
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
               <span className="truncate text-[15.5px] font-bold">{ix.name}</span>
-              {!ix.enabled ? (
-                <Pill color="rgba(244,243,240,.55)">{t('indexers.disabled')}</Pill>
-              ) : null}
+              {!ix.enabled ? <Badge tone="neutral">{t('indexers.disabled')}</Badge> : null}
             </div>
             <div className="mt-0.5 truncate text-[12.5px] font-medium text-dim">{ix.url}</div>
           </div>
         </div>
-        <Toggle on={ix.enabled} onChange={onToggle} />
+        <Switch checked={ix.enabled} onChange={onToggle} label={ix.name} />
       </div>
 
       <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[12px] font-semibold text-white/55">
-        <Pill color={ix.kind === 'builtin' ? '#F0A868' : '#86A8FF'}>
+        <Badge tone={ix.kind === 'builtin' ? 'warning' : 'info'}>
           {ix.kind === 'builtin' ? t('indexers.builtin') : t('indexers.torznab')}
-        </Pill>
-        <Pill color="#86A8FF">{t('indexers.cats', { cats: ix.categories.join(', ') })}</Pill>
+        </Badge>
+        <Badge tone="info">{t('indexers.cats', { cats: ix.categories.join(', ') })}</Badge>
         {ix.priority !== 0 ? (
-          <Pill color="#C792EA">{t('indexers.prio', { prio: String(ix.priority) })}</Pill>
+          <Badge tone="neutral">{t('indexers.prio', { prio: String(ix.priority) })}</Badge>
         ) : null}
-        {ix.hasApiKey ? <Pill color="#46D08D">{t('indexers.keySet')}</Pill> : null}
+        {ix.hasApiKey ? <Badge tone="success">{t('indexers.keySet')}</Badge> : null}
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/6 pt-3.5">
         <TestLine ix={ix} test={test} />
         <div className="flex items-center gap-2">
           <Button
-            variant="secondary"
+            variant="glass"
             size="sm"
             label={t('indexers.test')}
-            onClick={onTest}
+            onPress={onTest}
             loading={test?.busy}
           />
-          <IconButton icon={IconPencil} label={t('indexers.edit')} onClick={onEdit} />
+          <IconButton icon="pencil" label={t('indexers.edit')} onPress={onEdit} />
         </div>
       </div>
-    </Card>
+    </Surface>
   );
 }
 

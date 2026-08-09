@@ -6,10 +6,10 @@
 
 import type { Notification, NotificationEvent } from '@kroma/core';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kroma/core';
-import { Icon, IconButton, type IconName, styles } from '@kroma/ui/kit';
+import { Box, Icon, IconButton, type IconName, styles, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
+import { Pressable, RefreshControl, SectionList } from 'react-native';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -92,7 +92,7 @@ export default function NotificationsScreen() {
               tintColor={colors.textDim}
             />
           }
-          renderSectionHeader={({ section }) => <Text style={s.dayLabel}>{section.title}</Text>}
+          renderSectionHeader={({ section }) => <Txt style={s.dayLabel}>{section.title}</Txt>}
           renderItem={({ item }) => <NotificationRow row={item} />}
         />
       )}
@@ -151,27 +151,27 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
         style={({ pressed }) => [s.row, pressed && s.rowPressed]}
       >
         {/* The gutter is here on every row, empty or not, so nothing shifts. */}
-        <View style={s.gutter}>{unread ? <View style={s.dot} /> : null}</View>
+        <Box style={s.gutter}>{unread ? <Box style={s.dot} /> : null}</Box>
 
         {poster ? (
           <FadeImage uri={poster} seed={row.id} radius={radius.md} style={s.tile} />
         ) : (
-          <View style={[s.tile, s.tilePlate]}>
+          <Box style={[s.tile, s.tilePlate]}>
             <Icon name={glyph.name} size={20} stroke={1.8} color={glyph.color} />
-          </View>
+          </Box>
         )}
 
-        <View style={s.body}>
-          <View style={s.titleRow}>
-            <Text numberOfLines={1} style={[s.title, !unread && s.titleRead]}>
+        <Box style={s.body}>
+          <Box style={s.titleRow}>
+            <Txt lines={1} style={[s.title, !unread && s.titleRead]}>
               {row.title}
-            </Text>
-            <Text style={s.time}>{sinceLabel(t, row.createdAt)}</Text>
-          </View>
-          <Text numberOfLines={2} style={s.text}>
+            </Txt>
+            <Txt style={s.time}>{sinceLabel(t, row.createdAt)}</Txt>
+          </Box>
+          <Txt lines={2} style={s.text}>
             {row.body}
-          </Text>
-        </View>
+          </Txt>
+        </Box>
       </Pressable>
     </ReanimatedSwipeable>
   );

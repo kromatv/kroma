@@ -107,7 +107,9 @@ fn paint_wheel(pm: &mut Pixmap, x: f32, y: f32, size: f32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::card::{H, W};
+    use crate::api::card::W;
+
+    const H: u32 = W * 9 / 16;
 
     #[test]
     fn lockup_paints_in_the_top_right_corner() {

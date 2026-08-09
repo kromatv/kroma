@@ -2,9 +2,9 @@
 // Face ID / Touch ID.
 
 import { apiErrorText } from '@kroma/core';
-import { Button, styles } from '@kroma/ui/kit';
+import { Box, Button, styles, Txt } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
-import { Platform, Text, View } from 'react-native';
+import { Platform } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { BioSwitchRow, LockCard, PinWizard } from '#mobile/components/profileLock';
 import { ErrorBanner, Screen } from '#mobile/components/ui';
@@ -198,13 +198,13 @@ export default function ProfilePin() {
     <Screen padded={false}>
       <PageHeader title={t('account.profileLock')} />
       {step.kind === 'menu' ? (
-        <View style={s.body}>
+        <Box style={s.body}>
           <LockCard
             title={t('account.pin')}
             sub={hasPin ? t('account.pinSubSet') : t('account.pinSub')}
           >
             {hasPin ? (
-              <View style={s.buttons}>
+              <Box style={s.buttons}>
                 <Button
                   label={t('account.changePin')}
                   onPress={() => begin({ kind: 'current', after: 'new' })}
@@ -214,7 +214,7 @@ export default function ProfilePin() {
                   label={t('account.removePin')}
                   onPress={() => begin({ kind: 'current', after: 'remove' })}
                 />
-              </View>
+              </Box>
             ) : (
               <Button label={t('account.setPin')} onPress={() => begin({ kind: 'new' })} />
             )}
@@ -238,9 +238,9 @@ export default function ProfilePin() {
             </LockCard>
           ) : null}
 
-          {saved ? <Text style={s.saved}>{t('account.profileSaved')}</Text> : null}
+          {saved ? <Txt style={s.saved}>{t('account.profileSaved')}</Txt> : null}
           <ErrorBanner message={error} />
-        </View>
+        </Box>
       ) : (
         <PinWizard
           subtitle={stepSubtitle()}

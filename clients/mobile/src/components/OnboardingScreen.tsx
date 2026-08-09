@@ -1,60 +1,59 @@
 // Shared scaffold for the onboarding/login surfaces. The lockup is the one
 // anchor: same size and position on every phase, with content swapping beneath.
 
-import { BackButton, styles } from '@kroma/ui/kit';
+import { BackButton, Box, SplashBackdrop, type SplashCover, styles, Txt } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
-import {
-  KeyboardAvoidingView,
-  type KeyboardAvoidingViewProps,
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, type KeyboardAvoidingViewProps, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth, useIsWide } from '#mobile/lib/layout';
 import { colors, SHADE, spacing, type } from '#mobile/lib/theme';
+import { GateSettings } from './GateSettings';
 import { KromaLockup } from './KromaLockup';
 
 export function OnboardingScreen({
   keyboardBehavior,
   onBack,
+  covers,
   children,
 }: Readonly<{
   keyboardBehavior?: NonNullable<KeyboardAvoidingViewProps['behavior']>;
   onBack?: () => void;
+  /** Splash artwork behind the phase (see the kit's SplashBackdrop); phases
+   *  without a known server pass nothing and keep the plain wash. */
+  covers?: readonly SplashCover[];
   children: ReactNode;
 }>) {
   const t = useT();
   const insets = useSafeAreaInsets();
   const wide = useIsWide();
   return (
-    <View style={s.screen}>
+    <Box style={s.screen}>
+      {covers && covers.length > 0 ? <SplashBackdrop covers={covers} /> : null}
       <LinearGradient
         colors={[colors.accentSoft, SHADE.transparent]}
         style={s.wash}
         pointerEvents="none"
       />
       {onBack ? (
-        <View style={[s.back, { top: insets.top + 8 }]}>
-          <BackButton
-            variant="ghost"
-            size={40}
-            hitSlop={12}
-            label={t('common.back')}
-            onPress={onBack}
-          />
-        </View>
+        <Box style={[s.back, { top: insets.top + 8 }]}>
+          <BackButton label={t('common.back')} onPress={onBack} />
+        </Box>
       ) : null}
+      {/* The gear the TV and web gates both carry: language before sign-in.
+          Opposite corner to Back, and outside the keyboard-avoiding column so
+          it neither moves nor tints with the keyboard. */}
+      <Box style={[s.gear, { top: insets.top + 8 }]}>
+        <GateSettings />
+      </Box>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : keyboardBehavior}
         style={s.body}
       >
         {/* KeyboardAvoidingView owns its own bottom padding, so the safe-area
             spacing lives on an inner view it never touches. */}
-        <View
+        <Box
           style={[
             s.inner,
             wide && s.innerCentered,
@@ -64,13 +63,13 @@ export function OnboardingScreen({
             },
           ]}
         >
-          <View style={s.brand}>
+          <Box style={s.brand}>
             <KromaLockup height={36} />
-          </View>
+          </Box>
           {children}
-        </View>
+        </Box>
       </KeyboardAvoidingView>
-    </View>
+    </Box>
   );
 }
 
@@ -79,7 +78,7 @@ export function OnboardingScreen({
  * on every phase either way. */
 export function OnboardingBox({ children }: Readonly<{ children: ReactNode }>) {
   const wide = useIsWide();
-  return <View style={wide ? s.boxWide : s.box}>{children}</View>;
+  return <Box style={wide ? s.boxWide : s.box}>{children}</Box>;
 }
 
 export function OnboardingTitle({
@@ -87,23 +86,10 @@ export function OnboardingTitle({
   subtitle,
 }: Readonly<{ title: string; subtitle?: string | null }>) {
   return (
-    <View style={s.titleBlock}>
-      <Text style={s.headline}>{title}</Text>
-      {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
-    </View>
-  );
-}
-
-export function BackLink({ onPress }: Readonly<{ onPress(): void }>) {
-  const t = useT();
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={8}
-      style={({ pressed }) => [s.backLink, pressed && { opacity: 0.6 }]}
-    >
-      <Text style={s.backLinkText}>{t('common.back')}</Text>
-    </Pressable>
+    <Box style={s.titleBlock}>
+      <Txt style={s.headline}>{title}</Txt>
+      {subtitle ? <Txt style={s.subtitle}>{subtitle}</Txt> : null}
+    </Box>
   );
 }
 
@@ -113,6 +99,7 @@ const s = styles({
   // Above the wash and outside the keyboard-avoiding column, so it neither
   // tints nor moves when the keyboard does.
   back: { absolute: true, left: spacing.md, z: 2 },
+  gear: { absolute: true, right: spacing.md, z: 2 },
   body: { flex: true },
   inner: { flex: true, px: spacing.lg, ...boxed(contentWidth.form) },
   innerCentered: { justify: 'center' },
@@ -122,6 +109,4 @@ const s = styles({
   titleBlock: { mb: spacing.sm },
   headline: { ...type.display, fontSize: 28, textAlign: 'center' },
   subtitle: { ...type.caption, mt: 6, textAlign: 'center' },
-  backLink: { self: 'center', p: spacing.sm, mt: 'auto' },
-  backLinkText: { ...type.caption, color: 'textMuted', fontWeight: '600' },
 });

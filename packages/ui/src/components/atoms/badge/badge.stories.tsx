@@ -6,7 +6,7 @@ const TONES = badgeVariants.options.tone as BadgeTone[];
 
 export default story({
   name: 'Badge',
-  group: 'Actions',
+  group: 'Feedback',
   docs: 'A metadata pill: video quality, codec, state. Each tone has its own dedicated color so it stays readable on a poster. Text only, **never emoji**.',
   usage: `<Badge tone="4K" />
 <Badge tone={qualityTone(quality)}>{quality}</Badge>`,

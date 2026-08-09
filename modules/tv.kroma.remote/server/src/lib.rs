@@ -12,10 +12,18 @@
 //! setting; they never block. The `cloudflared` binary is provided by the server
 //! and downloaded on demand (see [`provision`]) inside the background launch, so
 //! enabling never stalls the request on a multi-MB download.
+//!
+//! The connector must never outlive the module. Stopping this module (the admin
+//! toggle, an uninstall, a server shutdown) SIGTERMs the sidecar, which runs
+//! [`RemoteModule::on_disable`] → [`RemoteAccess::shutdown`]: the reconcile loop
+//! is latched off and the child is killed before the process exits. A generation
+//! that missed that window (SIGKILL, a crash) leaves an untracked `cloudflared`
+//! still serving the tunnel, so the next start sweeps for one before reconciling.
 
 use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -57,6 +65,11 @@ struct Inner {
 pub struct RemoteAccess {
     inner: Mutex<Inner>,
     data_dir: PathBuf,
+    // Latched by `shutdown` so a reconcile - or a launch already in flight -
+    // can't bring the connector back up while the module is going down.
+    stopping: AtomicBool,
+    // One reconcile loop per process, however often `spawn_boot` is called.
+    watching: AtomicBool,
 }
 
 /// Snapshot for the admin panel. Never carries the token.
@@ -74,7 +87,12 @@ pub struct RemoteStatus {
 
 impl RemoteAccess {
     pub fn new(data_dir: PathBuf) -> Arc<Self> {
-        Arc::new(Self { inner: Mutex::new(Inner::default()), data_dir })
+        Arc::new(Self {
+            inner: Mutex::new(Inner::default()),
+            data_dir,
+            stopping: AtomicBool::new(false),
+            watching: AtomicBool::new(false),
+        })
     }
 
     // Resolution order: packaged next to the server executable, a copy cached
@@ -202,20 +220,28 @@ impl RemoteAccess {
             #[cfg(unix)]
             self.kill_all_cloudflared();
             let result = self.spawn_child(token).await;
-            let mut g = self.inner.lock().await;
-            g.starting = false;
-            match result {
-                Ok(child) => {
-                    g.child = Some(child);
-                    g.running = true;
-                    g.since = Some(kroma_module_sdk::primitives::now_iso8601());
-                    info!("remote access: cloudflared connector started");
+            {
+                let mut g = self.inner.lock().await;
+                g.starting = false;
+                match result {
+                    Ok(child) => {
+                        g.child = Some(child);
+                        g.running = true;
+                        g.since = Some(kroma_module_sdk::primitives::now_iso8601());
+                        info!("remote access: cloudflared connector started");
+                    }
+                    Err(e) => {
+                        g.running = false;
+                        g.last_error = Some(e.clone());
+                        warn!("remote access: {e}");
+                    }
                 }
-                Err(e) => {
-                    g.running = false;
-                    g.last_error = Some(e.clone());
-                    warn!("remote access: {e}");
-                }
+            }
+            // A shutdown that landed mid-launch found no child to kill (this one
+            // did not exist yet), so honour it now rather than leaving a
+            // connector running with nothing left to supervise it.
+            if self.stopping.load(Ordering::SeqCst) {
+                self.kill_child().await;
             }
         });
     }
@@ -273,10 +299,14 @@ impl RemoteAccess {
     /// Enabled + token → launch (if down and not already starting); otherwise →
     /// kill. Called both by the loop and immediately after a settings change so
     /// the panel reflects the action without waiting a full tick.
+    ///
+    /// A latched [`Self::shutdown`] outranks the setting: the module is going
+    /// away, so the only correct state is "connector down".
     pub async fn reconcile(self: &Arc<Self>, host: &dyn HostCtx) {
         let enabled = host.setting_bool("remoteAccess", false);
         let token = host.setting_str("remoteAccessToken", "");
-        let desired = enabled && !token.trim().is_empty();
+        let desired =
+            enabled && !token.trim().is_empty() && !self.stopping.load(Ordering::SeqCst);
         let alive = self.alive().await;
         let starting = self.inner.lock().await.starting;
         if desired {
@@ -288,11 +318,33 @@ impl RemoteAccess {
         }
     }
 
+    /// Take the connector down for good: latch the reconcile loop off, then kill
+    /// the child. Idempotent, and awaited by the callers that matter: the
+    /// module being disabled and the sidecar being asked to exit, so the tunnel
+    /// is gone before this process is.
+    pub async fn shutdown(&self) {
+        self.stopping.store(true, Ordering::SeqCst);
+        self.kill_child().await;
+        info!("remote access: connector shut down");
+    }
+
     /// Boot hook: run the reconcile loop forever. Brings the tunnel up at boot if
     /// the admin left it enabled with a token, keeps it alive if the child dies,
     /// and takes it down promptly once disabled. No-op while disabled.
     pub fn spawn_boot(self: Arc<Self>, host: Arc<dyn HostCtx>) {
+        // Re-enabling clears a previous shutdown; the running loop, if any, then
+        // reconciles back up on its own tick.
+        self.stopping.store(false, Ordering::SeqCst);
+        if self.watching.swap(true, Ordering::SeqCst) {
+            return;
+        }
         tokio::spawn(async move {
+            // A prior generation killed outright (SIGKILL, a crash) left its
+            // connector running and untracked. Nothing else will ever reap it:
+            // while `remoteAccess` is off the reconcile loop has no live child
+            // to notice, so claim the slot before the first reconcile.
+            #[cfg(unix)]
+            self.kill_all_cloudflared();
             loop {
                 self.reconcile(&*host).await;
                 tokio::time::sleep(Duration::from_secs(RECONCILE_SECS)).await;
@@ -406,6 +458,15 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for RemoteModul
         // it alive via the watchdog.
         if let Some(remote) = service::<RemoteAccess>(host.as_ref()) {
             remote.spawn_boot(host);
+        }
+    }
+
+    async fn on_disable(&self, host: Arc<dyn HostCtx>) {
+        // Disabling the module has to take the tunnel with it: the connector is
+        // a child process, so leaving it up would keep the box publicly
+        // reachable with no module left to show or stop it.
+        if let Some(remote) = service::<RemoteAccess>(host.as_ref()) {
+            remote.shutdown().await;
         }
     }
 }

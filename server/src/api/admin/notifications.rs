@@ -63,6 +63,12 @@ fn within(value: &str, max: usize, too_long: &'static str) -> Result<(), &'stati
 // width in a rich push; a master past this is bytes nobody ever sees.
 const IMAGE_MAX_WIDTH: u32 = 1280;
 
+// Uploads share the poster cache's directory; the prefix is what lets the
+// listing tell an admin's uploads from thousands of cached posters.
+const UPLOAD_PREFIX: &str = "notif-";
+
+const MAX_LISTED_IMAGES: usize = 200;
+
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/notifications", post(send))
@@ -71,6 +77,7 @@ pub fn routes() -> Router<SharedState> {
             "/notifications/image",
             post(upload_image).layer(DefaultBodyLimit::max(MAX_IMAGE_BYTES)),
         )
+        .route("/notifications/images", get(list_images))
 }
 
 /// `GET /api/admin/notifications/samples` → every kind this server can send,
@@ -213,12 +220,80 @@ pub async fn upload_image(
     }
     let data_dir = state.config.data_dir.clone();
     let bytes = body.to_vec();
-    let url = blocking(move || Ok(kroma_engine::infra::image::store_upload(&data_dir, &bytes, Some(IMAGE_MAX_WIDTH))))
-        .await?;
+    let url = blocking(move || {
+        Ok(kroma_engine::infra::image::store_upload(
+            &data_dir,
+            &bytes,
+            Some(IMAGE_MAX_WIDTH),
+            UPLOAD_PREFIX,
+        ))
+    })
+    .await?;
     match url {
         Some(url) => Ok(Json(json!({ "imageUrl": url })).into_response()),
         None => Err(json_error(StatusCode::UNSUPPORTED_MEDIA_TYPE, "unreadable image")),
     }
+}
+
+/// `GET /api/admin/notifications/images` → the images previously uploaded for
+/// notifications, newest first, capped at 200. Nothing else in the shared image
+/// cache (posters, avatars, renditions) is listed.
+pub async fn list_images(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    let dir = crate::infra::image::images_dir(&state.config.data_dir);
+    let images = blocking(move || Ok(uploaded_images(&dir))).await?;
+    Ok(Json(crate::api::dto::NotificationImages { images }).into_response())
+}
+
+fn uploaded_images(dir: &std::path::Path) -> Vec<crate::api::dto::NotificationImage> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut images: Vec<crate::api::dto::NotificationImage> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let name = entry.file_name().into_string().ok()?;
+            if !is_notification_upload(&name) {
+                return None;
+            }
+            let meta = entry.metadata().ok().filter(std::fs::Metadata::is_file)?;
+            let uploaded_at = meta
+                .modified()
+                .ok()?
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()
+                .and_then(|d| i64::try_from(d.as_millis()).ok())?;
+            Some(crate::api::dto::NotificationImage {
+                url: format!("{}{name}", kroma_engine::infra::image::PUBLIC_PREFIX),
+                name,
+                uploaded_at,
+                bytes: meta.len(),
+            })
+        })
+        .collect();
+    images.sort_by(|a, b| b.uploaded_at.cmp(&a.uploaded_at).then_with(|| a.name.cmp(&b.name)));
+    images.truncate(MAX_LISTED_IMAGES);
+    images
+}
+
+fn is_notification_upload(name: &str) -> bool {
+    let Some(stem) = name.strip_suffix(".webp") else {
+        return false;
+    };
+    // Renditions of a cached image chain extensions (`x.webp.w320.webp`).
+    if stem.contains('.') {
+        return false;
+    }
+    if stem.starts_with(UPLOAD_PREFIX) {
+        return true;
+    }
+    // Uploads stored before the prefix existed: a 16-hex content hash plus the
+    // 1280 cap only this endpoint ever used.
+    stem.strip_suffix("-w1280")
+        .is_some_and(|hash| hash.len() == 16 && hash.bytes().all(|b| b.is_ascii_hexdigit()))
 }
 
 // Uses the same message keys a real producer would, so what lands in the bell

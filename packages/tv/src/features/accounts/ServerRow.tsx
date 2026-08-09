@@ -3,11 +3,14 @@ import { useT } from '@kroma/ui';
 import {
   Badge,
   Box,
+  CONTROL,
   Focusable,
+  Frost,
   Icon,
   type IconName,
   IconWell,
   ListRow,
+  radius,
   Skeleton,
   styles,
   sv,
@@ -49,6 +52,9 @@ export function ServerRow({
       ring={false}
       sv={serverRow}
     >
+      {/* The shell's fill is translucent, so blur what shows through: the row
+          reads as one glass surface, like the <ListRow> under it. */}
+      <Frost radius={radius.xl} />
       <IconWell name="server-2" />
       <Box flex gap={3} style={s.min0}>
         <Box row align="center" gap={9}>
@@ -132,6 +138,10 @@ const s = styles({
   meta: { fontSize: 12.5, fontWeight: '600', letterSpacing: 0.2 },
 });
 
+// A <ListRow> this component cannot draw (a badge beside the title, two
+// sub-lines), so it draws the row itself - but from the SAME shell values, or
+// a server row and the "add manually" ListRow under it arrive in two
+// different colours.
 const serverRow = sv({
   base: {
     row: true,
@@ -139,9 +149,10 @@ const serverRow = sv({
     gap: 16,
     px: 20,
     py: 16,
-    radius: 15,
-    bg: 'white/3',
+    radius: 'xl',
+    bg: CONTROL.md.bg,
     border: 'border',
+    shadow: 'card',
     _focus: { border: 'accent' },
   },
   variants: {

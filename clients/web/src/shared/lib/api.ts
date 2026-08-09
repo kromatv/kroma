@@ -10,6 +10,7 @@ import {
   KromaClient,
   loadSession,
   type MediaItem,
+  resolveImageUrl,
   type Show,
   sessionToken,
   setSessionToken,
@@ -111,8 +112,7 @@ export function kromaClient(): KromaClient {
 /** Resolve a metadata image path (relative `/api/…` cached art, or an absolute
  * URL) against the KROMA origin. Works on both server and client. */
 export function imageUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  return /^https?:\/\//.test(url) ? url : `${apiBase()}${url}`;
+  return resolveImageUrl(apiBase(), url);
 }
 
 /** A subtitle track with its on-demand WebVTT URL (text subs only). */

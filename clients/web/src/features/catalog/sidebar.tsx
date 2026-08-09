@@ -1,8 +1,7 @@
 import buildInfo from 'virtual:build-info';
 import { hasPermission, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import * as Dialog from '@radix-ui/react-dialog';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { Drawer, Logo, Menu, type MenuEntry } from '@kroma/ui/kit';
 import {
   IconAlertTriangle,
   IconCalendarClock,
@@ -12,20 +11,17 @@ import {
   IconHome,
   IconInbox,
   IconListDetails,
-  IconLogout,
   IconMenu2,
   IconMovie,
   IconSearch,
   IconSettings,
-  IconUserCircle,
   IconUserPlus,
-  IconUsers,
   IconX,
   type TablerIcon,
 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ComponentProps, useEffect, useState } from 'react';
 import { CapabilityChip } from '#web/features/accounts/capability-chip';
 import { UserAvatar } from '#web/features/accounts/user-avatar';
 import { NotificationBell } from '#web/features/notifications/panel';
@@ -33,10 +29,9 @@ import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
 import { serverQueries } from '#web/shared/lib/queries';
-import { Logo } from '#web/shared/ui';
 
 const itemCls =
-  'flex items-center gap-3.5 rounded-[11px] px-3.5 py-3 text-[15px] max-lg:text-[16px] font-semibold text-muted no-underline transition-colors duration-200 hover:bg-white/4 hover:text-text aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent';
+  'flex items-center gap-3.5 rounded-md px-3.5 py-3 text-[15px] max-lg:text-[16px] font-semibold text-muted no-underline transition-colors duration-200 hover:bg-white/4 hover:text-text aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent';
 
 const NAV: { labelKey: MessageKey; to: string; icon: TablerIcon; exact?: boolean }[] = [
   { labelKey: 'nav.home', to: '/', icon: IconHome, exact: true },
@@ -119,45 +114,45 @@ export function MobileTopbar() {
       </Link>
       <div className="flex items-center gap-0.5">
         <NotificationBell />
-        <Dialog.Root open={open} onOpenChange={setOpen}>
-          <Dialog.Trigger asChild>
+        <button
+          type="button"
+          aria-label={t('nav.menu')}
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/4 hover:text-text"
+        >
+          <IconMenu2 size={22} />
+        </button>
+        <Drawer
+          open={open}
+          onClose={() => setOpen(false)}
+          title="KROMA"
+          side="left"
+          width={304}
+          fullBelow={640}
+          panelStyle={NAV_FILL}
+        >
+          <div className="flex shrink-0 items-center justify-between px-4.5 pb-2 pt-[max(1.75rem,env(safe-area-inset-top))]">
+            <div className="px-2 pb-2">
+              <Logo size={24} />
+            </div>
             <button
               type="button"
-              aria-label={t('nav.menu')}
-              className="flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/4 hover:text-text"
+              aria-label={t('common.close')}
+              onClick={() => setOpen(false)}
+              className="flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/4 hover:text-text"
             >
-              <IconMenu2 size={22} />
+              <IconX size={20} />
             </button>
-          </Dialog.Trigger>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 animate-[fade-in_.2s_var(--ease-out)] lg:hidden" />
-            <Dialog.Content
-              className="fixed inset-y-0 left-0 z-50 flex w-full flex-col border-border bg-[#0C0C0E] outline-none sm:w-[min(19rem,85vw)] sm:border-r lg:hidden"
-              aria-describedby={undefined}
-            >
-              <Dialog.Title className="sr-only">KROMA</Dialog.Title>
-              <div className="flex shrink-0 items-center justify-between px-4.5 pb-2 pt-[max(1.75rem,env(safe-area-inset-top))]">
-                <div className="px-2 pb-2">
-                  <Logo size={24} />
-                </div>
-                <Dialog.Close asChild>
-                  <button
-                    type="button"
-                    aria-label={t('common.close')}
-                    className="flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/4 hover:text-text"
-                  >
-                    <IconX size={20} />
-                  </button>
-                </Dialog.Close>
-              </div>
-              <SidebarBody />
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
+          </div>
+          <SidebarBody />
+        </Drawer>
       </div>
     </header>
   );
 }
+
+const NAV_FILL = { backgroundColor: '#0C0C0E' } as const;
 
 function RequestsLink() {
   const t = useT();
@@ -269,28 +264,6 @@ function ModuleNavLinks() {
   );
 }
 
-const MENU =
-  'z-50 min-w-[204px] rounded-xl border border-white/10 bg-[#16161C] p-1.5 shadow-[0_12px_32px_rgba(0,0,0,.45)]';
-
-function MenuItem({
-  icon,
-  label,
-  onSelect,
-  danger,
-}: Readonly<{ icon: ReactNode; label: string; onSelect: () => void; danger?: boolean }>) {
-  return (
-    <DropdownMenu.Item
-      onSelect={onSelect}
-      className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-semibold outline-none transition-colors data-highlighted:bg-white/8 ${
-        danger ? 'text-danger' : 'text-text'
-      }`}
-    >
-      {icon}
-      {label}
-    </DropdownMenu.Item>
-  );
-}
-
 function UserChip() {
   const t = useT();
   const navigate = useNavigate();
@@ -298,48 +271,72 @@ function UserChip() {
   // Return to the current page after switching profile.
   const href = useRouterState({ select: (s) => s.location.href });
   if (!user) return null;
+  const items: MenuEntry[] = [
+    {
+      icon: 'user-circle',
+      label: t('nav.accountSettings'),
+      onSelect: () => void navigate({ to: '/account' }),
+    },
+    {
+      icon: 'users',
+      label: t('nav.changeProfile'),
+      onSelect: () => void navigate({ to: '/login', search: { redirect: href } }),
+    },
+    'separator',
+    { icon: 'logout', label: t('auth.logout'), onSelect: () => void logout(), danger: true },
+  ];
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          className="mt-2 flex items-center gap-3 rounded-[11px] p-2.5 text-left transition-colors hover:bg-white/4 focus:outline-none data-[state=open]:bg-white/4"
-          title={t('nav.account')}
-        >
-          <UserAvatar
-            name={user.username}
-            avatarUrl={user.avatarUrl}
-            seed={user.id}
-            size={36}
-            radius={9}
-          />
-          <div className="min-w-0">
-            <div className="truncate text-[14px] font-semibold text-text">{user.username}</div>
-            <div className="truncate text-[11px] font-medium text-dim">{t('nav.account')}</div>
-          </div>
-        </button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content side="top" align="start" sideOffset={6} className={MENU}>
-          <MenuItem
-            icon={<IconUserCircle size={17} />}
-            label={t('nav.accountSettings')}
-            onSelect={() => void navigate({ to: '/account' })}
-          />
-          <MenuItem
-            icon={<IconUsers size={17} />}
-            label={t('nav.changeProfile')}
-            onSelect={() => void navigate({ to: '/login', search: { redirect: href } })}
-          />
-          <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
-          <MenuItem
-            icon={<IconLogout size={17} />}
-            label={t('auth.logout')}
-            onSelect={() => void logout()}
-            danger
-          />
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+    <Menu
+      label={t('nav.account')}
+      align="start"
+      items={items}
+      trigger={userChipTrigger(user, t('nav.account'))}
+    />
+  );
+}
+
+type MenuTriggerBind = Parameters<NonNullable<ComponentProps<typeof Menu>['trigger']>>[0];
+
+// Built out here rather than inline in <UserChip>: a render prop is still a
+// function returning elements, and one written inside the parent remounts its
+// subtree on every render of it.
+const userChipTrigger = (user: ChipUser, label: string) => (bind: MenuTriggerBind) => (
+  <UserChipTrigger bind={bind} user={user} label={label} />
+);
+
+interface ChipUser {
+  id: string;
+  username: string;
+  avatarUrl?: string | null;
+}
+
+function UserChipTrigger({
+  bind,
+  user,
+  label,
+}: Readonly<{ bind: MenuTriggerBind; user: ChipUser; label: string }>) {
+  const { ref, expanded, open } = bind;
+  return (
+    <button
+      ref={ref as unknown as React.Ref<HTMLButtonElement>}
+      type="button"
+      aria-haspopup="menu"
+      aria-expanded={expanded}
+      onClick={open}
+      className={`mt-2 flex items-center gap-3 rounded-md p-2.5 text-left transition-colors hover:bg-white/4 focus:outline-none ${expanded ? 'bg-white/4' : ''}`}
+      title={label}
+    >
+      <UserAvatar
+        name={user.username}
+        avatarUrl={user.avatarUrl}
+        seed={user.id}
+        size={36}
+        radius={10}
+      />
+      <div className="min-w-0">
+        <div className="truncate text-[14px] font-semibold text-text">{user.username}</div>
+        <div className="truncate text-[11px] font-medium text-dim">{label}</div>
+      </div>
+    </button>
   );
 }

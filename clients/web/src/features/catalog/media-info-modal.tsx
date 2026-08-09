@@ -39,9 +39,7 @@ export const MediaInfoModal = createCallable<{ id: string; title: string }, void
                 <h2 className="mt-1 truncate font-display text-[20px] font-bold">{title}</h2>
               </div>
               <IconButton
-                size={36}
-                glyph={18}
-                radius={12}
+                control="sm"
                 icon="x"
                 label={t('common.close')}
                 onPress={() => call.end()}

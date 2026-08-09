@@ -15,7 +15,7 @@
 // node that exists).
 
 import { Children, type ReactElement, type ReactNode, useMemo } from 'react';
-import { ScrollView, type StyleProp, type TextStyle } from 'react-native';
+import { ScrollView, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import { SpatialNavigationNode, SpatialNavigationView } from 'react-tv-space-navigation';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
@@ -112,13 +112,9 @@ function Rail({
     return (
       <Box gap={16}>
         {heading}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap, paddingHorizontal: inset, paddingVertical: 12 }}
-        >
+        <ScrolledRow contentStyle={{ gap, paddingHorizontal: inset, paddingVertical: 12 }}>
           {tiles}
-        </ScrollView>
+        </ScrolledRow>
       </Box>
     );
   }
@@ -155,6 +151,21 @@ function Rail({
         </SpatialNavigationView>
       </FocusRail>
     </Box>
+  );
+}
+
+function ScrolledRow({
+  contentStyle,
+  children,
+}: Readonly<{ contentStyle: ViewStyle; children: ReactNode }>) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={contentStyle}
+    >
+      {children}
+    </ScrollView>
   );
 }
 

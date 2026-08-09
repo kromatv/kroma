@@ -5,15 +5,9 @@ import {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { styles } from '@kroma/ui/kit';
+import { styles, Txt } from '@kroma/ui/kit';
 import { type ReactNode, useMemo } from 'react';
-import {
-  type StyleProp,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  type ViewStyle,
-} from 'react-native';
+import { type StyleProp, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
@@ -50,7 +44,7 @@ export function SheetBody({
 }
 
 export function SheetTitle({ children }: Readonly<{ children: ReactNode }>) {
-  return <Text style={s.title}>{children}</Text>;
+  return <Txt style={s.title}>{children}</Txt>;
 }
 
 const s = styles({

@@ -5,8 +5,10 @@ import {
   compareTitles,
   hasGenre,
   isSortMode,
+  letterMarks,
   type Sortable,
   sortTitles,
+  titleLetter,
 } from './browse';
 
 function title(p: {
@@ -128,5 +130,53 @@ describe('hasGenre', () => {
   it('does not match an absent genre or a title without metadata', () => {
     expect(hasGenre(item, 'Horror')).toBe(false);
     expect(hasGenre(title({ title: 'b' }), 'Action')).toBe(false);
+  });
+});
+
+describe('titleLetter', () => {
+  it('uppercases and folds diacritics', () => {
+    expect(titleLetter('Avatar')).toBe('A');
+    expect(titleLetter('école')).toBe('E');
+    expect(titleLetter('Élite')).toBe('E');
+  });
+
+  it('buckets digit-led titles under #', () => {
+    expect(titleLetter('24 heures chrono')).toBe('#');
+    expect(titleLetter("'71")).toBe('#');
+  });
+
+  it('skips leading punctuation, like localeCompare does', () => {
+    expect(titleLetter('…And Justice for All')).toBe('A');
+    expect(titleLetter('"Bonjour"')).toBe('B');
+  });
+
+  it('buckets symbol-only and non-Latin titles under #', () => {
+    expect(titleLetter('')).toBe('#');
+    expect(titleLetter('★')).toBe('#');
+    expect(titleLetter('龍門客棧')).toBe('#');
+  });
+});
+
+describe('letterMarks', () => {
+  it('records the first index of each bucket, in list order', () => {
+    const items = ['24', 'Amélie', 'Avatar', 'École', 'Zorro'].map((t) => title({ title: t }));
+    expect(letterMarks(items)).toEqual([
+      { letter: '#', index: 0 },
+      { letter: 'A', index: 1 },
+      { letter: 'E', index: 3 },
+      { letter: 'Z', index: 4 },
+    ]);
+  });
+
+  it('keeps only the first occurrence when a bucket reappears', () => {
+    const items = ['1917', 'Alien', '龍門客棧'].map((t) => title({ title: t }));
+    expect(letterMarks(items)).toEqual([
+      { letter: '#', index: 0 },
+      { letter: 'A', index: 1 },
+    ]);
+  });
+
+  it('returns nothing for an empty list', () => {
+    expect(letterMarks([])).toEqual([]);
   });
 });

@@ -17,7 +17,7 @@ function Surface({ children }: Readonly<{ children: ReactNode }>) {
 
 export default story({
   name: 'PlayerStats',
-  group: 'State',
+  group: 'Player',
   docs: 'The playback read-out: what the stream actually is, versus what was asked for. It exists because "is this direct-playing?" is the first question about any TV playback problem, and the answer is not visible anywhere else — so `mode` is the headline, above a wrapping run of the stream\'s fixed identity. ONE layout serves every surface: a native TV plane that reports seven fields and the web engine that reports twenty-seven fill more or fewer of the same columns, at the same type and rhythm, rather than switching to a second design. Live series arrive as `meters`; those sharing a `chart` id are drawn on ONE axis, which is only ever legal when they share a unit.',
   usage: `<StatsPanel controller={controller} onClose={() => setStatsOn(false)} />
 

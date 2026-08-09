@@ -45,6 +45,7 @@ function deps(switchAccount: (a: MobileAccount, pin?: string) => Promise<void>) 
   const d = {
     session: {
       switchAccount: vi.fn(switchAccount),
+      relockAccount: vi.fn(async (_a: MobileAccount) => undefined),
       forgetAccount: (a: MobileAccount) => state.forgot.push(a),
       selectServer: (url: string) => state.selected.push(url),
     },
@@ -96,6 +97,40 @@ describe('the device lock, before anything else', () => {
       expect.objectContaining({ serverUrl: 'https://attic' }),
       'auth.faceUnlock',
     );
+  });
+});
+
+describe('the credential the gate is about to spend', () => {
+  it('is relocked first, so a PIN profile cannot be entered with one tap', async () => {
+    // The server's PIN check rides on the access token and survives the app
+    // being killed: without this, any gate not reached through "switch
+    // profile" still held a verified credential.
+    const { d } = deps(ok);
+    await enterSavedAccount(d as unknown as EnterSavedDeps, account());
+
+    expect(d.session.relockAccount).toHaveBeenCalledWith(
+      expect.objectContaining({ accessToken: 'device-token' }),
+    );
+    const relocked = d.session.relockAccount.mock.invocationCallOrder[0] ?? 0;
+    const spent = d.session.switchAccount.mock.invocationCallOrder[0] ?? 0;
+    expect(relocked).toBeLessThan(spent);
+  });
+
+  it('is NOT relocked again when the pad submits the PIN', async () => {
+    // Relocking between typing the code and checking it would throw the very
+    // verification being made away.
+    const { d } = deps(ok);
+    await enterSavedAccount(d as unknown as EnterSavedDeps, account(), '1234');
+    expect(d.session.relockAccount).not.toHaveBeenCalled();
+  });
+
+  it('still tries to sign in when the relock call fails', async () => {
+    // An unreachable server fails the exchange below on its own; a relock that
+    // 500s must not cost the profile.
+    const { d, state } = deps(ok);
+    d.session.relockAccount.mockRejectedValue(new Error('boom'));
+    await enterSavedAccount(d as unknown as EnterSavedDeps, account());
+    expect(state.entered).toBe(1);
   });
 });
 

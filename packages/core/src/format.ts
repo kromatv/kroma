@@ -29,7 +29,13 @@ const IMAGE_SCHEME = /^(?:https?:|blob:|data:image\/)/i;
  * that only ever paints (blocks `javascript:` and other DOM-sink schemes). */
 export function safeImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  const trimmed = url.trim();
+  // Tab and newline are deleted from ANYWHERE in a URL before it is parsed
+  // (WHATWG URL, "URL sanitization"), so `java\nscript:` reaches the DOM as
+  // `javascript:`. Strip them before the scheme test rather than trusting
+  // `trim()`, which only touches the ends: the check has to read the same
+  // scheme the browser will.
+  const trimmed = url.replace(/[\t\n\r]/g, '').trim();
+  if (!trimmed) return null;
   // No scheme at all: a path on the current origin, which is where our own
   // /api/images/ URLs land. `//host/x` is scheme-relative and inherits https.
   if (trimmed.startsWith('/') || !/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
@@ -120,6 +126,27 @@ export function metaLine(item: MediaItem): string {
   if ((item.video?.width ?? 0) >= 3840) parts.push('4K');
   if (item.video?.hdr) parts.push('HDR');
   return parts.join(' · ');
+}
+
+/** Resolve a metadata image path (relative `/api/...` cached art, or an
+ * absolute URL) against a KROMA origin. */
+export function resolveImageUrl(apiBase: string, url: string | null | undefined): string | null {
+  if (!url) return null;
+  return /^https?:\/\//.test(url) ? url : `${apiBase}${url}`;
+}
+
+/** French-style decimal: a comma separator. */
+export function decimal(n: number, digits = 1): string {
+  return n.toFixed(digits).replace('.', ',');
+}
+
+/** Human byte size in French units: o / Ko / Mo / Go / To / Po. */
+export function formatBytes(bytes: number): string {
+  if (!bytes || bytes < 0) return '0 o';
+  const units = ['o', 'Ko', 'Mo', 'Go', 'To', 'Po'];
+  const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  const v = bytes / 1024 ** i;
+  return `${decimal(v, v >= 100 || i <= 1 ? 0 : 1)} ${units[i]}`;
 }
 
 /** Player scrub-bar timecode "1:04:07" / "4:07" (no leading hours when < 1h). */

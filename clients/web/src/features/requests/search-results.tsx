@@ -4,7 +4,7 @@
 
 import { posterColors, type SearchHit } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Box, EmptyState, Txt } from '@kroma/ui/kit';
 
 import { useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -18,6 +18,8 @@ import { Poster } from '#web/shared/ui/poster';
 const GRID =
   'grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
 
+const COUNT = { fontVariant: ['tabular-nums' as const] };
+
 function Section({
   title,
   count,
@@ -25,9 +27,12 @@ function Section({
 }: Readonly<{ title: string; count: number; children: ReactNode }>) {
   return (
     <section className="mb-9 animate-[fade-in_.25s_var(--ease-out)]">
-      <h2 className="mb-4 flex items-baseline gap-2.5 font-display text-[20px] font-bold tracking-[-.02em] text-text">
-        {title}
-        <span className="text-[13px] font-semibold tabular-nums text-dim">{count}</span>
+      {/* Still an <h2>: <Txt accessibilityRole="header"> can only render an h1. */}
+      <h2 className="mb-4 flex items-baseline gap-2.5">
+        <Txt variant="title">{title}</Txt>
+        <Txt variant="meta" color="textDim" style={COUNT}>
+          {count}
+        </Txt>
       </h2>
       <div className={GRID}>{children}</div>
     </section>
@@ -67,9 +72,9 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
 
   if (state.loading) {
     return (
-      <div className="mt-8">
+      <Box mt={32}>
         <SkeletonRow count={10} />
-      </div>
+      </Box>
     );
   }
 
@@ -85,7 +90,7 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
   }
 
   return (
-    <div className="mt-7">
+    <Box mt={28}>
       {state.local.length > 0 ? (
         <Section title={t('discover.sectionLibrary')} count={state.local.length}>
           {state.local.map((hit) => {
@@ -102,6 +107,6 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
           ))}
         </Section>
       ) : null}
-    </div>
+    </Box>
   );
 }

@@ -1,111 +1,105 @@
 // @vitest-environment jsdom
 
 import { renderHook } from '@testing-library/react';
-import type { RefObject } from 'react';
-import type { View } from 'react-native';
-import { describe, expect, it, vi } from 'vitest';
-import { useWheelPan as useWheelPanNative } from './wheel-pan';
-import { useWheelPan as useWheelPanWeb } from './wheel-pan.web';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useWheelTravel as useNativeTravel, type WheelHost } from './wheel-pan';
+import { useWheelTravel } from './wheel-pan.web';
 
-function viewport() {
-  const node = document.createElement('div');
-  document.body.appendChild(node);
-  return { current: node } as unknown as RefObject<View | null>;
+function host(): WheelHost {
+  const el = document.body.appendChild(document.createElement('div'));
+  return { current: el } as unknown as WheelHost;
 }
 
-function wheel(ref: RefObject<View | null>, init: WheelEventInit) {
+function wheel(at: WheelHost, init: WheelEventInit) {
   const event = new WheelEvent('wheel', { cancelable: true, ...init });
-  (ref.current as unknown as HTMLElement).dispatchEvent(event);
+  (at.current as unknown as HTMLElement).dispatchEvent(event);
   return event;
 }
 
-describe('the web half', () => {
-  it('reports wheel travel in raw px', () => {
-    const ref = viewport();
-    const onPan = vi.fn();
-    renderHook(() => useWheelPanWeb(ref, onPan));
-    wheel(ref, { deltaY: 120 });
-    expect(onPan).toHaveBeenCalledWith(120);
+afterEach(() => {
+  document.body.replaceChildren();
+});
+
+describe('a list that is its own surface scroll', () => {
+  it('takes the vertical wheel and consumes the gesture', () => {
+    const onTravel = vi.fn();
+    const at = host();
+    renderHook(() => useWheelTravel(at, onTravel));
+    const event = wheel(at, { deltaY: 120 });
+    expect(onTravel).toHaveBeenCalledWith(120);
+    expect(event.defaultPrevented).toBe(true);
   });
 
   it('takes whichever axis moved more', () => {
-    const ref = viewport();
-    const onPan = vi.fn();
-    renderHook(() => useWheelPanWeb(ref, onPan));
-
-    // A trackpad swiped sideways, then a mouse, which only has a wheel.
-    wheel(ref, { deltaX: 80, deltaY: 10 });
-    expect(onPan).toHaveBeenLastCalledWith(80);
-
-    wheel(ref, { deltaX: 0, deltaY: -45 });
-    expect(onPan).toHaveBeenLastCalledWith(-45);
+    const onTravel = vi.fn();
+    const at = host();
+    renderHook(() => useWheelTravel(at, onTravel));
+    wheel(at, { deltaX: 80, deltaY: 20 });
+    expect(onTravel).toHaveBeenCalledWith(80);
   });
 
-  it('compares magnitudes, not signs', () => {
-    const ref = viewport();
-    const onPan = vi.fn();
-    renderHook(() => useWheelPanWeb(ref, onPan));
-    wheel(ref, { deltaX: -90, deltaY: 5 });
-    expect(onPan).toHaveBeenCalledWith(-90);
+  it('reads a line delta as pixels', () => {
+    const onTravel = vi.fn();
+    const at = host();
+    renderHook(() => useWheelTravel(at, onTravel));
+    wheel(at, { deltaY: 3, deltaMode: WheelEvent.DOM_DELTA_LINE });
+    expect(onTravel).toHaveBeenCalledWith(48);
   });
 
-  it('stops the page scrolling underneath', () => {
-    const ref = viewport();
-    renderHook(() => useWheelPanWeb(ref, vi.fn()));
-    expect(wheel(ref, { deltaY: 60 }).defaultPrevented).toBe(true);
+  it('leaves a pinch zoom to the browser', () => {
+    const onTravel = vi.fn();
+    const at = host();
+    renderHook(() => useWheelTravel(at, onTravel));
+    const event = wheel(at, { deltaY: 120, ctrlKey: true });
+    expect(onTravel).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
   });
 
   it('ignores a zero delta entirely', () => {
-    const ref = viewport();
-    const onPan = vi.fn();
-    renderHook(() => useWheelPanWeb(ref, onPan));
-    const event = wheel(ref, { deltaX: 0, deltaY: 0 });
-    expect(onPan).not.toHaveBeenCalled();
-    // Not even prevented: swallowing it would block whatever else wanted it.
+    const onTravel = vi.fn();
+    const at = host();
+    renderHook(() => useWheelTravel(at, onTravel));
+    const event = wheel(at, { deltaX: 0, deltaY: 0 });
+    expect(onTravel).not.toHaveBeenCalled();
     expect(event.defaultPrevented).toBe(false);
   });
 
   it('is silent while disabled, and wakes when re-enabled', () => {
-    const ref = viewport();
-    const onPan = vi.fn();
-    const { rerender } = renderHook(({ on }) => useWheelPanWeb(ref, onPan, on), {
+    const onTravel = vi.fn();
+    const at = host();
+    const { rerender } = renderHook(({ on }) => useWheelTravel(at, onTravel, on), {
       initialProps: { on: false },
     });
-    wheel(ref, { deltaY: 60 });
-    expect(onPan).not.toHaveBeenCalled();
-
+    wheel(at, { deltaY: 120 });
+    expect(onTravel).not.toHaveBeenCalled();
     rerender({ on: true });
-    wheel(ref, { deltaY: 60 });
-    expect(onPan).toHaveBeenCalledOnce();
+    wheel(at, { deltaY: 120 });
+    expect(onTravel).toHaveBeenCalledTimes(1);
   });
 
   it('lets go of the node on unmount', () => {
-    const ref = viewport();
-    const onPan = vi.fn();
-    const { unmount } = renderHook(() => useWheelPanWeb(ref, onPan));
+    const onTravel = vi.fn();
+    const at = host();
+    const { unmount } = renderHook(() => useWheelTravel(at, onTravel));
     unmount();
-    wheel(ref, { deltaY: 60 });
-    expect(onPan).not.toHaveBeenCalled();
+    const event = wheel(at, { deltaY: 120 });
+    expect(onTravel).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
   });
 
   it('does nothing when there is no node yet', () => {
-    const empty = { current: null } as RefObject<View | null>;
-    expect(() => renderHook(() => useWheelPanWeb(empty, vi.fn()))).not.toThrow();
+    const empty = { current: null } as WheelHost;
+    expect(() => renderHook(() => useWheelTravel(empty, vi.fn()))).not.toThrow();
   });
 });
 
 describe('the native half', () => {
   it('is a silent no-op with the same signature', () => {
-    const ref = viewport();
-    const onPan = vi.fn();
-    expect(() => renderHook(() => useWheelPanNative(ref, onPan))).not.toThrow();
-    wheel(ref, { deltaY: 120 });
-    expect(onPan).not.toHaveBeenCalled();
-  });
-
-  it('attaches nothing, so the page keeps its own wheel', () => {
-    const ref = viewport();
-    renderHook(() => useWheelPanNative(ref, vi.fn()));
-    expect(wheel(ref, { deltaY: 60 }).defaultPrevented).toBe(false);
+    const onTravel = vi.fn();
+    const at = host();
+    renderHook(() => useNativeTravel(at, onTravel));
+    const event = wheel(at, { deltaY: 120 });
+    expect(onTravel).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
   });
 });

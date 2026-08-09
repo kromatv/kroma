@@ -8,6 +8,9 @@ import {
   type SpatialNavigationVirtualizedListRef,
 } from 'react-tv-space-navigation';
 import { clipStyles, OVERSCAN } from './clip';
+
+const NO_POINTER = { pointerEvents: 'none' } as const;
+
 import { useWheelScroll } from './use-wheel-rows';
 
 interface VirtualGridProps<T> {
@@ -71,7 +74,7 @@ function VirtualGrid<T>({
       {/* Inert on the inner clip, not the viewport: the wheel listener lives on
           the viewport's node, and pointer-events none there would drop the pan
           events too. */}
-      <View style={clipStyles.column} pointerEvents={fraction === null ? 'auto' : 'none'}>
+      <View style={[clipStyles.column, fraction === null ? null : NO_POINTER]}>
         {/* The library's ref type omits `| null`, which every real ref has before it attaches. */}
         <SpatialNavigationVirtualizedGrid
           ref={list as RefObject<SpatialNavigationVirtualizedListRef>}

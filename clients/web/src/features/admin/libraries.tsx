@@ -1,6 +1,6 @@
 import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState } from '@kroma/ui/kit';
+import { Button, EmptyState, Surface } from '@kroma/ui/kit';
 import {
   IconDeviceTv,
   IconFolder,
@@ -15,8 +15,7 @@ import {
   ManageLibraryModal,
   normalizeLibKind,
 } from '#web/features/admin/libraries-modals';
-import { Denied, HeaderAction, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
-import { Card } from '#web/features/admin/ui';
+import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { formatBytes, relativeSeen } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
@@ -59,7 +58,14 @@ function LibrariesPageInner() {
       <PageHeader
         title={t('admin.librariesTitle')}
         subtitle={t('admin.librariesSub')}
-        action={<HeaderAction label={t('admin.addLibrary')} onClick={() => void openAdd()} />}
+        action={
+          <Button
+            variant="primary"
+            icon="plus"
+            label={t('admin.addLibrary')}
+            onPress={() => void openAdd()}
+          />
+        }
       />
 
       {data === null ? <TableSkeleton rows={4} /> : null}
@@ -75,7 +81,14 @@ function LibrariesPageInner() {
         <EmptyState
           icon="library"
           title={t('admin.noLibraries')}
-          action={<HeaderAction label={t('admin.addLibrary')} onClick={() => void openAdd()} />}
+          action={
+            <Button
+              variant="primary"
+              icon="plus"
+              label={t('admin.addLibrary')}
+              onPress={() => void openAdd()}
+            />
+          }
         />
       ) : null}
     </>
@@ -106,7 +119,7 @@ function LibraryCard({
   const LibIcon = ICONS[lib.kind] ?? IconMovie;
 
   return (
-    <Card className="overflow-hidden">
+    <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
       <div
         className="flex items-center gap-3.5 border-b border-white/5 px-5 py-4.5"
         style={{ background: 'rgba(132,206,126,.07)' }}
@@ -165,7 +178,7 @@ function LibraryCard({
         />
         <Button variant="glass" size="sm" label={t('common.manage')} onPress={onManage} />
       </div>
-    </Card>
+    </Surface>
   );
 }
 

@@ -93,14 +93,25 @@ function loadDevStack(): TvRoute[] | null {
 export type TvScreens = { [K in RouteName]: ComponentType };
 const ScreensCtx = createContext<TvScreens | null>(null);
 
-// Chrome that outlives the screen under it (the browse top bar): the outlet
-// renders one instance across a section change, inside the shared <FocusScope>,
-// which is why the routes sharing it share one scope.
+/**
+ * A layer that outlives the screen it belongs to: the outlet renders ONE
+ * instance across every route in `routes`, so it neither remounts nor refetches
+ * as the viewer moves between them. That is what lets the browse nav pill's
+ * lens travel between sections instead of arriving with no previous box to
+ * animate from, and what stops the gate's splash cutting to another cover and
+ * restarting its pan on every step of a sign-in.
+ *
+ * `under` is the whole difference between the two kinds. Chrome sits INSIDE the
+ * shared <FocusScope> - it is reachable, so its routes share one scope. A
+ * backdrop sits under it: decorative, never a focus target, and its routes keep
+ * their own scopes.
+ */
 export interface TvChrome {
   routes: readonly RouteName[];
   render: ComponentType;
+  under?: boolean;
 }
-const ChromeCtx = createContext<TvChrome | null>(null);
+const ChromeCtx = createContext<readonly TvChrome[] | null>(null);
 
 function make<K extends RouteName>(name: K, params?: TvRoutes[K]): TvRoute {
   return { name, params } as TvRoute;
@@ -110,7 +121,7 @@ export function TvNavProvider({
   screens,
   chrome,
   children,
-}: Readonly<{ screens: TvScreens; chrome?: TvChrome; children: ReactNode }>) {
+}: Readonly<{ screens: TvScreens; chrome?: readonly TvChrome[]; children: ReactNode }>) {
   const [stack, setStack] = useState<TvRoute[]>(() => loadDevStack() ?? [PROFILES]);
 
   useEffect(() => {
@@ -201,19 +212,28 @@ export function TvOutlet() {
   const chrome = useContext(ChromeCtx);
   if (!screens) throw new Error('<TvOutlet> must be inside <TvNavProvider screens={…}>');
   const Screen = screens[route.name];
-  const Chrome = chrome?.routes.includes(route.name) ? chrome.render : null;
+  const here = (chrome ?? []).filter((layer) => layer.routes.includes(route.name));
+  const under = here.filter((layer) => layer.under);
+  const inScope = here.filter((layer) => !layer.under);
   // Keyed by item id so an "up next" swap remounts the player into clean
   // engine/resume state even though the route itself doesn't change.
   const key = route.name === 'player' ? `player:${route.params.item.id}` : route.name;
   // The focus engine on Apple TV / Android TV invents no entry point on its own;
   // without <FocusScope> a screen with no `autoFocus` control mounts with focus
   // nowhere and the remote does nothing.
-  const scopeKey = Chrome ? 'chrome' : key;
+  const scopeKey = inScope.length > 0 ? 'chrome' : key;
   return (
     <PageMain>
+      {/* First, so they paint behind, and outside the scope, so the remote can
+          never land on one and a route change never remounts it. */}
+      {under.map((layer) => (
+        <layer.render key={layer.routes[0]} />
+      ))}
       <Suspense fallback={<Box fill bg="bg" />}>
         <FocusScope key={scopeKey} entryKey={key}>
-          {Chrome ? <Chrome /> : null}
+          {inScope.map((layer) => (
+            <layer.render key={layer.routes[0]} />
+          ))}
           <Screen key={key} />
         </FocusScope>
       </Suspense>

@@ -3,11 +3,11 @@
 
 import type { SectionItem } from '@kroma/core';
 import { sizedImageUrl } from '@kroma/core';
-import { Button, styles } from '@kroma/ui/kit';
+import { Box, Button, styles, Txt } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
@@ -61,7 +61,7 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
     : Math.min(Math.round(w * 1.42), Math.round(height * 0.72));
 
   return (
-    <View style={[s.wrap, { width: w, height: h }]}>
+    <Box style={[s.wrap, { width: w, height: h }]}>
       <Pressable onPress={() => router.push(detailRoute as never)} style={StyleSheet.absoluteFill}>
         <FadeImage uri={art} seed={id} radius={radius.xl} style={StyleSheet.absoluteFill} />
         <LinearGradient
@@ -70,16 +70,16 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
           style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
         />
       </Pressable>
-      <View style={s.content} pointerEvents="box-none">
-        <Text numberOfLines={2} style={s.title}>
+      <Box style={s.content} pointerEvents="box-none">
+        <Txt lines={2} style={s.title}>
           {title}
-        </Text>
+        </Txt>
         {genres.length > 0 ? (
-          <Text numberOfLines={1} style={s.genres}>
+          <Txt lines={1} style={s.genres}>
             {genres.join('  ·  ')}
-          </Text>
+          </Txt>
         ) : null}
-        <View style={s.buttons}>
+        <Box style={s.buttons}>
           <Button icon="player-play-filled" label={t('player.play')} style={s.cta} onPress={play} />
           <Button
             variant="outline"
@@ -89,9 +89,9 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
             style={s.cta}
             onPress={() => toggleList.mutate()}
           />
-        </View>
-      </View>
-    </View>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

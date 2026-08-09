@@ -5,14 +5,26 @@
 
 import { type JobInfo, KromaEvents, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Chip, EmptyState, IconButton, Txt } from '@kroma/ui/kit';
+import {
+  Badge,
+  type BadgeTone,
+  Button,
+  Chip,
+  EmptyState,
+  IconButton,
+  Progress,
+  Section,
+  Surface,
+  Switch,
+  Txt,
+} from '@kroma/ui/kit';
 import { IconBolt, IconClock } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { JobDetailPanel } from '#web/features/admin/jobs-detail';
 import { dur, rel } from '#web/features/admin/jobs-format';
 import { ScheduleModal } from '#web/features/admin/jobs-schedule';
+import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAsyncAction, useCap, usePoll } from '#web/features/admin/shell';
-import { C, Card, Pill, ProgressBar, Section, Toggle } from '#web/features/admin/ui';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
@@ -56,10 +68,14 @@ export function JobsPage() {
 
   return (
     <>
-      <PageHeader title={t('admin.jobsTitle')} subtitle={t('admin.jobsSub')} realtime />
+      <PageHeader
+        title={t('admin.jobsTitle')}
+        subtitle={t('admin.jobsSub')}
+        action={<RealtimeBadge />}
+      />
       {data === null ? <TableSkeleton rows={6} /> : null}
       {categories.map((cat) => (
-        <Section key={cat} title={t(`jobs.cat.${cat}` as MessageKey)}>
+        <Section key={cat} title={t(`jobs.cat.${cat}` as MessageKey)} mt={28}>
           <div className="flex flex-col gap-3.5">
             {jobs
               .filter((j) => j.category === cat)
@@ -120,7 +136,11 @@ function JobActions({
   return (
     <div className="flex shrink-0 items-center gap-3">
       {job.schedule ? (
-        <Toggle on={job.enabled} onChange={canManage ? onToggle : undefined} />
+        <Switch
+          checked={job.enabled}
+          onChange={canManage ? onToggle : undefined}
+          label={t(job.name as MessageKey)}
+        />
       ) : null}
       {job.running ? (
         <Button
@@ -143,8 +163,6 @@ function JobActions({
       )}
       <IconButton
         variant="ghost"
-        size={30}
-        glyph={18}
         icon={open ? 'chevron-up' : 'chevron-down'}
         label={t('jobs.history')}
         onPress={onToggleOpen}
@@ -159,7 +177,9 @@ function JobProgress({ prog }: Readonly<{ prog: { done: number; total: number } 
     <div className="px-5.5 pb-4">
       {prog.total > 0 ? (
         <div className="flex items-center gap-3">
-          <ProgressBar pct={(prog.done / prog.total) * 100} color={C.accent} />
+          <div className="flex-1">
+            <Progress value={prog.done / prog.total} rounded />
+          </div>
           <span className="shrink-0 text-[12px] font-semibold tabular-nums text-text/60">
             {prog.done}/{prog.total}
           </span>
@@ -197,7 +217,7 @@ function JobCard({
     : null;
 
   return (
-    <Card className="overflow-hidden">
+    <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
       <div className="flex items-center justify-between gap-4 px-5.5 py-4.5">
         <JobMeta job={job} onEdit={canManage ? () => void editSchedule() : undefined} />
         <JobActions
@@ -219,26 +239,21 @@ function JobCard({
       ) : null}
 
       {open ? <JobDetailPanel jobKey={job.key} /> : null}
-    </Card>
+    </Surface>
   );
 }
 
 function StatusPill({ job }: Readonly<{ job: JobInfo }>) {
   const t = useT();
   if (job.running) {
-    return (
-      <Pill color={C.accent} bg="rgba(244,182,66,.14)">
-        {t('jobs.status.running')}
-      </Pill>
-    );
+    return <Badge tone="warning">{t('jobs.status.running')}</Badge>;
   }
   const status = job.lastRun?.status;
   if (!status) return null;
-  const { color, bg } = STATUS_STYLE[status] ?? STATUS_FALLBACK;
   return (
-    <Pill color={color} bg={bg}>
+    <Badge tone={STATUS_TONE[status] ?? 'neutral'}>
       {t(`jobs.status.${status}` as MessageKey)}
-    </Pill>
+    </Badge>
   );
 }
 
@@ -267,10 +282,9 @@ function LastRun({ job }: Readonly<{ job: JobInfo }>) {
   );
 }
 
-const STATUS_FALLBACK = { color: '#9AA0AA', bg: 'rgba(255,255,255,.06)' };
-const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
-  success: { color: C.green, bg: 'rgba(70,208,141,.13)' },
-  failed: { color: C.red, bg: 'rgba(232,83,106,.13)' },
-  cancelled: STATUS_FALLBACK,
-  running: { color: C.accent, bg: 'rgba(244,182,66,.14)' },
+const STATUS_TONE: Record<string, BadgeTone> = {
+  success: 'success',
+  failed: 'danger',
+  cancelled: 'neutral',
+  running: 'warning',
 };

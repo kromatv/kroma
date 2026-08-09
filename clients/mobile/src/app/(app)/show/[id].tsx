@@ -3,11 +3,11 @@
 // components/showEpisodes.tsx.
 
 import { sizedImageUrl } from '@kroma/core';
-import { Button, Chip, styles } from '@kroma/ui/kit';
+import { Box, Button, Chip, styles, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, type View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { CastRail, DetailHero, MetaBadge } from '#mobile/components/detail';
 import { type PopoverAnchor, PopoverMenu } from '#mobile/components/PopoverMenu';
@@ -99,10 +99,10 @@ export default function ShowDetail() {
         title={title}
         meta={
           <>
-            {show.year ? <Text style={s.metaText}>{show.year}</Text> : null}
-            <Text style={s.metaText}>{t('content.seasonCount', { count: show.seasonCount })}</Text>
+            {show.year ? <Txt style={s.metaText}>{show.year}</Txt> : null}
+            <Txt style={s.metaText}>{t('content.seasonCount', { count: show.seasonCount })}</Txt>
             {show.metadata?.rating ? (
-              <Text style={s.rating}>★ {show.metadata.rating.toFixed(1)}</Text>
+              <Txt style={s.rating}>★ {show.metadata.rating.toFixed(1)}</Txt>
             ) : null}
             {show.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
           </>
@@ -126,7 +126,7 @@ export default function ShowDetail() {
               <ExpandableText>{show.metadata.overview}</ExpandableText>
             ) : null}
             {show.metadata?.genres?.length ? (
-              <View style={s.genreRow}>
+              <Box style={s.genreRow}>
                 {show.metadata.genres.slice(0, 4).map((genre) => (
                   <Chip
                     key={genre}
@@ -134,7 +134,7 @@ export default function ShowDetail() {
                     onPress={() => router.push(`/genre/${encodeURIComponent(genre)}` as never)}
                   />
                 ))}
-              </View>
+              </Box>
             ) : null}
             <Button
               variant="ghost"
@@ -153,13 +153,13 @@ export default function ShowDetail() {
 
         const episodesPane = (
           <>
-            <View style={[s.tabsRow, wide ? s.tabsRowWide : gutterPad]}>
-              <View style={s.tabActive}>
-                <Text style={s.tabActiveText}>{t('content.episodes')}</Text>
-              </View>
-            </View>
+            <Box style={[s.tabsRow, wide ? s.tabsRowWide : gutterPad]}>
+              <Box style={s.tabActive}>
+                <Txt style={s.tabActiveText}>{t('content.episodes')}</Txt>
+              </Box>
+            </Box>
 
-            <View style={[s.seasonHeader, !wide && gutterPad]}>
+            <Box style={[s.seasonHeader, !wide && gutterPad]}>
               <Button
                 ref={seasonButtonRef}
                 variant="glass"
@@ -174,9 +174,9 @@ export default function ShowDetail() {
                 }
               />
               <SeasonDownload episodes={season?.episodes ?? []} />
-            </View>
+            </Box>
 
-            <View style={[s.episodes, !wide && gutterPad]}>
+            <Box style={[s.episodes, !wide && gutterPad]}>
               {(season?.episodes ?? []).map((ep) => (
                 <EpisodeRow
                   key={ep.id}
@@ -185,28 +185,28 @@ export default function ShowDetail() {
                   watched={watchedIds.has(ep.id)}
                 />
               ))}
-            </View>
+            </Box>
           </>
         );
 
         return wide ? (
-          <View style={[s.split, gutterPad]}>
-            <View style={s.splitInfo}>{info}</View>
-            <View style={s.splitEpisodes}>{episodesPane}</View>
-          </View>
+          <Box style={[s.split, gutterPad]}>
+            <Box style={s.splitInfo}>{info}</Box>
+            <Box style={s.splitEpisodes}>{episodesPane}</Box>
+          </Box>
         ) : (
           <>
-            <View style={[s.body, gutterPad]}>{info}</View>
+            <Box style={[s.body, gutterPad]}>{info}</Box>
             {episodesPane}
           </>
         );
       })()}
 
       {cast.length > 0 ? (
-        <View style={{ marginTop: spacing.lg }}>
+        <Box style={{ marginTop: spacing.lg }}>
           <SectionTitle>{t('content.cast')}</SectionTitle>
           <CastRail cast={cast} />
-        </View>
+        </Box>
       ) : null}
 
       <PopoverMenu

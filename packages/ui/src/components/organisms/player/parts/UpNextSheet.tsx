@@ -160,8 +160,11 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
         onPress={onClose}
         accessibilityRole="button"
         accessibilityLabel={t('player.back')}
-        pointerEvents={open ? 'auto' : 'none'}
-        style={[s.scrimBox, SCRIM, { opacity: open ? 1 : 0 }]}
+        style={[
+          s.scrimBox,
+          SCRIM,
+          { opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' },
+        ]}
       />
       <Animated.View
         onLayout={(e) => {

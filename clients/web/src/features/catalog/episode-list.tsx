@@ -3,7 +3,6 @@
 // request card for a missing or partial season, so a partially-owned show
 // plays what it has and requests the gaps on one screen.
 
-import { Image } from '@kroma/admin-kit';
 import { type CastMember, formatRuntime, type MediaItem, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, Chip, IconButton } from '@kroma/ui/kit';
@@ -14,6 +13,7 @@ import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import { kromaClient } from '#web/shared/lib/api';
 import type { TitleSeason } from '#web/shared/lib/titleView';
+import { Image } from '#web/shared/ui';
 
 function EpisodeRow({
   episode,
@@ -40,7 +40,7 @@ function EpisodeRow({
   const reportLabel = `${num}${episode.episodeTitle ?? episode.title}`;
   return (
     <div
-      className={`group flex items-center gap-3 rounded-[14px] border bg-white/2.5 p-3.5 transition-colors hover:bg-white/6 sm:gap-5 ${
+      className={`group flex items-center gap-3 rounded-lg border bg-white/2.5 p-3.5 transition-colors hover:bg-white/6 sm:gap-5 ${
         watched ? 'border-accent/30' : 'border-white/5'
       }`}
     >
@@ -90,8 +90,6 @@ function EpisodeRow({
         </div>
       </button>
       <IconButton
-        size={36}
-        glyph={16}
         icon="flag"
         label={t('report.action')}
         onPress={() =>
@@ -103,8 +101,6 @@ function EpisodeRow({
         }
       />
       <IconButton
-        size={36}
-        glyph={17}
         icon="check"
         active={watched}
         label={watched ? t('content.markUnwatched') : t('content.markWatched')}
@@ -128,7 +124,7 @@ function MissingEpisodeRow({
 }>) {
   const t = useT();
   return (
-    <div className="flex items-center gap-3 rounded-[14px] border border-white/5 bg-white/1.5 p-3.5 sm:gap-5">
+    <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/1.5 p-3.5 sm:gap-5">
       <div className="flex aspect-video w-32 shrink-0 items-center justify-center rounded-md bg-white/4 text-white/35 sm:w-50">
         <span className="text-[15px] font-bold">{episode}</span>
       </div>
@@ -141,8 +137,6 @@ function MissingEpisodeRow({
         <RequestStatusChip status="pending" size="card" />
       ) : (
         <IconButton
-          size={36}
-          glyph={17}
           icon="plus"
           active
           label={t('requests.requestEpisode')}
@@ -161,7 +155,7 @@ function SeasonSwitcher({
 }: Readonly<{ seasons: TitleSeason[]; current: number; onPick: (n: number) => void }>) {
   const t = useT();
   return (
-    <div className="scrollbar-none flex gap-2 overflow-x-auto px-(--gutter-web)">
+    <div className="flex gap-2 overflow-x-auto px-(--gutter-web) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {seasons.map((s) => (
         <Chip
           key={s.number}

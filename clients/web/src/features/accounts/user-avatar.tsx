@@ -1,43 +1,13 @@
+import { Avatar } from '@kroma/ui/kit';
 import { imageUrl } from '#web/shared/lib/api';
-import { Avatar, AvatarFallback, AvatarImage } from '#web/shared/ui';
 
-// Vivid two-stop gradients lifted from the KROMA design (KROMA.dc.html profiles),
-// picked deterministically from a seed so a given account keeps its colour.
-const GRADS = [
-  'linear-gradient(135deg,#F4B642,#E8743B)', // amber → orange
-  'linear-gradient(135deg,#3BC9DB,#3B82F6)', // cyan → blue
-  'linear-gradient(135deg,#A855F7,#6366F1)', // purple → indigo
-  'linear-gradient(135deg,#F472B6,#EC4899)', // pink
-  'linear-gradient(135deg,#34D399,#10B981)', // green
-];
-
-function hashIndex(seed: string, n: number): number {
-  let h = 0;
-  for (let i = 0; i < seed.length; i += 1) h = (h * 31 + (seed.codePointAt(i) ?? 0)) >>> 0;
-  return h % n;
-}
-
-/** Deterministic avatar gradient for a seed (user id or name). */
-export function avatarGradient(seed: string): string {
-  return GRADS[hashIndex(seed || '?', GRADS.length)] as string;
-}
-
-/** Up-to-two-letter initials from a display name. */
-export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const first = parts[0];
-  if (!first) return '?';
-  if (parts.length === 1) return first.slice(0, 2).toUpperCase();
-  // `parts` came from `filter(Boolean)`, so every entry is a non-empty string:
-  // `last` exists (length >= 2) and both first chars are present. The `?? ''`
-  // fallbacks are only there to satisfy the type-checker and never trigger.
-  const last = parts.at(-1) ?? first;
-  return ((first[0] ?? '') + (last[0] ?? '')).toUpperCase();
-}
+// The deterministic gradient + initials are the design system's own, so an
+// account keeps the same colour on the TV, the phone and here.
+export { gradientFor as avatarGradient, initialsOf as initials } from '@kroma/ui/kit';
 
 /**
  * Account avatar in the KROMA shape: a rounded-square gradient with Bricolage
- * initials, with the uploaded WebP photo layered over it once loaded (Radix
+ * initials, with the uploaded WebP photo layered over it once loaded (the kit
  * Avatar handles the swap, so SSR shows initials and the photo fades in).
  */
 export function UserAvatar({
@@ -55,18 +25,25 @@ export function UserAvatar({
   radius?: number;
   className?: string;
 }>) {
-  const r = radius ?? Math.round(size * 0.13);
+  const corner = radius ?? Math.round(size * 0.13);
   return (
-    <Avatar className={className} style={{ width: size, height: size, borderRadius: r }}>
-      {avatarUrl ? (
-        <AvatarImage src={imageUrl(avatarUrl) ?? undefined} alt="" loading="lazy" />
-      ) : null}
-      <AvatarFallback
-        className="font-display font-bold text-white/90"
-        style={{ background: avatarGradient(seed ?? name), fontSize: Math.round(size * 0.38) }}
-      >
-        {initials(name)}
-      </AvatarFallback>
-    </Avatar>
+    // Block, sized and rounded to exactly the avatar's box: callers put their
+    // shadow/ring classes HERE, and a box-shadow only traces a rounded corner
+    // the element itself has - while `inline` would add the line box's
+    // descender under the disc and shift anything absolutely positioned
+    // against the tile (the padlock overlay).
+    <span
+      className={className}
+      style={{ display: 'block', width: size, height: size, borderRadius: corner }}
+    >
+      <Avatar
+        name={name}
+        seed={seed}
+        src={avatarUrl ? imageUrl(avatarUrl) : null}
+        size={size}
+        roundness={corner / size}
+        shadow={false}
+      />
+    </span>
   );
 }

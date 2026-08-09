@@ -4,31 +4,25 @@
 // /api/admin/llm*.
 import type { KromaClient, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Icon, Button as KitButton, Txt } from '@kroma/ui/kit';
 import {
-  IconCheck,
-  IconChevronDown,
-  IconPlugConnected,
-  IconReload,
-  IconStar,
-  IconX,
-} from '@tabler/icons-react';
-import { type ReactNode, useState } from 'react';
-import {
+  Badge,
   Button,
-  C,
-  Card,
   Disclosure,
   Field,
+  Icon,
   NumberField,
-  Pill,
   SegmentedControl,
-  TextInput,
-  Toggle,
-} from '#web/features/admin/ui';
+  Surface,
+  Switch,
+  Txt,
+} from '@kroma/ui/kit';
+import { IconCheck, IconChevronDown, IconX } from '@tabler/icons-react';
+import { type ReactNode, useState } from 'react';
 import { SearchSelect } from './search-select';
 
 const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
+const MONO = { fontFamily: 'monospace' } as const;
+const MODEL_PICKER = { width: 288, maxWidth: '100%' } as const;
 
 // `apiKey` is a transient field ('' = keep the stored secret); `hasApiKey`
 // reports whether one is stored server-side.
@@ -114,22 +108,15 @@ function ProviderHeader({
       className="flex w-full items-center gap-3 px-5 py-4 text-left"
     >
       <span
-        className="h-2.5 w-2.5 shrink-0 rounded-full"
-        style={{ background: isDefault ? C.accent : 'rgba(255,255,255,.18)' }}
+        className={`h-2.5 w-2.5 shrink-0 rounded-full ${isDefault ? 'bg-accent' : 'bg-white/18'}`}
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate text-[14.5px] font-bold">
             {p.name || t('admin.aiUntitledProvider')}
           </span>
-          <Pill color="#9AA0AA" bg="rgba(255,255,255,.06)">
-            {p.provider}
-          </Pill>
-          {isDefault ? (
-            <Pill color={C.accent} bg="rgba(244,182,66,.14)">
-              {t('admin.aiDefault')}
-            </Pill>
-          ) : null}
+          <Badge tone="neutral">{p.provider}</Badge>
+          {isDefault ? <Badge tone="warning">{t('admin.aiDefault')}</Badge> : null}
         </div>
         <div className="mt-0.5 truncate text-[12.5px] text-dim">
           {p.model || '-'}
@@ -138,8 +125,7 @@ function ProviderHeader({
       </div>
       {probe ? (
         <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: probe.ok ? C.green : C.red }}
+          className={`h-2 w-2 shrink-0 rounded-full ${probe.ok ? 'bg-success' : 'bg-danger'}`}
         />
       ) : null}
       <IconChevronDown
@@ -174,6 +160,7 @@ function ModelField({
           ? t('admin.aiModelsCount', { count: models.length })
           : t('admin.aiModelHint')
       }
+      mb={16}
     >
       <div className="flex flex-wrap items-center gap-2">
         {models.length > 0 ? (
@@ -183,20 +170,27 @@ function ModelField({
             onChange={onModel}
             placeholder={modelPlaceholder}
             searchPlaceholder={t('admin.aiSearchModels')}
-            className="w-72 max-w-full"
+            style={MODEL_PICKER}
           />
         ) : (
-          <TextInput
+          <Field
+            label={t('admin.aiModel')}
+            hideLabel
+            icon="brain"
             value={p.model}
             onChange={onModel}
             placeholder={modelPlaceholder}
-            className="w-72 max-w-full font-mono"
+            w={288}
+            maxW="100%"
+            entry={{ textStyle: MONO }}
           />
         )}
         <Button
+          variant="glass"
+          size="sm"
           label={busy === 'models' ? t('admin.aiLoading') : t('admin.aiLoadModels')}
-          icon={IconReload}
-          onClick={onLoad}
+          icon="reload"
+          onPress={onLoad}
           disabled={busy !== 'idle'}
         />
       </div>
@@ -220,8 +214,9 @@ function AdvancedSection({
     <Disclosure title={t('admin.aiAdvanced')}>
       {spec.baseUrl === 'advanced' ? baseUrlField : null}
       {spec.temperature ? (
-        <Field label={t('admin.aiTemperature')} hint={t('admin.aiTemperatureHint')}>
+        <Field label={t('admin.aiTemperature')} hint={t('admin.aiTemperatureHint')} mb={16}>
           <NumberField
+            label={t('admin.aiTemperature')}
             value={p.temperature}
             step={0.1}
             min={0}
@@ -230,8 +225,9 @@ function AdvancedSection({
           />
         </Field>
       ) : null}
-      <Field label={t('admin.aiMaxTokens')} hint={t('admin.aiMaxTokensHint')}>
+      <Field label={t('admin.aiMaxTokens')} hint={t('admin.aiMaxTokensHint')} mb={16}>
         <NumberField
+          label={t('admin.aiMaxTokens')}
           value={p.maxTokens}
           step={100}
           min={64}
@@ -244,7 +240,11 @@ function AdvancedSection({
             <div className="text-[14px] font-bold">{t('admin.aiReasoning')}</div>
             <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.aiReasoningHint')}</div>
           </div>
-          <Toggle on={p.reasoning} onChange={(v) => onSet({ reasoning: v })} />
+          <Switch
+            checked={p.reasoning}
+            onChange={(v) => onSet({ reasoning: v })}
+            label={t('admin.aiReasoning')}
+          />
         </div>
       ) : null}
     </Disclosure>
@@ -270,30 +270,37 @@ function CardActions({
   return (
     <div className="mb-5 mt-2 flex flex-wrap items-center gap-2.5">
       <Button
+        variant="glass"
+        size="sm"
         label={busy === 'test' ? t('admin.aiTesting') : t('admin.aiTest')}
-        icon={IconPlugConnected}
-        onClick={onTest}
+        icon="plug-connected"
+        onPress={onTest}
         disabled={busy !== 'idle'}
       />
       {!isDefault ? (
-        <Button label={t('admin.aiSetDefault')} icon={IconStar} onClick={onSetDefault} />
+        <Button
+          variant="glass"
+          size="sm"
+          label={t('admin.aiSetDefault')}
+          icon="star"
+          onPress={onSetDefault}
+        />
       ) : null}
       {probe ? (
         <span
-          className="inline-flex items-center gap-1.5 text-[13px] font-semibold"
-          style={{ color: probe.ok ? C.green : C.red }}
+          className={`inline-flex items-center gap-1.5 text-[13px] font-semibold ${probe.ok ? 'text-success' : 'text-danger'}`}
         >
           {probe.ok ? <IconCheck size={15} stroke={2.4} /> : <IconX size={15} stroke={2.4} />}
           {probe.text}
         </span>
       ) : null}
       <div className="ml-auto">
-        <KitButton variant="ghost" size="sm" onPress={onRemove}>
+        <Button variant="ghost" size="sm" onPress={onRemove}>
           <Icon name="trash" size={15} color="danger" />
           <Txt color="danger" style={DANGER_LABEL}>
             {t('admin.aiRemoveProvider')}
           </Txt>
-        </KitButton>
+        </Button>
       </div>
     </div>
   );
@@ -334,30 +341,31 @@ function ProviderBody({
     <Field
       label={t('admin.aiBaseUrl')}
       hint={t(BASE_HINT_KEY[p.provider] ?? 'admin.aiBaseUrlHint')}
-    >
-      <TextInput
-        value={p.baseUrl}
-        onChange={(v) => set({ baseUrl: v })}
-        placeholder={PROVIDER_BASE[p.provider] || 'http://localhost:11434/v1'}
-        className="w-full max-w-120 font-mono"
-      />
-    </Field>
+      icon="world"
+      value={p.baseUrl}
+      onChange={(v) => set({ baseUrl: v })}
+      placeholder={PROVIDER_BASE[p.provider] || 'http://localhost:11434/v1'}
+      maxW={480}
+      mb={16}
+      entry={{ textStyle: MONO }}
+    />
   );
   const apiKeyRequirement =
     spec.apiKey === 'required' ? t('admin.aiRequired') : t('admin.aiOptional');
 
   return (
     <div className="border-t border-border px-5 pt-5">
-      <Field label={t('admin.aiProviderName')}>
-        <TextInput
-          value={p.name}
-          onChange={(v) => set({ name: v })}
-          placeholder={t('admin.aiProviderNamePlaceholder')}
-          className="w-full max-w-120"
-        />
-      </Field>
+      <Field
+        label={t('admin.aiProviderName')}
+        icon="tag"
+        value={p.name}
+        onChange={(v) => set({ name: v })}
+        placeholder={t('admin.aiProviderNamePlaceholder')}
+        maxW={480}
+        mb={16}
+      />
 
-      <Field label={t('admin.aiProvider')} hint={t('admin.aiProviderHint')}>
+      <Field label={t('admin.aiProvider')} hint={t('admin.aiProviderHint')} mb={16}>
         <SegmentedControl
           value={p.provider}
           onChange={onProvider}
@@ -371,15 +379,18 @@ function ProviderBody({
 
       {spec.baseUrl === 'required' ? baseUrlField : null}
 
-      <Field label={`${t('admin.aiApiKey')} · ${apiKeyRequirement}`} hint={t('admin.aiApiKeyHint')}>
-        <TextInput
-          value={p.apiKey}
-          onChange={(v) => set({ apiKey: v })}
-          type="password"
-          placeholder={p.hasApiKey ? t('admin.aiApiKeyKeep') : 'sk-…'}
-          className="w-full max-w-120 font-mono"
-        />
-      </Field>
+      <Field
+        label={`${t('admin.aiApiKey')} · ${apiKeyRequirement}`}
+        hint={t('admin.aiApiKeyHint')}
+        type="password"
+        icon="key"
+        value={p.apiKey}
+        onChange={(v) => set({ apiKey: v })}
+        placeholder={p.hasApiKey ? t('admin.aiApiKeyKeep') : 'sk-…'}
+        maxW={480}
+        mb={16}
+        entry={{ textStyle: MONO }}
+      />
 
       <ModelField
         p={p}
@@ -474,7 +485,7 @@ export function ProviderCard({
   const host = hostOf(p.baseUrl, isAnthropic);
 
   return (
-    <Card className="overflow-hidden">
+    <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
       <ProviderHeader
         p={p}
         isDefault={isDefault}
@@ -503,6 +514,6 @@ export function ProviderCard({
           onRemove={onRemove}
         />
       ) : null}
-    </Card>
+    </Surface>
   );
 }

@@ -216,3 +216,17 @@ pub struct ShowDetail {
     pub show: Show,
     pub seasons: Vec<Season>,
 }
+
+/// One cover of the anonymous sign-in splash (`GET /api/splash`): enough to
+/// paint a backdrop and caption it, and deliberately nothing more.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SplashEntry {
+    /// `movie` or `show`.
+    pub kind: String,
+    pub title: String,
+    pub year: Option<u32>,
+    #[serde(rename = "backdropUrl")]
+    pub backdrop_url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rating: Option<f64>,
+}

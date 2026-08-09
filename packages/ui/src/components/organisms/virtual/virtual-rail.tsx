@@ -1,5 +1,10 @@
 // <VirtualRail>: the horizontally scrolling row of the browse screens.
 //
+// Under a pointer or a finger the row is a REAL horizontal scroller and the
+// platform owns every gesture: a vertical wheel chains to the page with its
+// momentum intact, a sideways swipe or shift+wheel pans the row. Only under a
+// D-pad, where no wheel exists, is the row translated by hand.
+//
 // LRUD orders siblings by REGISTRATION and `SpatialNavigationNode` cannot declare
 // an index, so a tile mounting at the head of a sliding window registers LAST and
 // walking left dies at the window's edge. The row therefore GROWS and never
@@ -23,7 +28,6 @@ import { maskImage } from '#ui/lib/css';
 import { webDocument } from '#ui/lib/dom';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
-import { useWheelPan } from '#ui/lib/wheel-pan';
 import { clipStyles, OVERSCAN } from './clip';
 import { edgeScrollOffset, fitPitch, horizontalInset, maxOffset } from './edge-scroll';
 import { edgeWidth, RailEdge, railMask } from './rail-edge';
@@ -35,8 +39,6 @@ const TOUCH = !WEB && !Platform.isTV;
 const KEY_GRACE_MS = 400;
 
 const DIRECTIONS = new Set(['ArrowLeft', 'ArrowRight', 'Left', 'Right']);
-
-const PAN_SETTLE_MS = 180;
 
 interface VirtualRailProps<T> {
   data: readonly T[];
@@ -50,7 +52,6 @@ interface VirtualRailProps<T> {
   onEndReached?: () => void;
   /** Look-ahead kept past the selection, in TILES, before the row starts moving. */
   edgeMargin?: number;
-  wheel?: boolean;
   arrows?: boolean;
 }
 
@@ -63,37 +64,36 @@ function VirtualRail<T>({
   contentStyle,
   onEndReached,
   edgeMargin = 1,
-  wheel = true,
   arrows = true,
 }: Readonly<VirtualRailProps<T>>) {
-  const viewport = useRef<View | null>(null);
   // Without a <FocusScope> above there is no navigator, and its view THROWS on a
   // missing root. Unscoped, the row keeps everything except the D-pad.
   const scoped = useInsideFocusScope();
+  // Translated only where the D-pad drives the row; everywhere else the row is
+  // a real scroller.
+  const translated = scoped;
+  const scroller = useRef<ScrollView | null>(null);
   const [offset, setOffset] = useState(0);
   const [reach, setReach] = useState(OVERSCAN);
-  const [panning, setPanning] = useState(false);
   const [hovered, setHovered] = useState(false);
 
-  // The offset is state (the transform renders from it) and a ref (a pan adds to
-  // it between renders, and a wheel delivers faster than React commits).
+  // The offset is state (the fades render from it) and a ref (a scroll event
+  // delivers faster than React commits).
   const at = useRef(0);
   const measured = useRef(0);
   const keyAt = useRef(0);
-  const settle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(settle.current), []);
 
   // Capture phase: react-native-web's TextInput stops propagation on keydown, so
   // a bubbling listener would miss every press made while a field holds focus.
   useEffect(() => {
     const dom = webDocument();
-    if (!WEB || !dom) return;
+    if (!WEB || !scoped || !dom) return;
     const onKey = (e: KeyboardEvent) => {
       if (DIRECTIONS.has(e.key)) keyAt.current = Date.now();
     };
     dom.addEventListener('keydown', onKey, true);
     return () => dom.removeEventListener('keydown', onKey, true);
-  }, []);
+  }, [scoped]);
 
   const count = data.length;
   const contentInset = useMemo(() => horizontalInset(contentStyle), [contentStyle]);
@@ -111,16 +111,15 @@ function VirtualRail<T>({
 
   const select = useCallback(
     (index: number) => {
-      setPanning(false);
       grow(index + OVERSCAN);
       if (index >= count - 1 - OVERSCAN) onEndReached?.();
+      // A real scroller owns its position: the browser reveals a tab-focused
+      // tile itself, and a tap must not yank the row out from under the finger.
+      if (!translated) return;
       // Only a PRESS moves the row: the navigator focuses whatever the cursor
       // enters, so scrolling on every focus change made the row creep sideways
       // under a wandering pointer.
       if (WEB && Date.now() - keyAt.current > KEY_GRACE_MS) return;
-      // On a touchscreen the ScrollView owns the position: a tap must not yank
-      // the row out from under the finger.
-      if (TOUCH) return;
       at.current = edgeScrollOffset({
         offset: at.current,
         index,
@@ -131,33 +130,14 @@ function VirtualRail<T>({
       });
       setOffset(at.current);
     },
-    [count, edgeMargin, grow, onEndReached, pitch],
+    [count, edgeMargin, grow, onEndReached, pitch, translated],
   );
   // The tiles close over this rather than over `select`, so growing the row does
   // not rebuild every tile that was already in it.
   const selectRef = useRef(select);
   selectRef.current = select;
 
-  const panBy = useCallback(
-    (delta: number, instant: boolean) => {
-      const furthest = maxOffset(count, pitch, measured.current);
-      at.current = Math.round(Math.min(furthest, Math.max(0, at.current + delta)));
-      setOffset(at.current);
-      grow(Math.ceil((at.current + measured.current) / pitch) + OVERSCAN);
-      // The row stops answering the pointer while it moves under one: the
-      // navigator focuses whatever the cursor ENTERS, and the tiles move under it
-      // without the cursor moving at all.
-      setPanning(instant);
-      clearTimeout(settle.current);
-      settle.current = setTimeout(() => setPanning(false), PAN_SETTLE_MS);
-    },
-    [count, grow, pitch],
-  );
-
-  const pan = useCallback((delta: number) => panBy(delta, true), [panBy]);
-  useWheelPan(viewport, pan, wheel);
-
-  const onTouchScroll = useCallback(
+  const onRailScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const x = Math.round(event.nativeEvent.contentOffset.x);
       at.current = x;
@@ -171,8 +151,20 @@ function VirtualRail<T>({
   // A screenful less a tile, so the row overlaps itself by one. In PITCHES:
   // paging by the authored width left the row a fraction of a tile out of step.
   const page = useCallback(
-    (direction: 1 | -1) => panBy(direction * Math.max(pitch, measured.current - pitch), false),
-    [panBy, pitch],
+    (direction: 1 | -1) => {
+      const by = direction * Math.max(pitch, measured.current - pitch);
+      const furthest = maxOffset(count, pitch, measured.current);
+      const target = Math.round(Math.min(furthest, Math.max(0, at.current + by)));
+      // Mounted before the move, or the scroll runs into an unrendered gap.
+      grow(Math.ceil((target + measured.current) / pitch) + OVERSCAN);
+      if (translated) {
+        at.current = target;
+        setOffset(target);
+        return;
+      }
+      scroller.current?.scrollTo({ x: target, animated: true });
+    },
+    [count, grow, pitch, translated],
   );
 
   const onLayout = useCallback(
@@ -198,6 +190,7 @@ function VirtualRail<T>({
     if (snapped === at.current) return;
     at.current = snapped;
     setOffset(snapped);
+    scroller.current?.scrollTo({ x: snapped, animated: false });
   }, [pitch, count]);
 
   const mounted = Math.min(count, reach + 1);
@@ -231,10 +224,10 @@ function VirtualRail<T>({
   const fadeOn = scoped || buttonsUp;
   const fadeStart = fadeOn && offset > 1;
   const fadeEnd = fadeOn && offset < furthest - 1;
-  // Memoised because a wheel gesture calls `setOffset` on every tick: unmemoised,
-  // the mask string and the clip box's CSS were rebuilt on every frame of a pan.
-  const clip = useMemo(
-    () => [clipStyles.clip, WEB ? maskImage(railMask(edge, fadeStart, fadeEnd)) : null],
+  // Memoised because a scroll calls `setOffset` on every tick: unmemoised, the
+  // mask string was rebuilt on every frame.
+  const mask = useMemo(
+    () => (WEB ? maskImage(railMask(edge, fadeStart, fadeEnd)) : null),
     [edge, fadeStart, fadeEnd],
   );
 
@@ -246,32 +239,31 @@ function VirtualRail<T>({
 
   return (
     <View
-      ref={viewport}
       style={style}
       onLayout={onLayout}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      {/* Touch gets a real ScrollView: thumb physics cannot be imitated with a
-          transition. Elsewhere the row is translated. */}
-      {TOUCH ? (
+      {translated ? (
+        <View style={[clipStyles.clip, mask]}>
+          <MovingRow offset={offset} style={contentStyle}>
+            {row}
+          </MovingRow>
+        </View>
+      ) : (
         <ScrollView
+          ref={scroller}
           horizontal
           showsHorizontalScrollIndicator={false}
-          onScroll={onTouchScroll}
-          scrollEventThrottle={32}
+          onScroll={onRailScroll}
+          scrollEventThrottle={16}
+          style={mask}
           // The full row's width from the first frame: the scroll RANGE must not
           // grow with the mounted window, or a hard fling bounces off its end.
           contentContainerStyle={[s.row, contentStyle, { minWidth: count * pitch }]}
         >
           {row}
         </ScrollView>
-      ) : (
-        <View style={clip}>
-          <MovingRow offset={offset} instant={panning} style={contentStyle} interactive={!panning}>
-            {row}
-          </MovingRow>
-        </View>
       )}
       {/* Mounted whether shown or not, so the control fades rather than appears. */}
       {arrowsOn || (scoped && !WEB && !TOUCH) ? (
@@ -301,14 +293,10 @@ function VirtualRail<T>({
 // main thread. Native: `Animated`, where the driver is real.
 function MovingRow({
   offset,
-  instant,
-  interactive,
   style,
   children,
 }: Readonly<{
   offset: number;
-  instant: boolean;
-  interactive: boolean;
   style?: ViewStyle;
   children: ReactElement;
 }>) {
@@ -316,24 +304,17 @@ function MovingRow({
 
   useEffect(() => {
     if (WEB) return;
-    if (instant) {
-      slide.setValue(-offset);
-      return;
-    }
     Animated.timing(slide, {
       toValue: -offset,
       duration: SETTLE_MS,
       easing: EASE_NATIVE,
       useNativeDriver: true,
     }).start();
-  }, [instant, offset, slide]);
-
-  const pointerEvents = interactive ? 'auto' : 'none';
+  }, [offset, slide]);
 
   if (WEB) {
     return (
       <View
-        pointerEvents={pointerEvents}
         style={[
           s.row,
           style,
@@ -341,7 +322,7 @@ function MovingRow({
             transform: [{ translateX: -offset }],
             // CSS-only props react-native-web understands and RN's types do not.
             transitionProperty: 'transform',
-            transitionDuration: `${instant ? 0 : SETTLE_MS}ms`,
+            transitionDuration: `${SETTLE_MS}ms`,
             transitionTimingFunction: EASE_CSS,
           } as ViewStyle,
         ]}
@@ -352,10 +333,7 @@ function MovingRow({
   }
 
   return (
-    <Animated.View
-      pointerEvents={pointerEvents}
-      style={[s.row, style, { transform: [{ translateX: slide }] }]}
-    >
+    <Animated.View style={[s.row, style, { transform: [{ translateX: slide }] }]}>
       {children}
     </Animated.View>
   );

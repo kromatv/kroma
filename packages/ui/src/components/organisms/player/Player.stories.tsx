@@ -54,7 +54,7 @@ function Surface() {
 
 export default story({
   name: 'Player',
-  group: 'Media',
+  group: 'Player',
   docs: 'The whole chrome, assembled. `Player` owns no playback of its own: it is handed a **`PlayerController`** and a `surface` node, and everything it draws — the top bar, the chapter bar, the transport, the panels, the up-next sheet — reads from that one object. That is what lets the same component draw over four different decoders (an in-page `<video>` on the web; AVPlay, mpv or ExoPlayer rendering to a native plane *behind* a transparent page on the televisions). `flags` is the other half: a TV has no volume slider, no PiP and no fullscreen, so those controls are absent rather than disabled.',
   usage: `<Player
   controller={controller}

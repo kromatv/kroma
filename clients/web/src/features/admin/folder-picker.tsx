@@ -84,9 +84,7 @@ export function FolderPicker({
       <div className="flex items-center gap-2 border-b border-white/6 px-3 py-2.5">
         <IconButton
           variant="ghost"
-          size={26}
-          glyph={16}
-          radius={8}
+          control="sm"
           icon="corner-left-up"
           label={t('admin.parentFolder')}
           onPress={() => list?.parent != null && setPath(list.parent)}
@@ -163,7 +161,7 @@ export function FolderField({
     );
   }
   return (
-    <div className="flex items-center gap-2.5 rounded-[9px] border border-border bg-[#0F0F13] px-3 py-2">
+    <div className="flex items-center gap-2.5 rounded-md border border-border bg-[#0F0F13] px-3 py-2">
       <IconFolder size={16} stroke={1.8} className="shrink-0 text-accent" />
       <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text/78">
         {value}

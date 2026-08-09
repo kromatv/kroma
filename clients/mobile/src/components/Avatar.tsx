@@ -9,10 +9,16 @@ export function Avatar({
   uri,
   name,
   size = 40,
+  circle = true,
+  locked = false,
 }: Readonly<{
   uri: string | null | undefined;
   name: string | null | undefined;
   size?: number;
+  /** A disc (a row's mark), or the rounded square the pickers use. */
+  circle?: boolean;
+  /** Draws the kit's padlock, scaled with the avatar. */
+  locked?: boolean;
 }>) {
   const label = name?.trim() || '?';
   return (
@@ -20,7 +26,8 @@ export function Avatar({
       name={label}
       src={uri ?? null}
       size={size}
-      circle
+      circle={circle}
+      locked={locked}
       gradient={tintGradient(posterColors(label))}
       shadow={false}
     />

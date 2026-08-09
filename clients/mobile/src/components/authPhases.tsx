@@ -1,13 +1,11 @@
 // Presentation only; auth calls and phase switching stay in sign-in.
 
-import { Button, Spinner, styles } from '@kroma/ui/kit';
-import { Text, View } from 'react-native';
+import { Box, Button, Field, OtpField, Spinner, styles, Txt } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { colors, spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
-import { BackLink, OnboardingBox, OnboardingTitle } from './OnboardingScreen';
-import { PinPad } from './onboarding';
-import { ErrorBanner, TextField } from './ui';
+import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
+import { ErrorBanner } from './ui';
 
 export type Identity = { name: string; avatarUri: string | null };
 
@@ -16,11 +14,11 @@ function IdentityHeader({
   subtitle,
 }: Readonly<{ identity: Identity; subtitle?: string }>) {
   return (
-    <View style={s.identity}>
+    <Box style={s.identity}>
       <Avatar uri={identity.avatarUri} name={identity.name} size={72} />
-      <Text style={s.name}>{identity.name}</Text>
-      {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
-    </View>
+      <Txt style={s.name}>{identity.name}</Txt>
+      {subtitle ? <Txt style={s.subtitle}>{subtitle}</Txt> : null}
+    </Box>
   );
 }
 
@@ -31,7 +29,6 @@ export function PinPhase({
   checking,
   error,
   onChange,
-  onBack,
 }: Readonly<{
   identity: Identity;
   pin: string;
@@ -39,16 +36,30 @@ export function PinPhase({
   checking: boolean;
   error: string | null;
   onChange(next: string): void;
-  onBack(): void;
 }>) {
   const t = useT();
   return (
     <OnboardingBox>
       <IdentityHeader identity={identity} subtitle={t('auth.pinRequired')} />
-      <PinPad value={pin} disabled={disabled} onChange={onChange} />
-      {checking ? <Spinner size={24} color={colors.textDim} /> : null}
+      {/* The column stretches its children (the phases below hand it
+          full-width fields), so the code row has to size to its slots and
+          centre itself under the avatar rather than sit against the margin. */}
+      <OtpField
+        self="center"
+        maxLength={4}
+        value={pin}
+        onChange={onChange}
+        mask
+        disabled={disabled}
+        physicalKeyboard
+        autoFocus
+      />
+      {checking ? (
+        <Box self="center">
+          <Spinner size={24} color={colors.textDim} />
+        </Box>
+      ) : null}
       <ErrorBanner message={error} />
-      <BackLink onPress={onBack} />
     </OnboardingBox>
   );
 }
@@ -63,7 +74,6 @@ export function CredentialsPhase({
   onIdentifier,
   onPassword,
   onSubmit,
-  onBack,
 }: Readonly<{
   identity: Identity | null;
   serverLabel: string | null;
@@ -74,7 +84,6 @@ export function CredentialsPhase({
   onIdentifier(next: string): void;
   onPassword(next: string): void;
   onSubmit(): void;
-  onBack(): void;
 }>) {
   const t = useT();
   return (
@@ -85,26 +94,31 @@ export function CredentialsPhase({
         <OnboardingTitle title={t('auth.signinTitle')} subtitle={serverLabel} />
       )}
       {identity ? null : (
-        <TextField
+        <Field
+          w="100%"
+          label={t('auth.emailOrUsername')}
+          hideLabel
           icon="user"
           value={identifier}
-          onChangeText={onIdentifier}
+          onChange={onIdentifier}
           placeholder={t('auth.emailOrUsername')}
           keyboardType="email-address"
-          textContentType="username"
           autoFocus
+          entry={{ autoComplete: 'username' }}
         />
       )}
-      <TextField
+      <Field
+        w="100%"
+        label={t('auth.password')}
+        hideLabel
         icon="lock"
         value={password}
-        onChangeText={onPassword}
+        onChange={onPassword}
         placeholder={t('auth.password')}
-        secureTextEntry
-        textContentType="password"
+        type="password"
         autoFocus={identity !== null}
-        returnKeyType="go"
-        onSubmitEditing={onSubmit}
+        onSubmit={onSubmit}
+        entry={{ autoComplete: 'current-password' }}
       />
       <ErrorBanner message={error} />
       <Button
@@ -113,7 +127,6 @@ export function CredentialsPhase({
         loading={busy}
         disabled={!password || (!identity && !identifier.trim())}
       />
-      <BackLink onPress={onBack} />
     </OnboardingBox>
   );
 }

@@ -6,40 +6,20 @@
 
 import {
   groupNotificationsByDay,
-  type KNOWN_NOTIFICATION_EVENTS,
   NOTIFICATION_DAY_LABEL,
   type Notification,
-  type NotificationEvent,
   sizedImageUrl,
 } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import * as Dialog from '@radix-ui/react-dialog';
-import {
-  IconAlertTriangle,
-  IconBell,
-  IconBellRinging,
-  IconChecks,
-  IconCircleCheck,
-  IconCircleMinus,
-  IconCircleX,
-  IconDatabase,
-  IconDeviceTv,
-  IconDownload,
-  IconFlag3,
-  IconInbox,
-  IconLoader2,
-  IconPlayerPlayFilled,
-  IconServerBolt,
-  IconSparkles,
-  IconX,
-  type TablerIcon,
-} from '@tabler/icons-react';
+import { Drawer } from '@kroma/ui/kit';
+import { IconBell, IconChecks, IconLoader2, IconX, type TablerIcon } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { type ReactNode, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { usePanelState, useUnreadCount } from '#web/features/notifications/use-notifications';
 import { kromaClient } from '#web/shared/lib/api';
 import { userQueries } from '#web/shared/lib/queries';
+import { NotificationCard } from '#web/shared/ui/notification-card';
 
 /** Bell + badge + drawer. Mounted in the sidebar (desktop) and topbar (mobile). */
 export function NotificationBell({ className }: Readonly<{ className?: string }>) {
@@ -48,38 +28,39 @@ export function NotificationBell({ className }: Readonly<{ className?: string }>
   const { open, setOpen, everOpened } = usePanelState();
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger asChild>
-        <button
-          type="button"
-          aria-label={
-            unread > 0 ? `${t('notifications.title')} (${unread})` : t('notifications.title')
-          }
-          className={`relative flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/6 hover:text-text data-[state=open]:bg-white/8 data-[state=open]:text-text ${className ?? ''}`}
-        >
-          <IconBell size={20} />
-          {unread > 0 && (
-            <span
-              // Caps at 9+ so the badge doesn't outgrow the bell.
-              className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[18px] tabular-nums text-accent-ink ring-2 ring-[#0C0C0E]"
-            >
-              {unread > 9 ? '9+' : unread}
-            </span>
-          )}
-        </button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[6px] data-[state=open]:animate-[fade-in_.22s_var(--ease-out)]" />
-        <Dialog.Content
-          aria-describedby={undefined}
-          className="fixed inset-y-0 right-0 z-50 flex w-full flex-col bg-[#101014] outline-none data-[state=open]:animate-[slide-in-right_.3s_var(--ease-out)] sm:w-[min(25rem,92vw)] sm:border-l sm:border-white/8"
-        >
-          <PanelHeader onClose={() => setOpen(false)} />
-          {/* Mounted on first open and kept mounted after, so reopening doesn't refetch. */}
-          {everOpened ? <PanelBody onNavigate={() => setOpen(false)} /> : null}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <>
+      <button
+        type="button"
+        aria-label={
+          unread > 0 ? `${t('notifications.title')} (${unread})` : t('notifications.title')
+        }
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className={`relative flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/6 hover:text-text ${open ? 'bg-white/8 text-text' : ''} ${className ?? ''}`}
+      >
+        <IconBell size={20} />
+        {unread > 0 && (
+          <span
+            // Caps at 9+ so the badge doesn't outgrow the bell.
+            className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[18px] tabular-nums text-accent-ink ring-2 ring-[#0C0C0E]"
+          >
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </button>
+      <Drawer
+        open={open}
+        onClose={() => setOpen(false)}
+        title={t('notifications.title')}
+        width={400}
+        fullBelow={640}
+        panelStyle={PANEL_FILL}
+      >
+        <PanelHeader onClose={() => setOpen(false)} />
+        {/* Mounted on first open and kept mounted after, so reopening doesn't refetch. */}
+        {everOpened ? <PanelBody onNavigate={() => setOpen(false)} /> : null}
+      </Drawer>
+    </>
   );
 }
 
@@ -101,9 +82,7 @@ function PanelHeader({ onClose }: Readonly<{ onClose: () => void }>) {
 
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-white/[0.07] px-4 pb-3 pt-[max(1.15rem,env(safe-area-inset-top))]">
-      <Dialog.Title className="text-[16px] font-semibold text-text">
-        {t('notifications.title')}
-      </Dialog.Title>
+      <h2 className="text-[16px] font-semibold text-text">{t('notifications.title')}</h2>
       <div className="ml-auto flex items-center gap-0.5">
         {/* Icon-only: the label is long in every language and crowded the title. */}
         <IconAction
@@ -118,6 +97,8 @@ function PanelHeader({ onClose }: Readonly<{ onClose: () => void }>) {
     </div>
   );
 }
+
+const PANEL_FILL = { backgroundColor: '#101014' } as const;
 
 function IconAction({
   icon: Icon,
@@ -185,7 +166,7 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
         // Keyed on the run's first row, not the day: an unsorted inbox can open a
         // second "Earlier" run, and two sections must not share a key.
         <section key={group.items[0]?.id}>
-          {/* h3, not h2: Radix renders <Dialog.Title> as the h2. */}
+          {/* h3, not h2: the panel header renders the h2. */}
           <h3 className="sticky top-0 z-10 bg-[#101014] px-2 pb-1.5 pt-3 text-[11px] font-semibold text-dim">
             {t(NOTIFICATION_DAY_LABEL[group.day])}
           </h3>
@@ -261,130 +242,12 @@ function NotificationRow({
 /** A notification row's contents: gutter, tile, title/time line, clamped body.
  * Exported so the admin composer's preview renders the real row markup rather
  * than a hand-copied approximation; the caller supplies the shell and tones. */
-export function NotificationCard({
-  className = '',
-  event,
-  src,
-  unread,
-  title,
-  titleTone = 'text-text',
-  titleId,
-  body,
-  bodyTone = 'text-muted',
-  bodyId,
-  time,
-}: Readonly<{
-  className?: string;
-  event: NotificationEvent;
-  src: string | null;
-  unread: boolean;
-  title: ReactNode;
-  titleTone?: string;
-  titleId?: string;
-  body: ReactNode;
-  bodyTone?: string;
-  bodyId?: string;
-  time: ReactNode;
-}>) {
-  return (
-    <div className={`flex items-start p-2.5 pl-2 ${className}`}>
-      {/* The gutter is reserved on every row, empty or not, so nothing shifts. */}
-      <span className="mr-2 flex h-12 w-1.5 shrink-0 items-center">
-        {unread && <span className="h-1.5 w-1.5 rounded-full bg-accent" />}
-      </span>
-      <NotificationTile event={event} src={src} className="mr-3" />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-2">
-          <p
-            id={titleId}
-            className={`min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-5 ${titleTone}`}
-          >
-            {title}
-          </p>
-          <span className="shrink-0 pt-[3px] text-[11px] text-dim">{time}</span>
-        </div>
-        <p id={bodyId} className={`mt-0.5 line-clamp-2 text-[12.5px] leading-[1.45] ${bodyTone}`}>
-          {body}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function NotificationGlyph({
-  event,
-  size = 20,
-}: Readonly<{ event: NotificationEvent; size?: number }>) {
-  const meta = eventMeta(event);
-  return <meta.icon size={size} stroke={1.8} className={meta.fg} />;
-}
-
-/** The 48px leading tile: artwork when the notification carries some, else the
- * event glyph on a neutral plate (kept neutral so the glyph's colour is the
- * signal). `src` arrives already resolved by the caller. */
-export function NotificationTile({
-  event,
-  src,
-  className = '',
-}: Readonly<{ event: NotificationEvent; src?: string | null; className?: string }>) {
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt=""
-        loading="lazy"
-        className={`h-12 w-12 shrink-0 rounded-xl object-cover ${className}`}
-      />
-    );
-  }
-  return (
-    <span
-      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/6 ${className}`}
-    >
-      <NotificationGlyph event={event} />
-    </span>
-  );
-}
-
 // The notification's own `link`, else its first `link`-kind action. `api`
 // actions (Approve, Deny) have no destination — deliberately not offered here,
 // since their notification links to the queue where the decision belongs.
 function destinationOf(notification: Notification): string | undefined {
   if (notification.link) return notification.link;
   return notification.actions.find((a) => a.kind === 'link')?.href;
-}
-
-interface EventMeta {
-  icon: TablerIcon;
-  fg: string;
-}
-
-// Keyed on the KNOWN list, not on `NotificationEvent` (an open union a newer
-// server may extend): a known event missing an entry is a type error, an
-// unknown one just falls back.
-const EVENT_META: Record<(typeof KNOWN_NOTIFICATION_EVENTS)[number], EventMeta> = {
-  'request.submitted': { icon: IconInbox, fg: 'text-accent' },
-  'request.approved': { icon: IconCircleCheck, fg: 'text-success' },
-  'request.denied': { icon: IconCircleX, fg: 'text-red-400' },
-  'request.available': { icon: IconSparkles, fg: 'text-accent' },
-  'media.added': { icon: IconPlayerPlayFilled, fg: 'text-info' },
-  'media.episode': { icon: IconDeviceTv, fg: 'text-info' },
-  'report.submitted': { icon: IconFlag3, fg: 'text-hdr' },
-  'report.resolved': { icon: IconCircleCheck, fg: 'text-success' },
-  'report.dismissed': { icon: IconCircleMinus, fg: 'text-muted' },
-  'download.imported': { icon: IconDownload, fg: 'text-h265' },
-  'download.failed': { icon: IconAlertTriangle, fg: 'text-red-400' },
-  'system.job.failed': { icon: IconServerBolt, fg: 'text-red-400' },
-  'system.disk.low': { icon: IconDatabase, fg: 'text-accent' },
-  'system.test': { icon: IconBellRinging, fg: 'text-accent' },
-  // A module's own event has no vocabulary this app can read, so it stays neutral.
-  custom: { icon: IconSparkles, fg: 'text-muted' },
-};
-
-const FALLBACK_META: EventMeta = { icon: IconBell, fg: 'text-muted' };
-
-function eventMeta(event: NotificationEvent): EventMeta {
-  return (EVENT_META as Record<string, EventMeta | undefined>)[event] ?? FALLBACK_META;
 }
 
 // `Intl.RelativeTimeFormat` renders the zero case as the CURRENT unit rather

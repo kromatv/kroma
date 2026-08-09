@@ -1,4 +1,4 @@
-import { configureRemote, OverlayHost, Toaster } from '@kroma/ui/kit';
+import { configureRemote, OverlayHost, setEntryDefaults, Toaster } from '@kroma/ui/kit';
 import { useEffect } from 'react';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
@@ -38,6 +38,7 @@ import { TvShowDetail } from '#tv/features/catalog/TvShowDetail';
 // the native ones cannot.
 import { TvPlayer } from '#tv/features/playback/playerChunk';
 import { TvReport } from '#tv/features/reports/TvReport';
+import { AUTH_BACKDROP } from '#tv/shared/ui';
 
 export interface TvAppProps {
   platform?: string;
@@ -48,6 +49,15 @@ export interface TvAppProps {
 // Module scope, so the remote is wired before the first screen renders.
 configureRemote();
 
+// This app's form factor, stated once instead of at every control: a television
+// is read across a room and driven by a D-pad, so its entries take the shell's
+// ten-foot size and never the physical-keyboard spelling (see lib/field-shell).
+setEntryDefaults({ size: 'tv' });
+
+// The layers the outlet keeps mounted across a route set: the browse top bar,
+// and the gate's artwork beneath every sign-in screen.
+const LAYERS = [BROWSE_CHROME, AUTH_BACKDROP] as const;
+
 const TOAST_INSET = { x: 64, y: 132 } as const;
 
 export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly<TvAppProps>) {
@@ -56,7 +66,7 @@ export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly
 
   return (
     <EnvProvider platform={platform} overrides={capabilities}>
-      <TvNavProvider screens={SCREENS} chrome={BROWSE_CHROME}>
+      <TvNavProvider screens={SCREENS} chrome={LAYERS}>
         <ConnectionProvider value={connection}>
           <TvClientProvider client={client}>
             <AuthProvider
@@ -81,7 +91,7 @@ export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly
                             <TvRouterGuard />
                             {/* Above the router so notices survive a screen
                                 change; they never take focus. */}
-                            <Toaster placement="top-right" inset={TOAST_INSET} />
+                            <Toaster position="top-right" inset={TOAST_INSET} />
                           </OverlayHost>
                         </CastReceiverProvider>
                       </WatchedProvider>

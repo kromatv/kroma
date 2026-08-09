@@ -2515,6 +2515,7 @@ dependencies = [
  "hex",
  "kroma-module-host",
  "kroma-module-manifest",
+ "libc",
  "rand 0.10.2",
  "reqwest",
  "ruzstd",

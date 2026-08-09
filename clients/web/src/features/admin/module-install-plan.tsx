@@ -2,15 +2,15 @@
 // groups (optional deps + capability providers) and the unsatisfiable-
 // requirement warnings. The dialog itself lives in module-install.tsx.
 
-import { Button, C, formatBytes } from '@kroma/admin-kit';
-import type {
-  StoreMissingCapability,
-  StoreOptionalModule,
-  StorePlan,
-  StorePlanModule,
+import {
+  formatBytes,
+  type StoreMissingCapability,
+  type StoreOptionalModule,
+  type StorePlan,
+  type StorePlanModule,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Spinner } from '@kroma/ui/kit';
+import { Button, Spinner } from '@kroma/ui/kit';
 
 /** The dialog title already says the install failed, so the server's
  * `install failed:` prefix is dropped and the detail (which module, which
@@ -75,8 +75,7 @@ function OptionalRow({
           type="checkbox"
           checked={checked}
           onChange={(e) => onToggle(e.target.checked)}
-          className="h-4 w-4"
-          style={{ accentColor: C.accent }}
+          className="h-4 w-4 accent-accent"
         />
       </div>
     </label>
@@ -154,7 +153,7 @@ export function PlanStage({
       <>
         <ErrorBox text={error} />
         <div className="mt-4 flex justify-end">
-          <Button variant="quiet" label={t('common.close')} onClick={onCancel} />
+          <Button variant="ghost" size="sm" label={t('common.close')} onPress={onCancel} />
         </div>
       </>
     );
@@ -197,11 +196,12 @@ export function PlanStage({
             : ''}
         </span>
         <div className="flex items-center gap-2.5">
-          <Button variant="quiet" label={t('common.cancel')} onClick={onCancel} />
+          <Button variant="ghost" size="sm" label={t('common.cancel')} onPress={onCancel} />
           <Button
             variant="primary"
+            size="sm"
             label={t('admin.modulesInstall')}
-            onClick={onRun}
+            onPress={onRun}
             disabled={busy}
           />
         </div>

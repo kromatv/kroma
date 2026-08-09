@@ -1,9 +1,9 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Button, Icon, styles } from '@kroma/ui/kit';
+import { Box, Button, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useRef } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { type DownloadState, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
@@ -77,7 +77,7 @@ export function DetailActions({
   const { playOn } = useCast();
   const devices = useRef<BottomSheetModal>(null);
   return (
-    <View style={s.actions}>
+    <Box style={s.actions}>
       <Button icon="player-play-filled" label={playLabel} onPress={onPlay} />
       <Pressable
         onPress={() => {
@@ -109,15 +109,15 @@ export function DetailActions({
         style={({ pressed }) => [s.downloadBar, pressed && { opacity: 0.85 }]}
       >
         {(state.status === 'downloading' || state.status === 'paused') && state.progress > 0 ? (
-          <View
+          <Box
             style={[s.downloadBarFill, { width: `${Math.round(state.progress * 100)}%` }]}
             pointerEvents="none"
           />
         ) : null}
         {barIcon(state)}
-        <Text style={[s.downloadBarLabel, bar.done && { color: colors.accent }]}>{bar.label}</Text>
+        <Txt style={[s.downloadBarLabel, bar.done && { color: colors.accent }]}>{bar.label}</Txt>
       </Pressable>
-      <View style={s.secondaryRow}>
+      <Box style={s.secondaryRow}>
         <Pressable
           onPress={onToggleList}
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
@@ -127,9 +127,9 @@ export function DetailActions({
           ) : (
             <Icon name="plus" size={24} stroke={2.2} />
           )}
-          <Text numberOfLines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
+          <Txt lines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
             {t('nav.myList')}
-          </Text>
+          </Txt>
         </Pressable>
         {onToggleWatched ? (
           <Pressable
@@ -141,9 +141,9 @@ export function DetailActions({
             ) : (
               <Icon name="eye" size={24} stroke={1.8} />
             )}
-            <Text numberOfLines={1} style={[s.secondaryLabel, watched && s.secondaryActive]}>
+            <Txt lines={1} style={[s.secondaryLabel, watched && s.secondaryActive]}>
               {t('content.watched')}
-            </Text>
+            </Txt>
           </Pressable>
         ) : null}
         <Pressable
@@ -151,9 +151,9 @@ export function DetailActions({
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
           <Icon name="cast" size={24} stroke={1.8} />
-          <Text numberOfLines={1} style={s.secondaryLabel}>
+          <Txt lines={1} style={s.secondaryLabel}>
             {t('cast.title')}
-          </Text>
+          </Txt>
         </Pressable>
         {onReport ? (
           <Pressable
@@ -161,12 +161,12 @@ export function DetailActions({
             style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
             <Icon name="flag" size={24} stroke={1.8} />
-            <Text numberOfLines={1} style={s.secondaryLabel}>
+            <Txt lines={1} style={s.secondaryLabel}>
               {t('reports.sheet')}
-            </Text>
+            </Txt>
           </Pressable>
         ) : null}
-      </View>
+      </Box>
       {/* Picking a TV starts the title on it, from the account's own resume
           point, which the receiver already knows. */}
       <CastSheet
@@ -177,7 +177,7 @@ export function DetailActions({
           if (id) void playOn(id, item.id);
         }}
       />
-    </View>
+    </Box>
   );
 }
 

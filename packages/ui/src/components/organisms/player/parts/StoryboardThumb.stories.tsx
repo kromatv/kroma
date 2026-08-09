@@ -9,7 +9,7 @@ const tileAt = fakeTileAt([stillArt(0), stillArt(1), stillArt(2), stillArt(3)]);
 
 export default story({
   name: 'StoryboardThumb',
-  group: 'Media',
+  group: 'Player',
   docs: "The frame shown above the playhead while seeking. A storyboard is ONE sprite sheet holding every thumbnail of the film, and a tile is a **window** onto it: the sheet is positioned by `offsetX/offsetY` so the wanted frame lands in the window. The sheet is drawn at its own pixel size and then scaled as a layer — asking the decoder for `sheetWidth * scale` pixels instead is what silently produces a black rectangle on a television, because a 2560px sheet blown up past the GPU's texture limit is simply not drawn, with no error anywhere.",
   usage: `// The seek bar asks the storyboard for a tile at a position:
 const tile = storyboard.tile(sec, 220);

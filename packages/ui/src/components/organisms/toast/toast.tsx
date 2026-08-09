@@ -3,21 +3,47 @@
 // with something to say never needs to know where notices are drawn.
 //
 // Written for the ten-foot case first: a notice on a television is read from
-// the sofa, is never dismissed by hand, and must never take the remote — so
-// it is `pointerEvents="none"`, sized at 10-foot metrics, and leaves on a
-// timer. Deliberately not a dialog: nothing here is a question.
+// the sofa, is never dismissed by hand, and must never take the remote, so it
+// is `pointerEvents: 'none'`, sized at 10-foot metrics, and leaves on a timer.
+// Deliberately not a dialog: nothing here is a question.
 
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Platform } from 'react-native';
+import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
-import { type ColorToken, styles } from '#ui/core';
-import { hasGlyph } from '#ui/lib/icons/glyphs';
+import type { IconName } from '#ui/components/atoms/icon';
+import { ToastCard } from './toast-card';
 
 const DEFAULT_MS = 4500;
-// Never stack more than this: a column of notices is a wall, not a message.
+// Never stack more than this per corner: a column of notices is a wall, not a
+// message. Counted per corner, so a notice at the bottom cannot evict one the
+// viewer is still reading at the top.
 const MAX_VISIBLE = 3;
+const DEFAULT_INSET = 32;
+const SLIDE = 8;
+
+export type ToastPosition =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
+
+const DEFAULT_POSITION: ToastPosition = 'top-right';
+
+const NO_POINTER: ViewStyle = { pointerEvents: 'none' };
+
+const COLUMNS = {
+  'top-left': { top: true, align: 'flex-start' },
+  'top-center': { top: true, align: 'center' },
+  'top-right': { top: true, align: 'flex-end' },
+  'bottom-left': { top: false, align: 'flex-start' },
+  'bottom-center': { top: false, align: 'center' },
+  'bottom-right': { top: false, align: 'flex-end' },
+} as const satisfies Record<
+  ToastPosition,
+  { top: boolean; align: 'flex-start' | 'center' | 'flex-end' }
+>;
 
 export interface ToastOptions {
   /** The line to read. Already translated - the kit does not know your catalog. */
@@ -37,10 +63,18 @@ export interface ToastOptions {
   duration?: number;
   /** `success` tints the well; `plain` is the default neutral. */
   tone?: 'plain' | 'success' | 'accent';
+  /** Beats the <Toaster/>'s own, for the one notice that belongs somewhere
+   *  else. Read when the notice appears and kept: a notice never moves under
+   *  a viewer who is reading it. */
+  position?: ToastPosition;
 }
 
 interface Entry extends ToastOptions {
   id: number;
+}
+
+interface Placed extends Entry {
+  at: ToastPosition;
 }
 
 type Listener = (entry: Entry) => void;
@@ -58,20 +92,39 @@ export function toast(options: ToastOptions): void {
 }
 
 export interface ToasterProps {
-  /** Where notices sit. TVs read top-right, next to the status cluster they are
-   * usually about; phones and browsers expect the bottom. */
-  placement?: 'top-right' | 'bottom-center';
-  /** Inset from the screen edge, in px. The two axes can differ, which a
-   * television needs: notices line up with the top bar's gutter but must clear
-   * the bar itself. */
-  inset?: number | { x?: number; y?: number };
+  /** Where notices sit unless one names its own. TVs read top-right, next to
+   * the status cluster they are usually about; phones and browsers expect the
+   * bottom. */
+  position?: ToastPosition;
+  /** Inset from the screen edge, in px. The edges can differ, which both form
+   * factors need: a television lines its notices up with the top bar's gutter
+   * but must clear the bar itself, and a phone's notch is not its home
+   * indicator (React Native reports neither, so a phone shell passes its own
+   * safe-area insets here, or mounts the host inside its safe frame). */
+  inset?: number | { x?: number; y?: number; top?: number; bottom?: number };
 }
 
-/** Mount once, near the root. Draws whatever `toast()` says. */
-export function Toaster({ placement = 'top-right', inset = 32 }: Readonly<ToasterProps>) {
-  const x = typeof inset === 'number' ? inset : (inset.x ?? 32);
-  const y = typeof inset === 'number' ? inset : (inset.y ?? 32);
-  const [entries, setEntries] = useState<Entry[]>([]);
+interface Gutters {
+  x: number;
+  top: number;
+  bottom: number;
+}
+
+/**
+ * Mount once, as a child of the view that IS the screen: the host is a
+ * full-bleed layer over its parent, so it pins to the viewport in an app and
+ * stays inside the stage in the workbench, with no window portal either way.
+ */
+export function Toaster({
+  position = DEFAULT_POSITION,
+  inset = DEFAULT_INSET,
+}: Readonly<ToasterProps>) {
+  const gutters = resolveInset(inset);
+  const [entries, setEntries] = useState<Placed[]>([]);
+  // Through a ref, and resolved once into the entry: the host's position is
+  // what a notice is BORN with, not something it keeps reading.
+  const fallback = useRef(position);
+  fallback.current = position;
 
   const dismiss = useCallback((id: number) => {
     setEntries((list) => list.filter((e) => e.id !== id));
@@ -79,7 +132,8 @@ export function Toaster({ placement = 'top-right', inset = 32 }: Readonly<Toaste
 
   useEffect(() => {
     const listener: Listener = (entry) => {
-      setEntries((list) => [...list, entry].slice(-MAX_VISIBLE));
+      const at = entry.position ?? fallback.current;
+      setEntries((list) => capped([...list, { ...entry, at }], at));
     };
     listeners.add(listener);
     return () => {
@@ -87,115 +141,86 @@ export function Toaster({ placement = 'top-right', inset = 32 }: Readonly<Toaste
     };
   }, []);
 
-  if (entries.length === 0) return null;
-
-  const top = placement === 'top-right';
+  // The (empty) layer stays mounted: a live region only announces changes
+  // INSIDE an element assistive tech already knows about, so mounting it
+  // together with the first notice would swallow that notice.
   return (
     <Box
-      absolute
-      top={top ? y : undefined}
-      bottom={top ? undefined : y}
-      right={top ? x : undefined}
-      left={top ? undefined : 0}
+      fill
       z={90}
-      gap={10}
-      align={top ? 'flex-end' : 'center'}
       // A notice never takes the remote, and never eats a tap meant for what is
       // underneath it.
-      pointerEvents="none"
-      style={top ? undefined : s.fullWidth}
+      style={NO_POINTER}
+      // A live region, so a screen reader announces a notice when it appears
+      // instead of the viewer having to stumble on it.
+      accessibilityLiveRegion="polite"
     >
-      {entries.map((entry) => (
-        <ToastCard key={entry.id} entry={entry} onDone={() => dismiss(entry.id)} />
+      {[...byPosition(entries)].map(([at, column]) => (
+        <ToastColumn key={at} at={at} entries={column} gutters={gutters} onDone={dismiss} />
       ))}
     </Box>
   );
 }
 
-function ToastCard({ entry, onDone }: Readonly<{ entry: Entry; onDone: () => void }>) {
-  const appear = useRef(new Animated.Value(0)).current;
-  const done = useRef(onDone);
-  done.current = onDone;
+function resolveInset(inset: NonNullable<ToasterProps['inset']>): Gutters {
+  if (typeof inset === 'number') return { x: inset, top: inset, bottom: inset };
+  const y = inset.y ?? DEFAULT_INSET;
+  return { x: inset.x ?? DEFAULT_INSET, top: inset.top ?? y, bottom: inset.bottom ?? y };
+}
 
-  useEffect(() => {
-    Animated.timing(appear, {
-      toValue: 1,
-      duration: 220,
-      useNativeDriver: true,
-    }).start();
-    const stay = setTimeout(() => {
-      Animated.timing(appear, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => done.current());
-    }, entry.duration ?? DEFAULT_MS);
-    return () => clearTimeout(stay);
-  }, [appear, entry.duration]);
+function capped(list: readonly Placed[], at: ToastPosition): Placed[] {
+  const column = list.filter((entry) => entry.at === at);
+  const over = column.length - MAX_VISIBLE;
+  if (over <= 0) return [...list];
+  const evicted = new Set(column.slice(0, over).map((entry) => entry.id));
+  return list.filter((entry) => !evicted.has(entry.id));
+}
 
+function byPosition(entries: readonly Placed[]): Map<ToastPosition, Placed[]> {
+  const columns = new Map<ToastPosition, Placed[]>();
+  for (const entry of entries) {
+    const column = columns.get(entry.at);
+    if (column) column.push(entry);
+    else columns.set(entry.at, [entry]);
+  }
+  return columns;
+}
+
+function ToastColumn({
+  at,
+  entries,
+  gutters,
+  onDone,
+}: Readonly<{
+  at: ToastPosition;
+  entries: readonly Placed[];
+  gutters: Gutters;
+  onDone: (id: number) => void;
+}>) {
+  const { top, align } = COLUMNS[at];
+  // Newest nearest the edge. A top column is anchored at the top and grows
+  // down, so the newest is drawn FIRST; a bottom one grows up from its anchor,
+  // so it is drawn last and the two read as mirrors.
+  const order = top ? [...entries].reverse() : entries;
   return (
-    <Animated.View
-      style={{
-        opacity: appear,
-        transform: [
-          {
-            translateY: appear.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }),
-          },
-        ],
-      }}
+    <Box
+      absolute
+      top={top ? gutters.top : undefined}
+      bottom={top ? undefined : gutters.bottom}
+      left={gutters.x}
+      right={gutters.x}
+      gap={10}
+      align={align}
     >
-      <Box row align="center" gap={14} px={20} py={16} radius="xl" style={s.card}>
-        {entry.icon ? (
-          // A NAMED glyph gets the kit's well; anything else (an avatar) is
-          // already a finished round thing and is drawn as it comes.
-          <Box
-            w={40}
-            h={40}
-            center
-            radius="pill"
-            style={typeof entry.icon === 'string' ? s.well : undefined}
-          >
-            {typeof entry.icon === 'string' && hasGlyph(entry.icon) ? (
-              <Icon name={entry.icon} size={22} stroke={1.9} color={wellTone(entry.tone)} />
-            ) : (
-              entry.icon
-            )}
-          </Box>
-        ) : null}
-        <Box style={s.text}>
-          <Txt lines={1} style={s.message}>
-            {entry.message}
-          </Txt>
-          {entry.detail ? (
-            <Txt lines={1} style={s.detail} color="textMuted">
-              {entry.detail}
-            </Txt>
-          ) : null}
-        </Box>
-      </Box>
-    </Animated.View>
+      {order.map((entry) => (
+        <ToastCard
+          key={entry.id}
+          entry={entry}
+          stay={entry.duration ?? DEFAULT_MS}
+          from={top ? -SLIDE : SLIDE}
+          onDone={() => onDone(entry.id)}
+        />
+      ))}
+    </Box>
   );
 }
-
-function wellTone(tone: ToastOptions['tone']): ColorToken {
-  if (tone === 'success') return 'success';
-  if (tone === 'accent') return 'accent';
-  return 'text';
-}
-
-const s = styles({
-  fullWidth: { w: '100%' },
-  card: {
-    bg: 'overlay',
-    border: 'border',
-    radius: 'xl',
-    maxW: 520,
-    // The lift that separates a notice from the picture behind it. Web-only: the
-    // native shadow props cost a rasterisation pass a TV does not need to spend.
-    ...(Platform.OS === 'web' ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
-  },
-  well: { bg: 'white/8' },
-  text: { minW: 0, shrink: 1 },
-  message: { font: 'ui', fontSize: 17, fontWeight: '600' },
-  detail: { font: 'ui', fontSize: 14, mt: 2 },
-});

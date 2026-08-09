@@ -1,9 +1,9 @@
 // Whole-surface states: what a screen shows instead of content while it is
 // loading, empty, or broken, plus the inline error banner forms use.
 
-import { Button, Icon, Spinner, styles } from '@kroma/ui/kit';
+import { Box, Button, Icon, Spinner, styles, Txt } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated } from 'react-native';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 /** Tinted banner with a shake on message change; renders nothing while
@@ -28,17 +28,17 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   return (
     <Animated.View style={[s.box, { opacity: fade, transform: [{ translateX: shake }] }]}>
       <Icon name="alert-circle" size={17} stroke={2} color={colors.danger} />
-      <Text style={s.boxText}>{message}</Text>
+      <Txt style={s.boxText}>{message}</Txt>
     </Animated.View>
   );
 }
 
 export function Loading({ label }: Readonly<{ label?: string }>) {
   return (
-    <View style={s.center}>
+    <Box style={s.center}>
       <Spinner size={36} color={colors.textDim} />
-      {label ? <Text style={[s.centerText, s.loadingLabel]}>{label}</Text> : null}
-    </View>
+      {label ? <Txt style={[s.centerText, s.loadingLabel]}>{label}</Txt> : null}
+    </Box>
   );
 }
 
@@ -52,14 +52,14 @@ export function ErrorView({
   onRetry?: () => void;
 }>) {
   return (
-    <View style={s.center}>
-      <Text style={s.centerText}>{message}</Text>
+    <Box style={s.center}>
+      <Txt style={s.centerText}>{message}</Txt>
       {onRetry && retryLabel ? (
-        <View style={s.retry}>
+        <Box style={s.retry}>
           <Button variant="glass" label={retryLabel} onPress={onRetry} />
-        </View>
+        </Box>
       ) : null}
-    </View>
+    </Box>
   );
 }
 
@@ -77,16 +77,16 @@ export function EmptyState({
   onAction?: () => void;
 }>) {
   return (
-    <View style={s.emptyBox}>
-      <View style={s.emptyDisc}>{icon}</View>
-      <Text style={s.emptyTitle}>{title}</Text>
-      {hint ? <Text style={s.emptyHint}>{hint}</Text> : null}
+    <Box style={s.emptyBox}>
+      <Box style={s.emptyDisc}>{icon}</Box>
+      <Txt style={s.emptyTitle}>{title}</Txt>
+      {hint ? <Txt style={s.emptyHint}>{hint}</Txt> : null}
       {actionLabel && onAction ? (
-        <View style={s.emptyAction}>
+        <Box style={s.emptyAction}>
           <Button variant="glass" label={actionLabel} onPress={onAction} />
-        </View>
+        </Box>
       ) : null}
-    </View>
+    </Box>
   );
 }
 

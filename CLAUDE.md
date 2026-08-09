@@ -18,6 +18,10 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
   Never narrate your work in a source file.
 - [`CONVENTIONS.md`](CONVENTIONS.md) — cross-file house rules (zod at trust
   boundaries, where secrets live).
+- [`packages/ui/src/components/README.md`](packages/ui/src/components/README.md) —
+  the component hierarchy, and how a kit component is shaped: **composed, not
+  configured** (Radix's part-based API), with the whole row as the control and
+  the sugar kept for the common case.
 - [`modules/README.md`](modules/README.md) — authoring a module.
 
 ## Checks
@@ -168,7 +172,7 @@ packages/
   core/     re-exports @kroma/client, plus HEVC detection, direct-play, i18n, remote map
   ui/       @kroma/ui — the design system, authored against React Native
   tv/       the whole 10-foot experience (spatial focus nav, home, detail, player)
-  admin-kit module-sdk module-registry bundler workbench push-relay ...
+  module-sdk module-registry bundler workbench push-relay ...
 clients/    thin shells only: web · tizen · webos · tv-web · tv-native · mobile ·
             desktop (Tauri+mpv) · kit · site · synology · tv-build (shared TV pipeline)
 ```
@@ -182,6 +186,14 @@ clients/    thin shells only: web · tizen · webos · tv-web · tv-native · mo
   `src/core/tokens/` → `src/components/{atoms,molecules,organisms,templates}/`.
   **Pages are not in the kit** — they live in `packages/tv/src/features/*` and
   `clients/*/src`. See `packages/ui/src/components/README.md`.
+- **Components are composed, not configured.** A component that is a set of
+  parts exposes them by name in Radix's shape (`<ChoiceList.Root>` /
+  `.Item` / `.Label`), with the Root owning state, semantics and behaviour, and
+  keeps a sugar prop for the common row so the simple case stays one line.
+  Two rules Radix does not have to carry: the **whole row is the control** (one
+  D-pad stop, a pointer-sized hit area), so indicators are non-pressable faces;
+  and a control's shape comes from the one shell table in `lib/field-shell`,
+  never from its own paddings.
 - **Clients stay thin.** UI belongs in `@kroma/ui`, logic in `@kroma/core`, the TV
   experience in `@kroma/tv`. Write platform code once.
 - Both `clients/web/src` and `packages/tv/src` are **feature-sliced**

@@ -9,7 +9,7 @@ export { useAuthSession } from './services/auth';
 export type { Cast, CastProviderProps } from './services/cast';
 export { CastProvider, useCast } from './services/cast';
 export type { I18nProviderProps } from './services/i18n';
-export { I18nProvider, useLocale, useSetLocale, useT } from './services/i18n';
+export { I18nProvider, useLocale, useLocaleDefault, useSetLocale, useT } from './services/i18n';
 export type { LocaleProviderProps } from './services/locale';
 export { LocaleProvider } from './services/locale';
 export type { PlaybackHeartbeatParams } from './services/playback';

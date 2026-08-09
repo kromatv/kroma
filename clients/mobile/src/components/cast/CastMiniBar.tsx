@@ -1,10 +1,10 @@
 // The strip above the tab bar while this phone is driving a TV.
 
 import { useCast } from '@kroma/ui';
-import { Icon, styles } from '@kroma/ui/kit';
+import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
@@ -34,18 +34,18 @@ export function CastMiniBar() {
       {poster ? (
         <Image source={{ uri: poster }} style={s.poster} contentFit="cover" />
       ) : (
-        <View style={[s.poster, s.posterFallback]}>
+        <Box style={[s.poster, s.posterFallback]}>
           <Icon name="device-tv" size={18} stroke={1.8} color={colors.textDim} />
-        </View>
+        </Box>
       )}
-      <View style={s.text}>
-        <Text numberOfLines={1} style={s.title}>
+      <Box style={s.text}>
+        <Txt lines={1} style={s.title}>
           {title}
-        </Text>
-        <Text numberOfLines={1} style={s.device}>
+        </Txt>
+        <Txt lines={1} style={s.device}>
           {t('cast.playingOn', { device: active.name })}
-        </Text>
-      </View>
+        </Txt>
+      </Box>
       {playing ? (
         <Pressable
           onPress={() => void send({ type: isPlaying ? 'pause' : 'resume' })}
@@ -63,9 +63,9 @@ export function CastMiniBar() {
       ) : null}
       {/* A hairline of progress along the bottom edge: enough to say how far in
           the TV is without spending a row on it. */}
-      <View style={s.track} pointerEvents="none">
-        <View style={[s.fill, { width: `${progress * 100}%` }]} />
-      </View>
+      <Box style={s.track} pointerEvents="none">
+        <Box style={[s.fill, { width: `${progress * 100}%` }]} />
+      </Box>
     </Pressable>
   );
 }

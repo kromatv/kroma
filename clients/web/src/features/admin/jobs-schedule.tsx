@@ -3,18 +3,14 @@
 
 import { type JobInfo, KromaApiError } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Chip, Txt } from '@kroma/ui/kit';
+import { Button, Chip, Dialog, DialogActions, Field, Txt } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
-import { Field, Modal, ModalActions, TextInput } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 
-const CRON = {
-  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-  fontSize: 11.5,
-  fontWeight: '600',
-} as const;
+const MONO = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' } as const;
+const CRON = { ...MONO, fontSize: 11.5, fontWeight: '600' } as const;
 const RESET_LABEL = { fontSize: 12, fontWeight: '600' } as const;
 
 const PRESETS: { label: string; expr: string }[] = [
@@ -44,17 +40,17 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
     );
 
   return (
-    <Modal title={t('jobs.editSchedule')} onClose={() => call.end(false)}>
-      <Field label={t('jobs.cronExpr')}>
-        <TextInput
-          value={value}
-          onChange={setValue}
-          placeholder="0 4 * * *"
-          className="w-full font-mono"
-        />
-      </Field>
+    <Dialog open title={t('jobs.editSchedule')} width={520} onClose={() => call.end(false)}>
+      <Field
+        label={t('jobs.cronExpr')}
+        icon="clock"
+        value={value}
+        onChange={setValue}
+        placeholder="0 4 * * *"
+        entry={{ textStyle: MONO }}
+      />
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {PRESETS.map((p) => (
           <Chip key={p.expr} variant="surface" onPress={() => setValue(p.expr)}>
             <Txt style={CRON} color="textMuted">
@@ -65,7 +61,7 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
         <Chip variant="surface" label={t('jobs.manual')} onPress={() => setValue('')} />
       </div>
 
-      <p className="mb-1 text-[12px] leading-relaxed text-dim">{t('jobs.cronHint')}</p>
+      <p className="text-[12px] leading-relaxed text-dim">{t('jobs.cronHint')}</p>
       {job.defaultSchedule && job.defaultSchedule !== value ? (
         <div className="flex">
           <Button variant="ghost" size="sm" onPress={() => setValue(job.defaultSchedule ?? '')}>
@@ -76,17 +72,15 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
         </div>
       ) : null}
 
-      {error ? (
-        <div className="mt-3 text-[12.5px] font-semibold text-[#E8536A]">{error}</div>
-      ) : null}
+      {error ? <div className="text-[12.5px] font-semibold text-[#E8536A]">{error}</div> : null}
 
-      <ModalActions
+      <DialogActions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={save}
         confirmLabel={busy ? t('jobs.saving') : t('common.save')}
         busy={busy}
       />
-    </Modal>
+    </Dialog>
   );
 });

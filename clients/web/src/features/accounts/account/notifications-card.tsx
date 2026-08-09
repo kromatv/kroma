@@ -11,6 +11,7 @@ import {
   type PushBlocker,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button } from '@kroma/ui/kit';
 import { IconBell, IconBellOff } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -18,7 +19,6 @@ import { Panel } from '#web/features/accounts/account/ui';
 import { kromaClient } from '#web/shared/lib/api';
 import { pushBlocker, webPush } from '#web/shared/lib/push';
 import { userQueries } from '#web/shared/lib/queries';
-import { Button } from '#web/shared/ui';
 
 export function NotificationsCard() {
   return (

@@ -61,6 +61,7 @@ import type {
   Metadata,
   MetricsSnapshot,
   ModuleInfo,
+  NotificationImages,
   NotificationPrefs,
   NotificationsView,
   PasskeyInfo,
@@ -87,6 +88,7 @@ import type {
   SettingsView,
   Show,
   ShowDetail,
+  SplashEntry,
   StorageInfo,
   SubscribeBody,
   TopUser,
@@ -224,6 +226,11 @@ export class KromaClient {
 
   health(init?: RequestInit): Promise<Health> {
     return media.health(this.ctx, init);
+  }
+
+  /** Anonymous sign-in splash art (`GET /api/splash`), usable before login. */
+  splash(): Promise<SplashEntry[]> {
+    return media.splash(this.ctx);
   }
   /** Modules on this server with their enabled flag + capabilities; drives the admin's data-driven ADD flows. */
   modules(): Promise<ModuleInfo[]> {
@@ -756,6 +763,11 @@ export class KromaClient {
   /** Store an image for a notification, returning its cached path. */
   uploadNotificationImage(file: Blob): Promise<{ imageUrl: string }> {
     return admin.uploadNotificationImage(this.ctx, file);
+  }
+
+  /** Images previously uploaded for notifications, newest first. */
+  listNotificationImages(): Promise<NotificationImages> {
+    return admin.listNotificationImages(this.ctx);
   }
 
   adminJobs(): Promise<JobsView> {

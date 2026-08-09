@@ -2,7 +2,6 @@
 // (metadata, or the failing/running stage), the treatment "flow" of status dots,
 // the overall status pill, and a reprocess shortcut.
 
-import { Image } from '@kroma/admin-kit';
 import type { ElementRow, MessageKey, Translate, Treatment } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { IconCheck, IconLoader2, IconRefresh, IconX } from '@tabler/icons-react';
@@ -14,6 +13,7 @@ import {
   statusMeta,
 } from '#web/features/admin/pipeline-meta';
 import { useAuth } from '#web/shared/lib/auth';
+import { Image } from '#web/shared/ui';
 
 function subLine(t: Translate, el: ElementRow): { text: string; color: string } {
   const names = (pred: (x: Treatment) => boolean) =>
@@ -62,7 +62,7 @@ function Poster({
   return (
     <div
       style={{ background: posterGrad(seed) }}
-      className="relative h-[46px] w-8 flex-[0_0_32px] overflow-hidden rounded-[6px] shadow-[0_5px_14px_rgba(0,0,0,.45)]"
+      className="relative h-[46px] w-8 flex-[0_0_32px] overflow-hidden rounded-sm shadow-[0_5px_14px_rgba(0,0,0,.45)]"
     >
       <Image src={src} fit="cover" fill />
     </div>
@@ -82,7 +82,7 @@ function FlowDots({ treatments }: Readonly<{ treatments: Treatment[] }>) {
           <span key={tr.key} className="flex items-center">
             {i > 0 ? (
               <span
-                className="h-0.5 w-3 flex-[0_0_12px] rounded-[2px]"
+                className="h-0.5 w-3 flex-[0_0_12px] rounded-full"
                 style={{ background: prevDone ? '#46D08D' : 'rgba(255,255,255,.12)' }}
               />
             ) : null}

@@ -10,7 +10,7 @@
 // the rounded clip of the view it sits in, so an unrounded blur pane would
 // poke out of the panel's rounded corners.
 
-import { styles } from '@kroma/ui/kit';
+import { Box, styles } from '@kroma/ui/kit';
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import {
@@ -20,7 +20,6 @@ import {
   ScrollView,
   StyleSheet,
   useWindowDimensions,
-  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSheetMinHeight } from '#mobile/components/ui';
@@ -58,9 +57,9 @@ export function PlayerPanel({
       onRequestClose={onRequestClose ?? onClose}
       supportedOrientations={['portrait', 'landscape', 'landscape-left', 'landscape-right']}
     >
-      <View style={landscape ? s.overlayRow : s.overlayColumn}>
+      <Box style={landscape ? s.overlayRow : s.overlayColumn}>
         <Pressable style={s.backdrop} onPress={onClose} />
-        <View
+        <Box
           style={[
             corners,
             landscape
@@ -84,8 +83,8 @@ export function PlayerPanel({
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
             {children}
           </ScrollView>
-        </View>
-      </View>
+        </Box>
+      </Box>
     </Modal>
   );
 }

@@ -177,26 +177,29 @@ export const kromaUi = {
 
   /** The Metro half; native targets draw from `@tabler/icons-react-native`. The
    * generated module is written to `node_modules/.cache` and swapped in via
-   * `resolveRequest`, since Metro has no virtual modules - and lazily on first
-   * resolution, not at config-eval time, so it never taxes every `expo start`. */
+   * `resolveRequest`, since Metro has no virtual modules.
+   *
+   * The write happens HERE, at config-eval time, and not lazily on first
+   * resolution: `expo export` crawls the filesystem once and reads every hash
+   * from that one snapshot, so a file first written during resolution is not in
+   * it and the bundle dies on `Failed to get the SHA-1`. Only the dev server,
+   * which keeps a watcher, ever noticed the late write. Config eval runs before
+   * the crawl, which makes the two modes agree; the scan it costs every
+   * `expo start` is ~80ms. */
   metro(config: MetroConfigLike, { repoRoot, icons = 'subset' }: KromaUiOptions): MetroConfigLike {
     if (icons === 'full') return config;
     assertTargetExists(repoRoot);
 
-    let generated: string | undefined;
-    const write = (): string => {
-      if (generated) return generated;
-      const { code, note } = iconSubset(repoRoot, '@tabler/icons-react-native');
-      const cacheDir = join(repoRoot, 'node_modules', '.cache', 'kroma-ui');
-      mkdirSync(cacheDir, { recursive: true });
-      const path = join(cacheDir, 'glyph-source.js');
-      // Only when it changed: Metro resolves this into the graph, so a pointless
-      // rewrite bumps an mtime the caches key on.
-      if (!existsSync(path) || readFileSync(path, 'utf8') !== code) writeFileSync(path, code);
-      console.log(note);
-      generated = path;
-      return path;
-    };
+    const { code, note } = iconSubset(repoRoot, '@tabler/icons-react-native');
+    const cacheDir = join(repoRoot, 'node_modules', '.cache', 'kroma-ui');
+    mkdirSync(cacheDir, { recursive: true });
+    const generated = join(cacheDir, 'glyph-source.js');
+    // Only when it changed: Metro resolves this into the graph, so a pointless
+    // rewrite bumps an mtime the caches key on.
+    if (!existsSync(generated) || readFileSync(generated, 'utf8') !== code) {
+      writeFileSync(generated, code);
+    }
+    console.log(note);
 
     config.resolver ??= {};
     const resolver = config.resolver;
@@ -206,7 +209,7 @@ export const kromaUi = {
       // Swap on the RESOLVED path rather than the specifier: the import is
       // relative (`./glyph-source`), so the specifier alone does not identify it.
       return resolved?.filePath?.endsWith(GLYPH_SOURCE)
-        ? { ...resolved, filePath: write() }
+        ? { ...resolved, filePath: generated }
         : resolved;
     };
     return config;

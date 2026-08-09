@@ -23,7 +23,21 @@ export default defineConfig({
   define: { __KROMA_BUILD__: JSON.stringify(collectBuildInfo(kitDir)), ...RNW_DEFINE },
   // The Props tab's data, read by TypeScript's checker over @kroma/ui at build
   // time and served as `virtual:kroma-props`.
-  plugins: [react(), propDocs({ tsconfig: `${repoRoot}packages/ui/tsconfig.json` })],
+  plugins: [
+    react(),
+    propDocs({ tsconfig: `${repoRoot}packages/ui/tsconfig.json` }),
+    {
+      name: 'kroma:watch-ui-stories',
+      // packages/ui sits outside this app's watch root, so chokidar never saw
+      // a NEW *.stories.tsx / *.demo.tsx there and the registry glob could not
+      // re-run without a restart. Watching the directory is the whole fix:
+      // vite's own glob-import plugin matches the add/unlink event against the
+      // registry's `import.meta.glob` and reloads with the file discovered.
+      configureServer(server) {
+        server.watcher.add(`${repoRoot}packages/ui/src`);
+      },
+    },
+  ],
   resolve: webResolve(),
   // Absolute, not './': the workbench routes on real paths (`/story/button`),
   // and a relative base would resolve asset URLs against that path instead.
@@ -31,9 +45,6 @@ export default defineConfig({
   server: {
     port: 5180,
     fs: { allow: [repoRoot] },
-    // The story registry globs packages/ui, outside this app's watch root:
-    // editing a story hot-reloads, but adding a new *.stories.tsx needs a
-    // dev-server restart to be discovered.
   },
   optimizeDeps: {
     // Workspace packages left OUT of this list get pre-bundled into

@@ -4,13 +4,13 @@
 // installed state, and a live `module.op.*` stream replaces the action with a
 // download/install progress bar.
 
-import { Button, Card, CardSkeleton, formatBytes, Image, ProgressBar } from '@kroma/admin-kit';
-import type { StoreCatalog, StoreModule } from '@kroma/core';
+import { formatBytes, type StoreCatalog, type StoreModule } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Button, CardSkeleton, EmptyState, Progress, Surface } from '@kroma/ui/kit';
 import { IconCircleCheckFilled } from '@tabler/icons-react';
 import { matchesQuery } from '#web/features/admin/module-api';
 import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
+import { Image } from '#web/shared/ui';
 
 /** Compact live progress: the phase label above a thin bar. */
 export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
@@ -23,7 +23,7 @@ export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
         <span>{label}</span>
         {pct !== null && op.phase === 'download' && <span>{pct}%</span>}
       </div>
-      <ProgressBar pct={runningPct(op.phase, pct)} height={4} />
+      <Progress value={runningPct(op.phase, pct) / 100} size={4} rounded />
     </div>
   );
 }
@@ -50,7 +50,7 @@ function CardAction({
   }
   if (m.installedVersion && m.updateAvailable) {
     return (
-      <Button variant="primary" size="sm" label={t('admin.modulesUpdate')} onClick={onUpdate} />
+      <Button variant="primary" size="sm" label={t('admin.modulesUpdate')} onPress={onUpdate} />
     );
   }
   if (m.installedVersion) {
@@ -61,9 +61,7 @@ function CardAction({
       </span>
     );
   }
-  return (
-    <Button variant="secondary" size="sm" label={t('admin.modulesInstall')} onClick={onInstall} />
-  );
+  return <Button variant="glass" size="sm" label={t('admin.modulesInstall')} onPress={onInstall} />;
 }
 
 function StoreCard({
@@ -81,7 +79,16 @@ function StoreCard({
 }>) {
   const t = useT();
   return (
-    <Card className={`flex items-start gap-3 p-4 ${m.compatible ? '' : 'opacity-70'}`}>
+    <Surface
+      elevated
+      pad="none"
+      radius={16}
+      p={16}
+      gap={12}
+      row
+      align="flex-start"
+      opacity={m.compatible ? 1 : 0.7}
+    >
       <button type="button" onClick={onOpen} aria-label={m.name} className="shrink-0">
         {m.icon ? (
           <Image src={m.icon} fit="cover" className="mt-0.5 h-10 w-10 rounded-xl" />
@@ -119,7 +126,7 @@ function StoreCard({
           <p className="mt-1 text-[11px] font-semibold text-danger">{m.reason}</p>
         )}
       </div>
-    </Card>
+    </Surface>
   );
 }
 
@@ -157,11 +164,11 @@ export function StoreGrid({
   // reported on its row in the Registries drawer.
   if (catalog.modules.length === 0 && catalog.error) {
     return (
-      <Card className="flex flex-col gap-2 p-5">
+      <Surface elevated pad="none" radius={16} p={20} gap={8}>
         <p className="text-sm font-semibold text-danger">{t('admin.modulesCatalogError')}</p>
         <p className="break-all text-xs text-muted">{catalog.error}</p>
         <p className="text-xs text-muted">{t('admin.modulesCatalogErrorHint')}</p>
-      </Card>
+      </Surface>
     );
   }
   const shown = catalog.modules

@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { colors, radius, typeSpec } from '#ui/core/tokens';
+import { CONTROL } from '#ui/lib/field-shell';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { onScreen } from '#ui/testing';
 import { AVATAR_GRADIENTS, Avatar, gradientFor, initialsOf } from './avatar';
@@ -55,6 +56,14 @@ function rgb(hex: string): string {
   if (!m) return hex;
   const [r, g, b] = [m[1], m[2], m[3]].map((h) => Number.parseInt(h as string, 16));
   return `rgb(${r}, ${g}, ${b})`;
+}
+
+// The alpha spelling, for a token like `accent/50`.
+function rgba(hex: string, alpha: number): string {
+  const m = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
+  if (!m) return hex;
+  const [r, g, b] = [m[1], m[2], m[3]].map((h) => Number.parseInt(h as string, 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 describe('Icon', () => {
@@ -108,7 +117,12 @@ describe('Button', () => {
     // A disabled control is not a navigator node at all, so it IS the styled
     // element rather than the view inside one.
     const el = screen.getByLabelText('Off');
-    expect(css(el).opacity).toBe('0.5');
+    // The FILL fades and the ink row dims, never the element itself: a root
+    // opacity would make the element its own backdrop root and blind the
+    // frost layer's backdrop-filter (see button.tsx).
+    expect(css(el).opacity).not.toBe('0.5');
+    expect(css(el).backgroundColor).toBe(rgba(colors.accent, 0.5));
+    expect(css(screen.getByText('Off').parentElement as HTMLElement).opacity).toBe('0.5');
     fireEvent.click(el);
     expect(onPress).not.toHaveBeenCalled();
   });
@@ -217,6 +231,17 @@ describe('TextField', () => {
     fireEvent.mouseUp(field);
     expect(document.activeElement).toBe(input);
   });
+
+  it('seats the television value on the shell line, not the body role', () => {
+    // Without a keyboard the value is drawn text, and it has to measure like the
+    // entry it replaces: `body`'s own 1.55 ratio overflows the content row, and
+    // native clips a line box that does not fit (the web only spills), so the
+    // value sat wrong on tvOS alone.
+    render(<TextField value="192.168.1.124:4040" label="Address" size="sm" />);
+    const value = css(screen.getByText('192.168.1.124:4040'));
+    expect(value.fontSize).toBe(`${CONTROL.sm.fontSize}px`);
+    expect(value.lineHeight).toBe(`${CONTROL.sm.line}px`);
+  });
 });
 
 describe('TextArea', () => {
@@ -260,11 +285,18 @@ describe('Avatar', () => {
     expect(AVATAR_GRADIENTS).toContain(gradientFor('user-1'));
   });
 
-  it('shows the initials when there is no photo, and not when there is', () => {
-    const { rerender } = render(<Avatar name="Marie Curie" />);
+  it('shows the initials until a photo has actually arrived', () => {
+    const { container, rerender } = render(<Avatar name="Marie Curie" />);
     expect(screen.getByText('MC')).toBeTruthy();
     rerender(<Avatar name="Marie Curie" src="https://example.test/a.jpg" />);
+    // Still there while the photo loads, and again if it fails: a profile is
+    // never a blank disc.
+    expect(screen.getByText('MC')).toBeTruthy();
+    const img = container.querySelector('img:not([aria-hidden])') as HTMLImageElement;
+    fireEvent.load(img);
     expect(screen.queryByText('MC')).toBeNull();
+    fireEvent.error(img);
+    expect(screen.getByText('MC')).toBeTruthy();
   });
 
   it('rounds to an exact circle, half the size, rather than a clamped radius', () => {

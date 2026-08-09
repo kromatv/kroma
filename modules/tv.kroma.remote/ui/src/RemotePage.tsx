@@ -5,21 +5,9 @@
 //
 // One control drives the connector: the enable toggle (auto-saved). The server
 // reconciles the running connector to match it, so disabling always stops it.
-import {
-  Button,
-  C,
-  Card,
-  Denied,
-  Field,
-  PageHeader,
-  Pill,
-  Section,
-  TextInput,
-  Toggle,
-  useCap,
-  useT,
-} from '@kroma/module-sdk';
-import { IconCloud, IconDeviceFloppy, IconExternalLink } from '@tabler/icons-react';
+import { Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kroma/module-sdk';
+import { Badge, Button, Field, PageHeader, Section, Surface, Switch } from '@kroma/ui/kit';
+import { IconCloud, IconExternalLink } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { useRemoteApi } from './api';
 import type { RemoteAccessView } from './schemas';
@@ -42,6 +30,9 @@ export default function RemotePage() {
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  // A first fetch that never answers must not leave a blank page: the page
+  // waits, then says the data failed. Later polls keep the last good view.
+  const [failed, setFailed] = useState(false);
   const loaded = useRef(false);
 
   useEffect(() => {
@@ -49,13 +40,14 @@ export default function RemotePage() {
       .status()
       .then((v) => {
         setView(v);
+        setFailed(false);
         if (!loaded.current) {
           loaded.current = true;
           setUrl(v.url);
           setEnabled(v.enabled);
         }
       })
-      .catch(() => undefined);
+      .catch(() => setFailed(true));
   }, [remote]);
 
   // Poll live status (running / logs) without touching the form fields.
@@ -70,7 +62,7 @@ export default function RemotePage() {
   }, [remote]);
 
   if (!canManage) return <Denied />;
-  if (!view) return null;
+  if (!view) return failed ? <ModuleFailed /> : <ModuleLoading panels={2} />;
   const st = view.status;
 
   // Persist config; the server reconciles the connector to match `enabled`.
@@ -102,26 +94,25 @@ export default function RemotePage() {
       />
 
       {/* Public URL (used for share / Quick Connect links; always applicable). */}
-      <Card className="mt-6 px-5.5 py-5">
-        <Field label={t('admin.customUrl')} hint={t('admin.customUrlHint')}>
-          <TextInput
-            value={url}
-            onChange={setUrl}
-            placeholder="https://kroma.example.com"
-            className="w-full"
-          />
-        </Field>
-      </Card>
+      <Surface elevated border="border" pad="none" px={22} py={20} mt={24}>
+        <Field
+          label={t('admin.customUrl')}
+          hint={t('admin.customUrlHint')}
+          value={url}
+          onChange={setUrl}
+          placeholder="https://kroma.example.com"
+        />
+      </Surface>
 
       {/* Managed connector (optional). */}
-      <Section title={t('admin.remoteManaged')}>
+      <Section title={t('admin.remoteManaged')} mt={28}>
         <p className="-mt-2 mb-4 text-[12.5px] text-dim">{t('admin.remoteManagedHint')}</p>
-        <Card className="px-5.5 py-5">
+        <Surface elevated border="border" pad="none" px={22} py={20}>
           <div className="mb-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <span
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
-                style={{ background: 'rgba(92,141,246,.16)', color: C.blue }}
+                style={{ background: 'rgba(92,141,246,.16)', color: '#5C8DF6' }}
               >
                 <IconCloud size={20} stroke={1.8} />
               </span>
@@ -130,18 +121,18 @@ export default function RemotePage() {
                 <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.remoteAccessDesc')}</div>
               </div>
             </div>
-            <Toggle on={enabled} onChange={toggle} />
+            <Switch checked={enabled} onChange={toggle} label={t('admin.enableRemoteAccess')} />
           </div>
 
-          <Field label={t('admin.remoteToken')} hint={t('admin.remoteTokenHint')}>
-            <TextInput
-              value={token}
-              onChange={setToken}
-              type="password"
-              placeholder={view.hasToken ? t('admin.remoteTokenKeep') : 'eyJhIjoi…'}
-              className="w-full"
-            />
-          </Field>
+          <Field
+            label={t('admin.remoteToken')}
+            hint={t('admin.remoteTokenHint')}
+            value={token}
+            onChange={setToken}
+            type="password"
+            placeholder={view.hasToken ? t('admin.remoteTokenKeep') : 'eyJhIjoi…'}
+            mb={12}
+          />
 
           <a
             href={CF_TUNNELS_URL}
@@ -156,23 +147,24 @@ export default function RemotePage() {
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <Button
               label={busy ? t('admin.aiSaving') : t('common.save')}
-              icon={IconDeviceFloppy}
+              icon="device-floppy"
               variant="primary"
-              onClick={() => void persist(enabled)}
+              size="sm"
+              onPress={() => void persist(enabled)}
               disabled={busy}
             />
             {saved ? (
-              <span className="text-[13px] font-semibold" style={{ color: C.green }}>
+              <span className="text-[13px] font-semibold" style={{ color: '#46D08D' }}>
                 {t('admin.remoteSaved')}
               </span>
             ) : null}
           </div>
-        </Card>
+        </Surface>
       </Section>
 
       {/* Live connector status + logs. */}
-      <Section title={t('admin.remoteLogs')}>
-        <Card className="px-5.5 py-5">
+      <Section title={t('admin.remoteLogs')} mt={28}>
+        <Surface elevated border="border" pad="none" px={22} py={20}>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[13px]">
             <StatusChip status={st} />
             {st.since ? (
@@ -183,18 +175,18 @@ export default function RemotePage() {
             {st.binaryFound ? (
               <span className="text-dim">{st.binaryVersion ?? 'cloudflared'}</span>
             ) : (
-              <span style={{ color: C.red }}>{t('admin.remoteBinaryMissing')}</span>
+              <span style={{ color: '#E8536A' }}>{t('admin.remoteBinaryMissing')}</span>
             )}
           </div>
           {st.lastError ? (
-            <div className="mt-2 text-[12.5px]" style={{ color: C.red }}>
+            <div className="mt-2 text-[12.5px]" style={{ color: '#E8536A' }}>
               {st.lastError}
             </div>
           ) : null}
           <pre className="mt-3 max-h-72 overflow-auto rounded-[9px] border border-border bg-[#0B0B0E] p-3 text-[11.5px] leading-relaxed text-muted">
             {st.logs.length ? st.logs.join('\n') : t('admin.remoteNoLogs')}
           </pre>
-        </Card>
+        </Surface>
       </Section>
     </>
   );
@@ -203,22 +195,10 @@ export default function RemotePage() {
 function StatusChip({ status }: Readonly<{ status: RemoteAccessView['status'] }>) {
   const t = useT();
   if (status.running) {
-    return (
-      <Pill color={C.green} bg="rgba(70,208,141,.14)">
-        {t('admin.remoteConnected')}
-      </Pill>
-    );
+    return <Badge tone="success">{t('admin.remoteConnected')}</Badge>;
   }
   if (status.connecting) {
-    return (
-      <Pill color={C.accent} bg="rgba(244,182,66,.14)">
-        {t('admin.remoteConnecting')}
-      </Pill>
-    );
+    return <Badge tone="warning">{t('admin.remoteConnecting')}</Badge>;
   }
-  return (
-    <Pill color="#9AA0AA" bg="rgba(255,255,255,.06)">
-      {t('admin.remoteDisconnected')}
-    </Pill>
-  );
+  return <Badge tone="neutral">{t('admin.remoteDisconnected')}</Badge>;
 }

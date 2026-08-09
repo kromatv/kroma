@@ -6,9 +6,9 @@
 // its API through `useModuleApi()` without ever spelling the id out. Naming a
 // module is then reserved for what it should mean: addressing a DIFFERENT one.
 
-import { useAdminKit } from '@kroma/admin-kit';
 import type { ModuleApi } from '@kroma/core';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { useAdminHost } from './admin/context';
 
 const ModuleIdContext = createContext<string | null>(null);
 
@@ -21,7 +21,7 @@ export function ModuleScope({ id, children }: Readonly<{ id: string; children: R
  *  relative to that mount, so `get('/vpn')` reads the module's own `/vpn`. */
 export function useModuleApi(): ModuleApi {
   const id = useContext(ModuleIdContext);
-  const { client } = useAdminKit();
+  const { client } = useAdminHost();
   const api = useMemo(() => (id === null ? null : client.module(id)), [client, id]);
   if (api === null) {
     throw new Error('useModuleApi must be used inside a module page (the host mounts ModuleScope)');
@@ -46,7 +46,7 @@ export function moduleApiHook<T>(
     const id = idOrFactory;
     const factory = boundFactory as (api: ModuleApi) => T;
     return function useBoundModuleApi(): T {
-      const { client } = useAdminKit();
+      const { client } = useAdminHost();
       return useMemo(() => factory(client.module(id)), [client]);
     };
   }

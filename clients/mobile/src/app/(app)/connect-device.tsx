@@ -2,17 +2,16 @@
 // type the 4-digit code, then authorize that device into this account (mirror
 // of the web flow, POST /auth/quickconnect/authorize).
 
-import { Icon, styles } from '@kroma/ui/kit';
+import { Box, Icon, OtpField, styles, Txt } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import {
   OnboardingBox,
   OnboardingScreen,
   OnboardingTitle,
 } from '#mobile/components/OnboardingScreen';
-import { CodeCells } from '#mobile/components/onboarding';
 import { ErrorBanner } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
@@ -106,21 +105,21 @@ export default function ConnectDevice() {
     <OnboardingScreen keyboardBehavior="height" onBack={() => goBack(router)}>
       <OnboardingBox>
         {state === 'done' ? (
-          <View style={s.center}>
-            <View style={s.doneBadge}>
+          <Box style={s.center}>
+            <Box style={s.doneBadge}>
               <Icon name="check" size={34} stroke={2.4} color={colors.accentInk} />
-            </View>
+            </Box>
             <OnboardingTitle
               title={t('connect.connected')}
               subtitle={t('connect.willConnectSoon')}
             />
-          </View>
+          </Box>
         ) : (
           <>
             <OnboardingTitle title={t('connect.title')} subtitle={t('connect.codePrompt')} />
-            <View style={s.center}>
+            <Box style={s.center}>
               {camera ? (
-                <View style={s.cameraBox}>
+                <Box style={s.cameraBox}>
                   {cameraOn ? (
                     <>
                       <camera.CameraView
@@ -129,7 +128,7 @@ export default function ConnectDevice() {
                         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                         onBarcodeScanned={({ data }) => onScanned(data)}
                       />
-                      <View style={s.cameraFrame} pointerEvents="none" />
+                      <Box style={s.cameraFrame} pointerEvents="none" />
                     </>
                   ) : (
                     <Pressable
@@ -140,21 +139,23 @@ export default function ConnectDevice() {
                       ]}
                     >
                       <Icon name="scan" size={34} stroke={1.8} color={colors.accent} />
-                      <Text style={s.cameraOffLabel}>{t('connect.scanTvQr')}</Text>
+                      <Txt style={s.cameraOffLabel}>{t('connect.scanTvQr')}</Txt>
                     </Pressable>
                   )}
-                </View>
+                </Box>
               ) : (
                 <Icon name="device-tv" size={56} stroke={1.8} color={colors.accent} />
               )}
-              <CodeCells
+              <OtpField
+                maxLength={4}
                 value={code}
                 onChange={onChange}
-                error={state === 'error'}
-                showActive={state !== 'busy'}
-                refocusOnBlur={state === 'idle' || state === 'error'}
+                invalid={state === 'error'}
+                disabled={state === 'busy'}
+                physicalKeyboard
+                autoFocus
               />
-            </View>
+            </Box>
             <ErrorBanner message={state === 'error' ? t('connect.invalidCode') : null} />
           </>
         )}

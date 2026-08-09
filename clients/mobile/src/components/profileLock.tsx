@@ -2,11 +2,9 @@
 // biometric switch row and the step-at-a-time masked PIN wizard. All state
 // and auth calls stay in the route (app/(app)/profile-pin.tsx).
 
-import { Button, Spinner, Switch, styles } from '@kroma/ui/kit';
-import { Text, View } from 'react-native';
+import { Box, Button, OtpField, Spinner, Switch, styles, Txt } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
-import { CodeCells } from './onboarding';
 import { ErrorBanner } from './ui';
 
 export function LockCard({
@@ -19,13 +17,13 @@ export function LockCard({
   children: React.ReactNode;
 }>) {
   return (
-    <View style={s.section}>
-      <Text style={s.sectionTitle}>{title}</Text>
-      <View style={s.card}>
-        <Text style={s.sub}>{sub}</Text>
+    <Box style={s.section}>
+      <Txt style={s.sectionTitle}>{title}</Txt>
+      <Box style={s.card}>
+        <Txt style={s.sub}>{sub}</Txt>
         {children}
-      </View>
-    </View>
+      </Box>
+    </Box>
   );
 }
 
@@ -41,10 +39,10 @@ export function BioSwitchRow({
   onChange(next: boolean): void;
 }>) {
   return (
-    <View style={s.bioRow}>
-      <Text style={s.bioLabel}>{label}</Text>
+    <Box style={s.bioRow}>
+      <Txt style={s.bioLabel}>{label}</Txt>
       <Switch checked={value} disabled={disabled} onChange={onChange} />
-    </View>
+    </Box>
   );
 }
 
@@ -66,13 +64,26 @@ export function PinWizard({
 }>) {
   const t = useT();
   return (
-    <View style={s.wizard}>
-      <Text style={s.wizardSub}>{subtitle}</Text>
-      <CodeCells value={pin} masked editable={!busy} onChange={onChange} />
-      {busy ? <Spinner size={24} color={colors.textDim} /> : null}
+    <Box style={s.wizard}>
+      <Txt style={s.wizardSub}>{subtitle}</Txt>
+      <OtpField
+        self="center"
+        maxLength={4}
+        value={pin}
+        onChange={onChange}
+        mask
+        disabled={busy}
+        physicalKeyboard
+        autoFocus
+      />
+      {busy ? (
+        <Box self="center">
+          <Spinner size={24} color={colors.textDim} />
+        </Box>
+      ) : null}
       <ErrorBanner message={error} />
       <Button variant="glass" label={t('common.cancel')} onPress={onCancel} />
-    </View>
+    </Box>
   );
 }
 

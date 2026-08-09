@@ -5,7 +5,7 @@
 import { Icon } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { colors } from '#mobile/lib/theme';
-import { BackLink, OnboardingBox, OnboardingTitle } from './OnboardingScreen';
+import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
 import { ServerList, ServerRow, ServerSectionHeader, ServerSectionHint } from './serverRows';
 import { ErrorBanner } from './ui';
 
@@ -20,7 +20,6 @@ export function ServerPicker({
   onPickSaved,
   onPickDiscovered,
   onAddServer,
-  onBack,
 }: Readonly<{
   saved: SavedServerRow[];
   discovered: FoundServerRow[];
@@ -29,7 +28,6 @@ export function ServerPicker({
   onPickSaved(url: string): void;
   onPickDiscovered(url: string): void;
   onAddServer(): void;
-  onBack(): void;
 }>) {
   const t = useT();
   return (
@@ -74,7 +72,6 @@ export function ServerPicker({
         <ServerSectionHint>{t('connect.searchingServer')}</ServerSectionHint>
       )}
       <ErrorBanner message={error} />
-      <BackLink onPress={onBack} />
     </OnboardingBox>
   );
 }

@@ -100,12 +100,6 @@ export function TvReport() {
             label={t('report.message')}
             hideLabel
             physicalKeyboard={physicalKeyboard}
-            entry={{
-              py: 16,
-              radius: 'md',
-              bg: '#0F0F13',
-              textStyle: { fontSize: 20, fontWeight: '600' },
-            }}
           />
           <OnScreenKeyboard
             value={message}

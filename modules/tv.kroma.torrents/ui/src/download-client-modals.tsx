@@ -1,18 +1,11 @@
 // Edit modal for an existing external download client (Transmission RPC or
 // qBittorrent WebUI). The kind is fixed once a client exists, so this is edit-only
 // (name / URL / credentials); adding a client goes through the generic
-// AddEngineModal, driven by the enabled download-client engines. The embedded
+// add-engine dialog, driven by the enabled download-client engines. The embedded
 // engine has no form (configured from the Acquisition settings page).
 
-import {
-  apiErrorText,
-  Field,
-  Modal,
-  ModalActions,
-  TextInput,
-  useAsyncAction,
-  useT,
-} from '@kroma/module-sdk';
+import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
+import { Dialog, DialogActions, Field } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useTorrentsApi } from './api';
@@ -58,31 +51,31 @@ export const DownloadClientModal = createCallable<
     );
 
   return (
-    <Modal title={t('dlclients.edit')} onClose={() => call.end(false)}>
-      <Field label={t('dlclients.name')}>
-        <TextInput value={name} onChange={setName} placeholder={client.kind} className="w-full" />
-      </Field>
-      <Field label={t('dlclients.url')} hint={t('dlclients.urlHint')}>
-        <TextInput value={url} onChange={setUrl} className="w-full" />
-      </Field>
+    <Dialog open title={t('dlclients.edit')} onClose={() => call.end(false)} width={520}>
+      <Field
+        label={t('dlclients.name')}
+        value={name}
+        onChange={setName}
+        placeholder={client.kind}
+      />
+      <Field
+        label={t('dlclients.url')}
+        hint={t('dlclients.urlHint')}
+        value={url}
+        onChange={setUrl}
+      />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label={t('dlclients.username')}>
-          <TextInput value={username} onChange={setUsername} className="w-full min-w-0" />
-        </Field>
+        <Field label={t('dlclients.username')} value={username} onChange={setUsername} />
         <Field
           label={t('dlclients.password')}
           hint={client.hasPassword ? t('dlclients.passwordKept') : undefined}
-        >
-          <TextInput
-            value={password}
-            onChange={setPassword}
-            type="password"
-            className="w-full min-w-0"
-          />
-        </Field>
+          value={password}
+          onChange={setPassword}
+          type="password"
+        />
       </div>
-      {error ? <p className="mt-1 text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <ModalActions
+      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
+      <DialogActions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={save}
@@ -92,9 +85,9 @@ export const DownloadClientModal = createCallable<
         destructive={
           client.builtin
             ? undefined
-            : { label: t('dlclients.delete'), onClick: remove, disabled: busy }
+            : { label: t('dlclients.delete'), onPress: remove, disabled: busy }
         }
       />
-    </Modal>
+    </Dialog>
   );
 });

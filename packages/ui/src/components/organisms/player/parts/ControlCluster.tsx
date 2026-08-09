@@ -368,7 +368,7 @@ function VolumeControl({
         <Box
           ref={track.ref}
           onLayout={track.onLayout}
-          pointerEvents="none"
+          style={s.inert}
           h={px(6)}
           w="100%"
           radius="pill"
@@ -411,6 +411,7 @@ function VolumeControl({
 
 const s = styles({
   thumb: { boxShadow: '0 1px 4px rgba(0, 0, 0, 0.5)' },
+  inert: { pointerEvents: 'none' },
 });
 
 const NOOP = () => {};

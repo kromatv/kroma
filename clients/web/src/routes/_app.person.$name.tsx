@@ -9,14 +9,7 @@ import { initials } from '#web/features/catalog/detail';
 import { PersonProfile } from '#web/features/catalog/person-profile';
 import { imageUrl, isAuthed, kromaClient, toMovieView, toShowView } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  PAGE_MAIN,
-  PAGE_TITLE,
-  PageSkeleton,
-} from '#web/shared/ui';
+import { Image, PAGE_MAIN, PAGE_TITLE, PageSkeleton } from '#web/shared/ui';
 
 /** `/person/<name>` every movie + show one cast/crew member is credited in. */
 export const Route = createFileRoute('/_app/person/$name')({
@@ -56,16 +49,13 @@ function PersonPage() {
   return (
     <main className={PAGE_MAIN}>
       <header className="mb-9 flex items-center gap-5.5">
-        <Avatar className="h-20 w-20 rounded-full shadow-[0_8px_22px_rgba(0,0,0,.45)] sm:h-26 sm:w-26">
-          {photo ? <AvatarImage src={photo} alt={name} decoding="async" draggable={false} /> : null}
-          <AvatarFallback
-            className="font-display text-[34px] font-bold text-white/90"
-            style={{ background: `linear-gradient(158deg, ${g1}, ${g2})` }}
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_22%,rgba(255,255,255,.2),transparent_60%)]" />
-            <span className="relative">{initials(name)}</span>
-          </AvatarFallback>
-        </Avatar>
+        <Image
+          className="h-20 w-20 rounded-full shadow-[0_8px_22px_rgba(0,0,0,.45)] sm:h-26 sm:w-26"
+          src={photo}
+          alt={name}
+          placeholder={<PersonInitials name={name} g1={g1} g2={g2} />}
+          fallback={<PersonInitials name={name} g1={g1} g2={g2} />}
+        />
         <div className="min-w-0">
           <h1 className={PAGE_TITLE}>{name}</h1>
           <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[14px] font-medium text-muted">
@@ -86,5 +76,17 @@ function PersonPage() {
         <EmptyState icon="user-x" title={t('person.empty')} />
       )}
     </main>
+  );
+}
+
+function PersonInitials({ name, g1, g2 }: Readonly<{ name: string; g1: string; g2: string }>) {
+  return (
+    <span
+      className="relative flex h-full w-full items-center justify-center font-display text-[34px] font-bold text-white/90"
+      style={{ background: `linear-gradient(158deg, ${g1}, ${g2})` }}
+    >
+      <span className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_22%,rgba(255,255,255,.2),transparent_60%)]" />
+      <span className="relative">{initials(name)}</span>
+    </span>
   );
 }

@@ -281,3 +281,48 @@ async fn person_details_with_a_blank_name_never_reaches_the_provider() {
     assert_eq!(body["name"], json!(""));
     assert_eq!(body["person"], Value::Null);
 }
+
+#[tokio::test]
+async fn splash_is_public_and_serves_only_backdrop_captions() {
+    let t = test_app();
+
+    // Nothing enriched yet: public, 200, empty.
+    let (status, body) = get(&t.app, "/api/splash", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body, json!([]));
+
+    // One enriched movie and one enriched show become the whole sample. The
+    // show's scan year is dropped so its caption year must come from the
+    // enriched release date.
+    let movie = demo_item_id("The Matrix");
+    let show = demo_show_id("The Office");
+    {
+        let conn = t.state.db.get().unwrap();
+        for (kind, id) in [("item", movie.as_str()), ("show", show.as_str())] {
+            conn.execute(
+                "INSERT INTO metadata_core \
+                 (subject_kind,subject_id,rating,backdrop_url,release_date,updated_at) \
+                 VALUES (?1,?2,8.5,'/api/images/b.webp','2005-03-24',0)",
+                (kind, id),
+            )
+            .unwrap();
+        }
+        conn.execute("UPDATE shows SET year = NULL WHERE id = ?1", (show.as_str(),)).unwrap();
+    }
+
+    let (status, body) = get(&t.app, "/api/splash", None).await;
+    assert_eq!(status, StatusCode::OK);
+    let entries = body.as_array().unwrap();
+    assert_eq!(entries.len(), 2);
+    for e in entries {
+        assert_eq!(e["backdropUrl"], json!("/api/images/b.webp"));
+        assert!(e["title"].as_str().is_some_and(|s| !s.is_empty()));
+        // The caption is the whole payload: no ids, paths or blobs ride along.
+        assert!(e.get("id").is_none());
+        assert!(e.get("metadata").is_none());
+    }
+    let kinds: Vec<_> = entries.iter().map(|e| e["kind"].as_str().unwrap()).collect();
+    assert!(kinds.contains(&"movie") && kinds.contains(&"show"));
+    let show_entry = entries.iter().find(|e| e["kind"] == json!("show")).unwrap();
+    assert_eq!(show_entry["year"], json!(2005));
+}

@@ -1,6 +1,6 @@
-// Mount points for the admin console's imperative modals (react-call): each
-// callable needs exactly one Root rendered while it can be called.
-import { AddEngineModal } from '@kroma/admin-kit';
+// Mount points for the admin console's imperative modals: each callable needs
+// exactly one host rendered while it can be called.
+import { AddEngineHost } from '@kroma/module-sdk';
 import { ExportModal, ImportModal } from '#web/features/admin/backup-modals';
 import { StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { ScheduleModal } from '#web/features/admin/jobs-schedule';
@@ -30,8 +30,8 @@ export function AdminModalHosts() {
       <ModuleDetailDrawer />
       <InstallModal />
       <RegistriesDrawer />
-      {/* One root covers every module page (indexers, download clients). */}
-      <AddEngineModal />
+      {/* One host covers every module page (indexers, download clients). */}
+      <AddEngineHost />
     </>
   );
 }

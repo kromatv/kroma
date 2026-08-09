@@ -1,6 +1,8 @@
 // The workbench sidebar: the brand, a button that opens the command palette, and
-// every story as a collapsible tree. Stories nest by LEVEL (atoms, molecules,
-// organisms), then by GROUP within it (Actions, Input, Media, State).
+// every story under ONE flat level of collapsible functional groups (Layout,
+// Input, Overlays, ...). Deliberately not the atomic levels: those are for the
+// people editing the kit, and a tree that nested them scattered every kind of
+// input across three branches.
 //
 // Everything is a `Focusable` rather than a link, so the same tree works with a
 // mouse in a browser and a D-pad on a television.
@@ -34,40 +36,23 @@ interface TreeGroup {
   entries: readonly Story[];
 }
 
-interface TreeTier {
-  tier: string;
-  count: number;
-  groups: readonly TreeGroup[];
-}
-
 // Registry order, via the same `groupBy` the command palette uses.
-function tree(stories: readonly Story[]): TreeTier[] {
-  return groupBy(stories, (story) => story.tier).map(({ key: tier, items: entries }) => ({
-    tier,
-    count: entries.length,
-    groups: groupBy(entries, (story) => story.group).map(({ key: group, items }) => ({
-      group,
-      entries: items,
-    })),
+function tree(stories: readonly Story[]): TreeGroup[] {
+  return groupBy(stories, (story) => story.group).map(({ key: group, items }) => ({
+    group,
+    entries: items,
   }));
 }
 
-// Branch keys along the path to one story, so the tree re-opens to it when the
-// selection changes from elsewhere (the palette, a deep link).
-function revealPath(tiers: readonly TreeTier[], selected: string): Set<string> {
+// The branch holding one story, so the tree re-opens to it when the selection
+// changes from elsewhere (the palette, a deep link).
+function revealPath(groups: readonly TreeGroup[], selected: string): Set<string> {
   const open = new Set<string>();
-  for (const tier of tiers) {
-    for (const { group, entries } of tier.groups) {
-      if (!entries.some((story) => story.id === selected)) continue;
-      open.add(tier.tier);
-      open.add(`${tier.tier}/${group}`);
-    }
+  for (const { group, entries } of groups) {
+    if (entries.some((story) => story.id === selected)) open.add(group);
   }
   // A deep link to a story that has since moved must still leave something open.
-  if (open.size === 0 && tiers[0]) {
-    open.add(tiers[0].tier);
-    if (tiers[0].groups[0]) open.add(`${tiers[0].tier}/${tiers[0].groups[0].group}`);
-  }
+  if (open.size === 0 && groups[0]) open.add(groups[0].group);
   return open;
 }
 
@@ -82,12 +67,12 @@ function Sidebar({
   layout,
   onClose,
 }: Readonly<SidebarProps>) {
-  const tiers = useMemo(() => tree(stories), [stories]);
+  const groups = useMemo(() => tree(stories), [stories]);
   // Folded state is per branch and lives here rather than in the shell: it is how
-  // the s.list is being read, not part of what the workbench is showing, and it
+  // the list is being read, not part of what the workbench is showing, and it
   // should survive changing story (which it does - the drawer remounts, a column
   // does not).
-  const [open, setOpen] = useState(() => revealPath(tiers, selected));
+  const [open, setOpen] = useState(() => revealPath(groups, selected));
   const toggle = (key: string) =>
     setOpen((prev) => {
       const next = new Set(prev);
@@ -100,11 +85,11 @@ function Sidebar({
   // two components stay open behind the one that just got revealed.
   useEffect(() => {
     setOpen((prev) => {
-      const path = revealPath(tiers, selected);
+      const path = revealPath(groups, selected);
       if ([...path].every((key) => prev.has(key))) return prev;
       return new Set([...prev, ...path]);
     });
-  }, [tiers, selected]);
+  }, [groups, selected]);
 
   return (
     <Box
@@ -120,31 +105,23 @@ function Sidebar({
         <SearchButton onPress={onSearch} />
       </Box>
       <ScrollView style={s.scroll} contentContainerStyle={s.list}>
-        {tiers.map((tier) => {
-          const tierOpen = open.has(tier.tier);
+        {groups.map(({ group, entries }) => {
+          const groupOpen = open.has(group);
           return (
-            <Box key={tier.tier}>
+            <Box key={group}>
               <Branch
-                label={tier.tier}
-                count={tier.count}
-                open={tierOpen}
-                depth={0}
-                onPress={() => toggle(tier.tier)}
+                label={group}
+                count={entries.length}
+                open={groupOpen}
+                onPress={() => toggle(group)}
               />
-              {tierOpen
-                ? tier.groups.map(({ group, entries }) => (
-                    <Group
-                      key={group}
-                      group={group}
-                      entries={entries}
-                      // One group per level means the group row would only
-                      // repeat the level, so the leaves hang straight off it.
-                      solo={tier.groups.length === 1}
-                      open={open}
-                      tier={tier.tier}
-                      selected={selected}
-                      onToggle={toggle}
-                      onSelect={onSelect}
+              {groupOpen
+                ? entries.map((story) => (
+                    <Leaf
+                      key={story.id}
+                      story={story}
+                      active={story.id === selected}
+                      onPress={() => onSelect(story.id)}
                     />
                   ))
                 : null}
@@ -218,74 +195,24 @@ function SearchButton({ onPress }: Readonly<{ onPress: () => void }>) {
   );
 }
 
-// A foldable row: the twisty, the name, and how many leaves are under it. The chevron ROTATES
-// in place rather than swapping glyph, which is the one detail that makes a tree feel like a
-// tree.
-// One group inside a tier: its own row, and the stories under it. Its own component
-// so the tree is two nested maps rather than three.
-function Group({
-  group,
-  entries,
-  solo,
-  open,
-  tier,
-  selected,
-  onToggle,
-  onSelect,
-}: Readonly<{
-  group: string;
-  entries: readonly Story[];
-  // The only group in its tier: the row would just repeat the tier's name.
-  solo: boolean;
-  open: ReadonlySet<string>;
-  tier: string;
-  selected: string;
-  onToggle: (key: string) => void;
-  onSelect: (id: string) => void;
-}>) {
-  const key = `${tier}/${group}`;
-  const groupOpen = solo || open.has(key);
-  return (
-    <Box>
-      {solo ? null : (
-        <Branch
-          label={group}
-          count={entries.length}
-          open={groupOpen}
-          depth={1}
-          onPress={() => onToggle(key)}
-        />
-      )}
-      {groupOpen
-        ? entries.map((story) => (
-            <Leaf
-              key={story.id}
-              story={story}
-              active={story.id === selected}
-              depth={solo ? 1 : 2}
-              onPress={() => onSelect(story.id)}
-            />
-          ))
-        : null}
-    </Box>
-  );
-}
-
+// A foldable section row: the twisty, the name, and how many components are under
+// it. The chevron ROTATES in place rather than swapping glyph, which is the one
+// detail that makes a tree feel like a tree.
 function Branch({
   label,
   count,
   open,
-  depth,
   onPress,
-}: Readonly<{ label: string; count: number; open: boolean; depth: number; onPress: () => void }>) {
+}: Readonly<{ label: string; count: number; open: boolean; onPress: () => void }>) {
   return (
     <Focusable
       label={`${open ? 'Collapse' : 'Expand'} ${label}`}
       ring={false}
       onPress={onPress}
+      expanded={open}
       sv={treeRow}
-      vars={{ kind: depth === 0 ? 'tier' : 'group' }}
-      style={{ marginLeft: 8 + depth * INDENT }}
+      vars={{ kind: 'group' }}
+      style={s.branchRow}
     >
       {({ slots }) => (
         <>
@@ -306,9 +233,8 @@ function Branch({
 function Leaf({
   story,
   active,
-  depth,
   onPress,
-}: Readonly<{ story: Story; active: boolean; depth: number; onPress: () => void }>) {
+}: Readonly<{ story: Story; active: boolean; onPress: () => void }>) {
   return (
     <Focusable
       label={story.name}
@@ -316,7 +242,7 @@ function Leaf({
       onPress={onPress}
       sv={treeRow}
       vars={{ active }}
-      style={{ marginLeft: 8 + depth * INDENT }}
+      style={s.leafRow}
     >
       {({ slots }) => (
         <>
@@ -333,7 +259,7 @@ function Leaf({
   );
 }
 
-// How far one level of the tree steps in.
+// How far the leaves step in under their section row.
 const INDENT = 12;
 
 // The 16pt glyph in the box the old padded shape came to.
@@ -350,6 +276,8 @@ const s = styles({
   tally: { fontSize: 10.5 },
   searchInk: { fontSize: 12.5 },
   count: { fontSize: 10.5 },
+  branchRow: { ml: 8 },
+  leafRow: { ml: 8 + INDENT },
 });
 const searchButton = sv({
   base: {
@@ -381,10 +309,9 @@ const treeRow = sv({
   },
   variants: {
     kind: {
-      tier: {
+      group: {
         label: { fontSize: 11.5, letterSpacing: 0.5, textTransform: 'uppercase', color: 'text' },
       },
-      group: { label: { fontSize: 12 } },
       story: {},
     },
     // The open story is FILLED - amber, with ink to match - rather than tinted:
@@ -400,5 +327,5 @@ const treeRow = sv({
   defaults: { kind: 'story', active: false },
 });
 
-export type { SidebarProps, TreeGroup, TreeTier };
+export type { SidebarProps, TreeGroup };
 export { revealPath, Sidebar, tree };

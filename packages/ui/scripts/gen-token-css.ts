@@ -6,7 +6,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { colors } from '../src/core/tokens/colors';
-import { glow, motion, ring, shadow } from '../src/core/tokens/effects';
+import { glow, motion, RING_WIDTH, ring, shadow } from '../src/core/tokens/effects';
 import { gutter, radius, rhythm, space } from '../src/core/tokens/layout';
 import { fonts, tracking, typeSpec } from '../src/core/tokens/typography';
 
@@ -148,6 +148,7 @@ function effectsCss(): string {
     ...section('Elevation'),
     ...Object.entries(shadow).map(([k, v]) => `  --shadow-${k}: ${v};`),
     ...section('Focus + glow (10-foot / TV)'),
+    `  --ring-width: ${RING_WIDTH}px; /* one width for every focus visual */`,
     `  --ring-focus: ${accentVar(ring.focus)};`,
     `  --ring-focus-sm: ${accentVar(ring.focusSm)};`,
     ...Object.entries(glow).map(([k, v]) => `  --glow-${k}: ${v};`),

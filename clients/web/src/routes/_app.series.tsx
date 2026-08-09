@@ -1,16 +1,13 @@
-import { collectGenres, hasGenre, sortTitles } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
-
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useMemo } from 'react';
-import { BrowseBar } from '#web/features/catalog/browse-bar';
+import { BROWSE_TITLE } from '#web/features/catalog/browse-hero';
+import { BrowseScreen } from '#web/features/catalog/browse-screen';
 import { validateBrowseSearch } from '#web/features/catalog/browse-search';
 import { ShowGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/series')({
   validateSearch: validateBrowseSearch,
@@ -26,7 +23,7 @@ function SeriesPending() {
   const t = useT();
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{t('nav.series')}</h1>
+      <h1 className={BROWSE_TITLE}>{t('nav.series')}</h1>
       <div className="mt-6">
         <SkeletonRow count={14} />
       </div>
@@ -40,33 +37,20 @@ function SeriesPage() {
   const navigate = Route.useNavigate();
   const { data: shows } = useSuspenseQuery(catalogQueries.showsView());
 
-  const genres = useMemo(() => collectGenres(shows), [shows]);
-  const view = useMemo(() => {
-    const filtered = genre ? shows.filter((s) => hasGenre(s, genre)) : shows;
-    return sortTitles(filtered, sort);
-  }, [shows, genre, sort]);
-
   return (
-    <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{t('nav.series')}</h1>
-      {shows.length === 0 ? (
-        <EmptyState icon="device-tv" title={t('content.seriesEmpty')} />
-      ) : (
-        <>
-          <BrowseBar
-            sort={sort}
-            onSort={(mode) => navigate({ search: (p) => ({ ...p, sort: mode }) })}
-            genres={genres}
-            genre={genre}
-            onGenre={(g) => navigate({ search: (p) => ({ ...p, genre: g }) })}
-          />
-          {view.length === 0 ? (
-            <EmptyState icon="device-tv" title={t('search.noResults')} />
-          ) : (
-            <ShowGrid shows={view} />
-          )}
-        </>
-      )}
-    </main>
+    <BrowseScreen
+      heading={t('nav.series')}
+      items={shows}
+      countKey="browse.count.series"
+      emptyIcon="device-tv"
+      emptyTitle={t('content.seriesEmpty')}
+      sort={sort}
+      genre={genre}
+      onSort={(mode, opts) =>
+        navigate({ search: (p) => ({ ...p, sort: mode }), resetScroll: opts?.resetScroll })
+      }
+      onGenre={(g) => navigate({ search: (p) => ({ ...p, genre: g }) })}
+      renderGrid={(view) => <ShowGrid shows={view} />}
+    />
   );
 }

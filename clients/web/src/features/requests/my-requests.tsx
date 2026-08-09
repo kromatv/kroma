@@ -1,4 +1,3 @@
-import { Image } from '@kroma/admin-kit';
 import {
   KromaEvents,
   type MediaRequest,
@@ -18,7 +17,7 @@ import { seasonsSummary } from '#web/features/requests/status';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
+import { Image, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
 
 export function MyRequestsPage() {
   const t = useT();
@@ -71,7 +70,7 @@ export function MyRequestsPage() {
         <div className="mt-6 flex flex-col gap-2.5">
           {Array.from({ length: 4 }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
-            <Skeleton key={i} className="h-[92px] rounded-2xl" />
+            <Skeleton key={i} h={92} radius={16} />
           ))}
         </div>
       ) : null}
@@ -182,9 +181,7 @@ function RequestRow({
       <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
       {req.status === 'pending' ? (
         <IconButton
-          size={36}
-          glyph={15}
-          radius={8}
+          control="sm"
           icon="x"
           label={t('requests.cancel')}
           onPress={onCancel}

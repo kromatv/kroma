@@ -1,9 +1,9 @@
 // Account tab: identity, one card of destination rows, sign-out. Everything
 // else lives in dedicated pages.
 
-import { Button, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '#mobile/components/Avatar';
 import { formatBytes, useDownloads } from '#mobile/lib/downloads';
@@ -25,18 +25,18 @@ function Row({
 }>) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
-      <View style={s.rowIconLabel}>
-        <View style={s.rowIconBox}>{icon}</View>
-        <Text style={s.rowLabel}>{label}</Text>
-      </View>
-      <View style={s.rowRight}>
+      <Box style={s.rowIconLabel}>
+        <Box style={s.rowIconBox}>{icon}</Box>
+        <Txt style={s.rowLabel}>{label}</Txt>
+      </Box>
+      <Box style={s.rowRight}>
         {value ? (
-          <Text numberOfLines={1} style={s.rowValue}>
+          <Txt lines={1} style={s.rowValue}>
             {value}
-          </Text>
+          </Txt>
         ) : null}
         <Icon name="chevron-right" size={16} stroke={2.2} color={colors.textFaint} />
-      </View>
+      </Box>
     </Pressable>
   );
 }
@@ -61,17 +61,17 @@ export default function Profile() {
         onPress={() => router.push('/edit-profile' as never)}
         style={({ pressed }) => [s.identity, pressed && { opacity: 0.85 }]}
       >
-        <View>
+        <Box>
           <Avatar uri={avatar} name={user?.username} size={96} />
-          <View style={s.editBadge}>
+          <Box style={s.editBadge}>
             <Icon name="pencil" size={13} stroke={1.8} color={colors.accentInk} />
-          </View>
-        </View>
-        <Text style={s.username}>{user?.username}</Text>
-        {user?.email ? <Text style={s.email}>{user.email}</Text> : null}
+          </Box>
+        </Box>
+        <Txt style={s.username}>{user?.username}</Txt>
+        {user?.email ? <Txt style={s.email}>{user.email}</Txt> : null}
       </Pressable>
 
-      <View style={s.card}>
+      <Box style={s.card}>
         <Row
           icon={<Icon name="users" size={19} stroke={2} color={colors.accent} />}
           label={t('nav.changeProfile')}
@@ -98,7 +98,7 @@ export default function Profile() {
           label={t('nav.settings')}
           onPress={() => router.push('/settings' as never)}
         />
-      </View>
+      </Box>
 
       {/* The kit ghost inks text-colored; the danger reading comes via children. */}
       <Button variant="ghost" style={s.signOut} onPress={() => void signOut()}>

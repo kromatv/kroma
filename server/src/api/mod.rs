@@ -73,6 +73,8 @@ mod it_admin_manage;
 mod it_reports;
 #[cfg(test)]
 mod it_notifications;
+#[cfg(test)]
+mod it_notification_images;
 
 use std::sync::Arc;
 

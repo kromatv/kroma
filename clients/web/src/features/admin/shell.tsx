@@ -2,7 +2,6 @@
 // the data/event context (server info + a tick that bumps on server events so
 // pages can refresh live).
 
-import { AdminKitProvider } from '@kroma/admin-kit';
 import {
   hasPermission,
   KromaEvents,
@@ -10,10 +9,9 @@ import {
   type Permission,
   type ServerInfo,
 } from '@kroma/core';
-import type { ModuleNav } from '@kroma/module-sdk';
+import { AdminHostProvider, type ModuleNav } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Logo } from '@kroma/ui/kit';
-import * as Dialog from '@radix-ui/react-dialog';
+import { Drawer, Logo } from '@kroma/ui/kit';
 import {
   IconApps,
   IconArchive,
@@ -47,7 +45,7 @@ import { formatUptime } from '#web/shared/lib/adminFormat';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
-export { HeaderAction, PageHeader } from '@kroma/admin-kit';
+export { PageHeader } from '@kroma/ui/kit';
 // Data hooks + capability helpers and the page header live in sibling modules;
 // re-exported here so call sites keep importing them from this shell module.
 export { Denied, isAnyAdmin, useAsyncAction, useCap, usePoll } from '#web/features/admin/hooks';
@@ -99,9 +97,9 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   const adminValue = useMemo(() => ({ serverInfo }), [serverInfo]);
 
   return (
-    <AdminKitProvider value={kit}>
+    <AdminHostProvider value={kit}>
       <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
-    </AdminKitProvider>
+    </AdminHostProvider>
   );
 }
 
@@ -236,7 +234,7 @@ function AdminBrand() {
   return (
     <div className="flex items-center gap-2.5">
       <Logo size={19} />
-      <span className="rounded-[5px] bg-accent px-1.5 py-0.75 text-[8.5px] font-bold tracking-[.13em] text-accent-ink">
+      <span className="rounded-sm bg-accent px-1.5 py-0.75 text-[8.5px] font-bold tracking-[.13em] text-accent-ink">
         {t('admin.badge')}
       </span>
     </div>
@@ -265,7 +263,7 @@ function AdminSidebarBody() {
       <div className="shrink-0 px-3.5 pb-2">
         <Link
           to="/"
-          className="flex items-center justify-between rounded-[11px] border border-border-strong bg-surface-2 px-3.5 py-2.5 no-underline"
+          className="flex items-center justify-between rounded-md border border-border-strong bg-surface-2 px-3.5 py-2.5 no-underline"
         >
           <span className="inline-flex items-center gap-2.5 text-[14px] font-bold text-accent">
             <Logo markOnly size={17} />
@@ -331,42 +329,42 @@ function AdminMobileTopbar() {
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-[#0C0C0E]/95 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
       <AdminBrand />
-      <Dialog.Root open={open} onOpenChange={setOpen}>
-        <Dialog.Trigger asChild>
+      <button
+        type="button"
+        aria-label={t('nav.menu')}
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        className="flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/4 hover:text-text"
+      >
+        <IconMenu2 size={22} />
+      </button>
+      <Drawer
+        open={open}
+        onClose={() => setOpen(false)}
+        title="KROMA"
+        side="left"
+        width={304}
+        fullBelow={640}
+        panelStyle={NAV_FILL}
+      >
+        <div className="mb-4 flex shrink-0 items-center justify-between px-6 pr-4 pt-[max(1.5rem,env(safe-area-inset-top))]">
+          <AdminBrand />
           <button
             type="button"
-            aria-label={t('nav.menu')}
-            className="flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/4 hover:text-text"
+            aria-label={t('common.close')}
+            onClick={() => setOpen(false)}
+            className="flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/4 hover:text-text"
           >
-            <IconMenu2 size={22} />
+            <IconX size={20} />
           </button>
-        </Dialog.Trigger>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 animate-[fade-in_.2s_var(--ease-out)] lg:hidden" />
-          <Dialog.Content
-            className="fixed inset-y-0 left-0 z-50 flex w-full flex-col border-border bg-[#0C0C0E] outline-none sm:w-[min(19rem,85vw)] sm:border-r lg:hidden"
-            aria-describedby={undefined}
-          >
-            <Dialog.Title className="sr-only">KROMA</Dialog.Title>
-            <div className="mb-4 flex shrink-0 items-center justify-between px-6 pr-4 pt-[max(1.5rem,env(safe-area-inset-top))]">
-              <AdminBrand />
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  aria-label={t('common.close')}
-                  className="flex h-10 w-10 items-center justify-center rounded-[11px] text-muted transition-colors hover:bg-white/4 hover:text-text"
-                >
-                  <IconX size={20} />
-                </button>
-              </Dialog.Close>
-            </div>
-            <AdminSidebarBody />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+        </div>
+        <AdminSidebarBody />
+      </Drawer>
     </header>
   );
 }
+
+const NAV_FILL = { backgroundColor: '#0C0C0E' } as const;
 
 function ModuleNavLink({ item }: Readonly<{ item: ModuleNav }>) {
   const Icon = resolveModuleIcon(item.icon);

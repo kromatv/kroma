@@ -2,7 +2,6 @@
 // show / episode (wrong metadata, audio, video, subtitles, other) with an
 // optional note. Posts to /api/reports; the server resolves the title itself.
 
-import { TextArea } from '@kroma/admin-kit';
 import {
   apiErrorText,
   type MessageKey,
@@ -10,7 +9,7 @@ import {
   type ReportSubjectKind,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, IconButton } from '@kroma/ui/kit';
+import { Button, Field, IconButton } from '@kroma/ui/kit';
 import {
   IconCheck,
   IconDotsCircleHorizontal,
@@ -109,9 +108,7 @@ export const ReportDialog = createCallable<
               <h2 className="mt-1 truncate font-display text-[20px] font-bold">{subjectTitle}</h2>
             </div>
             <IconButton
-              size={36}
-              glyph={18}
-              radius={12}
+              control="sm"
               icon="x"
               label={t('common.close')}
               onPress={() => call.end()}
@@ -165,20 +162,17 @@ export const ReportDialog = createCallable<
               </div>
 
               <div>
-                <label
-                  htmlFor="report-message"
-                  className="mb-2 block text-[10px] font-bold uppercase tracking-[.12em] text-white/40"
-                >
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/40">
                   {t('report.message')}
-                </label>
-                <TextArea
-                  id="report-message"
-                  value={message}
-                  onChange={setMessage}
+                </div>
+                <Field
+                  label={t('report.message')}
+                  hideLabel
+                  multiline
                   rows={3}
-                  maxLength={2000}
+                  value={message}
+                  onChange={(v) => setMessage(v.slice(0, 2000))}
                   placeholder={t('report.messagePlaceholder')}
-                  className="w-full"
                 />
               </div>
 

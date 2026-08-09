@@ -1,30 +1,17 @@
 // Catalogue-specific loading placeholders, shaped like the layouts they stand
-// in for. The base primitives come from @kroma/admin-kit.
+// in for. The pulsing primitives come from @kroma/ui/kit; the wrappers here
+// only reproduce the pages' own grids and gutters.
 
-import { Skeleton } from '@kroma/admin-kit';
+import { PosterSkeleton, Skeleton } from '@kroma/ui/kit';
 
-export { CardSkeleton, Skeleton, TableSkeleton } from '@kroma/admin-kit';
+export { CardSkeleton, Skeleton, TableSkeleton } from '@kroma/ui/kit';
 
-export function SkeletonText({
-  lines = 3,
-  className = '',
-}: Readonly<{ lines?: number; className?: string }>) {
+// The web tiles are sized by `--card-w`, a fluid CSS variable no React Native
+// prop can carry, so the cell states the width and the kit tile fills it.
+function PosterCell() {
   return (
-    <div className={`space-y-2 ${className}`}>
-      {Array.from({ length: lines }, (_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder row
-        <Skeleton key={i} className={`h-3.5 ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} />
-      ))}
-    </div>
-  );
-}
-
-export function PosterSkeleton({ width }: Readonly<{ width?: number }>) {
-  return (
-    <div style={{ width: width ?? 'var(--card-w)' }} className="shrink-0">
-      <Skeleton className="aspect-2/3 w-full rounded-lg" />
-      <Skeleton className="mt-2.5 h-3.5 w-3/4" />
-      <Skeleton className="mt-1.5 h-3 w-1/3 bg-white/4" />
+    <div style={{ width: 'var(--card-w)' }} className="shrink-0">
+      <PosterSkeleton />
     </div>
   );
 }
@@ -35,7 +22,7 @@ export function SkeletonRow({ count = 7 }: Readonly<{ count?: number }>) {
     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!">
       {Array.from({ length: count }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder grid
-        <PosterSkeleton key={i} />
+        <PosterCell key={i} />
       ))}
     </div>
   );
@@ -44,11 +31,11 @@ export function SkeletonRow({ count = 7 }: Readonly<{ count?: number }>) {
 export function RailSkeleton({ count = 7 }: Readonly<{ count?: number }>) {
   return (
     <section>
-      <Skeleton className="mb-5 mt-10 h-6 w-52" />
+      <Skeleton h={24} w={208} mt={40} mb={20} />
       <div className="flex gap-[18px] overflow-hidden py-4">
         {Array.from({ length: count }, (_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rail
-          <PosterSkeleton key={i} />
+          <PosterCell key={i} />
         ))}
       </div>
     </section>
@@ -58,7 +45,9 @@ export function RailSkeleton({ count = 7 }: Readonly<{ count?: number }>) {
 export function PageSkeleton({ rails = 3 }: Readonly<{ rails?: number }>) {
   return (
     <main className="min-w-0 px-(--gutter-web) pb-20 pt-9">
-      <Skeleton className="h-[46vh] min-h-80 w-full rounded-2xl" />
+      <div className="h-[46vh] min-h-80 w-full">
+        <Skeleton h="100%" w="100%" radius={16} />
+      </div>
       {Array.from({ length: rails }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rails
         <RailSkeleton key={i} />
@@ -71,19 +60,21 @@ export function DetailSkeleton() {
   return (
     <main className="pb-16">
       <div className="relative h-[56vh] min-h-96 w-full overflow-hidden">
-        <Skeleton className="h-full w-full rounded-none" />
+        <Skeleton h="100%" w="100%" radius={0} />
       </div>
       <div className="px-(--gutter-web)">
-        <Skeleton className="-mt-24 h-10 w-2/5" />
+        <Skeleton h={40} w="40%" mt={-96} />
         <div className="mt-4 flex gap-3">
-          <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-6 w-24" />
+          <Skeleton h={24} w={64} />
+          <Skeleton h={24} w={64} />
+          <Skeleton h={24} w={96} />
         </div>
-        <SkeletonText className="mt-6 max-w-2xl" lines={3} />
+        <div className="mt-6 max-w-2xl">
+          <Skeleton shape="text" lines={3} />
+        </div>
         <div className="mt-8 flex gap-3">
-          <Skeleton className="h-12 w-36 rounded-xl" />
-          <Skeleton className="h-12 w-12 rounded-xl" />
+          <Skeleton h={48} w={144} radius="lg" />
+          <Skeleton h={48} w={48} radius="lg" />
         </div>
         <RailSkeleton count={6} />
       </div>

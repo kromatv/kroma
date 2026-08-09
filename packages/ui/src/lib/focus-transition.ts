@@ -5,8 +5,9 @@
 // gets from a CSS transition. See transition.web.ts for the web half.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated } from 'react-native';
+import { Animated, type LayoutChangeEvent } from 'react-native';
 import { motion } from '#ui/core/tokens';
+import { longestSideOf, pressScaleFor } from '#ui/lib/press-dip';
 import { ease } from './ease';
 
 const EASE = ease.out.native;
@@ -38,6 +39,7 @@ export function useFocusScale(focused: boolean, to: number): Record<string, unkn
 interface PressScale {
   pressed: boolean;
   style: Record<string, unknown>;
+  onLayout: (event: LayoutChangeEvent) => void;
   onPressIn: () => void;
   onPressOut: () => void;
 }
@@ -52,12 +54,16 @@ interface PressScale {
 export function usePressScale(): PressScale {
   const [pressed, setPressed] = useState(false);
   const value = useRef(new Animated.Value(1)).current;
+  const longest = useRef(0);
+  const onLayout = useCallback((event: LayoutChangeEvent) => {
+    longest.current = longestSideOf(event);
+  }, []);
 
   const onPressIn = useCallback(() => {
     setPressed(true);
     // The dip is immediate feedback, so it eases fast and never bounces.
     Animated.timing(value, {
-      toValue: motion.pressScale,
+      toValue: pressScaleFor(longest.current),
       duration: motion.duration.fast,
       easing: EASE,
       useNativeDriver: true,
@@ -70,5 +76,5 @@ export function usePressScale(): PressScale {
     Animated.spring(value, { toValue: 1, speed: 30, bounciness: 9, useNativeDriver: true }).start();
   }, [value]);
 
-  return { pressed, style: { transform: [{ scale: value }] }, onPressIn, onPressOut };
+  return { pressed, style: { transform: [{ scale: value }] }, onLayout, onPressIn, onPressOut };
 }

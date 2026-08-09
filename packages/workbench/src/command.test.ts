@@ -22,15 +22,15 @@ const STORIES = [
 ];
 
 describe('commandGroups', () => {
-  it('groups by atomic level, in the registry order', () => {
+  it('groups by functional section, in the registry order', () => {
     const groups = commandGroups(STORIES, '');
-    expect(groups.map((group) => group.title)).toEqual(['Foundations', 'Atoms', 'Molecules']);
+    expect(groups.map((group) => group.title)).toEqual(['Foundations', 'Actions', 'Input']);
     expect(groups[1]?.items.map((story) => story.name)).toEqual(['Button', 'Chip']);
   });
 
-  it('drops a level the query leaves empty rather than showing an empty heading', () => {
+  it('drops a section the query leaves empty rather than showing an empty heading', () => {
     const groups = commandGroups(STORIES, 'ch');
-    expect(groups.map((group) => group.title)).toEqual(['Atoms']);
+    expect(groups.map((group) => group.title)).toEqual(['Actions']);
     expect(flatten(groups).map((story) => story.name)).toEqual(['Chip']);
   });
 

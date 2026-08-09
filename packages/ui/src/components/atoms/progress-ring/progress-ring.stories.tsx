@@ -4,7 +4,7 @@ import { ProgressRing } from './progress-ring';
 
 export default story({
   name: 'ProgressRing',
-  group: 'State',
+  group: 'Feedback',
   docs: 'The progress ring, in SVG. It replaces a CSS conic-gradient, which exists neither on Apple TV nor in old television browsers. The arc eases to each new value rather than jumping to it; `indeterminate` spins a quarter arc for work whose share is unknown.',
   matrix: false,
   args: { value: 0.62, size: 64, stroke: 6, indeterminate: false },

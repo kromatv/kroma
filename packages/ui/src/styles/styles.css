@@ -87,3 +87,45 @@ textarea:focus-visible {
     opacity: 0.6;
   }
 }
+
+/* Scrollbars, in the design's own materials rather than the platform's.
+   `scrollbar-color`/`scrollbar-width` are the standard, honoured by Firefox
+   and by Chromium 121+; the ::-webkit- rules below carry the older Chromium
+   the TV shells ship (webOS 53+, Tizen), where the standard properties are
+   ignored. Both say the same thing, so a browser that understands one is
+   never left with half a scrollbar.
+
+   Overlay scrollbars (the macOS default) are untouched: they only appear
+   while scrolling and already sit over the content. */
+* {
+  scrollbar-color: var(--kroma-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  /* Inset by a transparent border so the thumb reads as a floating pill
+     rather than a bar wedged against the panel's edge. */
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-color: var(--kroma-border-strong);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--kroma-text-dim);
+}
+
+/* The corner where two scrollbars meet: the page colour, never the platform's
+   grey square. */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

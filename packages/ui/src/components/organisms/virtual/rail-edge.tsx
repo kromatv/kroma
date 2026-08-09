@@ -116,9 +116,9 @@ export function RailEdge({
   }, [shown, fade]);
   return (
     <Animated.View
-      pointerEvents={shown && arrow ? 'box-none' : 'none'}
       style={[
         s.edge,
+        shown && arrow ? s.passThrough : s.inert,
         { width: width + FOCUS_BLEED },
         start ? s.edgeStart : s.edgeEnd,
         // Web already masked the edge away; painting a scrim here would recreate
@@ -151,6 +151,8 @@ const s = styles({
   // Sized to the row's own height, not the clip's, so a native scrim doesn't
   // bleed into the title above the rail.
   edge: { absolute: true, top: 0, bottom: 0, justify: 'center', z: 2 },
+  passThrough: { pointerEvents: 'box-none' },
+  inert: { pointerEvents: 'none' },
   // Pulled out by FOCUS_BLEED and padded back in, so the strip covers the clip
   // edge while the button stays on the row.
   edgeStart: { left: -FOCUS_BLEED, align: 'flex-start', pl: FOCUS_BLEED + EDGE_INSET },

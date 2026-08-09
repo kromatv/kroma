@@ -21,7 +21,7 @@ interface DragTrack {
 }
 
 /**
- * Every layer inside the track should be `pointerEvents="none"`, so the track is
+ * Every layer inside the track should be `pointerEvents: 'none'`, so the track is
  * always the event's target and `locationX` is relative to the track itself
  * rather than to whichever fill happened to be under the finger.
  */

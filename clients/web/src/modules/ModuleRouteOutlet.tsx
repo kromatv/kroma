@@ -3,7 +3,7 @@
 // route; a disabled or unknown module renders the not-found state, so turning a
 // module off makes its pages vanish just like its nav.
 
-import { type KromaHost, ModuleScope } from '@kroma/module-sdk';
+import { type KromaHost, ModuleLoading, ModuleScope, ModuleUnavailable } from '@kroma/module-sdk';
 import { Suspense, useMemo } from 'react';
 import { useModuleHostValue, useModuleRoute, useModuleT } from '#web/modules/ModuleHostProvider';
 
@@ -29,28 +29,16 @@ export function ModuleRouteOutlet({ path }: Readonly<{ path: string }>) {
     [host, moduleT],
   );
 
-  if (!scopedHost) return <ModuleMessage text="Loading modules..." />;
-  if (!route) {
-    return (
-      <ModuleMessage text="This module is not installed or has been disabled." tone="strong" />
-    );
-  }
+  // The registry is still resolving, so it is too early to say the module is
+  // missing: hold the page's silhouette rather than accusing it of absence.
+  if (!scopedHost) return <ModuleLoading />;
+  if (!route) return <ModuleUnavailable />;
   const Panel = route.component;
   return (
-    <Suspense fallback={<ModuleMessage text="Loading..." />}>
+    <Suspense fallback={<ModuleLoading />}>
       <ModuleScope id={route.moduleId}>
         <Panel host={scopedHost} />
       </ModuleScope>
     </Suspense>
-  );
-}
-
-function ModuleMessage({ text, tone }: Readonly<{ text: string; tone?: 'strong' }>) {
-  return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-2 p-6">
-      <p className={tone === 'strong' ? 'text-sm font-semibold text-text' : 'text-sm text-muted'}>
-        {text}
-      </p>
-    </div>
   );
 }

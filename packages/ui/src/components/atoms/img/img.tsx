@@ -13,6 +13,7 @@ import {
   Fragment,
   type ReactNode,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -50,6 +51,11 @@ export interface ImgProps {
   radius?: number;
   /** Stretch to fill a positioned parent (absolute, inset 0). */
   fill?: boolean;
+  /** Drawn under the art while it loads (a blur hash, a glyph). */
+  placeholder?: ReactNode;
+  /** Drawn when there is no `src` or it failed (initials, a fallback glyph),
+   *  so the surface degrades to something said rather than to blank. */
+  fallback?: ReactNode;
   style?: StyleProp<ViewStyle>;
   /** Mark this the above-the-fold LCP art: load it eagerly at high priority
    *  instead of lazily. Web only, and at most one image per screen. */
@@ -131,6 +137,8 @@ function Img({
   background,
   radius,
   fill = false,
+  placeholder,
+  fallback,
   style,
   priority = false,
   noCrossFade = false,
@@ -147,6 +155,14 @@ function Img({
   const [natural, setNatural] = useState<Size | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const focal = useMemo(() => parsePosition(position), [position]);
+
+  // Each new source starts transparent again. Before paint, not in an effect
+  // after it: the leaf remounts with this source's key in the same commit, and
+  // a frame of the previous cover at full opacity under the new one is exactly
+  // the cut the fade exists to avoid.
+  useLayoutEffect(() => {
+    if (!IS_WEB && src) opacity.setValue(0);
+  }, [src, opacity]);
 
   // React Native has no object-position, so the native leaf places the cover
   // rectangle itself; `contain` never overflows, so it needs no focal maths.
@@ -171,9 +187,25 @@ function Img({
     style,
   ];
 
+  // The extra surfaces both platforms share: the placeholder sits under the
+  // incoming art and leaves with it; the fallback replaces it outright.
+  const showPlaceholder = placeholder != null && src != null && !loaded && !errored;
+  const showFallback = fallback != null && (src == null || errored);
+  const placeholderLayer = showPlaceholder ? (
+    <View key="placeholder" style={absoluteFill}>
+      {placeholder}
+    </View>
+  ) : null;
+  const fallbackLayer = showFallback ? (
+    <View key="fallback" style={absoluteFill}>
+      {fallback}
+    </View>
+  ) : null;
+
   if (IS_WEB) {
     return (
       <View style={container}>
+        {placeholderLayer}
         {webLayers({
           src,
           under,
@@ -189,12 +221,54 @@ function Img({
           onLoad,
           onError: handleError,
         })}
+        {fallbackLayer}
       </View>
     );
   }
 
-  const layer = rect ? { position: 'absolute' as const, ...rect } : absoluteFill;
-  const mode = rect ? ('stretch' as const) : fit;
+  return (
+    <View onLayout={onBoxLayout} style={container}>
+      {placeholderLayer}
+      {nativeLayers({
+        src,
+        under,
+        alt,
+        fit,
+        rect,
+        duration,
+        errored,
+        opacity,
+        setNatural,
+        markLoaded,
+        onLoad,
+        onError: handleError,
+      })}
+      {fallbackLayer}
+    </View>
+  );
+}
+
+interface NativeLayersArgs {
+  src: string | null;
+  under: string | null;
+  alt: string;
+  fit: 'cover' | 'contain';
+  rect: { top: number; left: number; width: number; height: number } | null;
+  duration: number;
+  errored: boolean;
+  opacity: Animated.Value;
+  setNatural: (size: Size) => void;
+  markLoaded: () => void;
+  onLoad: (() => void) | undefined;
+  onError: () => void;
+}
+
+// The native counterpart of webLayers, and a plain function for the same
+// reason: same elements, same keys, same style identities as when <Img>
+// returned them inline.
+function nativeLayers(at: Readonly<NativeLayersArgs>): ReactNode {
+  const layer = at.rect ? { position: 'absolute' as const, ...at.rect } : absoluteFill;
+  const mode = at.rect ? ('stretch' as const) : at.fit;
   const backend = imageBackend();
   // A backend that fades itself (expo-image) is left alone; one that doesn't
   // (React Native's <Image>) is cross-faded here instead.
@@ -202,29 +276,44 @@ function Img({
     backend.render({
       uri,
       fit: mode,
-      fadeMs: duration,
-      accessibilityLabel: alt || undefined,
-      onLoad: (size: { width: number; height: number } | null) => {
-        if (size) setNatural(size);
-        markLoaded();
+      fadeMs: at.duration,
+      accessibilityLabel: at.alt || undefined,
+      onLoad: (size: Size | null) => {
+        if (size) at.setNatural(size);
+        at.markLoaded();
         if (!backend.fades) {
-          Animated.timing(opacity, { toValue: 1, duration, useNativeDriver: true }).start();
+          Animated.timing(at.opacity, {
+            toValue: 1,
+            duration: at.duration,
+            useNativeDriver: true,
+          }).start();
         }
-        onLoad?.();
+        at.onLoad?.();
       },
-      onError: handleError,
-      style: [layer, animated && !backend.fades ? { opacity: loaded ? opacity : 0 } : null],
+      onError: at.onError,
+      // ALWAYS the driven value, never a bare number. Two reasons, and the
+      // second is the one that bites on tvOS:
+      //
+      // - the value belongs to the <Img>, not to the source, so it is still
+      //   sitting at 1 from the last fade when the next cover arrives; it is
+      //   reset per source in the layout effect above rather than here.
+      // - swapping between `{ opacity: 0 }` and `{ opacity: <value> }` changes
+      //   the STYLE'S SHAPE between renders, and a native-driven animation
+      //   attached to a prop that JS just rewrote does not run under Fabric.
+      //   The image simply appeared, which is what "fading is broken on Apple
+      //   TV" looks like.
+      style: [layer, animated && !backend.fades ? { opacity: at.opacity } : null],
     });
 
   return (
-    <View onLayout={onBoxLayout} style={container}>
-      {under && under !== src ? (
+    <>
+      {at.under && at.under !== at.src ? (
         <View key="under" style={layer}>
-          {backend.render({ uri: under, fit: mode, fadeMs: 0, style: absoluteFill })}
+          {backend.render({ uri: at.under, fit: mode, fadeMs: 0, style: absoluteFill })}
         </View>
       ) : null}
-      {src && !errored ? <Fragment key={src}>{leaf(src, true)}</Fragment> : null}
-    </View>
+      {at.src && !at.errored ? <Fragment key={at.src}>{leaf(at.src, true)}</Fragment> : null}
+    </>
   );
 }
 

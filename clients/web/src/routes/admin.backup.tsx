@@ -1,11 +1,10 @@
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import { Button, Section, Surface } from '@kroma/ui/kit';
 import { IconAlertTriangle } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { ExportModal, ImportModal, isEncryptedFile } from '#web/features/admin/backup-modals';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
-import { C, Card, Section } from '#web/features/admin/ui';
 
 export const Route = createFileRoute('/admin/backup')({
   component: BackupPage,
@@ -31,12 +30,23 @@ function BackupPage() {
     <>
       <PageHeader title={t('admin.backupTitle')} subtitle={t('admin.backupSub')} />
 
-      <Card className="mt-6 flex items-start gap-3 px-5 py-4">
-        <IconAlertTriangle size={20} stroke={1.8} color={C.accent} className="mt-0.5 shrink-0" />
+      <Surface
+        elevated
+        pad="none"
+        radius={16}
+        border="border"
+        row
+        align="flex-start"
+        gap={12}
+        px={20}
+        py={16}
+        mt={24}
+      >
+        <IconAlertTriangle size={20} stroke={1.8} className="mt-0.5 shrink-0 text-accent" />
         <p className="text-[13.5px] font-medium text-text/70">{t('admin.backupWarning')}</p>
-      </Card>
+      </Surface>
 
-      <Section title={t('admin.backupExportTitle')}>
+      <Section title={t('admin.backupExportTitle')} mt={28}>
         <ActionRow
           desc={t('admin.backupExportDesc')}
           action={
@@ -52,7 +62,7 @@ function BackupPage() {
         />
       </Section>
 
-      <Section title={t('admin.backupImportTitle')}>
+      <Section title={t('admin.backupImportTitle')} mt={28}>
         <ActionRow
           desc={t('admin.backupImportDesc')}
           action={
@@ -78,11 +88,7 @@ function BackupPage() {
             </>
           }
         />
-        {notice ? (
-          <p className="mt-3 text-[13px] font-semibold" style={{ color: C.green }}>
-            {notice}
-          </p>
-        ) : null}
+        {notice ? <p className="mt-3 text-[13px] font-semibold text-success">{notice}</p> : null}
       </Section>
     </>
   );
@@ -90,9 +96,20 @@ function BackupPage() {
 
 function ActionRow({ desc, action }: Readonly<{ desc: string; action: React.ReactNode }>) {
   return (
-    <Card className="flex items-center justify-between gap-5 px-5.5 py-4.5">
+    <Surface
+      elevated
+      pad="none"
+      radius={16}
+      border="border"
+      row
+      align="center"
+      justify="space-between"
+      gap={20}
+      px={22}
+      py={18}
+    >
       <p className="max-w-160 text-[13.5px] text-dim">{desc}</p>
       <div className="shrink-0">{action}</div>
-    </Card>
+    </Surface>
   );
 }

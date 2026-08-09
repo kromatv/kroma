@@ -1,19 +1,8 @@
-import { formatBytes, IconButton, type MessageKey, ProgressBar, useT } from '@kroma/module-sdk';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import {
-  IconDotsVertical,
-  IconExternalLink,
-  IconInfoCircle,
-  IconMovie,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconRefresh,
-  IconTrash,
-  IconUsers,
-  IconUsersPlus,
-} from '@tabler/icons-react';
+import { formatBytes } from '@kroma/core';
+import { type MessageKey, useT } from '@kroma/module-sdk';
+import { type ColorValue, Menu, type MenuEntry, Progress } from '@kroma/ui/kit';
+import { IconExternalLink, IconMovie, IconUsers } from '@tabler/icons-react';
 import { useNavigate } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
 import type { DownloadView } from './schemas';
 
 /** Live per-download overlay fed by `download.progress` WS frames. */
@@ -26,7 +15,7 @@ export interface LiveDl {
   state: string;
 }
 
-const STATUS_COLOR: Record<string, string> = {
+const STATUS_COLOR: Record<string, ColorValue> = {
   queued: 'rgba(244,243,240,.55)',
   downloading: '#F4B642',
   seeding: '#46D08D',
@@ -36,9 +25,6 @@ const STATUS_COLOR: Record<string, string> = {
   failed: '#E8536A',
   removed: 'rgba(244,243,240,.4)',
 };
-
-const MENU =
-  'z-50 min-w-[184px] rounded-xl border border-white/10 bg-[#16161C] p-1.5 shadow-[0_12px_32px_rgba(0,0,0,.45)]';
 
 function targetPill(dl: DownloadView): string | null {
   const s = String(dl.season ?? 0).padStart(2, '0');
@@ -159,10 +145,10 @@ function RowProgressCell({
   dl,
   progress,
   color,
-}: Readonly<{ dl: DownloadView; progress: number; color: string }>) {
+}: Readonly<{ dl: DownloadView; progress: number; color: ColorValue }>) {
   return (
     <div className="max-md:hidden">
-      <ProgressBar pct={progress * 100} color={color} height={5} />
+      <Progress value={progress} color={color} size={5} rounded />
       <div className="mt-1 flex items-center justify-between text-[11px] font-semibold tabular-nums text-white/45">
         <span>{Math.round(progress * 100)}%</span>
         {dl.sizeBytes != null ? <span>{formatBytes(dl.sizeBytes)}</span> : null}
@@ -256,9 +242,6 @@ function RowActionsMenu({
   const resumable = status === 'paused';
   // Only meaningful while the torrent is live in the engine.
   const canAskPeers = active || status === 'seeding';
-  // Offered in every state: the backend re-imports a completed download and
-  // resets + re-adds anything else.
-  const retryable = true;
 
   const localId = dl.localId;
   const openInKroma = localId
@@ -269,104 +252,67 @@ function RowActionsMenu({
         })
     : null;
 
+  const items: MenuEntry[] = [
+    ...(pausable
+      ? [
+          {
+            icon: 'player-pause',
+            label: t('downloads.pause'),
+            onSelect: onPause,
+            disabled: busy,
+          } as const,
+        ]
+      : []),
+    ...(resumable
+      ? [
+          {
+            icon: 'player-play',
+            label: t('downloads.resume'),
+            onSelect: onResume,
+            disabled: busy,
+          } as const,
+        ]
+      : []),
+    ...(canAskPeers
+      ? [
+          {
+            icon: 'users-plus',
+            label: t('downloads.askPeers'),
+            onSelect: onAskPeers,
+            disabled: busy,
+          } as const,
+        ]
+      : []),
+    // Offered in every state: the backend re-imports a completed download and
+    // resets + re-adds anything else.
+    { icon: 'refresh', label: t('downloads.retry'), onSelect: onRetry, disabled: busy } as const,
+    ...(openInKroma
+      ? [{ icon: 'info-circle', label: t('downloads.openInKroma'), onSelect: openInKroma } as const]
+      : []),
+    ...(dl.detailsUrl
+      ? [
+          {
+            icon: 'external-link',
+            label: t('downloads.viewOnTracker'),
+            onSelect: () => {
+              if (dl.detailsUrl) window.open(dl.detailsUrl, '_blank', 'noopener,noreferrer');
+            },
+          } as const,
+        ]
+      : []),
+    'separator',
+    {
+      icon: 'trash',
+      label: t('downloads.remove'),
+      onSelect: onRemove,
+      disabled: busy,
+      danger: true,
+    } as const,
+  ];
+
   return (
     <div className="flex justify-end">
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <IconButton
-            icon={IconDotsVertical}
-            label={t('downloads.rowActions')}
-            size={32}
-            iconSize={15}
-            className="data-[state=open]:bg-white/8 data-[state=open]:text-white"
-          />
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content align="end" sideOffset={6} className={MENU}>
-            {pausable ? (
-              <RowMenuItem
-                icon={<IconPlayerPause size={14} stroke={2.2} />}
-                label={t('downloads.pause')}
-                onSelect={onPause}
-                disabled={busy}
-              />
-            ) : null}
-            {resumable ? (
-              <RowMenuItem
-                icon={<IconPlayerPlay size={14} stroke={2.2} />}
-                label={t('downloads.resume')}
-                onSelect={onResume}
-                disabled={busy}
-              />
-            ) : null}
-            {canAskPeers ? (
-              <RowMenuItem
-                icon={<IconUsersPlus size={14} stroke={2.2} />}
-                label={t('downloads.askPeers')}
-                onSelect={onAskPeers}
-                disabled={busy}
-              />
-            ) : null}
-            {retryable ? (
-              <RowMenuItem
-                icon={<IconRefresh size={14} stroke={2.2} />}
-                label={t('downloads.retry')}
-                onSelect={onRetry}
-                disabled={busy}
-              />
-            ) : null}
-            {openInKroma ? (
-              <RowMenuItem
-                icon={<IconInfoCircle size={14} stroke={2} />}
-                label={t('downloads.openInKroma')}
-                onSelect={openInKroma}
-              />
-            ) : null}
-            {dl.detailsUrl ? (
-              <RowMenuItem
-                icon={<IconExternalLink size={14} stroke={2} />}
-                label={t('downloads.viewOnTracker')}
-                onSelect={() => {
-                  if (dl.detailsUrl) window.open(dl.detailsUrl, '_blank', 'noopener,noreferrer');
-                }}
-              />
-            ) : null}
-            <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
-            <RowMenuItem
-              icon={<IconTrash size={14} stroke={2} />}
-              label={t('downloads.remove')}
-              onSelect={onRemove}
-              disabled={busy}
-              danger
-            />
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+      <Menu label={t('downloads.rowActions')} align="end" size={32} items={items} />
     </div>
-  );
-}
-
-function RowMenuItem({
-  icon,
-  label,
-  onSelect,
-  disabled,
-  danger,
-}: Readonly<{
-  icon: ReactNode;
-  label: string;
-  onSelect: () => void;
-  disabled?: boolean;
-  danger?: boolean;
-}>) {
-  return (
-    <DropdownMenu.Item
-      disabled={disabled}
-      onSelect={onSelect}
-      className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold outline-none transition-colors data-disabled:cursor-not-allowed data-disabled:opacity-40 ${danger ? 'text-[#EF8091] data-highlighted:bg-[#E8536A]/[0.14]' : 'text-white/80 data-highlighted:bg-white/[0.07] data-highlighted:text-white'}`}
-    >
-      {icon}
-      {label}
-    </DropdownMenu.Item>
   );
 }

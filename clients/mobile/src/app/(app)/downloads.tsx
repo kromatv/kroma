@@ -2,12 +2,12 @@
 // ones are swipe-to-delete rows.
 
 import { episodeTag, formatRuntime, type MediaItem } from '@kroma/core';
-import { Icon, styles } from '@kroma/ui/kit';
+import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
-import { Alert, FlatList, Pressable, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable } from 'react-native';
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -23,14 +23,14 @@ import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
   return (
-    <View>
+    <Box>
       <FadeImage uri={uri} seed={seed} radius={radius.sm} style={s.thumb} />
-      <View style={s.playBadge}>
-        <View style={s.playCircle}>
+      <Box style={s.playBadge}>
+        <Box style={s.playCircle}>
           <Icon name="player-play-filled" size={15} />
-        </View>
-      </View>
-    </View>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -59,7 +59,7 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
           style={s.deleteAction}
         >
           <Icon name="trash" size={22} stroke={2} />
-          <Text style={s.deleteLabel}>{t('common.delete')}</Text>
+          <Txt style={s.deleteLabel}>{t('common.delete')}</Txt>
         </Pressable>
       )}
     >
@@ -68,14 +68,14 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
         style={({ pressed }) => [s.row, pressed && { backgroundColor: colors.surface }]}
       >
         <RowArt uri={entry.backdropUrl ?? entry.posterUrl} seed={item.id} />
-        <View style={s.text}>
-          <Text numberOfLines={2} style={s.rowTitle}>
+        <Box style={s.text}>
+          <Txt lines={2} style={s.rowTitle}>
             {item.showTitle ?? item.metadata?.title ?? item.title}
-          </Text>
-          <Text numberOfLines={1} style={s.rowSub}>
+          </Txt>
+          <Txt lines={1} style={s.rowSub}>
             {sub}
-          </Text>
-        </View>
+          </Txt>
+        </Box>
       </Pressable>
     </ReanimatedSwipeable>
   );
@@ -137,26 +137,26 @@ function ActiveRow({
   return (
     <Pressable onPress={showOptions} style={s.row}>
       <RowArt uri={client.backdropFor(item) ?? client.posterFor(item)} seed={item.id} />
-      <View style={s.text}>
-        <Text numberOfLines={2} style={s.rowTitle}>
+      <Box style={s.text}>
+        <Txt lines={2} style={s.rowTitle}>
           {item.showTitle ?? item.metadata?.title ?? item.title}
-        </Text>
-        <Text numberOfLines={1} style={s.rowSub}>
+        </Txt>
+        <Txt lines={1} style={s.rowSub}>
           {activeLabel(t, progress, mode)}
-        </Text>
-      </View>
-      <View style={s.ringBox}>
+        </Txt>
+      </Box>
+      <Box style={s.ringBox}>
         {mode === 'paused' ? (
-          <View style={s.pausedRing}>
+          <Box style={s.pausedRing}>
             <ProgressRing progress={Math.max(0.02, progress)} size={36} />
-            <View pointerEvents="none" style={s.pausedRingGlyph}>
+            <Box pointerEvents="none" style={s.pausedRingGlyph}>
               <Icon name="player-pause-filled" size={12} color={colors.textDim} />
-            </View>
-          </View>
+            </Box>
+          </Box>
         ) : (
           <ProgressRing progress={progress} size={36} />
         )}
-      </View>
+      </Box>
     </Pressable>
   );
 }
@@ -167,8 +167,8 @@ function LegendItem({
   label,
 }: Readonly<{ color?: string; outlined?: boolean; label: string }>) {
   return (
-    <View style={s.legendItem}>
-      <View
+    <Box style={s.legendItem}>
+      <Box
         style={[
           s.legendDot,
           outlined
@@ -176,8 +176,8 @@ function LegendItem({
             : { backgroundColor: color },
         ]}
       />
-      <Text style={s.legendText}>{label}</Text>
-    </View>
+      <Txt style={s.legendText}>{label}</Txt>
+    </Box>
   );
 }
 
@@ -197,11 +197,11 @@ function StorageMeter() {
   const app = downloads.totalBytes;
   const other = Math.max(0, total - free - app);
   return (
-    <View style={s.meter}>
-      <View style={s.meterTrack}>
-        <View style={[s.meterFill, { flex: other / total }]} />
+    <Box style={s.meter}>
+      <Box style={s.meterTrack}>
+        <Box style={[s.meterFill, { flex: other / total }]} />
         {app > 0 ? (
-          <View
+          <Box
             style={[
               s.meterFill,
               // A film on a terabyte of flash is a fraction of a pixel; a
@@ -210,9 +210,9 @@ function StorageMeter() {
             ]}
           />
         ) : null}
-        <View style={{ flex: free / total }} />
-      </View>
-      <View style={s.meterLegend}>
+        <Box style={{ flex: free / total }} />
+      </Box>
+      <Box style={s.meterLegend}>
         {app > 0 ? (
           <LegendItem color={colors.accent} label={`KROMA · ${formatBytes(app)}`} />
         ) : null}
@@ -221,8 +221,8 @@ function StorageMeter() {
           label={`${t('offline.storageOther')} · ${formatBytes(other)}`}
         />
         <LegendItem outlined label={`${t('offline.storageFree')} · ${formatBytes(free)}`} />
-      </View>
-    </View>
+      </Box>
+    </Box>
   );
 }
 
@@ -248,7 +248,7 @@ export default function Downloads() {
             downloads.downloading.length > 0 ||
             downloads.paused.length > 0 ||
             downloads.queuedItems.length > 0 ? (
-              <View style={s.activeBlock}>
+              <Box style={s.activeBlock}>
                 {downloads.downloading.map(({ item, progress }) => (
                   <ActiveRow key={item.id} item={item} progress={progress} mode="downloading" />
                 ))}
@@ -258,7 +258,7 @@ export default function Downloads() {
                 {downloads.queuedItems.map((item) => (
                   <ActiveRow key={item.id} item={item} progress={-1} mode="queued" />
                 ))}
-              </View>
+              </Box>
             ) : null
           }
           ListFooterComponent={<StorageMeter />}

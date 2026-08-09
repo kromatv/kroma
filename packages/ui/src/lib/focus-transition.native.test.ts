@@ -19,7 +19,7 @@
 // in the diff would say so.
 
 import { act, renderHook } from '@testing-library/react';
-import { Animated } from 'react-native';
+import { Animated, type LayoutChangeEvent } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { motion } from '#ui/core/tokens';
 import { ease } from './ease';
@@ -28,10 +28,14 @@ import {
   useFocusScale as useFocusScaleWeb,
   usePressScale as usePressScaleWeb,
 } from './focus-transition.web';
+import { pressScaleFor } from './press-dip';
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+const layout = (width: number, height: number) =>
+  ({ nativeEvent: { layout: { width, height, x: 0, y: 0 } } }) as LayoutChangeEvent;
 
 describe('useFocusScale on the web', () => {
   it('transitions transform and NOTHING else', () => {
@@ -123,6 +127,13 @@ describe('usePressScale on the web', () => {
     expect(result.current.style.transform).toEqual([{ scale: 1 }]);
   });
 
+  it('scales a measured row by its own size, like the native half', () => {
+    const { result } = renderHook(() => usePressScaleWeb());
+    act(() => result.current.onLayout(layout(900, 60)));
+    act(() => result.current.onPressIn());
+    expect(result.current.style.transform).toEqual([{ scale: pressScaleFor(900) }]);
+  });
+
   it('carries the release overshoot in the bezier, over the fast duration', () => {
     const { result } = renderHook(() => usePressScaleWeb());
     // The dip is immediate feedback, so it is the fast token; the spring curve
@@ -156,6 +167,18 @@ describe('usePressScale on native', () => {
     const [, config] = spring.mock.calls[0] ?? [];
     // Bounciness is the overshoot: a timing back to 1 would feel dead.
     expect(config).toMatchObject({ toValue: 1, bounciness: 9, useNativeDriver: true });
+  });
+
+  it('dips a measured row by its own size rather than by the flat floor', () => {
+    // The whole point of measuring: a full-width row must travel the same few
+    // pixels a small button does, not collapse by the same percentage.
+    const timing = vi.spyOn(Animated, 'timing');
+    const { result } = renderHook(() => usePressScale());
+    act(() => result.current.onLayout(layout(900, 60)));
+    act(() => result.current.onPressIn());
+    const [, config] = timing.mock.calls[0] ?? [];
+    expect(config?.toValue).toBe(pressScaleFor(900));
+    expect(config?.toValue).toBeGreaterThan(motion.pressScale);
   });
 });
 

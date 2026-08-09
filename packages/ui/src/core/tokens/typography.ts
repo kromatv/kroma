@@ -22,7 +22,7 @@ export const tracking = { overline: 0.12, overlineTv: 0.22, display: -0.02 } as 
 
 export interface TypeSpec {
   family: FontToken;
-  weight: '400' | '500' | '600' | '700';
+  weight: '400' | '500' | '600' | '700' | '800';
   size: number;
   /** Line height as a multiple of `size`. */
   ratio: number;

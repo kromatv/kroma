@@ -52,6 +52,10 @@ function Progress({
       radius={corner}
       overflow="hidden"
       accessibilityRole="progressbar"
+      // An indeterminate bar has no value to announce.
+      accessibilityValue={
+        indeterminate ? undefined : { min: 0, max: 100, now: Math.round(clamp01(value) * 100) }
+      }
     >
       {indeterminate ? (
         <Animated.View style={[bar, sweep]} />

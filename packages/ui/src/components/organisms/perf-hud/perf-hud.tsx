@@ -37,7 +37,7 @@ function PerfHud({ enabled }: Readonly<{ enabled: boolean }>) {
 
   if (!enabled || !report) return null;
   return (
-    <Box absolute style={s.panel} pointerEvents="none">
+    <Box absolute style={s.panel}>
       <Row label="FPS" value={String(report.fps)} bad={report.fps < 45} />
       <Row label="WORST" value={`${report.worstFrame} ms`} bad={report.worstFrame > 50} />
       <Row label="JANK" value={String(report.jankyFrames)} bad={report.jankyFrames > 0} />
@@ -65,6 +65,7 @@ function Row({ label, value, bad }: Readonly<{ label: string; value: string; bad
 
 const s = styles({
   panel: {
+    pointerEvents: 'none',
     top: 24,
     right: 24,
     z: 999,

@@ -8,8 +8,9 @@ import { useT } from '@kroma/ui';
 import { useState } from 'react';
 import { clock, dur, rel } from '#web/features/admin/jobs-format';
 import { usePoll } from '#web/features/admin/shell';
-import { C } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
+
+const C = { accent: '#F4B642', green: '#46D08D', red: '#E8536A' } as const;
 
 export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: string }>) {
   const t = useT();
@@ -58,7 +59,7 @@ function RunRow({
     <button
       type="button"
       onClick={onClick}
-      className={`mb-1 flex w-full items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-left transition-colors ${
+      className={`mb-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors ${
         active ? 'bg-white/6' : 'hover:bg-white/3'
       }`}
     >

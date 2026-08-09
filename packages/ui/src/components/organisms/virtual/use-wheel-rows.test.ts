@@ -9,7 +9,7 @@ import { useWheelScroll } from './use-wheel-rows';
 
 let pan: ((delta: number) => void) | null = null;
 vi.mock('#ui/lib/wheel-pan', () => ({
-  useWheelPan: (_viewport: unknown, handler: (delta: number) => void) => {
+  useWheelTravel: (_viewport: unknown, handler: (delta: number) => void) => {
     pan = handler;
   },
 }));

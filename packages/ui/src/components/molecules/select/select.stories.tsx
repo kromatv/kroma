@@ -13,7 +13,7 @@ const TRACKS = [
 export default story({
   name: 'Select',
   group: 'Input',
-  docs: "Pick one of a few, from a trigger that says what is picked. The options open in a **Dialog** rather than a hung panel, and that is the television talking: a modal is its own view controller on tvOS, so the D-pad is confined to the options for free - and a form deep in a ScrollView cannot clip it. The trigger wears <TextField>'s well, so a form reads as one family of controls. Wrap it in a `<Field>` for a label, hint and error, exactly as you would the entry.",
+  docs: "Pick one of a few, from a trigger that says what is picked. Where the options appear is the platform's decision: under a D-pad they open in a **Dialog** (a modal is its own view controller on tvOS, so the remote is confined to the options for free), and under a pointer they open as an anchored listbox popover with the full combobox keyboard - arrows, Home/End, type-ahead, Enter picks, Esc returns to the trigger - announced through `aria-activedescendant`. The trigger wears <TextField>'s well, so a form reads as one family of controls. Wrap it in a `<Field>` for a label, hint and error, exactly as you would the entry.",
   usage: `<Select
   label="Audio track"
   options={[

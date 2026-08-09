@@ -9,11 +9,11 @@ import {
   type Show,
   sizedImageUrl,
 } from '@kroma/core';
-import { styles } from '@kroma/ui/kit';
+import { Box, styles, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { PageHeader } from '#mobile/components/PageHeader';
@@ -82,7 +82,7 @@ export default function Genres() {
               { width: tileW, height: tileW * 0.62, opacity: pressed ? 0.8 : 1 },
             ]}
           >
-            <View style={s.tile}>
+            <Box style={s.tile}>
               <LinearGradient colors={tile.gradient} style={StyleSheet.absoluteFill} />
               {tile.art ? (
                 <FadeImage uri={tile.art} seed={tile.name} style={StyleSheet.absoluteFill} />
@@ -92,15 +92,15 @@ export default function Genres() {
                 locations={[0, 0.45, 1]}
                 style={StyleSheet.absoluteFill}
               />
-              <View style={s.tileCountPill}>
-                <Text style={s.tileCountText}>{tile.count}</Text>
-              </View>
-              <View style={s.tileText}>
-                <Text numberOfLines={1} style={s.tileName}>
+              <Box style={s.tileCountPill}>
+                <Txt style={s.tileCountText}>{tile.count}</Txt>
+              </Box>
+              <Box style={s.tileText}>
+                <Txt lines={1} style={s.tileName}>
                   {tile.name}
-                </Text>
-              </View>
-            </View>
+                </Txt>
+              </Box>
+            </Box>
           </Pressable>
         )}
       />

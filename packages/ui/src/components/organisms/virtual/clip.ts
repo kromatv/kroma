@@ -36,6 +36,7 @@ export const clipStyles = styles({
     left: -FOCUS_BLEED,
     p: FOCUS_BLEED,
     overflow: 'hidden',
+    pointerEvents: 'box-none',
   },
 
   // The same box, but flush at the top — for a vertical list, which always has

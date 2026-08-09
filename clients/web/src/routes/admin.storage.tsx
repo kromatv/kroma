@@ -1,14 +1,21 @@
 import type { Volume } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState } from '@kroma/ui/kit';
+import {
+  Button,
+  confirm,
+  EmptyState,
+  Progress,
+  Section,
+  Select,
+  StatCard,
+  Surface,
+} from '@kroma/ui/kit';
 import { IconDatabase } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
-import { C, Card, ProgressBar, Section, Select, StatCard } from '#web/features/admin/ui';
 import { formatBytes } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
-import { confirmDialog } from '#web/shared/ui';
 
 export const Route = createFileRoute('/admin/storage')({
   component: StoragePage,
@@ -36,7 +43,7 @@ function StoragePage() {
   }
 
   async function resetMetadata() {
-    const ok = await confirmDialog({
+    const ok = await confirm({
       title: t('admin.resetMetadata'),
       message: t('admin.resetMetadataConfirm'),
       confirmLabel: t('admin.resetMetadataBtn'),
@@ -63,16 +70,16 @@ function StoragePage() {
           label={t('admin.used')}
           value={formatBytes(data?.usedBytes ?? 0)}
           unit={`${pctUsed}%`}
-          color={C.accent}
+          color="accent"
         />
         <StatCard
           label={t('admin.available')}
           value={formatBytes(data?.availableBytes ?? 0)}
-          color={C.green}
+          color="success"
         />
       </div>
 
-      <Section title={t('admin.volumes')}>
+      <Section title={t('admin.volumes')} mt={28}>
         <div className="flex flex-col gap-3.5">
           {(data?.volumes ?? []).map((v) => (
             <VolumeCard key={v.mount} v={v} />
@@ -83,19 +90,19 @@ function StoragePage() {
         </div>
       </Section>
 
-      <Section title={t('admin.cacheContent')}>
+      <Section title={t('admin.cacheContent')} mt={28}>
         <div className="grid grid-cols-4 gap-4">
           <StatCard
             label={t('admin.transcodeCacheSize')}
             value={formatBytes(cache?.transcodeBytes ?? 0)}
             unit={t('admin.transcodeCacheBudget', { limit: cache?.transcodeLimit ?? '20 Go' })}
-            color={C.accent}
+            color="accent"
           />
           <StatCard
             label={t('admin.cachedImages')}
             value={(cache?.imagesCount ?? 0).toLocaleString()}
             unit={formatBytes(cache?.imagesBytes ?? 0)}
-            color={C.accent}
+            color="accent"
           />
           <StatCard
             label={t('admin.enrichedTitles')}
@@ -104,7 +111,7 @@ function StoragePage() {
               movies: cache?.enrichedItems ?? 0,
               shows: cache?.enrichedShows ?? 0,
             })}
-            color={C.green}
+            color="success"
           />
           <StatCard
             label={t('admin.cacheEmbeddings')}
@@ -113,13 +120,13 @@ function StoragePage() {
         </div>
       </Section>
 
-      <Section title={t('admin.cacheMaintenance')}>
-        <Card className="overflow-hidden">
+      <Section title={t('admin.cacheMaintenance')} mt={28}>
+        <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
           <MaintRow
             title={t('admin.transcodeCacheFolder')}
             desc={t('admin.transcodeCacheFolderDesc')}
             right={
-              <span className="rounded-[9px] border border-border-strong bg-surface-2 px-3 py-2 text-[13px] font-semibold text-text">
+              <span className="rounded-md border border-border-strong bg-surface-2 px-3 py-2 text-[13px] font-semibold text-text">
                 {data?.cache.dir ?? '-'}
               </span>
             }
@@ -128,7 +135,8 @@ function StoragePage() {
             title={t('admin.cacheLimit')}
             desc={t('admin.cacheLimitDesc')}
             right={
-              <Select
+              <LimitSelect
+                label={t('admin.cacheLimit')}
                 value={data?.cache.limit ?? '80 Go'}
                 options={['40 Go', '80 Go', '120 Go', '256 Go', t('opt.unlimited')]}
                 onChange={(v) => client.updateSettings({ cacheLimit: v }).then(reload)}
@@ -139,7 +147,8 @@ function StoragePage() {
             title={t('admin.transcodeCacheLimit')}
             desc={t('admin.transcodeCacheLimitDesc')}
             right={
-              <Select
+              <LimitSelect
+                label={t('admin.transcodeCacheLimit')}
                 value={data?.cache.transcodeLimit ?? '20 Go'}
                 options={['10 Go', '20 Go', '50 Go', '100 Go', t('opt.unlimited')]}
                 onChange={(v) => client.updateSettings({ transcodeCacheLimit: v }).then(reload)}
@@ -173,24 +182,43 @@ function StoragePage() {
               />
             }
           />
-        </Card>
+        </Surface>
       </Section>
     </>
+  );
+}
+
+function LimitSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: Readonly<{
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+}>) {
+  const all = options.includes(value) ? options : [value, ...options];
+  return (
+    <Select
+      label={label}
+      value={value}
+      options={all.map((o) => ({ value: o, label: o }))}
+      onChange={onChange}
+    />
   );
 }
 
 function VolumeCard({ v }: Readonly<{ v: Volume }>) {
   const t = useT();
   const pct = v.totalBytes ? Math.round((v.usedBytes / v.totalBytes) * 100) : 0;
-  const barColor = pct >= 80 ? C.red : C.accent;
+  const nearFull = pct >= 80;
   return (
-    <Card className="px-5.5 py-4.5">
+    <Surface elevated pad="none" radius={16} border="border" px={22} py={18}>
       <div className="mb-3 flex items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3.5">
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
-            style={{ background: 'rgba(244,182,66,.16)', color: C.accent }}
-          >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
             <IconDatabase size={20} stroke={1.8} />
           </span>
           <div className="min-w-0">
@@ -205,13 +233,13 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
             {formatBytes(v.usedBytes)}{' '}
             <span className="font-medium text-text/40">/ {formatBytes(v.totalBytes)}</span>
           </div>
-          <div className="text-[12px] font-semibold" style={{ color: barColor }}>
+          <div className={`text-[12px] font-semibold ${nearFull ? 'text-danger' : 'text-accent'}`}>
             {t('admin.pctUsed', { pct })}
           </div>
         </div>
       </div>
-      <ProgressBar pct={pct} color={barColor} height={9} />
-    </Card>
+      <Progress value={pct / 100} color={nearFull ? 'danger' : 'accent'} size={9} rounded />
+    </Surface>
   );
 }
 

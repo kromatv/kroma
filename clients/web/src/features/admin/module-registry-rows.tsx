@@ -2,11 +2,11 @@
 // operator-added registry, and the add flow with its verify-before-save step.
 // The drawer container and its draft state live in module-registries.tsx.
 
-import { Button, Card, TextInput, Toggle, useAsyncAction } from '@kroma/admin-kit';
 import type { StoreRegistry, StoreRegistryPreview } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconButton } from '@kroma/ui/kit';
+import { Button, Field, IconButton, Surface, Switch } from '@kroma/ui/kit';
 import { useState } from 'react';
+import { useAsyncAction } from '#web/features/admin/hooks';
 import { adminApi, message, previewRegistry } from '#web/features/admin/module-api';
 
 /** One operator-added registry, as stored in the `moduleRegistries` setting. */
@@ -54,7 +54,7 @@ export function OfficialRow({
       onSaved();
     }, message);
   return (
-    <Card className="flex flex-col gap-2 p-4">
+    <Surface elevated pad="none" radius={16} p={16} gap={8}>
       <div className="flex items-center gap-2">
         <span className="font-semibold text-text">{t('admin.registriesOfficial')}</span>
         <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
@@ -63,23 +63,29 @@ export function OfficialRow({
       </div>
       <p className="text-xs text-muted">{t('admin.registriesOfficialDesc')}</p>
       <div className="flex flex-wrap items-center gap-2">
-        <TextInput
+        <Field
+          label="URL"
+          hideLabel
+          type="url"
+          icon="world"
           value={value}
           onChange={setValue}
           placeholder="https://.../modules.json"
-          className="min-w-0 flex-1"
+          flex={1}
+          minW={0}
         />
         <Button
-          variant="secondary"
+          variant="glass"
+          size="sm"
           label={t('common.save')}
-          onClick={save}
+          onPress={save}
           loading={busy}
           disabled={!dirty}
         />
       </div>
       {error && <p className="text-xs font-semibold text-danger">{error}</p>}
       <StatusLine status={status} />
-    </Card>
+    </Surface>
   );
 }
 
@@ -98,35 +104,44 @@ export function ExtraRow({
 }>) {
   const t = useT();
   return (
-    <Card className="flex flex-col gap-2 p-4">
+    <Surface elevated pad="none" radius={16} p={16} gap={8}>
       <div className="flex flex-wrap items-center gap-2">
-        <TextInput
+        <Field
+          label={t('admin.registriesName')}
+          hideLabel
+          icon="tag"
           value={registry.name}
           onChange={(name) => onChange({ ...registry, name })}
           placeholder={t('admin.registriesName')}
-          className="w-44"
+          w={176}
         />
-        <Toggle on={registry.enabled} onChange={(enabled) => onChange({ ...registry, enabled })} />
+        <Switch
+          checked={registry.enabled}
+          onChange={(enabled) => onChange({ ...registry, enabled })}
+          label={registry.name || registry.url}
+        />
         <span className="text-xs text-dim">
           {registry.enabled ? t('admin.modulesEnabled') : t('admin.modulesDisabled')}
         </span>
         <div className="flex-1" />
         <IconButton
           variant="ghost"
-          size={32}
-          glyph={17}
           icon="trash"
           label={t('admin.registriesRemove')}
           onPress={busy ? () => {} : onRemove}
         />
       </div>
-      <TextInput
+      <Field
+        label="URL"
+        hideLabel
+        type="url"
+        icon="world"
         value={registry.url}
         onChange={(url) => onChange({ ...registry, url })}
         placeholder="https://.../modules.json"
       />
       <StatusLine status={status} />
-    </Card>
+    </Surface>
   );
 }
 
@@ -183,20 +198,28 @@ export function AddRegistry({
     setPreview(null);
   };
   return (
-    <Card className="flex flex-col gap-2.5 p-4">
+    <Surface elevated pad="none" radius={16} p={16} gap={10}>
       <span className="font-semibold text-text">{t('admin.registriesAdd')}</span>
       <div className="flex flex-wrap items-center gap-2">
-        <TextInput
+        <Field
+          label={t('admin.registriesName')}
+          hideLabel
+          icon="tag"
           value={name}
           onChange={setName}
           placeholder={t('admin.registriesName')}
-          className="w-44"
+          w={176}
         />
-        <TextInput
+        <Field
+          label="URL"
+          hideLabel
+          type="url"
+          icon="world"
           value={url}
           onChange={setUrl}
           placeholder="https://.../modules.json"
-          className="min-w-0 flex-1"
+          flex={1}
+          minW={0}
         />
       </div>
       {url.trim() !== '' && !valid && (
@@ -210,20 +233,22 @@ export function AddRegistry({
         </p>
         <div className="flex shrink-0 items-center gap-2">
           <Button
-            variant="secondary"
+            variant="glass"
+            size="sm"
             label={t('admin.registriesCheck')}
-            onClick={runCheck}
+            onPress={runCheck}
             loading={check.busy}
             disabled={!valid || check.busy}
           />
           <Button
             variant="primary"
+            size="sm"
             label={t('common.add')}
-            onClick={add}
+            onPress={add}
             disabled={busy || !verified}
           />
         </div>
       </div>
-    </Card>
+    </Surface>
   );
 }

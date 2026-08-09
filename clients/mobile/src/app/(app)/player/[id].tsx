@@ -4,14 +4,14 @@
 
 import { audioTracksOf, langCode, type MediaItem, preferredAudioIndex } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { styles } from '@kroma/ui/kit';
+import { Box, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import type { VideoView as VideoViewRef } from 'expo-video';
 import { VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { CastPanel } from '#mobile/components/cast/CastPanel';
 import { ErrorView, Loading } from '#mobile/components/ui';
 import { type DownloadEntry, useDownloads } from '#mobile/lib/downloads';
@@ -164,7 +164,7 @@ function PlayerBody({
   }
 
   return (
-    <View style={s.stage}>
+    <Box style={s.stage}>
       <VideoView
         ref={viewRef}
         player={engine.player}
@@ -226,7 +226,7 @@ function PlayerBody({
         statsOn={statsOn}
         onToggleStats={() => setStatsOn((v) => !v)}
       />
-    </View>
+    </Box>
   );
 }
 

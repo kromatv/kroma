@@ -4,15 +4,15 @@
 // closes on an ack rather than waiting for the new art (the fiche live-refreshes
 // on the update event). Gated on `library.manage` by the caller AND the server.
 
-import { Image, TextInput } from '@kroma/admin-kit';
 import { apiErrorText, type MatchCandidate } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, IconButton } from '@kroma/ui/kit';
+import { Button, Field, IconButton } from '@kroma/ui/kit';
 import { IconCheck, IconLoader2, IconSearch } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';
+import { Image } from '#web/shared/ui';
 
 type Kind = 'movie' | 'show';
 
@@ -85,27 +85,28 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                   setSubmitted(query.trim() || undefined);
                 }}
               >
-                <TextInput
-                  value={query}
-                  onChange={setTyped}
-                  placeholder={t('rematch.searchPlaceholder')}
-                  aria-label={t('rematch.searchPlaceholder')}
-                  className="w-[220px] max-w-[42vw]"
-                />
+                <div className="w-[220px] max-w-[42vw]">
+                  <Field
+                    label={t('rematch.searchPlaceholder')}
+                    hideLabel
+                    type="search"
+                    icon="search"
+                    value={query}
+                    onChange={setTyped}
+                    onSubmit={() => setSubmitted(query.trim() || undefined)}
+                    placeholder={t('rematch.searchPlaceholder')}
+                  />
+                </div>
                 {/* Mirrors the form's implicit Enter-key submit. */}
                 <IconButton
-                  size={41}
-                  glyph={16}
-                  radius={12}
+                  control="sm"
                   icon="search"
                   label={t('rematch.search')}
                   onPress={() => setSubmitted(query.trim() || undefined)}
                   disabled={isPending}
                 />
                 <IconButton
-                  size={36}
-                  glyph={18}
-                  radius={12}
+                  control="sm"
                   icon="x"
                   label={t('common.close')}
                   onPress={() => call.end(false)}

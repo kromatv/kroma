@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
 import {
@@ -16,6 +17,8 @@ interface Cue {
 }
 
 const TAG = /<[^<>]*>/g;
+
+const NO_POINTER: ViewStyle = { pointerEvents: 'none' };
 
 /** Strip VTT inline markup UNTIL STABLE, not in one pass: removing the inner tag
  * of `<<i>>` leaves `<>` behind, so a single sweep can put the very markup this
@@ -209,7 +212,7 @@ export function SubtitleRenderer({
       align="center"
       gap={7}
       px="8%"
-      pointerEvents="none"
+      style={NO_POINTER}
     >
       {/* CEA-708 has three layers: text, its background box, and the WINDOW the
           cue sits in. The window is a container, so it only renders when

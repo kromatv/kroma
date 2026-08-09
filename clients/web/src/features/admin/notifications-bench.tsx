@@ -3,25 +3,37 @@
 // preferences, per-recipient rendering, the stored row, the live bell, the push
 // fan-out), so "everyone" reaches every account for real.
 
-import { Card, Field, OptionSelect, TextArea, TextInput, useAsyncAction } from '@kroma/admin-kit';
 import type { MessageKey, Notification } from '@kroma/core';
 import { NOTIFICATION_CATEGORY_LABEL } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
-import { useRef, useState } from 'react';
-import { NotificationCard } from '#web/features/notifications/panel';
+import {
+  Box,
+  Button,
+  ChoiceList,
+  Divider,
+  Field,
+  Icon,
+  Row,
+  Select,
+  Surface,
+  Txt,
+} from '@kroma/ui/kit';
+import { useState } from 'react';
+import { useAsyncAction } from '#web/features/admin/hooks';
+import { NotificationImageField } from '#web/features/admin/notification-image-field';
 import { kromaClient } from '#web/shared/lib/api';
+import { NotificationCard } from '#web/shared/ui/notification-card';
 
 type Target = 'me' | 'admins' | 'everyone';
 type Category = Notification['category'];
 
-const TARGETS: { value: Target; label: MessageKey }[] = [
-  { value: 'me', label: 'admin.notifTargetMe' },
-  { value: 'admins', label: 'admin.notifTargetAdmins' },
-  { value: 'everyone', label: 'admin.notifTargetEveryone' },
+const TARGETS: { value: Target; label: MessageKey; hint: MessageKey }[] = [
+  { value: 'me', label: 'admin.notifTargetMe', hint: 'admin.notifTargetMeHint' },
+  { value: 'admins', label: 'admin.notifTargetAdmins', hint: 'admin.notifTargetAdminsHint' },
+  { value: 'everyone', label: 'admin.notifTargetEveryone', hint: 'admin.notifTargetEveryoneHint' },
 ];
 
-/** What the form holds — and, one to one, what the server is asked to send. */
+/** What the form holds, and one to one what the server is asked to send. */
 interface Draft {
   title: string;
   body: string;
@@ -38,7 +50,6 @@ export function NotificationBench() {
   const [target, setTarget] = useState<Target>('me');
   const [sent, setSent] = useState<number | null>(null);
   const { busy, error, run } = useAsyncAction();
-  const fileRef = useRef<HTMLInputElement>(null);
 
   // Any edit invalidates the last delivery count: it belonged to what was on
   // screen a moment ago, not to what is there now.
@@ -64,179 +75,127 @@ export function NotificationBench() {
       (e) => (e instanceof Error ? e.message : t('error.serverBody')),
     );
 
-  const upload = (file: File) =>
-    run(
-      async () => {
-        const { imageUrl } = await kromaClient().uploadNotificationImage(file);
-        edit({ imageUrl });
-      },
-      (e) => (e instanceof Error ? e.message : t('error.serverBody')),
-    );
-
   return (
-    // Capped width: a five-field form shouldn't stretch full-bleed on a wide display.
-    <div className="mt-6 grid max-w-[58rem] items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
-      <Card className="min-w-0 px-5.5 pb-1.5 pt-5">
-        <Field label={t('admin.notifFieldTitle')}>
-          <TextInput
-            className="w-full"
-            value={draft.title}
-            onChange={(v) => edit({ title: v })}
-            placeholder={t('admin.notifTitlePlaceholder')}
-          />
-        </Field>
+    <div className="mt-6 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <Surface elevated pad="none" radius={16} px={22} py={20} gap={16} minW={0}>
+        <Field
+          icon="tag"
+          label={t('admin.notifFieldTitle')}
+          value={draft.title}
+          onChange={(v) => edit({ title: v })}
+          placeholder={t('admin.notifTitlePlaceholder')}
+        />
 
-        <Field label={t('admin.notifFieldBody')}>
-          <TextArea
-            className="w-full"
-            value={draft.body}
-            onChange={(v) => edit({ body: v })}
-            rows={3}
-            placeholder={t('admin.notifBodyPlaceholder')}
-          />
-        </Field>
+        <Field
+          label={t('admin.notifFieldBody')}
+          multiline
+          rows={3}
+          value={draft.body}
+          onChange={(v) => edit({ body: v })}
+          placeholder={t('admin.notifBodyPlaceholder')}
+        />
 
-        <div className="grid gap-x-3.5 sm:grid-cols-2">
-          <Field label={t('admin.notifFieldCategory')}>
-            <OptionSelect
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={t('admin.notifFieldCategory')} minW={0}>
+            <Select
               block
+              label={t('admin.notifFieldCategory')}
               value={draft.category}
               onChange={(v) => edit({ category: v as Category })}
-              ariaLabel={t('admin.notifFieldCategory')}
               options={(Object.keys(NOTIFICATION_CATEGORY_LABEL) as Category[]).map((c) => ({
                 value: c,
                 label: t(NOTIFICATION_CATEGORY_LABEL[c]),
               }))}
             />
           </Field>
-          <Field label={t('admin.notifFieldLink')}>
-            <TextInput
-              className="w-full"
-              value={draft.link}
-              onChange={(v) => edit({ link: v })}
-              placeholder="/movie/…"
-            />
-          </Field>
+          <Field
+            icon="link"
+            label={t('admin.notifFieldLink')}
+            value={draft.link}
+            onChange={(v) => edit({ link: v })}
+            placeholder="/movie/…"
+            minW={0}
+          />
         </div>
 
-        <Field label={t('admin.notifFieldImage')}>
-          {/* Upload or paste a path: covers a new image and reusing an existing poster. */}
-          <div className="flex items-center gap-2">
-            <TextInput
-              className="w-full flex-1"
-              value={draft.imageUrl}
-              onChange={(v) => edit({ imageUrl: v })}
-              placeholder="/api/images/…"
-            />
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void upload(file);
-                if (fileRef.current) fileRef.current.value = '';
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              icon="photo"
-              label={t('admin.notifUpload')}
-              disabled={busy}
-              onPress={() => fileRef.current?.click()}
-            />
-            {draft.imageUrl ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                icon="trash"
-                label={t('common.delete')}
-                onPress={() => edit({ imageUrl: '' })}
-              />
-            ) : null}
-          </div>
-        </Field>
-      </Card>
+        <NotificationImageField
+          value={draft.imageUrl}
+          onChange={(imageUrl) => edit({ imageUrl })}
+        />
+      </Surface>
 
-      <Card className="px-5 py-5 lg:sticky lg:top-5">
-        <h2 className="mb-4 text-[14px] font-semibold text-text">{t('admin.notifPreview')}</h2>
-        <PreviewRow draft={draft} empty={t('admin.notifTitlePlaceholder')} />
+      <div className="xl:sticky xl:top-5">
+        <Surface elevated pad="none" radius={16} p={20} gap={16}>
+          <Txt variant="label">{t('admin.notifPreview')}</Txt>
+          <PreviewRow draft={draft} empty={t('admin.notifTitlePlaceholder')} />
 
-        <div className="mt-5 border-t border-border pt-4">
-          {/* Real radios, not styled buttons: native arrow-key nav and screen-reader
-              grouping. The row carries the focus ring the app blanks on form controls. */}
-          <fieldset>
-            <legend className="mb-2 text-[12px] font-semibold text-dim">
+          <Divider />
+
+          <Box gap={10}>
+            <Txt variant="meta" color="textDim">
               {t('admin.notifTestTarget')}
-            </legend>
-            <div className="flex flex-col">
+            </Txt>
+            <ChoiceList.Root
+              label={t('admin.notifTestTarget')}
+              value={target}
+              onValueChange={(next) => {
+                setTarget(next as Target);
+                setSent(null);
+              }}
+            >
               {TARGETS.map((o) => (
-                <label
+                <ChoiceList.Item
                   key={o.value}
-                  className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-accent/50 ${
-                    target === o.value
-                      ? 'text-accent'
-                      : 'text-muted hover:bg-white/4 hover:text-text'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="notif-target"
-                    value={o.value}
-                    checked={target === o.value}
-                    onChange={() => {
-                      setTarget(o.value);
-                      setSent(null);
-                    }}
-                    className="h-3.5 w-3.5 shrink-0 accent-accent"
-                  />
-                  {t(o.label)}
-                </label>
+                  value={o.value}
+                  label={t(o.label)}
+                  hint={t(o.hint)}
+                />
               ))}
-            </div>
-          </fieldset>
+            </ChoiceList.Root>
+          </Box>
 
           {/* Said before the press: "everyone" writes a row into every account
               on this server, and there is no unsend. */}
           {target === 'everyone' ? (
-            <p className="mt-2 px-2.5 text-[12px] leading-relaxed text-accent">
-              {t('admin.notifTestEveryoneWarning')}
-            </p>
+            <Row gap={10} align="flex-start" bg="accent/12" radius={10} px={12} py={10}>
+              <Icon name="alert-triangle" size={16} color="accent" />
+              <Txt variant="meta" color="accent" style={NOTE}>
+                {t('admin.notifTestEveryoneWarning')}
+              </Txt>
+            </Row>
           ) : null}
 
-          <div className="mt-4">
-            <Button
-              variant="primary"
-              size="sm"
-              icon="send"
-              block
-              label={busy ? t('common.loading') : t('admin.notifTestSend')}
-              disabled={busy || !draft.title.trim()}
-              onPress={() => void send()}
-            />
-          </div>
+          <Button
+            variant="primary"
+            icon="send"
+            block
+            label={busy ? t('common.loading') : t('admin.notifTestSend')}
+            disabled={busy || !draft.title.trim()}
+            onPress={() => void send()}
+          />
 
           {sent !== null ? (
-            <p
-              className={`mt-2.5 text-center text-[12.5px] font-semibold ${sent > 0 ? 'text-success' : 'text-dim'}`}
-            >
+            <Txt variant="meta" color={sent > 0 ? 'success' : 'textDim'} style={CENTRED}>
               {sent > 0 ? t('admin.notifTestSent', { n: sent }) : t('admin.notifTestMuted')}
-            </p>
+            </Txt>
           ) : null}
           {error ? (
-            <p className="mt-2.5 text-center text-[12.5px] font-semibold text-danger">{error}</p>
+            <Txt variant="meta" color="danger" style={CENTRED}>
+              {error}
+            </Txt>
           ) : null}
 
-          <p className="mt-3.5 text-[11.5px] leading-relaxed text-dim">
+          <Txt variant="meta" color="textDim">
             {t('admin.notifSendHint')}
-          </p>
-        </div>
-      </Card>
+          </Txt>
+        </Surface>
+      </div>
     </div>
   );
 }
+
+const CENTRED = { textAlign: 'center' } as const;
+const NOTE = { flex: 1 } as const;
 
 // The same tile, gutter and metrics the drawer uses, so the preview matches
 // what recipients actually see; `custom` is the event type this bench always sends.

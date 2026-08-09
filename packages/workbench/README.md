@@ -172,7 +172,7 @@ Four things are read rather than declared, which is the theme of the folder:
 | Shown | Read from |
 | --- | --- |
 | Controls + the variant matrix | the component's `sv` |
-| The atomic level in the sidebar | the story file's PATH (`tierFor`) |
+| The atomic level (search + palette) | the story file's PATH (`tierFor`) |
 | A demo's name, prose and code | its file name, doc comment and text |
 | Every prop, with its documentation | the component's props interface (`props.ts`) |
 
@@ -182,7 +182,7 @@ Four things are read rather than declared, which is the theme of the folder:
 | --- | --- |
 | `⌘K` / `Ctrl-K` | the command palette — the workbench's one search |
 | `↑` `↓` `PgUp` `PgDn`, `↵`, `esc` | walk the results, open one, give up |
-| the tree | fold a level or a group; the open story is always revealed |
+| the tree | fold a group; the open story is always revealed |
 | the toolbar | one menu per lens (frame, surface, language), a rotate button on the frames that turn, plus copy-link and full screen |
 
 ### Width
@@ -219,8 +219,11 @@ hairline at 40% is drawn 0.4px). Hence `hairline()`, which counter-scales it.
 
 - `workbench.tsx` — the shell: selection, url state, full screen, the lenses.
 - `layout.ts` — one pure function turning a window size into wide / medium / compact.
-- `sidebar.tsx` — the brand, the search key and the foldable tree: atomic level,
-  then group, then story.
+- `sidebar.tsx` — the brand, the search key and the foldable tree: one flat
+  level of functional groups (Layout, Input, Overlays, ...), then the stories.
+  The atomic levels stay out of the nav on purpose — they are for the people
+  editing the kit, and nesting them scattered every kind of input across
+  three branches.
 - `command.tsx` — the ⌘K palette, built to cmdk's design and driven by a
   capture-phase key listener (react-native-web's TextInput eats bubbled keydowns).
 - `toolbar.tsx` — the canvas toolbar: a menu per lens, so nine flat buttons became
@@ -230,7 +233,8 @@ hairline at 40% is drawn 0.4px). Hence `hairline()`, which counter-scales it.
   adaptive zoom that scales a component down when it is wider than the canvas.
 - `panel.tsx` — the inspector, tabbed: Controls, Docs, Props, each with its count.
 - `story.ts` — the SDK: `story()`, the `sv`-derived controls and matrix, scenes,
-  the atomic level read from a file's path, and the registry's ordering.
+  the atomic level read from a file's path, and the registry's ordering
+  (functional group first, then name).
 - `controls.tsx`, `code.tsx`, `docs.tsx`, `props.ts`, `demos.ts` — the parts above.
 
 The story SDK ships here rather than separately because a story format that

@@ -1,8 +1,6 @@
 // The single layout dialect for every page in the app, catalogue and admin
 // console alike.
 
-export { EmptyState } from '@kroma/ui/kit';
-
 export const PAGE_MAIN = 'min-w-0 px-(--gutter-web) pb-20 pt-9';
 
 export const PAGE_TITLE =

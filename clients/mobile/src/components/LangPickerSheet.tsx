@@ -10,9 +10,9 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import { LANG_OFF, langOptions, offeredLang } from '@kroma/core';
-import { Icon, styles } from '@kroma/ui/kit';
+import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
 import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SheetTitle, sheetChrome } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
@@ -110,9 +110,9 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
         android_keyboardInputMode="adjustResize"
         onDismiss={() => setQuery('')}
       >
-        <View style={s.header}>
+        <Box style={s.header}>
           <SheetTitle>{title}</SheetTitle>
-          <View style={s.searchBox}>
+          <Box style={s.searchBox}>
             <Icon name="search" size={17} stroke={2} color={colors.textFaint} />
             <BottomSheetTextInput
               value={query}
@@ -142,8 +142,8 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
                 <Icon name="x" size={16} stroke={2.4} color={colors.textFaint} />
               </Pressable>
             ) : null}
-          </View>
-        </View>
+          </Box>
+        </Box>
 
         <BottomSheetFlatList
           ref={list}
@@ -168,7 +168,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
               onPress={() => onPick(item.value)}
             />
           )}
-          ListEmptyComponent={<Text style={s.empty}>{t('search.noResults')}</Text>}
+          ListEmptyComponent={<Txt style={s.empty}>{t('search.noResults')}</Txt>}
         />
       </BottomSheetModal>
     );
@@ -192,11 +192,11 @@ function LangRow({
         pressed && { backgroundColor: colors.surfaceHigh },
       ]}
     >
-      <Text numberOfLines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
+      <Txt lines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
         {row.label}
-      </Text>
+      </Txt>
       {active ? <Icon name="check" size={17} stroke={2.4} color={colors.accent} /> : null}
-      {row.code && !active ? <Text style={s.rowCode}>{row.code.toUpperCase()}</Text> : null}
+      {row.code && !active ? <Txt style={s.rowCode}>{row.code.toUpperCase()}</Txt> : null}
     </Pressable>
   );
 }

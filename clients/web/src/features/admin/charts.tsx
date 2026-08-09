@@ -18,8 +18,9 @@ import {
 } from 'chart.js';
 import type { ReactNode } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
-import { C } from '#web/features/admin/ui';
 import { formatHours } from '#web/shared/lib/adminFormat';
+
+const C = { films: '#84CE7E', tv: '#E8536A' } as const;
 
 ChartJS.register(
   CategoryScale,

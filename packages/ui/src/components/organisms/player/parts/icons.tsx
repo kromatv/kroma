@@ -29,7 +29,6 @@ export const IconPip = glyph('picture-in-picture', 22, 1.8);
 export const IconCast = glyph('cast', 22, 1.8);
 export const IconFullscreen = glyph('maximize', 22, 1.8);
 export const IconFullscreenExit = glyph('minimize', 22, 1.8);
-export const IconBack = glyph('chevron-left', 20, 2);
 export const IconForward = glyph('chevron-right', 20, 2);
 export const IconExpand = glyph('chevron-up', 22, 2);
 export const IconCollapse = glyph('chevron-down', 22, 2);

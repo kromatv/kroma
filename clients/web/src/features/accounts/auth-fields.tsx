@@ -3,11 +3,12 @@
 // render the exact same avatar tile + email/username/password inputs, so that
 // block lives here once and is driven by controlled props.
 
-import { Image, TextInput } from '@kroma/admin-kit';
 import { useT } from '@kroma/ui';
+import { Field } from '@kroma/ui/kit';
 import { IconPlus } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { avatarGradient, initials } from '#web/features/accounts/user-avatar';
+import { Image } from '#web/shared/ui';
 
 export type RegisterValues = Readonly<{ email: string; username: string; password: string }>;
 
@@ -74,31 +75,41 @@ export function RegisterFields({
         onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
       />
 
-      <TextInput
-        size="lg"
-        className="w-full"
+      {/* `md` against the app's `sm` default, matching the sign-in form these
+          sit beside; see the note in auth-forms.tsx. */}
+      <Field
+        w="100%"
+        size="md"
+        label={t('auth.email')}
+        hideLabel
         type="email"
+        icon="mail"
         placeholder={t('auth.email')}
-        autoComplete="email"
         value={email}
         onChange={(v) => onChange({ ...values, email: v })}
       />
-      <TextInput
-        size="lg"
-        className="w-full"
+      <Field
+        w="100%"
+        size="md"
+        label={t('auth.username')}
+        hideLabel
+        icon="user"
         placeholder={t('auth.username')}
-        autoComplete="nickname"
         value={username}
         onChange={(v) => onChange({ ...values, username: v })}
+        entry={{ autoComplete: 'username' }}
       />
-      <TextInput
-        size="lg"
-        className="w-full"
+      <Field
+        w="100%"
+        size="md"
+        label={t('auth.passwordHint')}
+        hideLabel
         type="password"
+        icon="lock"
         placeholder={t('auth.passwordHint')}
-        autoComplete="new-password"
         value={password}
         onChange={(v) => onChange({ ...values, password: v })}
+        entry={{ autoComplete: 'new-password' }}
       />
     </>
   );

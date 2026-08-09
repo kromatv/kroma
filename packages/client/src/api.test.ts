@@ -308,6 +308,7 @@ describe('delegating methods issue the expected request', () => {
   // Exact path + method assertions for the domains whose paths this test owns.
   const known: Array<[string, (c: KromaClient) => unknown, string, string]> = [
     ['health', (c) => c.health(), 'GET', '/health'],
+    ['splash', (c) => c.splash(), 'GET', '/splash'],
     ['modules', (c) => c.modules(), 'GET', '/modules'],
     ['libraries', (c) => c.libraries(), 'GET', '/libraries'],
     ['items', (c) => c.items(), 'GET', '/items'],

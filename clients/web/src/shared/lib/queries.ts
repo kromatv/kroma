@@ -229,6 +229,14 @@ export const serverQueries = {
       queryFn: () => kromaClient().health(),
       staleTime: 5 * 60_000,
     }),
+  /** Public `GET /api/splash`: the sign-in screen's random art sample (no
+   * auth). Cached for the visit so the slideshow rotates a stable set. */
+  splash: () =>
+    queryOptions({
+      queryKey: ['splash'] as const,
+      queryFn: () => kromaClient().splash(),
+      staleTime: 10 * 60_000,
+    }),
 } as const;
 
 export const discoverQueries = {

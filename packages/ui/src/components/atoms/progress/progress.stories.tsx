@@ -4,7 +4,7 @@ import { Progress } from './progress';
 
 export default story({
   name: 'Progress',
-  group: 'State',
+  group: 'Feedback',
   docs: "The playback progress bar: the one running under a partially watched thumbnail, and the player's own. The value is clamped to 0..1 by the component itself, and the fill eases to each new one. `indeterminate` sweeps a segment across the track for work whose share is unknown.",
   matrix: false,
   // It takes whatever width it is given, so a range rather than the one width

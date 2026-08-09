@@ -1,4 +1,3 @@
-import { Image } from '@kroma/admin-kit';
 import {
   collectGenres,
   type GenreCount,
@@ -16,7 +15,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { Image, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/genres')({
   loader: async ({ context: { queryClient } }) => {

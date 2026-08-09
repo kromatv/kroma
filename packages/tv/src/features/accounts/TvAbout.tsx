@@ -4,7 +4,7 @@ import { Box, Hint, ListRow, styles, Txt, useFocusNav } from '@kroma/ui/kit';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 import { useNav } from '#tv/app/router';
-import { AuthScreen, KromaMark } from '#tv/shared/ui';
+import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
 
 /**
  * About (route `about`): which build of the client is running.
@@ -23,7 +23,7 @@ export function TvAbout() {
   return (
     <AuthScreen>
       <Box mb={32}>
-        <KromaMark size={40} />
+        <KromaMark size={GATE_MARK} />
       </Box>
       <Txt
         variant="hero"

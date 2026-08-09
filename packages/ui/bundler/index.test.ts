@@ -3,7 +3,7 @@
 // the behaviour a broken scan would break — aliases survive, the fallback is
 // always present, a renamed target fails loudly — not the exact icon count.
 // They run against the real Tabler install and the real repo on purpose.
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
@@ -175,6 +175,20 @@ describe('the metro half', () => {
     expect(resolved?.filePath).toMatch(
       /node_modules[/\\]\.cache[/\\]kroma-ui[/\\]glyph-source\.js$/,
     );
+  });
+
+  it('writes that file before it returns, not on first resolution', () => {
+    // `expo export` hashes one filesystem snapshot taken after config eval, so a
+    // module first written during resolution is absent from it and the bundle
+    // dies on `Failed to get the SHA-1`. Only the dev server's watcher hid it,
+    // which is why this failed on a clean checkout and passed on a warm one.
+    const generated = join(REPO_ROOT, 'node_modules', '.cache', 'kroma-ui', 'glyph-source.js');
+    rmSync(generated, { force: true });
+
+    kromaUi.metro({}, { repoRoot: REPO_ROOT });
+
+    expect(existsSync(generated)).toBe(true);
+    expect(readFileSync(generated, 'utf8')).toContain('export const FALLBACK = IconHelpCircle;');
   });
 });
 

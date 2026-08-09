@@ -1,21 +1,10 @@
 // Admin naming: edit the naming templates with a live sample, then preview and
 // apply a library-wide rename.
 
-import {
-  apiErrorText,
-  Button,
-  Card,
-  confirmDialog,
-  Denied,
-  PageHeader,
-  Section,
-  OptionSelect as Select,
-  TextInput,
-  useCap,
-  useT,
-} from '@kroma/module-sdk';
-import { IconArrowRight, IconBraces, IconWand } from '@tabler/icons-react';
-import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { apiErrorText, Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kroma/module-sdk';
+import { Button, confirm, Field, PageHeader, Section, Select, Surface } from '@kroma/ui/kit';
+import { IconArrowRight } from '@tabler/icons-react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useTorrentsApi } from './api';
 import { NamingTokenModal } from './naming-tokens';
 import type { NamingTemplatesView, OrganizePlan } from './schemas';
@@ -36,13 +25,15 @@ const CASES: { value: string; labelKey: string }[] = [
   { value: 'lower', labelKey: 'naming.caseLower' },
 ];
 
+const MONO = { fontFamily: 'monospace', fontSize: 13 } as const;
+
 export default function NamingPage() {
   const t = useT();
-  const fieldIds = useId();
   const torrents = useTorrentsApi();
   const canManage = useCap('library.manage');
 
   const [tpl, setTpl] = useState<NamingTemplatesView | null>(null);
+  const [failed, setFailed] = useState(false);
   const [sample, setSample] = useState<{ movie: string; episode: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -54,7 +45,7 @@ export default function NamingPage() {
         setTpl(v.templates);
         setSample(v.sample);
       })
-      .catch(() => undefined);
+      .catch(() => setFailed(true));
   }, [torrents]);
 
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -105,52 +96,47 @@ export default function NamingPage() {
   };
 
   if (!canManage) return <Denied />;
+  if (!tpl) return failed ? <ModuleFailed /> : <ModuleLoading />;
 
   return (
     <>
       <PageHeader title={t('admin.namingTitle')} subtitle={t('admin.namingSub')} />
 
-      <Card className="mt-6 p-6">
+      <Surface elevated border="border" pad="none" p={24} mt={24}>
         {tpl ? (
           <div className="flex flex-col gap-4">
             {FIELDS.map((f) => (
-              <label key={f.key} htmlFor={`${fieldIds}-${f.key}`} className="block">
-                <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.12em] text-dim">
-                  {t(f.labelKey as Parameters<typeof t>[0])}
-                </span>
-                <div className="flex gap-2">
-                  <TextInput
-                    id={`${fieldIds}-${f.key}`}
-                    mono
-                    value={tpl[f.key]}
-                    onChange={(v) => set(f.key, v)}
-                    className="w-full"
-                  />
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={IconBraces}
-                    label={t('naming.tokens')}
-                    onClick={() => openTokens(f.key)}
-                  />
-                </div>
-              </label>
+              <div key={f.key} className="flex items-end gap-2">
+                <Field
+                  label={t(f.labelKey as Parameters<typeof t>[0])}
+                  value={tpl[f.key]}
+                  onChange={(v) => set(f.key, v)}
+                  entry={{ textStyle: MONO }}
+                  flex
+                />
+                <Button
+                  variant="glass"
+                  size="sm"
+                  icon="braces"
+                  label={t('naming.tokens')}
+                  onPress={() => openTokens(f.key)}
+                />
+              </div>
             ))}
 
-            <div className="block max-w-xs">
-              <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.12em] text-dim">
-                {t('naming.caseLabel')}
-              </span>
-              <Select
-                value={tpl.case}
-                onChange={(v) => set('case', v)}
-                ariaLabel={t('naming.caseLabel')}
-                block
-                options={CASES.map((c) => ({
-                  value: c.value,
-                  label: t(c.labelKey as Parameters<typeof t>[0]),
-                }))}
-              />
+            <div className="max-w-xs">
+              <Field label={t('naming.caseLabel')}>
+                <Select
+                  label={t('naming.caseLabel')}
+                  value={tpl.case}
+                  onChange={(v) => set('case', v)}
+                  block
+                  options={CASES.map((c) => ({
+                    value: c.value,
+                    label: t(c.labelKey as Parameters<typeof t>[0]),
+                  }))}
+                />
+              </Field>
             </div>
           </div>
         ) : (
@@ -172,7 +158,7 @@ export default function NamingPage() {
             variant="primary"
             size="sm"
             label={t('common.save')}
-            onClick={save}
+            onPress={save}
             loading={saving}
             disabled={!tpl}
           />
@@ -180,7 +166,7 @@ export default function NamingPage() {
             <span className="text-[13px] font-semibold text-[#46D08D]">{t('common.saved')}</span>
           ) : null}
         </div>
-      </Card>
+      </Surface>
 
       <RenameSection />
       {/* The token picker's react-call root: the page that calls it hosts it. */}
@@ -226,7 +212,7 @@ function RenameSection() {
       .finally(() => setBusy(false));
   };
   const askApply = async () => {
-    const ok = await confirmDialog({
+    const ok = await confirm({
       title: t('naming.confirmTitle'),
       message: t('naming.confirmBody'),
       confirmLabel: t('naming.confirmApply'),
@@ -238,13 +224,14 @@ function RenameSection() {
   return (
     <Section
       title={t('naming.renameTitle')}
-      right={
+      mt={28}
+      action={
         <Button
-          variant="secondary"
+          variant="glass"
           size="sm"
-          icon={IconWand}
+          icon="wand"
           label={t('naming.preview2')}
-          onClick={preview}
+          onPress={preview}
           loading={busy}
         />
       }
@@ -258,7 +245,7 @@ function RenameSection() {
       ) : null}
 
       {plan ? (
-        <Card className="p-4">
+        <Surface elevated border="border" pad="none" p={16}>
           <div className="mb-3 text-[13px] font-semibold text-white/70">
             {t('naming.planSummary', {
               moves: String(plan.moves.length),
@@ -278,7 +265,7 @@ function RenameSection() {
                   variant="primary"
                   size="sm"
                   label={t('naming.apply', { n: String(plan.moves.length) })}
-                  onClick={() => void askApply()}
+                  onPress={() => void askApply()}
                   disabled={busy}
                 />
               </div>
@@ -288,7 +275,7 @@ function RenameSection() {
               {t('naming.allMatch')}
             </div>
           )}
-        </Card>
+        </Surface>
       ) : null}
     </Section>
   );

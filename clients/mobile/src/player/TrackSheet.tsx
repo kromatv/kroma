@@ -12,10 +12,10 @@ import {
 } from '@kroma/core';
 import type { SubtitleAppearance } from '@kroma/ui';
 import { AUDIO_FILTER_KEY, SUB_COLORS } from '@kroma/ui';
-import { Chip, Icon, type IconName, SwitchFace, styles } from '@kroma/ui/kit';
+import { Box, Chip, Icon, type IconName, SwitchFace, styles, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Animated, Easing, Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useLangPrefs } from '#mobile/lib/langPrefs';
 import { colors, spacing, type } from '#mobile/lib/theme';
@@ -58,8 +58,8 @@ function Row({
         disabled && s.rowDisabled,
       ]}
     >
-      <Text style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Text>
-      {note ? <Text style={s.rowNote}>{note}</Text> : null}
+      <Txt style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Txt>
+      {note ? <Txt style={s.rowNote}>{note}</Txt> : null}
       {selected ? <Icon name="check" size={17} stroke={2.4} color={colors.accent} /> : null}
     </Pressable>
   );
@@ -89,14 +89,14 @@ function MenuRow({
       style={({ pressed }) => [s.menuRow, pressed && { backgroundColor: colors.surfaceHigh }]}
     >
       <Icon name={icon} size={20} stroke={1.8} color={colors.textDim} />
-      <View style={s.menuText}>
-        <Text style={s.menuLabel}>{label}</Text>
+      <Box style={s.menuText}>
+        <Txt style={s.menuLabel}>{label}</Txt>
         {!toggle && value ? (
-          <Text numberOfLines={1} style={s.menuValue}>
+          <Txt lines={1} style={s.menuValue}>
             {value}
-          </Text>
+          </Txt>
         ) : null}
-      </View>
+      </Box>
       {toggle ? (
         <SwitchFace checked={Boolean(on)} style={s.noShrink} />
       ) : (
@@ -110,17 +110,17 @@ function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }
   return (
     <Pressable onPress={onBack} style={({ pressed }) => [s.subHeader, pressed && { opacity: 0.7 }]}>
       <Icon name="chevron-left" size={20} stroke={2.4} color={colors.text} />
-      <Text style={s.subTitle}>{title}</Text>
+      <Txt style={s.subTitle}>{title}</Txt>
     </Pressable>
   );
 }
 
 function ChipGroup({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
-    <View style={s.chipGroup}>
-      <Text style={s.group}>{label}</Text>
-      <View style={s.chipRow}>{children}</View>
-    </View>
+    <Box style={s.chipGroup}>
+      <Txt style={s.group}>{label}</Txt>
+      <Box style={s.chipRow}>{children}</Box>
+    </Box>
   );
 }
 
@@ -175,7 +175,7 @@ function SheetMenu(
   }>,
 ) {
   return (
-    <View style={s.menuList}>
+    <Box style={s.menuList}>
       <MenuRow
         icon="badge-4k"
         label={at.t('player.quality')}
@@ -224,7 +224,7 @@ function SheetMenu(
         onPress={at.onToggleStats}
       />
       <MenuRow icon="flag" label={at.t('reports.sheet')} onPress={at.onReport} />
-    </View>
+    </Box>
   );
 }
 
@@ -331,14 +331,14 @@ export function TrackSheet({
       {view === 'menu' ? menu : null}
 
       {view === 'quality' ? (
-        <View>
+        <Box>
           <SubHeader title={t('player.quality')} onBack={backToMenu} />
           <Row label={qualityLabel} selected onPress={done} />
-        </View>
+        </Box>
       ) : null}
 
       {view === 'audio' ? (
-        <View>
+        <Box>
           <SubHeader title={t('player.audioTracks')} onBack={backToMenu} />
           {audio.map((track) => (
             <Row
@@ -354,11 +354,11 @@ export function TrackSheet({
               }}
             />
           ))}
-        </View>
+        </Box>
       ) : null}
 
       {view === 'audioFilter' ? (
-        <View>
+        <Box>
           <SubHeader title={t('player.audioFilters')} onBack={backToMenu} />
           {(['off', 'standard', 'night'] as const).map((mode) => (
             <Row
@@ -371,11 +371,11 @@ export function TrackSheet({
               }}
             />
           ))}
-        </View>
+        </Box>
       ) : null}
 
       {view === 'subtitles' ? (
-        <View>
+        <Box>
           <SubHeader title={t('player.subtitles')} onBack={backToMenu} />
           <Row
             label={t('player.subtitlesOff')}
@@ -408,11 +408,11 @@ export function TrackSheet({
               }}
             />
           ))}
-        </View>
+        </Box>
       ) : null}
 
       {view === 'appearance' ? (
-        <View>
+        <Box>
           <SubHeader title={t('player.subAppearance')} onBack={backToMenu} />
           <ChipGroup label={t('player.subSize')}>
             {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
@@ -455,11 +455,11 @@ export function TrackSheet({
               />
             ))}
           </ChipGroup>
-        </View>
+        </Box>
       ) : null}
 
       {view === 'speed' ? (
-        <View>
+        <Box>
           <SubHeader title={t('player.speed')} onBack={backToMenu} />
           {SPEEDS.map((s) => (
             <Row
@@ -472,7 +472,7 @@ export function TrackSheet({
               }}
             />
           ))}
-        </View>
+        </Box>
       ) : null}
     </>
   );

@@ -1,7 +1,7 @@
-import { Chip, Icon, IconButton, styles } from '@kroma/ui/kit';
+import { Box, Chip, Icon, IconButton, styles, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { RefreshControl, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { RefreshControl, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '#mobile/components/Avatar';
 import {
@@ -29,19 +29,19 @@ function DownloadsGlyph() {
   if (pending === 0) return <Icon name="download" size={22} stroke={2} />;
   const progress = downloads.downloading[0]?.progress ?? -1;
   return (
-    <View style={s.dlGlyph}>
+    <Box style={s.dlGlyph}>
       <ProgressRing progress={progress} size={26} stroke={2.5} />
       {progress >= 0 ? (
-        <View pointerEvents="none" style={s.dlArrow}>
+        <Box pointerEvents="none" style={s.dlArrow}>
           <Icon name="download" size={12} stroke={2.6} />
-        </View>
+        </Box>
       ) : null}
       {pending > 1 ? (
-        <View style={s.dlCount}>
-          <Text style={s.dlCountText}>{pending}</Text>
-        </View>
+        <Box style={s.dlCount}>
+          <Txt style={s.dlCountText}>{pending}</Txt>
+        </Box>
       ) : null}
-    </View>
+    </Box>
   );
 }
 
@@ -53,11 +53,11 @@ function HomeHeader() {
   const gutters = useGutters();
   const avatar = client.resolveArt(user?.avatarUrl);
   return (
-    <View style={[s.header, { paddingTop: insets.top + spacing.sm }, gutters.style]}>
-      <View style={s.brandRow}>
+    <Box style={[s.header, { paddingTop: insets.top + spacing.sm }, gutters.style]}>
+      <Box style={s.brandRow}>
         <KromaLockup height={20} />
-      </View>
-      <View style={s.headerActions}>
+      </Box>
+      <Box style={s.headerActions}>
         <CastIconButton />
         <IconButton
           variant="ghost"
@@ -77,8 +77,8 @@ function HomeHeader() {
         >
           <Avatar uri={avatar} name={user?.username} size={28} />
         </IconButton>
-      </View>
-    </View>
+      </Box>
+    </Box>
   );
 }
 
@@ -92,7 +92,7 @@ function CategoryChips() {
     { label: t('nav.genres'), route: '/genres' },
   ];
   return (
-    <View style={[s.chips, gutters.style]}>
+    <Box style={[s.chips, gutters.style]}>
       {chips.map((chip) => (
         <Chip
           key={chip.route}
@@ -100,7 +100,7 @@ function CategoryChips() {
           onPress={() => router.push(chip.route as never)}
         />
       ))}
-    </View>
+    </Box>
   );
 }
 
@@ -129,7 +129,7 @@ function MyListRail() {
   });
   if (!items.data?.length) return null;
   return (
-    <View>
+    <Box>
       <SectionTitle>{t('nav.myList')}</SectionTitle>
       <MediaRail
         cards={items.data.map((entry) =>
@@ -138,7 +138,7 @@ function MyListRail() {
             : showCard(entry.show, client, cardW),
         )}
       />
-    </View>
+    </Box>
   );
 }
 
@@ -189,21 +189,21 @@ export default function Home() {
       <CategoryChips />
       {featured.data ? <HeroBillboard entry={featured.data} /> : null}
       {cont.data?.length ? (
-        <View>
+        <Box>
           <SectionTitle>{t('content.continueWatching')}</SectionTitle>
           <ContinueRail entries={cont.data} client={client} />
-        </View>
+        </Box>
       ) : null}
       <MyListRail />
       {(home.data ?? [])
         .filter((s) => s.items.length > 0)
         .map((section) => (
-          <View key={section.id}>
+          <Box key={section.id}>
             <SectionTitle>{section.title}</SectionTitle>
             <MediaRail cards={section.items.map((i) => sectionCard(i, client, cardW))} />
-          </View>
+          </Box>
         ))}
-      <View style={{ height: TAB_BAR_CLEARANCE }} />
+      <Box style={{ height: TAB_BAR_CLEARANCE }} />
     </ScrollView>
   );
 }

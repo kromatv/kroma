@@ -8,16 +8,14 @@
 //  - qwertz : German/Swiss typewriter order.
 
 import type { MessageKey } from '@kroma/core';
+import { KEYBOARD_LAYOUTS, type KeyboardLayout } from '@kroma/ui/kit';
 import { reactivePref } from '#tv/app/settings/store';
 
-export type KeyboardLayoutPref = 'abc' | 'azerty' | 'qwerty' | 'qwertz';
+// The letter orders themselves are the kit's (its <OnScreenKeyboard> renders
+// them); this module only persists WHICH one this device wants.
+export type KeyboardLayoutPref = KeyboardLayout;
 
-export const ALL_KEYBOARD_LAYOUTS: readonly KeyboardLayoutPref[] = [
-  'abc',
-  'azerty',
-  'qwerty',
-  'qwertz',
-];
+export const ALL_KEYBOARD_LAYOUTS: readonly KeyboardLayoutPref[] = KEYBOARD_LAYOUTS;
 
 export const keyboardLayoutStore = reactivePref('kroma:kbd-layout', ALL_KEYBOARD_LAYOUTS, 'abc');
 

@@ -2,16 +2,12 @@
 // self-service change is how an account rotates its own password.
 
 import { useT } from '@kroma/ui';
+import { Button, Field } from '@kroma/ui/kit';
 import { useState } from 'react';
-import {
-  LabeledInput,
-  Panel,
-  passwordStrength,
-  StatusText,
-  useSave,
-} from '#web/features/accounts/account/ui';
+import { Panel, passwordStrength, StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { Button } from '#web/shared/ui';
+
+const NEW_PASSWORD_ENTRY = { autoComplete: 'new-password' } as const;
 
 export function SecurityCard() {
   const t = useT();
@@ -44,24 +40,24 @@ export function SecurityCard() {
       <div className="mb-4.5 text-[12.5px] text-muted">{t('auth.passwordHint')}</div>
 
       <form onSubmit={submit} className="grid grid-cols-1 gap-4.5 sm:grid-cols-2">
-        <LabeledInput
-          className="sm:col-span-2 sm:max-w-[calc(50%-0.5625rem)]"
-          label={t('account.currentPassword')}
-          type="password"
-          autoComplete="current-password"
-          placeholder="••••••••"
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-        />
+        <div className="sm:col-span-2 sm:max-w-[calc(50%-0.5625rem)]">
+          <Field
+            label={t('account.currentPassword')}
+            type="password"
+            placeholder="••••••••"
+            value={current}
+            onChange={setCurrent}
+          />
+        </div>
 
         <div className="flex flex-col gap-2.5">
-          <LabeledInput
+          <Field
             label={t('account.newPassword')}
             type="password"
-            autoComplete="new-password"
             placeholder="••••••••"
             value={next}
-            onChange={(e) => setNext(e.target.value)}
+            onChange={setNext}
+            entry={NEW_PASSWORD_ENTRY}
           />
           <div className="flex items-center gap-2.5">
             <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-white/10">
@@ -81,21 +77,15 @@ export function SecurityCard() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2.5">
-          <LabeledInput
-            label={t('account.confirmPassword')}
-            type="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-          />
-          {mismatch ? (
-            <span className="text-[11.5px] font-semibold text-danger">
-              {t('account.passwordMismatch')}
-            </span>
-          ) : null}
-        </div>
+        <Field
+          label={t('account.confirmPassword')}
+          type="password"
+          placeholder="••••••••"
+          value={confirm}
+          onChange={setConfirm}
+          error={mismatch ? t('account.passwordMismatch') : undefined}
+          entry={NEW_PASSWORD_ENTRY}
+        />
 
         <div className="flex items-center gap-3 sm:col-span-2">
           <Button

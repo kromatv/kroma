@@ -2,12 +2,12 @@
 // profile tiles. Presentation only; every tile's action arrives prebuilt from
 // the sign-in screen.
 
-import { styles } from '@kroma/ui/kit';
+import { AddTile, styles } from '@kroma/ui/kit';
 import { ScrollView } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { spacing } from '#mobile/lib/theme';
 import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
-import { AddTile, ProfileTile } from './onboarding';
+import { ProfileTile } from './onboarding';
 import { ErrorBanner } from './ui';
 
 export type GateTile = {
@@ -50,7 +50,7 @@ export function ProfileGate({
             onPress={tile.onPress}
           />
         ))}
-        <AddTile label={t('profiles.add')} onPress={onAdd} />
+        <AddTile size="md" label={t('profiles.add')} onPress={onAdd} />
       </ScrollView>
       <ErrorBanner message={error} />
     </OnboardingBox>

@@ -66,7 +66,7 @@ function Capture() {
 function mount(screens = stubScreens()) {
   MOUNTS.bar = 0;
   return render(
-    <TvNavProvider screens={screens} chrome={CHROME}>
+    <TvNavProvider screens={screens} chrome={[CHROME]}>
       <Capture />
       <TvOutlet />
     </TvNavProvider>,

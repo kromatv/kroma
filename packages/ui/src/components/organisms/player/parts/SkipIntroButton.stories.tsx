@@ -4,7 +4,7 @@ import { SkipIntroButton } from './SkipIntroButton';
 
 export default story({
   name: 'SkipIntroButton',
-  group: 'Actions',
+  group: 'Player',
   docs: "The one button that appears over the film without being asked for. It renders nothing at all when `visible` is false rather than hiding itself, so it costs nothing for the 95% of a film where there is no intro to skip. `focused` comes from the player's nav machine, not from the DOM: on a television this is a virtual focus target, because the real focus stays with the player surface.",
   usage: `<SkipIntroButton
   visible={inIntro}

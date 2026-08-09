@@ -1,57 +1,43 @@
-// Options are presented in a <Dialog> rather than a popover panel: on tvOS a
-// modal is its own view controller, so the D-pad is confined to the options,
-// and a popover anchored to the trigger is clipped inside a ScrollView.
+// <Select>: one value from a list. The trigger is shared; where the options
+// appear is the platform's decision (see ./select-options): a <Dialog> under a
+// D-pad (on tvOS a modal is its own view controller, so the remote is
+// confined to the options) and an anchored listbox popover under a pointer,
+// with the combobox keyboard the browser's native select taught everyone.
 
-import { useCallback, useState } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import type { StyleProp, View, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
-import { Dialog } from '#ui/components/organisms/dialog';
 import { sv } from '#ui/core';
-import { FocusColumn } from '#ui/lib/focus-scope';
+import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { useControllable } from '#ui/lib/use-controllable';
+import { SelectOptions } from './select-options';
 
-// The trigger wears <TextField>'s well, so a form reads as one family.
+// The trigger IS a field: same well, same metrics table, so a select and an
+// entry on one row are the same shape and height (see lib/field-shell).
 const triggerVariants = sv({
   slots: {
     root: {
       row: true,
       align: 'center',
-      gap: 14,
-      px: 22,
-      py: 12,
-      radius: '2xl',
+      bg: CONTROL.md.bg,
       border: 'borderStrong',
-      _hover: { bg: 'white/6' },
+      _hover: { bg: 'surface3' },
     },
     ink: { shrink: 1 },
   },
   variants: {
+    size: bySize((m) => ({
+      root: { gap: m.gap, px: m.px, py: m.py, radius: m.radius, minH: m.line },
+      ink: { fontSize: m.fontSize, lineHeight: m.line },
+    })),
     invalid: { true: { root: { border: 'danger' } } },
     filled: { true: { ink: { color: 'text' } }, false: { ink: { color: 'textDim' } } },
+    block: { true: { root: { self: 'stretch' } } },
   },
-  defaults: { invalid: false, filled: false },
-});
-
-const optionVariants = sv({
-  slots: {
-    root: {
-      row: true,
-      align: 'center',
-      gap: 12,
-      px: 14,
-      py: 12,
-      radius: 'md',
-      _hover: { bg: 'white/8' },
-    },
-    ink: { shrink: 1 },
-  },
-  variants: {
-    chosen: { true: { ink: { color: 'text' } }, false: { ink: { color: 'textMuted' } } },
-  },
-  defaults: { chosen: false },
+  defaults: { size: 'md', invalid: false, filled: false, block: false },
 });
 
 interface SelectOption {
@@ -59,6 +45,7 @@ interface SelectOption {
   label: string;
   note?: string;
   icon?: IconName;
+  disabled?: boolean;
 }
 
 interface SelectProps extends Omit<FocusableProps, 'children' | 'onPress' | 'style'> {
@@ -69,6 +56,10 @@ interface SelectProps extends Omit<FocusableProps, 'children' | 'onPress' | 'sty
   onChange?: (next: string) => void;
   placeholder?: string;
   invalid?: boolean;
+  /** Stretch to the width of the parent. */
+  block?: boolean;
+  /** The control shell's size; see <TextField>. */
+  size?: ControlSize;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -78,16 +69,22 @@ function Select({
   value: valueProp,
   defaultValue,
   onChange,
-  placeholder = 'Select…',
+  // No default text: the product is not in this file's language, so an unset
+  // select renders blank unless the caller passes a translated placeholder.
+  placeholder,
   disabled = false,
   invalid = false,
+  block = false,
+  size,
   style,
   ...focusProps
 }: Readonly<SelectProps>) {
+  const shell = size ?? entryDefaultSize();
   // '' is "nothing picked": no option may use it, or the placeholder never shows.
   const [value, setValue] = useControllable(valueProp, defaultValue ?? '', onChange);
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  const trigger = useRef<View>(null);
   const current = options.find((option) => option.value === value);
 
   const pick = useCallback(
@@ -102,18 +99,21 @@ function Select({
     <>
       <Focusable
         {...focusProps}
-        label={`${label}: ${current?.label ?? placeholder}`}
+        ref={trigger}
+        role="combobox"
+        expanded={open}
+        label={current ? `${label}: ${current.label}` : (placeholder ?? label)}
         disabled={disabled}
         onPress={() => setOpen(true)}
         sv={triggerVariants}
-        vars={{ invalid, filled: current !== undefined }}
+        vars={{ size: shell, invalid, filled: current !== undefined, block }}
         style={style}
       >
         {(state) => (
           <>
             {current?.icon ? <Icon name={current.icon} size={18} color="textMuted" /> : null}
             <Txt variant="body" lines={1} style={state.slots.ink}>
-              {current?.label ?? placeholder}
+              {current?.label ?? placeholder ?? ''}
             </Txt>
             <Box flex />
             <Icon name="chevron-down" size={16} color="textDim" />
@@ -121,49 +121,18 @@ function Select({
         )}
       </Focusable>
 
-      <Dialog open={open} onClose={close} title={label} width={560}>
-        <FocusColumn>
-          {options.map((option) => (
-            <Option
-              key={option.value}
-              option={option}
-              chosen={option.value === value}
-              onPress={() => pick(option.value)}
-            />
-          ))}
-        </FocusColumn>
-      </Dialog>
+      <SelectOptions
+        open={open}
+        onClose={close}
+        label={label}
+        options={options}
+        value={value}
+        onPick={pick}
+        anchor={trigger}
+      />
     </>
   );
 }
 
-function Option({
-  option,
-  chosen,
-  onPress,
-}: Readonly<{ option: SelectOption; chosen: boolean; onPress: () => void }>) {
-  return (
-    <Focusable label={option.label} onPress={onPress} sv={optionVariants} vars={{ chosen }}>
-      {(state) => (
-        <>
-          {option.icon ? <Icon name={option.icon} size={18} color="textMuted" /> : null}
-          <Txt variant="body" lines={1} style={state.slots.ink}>
-            {option.label}
-          </Txt>
-          <Box flex />
-          {option.note ? (
-            <Txt variant="meta" color="textDim">
-              {option.note}
-            </Txt>
-          ) : null}
-          <Box w={18} align="center">
-            {chosen ? <Icon name="check" size={16} color="accent" /> : null}
-          </Box>
-        </>
-      )}
-    </Focusable>
-  );
-}
-
 export type { SelectOption, SelectProps };
-export { Select };
+export { Select, triggerVariants as selectTriggerVariants };

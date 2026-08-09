@@ -5,8 +5,9 @@
 
 import { apiErrorText, KromaApiError, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button, Disclosure, Logo } from '@kroma/ui/kit';
 import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
-import { Button, Logo } from '#web/shared/ui';
+import { useCallback, useState } from 'react';
 
 type Kind = 'notFound' | 'unauthorized' | 'forbidden' | 'server';
 
@@ -30,11 +31,13 @@ const RADIAL = 'radial-gradient(120% 90% at 50% 0%, #15131C, #0A0A0C 70%)';
 function ErrorScreen({
   kind,
   detail,
+  trace,
   onRetry,
   onSignIn,
 }: Readonly<{
   kind: Kind;
   detail?: string | null;
+  trace?: string | null;
   onRetry?: () => void;
   onSignIn?: () => void;
 }>) {
@@ -71,6 +74,8 @@ function ErrorScreen({
             {detail}
           </p>
         ) : null}
+
+        {trace ? <Trace trace={trace} /> : null}
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           {onRetry ? (
@@ -126,7 +131,52 @@ export function RouteError({ error, reset }: Readonly<{ error: Error; reset: () 
   // Only surface the raw message for server errors (404/401/403 are self-evident
   // and the message would just be noise).
   const detail = kind === 'server' ? apiErrorText(error, '') || null : null;
-  return <ErrorScreen kind={kind} detail={detail} onRetry={onRetry} onSignIn={onSignIn} />;
+  const trace = kind === 'server' ? traceOf(error) : null;
+  return (
+    <ErrorScreen kind={kind} detail={detail} trace={trace} onRetry={onRetry} onSignIn={onSignIn} />
+  );
+}
+
+// The stack when the throw carries one (a client-side crash), the composed
+// status line when it does not (an API 500 has no client stack worth reading).
+function traceOf(error: Error): string | null {
+  if (error.stack) return error.stack;
+  if (error instanceof KromaApiError) return `${error.name}: ${error.message}`;
+  return String(error) || null;
+}
+
+function Trace({ trace }: Readonly<{ trace: string }>) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+  const copy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(trace);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }, [trace]);
+  return (
+    <div className="mt-5 w-full text-left">
+      <Disclosure title={t('error.technicalDetails')}>
+        <div className="flex flex-col gap-2.5">
+          <pre className="max-h-56 overflow-auto whitespace-pre-wrap wrap-break-word rounded-md border border-border bg-surface-1 px-3.5 py-3 font-mono text-[11.5px] leading-relaxed text-dim">
+            {trace}
+          </pre>
+          <div className="self-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={copied ? 'check' : 'copy'}
+              label={copied ? t('common.copied') : t('common.copy')}
+              onPress={() => void copy()}
+            />
+          </div>
+        </div>
+      </Disclosure>
+    </div>
+  );
 }
 
 /** Router `defaultNotFoundComponent`: an unmatched route (404). */

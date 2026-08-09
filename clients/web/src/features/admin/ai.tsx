@@ -2,12 +2,11 @@
 // sections and taste profiles. Backed by /api/admin/llm*.
 import type { LlmAdminConfig } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
-import { IconDeviceFloppy, IconPlus, IconSparkles } from '@tabler/icons-react';
+import { Badge, Button, EmptyState, Section, Surface, Switch } from '@kroma/ui/kit';
+import { IconSparkles } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { ProviderCard, type ProviderForm } from '#web/features/admin/ai-providers';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
-import { Button, C, Card, Pill, Section, Toggle } from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
 
 // `id` is the server's (blank until saved); `key` is a client-only handle. The
@@ -131,12 +130,21 @@ export function AiPage() {
         action={<StatusChip enabled={cfg.enabled} />}
       />
 
-      <Card className="mt-6 flex items-center justify-between gap-4 px-5.5 py-4.5">
+      <Surface
+        elevated
+        pad="none"
+        radius={16}
+        border="border"
+        row
+        align="center"
+        justify="space-between"
+        gap={16}
+        px={22}
+        py={18}
+        mt={24}
+      >
         <div className="flex items-center gap-3.5">
-          <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
-            style={{ background: 'rgba(244,182,66,.16)', color: C.accent }}
-          >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
             <IconSparkles size={20} stroke={1.8} />
           </span>
           <div>
@@ -144,12 +152,25 @@ export function AiPage() {
             <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.aiEnabledHint')}</div>
           </div>
         </div>
-        <Toggle on={cfg.enabled} onChange={(v) => update({ enabled: v })} />
-      </Card>
+        <Switch
+          checked={cfg.enabled}
+          onChange={(v) => update({ enabled: v })}
+          label={t('admin.aiEnabled')}
+        />
+      </Surface>
 
       <Section
         title={t('admin.aiProviders')}
-        right={<Button label={t('admin.aiAddProvider')} icon={IconPlus} onClick={addProvider} />}
+        mt={28}
+        action={
+          <Button
+            variant="glass"
+            size="sm"
+            icon="plus"
+            label={t('admin.aiAddProvider')}
+            onPress={addProvider}
+          />
+        }
       >
         <p className="-mt-2 mb-4 text-[12.5px] text-dim">{t('admin.aiProvidersHint')}</p>
         {cfg.providers.length === 0 ? (
@@ -157,7 +178,13 @@ export function AiPage() {
             icon="sparkles"
             title={t('admin.aiNoProviders')}
             action={
-              <Button label={t('admin.aiAddProvider')} icon={IconPlus} onClick={addProvider} />
+              <Button
+                variant="glass"
+                size="sm"
+                icon="plus"
+                label={t('admin.aiAddProvider')}
+                onPress={addProvider}
+              />
             }
           />
         ) : (
@@ -182,21 +209,15 @@ export function AiPage() {
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Button
           label={busy === 'save' ? t('admin.aiSaving') : t('common.save')}
-          icon={IconDeviceFloppy}
+          icon="device-floppy"
           variant="primary"
-          onClick={() => void save()}
+          onPress={() => void save()}
           disabled={busy !== 'idle'}
         />
         {saved ? (
-          <span className="text-[13px] font-semibold" style={{ color: C.green }}>
-            {t('admin.aiSaved')}
-          </span>
+          <span className="text-[13px] font-semibold text-success">{t('admin.aiSaved')}</span>
         ) : null}
-        {error ? (
-          <span className="text-[13px] font-semibold" style={{ color: C.red }}>
-            {error}
-          </span>
-        ) : null}
+        {error ? <span className="text-[13px] font-semibold text-danger">{error}</span> : null}
       </div>
     </>
   );
@@ -205,12 +226,8 @@ export function AiPage() {
 function StatusChip({ enabled }: Readonly<{ enabled: boolean }>) {
   const t = useT();
   return enabled ? (
-    <Pill color={C.accent} bg="rgba(244,182,66,.14)">
-      {t('admin.aiStatusOn')}
-    </Pill>
+    <Badge tone="warning">{t('admin.aiStatusOn')}</Badge>
   ) : (
-    <Pill color="#9AA0AA" bg="rgba(255,255,255,.06)">
-      {t('admin.aiStatusOff')}
-    </Pill>
+    <Badge tone="neutral">{t('admin.aiStatusOff')}</Badge>
   );
 }

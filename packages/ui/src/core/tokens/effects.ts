@@ -20,13 +20,21 @@ export interface ShadowRegistry {}
 
 export type ShadowToken = TokenOf<typeof shadow, ShadowRegistry>;
 
+/** ONE ring width, everywhere. A control's focus visual is how a viewer keeps
+ * their place, so it must not change thickness as focus travels from a button
+ * to a field to a row: three widths across the kit read as three different
+ * kinds of focus. Every ring below, and the field outline the web draws in
+ * CSS, are this number. */
+export const RING_WIDTH = 3;
+
 /** The 10-foot focus treatment: a CLEAN solid amber ring plus a dark drop
  * shadow for lift, never an amber bloom, so the ring reads as a crisp border. */
 export const ring = {
-  focus: `0 0 0 4px ${colors.accent}`,
-  focusSm: `0 0 0 3px ${colors.accent}`,
+  focus: `0 0 0 ${RING_WIDTH}px ${colors.accent}`,
+  /** Kept as a name callers already use; the same width as the rest. */
+  focusSm: `0 0 0 ${RING_WIDTH}px ${colors.accent}`,
   /** Ring + lift, the combination every focusable actually renders. */
-  focusLift: `0 0 0 4px ${colors.accent}, 0 10px 28px rgba(0, 0, 0, 0.5)`,
+  focusLift: `0 0 0 ${RING_WIDTH}px ${colors.accent}, 0 10px 28px rgba(0, 0, 0, 0.5)`,
 } as const;
 
 export const glow = {

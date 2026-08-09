@@ -309,7 +309,8 @@ async fn main() -> anyhow::Result<()> {
     info!("shutting down: cancelling running jobs + stopping module processes");
     state.jobs.cancel_all();
     await_jobs_drained(&state).await;
-    supervisor.stop_all();
+    // Blocking: each sidecar gets a grace period to run its own shutdown hooks.
+    let _ = tokio::task::spawn_blocking(move || supervisor.stop_all()).await;
 
     Ok(())
 }

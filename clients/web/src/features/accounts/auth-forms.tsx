@@ -2,10 +2,9 @@
 // `AuthGate.tsx`, which owns the gate/routing + profile picker and composes
 // these two screens.
 
-import { TextInput } from '@kroma/admin-kit';
 import { isEmail, isPassword, isUsername, type PublicUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import { Button, Field } from '@kroma/ui/kit';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
@@ -63,24 +62,33 @@ export function LoginForm({
         </div>
       ) : null}
 
+      {/* `size="md"` against the app's `sm` default (see router.tsx): the gate
+          is a full-screen front door rather than a console page, and <Button>
+          is `md` whatever the entries are - left alone, the form would stack a
+          40px field under a 50px button. */}
       {profile ? null : (
-        <TextInput
-          size="lg"
-          className="w-full"
+        <Field
+          w="100%"
+          size="md"
+          label={t('auth.emailOrUsername')}
+          hideLabel
+          icon="user"
           placeholder={t('auth.emailOrUsername')}
-          autoComplete="username"
           value={identifier}
           onChange={setIdentifier}
+          entry={{ autoComplete: 'username' }}
           // Deliberate: the sign-in field is what this screen is for.
           autoFocus
         />
       )}
-      <TextInput
-        size="lg"
-        className="w-full"
+      <Field
+        w="100%"
+        size="md"
+        label={t('auth.password')}
+        hideLabel
         type="password"
+        icon="lock"
         placeholder={t('auth.password')}
-        autoComplete="current-password"
         value={password}
         onChange={setPassword}
         // Deliberate: with a profile already picked, the password is the only thing left to type.
@@ -89,13 +97,19 @@ export function LoginForm({
 
       {error ? <p className="text-[13px] font-medium text-danger">{error}</p> : null}
 
-      <button
-        type="submit"
+      {/* Hidden native submit keeps Enter-to-submit working; the visible
+          control is the kit Button, so it matches the passkey one below. */}
+      <input type="submit" hidden />
+      <Button
+        block
+        label={busy ? t('auth.loggingIn') : t('auth.login')}
+        loading={busy}
         disabled={busy || !password}
-        className="mt-1 w-full rounded-md bg-accent py-3.5 text-[15px] font-bold text-accent-ink transition-colors hover:bg-accent-hover disabled:opacity-50"
-      >
-        {busy ? t('auth.loggingIn') : t('auth.login')}
-      </button>
+        onPress={() => {
+          if (identifier.trim() && password) onSubmit(identifier.trim(), password);
+        }}
+        style={{ marginTop: 4 }}
+      />
       {canUsePasskey && onPasskey ? (
         <Button
           block

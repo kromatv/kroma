@@ -168,33 +168,32 @@ describe('orderStories', () => {
   const make = (tier: string, group: string, name: string) =>
     ({ id: slug(name), tier, group, name }) as Story;
 
-  it('sorts by atomic level first, so the sidebar reads as the hierarchy', () => {
+  it('sorts by functional group first, so every input sits in one section', () => {
     const sorted = orderStories([
       make('Organisms', 'Media', 'Rail'),
-      make('Atoms', 'Actions', 'Button'),
-      make('Templates', 'Layout', 'TvStage'),
-      make('Foundations', 'Foundations', 'Colors'),
       make('Molecules', 'Input', 'Field'),
+      make('Atoms', 'Input', 'Switch'),
+      make('Foundations', 'Foundations', 'Colors'),
+      make('Atoms', 'Actions', 'Button'),
     ]);
-    expect(sorted.map((s) => s.name)).toEqual(['Colors', 'Button', 'Field', 'Rail', 'TvStage']);
+    expect(sorted.map((s) => s.name)).toEqual(['Colors', 'Button', 'Field', 'Switch', 'Rail']);
   });
 
-  it('falls back to the design grouping, then the name, within one level', () => {
+  it('ignores the atomic level entirely: it is for kit editors, not the reader', () => {
     const sorted = orderStories([
-      make('Atoms', 'Brand', 'Wheel'),
-      make('Atoms', 'Actions', 'Chip'),
+      make('Organisms', 'Actions', 'Menu'),
       make('Atoms', 'Actions', 'Button'),
     ]);
-    expect(sorted.map((s) => s.name)).toEqual(['Button', 'Chip', 'Wheel']);
+    expect(sorted.map((s) => s.name)).toEqual(['Button', 'Menu']);
     expect(GROUP_ORDER).toContain('Brand');
   });
 
-  it('puts an unlisted level last instead of silently dropping it', () => {
+  it('puts an unlisted group last, alphabetically, instead of silently dropping it', () => {
     const sorted = orderStories([
-      make('Zzz unknown', 'Media', 'Thing'),
+      make('Atoms', 'Zzz unknown', 'Thing'),
       make('Atoms', 'Brand', 'Logo'),
     ]);
-    expect(sorted.map((s) => s.tier)).toEqual(['Atoms', 'Zzz unknown']);
+    expect(sorted.map((s) => s.group)).toEqual(['Brand', 'Zzz unknown']);
   });
 
   it('sorts a story whose tier was never attached instead of crashing', () => {

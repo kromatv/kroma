@@ -3,14 +3,14 @@
 // chip and a chevron into the detail drawer. Configuration, dependencies and
 // uninstall live in the drawer, so the list stays scannable.
 
-import { Card, Image, Toggle } from '@kroma/admin-kit';
 import type { StoreCatalog } from '@kroma/core';
 import { moduleIconUrl } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { EmptyState, IconButton } from '@kroma/ui/kit';
+import { EmptyState, IconButton, Surface, Switch } from '@kroma/ui/kit';
 import { type AdminModule, matchesQuery } from '#web/features/admin/module-api';
 import { useModuleToggle } from '#web/features/admin/module-data';
 import { apiBase } from '#web/shared/lib/api';
+import { Image } from '#web/shared/ui';
 
 function InstalledRow({
   m,
@@ -63,13 +63,15 @@ function InstalledRow({
           <span className="text-[11px] font-semibold text-dim max-md:hidden">
             {m.enabled ? t('admin.modulesEnabled') : t('admin.modulesDisabled')}
           </span>
-          <Toggle on={m.enabled} onChange={busy ? undefined : (v) => void toggle(v)} />
+          <Switch
+            checked={m.enabled}
+            onChange={busy ? undefined : (v) => void toggle(v)}
+            label={m.name}
+          />
         </div>
         <div className="flex justify-end">
           <IconButton
             variant="ghost"
-            size={32}
-            glyph={18}
             icon="chevron-right"
             label={t('admin.modulesDetails')}
             onPress={onOpen}
@@ -117,7 +119,7 @@ export function InstalledList({
     );
   }
   return (
-    <Card className="overflow-hidden">
+    <Surface elevated pad="none" radius={16} overflow="hidden">
       {shown.map((m) => (
         <InstalledRow
           key={m.id}
@@ -127,6 +129,6 @@ export function InstalledList({
           onChanged={onChanged}
         />
       ))}
-    </Card>
+    </Surface>
   );
 }

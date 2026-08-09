@@ -1,6 +1,5 @@
-import { Icon, IconButton, styles } from '@kroma/ui/kit';
+import { Box, Icon, IconButton, styles, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useUnreadCount } from '#mobile/lib/notifications';
 import { type } from '#mobile/lib/theme';
@@ -19,15 +18,15 @@ export function NotificationBell() {
       label={unread > 0 ? t('notifications.unreadCount', { n: unread }) : t('notifications.title')}
       onPress={() => router.push('/notifications' as never)}
     >
-      <View>
+      <Box>
         <Icon name="bell" size={22} stroke={2} />
         {unread > 0 ? (
-          <View style={s.badge}>
+          <Box style={s.badge}>
             {/* Past nine the pill starts outgrowing the bell. */}
-            <Text style={s.count}>{unread > 9 ? '9+' : unread}</Text>
-          </View>
+            <Txt style={s.count}>{unread > 9 ? '9+' : unread}</Txt>
+          </Box>
         ) : null}
-      </View>
+      </Box>
     </IconButton>
   );
 }

@@ -1,15 +1,15 @@
 // Formatting + deterministic-gradient helpers for the admin console. The core
-// hue / decimal / formatBytes helpers live in @kroma/admin-kit; this module
+// hue / decimal / formatBytes helpers live in @kroma/core; this module
 // re-exports the ones the web app consumes and keeps the web-specific extras
 // (poster gradient, French durations/uptime, relative timestamps) below.
 
-import { decimal, hue } from '@kroma/admin-kit';
+import { decimal, formatTimecode, hueFromString } from '@kroma/core';
 
-export { decimal, formatBytes } from '@kroma/admin-kit';
+export { decimal, formatBytes } from '@kroma/core';
 
 /** Poster gradient for a title (matches the design's `posterGrad`). */
 export function posterGradient(title: string): string {
-  const h = hue(title);
+  const h = hueFromString(title);
   return `radial-gradient(120% 90% at 30% 16%, hsla(${(h + 22) % 360},60%,46%,.5), transparent 62%), linear-gradient(155deg, hsl(${h} 42% 27%), hsl(${(h + 30) % 360} 48% 10%))`;
 }
 
@@ -27,14 +27,10 @@ export function formatHours(ms: number): string {
   return `${decimal((ms || 0) / 3_600_000, 1)} h`;
 }
 
-/** Player timecode from ms: "1:42:08" or "8:30". */
+/** Player timecode from ms: "1:42:08" or "8:30". Core's scrub-bar formatter,
+ * fed milliseconds. */
 export function timecode(ms: number): string {
-  const s = Math.max(0, Math.floor((ms || 0) / 1000));
-  const hh = Math.floor(s / 3600);
-  const mm = Math.floor((s % 3600) / 60);
-  const ss = s % 60;
-  const p = (n: number) => String(n).padStart(2, '0');
-  return hh > 0 ? `${hh}:${p(mm)}:${p(ss)}` : `${mm}:${p(ss)}`;
+  return formatTimecode((ms || 0) / 1000);
 }
 
 /** Mb/s with a French decimal comma. */

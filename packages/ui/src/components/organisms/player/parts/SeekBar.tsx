@@ -189,8 +189,7 @@ export function SeekBar({
             z={6}
             align="center"
             gap={px(8)}
-            pointerEvents="none"
-            style={{ transform: [{ translateX: previewX - previewHalf }] }}
+            style={[s.inert, { transform: [{ translateX: previewX - previewHalf }] }]}
           >
             {previewTile ? <StoryboardThumb tile={previewTile} /> : null}
             <Box radius="md" bg="black/80" px={px(12)} py={px(4)}>
@@ -216,7 +215,7 @@ export function SeekBar({
                 radius="pill"
                 overflow="hidden"
                 bg={seekBar().track}
-                pointerEvents="none"
+                style={s.inert}
               >
                 {/* Insets vary per tick, so they bypass the shared cache via `style`.
                     Not scaleX: that would stretch the gradient and the pill caps. */}
@@ -245,8 +244,8 @@ export function SeekBar({
             h={px(16)}
             radius="pill"
             bg="#FFFFFF"
-            pointerEvents="none"
             style={[
+              s.inert,
               playheadShadow(),
               {
                 transform: [{ translateX: playheadX - px(16) / 2 }, { translateY: -px(16) / 2 }],
@@ -277,6 +276,7 @@ const s = styles({
   shrink: { shrink: 1 },
   track: { position: 'relative', row: true, align: 'center', flex: true, gap: SEGMENT_GAP },
   stamp: { font: 'ui', fontWeight: '700', color: 'white', fontVariant: ['tabular-nums'] },
+  inert: { pointerEvents: 'none' },
 });
 
 function scaled(scale: number) {

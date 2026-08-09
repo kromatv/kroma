@@ -2,23 +2,23 @@
 // the iOS/Android backdrop split. Screens scroll underneath, padding by
 // TAB_BAR_CLEARANCE.
 
-import { NavPill, NavPillItem, styles } from '@kroma/ui/kit';
+import { Box, NavPill, NavPillItem, styles } from '@kroma/ui/kit';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 // expo-router vendors react-navigation and does not re-export this type from its root.
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CastMiniBar } from '#mobile/components/cast/CastMiniBar';
 
 export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTabBarProps>) {
   const insets = useSafeAreaInsets();
   return (
-    <View pointerEvents="box-none" style={[s.dock, { bottom: Math.max(insets.bottom, 12) + 8 }]}>
+    <Box pointerEvents="box-none" style={[s.dock, { bottom: Math.max(insets.bottom, 12) + 8 }]}>
       {/* Renders nothing when not casting. */}
       <CastMiniBar />
       {/* Unclipped wrapper: the pill itself clips the blur. */}
-      <View style={s.shadow}>
+      <Box style={s.shadow}>
         <NavPill
           size="sm"
           // Null is the slide ending - nothing to feel there.
@@ -55,8 +55,8 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
             );
           })}
         </NavPill>
-      </View>
-    </View>
+      </Box>
+    </Box>
   );
 }
 

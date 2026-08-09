@@ -13,12 +13,14 @@
 // Sibling: <PinField> is the masked-dots spelling of the same job, for a
 // 10-foot secret PIN.
 
-import { type ReactNode, useMemo, useRef } from 'react';
-import { TextInput } from 'react-native';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, TextInput } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
+import { Frost } from '#ui/components/atoms/frost';
 import { Txt } from '#ui/components/atoms/text';
-import { styles, sv } from '#ui/core';
+import { radius, styles, sv } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
+import { CONTROL } from '#ui/lib/field-shell';
 import { useCompleteOnce } from '#ui/lib/use-complete-once';
 import { useControllable } from '#ui/lib/use-controllable';
 
@@ -26,21 +28,32 @@ const REGEXP_ONLY_DIGITS = String.raw`^\d+$`;
 const REGEXP_ONLY_CHARS = '^[a-zA-Z]+$';
 const REGEXP_ONLY_DIGITS_AND_CHARS = '^[a-zA-Z0-9]+$';
 
+// <Frost> clips itself to the corner rather than inheriting it, so the radius
+// each size gives its slot has to be stated where the frost can read it too.
+const SLOT_RADIUS = { md: radius.lg, tv: radius.xl } as const;
+
 const otpVariants = sv({
   slots: {
-    slot: { center: true, bg: 'surface2', border: 'borderStrong' },
+    slot: { center: true, bg: CONTROL.md.bg, border: 'borderStrong' },
     char: { fontWeight: '600', color: 'text' },
   },
   variants: {
     size: {
-      md: { slot: { w: 52, h: 60, radius: 'lg' }, char: { fontSize: 26 } },
-      tv: { slot: { w: 72, h: 84, radius: 'xl' }, char: { fontSize: 38 } },
+      md: { slot: { w: 52, h: 60, radius: SLOT_RADIUS.md }, char: { fontSize: 26 } },
+      tv: { slot: { w: 72, h: 84, radius: SLOT_RADIUS.tv }, char: { fontSize: 38 } },
     },
     /** `active` is the slot the next character lands in, and the only one with a caret. */
     state: {
       empty: {},
       filled: {},
       active: { slot: { borderColor: 'accent', bg: 'accentSoft' } },
+    },
+    /** Dimmed by colour, never by a row `opacity`: fading the row would fade
+     *  the FROST with it and let the backdrop through as a legible picture.
+     *  The well keeps its fill and only the edge and the ink recede. Declared
+     *  before `invalid` so a lockout keeps its red edge. */
+    disabled: {
+      true: { slot: { borderColor: 'border' }, char: { color: 'textDim' } },
     },
     invalid: {
       true: { slot: { borderColor: 'danger' } },
@@ -54,7 +67,7 @@ const otpVariants = sv({
       style: { slot: { borderColor: 'danger' } },
     },
   ],
-  defaults: { size: 'md', state: 'empty', invalid: false },
+  defaults: { size: 'md', state: 'empty', disabled: false, invalid: false },
 });
 
 type OtpSize = 'md' | 'tv';
@@ -120,6 +133,7 @@ function OtpField({
 }: Readonly<OtpFieldProps>) {
   const [value, setValue] = useControllable(valueProp, defaultValue, onChange);
   const input = useRef<TextInput>(null);
+  const [focused, setFocused] = useState(false);
 
   const allowed = useMemo(() => new RegExp(pattern), [pattern]);
 
@@ -137,48 +151,77 @@ function OtpField({
     report(clean);
   };
 
+  // A rejected code is checked with the row disabled and then handed back
+  // empty, and iOS drops the keyboard the instant an input stops being
+  // editable - `autoFocus` is a mount-time prop and never fires again. Without
+  // this the retry has no caret and no keyboard. Only a field that asked for
+  // the focus takes it back, so a screen stacking several codes (current, new,
+  // confirm) is left alone.
+  useEffect(() => {
+    if (physicalKeyboard && autoFocus && !disabled) input.current?.focus();
+  }, [physicalKeyboard, autoFocus, disabled]);
+
+  // The caret sits in the next empty slot; a full code has none, because there
+  // is nowhere left to type. It also tracks focus rather than mere presence: a
+  // screen can stack several codes (current PIN, new PIN, confirm), and a caret
+  // blinking in a field that would not receive the keystroke is a lie.
+  const caretAt = physicalKeyboard && focused && !disabled ? value.length : -1;
+
   const slots: OtpSlot[] = Array.from({ length: maxLength }, (_, at) => ({
     char: at < value.length ? (value[at] ?? null) : null,
     isActive: at === Math.min(value.length, maxLength - 1),
-    // The caret sits in the next empty slot; a full code has none, because
-    // there is nowhere left to type.
-    hasFakeCaret: physicalKeyboard && !disabled && at === value.length,
+    hasFakeCaret: at === caretAt,
   }));
 
   return (
-    <Box row align="center" gap={12} opacity={disabled ? 0.5 : 1} {...box}>
+    <Box row align="center" gap={12} {...box}>
       {physicalKeyboard ? (
-        // Off-screen rather than hidden: `opacity: 0` still leaves a focusable,
-        // pasteable, autofillable entry. It covers the row so a tap anywhere
-        // on the slots lands the caret.
-        <TextInput
-          ref={input}
-          value={value}
-          onChangeText={commit}
-          maxLength={maxLength}
-          autoFocus={autoFocus}
-          editable={!disabled}
-          keyboardType="number-pad"
-          inputMode={pattern === REGEXP_ONLY_DIGITS ? 'numeric' : 'text'}
-          autoComplete="one-time-code"
-          textContentType="oneTimeCode"
-          autoCorrect={false}
-          autoCapitalize="characters"
-          spellCheck={false}
-          accessibilityLabel={label}
-          caretHidden
-          style={s.entry}
-        />
+        <>
+          {/* Transparent rather than hidden: `display: none` would cost the
+              paste, the SMS autofill and the hardware typing that all need a
+              real entry. */}
+          <TextInput
+            ref={input}
+            value={value}
+            onChangeText={commit}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            maxLength={maxLength}
+            autoFocus={autoFocus}
+            editable={!disabled}
+            keyboardType="number-pad"
+            inputMode={pattern === REGEXP_ONLY_DIGITS ? 'numeric' : 'text'}
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            autoCorrect={false}
+            autoCapitalize="characters"
+            spellCheck={false}
+            accessibilityLabel={label}
+            caretHidden
+            style={s.entry}
+          />
+          {/* UIKit refuses to hit-test a view at alpha 0, so on iOS the entry
+              cannot be tapped however wide it is spread - this is what makes
+              the whole row the control there, with the slots below kept as
+              faces so a tap on one falls through to it. It stays under the
+              entry, so on the web the native click still places the caret. */}
+          <Pressable
+            accessible={false}
+            disabled={disabled}
+            onPress={() => input.current?.focus()}
+            style={s.hit}
+          />
+        </>
       ) : null}
       {slots.map((slot, at) => (
         // A code is a fixed row of positions: slot 3 IS the identity of the
         // third box, and nothing is ever inserted, removed or reordered.
         // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-        <Box row align="center" gap={12} key={at}>
+        <Box row align="center" gap={12} key={at} pointerEvents="none">
           {renderSlot ? (
             renderSlot(slot, at)
           ) : (
-            <Slot slot={slot} size={size} invalid={invalid} mask={mask} />
+            <Slot slot={slot} size={size} invalid={invalid} disabled={disabled} mask={mask} />
           )}
           {isGroupEnd(groups, at, maxLength) ? <Separator /> : null}
         </Box>
@@ -208,12 +251,17 @@ function Slot({
   slot,
   size,
   invalid,
+  disabled,
   mask,
-}: Readonly<{ slot: OtpSlot; size: OtpSize; invalid: boolean; mask: boolean }>) {
+}: Readonly<{ slot: OtpSlot; size: OtpSize; invalid: boolean; disabled: boolean; mask: boolean }>) {
   const state = slotState(slot);
-  const s = otpVariants({ size, state, invalid });
+  const s = otpVariants({ size, state, invalid, disabled });
   return (
     <Box style={s.slot}>
+      {/* The fill is translucent (lib/field-shell), so blur what shows through:
+          a code entry over the sign-in artwork reads as glass like every other
+          control, rather than as an opaque chip punched out of it. */}
+      <Frost radius={SLOT_RADIUS[size]} />
       {slot.char == null ? null : <Txt style={s.char}>{mask ? '•' : slot.char}</Txt>}
       {slot.hasFakeCaret ? <Caret absolute height={size === 'tv' ? 44 : 30} /> : null}
     </Box>
@@ -224,7 +272,7 @@ function Separator() {
   return <Box w={12} h={2} radius="pill" bg="borderStrong" />;
 }
 
-// Off-screen, not `display: none`: it has to stay focusable to receive the
+// Invisible, not `display: none`: it has to stay in the tree to receive the
 // paste, the autofill and the keystrokes.
 const s = styles({
   entry: {
@@ -240,6 +288,7 @@ const s = styles({
     color: 'transparent',
     z: 1,
   },
+  hit: { absolute: true, left: 0, top: 0, w: '100%', h: '100%' },
 });
 
 export type { OtpFieldProps, OtpSize, OtpSlot };

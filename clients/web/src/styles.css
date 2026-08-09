@@ -11,7 +11,6 @@
    this build). Source them explicitly, or their unique utilities (e.g. a module
    page's grid template) never get emitted and the layout breaks. (Runtime .tar
    modules ship their own CSS instead - see the shared entry above.) */
-@source "../../../packages/admin-kit/src/**/*.{ts,tsx}";
 @source "../../../packages/ui/src/components/**/*.{ts,tsx}";
 @source "../../../packages/ui/src/player/**/*.{ts,tsx}";
 @source "../../../modules/*/ui/src/**/*.{ts,tsx}";
@@ -63,16 +62,6 @@
   }
 }
 
-/* Blinking caret for the OTP / PIN slots (shared/ui/Otp). */
-@keyframes otp-caret {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
 /* Horizontal shake for a rejected PIN (keyed re-mount retriggers it). */
 @keyframes otp-shake {
   0%,
@@ -96,7 +85,7 @@
    drift apart. An OUTLINE rather than a box-shadow, unlike the 10-foot ring:
    it does not evict a shadow the field already carries. */
 :root {
-  --ring-field: 3px solid color-mix(in srgb, var(--kroma-accent) 32%, transparent);
+  --ring-field: var(--ring-width) solid color-mix(in srgb, var(--kroma-accent) 32%, transparent);
 }
 
 /* THE FIELD FOCUS VISUAL, for every text entry on the web.

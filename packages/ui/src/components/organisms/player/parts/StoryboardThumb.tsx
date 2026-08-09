@@ -13,6 +13,7 @@ import type { StoryboardTile } from '#ui/services/storyboard';
 
 const s = styles({
   tileShadow: { boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7)' },
+  vignette: { pointerEvents: 'none' },
 });
 const TILE_VIGNETTE = 'radial-gradient(120% 120% at 50% 35%, transparent, rgba(0,0,0,0.5))';
 
@@ -46,7 +47,7 @@ export function StoryboardThumb({ tile }: Readonly<{ tile: StoryboardTile }>) {
           transform: [{ scale: tile.scale }],
         }}
       />
-      <Box fill pointerEvents="none" style={gradient(TILE_VIGNETTE)} />
+      <Box fill style={[s.vignette, gradient(TILE_VIGNETTE)]} />
     </Box>
   );
 }

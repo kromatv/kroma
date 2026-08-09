@@ -21,7 +21,7 @@ function Demo(props: Readonly<Omit<DialogProps, 'open' | 'onClose' | 'children'>
 
 export default story({
   name: 'Dialog',
-  group: 'State',
+  group: 'Overlays',
   docs: 'A modal box. It declares a focus SCOPE, which keeps the D-pad from wandering back into the page left behind: that is the difference between an overlay and a true modal on a television.',
   matrix: false,
   args: {

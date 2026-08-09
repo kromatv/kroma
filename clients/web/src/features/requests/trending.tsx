@@ -4,17 +4,28 @@
 
 import type { DiscoverEntry, DiscoverType } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconChevronRight, IconFlame } from '@tabler/icons-react';
+import { Box, Icon, Row, Txt } from '@kroma/ui/kit';
+import { IconChevronRight } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
 import { PosterRail, SkeletonRow } from '#web/shared/ui';
 
-const RAIL_HEADING =
-  'flex items-center gap-2 font-display text-[22px] font-bold tracking-[-.02em] text-text';
-const SECTION_TITLE = `mb-4 mt-9 ${RAIL_HEADING}`;
-
 // DiscoverCard's caption strip under the 2:3 art (title + kind/year lines).
 const CAPTION_H = 52;
+
+function RailHeading({ title, action }: Readonly<{ title: string; action?: ReactNode }>) {
+  return (
+    <Row between gap={12} mt={36} mb={16}>
+      {/* Still an <h2>: <Txt accessibilityRole="header"> can only render an h1. */}
+      <h2 className="flex items-center gap-2">
+        <Icon name="flame" size={20} stroke={2} color="accent" />
+        <Txt variant="h2">{title}</Txt>
+      </h2>
+      {action}
+    </Row>
+  );
+}
 
 function TrendRail({
   title,
@@ -25,20 +36,19 @@ function TrendRail({
   if (entries.length === 0) return null;
   return (
     <section>
-      <div className="mb-4 mt-9 flex items-center justify-between gap-3">
-        <h2 className={RAIL_HEADING}>
-          <IconFlame size={20} stroke={2} className="text-accent" />
-          {title}
-        </h2>
-        <Link
-          to="/trending/$type"
-          params={{ type: linkType }}
-          className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-dim transition-colors hover:text-accent"
-        >
-          {t('discover.seeAll')}
-          <IconChevronRight size={15} stroke={2.4} />
-        </Link>
-      </div>
+      <RailHeading
+        title={title}
+        action={
+          <Link
+            to="/trending/$type"
+            params={{ type: linkType }}
+            className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-dim transition-colors hover:text-accent"
+          >
+            {t('discover.seeAll')}
+            <IconChevronRight size={15} stroke={2.4} />
+          </Link>
+        }
+      />
       <PosterRail data={entries} extra={CAPTION_H} renderItem={(e) => <DiscoverCard entry={e} />} />
     </section>
   );
@@ -53,13 +63,10 @@ export function TrendingBrowse({
 
   if (loading) {
     return (
-      <div className="mt-9">
-        <h2 className={SECTION_TITLE}>
-          <IconFlame size={20} stroke={2} className="text-accent" />
-          {t('discover.trending')}
-        </h2>
+      <Box>
+        <RailHeading title={t('discover.trending')} />
         <SkeletonRow />
-      </div>
+      </Box>
     );
   }
 

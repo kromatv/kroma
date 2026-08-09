@@ -17,7 +17,6 @@ use tiny_skia::{
 };
 
 const W: u32 = 640;
-const H: u32 = 360;
 const MARGIN: f32 = 28.0;
 const ACCENT: (u8, u8, u8) = (242, 180, 66); // KROMA amber
 const WHITE: (u8, u8, u8) = (245, 245, 247);

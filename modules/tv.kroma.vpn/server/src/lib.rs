@@ -9,12 +9,20 @@
 //! torrent engine then routes every peer connection through
 //! `socks5://127.0.0.1:<port>`; the rest of the server never touches the
 //! tunnel. Works identically for Mullvad or any other WireGuard provider.
+//!
+//! The bridge must never outlive the module. Stopping this module (the admin
+//! toggle, an uninstall, a server shutdown) SIGTERMs the sidecar, which runs
+//! [`VpnModule::on_disable`] → [`Vpn::stop`]: respawns are latched off and the
+//! child is killed before the process exits. A generation that missed that
+//! window (SIGKILL, a crash) leaves a `wireproxy` still tunnelling and still
+//! holding the SOCKS port, so [`Vpn::apply`] reaps one by pidfile on every pass,
+//! including the pass that finds no config at all.
 
 mod provision;
 pub mod routes;
 
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use axum::Router;
@@ -33,11 +41,19 @@ pub struct Vpn {
     // Bumped on every (re)configure so a stale exit-waiter never respawns an
     // old generation.
     generation: AtomicU64,
+    // Latched by `stop` so an `apply` racing the shutdown - a `PUT /vpn` still
+    // draining while the process exits - can't bring the bridge back up.
+    stopping: AtomicBool,
 }
 
 impl Vpn {
     pub fn new(data_dir: PathBuf) -> Arc<Self> {
-        Arc::new(Self { data_dir, child: tokio::sync::Mutex::new(None), generation: AtomicU64::new(0) })
+        Arc::new(Self {
+            data_dir,
+            child: tokio::sync::Mutex::new(None),
+            generation: AtomicU64::new(0),
+            stopping: AtomicBool::new(false),
+        })
     }
 
     fn dir(&self) -> PathBuf {
@@ -48,12 +64,17 @@ impl Vpn {
     /// Call at boot and whenever `vpnWgConfig` / `vpnLocalPort` change.
     pub async fn apply(self: &Arc<Self>, host: &dyn HostCtx) {
         let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
-        // Always stop the previous child first (config change or teardown).
+        // Always stop the previous child first (config change or teardown), then
+        // sweep for one this process never owned. The sweep is above the
+        // no-config exit on purpose: with `vpnWgConfig` cleared there is no
+        // tracked child to notice an orphan by, so anything left tunnelling from
+        // a killed generation would keep the SOCKS port bound forever.
         if let Some(mut old) = self.child.lock().await.take() {
             let _ = old.kill().await;
         }
+        reap_stale(&self.dir());
         let wg = host.setting_str("vpnWgConfig", "");
-        if wg.trim().is_empty() {
+        if wg.trim().is_empty() || self.stopping.load(Ordering::SeqCst) {
             return;
         }
         let port = host.setting_i64("vpnLocalPort", 25345).clamp(1, 65535);
@@ -62,14 +83,23 @@ impl Vpn {
         }
     }
 
-    /// Stop the bridge child and prevent respawns (the VPN module was disabled).
-    /// Bumping the generation makes the current supervisor exit; `apply` brings
-    /// the bridge back up when the module is re-enabled.
+    /// Take the bridge down for good: latch respawns off, kill the child, and
+    /// sweep any orphan. Idempotent, and awaited by the callers that matter: the
+    /// module being disabled and the sidecar being asked to exit, so nothing is
+    /// left tunnelling. [`Self::resume`] undoes the latch on re-enable.
     pub async fn stop(self: &Arc<Self>) {
+        self.stopping.store(true, Ordering::SeqCst);
         self.generation.fetch_add(1, Ordering::SeqCst);
         if let Some(mut old) = self.child.lock().await.take() {
             let _ = old.kill().await;
         }
+        reap_stale(&self.dir());
+        tracing::info!("wireguard bridge shut down");
+    }
+
+    /// Clear a previous [`Self::stop`] so `apply` may start the bridge again.
+    pub fn resume(&self) {
+        self.stopping.store(false, Ordering::SeqCst);
     }
 
     async fn start_bridge(
@@ -102,50 +132,77 @@ impl Vpn {
         )
         .map_err(|e| format!("write wireproxy.conf: {e}"))?;
 
-        // The module supervisor stops sidecars with SIGKILL, which orphans the
-        // wireproxy child of a previous run. A stale bridge keeps the SOCKS
-        // port bound with an outdated config, so every fresh spawn here fails
-        // with "address in use" while traffic silently rides the old tunnel.
-        reap_stale(&dir);
         let child = spawn_child(&bin, &conf_path)?;
         record_pid(&dir, &child);
         tracing::info!(port, "wireguard bridge started (wireproxy)");
         *self.child.lock().await = Some(child);
 
-        // Supervisor: while this generation is the active config, respawn the
-        // child (with a small backoff) whenever it dies. The kill switch
-        // covers the gap. Respawns re-run the child directly, never `apply`.
-        let me = self.clone();
+        self.clone().supervise(generation, bin, conf_path);
+        Ok(())
+    }
+
+    /// While `generation` is the active config, respawn the child (with a small
+    /// backoff) whenever it dies. The kill switch covers the gap. Respawns
+    /// re-run the child directly, never `apply`.
+    fn supervise(self: Arc<Self>, generation: u64, bin: PathBuf, conf_path: PathBuf) {
+        let me = self;
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(std::time::Duration::from_secs(3)).await;
-                if me.generation.load(Ordering::SeqCst) != generation {
+                if !me.is_current(generation) {
                     return;
                 }
-                let died = {
-                    let mut guard = me.child.lock().await;
-                    match guard.as_mut() {
-                        Some(child) => child.try_wait().map(|s| s.is_some()).unwrap_or(true),
-                        None => return,
-                    }
-                };
-                if died {
-                    tracing::warn!("wireguard bridge exited; restarting in 5s");
-                    tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-                    if me.generation.load(Ordering::SeqCst) != generation {
-                        return;
-                    }
-                    match spawn_child(&bin, &conf_path) {
-                        Ok(child) => {
-                            record_pid(&me.dir(), &child);
-                            *me.child.lock().await = Some(child);
-                        }
-                        Err(e) => tracing::warn!(error = %e, "wireguard bridge restart failed"),
-                    }
+                match me.child_died().await {
+                    // No child left to watch: a `stop` took it.
+                    None => return,
+                    Some(false) => continue,
+                    Some(true) => {}
+                }
+                tracing::warn!("wireguard bridge exited; restarting in 5s");
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                if !me.respawn(generation, &bin, &conf_path).await {
+                    return;
                 }
             }
         });
-        Ok(())
+    }
+
+    fn is_current(&self, generation: u64) -> bool {
+        self.generation.load(Ordering::SeqCst) == generation
+    }
+
+    /// Whether the child has exited, or `None` when there is no longer one.
+    async fn child_died(&self) -> Option<bool> {
+        let mut guard = self.child.lock().await;
+        let child = guard.as_mut()?;
+        Some(child.try_wait().map(|s| s.is_some()).unwrap_or(true))
+    }
+
+    /// Whether the supervisor should keep watching: false once this generation
+    /// is no longer the active config.
+    async fn respawn(&self, generation: u64, bin: &std::path::Path, conf: &std::path::Path) -> bool {
+        if !self.is_current(generation) {
+            return false;
+        }
+        match spawn_child(bin, conf) {
+            Ok(mut child) => {
+                let mut guard = self.child.lock().await;
+                // Re-check under the lock: a `stop` between the check above and
+                // here took a `None` child, so storing this one would leave it
+                // tunnelling with nothing left holding a handle to kill it.
+                if !self.is_current(generation) {
+                    let _ = child.kill().await;
+                    return false;
+                }
+                record_pid(&self.dir(), &child);
+                *guard = Some(child);
+                true
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "wireguard bridge restart failed");
+                true
+            }
+        }
     }
 
     /// Whether the bridge child is currently alive.
@@ -209,6 +266,10 @@ fn record_pid(dir: &std::path::Path, child: &Child) {
 
 /// Kill a wireproxy orphaned by a previous run, identified by the pidfile and
 /// verified by process name (never kill a reused pid). Best-effort.
+///
+/// A stale bridge keeps the SOCKS port bound with an outdated config, so
+/// skipping this both fails every fresh spawn with "address in use" and leaves
+/// traffic silently riding the old tunnel.
 #[cfg(unix)]
 fn reap_stale(dir: &std::path::Path) {
     let path = pidfile(dir);
@@ -317,6 +378,7 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for VpnModule {
 
     async fn on_enable(&self, host: Arc<dyn HostCtx>) {
         if let Some(vpn) = service::<Vpn>(host.as_ref()) {
+            vpn.resume();
             vpn.apply(host.as_ref()).await;
         }
     }

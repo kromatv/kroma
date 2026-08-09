@@ -113,9 +113,7 @@ function ReleaseRow({
         ) : null}
         {canGrab && r.grabbable ? (
           <IconButton
-            size={28}
-            glyph={13}
-            radius={8}
+            control="sm"
             icon="download"
             active
             label={override ? t('requests.grabAnyway') : t('requests.grab')}

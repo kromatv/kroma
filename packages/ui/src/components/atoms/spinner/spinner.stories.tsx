@@ -3,7 +3,7 @@ import { Spinner } from './spinner';
 
 export default story({
   name: 'Spinner',
-  group: 'State',
+  group: 'Feedback',
   docs: 'The indeterminate waiting indicator. Animated with Animated rather than CSS keyframes, which makes it correct on all four targets and immune to the animation freeze of a hidden window.',
   matrix: false,
   args: { size: 28, thickness: 3 },

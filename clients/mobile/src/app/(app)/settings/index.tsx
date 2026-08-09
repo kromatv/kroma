@@ -2,11 +2,11 @@
 // build of the app this actually is.
 
 import { formatBuildDate, LOCALES } from '@kroma/core';
-import { Icon, type IconName, styles } from '@kroma/ui/kit';
+import { Box, Icon, type IconName, styles, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { buildInfo, commitLabel, repoLabel } from '#mobile/lib/buildInfo';
@@ -31,7 +31,7 @@ export default function Settings() {
     <Screen padded={false}>
       <PageHeader title={t('nav.settings')} />
       <ScrollView contentContainerStyle={s.body}>
-        <View style={s.card}>
+        <Box style={s.card}>
           <Row
             label={t('account.uiLanguage')}
             value={localeLabel ? t(localeLabel) : locale}
@@ -44,17 +44,17 @@ export default function Settings() {
             icon="chevron-right"
             onPress={() => router.push('/settings/notifications' as never)}
           />
-        </View>
+        </Box>
 
-        <Text style={s.group}>{t('nav.server')}</Text>
-        <View style={s.card}>
+        <Txt style={s.group}>{t('nav.server')}</Txt>
+        <Box style={s.card}>
           <Row label={t('nav.server')} value={serverUrl?.replace(/^https?:\/\//, '')} />
           {/* Plain "Version": the group heading above already says which side. */}
           <Row label={t('about.version')} value={health.data ? `v${health.data.version}` : '…'} />
-        </View>
+        </Box>
 
-        <Text style={s.group}>{t('about.title')}</Text>
-        <View style={s.card}>
+        <Txt style={s.group}>{t('about.title')}</Txt>
+        <Box style={s.card}>
           <Row label={t('about.version')} value={`v${buildInfo.version}`} />
           {/* Git-derived fields are absent in a build made outside a checkout
               (a source tarball); each row hides itself when its value is empty. */}
@@ -69,7 +69,7 @@ export default function Settings() {
               repository ? () => void Linking.openURL(repository).catch(() => undefined) : undefined
             }
           />
-        </View>
+        </Box>
       </ScrollView>
     </Screen>
   );
@@ -89,16 +89,16 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
   if (!value) return null;
   const body: ReactNode = (
     <>
-      <Text style={s.rowLabel}>{label}</Text>
-      <View style={s.rowRight}>
-        <Text numberOfLines={1} style={mono ? s.rowValueMono : s.rowValue}>
+      <Txt style={s.rowLabel}>{label}</Txt>
+      <Box style={s.rowRight}>
+        <Txt lines={1} style={mono ? s.rowValueMono : s.rowValue}>
           {value}
-        </Text>
+        </Txt>
         {icon ? <Icon name={icon} size={16} stroke={2.2} color={colors.textFaint} /> : null}
-      </View>
+      </Box>
     </>
   );
-  if (!onPress) return <View style={s.row}>{body}</View>;
+  if (!onPress) return <Box style={s.row}>{body}</Box>;
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
       {body}

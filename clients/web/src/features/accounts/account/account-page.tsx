@@ -1,8 +1,8 @@
 import type { AccountPatch } from '@kroma/core';
 import { prefValue } from '@kroma/core/react';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
-import { IconAt, IconCheck, IconMail } from '@tabler/icons-react';
+import { Button, EmptyState, Field } from '@kroma/ui/kit';
+import { IconCheck } from '@tabler/icons-react';
 import { useState } from 'react';
 import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';
@@ -11,9 +11,11 @@ import { NONE, PreferencesCard } from '#web/features/accounts/account/preference
 import { PhotoCard } from '#web/features/accounts/account/profile-card';
 import { SecurityCard } from '#web/features/accounts/account/security-card';
 import { SessionsCard } from '#web/features/accounts/account/sessions-card';
-import { LabeledInput, Panel, Section, useSave } from '#web/features/accounts/account/ui';
+import { Panel, Section, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { Button, PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
+import { PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
+
+const USERNAME_ENTRY = { autoComplete: 'nickname' } as const;
 
 export function AccountPage() {
   const t = useT();
@@ -109,22 +111,22 @@ function ProfileEditor() {
 
       <Section title={t('account.sectionInfo')}>
         <Panel className="grid grid-cols-1 gap-4.5 p-5.5 sm:grid-cols-2">
-          <LabeledInput
+          <Field
             label={t('auth.username')}
-            autoComplete="nickname"
-            leading={<IconAt size={17} className="text-dim" stroke={1.8} />}
+            icon="at"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={setUsername}
+            entry={USERNAME_ENTRY}
           />
-          <LabeledInput
-            className="sm:col-span-2"
-            label={t('auth.email')}
-            type="email"
-            autoComplete="email"
-            leading={<IconMail size={17} className="text-dim" stroke={1.8} />}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <div className="sm:col-span-2">
+            <Field
+              label={t('auth.email')}
+              type="email"
+              icon="mail"
+              value={email}
+              onChange={setEmail}
+            />
+          </div>
         </Panel>
       </Section>
 
@@ -150,7 +152,7 @@ function ProfileEditor() {
 
       <div className="sticky bottom-0 mt-6 bg-linear-to-t from-bg via-bg/90 to-transparent pb-5 pt-6">
         {dirty || save.status !== 'idle' ? (
-          <div className="flex items-center justify-between gap-4 rounded-[14px] border border-border-strong bg-surface-2 py-3 pl-5 pr-3 shadow-pop">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-border-strong bg-surface-2 py-3 pl-5 pr-3 shadow-pop">
             <div className="flex min-w-0 items-center gap-2.5">
               <SaveStatusLabel dirty={dirty} status={save.status} error={save.error} />
             </div>

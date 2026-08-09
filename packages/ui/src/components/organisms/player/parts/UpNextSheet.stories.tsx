@@ -29,7 +29,7 @@ const DATA = {
 
 export default story({
   name: 'UpNextSheet',
-  group: 'Media',
+  group: 'Player',
   docs: 'What plays after this one. It has three states rather than two: parked (a **peek** of the sheet above the bottom edge, shown only when the chrome is revealed and there is actually something next), open (it rises and captures the D-pad), and gone. The peek is what makes it discoverable on a television, where there is no hover and no scrollbar to hint that something is below.',
   usage: `<UpNextSheet
   data={upNext}

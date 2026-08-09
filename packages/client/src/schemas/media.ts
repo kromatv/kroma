@@ -266,6 +266,16 @@ export const Health = z.object({
 });
 export type Health = z.infer<typeof Health>;
 
+/** `GET /api/splash`: one cover of the anonymous sign-in slideshow. */
+export const SplashEntry = z.object({
+  kind: z.string(),
+  title: z.string(),
+  year: z.number().nullable(),
+  backdropUrl: z.string(),
+  rating: z.number().nullish(),
+});
+export type SplashEntry = z.infer<typeof SplashEntry>;
+
 export const ServerInfo = z.object({
   name: z.string(),
   hostname: z.string(),

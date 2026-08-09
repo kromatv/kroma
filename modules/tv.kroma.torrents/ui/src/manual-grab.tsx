@@ -5,31 +5,21 @@
 //
 // NOTE an inversion: the backend graph has acquisition dependsOn torrents, yet
 // this file (torrents) drives acquisition's search/analyze/add. The entangle-
-// ment is real — a manual grab needs both halves — and predates this layout; it
+// ment is real (a manual grab needs both halves) and predates this layout; it
 // used to hide inside the monolithic client. If it ever needs untangling, the
 // manual-grab flow moves INTO acquisition and reaches this page via module
 // exports (`getModuleApi`), not by a package import in this direction.
 
+import { formatBytes } from '@kroma/core';
 import { useAcquisitionApi } from '@kroma/module-acquisition/api';
 import type {
   ManualReleaseView,
   TorrentAnalysis,
   TorrentFileView,
 } from '@kroma/module-acquisition/schemas';
-import {
-  apiErrorText,
-  Button,
-  FIELD_GROUP,
-  Field,
-  formatBytes,
-  Modal,
-  ModalActions,
-  SegmentedControl,
-  TextInput,
-  useAsyncAction,
-  useT,
-} from '@kroma/module-sdk';
-import { IconDownload, IconSearch, IconWand } from '@tabler/icons-react';
+import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
+import { Button, Dialog, DialogActions, Field, SegmentedControl } from '@kroma/ui/kit';
+import { IconDownload } from '@tabler/icons-react';
 import { useState } from 'react';
 
 type Kind = 'movie' | 'episode' | 'season';
@@ -216,7 +206,7 @@ export function ManualGrabModal({
   const canAdd = magnet.trim().length > 0 && title.trim().length > 0;
 
   return (
-    <Modal title={t('manual.title')} onClose={onClose}>
+    <Dialog open title={t('manual.title')} onClose={onClose} width={520}>
       {/* search sub-panel */}
       <SearchPanel
         query={query}
@@ -229,33 +219,29 @@ export function ManualGrabModal({
       />
 
       {/* magnet + analyze */}
-      <Field label={t('manual.magnet')} hint={t('manual.magnetHint')}>
-        <div className="flex gap-2">
-          <TextInput
-            value={magnet}
-            onChange={(v) => {
-              setMagnet(v);
-              setDetailsUrl(null);
-              resetAnalysis();
-            }}
-            placeholder="magnet:?xt=urn:btih:..."
-            className="w-full min-w-0"
-          />
+      <Field
+        label={t('manual.magnet')}
+        hint={t('manual.magnetHint')}
+        value={magnet}
+        onChange={(v) => {
+          setMagnet(v);
+          setDetailsUrl(null);
+          resetAnalysis();
+        }}
+        placeholder="magnet:?xt=urn:btih:..."
+        trailing={
           <Button
-            variant="secondary"
+            variant="glass"
             size="sm"
-            icon={IconWand}
+            icon="wand"
             label={t('manual.analyze')}
-            onClick={analyze}
+            onPress={analyze}
             disabled={!magnet.trim()}
             loading={analyzing}
-            className="shrink-0"
           />
-        </div>
-      </Field>
-      {analyzeErr ? (
-        <p className="-mt-2 mb-3 text-[12px] font-semibold text-[#EF8091]">{analyzeErr}</p>
-      ) : null}
+        }
+      />
+      {analyzeErr ? <p className="text-[12px] font-semibold text-[#EF8091]">{analyzeErr}</p> : null}
 
       {/* analysis result: detected kind + file selection */}
       {analysis ? (
@@ -274,6 +260,7 @@ export function ManualGrabModal({
         <SegmentedControl
           value={kind}
           onChange={setKind}
+          label={t('manual.kind')}
           options={[
             { value: 'movie' as const, label: t('manual.kindMovie') },
             { value: 'episode' as const, label: t('manual.kindEpisode') },
@@ -282,48 +269,31 @@ export function ManualGrabModal({
         />
       </Field>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_100px]">
-        <Field label={t('manual.titleLabel')} hint={t('manual.titleHint')}>
-          <TextInput
-            value={title}
-            onChange={setTitle}
-            placeholder="The Matrix"
-            className="w-full min-w-0"
-          />
-        </Field>
-        <Field label={t('manual.year')}>
-          <TextInput
-            value={year}
-            onChange={setYear}
-            placeholder="1999"
-            className="w-full min-w-0"
-          />
-        </Field>
+        <Field
+          label={t('manual.titleLabel')}
+          hint={t('manual.titleHint')}
+          value={title}
+          onChange={setTitle}
+          placeholder="The Matrix"
+        />
+        <Field label={t('manual.year')} value={year} onChange={setYear} placeholder="1999" />
       </div>
       {kind !== 'movie' ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label={t('manual.season')}>
-            <TextInput
-              value={season}
-              onChange={setSeason}
-              placeholder="1"
-              className="w-full min-w-0"
-            />
-          </Field>
+          <Field label={t('manual.season')} value={season} onChange={setSeason} placeholder="1" />
           {kind === 'episode' ? (
-            <Field label={t('manual.episode')}>
-              <TextInput
-                value={episode}
-                onChange={setEpisode}
-                placeholder="1"
-                className="w-full min-w-0"
-              />
-            </Field>
+            <Field
+              label={t('manual.episode')}
+              value={episode}
+              onChange={setEpisode}
+              placeholder="1"
+            />
           ) : null}
         </div>
       ) : null}
 
-      {error ? <p className="mt-1 text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <ModalActions
+      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
+      <DialogActions
         onCancel={onClose}
         cancelLabel={t('common.cancel')}
         onConfirm={add}
@@ -331,7 +301,7 @@ export function ManualGrabModal({
         busy={busy}
         disabled={!canAdd}
       />
-    </Modal>
+    </Dialog>
   );
 }
 
@@ -354,7 +324,7 @@ function AnalysisPanel({
   const seasonTags = analysis.seasons.map((s) => `S${s}`).join(' ');
   const seasonsLabel = analysis.seasons.length > 0 ? ` · ${seasonTags}` : '';
   return (
-    <div className="mb-4 rounded-xl border border-white/[0.07] bg-[#0F0F13] p-3">
+    <div className="rounded-xl border border-white/[0.07] bg-[#0F0F13] p-3">
       <div className="mb-2 flex items-center justify-between">
         <span
           className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-[.06em]"
@@ -368,10 +338,10 @@ function AnalysisPanel({
         </span>
         {videoFiles.length > 1 ? (
           <Button
-            variant="quiet"
+            variant="ghost"
             size="sm"
             label={allVideoSelected ? t('manual.selectNone') : t('manual.selectAll')}
-            onClick={() =>
+            onPress={() =>
               setSelected(allVideoSelected ? new Set() : new Set(videoFiles.map((f) => f.index)))
             }
           />
@@ -452,28 +422,25 @@ function SearchPanel({
 }>) {
   const t = useT();
   return (
-    <div className="mb-4">
+    <div>
       <div className="flex gap-2">
-        <div className={`${FIELD_GROUP} h-11 flex-1`}>
-          <IconSearch size={16} className="shrink-0 text-dim" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-            placeholder={t('manual.searchPlaceholder')}
-            // The box above is the field; it takes the border and the ring.
-            data-focus-ring="off"
-            className="min-w-0 flex-1 bg-transparent text-[13.5px] font-semibold text-text outline-none placeholder:text-dim"
-          />
-        </div>
+        <Field
+          label={t('manual.search')}
+          hideLabel
+          icon="search"
+          flex
+          value={query}
+          onChange={setQuery}
+          onSubmit={onSearch}
+          placeholder={t('manual.searchPlaceholder')}
+        />
         <Button
           variant="primary"
           size="sm"
           label={t('manual.search')}
-          onClick={onSearch}
+          onPress={onSearch}
           disabled={!query.trim()}
           loading={searching}
-          className="shrink-0"
         />
       </div>
       {searchErr ? (

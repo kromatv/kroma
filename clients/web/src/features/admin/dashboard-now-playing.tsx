@@ -1,16 +1,17 @@
-import { Image, TextArea } from '@kroma/admin-kit';
-import type { PlaybackSession } from '@kroma/core';
+import { type PlaybackSession, resolveImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Icon, IconButton } from '@kroma/ui/kit';
-import { useId, useState } from 'react';
+import { Avatar, Button, Dialog, Field, Icon, IconButton, Progress, Surface } from '@kroma/ui/kit';
+import { useState } from 'react';
 import { createCallable } from 'react-call';
-import { Avatar, C, Card, Modal, ProgressBar } from '#web/features/admin/ui';
 import { useStoryboard } from '#web/features/playback/use-storyboard';
 import { formatMbps, posterGradient, timecode } from '#web/shared/lib/adminFormat';
-import { kromaClient } from '#web/shared/lib/api';
+import { apiBase, kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { Image } from '#web/shared/ui';
 
 const THUMB_W = 132;
+
+const C = { accent: '#F4B642', green: '#46D08D', blue: '#5C8DF6' } as const;
 
 // The current storyboard frame when the sheet is ready, else the item poster,
 // else a title-seeded gradient.
@@ -24,7 +25,7 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
 
   return (
     <div
-      className="relative aspect-video shrink-0 self-start overflow-hidden rounded-[9px] shadow-[0_8px_20px_rgba(0,0,0,.45)]"
+      className="relative aspect-video shrink-0 self-start overflow-hidden rounded-md shadow-[0_8px_20px_rgba(0,0,0,.45)]"
       style={{ width: THUMB_W, background: posterGradient(s.title) }}
     >
       {posterFailed ? null : (
@@ -86,7 +87,7 @@ export function NowPlayingCard({
   else if (s.year != null) sub = String(s.year);
 
   return (
-    <Card className="flex gap-4.5 px-5 py-4.5">
+    <Surface elevated pad="none" radius={16} border="border" row gap={18} px={20} py={18}>
       <NowPlayingThumb s={s} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -118,8 +119,13 @@ export function NowPlayingCard({
                 {s.player} · {s.device}
               </div>
             </div>
-            <Avatar name={s.username} avatarUrl={avatarUrl} size={38} radius={10} />
-            <IconButton size={36} radius={10} label={t('admin.stopStream')} onPress={onStop}>
+            <Avatar
+              name={s.username}
+              src={resolveImageUrl(apiBase(), avatarUrl)}
+              size={38}
+              roundness={10 / 38}
+            />
+            <IconButton control="sm" label={t('admin.stopStream')} onPress={onStop}>
               <Icon name="player-stop-filled" size={15} color="danger" />
             </IconButton>
           </div>
@@ -130,7 +136,7 @@ export function NowPlayingCard({
             {timecode(s.positionMs)}
           </span>
           <div className="flex-1">
-            <ProgressBar pct={pct} />
+            <Progress value={pct / 100} rounded />
           </div>
           <span className="text-[12px] font-semibold tabular-nums text-text/40">
             {s.durationMs ? timecode(s.durationMs) : '-'}
@@ -140,7 +146,7 @@ export function NowPlayingCard({
         <div className="flex flex-wrap gap-x-6.5 gap-y-2.5 border-t border-border pt-3">
           <Stat label={t('admin.statPlayback')}>
             <span
-              className="inline-flex items-center gap-1.5 rounded-[7px] px-2.25 py-0.75 text-[13px] font-semibold"
+              className="inline-flex items-center gap-1.5 rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
               style={{ color: pipe.color, background: pipe.bg }}
             >
               {pipe.label}
@@ -169,7 +175,7 @@ export function NowPlayingCard({
           </Stat>
           <Stat label={t('admin.statNetwork')}>
             <span
-              className="inline-flex items-center gap-1.5 rounded-[7px] px-2.25 py-0.75 text-[13px] font-semibold"
+              className="inline-flex items-center gap-1.5 rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
               style={{
                 color: lan ? C.green : C.blue,
                 background: lan ? 'rgba(70,208,141,.12)' : 'rgba(92,141,246,.12)',
@@ -180,7 +186,7 @@ export function NowPlayingCard({
           </Stat>
         </div>
       </div>
-    </Card>
+    </Surface>
   );
 }
 
@@ -201,7 +207,6 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
   ({ call, session }) => {
     const t = useT();
     const { client } = useAuth();
-    const messageId = useId();
     const [message, setMessage] = useState('');
     const [busy, setBusy] = useState(false);
 
@@ -216,24 +221,17 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
     }
 
     return (
-      <Modal title={t('admin.stopStreamTitle')} onClose={() => call.end(false)}>
-        <p className="mb-4 text-[13px] text-dim">
+      <Dialog open title={t('admin.stopStreamTitle')} width={520} onClose={() => call.end(false)}>
+        <p className="text-[13px] text-dim">
           {t('admin.stopStreamDesc', { user: session.username })}
         </p>
-        <label
-          htmlFor={messageId}
-          className="mb-1.5 block text-[12px] font-bold uppercase tracking-[.12em] text-dim"
-        >
-          {t('admin.stopMessageLabel')}
-        </label>
-        <TextArea
-          id={messageId}
+        <Field
+          label={t('admin.stopMessageLabel')}
+          multiline
+          rows={2}
           value={message}
           onChange={setMessage}
-          rows={2}
-          resize="none"
           placeholder={t('admin.stopMessagePlaceholder')}
-          className="mb-5 w-full"
         />
         <div className="flex justify-end gap-2.5">
           <Button
@@ -250,7 +248,7 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
             loading={busy}
           />
         </div>
-      </Modal>
+      </Dialog>
     );
   },
 );

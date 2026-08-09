@@ -2,9 +2,9 @@
 // Long-press (or tap when done) removes the download.
 
 import type { MediaItem } from '@kroma/core';
-import { Icon, IconButton, styles } from '@kroma/ui/kit';
+import { Box, Icon, IconButton, styles } from '@kroma/ui/kit';
 import { useMemo } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { colors } from '#mobile/lib/theme';
@@ -58,19 +58,19 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   if (state.status === 'downloading') glyph = <ProgressRing progress={state.progress} />;
   else if (state.status === 'paused')
     glyph = (
-      <View style={s.pausedBox}>
+      <Box style={s.pausedBox}>
         <ProgressRing progress={Math.max(0.02, state.progress)} />
-        <View pointerEvents="none" style={s.pausedGlyph}>
+        <Box pointerEvents="none" style={s.pausedGlyph}>
           <Icon name="player-pause-filled" size={11} color={colors.textDim} />
-        </View>
-      </View>
+        </Box>
+      </Box>
     );
   else if (state.status === 'queued') glyph = <ProgressRing progress={-1} />;
   else if (state.status === 'done')
     glyph = (
-      <View style={s.doneBadge}>
+      <Box style={s.doneBadge}>
         <Icon name="check" size={size - 6} stroke={2.4} color={colors.accentInk} />
-      </View>
+      </Box>
     );
 
   return (

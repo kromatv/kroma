@@ -11,6 +11,7 @@ import {
   type TextFieldProps,
   type TextFieldType,
 } from '#ui/components/atoms/text-field';
+import type { ControlSize } from '#ui/lib/field-shell';
 
 interface FieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   label: string;
@@ -34,6 +35,8 @@ interface FieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   physicalKeyboard?: boolean;
   /** Explicit override; normally derived from `type`. */
   keyboardType?: NonNullable<TextFieldProps['keyboardType']>;
+  /** The control shell's size; see <TextField>. */
+  size?: ControlSize;
   autoFocus?: boolean;
   trailing?: ReactNode;
   /** Box props on `<Field>` lay out the field; `entry` reaches the input itself. */
@@ -58,6 +61,7 @@ function Field({
   placeholder,
   physicalKeyboard,
   keyboardType,
+  size,
   autoFocus = false,
   trailing,
   entry,
@@ -84,7 +88,7 @@ function Field({
             autoFocus={autoFocus}
             invalid={Boolean(error)}
             label={label}
-            py={12}
+            size={size}
             {...entry}
           />
         ) : (
@@ -102,7 +106,7 @@ function Field({
             trailing={trailing}
             invalid={Boolean(error)}
             label={label}
-            py={12}
+            size={size}
             {...entry}
           />
         ))}

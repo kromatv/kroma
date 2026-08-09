@@ -2,12 +2,11 @@
 // confirms before anything is fetched, then live per-module progress off the
 // `module.op.*` stream while the install runs. Resolves `true` when an
 // install was attempted, so the caller refreshes; `false` on a plain cancel.
-// Built on admin-kit's `Modal` (portalled Radix Dialog), which stacks above
-// the detail drawer.
+// Built on the kit `Dialog`, which stacks above the detail drawer.
 
-import { Button, C, Modal, ProgressBar } from '@kroma/admin-kit';
 import type { StoreOptionalModule, StorePlan } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Button, Dialog, Progress } from '@kroma/ui/kit';
 import { IconCircleCheckFilled } from '@tabler/icons-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
@@ -36,10 +35,11 @@ function RunningRow({ name, op }: Readonly<{ name: string; op: OpModule | undefi
           {phase === 'download' && pct !== null ? ` · ${pct}%` : ''}
         </span>
       </div>
-      <ProgressBar
-        pct={runningPct(phase, pct)}
-        color={phase === 'done' ? C.green : C.accent}
-        height={5}
+      <Progress
+        value={runningPct(phase, pct) / 100}
+        color={phase === 'done' ? 'success' : 'accent'}
+        size={5}
+        rounded
       />
     </div>
   );
@@ -139,7 +139,7 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
   };
 
   return (
-    <Modal title={title} onClose={close}>
+    <Dialog open title={title} onClose={close} width={520}>
       {stage === 'plan' && (
         <PlanStage
           plan={plan}
@@ -181,10 +181,15 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
             <ErrorBox text={result ?? ''} />
           )}
           <div className="mt-5 flex justify-end">
-            <Button variant="secondary" label={t('common.close')} onClick={() => call.end(true)} />
+            <Button
+              variant="glass"
+              size="sm"
+              label={t('common.close')}
+              onPress={() => call.end(true)}
+            />
           </div>
         </>
       )}
-    </Modal>
+    </Dialog>
   );
 });

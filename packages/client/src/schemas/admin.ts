@@ -266,3 +266,19 @@ export const LogsView = z.object({
   sources: z.array(z.string()),
 });
 export type LogsView = z.infer<typeof LogsView>;
+
+/** One image previously uploaded for a notification. `uploadedAt` is epoch
+ * milliseconds of the stored file's mtime. */
+export const NotificationImage = z.object({
+  name: z.string(),
+  url: z.string(),
+  uploadedAt: z.number(),
+  bytes: z.number(),
+});
+export type NotificationImage = z.infer<typeof NotificationImage>;
+
+/** `GET /api/admin/notifications/images` newest first, capped server-side. */
+export const NotificationImages = z.object({
+  images: z.array(NotificationImage),
+});
+export type NotificationImages = z.infer<typeof NotificationImages>;

@@ -22,12 +22,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@types/react": "^19",
+    "@types/react": "^19.2.18",
     "react": "19.2.8",
     "react-native": "npm:react-native-tvos@0.86.0-2",
     "react-native-web": "^0.21.2",
     "typescript": "^7.0.2",
-    "@tanstack/react-router": "^1.170.16"
+    "@tanstack/react-router": "^1.170.23"
   },
   "peerDependenciesMeta": {
     "@tanstack/react-router": {

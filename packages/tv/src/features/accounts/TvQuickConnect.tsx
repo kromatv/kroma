@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
-import { AuthScreen, KromaMark } from '#tv/shared/ui';
+import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
 
 const EXPIRY_MARGIN_SEC = 5;
 
@@ -106,7 +106,7 @@ export function TvQuickConnect() {
   return (
     <AuthScreen>
       <Box mb={36}>
-        <KromaMark size={40} />
+        <KromaMark size={GATE_MARK} />
       </Box>
       <Txt
         variant="hero"

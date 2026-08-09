@@ -14,7 +14,15 @@ import { Txt } from '#ui/components/atoms/text';
 import { styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import { fieldSizing } from '#ui/lib/css';
-import { CONTENT_LINE, edgeColor, fieldRing, NO_OUTLINE, PLACEHOLDER } from '#ui/lib/field-shell';
+import {
+  CONTROL,
+  type ControlSize,
+  controlMetrics,
+  entryDefaultPhysicalKeyboard,
+  fieldShell,
+  NO_OUTLINE,
+  PLACEHOLDER,
+} from '#ui/lib/field-shell';
 import { useControllable } from '#ui/lib/use-controllable';
 
 const WEB = Platform.OS === 'web';
@@ -23,6 +31,10 @@ interface TextAreaProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'>
   value?: string;
   defaultValue?: string;
   onChange?: (next: string) => void;
+  /** After the entry takes focus; see <TextField>. */
+  onFocus?: () => void;
+  /** After the entry loses focus: the commit point of a save-on-blur field. */
+  onBlur?: () => void;
   placeholder?: string;
   rows?: number;
   maxRows?: number;
@@ -31,30 +43,36 @@ interface TextAreaProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'>
   autoFocus?: boolean;
   invalid?: boolean;
   label?: string;
+  /** The control shell's size; see <TextField>. */
+  size?: ControlSize;
   /** A caller setting a bigger font here should set `lineHeight` with it: that
    *  is what `rows` counts. */
   textStyle?: StyleProp<TextStyle>;
-  /** The amber focus ring. Off for an entry flattened into other chrome, where
-   *  the surrounding sheet is the focus surface. */
-  ring?: boolean;
+  /** The shell belongs to something else - the well of an <InputGroup>. See
+   *  `fieldShell` for what that drops and why. */
+  flat?: boolean;
 }
 
 function TextArea({
   value: valueProp,
   defaultValue = '',
   onChange,
+  onFocus,
+  onBlur,
   placeholder,
   rows = 3,
   maxRows = 10,
   autoSize = true,
-  physicalKeyboard = false,
+  physicalKeyboard = entryDefaultPhysicalKeyboard(),
   autoFocus = false,
   invalid = false,
   label,
+  size,
   textStyle,
-  ring = true,
+  flat = false,
   ...box
 }: Readonly<TextAreaProps>) {
+  const metrics = controlMetrics(size);
   const theme = useTheme();
   const [value, setValue] = useControllable(valueProp, defaultValue, onChange);
   const [focused, setFocused] = useState(false);
@@ -64,25 +82,22 @@ function TextArea({
   const min = lines(rows);
   const max = lines(maxRows);
   const grown = Math.min(Math.max(content, min), max);
+  const shell = fieldShell(metrics, { flat, focused, invalid });
 
   return (
     <Box
       // Top, not centre: a field that grows downwards keeps its first line put.
       align="flex-start"
-      px={22}
-      radius="2xl"
-      borderWidth={1}
+      px={metrics.px}
+      py={metrics.py}
+      {...shell.box}
       {...box}
       // The whole field is the caret's landing zone, padding included. A drag a
       // surrounding list steals never releases here, so scrolling past the field
       // cannot summon the caret.
       onStartShouldSetResponder={() => physicalKeyboard}
       onResponderRelease={() => input.current?.focus()}
-      style={[
-        { borderColor: edgeColor(focused, invalid) },
-        focused && ring ? fieldRing() : null,
-        box.style,
-      ]}
+      style={[shell.edge, box.style]}
     >
       {physicalKeyboard ? (
         <TextInput
@@ -90,8 +105,14 @@ function TextArea({
           multiline
           value={value}
           onChangeText={setValue}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onFocus={() => {
+            setFocused(true);
+            onFocus?.();
+          }}
+          onBlur={() => {
+            setFocused(false);
+            onBlur?.();
+          }}
           placeholder={placeholder}
           placeholderTextColor={PLACEHOLDER}
           accessibilityLabel={label}
@@ -138,7 +159,9 @@ function growth(autoSize: boolean, min: number, grown: number): StyleProp<TextSt
   return WEB ? (fieldSizing() as unknown as TextStyle) : { height: grown };
 }
 
-const LINE = CONTENT_LINE;
+// The row unit `rows`/`maxRows` count in: the md shell's content line, so a
+// one-line TextArea is exactly a TextField tall on either size.
+const LINE = CONTROL.md.line;
 const lines = (n: number) => n * LINE;
 
 const s = styles({

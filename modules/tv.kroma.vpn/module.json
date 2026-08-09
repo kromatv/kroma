@@ -1,7 +1,7 @@
 {
   "id": "tv.kroma.vpn",
   "name": "VPN",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "minServer": "0.1.4",
   "provides": [{ "kind": "vpn", "id": "wireguard" }],
   "description": "Managed WireGuard bridge (any provider) that torrent traffic routes through, with a live seal test. Disable it to stop the bridge and hide its page + routes."

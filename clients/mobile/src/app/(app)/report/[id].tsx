@@ -3,12 +3,12 @@
 // flow (POST /api/reports).
 
 import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
-import { Button, Icon, styles } from '@kroma/ui/kit';
+import { Box, Button, Field, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
-import { Screen, TextField } from '#mobile/components/ui';
+import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
@@ -55,12 +55,12 @@ export default function ReportProblem() {
     <Screen padded={false}>
       <PageHeader title={t('report.title')} />
       {state === 'done' ? (
-        <View style={s.done}>
-          <View style={s.doneBadge}>
+        <Box style={s.done}>
+          <Box style={s.doneBadge}>
             <Icon name="check" size={30} stroke={2.4} color={colors.accentInk} />
-          </View>
-          <Text style={s.doneText}>{t('report.submitted')}</Text>
-        </View>
+          </Box>
+          <Txt style={s.doneText}>{t('report.submitted')}</Txt>
+        </Box>
       ) : (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -68,16 +68,16 @@ export default function ReportProblem() {
         >
           <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
             {title ? (
-              <View style={s.subjectRow}>
+              <Box style={s.subjectRow}>
                 <Icon name="flag" size={16} stroke={1.8} color={colors.accent} />
-                <Text numberOfLines={1} style={s.subject}>
+                <Txt lines={1} style={s.subject}>
                   {title}
-                </Text>
-              </View>
+                </Txt>
+              </Box>
             ) : null}
 
-            <Text style={s.group}>{t('report.category')}</Text>
-            <View style={s.cards}>
+            <Txt style={s.group}>{t('report.category')}</Txt>
+            <Box style={s.cards}>
               {CATEGORIES.map((c) => {
                 const active = category === c.key;
                 return (
@@ -90,31 +90,33 @@ export default function ReportProblem() {
                       pressed && !active && { backgroundColor: colors.surfaceRaised },
                     ]}
                   >
-                    <View style={s.cardText}>
-                      <Text style={[s.cardLabel, active && { color: colors.accent }]}>
+                    <Box style={s.cardText}>
+                      <Txt style={[s.cardLabel, active && { color: colors.accent }]}>
                         {t(c.label as never)}
-                      </Text>
-                      <Text style={s.cardHint}>{t(c.hint as never)}</Text>
-                    </View>
+                      </Txt>
+                      <Txt style={s.cardHint}>{t(c.hint as never)}</Txt>
+                    </Box>
                     {active ? (
                       <Icon name="check" size={18} stroke={2.4} color={colors.accent} />
                     ) : null}
                   </Pressable>
                 );
               })}
-            </View>
+            </Box>
 
-            <Text style={s.group}>{t('report.message')}</Text>
-            <TextField
+            <Txt style={s.group}>{t('report.message')}</Txt>
+            <Field
+              label={t('report.messagePlaceholder')}
+              hideLabel
               icon="message-2"
               value={message}
-              onChangeText={setMessage}
+              onChange={setMessage}
               placeholder={t('report.messagePlaceholder')}
               multiline
-              numberOfLines={4}
+              rows={4}
               style={s.message}
             />
-            {error ? <Text style={s.error}>{error}</Text> : null}
+            {error ? <Txt style={s.error}>{error}</Txt> : null}
             <Button
               label={t('report.submit')}
               onPress={() => void submit()}

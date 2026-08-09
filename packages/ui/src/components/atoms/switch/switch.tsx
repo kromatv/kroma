@@ -71,7 +71,8 @@ const switchVariants = sv({
 
 type SwitchSize = keyof typeof track;
 
-interface SwitchProps extends Omit<FocusableProps, 'children' | 'onPress' | 'style'> {
+interface SwitchProps
+  extends Omit<FocusableProps, 'children' | 'onPress' | 'style' | 'role' | 'checked'> {
   /** Present: you own the state (controlled). Absent: the switch runs itself
    *  from `defaultChecked` and reports through `onChange`. */
   checked?: boolean;
@@ -94,6 +95,8 @@ function Switch({
   return (
     <Focusable
       {...focusProps}
+      role="switch"
+      checked={checked}
       disabled={disabled}
       onPress={() => setChecked(!checked)}
       sv={switchVariants}

@@ -5,6 +5,7 @@ import {
   backdropFor,
   downloadUrl,
   featured,
+  health,
   hlsMasterUrl,
   items,
   logs,
@@ -17,6 +18,7 @@ import {
   resolveArt,
   search,
   showPosterUrl,
+  splash,
   storyboard,
   streamUrl,
   subtitleUrl,
@@ -45,6 +47,93 @@ function recordCtx(resp?: { ok?: boolean; status?: number; json?: unknown; text?
   } as unknown as RequestContext;
   return { ctx: rich, calls };
 }
+
+describe('splash', () => {
+  function splashCtx(entries: unknown[]) {
+    const calls: string[] = [];
+    const rich = {
+      baseUrl: 'http://kroma.test',
+      json: async (path: string) => {
+        calls.push(path);
+        return entries as never;
+      },
+    } as unknown as RequestContext;
+    return { ctx: rich, calls };
+  }
+
+  it('asks the anonymous endpoint', async () => {
+    const { ctx: c, calls } = splashCtx([]);
+    await splash(c);
+    expect(calls).toEqual(['/splash']);
+  });
+
+  it('resolves each art path against the server, like every other poster', async () => {
+    // The sign-in screen has no session yet, so nothing else would rewrite
+    // these for it: a bare `/api/images/...` would resolve against the app's
+    // own origin, which on a TV shell is a file:// bundle.
+    const { ctx: c } = splashCtx([
+      { backdropUrl: '/api/images/a', caption: 'Un' },
+      { backdropUrl: '/api/images/b', caption: 'Deux' },
+    ]);
+    const out = await splash(c);
+    expect(out.map((e) => e.backdropUrl)).toEqual([
+      'http://kroma.test/api/images/a',
+      'http://kroma.test/api/images/b',
+    ]);
+  });
+
+  it('leaves an absolute URL alone and keeps the rest of the entry', async () => {
+    const { ctx: c } = splashCtx([
+      { backdropUrl: 'https://image.tmdb.org/x.jpg', caption: 'Trois', title: 'Dune' },
+    ]);
+    const [entry] = await splash(c);
+    expect(entry).toMatchObject({
+      backdropUrl: 'https://image.tmdb.org/x.jpg',
+      caption: 'Trois',
+      title: 'Dune',
+    });
+  });
+
+  it('keeps the original when there is nothing to resolve', async () => {
+    const { ctx: c } = splashCtx([{ backdropUrl: '', caption: 'Quatre' }]);
+    const [entry] = await splash(c);
+    expect(entry?.backdropUrl).toBe('');
+  });
+
+  it('answers an empty sample with an empty list', async () => {
+    const { ctx: c } = splashCtx([]);
+    expect(await splash(c)).toEqual([]);
+  });
+});
+
+describe('health', () => {
+  it('passes the init straight through, so a heartbeat can bound the probe', async () => {
+    const seen: Array<[string, RequestInit | undefined]> = [];
+    const c = {
+      baseUrl: 'http://kroma.test',
+      json: async (path: string, init?: RequestInit) => {
+        seen.push([path, init]);
+        return {} as never;
+      },
+    } as unknown as RequestContext;
+    const signal = AbortSignal.abort();
+    await health(c, { signal });
+    expect(seen).toEqual([['/health', { signal }]]);
+  });
+
+  it('works with no init at all', async () => {
+    const seen: string[] = [];
+    const c = {
+      baseUrl: 'http://kroma.test',
+      json: async (path: string) => {
+        seen.push(path);
+        return {} as never;
+      },
+    } as unknown as RequestContext;
+    await health(c);
+    expect(seen).toEqual(['/health']);
+  });
+});
 
 describe('hlsMasterUrl', () => {
   it('emits the copy program at anchor 0, audio 0', () => {

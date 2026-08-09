@@ -35,6 +35,7 @@ import {
   useId,
   useState,
 } from 'react';
+import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 
 /** Puts `node` in the host's layer under `id`, or takes it out with `null`. */
@@ -69,9 +70,9 @@ export function OverlayHost({ children }: Readonly<{ children: ReactNode }>) {
         // `box-none`: the layer itself catches nothing, so a dialog's own scrim
         // decides what is clickable and the screen underneath is not blocked by
         // an empty full-screen box.
-        <Box fill z={LAYER} pointerEvents="box-none">
+        <Box fill z={LAYER} style={PASS_THROUGH}>
           {[...slots].map(([id, node]) => (
-            <Box key={id} fill pointerEvents="box-none">
+            <Box key={id} fill style={PASS_THROUGH}>
               {node}
             </Box>
           ))}
@@ -82,6 +83,8 @@ export function OverlayHost({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 const EMPTY: ReadonlyMap<string, ReactNode> = new Map();
+
+const PASS_THROUGH: ViewStyle = { pointerEvents: 'box-none' };
 
 /**
  * Is there a host above this? Answerable before the node exists, which is what

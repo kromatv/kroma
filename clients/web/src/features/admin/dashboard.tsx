@@ -1,30 +1,37 @@
-import { OptionSelect } from '@kroma/admin-kit';
 import type { MetricsSnapshot, PlaybackSession, TopUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Avatar, EmptyState, Section, Select, Surface } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
 import { HistoryBars, MetricsChart } from '#web/features/admin/charts';
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
+import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
-import { Avatar, C, Card, FilterLabel, Section } from '#web/features/admin/ui';
 import { decimal, formatDuration, formatMbps } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
+
+const C = {
+  accent: '#F4B642',
+  green: '#46D08D',
+  blue: '#5C8DF6',
+  purple: '#C792EA',
+  cpuRed: '#E5566B',
+} as const;
 
 function RangeSelect({
   value,
   onChange,
   options,
-  ariaLabel,
+  label,
 }: Readonly<{
   value: number;
   onChange: (days: number) => void;
   options: number[];
-  ariaLabel: string;
+  label: string;
 }>) {
   const t = useT();
   return (
-    <OptionSelect
-      ariaLabel={ariaLabel}
+    <Select
+      label={label}
       value={String(value)}
       onChange={(v) => onChange(Number(v))}
       options={options.map((d) => ({
@@ -32,6 +39,15 @@ function RangeSelect({
         label: t('admin.lastNdays', { count: d }),
       }))}
     />
+  );
+}
+
+function LiveLabel() {
+  const t = useT();
+  return (
+    <span className="inline-flex cursor-default items-center gap-1.5 text-[14px] font-semibold text-muted">
+      {t('admin.realtime')}
+    </span>
   );
 }
 
@@ -81,10 +97,10 @@ export function DashboardScreen() {
       <PageHeader
         title={serverInfo?.name ?? 'KROMA'}
         suffix={t('admin.dashboardSuffix')}
-        realtime
+        action={<RealtimeBadge />}
       />
 
-      <Section title={t('admin.nowPlaying')}>
+      <Section title={t('admin.nowPlaying')} mt={28}>
         {sessions.length === 0 ? (
           <EmptyState icon="player-play" title={t('admin.noPlayback')} />
         ) : (
@@ -107,9 +123,10 @@ export function DashboardScreen() {
 
       <Section
         title={t('admin.topUsers')}
-        right={
+        mt={28}
+        action={
           <RangeSelect
-            ariaLabel={t('admin.topUsers')}
+            label={t('admin.topUsers')}
             value={topDays}
             onChange={setTopDays}
             options={[7, 30, 90]}
@@ -129,9 +146,10 @@ export function DashboardScreen() {
 
       <Section
         title={t('admin.playHistory')}
-        right={
+        mt={28}
+        action={
           <RangeSelect
-            ariaLabel={t('admin.playHistory')}
+            label={t('admin.playHistory')}
             value={historyDays}
             onChange={setHistoryDays}
             options={[30, 90, 180]}
@@ -154,10 +172,7 @@ function BandwidthSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | nul
   const remote = metrics?.series.bwRemote ?? [];
   const max = Math.max(1, ...local, ...remote);
   return (
-    <Section
-      title={t('admin.bandwidth')}
-      right={<FilterLabel plain>{t('admin.realtime')}</FilterLabel>}
-    >
+    <Section title={t('admin.bandwidth')} mt={28} action={<LiveLabel />}>
       <MetricsChart
         max={max}
         sampleSec={sampleSec(metrics)}
@@ -184,7 +199,7 @@ function CpuSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) 
   const kroma = metrics?.series.cpuKroma ?? [];
   const sys = metrics?.series.cpuSystem ?? [];
   return (
-    <Section title={t('admin.cpu')} right={<FilterLabel plain>{t('admin.realtime')}</FilterLabel>}>
+    <Section title={t('admin.cpu')} mt={28} action={<LiveLabel />}>
       <MetricsChart
         max={100}
         sampleSec={sampleSec(metrics)}
@@ -211,7 +226,7 @@ function RamSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) 
   const kroma = metrics?.series.ramKroma ?? [];
   const sys = metrics?.series.ramSystem ?? [];
   return (
-    <Section title={t('admin.ram')} right={<FilterLabel plain>{t('admin.realtime')}</FilterLabel>}>
+    <Section title={t('admin.ram')} mt={28} action={<LiveLabel />}>
       <MetricsChart
         max={100}
         sampleSec={sampleSec(metrics)}
@@ -240,9 +255,9 @@ function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
     { label: t('admin.tv'), val: formatDuration(u.tvMs), on: u.tvMs > u.filmsMs },
   ];
   return (
-    <Card className="overflow-hidden">
+    <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
       <div className="flex items-center gap-3.5 px-5 py-4.5">
-        <Avatar name={u.username} size={48} />
+        <Avatar name={u.username} size={48} circle />
         <div>
           <div className="font-display text-[16px] font-bold">
             {u.plays} {u.plays > 1 ? t('admin.plays') : t('admin.play')}
@@ -275,6 +290,6 @@ function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
           </div>
         ))}
       </div>
-    </Card>
+    </Surface>
   );
 }

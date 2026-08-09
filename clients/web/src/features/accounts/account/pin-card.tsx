@@ -2,13 +2,13 @@
 // into this profile on a shared device. It is not the login credential.
 
 import { useT } from '@kroma/ui';
+import { Button, OtpField } from '@kroma/ui/kit';
 import { IconLock } from '@tabler/icons-react';
 import { useState } from 'react';
 import { Panel, StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { Button, Otp } from '#web/shared/ui';
 
-function PinField({
+function PinRow({
   label,
   value,
   onChange,
@@ -16,7 +16,14 @@ function PinField({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-dim">{label}</span>
-      <Otp value={value} onChange={onChange} mask ariaLabel={label} />
+      <OtpField
+        maxLength={4}
+        value={value}
+        onChange={onChange}
+        mask
+        physicalKeyboard
+        label={label}
+      />
     </div>
   );
 }
@@ -69,7 +76,7 @@ export function PinCard() {
   return (
     <Panel className="p-5.5">
       <div className="mb-4 flex items-center gap-3.5">
-        <span className="flex size-10 flex-none items-center justify-center rounded-[11px] bg-accent-soft text-accent">
+        <span className="flex size-10 flex-none items-center justify-center rounded-md bg-accent-soft text-accent">
           <IconLock size={20} stroke={1.8} />
         </span>
         <div className="min-w-0">
@@ -82,14 +89,14 @@ export function PinCard() {
 
       <form onSubmit={submit} className="flex flex-col gap-4">
         {hasPin ? (
-          <PinField label={t('account.currentPin')} value={current} onChange={setCurrent} />
+          <PinRow label={t('account.currentPin')} value={current} onChange={setCurrent} />
         ) : null}
-        <PinField
+        <PinRow
           label={hasPin ? t('account.newPin') : t('account.pin')}
           value={pin}
           onChange={setPin}
         />
-        <PinField label={t('account.confirmPin')} value={confirm} onChange={setConfirm} />
+        <PinRow label={t('account.confirmPin')} value={confirm} onChange={setConfirm} />
         <div className="flex flex-wrap items-center gap-3">
           <Button
             size="sm"

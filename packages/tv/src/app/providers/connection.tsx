@@ -54,3 +54,10 @@ export function useConnection(): Connection {
   if (!c) throw new Error('useConnection() must be used inside <ConnectionProvider>');
   return c;
 }
+
+/** Like {@link useConnection}, but standing alone: `null` outside the
+ * provider, for shared screens that component tests mount without the app
+ * shell (the auth screens' splash artwork degrades to none). */
+export function useConnectionMaybe(): Connection | null {
+  return useContext(ConnectionCtx);
+}

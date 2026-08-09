@@ -73,7 +73,7 @@ interface FilterDebugHandle {
 // it would pin a detached element's decoder buffers, defeating the WeakMap below.
 function publishDebugHandle(handle: FilterDebugHandle): void {
   // Cast rather than `vite/client` types: @kroma/ui is also consumed outside a
-  // Vite build (module SDK, admin-kit), where `import.meta.env` is undefined.
+  // Vite build (module SDK), where `import.meta.env` is undefined.
   if (!(import.meta as { env?: { DEV?: boolean } }).env?.DEV) return;
   (globalThis as { __kromaAudioFilter?: FilterDebugHandle }).__kromaAudioFilter = handle;
 }

@@ -54,8 +54,7 @@ export const TopBar = memo(function TopBar({
       gap={px(18)}
       px={px(GUTTER)}
       py={px(26)}
-      pointerEvents="box-none"
-      style={gradient(SCRIM)}
+      style={[s.bar, gradient(SCRIM)]}
     >
       {/* Controlled focus (`focused` is ALWAYS passed): the button must never
           become a platform / navigator focus target inside the player - see
@@ -106,6 +105,7 @@ const SUBTITLE_SIZE = 13;
 const WARN_SIZE = 13;
 
 const s = styles({
+  bar: { pointerEvents: 'box-none' },
   title: { font: 'display', fontWeight: '700', color: 'white' },
   subtitle: { font: 'ui', fontWeight: '500' },
   warn: { font: 'ui', fontWeight: '600' },

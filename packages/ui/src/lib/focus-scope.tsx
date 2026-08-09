@@ -4,10 +4,10 @@
 // root is forked, into focus-root.tsx / focus-root.web.tsx).
 
 import { type ReactNode, useEffect } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { SpatialNavigationView, useLockSpatialNavigation } from 'react-tv-space-navigation';
 import { useFocusEntryScope } from './focus-entry';
-import { FocusPresenceProvider } from './focus-presence';
+import { FocusPresenceProvider, useInsideFocusScope } from './focus-presence';
 import { useRemoteBridge } from './focus-remote';
 import { FocusRoot } from './focus-root';
 import { flat } from './nav-style';
@@ -83,6 +83,13 @@ function useLockFocusBehind(active: boolean): void {
  * from the tree.
  */
 function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
+  // A group is only a group to a navigator. Unscoped - the browser app, a
+  // phone - there is none to register with, and asking would throw ("No
+  // registered spatial navigator"), so the row is a plain view. This is the
+  // same degradation <Focusable> makes, and it is what lets a kit component
+  // holding a FocusRegion (a dialog's action row) render in an app that has
+  // no spatial navigation at all.
+  if (!useInsideFocusScope()) return <View style={flat(style)}>{children}</View>;
   return (
     <SpatialNavigationView direction="horizontal" style={flat(style)}>
       {children}
@@ -97,6 +104,8 @@ function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
  * from T lands on A); with it, the navigator keeps the column position.
  */
 function FocusColumn({ children, style, grid = false }: Readonly<FocusColumnProps>) {
+  // See <FocusRegion>: unscoped, a stack is just a stack.
+  if (!useInsideFocusScope()) return <View style={flat(style)}>{children}</View>;
   return (
     <SpatialNavigationView direction="vertical" alignInGrid={grid} style={flat(style)}>
       {children}

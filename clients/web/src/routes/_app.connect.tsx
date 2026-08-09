@@ -1,9 +1,8 @@
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import { Button, OtpField } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
-import { Otp } from '#web/shared/ui';
 
 // The approver side of Quick Connect: a signed-in user enters the code a TV
 // shows to grant that device a session. AuthGate guarantees the sign-in.
@@ -61,16 +60,18 @@ function ConnectPage() {
             }}
             className="flex flex-col items-center gap-4"
           >
-            <Otp
+            <OtpField
+              maxLength={4}
               value={code}
               onChange={(v) => {
                 setCode(v);
                 setStatus('idle');
               }}
               onComplete={(v) => void submit(v)}
+              physicalKeyboard
               autoFocus
               disabled={busy}
-              ariaLabel={t('connect.title')}
+              label={t('connect.title')}
             />
             {status === 'err' ? (
               <p className="text-[13px] font-medium text-danger">{t('connect.invalidCode')}</p>

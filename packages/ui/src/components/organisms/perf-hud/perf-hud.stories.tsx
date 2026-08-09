@@ -5,7 +5,7 @@ import { PerfHud } from './perf-hud';
 
 export default story({
   name: 'PerfHud',
-  group: 'State',
+  group: 'Feedback',
   docs: 'The on-device frame read-out, turned on in the device settings. A television is the only place these numbers mean anything and the hardest place to attach a profiler — Samsung blocks the log, the simulator lies about the CPU, and a laptop browser is ten times too fast — so the app carries its own. Read it in order: **RESPONSE** (press-to-focus; over ~120ms the remote feels heavy whatever the frame rate says), **WORST** (one 200ms frame is a visible jolt even at a good average), then **JANK**.',
   usage: `<PerfHud enabled={settings.showPerfHud} />`,
   guidelines: {

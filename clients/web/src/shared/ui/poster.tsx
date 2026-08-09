@@ -1,8 +1,8 @@
-import { Image } from '@kroma/admin-kit';
 import { sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconButton, VirtualRail } from '@kroma/ui/kit';
+import { IconButton, Progress, VirtualRail } from '@kroma/ui/kit';
 import { type ReactElement, useState } from 'react';
+import { Image } from '#web/shared/ui/image';
 
 export interface PosterProps {
   title: string;
@@ -80,10 +80,14 @@ export function Poster({
       className="group relative block shrink-0 text-left transition-transform duration-200 ease-out hover:-translate-y-1.5"
     >
       <button type="button" onClick={onClick} className="block w-full text-left focus:outline-none">
+        {/* The accent ring is an outline, not a second box-shadow: a shadow list
+            interpolates item by item, so growing [card] into [ring, pop] faded the
+            card's 28px blur into the ring's slot and the ring arrived as a halo
+            before it snapped. An outline has no blur radius at any frame. */}
         <div
-          className="relative aspect-2/3 overflow-hidden rounded-lg shadow-card transition-shadow duration-200
-            group-hover:shadow-[0_0_0_3px_var(--kroma-accent),var(--shadow-pop)]
-            group-focus-within:shadow-[0_0_0_3px_var(--kroma-accent),var(--shadow-pop)]"
+          className="relative aspect-2/3 overflow-hidden rounded-lg shadow-card outline-3 outline-transparent transition-[box-shadow,outline-color] duration-200
+            group-hover:shadow-pop group-hover:outline-accent
+            group-focus-within:shadow-pop group-focus-within:outline-accent"
           style={{ background: gradient }}
         >
           <Image
@@ -106,8 +110,8 @@ export function Poster({
             <div className="font-display text-[20px] font-bold text-white">{title}</div>
           </div>
           {progress != null ? (
-            <div className="absolute inset-x-0 bottom-0 h-1.25 bg-white/20">
-              <div className="h-full bg-accent" style={{ width: `${progress}%` }} />
+            <div className="absolute inset-x-0 bottom-0">
+              <Progress value={progress / 100} size={5} trackColor="white/20" />
             </div>
           ) : null}
         </div>

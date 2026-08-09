@@ -397,7 +397,7 @@ export function Player(props: Readonly<PlayerProps>) {
         <SurfaceRadiusProvider radius={stage.radius}>{props.surface}</SurfaceRadiusProvider>
         {/* Carries the spinner + subtitles into the card when a native plane
             shrinks; the stage itself must not move then. */}
-        <Box fill overflow="hidden" pointerEvents="none" style={contentShrink}>
+        <Box fill overflow="hidden" style={[s.inert, contentShrink]}>
           <SubtitleRenderer
             positionSec={c.cur}
             playing={c.playing}
@@ -427,7 +427,6 @@ export function Player(props: Readonly<PlayerProps>) {
           z={3}
           radius={24}
           opacity={nativeShrink ? 1 : 0}
-          pointerEvents="none"
           style={s.maskSurround}
         />
       ) : null}
@@ -468,7 +467,7 @@ export function Player(props: Readonly<PlayerProps>) {
         top={0}
         z={20}
         opacity={chromeShown ? 1 : 0}
-        pointerEvents={chromeShown ? 'box-none' : 'none'}
+        style={chromeShown ? s.chromeLive : s.inert}
       >
         <TopBar
           title={props.title}
@@ -505,8 +504,7 @@ export function Player(props: Readonly<PlayerProps>) {
         // Not scaled: it is the peek's own height, from the sheet that draws it.
         pb={bottomInset}
         opacity={chromeShown ? 1 : 0}
-        pointerEvents={chromeShown ? 'box-none' : 'none'}
-        style={BOTTOM_SCRIM}
+        style={[chromeShown ? s.chromeLive : s.inert, BOTTOM_SCRIM]}
       >
         {/* Measured so the skip-intro pill can sit clear of it; the layout is
             kept while the chrome fades (opacity, not display). */}
@@ -576,5 +574,7 @@ const BOTTOM_SCRIM = gradient('linear-gradient(0deg, rgba(0,0,0,0.82), transpare
 
 const s = styles({
   stage: { fill: true, z: 2, overflow: 'hidden' },
-  maskSurround: { boxShadow: '0 0 0 100vmax #000' },
+  maskSurround: { boxShadow: '0 0 0 100vmax #000', pointerEvents: 'none' },
+  inert: { pointerEvents: 'none' },
+  chromeLive: { pointerEvents: 'box-none' },
 });

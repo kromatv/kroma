@@ -4,7 +4,6 @@
 // Releases landing within the week get the accent date treatment so the
 // imminent stuff pops out of the list.
 
-import { Image } from '@kroma/admin-kit';
 import { type CalendarEntry, episodeTag, posterColors, sizedImageUrl } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import { EmptyState } from '@kroma/ui/kit';
@@ -19,7 +18,7 @@ import {
   shortDayLabel,
 } from '#web/features/requests/airdate';
 import { userQueries } from '#web/shared/lib/queries';
-import { PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
+import { Image, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
 
 // Releases at most this many days out get the accent "imminent" date.
 const IMMINENT_DAYS = 7;
@@ -56,7 +55,7 @@ export function ComingSoonPage() {
         <div className="mt-6 flex flex-col gap-2.5">
           {Array.from({ length: 5 }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
-            <Skeleton key={i} className="h-[76px] rounded-2xl" />
+            <Skeleton key={i} h={76} radius={16} />
           ))}
         </div>
       ) : null}

@@ -11,10 +11,10 @@ import {
   type Show,
   sizedImageUrl,
 } from '@kroma/core';
-import { styles, VirtualRail } from '@kroma/ui/kit';
+import { Box, styles, Txt, VirtualRail } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
-import { Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, useWindowDimensions } from 'react-native';
 import { useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { posterWidth, radius, type } from '#mobile/lib/theme';
@@ -120,21 +120,21 @@ export function ContinueCard({
       onPress={() => void play(item.id)}
       style={({ pressed }) => [{ width, opacity: pressed ? 0.75 : 1 }]}
     >
-      <View>
+      <Box>
         <FadeImage
           uri={backdrop}
           seed={item.id}
           radius={radius.sm}
           style={{ width, aspectRatio: 16 / 9 }}
         />
-        <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: `${frac * 100}%` }]} />
-        </View>
-      </View>
-      <Text numberOfLines={1} style={s.cardTitle}>
+        <Box style={s.progressTrack}>
+          <Box style={[s.progressFill, { width: `${frac * 100}%` }]} />
+        </Box>
+      </Box>
+      <Txt lines={1} style={s.cardTitle}>
         {item.showTitle ?? item.metadata?.title ?? item.title}
-      </Text>
-      {tag ? <Text style={s.cardSub}>{tag}</Text> : null}
+      </Txt>
+      {tag ? <Txt style={s.cardSub}>{tag}</Txt> : null}
     </Pressable>
   );
 }

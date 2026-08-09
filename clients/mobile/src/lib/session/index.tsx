@@ -29,6 +29,9 @@ export interface AuthSession {
   login(identifier: string, password: string): Promise<void>;
   // PIN-locked profiles need `pin` (401 body `pinRequired: true` otherwise).
   switchAccount(account: MobileAccount, pin?: string): Promise<void>;
+  /** Clear the PIN-verified flag the server keeps on a stored credential, so
+   *  the next exchange re-prompts. */
+  relockAccount(account: MobileAccount): Promise<void>;
   switchProfile(): void;
   signOut(): Promise<void>;
   forgetAccount(account: MobileAccount): void;
@@ -146,6 +149,10 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
     [enterSession],
   );
 
+  const relockAccount = useCallback(async (account: MobileAccount) => {
+    await makeClient(account.serverUrl).relock(account.accessToken);
+  }, []);
+
   const forgetSecrets = useCallback((url: string, userId: string) => {
     void deletePinBehindBiometrics(url, userId);
     void setBiometricLockEnabled(url, userId, false);
@@ -222,6 +229,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       renameServer,
       login,
       switchAccount,
+      relockAccount,
       switchProfile,
       signOut,
       forgetAccount,
@@ -240,6 +248,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       renameServer,
       login,
       switchAccount,
+      relockAccount,
       switchProfile,
       signOut,
       forgetAccount,

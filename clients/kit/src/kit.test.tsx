@@ -39,12 +39,12 @@ afterEach(() => {
 describe('the kit site', () => {
   it('lists the stories as a tree, and opens the first one', () => {
     render(<Kit />);
-    // The level the first story sits in is unfolded; the rest are branches with
+    // The group the first story sits in is unfolded; the rest are branches with
     // a count on them.
     expect(screen.getAllByText('Foundations').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Colors').length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Expand Atoms' })).toBeTruthy();
-    // The first story of the first level is what a cold open lands on.
+    expect(screen.getByRole('button', { name: 'Expand Actions' })).toBeTruthy();
+    // The first story of the first group is what a cold open lands on.
     expect(screen.getAllByText('Preview')).toHaveLength(1);
   });
 
@@ -62,7 +62,7 @@ describe('the kit site', () => {
   it('folds and unfolds a branch', () => {
     render(<Kit />);
     expect(screen.queryByRole('button', { name: 'Button' })).toBeNull();
-    press('Expand Atoms', 'Expand Actions');
+    press('Expand Actions');
     expect(screen.getByRole('button', { name: 'Button' })).toBeTruthy();
     press('Collapse Actions');
     expect(screen.queryByRole('button', { name: 'Button' })).toBeNull();
@@ -70,7 +70,7 @@ describe('the kit site', () => {
 
   it('switches story when a tree leaf is pressed', () => {
     render(<Kit />);
-    press('Expand Atoms', 'Expand Actions', 'Button');
+    press('Expand Actions', 'Button');
     // The header now names the selected component, alongside its tree entry.
     expect(screen.getAllByText('Button').length).toBeGreaterThan(1);
     // ...and the panel shows the controls derived from the component's own `sv`.
@@ -83,7 +83,7 @@ describe('the kit site', () => {
 
   it('renders one matrix row per variant group', () => {
     render(<Kit />);
-    press('Expand Atoms', 'Expand Actions', 'Button', 'Matrix');
+    press('Expand Actions', 'Button', 'Matrix');
     // Button declares variant / active / size / block; each becomes a labelled
     // row, and each row holds one cell per option.
     expect(screen.getAllByText('primary').length).toBeGreaterThan(0);
@@ -93,7 +93,7 @@ describe('the kit site', () => {
 
   it('shows the inspector as tabs, one per kind of answer', () => {
     render(<Kit />);
-    press('Expand Atoms', 'Expand Actions', 'Button');
+    press('Expand Actions', 'Button');
     expect(screen.getByRole('button', { name: 'Docs' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Props' })).toBeTruthy();
     press('Docs');
@@ -229,7 +229,7 @@ describe('the command palette', () => {
 describe('routing', () => {
   it('puts the open story on a real path, with no query string', () => {
     render(<Kit />);
-    press('Expand Atoms', 'Expand Actions', 'Button');
+    press('Expand Actions', 'Button');
     // A link you could read, type or shorten - and `preview` is spelled by being
     // absent, so the commonest state has the shortest URL.
     expect(location.pathname).toBe('/story/button');
@@ -240,7 +240,7 @@ describe('routing', () => {
 
   it('spells a scene with a dash, because a path is something people type', () => {
     render(<Kit />);
-    press('Expand Molecules', 'Expand Media', 'PosterCard');
+    press('Expand Media', 'PosterCard');
     press('A shelf');
     expect(location.pathname).toMatch(/^\/story\/poster-card\/scene-\d+$/);
   });
@@ -250,12 +250,12 @@ describe('routing', () => {
     render(<Kit />);
     // The heading names it, and the tree has unfolded to reveal it.
     expect(screen.getAllByText('Chip').length).toBeGreaterThan(1);
-    expect(screen.getByRole('button', { name: 'Collapse Atoms' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Collapse Actions' })).toBeTruthy();
   });
 
   it('follows the browser Back button', () => {
     render(<Kit />);
-    press('Expand Atoms', 'Expand Actions', 'Button');
+    press('Expand Actions', 'Button');
     expect(location.pathname).toBe('/story/button');
     press('Chip');
     expect(location.pathname).toBe('/story/chip');

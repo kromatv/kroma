@@ -8,10 +8,10 @@ import {
   StatsPanel,
   type SubtitleAppearance,
 } from '@kroma/ui';
-import { styles } from '@kroma/ui/kit';
+import { Box, styles, Txt } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
@@ -205,19 +205,19 @@ export function PlayerChrome({
   );
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <Box fill>
       {/* Tap layer sits BEHIND the controls: toggling visibility must not fire
           when a control is pressed. */}
       <GestureDetector gesture={gestures}>
-        <View style={StyleSheet.absoluteFill} />
+        <Box fill />
       </GestureDetector>
-      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Box style={StyleSheet.absoluteFill} pointerEvents="box-none">
         <CueLine cue={cue} bottom={(visible ? 110 : 40) + insets.bottom} appearance={appearance} />
 
         {(zoomNote ?? notice) ? (
-          <View style={[s.zoomNote, { top: insets.top + 18 }]} pointerEvents="none">
-            <Text style={s.zoomNoteText}>{zoomNote ?? notice}</Text>
-          </View>
+          <Box style={[s.zoomNote, { top: insets.top + 18 }]} pointerEvents="none">
+            <Txt style={s.zoomNoteText}>{zoomNote ?? notice}</Txt>
+          </Box>
         ) : null}
 
         {statsOn ? (
@@ -261,8 +261,8 @@ export function PlayerChrome({
             onCast={onCast}
           />
         ) : null}
-      </View>
-    </View>
+      </Box>
+    </Box>
   );
 }
 

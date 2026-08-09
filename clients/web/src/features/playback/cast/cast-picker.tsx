@@ -4,9 +4,8 @@
 // actually wants - "which screen" - and none of them should have to hold open
 // state to ask. Its single root is mounted in the app shell.
 
-import { Modal } from '@kroma/admin-kit';
 import { useCast, useT } from '@kroma/ui';
-import { Icon } from '@kroma/ui/kit';
+import { Dialog, Icon } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
 
 export interface CastPickerProps {
@@ -20,7 +19,7 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
   const t = useT();
   const { receivers, active } = useCast();
   return (
-    <Modal title={t('cast.title')} onClose={() => call.end(undefined)}>
+    <Dialog open title={t('cast.title')} onClose={() => call.end(undefined)} width={460}>
       <div className="flex flex-col gap-1">
         {offerLocal ? (
           <DeviceRow
@@ -52,7 +51,7 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
           </div>
         ) : null}
       </div>
-    </Modal>
+    </Dialog>
   );
 });
 

@@ -1,19 +1,11 @@
 import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { confirm, Dialog, DialogActions, Field, SegmentedControl, Switch } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { FolderField } from '#web/features/admin/folder-picker';
 import { useAsyncAction } from '#web/features/admin/shell';
-import {
-  Field,
-  Modal,
-  ModalActions,
-  SegmentedControl,
-  TextInput,
-  Toggle,
-} from '#web/features/admin/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { confirmDialog } from '#web/shared/ui';
 
 /** Library kind as accepted by the create/update API: `""` = Auto. */
 export type LibKind = '' | 'movies' | 'shows' | 'mixed';
@@ -93,15 +85,14 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   };
 
   return (
-    <Modal title={t('admin.addLibrary')} width={600} onClose={() => call.end(false)}>
-      <Field label={t('admin.name')}>
-        <TextInput
-          value={name}
-          onChange={setName}
-          placeholder={t('admin.kindMovies')}
-          className="w-full"
-        />
-      </Field>
+    <Dialog open title={t('admin.addLibrary')} width={600} onClose={() => call.end(false)}>
+      <Field
+        label={t('admin.name')}
+        icon="tag"
+        value={name}
+        onChange={setName}
+        placeholder={t('admin.kindMovies')}
+      />
       <Field label={t('admin.libraryType')}>
         <LibraryTypeSelect value={kind} onChange={setKind} />
       </Field>
@@ -113,7 +104,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
           onClear={() => setFolder('')}
         />
       </Field>
-      <ModalActions
+      <DialogActions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={() => {
@@ -123,7 +114,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
         busy={busy}
         disabled={!name.trim()}
       />
-    </Modal>
+    </Dialog>
   );
 });
 
@@ -143,7 +134,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
         call.end(true);
       });
     const remove = async () => {
-      const ok = await confirmDialog({
+      const ok = await confirm({
         title: t('common.delete'),
         message: t('admin.confirmDeleteLibrary', { name: lib.name }),
         confirmLabel: t('common.delete'),
@@ -158,28 +149,27 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
     };
 
     return (
-      <Modal
+      <Dialog
+        open
         title={t('admin.manageLibrary', { name: lib.name })}
         width={600}
         onClose={() => call.end(false)}
       >
-        <Field label={t('admin.name')}>
-          <TextInput value={name} onChange={setName} className="w-full" />
-        </Field>
+        <Field label={t('admin.name')} icon="tag" value={name} onChange={setName} />
         <Field label={t('admin.libraryType')}>
           <LibraryTypeSelect value={kind} onChange={setKind} />
         </Field>
         <Field label={t('admin.scannedFolders')}>
           <FolderListEditor folders={folders} onChange={setFolders} />
         </Field>
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-[14px] font-bold">{t('admin.autoScan')}</div>
             <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.autoScanHint')}</div>
           </div>
-          <Toggle on={autoScan} onChange={setAutoScan} />
+          <Switch checked={autoScan} onChange={setAutoScan} label={t('admin.autoScan')} />
         </div>
-        <ModalActions
+        <DialogActions
           onCancel={() => call.end(false)}
           cancelLabel={t('common.cancel')}
           onConfirm={() => {
@@ -190,12 +180,12 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
           disabled={!name.trim()}
           destructive={{
             label: t('common.delete'),
-            onClick: () => {
+            onPress: () => {
               void remove();
             },
           }}
         />
-      </Modal>
+      </Dialog>
     );
   },
 );

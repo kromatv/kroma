@@ -4,12 +4,12 @@
 // avatar-removal endpoint, so there is no reset here.)
 
 import { useT } from '@kroma/ui';
+import { Button } from '@kroma/ui/kit';
 import { IconCamera } from '@tabler/icons-react';
 import { useRef } from 'react';
 import { Panel, StatusText, useSave } from '#web/features/accounts/account/ui';
 import { UserAvatar } from '#web/features/accounts/user-avatar';
 import { useAuth } from '#web/shared/lib/auth';
-import { Button } from '#web/shared/ui';
 
 export function PhotoCard() {
   const t = useT();
@@ -35,7 +35,7 @@ export function PhotoCard() {
           avatarUrl={user.avatarUrl}
           seed={user.id}
           size={96}
-          radius={26}
+          radius={22}
         />
         <span className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-border-strong bg-surface-2 text-accent">
           <IconCamera size={15} stroke={1.9} />

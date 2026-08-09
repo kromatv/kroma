@@ -3,20 +3,8 @@
 //  - Built-in (native Cardigann definition): a browse/pick step then a form
 //    generated from the definition's own settings schema.
 
-import {
-  apiErrorText,
-  Button,
-  FIELD_GROUP,
-  Field,
-  Modal,
-  ModalActions,
-  TextInput,
-  Toggle,
-  OptionSelect as UiSelect,
-  useAsyncAction,
-  useT,
-} from '@kroma/module-sdk';
-import { IconSearch } from '@tabler/icons-react';
+import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
+import { Button, Dialog, DialogActions, Field, Select, Switch } from '@kroma/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useIndexerApi } from './api';
@@ -95,43 +83,52 @@ function TorznabIndexerForm({
     );
 
   return (
-    <Modal title={t('indexers.edit')} onClose={() => end(false)}>
-      <Field label={t('indexers.name')}>
-        <TextInput value={name} onChange={setName} placeholder="Jackett - YGG" className="w-full" />
-      </Field>
-      <Field label={t('indexers.url')} hint={t('indexers.urlHint')}>
-        <TextInput
-          value={url}
-          onChange={setUrl}
-          placeholder="http://nas:9117/api/v2.0/indexers/xxx/results/torznab"
-          className="w-full"
-        />
-      </Field>
+    <Dialog open title={t('indexers.edit')} onClose={() => end(false)} width={520}>
+      <Field
+        label={t('indexers.name')}
+        value={name}
+        onChange={setName}
+        placeholder="Jackett - YGG"
+      />
+      <Field
+        label={t('indexers.url')}
+        hint={t('indexers.urlHint')}
+        value={url}
+        onChange={setUrl}
+        placeholder="http://nas:9117/api/v2.0/indexers/xxx/results/torznab"
+      />
       <Field
         label={t('indexers.apiKey')}
         hint={indexer.hasApiKey ? t('indexers.apiKeyKept') : undefined}
-      >
-        <TextInput value={apiKey} onChange={setApiKey} type="password" className="w-full" />
-      </Field>
+        value={apiKey}
+        onChange={setApiKey}
+        type="password"
+      />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label={t('indexers.categories')} hint={t('indexers.categoriesHint')}>
-          <TextInput value={cats} onChange={setCats} className="w-full min-w-0" />
-        </Field>
-        <Field label={t('indexers.priority')} hint={t('indexers.priorityHint')}>
-          <TextInput value={priority} onChange={setPriority} className="w-full min-w-0" />
-        </Field>
+        <Field
+          label={t('indexers.categories')}
+          hint={t('indexers.categoriesHint')}
+          value={cats}
+          onChange={setCats}
+        />
+        <Field
+          label={t('indexers.priority')}
+          hint={t('indexers.priorityHint')}
+          value={priority}
+          onChange={setPriority}
+        />
       </div>
-      {error ? <p className="mt-1 text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <ModalActions
+      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
+      <DialogActions
         onCancel={() => end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={save}
         confirmLabel={busy ? t('common.saving') : t('common.save')}
         busy={busy}
         disabled={!name.trim() || !url.trim()}
-        destructive={{ label: t('indexers.delete'), onClick: remove, disabled: busy }}
+        destructive={{ label: t('indexers.delete'), onPress: remove, disabled: busy }}
       />
-    </Modal>
+    </Dialog>
   );
 }
 
@@ -181,30 +178,27 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
   }, [defs, q]);
 
   return (
-    <Modal title={t('indexers.pickTitle')} onClose={() => call.end(null)}>
-      <div className="mb-3 flex items-center gap-2">
-        <div className={`${FIELD_GROUP} flex-1`}>
-          <IconSearch size={15} className="text-dim" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('indexers.searchDefs')}
-            // The box above is the field; it takes the border and the ring.
-            data-focus-ring="off"
-            className="min-w-0 flex-1 bg-transparent py-2.25 text-[13.5px] font-semibold text-text outline-none placeholder:text-dim"
-          />
-        </div>
+    <Dialog open title={t('indexers.pickTitle')} onClose={() => call.end(null)} width={520}>
+      <div className="flex items-center gap-2">
+        <Field
+          label={t('indexers.searchDefs')}
+          hideLabel
+          icon="search"
+          flex
+          value={q}
+          onChange={setQ}
+          placeholder={t('indexers.searchDefs')}
+        />
         <Button
-          variant="secondary"
+          variant="glass"
           size="sm"
           label={t('indexers.syncDefs')}
-          onClick={sync}
+          onPress={sync}
           loading={syncing}
-          className="shrink-0"
         />
       </div>
 
-      {error ? <p className="mb-2 text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
+      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
 
       {defs && !synced && defs.length === 0 ? (
         <p className="py-8 text-center text-[13px] text-dim">{t('indexers.syncFirst')}</p>
@@ -232,13 +226,13 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
         ) : null}
       </div>
 
-      <ModalActions
+      <DialogActions
         onCancel={() => call.end(null)}
         cancelLabel={t('common.cancel')}
         onConfirm={() => call.end(null)}
         confirmLabel={t('common.close')}
       />
-    </Modal>
+    </Dialog>
   );
 });
 
@@ -325,10 +319,8 @@ function BuiltinIndexerForm({
   const title = detail?.name ?? definitionId;
 
   return (
-    <Modal title={title} onClose={() => end(false)}>
-      {loadError ? (
-        <p className="mb-2 text-[13px] font-semibold text-[#EF8091]">{loadError}</p>
-      ) : null}
+    <Dialog open title={title} onClose={() => end(false)} width={520}>
+      {loadError ? <p className="text-[13px] font-semibold text-[#EF8091]">{loadError}</p> : null}
       {detail === null && !loadError ? (
         <p className="py-8 text-center text-[13px] text-dim">{t('indexers.loading')}</p>
       ) : null}
@@ -336,17 +328,16 @@ function BuiltinIndexerForm({
       {detail ? (
         <div className="max-h-[52vh] overflow-y-auto pr-0.5">
           {detail.links.length > 1 ? (
-            <Field label={t('indexers.baseUrl')}>
-              <UiSelect
+            <Field label={t('indexers.baseUrl')} mb={16}>
+              <Select
+                label={t('indexers.baseUrl')}
                 value={baseUrl}
                 onChange={setBaseUrl}
                 options={detail.links.map((l) => ({ value: l, label: l }))}
               />
             </Field>
           ) : (
-            <Field label={t('indexers.baseUrl')}>
-              <TextInput value={baseUrl} onChange={setBaseUrl} className="w-full" />
-            </Field>
+            <Field label={t('indexers.baseUrl')} value={baseUrl} onChange={setBaseUrl} mb={16} />
           )}
 
           {detail.settings
@@ -357,17 +348,19 @@ function BuiltinIndexerForm({
                 return (
                   <div key={s.name} className="mb-4 flex items-center justify-between gap-4">
                     <span className="text-[13.5px] font-semibold text-text">{s.label}</span>
-                    <Toggle
-                      on={settings[s.name] === 'true'}
+                    <Switch
+                      checked={settings[s.name] === 'true'}
                       onChange={(v) => setField(s.name, v ? 'true' : 'false')}
+                      label={s.label}
                     />
                   </div>
                 );
               }
               if (s.kind === 'select') {
                 return (
-                  <Field key={s.name} label={s.label}>
-                    <UiSelect
+                  <Field key={s.name} label={s.label} mb={16}>
+                    <Select
+                      label={s.label}
                       value={settings[s.name] ?? ''}
                       onChange={(v) => setField(s.name, v)}
                       options={s.options.map(([value, label]) => ({ value, label }))}
@@ -381,30 +374,33 @@ function BuiltinIndexerForm({
                   key={s.name}
                   label={s.label}
                   hint={isSecret && configured ? t('indexers.apiKeyKept') : undefined}
-                >
-                  <TextInput
-                    value={settings[s.name] ?? ''}
-                    onChange={(v) => setField(s.name, v)}
-                    type={isSecret ? 'password' : 'text'}
-                    className="w-full"
-                  />
-                </Field>
+                  value={settings[s.name] ?? ''}
+                  onChange={(v) => setField(s.name, v)}
+                  type={isSecret ? 'password' : undefined}
+                  mb={16}
+                />
               );
             })}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label={t('indexers.categories')} hint={t('indexers.categoriesHint')}>
-              <TextInput value={cats} onChange={setCats} className="w-full min-w-0" />
-            </Field>
-            <Field label={t('indexers.priority')} hint={t('indexers.priorityHint')}>
-              <TextInput value={priority} onChange={setPriority} className="w-full min-w-0" />
-            </Field>
+            <Field
+              label={t('indexers.categories')}
+              hint={t('indexers.categoriesHint')}
+              value={cats}
+              onChange={setCats}
+            />
+            <Field
+              label={t('indexers.priority')}
+              hint={t('indexers.priorityHint')}
+              value={priority}
+              onChange={setPriority}
+            />
           </div>
         </div>
       ) : null}
 
-      {error ? <p className="mt-1 text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <ModalActions
+      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
+      <DialogActions
         onCancel={() => end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={save}
@@ -412,9 +408,9 @@ function BuiltinIndexerForm({
         busy={busy}
         disabled={!detail || !baseUrl.trim()}
         destructive={
-          indexer ? { label: t('indexers.delete'), onClick: remove, disabled: busy } : undefined
+          indexer ? { label: t('indexers.delete'), onPress: remove, disabled: busy } : undefined
         }
       />
-    </Modal>
+    </Dialog>
   );
 }

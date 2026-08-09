@@ -4,12 +4,11 @@
 
 import type { Report, ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, IconButton } from '@kroma/ui/kit';
+import { Avatar, Button, Drawer, IconButton } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
-import { Avatar } from '#web/features/admin/ui';
 
 // Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
@@ -24,14 +23,7 @@ function Header({ report, onClose }: Readonly<{ report: Report; onClose: () => v
         <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
           {t('reports.sheet')}
         </span>
-        <IconButton
-          variant="ghost"
-          size={32}
-          glyph={20}
-          icon="x"
-          label={t('common.close')}
-          onPress={onClose}
-        />
+        <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
       </div>
       <div className="mb-2.5 flex flex-wrap items-center gap-2">
         <span
@@ -73,18 +65,9 @@ export const ReportDrawer = createCallable<
   const navigate = useNavigate();
   const [report, setReport] = useState(initial);
   const [busy, setBusy] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  // react-call mounts us on `.call()` / unmounts on `call.end()`, so drive the
-  // slide with a mount effect (in) and a delayed end (out) to keep the anim.
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setOpen(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  const close = () => {
-    setOpen(false);
-    window.setTimeout(() => call.end(), 300);
-  };
+  // react-call keeps us mounted for `unmountingDelay` ms after `call.end()`,
+  // which is the window the kit Drawer's slide-out plays in.
+  const close = () => call.end();
 
   // Reflect the new status locally; the parent reloads the list behind us.
   // Failures leave the report untouched (the callback surfaced its own toast).
@@ -108,102 +91,98 @@ export const ReportDrawer = createCallable<
       : null;
 
   return (
-    <>
-      <button
-        type="button"
-        aria-label={t('common.close')}
-        onClick={close}
-        className={`fixed inset-0 z-60 bg-[rgba(4,4,6,.6)] backdrop-blur-[2px] transition-opacity ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-      />
-      <aside
-        className="fixed right-0 top-0 z-61 flex h-screen w-[460px] max-w-full flex-col border-l border-white/9 bg-[#0E0E12] shadow-[-20px_0_60px_rgba(0,0,0,.6)] transition-transform duration-300 ease-out sm:max-w-[92vw]"
-        style={{ transform: open ? 'translateX(0)' : 'translateX(105%)' }}
-      >
-        <Header report={report} onClose={close} />
+    <Drawer
+      open={!call.ended}
+      onClose={close}
+      title={t('reports.sheet')}
+      width={460}
+      panelStyle={DRAWER_FILL}
+    >
+      <Header report={report} onClose={close} />
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          <div className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-            {t('reports.reportedBy')}
-          </div>
-          <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5">
-            <Avatar name={report.reportedByName ?? '?'} size={34} />
-            <div className="min-w-0">
-              <div className="truncate text-[14px] font-bold">
-                {report.reportedByName ?? t('reports.unknownUser')}
-              </div>
-              <div className="text-[12px] font-medium text-white/45">
-                {new Date(report.createdAt).toLocaleDateString()}{' '}
-                {new Date(report.createdAt).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
+      <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+          {t('reports.reportedBy')}
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5">
+          <Avatar name={report.reportedByName ?? '?'} size={34} circle shadow={false} />
+          <div className="min-w-0">
+            <div className="truncate text-[14px] font-bold">
+              {report.reportedByName ?? t('reports.unknownUser')}
+            </div>
+            <div className="text-[12px] font-medium text-white/45">
+              {new Date(report.createdAt).toLocaleDateString()}{' '}
+              {new Date(report.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </div>
           </div>
-
-          {report.message ? (
-            <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5 text-[13.5px] leading-[1.5] text-white/80">
-              {report.message}
-            </div>
-          ) : (
-            <p className="mt-4 text-[13px] italic text-white/35">{t('reports.noMessage')}</p>
-          )}
-
-          {ficheTo ? (
-            <div className="mt-4 flex">
-              <Button
-                variant="glass"
-                size="sm"
-                icon="external-link"
-                label={t('reports.viewTitle')}
-                onPress={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
-              />
-            </div>
-          ) : null}
         </div>
 
-        {canManage ? (
-          <div className="flex gap-2.5 border-t border-white/[0.07] px-6 py-4.5">
-            {report.status === 'open' ? (
-              <>
-                <Button
-                  icon="check"
-                  label={t('reports.actionResolve')}
-                  onPress={() => run(onResolve, 'resolved')}
-                  loading={busy}
-                  style={FLEX_1}
-                />
-                <Button
-                  variant="glass"
-                  icon="x"
-                  label={t('reports.actionDismiss')}
-                  onPress={() => run(onDismiss, 'dismissed')}
-                  disabled={busy}
-                  style={FLEX_1}
-                />
-              </>
-            ) : (
-              <Button
-                variant="glass"
-                icon="arrow-back-up"
-                label={t('reports.actionReopen')}
-                onPress={() => run(onReopen, 'open')}
-                disabled={busy}
-                style={FLEX_1}
-              />
-            )}
-            <IconButton
-              size={46}
-              glyph={16}
-              radius={12}
-              icon="trash"
-              label={t('reports.actionDelete')}
-              onPress={del}
-              disabled={busy}
+        {report.message ? (
+          <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5 text-[13.5px] leading-[1.5] text-white/80">
+            {report.message}
+          </div>
+        ) : (
+          <p className="mt-4 text-[13px] italic text-white/35">{t('reports.noMessage')}</p>
+        )}
+
+        {ficheTo ? (
+          <div className="mt-4 flex">
+            <Button
+              variant="glass"
+              size="sm"
+              icon="external-link"
+              label={t('reports.viewTitle')}
+              onPress={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
             />
           </div>
         ) : null}
-      </aside>
-    </>
+      </div>
+
+      {canManage ? (
+        <div className="flex gap-2.5 border-t border-white/[0.07] px-6 py-4.5">
+          {report.status === 'open' ? (
+            <>
+              <Button
+                icon="check"
+                label={t('reports.actionResolve')}
+                onPress={() => run(onResolve, 'resolved')}
+                loading={busy}
+                style={FLEX_1}
+              />
+              <Button
+                variant="glass"
+                icon="x"
+                label={t('reports.actionDismiss')}
+                onPress={() => run(onDismiss, 'dismissed')}
+                disabled={busy}
+                style={FLEX_1}
+              />
+            </>
+          ) : (
+            <Button
+              variant="glass"
+              icon="arrow-back-up"
+              label={t('reports.actionReopen')}
+              onPress={() => run(onReopen, 'open')}
+              disabled={busy}
+              style={FLEX_1}
+            />
+          )}
+          <IconButton
+            control="md"
+            icon="trash"
+            label={t('reports.actionDelete')}
+            onPress={del}
+            disabled={busy}
+          />
+        </div>
+      ) : null}
+    </Drawer>
   );
-});
+}, 400);
+
+// The drawers' darker fill, kept from the hand-rolled asides they replace.
+const DRAWER_FILL = { backgroundColor: '#0E0E12' } as const;

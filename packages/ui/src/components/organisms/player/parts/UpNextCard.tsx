@@ -69,7 +69,7 @@ export function UpNextCard({
         style={still(undefined, { focus: focused }).root}
       >
         <Img src={item.posterUrl ?? null} background={placeholder} fill />
-        <Box fill pointerEvents="none" style={VIGNETTE} />
+        <Box fill style={[s.vignette, VIGNETTE]} />
         {item.durationLabel ? (
           <Box absolute right={10} bottom={10} radius={7} bg="black/72" px={9} py={3}>
             <Txt style={s.duration}>{item.durationLabel}</Txt>
@@ -92,6 +92,7 @@ export function UpNextCard({
 }
 
 const s = styles({
+  vignette: { pointerEvents: 'none' },
   duration: {
     font: 'ui',
     fontSize: 12,

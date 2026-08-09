@@ -225,16 +225,22 @@ fn cache(data_dir: &Path, remote_url: &str) -> Option<String> {
 /// Stores an uploaded image as a content-addressed WebP, returning its public
 /// path. `max_width`, if given, caps the stored master in pixels (shrinking
 /// only) so an oversized upload doesn't fill the cache with pixels nothing
-/// ever draws.
-pub fn store_upload(data_dir: &Path, bytes: &[u8], max_width: Option<u32>) -> Option<String> {
+/// ever draws. `name_prefix` namespaces the stored file inside the shared
+/// image dir, so one caller's uploads can be listed apart from the rest.
+pub fn store_upload(
+    data_dir: &Path,
+    bytes: &[u8],
+    max_width: Option<u32>,
+    name_prefix: &str,
+) -> Option<String> {
     let dir = images_dir(data_dir);
     std::fs::create_dir_all(&dir).ok()?;
 
     // Hash covers the cap too: the same photo stored for two different caps
     // is two different images, so reusing one hash would serve the wrong crop.
     let name = match max_width {
-        Some(w) => format!("{}-w{w}.webp", content_hash(bytes)),
-        None => format!("{}.webp", content_hash(bytes)),
+        Some(w) => format!("{name_prefix}{}-w{w}.webp", content_hash(bytes)),
+        None => format!("{name_prefix}{}.webp", content_hash(bytes)),
     };
     let out = dir.join(&name);
     if !out.exists() {

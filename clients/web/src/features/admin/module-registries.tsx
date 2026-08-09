@@ -6,11 +6,11 @@
 // Resolves `true` when anything was saved, so the caller knows whether to
 // refresh.
 
-import { Button, Drawer, useAsyncAction, usePoll } from '@kroma/admin-kit';
 import { useT } from '@kroma/ui';
-import { IconButton } from '@kroma/ui/kit';
+import { Button, Drawer, IconButton } from '@kroma/ui/kit';
 import { useRef, useState } from 'react';
 import { createCallable } from 'react-call';
+import { useAsyncAction, usePoll } from '#web/features/admin/hooks';
 import { adminApi, fetchStoreCatalog, message } from '#web/features/admin/module-api';
 import {
   AddRegistry,
@@ -84,8 +84,6 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
           </div>
           <IconButton
             variant="ghost"
-            size={32}
-            glyph={20}
             icon="x"
             label={t('common.close')}
             onPress={() => call.end(changed.current)}
@@ -123,14 +121,16 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
               <div className="flex items-center gap-2">
                 <Button
                   variant="primary"
+                  size="sm"
                   label={t('common.save')}
-                  onClick={() => commit(list)}
+                  onPress={() => commit(list)}
                   loading={saving}
                 />
                 <Button
-                  variant="quiet"
+                  variant="ghost"
+                  size="sm"
                   label={t('common.cancel')}
-                  onClick={() => setDraft(null)}
+                  onPress={() => setDraft(null)}
                   disabled={saving}
                 />
               </div>
@@ -144,4 +144,4 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
       </div>
     </Drawer>
   );
-}, 300);
+}, 400);

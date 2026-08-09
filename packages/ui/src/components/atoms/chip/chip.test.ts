@@ -16,6 +16,29 @@ describe('chip design', () => {
     expect(chipVariants({ variant: 'surface' }).root.backgroundColor).toBe(colors.surface2);
   });
 
+  it("paints an active chip's dot in ink, whatever colour the caller asked for", () => {
+    // The status hues ARE the accent and its neighbours, so a dot that kept
+    // its own colour would vanish into the active fill. Every variant flips.
+    for (const variant of VARIANTS) {
+      expect(chipVariants({ variant, active: true }).dot.backgroundColor).toBe(colors.accentInk);
+      expect(chipVariants({ variant }).dot.backgroundColor).toBeUndefined();
+    }
+  });
+
+  it('keeps the count in step with the label it trails', () => {
+    for (const variant of VARIANTS) {
+      const idle = chipVariants({ variant });
+      expect(idle.count.color).toBe(idle.label.color);
+      const on = chipVariants({ variant, active: true });
+      expect(on.count.color).toBe(on.label.color);
+      expect(on.count.color).toBe(colors.accentInk);
+    }
+    for (const size of SIZES) {
+      const at = chipVariants({ size });
+      expect(at.count.fontSize).toBe(at.label.fontSize);
+    }
+  });
+
   it('borders only the solid variant', () => {
     expect(chipVariants({ variant: 'solid' }).root.borderWidth).toBe(1);
     expect(chipVariants({ variant: 'subtle' }).root.borderWidth).toBe(0);

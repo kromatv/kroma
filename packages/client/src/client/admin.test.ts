@@ -6,6 +6,7 @@ import {
   adminSettings,
   exportBackup,
   importBackup,
+  listNotificationImages,
   pipelineElements,
   playHistory,
   runJob,
@@ -114,6 +115,41 @@ describe('bodies', () => {
       username: 'Max',
       permissions: ['playback'],
     });
+  });
+});
+
+function payloadCtx(payload: unknown) {
+  const paths: string[] = [];
+  const ctx = {
+    baseUrl: 'http://nas',
+    json: async (path: string) => {
+      paths.push(path);
+      return payload as never;
+    },
+  } as unknown as RequestContext;
+  return { ctx, paths };
+}
+
+describe('listNotificationImages', () => {
+  it('parses the listing through the schema', async () => {
+    const listing = {
+      images: [
+        {
+          name: 'notif-a-w1280.webp',
+          url: '/api/images/notif-a-w1280.webp',
+          uploadedAt: 5,
+          bytes: 9,
+        },
+      ],
+    };
+    const { ctx, paths } = payloadCtx(listing);
+    await expect(listNotificationImages(ctx)).resolves.toEqual(listing);
+    expect(paths[0]).toBe('/admin/notifications/images');
+  });
+
+  it('rejects a malformed listing', async () => {
+    const { ctx } = payloadCtx({ images: [{ name: 1 }] });
+    await expect(listNotificationImages(ctx)).rejects.toThrow();
   });
 });
 

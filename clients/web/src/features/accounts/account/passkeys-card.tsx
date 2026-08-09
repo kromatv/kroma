@@ -5,7 +5,7 @@
 
 import { apiErrorText, type PasskeyInfo } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Txt } from '@kroma/ui/kit';
+import { Button, Txt } from '@kroma/ui/kit';
 import { IconKey, IconShieldLock } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -15,7 +15,6 @@ import { kromaClient } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { userQueries } from '#web/shared/lib/queries';
 import { createPasskey, passkeysSupported } from '#web/shared/lib/webauthn';
-import { Button } from '#web/shared/ui';
 
 const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
@@ -103,7 +102,7 @@ export function PasskeysCard() {
     <Panel className="overflow-hidden">
       <div className="flex items-center justify-between gap-4 border-b border-border px-5.5 py-4">
         <div className="flex min-w-0 items-center gap-3.5">
-          <span className="flex size-10 flex-none items-center justify-center rounded-[11px] bg-accent-soft text-accent">
+          <span className="flex size-10 flex-none items-center justify-center rounded-md bg-accent-soft text-accent">
             <IconShieldLock size={20} stroke={1.7} />
           </span>
           <div className="min-w-0">

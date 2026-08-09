@@ -10,10 +10,10 @@ import {
   NOTIFICATION_CATEGORY_LABEL,
   PUSH_BLOCKER_LABEL,
 } from '@kroma/core';
-import { Switch, styles } from '@kroma/ui/kit';
+import { Box, Switch, styles, Txt } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
@@ -75,12 +75,12 @@ export default function NotificationSettings() {
     <Screen padded={false}>
       <PageHeader title={t('notifications.settings')} />
       <ScrollView contentContainerStyle={s.body}>
-        <View style={s.card}>
-          <View style={s.pushRow}>
-            <View style={s.pushText}>
-              <Text style={s.rowLabel}>{t('push.title')}</Text>
-              <Text style={s.hint}>{t('push.description')}</Text>
-            </View>
+        <Box style={s.card}>
+          <Box style={s.pushRow}>
+            <Box style={s.pushText}>
+              <Txt style={s.rowLabel}>{t('push.title')}</Txt>
+              <Txt style={s.hint}>{t('push.description')}</Txt>
+            </Box>
             {blocker ? null : (
               <Pressable
                 onPress={() => toggle.mutate()}
@@ -90,39 +90,39 @@ export default function NotificationSettings() {
                 {toggle.isPending ? (
                   <ActivityIndicator color={colors.text} size="small" />
                 ) : (
-                  <Text style={s.actionLabel}>
+                  <Txt style={s.actionLabel}>
                     {subscribed ? t('push.disable') : t('push.enable')}
-                  </Text>
+                  </Txt>
                 )}
               </Pressable>
             )}
-          </View>
-          {blocker ? <Text style={s.notice}>{t(PUSH_BLOCKER_LABEL[blocker])}</Text> : null}
-          {error ? <Text style={s.error}>{error}</Text> : null}
-        </View>
+          </Box>
+          {blocker ? <Txt style={s.notice}>{t(PUSH_BLOCKER_LABEL[blocker])}</Txt> : null}
+          {error ? <Txt style={s.error}>{error}</Txt> : null}
+        </Box>
 
-        <Text style={s.group}>{t('notifications.settings')}</Text>
-        <View style={s.card}>
-          <View style={s.headerRow}>
-            <Text style={s.headerSpacer} />
-            <Text style={s.headerCell}>{t('notifications.channelInApp')}</Text>
-            <Text style={s.headerCell}>{t('notifications.channelPush')}</Text>
-          </View>
+        <Txt style={s.group}>{t('notifications.settings')}</Txt>
+        <Box style={s.card}>
+          <Box style={s.headerRow}>
+            <Txt style={s.headerSpacer} />
+            <Txt style={s.headerCell}>{t('notifications.channelInApp')}</Txt>
+            <Txt style={s.headerCell}>{t('notifications.channelPush')}</Txt>
+          </Box>
           {prefs.data?.categories.map((pref) => (
-            <View key={pref.category} style={s.row}>
-              <Text style={s.rowLabel}>{t(NOTIFICATION_CATEGORY_LABEL[pref.category])}</Text>
-              <View style={s.cell}>
+            <Box key={pref.category} style={s.row}>
+              <Txt style={s.rowLabel}>{t(NOTIFICATION_CATEGORY_LABEL[pref.category])}</Txt>
+              <Box style={s.cell}>
                 <Switch
                   checked={pref.inApp}
                   onChange={(inApp) => setPref(pref.category, { inApp })}
                 />
-              </View>
-              <View style={s.cell}>
+              </Box>
+              <Box style={s.cell}>
                 <Switch checked={pref.push} onChange={(push) => setPref(pref.category, { push })} />
-              </View>
-            </View>
+              </Box>
+            </Box>
           ))}
-        </View>
+        </Box>
       </ScrollView>
     </Screen>
   );

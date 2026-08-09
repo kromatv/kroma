@@ -3,13 +3,13 @@
 // catalog fetch server-side), and live per-module progress off the
 // `module.op.*` stream.
 
-import { Button, Card, formatBytes, Image } from '@kroma/admin-kit';
-import type { StoreModule } from '@kroma/core';
+import { formatBytes, type StoreModule } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Button, EmptyState, Surface } from '@kroma/ui/kit';
 import { IconArrowRight } from '@tabler/icons-react';
 import type { OpModule } from '#web/features/admin/module-ops';
 import { OpProgress } from '#web/features/admin/module-store';
+import { Image } from '#web/shared/ui';
 
 function UpdateRow({
   m,
@@ -53,10 +53,10 @@ function UpdateRow({
         <OpProgress op={op} />
       ) : (
         <Button
-          variant="secondary"
+          variant="glass"
           size="sm"
           label={t('admin.modulesUpdate')}
-          onClick={onUpdate}
+          onPress={onUpdate}
           disabled={busy}
         />
       )}
@@ -104,12 +104,12 @@ export function UpdatesList({
           variant="primary"
           size="sm"
           label={t('admin.modulesUpdateAll')}
-          onClick={onUpdateAll}
+          onPress={onUpdateAll}
           loading={busy}
           disabled={busy}
         />
       </div>
-      <Card className="overflow-hidden">
+      <Surface elevated pad="none" radius={16} overflow="hidden">
         {updates.map((m) => (
           <UpdateRow
             key={m.id}
@@ -120,7 +120,7 @@ export function UpdatesList({
             onOpen={() => onOpen(m.id)}
           />
         ))}
-      </Card>
+      </Surface>
     </div>
   );
 }

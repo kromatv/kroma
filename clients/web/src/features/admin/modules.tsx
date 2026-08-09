@@ -3,9 +3,8 @@
 // install progress off the `module.op.*` stream, a detail drawer per module,
 // and registry management in its own drawer.
 
-import { Button, PageHeader, SegmentedControl } from '@kroma/admin-kit';
 import { useT } from '@kroma/ui';
-import { IconSearch, IconUpload, IconWorld } from '@tabler/icons-react';
+import { Button, Field, SegmentedControl } from '@kroma/ui/kit';
 import { useMemo, useRef, useState } from 'react';
 import { installBundle, message, updateModules } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
@@ -16,8 +15,7 @@ import { useStoreOps } from '#web/features/admin/module-ops';
 import { RegistriesDrawer } from '#web/features/admin/module-registries';
 import { StoreGrid } from '#web/features/admin/module-store';
 import { UpdatesList } from '#web/features/admin/module-updates';
-import { Denied, useAsyncAction, useCap } from '#web/features/admin/shell';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '#web/shared/ui/input-group';
+import { Denied, PageHeader, useAsyncAction, useCap } from '#web/features/admin/shell';
 
 type Tab = 'discover' | 'installed' | 'updates';
 
@@ -89,20 +87,20 @@ function ModulesInner() {
         action={
           <div className="flex items-center gap-2">
             <Button
-              variant="secondary"
+              variant="glass"
               label={t('admin.modulesRegistries')}
-              icon={IconWorld}
-              onClick={() =>
+              icon="world"
+              onPress={() =>
                 void RegistriesDrawer.call({}).then((c) => {
                   if (c) void refreshAll();
                 })
               }
             />
             <Button
-              variant="secondary"
+              variant="glass"
               label={t('admin.modulesUpload')}
-              icon={IconUpload}
-              onClick={() => fileRef.current?.click()}
+              icon="upload"
+              onPress={() => fileRef.current?.click()}
               loading={upload.busy}
             />
           </div>
@@ -125,17 +123,16 @@ function ModulesInner() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <SegmentedControl value={tab} options={tabs} onChange={setTab} />
         {tab !== 'updates' && (
-          <InputGroup className="h-9 w-64">
-            <InputGroupAddon>
-              <IconSearch size={15} />
-            </InputGroupAddon>
-            <InputGroupInput
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('admin.modulesSearch')}
-              className="text-[13px]"
-            />
-          </InputGroup>
+          <Field
+            w={256}
+            label={t('admin.modulesSearch')}
+            hideLabel
+            type="search"
+            icon="search"
+            placeholder={t('admin.modulesSearch')}
+            value={query}
+            onChange={setQuery}
+          />
         )}
       </div>
 

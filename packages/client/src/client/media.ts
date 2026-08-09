@@ -13,6 +13,7 @@ import type {
   SectionItem,
   Show,
   ShowDetail,
+  SplashEntry,
 } from '../types';
 import { KromaApiError, libraryQuery, type RequestContext } from './base';
 
@@ -20,6 +21,16 @@ import { KromaApiError, libraryQuery, type RequestContext } from './base';
  * client-side heartbeat can bound the probe with a short timeout. */
 export function health(ctx: RequestContext, init?: RequestInit): Promise<Health> {
   return ctx.json<Health>('/health', init);
+}
+
+/** Anonymous sign-in splash: a small random sample of backdrop art with
+ * captions, art URLs resolved against the server base like every poster. */
+export async function splash(ctx: RequestContext): Promise<SplashEntry[]> {
+  const entries = await ctx.json<SplashEntry[]>('/splash');
+  return entries.map((e) => ({
+    ...e,
+    backdropUrl: resolveArt(ctx, e.backdropUrl) ?? e.backdropUrl,
+  }));
 }
 
 export function libraries(ctx: RequestContext): Promise<Library[]> {

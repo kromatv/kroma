@@ -1,13 +1,12 @@
-// Slide-in module detail drawer (admin-kit `Drawer`): identity, versions,
+// Slide-in module detail drawer: identity, versions,
 // dependency graph, add-ons, declared config and the install / update /
 // enable / uninstall actions, for installed modules and catalog-only entries
 // alike. Uninstall confirms inline in the footer, including the
 // informed-force path when other modules still depend on it. Resolves `true`
 // when anything changed, so the caller knows whether to refresh.
 
-import { Button, Drawer, Toggle } from '@kroma/admin-kit';
 import { useT } from '@kroma/ui';
-import { IconButton } from '@kroma/ui/kit';
+import { Button, Drawer, IconButton, Switch } from '@kroma/ui/kit';
 import { type ReactNode, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { message, UninstallConflictError, uninstallModule } from '#web/features/admin/module-api';
@@ -47,8 +46,20 @@ function ConfirmStrip({
         {text}
       </p>
       <div className="flex justify-end gap-2.5">
-        <Button variant="quiet" label={t('common.cancel')} onClick={onCancel} disabled={busy} />
-        <Button variant="danger" label={confirmLabel} onClick={onConfirm} loading={busy} />
+        <Button
+          variant="ghost"
+          size="sm"
+          label={t('common.cancel')}
+          onPress={onCancel}
+          disabled={busy}
+        />
+        <Button
+          variant="danger"
+          size="sm"
+          label={confirmLabel}
+          onPress={onConfirm}
+          loading={busy}
+        />
       </div>
     </div>
   );
@@ -152,9 +163,10 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
       <div className="flex items-center gap-3">
         {installed && (
           <div className="flex items-center gap-2">
-            <Toggle
-              on={installed.enabled}
+            <Switch
+              checked={installed.enabled}
               onChange={toggler.busy ? undefined : (v) => void toggler.toggle(v)}
+              label={name}
             />
             <span className="text-[12px] font-semibold text-dim">
               {installed.enabled ? t('admin.modulesEnabled') : t('admin.modulesDisabled')}
@@ -164,23 +176,26 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
         <div className="flex-1" />
         {installed?.removable && (
           <Button
-            variant="quiet"
+            variant="ghost"
+            size="sm"
             label={t('admin.modulesUninstall')}
-            onClick={() => setRemoving(true)}
+            onPress={() => setRemoving(true)}
           />
         )}
         {update && (
           <Button
             variant="primary"
+            size="sm"
             label={t('admin.modulesUpdate')}
-            onClick={() => void install()}
+            onPress={() => void install()}
           />
         )}
         {!installed && entry?.compatible && (
           <Button
             variant="primary"
+            size="sm"
             label={t('admin.modulesInstall')}
-            onClick={() => void install()}
+            onPress={() => void install()}
           />
         )}
       </div>
@@ -194,14 +209,7 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
           <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
             {t('admin.modulesSheet')}
           </span>
-          <IconButton
-            variant="ghost"
-            size={32}
-            glyph={20}
-            icon="x"
-            label={t('common.close')}
-            onPress={close}
-          />
+          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={close} />
         </div>
         <div className="flex items-start gap-4">
           <HeaderIcon id={id} installed={!!installed} icon={entry?.icon} />
@@ -248,4 +256,4 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
       <div className="border-t border-white/[0.07] px-6 py-4.5">{footer}</div>
     </Drawer>
   );
-}, 300);
+}, 400);

@@ -6,9 +6,9 @@
 
 import type { CastReceiver } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Icon, styles } from '@kroma/ui/kit';
+import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useEffect, useRef } from 'react';
-import { Animated, Pressable, Text, View } from 'react-native';
+import { Animated, Pressable } from 'react-native';
 import { SheetTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
@@ -54,9 +54,9 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
       ) : (
         // Shown even with devices already listed: the roster is live, so a
         // second receiver can still appear below.
-        <View style={s.searchingRow}>
+        <Box style={s.searchingRow}>
           <Searching />
-        </View>
+        </Box>
       )}
     </>
   );
@@ -68,14 +68,14 @@ function NoDevices() {
   const t = useT();
 
   return (
-    <View style={s.empty}>
-      <View style={s.emptyDisc}>
+    <Box style={s.empty}>
+      <Box style={s.emptyDisc}>
         <Icon name="device-tv" size={34} stroke={1.4} color={colors.textDim} />
-      </View>
-      <Text style={s.emptyTitle}>{t('cast.noDevices')}</Text>
-      <Text style={s.emptyHint}>{t('cast.noDevicesHint')}</Text>
+      </Box>
+      <Txt style={s.emptyTitle}>{t('cast.noDevices')}</Txt>
+      <Txt style={s.emptyHint}>{t('cast.noDevicesHint')}</Txt>
       <Searching />
-    </View>
+    </Box>
   );
 }
 
@@ -94,10 +94,10 @@ function Searching() {
   }, [pulse]);
 
   return (
-    <View style={s.searching}>
+    <Box style={s.searching}>
       <Animated.View style={[s.searchingDot, { opacity: pulse }]} />
-      <Text style={s.searchingLabel}>{t('cast.searching')}</Text>
-    </View>
+      <Txt style={s.searchingLabel}>{t('cast.searching')}</Txt>
+    </Box>
   );
 }
 
@@ -128,14 +128,14 @@ function DeviceRow({
       accessibilityState={{ selected }}
     >
       <Icon name={icon} size={24} stroke={1.8} color={selected ? colors.accent : colors.text} />
-      <View style={s.rowText}>
-        <Text numberOfLines={1} style={[s.rowName, selected && { color: colors.accent }]}>
+      <Box style={s.rowText}>
+        <Txt lines={1} style={[s.rowName, selected && { color: colors.accent }]}>
           {name}
-        </Text>
-        <Text numberOfLines={1} style={s.rowDetail}>
+        </Txt>
+        <Txt lines={1} style={s.rowDetail}>
           {detail}
-        </Text>
-      </View>
+        </Txt>
+      </Box>
       {selected ? <Icon name="check" size={20} stroke={2.4} color={colors.accent} /> : null}
     </Pressable>
   );

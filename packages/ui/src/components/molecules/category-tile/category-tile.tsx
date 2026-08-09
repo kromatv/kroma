@@ -12,6 +12,8 @@ import type { ColorValue } from '#ui/core';
 import { sv } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 
+const NO_POINTER: ViewStyle = { pointerEvents: 'none' };
+
 const categoryTileVariants = sv({
   slots: {
     frame: { shrink: 0, p: 6, radius: 'xl' },
@@ -74,7 +76,7 @@ function CategoryTile({
     >
       <Box aspect={aspect} radius="lg" overflow="hidden" bg="surface1" shadow="card">
         <Img src={art} background={background} position="50% 25%" fill />
-        {wash ? <Box fill pointerEvents="none" style={gradient(wash)} /> : null}
+        {wash ? <Box fill style={[NO_POINTER, gradient(wash)]} /> : null}
         <Box absolute left={20} right={20} bottom={16} gap={2}>
           {accent ? <Box h={4} w={28} radius="pill" bg={accent} mb={8} /> : null}
           <Txt style={s.label}>{label}</Txt>

@@ -53,7 +53,7 @@ function SelectableRail({
 export default story({
   name: 'Rail',
   group: 'Media',
-  docs: 'A horizontal scrolling row. Given a tile PITCH (`item`) it runs on `<VirtualRail>`: the row holds still while the highlight travels and moves only when the selection comes within a tile of either end, a wheel pans it without changing the selection, and a pointer gets an arrow at each end. Without a pitch it falls back to the growing rail, which is for rows whose tiles are not all one width (chips, cast faces).',
+  docs: 'A horizontal scrolling row. Given a tile PITCH (`item`) it runs on `<VirtualRail>`: the row holds still while the highlight travels and moves only when the selection comes within a tile of either end, a SIDEWAYS wheel pans it without changing the selection (a vertical one is left to the page), and a pointer gets an arrow at each end. Without a pitch it falls back to the growing rail, which is for rows whose tiles are not all one width (chips, cast faces).',
   matrix: false,
   width: { min: 560, max: 1400 },
   args: { title: 'Continue watching', gap: 24, inset: 0, count: 24, virtualised: true },

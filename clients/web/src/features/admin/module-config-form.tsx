@@ -5,12 +5,14 @@
 
 import type { ConfigField } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
-import { type ReactNode, useId, useState } from 'react';
+import { Button, Field, NumberField, Select, Switch } from '@kroma/ui/kit';
+import { type ReactNode, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
-import { FIELD, Toggle } from '#web/features/admin/ui';
 
 type ConfigValue = string | number | boolean;
+
+const CONTROL_WIDTH = 160;
+const SELECT_STYLE = { width: CONTROL_WIDTH } as const;
 
 function initial(field: ConfigField, stored: unknown): ConfigValue {
   const raw = stored ?? field.default;
@@ -63,7 +65,7 @@ export function ModuleConfigForm({
   return (
     <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
       {fields.map((f) => (
-        <Field key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
+        <ConfigRow key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
       ))}
       <div className="flex justify-end">
         <Button
@@ -79,7 +81,7 @@ export function ModuleConfigForm({
   );
 }
 
-function Field({
+function ConfigRow({
   field,
   value,
   onChange,
@@ -88,54 +90,46 @@ function Field({
   value: ConfigValue | undefined;
   onChange: (v: ConfigValue) => void;
 }>) {
-  const id = useId();
-  const inputCls = `${FIELD} w-40`;
-
   let control: ReactNode;
   if (field.type === 'bool') {
-    control = <Toggle on={value === true} onChange={onChange} />;
+    control = <Switch checked={value === true} onChange={onChange} label={field.label} />;
   } else if (field.type === 'select') {
     control = (
-      <select
-        id={id}
-        className={inputCls}
+      <Select
+        label={field.label}
+        options={(field.options ?? []).map((opt) => ({ value: opt, label: opt }))}
         value={String(value ?? '')}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {(field.options ?? []).map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
+        onChange={onChange}
+        style={SELECT_STYLE}
+      />
     );
   } else if (field.type === 'number') {
     control = (
-      <input
-        id={id}
-        type="number"
-        className={inputCls}
-        value={typeof value === 'number' ? value : ''}
-        onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+      <NumberField
+        label={field.label}
+        value={typeof value === 'number' ? value : 0}
+        onChange={onChange}
+        w={CONTROL_WIDTH}
       />
     );
   } else {
     control = (
-      <input
-        id={id}
+      <Field
+        label={field.label}
+        hideLabel
         type={field.secret ? 'password' : 'text'}
         placeholder={field.placeholder}
-        className={inputCls}
         value={String(value ?? '')}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
+        w={CONTROL_WIDTH}
       />
     );
   }
 
   return (
-    <label htmlFor={id} className="flex items-center justify-between gap-2 text-xs">
+    <div className="flex items-center justify-between gap-2 text-xs">
       <span className="text-muted">{field.label}</span>
       {control}
-    </label>
+    </div>
   );
 }

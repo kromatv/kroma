@@ -1,7 +1,13 @@
+import { setEntryDefaults } from '@kroma/ui/kit';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { NotFound, RouteError } from '#web/features/errors/error-page';
 import { routeTree } from '#web/routeTree.gen';
 import { queryClient } from '#web/shared/lib/query';
+
+// The console is a mouse-and-keyboard page read at arm's length: real inputs
+// rather than the TV caret form, and the compact control shell, stated once so
+// every kit control on a row is the same shape and height.
+setEntryDefaults({ physicalKeyboard: true, size: 'sm' });
 
 export function getRouter() {
   return createTanStackRouter({

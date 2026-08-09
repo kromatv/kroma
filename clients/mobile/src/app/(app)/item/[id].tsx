@@ -11,10 +11,10 @@ import {
   sizedImageUrl,
   type Translate,
 } from '@kroma/core';
-import { Chip, styles } from '@kroma/ui/kit';
+import { Box, Chip, styles, Txt } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { MediaRail, movieCard } from '#mobile/components/cards';
 import { CastRail, DetailActions, DetailHero, MetaBadge } from '#mobile/components/detail';
@@ -55,11 +55,11 @@ function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
   const rating = media.metadata?.rating;
   return (
     <>
-      {media.year ? <Text style={s.metaText}>{media.year}</Text> : null}
-      {runtime ? <Text style={s.metaText}>{runtime}</Text> : null}
+      {media.year ? <Txt style={s.metaText}>{media.year}</Txt> : null}
+      {runtime ? <Txt style={s.metaText}>{runtime}</Txt> : null}
       {badge ? <MetaBadge>{badge}</MetaBadge> : null}
       {media.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
-      {rating ? <Text style={s.rating}>★ {rating.toFixed(1)}</Text> : null}
+      {rating ? <Txt style={s.rating}>★ {rating.toFixed(1)}</Txt> : null}
     </>
   );
 }
@@ -160,7 +160,7 @@ export default function ItemDetail() {
               <ExpandableText>{media.metadata.overview}</ExpandableText>
             ) : null}
             {media.metadata?.genres?.length ? (
-              <View style={s.genreRow}>
+              <Box style={s.genreRow}>
                 {media.metadata.genres.slice(0, 4).map((genre) => (
                   <Chip
                     key={genre}
@@ -168,24 +168,24 @@ export default function ItemDetail() {
                     onPress={() => router.push(`/genre/${encodeURIComponent(genre)}` as never)}
                   />
                 ))}
-              </View>
+              </Box>
             ) : null}
           </>
         }
       />
 
       {cast.length > 0 ? (
-        <View>
+        <Box>
           <SectionTitle>{t('content.cast')}</SectionTitle>
           <CastRail cast={cast} />
-        </View>
+        </Box>
       ) : null}
 
       {similar.data?.length ? (
-        <View>
+        <Box>
           <SectionTitle>{t('content.similarTitles')}</SectionTitle>
           <MediaRail cards={similar.data.map((m) => movieCard(m, client, cardW))} />
-        </View>
+        </Box>
       ) : null}
     </Animated.ScrollView>
   );

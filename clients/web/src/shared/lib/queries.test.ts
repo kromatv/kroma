@@ -41,7 +41,9 @@ const c: Client = {
   listPasskeys: vi.fn(),
   listNotifications: vi.fn(),
   getNotificationPrefs: vi.fn(),
+  pushKey: vi.fn(),
   health: vi.fn(),
+  splash: vi.fn(),
   discoverTrending: vi.fn(),
 };
 
@@ -318,7 +320,9 @@ describe('the plain reads', () => {
     ['user.passkeys', () => userQueries.passkeys(), 'listPasskeys'],
     ['user.notifications', () => userQueries.notifications(), 'listNotifications'],
     ['user.notificationPrefs', () => userQueries.notificationPrefs(), 'getNotificationPrefs'],
+    ['user.pushKey', () => userQueries.pushKey(), 'pushKey'],
     ['server.health', () => serverQueries.health(), 'health'],
+    ['server.splash', () => serverQueries.splash(), 'splash'],
     ['discover.detail', () => discoverQueries.detail('movie', 603), 'discoverDetail'],
     [
       'discover.trending',

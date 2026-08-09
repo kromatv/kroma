@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, RwLock};
+use std::time::{Duration, Instant};
 
 use axum::body::Body;
 use axum::extract::{Request, State};
@@ -245,13 +246,13 @@ impl Supervisor {
         }
     }
 
-    /// Stop a module process (SIGKILL). A no-op if not running.
+    /// Stop a module process, giving it the grace period to shut down cleanly.
+    /// A no-op if not running. Blocking: call it off the async runtime.
     pub fn stop(&self, id: &str) {
-        if let Some(mut p) = self.procs.write().unwrap().remove(id) {
-            let _ = p.child.kill();
-            let _ = p.child.wait();
-            tracing::info!(module = %id, "stopped module process");
-        }
+        let Some(mut p) = self.procs.write().unwrap().remove(id) else { return };
+        ask_to_stop(id, &mut p.child);
+        reap(id, &mut p.child, Instant::now() + STOP_GRACE);
+        tracing::info!(module = %id, "stopped module process");
     }
 
     fn staged_manifest(
@@ -424,10 +425,19 @@ impl Supervisor {
 
     /// Sidecars are plain child processes that survive their parent, so a
     /// shutdown skipping this leaves orphans holding their ports.
+    ///
+    /// Every module is asked to stop first and only then waited on, so the whole
+    /// shutdown costs one grace period rather than one per module. Blocking:
+    /// call it off the async runtime.
     pub fn stop_all(&self) {
-        let ids: Vec<String> = self.procs.read().unwrap().keys().cloned().collect();
-        for id in ids {
-            self.stop(&id);
+        let mut procs: Vec<(String, Proc)> = self.procs.write().unwrap().drain().collect();
+        for (id, p) in &mut procs {
+            ask_to_stop(id, &mut p.child);
+        }
+        let deadline = Instant::now() + STOP_GRACE;
+        for (id, p) in &mut procs {
+            reap(id, &mut p.child, deadline);
+            tracing::info!(module = %id, "stopped module process");
         }
     }
 
@@ -491,6 +501,46 @@ pub fn verify_sha256(bytes: &[u8], expected: &str) -> anyhow::Result<()> {
         "bundle checksum mismatch (expected {expected}, got {actual}); refusing to install"
     );
     Ok(())
+}
+
+/// How long a sidecar gets to run its `on_disable` hooks before it is killed
+/// outright. A module that supervises a child of its own (the remote module's
+/// `cloudflared`) needs this window to take it down; SIGKILL orphans it and the
+/// tunnel keeps serving with nothing left to stop it.
+const STOP_GRACE: Duration = Duration::from_secs(6);
+const STOP_POLL: Duration = Duration::from_millis(25);
+
+/// Ask a module process to exit cleanly. Unix only: elsewhere the process has no
+/// shutdown path and [`reap`] kills it once the grace period lapses.
+fn ask_to_stop(id: &str, child: &mut Child) {
+    #[cfg(unix)]
+    {
+        let pid = child.id() as i32;
+        // SAFETY: `child` has not been waited on, so `pid` is still our
+        // un-reaped child and cannot have been recycled onto another process.
+        let sent = unsafe { libc::kill(pid, libc::SIGTERM) };
+        if sent != 0 {
+            tracing::warn!(module = %id, pid, "SIGTERM failed; will kill");
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = (id, child);
+}
+
+/// Wait for a stopping child until `deadline`, then kill it. Always reaps, so no
+/// zombie is left behind.
+fn reap(id: &str, child: &mut Child, deadline: Instant) {
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => return,
+            Ok(None) if Instant::now() < deadline => std::thread::sleep(STOP_POLL),
+            Ok(None) => break,
+            Err(_) => break,
+        }
+    }
+    tracing::warn!(module = %id, "module did not stop in time; killing");
+    let _ = child.kill();
+    let _ = child.wait();
 }
 
 fn free_port() -> anyhow::Result<u16> {

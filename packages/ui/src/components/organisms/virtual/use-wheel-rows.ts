@@ -7,7 +7,7 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import type { View } from 'react-native';
 import type { SpatialNavigationVirtualizedListRef } from 'react-tv-space-navigation';
-import { useWheelPan } from '#ui/lib/wheel-pan';
+import { useWheelTravel } from '#ui/lib/wheel-pan';
 
 // Long enough that an inertia tail's sparse final events don't each snap.
 const SNAP_AFTER_MS = 160;
@@ -65,7 +65,7 @@ export function useWheelScroll(
     },
     [list, lastIndex, rowPitch],
   );
-  useWheelPan(viewport, pan);
+  useWheelTravel(viewport, pan);
 
   return fraction;
 }

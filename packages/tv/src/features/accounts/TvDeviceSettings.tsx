@@ -2,7 +2,7 @@ import { useT } from '@kroma/ui';
 import { Box, Hint, Txt, useFocusNav } from '@kroma/ui/kit';
 import { useNav } from '#tv/app/router';
 import { aboutItem, DEVICE_SETTINGS, quitAppItem } from '#tv/app/settings/registry';
-import { AuthScreen, KromaMark } from '#tv/shared/ui';
+import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
 import { SettingsRows } from './SettingsRows';
 
 /** Device settings (route `deviceSettings`), reachable from the signed-out
@@ -15,7 +15,7 @@ export function TvDeviceSettings() {
   return (
     <AuthScreen>
       <Box mb={32}>
-        <KromaMark size={40} />
+        <KromaMark size={GATE_MARK} />
       </Box>
       <Txt
         variant="hero"

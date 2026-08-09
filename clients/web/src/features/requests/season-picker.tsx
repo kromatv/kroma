@@ -58,14 +58,7 @@ export function SeasonPicker({
             </div>
             <h2 className="mt-1 font-display text-[19px] font-bold">{title}</h2>
           </div>
-          <IconButton
-            variant="ghost"
-            size={32}
-            glyph={20}
-            icon="x"
-            label={t('common.close')}
-            onPress={onClose}
-          />
+          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">

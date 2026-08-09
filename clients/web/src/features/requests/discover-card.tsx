@@ -2,13 +2,17 @@
 // rating + availability/request chip, and a hover "request" affordance.
 // Clicks route to the local fiche when owned, else the discover detail.
 
-import { Image } from '@kroma/admin-kit';
 import { type DiscoverEntry, posterColors, sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconPlus, IconStarFilled } from '@tabler/icons-react';
+import { Box, backdropBlur, Icon, Row, Txt } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
+import { Image } from '#web/shared/ui';
+
+const RATING_PILL = backdropBlur(4);
+const RATING_LABEL = { fontSize: 10.5, fontWeight: '700' } as const;
+const REQUEST_LABEL = { fontSize: 12.5, fontWeight: '700' } as const;
 
 export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; width?: number }>) {
   const t = useT();
@@ -57,52 +61,76 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
     >
       <button type="button" onClick={open} className="block w-full text-left focus:outline-none">
         <div
-          className="relative aspect-2/3 overflow-hidden rounded-lg shadow-card transition-shadow duration-200 group-hover/card:shadow-[0_0_0_3px_var(--kroma-accent),var(--shadow-pop)]"
+          className="relative aspect-2/3 overflow-hidden rounded-lg shadow-card outline-3 outline-transparent transition-[box-shadow,outline-color] duration-200 group-hover/card:shadow-pop group-hover/card:outline-accent"
           style={{ background: `linear-gradient(158deg, ${c1} 0%, ${c2} 70%)` }}
         >
           {showImg ? (
             <Image src={art} alt={entry.title} fit="cover" fill onError={() => setImgOk(false)} />
           ) : (
-            <div className="absolute inset-0 flex items-end p-3">
-              <span className="line-clamp-3 text-[15px] font-bold leading-tight text-white/90">
+            <Box fill justify="flex-end" p={12}>
+              <Txt variant="label" color="white/90" lines={3}>
                 {entry.title}
-              </span>
-            </div>
+              </Txt>
+            </Box>
           )}
 
           {/* top gradient scrim keeps the chips legible over bright art */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-black/55 to-transparent opacity-0 transition-opacity group-hover/card:opacity-100 group-focus-within/card:opacity-100 pointer-coarse:opacity-100" />
 
-          <div className="absolute left-2 top-2 flex flex-col gap-1.5">{statusChip}</div>
+          <Box absolute left={8} top={8} gap={6}>
+            {statusChip}
+          </Box>
 
           {entry.rating ? (
-            <span className="absolute right-2 top-2 inline-flex items-center gap-0.5 rounded-full bg-black/55 px-1.5 py-0.5 text-[10.5px] font-bold text-[#F4B642] backdrop-blur-xs">
-              <IconStarFilled size={9} />
-              {entry.rating.toFixed(1)}
-            </span>
+            <Row
+              absolute
+              top={8}
+              right={8}
+              gap={2}
+              px={6}
+              py={2}
+              radius="pill"
+              bg="black/55"
+              style={RATING_PILL}
+            >
+              <Icon name="star-filled" size={9} color="accent" />
+              <Txt color="accent" style={RATING_LABEL}>
+                {entry.rating.toFixed(1)}
+              </Txt>
+            </Row>
           ) : null}
 
           {/* Visual only: the click opens the detail where the real request action lives. */}
           {canRequest ? (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-2 items-center justify-center gap-1.5 bg-linear-to-t from-black/75 to-transparent pb-3 pt-8 text-[12.5px] font-bold text-white opacity-0 transition-all duration-200 group-hover/card:translate-y-0 group-hover/card:opacity-100 group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100 pointer-coarse:translate-y-0 pointer-coarse:opacity-100">
-              <IconPlus size={14} stroke={2.6} />
-              {t('discover.request')}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-2 items-center justify-center gap-1.5 bg-linear-to-t from-black/75 to-transparent pb-3 pt-8 opacity-0 transition-all duration-200 group-hover/card:translate-y-0 group-hover/card:opacity-100 group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100 pointer-coarse:translate-y-0 pointer-coarse:opacity-100">
+              <Icon name="plus" size={14} stroke={2.6} color="white" />
+              <Txt color="white" style={REQUEST_LABEL}>
+                {t('discover.request')}
+              </Txt>
             </div>
           ) : null}
         </div>
       </button>
-      <div className="mt-2 px-0.5">
-        <div className="truncate text-[14px] font-semibold text-text">{entry.title}</div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-medium text-dim">
-          <span>{entry.kind === 'show' ? t('discover.kindShow') : t('discover.kindMovie')}</span>
+      <Box mt={8} px={2}>
+        <Txt variant="label" lines={1}>
+          {entry.title}
+        </Txt>
+        <Row gap={6} mt={2}>
+          <Txt variant="meta" color="textDim">
+            {entry.kind === 'show' ? t('discover.kindShow') : t('discover.kindMovie')}
+          </Txt>
           {entry.year ? (
             <>
-              <span className="text-white/20">·</span>
-              <span>{entry.year}</span>
+              <Txt variant="meta" color="white/20">
+                ·
+              </Txt>
+              <Txt variant="meta" color="textDim">
+                {entry.year}
+              </Txt>
             </>
           ) : null}
-        </div>
-      </div>
+        </Row>
+      </Box>
     </div>
   );
 }

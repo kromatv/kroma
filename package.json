@@ -53,7 +53,7 @@
     "build:mobile": "bun run --filter '@kroma/mobile' bundle:check",
     "build:desktop": "bun run --filter '@kroma/desktop' build",
     "deploy:tizen": "bun run --filter '@kroma/tizen' deploy",
-    "tizen:prepare": "bun run build:tizen && echo \"\u2713 Tizen app ready \u2192 clients/tizen/dist  (package: cd clients/tizen && tizen build-web && tizen package -t wgt -s <cert-profile> -- dist)\"",
+    "tizen:prepare": "bun run build:tizen && echo \"✓ Tizen app ready → clients/tizen/dist  (package: cd clients/tizen && tizen build-web && tizen package -t wgt -s <cert-profile> -- dist)\"",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -63,38 +63,38 @@
     "deadcode": "bun x knip@5 --no-progress",
     "sonar:precheck": "git diff --name-only --diff-filter=ACMR origin/main...HEAD | bun packages/sonar-tools/src/precheck.ts",
     "check:fix": "biome check --write .",
-    "server": "cd server && cargo run --features semantic-embeddings,whisper-metal",
-    "server:watch": "cd server && cargo watch -x 'run --features semantic-embeddings,whisper-metal'",
-    "server:watch:cpu": "cd server && cargo watch -x 'run --features semantic-embeddings,whisper-local'",
-    "server:watch:lexical": "cd server && cargo watch -x run",
+    "server": "bun server/preflight.ts && cd server && cargo run --features semantic-embeddings,whisper-metal",
+    "server:watch": "bun server/preflight.ts && cd server && cargo watch -x 'run --features semantic-embeddings,whisper-metal'",
+    "server:watch:cpu": "bun server/preflight.ts && cd server && cargo watch -x 'run --features semantic-embeddings,whisper-local'",
+    "server:watch:lexical": "bun server/preflight.ts && cd server && cargo watch -x run",
     "server:build": "cd server && cargo build --release"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.5",
+    "@biomejs/biome": "^2.5.7",
     "@csstools/postcss-cascade-layers": "^6.0.0",
     "@kroma/bundler": "workspace:*",
     "@kroma/module-sdk": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
-    "@vitejs/plugin-react": "^6.0.4",
+    "@vitejs/plugin-react": "^6.0.5",
     "@vitest/coverage-istanbul": "^4.1.10",
     "abortcontroller-polyfill": "^1.7.8",
     "concurrently": "^10.0.4",
-    "core-js": "^3.49.0",
+    "core-js": "^3.50.0",
     "intersection-observer": "^0.12.2",
     "jsdom": "^29.1.1",
     "lightningcss": "^1.33.0",
     "lodash": "^4.18.1",
-    "playwright": "^1.62.0",
-    "postcss": "^8.5.23",
+    "playwright": "^1.62.1",
+    "postcss": "^8.5.26",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-native-web": "^0.21.2",
-    "shadcn": "^4.16.0",
+    "shadcn": "^4.16.2",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vite": "^8.1.5",
+    "vite": "^8.2.1",
     "vitest": "^4.1.10"
   },
   "engines": {
@@ -120,14 +120,44 @@
     "package.json - and prebuild dies. That is what broke both .ipa builds in v0.1.34."
   ],
   "overrides": {
-    "react-native": "npm:react-native-tvos@0.86.0-2"
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "react-native": "npm:react-native-tvos@0.86.0-2",
+    "vite": "8.2.1"
   },
   "dependencies": {
+    "expo-modules-core": "~57.0.10",
     "react-native": "npm:react-native-tvos@0.86.0-2"
   },
   "patchedDependencies": {
     "react-native-svg@15.15.4": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",
     "react-native-svg@15.15.5": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",
-    "react-tv-space-navigation@6.0.0-beta1": "patches/react-tv-space-navigation@6.0.0-beta1.patch"
-  }
+    "react-tv-space-navigation@6.0.0-beta1": "patches/react-tv-space-navigation@6.0.0-beta1.patch",
+    "@expo/require-utils@57.0.4": "patches/@expo%2Frequire-utils@57.0.4.patch"
+  },
+  "//overrides": [
+    "ONE copy of every type-bearing package, forced onto transitive peers.",
+    "These are structural types: two copies of @types/react in the tree make a",
+    "React.Ref from one of them un-assignable to a React.Ref from the other, and",
+    "two copies of vite make the config a shared factory returns un-assignable to",
+    "the UserConfig its caller imports. Neither is a real incompatibility - both",
+    "are the same version range resolved twice - so the fix is to collapse them",
+    "rather than to cast at the call site."
+  ],
+  "//expo-modules-core": [
+    "A ROOT dependency for the same reason `react-native` below is one, and it is",
+    "not reachable from any workspace manifest either.",
+    "",
+    "`expo-constants` (and several other expo modules) import `expo-modules-core`",
+    "without DECLARING it - they assume the flat node_modules npm would have given",
+    "them. Bun's isolated store gives each package only what it declares, so the",
+    "import resolves against nothing and Metro fails the bundle outright.",
+    "",
+    "Metro resolves from the importing file, which lives in the store, and walks up:",
+    "  .../node_modules/.bun/expo-constants@…/node_modules",
+    "  .../node_modules/.bun/node_modules",
+    "  <repo>/node_modules            <- this entry",
+    "It never visits clients/mobile/node_modules, so declaring it on the app does",
+    "not help; the root is the first directory on that walk that we control."
+  ]
 }

@@ -1,18 +1,19 @@
-// Mouse-wheel / trackpad panning over a row. Native no-op.
-//
-// A television has no pointer, and the phone builds pan a real ScrollView with a
-// finger, so there is nothing to wire here. See `wheel-pan.web.ts`.
+// Mouse-wheel handling over a virtualised list. Native no-op: a television has
+// no pointer, and the phone builds scroll with a finger. See `wheel-pan.web.ts`.
 
 import type { RefObject } from 'react';
-import type { View } from 'react-native';
+import type { ScrollView, View } from 'react-native';
+
+type WheelHost = RefObject<View | ScrollView | null>;
 
 /** No-op off the web. */
-function useWheelPan(
-  _ref: RefObject<View | null>,
-  _onPan: (delta: number) => void,
+function useWheelTravel(
+  _ref: WheelHost,
+  _onTravel: (delta: number) => void,
   _enabled = true,
 ): void {
   // No pointer to listen to.
 }
 
-export { useWheelPan };
+export type { WheelHost };
+export { useWheelTravel };

@@ -1,8 +1,8 @@
-// The frontend module contract. A module package imports its types from here
-// and exports a `KromaModule`; it depends on no other @kroma package, so the
-// re-exports below are that facade.
+// The frontend module contract. A module package imports its manifest types,
+// host context, admin data hooks and event bus from here; the COMPONENTS it
+// renders with come from `@kroma/ui/kit`, the one design system every KROMA
+// surface shares.
 
-export * from '@kroma/admin-kit';
 export type {
   EngineCapability,
   KromaClient,
@@ -21,7 +21,20 @@ export {
   RequestId,
 } from '@kroma/core';
 export { useT } from '@kroma/ui';
-export { EmptyState } from '@kroma/ui/kit';
+export type { AdminHostValue } from './admin/context';
+export { AdminHostProvider, useAdminHost } from './admin/context';
+export { Denied } from './admin/denied';
+export type { AddEngineOptions } from './admin/engines';
+export {
+  AddEngineHost,
+  addEngine,
+  FieldForm,
+  useEnabledEngines,
+  useModuleEnabled,
+} from './admin/engines';
+export { isAnyAdmin, useAsyncAction, useCap, usePoll } from './admin/hooks';
+export { ModuleFailed, ModuleLoading, ModuleUnavailable } from './admin/page-states';
+export { SettingsView } from './admin/settings';
 export type { EventBus, EventKey } from './bus';
 export { createEventBus } from './bus';
 export type { KromaEvents, ModuleApiRegistry } from './contracts';

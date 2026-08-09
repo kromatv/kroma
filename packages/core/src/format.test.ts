@@ -4,7 +4,9 @@ import {
   audioTrackLabel,
   channelLabel,
   codecLabel,
+  decimal,
   episodeTag,
+  formatBytes,
   formatTimecode,
   hueFromString,
   langCode,
@@ -14,6 +16,7 @@ import {
   posterColors,
   qualityBadge,
   qualityBadgeForVideo,
+  resolveImageUrl,
   safeImageUrl,
   sizedImageUrl,
 } from './format';
@@ -306,9 +309,78 @@ describe('safeImageUrl', () => {
     expect(safeImageUrl('vbscript:msgbox')).toBeNull();
   });
 
+  it('rejects a scheme smuggled past the check with a tab or a newline', () => {
+    // A browser deletes tab/CR/LF from anywhere in a URL before parsing it, so
+    // every one of these loads as `javascript:alert(1)`. Splitting the scheme
+    // used to walk straight through the "no scheme at all" branch.
+    expect(safeImageUrl('java\nscript:alert(1)')).toBeNull();
+    expect(safeImageUrl('java\tscript:alert(1)')).toBeNull();
+    expect(safeImageUrl('jav\rascript:alert(1)')).toBeNull();
+    expect(safeImageUrl('data:text/ht\nml,<script>alert(1)</script>')).toBeNull();
+  });
+
+  it('keeps stripping to the scheme check, leaving a real path usable', () => {
+    // The strip must not corrupt artwork that merely got wrapped in transit.
+    expect(safeImageUrl('/api/images/\nabc')).toBe('/api/images/abc');
+    expect(safeImageUrl('\n')).toBeNull();
+  });
+
   it('treats absent artwork as absent', () => {
     expect(safeImageUrl(null)).toBeNull();
     expect(safeImageUrl(undefined)).toBeNull();
     expect(safeImageUrl('')).toBeNull();
+  });
+});
+
+describe('resolveImageUrl', () => {
+  it('passes absolute URLs through and resolves paths against the origin', () => {
+    expect(resolveImageUrl('http://kroma.local:4040', 'https://cdn/img.jpg')).toBe(
+      'https://cdn/img.jpg',
+    );
+    expect(resolveImageUrl('http://kroma.local:4040', '/api/images/x')).toBe(
+      'http://kroma.local:4040/api/images/x',
+    );
+    expect(resolveImageUrl('http://kroma.local:4040', null)).toBeNull();
+  });
+});
+
+describe('decimal', () => {
+  it('uses a comma and one decimal place by default', () => {
+    expect(decimal(1.5)).toBe('1,5');
+    expect(decimal(2)).toBe('2,0');
+  });
+
+  it('honors a requested digit count (rounding)', () => {
+    expect(decimal(Math.PI, 2)).toBe('3,14');
+    expect(decimal(Math.PI, 0)).toBe('3');
+    expect(decimal(Math.E, 3)).toBe('2,718');
+  });
+});
+
+describe('formatBytes', () => {
+  it('returns "0 o" for zero and negatives', () => {
+    expect(formatBytes(0)).toBe('0 o');
+    expect(formatBytes(-100)).toBe('0 o');
+  });
+
+  it('keeps bytes and kilobytes at 0 decimals', () => {
+    expect(formatBytes(500)).toBe('500 o');
+    expect(formatBytes(1024)).toBe('1 Ko');
+    expect(formatBytes(1536)).toBe('2 Ko'); // 1.5 KiB rounds to 2 at 0 digits
+  });
+
+  it('shows one decimal from megabytes up (below 100)', () => {
+    expect(formatBytes(1024 ** 2)).toBe('1,0 Mo');
+    expect(formatBytes(5 * 1024 ** 2)).toBe('5,0 Mo');
+    expect(formatBytes(1024 ** 3)).toBe('1,0 Go');
+    expect(formatBytes(1024 ** 5)).toBe('1,0 Po');
+  });
+
+  it('drops the decimal once the mantissa reaches 100', () => {
+    expect(formatBytes(150 * 1024 ** 2)).toBe('150 Mo');
+  });
+
+  it('caps the unit at Po (petabytes) for huge inputs', () => {
+    expect(formatBytes(1024 ** 6)).toBe('1024 Po');
   });
 });

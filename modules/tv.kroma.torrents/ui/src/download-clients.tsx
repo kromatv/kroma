@@ -2,22 +2,18 @@
 // engine (embedded / Transmission / qBittorrent) with enable toggle, live
 // connection test and the add/edit modal.
 
+import { addEngine, apiErrorText, useEnabledEngines, usePoll, useT } from '@kroma/module-sdk';
 import {
-  AddEngineModal,
-  apiErrorText,
+  Badge,
   Button,
-  Card,
   EmptyState,
   IconButton,
-  Pill,
   Section,
+  Surface,
+  Switch,
   TableSkeleton,
-  Toggle,
-  useEnabledEngines,
-  usePoll,
-  useT,
-} from '@kroma/module-sdk';
-import { IconCpu, IconPencil, IconPlus, IconServer } from '@tabler/icons-react';
+} from '@kroma/ui/kit';
+import { IconCpu, IconServer } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useTorrentsApi } from './api';
 import { DownloadClientModal } from './download-client-modals';
@@ -34,7 +30,7 @@ export function DownloadClientsSection() {
   const clients = data?.clients ?? [];
 
   const openAdd = async () => {
-    const changed = await AddEngineModal.call({
+    const changed = await addEngine({
       engines,
       title: t('dlclients.addTitle'),
       onSubmit: async (kind, v) => {
@@ -84,20 +80,20 @@ export function DownloadClientsSection() {
   const addButton =
     engines.length > 0 ? (
       <Button
-        variant="secondary"
+        variant="glass"
         size="sm"
-        icon={IconPlus}
+        icon="plus"
         label={t('dlclients.add')}
-        onClick={() => void openAdd()}
+        onPress={() => void openAdd()}
       />
     ) : null;
 
   return (
-    <Section title={t('dlclients.sectionTitle')} right={addButton}>
+    <Section title={t('dlclients.sectionTitle')} action={addButton} mt={28}>
       {data === null ? <TableSkeleton rows={3} /> : null}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {clients.map((c) => (
-          <Card key={c.id} className="p-4.5">
+          <Surface key={c.id} elevated border="border" pad="none" p={18}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="flex h-10 w-10 flex-[0_0_40px] items-center justify-center rounded-xl border border-border-strong bg-surface-2 text-accent">
@@ -110,36 +106,35 @@ export function DownloadClientsSection() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="truncate text-[14.5px] font-bold">{c.name}</span>
-                    <Pill color="#86A8FF">{c.builtin ? t('dlclients.embedded') : c.kind}</Pill>
+                    <Badge tone="info">{c.builtin ? t('dlclients.embedded') : c.kind}</Badge>
                   </div>
                   <div className="mt-0.5 truncate text-[12px] font-medium text-dim">
                     {c.builtin ? t('dlclients.embeddedSub') : c.url}
                   </div>
                 </div>
               </div>
-              <Toggle on={c.enabled} onChange={(v) => toggle(c, v)} />
+              <Switch checked={c.enabled} onChange={(v) => toggle(c, v)} label={c.name} />
             </div>
             <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-white/6 pt-3">
               <TestLine test={tests[c.id]} />
               <div className="flex items-center gap-2">
                 <Button
-                  variant="secondary"
+                  variant="glass"
                   size="sm"
                   label={t('dlclients.test')}
-                  onClick={() => test(c)}
+                  onPress={() => test(c)}
                   loading={tests[c.id]?.busy}
                 />
                 {!c.builtin ? (
                   <IconButton
-                    icon={IconPencil}
+                    icon="pencil"
                     label={t('dlclients.edit')}
-                    size={30}
-                    onClick={() => void openEdit(c)}
+                    onPress={() => void openEdit(c)}
                   />
                 ) : null}
               </div>
             </div>
-          </Card>
+          </Surface>
         ))}
       </div>
       {data && clients.length === 0 ? (

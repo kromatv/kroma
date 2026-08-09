@@ -10,9 +10,9 @@ import {
   type SortMode,
   sortTitles,
 } from '@kroma/core';
-import { Chip, Icon, styles } from '@kroma/ui/kit';
+import { Box, Chip, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
-import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
@@ -74,11 +74,11 @@ export function CatalogueScreen<T extends MediaItem | Show>({
     );
 
   const header = (
-    <View style={{ paddingTop: insets.top + spacing.sm }}>
-      <View style={s.titleRow}>
-        <Text style={s.title}>{title}</Text>
-        <Text style={s.count}>{cards.length}</Text>
-      </View>
+    <Box style={{ paddingTop: insets.top + spacing.sm }}>
+      <Box style={s.titleRow}>
+        <Txt style={s.title}>{title}</Txt>
+        <Txt style={s.count}>{cards.length}</Txt>
+      </Box>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -116,12 +116,12 @@ export function CatalogueScreen<T extends MediaItem | Show>({
           ))}
         </ScrollView>
       ) : null}
-      <View style={{ height: spacing.sm }} />
-    </View>
+      <Box style={{ height: spacing.sm }} />
+    </Box>
   );
 
   return (
-    <View style={s.screen}>
+    <Box style={s.screen}>
       <PosterGrid
         cards={cards}
         gutters={gutters}
@@ -135,7 +135,7 @@ export function CatalogueScreen<T extends MediaItem | Show>({
         refreshing={refreshing}
         onRefresh={refetch}
       />
-    </View>
+    </Box>
   );
 }
 

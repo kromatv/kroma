@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
-import { AuthScreen, KromaMark, OnScreenKeyboard } from '#tv/shared/ui';
+import { AuthScreen, GATE_MARK, KromaMark, OnScreenKeyboard } from '#tv/shared/ui';
 
 /**
  * Add a server by address via an on-screen URL keyboard; on submit the server is
@@ -97,7 +97,7 @@ export function TvConnect() {
   return (
     <AuthScreen>
       <Box mb={24}>
-        <KromaMark size={32} />
+        <KromaMark size={GATE_MARK} />
       </Box>
       <Box w="100%" maxW={720}>
         <Txt variant="h1" style={{ fontSize: 38, fontWeight: '600', textAlign: 'center' }}>
@@ -127,12 +127,6 @@ export function TvConnect() {
           keyboardType="url"
           physicalKeyboard={physicalKeyboard}
           mb={20}
-          entry={{
-            py: 16,
-            radius: 'md',
-            bg: '#0F0F13',
-            textStyle: { fontSize: 20, fontWeight: '600' },
-          }}
         />
 
         {value.trim() ? <SchemeBadge probing={probing} probe={probe} /> : null}

@@ -2,16 +2,15 @@
 // (continuous LAN sweep); this screen is only the manual path: one field,
 // one button. A bare host tries https then http (session.connect).
 
-import { Button } from '@kroma/ui/kit';
+import { Button, Field } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  BackLink,
   OnboardingBox,
   OnboardingScreen,
   OnboardingTitle,
 } from '#mobile/components/OnboardingScreen';
-import { ErrorBanner, TextField } from '#mobile/components/ui';
+import { ErrorBanner } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useSession } from '#mobile/lib/session';
 
@@ -38,22 +37,23 @@ export default function Connect() {
   };
 
   return (
-    <OnboardingScreen>
+    <OnboardingScreen onBack={router.canGoBack() ? () => router.back() : undefined}>
       <OnboardingBox>
         <OnboardingTitle title={t('connect.addServerTitle')} />
-        <TextField
+        <Field
+          label={t('connect.serverPlaceholder')}
+          hideLabel
           icon="server-2"
           value={url}
-          onChangeText={(v) => {
+          onChange={(v) => {
             setUrl(v);
             if (error) setError(null);
           }}
           placeholder={t('connect.serverPlaceholder')}
           keyboardType="url"
-          textContentType="URL"
           autoFocus
-          returnKeyType="go"
-          onSubmitEditing={() => void submit()}
+          onSubmit={() => void submit()}
+          entry={{ autoComplete: 'url' }}
         />
         <ErrorBanner message={error} />
         <Button
@@ -62,7 +62,6 @@ export default function Connect() {
           loading={busy}
           disabled={!url.trim()}
         />
-        {router.canGoBack() ? <BackLink onPress={() => router.back()} /> : null}
       </OnboardingBox>
     </OnboardingScreen>
   );

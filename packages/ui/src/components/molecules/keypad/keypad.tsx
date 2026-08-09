@@ -15,9 +15,13 @@
 import { SpatialNavigationNode } from 'react-tv-space-navigation';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
+import { Frost } from '#ui/components/atoms/frost';
+import { Icon } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
-import { type StyleDecl, styles, svFor } from '#ui/core';
+import { radius, type StyleDecl, styles, svFor } from '#ui/core';
+import { keyFace } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
+import { useTDefault } from '#ui/services/i18n';
 
 const ROWS = [
   ['1', '2', '3'],
@@ -25,26 +29,13 @@ const ROWS = [
   ['7', '8', '9'],
 ] as const;
 
-// A keyboard glyph rather than an icon: unlike the arrows, it has no emoji
-// presentation to fall into on tvOS.
-const DELETE = '⌫';
-
 type KeyKind = 'digit' | 'delete';
 
 const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   slots: {
-    root: {
-      w: 88,
-      h: 72,
-      center: true,
-      radius: '2xl',
-      bg: 'white/6',
-      // A key under the cursor lifts its own wash rather than borrowing the
-      // amber: on a PIN pad, amber says "this is where Enter goes".
-      _hover: { bg: 'white/12' },
-      _focus: { bg: 'accentSoft' },
-    },
-    label: { fontWeight: '700', color: 'text', _focus: { color: 'accent' } },
+    // The shared key face (lib/field-shell); the pad brings only its own box.
+    root: { ...keyFace.root, w: 88, h: 72, radius: radius['2xl'] },
+    label: keyFace.label,
   },
   variants: {
     kind: {
@@ -66,11 +57,15 @@ interface KeypadProps {
 }
 
 function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<KeypadProps>) {
+  const t = useTDefault();
   const key = (label: string, onPress: () => void, kind: KeyKind = 'digit') => (
     <Focusable
       key={label}
       onPress={onPress}
-      label={label}
+      // The delete key draws a glyph, so its accessible name is a WORD: the
+      // backspace character reaches a screen reader as "erase to the left",
+      // or as nothing at all.
+      label={kind === 'delete' ? t('common.delete') : label}
       disabled={disabled}
       autoFocus={autoFocus && label === '1'}
       focusScale={1.08}
@@ -78,7 +73,18 @@ function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<Keyp
       sv={keypadVariants}
       vars={{ kind }}
     >
-      {(state) => <Txt style={state.slots.label}>{label}</Txt>}
+      {(state) => (
+        <>
+          {/* The fill is translucent (lib/field-shell), so blur what shows
+              through: the pad reads as glass over the artwork behind it. */}
+          <Frost radius={radius['2xl']} />
+          {kind === 'delete' ? (
+            <Icon name="backspace" size={30} stroke={1.8} color="textMuted" />
+          ) : (
+            <Txt style={state.slots.label}>{label}</Txt>
+          )}
+        </>
+      )}
     </Focusable>
   );
   return (
@@ -96,7 +102,7 @@ function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<Keyp
           <Box w={88} h={72} />
         </SpatialNavigationNode>
         {key('0', () => onDigit('0'))}
-        {key(DELETE, onDelete, 'delete')}
+        {key('delete', onDelete, 'delete')}
       </FocusRegion>
     </FocusColumn>
   );

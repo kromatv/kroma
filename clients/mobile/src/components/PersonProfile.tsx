@@ -4,10 +4,9 @@
 // show, the component renders nothing and the grid keeps its header-less look.
 
 import { type PersonDetail, personFacts } from '@kroma/core';
-import { styles } from '@kroma/ui/kit';
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Box, styles, Txt } from '@kroma/ui/kit';
 import { Avatar } from '#mobile/components/Avatar';
+import { ExpandableText } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 
@@ -26,41 +25,39 @@ export function PersonProfile({
 }>) {
   const t = useT();
   const { locale } = useI18n();
-  const [expanded, setExpanded] = useState(false);
   const facts = personFacts(t, detail, locale);
   const biography = detail?.biography?.trim() || null;
 
   if (!photo && !facts.length && !biography && !roles.length) return null;
 
   return (
-    <View style={s.wrap}>
-      <View style={s.identity}>
+    <Box style={s.wrap}>
+      <Box style={s.identity}>
         <Avatar uri={photo} name={name} size={92} />
-        <View style={s.facts}>
-          {roles.length ? <Text style={s.roles}>{roles.join(' · ')}</Text> : null}
+        <Box style={s.facts}>
+          {roles.length ? <Txt style={s.roles}>{roles.join(' · ')}</Txt> : null}
           {facts.map((f) => (
-            <View key={f.key} style={s.fact}>
-              <Text style={s.factLabel}>{f.label}</Text>
-              <Text style={s.factValue}>{f.value}</Text>
-            </View>
+            <Box key={f.key} style={s.fact}>
+              <Txt style={s.factLabel}>{f.label}</Txt>
+              <Txt style={s.factValue}>{f.value}</Txt>
+            </Box>
           ))}
-        </View>
-      </View>
+        </Box>
+      </Box>
 
       {biography ? (
-        <Pressable
-          onPress={() => setExpanded((v) => !v)}
-          accessibilityRole="button"
-          accessibilityLabel={expanded ? t('person.readLess') : t('person.readMore')}
-        >
-          <Text style={s.group}>{t('person.biography')}</Text>
-          <Text style={s.biography} numberOfLines={expanded ? undefined : CLAMP_LINES}>
+        <Box>
+          <Txt style={s.group}>{t('person.biography')}</Txt>
+          {/* The kit's paragraph, like the film and series overviews on this
+              app: it GROWS into its full height rather than jumping, and it
+              only offers "read more" when the copy actually overflows - the
+              hand-rolled version here offered it on a one-line biography. */}
+          <ExpandableText lines={CLAMP_LINES} moreLabel={t('person.readMore')}>
             {biography}
-          </Text>
-          <Text style={s.more}>{expanded ? t('person.readLess') : t('person.readMore')}</Text>
-        </Pressable>
+          </ExpandableText>
+        </Box>
       ) : null}
-    </View>
+    </Box>
   );
 }
 
@@ -73,6 +70,4 @@ const s = styles({
   factLabel: { ...type.small, color: 'textDim', textTransform: 'uppercase', letterSpacing: 1 },
   factValue: { ...type.caption, color: 'text', fontWeight: '600' },
   group: { ...type.small, mb: 4, color: 'textDim', textTransform: 'uppercase', letterSpacing: 1 },
-  biography: { ...type.body, color: 'textMuted' },
-  more: { ...type.caption, mt: 4, color: 'accent', fontWeight: '700' },
 });

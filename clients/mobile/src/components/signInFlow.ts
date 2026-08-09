@@ -24,7 +24,7 @@ export type Phase =
 
 /** Everything the flow needs from the screen: the session and its setters. */
 export interface EnterSavedDeps {
-  session: AuthSession;
+  session: Pick<AuthSession, 'switchAccount' | 'relockAccount' | 'forgetAccount' | 'selectServer'>;
   t: Translate;
   enterApp(): void;
   setBusy(busy: string | null): void;
@@ -74,6 +74,14 @@ export async function enterSavedAccount(
 ): Promise<void> {
   deps.setBusy(withPin === undefined ? keyOf(account) : 'pin');
   deps.setError(null);
+  // The server keeps its PIN check on the credential, not on the session, and
+  // only "switch profile" hands it back - so a gate reached any other way (a
+  // cold start that could not resume, a failed device lock, a dropped
+  // connection) still held a verified token and let one tap straight in. Being
+  // on the gate IS the profile having been left, so the credential is relocked
+  // before it is spent. Best-effort: a server that cannot be asked cannot
+  // complete the exchange below either.
+  if (withPin === undefined) await deps.session.relockAccount(account).catch(() => undefined);
   // PIN-less profiles may carry a device Face ID lock; it must pass first.
   if (!(await passProfileBiometricGate(account, deps.t('auth.faceUnlock')))) {
     deps.setBusy(null);

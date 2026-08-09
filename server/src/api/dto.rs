@@ -275,3 +275,20 @@ pub struct PersonDetailResponse {
     pub name: String,
     pub person: Option<crate::model::PersonDetail>,
 }
+
+/// One image previously uploaded for a notification. `uploadedAt` is epoch
+/// milliseconds of the file's mtime, which is what "newest first" sorts by.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationImage {
+    pub name: String,
+    pub url: String,
+    pub uploaded_at: i64,
+    pub bytes: u64,
+}
+
+/// `GET /api/admin/notifications/images` newest first, capped server-side.
+#[derive(Serialize)]
+pub struct NotificationImages {
+    pub images: Vec<NotificationImage>,
+}

@@ -3,7 +3,6 @@
 // with optional reason / delete). The interactive release search joins with
 // the indexer milestone.
 
-import { Image, useModuleEnabled } from '@kroma/admin-kit';
 import {
   apiErrorText,
   type InteractiveSearchView,
@@ -11,17 +10,18 @@ import {
   type MessageKey,
   type ScoredReleaseView,
 } from '@kroma/core';
+import { useModuleEnabled } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Button, IconButton } from '@kroma/ui/kit';
+import { Avatar, Button, Drawer, Field, IconButton } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
 import { ReleaseList } from '#web/features/admin/release-list';
 import { useAsyncAction, usePoll } from '#web/features/admin/shell';
-import { Avatar, TextInput } from '#web/features/admin/ui';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import { seasonsSummary } from '#web/features/requests/status';
 import { useAuth } from '#web/shared/lib/auth';
+import { Image } from '#web/shared/ui';
 
 // Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
@@ -60,14 +60,7 @@ function DrawerHeader({ req, onClose }: Readonly<{ req: MediaRequest; onClose: (
         <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
           {t('requests.sheet')}
         </span>
-        <IconButton
-          variant="ghost"
-          size={32}
-          glyph={20}
-          icon="x"
-          label={t('common.close')}
-          onPress={onClose}
-        />
+        <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
       </div>
       <div className="flex gap-4">
         <DrawerPoster req={req} />
@@ -97,7 +90,7 @@ function RequesterCard({ req }: Readonly<{ req: MediaRequest }>) {
         {t('requests.requestedBy')}
       </div>
       <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5">
-        <Avatar name={req.requestedByName ?? '?'} size={34} />
+        <Avatar name={req.requestedByName ?? '?'} size={34} circle shadow={false} />
         <div className="min-w-0">
           <div className="truncate text-[14px] font-bold">
             {req.requestedByName ?? t('requests.unknownUser')}
@@ -193,11 +186,13 @@ function DenyForm({
   const t = useT();
   return (
     <div className="flex flex-col gap-2.5">
-      <TextInput
+      <Field
+        label={t('requests.denyNote')}
+        hideLabel
+        icon="note"
         value={note}
         onChange={onNote}
         placeholder={t('requests.denyNote')}
-        className="w-full"
       />
       <div className="flex gap-2.5">
         <Button
@@ -249,9 +244,7 @@ function ModerationButtons({
         />
       ) : null}
       <IconButton
-        size={46}
-        glyph={16}
-        radius={12}
+        control="md"
         icon="trash"
         label={t('requests.delete')}
         onPress={onDelete}
@@ -289,15 +282,6 @@ export const RequestDrawer = createCallable<
   const [note, setNote] = useState('');
   const [search, setSearch] = useState<SearchState>({ busy: false, view: null, error: null });
   const [grabbed, setGrabbed] = useState<GrabbedState>(null);
-
-  // Mount at the off-screen transform, flip to `open` next frame; the 300ms
-  // unmounting delay keeps the node mounted while `call.ended` animates it out.
-  const [entered, setEntered] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setEntered(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-  const open = entered && !call.ended;
 
   // Close when this request drops out of the list (deleted here or elsewhere).
   const gone = !!data && !data.requests.some((r) => r.id === initialReq.id);
@@ -352,60 +336,58 @@ export const RequestDrawer = createCallable<
     !!req && acqEnabled && canReview && req.status !== 'denied' && req.status !== 'available';
 
   return (
-    <>
-      <button
-        type="button"
-        aria-label={t('common.close')}
-        onClick={() => call.end()}
-        className={`fixed inset-0 z-60 bg-[rgba(4,4,6,.6)] backdrop-blur-[2px] transition-opacity ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-      />
-      <aside
-        className="fixed right-0 top-0 z-61 flex h-screen w-[460px] max-w-full flex-col border-l border-white/9 bg-[#0E0E12] shadow-[-20px_0_60px_rgba(0,0,0,.6)] transition-transform duration-300 ease-out sm:max-w-[92vw]"
-        style={{ transform: open ? 'translateX(0)' : 'translateX(105%)' }}
-      >
-        {req ? (
-          <>
-            <DrawerHeader req={req} onClose={() => call.end()} />
+    <Drawer
+      open={!call.ended}
+      onClose={() => call.end()}
+      title={t('requests.sheet')}
+      width={460}
+      panelStyle={DRAWER_FILL}
+    >
+      {req ? (
+        <>
+          <DrawerHeader req={req} onClose={() => call.end()} />
 
-            <div className="flex-1 overflow-y-auto px-6 py-5">
-              <RequesterCard req={req} />
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            <RequesterCard req={req} />
 
-              {showSearch ? (
-                <SearchPanel
-                  canReview={canReview}
-                  busy={busy}
-                  search={search}
-                  grabbed={grabbed}
-                  onSearch={runSearch}
-                  onGrab={grab}
-                />
-              ) : null}
-            </div>
-
-            {canReview ? (
-              <div className="border-t border-white/[0.07] px-6 py-4.5">
-                {denying ? (
-                  <DenyForm
-                    busy={busy}
-                    note={note}
-                    onNote={setNote}
-                    onDeny={submitDeny}
-                    onCancel={() => setDenying(false)}
-                  />
-                ) : (
-                  <ModerationButtons
-                    req={req}
-                    busy={busy}
-                    onApprove={submitApprove}
-                    onStartDeny={() => setDenying(true)}
-                    onDelete={submitDelete}
-                  />
-                )}
-              </div>
+            {showSearch ? (
+              <SearchPanel
+                canReview={canReview}
+                busy={busy}
+                search={search}
+                grabbed={grabbed}
+                onSearch={runSearch}
+                onGrab={grab}
+              />
             ) : null}
-          </>
-        ) : null}
-      </aside>
-    </>
+          </div>
+
+          {canReview ? (
+            <div className="border-t border-white/[0.07] px-6 py-4.5">
+              {denying ? (
+                <DenyForm
+                  busy={busy}
+                  note={note}
+                  onNote={setNote}
+                  onDeny={submitDeny}
+                  onCancel={() => setDenying(false)}
+                />
+              ) : (
+                <ModerationButtons
+                  req={req}
+                  busy={busy}
+                  onApprove={submitApprove}
+                  onStartDeny={() => setDenying(true)}
+                  onDelete={submitDelete}
+                />
+              )}
+            </div>
+          ) : null}
+        </>
+      ) : null}
+    </Drawer>
   );
-}, 300);
+}, 400);
+
+// The drawers' darker fill, kept from the hand-rolled asides they replace.
+const DRAWER_FILL = { backgroundColor: '#0E0E12' } as const;

@@ -2,17 +2,9 @@
 // from the trigger's position, with a press-through backdrop. Pure RN Animated,
 // reusable for any small option list (seasons, sort, ...).
 
-import { Icon, styles } from '@kroma/ui/kit';
+import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 export interface PopoverAnchor {
@@ -95,13 +87,13 @@ export function PopoverMenu({
               }}
               style={({ pressed }) => [s.row, pressed && { backgroundColor: colors.surfaceHigh }]}
             >
-              <Text style={[s.label, item.active && s.labelActive]}>{item.label}</Text>
-              <View style={s.right}>
-                {item.detail ? <Text style={s.detail}>{item.detail}</Text> : null}
+              <Txt style={[s.label, item.active && s.labelActive]}>{item.label}</Txt>
+              <Box style={s.right}>
+                {item.detail ? <Txt style={s.detail}>{item.detail}</Txt> : null}
                 {item.active ? (
                   <Icon name="check" size={16} stroke={2.4} color={colors.accent} />
                 ) : null}
-              </View>
+              </Box>
             </Pressable>
           ))}
         </ScrollView>

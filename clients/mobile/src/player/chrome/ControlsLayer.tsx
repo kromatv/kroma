@@ -7,9 +7,19 @@
 // rather than importing them.
 
 import { audioTracksOf, episodeTag, formatTimecode, type MediaItem } from '@kroma/core';
-import { fonts, Icon, IconButton, type IconName, Spinner, styles } from '@kroma/ui/kit';
+import {
+  BackButton,
+  Box,
+  fonts,
+  Icon,
+  IconButton,
+  type IconName,
+  Spinner,
+  styles,
+  Txt,
+} from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import type { EdgeInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { colors, spacing } from '#mobile/lib/theme';
@@ -60,8 +70,8 @@ export function ControlsLayer({
   const audioCount = engine.offline ? engine.localAudio.length : audioTracksOf(item).length;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <View style={s.scrim} pointerEvents="none" />
+    <Box style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Box style={s.scrim} pointerEvents="none" />
       <LinearGradient
         colors={['rgba(0,0,0,0.65)', 'rgba(0,0,0,0)']}
         style={s.scrimTop}
@@ -72,7 +82,7 @@ export function ControlsLayer({
         style={s.scrimBottom}
         pointerEvents="none"
       />
-      <View
+      <Box
         style={[
           s.topBar,
           {
@@ -83,24 +93,22 @@ export function ControlsLayer({
         ]}
         pointerEvents="box-none"
       >
-        <IconButton size={42} onPress={onBack} label={t('common.back')}>
-          <Icon name="chevron-left" size={20} stroke={2.4} />
-        </IconButton>
+        <BackButton size={42} onPress={onBack} label={t('common.back')} />
         {/* Beside the back button, like the TV bar: the title reads from the
             corner, not the centre of the picture. */}
-        <View style={s.titleBox}>
-          <Text numberOfLines={1} style={s.title}>
+        <Box style={s.titleBox}>
+          <Txt lines={1} style={s.title}>
             {title}
-          </Text>
+          </Txt>
           {sub ? (
-            <Text numberOfLines={1} style={s.subtitle}>
+            <Txt lines={1} style={s.subtitle}>
               {sub}
-            </Text>
+            </Txt>
           ) : null}
-        </View>
-      </View>
+        </Box>
+      </Box>
 
-      <View style={s.centerRow} pointerEvents="box-none">
+      <Box style={s.centerRow} pointerEvents="box-none">
         <IconButton
           size={56}
           icon="rewind-backward-10"
@@ -139,9 +147,9 @@ export function ControlsLayer({
           }}
           label={t('player.fwd10')}
         />
-      </View>
+      </Box>
 
-      <View
+      <Box
         style={[
           s.bottomBar,
           {
@@ -153,8 +161,8 @@ export function ControlsLayer({
       >
         <ScrubRow engine={engine} onInteract={poke} tileFor={tileFor} item={item} />
         {/* Icon-only: labels ride on accessibility, not the row itself. */}
-        <View style={s.actionsRow}>
-          <View style={s.actionsGroup}>
+        <Box style={s.actionsRow}>
+          <Box style={s.actionsGroup}>
             {audioCount > 1 ? (
               <RowShortcut
                 icon="wave-sine"
@@ -168,8 +176,8 @@ export function ControlsLayer({
               onPress={() => open('subtitles')}
             />
             <RowShortcut icon="gauge" label={t('player.speed')} onPress={() => open('speed')} />
-          </View>
-          <View style={s.actionsGroup}>
+          </Box>
+          <Box style={s.actionsGroup}>
             {next && onPlayNext ? (
               <RowShortcut
                 icon="player-track-next"
@@ -198,10 +206,10 @@ export function ControlsLayer({
               />
             ) : null}
             <RowShortcut icon="settings" label={t('player.settings')} onPress={() => open()} />
-          </View>
-        </View>
-      </View>
-    </View>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -226,7 +234,7 @@ function ScrubRow({
 }>) {
   const markers = (item.markers ?? []).map((m) => m.startMs / 1000);
   return (
-    <View>
+    <Box>
       <ScrubBar
         cur={engine.cur}
         dur={engine.dur}
@@ -238,11 +246,11 @@ function ScrubRow({
           onInteract();
         }}
       />
-      <View style={s.timeRow}>
-        <Text style={s.time}>{formatTimecode(engine.cur)}</Text>
-        <Text style={s.time}>{formatTimecode(engine.dur)}</Text>
-      </View>
-    </View>
+      <Box style={s.timeRow}>
+        <Txt style={s.time}>{formatTimecode(engine.cur)}</Txt>
+        <Txt style={s.time}>{formatTimecode(engine.dur)}</Txt>
+      </Box>
+    </Box>
   );
 }
 

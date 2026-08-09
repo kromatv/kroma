@@ -185,16 +185,11 @@ export function TvSearch() {
             hideLabel
             physicalKeyboard={physicalKeyboard}
             mb={26}
-            entry={{
-              h: 68,
-              bg: 'rgba(255, 255, 255, 0.05)',
-              textStyle: { fontSize: 24, fontWeight: '600' },
-            }}
             trailing={
               voice ? (
                 <IconButton
                   icon="microphone"
-                  size={48}
+                  control="tv"
                   glyph={24}
                   variant="ghost"
                   label={t('search.voice')}

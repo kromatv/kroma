@@ -25,7 +25,7 @@ const NARROW_OVERFLOW: ControlId[] = ['next', 'volume', 'subtitles', 'audio', 'c
 
 export default story({
   name: 'PlayerSettings',
-  group: 'Input',
+  group: 'Player',
   docs: 'Everything you can change without leaving the film: audio track, subtitles and their appearance, speed, quality, the normalizer, and — where the host offers it — reporting a problem. It is a **stack of sub-views** rather than one long list, because a 10-foot menu that scrolls is a menu you lose your place in. Rows appear only when the platform supports them: no engine picker on a TV, no report row unless the host passes `onReport`.',
   usage: `<SettingsPanel
   controller={controller}

@@ -1,7 +1,7 @@
 import { formatRuntime, type MediaItem, type ProgressEntry, sizedImageUrl } from '@kroma/core';
-import { Button, Icon, styles } from '@kroma/ui/kit';
+import { Box, Button, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { usePlay } from '#mobile/lib/play';
@@ -23,10 +23,10 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
   if (episodes.length === 0) return null;
   if (done === episodes.length) {
     return (
-      <View style={s.seasonDl}>
+      <Box style={s.seasonDl}>
         <Icon name="check" size={16} stroke={2.4} color={colors.accent} />
-        <Text style={[s.seasonDlLabel, { color: colors.accent }]}>{t('offline.downloaded')}</Text>
-      </View>
+        <Txt style={[s.seasonDlLabel, { color: colors.accent }]}>{t('offline.downloaded')}</Txt>
+      </Box>
     );
   }
   if (busy > 0) {
@@ -70,7 +70,7 @@ export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: num
       onPress={() => void play(next.id)}
       style={({ pressed }) => [s.upNextCard, pressed && { opacity: 0.85 }]}
     >
-      <View>
+      <Box>
         <FadeImage
           uri={sizedImageUrl(client.backdropFor(next), 480)}
           seed={next.id}
@@ -78,18 +78,18 @@ export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: num
           style={s.upNextThumb}
         />
         {frac > 0 ? (
-          <View style={s.upNextTrack}>
-            <View style={[s.upNextFill, { width: `${frac * 100}%` }]} />
-          </View>
+          <Box style={s.upNextTrack}>
+            <Box style={[s.upNextFill, { width: `${frac * 100}%` }]} />
+          </Box>
         ) : null}
-      </View>
-      <View style={s.upNextText}>
-        <Text style={s.upNextLabel}>{t('content.upNext')}</Text>
-        <Text numberOfLines={2} style={s.upNextTitle}>
+      </Box>
+      <Box style={s.upNextText}>
+        <Txt style={s.upNextLabel}>{t('content.upNext')}</Txt>
+        <Txt lines={2} style={s.upNextTitle}>
           {next.episode != null ? `${next.episode}. ` : ''}
           {next.episodeTitle ?? next.title}
-        </Text>
-      </View>
+        </Txt>
+      </Box>
       <Icon name="player-play-filled" size={20} />
     </Pressable>
   );
@@ -117,39 +117,39 @@ export function EpisodeRow({
       onLongPress={() => router.push(`/item/${episode.id}` as never)}
       style={({ pressed }) => [s.episode, pressed && { backgroundColor: colors.surface }]}
     >
-      <View>
+      <Box>
         <FadeImage
           uri={sizedImageUrl(client.backdropFor(episode), 480)}
           seed={episode.id}
           radius={radius.sm}
           style={s.epThumb}
         />
-        <View style={s.epPlayBadge}>
-          <View style={s.epPlayCircle}>
+        <Box style={s.epPlayBadge}>
+          <Box style={s.epPlayCircle}>
             <Icon name="player-play-filled" size={15} />
-          </View>
-        </View>
+          </Box>
+        </Box>
         {frac > 0 ? (
-          <View style={s.epProgressTrack}>
-            <View style={[s.epProgressFill, { width: `${frac * 100}%` }]} />
-          </View>
+          <Box style={s.epProgressTrack}>
+            <Box style={[s.epProgressFill, { width: `${frac * 100}%` }]} />
+          </Box>
         ) : null}
-      </View>
-      <View style={s.epText}>
-        <View style={s.epTitleRow}>
-          <Text numberOfLines={1} style={s.epTitle}>
+      </Box>
+      <Box style={s.epText}>
+        <Box style={s.epTitleRow}>
+          <Txt lines={1} style={s.epTitle}>
             {episode.episode != null ? `${episode.episode}. ` : ''}
             {episode.episodeTitle ?? episode.title}
-          </Text>
+          </Txt>
           {watched ? <Icon name="check" size={14} stroke={2.4} color={colors.success} /> : null}
-        </View>
-        {runtime ? <Text style={s.epMeta}>{runtime}</Text> : null}
+        </Box>
+        {runtime ? <Txt style={s.epMeta}>{runtime}</Txt> : null}
         {overview ? (
-          <Text numberOfLines={2} style={s.epOverview}>
+          <Txt lines={2} style={s.epOverview}>
             {overview}
-          </Text>
+          </Txt>
         ) : null}
-      </View>
+      </Box>
       <DownloadButton item={episode} />
     </Pressable>
   );

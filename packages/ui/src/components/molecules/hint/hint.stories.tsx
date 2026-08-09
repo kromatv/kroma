@@ -4,7 +4,7 @@ import { HINT_KEYS, Hint } from './hint';
 
 export default story({
   name: 'Hint',
-  group: 'State',
+  group: 'Feedback',
   docs: "The line that tells you what the remote does. The translation carries only the WORDS, with `{left}`-style tokens where a key belongs, and those become real glyphs from the kit's own set at the text's size and colour. The alternative — geometric characters typed into the translation — put part of the interface inside a string a translator edits, and tvOS rendered several of those code points as blue **emoji**.",
   usage: `<Hint text={t('profiles.navHint')} />
 // "profiles.navHint": "{left} {right} Browse · OK Select"`,

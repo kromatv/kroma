@@ -1,16 +1,14 @@
-// The server list visual language shared by the onboarding screens: rows in a
-// soft surface card (name + host sub-line + chevron, color-only press
-// feedback) plus the uppercase section header and hint that frame them.
+// The server list of the onboarding screens, on the kit's <ListRow.Group>:
+// the card, its glass, its hairlines and each row's shape are the design
+// system's, so a phone's server list is the same object as the TV's and the
+// console's. What stays here is the section header and hint that frame it.
 
-import { Icon, Spinner, styles } from '@kroma/ui/kit';
+import { Box, ListRow, Spinner, styles, Txt } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { colors, spacing, type } from '#mobile/lib/theme';
 
-/** Soft surface card the rows stack in (the profile-rows card language). */
-export function ServerList({ children }: Readonly<{ children: ReactNode }>) {
-  return <View style={s.list}>{children}</View>;
-}
+/** The card the rows stack in. */
+export const ServerList = ListRow.Group;
 
 export function ServerRow({
   name,
@@ -28,28 +26,15 @@ export function ServerRow({
   onPress(): void;
 }>) {
   return (
-    <Pressable
+    <ListRow
+      size="sm"
+      label={name}
+      hint={host ?? undefined}
+      leading={icon}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        s.row,
-        pressed && { backgroundColor: colors.surfaceHigh },
-        dimmed && { opacity: 0.5 },
-      ]}
-    >
-      {icon ? <View style={s.leadIcon}>{icon}</View> : null}
-      <View style={s.text}>
-        <Text numberOfLines={1} style={s.name}>
-          {name}
-        </Text>
-        {host ? (
-          <Text numberOfLines={1} style={s.host}>
-            {host}
-          </Text>
-        ) : null}
-      </View>
-      <Icon name="chevron-right" size={16} stroke={2.2} color={colors.textFaint} />
-    </Pressable>
+      style={dimmed ? s.dimmed : undefined}
+    />
   );
 }
 
@@ -59,25 +44,23 @@ export function ServerSectionHeader({
   loading,
 }: Readonly<{ title: string; loading?: boolean }>) {
   return (
-    <View style={s.sectionHeader}>
-      <Text style={s.sectionTitle}>{title}</Text>
+    <Box style={s.sectionHeader}>
+      <Txt style={s.sectionTitle}>{title}</Txt>
       {loading ? <Spinner size={18} color={colors.textFaint} /> : null}
-    </View>
+    </Box>
   );
 }
 
 export function ServerSectionHint({ children }: Readonly<{ children: string }>) {
-  return <Text style={s.sectionHint}>{children}</Text>;
+  return <Txt style={s.sectionHint}>{children}</Txt>;
 }
 
 const s = styles({
-  list: { px: 6, py: 4, bg: 'surface1', radius: radius.lg },
-  row: { row: true, align: 'center', gap: spacing.sm, minH: 56, px: spacing.sm, radius: radius.md },
-  text: { flex: true, gap: 1 },
-  name: { ...type.body, color: 'text', fontWeight: '600' },
-  host: { ...type.small, color: 'textMuted' },
-  leadIcon: { center: true, w: 30, h: 30, bg: 'accentSoft', radius: 15 },
+  // A row the list shows but cannot be used yet (an offline server).
+  dimmed: { opacity: 0.5 },
   sectionHeader: { row: true, align: 'center', gap: 10, px: spacing.xs },
   sectionTitle: { ...type.small, textTransform: 'uppercase', letterSpacing: 1.2 },
   sectionHint: { ...type.small, px: spacing.xs },
 });
+
+export type { ListRowProps as ServerRowProps } from '@kroma/ui/kit';

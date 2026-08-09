@@ -4,11 +4,11 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { formatTimecode, type MediaItem, sizedImageUrl } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Icon, type IconName, styles } from '@kroma/ui/kit';
+import { Box, Icon, type IconName, styles, Txt } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
-import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { TrackPickerSheet } from '#mobile/components/cast/TrackPickerSheet';
 import { EmptyState, Screen } from '#mobile/components/ui';
@@ -43,7 +43,7 @@ function RemoteActions({
 }>) {
   const t = useT();
   return (
-    <View style={s.actions}>
+    <Box style={s.actions}>
       {playing.audioTracks.length > 1 ? (
         <Wide
           icon="wave-sine"
@@ -70,7 +70,7 @@ function RemoteActions({
         value={t('cast.stopHint', { device: deviceName })}
         onPress={onStop}
       />
-    </View>
+    </Box>
   );
 }
 
@@ -85,17 +85,17 @@ function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
       {art ? (
         <Image source={{ uri: art }} style={s.art} contentFit="cover" transition={200} />
       ) : (
-        <View style={[s.art, s.artFallback]}>
+        <Box style={[s.art, s.artFallback]}>
           <Icon name="device-tv" size={40} stroke={1.4} color={colors.textFaint} />
-        </View>
+        </Box>
       )}
-      <Text numberOfLines={2} style={s.title}>
+      <Txt lines={2} style={s.title}>
         {item?.metadata?.title ?? item?.title ?? ''}
-      </Text>
+      </Txt>
       {item?.showTitle ? (
-        <Text numberOfLines={1} style={s.subtitle}>
+        <Txt lines={1} style={s.subtitle}>
           {item.showTitle}
-        </Text>
+        </Txt>
       ) : null}
     </>
   );
@@ -133,11 +133,11 @@ export default function CastRemoteScreen() {
       <Header title={active.name} onBack={() => goBack(router)} />
       <Pressable onPress={() => devices.current?.present()} style={s.deviceRow}>
         <Icon name="cast" size={18} stroke={1.8} color={playing ? colors.accent : colors.textDim} />
-        <Text style={[s.deviceText, !playing && s.deviceTextIdle]}>
+        <Txt style={[s.deviceText, !playing && s.deviceTextIdle]}>
           {t(playing ? 'cast.playingOn' : 'cast.connectedTo', {
             device: `${active.name} · ${active.username}`,
           })}
-        </Text>
+        </Txt>
         <Icon name="chevron-right" size={16} stroke={2} color={colors.textDim} />
       </Pressable>
 
@@ -145,24 +145,24 @@ export default function CastRemoteScreen() {
         <ScrollView contentContainerStyle={s.body}>
           <RemoteArtwork item={item} />
 
-          <View style={s.scrub}>
+          <Box style={s.scrub}>
             <ScrubBar
               cur={positionMs / 1000}
               dur={durationMs / 1000}
               buffered={0}
               onSeek={(abs) => void send({ type: 'seek', positionMs: Math.round(abs * 1000) })}
             />
-            <View style={s.times}>
-              <Text style={s.time}>{formatTimecode(positionMs / 1000)}</Text>
-              <Text style={s.time}>
+            <Box style={s.times}>
+              <Txt style={s.time}>{formatTimecode(positionMs / 1000)}</Txt>
+              <Txt style={s.time}>
                 {durationMs
                   ? `-${formatTimecode(Math.max(0, (durationMs - positionMs) / 1000))}`
                   : ''}
-              </Text>
-            </View>
-          </View>
+              </Txt>
+            </Box>
+          </Box>
 
-          <View style={s.transport}>
+          <Box style={s.transport}>
             <Round
               icon="rewind-backward-10"
               label={t('player.back10')}
@@ -179,7 +179,7 @@ export default function CastRemoteScreen() {
               label={t('player.fwd10')}
               onPress={() => void send({ type: 'skip', deltaMs: SKIP_MS })}
             />
-          </View>
+          </Box>
 
           <RemoteActions
             playing={playing}
@@ -254,15 +254,15 @@ function labelOf(tracks: { index: number; label: string }[], index?: number | nu
 
 function Header({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
   return (
-    <View style={s.header}>
+    <Box style={s.header}>
       <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button">
         <Icon name="chevron-down" size={26} stroke={2} />
       </Pressable>
-      <Text numberOfLines={1} style={s.headerTitle}>
+      <Txt lines={1} style={s.headerTitle}>
         {title}
-      </Text>
-      <View style={s.headerSpacer} />
-    </View>
+      </Txt>
+      <Box style={s.headerSpacer} />
+    </Box>
   );
 }
 
@@ -297,13 +297,13 @@ function Wide({
       style={({ pressed }) => [s.wide, pressed && { opacity: 0.75 }]}
     >
       <Icon name={icon} size={20} stroke={1.8} color={colors.text} />
-      <Text numberOfLines={1} style={s.wideLabel}>
+      <Txt lines={1} style={s.wideLabel}>
         {label}
-      </Text>
+      </Txt>
       {value ? (
-        <Text numberOfLines={1} style={s.wideValue}>
+        <Txt lines={1} style={s.wideValue}>
           {value}
-        </Text>
+        </Txt>
       ) : null}
     </Pressable>
   );

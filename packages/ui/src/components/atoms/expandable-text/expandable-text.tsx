@@ -4,17 +4,23 @@
 // A clamped <Text> reports its clamped geometry, so whether it overflows at
 // all can't be read off the visible copy: it's measured against a hidden,
 // unclamped ghost rendered behind it, by height (`onLayout`), since
-// react-native-web never fires `onTextLayout`.
+// react-native-web never fires `onTextLayout`. Those two measurements are also
+// what make the expansion animatable: they ARE the from and to.
 //
 // `moreLabel` is a prop, not a translation call: the kit knows no app's
 // i18n, so the host names the affordance the same way it names a Focusable.
 // A television build simply renders it clamped — the press is a pointer's or
 // a thumb's gesture, and a D-pad synopsis wants a screen of its own.
 
-import { useState } from 'react';
-import { Pressable } from 'react-native';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
 import { Txt, type TxtProps } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { motion } from '#ui/core/tokens';
+import { ease } from '#ui/lib/ease';
+
+const WEB = Platform.OS === 'web';
+const GROW_MS = motion.duration.base;
 
 interface ExpandableTextProps extends Pick<TxtProps, 'variant' | 'color' | 'style'> {
   children: string;
@@ -22,6 +28,13 @@ interface ExpandableTextProps extends Pick<TxtProps, 'variant' | 'color' | 'styl
   lines?: number;
   /** The affordance's text, in the host's language. Drawn as `… {moreLabel}`. */
   moreLabel: string;
+  /**
+   * Grow and shrink between the two heights rather than jumping. On by
+   * default: the paragraph moves everything under it, and a jump reads as the
+   * page having reloaded. Pass `false` where the surrounding layout animates
+   * already, or in a test that would rather not wait.
+   */
+  animate?: boolean;
 }
 
 function ExpandableText({
@@ -31,6 +44,7 @@ function ExpandableText({
   variant = 'body',
   color = 'textMuted',
   style,
+  animate = true,
 }: Readonly<ExpandableTextProps>) {
   const [expanded, setExpanded] = useState(false);
   // Overflow = the ghost is taller than the clamped copy, with a pixel of
@@ -39,26 +53,54 @@ function ExpandableText({
   const [full, setFull] = useState(0);
   const [hovered, setHovered] = useState(false);
   const clampable = full > shown + 1;
+
+  // The clamp and the expansion are separate: the text must be UNCLAMPED for
+  // the whole growth (there is nothing to reveal otherwise) and stays that way
+  // until a collapse has finished shrinking, or the last lines would vanish
+  // before the box reached them.
+  const [clamped, setClamped] = useState(true);
+  useEffect(() => {
+    if (expanded) {
+      setClamped(false);
+      return;
+    }
+    if (!animate) {
+      setClamped(true);
+      return;
+    }
+    const settle = setTimeout(() => setClamped(true), GROW_MS);
+    return () => clearTimeout(settle);
+  }, [expanded, animate]);
+
+  const measured = shown > 0 && full > 0;
+  const height = expanded ? full : shown;
+  // Before the first measurement the box has no height to hold: it sizes to
+  // its content, which is what produces the measurement.
+  const box = animate && measured && clampable ? height : undefined;
+
   return (
     <Pressable
       onPress={() => clampable && setExpanded((prev) => !prev)}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       accessibilityRole={clampable ? 'button' : undefined}
+      aria-expanded={clampable ? expanded : undefined}
     >
-      <Txt
-        variant={variant}
-        color={color}
-        style={style}
-        lines={expanded ? undefined : lines}
-        onLayout={(event) => {
-          // Only the CLAMPED height is the comparison's left side; expanded,
-          // the visible copy is the ghost's own height and says nothing.
-          if (!expanded) setShown(event.nativeEvent.layout.height);
-        }}
-      >
-        {children}
-      </Txt>
+      <Grow height={box}>
+        <Txt
+          variant={variant}
+          color={color}
+          style={style}
+          lines={clamped ? lines : undefined}
+          onLayout={(event) => {
+            // Only the CLAMPED height is the comparison's left side; expanded,
+            // the visible copy is the ghost's own height and says nothing.
+            if (!expanded && clamped) setShown(event.nativeEvent.layout.height);
+          }}
+        >
+          {children}
+        </Txt>
+      </Grow>
       {/* The measuring ghost: unclamped, invisible, untouchable. */}
       <Txt
         accessible={false}
@@ -83,9 +125,54 @@ function ExpandableText({
   );
 }
 
+/** The growing box. A height cannot go through the native driver, so the two
+ *  platforms animate it their own way: a CSS transition in the browser, an
+ *  `Animated` value elsewhere. `undefined` means "size to the content", which
+ *  is how the first measurement happens. */
+function Grow({ height, children }: Readonly<{ height?: number; children: ReactNode }>) {
+  const value = useRef(new Animated.Value(height ?? 0)).current;
+  const settled = useRef(height);
+  useEffect(() => {
+    if (WEB || height === undefined) return;
+    // The first known height is adopted rather than animated to: there was no
+    // previous one to grow from.
+    if (settled.current === undefined) {
+      value.setValue(height);
+      settled.current = height;
+      return;
+    }
+    settled.current = height;
+    Animated.timing(value, {
+      toValue: height,
+      duration: GROW_MS,
+      easing: ease.out.native,
+      useNativeDriver: false,
+    }).start();
+  }, [height, value]);
+
+  if (height === undefined) return <>{children}</>;
+  if (WEB) {
+    return (
+      <Animated.View style={[s.clip, TRANSITION as ViewStyle, { height }]}>
+        {children}
+      </Animated.View>
+    );
+  }
+  return <Animated.View style={[s.clip, { height: value }]}>{children}</Animated.View>;
+}
+
+// react-native-web understands these CSS-only props; React Native's types do
+// not, hence the cast at the use site.
+const TRANSITION = {
+  transitionProperty: 'height',
+  transitionDuration: `${GROW_MS}ms`,
+  transitionTimingFunction: ease.out.css,
+};
+
 const s = styles({
   ghost: { absolute: true, left: 0, right: 0, top: 0, opacity: 0, pointerEvents: 'none' },
   more: { fontWeight: '700', mt: 2 },
+  clip: { overflow: 'hidden' },
 });
 
 export type { ExpandableTextProps };

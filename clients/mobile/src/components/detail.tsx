@@ -1,10 +1,10 @@
 import type { CastMember } from '@kroma/core';
 import { posterColors, sizedImageUrl } from '@kroma/core';
-import { BackButton, PersonCard, styles, tintGradient } from '@kroma/ui/kit';
+import { BackButton, Box, PersonCard, styles, Txt, tintGradient } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
@@ -18,9 +18,9 @@ export { DetailActions } from './DetailActions';
 
 export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <View style={s.badge}>
-      <Text style={s.badgeText}>{children}</Text>
-    </View>
+    <Box style={s.badge}>
+      <Txt style={s.badgeText}>{children}</Txt>
+    </Box>
   );
 }
 
@@ -59,7 +59,7 @@ export function DetailHero({
   });
 
   return (
-    <View style={{ height }}>
+    <Box style={{ height }}>
       <Animated.View style={[StyleSheet.absoluteFill, stretch]}>
         <FadeImage uri={art} seed={seed} style={StyleSheet.absoluteFill} />
         <LinearGradient
@@ -68,22 +68,22 @@ export function DetailHero({
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
-      <View style={[s.back, { top: insets.top + 6, left: gutters.left }]}>
+      <Box style={[s.back, { top: insets.top + 6, left: gutters.left }]}>
         <BackButton
           size={40}
           hitSlop={12}
           label={t('common.back')}
           onPress={() => goBack(router)}
         />
-      </View>
-      <View style={[s.heroText, { left: gutters.left, right: gutters.right }]}>
-        {context ? <Text style={s.context}>{context}</Text> : null}
-        <Text numberOfLines={2} style={s.heroTitle}>
+      </Box>
+      <Box style={[s.heroText, { left: gutters.left, right: gutters.right }]}>
+        {context ? <Txt style={s.context}>{context}</Txt> : null}
+        <Txt lines={2} style={s.heroTitle}>
           {title}
-        </Text>
-        {meta ? <View style={s.metaRow}>{meta}</View> : null}
-      </View>
-    </View>
+        </Txt>
+        {meta ? <Box style={s.metaRow}>{meta}</Box> : null}
+      </Box>
+    </Box>
   );
 }
 

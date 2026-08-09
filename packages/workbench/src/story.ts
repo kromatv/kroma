@@ -223,8 +223,21 @@ function matches(story: Story, query: string): boolean {
   );
 }
 
-/** Sidebar order; any group not listed follows alphabetically. */
-const GROUP_ORDER = ['Foundations', 'Layout', 'Actions', 'Input', 'Media', 'State', 'Brand'];
+/** Sidebar order; any group not listed follows alphabetically. One flat list
+ * of FUNCTIONAL groups: what a component is for, never which atomic level it
+ * happens to live at - the levels are for the people editing the kit, and a
+ * tree that nested them made every kind of input land in three places. */
+const GROUP_ORDER = [
+  'Foundations',
+  'Layout',
+  'Actions',
+  'Input',
+  'Overlays',
+  'Feedback',
+  'Media',
+  'Player',
+  'Brand',
+];
 
 const TIER_ORDER = ['Foundations', 'Atoms', 'Molecules', 'Organisms', 'Templates'];
 
@@ -254,18 +267,18 @@ function attachTiers(stories: readonly Story[], paths: readonly string[]): Story
   return stories.map((entry, at) => ({ ...entry, tier: tierFor(paths[at] ?? '') }));
 }
 
-/** Sorts the registry for display: by atomic level, then group, then name. */
+/** Sorts the registry for display: by functional group, then name. The atomic
+ * level stays attached (search matches it, the palette shows it) but never
+ * drives the order a reader scans. */
 function orderStories(stories: readonly Story[]): Story[] {
   const rankOf = (order: readonly string[], value: string) => {
     const at = order.indexOf(value);
     return at === -1 ? order.length : at;
   };
-  const tier = (entry: Story) => entry.tier ?? '';
   return [...stories].sort(
     (a, b) =>
-      rankOf(TIER_ORDER, tier(a)) - rankOf(TIER_ORDER, tier(b)) ||
-      tier(a).localeCompare(tier(b)) ||
       rankOf(GROUP_ORDER, a.group) - rankOf(GROUP_ORDER, b.group) ||
+      a.group.localeCompare(b.group) ||
       a.name.localeCompare(b.name),
   );
 }

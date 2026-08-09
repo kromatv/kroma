@@ -3,8 +3,8 @@
 // full-filename presets and a separator helper. Clicking a token inserts it at
 // the cursor of the field being edited; clicking a preset replaces the field.
 
-import { Button, IconButton, OptionSelect as Select, TextInput, useT } from '@kroma/module-sdk';
-import { IconX } from '@tabler/icons-react';
+import { useT } from '@kroma/module-sdk';
+import { Button, IconButton, Select } from '@kroma/ui/kit';
 import { useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import type { NamingTemplatesView } from './schemas';
@@ -13,6 +13,11 @@ type FieldKey = keyof Omit<NamingTemplatesView, 'case'>;
 
 type Token = Readonly<{ token: string; example: string }>;
 type Group = Readonly<{ titleKey: string; tokens: readonly Token[] }>;
+
+// The working value needs cursor-position inserts, so it stays a hand-rolled
+// DOM input wearing the field box locally.
+const FIELD =
+  'min-w-0 rounded-[9px] border border-border-strong bg-surface-2 px-3.5 py-2.25 font-mono text-[13px] font-semibold text-text outline-none transition-colors focus:border-accent';
 
 const QUALITY: Group = {
   titleKey: 'naming.grpQuality',
@@ -171,11 +176,9 @@ export const NamingTokenModal = createCallable<
           </div>
           <IconButton
             variant="ghost"
-            size={30}
-            iconSize={18}
-            icon={IconX}
+            icon="x"
             label={t('common.close')}
-            onClick={() => call.end()}
+            onPress={() => call.end()}
           />
         </div>
 
@@ -183,9 +186,9 @@ export const NamingTokenModal = createCallable<
           <div className="mb-4 flex items-center gap-2 text-[12px] font-semibold text-dim">
             {t('naming.separator')}
             <Select
+              label={t('naming.separator')}
               value={separator}
               onChange={setSeparator}
-              ariaLabel={t('naming.separator')}
               options={SEPARATORS.map((s) => ({
                 value: s.value,
                 label: t(s.labelKey as Parameters<typeof t>[0]),
@@ -233,8 +236,14 @@ export const NamingTokenModal = createCallable<
         </div>
 
         <div className="flex items-center gap-3 border-t border-white/[0.07] px-6 py-4">
-          <TextInput ref={inputRef} mono value={value} onChange={onChange} className="flex-1" />
-          <Button size="sm" label={t('common.close')} onClick={() => call.end()} />
+          <input
+            ref={inputRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            aria-label={fieldLabel}
+            className={`${FIELD} flex-1`}
+          />
+          <Button variant="glass" size="sm" label={t('common.close')} onPress={() => call.end()} />
         </div>
       </div>
     </div>

@@ -1,34 +1,46 @@
-// Mouse-wheel / trackpad panning over a row. The wheel scrolls the row and
-// deliberately does not move the selection; the next direction key pulls the row
-// back to it.
+// Mouse-wheel handling for the one list that IS its surface's scroll: the
+// virtualised grid, which translates its rows and has no overflow of its own
+// to catch a wheel. A horizontal rail is a REAL scroller and never comes here;
+// the browser routes its wheel natively.
 
 import { type RefObject, useEffect } from 'react';
-import type { View } from 'react-native';
+import type { ScrollView, View } from 'react-native';
 
-/** Reports wheel travel over a horizontal row in raw px, positive = towards the end. */
-function useWheelPan(
-  ref: RefObject<View | null>,
-  onPan: (delta: number) => void,
-  enabled = true,
-): void {
-  useEffect(() => {
-    // The RNW View IS the DOM node, but the type does not say so.
-    const node = ref.current as unknown as HTMLElement | null;
-    if (!node || !enabled) return;
+type WheelHost = RefObject<View | ScrollView | null>;
 
-    const onWheel = (event: WheelEvent) => {
-      // A trackpad swipes sideways (deltaX), a mouse only has a wheel (deltaY);
-      // whichever moved more is the gesture.
-      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-      if (delta === 0) return;
-      event.preventDefault();
-      onPan(delta);
-    };
+const LINE_PX = 16;
 
-    // Not passive: this handler calls preventDefault.
-    node.addEventListener('wheel', onWheel, { passive: false });
-    return () => node.removeEventListener('wheel', onWheel);
-  }, [ref, onPan, enabled]);
+function unitPx(mode: number, viewport: number): number {
+  if (mode === WheelEvent.DOM_DELTA_LINE) return LINE_PX;
+  if (mode === WheelEvent.DOM_DELTA_PAGE) return viewport;
+  return 1;
 }
 
-export { useWheelPan };
+/**
+ * Reports raw px along whichever axis moved more and consumes the gesture.
+ * Only for a list that owns its surface's scroll entirely; anything that
+ * scrolls one axis while the page owns the other must be a real scroller.
+ */
+function useWheelTravel(ref: WheelHost, onTravel: (delta: number) => void, enabled = true): void {
+  useEffect(() => {
+    // The RNW View IS the DOM node, but the types do not say so.
+    const node = ref.current as unknown as HTMLElement | null;
+    if (!node || !enabled) return;
+    const onWheel = (event: WheelEvent) => {
+      // ctrl + wheel is pinch zoom. It is the browser's gesture, not the list's.
+      if (event.ctrlKey) return;
+      const x = event.deltaX * unitPx(event.deltaMode, window.innerWidth);
+      const y = event.deltaY * unitPx(event.deltaMode, window.innerHeight);
+      const delta = Math.abs(x) > Math.abs(y) ? x : y;
+      if (delta === 0) return;
+      event.preventDefault();
+      onTravel(delta);
+    };
+    // Not passive: the handler calls preventDefault.
+    node.addEventListener('wheel', onWheel, { passive: false });
+    return () => node.removeEventListener('wheel', onWheel);
+  }, [ref, onTravel, enabled]);
+}
+
+export type { WheelHost };
+export { useWheelTravel };

@@ -216,6 +216,7 @@ function NavPill({
       <Box
         ref={capsule}
         {...(slide && !Platform.isTV ? pan.panHandlers : null)}
+        accessibilityRole="tablist"
         row
         align="center"
         gap={size === 'sm' ? 2 : 4}
@@ -406,6 +407,8 @@ function NavPillItem({
         ref={ref}
         onPress={onPress}
         label={label}
+        role="tab"
+        selected={active}
         focusScale={1.04}
         sv={navPillItemVariants}
         vars={{ size, lit, active }}

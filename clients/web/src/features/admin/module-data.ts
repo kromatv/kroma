@@ -3,8 +3,8 @@
 // covers them, and the enable-toggle flow the list row and the detail drawer
 // both drive.
 
-import { usePoll } from '@kroma/admin-kit';
 import { useState } from 'react';
+import { usePoll } from '#web/features/admin/hooks';
 import {
   fetchAdminModules,
   fetchStoreCatalog,

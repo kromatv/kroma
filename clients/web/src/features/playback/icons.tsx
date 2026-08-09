@@ -3,7 +3,6 @@
 import {
   IconChartBar as TbChartBar,
   IconCheck as TbCheck,
-  IconChevronLeft as TbChevronLeft,
   IconChevronsLeft as TbChevronsLeft,
   IconChevronsRight as TbChevronsRight,
   IconMaximize as TbMaximize,
@@ -39,7 +38,6 @@ export const IconFullscreenExit = ({ size = 22 }: Readonly<P>) => (
   <TbMinimize size={size} stroke={1.8} />
 );
 export const IconPip = ({ size = 22 }: Readonly<P>) => <TbPip size={size} stroke={1.8} />;
-export const IconBack = ({ size = 22 }: Readonly<P>) => <TbChevronLeft size={size} stroke={1.8} />;
 export const IconTracks = ({ size = 18 }: Readonly<P>) => <TbTracks size={size} stroke={1.8} />;
 export const IconStats = ({ size = 22 }: Readonly<P>) => <TbChartBar size={size} stroke={1.8} />;
 export const IconCheck = ({ size = 18 }: Readonly<P>) => <TbCheck size={size} stroke={1.8} />;

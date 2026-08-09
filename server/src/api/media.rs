@@ -19,11 +19,14 @@ use axum::routing::{get, post};
 use axum::Router;
 
 /// Unauthenticated: the TV health monitor polls `/api/health` before any login.
-/// Neither route may leak catalogue data.
+/// `/splash` is the deliberate exception to "no catalogue data before a
+/// session": a fixed-size random sample of covers for the sign-in screen,
+/// never a listing. `/health` and `/status` may not leak catalogue data.
 pub fn public_routes() -> Router<SharedState> {
     Router::new()
         .route("/health", get(health))
         .route("/status", get(status))
+        .route("/splash", get(splash))
 }
 
 /// Gated by the session middleware in [`super`] so the library isn't listable
@@ -43,6 +46,18 @@ pub fn routes() -> Router<SharedState> {
 #[derive(Debug, Deserialize)]
 pub struct LibraryQuery {
     pub library: Option<String>,
+}
+
+/// `GET /api/splash` → `SplashEntry[]`: a random sample of backdrop art with
+/// title/year captions, for the sign-in screen's ambient slideshow. The
+/// sample is small and random on every call, so the catalogue stays
+/// unlistable without a session.
+pub async fn splash(
+    State(state): State<SharedState>,
+    ReqLocale(locale): ReqLocale,
+) -> Result<Response, Response> {
+    let entries = query(&state.db, move |pool| db::splash_entries(&pool, 12, locale)).await?;
+    Ok(Json(entries).into_response())
 }
 
 /// `GET /api/health`. Public, so the human-readable server name is attached for

@@ -1,15 +1,14 @@
 // Shared primitives for the mobile screens, re-exporting the controls and state
 // views so every screen imports them from one place.
 
-import { ExpandableText as KitExpandableText, styles } from '@kroma/ui/kit';
+import { Box, ExpandableText as KitExpandableText, styles, Txt } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
-import { Text, View, type ViewStyle } from 'react-native';
+import type { ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { spacing, type } from '#mobile/lib/theme';
 
-export { TextField } from './controls';
 export {
   SheetBackdrop,
   SheetBody,
@@ -33,7 +32,7 @@ export function Screen({
   // horizontal inset rather than stacking on top of it.
   const pad = padded ? spacing.md : 0;
   return (
-    <View
+    <Box
       style={[
         s.screen,
         {
@@ -45,7 +44,7 @@ export function Screen({
       ]}
     >
       {children}
-    </View>
+    </Box>
   );
 }
 
@@ -53,10 +52,15 @@ export function Screen({
 export function ExpandableText({
   children,
   lines = 3,
-}: Readonly<{ children: string; lines?: number }>) {
+  moreLabel,
+}: Readonly<{ children: string; lines?: number; moreLabel?: string }>) {
   const t = useT();
   return (
-    <KitExpandableText lines={lines} moreLabel={t('content.moreInfo')} style={s.expandable}>
+    <KitExpandableText
+      lines={lines}
+      moreLabel={moreLabel ?? t('content.moreInfo')}
+      style={s.expandable}
+    >
       {children}
     </KitExpandableText>
   );
@@ -65,7 +69,7 @@ export function ExpandableText({
 export function SectionTitle({ children }: Readonly<{ children: ReactNode }>) {
   // Section titles sit on full-bleed pages, so they clear the notch themselves.
   const gutters = useGutters();
-  return <Text style={[s.sectionTitle, gutters.style]}>{children}</Text>;
+  return <Txt style={[s.sectionTitle, gutters.style]}>{children}</Txt>;
 }
 
 const s = styles({

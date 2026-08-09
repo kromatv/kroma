@@ -2,8 +2,8 @@
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
 import { type SubtitleAppearance, withOpacity } from '@kroma/ui';
-import { Button, Icon, Spinner, styles } from '@kroma/ui/kit';
-import { Platform, Pressable, Text, type TextStyle, View } from 'react-native';
+import { Box, Button, Icon, Spinner, styles, Txt } from '@kroma/ui/kit';
+import { Platform, Pressable, type TextStyle } from 'react-native';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
@@ -60,17 +60,17 @@ export function CueLine({
 }: Readonly<{ cue: string; bottom: number; appearance: SubtitleAppearance }>) {
   if (!cue) return null;
   return (
-    <View style={[s.cueBox, { bottom }]}>
-      <Text style={[s.cueText, cueStyle(appearance)]}>{cue}</Text>
-    </View>
+    <Box style={[s.cueBox, { bottom }]}>
+      <Txt style={[s.cueText, cueStyle(appearance)]}>{cue}</Txt>
+    </Box>
   );
 }
 
 export function BufferingSpinner() {
   return (
-    <View style={s.centerOverlay} pointerEvents="none">
+    <Box style={s.centerOverlay} pointerEvents="none">
       <Spinner size={40} color={colors.text} />
-    </View>
+    </Box>
   );
 }
 
@@ -105,12 +105,12 @@ export function UpNextCard({
   return (
     <Pressable onPress={onPlayNext} style={[s.upNext, { bottom }]}>
       <FadeImage uri={thumb} seed={next.id} radius={6} style={s.upNextThumb} />
-      <View style={s.upNextText}>
-        <Text style={s.upNextLabel}>{t('player.nextEpisode')}</Text>
-        <Text numberOfLines={1} style={s.upNextTitle}>
+      <Box style={s.upNextText}>
+        <Txt style={s.upNextLabel}>{t('player.nextEpisode')}</Txt>
+        <Txt lines={1} style={s.upNextTitle}>
           {next.episodeTitle ?? next.title}
-        </Text>
-      </View>
+        </Txt>
+      </Box>
       <Icon name="player-play-filled" size={20} />
     </Pressable>
   );

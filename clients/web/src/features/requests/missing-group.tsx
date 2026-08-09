@@ -1,31 +1,17 @@
-// One "Manquants" group card: the title header (poster, name, missing count OR
-// the movie's release line) and, for a series, its missing-episode rows. Long
-// episode lists collapse behind a "show more" toggle so one gappy series can't
-// swallow the page. Row/series checkboxes and search buttons report back to the
-// page through callbacks; all mutation state lives in `missing.tsx`.
+// One "Manquants" group card: the title header (poster, name, missing-count
+// badge OR the movie's release line) and, for a series, its missing-episode
+// rows. Long episode lists collapse behind a "show more" toggle so one gappy
+// series can't swallow the page. The whole row is the selection control; the
+// trailing button carries the row's busy and "search started" states. All
+// mutation state lives in `missing.tsx`.
 
-import { Image } from '@kroma/admin-kit';
 import { type CalendarEntry, episodeTag, posterColors, sizedImageUrl } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Button, IconButton, Spinner } from '@kroma/ui/kit';
+import { Badge, Button, Checkbox, CheckboxFace, Icon, IconButton, Spinner } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { relativeAirDate } from '#web/features/requests/airdate';
-
-export interface MissingGroup {
-  requestId: string | null;
-  tmdbId: number;
-  kind: CalendarEntry['kind'];
-  title: string;
-  year: number | null;
-  posterUrl: string | null;
-  items: CalendarEntry[];
-}
-
-/** A stable key for one missing row (unique across the whole list). */
-export function epKey(e: CalendarEntry): string {
-  const groupKey = e.requestId ?? `tmdb:${e.tmdbId}`;
-  return `${groupKey}:${e.season ?? 0}:${e.episode ?? 0}`;
-}
+import { epKey, type MissingGroup } from '#web/features/requests/missing-model';
+import { Image } from '#web/shared/ui';
 
 // Episode lists longer than this collapse behind a "show more" toggle.
 const COLLAPSE_OVER = 12;
@@ -41,6 +27,7 @@ export function MissingGroupCard({
   group,
   canManage,
   busyKeys,
+  doneKeys,
   selected,
   onToggleRow,
   onToggleGroup,
@@ -50,6 +37,7 @@ export function MissingGroupCard({
   group: MissingGroup;
   canManage: boolean;
   busyKeys: Set<string>;
+  doneKeys: Set<string>;
   selected: Set<string>;
   onToggleRow: (key: string) => void;
   onToggleGroup: (pick: boolean) => void;
@@ -61,8 +49,11 @@ export function MissingGroupCard({
   const poster = sizedImageUrl(group.posterUrl, 92);
 
   const episodes = episodesOf(group);
-  const groupBusy = group.items.some((i) => busyKeys.has(epKey(i)));
-  const allPicked = group.items.length > 0 && group.items.every((e) => selected.has(epKey(e)));
+  const keys = group.items.map(epKey);
+  const groupBusy = keys.some((k) => busyKeys.has(k));
+  const groupDone = !groupBusy && keys.every((k) => doneKeys.has(k));
+  const pickedCount = keys.filter((k) => selected.has(k)).length;
+  const allPicked = keys.length > 0 && pickedCount === keys.length;
   // A gap is actionable by any requester; a request needs manage.
   const canAct = group.requestId ? canManage : true;
 
@@ -70,9 +61,14 @@ export function MissingGroupCard({
     <section className="overflow-hidden rounded-2xl border border-border bg-surface-1">
       <div className="flex items-center gap-3.5 border-b border-white/6 p-3.5 last:border-b-0">
         {canAct ? (
-          <Check on={allPicked} onClick={() => onToggleGroup(!allPicked)} />
+          <Checkbox
+            checked={allPicked}
+            indeterminate={pickedCount > 0 && !allPicked}
+            onChange={onToggleGroup}
+            label={t('requests.select')}
+          />
         ) : (
-          <span className="w-[18px]" />
+          <span className="w-5" />
         )}
         <button
           type="button"
@@ -89,19 +85,14 @@ export function MissingGroupCard({
             <div className="truncate text-[15px] font-bold transition-colors group-hover/head:text-accent">
               {group.title}
             </div>
-            <div className="mt-0.5 truncate text-[12.5px] font-semibold text-dim">
-              <GroupMeta group={group} episodeCount={episodes.length} />
-            </div>
+            <GroupMeta group={group} episodeCount={episodes.length} />
           </div>
         </button>
         {canAct ? (
-          <Button
-            variant="glass"
-            size="sm"
-            icon="search"
-            label={t('requests.search')}
+          <GroupSearchButton
+            busy={groupBusy}
+            done={groupDone}
             onPress={() => onSearch(group.items)}
-            loading={groupBusy}
           />
         ) : null}
       </div>
@@ -109,6 +100,7 @@ export function MissingGroupCard({
         entries={episodes}
         canAct={canAct}
         busyKeys={busyKeys}
+        doneKeys={doneKeys}
         selected={selected}
         onToggleRow={onToggleRow}
         onSearch={onSearch}
@@ -123,18 +115,39 @@ function GroupMeta({
 }: Readonly<{ group: MissingGroup; episodeCount: number }>) {
   const t = useT();
   const locale = useLocale();
-  if (group.kind !== 'movie') {
+  const movie = group.kind === 'movie';
+  const rel = movie ? relativeAirDate(group.items[0]?.airDate ?? null, locale) : '';
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] font-semibold text-dim">
+      <Badge tone="warning">
+        {movie ? t('requests.missingMovie') : t('requests.missingCount', { count: episodeCount })}
+      </Badge>
+      {group.year ? <span>{group.year}</span> : null}
+      {rel ? <span className="first-letter:uppercase">{rel}</span> : null}
+    </div>
+  );
+}
+
+function GroupSearchButton({
+  busy,
+  done,
+  onPress,
+}: Readonly<{ busy: boolean; done: boolean; onPress: () => void }>) {
+  const t = useT();
+  if (done) {
     return (
-      <span className="text-[#EFB661]">{t('requests.missingCount', { count: episodeCount })}</span>
+      <Button variant="glass" size="sm" icon="check" label={t('requests.searchStarted')} disabled />
     );
   }
-  const rel = relativeAirDate(group.items[0]?.airDate ?? null, locale);
   return (
-    <>
-      <span className="text-[#EFB661]">{t('requests.missingMovie')}</span>
-      {group.year ? <span> · {group.year}</span> : null}
-      {rel ? <span> · {rel}</span> : null}
-    </>
+    <Button
+      variant="glass"
+      size="sm"
+      icon="search"
+      label={t('requests.search')}
+      onPress={onPress}
+      loading={busy}
+    />
   );
 }
 
@@ -142,6 +155,7 @@ function EpisodeList({
   entries,
   canAct,
   busyKeys,
+  doneKeys,
   selected,
   onToggleRow,
   onSearch,
@@ -149,6 +163,7 @@ function EpisodeList({
   entries: CalendarEntry[];
   canAct: boolean;
   busyKeys: Set<string>;
+  doneKeys: Set<string>;
   selected: Set<string>;
   onToggleRow: (key: string) => void;
   onSearch: (items: CalendarEntry[]) => void;
@@ -167,6 +182,7 @@ function EpisodeList({
           entry={e}
           canAct={canAct}
           busy={busyKeys.has(epKey(e))}
+          done={doneKeys.has(epKey(e))}
           picked={selected.has(epKey(e))}
           onToggle={() => onToggleRow(epKey(e))}
           onSearch={() => onSearch([e])}
@@ -177,6 +193,7 @@ function EpisodeList({
           <Button
             variant="ghost"
             size="sm"
+            iconRight={collapsed ? 'chevron-down' : 'chevron-up'}
             label={
               collapsed
                 ? t('requests.showMore', { count: entries.length - COLLAPSED_ROWS })
@@ -194,6 +211,7 @@ function EpisodeRow({
   entry,
   canAct,
   busy,
+  done,
   picked,
   onToggle,
   onSearch,
@@ -201,17 +219,40 @@ function EpisodeRow({
   entry: CalendarEntry;
   canAct: boolean;
   busy: boolean;
+  done: boolean;
   picked: boolean;
   onToggle: () => void;
   onSearch: () => void;
 }>) {
+  const cells = <EpisodeCells entry={entry} />;
+
+  if (!canAct) {
+    return <li className="flex items-center gap-3.5 py-2.5 pl-12 pr-3.5">{cells}</li>;
+  }
+  return (
+    <li className="flex items-center transition-colors hover:bg-white/3">
+      <button
+        type="button"
+        aria-pressed={picked}
+        onClick={onToggle}
+        className="flex min-w-0 flex-1 items-center gap-3.5 py-2.5 pl-3.5 text-left"
+      >
+        <CheckboxFace checked={picked} />
+        {cells}
+      </button>
+      <span className="px-2">
+        <RowAction busy={busy} done={done} onSearch={onSearch} />
+      </span>
+    </li>
+  );
+}
+
+function EpisodeCells({ entry }: Readonly<{ entry: CalendarEntry }>) {
   const t = useT();
   const locale = useLocale();
   const rel = relativeAirDate(entry.airDate, locale);
-
   return (
-    <li className="flex items-center gap-3.5 px-3.5 py-2.5 transition-colors hover:bg-white/3">
-      {canAct ? <Check on={picked} onClick={onToggle} /> : <span className="w-[18px]" />}
+    <>
       <span className="w-[62px] flex-[0_0_62px] font-mono text-[13px] font-bold text-accent tabular-nums">
         {episodeTag(entry)}
       </span>
@@ -222,47 +263,33 @@ function EpisodeRow({
           <span className="italic text-white/35">{t('requests.noDate')}</span>
         )}
       </span>
-      {canAct ? (
-        <IconButton
-          variant="ghost"
-          size={32}
-          glyph={15}
-          radius={8}
-          icon="search"
-          label={t('requests.searchTitle')}
-          onPress={onSearch}
-          disabled={busy}
-        >
-          {busy ? <Spinner size={15} /> : null}
-        </IconButton>
-      ) : null}
-    </li>
+    </>
   );
 }
 
-function Check({ on, onClick }: Readonly<{ on: boolean; onClick: () => void }>) {
+function RowAction({
+  busy,
+  done,
+  onSearch,
+}: Readonly<{ busy: boolean; done: boolean; onSearch: () => void }>) {
   const t = useT();
+  if (done) {
+    return (
+      <IconButton variant="ghost" control="sm" label={t('requests.searchStarted')} disabled>
+        <Icon name="check" size={16} color="success" />
+      </IconButton>
+    );
+  }
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={on}
-      aria-label={t('requests.select')}
-      className={`flex h-[18px] w-[18px] flex-[0_0_18px] items-center justify-center rounded-[5px] border transition-colors ${
-        on ? 'border-accent bg-accent text-accent-ink' : 'border-white/25 hover:border-white/50'
-      }`}
+    <IconButton
+      variant="ghost"
+      control="sm"
+      icon="search"
+      label={t('requests.searchTitle')}
+      onPress={onSearch}
+      disabled={busy}
     >
-      {on ? (
-        <svg viewBox="0 0 12 12" width="11" height="11" fill="none" aria-hidden="true">
-          <path
-            d="M2 6.2 4.6 9 10 3"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ) : null}
-    </button>
+      {busy ? <Spinner size={15} /> : null}
+    </IconButton>
   );
 }

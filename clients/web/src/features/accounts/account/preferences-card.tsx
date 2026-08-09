@@ -3,16 +3,14 @@
 
 import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kroma/core';
 import { useLocale, useSetLocale, useT } from '@kroma/ui';
+import { Select } from '@kroma/ui/kit';
 import { IconBadgeCc, IconLanguage, IconVolume } from '@tabler/icons-react';
 import { useMemo } from 'react';
 import { PrefRow } from '#web/features/accounts/account/ui';
-import { Select } from '#web/shared/ui';
 
 // Radix Select forbids an empty value, so "no preference" uses this sentinel
 // and is mapped back to `null` on the way to the server.
 export const NONE = LANG_NO_PREF;
-
-const TRIGGER = 'min-w-[min(188px,45vw)]';
 
 export function PreferencesCard({
   audio,
@@ -50,8 +48,7 @@ export function PreferencesCard({
         desc={t('account.uiLanguageDesc')}
         control={
           <Select
-            className={TRIGGER}
-            ariaLabel={t('account.uiLanguage')}
+            label={t('account.uiLanguage')}
             value={locale}
             onChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
             options={LOCALES.map((l) => ({ value: l.code, label: t(l.labelKey) }))}
@@ -64,8 +61,7 @@ export function PreferencesCard({
         desc={t('account.audioDesc')}
         control={
           <Select
-            className={TRIGGER}
-            ariaLabel={t('account.audioLanguage')}
+            label={t('account.audioLanguage')}
             value={audio}
             onChange={onAudio}
             options={withCurrent(audio, [
@@ -81,8 +77,7 @@ export function PreferencesCard({
         desc={t('account.subtitleDesc')}
         control={
           <Select
-            className={TRIGGER}
-            ariaLabel={t('account.subtitleLanguage')}
+            label={t('account.subtitleLanguage')}
             value={subtitle}
             onChange={onSubtitle}
             options={withCurrent(subtitle, [

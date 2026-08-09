@@ -15,7 +15,7 @@
 
 import type { TextStyle } from 'react-native';
 import { type ColorToken, colors, withAlpha } from './tokens/colors';
-import { motion, type ShadowToken, shadow } from './tokens/effects';
+import { motion, RING_WIDTH, type ShadowToken, shadow } from './tokens/effects';
 import { gutter, type RadiusToken, radius, rhythm, space } from './tokens/layout';
 import {
   type FontToken,
@@ -119,16 +119,20 @@ function derive(tokens: ThemeTokens): Theme {
     accent: `0 6px 22px ${withAlpha(tokens.colors.accentWash, 0.4)}`,
     play: `0 6px 22px ${withAlpha(tokens.colors.accentWash, 0.32)}`,
   };
+  // One spread, so a ring can only ever be authored as "this width, that ink".
+  const RING = `0 0 0 ${RING_WIDTH}px`;
   return Object.freeze({
     ...tokens,
     type: toType(tokens.typeSpec, tokens.fonts) as Record<TypeRole, TextStyle>,
+    // Every ring is RING_WIDTH wide (see tokens/effects): a themed accent
+    // retints them, it does not get to re-decide how thick focus is.
     ring: {
-      focus: `0 0 0 4px ${accent}`,
-      focusSm: `0 0 0 3px ${accent}`,
-      focusLift: `0 0 0 4px ${accent}, 0 10px 28px rgba(0, 0, 0, 0.5)`,
-      focusGlow: `0 0 0 4px ${accent}, ${glow.accent}`,
-      focusGlowSm: `0 0 0 3px ${accent}, ${glow.accent}`,
-      focusWash: `0 0 0 4px ${withAlpha(tokens.colors.accentWash, 0.28)}`,
+      focus: `${RING} ${accent}`,
+      focusSm: `${RING} ${accent}`,
+      focusLift: `${RING} ${accent}, 0 10px 28px rgba(0, 0, 0, 0.5)`,
+      focusGlow: `${RING} ${accent}, ${glow.accent}`,
+      focusGlowSm: `${RING} ${accent}, ${glow.accent}`,
+      focusWash: `${RING} ${withAlpha(tokens.colors.accentWash, 0.28)}`,
     },
     glow,
   });

@@ -6,7 +6,35 @@
 // system's `textMuted`/`textDim` swapped — the mapping below keeps the app's
 // names but takes the system's values.
 
-import { colors as kit, mobileType } from '@kroma/ui/kit';
+import {
+  createTheme,
+  colors as kit,
+  mobileRadius,
+  mobileType,
+  mobileTypeSpec,
+} from '@kroma/ui/kit';
+
+/**
+ * The phone's form factor, as a theme the design system actually runs on.
+ *
+ * Without it the kit renders a phone at its 10-foot defaults: a <Txt> resolves
+ * `variant` against the TV role table, and `sizeFix` re-derives a line height
+ * from the TV body's 1.55 ratio. The corners are the phone's for the same
+ * reason - a kit control here should be shaped for a hand, not for a room, and
+ * `@kroma/ui` already authors both scales (core/tokens/mobile).
+ *
+ * Only the roles the two ramps SHARE are restated, which is the point of a
+ * form-factor theme: on a phone, `body` and `title` mean the phone's sizes. The
+ * phone-only roles (display, heading, section, caption, small) stay out of the
+ * theme deliberately - a role name has to be registered globally to be legal in
+ * `variant`, and that would make the base theme owe values for five names the
+ * 10-foot ramp has no opinion about. They reach the screens through `type`
+ * below, which is spec-derived and so now carries their real line heights.
+ */
+export const MOBILE = createTheme({
+  typeSpec: { body: mobileTypeSpec.body, title: mobileTypeSpec.title },
+  radius: mobileRadius,
+});
 
 // Straight pass-throughs: re-exported rather than rebound, so no local name
 // stands between the screens and the token they are actually using.
@@ -48,6 +76,10 @@ export const colors = {
 // React Native's silent default text colour is black, invisible on this app's
 // near-black surfaces; this ramp bakes in ink so no role needs it spelled
 // out, though a colour after `...type.x` in a spread still overrides it.
+//
+// Prefer `<Txt variant="caption">` in new code: the role then carries its own
+// line height and tracking, and this spread is only still here for the styles()
+// declarations that predate the theme.
 export const type = {
   display: { ...mobileType.display, color: kit.text },
   title: { ...mobileType.title, color: kit.text },

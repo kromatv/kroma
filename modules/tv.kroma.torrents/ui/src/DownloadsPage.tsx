@@ -2,16 +2,11 @@
 // page-scoped download.progress stream, slow poll as the safety net), a VPN
 // status banner, aggregate stat cards and the download-clients section.
 
+import { formatBytes } from '@kroma/core';
 import {
-  Button,
-  EmptyState,
-  formatBytes,
-  HeaderAction,
-  Modal,
-  ModalActions,
-  PageHeader,
-  StatCard,
-  TableSkeleton,
+  Denied,
+  ModuleFailed,
+  ModuleLoading,
   useCap,
   usePoll,
   useServerEvents,
@@ -19,13 +14,15 @@ import {
 } from '@kroma/module-sdk';
 import type { VpnStatusEvent } from '@kroma/module-vpn/schemas';
 import {
-  IconDownload,
-  IconPlayerPause,
-  IconPlayerPlay,
-  IconShieldCheck,
-  IconShieldX,
-  IconUsersPlus,
-} from '@tabler/icons-react';
+  Button,
+  Dialog,
+  DialogActions,
+  EmptyState,
+  PageHeader,
+  StatCard,
+  TableSkeleton,
+} from '@kroma/ui/kit';
+import { IconShieldCheck, IconShieldX } from '@tabler/icons-react';
 import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { useTorrentsApi } from './api';
 import { DownloadClientsSection } from './download-clients';
@@ -49,7 +46,11 @@ export default function DownloadsPage() {
   const [manual, setManual] = useState(false);
 
   // Slow poll = reconnect/missed-event safety net; progress rides the WS.
-  const { data, reload } = usePoll(['admin', 'downloads'], () => torrents.downloads(), 10000);
+  const { data, failed, reload } = usePoll(
+    ['admin', 'downloads'],
+    () => torrents.downloads(),
+    10000,
+  );
 
   const lastReloadRef = useRef(0);
   const throttledReload = useCallback(() => {
@@ -106,7 +107,8 @@ export default function DownloadsPage() {
   const totalUp = activeRows.reduce((sum, d) => sum + (live[d.id]?.upBps ?? d.upBps), 0);
   const vpn = data?.vpn ?? null;
 
-  if (!canQueue) return null;
+  if (!canQueue) return <Denied />;
+  if (!data) return failed ? <ModuleFailed retry={reload} /> : <ModuleLoading />;
 
   return (
     <>
@@ -114,10 +116,11 @@ export default function DownloadsPage() {
         title={t('admin.downloadsTitle')}
         subtitle={t('admin.downloadsSub')}
         action={
-          <HeaderAction
-            icon={IconDownload}
+          <Button
+            variant="primary"
+            icon="download"
             label={t('manual.title')}
-            onClick={() => setManual(true)}
+            onPress={() => setManual(true)}
           />
         }
       />
@@ -137,27 +140,27 @@ export default function DownloadsPage() {
       {activeRows.length > 0 ? (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Button
-            variant="secondary"
+            variant="glass"
             size="sm"
-            icon={IconPlayerPause}
+            icon="player-pause"
             label={t('downloads.pauseAll')}
-            onClick={() => act(() => torrents.pauseAll())}
+            onPress={() => act(() => torrents.pauseAll())}
             disabled={busy}
           />
           <Button
-            variant="secondary"
+            variant="glass"
             size="sm"
-            icon={IconPlayerPlay}
+            icon="player-play"
             label={t('downloads.resumeAll')}
-            onClick={() => act(() => torrents.resumeAll())}
+            onPress={() => act(() => torrents.resumeAll())}
             disabled={busy}
           />
           <Button
-            variant="secondary"
+            variant="glass"
             size="sm"
-            icon={IconUsersPlus}
+            icon="users-plus"
             label={t('downloads.askPeers')}
-            onClick={() => act(() => torrents.reannounceAll())}
+            onPress={() => act(() => torrents.reannounceAll())}
             disabled={busy}
           />
         </div>
@@ -198,11 +201,16 @@ export default function DownloadsPage() {
       {canSettings ? <DownloadClientsSection /> : null}
 
       {confirm ? (
-        <Modal title={t('downloads.removeTitle')} onClose={() => setConfirm(null)}>
+        <Dialog
+          open
+          title={t('downloads.removeTitle')}
+          onClose={() => setConfirm(null)}
+          width={520}
+        >
           <p className="text-[13.5px] leading-relaxed text-white/70">
             {t('downloads.removeBody', { title: confirm.title })}
           </p>
-          <label className="mt-4 flex cursor-pointer items-center gap-2.5 text-[13.5px] font-semibold text-white/80">
+          <label className="flex cursor-pointer items-center gap-2.5 text-[13.5px] font-semibold text-white/80">
             <input
               type="checkbox"
               checked={wipeData}
@@ -211,7 +219,7 @@ export default function DownloadsPage() {
             />
             {t('downloads.removeData')}
           </label>
-          <ModalActions
+          <DialogActions
             onCancel={() => setConfirm(null)}
             cancelLabel={t('common.cancel')}
             onConfirm={() => {
@@ -222,7 +230,7 @@ export default function DownloadsPage() {
             confirmLabel={t('downloads.removeConfirm')}
             busy={busy}
           />
-        </Modal>
+        </Dialog>
       ) : null}
 
       {manual ? <ManualGrabModal onClose={() => setManual(false)} onAdded={reload} /> : null}

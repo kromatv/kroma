@@ -600,6 +600,23 @@ async fn an_oversized_avatar_is_rejected_by_the_body_limit() {
     assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
 }
 
+#[tokio::test]
+async fn an_avatar_the_encoder_cannot_read_is_refused_as_unsupported_media() {
+    // Past the length checks and into the encoder, which is the only path that
+    // reaches the store. The bytes are not an image, so the answer is the same
+    // whether or not the machine running this has cwebp: nothing was stored.
+    let t = test_app();
+    let (_uid, token) = seed_session(&t.state, "ana@test.dev", "ana", &[Permission::Playback]);
+
+    let (status, _h, _b) = raw_bytes(&t.app, "/api/users/avatar", &token, b"not-an-image".to_vec())
+        .await;
+    assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+
+    let dir = crate::infra::image::images_dir(&t.state.config.data_dir);
+    let stored = std::fs::read_dir(&dir).map(|d| d.count()).unwrap_or(0);
+    assert_eq!(stored, 0, "a rejected upload must leave nothing behind");
+}
+
 async fn raw_bytes(
     app: &axum::Router,
     uri: &str,

@@ -4,7 +4,7 @@
 
 import { KromaEvents, type Report, type ReportCategory, type ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Avatar, EmptyState } from '@kroma/ui/kit';
 
 import { useEffect, useState } from 'react';
 import { ReportDrawer } from '#web/features/admin/report-drawer';
@@ -19,7 +19,6 @@ import {
   useConsoleToast,
   useThrottledReload,
 } from '#web/features/admin/table-console';
-import { Avatar } from '#web/features/admin/ui';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
@@ -57,7 +56,7 @@ function ReportRow({ report, onOpen }: Readonly<{ report: Report; onOpen: () => 
       </span>
 
       <div className="flex min-w-0 items-center gap-2.5 max-md:hidden">
-        <Avatar name={report.reportedByName ?? '?'} size={26} />
+        <Avatar name={report.reportedByName ?? '?'} size={26} circle shadow={false} />
         <span className="truncate text-[13px] font-semibold text-white/75">
           {report.reportedByName ?? t('reports.unknownUser')}
         </span>

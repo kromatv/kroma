@@ -3,10 +3,10 @@
 // the module's declared settings. The container and its actions live in
 // module-detail.tsx.
 
-import { C, Image, ProgressBar } from '@kroma/admin-kit';
 import type { StoreCatalog, StoreModule } from '@kroma/core';
 import { moduleIconUrl } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
+import { Progress } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { ModuleConfigForm } from '#web/features/admin/module-config-form';
@@ -14,6 +14,7 @@ import { DepChip, depState, ModuleDeps } from '#web/features/admin/module-deps';
 import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
 import { useModuleSettingsPanels } from '#web/modules/ModuleHostProvider';
 import { apiBase } from '#web/shared/lib/api';
+import { Image } from '#web/shared/ui';
 
 export function Label({ children }: Readonly<{ children: ReactNode }>) {
   return (
@@ -209,10 +210,11 @@ export function FooterProgress({ op }: Readonly<{ op: OpModule }>) {
         <span>{t(PHASE_KEY[op.phase])}</span>
         {pct !== null && <span>{pct}%</span>}
       </div>
-      <ProgressBar
-        pct={runningPct(op.phase, pct)}
-        height={5}
-        color={op.phase === 'done' ? C.green : C.accent}
+      <Progress
+        value={runningPct(op.phase, pct) / 100}
+        size={5}
+        color={op.phase === 'done' ? 'success' : 'accent'}
+        rounded
       />
     </div>
   );

@@ -5,7 +5,7 @@ import { CreditsCard } from './CreditsCard';
 
 export default story({
   name: 'CreditsCard',
-  group: 'Media',
+  group: 'Player',
   docs: 'The card that appears over the credits: what is next, and a ring draining towards autoplay. `secondsLeft` and `total` are separate so the ring is drawn from the fraction rather than from a timer of its own — the player owns the countdown, and this only renders where it has got to.',
   usage: `<CreditsCard
   item={{ title: next.title, subtitle: next.episodeLabel, posterUrl: next.poster }}

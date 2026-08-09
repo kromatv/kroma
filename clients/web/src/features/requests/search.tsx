@@ -4,14 +4,12 @@
 
 import { type DiscoverType, hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Chip, EmptyState, IconButton } from '@kroma/ui/kit';
-import { IconSearch } from '@tabler/icons-react';
+import { Box, EmptyState, Icon, InputGroup, PageHeader, SegmentedControl } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { SearchResults } from '#web/features/requests/search-results';
 import { TrendingBrowse } from '#web/features/requests/trending';
 import { useDiscoverSearch, useTrending } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
 
 const TYPES: {
   value: DiscoverType;
@@ -21,6 +19,8 @@ const TYPES: {
   { value: 'movie', labelKey: 'discover.movies' },
   { value: 'tv', labelKey: 'discover.shows' },
 ];
+
+const SEARCH_BOX = { width: '100%', maxWidth: 672 } as const;
 
 export function SearchPage() {
   const t = useT();
@@ -45,55 +45,48 @@ export function SearchPage() {
 
   return (
     <main className="min-w-0 pb-20">
-      <div className="relative overflow-hidden px-(--gutter-web) pt-9">
-        <div className="pointer-events-none absolute inset-x-0 -top-20 h-72 bg-[radial-gradient(48%_60%_at_28%_20%,rgba(242,180,66,.10),transparent_70%)]" />
+      <div className="relative px-(--gutter-web) pt-9">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute inset-x-0 -top-20 h-72 bg-[radial-gradient(48%_60%_at_28%_20%,rgba(242,180,66,.10),transparent_70%)]" />
+        </div>
         <div className="relative">
-          <h1 className={PAGE_TITLE}>{t('discover.title')}</h1>
-          <p className={PAGE_SUBTITLE}>
-            {canDiscover ? t('discover.subtitle') : t('discover.subtitleLocal')}
-          </p>
+          <PageHeader
+            title={t('discover.title')}
+            subtitle={canDiscover ? t('discover.subtitle') : t('discover.subtitleLocal')}
+          />
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <label className="group/search relative flex h-14 w-full max-w-2xl items-center rounded-2xl border border-border-strong bg-surface-1 px-4 shadow-card transition-colors">
-              <IconSearch
-                size={20}
-                className="shrink-0 text-dim transition-colors group-focus-within/search:text-accent"
-              />
-              <input
+          <Box row wrap align="center" gap={12} mt={24}>
+            <InputGroup.Root size="md" label={t('discover.title')} style={SEARCH_BOX}>
+              <InputGroup.Addon>
+                <Icon name="search" size={20} color="textDim" />
+              </InputGroup.Addon>
+              <InputGroup.Input
+                type="search"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={setQuery}
                 placeholder={t('discover.placeholder')}
-                // biome-ignore lint/a11y/noAutofocus: discovery is a search-first page
-                autoFocus
-                // The bordered label above is the field; it takes the ring.
-                data-focus-ring="off"
-                className="min-w-0 flex-1 bg-transparent px-3.5 text-[16px] font-semibold text-text outline-none placeholder:font-medium placeholder:text-dim"
               />
               {query ? (
-                <IconButton
-                  variant="ghost"
-                  size={28}
-                  glyph={18}
-                  icon="x"
-                  onPress={() => setQuery('')}
-                />
+                <InputGroup.Addon align="inline-end">
+                  <InputGroup.IconButton
+                    icon="x"
+                    label={t('common.clear')}
+                    onPress={() => setQuery('')}
+                  />
+                </InputGroup.Addon>
               ) : null}
-            </label>
+            </InputGroup.Root>
 
             {canDiscover ? (
-              <div className="flex gap-1.5">
-                {TYPES.map((tp) => (
-                  <Chip
-                    key={tp.value}
-                    active={type === tp.value}
-                    variant="subtle"
-                    label={t(tp.labelKey)}
-                    onPress={() => setType(tp.value)}
-                  />
-                ))}
-              </div>
+              <SegmentedControl
+                size="md"
+                label={t('discover.title')}
+                value={type}
+                onChange={setType}
+                options={TYPES.map((tp) => ({ value: tp.value, label: t(tp.labelKey) }))}
+              />
             ) : null}
-          </div>
+          </Box>
         </div>
       </div>
 

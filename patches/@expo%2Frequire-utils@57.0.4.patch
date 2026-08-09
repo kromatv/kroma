@@ -1,0 +1,19 @@
+diff --git a/build/load.js b/build/load.js
+index 1084c921173e5ce5218334f1cf86c0dc43a925fc..a9afdde0ddddcf26376ee0949c119e5fd7841096 100644
+--- a/build/load.js
++++ b/build/load.js
+@@ -321,9 +321,12 @@ function evalModule(code, filename, opts = {}, format = toFormat(filename, true)
+     }
+     if (hasStripTypeScriptTypes && inputCode === code) {
+       // This may throw its own error, but this contains a code-frame already
++      // PATCHED (kroma): 'transform' mode no longer exists on current Node, and
++      // TypeScript 7 has no transpileModule to fall back on. The repo's config
++      // files are erasable-syntax-only by contract, so 'strip' suffices
++      // ('sourceMap' is only legal with 'transform').
+       inputCode = nodeModule().stripTypeScriptTypes(code, {
+-        mode: 'transform',
+-        sourceMap: true
++        mode: 'strip'
+       });
+       if (format.mode === 'commonjs-typescript') {
+         inputCode = (0, _transform().toCommonJS)(filename, inputCode);

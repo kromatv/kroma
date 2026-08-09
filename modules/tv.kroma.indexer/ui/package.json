@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@kroma/module-sdk": "workspace:*",
+    "@kroma/ui": "workspace:*",
     "@tabler/icons-react": "^3.44.0",
     "react-call": "^2.0.2",
     "zod": "^4.4.3"
@@ -21,7 +22,7 @@
     "react": ">=18"
   },
   "devDependencies": {
-    "@types/react": "^19",
+    "@types/react": "^19.2.18",
     "typescript": "^7.0.2"
   }
 }
