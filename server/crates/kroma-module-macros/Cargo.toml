@@ -10,3 +10,6 @@ license.workspace = true
 proc-macro = true
 
 [dependencies]
+
+[dev-dependencies]
+kroma-testing = { workspace = true }
