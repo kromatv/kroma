@@ -31,8 +31,8 @@ import {
 } from '#ui/core/tokens';
 
 export type Spacing = DimensionValue;
-export type Align = ViewStyle['alignItems'];
-export type Justify = ViewStyle['justifyContent'];
+export type Align = NonNullable<ViewStyle['alignItems']>;
+export type Justify = NonNullable<ViewStyle['justifyContent']>;
 
 export interface BoxStyleProps {
   flex?: boolean | number;

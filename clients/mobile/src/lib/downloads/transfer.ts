@@ -92,6 +92,11 @@ export function transferMetaOf(task: DownloadTask): TransferMeta | null {
 // declared dead and the title restarts.
 const RESUME_STALL_MS = 20_000;
 
+function header(headers: Record<string, string | null>, name: string): string | null {
+  const found = Object.entries(headers).find(([key]) => key.toLowerCase() === name);
+  return found ? found[1] : null;
+}
+
 function driveTask(
   task: DownloadTask,
   meta: TransferMeta,
@@ -112,9 +117,7 @@ function driveTask(
     task.begin(({ headers }) => {
       // A server without /download answers with the SPA HTML shell (200 text/html);
       // reject anything that isn't media bytes.
-      const contentType = Object.entries(headers).find(
-        ([k]) => k.toLowerCase() === 'content-type',
-      )?.[1];
+      const contentType = header(headers, 'content-type');
       if (contentType && !/video\/|octet-stream|matroska/i.test(contentType)) {
         fail(new Error(`not a media response: ${contentType}`));
       }
