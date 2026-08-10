@@ -54,3 +54,31 @@ pub fn recover_on_boot(pool: &crate::db::Pool) {
         Err(e) => tracing::warn!(error = %e, "pipeline: failed to reset stranded running tasks"),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_task_stranded_running_by_a_dead_process_is_handed_back_at_boot() {
+        let pool = crate::db::testing::temp_pool("pipeline-recover");
+        crate::db::pipeline::enqueue(&pool, "probe", "item", "m1", 0, 1).unwrap();
+        crate::db::pipeline::claim_batch(&pool, "probe", 1, 2).unwrap();
+
+        recover_on_boot(&pool);
+
+        let (pending, running, ..) = crate::db::pipeline::counts(&pool, "probe").unwrap();
+        assert_eq!((pending, running), (1, 0));
+    }
+
+    #[test]
+    fn a_ledger_that_cannot_be_read_at_boot_is_logged_rather_than_fatal() {
+        let pool = crate::db::testing::temp_pool("pipeline-recover-broken");
+        pool.get().unwrap().execute_batch("DROP TABLE pipeline_tasks").unwrap();
+        assert!(crate::db::pipeline::reset_running(&pool, None).is_err());
+
+        recover_on_boot(&pool);
+
+        assert!(pool.get().is_ok(), "a failed recovery must not cost the pool");
+    }
+}

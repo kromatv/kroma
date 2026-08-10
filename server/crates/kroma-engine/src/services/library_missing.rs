@@ -357,6 +357,28 @@ mod tests {
     }
 
     #[test]
+    fn a_gap_ledger_that_refuses_the_write_fails_the_scan_rather_than_reporting_it_clean() {
+        let state = test_state_with_tmdb("test-key");
+        let (show, _) = seed_show_episode(&state, "shw-1", "ep-1");
+        link_to_tmdb(&state, &show, 1396);
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, tmdb_show(&[1])),
+            _ => (200, tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))])),
+        });
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_gaps BEFORE INSERT ON library_gaps \
+                 BEGIN SELECT RAISE(ABORT, 'refused'); END",
+            )
+            .unwrap();
+
+        assert!(scan(&state, &Progress::default().record(), &never_cancelled()).is_err());
+    }
+
+    #[test]
     fn a_cancelled_scan_stops_where_it_was() {
         let state = test_state_with_tmdb("test-key");
         let (show, _) = seed_show_episode(&state, "shw-1", "ep-1");

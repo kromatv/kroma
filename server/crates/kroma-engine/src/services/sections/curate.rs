@@ -415,6 +415,32 @@ mod tests {
         assert_eq!(rows[0].key, "nolan");
     }
 
+    #[test]
+    fn two_collections_that_slug_the_same_are_published_once() {
+        let specs = parse_curate(
+            r#"[{"title":{"en":"Slow Burn"},"members":["a","b","c","d","e"]},
+                {"title":{"en":"slow  burn!"},"members":["a","b","c","d","e"]}]"#,
+        )
+        .unwrap();
+        let cat: Vec<CatalogEntry> =
+            ["a", "b", "c", "d", "e"].iter().map(|id| entry(id, id, 5.0, "")).collect();
+
+        let (rows, dropped) = resolve_members_by_id(&specs, &cat);
+        assert_eq!(dropped, 0, "the duplicate resolved fine; it is the key that collides");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].key, "slow-burn");
+    }
+
+    #[test]
+    fn a_title_that_slugs_to_nothing_is_not_a_collection() {
+        let specs =
+            parse_curate(r#"[{"title":{"en":"!!! ???"},"members":["a","b","c","d","e"]}]"#).unwrap();
+        let cat: Vec<CatalogEntry> =
+            ["a", "b", "c", "d", "e"].iter().map(|id| entry(id, id, 5.0, "")).collect();
+
+        assert!(resolve_members_by_id(&specs, &cat).0.is_empty());
+    }
+
     fn meta(rating: f32, genres: &[&str], directors: &[&str]) -> crate::model::Metadata {
         crate::model::Metadata {
             provider: "tmdb",

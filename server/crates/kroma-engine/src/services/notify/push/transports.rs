@@ -322,4 +322,69 @@ mod tests {
             assert!(!is_gone(&subscription(transport), 429, ""));
         }
     }
+
+    fn apple_senders() -> Senders {
+        let key = kroma_push::apns::ApnsKey::new(
+            &crate::test_support::test_apns_key_p8(),
+            "ABC1234567",
+            "TEAM123456",
+            "tv.kroma.mobile",
+            kroma_push::apns::Environment::Production,
+        )
+        .expect("the test key parses");
+        Senders { web: None, apns: Some(Apns { key: std::sync::Arc::new(key) }), fcm: None }
+    }
+
+    #[test]
+    fn an_apple_row_on_a_server_that_holds_the_key_builds_a_signed_request() {
+        let n = notification();
+        let out = Outgoing {
+            notification: &n,
+            web_payload: b"{}",
+            urgency: Urgency::High,
+            actions: Vec::new(),
+            native_image: n.image_url.clone(),
+        };
+
+        let built = build(&apple_senders(), &subscription(PushTransport::Apns), &out, 0)
+            .unwrap()
+            .expect("Apple is configured here");
+        assert!(built.url.ends_with("/3/device/DEVICE-TOKEN"), "{}", built.url);
+        assert!(built.http2, "APNs refuses HTTP/1.1");
+    }
+
+    #[test]
+    fn a_token_apple_rejects_as_wrong_environment_is_retried_at_the_other_host() {
+        let n = notification();
+        let out = Outgoing {
+            notification: &n,
+            web_payload: b"{}",
+            urgency: Urgency::High,
+            actions: Vec::new(),
+            native_image: None,
+        };
+        let mut request = build(&apple_senders(), &subscription(PushTransport::Apns), &out, 0)
+            .unwrap()
+            .expect("Apple is configured here");
+        let first_host = request.url.clone();
+
+        assert!(retry(
+            &subscription(PushTransport::Apns),
+            &mut request,
+            400,
+            r#"{"reason":"BadDeviceToken"}"#
+        ));
+        assert_ne!(request.url, first_host, "the retry must go to the other host");
+
+        let mut again = request.clone();
+        assert!(!retry(&subscription(PushTransport::Apns), &mut again, 410, ""));
+    }
+
+    #[test]
+    fn a_grant_the_relay_retires_evicts_the_row_it_stands_for() {
+        let relay = subscription(PushTransport::Relay);
+        assert!(is_gone(&relay, 410, ""));
+        assert!(!is_gone(&relay, 404, ""));
+        assert!(!is_gone(&relay, 503, ""));
+    }
 }

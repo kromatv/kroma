@@ -242,4 +242,15 @@ mod tests {
         // Deleting a missing row is a no-op (no error).
         delete_core(&conn, ITEM, "m1").unwrap();
     }
+
+    #[test]
+    fn a_core_table_that_is_gone_errors_on_every_operation() {
+        let p = pool();
+        p.get().unwrap().execute_batch("DROP TABLE metadata_core").unwrap();
+
+        assert!(set_core(&p, ITEM, "m1", &sample_core()).is_err());
+        let conn = p.get().unwrap();
+        assert!(get_cores(&conn, ITEM, &["m1"]).is_err());
+        assert!(delete_core(&conn, ITEM, "m1").is_err());
+    }
 }

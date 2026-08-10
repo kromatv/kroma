@@ -233,6 +233,17 @@ mod tests {
         let assets = gather_assets(&doc, dir.path());
         assert_eq!(assets.len(), 1);
         assert_eq!(assets[0].0, "av99.webp");
+
+        pool.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO users (id,email,username,password_hash,avatar_url,created_at) \
+                 VALUES ('u3','c@b.c','Cy','ph','/api/images/av99.webp','t')",
+                [],
+            )
+            .unwrap();
+        let doc = crate::db::export_portable(&pool).unwrap();
+        assert_eq!(gather_assets(&doc, dir.path()).len(), 1);
     }
 
     #[test]

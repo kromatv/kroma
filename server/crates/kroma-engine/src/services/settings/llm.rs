@@ -168,6 +168,27 @@ mod tests {
     }
 
     #[test]
+    fn an_empty_provider_list_still_lets_the_legacy_keys_speak() {
+        let pool = test_pool();
+        let s = settings(&pool);
+        s.set_patch(
+            &pool,
+            BTreeMap::from([
+                ("llmProviders".to_string(), json!([])),
+                ("llmModel".to_string(), json!("qwen2.5")),
+            ]),
+        );
+
+        let list = llm_providers(&s);
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, "default");
+        assert_eq!(list[0].model, "qwen2.5");
+
+        s.set_patch(&pool, BTreeMap::from([("llmProviders".to_string(), json!([1, 2, 3]))]));
+        assert_eq!(llm_providers(&s).len(), 1);
+    }
+
+    #[test]
     fn providers_migrate_from_flat_keys() {
         let pool = test_pool();
         let s = settings(&pool);

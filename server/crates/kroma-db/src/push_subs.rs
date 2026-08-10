@@ -280,4 +280,13 @@ mod tests {
         conn.execute("DELETE FROM users WHERE id = ?1", params![a]).unwrap();
         assert!(!has_subscription(&conn, &a).unwrap());
     }
+
+    #[test]
+    fn a_missing_endpoint_table_errors_rather_than_reporting_nobody_subscribed() {
+        let (p, a, _) = pool();
+        let conn = p.get().unwrap();
+        conn.execute_batch("DROP TABLE push_subscriptions").unwrap();
+
+        assert!(has_subscription(&conn, &a).is_err());
+    }
 }

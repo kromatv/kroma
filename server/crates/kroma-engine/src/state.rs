@@ -164,3 +164,60 @@ impl AppState {
         assert!(self.scratch_dir.set(dir).is_ok(), "the scratch dir is handed over once");
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Category;
+    use crate::services::jobs::{Builtin, JobContext, JobKey};
+
+    static CONTRIBUTED_RUNS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+    fn count_a_run(_ctx: &JobContext) -> anyhow::Result<()> {
+        CONTRIBUTED_RUNS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        Ok(())
+    }
+
+    static MODULE_JOB: &[Builtin] = &[Builtin {
+        key: JobKey("test.module.contributed"),
+        category: Category::Maintenance,
+        schedule: Some("0 3 * * *"),
+        triggers: &[],
+        run: count_a_run,
+    }];
+
+    #[test]
+    fn a_modules_own_jobs_join_the_roster_beside_the_built_ins() {
+        let dir = kroma_testing::temp_dir("state-module-jobs");
+        let db = crate::db::init(&dir.path().join("kroma.db")).unwrap();
+        let settings = Settings::load(&db);
+        let config = Config {
+            host: "127.0.0.1".into(),
+            port: 0,
+            data_dir: dir.path().to_path_buf(),
+            tmdb_language: "en-US".into(),
+            ..Default::default()
+        };
+        let state = AppState::new(
+            config,
+            false,
+            db,
+            settings,
+            Arc::new(crate::ports::NoopEmbedder),
+            std::collections::HashMap::new(),
+            MODULE_JOB,
+        );
+        state.own_scratch_dir(dir);
+
+        let keys: Vec<String> = state.jobs.list(&state).into_iter().map(|j| j.key).collect();
+        assert!(
+            keys.iter().any(|k| k == "test.module.contributed"),
+            "the module job should be registered: {keys:?}"
+        );
+        assert!(keys.len() > 1, "the built-ins are still there");
+
+        assert!(state.jobs.resolve("test.module.contributed").is_some(), "and it is triggerable");
+        (MODULE_JOB[0].run)(&JobContext::for_test(state.clone())).unwrap();
+        assert_eq!(CONTRIBUTED_RUNS.load(std::sync::atomic::Ordering::Relaxed), 1);
+    }
+}

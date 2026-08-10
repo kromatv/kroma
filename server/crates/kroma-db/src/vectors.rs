@@ -414,6 +414,23 @@ mod tests {
     }
 
     #[test]
+    fn a_rail_stops_topping_up_the_moment_it_is_full() {
+        let p = seeded();
+        p.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO items (id,kind,title,container,library,added_at,metadata) \
+                 VALUES ('d','movie','T','mkv','lib','t',?1)",
+                params![r#"{"tmdbId":1,"tmdbUrl":"x","genres":["Comedy"]}"#],
+            )
+            .unwrap();
+        set_item_vector(&p, "d", &[0.1, 0.99]).unwrap();
+
+        let ids: Vec<String> = similar_items(&p, "a", 2).unwrap().into_iter().map(|i| i.id).collect();
+        assert_eq!(ids, ["b", "d"]);
+    }
+
+    #[test]
     fn prune_orphans_drops_vectors_without_a_title() {
         let p = seeded();
         // Add a vector for an id that is neither an item nor a show.

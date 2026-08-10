@@ -171,6 +171,10 @@ mod tests {
         let state = test_state();
         let plain = user(&state, &[Permission::Playback]);
         assert_eq!(state.require_any_admin(&plain).unwrap_err().status(), StatusCode::FORBIDDEN);
+
+        let mut admin = plain;
+        admin.permissions = vec![Permission::ReportsManage];
+        assert!(state.require_any_admin(&admin).is_ok(), "any admin permission opens the door");
     }
 
     #[test]

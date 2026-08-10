@@ -238,6 +238,24 @@ mod tests {
     }
 
     #[test]
+    fn a_cache_the_database_can_no_longer_vouch_for_is_left_whole() {
+        let state = test_state();
+        set_limit(&state, "2 Go");
+        let ctx = JobContext::for_test(state.clone());
+        let root = kroma_testing::temp_dir("cache-nodb");
+        let images = root.path().join("images");
+        sparse(&images.join("old.jpg"), 3 * GB, 1);
+
+        let held: Vec<_> = (0..16).map(|_| state.db.get().unwrap()).collect();
+        std::fs::remove_dir_all(&state.config.data_dir).unwrap();
+
+        enforce_image_limit(&ctx, &images);
+
+        assert_eq!(names(&images), vec!["old.jpg"], "an avatar could have been among them");
+        drop(held);
+    }
+
+    #[test]
     fn over_budget_evicts_the_oldest_first() {
         let state = test_state();
         set_limit(&state, "2 Go");

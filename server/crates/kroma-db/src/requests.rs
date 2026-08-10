@@ -1095,4 +1095,44 @@ mod tests {
         assert_eq!(out[0].air_date.as_deref(), Some("2030-01-01"));
         assert_eq!(out[1].air_date.as_deref(), Some("2030-01-02"));
     }
+
+    #[test]
+    fn a_refused_row_rolls_the_whole_ledger_write_back() {
+        let pool = pool();
+        let conn = pool.get().unwrap();
+        seed_library(&conn);
+        insert_request(&pool, &new_req("r-1", RequestKind::Show, 1396, None), 1_000).unwrap();
+        conn.execute_batch(
+            "CREATE TRIGGER no_wanted BEFORE INSERT ON wanted \
+             BEGIN SELECT RAISE(ABORT, 'refused'); END;
+             CREATE TRIGGER no_gaps BEFORE INSERT ON library_gaps \
+             BEGIN SELECT RAISE(ABORT, 'refused'); END",
+        )
+        .unwrap();
+        drop(conn);
+
+        let rows = vec![wanted_row("w-1", "r-1", Some("2030-01-01"), "wanted")];
+        assert!(insert_wanted(&pool, &rows, 1_000).is_err());
+        assert!(replace_wanted(&pool, "r-1", &rows, 1_000).is_err());
+        assert!(replace_show_gaps(
+            &pool,
+            "s1",
+            1396,
+            "Breaking Bad",
+            None,
+            &[(1, 1, Some("2030-01-01".into()))],
+            1_000
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn the_calendar_and_episode_readers_error_when_their_tables_are_gone() {
+        let pool = pool();
+        let conn = pool.get().unwrap();
+        conn.execute_batch("DROP TABLE library_gaps; DROP TABLE items").unwrap();
+
+        assert!(library_gaps_list(&conn, 10).is_err());
+        assert!(episodes_present(&conn, "s1").is_err());
+    }
 }

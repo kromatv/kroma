@@ -1959,6 +1959,126 @@ mod tests {
     }
 
     #[test]
+    fn a_film_tmdb_has_no_date_for_gets_its_airing_signals_and_nothing_else() {
+        let host = test_host();
+        let _tmdb = FakeTmdb::start(|_| {
+            let mut d = movie_detail("Untitled Villeneuve Project", "");
+            d["release_date"] = json!("");
+            d["status"] = json!("In Production");
+            (200, d)
+        });
+        insert_req(&host, "r-1", RequestKind::Movie, 603, RequestStatus::Approved);
+        let undated = wanted("w1", "r-1", None, None, None, "wanted");
+        db::insert_wanted(host.db(), std::slice::from_ref(&undated), now_ms()).unwrap();
+
+        assert_eq!(refresh_pass(&host).unwrap(), 1);
+
+        let conn = host.db().get().unwrap();
+        assert!(db::wanted_for_request(&conn, "r-1").unwrap()[0].air_date.is_none());
+        assert_eq!(
+            db::get_request(&conn, "r-1").unwrap().unwrap().air_status.as_deref(),
+            Some("In Production")
+        );
+    }
+
+    #[test]
+    fn an_episode_tmdb_still_has_no_air_date_for_keeps_its_undated_row() {
+        let host = test_host();
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, show_detail("Breaking Bad", &[1])),
+            _ => (200, json!({ "episodes": [{ "episode_number": 1, "name": "E1" }] })),
+        });
+        insert_req(&host, "r-show", RequestKind::Show, 1396, RequestStatus::Approved);
+        db::insert_wanted(
+            host.db(),
+            &[wanted("w1", "r-show", Some(1), Some(1), None, "wanted")],
+            now_ms(),
+        )
+        .unwrap();
+
+        assert_eq!(refresh_pass(&host).unwrap(), 1);
+
+        let conn = host.db().get().unwrap();
+        let rows = db::wanted_for_request(&conn, "r-show").unwrap();
+        assert_eq!(rows.len(), 1, "nothing new to insert");
+        assert!(rows[0].air_date.is_none(), "there was no date to backfill with");
+    }
+
+    #[test]
+    fn a_refresh_that_cannot_store_the_airing_signals_is_not_counted_as_refreshed() {
+        let host = test_host();
+        let _tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
+        insert_req(&host, "r-1", RequestKind::Movie, 603, RequestStatus::Approved);
+        host.db()
+            .get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_request_update BEFORE UPDATE ON requests \
+                 BEGIN SELECT RAISE(ABORT, 'refused'); END",
+            )
+            .unwrap();
+
+        assert_eq!(refresh_pass(&host).unwrap(), 0, "the pass survives, the request does not count");
+    }
+
+    #[test]
+    fn an_import_that_changes_nothing_notifies_nobody() {
+        let host = test_host();
+        insert_req(&host, "r1", RequestKind::Movie, 603, RequestStatus::Available);
+        db::replace_wanted(
+            host.db(),
+            "r1",
+            &[wanted("w1", "r1", None, None, None, "available")],
+            now_ms(),
+        )
+        .unwrap();
+
+        on_download_imported(&host, "r1").unwrap();
+
+        assert_eq!(status_of_req(&host, "r1"), RequestStatus::Available);
+        assert!(host.notifications().is_empty(), "the reader was already told");
+    }
+
+    #[test]
+    fn a_film_already_marked_available_is_matched_again_without_a_second_announcement() {
+        let host = test_host();
+        seed_movie_item(&host, "m1", 603);
+        insert_req(&host, "r1", RequestKind::Movie, 603, RequestStatus::Available);
+        db::replace_wanted(
+            host.db(),
+            "r1",
+            &[wanted("w1", "r1", None, None, None, "wanted")],
+            now_ms(),
+        )
+        .unwrap();
+
+        assert_eq!(match_one(&host, "r1").unwrap(), Some(RequestStatus::Available));
+        assert!(host.notifications().is_empty());
+        let conn = host.db().get().unwrap();
+        assert_eq!(db::wanted_for_request(&conn, "r1").unwrap()[0].status, "available");
+    }
+
+    #[test]
+    fn a_show_that_is_still_exactly_as_partial_as_before_announces_nothing_new() {
+        let host = test_host();
+        seed_show(&host, "s1", 1396, &[(1, 1)]);
+        insert_req(&host, "r1", RequestKind::Show, 1396, RequestStatus::PartiallyAvailable);
+        db::replace_wanted(
+            host.db(),
+            "r1",
+            &[
+                wanted("w1", "r1", Some(1), Some(1), Some("2020-01-01"), "available"),
+                wanted("w2", "r1", Some(1), Some(2), Some("2020-01-02"), "wanted"),
+            ],
+            now_ms(),
+        )
+        .unwrap();
+
+        assert_eq!(match_one(&host, "r1").unwrap(), Some(RequestStatus::PartiallyAvailable));
+        assert!(host.notifications().is_empty());
+    }
+
+    #[test]
     fn the_api_key_and_language_reach_tmdb_on_every_call() {
         let host = test_host();
         let tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));

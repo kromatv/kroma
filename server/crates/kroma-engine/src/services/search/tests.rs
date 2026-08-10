@@ -278,3 +278,39 @@ fn a_rebuild_that_fails_keeps_the_index_that_was_working() {
         "a failed rebuild must not empty the index",
     );
 }
+
+#[test]
+fn a_translation_carrying_only_an_overview_still_reaches_the_index() {
+    let state = test_state();
+    seed_titled_movie(&state, "itm-1", "Amelie");
+    put_translation(
+        &state,
+        "item",
+        "itm-1",
+        "de",
+        serde_json::json!({ "overview": "Eine schüchterne Kellnerin.", "genres": ["Liebesfilm"] }),
+    );
+
+    state.search.reindex_from_db(&state.db).unwrap();
+    assert!(!state.search.search("Kellnerin", 5).is_empty());
+}
+
+#[test]
+fn metadata_with_no_title_of_its_own_still_contributes_its_other_fields() {
+    let e = SearchEngine::new().unwrap();
+    let mut untitled = meta("ignored", "Une serveuse timide", &["Romance"], &["Audrey Tautou"]);
+    untitled.title = None;
+    e.rebuild(&[movie("1", "Amelie", Some(untitled))], &[], &[]).unwrap();
+
+    assert_eq!(top_id(&e, "serveuse").as_deref(), Some("1"));
+    assert_eq!(top_id(&e, "Amelie").as_deref(), Some("1"));
+}
+
+#[test]
+fn a_row_with_no_id_is_skipped_rather_than_returned_as_a_blank_hit() {
+    let e = SearchEngine::new().unwrap();
+    e.rebuild(&[movie("", "Amelie", None), movie("2", "Amelie Two", None)], &[], &[]).unwrap();
+
+    let ids: Vec<String> = e.search("Amelie", 5).into_iter().map(|h| h.id).collect();
+    assert_eq!(ids, ["2"]);
+}

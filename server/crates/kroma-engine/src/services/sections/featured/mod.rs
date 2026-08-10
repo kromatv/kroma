@@ -134,6 +134,27 @@ mod tests {
     }
 
     #[test]
+    fn a_reader_with_a_history_is_scored_against_their_taste() {
+        let state = test_support::test_state();
+        seed_movie(&state.db, "seen", &meta(Some(9.9), true, true));
+        seed_movie(&state.db, "fresh", &meta(Some(6.0), true, true));
+        seed_user(&state, "u1");
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute(
+                "INSERT INTO play_history (id,user_id,item_id,kind,title,started_at,ended_at) \
+                 VALUES ('h1','u1','seen','movie','Title seen',1,2)",
+                [],
+            )
+            .unwrap();
+
+        let picked = pick(&state, &state.db, "en", "u1").expect("a hero");
+        assert_eq!(picked.id(), "fresh", "the title they just finished is not the hero");
+    }
+
+    #[test]
     fn gate_ladder_relaxes_presentation_before_going_dark() {
         let plain = fixtures::movie("plain", Some(meta(None, false, false)), "t", None);
         let shown = fixtures::movie("shown", Some(meta(None, true, true)), "t", None);

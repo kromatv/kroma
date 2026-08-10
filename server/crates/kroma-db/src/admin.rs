@@ -343,4 +343,12 @@ mod tests {
         // 1 enriched movie, 1 enriched show, 1 embedding.
         assert_eq!(metadata_counts(&p).unwrap(), (1, 1, 1));
     }
+
+    #[test]
+    fn the_cache_panel_counts_error_rather_than_reporting_an_empty_catalogue() {
+        let p = pool();
+        p.get().unwrap().execute_batch("DROP TABLE items").unwrap();
+
+        assert!(metadata_counts(&p).is_err());
+    }
 }

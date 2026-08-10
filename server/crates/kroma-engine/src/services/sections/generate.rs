@@ -262,6 +262,16 @@ mod tests {
     }
 
     #[test]
+    fn a_title_that_slugs_to_nothing_still_gets_a_stable_key() {
+        let reply = r#"{"sections":[{"title":"!!!","query":"loud and proud"},
+                                    {"title":"???","query":"quiet and unsure"}]}"#;
+        let (_, sections) = parse_response(reply).unwrap();
+        assert_eq!(sections.len(), 2);
+        assert_eq!(sections[0].key, "s1");
+        assert_eq!(sections[1].key, "s2");
+    }
+
+    #[test]
     fn load_returns_empty_when_no_taste_row() {
         let pool = crate::db::testing::temp_pool("gen-load");
         assert!(load(&pool, "nobody").is_empty());

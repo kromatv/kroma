@@ -942,6 +942,126 @@ mod tests {
     }
 
     #[test]
+    fn a_language_that_translates_nothing_leaves_no_row_behind() {
+        let p = pool();
+        let bare = Metadata { title: None, overview: None, genres: Vec::new(), cast: Vec::new(), ..meta(603, "Dune") };
+        let by_lang = HashMap::from([("de".to_string(), bare)]);
+        store_localized(&p, metadata_core::ITEM, "m1", &meta(603, "Dune"), &by_lang).unwrap();
+
+        assert!(crate::translations::resolve_one(&p, "item", "m1", "de").unwrap().is_none());
+    }
+
+    #[test]
+    fn the_probe_state_readers_error_when_the_file_table_is_gone() {
+        let p = pool();
+        p.get().unwrap().execute_batch("DROP TABLE files").unwrap();
+
+        assert!(item_probed(&p, "m1").is_err());
+        assert!(item_has_probed_file(&p, "m1").is_err());
+    }
+
+    fn pool_with_probed_movie() -> TempPool {
+        let p = pool();
+        sync_all(
+            &p,
+            &[lib("lib")],
+            &[],
+            &[movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", false)])],
+            &HashMap::new(),
+        )
+        .unwrap();
+        p
+    }
+
+    #[test]
+    fn a_refused_file_write_fails_the_probe_rather_than_reporting_success() {
+        let p = pool_with_probed_movie();
+        p.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_file_update BEFORE UPDATE ON files \
+                 BEGIN SELECT RAISE(ABORT, 'refused'); END",
+            )
+            .unwrap();
+
+        assert!(set_file_probe(&p, "f1", Some(1), None, None, &[], &[]).is_err());
+    }
+
+    #[test]
+    fn a_refused_item_write_fails_the_probe_that_triggered_the_recompute() {
+        let p = pool_with_probed_movie();
+        p.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_item_update BEFORE UPDATE ON items \
+                 BEGIN SELECT RAISE(ABORT, 'refused'); END",
+            )
+            .unwrap();
+
+        assert!(set_file_probe(&p, "f1", Some(1), None, None, &[], &[]).is_err());
+    }
+
+    #[test]
+    fn a_probe_result_for_a_file_that_is_gone_is_recorded_against_no_item() {
+        let p = pool_with_probed_movie();
+        set_file_probe(&p, "no-such-file", Some(1), None, None, &[], &[]).unwrap();
+
+        let container: String = p
+            .get()
+            .unwrap()
+            .query_row("SELECT container FROM items WHERE id='m1'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(container, "mkv", "no item was recomputed");
+    }
+
+    #[test]
+    fn an_item_with_nothing_probed_yet_keeps_its_scanned_columns() {
+        let p = pool_with_probed_movie();
+        let conn = p.get().unwrap();
+        recompute_item_representative(&conn, "m1").unwrap();
+
+        let container: String =
+            conn.query_row("SELECT container FROM items WHERE id='m1'", [], |r| r.get(0)).unwrap();
+        assert_eq!(container, "mkv");
+    }
+
+    #[test]
+    fn a_scan_that_cannot_write_an_item_fails_whole_rather_than_half() {
+        let p = pool();
+        p.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_item_insert BEFORE INSERT ON items \
+                 BEGIN SELECT RAISE(ABORT, 'refused'); END",
+            )
+            .unwrap();
+
+        let items = vec![movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", false)])];
+        assert!(sync_all(&p, &[lib("lib")], &[], &items, &HashMap::new()).is_err());
+    }
+
+    #[test]
+    fn a_scan_that_cannot_write_a_file_fails_on_both_the_probed_and_unprobed_paths() {
+        let p = pool();
+        p.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_file_insert BEFORE INSERT ON files \
+                 BEGIN SELECT RAISE(ABORT, 'refused'); END",
+            )
+            .unwrap();
+
+        for probed in [false, true] {
+            let items =
+                vec![movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", probed)])];
+            assert!(
+                sync_all(&p, &[lib("lib")], &[], &items, &HashMap::new()).is_err(),
+                "probed = {probed}"
+            );
+        }
+    }
+
+    #[test]
     fn every_kind_is_stored_under_the_spelling_the_queries_filter_on() {
         assert_eq!(kind_str(&Kind::Movie), "movie");
         assert_eq!(kind_str(&Kind::Episode), "episode");

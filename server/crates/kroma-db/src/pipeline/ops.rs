@@ -571,4 +571,20 @@ mod tests {
 
         assert_eq!(requeue_stage(&p, "probe", 10).unwrap(), 0);
     }
+
+    #[test]
+    fn a_refused_update_aborts_the_whole_reconcile_instead_of_half_writing_it() {
+        let p = pool();
+        reconcile(&p, "probe", "item", &[("m1".into(), "sig-a".into())], 1_000).unwrap();
+        p.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_update BEFORE UPDATE ON pipeline_tasks \
+                 BEGIN SELECT RAISE(ABORT, 'refused'); END",
+            )
+            .unwrap();
+
+        assert!(reconcile(&p, "probe", "item", &[("m1".into(), "sig-b".into())], 2_000).is_err());
+        assert_eq!(row(&p, "probe", "m1").0, "pending");
+    }
 }

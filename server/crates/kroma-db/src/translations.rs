@@ -248,6 +248,17 @@ mod tests {
     }
 
     #[test]
+    fn a_table_that_is_no_longer_there_surfaces_as_an_error_rather_than_silence() {
+        let p = pool();
+        p.get().unwrap().execute_batch("DROP TABLE translations").unwrap();
+
+        assert!(put(&p, "show", "s1", "en", TMDB, &td("A")).is_err());
+        let conn = p.get().unwrap();
+        assert!(delete_all(&conn, "show", "s1").is_err());
+        assert!(resolve_many(&conn, "show", &["s1"], "fr").is_err());
+    }
+
+    #[test]
     fn delete_all_removes_every_language() {
         let p = pool();
         put(&p, "show", "s1", "en", TMDB, &td("A")).unwrap();

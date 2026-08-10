@@ -65,4 +65,13 @@ mod tests {
             .unwrap();
         assert_eq!(gaps, 0, "no TMDB id means no episode list, not an empty one");
     }
+
+    #[test]
+    fn a_scan_that_cannot_finish_fails_the_job_rather_than_reporting_a_clean_library() {
+        let state = test_state_with_tmdb("key");
+        seed_show_episode(&state, "s1", "e1");
+        state.db.get().unwrap().execute_batch("DROP TABLE shows").unwrap();
+
+        assert!(run(&JobContext::for_test(state)).is_err());
+    }
 }

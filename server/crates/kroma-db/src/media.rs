@@ -765,4 +765,13 @@ mod tests {
         assert_eq!(splash_entries(&p, 2, "fr").unwrap().len(), 2);
         assert!(splash_entries(&p, 0, "fr").unwrap().is_empty());
     }
+
+    #[test]
+    fn a_shows_headline_stream_errors_when_the_file_table_is_gone() {
+        let p = pool();
+        let conn = p.get().unwrap();
+        conn.execute_batch("DROP TABLE files").unwrap();
+
+        assert!(representative_video(&conn, "s1").is_err());
+    }
 }

@@ -165,4 +165,14 @@ mod tests {
         let ctx = JobContext::for_test(state);
         assert!(process(&ctx, "m6").is_ok());
     }
+
+    #[test]
+    fn a_subject_whose_mount_is_offline_fails_its_task_rather_than_passing_quietly() {
+        let state = test_support::test_state();
+        test_support::seed_movie(&state, "m8");
+        set_subs(&state, "m8", r#"[{"codec":"subrip","language":"eng"}]"#);
+
+        let err = process(&JobContext::for_test(state), "m8").unwrap_err();
+        assert!(err.to_string().contains("unavailable"), "{err}");
+    }
 }

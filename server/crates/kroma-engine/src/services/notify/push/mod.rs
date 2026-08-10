@@ -672,6 +672,21 @@ mod tests {
     }
 
     #[test]
+    fn a_database_the_server_cannot_reach_costs_a_push_and_nothing_more() {
+        let service = FakeService::answering(201);
+        let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+        let sender = sender(&state);
+        let held: Vec<_> = (0..16).map(|_| state.db.get().unwrap()).collect();
+        std::fs::remove_dir_all(&state.config.data_dir).unwrap();
+
+        let note = notification(NotificationCategory::Requests);
+        assert_eq!(deliver(&state, &sender, &user, &note), 0);
+        assert_eq!(service.hits(), 0, "nothing was sent");
+        assert!(!is_subscribed(&state, &user));
+        drop(held);
+    }
+
+    #[test]
     fn no_endpoints_means_no_work_at_all() {
         let state = crate::test_support::test_state();
         let user = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id;
@@ -721,6 +736,35 @@ mod tests {
     }
 
     #[test]
+    fn a_fork_can_rename_the_bundle_the_apple_push_is_addressed_to() {
+        let state = crate::test_support::test_state();
+        assert_eq!(credentials(&state).apns_topic, APNS_TOPIC);
+
+        std::env::set_var("KROMA_APNS_TOPIC", "  tv.kroma.fork  ");
+        assert_eq!(credentials(&state).apns_topic, "tv.kroma.fork");
+
+        std::env::set_var("KROMA_APNS_TOPIC", "   ");
+        assert_eq!(credentials(&state).apns_topic, APNS_TOPIC, "a blank one is not a rename");
+        std::env::remove_var("KROMA_APNS_TOPIC");
+    }
+
+    #[test]
+    fn a_caller_that_says_nothing_is_not_counted_as_a_push() {
+        let service = FakeService::answering(201);
+        let addr = service.endpoint.trim_start_matches("http://");
+        let addr = addr.split('/').next().unwrap();
+        drop(std::net::TcpStream::connect(addr).expect("connect"));
+
+        let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+        assert_eq!(
+            deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests)),
+            1,
+            "the silent caller must not have consumed the listener"
+        );
+        assert_eq!(service.hits(), 1);
+    }
+
+    #[test]
     fn an_unusable_apple_key_disables_ios_push_and_nothing_else() {
         let state = crate::test_support::test_state();
         public_key(&state).unwrap();
@@ -733,6 +777,21 @@ mod tests {
         let keys = keys_for(&credentials(&state));
         assert!(keys.apns.is_none(), "a .p8 that does not parse is not an identity");
         assert!(keys.web.is_some(), "Web Push is independent of Apple");
+    }
+
+    #[test]
+    fn an_apple_key_that_parses_becomes_this_servers_ios_identity() {
+        let state = crate::test_support::test_state();
+        public_key(&state).unwrap();
+        state.set_settings(std::collections::BTreeMap::from([
+            (APNS_KEY_P8.to_string(), json!(crate::test_support::test_apns_key_p8())),
+            (APNS_KEY_ID.to_string(), json!("ABC1234567")),
+            (APNS_TEAM_ID.to_string(), json!("TEAM123456")),
+        ]));
+
+        let sender = sender(&state);
+        assert!(sender.apns.is_some(), "the key should have become a sender");
+        assert!(sender.has_own_credentials());
     }
 
     #[test]

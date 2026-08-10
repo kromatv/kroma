@@ -165,6 +165,57 @@ mod tests {
         assert!(process(&ctx, "m2-f").is_ok());
     }
 
+    fn measured(state: &crate::state::SharedState, file_id: &str) -> (f64, Option<f64>) {
+        state
+            .db
+            .get()
+            .unwrap()
+            .query_row(
+                "SELECT lufs_i, dialog_lufs FROM audio_analysis WHERE file_id = ?1",
+                [file_id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap()
+    }
+
+    fn seeded_with_wav(tag: &str, channels: u16, tracks: &str) -> (crate::state::SharedState, kroma_testing::TempDir) {
+        let dir = kroma_testing::temp_dir(tag);
+        let media = dir.path().join("tone.wav");
+        test_support::write_test_wav(&media, 2.0, channels);
+
+        let state = test_support::test_state();
+        test_support::seed_movie(&state, tag);
+        set_target(&state, &format!("{tag}-f"), &media.to_string_lossy(), tracks);
+        (state, dir)
+    }
+
+    #[test]
+    fn a_stereo_mix_is_measured_and_stored_without_a_dialogue_reading() {
+        let (state, _dir) =
+            seeded_with_wav("mono", 1, r#"[{"index":0,"codec":"pcm","channels":2,"default":true}]"#);
+
+        process(&JobContext::for_test(state.clone()), "mono-f").unwrap();
+
+        let (lufs, dialog) = measured(&state, "mono-f");
+        assert!(lufs.is_finite() && lufs < 0.0, "a real measurement, got {lufs}");
+        assert!(dialog.is_none(), "there is no centre channel to read");
+    }
+
+    #[test]
+    fn a_surround_mix_is_measured_twice_so_dialogue_can_be_judged() {
+        let (state, _dir) = seeded_with_wav(
+            "surround",
+            6,
+            r#"[{"index":0,"codec":"pcm","channels":6,"default":true}]"#,
+        );
+
+        process(&JobContext::for_test(state.clone()), "surround-f").unwrap();
+
+        let (lufs, dialog) = measured(&state, "surround-f");
+        assert!(lufs.is_finite());
+        assert!(dialog.is_some(), "5.1 earns a centre-channel measurement");
+    }
+
     #[test]
     fn enumerate_offers_only_probed_files() {
         let state = test_support::test_state();

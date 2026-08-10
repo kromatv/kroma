@@ -423,3 +423,93 @@ fn read_request_target(stream: &std::net::TcpStream) -> Option<String> {
     // "GET /movie/603?api_key=x HTTP/1.1" -> "/movie/603?api_key=x"
     Some(request.split_whitespace().nth(1).unwrap_or("").to_string())
 }
+
+/// Write a `channels`-channel 16-bit PCM WAV of `secs` seconds at `RATE` Hz.
+///
+/// Real audio bytes for the passes that shell out to `ffmpeg` (loudness,
+/// fingerprinting), so their success paths run without shipping a media fixture.
+/// One distinct tone per channel, so a centre-channel measurement differs from
+/// the full mix.
+pub(crate) fn write_test_wav(path: &std::path::Path, secs: f32, channels: u16) {
+    const RATE: u32 = 11_025;
+    let frames = (secs * RATE as f32) as u32;
+    let mut data = Vec::with_capacity(frames as usize * channels as usize * 2);
+    for i in 0..frames {
+        for c in 0..channels {
+            let hz = 220.0 + 80.0 * f32::from(c);
+            let t = i as f32 / RATE as f32;
+            let s = (12_000.0 * (std::f32::consts::TAU * hz * t).sin()) as i16;
+            data.extend_from_slice(&s.to_le_bytes());
+        }
+    }
+    let block_align = channels * 2;
+    let byte_rate = RATE * u32::from(block_align);
+    let mut out = Vec::with_capacity(44 + data.len());
+    out.extend_from_slice(b"RIFF");
+    out.extend_from_slice(&(36 + data.len() as u32).to_le_bytes());
+    out.extend_from_slice(b"WAVEfmt ");
+    out.extend_from_slice(&16u32.to_le_bytes());
+    out.extend_from_slice(&1u16.to_le_bytes());
+    out.extend_from_slice(&channels.to_le_bytes());
+    out.extend_from_slice(&RATE.to_le_bytes());
+    out.extend_from_slice(&byte_rate.to_le_bytes());
+    out.extend_from_slice(&block_align.to_le_bytes());
+    out.extend_from_slice(&16u16.to_le_bytes());
+    out.extend_from_slice(b"data");
+    out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+    out.extend_from_slice(&data);
+    std::fs::write(path, out).expect("write the test wav");
+}
+
+/// A throwaway Apple `.p8` auth key (PKCS#8 P-256), built here rather than
+/// stored as a PEM literal so no file in the tree looks like a private key.
+///
+/// The scalar is a counter, not a secret: it exists only so the APNs identity
+/// and the requests signed with it can be exercised without Apple's issuance.
+pub(crate) fn test_apns_key_p8() -> String {
+    let mut ec = vec![0x02, 0x01, 0x01, 0x04, 0x20];
+    ec.extend(1u8..=32);
+    let ec = der(0x30, &ec);
+    const ALG: &[u8] = &[
+        0x30, 0x13, 0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01, 0x06, 0x08, 0x2A, 0x86,
+        0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07,
+    ];
+    let mut body = vec![0x02, 0x01, 0x00];
+    body.extend_from_slice(ALG);
+    body.extend_from_slice(&der(0x04, &ec));
+    let pkcs8 = der(0x30, &body);
+
+    let b64 = base64_standard(&pkcs8);
+    let mut pem = String::from("-----BEGIN PRIVATE KEY-----\n");
+    for line in b64.as_bytes().chunks(64) {
+        pem.push_str(std::str::from_utf8(line).expect("ascii"));
+        pem.push('\n');
+    }
+    pem.push_str("-----END PRIVATE KEY-----\n");
+    pem
+}
+
+fn der(tag: u8, body: &[u8]) -> Vec<u8> {
+    let mut out = vec![tag, body.len() as u8];
+    out.extend_from_slice(body);
+    out
+}
+
+fn base64_standard(bytes: &[u8]) -> String {
+    const ALPHABET: &[u8; 64] =
+        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let n = (u32::from(chunk[0]) << 16)
+            | (u32::from(chunk.get(1).copied().unwrap_or(0)) << 8)
+            | u32::from(chunk.get(2).copied().unwrap_or(0));
+        for i in 0..4 {
+            if i <= chunk.len() {
+                out.push(char::from(ALPHABET[((n >> (18 - 6 * i)) & 63) as usize]));
+            } else {
+                out.push('=');
+            }
+        }
+    }
+    out
+}

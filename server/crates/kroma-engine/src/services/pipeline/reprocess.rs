@@ -527,6 +527,26 @@ mod tests {
         assert_eq!(pending(&state.db, "subtitles"), 1);
         stage_subtitles(&state, &state.db, "item", "m1", now_ms()).unwrap();
         assert_eq!(pending(&state.db, "subtitles"), 2);
+
+        stage_subtitles(&state, &state.db, "item", "vanished", now_ms()).unwrap();
+        assert_eq!(pending(&state.db, "subtitles"), 3);
+    }
+
+    #[test]
+    fn an_episode_with_no_season_of_its_own_queues_no_marker_pass() {
+        let state = test_support::test_state();
+        test_support::seed_show_episode(&state, "sh1", "ep1");
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute("UPDATE items SET show_id = NULL, season = NULL WHERE id = 'ep1'", [])
+            .unwrap();
+
+        let outcome = reprocess_item(&state, &state.db, "ep1", now_ms(), &mut 0).unwrap();
+
+        assert!(outcome.contains(&"pipeline.markers"));
+        assert_eq!(pending(&state.db, "markers"), 0);
     }
 
     #[tokio::test]

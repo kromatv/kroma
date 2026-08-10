@@ -324,6 +324,19 @@ mod tests {
     }
 
     #[test]
+    fn a_store_that_cannot_be_read_falls_back_to_the_built_in_defaults() {
+        let pool = test_pool();
+        crate::db::settings_set(&pool, "serverName", &json!("Stored")).unwrap();
+        pool.get().unwrap().execute_batch("DROP TABLE settings").unwrap();
+
+        let s = Settings::load(&pool);
+        assert_eq!(s.get("serverName"), json!("KROMA"));
+
+        s.reload(&pool);
+        assert_eq!(s.get("serverName"), json!("KROMA"));
+    }
+
+    #[test]
     fn cloned_handle_shares_the_same_map() {
         let pool = test_pool();
         let s = Settings::load(&pool);

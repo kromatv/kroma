@@ -382,6 +382,41 @@ mod tests {
         assert!(b.seen.is_empty(), "a row that was not emitted claims no titles");
     }
 
+    struct Uniform;
+
+    impl crate::ports::Embedder for Uniform {
+        fn dim(&self) -> usize {
+            2
+        }
+        fn embed(&self, _text: &str) -> Vec<f32> {
+            vec![1.0, 0.0]
+        }
+        fn relevance_floor(&self) -> f32 {
+            0.5
+        }
+    }
+
+    #[test]
+    fn a_themed_phrase_the_library_answers_becomes_a_row() {
+        let state = crate::test_support::test_state_with_embedder(std::sync::Arc::new(Uniform));
+        let ids = ["a", "b", "c", "d", "e"];
+        seed_movies(&state.db, &ids);
+        let vector = state.embedder.embed("anything");
+        assert_eq!(vector.len(), state.embedder.dim(), "a stored vector of another width is noise");
+        for id in ids {
+            crate::db::set_item_vector(&state.db, id, &vector).unwrap();
+        }
+        let _ = state.vectors.refresh_if_stale(&state.db);
+        let ctx = Context::build(&state.db, "u1");
+        let mut out = Builder { pool: &state.db, sections: Vec::new(), seen: HashSet::new() };
+
+        push_themed_rows(&mut out, &state, &ctx, "en", MAX_SECTIONS, state.embedder.relevance_floor());
+
+        assert_eq!(out.sections.len(), 1);
+        assert!(out.sections[0].id.starts_with("themed:"), "{}", out.sections[0].id);
+        assert_eq!(out.sections[0].items.len(), ids.len());
+    }
+
     #[test]
     fn last_title_returns_title_or_none() {
         let pool = test_pool();

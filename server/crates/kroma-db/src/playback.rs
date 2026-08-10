@@ -799,4 +799,34 @@ mod tests {
         assert_eq!(show_progress(&pool, &uid).unwrap().get("s1"), Some(&25));
         assert_eq!(show_progress_one(&pool, &uid, "s1").unwrap(), Some(25));
     }
+
+    #[test]
+    fn a_resume_row_on_something_that_is_not_an_episode_falls_back_to_the_first() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "e", 3);
+        pool.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO items (id,kind,title,container,library,show_id,added_at) \
+                 VALUES ('extra','video','Behind the scenes','mkv','lib','s1','t')",
+                [],
+            )
+            .unwrap();
+        upsert_progress(&pool, &uid, "extra", 60_000, Some(600_000)).unwrap();
+
+        let (item, resume) = up_next_episode(&pool, &uid, "s1").unwrap().unwrap();
+        assert_eq!(item.id, "e1");
+        assert!(!resume, "a bonus feature carries no episode resume position");
+    }
+
+    #[test]
+    fn a_single_shows_progress_errors_rather_than_reading_as_untouched() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "e", 3);
+        pool.get().unwrap().execute_batch("DROP TABLE watched").unwrap();
+        assert!(show_progress_one(&pool, &uid, "s1").is_err());
+
+        pool.get().unwrap().execute_batch("DROP TABLE items").unwrap();
+        assert!(show_progress_one(&pool, &uid, "s1").is_err());
+    }
 }

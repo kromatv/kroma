@@ -379,6 +379,37 @@ mod tests {
     }
 
     #[test]
+    fn a_libraries_array_that_is_not_definitions_seeds_from_the_config_instead() {
+        let pool = test_pool();
+        let s = settings(&pool);
+        s.set_patch(&pool, BTreeMap::from([("libraries".to_string(), json!([1, 2, 3]))]));
+        let mut cfg = test_config();
+        cfg.movies_dirs = vec![PathBuf::from("/media/films")];
+
+        let defs = library_defs(&s, &cfg);
+        assert_eq!(defs.len(), 1);
+        assert_eq!(defs[0].name, "Films");
+    }
+
+    #[test]
+    fn an_instance_id_already_on_disk_is_reused_rather_than_re_minted() {
+        let pool = test_pool();
+        crate::db::settings_set(&pool, "instanceId", &json!("  kept-id  ")).unwrap();
+        let s = settings(&pool);
+
+        assert_eq!(ensure_instance_id(&s, &pool), "  kept-id  ");
+    }
+
+    #[test]
+    fn a_box_with_no_instance_id_yet_mints_a_non_guessable_one() {
+        let pool = test_pool();
+        let s = settings(&pool);
+        let id = ensure_instance_id(&s, &pool);
+        assert_eq!(id.len(), 64, "a 32-byte token, hex-encoded");
+        assert!(id.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
     fn library_defs_round_trip_persisted() {
         let pool = test_pool();
         let s = settings(&pool);

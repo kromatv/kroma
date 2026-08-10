@@ -171,6 +171,17 @@ mod tests {
     }
 
     #[test]
+    fn every_catalog_kind_reaches_the_wire_under_its_own_name() {
+        let mut it = base_item();
+        for (kind, name) in
+            [(Kind::Movie, "movie"), (Kind::Episode, "episode"), (Kind::Video, "video")]
+        {
+            it.kind = kind;
+            assert_eq!(snapshot(&it).kind, name);
+        }
+    }
+
+    #[test]
     fn snapshot_no_streams_shows_dashes() {
         let snap = snapshot(&base_item());
         assert_eq!(snap.video_label, "-");

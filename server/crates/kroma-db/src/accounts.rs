@@ -754,4 +754,13 @@ mod tests {
         assert!(access_token_user(&p, "dev-phone").unwrap().is_none());
         assert!(list_access_tokens(&p, &user.id).unwrap().is_empty());
     }
+
+    #[test]
+    fn a_name_check_that_cannot_read_the_table_refuses_rather_than_reporting_free() {
+        let p = pool();
+        p.get().unwrap().execute_batch("DROP TABLE users").unwrap();
+
+        assert!(username_taken(&p, "alice", None).is_err());
+        assert!(username_taken(&p, "alice", Some("u1")).is_err());
+    }
 }

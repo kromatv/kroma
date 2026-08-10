@@ -279,4 +279,21 @@ mod tests {
         let err = process(&ctx, "shw-1#99").unwrap_err().to_string();
         assert!(err.contains("99"), "{err}");
     }
+
+    #[test]
+    fn a_season_that_is_still_there_is_handed_to_the_detector() {
+        let state = test_state();
+        seed_probed_season(&state, "shw-2", "ep-2");
+        let ctx = JobContext::for_test(state.clone());
+
+        process(&ctx, "shw-2#1").unwrap();
+
+        let markers: i64 = state
+            .db
+            .get()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM markers", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(markers, 0, "a single unreadable episode yields no marker");
+    }
 }

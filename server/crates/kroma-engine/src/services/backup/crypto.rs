@@ -98,4 +98,18 @@ mod tests {
         *tampered.last_mut().unwrap() ^= 0x01;
         assert_eq!(open(&tampered, "correct horse").unwrap(), None);
     }
+
+    #[test]
+    fn an_envelope_from_a_newer_server_is_refused_rather_than_read_as_a_bad_password() {
+        let sealed = seal(b"PK\x03\x04", "correct horse").unwrap();
+        let m = MAGIC.len();
+
+        let mut newer = sealed.clone();
+        newer[m] = VER + 1;
+        assert!(open(&newer, "correct horse").is_err());
+
+        let mut other_kdf = sealed;
+        other_kdf[m + 1] = KDF_PBKDF2 + 1;
+        assert!(open(&other_kdf, "correct horse").is_err());
+    }
 }

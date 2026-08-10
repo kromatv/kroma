@@ -486,4 +486,30 @@ mod tests {
         // ON DELETE CASCADE, so no orphan inbox survives the account.
         assert_eq!(unread_count(&conn, &u1).unwrap(), 0);
     }
+
+    #[test]
+    fn a_retention_sweep_that_is_refused_fails_the_write_it_belongs_to() {
+        let (p, u1, _) = pool();
+        let conn = p.get().unwrap();
+        for n in 0..=RETENTION_PER_USER {
+            insert_notification(&conn, &u1, &new(&format!("n{n}"), n as i64)).unwrap();
+        }
+        conn.execute_batch(
+            "CREATE TRIGGER no_prune BEFORE DELETE ON notifications \
+             BEGIN SELECT RAISE(ABORT, 'refused'); END",
+        )
+        .unwrap();
+
+        assert!(insert_notification(&conn, &u1, &new("over", 9_999)).is_err());
+    }
+
+    #[test]
+    fn the_digest_queries_report_a_missing_table_rather_than_an_empty_library() {
+        let (p, _, _) = pool();
+        let conn = p.get().unwrap();
+        conn.execute_batch("DROP TABLE my_list; DROP TABLE items").unwrap();
+
+        assert!(followers_of_show(&conn, "s1").is_err());
+        assert!(items_added_since(&conn, "2020-01-01", 10).is_err());
+    }
 }

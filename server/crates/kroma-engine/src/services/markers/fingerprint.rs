@@ -243,6 +243,30 @@ mod tests {
     }
 
     #[test]
+    fn a_decodable_window_fingerprints_and_remembers_where_it_began() {
+        let dir = kroma_testing::temp_dir("fingerprint-tone");
+        let media = dir.path().join("tone.wav");
+        crate::test_support::write_test_wav(&media, 8.0, 1);
+
+        let intro = fingerprint_window(&media, 4, false, 8.0).expect("the first seconds decode");
+        assert!(!intro.data.is_empty());
+        assert_eq!(intro.window_start_s, 0.0);
+
+        let credits = fingerprint_window(&media, 4, true, 8.0).expect("the last seconds decode");
+        assert!(!credits.data.is_empty());
+        assert_eq!(credits.window_start_s, 4.0);
+    }
+
+    #[test]
+    fn a_container_ffmpeg_reads_but_finds_no_samples_in_is_an_error_not_an_empty_print() {
+        let dir = kroma_testing::temp_dir("fingerprint-silent");
+        let media = dir.path().join("nothing.wav");
+        crate::test_support::write_test_wav(&media, 0.0, 1);
+
+        assert!(fingerprint_window(&media, 4, false, 8.0).is_err());
+    }
+
+    #[test]
     fn samples_are_read_little_endian() {
         // ffmpeg writes s16le; reading it big-endian yields plausible-looking
         // noise that fingerprints to nothing in common.

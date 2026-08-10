@@ -104,6 +104,12 @@ fn rejects_garbage() {
 }
 
 #[test]
+fn a_backwards_range_is_refused_rather_than_read_as_empty() {
+    assert!(Cron::parse("0 22-4 * * *").is_err());
+    assert!(Cron::parse("0 0 * 12-3 *").is_err());
+}
+
+#[test]
 fn unsatisfiable_returns_none() {
     // Feb 30th never happens.
     let from = datetime!(2026-01-01 00:00:00 UTC);

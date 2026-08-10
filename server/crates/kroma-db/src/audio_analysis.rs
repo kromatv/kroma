@@ -218,4 +218,13 @@ mod tests {
         assert!(audio_analysis_for_file(&conn, "f1").unwrap().is_none());
         assert!(audio_analysis_for_files(&conn, &["f1"]).unwrap().is_empty());
     }
+
+    #[test]
+    fn a_missing_analysis_table_errors_rather_than_reading_as_never_measured() {
+        let p = pool_with_file();
+        let conn = p.get().unwrap();
+        conn.execute_batch("DROP TABLE audio_analysis").unwrap();
+
+        assert!(audio_analysis_for_file(&conn, "f1").is_err());
+    }
 }

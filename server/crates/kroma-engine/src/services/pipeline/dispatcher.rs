@@ -764,4 +764,34 @@ mod tests {
 
         assert!(PROCESSED.lock().unwrap().is_empty(), "cancelled before the first claim");
     }
+
+    #[test]
+    fn a_ledger_that_is_gone_is_reported_rather_than_drained_blind() {
+        let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let state = test_support::test_state();
+        *SUBJECTS.lock().unwrap() = vec![("m1".to_string(), "sig".to_string())];
+        state.db.get().unwrap().execute_batch("DROP TABLE pipeline_tasks").unwrap();
+
+        assert!(run(&TEST_STAGE, &JobContext::for_test(state)).is_err());
+    }
+
+    #[test]
+    fn a_batch_whose_result_cannot_be_recorded_still_releases_what_it_claimed() {
+        let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
+        let state = test_support::test_state();
+        *SUBJECTS.lock().unwrap() = vec![("m1".to_string(), "sig".to_string())];
+        PROCESSED.lock().unwrap().clear();
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER no_release BEFORE UPDATE ON pipeline_tasks \
+                 WHEN OLD.status = 'running' BEGIN SELECT RAISE(ABORT, 'refused'); END",
+            )
+            .unwrap();
+
+        assert!(run(&TEST_STAGE, &JobContext::for_test(state)).is_err());
+        assert_eq!(PROCESSED.lock().unwrap().as_slice(), ["m1"], "the work itself was attempted");
+    }
 }
