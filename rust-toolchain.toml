@@ -11,3 +11,9 @@ channel = "1.96.1"
 # `cargo clippy`/`cargo fmt` break on the pinned toolchain (which ships neither by
 # default). rustup auto-installs these alongside the toolchain.
 components = ["clippy", "rustfmt"]
+# Same reason as the components above, and the reason the cross builds broke:
+# the musl images ship their own rustc with musl std, but this file overrides it
+# the moment cargo runs inside the mounted repo (the whole repo is mounted now,
+# for the module path-deps), and the toolchain rustup installs instead has no
+# musl std - `can't find crate for core`. Declared here, rustup installs both.
+targets = ["x86_64-unknown-linux-musl", "aarch64-unknown-linux-musl"]
