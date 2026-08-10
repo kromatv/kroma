@@ -73,6 +73,14 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: bunx wrangler@4 deploy
 
+      # The registry worker serves a built SPA through its ASSETS binding, so
+      # `../dist` has to exist before wrangler reads the config that points at it.
+      - name: Build the module registry page
+        if: steps.guard.outputs.has_token == 'true' && steps.f.outputs.modules_worker != 'false'
+        run: |
+          bun install --frozen-lockfile
+          bun run --filter '@kroma/module-registry' build
+
       - name: Deploy the module registry (modules.kroma.tv)
         if: steps.guard.outputs.has_token == 'true' && steps.f.outputs.modules_worker != 'false'
         working-directory: packages/module-registry/worker
