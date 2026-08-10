@@ -40,6 +40,8 @@ clients/desktop/src-tauri/bin/
 # TV packaging artifacts
 clients/tizen/*.wgt
 clients/tizen/dist/*.wgt
+# The webOS JS Service bundle, emitted beside dist/ by build:service.
+clients/webos/service/
 clients/tizen/.buildResult/
 clients/tizen/.tizen.env
 clients/webos/*.ipk

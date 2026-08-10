@@ -1,0 +1,19 @@
+{
+  "name": "@kroma/mdns-beacon",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The _kroma-tv._tcp beacon for televisions with a Node service but no DNS-SD API: webOS's JS service, a Tizen service. Node's dgram and nothing else.",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./wire": "./src/wire.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

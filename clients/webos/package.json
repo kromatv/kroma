@@ -6,14 +6,16 @@
   "description": "KROMA LG webOS TV client thin shell over @kroma/tv.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && vite build --config vite.config.legacy.ts && bun run check:legacy && bun ../tv-build/stamp-version.ts",
+    "build": "tsc --noEmit && vite build && vite build --config vite.config.legacy.ts && bun run check:legacy && bun run build:service && bun ../tv-build/stamp-version.ts",
     "check:legacy": "bun ../tv-build/check-legacy.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "package": "echo 'Run: bun run build:webos, then: ares-package clients/webos/dist'"
+    "package": "echo 'Run: bun run build:webos, then: ares-package clients/webos/dist clients/webos/service'",
+    "build:service": "bun ./scripts/build-service.ts"
   },
   "dependencies": {
     "@kroma/core": "workspace:*",
+    "@kroma/mdns-beacon": "workspace:*",
     "@kroma/tv": "workspace:*",
     "@kroma/ui": "workspace:*",
     "react": "19.2.8",
@@ -28,6 +30,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.3",
+    "esbuild": "^0.28.2",
     "lightningcss": "^1.27.0",
     "tailwindcss": "^4",
     "typescript": "^7.0.2",

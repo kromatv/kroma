@@ -10,6 +10,7 @@
       "**",
       "!**/dist",
       "!**/build",
+      "!clients/webos/service",
       "!**/.tanstack",
       "!**/*.gen.ts",
       "!**/routeTree.gen.ts",

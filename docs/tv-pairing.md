@@ -69,10 +69,28 @@ proof can only push *their own* account onto a television, never take one.
 
 | shell | publishes | browses | via |
 | --- | --- | --- | --- |
-| tv-native (Apple TV, Android TV) | yes | — | `@kroma/lan-beacon` |
+| tv-native (Apple TV, Android TV) | yes | — | `@kroma/lan-beacon` (the platform's own DNS-SD) |
+| webos | yes | — | `@kroma/mdns-beacon`, hosted by the JS Service beside the app |
 | mobile (iOS, Android) | — | yes | `@kroma/lan-beacon` |
 | web, tv-web, desktop | — | — | server source only |
-| tizen, webos | — | — | server source only, and confirmed by the check string, see [below](#who-may-raise-a-beacon) |
+| tizen | cannot | — | server source only, and confirmed by the check string, see [below](#who-may-raise-a-beacon) |
+
+A browser has no DNS-SD API, so neither television shell can raise the record
+from its UI. webOS can host one anyway: it lets an app ship a **JS Service**
+(Node) beside the browser, and a UDP socket is all multicast DNS needs -
+`@kroma/mdns-beacon` is that responder, written on `node:dgram` alone, so the
+bundle a television carries has no dependency tree.
+
+Tizen is "cannot" rather than "not yet", and the SDK is where that is settled.
+Its TV profile ships web-API metadata and no rootstraps at all (compare the
+`.core` profiles, which have them), so no native app or service can be built for
+a television: third-party TV apps are web apps. And the TV profile's whole Web
+Device API - Alarm, Application, Archive, Content, DataControl, Download, Exif,
+Filesystem, Iotcon, KeyManager, MessagePort, Package, Push, SystemInfo and the
+TV* modules - contains nothing that registers a DNS-SD service. The JS service
+that ships the Smart Hub preview is not Node either (no `fs`, so no `dgram`).
+A Samsung set is therefore found through the server, which is exactly what the
+check string is for.
 
 Discovery is a port, not a platform check: `TvDiscoverySource` in
 `packages/core/src/handoff/sources.ts`. Anything that produces rows implements
