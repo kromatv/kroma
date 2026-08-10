@@ -451,7 +451,6 @@ describe('useVideoPlayback engine override', () => {
     expect(lastAttach().useNativeHls).toBe(false);
     expect(lastAttach().useShaka).toBe(true);
   });
-
 });
 
 describe('useVideoPlayback direct-play safety net', () => {
@@ -554,7 +553,6 @@ describe('useVideoPlayback without an element', () => {
     expect(result.current.anchor).toBe(0);
     expect(result.current.getPosition()).toBe(0);
   });
-
 
   it('swallows a rejected play() and tolerates one that returns nothing', () => {
     const { result, v } = render();
