@@ -183,6 +183,19 @@ mod tests {
     }
 
     #[test]
+    fn a_hostname_that_is_not_an_ip_binds_every_interface() {
+        assert_eq!(https_addr("127.0.0.1", 4443), SocketAddr::from(([127, 0, 0, 1], 4443)));
+        assert_eq!(https_addr("kroma.local", 4443), SocketAddr::from(([0, 0, 0, 0], 4443)));
+    }
+
+    #[test]
+    fn installing_the_crypto_provider_twice_is_a_no_op() {
+        install_crypto_provider();
+        install_crypto_provider();
+        assert!(rustls::crypto::CryptoProvider::get_default().is_some());
+    }
+
+    #[test]
     fn ensure_self_signed_persists_and_reuses() {
         let scratch = kroma_testing::temp_dir("tls-test");
         let dir = scratch.path();

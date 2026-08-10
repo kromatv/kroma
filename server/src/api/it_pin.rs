@@ -6,7 +6,7 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{seed_session, send, test_app};
+use crate::api::test_support::{seed_access_token, seed_session, send, test_app};
 use crate::model::Permission;
 
 #[tokio::test]
@@ -88,4 +88,97 @@ async fn pin_verify_locks_out_after_five_wrong_tries() {
     let (status, _) =
         send(&t.app, "POST", "/api/auth/pin/verify", Some(&token), Some(json!({ "pin": "1234" }))).await;
     assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+}
+
+#[tokio::test]
+async fn switching_into_a_locked_profile_asks_for_the_pin_without_spending_a_try() {
+    let t = test_app();
+    let (uid, token) =
+        seed_session(&t.state, "switch@test.dev", "switcher", &[Permission::Playback]);
+    send(&t.app, "PATCH", "/api/auth/me/pin", Some(&token), Some(json!({ "pin": "1234" }))).await;
+    let access = seed_access_token(&t.state, &uid, false);
+
+    for _ in 0..6 {
+        let (status, body) = send(
+            &t.app,
+            "POST",
+            "/api/auth/token",
+            None,
+            Some(json!({ "accessToken": access })),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert_eq!(body["pinRequired"], json!(true));
+    }
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access, "pin": "1234" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["token"].as_str().is_some_and(|s| !s.is_empty()));
+    assert_eq!(body["user"]["id"], json!(uid));
+
+    let (status, _) =
+        send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": access }))).await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn wrong_pins_at_the_profile_switch_lock_the_profile_out_too() {
+    let t = test_app();
+    let (uid, token) =
+        seed_session(&t.state, "switchlock@test.dev", "switchlock", &[Permission::Playback]);
+    send(&t.app, "PATCH", "/api/auth/me/pin", Some(&token), Some(json!({ "pin": "1234" }))).await;
+    let access = seed_access_token(&t.state, &uid, false);
+
+    for _ in 0..4 {
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            "/api/auth/token",
+            None,
+            Some(json!({ "accessToken": access, "pin": "0000" })),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+    }
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access, "pin": "0000" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert!(body["retryAfter"].as_i64().unwrap_or(0) > 0);
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access, "pin": "1234" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    let (status, _) =
+        send(&t.app, "POST", "/api/auth/pin/verify", Some(&token), Some(json!({ "pin": "1234" })))
+            .await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+}
+
+#[tokio::test]
+async fn a_dead_access_token_says_so_rather_than_asking_for_a_pin() {
+    let t = test_app();
+    for body in [json!({ "accessToken": "" }), json!({ "accessToken": "   " }), json!({ "accessToken": "no-such-token" })] {
+        let (status, out) = send(&t.app, "POST", "/api/auth/token", None, Some(body.clone())).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{body}");
+        assert_eq!(out["tokenInvalid"], json!(true), "{body}");
+    }
 }

@@ -71,16 +71,23 @@ fn test_supervisor(data_dir: &Path) -> Arc<kroma_module_supervisor::Supervisor> 
 }
 
 pub fn test_app() -> TestApp {
-    build_app(None)
+    build_app(None, &[])
 }
 
 /// Like [`test_app`] but with a fake TMDB key, so handlers clear their
 /// `require_tmdb_key` gate. Only request *unknown* ids: no network fetch happens.
 pub fn test_app_with_tmdb() -> TestApp {
-    build_app(Some("test-tmdb-key"))
+    build_app(Some("test-tmdb-key"), &[])
 }
 
-fn build_app(tmdb_api_key: Option<&str>) -> TestApp {
+/// Like [`test_app`] but with a built web SPA on the same origin, as the
+/// single-binary deploy has. `files` are written verbatim under the served
+/// directory; `_shell.html` is the client-side-routing fallback.
+pub fn test_app_with_web(files: &[(&str, &str)]) -> TestApp {
+    build_app(None, files)
+}
+
+fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
     let tmp = unique_data_dir();
     let data_dir = tmp.path().to_path_buf();
     let db = db::init(&data_dir.join("kroma.db")).expect("init db");
@@ -96,6 +103,15 @@ fn build_app(tmdb_api_key: Option<&str>) -> TestApp {
 
     let mut config = test_config(data_dir.clone());
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
+    if !web.is_empty() {
+        let web_dir = data_dir.join("web");
+        for (name, contents) in web {
+            let path = web_dir.join(name);
+            std::fs::create_dir_all(path.parent().expect("web file parent")).expect("web dir");
+            std::fs::write(path, contents).expect("write web file");
+        }
+        config.web_dir = Some(web_dir);
+    }
     let settings = Settings::load(&db);
     let embedder: Arc<dyn kroma_engine::ports::Embedder> = Arc::new(kroma_engine::ports::NoopEmbedder);
     let state = AppState::new(config, false, db.clone(), settings, embedder, HashMap::new(), &[]);
@@ -277,4 +293,20 @@ pub async fn send(
 /// `GET` convenience over [`send`].
 pub async fn get(app: &Router, uri: &str, token: Option<&str>) -> (StatusCode, Value) {
     send(app, "GET", uri, token, None).await
+}
+
+/// Drive one request and return `(status, body as text)`, for the handlers that
+/// answer `text/plain`, which [`send`] flattens to [`Value::Null`].
+pub async fn text(
+    app: &Router,
+    method: &str,
+    uri: &str,
+    token: Option<&str>,
+    json: Option<Value>,
+) -> (StatusCode, String) {
+    let req = build_request(method, uri, token, json.map(|v| v.to_string()));
+    let resp = app.clone().oneshot(req).await.expect("router response");
+    let status = resp.status();
+    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.expect("read body");
+    (status, String::from_utf8_lossy(&bytes).into_owned())
 }

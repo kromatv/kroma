@@ -639,3 +639,118 @@ async fn the_bench_is_closed_to_anyone_who_cannot_manage_the_server() {
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&plain)).await;
     assert_eq!(inbox["unread"], json!(0));
 }
+
+#[tokio::test]
+async fn the_sample_catalogue_holds_one_rendered_row_per_event_the_server_can_send() {
+    let t = test_app();
+
+    let (status, body) = get(&t.app, "/api/admin/notifications/samples", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    let events = body["events"].as_array().unwrap();
+
+    let ids: Vec<&str> = events.iter().map(|e| e["event"].as_str().unwrap()).collect();
+    let expected: Vec<&str> = NotificationEvent::ALL.iter().map(|e| e.as_str()).collect();
+    assert_eq!(ids, expected);
+    assert_eq!(events[0]["id"], json!("request.submitted"));
+
+    for row in events {
+        let title = row["title"].as_str().unwrap();
+        let text = row["body"].as_str().unwrap();
+        assert!(!title.is_empty() && !title.starts_with("notifications."), "{row}");
+        assert!(!text.is_empty() && !text.starts_with("notifications."), "{row}");
+        assert_eq!(row["read"], json!(false));
+        for action in row["actions"].as_array().unwrap() {
+            assert_eq!(action["kind"], json!("link"), "{action}");
+            assert!(!action["label"].as_str().unwrap().starts_with("notifications."), "{action}");
+        }
+    }
+
+    let submitted = &events[0];
+    assert_eq!(submitted["category"], json!("requests"));
+    assert_eq!(submitted["link"], json!("/admin/requests"));
+    let text = submitted["body"].as_str().unwrap();
+    assert!(text.contains("Sample Film"), "{text}");
+    assert!(text.contains("owner"), "{text}");
+}
+
+#[tokio::test]
+async fn the_sample_catalogue_is_closed_to_anyone_who_cannot_manage_the_server() {
+    let t = test_app();
+    let (_id, plain) = member(&t, "plain-samples");
+
+    let (status, _) = get(&t.app, "/api/admin/notifications/samples", Some(&plain)).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _) = get(&t.app, "/api/admin/notifications/samples", None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn the_bench_reaches_the_admins_without_touching_a_plain_account() {
+    let t = test_app();
+    let (_id, plain) = member(&t, "not-an-admin");
+    let (_mod_id, moderator) =
+        seed_session(&t.state, "settings-mod@test.dev", "settings-mod", &[Permission::SettingsManage]);
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({ "event": "system.job.failed", "target": "admins" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["delivered"], json!(2));
+
+    let (_, mod_inbox) = get(&t.app, "/api/notifications", Some(&moderator)).await;
+    assert_eq!(mod_inbox["unread"], json!(1));
+    let (_, plain_inbox) = get(&t.app, "/api/notifications", Some(&plain)).await;
+    assert_eq!(plain_inbox["unread"], json!(0));
+}
+
+#[tokio::test]
+async fn a_written_notification_carries_the_image_the_admin_attached() {
+    let t = test_app();
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/notifications",
+        Some(&t.token),
+        Some(json!({
+            "title": "New poster",
+            "body": "Have a look.",
+            "imageUrl": "  /api/images/notif-aaaaaaaaaaaaaaaa-w1280.webp  ",
+            "link": "  /  ",
+            "target": "me",
+        })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&t.token)).await;
+    let row = &inbox["notifications"][0];
+    assert_eq!(row["imageUrl"], json!("/api/images/notif-aaaaaaaaaaaaaaaa-w1280.webp"));
+    assert_eq!(row["link"], json!("/"));
+}
+
+#[tokio::test]
+async fn the_bench_refuses_a_link_or_an_image_url_the_relay_would_reject() {
+    let t = test_app();
+
+    for field in ["link", "imageUrl"] {
+        let (status, body) = send(
+            &t.app,
+            "POST",
+            "/api/admin/notifications",
+            Some(&t.token),
+            Some(json!({ "title": "Fine", field: format!("/{}", "x".repeat(4096)), "target": "me" })),
+        )
+        .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{field}");
+        assert!(body["error"].as_str().unwrap_or_default().contains("too long"), "{body}");
+    }
+
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&t.token)).await;
+    assert_eq!(inbox["unread"], json!(0));
+}

@@ -291,6 +291,50 @@ mod tests {
     }
 
     #[test]
+    fn an_over_long_url_is_listed_with_its_reason_rather_than_fetched() {
+        let long = format!("https://x/{}", "y".repeat(MAX_URL_LEN));
+        let out = considered("https://official".into(), vec![stored_entry("Long", &long, true)]);
+        assert_eq!(out[1].skipped, Some("not consulted: the URL is too long"));
+    }
+
+    #[tokio::test]
+    async fn one_unreadable_saved_entry_does_not_take_the_rest_of_the_list_with_it() {
+        let t = crate::api::test_support::test_app();
+        t.state.settings.set_patch(
+            &t.state.db,
+            [(
+                "moduleRegistries".to_string(),
+                json!([
+                    { "name": "Kept", "url": "https://a/modules.json" },
+                    "not an object at all",
+                    { "name": "Also kept", "url": "https://b/modules.json", "enabled": false },
+                ]),
+            )]
+            .into_iter()
+            .collect(),
+        );
+
+        let saved = stored(&t.state);
+        assert_eq!(saved.len(), 3, "the editor must be able to see and fix the bad row");
+        assert_eq!(saved[0].url, "https://a/modules.json");
+        assert!(saved[0].enabled);
+        assert!(saved[1].url.is_empty());
+        assert!(!saved[1].enabled);
+        assert!(!saved[2].enabled);
+    }
+
+    #[tokio::test]
+    async fn a_setting_that_is_not_a_list_reads_as_no_extra_registries() {
+        let t = crate::api::test_support::test_app();
+        assert!(stored(&t.state).is_empty(), "unset means none");
+        t.state.settings.set_patch(
+            &t.state.db,
+            [("moduleRegistries".to_string(), json!("https://a/modules.json"))].into_iter().collect(),
+        );
+        assert!(stored(&t.state).is_empty());
+    }
+
+    #[test]
     fn earlier_third_party_shadows_a_later_one() {
         let merged = merge(vec![
             (reg(OFFICIAL_NAME, "https://o", true), vec![]),

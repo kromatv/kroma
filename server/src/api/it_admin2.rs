@@ -7,7 +7,7 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{get, seed_session, send, test_app};
+use crate::api::test_support::{get, seed_session, send, test_app, text};
 use crate::model::Permission;
 
 fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
@@ -262,4 +262,304 @@ async fn store_catalog_enriches_a_reachable_registry() {
     let alien = by_id("tv.kroma.alien");
     assert_eq!(alien["compatible"], json!(false));
     assert!(alien["url"].is_null(), "no build for this platform -> no install URL");
+}
+
+fn point_store_at(t: &crate::api::test_support::TestApp, url: &str) {
+    t.state.settings.set_patch(
+        &t.state.db,
+        [("moduleRegistryUrl".to_string(), json!(url))].into_iter().collect(),
+    );
+}
+
+#[tokio::test]
+async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
+    let t = test_app();
+    let url = spawn_registry(json!({
+        "schema": 2,
+        "modules": [
+            { "id": "tv.x.app", "name": "App", "version": "1.0.0",
+              "dependsOn": { "tv.x.lib": "^1.0.0" },
+              "optionalDependsOn": { "tv.x.vpn": "*" },
+              "requires": [{ "kind": "download-client" }],
+              "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 30 }] },
+            { "id": "tv.x.lib", "name": "Lib", "version": "1.4.0", "library": true,
+              "artifacts": [{ "target": null, "url": "https://x/lib.kmod", "size": 12 }] },
+            { "id": "tv.x.vpn", "name": "VPN", "version": "1.0.0",
+              "artifacts": [{ "target": null, "url": "https://x/vpn.kmod", "size": 7 }] },
+            { "id": "tv.x.engine", "name": "Engine", "version": "1.0.0",
+              "provides": [{ "kind": "download-client", "id": "rqbit" }],
+              "artifacts": [{ "target": null, "url": "https://x/engine.kmod", "size": 5 }] }
+        ]
+    }))
+    .await;
+    point_store_at(&t, &url);
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/store/plan",
+        Some(&t.token),
+        Some(json!({ "id": "tv.x.app" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["requested"], json!("tv.x.app"));
+
+    let modules = body["modules"].as_array().unwrap();
+    let ids: Vec<&str> = modules.iter().map(|m| m["id"].as_str().unwrap()).collect();
+    assert_eq!(ids, ["tv.x.lib", "tv.x.app"], "a dependency installs before its dependent");
+    assert_eq!(modules[0]["requested"], json!(false));
+    assert_eq!(modules[1]["requested"], json!(true));
+    assert!(modules[1]["installedVersion"].is_null());
+    assert_eq!(body["totalSize"], json!(42));
+
+    let optional = body["optional"].as_array().unwrap();
+    let by_id = |id: &str| optional.iter().find(|o| o["id"] == json!(id)).unwrap();
+    assert_eq!(optional.len(), 2);
+    assert!(by_id("tv.x.vpn")["capability"].is_null());
+    assert_eq!(by_id("tv.x.vpn")["suggested"], json!(false));
+    assert_eq!(by_id("tv.x.engine")["capability"], json!("download-client"));
+    assert_eq!(by_id("tv.x.engine")["suggested"], json!(true));
+    assert_eq!(body["missing"].as_array().unwrap().len(), 0);
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/store/plan",
+        Some(&t.token),
+        Some(json!({ "id": "tv.x.app", "include": ["tv.x.app", "tv.x.vpn"] })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let ids: Vec<&str> =
+        body["modules"].as_array().unwrap().iter().map(|m| m["id"].as_str().unwrap()).collect();
+    assert_eq!(ids, ["tv.x.lib", "tv.x.app", "tv.x.vpn"]);
+    assert_eq!(body["totalSize"], json!(49));
+}
+
+#[tokio::test]
+async fn planning_a_module_the_registry_does_not_offer_is_a_client_error() {
+    let t = test_app();
+    let url = spawn_registry(json!({ "schema": 2, "modules": [] })).await;
+    point_store_at(&t, &url);
+
+    let (status, message) = text(
+        &t.app,
+        "POST",
+        "/api/admin/store/plan",
+        Some(&t.token),
+        Some(json!({ "id": "tv.x.ghost" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(message, "'tv.x.ghost' is not in the registry");
+}
+
+#[tokio::test]
+async fn an_official_registry_that_is_down_stops_a_plan_rather_than_offering_less() {
+    let t = test_app();
+    point_store_at(&t, "http://127.0.0.1:9/none.json");
+
+    let (status, message) = text(
+        &t.app,
+        "POST",
+        "/api/admin/store/plan",
+        Some(&t.token),
+        Some(json!({ "id": "tv.kroma.torrents" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(message.contains("is unreachable"), "{message}");
+}
+
+#[tokio::test]
+async fn an_added_registry_that_is_down_leaves_the_official_catalog_usable() {
+    let t = test_app();
+    let url = spawn_registry(json!({
+        "schema": 2,
+        "modules": [
+            { "id": "tv.x.app", "name": "App", "version": "1.0.0",
+              "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 3 }] }
+        ]
+    }))
+    .await;
+    point_store_at(&t, &url);
+    t.state.settings.set_patch(
+        &t.state.db,
+        [(
+            "moduleRegistries".to_string(),
+            json!([
+                { "name": "Dead", "url": "https://127.0.0.1:9/modules.json", "enabled": true },
+                { "name": "Off", "url": "https://off.example/modules.json", "enabled": false },
+            ]),
+        )]
+        .into_iter()
+        .collect(),
+    );
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/store/plan",
+        Some(&t.token),
+        Some(json!({ "id": "tv.x.app" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["modules"].as_array().unwrap().len(), 1);
+
+    let (status, catalog) = get(&t.app, "/api/admin/store/catalog", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    let rows = catalog["registries"].as_array().unwrap();
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0]["official"], json!(true));
+    assert!(rows[1]["error"].is_string(), "the unreachable one reports its failure: {}", rows[1]);
+    assert_eq!(rows[2]["skipped"], json!("disabled"));
+}
+
+#[tokio::test]
+async fn the_install_plan_is_closed_to_anyone_who_cannot_manage_the_server() {
+    let t = test_app();
+    let m = member(&t, "plan-member");
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/store/plan",
+        Some(&m),
+        Some(json!({ "id": "tv.x.app" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn terminating_a_live_session_drops_it_and_tells_the_player_to_stop() {
+    let t = test_app();
+    let item = crate::api::test_support::demo_item_id("The Matrix");
+    send(
+        &t.app,
+        "POST",
+        "/api/playback/ping",
+        Some(&t.token),
+        Some(json!({ "sessionId": "sess-kill", "itemId": item, "positionMs": 5000 })),
+    )
+    .await;
+
+    let mut rx = t.state.events.subscribe();
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/sessions/sess-kill/stop",
+        Some(&t.token),
+        Some(json!({ "message": "  Serveur en maintenance  " })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["ok"], json!(true));
+
+    let mut frames = Vec::new();
+    while let Ok(envelope) = rx.try_recv() {
+        if let Some(json) = envelope.payload_for(&t.user_id) {
+            frames.push(serde_json::from_str::<serde_json::Value>(json).expect("event is json"));
+        }
+    }
+    let types: Vec<&str> = frames.iter().map(|f| f["type"].as_str().unwrap()).collect();
+    assert_eq!(types, ["playback.terminate", "playback.stopped"]);
+    assert_eq!(frames[0]["sessionId"], json!("sess-kill"));
+    assert_eq!(frames[0]["message"], json!("Serveur en maintenance"));
+    assert_eq!(frames[1]["count"], json!(0));
+
+    let (_, sessions) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
+    assert_eq!(sessions["sessions"].as_array().map(Vec::len), Some(0));
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/playback/ping",
+        Some(&t.token),
+        Some(json!({ "sessionId": "sess-kill", "itemId": item, "positionMs": 6000 })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::GONE);
+}
+
+#[tokio::test]
+async fn the_admin_surface_of_a_module_that_is_not_running_is_simply_absent() {
+    let t = test_app();
+    for path in ["/api/admin/m/tv.kroma.ghost", "/api/admin/m/tv.kroma.ghost/settings"] {
+        let (status, _) = get(&t.app, path, Some(&t.token)).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path}");
+    }
+}
+
+#[tokio::test]
+async fn a_finished_session_lands_in_the_weekly_watch_history() {
+    let t = test_app();
+    let movie = crate::api::test_support::demo_item_id("The Matrix");
+    send(
+        &t.app,
+        "POST",
+        "/api/playback/ping",
+        Some(&t.token),
+        Some(json!({ "sessionId": "sess-history", "itemId": movie, "positionMs": 0 })),
+    )
+    .await;
+    send(&t.app, "POST", "/api/playback/stop", Some(&t.token), Some(json!({ "sessionId": "sess-history" })))
+        .await;
+
+    let (status, body) = get(&t.app, "/api/admin/stats/history?days=28", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    let buckets = body["buckets"].as_array().expect("buckets");
+    assert_eq!(buckets.len(), 4, "28 days is four weekly buckets");
+    assert!(buckets.iter().all(|b| b["tvMs"] == json!(0)), "{body}");
+    assert_eq!(body["totalTvMs"], json!(0));
+    assert_eq!(body["totalFilmsMs"], buckets[3]["filmsMs"]);
+
+    let episode = crate::api::test_support::demo_item_id("Islands");
+    send(
+        &t.app,
+        "POST",
+        "/api/playback/ping",
+        Some(&t.token),
+        Some(json!({ "sessionId": "sess-tv", "itemId": episode, "positionMs": 0 })),
+    )
+    .await;
+    send(&t.app, "POST", "/api/playback/stop", Some(&t.token), Some(json!({ "sessionId": "sess-tv" })))
+        .await;
+    let (_, body) = get(&t.app, "/api/admin/stats/history?days=28", Some(&t.token)).await;
+    let buckets = body["buckets"].as_array().expect("buckets");
+    assert_eq!(body["totalTvMs"], buckets[3]["tvMs"]);
+
+    let (status, top) = get(&t.app, "/api/admin/stats/top-users?days=7", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        top["users"].as_array().unwrap().iter().any(|u| u["username"] == json!("owner")),
+        "the viewer is in the leaderboard: {top}"
+    );
+}
+
+#[tokio::test]
+async fn an_official_catalog_that_reports_its_own_outage_is_a_failure_not_an_empty_shelf() {
+    let t = test_app();
+    let url = spawn_registry(json!({ "modules": [], "error": "upstream unavailable" })).await;
+    point_store_at(&t, &url);
+
+    let (status, catalog) = get(&t.app, "/api/admin/store/catalog", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        catalog["error"].as_str().unwrap_or_default().contains("upstream unavailable"),
+        "{catalog}"
+    );
+    assert_eq!(catalog["modules"].as_array().map(Vec::len), Some(0));
+
+    let (status, message) = text(
+        &t.app,
+        "POST",
+        "/api/admin/store/plan",
+        Some(&t.token),
+        Some(json!({ "id": "tv.kroma.torrents" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(message.contains("is unreachable"), "{message}");
 }

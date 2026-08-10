@@ -426,3 +426,91 @@ fn link_action(id: &str, label_key: &str, href: &str) -> ActionSpec {
         style: ActionStyle::Primary,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn body(title: Option<&str>, text: Option<&str>) -> SendBody {
+        SendBody {
+            event: None,
+            title: title.map(str::to_string),
+            body: text.map(str::to_string),
+            category: None,
+            link: None,
+            image_url: None,
+            target: Target::Me,
+        }
+    }
+
+    fn param(spec: &NotificationSpec, key: &str) -> String {
+        spec.params.get(key).expect("param").resolve(|_| None)
+    }
+
+    #[test]
+    fn an_emoji_costs_two_of_the_title_budget_because_the_relay_counts_utf16() {
+        assert_eq!(wire_len("abc"), 3);
+        assert_eq!(wire_len("\u{1f4fa}"), 2);
+
+        let just_fits = "\u{1f4fa}".repeat(MAX_TITLE / 2);
+        assert_eq!(just_fits.chars().count(), MAX_TITLE / 2);
+        assert!(compose(&body(Some(&just_fits), None), "owner").is_ok());
+
+        let one_too_many = "\u{1f4fa}".repeat(MAX_TITLE / 2 + 1);
+        assert!(one_too_many.chars().count() < MAX_TITLE);
+        assert_eq!(compose(&body(Some(&one_too_many), None), "owner").err(), Some("title is too long"));
+    }
+
+    #[test]
+    fn a_blank_title_falls_through_to_the_named_event() {
+        let mut blank = body(Some("   "), Some("ignored"));
+        blank.event = Some("media.added".into());
+        let spec = compose(&blank, "owner").expect("compose");
+        assert_eq!(spec.event, NotificationEvent::MediaAdded);
+        assert_eq!(spec.title_key, "notifications.media.added.title");
+    }
+
+    #[test]
+    fn a_written_title_wins_over_a_named_event() {
+        let mut both = body(Some("  Maintenance  "), Some("At nine."));
+        both.event = Some("media.added".into());
+        let spec = compose(&both, "owner").expect("compose");
+        assert_eq!(spec.event, NotificationEvent::Custom);
+        assert_eq!(param(&spec, "title"), "Maintenance");
+        assert_eq!(param(&spec, "body"), "At nine.");
+        assert_eq!(spec.category(), NotificationCategory::System);
+    }
+
+    #[test]
+    fn a_blank_link_or_image_is_dropped_rather_than_stored_empty() {
+        let mut spaces = body(Some("Hello"), None);
+        spaces.link = Some("   ".into());
+        spaces.image_url = Some("".into());
+        let spec = compose(&spaces, "owner").expect("compose");
+        assert_eq!(spec.link, None);
+        assert_eq!(spec.image_url, None);
+    }
+
+    #[test]
+    fn the_custom_events_own_sample_is_an_empty_composer() {
+        let mut named = body(None, None);
+        named.event = Some("custom".into());
+        let spec = compose(&named, "owner").expect("compose");
+        assert_eq!(spec.event, NotificationEvent::Custom);
+        assert_eq!(spec.link, None);
+        assert!(spec.actions.is_empty());
+    }
+
+    #[test]
+    fn a_content_hash_that_is_not_hexadecimal_is_not_an_upload() {
+        assert!(is_notification_upload("0123456789abcdef-w1280.webp"));
+        assert!(!is_notification_upload("zzzzzzzzzzzzzzzz-w1280.webp"));
+        assert!(!is_notification_upload("0123456789ab-w1280.webp"));
+    }
+
+    #[test]
+    fn a_missing_images_directory_lists_nothing_rather_than_failing() {
+        let scratch = kroma_testing::temp_dir("notif-images");
+        assert!(uploaded_images(&scratch.path().join("never-created")).is_empty());
+    }
+}

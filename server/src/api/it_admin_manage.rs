@@ -198,3 +198,45 @@ async fn member_cannot_reach_user_management() {
     let (status, _) = send(&t.app, "DELETE", "/api/admin/users/x", Some(&m), None).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
+
+#[tokio::test]
+async fn an_admin_rename_obeys_the_same_uniqueness_as_a_self_service_one() {
+    let t = test_app();
+    let (ana_id, _) = seed_session(&t.state, "ana-adm@test.dev", "ana-adm", &[Permission::Playback]);
+    seed_session(&t.state, "bo-adm@test.dev", "bo-adm", &[Permission::Playback]);
+
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        &format!("/api/admin/users/{ana_id}"),
+        Some(&t.token),
+        Some(json!({ "username": "bo-adm" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        &format!("/api/admin/users/{ana_id}"),
+        Some(&t.token),
+        Some(json!({ "username": "  ana-adm  " })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        &format!("/api/admin/users/{ana_id}"),
+        Some(&t.token),
+        Some(json!({ "username": "ana-renamed" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, body) = get(&t.app, "/api/admin/users", Some(&t.token)).await;
+    assert!(
+        body["users"].as_array().unwrap().iter().any(|u| u["username"] == json!("ana-renamed")),
+        "{body}"
+    );
+}

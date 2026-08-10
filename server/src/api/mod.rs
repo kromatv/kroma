@@ -276,3 +276,45 @@ fn is_hashed_asset(path: &str) -> bool {
     stem.rsplit_once('-')
         .is_some_and(|(_, h)| h.len() >= 8 && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_'))
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::http::header::CACHE_CONTROL;
+
+    use super::*;
+    use crate::api::test_support::{raw, test_app_with_web, text};
+
+    #[tokio::test]
+    async fn a_client_side_route_falls_back_to_the_spa_shell_without_shadowing_the_api() {
+        let t = test_app_with_web(&[
+            ("_shell.html", "<!doctype html><title>KROMA</title>"),
+            ("assets/index-DXQwrN_7.js", "console.log(1)"),
+        ]);
+
+        let (status, headers, _) =
+            raw(&t.app, "GET", "/assets/index-DXQwrN_7.js", None, None, &[]).await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(headers[CACHE_CONTROL], "public, max-age=31536000, immutable");
+
+        let (status, shell) = text(&t.app, "GET", "/films", None, None).await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(shell.contains("<title>KROMA</title>"), "{shell}");
+        let (_, headers, _) = raw(&t.app, "GET", "/films", None, None, &[]).await;
+        assert_eq!(headers[CACHE_CONTROL], "no-cache");
+
+        let (status, body) = crate::api::test_support::get(&t.app, "/api/auth/config", None).await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(body.get("hasAccounts").is_some(), "{body}");
+    }
+
+    #[test]
+    fn only_a_content_hashed_asset_may_be_cached_forever() {
+        assert!(is_hashed_asset("/assets/index-DXQwrN_7.css"));
+        assert!(is_hashed_asset("/assets/Poster-BKMFTghM.js"));
+        assert!(!is_hashed_asset("/index.html"));
+        assert!(!is_hashed_asset("/assets/entry-BKMFTghM.html"));
+        assert!(!is_hashed_asset("/films"));
+        assert!(!is_hashed_asset("/favicon.ico"));
+        assert!(!is_hashed_asset("/assets/logo-dark.svg"));
+    }
+}

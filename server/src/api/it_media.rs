@@ -326,3 +326,52 @@ async fn splash_is_public_and_serves_only_backdrop_captions() {
     let show_entry = entries.iter().find(|e| e["kind"] == json!("show")).unwrap();
     assert_eq!(show_entry["year"], json!(2005));
 }
+
+#[tokio::test]
+async fn a_cached_theme_is_served_with_a_week_of_cache() {
+    let t = test_app();
+    enable_theme_songs(&t);
+    let dir = crate::infra::theme::themes_dir(&t.state.config.data_dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("424242.mp3"), b"ID3fake-mp3-bytes").unwrap();
+
+    let (status, headers, _) = raw(&t.app, "GET", "/api/themes/424242.mp3", None, None, &[]).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers["cache-control"], "public, max-age=604800");
+}
+
+#[tokio::test]
+async fn a_log_file_that_cannot_be_read_as_text_still_answers_an_empty_body() {
+    let t = test_app();
+    let dir = t.state.config.logs_dir();
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("kroma.log"), [0xff, 0xfe, 0x00, 0x01]).unwrap();
+
+    let (status, headers, _) = raw(&t.app, "GET", "/api/logs", Some(&t.token), None, &[]).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(headers["content-type"].to_str().unwrap().starts_with("text/plain"));
+}
+
+#[tokio::test]
+async fn search_surfaces_a_show_hit_as_show() {
+    let t = test_app();
+    let (status, body) = get(&t.app, "/api/search?q=Office", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    let results = body["results"].as_array().expect("results");
+    let show = results.iter().find(|r| r["type"] == json!("show")).expect("a show hit");
+    assert_eq!(show["show"]["title"], json!("The Office"));
+
+    let movies = movies_library_id(&t).await;
+    let (_, scoped) =
+        get(&t.app, &format!("/api/search?q=Office&library={movies}"), Some(&t.token)).await;
+    let results = scoped["results"].as_array().expect("results");
+    assert!(!results.iter().any(|r| r["type"] == json!("show")), "{scoped}");
+}
+
+#[tokio::test]
+async fn a_manual_scan_goes_through_the_tracked_job_so_it_cannot_race_a_watcher() {
+    let t = test_app();
+    let (status, body) = crate::api::test_support::send(&t.app, "POST", "/api/scan", Some(&t.token), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["runId"].as_str().is_some_and(|id| !id.is_empty()), "{body}");
+}

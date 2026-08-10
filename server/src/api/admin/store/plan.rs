@@ -416,6 +416,138 @@ mod tests {
     }
 
     #[test]
+    fn a_shared_dependency_is_planned_once_for_two_dependents() {
+        let mut a = module("tv.x.a", "1.0.0");
+        a.depends_on = vec![("tv.x.lib".into(), None)];
+        let mut b = module("tv.x.b", "1.0.0");
+        b.depends_on = vec![("tv.x.lib".into(), None)];
+        let modules = vec![a, b, module("tv.x.lib", "1.0.0")];
+        let mut p = planner(&modules);
+        p.roots(&["tv.x.a", "tv.x.b"]).unwrap();
+        let order: Vec<&str> = p.plan.iter().map(|x| x.entry.id.as_str()).collect();
+        assert_eq!(order, vec!["tv.x.lib", "tv.x.a", "tv.x.b"]);
+    }
+
+    #[test]
+    fn a_dependency_cycle_is_refused_by_name_rather_than_recursed_into() {
+        let mut a = module("tv.x.a", "1.0.0");
+        a.depends_on = vec![("tv.x.b".into(), None)];
+        let mut b = module("tv.x.b", "1.0.0");
+        b.depends_on = vec![("tv.x.a".into(), None)];
+        let modules = vec![a, b];
+        let mut p = planner(&modules);
+        let err = p.roots(&["tv.x.a"]).unwrap_err().to_string();
+        assert!(err.contains("cycle"), "{err}");
+    }
+
+    #[test]
+    fn a_missing_root_and_a_missing_dependency_say_different_things() {
+        let modules = vec![module("tv.x.app", "1.0.0")];
+        let err = planner(&modules).roots(&["tv.x.absent"]).unwrap_err().to_string();
+        assert_eq!(err, "'tv.x.absent' is not in the registry");
+
+        let mut root = module("tv.x.app", "1.0.0");
+        root.depends_on = vec![("tv.x.absent".into(), None)];
+        let modules = vec![root];
+        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
+        assert_eq!(err, "dependency 'tv.x.absent' is neither installed nor in the registry");
+    }
+
+    #[test]
+    fn a_module_this_server_is_too_old_for_blocks_the_plan_up_front() {
+        let mut root = module("tv.x.app", "1.0.0");
+        root.min_server = Some("999.0.0".into());
+        let modules = vec![root];
+        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
+        assert!(err.contains("requires KROMA server 999.0.0"), "{err}");
+        assert!(err.contains("update the server first"), "{err}");
+    }
+
+    #[test]
+    fn a_module_with_no_build_for_this_platform_blocks_the_plan_up_front() {
+        let modules = vec![catalog::test_module("tv.x.app", "1.0.0")];
+        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
+        assert_eq!(err, "'tv.x.app' has no build for this server's platform");
+    }
+
+    #[test]
+    fn a_dependency_already_installed_in_range_is_not_reinstalled() {
+        let mut root = module("tv.x.app", "1.0.0");
+        root.depends_on = vec![("tv.x.lib".into(), Some("^1.0.0".into()))];
+        let modules = vec![root, module("tv.x.lib", "1.2.0")];
+        let mut p = Planner::with_present(
+            &modules,
+            HashMap::from([("tv.x.lib".to_string(), "1.1.0".to_string())]),
+            Vec::new(),
+        );
+        p.roots(&["tv.x.app"]).unwrap();
+        let order: Vec<&str> = p.plan.iter().map(|x| x.entry.id.as_str()).collect();
+        assert_eq!(order, vec!["tv.x.app"]);
+    }
+
+    #[test]
+    fn a_registry_copy_that_misses_the_declared_range_is_refused_before_installing_it() {
+        let mut root = module("tv.x.app", "1.0.0");
+        root.depends_on = vec![("tv.x.lib".into(), Some("^2.0.0".into()))];
+        let modules = vec![root, module("tv.x.lib", "1.0.0")];
+        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
+        assert_eq!(err, "'tv.x.app' needs tv.x.lib@^2.0.0 but the registry has 1.0.0");
+    }
+
+    #[test]
+    fn an_optional_dependency_two_modules_name_is_offered_once() {
+        let mut a = module("tv.x.a", "1.0.0");
+        a.optional_depends_on = vec![("tv.x.vpn".into(), None)];
+        let mut b = module("tv.x.b", "1.0.0");
+        b.optional_depends_on = vec![("tv.x.vpn".into(), None)];
+        let modules = vec![a, b, module("tv.x.vpn", "1.0.0")];
+        let mut p = planner(&modules);
+        p.roots(&["tv.x.a", "tv.x.b"]).unwrap();
+        let (rows, _) = p.optional();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].get("for").and_then(Value::as_str), Some("tv.x.a"));
+    }
+
+    #[test]
+    fn the_extra_roots_join_the_plan_without_repeating_the_one_asked_for() {
+        let requested = "tv.x.app".to_string();
+        let include = vec![requested.clone(), "tv.x.extra".to_string()];
+        assert_eq!(root_list(&requested, &include), vec!["tv.x.app", "tv.x.extra"]);
+    }
+
+    #[test]
+    fn a_plan_row_states_what_is_installed_and_what_was_asked_for() {
+        let mut root = module("tv.x.app", "1.0.0");
+        root.depends_on = vec![("tv.x.lib".into(), None)];
+        let modules = vec![root, module("tv.x.lib", "1.0.0")];
+        let mut p = Planner::with_present(
+            &modules,
+            HashMap::from([("tv.x.app".to_string(), "0.9.0".to_string())]),
+            Vec::new(),
+        );
+        p.roots(&["tv.x.app"]).unwrap();
+        let rows: Vec<Value> = p.plan.iter().map(plan_row).collect();
+        assert_eq!(rows[0].get("id").and_then(Value::as_str), Some("tv.x.lib"));
+        assert!(rows[0].get("installedVersion").unwrap().is_null());
+        assert_eq!(rows[0].get("requested").and_then(Value::as_bool), Some(false));
+        assert_eq!(rows[1].get("installedVersion").and_then(Value::as_str), Some("0.9.0"));
+        assert_eq!(rows[1].get("requested").and_then(Value::as_bool), Some(true));
+        assert_eq!(rows[1].get("size").and_then(Value::as_u64), Some(10));
+
+        let brief = plan_brief(&p.plan);
+        let first = &brief.as_array().unwrap()[0];
+        assert_eq!(first.get("id").and_then(Value::as_str), Some("tv.x.lib"));
+        assert!(first.get("installedVersion").is_none());
+        assert_eq!(entry_brief(&modules[1]), *first);
+    }
+
+    #[test]
+    fn a_module_with_no_artifact_reports_no_size() {
+        let bare = catalog::test_module("tv.x.app", "1.0.0");
+        assert!(entry_brief(&bare).get("size").unwrap().is_null());
+    }
+
+    #[test]
     fn optional_deps_are_offered_but_installed_ones_are_not() {
         let mut root = module("tv.x.app", "1.0.0");
         root.optional_depends_on = vec![("tv.x.vpn".into(), None), ("tv.x.already".into(), None)];

@@ -216,3 +216,116 @@ async fn malformed_receiver_ids_and_bodies_are_rejected() {
     .await;
     assert!(status.is_client_error(), "unknown command types are refused, got {status}");
 }
+
+fn frames_for(
+    rx: &mut tokio::sync::broadcast::Receiver<crate::infra::events::Envelope>,
+    viewer: &str,
+) -> Vec<serde_json::Value> {
+    let mut out = Vec::new();
+    while let Ok(envelope) = rx.try_recv() {
+        if let Some(json) = envelope.payload_for(viewer) {
+            out.push(serde_json::from_str(json).expect("event is json"));
+        }
+    }
+    out
+}
+
+#[tokio::test]
+async fn a_beat_that_only_moved_the_playhead_announces_a_position_not_a_whole_receiver() {
+    let t = test_app();
+    let item = demo_item_id("The Matrix");
+    let playing = |ms: i64| {
+        json!({ "itemId": item, "positionMs": ms, "durationMs": 8_160_000, "state": "playing" })
+    };
+    let mut rx = t.state.events.subscribe();
+
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", Some(playing(1_000)))),
+    )
+    .await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", Some(playing(65_000)))),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let frames = frames_for(&mut rx, &t.user_id);
+    let types: Vec<&str> = frames.iter().map(|f| f["type"].as_str().unwrap()).collect();
+    assert_eq!(types, ["cast.receiver", "cast.position"]);
+    let position = &frames[1];
+    assert_eq!(position["receiverId"], json!("tv-salon-01"));
+    assert_eq!(position["positionMs"], json!(65_000));
+    assert_eq!(position["durationMs"], json!(8_160_000));
+    assert_eq!(position["state"], json!("playing"));
+}
+
+#[tokio::test]
+async fn a_paused_beat_still_reports_where_the_playhead_stopped() {
+    let t = test_app();
+    let item = demo_item_id("The Matrix");
+    let paused = |ms: i64| json!({ "itemId": item, "positionMs": ms, "state": "paused" });
+    let mut rx = t.state.events.subscribe();
+
+    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", Some(paused(10)))))
+        .await;
+    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", Some(paused(20)))))
+        .await;
+
+    let frames = frames_for(&mut rx, &t.user_id);
+    assert_eq!(frames[1]["type"], json!("cast.position"));
+    assert_eq!(frames[1]["state"], json!("paused"));
+    assert!(frames[1].get("durationMs").is_none());
+}
+
+#[tokio::test]
+async fn a_full_roster_refuses_the_next_television_instead_of_evicting_one() {
+    let t = test_app();
+    for n in 0..32 {
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            "/api/cast/announce",
+            Some(&t.token),
+            Some(beat(&format!("tv-salon-{n:03}"), None)),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "receiver {n} should fit");
+    }
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-one-too-many", None)),
+    )
+    .await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+
+    let (_, list) = get(&t.app, "/api/cast/receivers", Some(&t.token)).await;
+    assert_eq!(list.as_array().map(Vec::len), Some(32));
+}
+
+#[tokio::test]
+async fn a_command_addressed_to_a_malformed_receiver_id_never_reaches_the_roster() {
+    let t = test_app();
+    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/cast/receivers/short/command",
+        Some(&t.token),
+        Some(json!({ "type": "pause" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
