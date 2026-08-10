@@ -104,7 +104,22 @@ pub fn server_module<S: HostCtx + Clone + Send + Sync + 'static>() -> Box<dyn Se
 
 #[cfg(test)]
 mod tests {
+    use kroma_module_sdk::host::testing::StubHost;
+    use kroma_module_sdk::Module;
+    use serde_json::json;
+
     use super::*;
+
+    static CORE_URL: Mutex<()> = Mutex::new(());
+
+    fn with_core_url<T>(f: impl FnOnce() -> T) -> T {
+        let _held = CORE_URL.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        f()
+    }
+
+    fn block_on<F: std::future::Future>(f: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(f)
+    }
 
     #[test]
     fn the_advertised_names_have_the_shapes_dns_sd_requires() {
@@ -149,13 +164,63 @@ mod tests {
 
     #[test]
     fn the_advertised_port_is_read_off_the_core_url_not_this_sidecars_own() {
-        std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040");
-        assert_eq!(core_port(), Some(4040));
-        std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040/");
-        assert_eq!(core_port(), Some(4040));
-        std::env::set_var("KROMA_CORE_URL", "http://kroma.local");
-        assert_eq!(core_port(), None, "a URL with no port must not advertise a guess");
-        std::env::remove_var("KROMA_CORE_URL");
-        assert_eq!(core_port(), None);
+        with_core_url(|| {
+            std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040");
+            assert_eq!(core_port(), Some(4040));
+            std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040/");
+            assert_eq!(core_port(), Some(4040));
+            std::env::set_var("KROMA_CORE_URL", "http://kroma.local");
+            assert_eq!(core_port(), None, "a URL with no port must not advertise a guess");
+            std::env::remove_var("KROMA_CORE_URL");
+            assert_eq!(core_port(), None);
+        });
+    }
+
+    #[test]
+    fn the_module_carries_the_id_its_manifest_declares_and_contributes_nothing_else() {
+        let module = server_module::<StubHost>();
+        assert_eq!(module.id(), MODULE_ID);
+        assert_eq!(MODULE.manifest().id, MODULE_ID);
+        assert!(module.migrations().is_empty(), "a lifecycle-only module owns no tables");
+        assert!(module.admin_routes(&StubHost::new()).is_none());
+        assert!(module.jobs().is_empty());
+    }
+
+    #[test]
+    fn discovery_switched_off_in_settings_leaves_the_module_holding_no_daemon() {
+        let module = MdnsModule::default();
+        let host: Arc<dyn HostCtx> =
+            Arc::new(StubHost::new().with_setting("localDiscovery", json!(false)));
+
+        block_on(ServerModule::<StubHost>::on_enable(&module, host));
+
+        assert!(module.daemon.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn a_core_url_carrying_no_port_advertises_nothing_rather_than_a_guessed_one() {
+        with_core_url(|| {
+            std::env::set_var("KROMA_CORE_URL", "http://kroma.local");
+            let module = MdnsModule::default();
+            let host: Arc<dyn HostCtx> = Arc::new(StubHost::new());
+
+            block_on(ServerModule::<StubHost>::on_enable(&module, host));
+            std::env::remove_var("KROMA_CORE_URL");
+
+            assert!(module.daemon.lock().unwrap().is_none());
+        });
+    }
+
+    #[test]
+    fn disabling_a_module_that_never_started_advertising_is_a_no_op_the_kernel_can_repeat() {
+        let module = MdnsModule::default();
+        let host: Arc<dyn HostCtx> = Arc::new(StubHost::new());
+
+        block_on(async {
+            ServerModule::<StubHost>::on_disable(&module, host.clone()).await;
+            ServerModule::<StubHost>::on_disable(&module, host).await;
+        });
+
+        assert!(module.daemon.lock().unwrap().is_none());
     }
 }

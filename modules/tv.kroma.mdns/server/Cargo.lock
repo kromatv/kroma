@@ -1215,6 +1215,7 @@ name = "kroma-mdns"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
  "mdns-sd",
@@ -1232,6 +1233,7 @@ dependencies = [
  "axum",
  "kroma-db",
  "kroma-domain",
+ "kroma-testing",
  "serde",
  "serde_json",
  "tokio",
@@ -1320,6 +1322,13 @@ dependencies = [
  "kroma-module-manifest",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "kroma-testing"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
 ]
 
 [[package]]

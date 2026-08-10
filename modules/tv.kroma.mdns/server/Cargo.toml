@@ -24,6 +24,12 @@ tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 mdns-sd = "0.20"
 
+# `HostCtx` is typed in axum's Response/StatusCode, so a hand-rolled double
+# cannot be written from a crate that does not depend on axum. The shared
+# `StubHost` is the only way to reach this module's enable/disable path.
+[dev-dependencies]
+kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
+
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
 # speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module
