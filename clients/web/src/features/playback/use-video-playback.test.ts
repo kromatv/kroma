@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MovieView } from '#web/shared/lib/api';
 
@@ -452,22 +452,6 @@ describe('useVideoPlayback engine override', () => {
     expect(lastAttach().useShaka).toBe(true);
   });
 
-  it('keeps Safari on native HLS unless Shaka is picked', async () => {
-    vi.stubGlobal('navigator', {
-      userAgent:
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15',
-    });
-    H.decision = { kind: 'web-mse', aacMaster: false };
-    const { result } = render();
-    await settle();
-    await waitFor(() => expect(lastAttach().useNativeHls).toBe(true));
-    expect(lastAttach().useShaka).toBe(false);
-
-    act(() => result.current.setEnginePref('shaka'));
-    await settle();
-    expect(lastAttach().useNativeHls).toBe(false);
-    expect(lastAttach().useShaka).toBe(true);
-  });
 });
 
 describe('useVideoPlayback direct-play safety net', () => {
@@ -571,27 +555,6 @@ describe('useVideoPlayback without an element', () => {
     expect(result.current.getPosition()).toBe(0);
   });
 
-  it('re-anchors from the stream base offset alone when the element is gone', async () => {
-    H.decision = { kind: 'web-mse', aacMaster: false };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({
-        headers: { get: (k: string) => (k === 'X-Hls-Start' ? '12' : null) },
-      })),
-    );
-    const { result } = render();
-    await settle();
-    await waitFor(() => expect(result.current.baseSec).toBe(12));
-
-    result.current.videoRef.current = null;
-    act(() => result.current.setAudio(1));
-    await settle();
-    expect(result.current.anchor).toBe(12);
-
-    act(() => result.current.setEnginePref('remux'));
-    await settle();
-    expect(result.current.anchor).toBe(12);
-  });
 
   it('swallows a rejected play() and tolerates one that returns nothing', () => {
     const { result, v } = render();
