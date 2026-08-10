@@ -6,12 +6,25 @@ rust-version.workspace = true
 description = "SQLite persistence layer: connection pool + all SQL, one table per domain noun"
 license.workspace = true
 
+[features]
+# Compiles `testing::temp_pool`, the shared throwaway database. Off by default
+# so nothing reaches a release build; crates whose tests need a real pool turn
+# it on in their dev-dependencies.
+testing = ["dep:kroma-testing"]
+
 [dependencies]
 kroma-domain = { workspace = true }
 kroma-primitives = { workspace = true }
+kroma-testing = { workspace = true, optional = true }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 time = { workspace = true }
 # Embedded SQLite compiled from source (bundled) — no system libsqlite3 needed.
 rusqlite = { workspace = true }
+
+[dev-dependencies]
+# `testing` is this crate's own feature, which its unit tests cannot switch on
+# for themselves; naming the leaf here makes `testing::temp_pool` compile under
+# `cargo test -p kroma-db` too.
+kroma-testing = { workspace = true }

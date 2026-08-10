@@ -69,15 +69,10 @@ pub fn all_for_kind(pool: &Pool, kind: &str) -> Result<HashMap<String, u64>> {
 mod tests {
     use super::*;
     use crate::metadata_core::{ITEM, SHOW};
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use crate::testing::TempPool;
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn pool() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("kroma-tmdb-pin-{}-{n}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        crate::schema::init(&dir.join("test.db")).unwrap()
+    fn pool() -> TempPool {
+        crate::testing::temp_pool("tmdb-pin")
     }
 
     #[test]

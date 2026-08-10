@@ -84,7 +84,7 @@ pub async fn announce(
         return Err(bad_id(&user));
     }
 
-    let ip = client_ip(&headers, &addr);
+    let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
     let network = classify_network(&ip, &settings::local_networks(&state.settings));
 
     // Resolved server-side: senders must render a title the receiver cannot spoof.

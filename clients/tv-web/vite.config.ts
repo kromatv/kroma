@@ -1,6 +1,6 @@
 import { tvShellConfig } from '@kroma/bundler/shell';
 import type { ConfigEnv, UserConfig } from 'vite';
-import { target } from './tv.target';
+import { target } from './tv.target.ts';
 
 // The shared TV-shell pipeline, parameterized by ./tv.target.ts. Modern tier
 // only - see the target for why there is no legacy bundle here.

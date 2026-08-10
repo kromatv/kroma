@@ -39,6 +39,8 @@ export { StatsPanel } from './parts/StatsPanel';
 export type { SubtitleGenBundle, SubtitleGenRequest } from './parts/settings/gen';
 export type { SurfaceRadius } from './parts/surface-radius';
 export { SurfaceRadiusProvider, useSurfaceRadius } from './parts/surface-radius';
+// The width the sheet draws a card at, so a host asks for artwork that size.
+export { UP_NEXT_ART_W } from './parts/UpNextCard';
 export type { UpNextData, UpNextItem } from './parts/UpNextSheet';
 export type {
   AudioFilterMode,

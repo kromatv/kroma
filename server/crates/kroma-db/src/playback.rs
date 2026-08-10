@@ -420,18 +420,13 @@ pub fn next_episode(pool: &Pool, item_id: &str) -> Result<Option<MediaItem>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::TempPool;
     use kroma_domain::Permission;
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    static SEQ: AtomicU32 = AtomicU32::new(0);
 
     // Fresh DB with one user and one movie item `m1` (so `progress` which has an
     // items FK can be seeded).
-    fn pool_with_user() -> (Pool, String) {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-watched-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::init(&path).unwrap();
+    fn pool_with_user() -> (TempPool, String) {
+        let pool = crate::testing::temp_pool("watched");
         let user = crate::create_user(&pool, "w@e.com", "w", "hash", &[Permission::Playback]).unwrap();
         let conn = pool.get().unwrap();
         conn.execute(

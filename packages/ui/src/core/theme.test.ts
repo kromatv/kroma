@@ -18,7 +18,7 @@ describe('createTheme', () => {
       fonts: { display: 'Clash Display' },
     });
     // The focus ring follows the accent; the roles follow the family they name.
-    expect(ocean.ring.focus).toContain('#3FB6F2');
+    expect(ocean.ring.focus.outlineColor).toBe('#3FB6F2');
     expect(ocean.type.hero?.fontFamily).toBe('Clash Display');
     expect(ocean.type.body?.fontFamily).toBe(KROMA.fonts.ui);
   });

@@ -15,10 +15,12 @@
 import {
   type CastCommand,
   type CastReceiver,
+  type DiscoveredTv,
   type ItemId,
   KromaApiError,
   type KromaClient,
   KromaEvents,
+  type LanDiscoveryBridge,
   type ServerEvent,
 } from '@kroma/core';
 import {
@@ -34,6 +36,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useLanCast } from '#ui/services/cast-lan';
 
 const TICK_MS = 500;
 
@@ -41,6 +44,10 @@ const TICK_MS = 500;
 export interface Cast {
   /** Live receivers on this server, the caller's own devices first. */
   receivers: CastReceiver[];
+  /** Televisions heard in the room that have no account yet, so cannot be cast
+   * to until someone gives them one. Empty on a shell that cannot listen to its
+   * own link, which is every shell without the native module. */
+  pairable: DiscoveredTv[];
   /** The receiver this sender is driving, or null when playing locally. */
   active: CastReceiver | null;
   /** Whether any TV is available to cast to (drives the button's visibility). */
@@ -68,6 +75,7 @@ export function useCast(): Cast {
 
 const IDLE: Cast = {
   receivers: [],
+  pairable: [],
   active: null,
   available: false,
   positionMs: 0,
@@ -85,6 +93,10 @@ export interface CastProviderProps {
   /** What this device calls itself on the TV's list of remotes ("iPhone",
    * "Chrome"). Shown across the room, so it should be a thing, not a session id. */
   deviceName: string;
+  /** This device's DNS-SD stack, when the shell has one. It makes a television
+   * appear the moment it is heard rather than on the next beat, and surfaces
+   * the ones with no account at all. */
+  lan?: LanDiscoveryBridge;
   children: ReactNode;
 }
 
@@ -128,6 +140,7 @@ export function CastProvider({
   client,
   enabled,
   deviceName,
+  lan,
   children,
 }: Readonly<CastProviderProps>) {
   const [receivers, setReceivers] = useState<CastReceiver[]>([]);
@@ -155,6 +168,18 @@ export function CastProvider({
       .then(setReceivers)
       .catch(() => undefined);
   }, [client, enabled]);
+
+  // What the link adds: a signed-in television heard here is refetched at once
+  // instead of on the next beat, and the ones with no account are surfaced so a
+  // picker never reads "none available" with one in the room.
+  const known = useRef<CastReceiver[]>(receivers);
+  known.current = receivers;
+  const pairable = useLanCast({
+    lan,
+    enabled: enabled && Boolean(client),
+    onUnknownReceiver: refresh,
+    knowsReceiver: (id) => known.current.some((r) => r.id === id),
+  });
 
   // Roster: fetched once, then kept live off the bus.
   useEffect(() => {
@@ -291,6 +316,7 @@ export function CastProvider({
   const value = useMemo<Cast>(
     () => ({
       receivers,
+      pairable,
       active,
       available: receivers.length > 0,
       positionMs,
@@ -299,7 +325,7 @@ export function CastProvider({
       send,
       error,
     }),
-    [receivers, active, positionMs, select, playOn, send, error],
+    [receivers, pairable, active, positionMs, select, playOn, send, error],
   );
 
   return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;

@@ -30,6 +30,10 @@ import {
   WatchedButton,
 } from '#tv/features/catalog/detail/parts';
 
+// The backdrop fills the stage and no more: the original is several times
+// this on a modern release.
+const STAGE_W = 1920;
+
 export function TvShowDetail() {
   const nav = useNav();
   const { show } = useParams('show');
@@ -106,7 +110,7 @@ export function TvShowDetail() {
   }, [client, show.id]);
 
   const meta = show.metadata;
-  const backdrop = client.backdropFor(show) ?? client.showPosterFor(show);
+  const backdrop = client.backdropFor(show, STAGE_W) ?? client.showPosterFor(show, STAGE_W);
   const theme = useThemeAudio(client.themeFor(show));
 
   const activeSeason = useMemo(
@@ -160,7 +164,11 @@ export function TvShowDetail() {
             size="lg"
             autoFocus
             icon="player-play-filled"
-            disabled={!playTarget}
+            // NOT disabled while the episodes load: the navigator registers a
+            // node when it mounts and never re-registers it, so a button that
+            // becomes focusable later joins the row at its END - the remote
+            // walked past the leftmost button on the screen. It simply does
+            // nothing until there is something to play.
             label={
               playTarget
                 ? t(playLabelKey, {

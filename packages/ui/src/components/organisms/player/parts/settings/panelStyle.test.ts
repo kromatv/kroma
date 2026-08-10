@@ -13,13 +13,13 @@ describe('rowStyle', () => {
 });
 
 describe('focus-state style atoms', () => {
-  it('bakes the shared small focus ring into every ON row', () => {
-    expect(panel.rowOn.boxShadow).toBe(KROMA.ring.focusGlowSm);
-    expect(panel.valueRowOn.boxShadow).toBe(KROMA.ring.focusGlowSm);
+  it('bakes the kit focus ring into every ON row', () => {
+    expect(panel.rowOn).toMatchObject(KROMA.ring.focusLift);
+    expect(panel.valueRowOn).toMatchObject(KROMA.ring.focusLift);
   });
 
   it('keeps the idle row transparent, with no ring', () => {
     expect(panel.rowOff).toEqual({ backgroundColor: 'transparent' });
-    expect(panel.rowOff.boxShadow).toBeUndefined();
+    expect(panel.rowOff.outlineWidth).toBeUndefined();
   });
 });

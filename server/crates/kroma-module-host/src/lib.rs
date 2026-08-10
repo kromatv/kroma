@@ -446,9 +446,7 @@ mod tests {
 
     #[tokio::test]
     async fn query_hands_the_closure_its_own_pool() {
-        let path = std::env::temp_dir().join(format!("kroma-host-query-{}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = kroma_db::init(&path).expect("init db");
+        let pool = kroma_db::testing::temp_pool("host-query");
         let n: Result<i64, Response> = query(&pool, |p| {
             let conn = p.get()?;
             let v: i64 = conn.query_row("SELECT 1 + 1", [], |r| r.get(0))?;
@@ -456,7 +454,6 @@ mod tests {
         })
         .await;
         assert_eq!(n.unwrap(), 2);
-        let _ = std::fs::remove_file(&path);
     }
     use serde_json::json;
 

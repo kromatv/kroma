@@ -23,6 +23,7 @@ import {
   Img,
   MediaCard,
   qualityTone,
+  RAIL_GAP,
   Rail,
   styles,
   Txt,
@@ -53,7 +54,7 @@ const HERO_EMPTY_HEIGHT = 432;
 
 // What one home tile occupies, so the row can be virtualised: a <MediaCard>
 // at its default 328 width, 16:9, plus the 24px gap after it.
-const ROW_TILE = { width: 328 + 24, height: Math.round((328 * 9) / 16) };
+const ROW_TILE = { width: 328 + RAIL_GAP, height: Math.round((328 * 9) / 16) };
 
 // The design sizes the hero with viewport units and clamps; on the fixed
 // 1920x1080 stage those resolve to the values below.
@@ -102,8 +103,8 @@ function computeHero(
   if (hero) {
     heroBackdrop =
       hero.type === 'show'
-        ? (client.backdropFor(hero.show) ?? client.showPosterFor(hero.show))
-        : (client.backdropFor(hero.item) ?? client.posterFor(hero.item));
+        ? (client.backdropFor(hero.show, HERO_W) ?? client.showPosterFor(hero.show, HERO_W))
+        : (client.backdropFor(hero.item, HERO_W) ?? client.posterFor(hero.item, HERO_W));
   }
   let heroBadge: string | null = null;
   if (hero) {
@@ -155,7 +156,6 @@ export function TvHome() {
             tint={posterColors(show.id)}
             watched={isWatched(show.id)}
             progress={show.progress == null ? null : show.progress / 100}
-            width={330}
             onPress={() => onSelectShow(show)}
           />
         );
@@ -169,7 +169,6 @@ export function TvHome() {
           art={client.backdropFor(m, TILE_W) ?? client.posterFor(m, TILE_W)}
           tint={posterColors(m.id)}
           watched={isWatched(m.id)}
-          width={330}
           onPress={() => onSelectMovie(m)}
         />
       );
@@ -215,7 +214,6 @@ export function TvHome() {
                 art={client.backdropFor(item, TILE_W) ?? client.posterFor(item, TILE_W)}
                 tint={posterColors(item.id)}
                 progress={pct / 100}
-                width={330}
                 onPress={() => onPlay(item)}
               />
             );
@@ -250,7 +248,6 @@ export function TvHome() {
                 tint={posterColors(show.id)}
                 watched={isWatched(show.id)}
                 progress={show.progress == null ? null : show.progress / 100}
-                width={330}
                 onPress={() => onSelectShow(show)}
               />
             )),
@@ -364,7 +361,7 @@ export function TvHome() {
           // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the slot - see <FocusSlot>.
           <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
             <Box mb={8} mt={18}>
-              <Rail title={row.title} titleStyle={s.rowTitle} gap={24} item={ROW_TILE}>
+              <Rail title={row.title} titleStyle={s.rowTitle} item={ROW_TILE}>
                 {row.cards}
               </Rail>
             </Box>
@@ -391,6 +388,9 @@ function heroLine(e: SectionItem): string {
     .join(' · ');
 }
 
-// A rail tile is drawn 330pt wide; the server's fixed rendition buckets
-// (160/320/480/780) make 320 the better trade against the 480 bucket's cost.
+// A rail tile is drawn 330pt wide, but the server's next rendition bucket above
+// 320 is 480: those pixels cost more than the 3% upscale shows.
 const TILE_W = 320;
+// The hero fills the 1920 stage, but a backdrop master is a TMDB w1280 and the
+// server's widest bucket is 960, so there is nothing sharper to ask for.
+const HERO_W = 960;

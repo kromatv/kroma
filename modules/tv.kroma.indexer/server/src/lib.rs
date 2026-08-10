@@ -477,15 +477,8 @@ search:
         }
     }
 
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    fn db_pool() -> kroma_module_sdk::db::Pool {
-        static SEQ: AtomicU32 = AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path =
-            std::env::temp_dir().join(format!("kroma-indexer-lib-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = kroma_module_sdk::db::init(&path).expect("init db");
+    fn db_pool() -> kroma_module_sdk::db::testing::TempPool {
+        let pool = kroma_module_sdk::db::testing::temp_pool("indexer-lib");
         {
             let conn = pool.get().unwrap();
             kroma_module_sdk::db::apply_migrations(&conn, db::MIGRATIONS).expect("indexers schema");
@@ -527,7 +520,7 @@ search:
         use kroma_module_sdk::ports::TorrentFetchPort;
         let pool = db_pool();
         db::insert_indexer(&pool, &seed_row("tz", "torznab", true, 100)).unwrap();
-        let host = DbHost::with_pool(pool);
+        let host = DbHost::with_pool(pool.clone());
         assert!(IndexerTorrentFetch.fetch_torrent(&host, "nope", "http://x/f.torrent").is_none());
         assert!(IndexerTorrentFetch.fetch_torrent(&host, "tz", "http://x/f.torrent").is_none());
     }
@@ -543,7 +536,8 @@ search:
 
     #[test]
     fn the_module_declares_its_id_migrations_and_admin_routes() {
-        let host = DbHost::with_pool(db_pool());
+        let pool = db_pool();
+        let host = DbHost::with_pool(pool.clone());
         let module = server_module::<DbHost>();
         // The id is the manifest id: the host keys enable/disable state on it, so
         // a drift here silently detaches every stored setting.
@@ -591,7 +585,7 @@ search:
         let mut row = seed_row("builtin-gone", admin::KIND_BUILTIN, true, 100);
         row.definition_id = Some("a-tracker-that-does-not-exist".into());
         db::insert_indexer(&pool, &row).unwrap();
-        let host = DbHost::with_pool(pool);
+        let host = DbHost::with_pool(pool.clone());
 
         assert!(IndexerSearch.search(&host, &row, &port_query(), &[2000]).is_err());
     }
@@ -605,7 +599,7 @@ search:
         let mut row = seed_row("builtin-nodef", admin::KIND_BUILTIN, true, 100);
         row.definition_id = Some("also-missing".into());
         db::insert_indexer(&pool, &row).unwrap();
-        let host = DbHost::with_pool(pool);
+        let host = DbHost::with_pool(pool.clone());
 
         assert!(IndexerSearch
             .resolve_download(&host, &row, "Some.Release", None, "http://tracker.invalid/dl/1")
@@ -621,7 +615,7 @@ search:
         let mut row = seed_row("builtin-fetch", admin::KIND_BUILTIN, true, 100);
         row.definition_id = Some("nowhere-to-be-found".into());
         db::insert_indexer(&pool, &row).unwrap();
-        let host = DbHost::with_pool(pool);
+        let host = DbHost::with_pool(pool.clone());
 
         let outcome = IndexerTorrentFetch.fetch_torrent(&host, "builtin-fetch", "http://x/f.torrent");
         assert!(matches!(outcome, Some(Err(_))), "a built-in grab must not degrade to a plain fetch");

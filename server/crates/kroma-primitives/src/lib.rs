@@ -56,3 +56,44 @@ pub fn random_u32() -> u32 {
     let b = random_bytes(4);
     u32::from_le_bytes([b[0], b[1], b[2], b[3]])
 }
+
+/// The shape every self-declared device id must have: 8-64 of
+/// `[A-Za-z0-9._-]`. Long enough to be unique per device, narrow enough that a
+/// caller cannot smuggle a path segment or a control character through one.
+pub fn valid_device_id(id: &str) -> bool {
+    (8..=64).contains(&id.len())
+        && id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+}
+
+/// A device-supplied label, trimmed to `max` characters with control characters
+/// stripped: these are rendered in other people's device pickers, where a raw
+/// newline could otherwise forge a line.
+pub fn clean_label(s: &str, max: usize) -> String {
+    let out: String = s.chars().filter(|c| !c.is_control()).take(max).collect();
+    out.trim().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_device_id_must_be_long_enough_and_plain_enough() {
+        assert!(valid_device_id("tv-abcdef"));
+        assert!(valid_device_id(&"y".repeat(64)));
+        assert!(!valid_device_id("short"));
+        assert!(!valid_device_id(&"y".repeat(65)));
+        assert!(!valid_device_id("has spaces"));
+        assert!(!valid_device_id("../escape"));
+        assert!(!valid_device_id(""));
+    }
+
+    #[test]
+    fn a_label_loses_its_control_characters_and_its_overflow() {
+        assert_eq!(clean_label("  Salon  ", 48), "Salon");
+        assert_eq!(clean_label("Salon\nAdmin", 48), "SalonAdmin");
+        assert_eq!(clean_label(&"a".repeat(80), 10), "a".repeat(10));
+        // Truncation counts characters, not bytes: a multi-byte label survives.
+        assert_eq!(clean_label("téléviseur", 4), "télé");
+    }
+}

@@ -12,7 +12,8 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/client": "workspace:*"
+    "@kroma/client": "workspace:*",
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "react": ">=18"

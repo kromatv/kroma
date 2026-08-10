@@ -1,0 +1,21 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.lanbeacon'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.lanbeacon"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+// No dependencies: NsdManager is part of the platform (android.net.nsd), which
+// is the whole appeal - DNS-SD without shipping a resolver.

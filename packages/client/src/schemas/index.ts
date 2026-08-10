@@ -5,6 +5,7 @@ export * from './acquisition';
 export * from './admin';
 export * from './cast';
 export * from './discovery';
+export * from './handoff';
 export * from './ids';
 export * from './media';
 export * from './modules';

@@ -15,6 +15,7 @@ mod cast;
 mod discover;
 mod downloads_overlay;
 mod extract;
+mod handoff;
 mod home;
 mod host_jobs;
 mod images;
@@ -27,6 +28,7 @@ mod pin;
 mod recommend;
 mod rematch;
 mod notifications;
+mod origin;
 mod reports;
 mod requests;
 mod search;
@@ -60,6 +62,8 @@ mod it_playback;
 #[cfg(test)]
 mod it_cast;
 #[cfg(test)]
+mod it_handoff;
+#[cfg(test)]
 mod it_images;
 #[cfg(test)]
 mod it_invites;
@@ -86,7 +90,6 @@ use axum::{Extension, Router};
 use kroma_module_supervisor::Supervisor;
 use tower_http::compression::predicate::{NotForContentType, Predicate};
 use tower_http::compression::{CompressionLayer, DefaultPredicate};
-use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 
@@ -142,6 +145,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(accounts::routes())
         .merge(passkeys::routes())
         .merge(pin::routes())
+        .merge(handoff::public_routes(state.clone()))
         .merge(invites::routes())
         .merge(images::routes())
         .merge(media::public_routes())
@@ -168,6 +172,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(home::routes())
         .merge(playback::routes())
         .merge(cast::routes())
+        .merge(handoff::routes())
         .merge(discover::routes())
         .merge(rematch::routes())
         .merge(requests::routes())
@@ -227,7 +232,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
             .and(NotForContentType::new("application/vnd.apple.mpegurl")),
     );
 
-    app.layer(CorsLayer::permissive())
+    app.layer(origin::cors(&state.config.allowed_origins))
         .layer(compression)
         .layer(axum::middleware::from_fn(spa_cache_headers))
         .layer(TraceLayer::new_for_http())

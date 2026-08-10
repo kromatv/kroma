@@ -4,13 +4,16 @@
 // (<CastPanel>): the player is a native fullScreenModal, and @gorhom's sheet
 // renders into a host that sits behind it.
 
-import type { CastReceiver } from '@kroma/core';
+import type { CastReceiver, DiscoveredTv, FinalRefusal, GrantResult } from '@kroma/core';
+import { checkRetryable, grantRefusal } from '@kroma/core';
 import { useCast } from '@kroma/ui';
 import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable } from 'react-native';
+import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';
 import { SheetTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
+import { useClient } from '#mobile/lib/session';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 
 export interface CastDeviceListProps {
@@ -18,9 +21,80 @@ export interface CastDeviceListProps {
   offerLocal?: boolean;
 }
 
+// Every ending is its own word. Two of them reading the same was a bug: a code
+// that was refused looked exactly like a television that had signed in.
+type PairingState = 'signingIn' | 'done' | FinalRefusal;
+
+interface Attempt {
+  handle: string;
+  state: PairingState;
+}
+
 export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDeviceListProps>) {
   const t = useT();
-  const { receivers, active } = useCast();
+  const client = useClient();
+  const { receivers, active, pairable } = useCast();
+  // A television with no account cannot be cast to, and saying "none available"
+  // with one in the room is the dead end this answers. The provider already
+  // found it; the one useful thing to add here is the act of signing it in.
+  //
+  // Deliberately NOT `useNearbyTvs`: that hook does its own looking, and this
+  // list is rendered inside a provider that is already looking.
+  const [attempt, setAttempt] = useState<Attempt | null>(null);
+  const [asking, setAsking] = useState<DiscoveredTv | null>(null);
+  // A grant at a time, read through a ref because two taps can land inside one
+  // render: a second one in flight would settle the row of the first.
+  const granting = useRef(false);
+  const grant = useCallback(
+    async (tv: DiscoveredTv, check?: string): Promise<GrantResult> => {
+      if (granting.current) return 'dropped';
+      granting.current = true;
+      setAttempt({ handle: tv.handle, state: 'signingIn' });
+      try {
+        await client.handoffGrant(tv.handle, { proof: tv.proof, check });
+        setAttempt({ handle: tv.handle, state: 'done' });
+        setAsking(null);
+        return 'granted';
+      } catch (cause) {
+        const refusal = grantRefusal(cause);
+        // A code that can be retyped is the prompt's to report; the row is only
+        // told about an ending it has to keep.
+        if (checkRetryable(refusal)) {
+          setAttempt(null);
+          // A row this picker believed needed no code, and the server says
+          // otherwise: ask for it rather than leave a tap that did nothing.
+          if (refusal === 'checkRequired') setAsking(tv);
+          return refusal;
+        }
+        setAttempt({ handle: tv.handle, state: refusal });
+        setAsking(null);
+        return refusal;
+      } finally {
+        granting.current = false;
+      }
+    },
+    [client],
+  );
+
+  // A row the server never placed asks for the code that television is printing
+  // before it hands anybody an account. Everything the picker hears on the link
+  // is such a row, since nothing here has the server's word on any of them.
+  const start = (tv: DiscoveredTv) => {
+    if (tv.confirmRequired) {
+      setAsking(tv);
+      return;
+    }
+    void grant(tv);
+  };
+
+  if (asking) {
+    return (
+      <>
+        <SheetTitle>{t('cast.title')}</SheetTitle>
+        <CheckPrompt device={asking} onGrant={grant} onCancel={() => setAsking(null)} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -49,7 +123,23 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
         />
       ))}
 
-      {receivers.length === 0 ? (
+      {pairable.map((tv) => {
+        const state = attempt?.handle === tv.handle ? attempt.state : null;
+        return (
+          <DeviceRow
+            key={tv.handle}
+            icon="device-tv"
+            name={tv.name}
+            detail={detailOfPairable(state, t)}
+            selected={false}
+            // A granted beacon is spent: the server mints a new handle when that
+            // television waits again, so this row will never be the one to tap.
+            onPress={state === 'done' ? undefined : () => start(tv)}
+          />
+        );
+      })}
+
+      {receivers.length === 0 && pairable.length === 0 ? (
         <NoDevices />
       ) : (
         // Shown even with devices already listed: the roster is live, so a
@@ -101,6 +191,14 @@ function Searching() {
   );
 }
 
+function detailOfPairable(state: PairingState | null, t: ReturnType<typeof useT>): string {
+  if (state === 'signingIn') return t('handoff.connecting');
+  if (state === 'done') return t('handoff.rowDone');
+  if (state === 'gone') return t('handoff.gone');
+  if (state === 'checkTooMany') return t('handoff.checkTooMany');
+  return t('cast.signInThisTv');
+}
+
 function detailOf(r: CastReceiver, t: ReturnType<typeof useT>): string {
   const playing = r.nowPlaying?.item;
   if (playing) return playing.metadata?.title ?? playing.title;
@@ -118,11 +216,12 @@ function DeviceRow({
   name: string;
   detail: string;
   selected: boolean;
-  onPress(): void;
+  onPress?: () => void;
 }>) {
   return (
     <Pressable
       onPress={onPress}
+      disabled={!onPress}
       style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
       accessibilityRole="button"
       accessibilityState={{ selected }}

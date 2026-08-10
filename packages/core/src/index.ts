@@ -7,6 +7,7 @@ export * from './compat';
 export * from './discover';
 export * from './format';
 export * from './genre-art';
+export * from './handoff';
 export * from './hevc';
 export * from './i18n';
 export * from './lang';

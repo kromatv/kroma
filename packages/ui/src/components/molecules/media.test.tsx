@@ -30,12 +30,19 @@ describe('tintGradient', () => {
 });
 
 describe('MediaCard', () => {
-  it('is a focusable 16:9 tile at the design width and radius', () => {
+  it('is a focusable 16:9 tile that FILLS its cell, at the design radius', () => {
     render(<MediaCard title="Dune" art={null} tint={TINT} />);
     const el = tile('Dune');
     expect(screen.getByLabelText('Dune').getAttribute('role')).toBe('button');
-    expect(css(el).width).toBe('328px');
+    // A rail fits its pitch to whole columns, so a tile pinned to a width of
+    // its own eats the gap the cell was holding for it.
+    expect(css(el).width).toBe('100%');
     expect(css(el).borderTopLeftRadius).toBe(`${radius.xl}px`);
+  });
+
+  it('takes a width where there is no cell to fill', () => {
+    render(<MediaCard title="Dune" art={null} tint={TINT} width={280} />);
+    expect(css(tile('Dune')).width).toBe('280px');
   });
 
   it('scales to 1.06 on focus, the rail tile treatment', () => {

@@ -16,11 +16,8 @@ fn tar_with_manifest(manifest: &str) -> Vec<u8> {
     builder.into_inner().unwrap()
 }
 
-fn temp_modules_dir(tag: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("kroma-sup-{tag}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
+fn temp_modules_dir(tag: &str) -> kroma_testing::TempDir {
+    kroma_testing::temp_dir(&format!("sup-{tag}"))
 }
 
 fn supervisor(dir: &std::path::Path, server_version: &str) -> std::sync::Arc<Supervisor> {
@@ -38,8 +35,9 @@ fn supervisor(dir: &std::path::Path, server_version: &str) -> std::sync::Arc<Sup
 
 #[test]
 fn install_rejects_a_module_needing_a_newer_server() {
-    let dir = temp_modules_dir("gate");
-    let sup = supervisor(&dir, "0.1.4");
+    let scratch = temp_modules_dir("gate");
+    let dir = scratch.path();
+    let sup = supervisor(dir, "0.1.4");
     let bundle = tar_with_manifest(
         r#"{ "id": "com.example.demo", "name": "Demo", "version": "1.0.0",
              "minServer": "999.0.0", "library": true }"#,
@@ -47,13 +45,13 @@ fn install_rejects_a_module_needing_a_newer_server() {
     let err = sup.install(&bundle, None).unwrap_err().to_string();
     assert!(err.contains("requires KROMA server"), "unexpected error: {err}");
     assert!(sup.installed_ids().is_empty());
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
 fn install_accepts_a_satisfied_min_server() {
-    let dir = temp_modules_dir("ok");
-    let sup = supervisor(&dir, "0.1.4");
+    let scratch = temp_modules_dir("ok");
+    let dir = scratch.path();
+    let sup = supervisor(dir, "0.1.4");
     let bundle = tar_with_manifest(
         r#"{ "id": "com.example.demo", "name": "Demo", "version": "1.0.0",
              "minServer": "0.1.0", "library": true }"#,
@@ -61,19 +59,18 @@ fn install_accepts_a_satisfied_min_server() {
     let manifest = sup.install(&bundle, None).unwrap();
     assert_eq!(manifest["id"], "com.example.demo");
     assert_eq!(sup.installed_ids(), vec!["com.example.demo".to_string()]);
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
 fn install_still_rejects_reserved_ids() {
-    let dir = temp_modules_dir("reserved");
-    let sup = supervisor(&dir, "0.1.4");
+    let scratch = temp_modules_dir("reserved");
+    let dir = scratch.path();
+    let sup = supervisor(dir, "0.1.4");
     let bundle = tar_with_manifest(
         r#"{ "id": "tv.kroma.reserved", "name": "Shadow", "version": "1.0.0", "library": true }"#,
     );
     let err = sup.install(&bundle, None).unwrap_err().to_string();
     assert!(err.contains("built into this server"), "unexpected error: {err}");
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]

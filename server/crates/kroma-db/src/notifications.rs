@@ -302,19 +302,14 @@ pub fn set_prefs(pool: &Pool, user_id: &str, prefs: &[CategoryPref]) -> Result<(
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::{AtomicU32, Ordering};
 
     use super::*;
+    use crate::testing::TempPool;
     use kroma_domain::{ActionKind, ActionStyle};
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
     // Real accounts: notifications.user_id FKs users (and cascades).
-    fn pool() -> (Pool, String, String) {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-notif-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let p = crate::init(&path).unwrap();
+    fn pool() -> (TempPool, String, String) {
+        let p = crate::testing::temp_pool("notif");
         let u1 = crate::create_user(&p, "ana@test.dev", "Ana", "h", &[]).unwrap().id;
         let u2 = crate::create_user(&p, "bo@test.dev", "Bo", "h", &[]).unwrap().id;
         (p, u1, u2)

@@ -20,6 +20,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SpatialNavigationNode } from 'react-tv-space-navigation';
+import { RING_ROOM } from '#ui/core/tokens';
 import { pointerDriving } from '#ui/lib/input-source';
 
 const WEB = Platform.OS === 'web';
@@ -38,6 +39,52 @@ const RailScrollContext = createContext<((anchor: Anchor) => void) | null>(null)
 // each other; flatten once, here.
 const flat = (style: StyleProp<ViewStyle>): ViewStyle | undefined =>
   StyleSheet.flatten(style) as ViewStyle | undefined;
+
+const pad = (value: unknown): number => (typeof value === 'number' ? value : 0);
+
+/**
+ * A scroll view clips at its own edges, and the ring of a focused control stands
+ * outside the control - so a control flush with an edge loses that side of its
+ * ring (the leftmost poster of a results grid, every time). The scroller reaches
+ * RING_ROOM further out and its content is padded back in by the same amount:
+ * the content lands exactly where it did, with room around it for a ring.
+ *
+ * Only ACROSS the scroll: along it there is no edge to be flush with, the
+ * content simply scrolls past.
+ */
+function ringRoom(
+  style: ViewStyle | undefined,
+  content: ViewStyle | undefined,
+  horizontal: boolean,
+): { box: ViewStyle; content: ViewStyle } {
+  const c = content ?? {};
+  if (horizontal) {
+    return {
+      box: {
+        ...style,
+        marginTop: pad(style?.marginTop) - RING_ROOM,
+        marginBottom: pad(style?.marginBottom) - RING_ROOM,
+      },
+      content: {
+        ...c,
+        paddingTop: pad(c.paddingTop ?? c.paddingVertical ?? c.padding) + RING_ROOM,
+        paddingBottom: pad(c.paddingBottom ?? c.paddingVertical ?? c.padding) + RING_ROOM,
+      },
+    };
+  }
+  return {
+    box: {
+      ...style,
+      marginLeft: pad(style?.marginLeft) - RING_ROOM,
+      marginRight: pad(style?.marginRight) - RING_ROOM,
+    },
+    content: {
+      ...c,
+      paddingLeft: pad(c.paddingLeft ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
+      paddingRight: pad(c.paddingRight ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
+    },
+  };
+}
 
 interface PageMetrics {
   top: number;
@@ -108,6 +155,8 @@ function AxisScroll({
     [horizontal, offsetFromStart],
   );
 
+  const room = ringRoom(flat(style), flat(contentStyle), horizontal);
+
   return (
     <RevealContext.Provider value={reveal}>
       <ScrollView
@@ -115,8 +164,8 @@ function AxisScroll({
         horizontal={horizontal}
         // React 19 types a ref as nullable; React Native's prop does not.
         innerViewRef={inner as RefObject<View>}
-        style={flat(style)}
-        contentContainerStyle={flat(contentStyle)}
+        style={room.box}
+        contentContainerStyle={room.content}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
         onLayout={(e: LayoutChangeEvent) => {

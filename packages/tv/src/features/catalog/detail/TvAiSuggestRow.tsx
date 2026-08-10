@@ -1,6 +1,6 @@
 import { posterColors, type SectionItem } from '@kroma/core';
 import { useAiSuggest, useT } from '@kroma/ui';
-import { Box, MediaCard, ProgressRing, Rail, styles, Txt } from '@kroma/ui/kit';
+import { Box, MediaCard, ProgressRing, RAIL_GAP, Rail, styles, Txt } from '@kroma/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
 // The "Suggestions IA" rail on a TV detail screen. `useAiSuggest` polls the
@@ -8,7 +8,11 @@ import { useClient, useNav } from '#tv/app/router';
 // cards render once items arrive (empty items or a timeout -> nothing).
 
 // `item.width` is the tile pitch, not the card width: same recipe as TvHome's ROW_TILE.
-const ROW_TILE = { width: 300 + 24, height: Math.round((300 * 9) / 16) };
+const ROW_TILE = { width: 300 + RAIL_GAP, height: Math.round((300 * 9) / 16) };
+
+// The CARD is 300 wide; the tile pitch above includes the gap, and asking for
+// the pitch would over-fetch every tile in the row.
+const TILE_ART_W = 300;
 
 const s = styles({
   label: {
@@ -35,9 +39,8 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
           key={show.id}
           title={show.title}
           overline={show.metadata?.genres?.[0] ?? t('content.series')}
-          art={client.backdropFor(show) ?? client.showPosterFor(show)}
+          art={client.backdropFor(show, TILE_ART_W) ?? client.showPosterFor(show, TILE_ART_W)}
           tint={posterColors(show.id)}
-          width={300}
           onPress={() => go('show', { show })}
         />
       );
@@ -48,9 +51,8 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
         key={m.id}
         title={m.title}
         overline={m.metadata?.genres?.[0] ?? t('content.film')}
-        art={client.backdropFor(m) ?? client.posterFor(m)}
+        art={client.backdropFor(m, TILE_ART_W) ?? client.posterFor(m, TILE_ART_W)}
         tint={posterColors(m.id)}
-        width={300}
         onPress={() => go('movie', { item: m })}
       />
     );
@@ -67,7 +69,7 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
         ) : null}
         {/* The rail pads itself by the 10-foot gutter by default; this one
             sits inside a detail column with its own padding, so it opts out. */}
-        <Rail inset={0} gap={24} item={ROW_TILE}>
+        <Rail inset={0} item={ROW_TILE}>
           {section.items.map(card)}
         </Rail>
       </Box>

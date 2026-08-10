@@ -85,7 +85,7 @@ pub async fn ping(
         return StatusCode::GONE.into_response();
     }
 
-    let ip = client_ip(&headers, &addr);
+    let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
     let network = playback::classify_network(&ip, &settings::local_networks(&state.settings));
 
     let item = if state.playback.contains(&body.session_id) {

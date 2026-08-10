@@ -20,8 +20,23 @@ import { Icon } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
 import { radius, type StyleDecl, styles, svFor } from '#ui/core';
 import { keyFace } from '#ui/lib/field-shell';
+import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { useTDefault } from '#ui/services/i18n';
+
+// A pad we draw has no click of its own, so a phone answers a key with its
+// Taptic Engine or the thing feels dead under a thumb. Guard-required rather
+// than imported: a television has no haptics and the browser shells have no
+// module, and a bare `import` would break both. (`await import()` is not an
+// option under Metro - it throws in dev builds.)
+function loadHaptics(): { selectionAsync: () => Promise<void> } | null {
+  try {
+    return require('expo-haptics');
+  } catch {
+    return null;
+  }
+}
+const haptics = loadHaptics();
 
 const ROWS = [
   ['1', '2', '3'],
@@ -30,11 +45,12 @@ const ROWS = [
 ] as const;
 
 type KeyKind = 'digit' | 'delete';
+type KeypadSize = 'tv' | 'compact';
 
 const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   slots: {
     // The shared key face (lib/field-shell); the pad brings only its own box.
-    root: { ...keyFace.root, w: 88, h: 72, radius: radius['2xl'] },
+    root: { ...keyFace.root, radius: radius['2xl'] },
     label: keyFace.label,
   },
   variants: {
@@ -42,13 +58,27 @@ const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
       digit: { label: { fontSize: 28 } },
       delete: { label: { fontSize: 22 } },
     },
+    size: {
+      // A remote's key, sized for the far end of a room.
+      tv: { root: { w: 88, h: 72 } },
+      // A thumb's key: as large as the four rows can be and still leave the
+      // viewfinder above them on the shortest phone. Sized against that budget
+      // rather than picked - a remote's 88x72 overflows, and anything under
+      // this is small for a thumb without buying room anything else needs.
+      compact: { root: { w: 80, h: 64 }, label: { fontSize: 26 } },
+    },
   },
-  defaults: { kind: 'digit' },
+  defaults: { kind: 'digit', size: 'tv' },
 });
+
+const GAP = { tv: 13, compact: 10 } as const;
 
 interface KeypadProps {
   onDigit: (digit: string) => void;
   onDelete: () => void;
+  /** `tv` is a remote's pad, read across a room. `compact` is a thumb's, for a
+   *  phone, where the pad shares the screen with everything else. */
+  size?: KeypadSize;
   /** Takes the screen's focus on mount, landing on the 1 key. On by default:
    *  a PIN screen has nowhere else worth starting. */
   autoFocus?: boolean;
@@ -56,8 +86,17 @@ interface KeypadProps {
   disabled?: boolean;
 }
 
-function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<KeypadProps>) {
+function Keypad({
+  onDigit,
+  onDelete,
+  size = 'tv',
+  autoFocus = true,
+  disabled,
+}: Readonly<KeypadProps>) {
   const t = useTDefault();
+  const tap = () => {
+    void haptics?.selectionAsync();
+  };
   const key = (label: string, onPress: () => void, kind: KeyKind = 'digit') => (
     <Focusable
       key={label}
@@ -69,9 +108,8 @@ function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<Keyp
       disabled={disabled}
       autoFocus={autoFocus && label === '1'}
       focusScale={1.08}
-      ring={false}
       sv={keypadVariants}
-      vars={{ kind }}
+      vars={{ kind, size }}
     >
       {(state) => (
         <>
@@ -88,29 +126,51 @@ function Keypad({ onDigit, onDelete, autoFocus = true, disabled }: Readonly<Keyp
     </Focusable>
   );
   return (
-    <FocusColumn grid style={s.pad}>
+    <FocusColumn grid style={[s.pad, { gap: GAP[size] }]}>
       {ROWS.map((row) => (
-        <FocusRegion key={row.join('')} style={s.padRow}>
-          {row.map((d) => key(d, () => onDigit(d)))}
+        <FocusRegion key={row.join('')} style={[s.padRow, { gap: GAP[size] }]}>
+          {row.map((d) =>
+            key(d, () => {
+              tap();
+              onDigit(d);
+            }),
+          )}
         </FocusRegion>
       ))}
-      <FocusRegion style={s.padRow}>
+      <FocusRegion style={[s.padRow, { gap: GAP[size] }]}>
         {/* The spacer keeps 0 under the centre column with no OK key - in the
             LAYOUT through the box, and in the NAVIGATOR through the node, which
             occupies the row's first index without ever taking focus. */}
-        <SpatialNavigationNode>
-          <Box w={88} h={72} />
-        </SpatialNavigationNode>
-        {key('0', () => onDigit('0'))}
-        {key('delete', onDelete, 'delete')}
+        <PadSpacer size={size} />
+        {key('0', () => {
+          tap();
+          onDigit('0');
+        })}
+        {key(
+          'delete',
+          () => {
+            tap();
+            onDelete();
+          },
+          'delete',
+        )}
       </FocusRegion>
     </FocusColumn>
   );
 }
 
+// The spacer under the centre column. Wrapped in a navigator node ONLY where
+// there is a navigator: a phone has none, and `SpatialNavigationNode` throws
+// rather than degrading the way <FocusRegion> and <Focusable> do - which is
+// what made this pad, and any screen holding it, unrenderable off a television.
+function PadSpacer({ size }: Readonly<{ size: KeypadSize }>) {
+  const box = size === 'compact' ? <Box w={80} h={64} /> : <Box w={88} h={72} />;
+  return useInsideFocusScope() ? <SpatialNavigationNode>{box}</SpatialNavigationNode> : box;
+}
+
 const s = styles({
-  pad: { gap: 13 },
-  padRow: { row: true, gap: 13 },
+  pad: {},
+  padRow: { row: true },
 });
 
 export type { KeypadProps };

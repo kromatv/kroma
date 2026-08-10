@@ -2348,6 +2348,7 @@ dependencies = [
 name = "kroma-config"
 version = "0.1.0"
 dependencies = [
+ "kroma-testing",
  "tracing",
 ]
 
@@ -2358,6 +2359,7 @@ dependencies = [
  "anyhow",
  "kroma-domain",
  "kroma-primitives",
+ "kroma-testing",
  "rusqlite",
  "serde",
  "serde_json",
@@ -2390,6 +2392,7 @@ dependencies = [
  "kroma-module-manifest",
  "kroma-primitives",
  "kroma-push",
+ "kroma-testing",
  "notify",
  "rusty-chromaprint",
  "serde",
@@ -2397,6 +2400,7 @@ dependencies = [
  "sha2",
  "sysinfo",
  "tantivy",
+ "tempfile",
  "time",
  "tokio",
  "tokio-util",
@@ -2410,8 +2414,10 @@ name = "kroma-http"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "kroma-testing",
  "serde",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -2430,6 +2436,7 @@ dependencies = [
  "axum",
  "kroma-db",
  "kroma-domain",
+ "kroma-testing",
  "serde",
  "serde_json",
  "tokio",
@@ -2449,6 +2456,7 @@ dependencies = [
  "kroma-module-manifest",
  "kroma-module-supervisor",
  "kroma-modules-generated",
+ "kroma-testing",
  "serde_json",
  "tokio",
  "tower",
@@ -2515,6 +2523,7 @@ dependencies = [
  "hex",
  "kroma-module-host",
  "kroma-module-manifest",
+ "kroma-testing",
  "libc",
  "rand 0.10.2",
  "reqwest",
@@ -2607,6 +2616,7 @@ dependencies = [
  "kroma-module-sdk",
  "kroma-module-supervisor",
  "kroma-port-bridge",
+ "kroma-testing",
  "kroma-vector",
  "kroma-whisper",
  "mimalloc",
@@ -2632,6 +2642,13 @@ dependencies = [
  "walkdir",
  "webauthn-rs",
  "zip",
+]
+
+[[package]]
+name = "kroma-testing"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
 ]
 
 [[package]]

@@ -9,7 +9,6 @@ const episode = (at: number): UpNextItem => ({
   title: ['The Kingsroad', 'Lord Snow', 'Cripples and Broken Things'][at] ?? `Episode ${at + 2}`,
   subtitle: `S1 E${at + 2}`,
   posterUrl: stillArt(at),
-  durationLabel: '54 min',
   categoryLabel: 'Episode',
 });
 
@@ -18,7 +17,6 @@ const recommendation = (at: number): UpNextItem => ({
   title: ['Blade Runner 2049', 'Arrival', 'Dune'][at] ?? `Title ${at}`,
   subtitle: ['2017', '2016', '2021'][at] ?? '',
   posterUrl: stillArt(at + 3),
-  durationLabel: '2 h 44',
   categoryLabel: 'Science fiction',
 });
 

@@ -26,6 +26,7 @@ import { SpatialNavigationView } from 'react-tv-space-navigation';
 import { styles } from '#ui/core';
 import { maskImage } from '#ui/lib/css';
 import { webDocument } from '#ui/lib/dom';
+import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { clipStyles, OVERSCAN } from './clip';
@@ -206,11 +207,18 @@ function VirtualRail<T>({
         // <FocusReporter> is the only signal that fires in BOTH directions: the
         // navigator's `onActive` is monotone, so a row wired to that scrolls
         // right and freezes going left.
-        <View key={index} style={cell}>
-          <FocusReporter onFocus={() => selectRef.current(index)}>
-            {renderItem(item, index)}
-          </FocusReporter>
-        </View>,
+        // The CELL rises with its tile, not just the tile: a focused tile grows
+        // and wears a ring, both of which reach into the neighbouring cell - and
+        // that cell, drawn after it, was painting over them.
+        <FocusLiftHost key={index}>
+          {(held) => (
+            <View style={held ? [cell, LIFTED] : cell}>
+              <FocusReporter onFocus={() => selectRef.current(index)}>
+                {renderItem(item, index)}
+              </FocusReporter>
+            </View>
+          )}
+        </FocusLiftHost>,
       );
     }
     return out;

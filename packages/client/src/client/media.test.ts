@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Metadata } from '../types';
 import { KromaApiError, type RequestContext } from './base';
 import {
-  backdropFor,
   downloadUrl,
   featured,
   health,
@@ -13,17 +11,12 @@ import {
   movies,
   personCredits,
   personDetails,
-  posterFor,
-  posterUrl,
-  resolveArt,
   search,
-  showPosterUrl,
   splash,
   storyboard,
   streamUrl,
   subtitleUrl,
   themed,
-  themeFor,
 } from './media';
 
 // The URL builders only read `ctx.baseUrl`, so a minimal stub suffices.
@@ -174,11 +167,9 @@ describe('hlsMasterUrl', () => {
   });
 });
 
-describe('stream / poster / subtitle URL builders', () => {
-  it('builds encoded stream + poster + subtitle URLs', () => {
+describe('stream / subtitle URL builders', () => {
+  it('builds encoded stream + subtitle URLs', () => {
     expect(streamUrl(ctx, 'a b')).toBe('http://kroma.test/api/items/a%20b/stream');
-    expect(posterUrl(ctx, 'id')).toBe('http://kroma.test/api/items/id/poster');
-    expect(showPosterUrl(ctx, 's/1')).toBe('http://kroma.test/api/shows/s%2F1/poster');
     expect(subtitleUrl(ctx, 'id', 3)).toBe('http://kroma.test/api/items/id/subtitles/3.vtt');
   });
 
@@ -198,56 +189,6 @@ describe('stream / poster / subtitle URL builders', () => {
     // Empty set = transcode every track; omitted = the server's full copy set.
     expect(downloadUrl(ctx, 'id', [])).toBe('http://kroma.test/api/items/id/download?copy=');
     expect(downloadUrl(ctx, 'id')).toBe('http://kroma.test/api/items/id/download');
-  });
-});
-
-describe('resolveArt + art helpers', () => {
-  const meta = (m: Partial<Metadata>): { metadata?: Metadata | null } => ({
-    metadata: m as Metadata,
-  });
-
-  it('resolves relative art against the origin and passes absolute URLs through', () => {
-    expect(resolveArt(ctx, '/api/images/x.webp')).toBe('http://kroma.test/api/images/x.webp');
-    expect(resolveArt(ctx, 'https://image.tmdb.org/x.jpg')).toBe('https://image.tmdb.org/x.jpg');
-    expect(resolveArt(ctx, null)).toBeNull();
-    expect(resolveArt(ctx, undefined)).toBeNull();
-  });
-
-  it('asks the server for the width the artwork is actually drawn at', () => {
-    expect(resolveArt(ctx, '/api/images/x.webp', 320)).toBe(
-      'http://kroma.test/api/images/x.webp?w=320',
-    );
-    expect(
-      posterFor(ctx, { id: 'i', metadata: { posterUrl: '/api/images/p.webp' } as Metadata }, 203),
-    ).toBe('http://kroma.test/api/images/p.webp?w=203');
-    expect(backdropFor(ctx, meta({ backdropUrl: '/api/images/b.webp' }), 320)).toBe(
-      'http://kroma.test/api/images/b.webp?w=320',
-    );
-    expect(resolveArt(ctx, '/api/images/x.webp')).toBe('http://kroma.test/api/images/x.webp');
-    // An absolute TMDB fallback is not ours to resize.
-    expect(resolveArt(ctx, 'https://image.tmdb.org/x.jpg', 320)).toBe(
-      'https://image.tmdb.org/x.jpg',
-    );
-  });
-
-  it('posterFor uses cached art when present, else the generated poster', () => {
-    expect(
-      posterFor(ctx, { id: 'i1', metadata: { posterUrl: '/api/images/p.webp' } as Metadata }),
-    ).toBe('http://kroma.test/api/images/p.webp');
-    expect(posterFor(ctx, { id: 'i2', metadata: null })).toBe(
-      'http://kroma.test/api/items/i2/poster',
-    );
-  });
-
-  it('backdropFor / themeFor resolve or return null', () => {
-    expect(backdropFor(ctx, meta({ backdropUrl: '/api/images/b.webp' }))).toBe(
-      'http://kroma.test/api/images/b.webp',
-    );
-    expect(backdropFor(ctx, meta({}))).toBeNull();
-    expect(themeFor(ctx, meta({ themeUrl: '/api/themes/1.mp3' }))).toBe(
-      'http://kroma.test/api/themes/1.mp3',
-    );
-    expect(themeFor(ctx, {})).toBeNull();
   });
 });
 

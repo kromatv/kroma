@@ -47,6 +47,10 @@ xpath = ["dep:libxml"]
 [dev-dependencies]
 # The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
 kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
+# `db::testing::temp_pool`, also via the SDK re-export.
+kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
+# Self-deleting scratch dirs for the definition-store fixtures.
+kroma-testing = { path = "../../../server/crates/kroma-testing" }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO

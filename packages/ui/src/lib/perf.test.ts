@@ -8,7 +8,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  CHART_FRAMES,
   markFocus,
+  markGridFocus,
   markPress,
   perfReport,
   perfRunning,
@@ -105,7 +107,7 @@ describe('perfReport', () => {
     // Nineteen good frames and one 200ms stall: the mean stays near 60fps.
     const times = [100];
     for (let i = 1; i <= 19; i++) times.push(100 + i * 16);
-    times.push(times[times.length - 1]! + 200);
+    times.push(100 + 19 * 16 + 200);
     frames.paint(...times);
     const report = perfReport();
     expect(report.worstFrame).toBe(200);
@@ -118,6 +120,17 @@ describe('perfReport', () => {
     // 33ms is the threshold itself, so it is not jank; 34 is.
     frames.paint(100, 133, 167);
     expect(perfReport().jankyFrames).toBe(1);
+  });
+
+  it('hands out only the chart window, ending on the newest frame', () => {
+    const frames = frameClock();
+    startPerf();
+    const times = Array.from({ length: 120 }, (_, i) => 100 + i * 16);
+    frames.paint(...times, 100 + 119 * 16 + 200);
+    const report = perfReport();
+    expect(report.frameCount).toBe(120);
+    expect(report.frames).toHaveLength(CHART_FRAMES);
+    expect(report.frames.at(-1)).toBe(200);
   });
 
   it('derives fps from the total elapsed time', () => {
@@ -183,6 +196,27 @@ describe('press-to-focus', () => {
     const report = perfReport();
     expect(report.responseWorst).toBe(300);
     expect(report.responseP50).toBe(20);
+  });
+});
+
+// A remote bug is a bug about WHICH element took the focus, and a television
+// has no inspector to ask - so the HUD prints where the ring landed.
+describe('the focused grid cell', () => {
+  it('reads as a dash until a grid has moved the focus', () => {
+    expect(perfReport().gridCell).toBe('-');
+  });
+
+  it('names the row and column once one has', () => {
+    markGridFocus(2, 7);
+    expect(perfReport().gridCell).toBe('2,7');
+  });
+
+  // `resetPerf` starts a fresh measurement, and where the focus WAS is not a
+  // reading about the run that starts now.
+  it('is forgotten by a reset, like everything else', () => {
+    markGridFocus(1, 1);
+    resetPerf();
+    expect(perfReport().gridCell).toBe('-');
   });
 });
 

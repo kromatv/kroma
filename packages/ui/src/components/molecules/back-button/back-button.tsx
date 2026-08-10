@@ -11,7 +11,6 @@ function BackButton({
   glyph,
   variant = 'scrim',
   focusFill = true,
-  ring = false,
   focusScale = 1.08,
   hitSlop = 8,
   label = 'Back',
@@ -27,7 +26,6 @@ function BackButton({
       glyph={glyph ?? Math.round(size / 2)}
       variant={variant}
       focusFill={focusFill}
-      ring={ring}
       focusScale={focusScale}
       hitSlop={hitSlop}
       label={label}

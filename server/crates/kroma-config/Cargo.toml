@@ -8,3 +8,7 @@ license.workspace = true
 
 [dependencies]
 tracing = { workspace = true }
+
+[dev-dependencies]
+# The web-dir fixtures scratch in a directory that removes itself.
+kroma-testing = { workspace = true }

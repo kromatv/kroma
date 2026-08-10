@@ -107,6 +107,12 @@ interface OtpFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
    *  the code can be typed, pasted or autofilled. False (a television) leaves
    *  the slots presentational and expects `onChange` from a keypad. */
   physicalKeyboard?: boolean;
+  /** Offer the platform's SMS one-time-code autofill. Off by default: a code
+   *  that arrives by text message is the only thing it can fill, and iOS pays
+   *  for the offer with a suggestion bar wedged above the keyboard. A pairing
+   *  code read off a television and a profile PIN are neither of them SMS, so
+   *  the bar would be a permanent ornament over a four-digit field. */
+  smsAutofill?: boolean;
   autoFocus?: boolean;
   label?: string;
   /** Render a slot yourself. The kit's own slot is used when this is absent. */
@@ -126,6 +132,7 @@ function OtpField({
   size = 'md',
   groups,
   physicalKeyboard = false,
+  smsAutofill = false,
   autoFocus = false,
   label,
   renderSlot,
@@ -191,8 +198,9 @@ function OtpField({
             editable={!disabled}
             keyboardType="number-pad"
             inputMode={pattern === REGEXP_ONLY_DIGITS ? 'numeric' : 'text'}
-            autoComplete="one-time-code"
-            textContentType="oneTimeCode"
+            autoComplete={smsAutofill ? 'one-time-code' : 'off'}
+            textContentType={smsAutofill ? 'oneTimeCode' : 'none'}
+            importantForAutofill={smsAutofill ? 'yes' : 'no'}
             autoCorrect={false}
             autoCapitalize="characters"
             spellCheck={false}

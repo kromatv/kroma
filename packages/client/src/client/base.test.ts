@@ -66,7 +66,7 @@ describe('apiErrorText', () => {
 });
 
 describe('requestJson', () => {
-  it('hits ${baseUrl}/api${path} with auth + locale headers and parses JSON', async () => {
+  it('hits <baseUrl>/api<path> with auth + locale headers and parses JSON', async () => {
     const { fetch, calls } = stubFetch({ json: () => ({ ok: true, n: 1 }) });
     const out = await requestJson(fetch, 'http://nas:4040', 'tok', 'fr', '/items');
     expect(out).toEqual({ ok: true, n: 1 });

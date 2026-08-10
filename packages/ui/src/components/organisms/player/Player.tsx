@@ -475,6 +475,7 @@ export function Player(props: Readonly<PlayerProps>) {
           warn={props.warn}
           actions={props.actions}
           scale={metrics.scale}
+          backFocused={nav.zone === 'back'}
           onBack={props.onClose}
         />
       </Box>

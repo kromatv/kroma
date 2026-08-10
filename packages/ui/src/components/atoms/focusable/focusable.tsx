@@ -45,6 +45,8 @@ import {
 } from '#ui/core';
 import { splitBoxLayers } from '#ui/lib/box-layers';
 import { focusSettled, markFocusSettled } from '#ui/lib/focus-entry';
+import { noteFocus } from '#ui/lib/focus-here';
+import { LIFTED, useFocusLift } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { useFocusReport } from '#ui/lib/focus-report';
 import { useRevealOnFocus } from '#ui/lib/focus-scroll';
@@ -200,7 +202,7 @@ function usePair(a: StyleProp<ViewStyle>, b: StyleProp<ViewStyle>): StyleProp<Vi
 
 // Shared by identity per theme rather than minted per focused render: styleq
 // keys its cache on the object, and the ring follows the theme's accent.
-const focusRing = () => sharedStyle('focusable:ring', { boxShadow: activeTheme().ring.focusLift });
+const focusRing = () => sharedStyle('focusable:ring', { ...activeTheme().ring.focusLift });
 
 /** Tab reachability, plus whichever activation keys the form underneath does
  *  not already answer, on the web; null elsewhere. */
@@ -242,6 +244,7 @@ function touchForm(at: {
         at.style,
         hover,
         lit ? at.focusedStyle : null,
+        lit ? LIFTED : null,
         lit && at.showRing ? focusRing() : null,
         at.animated,
       ]
@@ -308,6 +311,12 @@ function navigatorForm(at: {
     at.layers ? at.layers.face : at.style,
     at.hovered ? at.hoveredStyle : null,
     at.focusVisible ? at.focusedStyle : null,
+    // Above its neighbours for as long as it holds focus. react-native-web
+    // gives every view an explicit `z-index: 0`, so equal siblings paint in DOM
+    // order and the NEXT tile in a row draws over the ring and the focus scale
+    // of the one before it. Keyed on `focused`, not `focusVisible`: the lift is
+    // about what is selected, not about which input selected it.
+    at.focused ? LIFTED : null,
     at.showRing && at.focusVisible ? focusRing() : null,
     at.animated,
   ];
@@ -436,6 +445,7 @@ function Focusable<R extends AnySv = AnySv>({
     };
   }, [disabled, inert, onPress, role]);
 
+  const lift = useFocusLift();
   const [hovered, setHovered] = useState(false);
   const hoverIn = useCallback(() => {
     setHovered(true);
@@ -460,6 +470,11 @@ function Focusable<R extends AnySv = AnySv>({
   const report = useFocusReport();
 
   const handleFocus = useCallback(() => {
+    // Everything between this control and the screen rises with it; a control
+    // lifted inside a row is still under the NEXT row without this.
+    lift?.(true);
+    // Where the ring landed, for the reading-order walk Tab does.
+    noteFocus(box.current);
     markFocus();
     // The screen now has a focus owner, so a control that mounts later must not
     // take it away.
@@ -468,12 +483,13 @@ function Focusable<R extends AnySv = AnySv>({
     reveal();
     report?.();
     onFocus?.();
-  }, [onFocus, reveal, report]);
+  }, [lift, onFocus, reveal, report]);
 
   const handleBlur = useCallback(() => {
+    lift?.(false);
     setSelfFocused(false);
     onBlur?.();
-  }, [onBlur]);
+  }, [lift, onBlur]);
 
   // The OK guard lives here, not in the navigator: on native, Select reaches a
   // focused control through the platform rather than the navigator, so this is

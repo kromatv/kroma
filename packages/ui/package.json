@@ -19,6 +19,7 @@
     "./fonts": "./src/assets/fonts.ts",
     "./styles.css": "./src/styles/styles.css",
     "./fonts.css": "./src/styles/fonts.css",
+    "./img.css": "./src/styles/img.css",
     "./tokens/*.css": "./src/styles/tokens/*.css",
     "./tailwind.css": "./src/styles/tailwind.css",
     "./src/assets/*": "./src/assets/*"

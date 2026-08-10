@@ -1,23 +1,17 @@
-import type { AudioTrack, MediaItem, VideoTrack } from '@kroma/client';
+import { type AudioTrack, artworkWidth, type MediaItem, type VideoTrack } from '@kroma/client';
 import type { Translate } from './i18n';
 import { langKey } from './lang';
 import { match } from './match';
 import { formatRuntime } from './player';
 
-// devicePixelRatio, rounded and capped at 2: a 3x phone gains nothing visible
-// and a fractional ratio would defeat the server's bucketing.
-function artworkRatio(): number {
-  const dpr = (globalThis as { devicePixelRatio?: number }).devicePixelRatio;
-  return Math.min(2, Math.max(1, Math.round(dpr ?? 1)));
-}
-
 /** Requests a downscaled rendition of locally-cached artwork (`?w=`, snapped to
- * a server-side bucket), scaling the given DISPLAY width by the device pixel
- * ratio. Remote (TMDB fallback) and non-image URLs pass through untouched. */
+ * a server-side bucket) for the given DISPLAY width, through the same
+ * {@link artworkWidth} the client's own art helpers use. Remote (TMDB fallback)
+ * and non-image URLs pass through untouched. */
 export function sizedImageUrl(url: string | null | undefined, displayWidth: number): string | null {
   if (!url) return null;
   if (!url.includes('/api/images/') || url.includes('?')) return url;
-  return `${url}?w=${Math.max(1, Math.round(displayWidth * artworkRatio()))}`;
+  return `${url}?w=${artworkWidth(displayWidth)}`;
 }
 
 // Schemes an <img> may load. `data:` is narrowed to images: a bare `data:` allow-list would

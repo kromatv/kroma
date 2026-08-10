@@ -262,13 +262,10 @@ fn reprocess_show(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::testing::TempPool;
 
-    fn test_pool() -> db::Pool {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-reproc-test-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        db::init(&path).unwrap()
+    fn test_pool() -> TempPool {
+        crate::db::testing::temp_pool("reproc-test")
     }
 
     // Pending count for a stage after enqueue.

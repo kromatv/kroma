@@ -1304,18 +1304,7 @@ mod tests {
     }
 
     fn user(id: &str, permissions: Vec<Permission>) -> User {
-        User {
-            id: id.into(),
-            email: format!("{id}@example.test"),
-            username: id.into(),
-            avatar_url: None,
-            language: None,
-            audio_language: None,
-            subtitle_language: None,
-            permissions,
-            created_at: "now".into(),
-            has_pin: false,
-        }
+        crate::test_support::test_user(id, permissions)
     }
 
     fn req_by(kind: RequestKind, status: RequestStatus, requester: &str) -> MediaRequest {

@@ -8,5 +8,10 @@ license.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+# curl's header dump goes to a guarded temp file, so a failed spawn leaves none.
+tempfile = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+
+[dev-dependencies]
+kroma-testing = { workspace = true }

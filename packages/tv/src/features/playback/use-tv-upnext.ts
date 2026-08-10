@@ -1,5 +1,5 @@
 import { formatRuntime, type KromaClient, type MediaItem, metaLine } from '@kroma/core';
-import type { UpNextData, UpNextItem } from '@kroma/ui';
+import { UP_NEXT_ART_W, type UpNextData, type UpNextItem } from '@kroma/ui';
 import { useEffect, useMemo, useState } from 'react';
 
 function toCard(client: KromaClient, item: MediaItem): UpNextItem {
@@ -7,9 +7,12 @@ function toCard(client: KromaClient, item: MediaItem): UpNextItem {
   return {
     id: item.id,
     title: isEp ? (item.episodeTitle ?? item.title) : item.title,
-    subtitle: isEp ? `S${item.season} E${item.episode}` : metaLine(item),
-    posterUrl: client.backdropFor(item) ?? client.posterFor(item),
-    durationLabel: formatRuntime(item.durationMs),
+    // The runtime belongs to this line and to nothing else: the card used to
+    // print it again in a chip of its own.
+    subtitle: isEp
+      ? `S${item.season} E${item.episode} · ${formatRuntime(item.durationMs)}`
+      : metaLine(item),
+    posterUrl: client.backdropFor(item, UP_NEXT_ART_W) ?? client.posterFor(item, UP_NEXT_ART_W),
     categoryLabel: item.metadata?.genres?.[0],
   };
 }

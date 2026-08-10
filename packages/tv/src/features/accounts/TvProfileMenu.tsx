@@ -4,7 +4,13 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
 import { actionItem } from '#tv/app/settings/items';
-import { aboutItem, groupItem, quitAppItem, SETTINGS_GROUPS } from '#tv/app/settings/registry';
+import {
+  aboutItem,
+  groupItem,
+  perfHudSetting,
+  quitAppItem,
+  SETTINGS_GROUPS,
+} from '#tv/app/settings/registry';
 import { AuthScreen } from '#tv/shared/ui';
 import { SettingsRows } from './SettingsRows';
 
@@ -44,6 +50,10 @@ export function TvProfileMenu() {
       run: switchProfile,
     }),
     actionItem({ id: 'signOut', icon: 'logout', label: 'auth.logout', run: onSignOut }),
+    // Also here, not only inside the Playback group: it is the one setting
+    // somebody reaches for WHILE something looks wrong, and three rows of
+    // navigation to find it is three rows during which the symptom passes.
+    perfHudSetting,
     aboutItem(() => nav.go('about')),
     quitAppItem,
   ];
@@ -56,7 +66,7 @@ export function TvProfileMenu() {
           seed={user.id}
           size={96}
           roundness={0.27}
-          src={client?.resolveArt(user.avatarUrl)}
+          src={client?.resolveArt(user.avatarUrl, 96)}
         />
         <Txt variant="h1" style={{ fontSize: 32, fontWeight: '600' }}>
           {user.username}

@@ -35,6 +35,11 @@ const host = (label: string) => screen.getByLabelText(label);
 // also the element the ring and focus scale paint on.
 const painted = (label: string) => host(label);
 
+// The ring is an outline standing off the control (see tokens/effects), so the
+// question "is this the focus?" is asked of the outline and not of a shadow -
+// several controls carry a shadow when nothing is focused at all.
+const ringed = (label: string) => painted(label).style.outlineWidth !== '';
+
 function press(key: string) {
   act(() => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
@@ -58,8 +63,11 @@ describe('Focusable on react-native-web', () => {
         <Focusable label="Entree" autoFocus />
       </>,
     );
-    expect(painted('Entree').style.boxShadow.replace(/\s+/g, ' ')).toBe(ring.focusLift);
-    expect(painted('Premier').style.boxShadow).toBe('');
+    const entry = painted('Entree');
+    expect(entry.style.outlineWidth).toBe(`${ring.focusLift.outlineWidth}px`);
+    expect(entry.style.outlineOffset).toBe(`${ring.focusLift.outlineOffset}px`);
+    expect(entry.style.boxShadow.replace(/\s+/g, ' ')).toBe(ring.focusLift.boxShadow);
+    expect(ringed('Premier')).toBe(false);
   });
 
   it('moves along a declared row on Left and Right', () => {
@@ -69,14 +77,14 @@ describe('Focusable on react-native-web', () => {
         <Focusable label="Deux" />
       </FocusRegion>,
     );
-    expect(painted('Un').style.boxShadow).not.toBe('');
+    expect(ringed('Un')).toBe(true);
 
     press('ArrowRight');
-    expect(painted('Deux').style.boxShadow).not.toBe('');
-    expect(painted('Un').style.boxShadow).toBe('');
+    expect(ringed('Deux')).toBe(true);
+    expect(ringed('Un')).toBe(false);
 
     press('ArrowLeft');
-    expect(painted('Un').style.boxShadow).not.toBe('');
+    expect(ringed('Un')).toBe(true);
   });
 
   it('moves between rows on Up and Down, and each row remembers its place', () => {
@@ -93,19 +101,19 @@ describe('Focusable on react-native-web', () => {
       </>,
     );
     press('ArrowRight');
-    expect(painted('A2').style.boxShadow).not.toBe('');
+    expect(ringed('A2')).toBe(true);
 
     // A row you have never been in opens at its beginning...
     press('ArrowDown');
-    expect(painted('B1').style.boxShadow).not.toBe('');
+    expect(ringed('B1')).toBe(true);
     press('ArrowRight');
-    expect(painted('B2').style.boxShadow).not.toBe('');
+    expect(ringed('B2')).toBe(true);
 
     // ...and a row you come back to gives you back where you were.
     press('ArrowUp');
-    expect(painted('A2').style.boxShadow).not.toBe('');
+    expect(ringed('A2')).toBe(true);
     press('ArrowDown');
-    expect(painted('B2').style.boxShadow).not.toBe('');
+    expect(ringed('B2')).toBe(true);
   });
 
   it('stays put when a direction has nowhere to go', () => {
@@ -116,7 +124,7 @@ describe('Focusable on react-native-web', () => {
     );
     press('ArrowLeft');
     press('ArrowUp');
-    expect(painted('Seul').style.boxShadow).not.toBe('');
+    expect(ringed('Seul')).toBe(true);
   });
 
   it('skips a disabled control entirely', () => {
@@ -128,7 +136,7 @@ describe('Focusable on react-native-web', () => {
       </FocusRegion>,
     );
     press('ArrowRight');
-    expect(painted('Suivant').style.boxShadow).not.toBe('');
+    expect(ringed('Suivant')).toBe(true);
   });
 
   it('fires onPress on OK, the key a TV remote sends', () => {
@@ -239,7 +247,7 @@ describe('focus visibility', () => {
         <Focusable autoFocus label="Keyed" />
       </FocusRegion>,
     );
-    expect(painted('Keyed').style.boxShadow.replace(/\s+/g, ' ')).toBe(ring.focusLift);
+    expect(ringed('Keyed')).toBe(true);
   });
 
   it('does not park the ring on a control the cursor merely swept', () => {
@@ -253,7 +261,7 @@ describe('focus visibility', () => {
         <Focusable autoFocus label="Swept" />
       </FocusRegion>,
     );
-    expect(painted('Swept').style.boxShadow).toBe('');
+    expect(ringed('Swept')).toBe(false);
   });
 
   it('restores the ring as soon as a key is pressed', () => {
@@ -264,8 +272,8 @@ describe('focus visibility', () => {
         <Focusable label="Deux" />
       </FocusRegion>,
     );
-    expect(painted('Un').style.boxShadow).toBe('');
+    expect(ringed('Un')).toBe(false);
     press('ArrowRight');
-    expect(painted('Deux').style.boxShadow.replace(/\s+/g, ' ')).toBe(ring.focusLift);
+    expect(ringed('Deux')).toBe(true);
   });
 });

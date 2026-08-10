@@ -15,7 +15,15 @@
 
 import type { TextStyle } from 'react-native';
 import { type ColorToken, colors, withAlpha } from './tokens/colors';
-import { motion, RING_WIDTH, type ShadowToken, shadow } from './tokens/effects';
+import {
+  LIFT_SHADOW,
+  motion,
+  type RingStyle,
+  type ShadowToken,
+  shadow,
+  standoff,
+  standoffInside,
+} from './tokens/effects';
 import { gutter, type RadiusToken, radius, rhythm, space } from './tokens/layout';
 import {
   type FontToken,
@@ -69,14 +77,16 @@ export interface Theme extends ThemeTokens {
   /** Derived from the accent; never authored directly. The glow pairs carry the
    *  accent bloom the player's focus treatment adds to the plain ring. */
   ring: {
-    focus: string;
-    focusSm: string;
-    focusLift: string;
-    focusGlow: string;
-    focusGlowSm: string;
+    focus: RingStyle;
+    focusSm: RingStyle;
+    focusLift: RingStyle;
+    focusGlow: RingStyle;
+    focusGlowSm: RingStyle;
     /** The soft wide wash, for a control whose focus must read as a glow on a
      *  thin shape (the seek bar's track) rather than a crisp outline. */
-    focusWash: string;
+    focusWash: RingStyle;
+    /** The ring, inward: for a control flush with whatever clips it. */
+    focusInset: RingStyle;
   };
   /** Derived from the accent wash; never authored directly. */
   glow: { accent: string; play: string };
@@ -119,20 +129,20 @@ function derive(tokens: ThemeTokens): Theme {
     accent: `0 6px 22px ${withAlpha(tokens.colors.accentWash, 0.4)}`,
     play: `0 6px 22px ${withAlpha(tokens.colors.accentWash, 0.32)}`,
   };
-  // One spread, so a ring can only ever be authored as "this width, that ink".
-  const RING = `0 0 0 ${RING_WIDTH}px`;
   return Object.freeze({
     ...tokens,
     type: toType(tokens.typeSpec, tokens.fonts) as Record<TypeRole, TextStyle>,
-    // Every ring is RING_WIDTH wide (see tokens/effects): a themed accent
-    // retints them, it does not get to re-decide how thick focus is.
+    // Every ring is one width standing one gap off the control (see
+    // tokens/effects): a themed accent retints them, it does not get to
+    // re-decide how thick focus is or how far off it sits.
     ring: {
-      focus: `${RING} ${accent}`,
-      focusSm: `${RING} ${accent}`,
-      focusLift: `${RING} ${accent}, 0 10px 28px rgba(0, 0, 0, 0.5)`,
-      focusGlow: `${RING} ${accent}, ${glow.accent}`,
-      focusGlowSm: `${RING} ${accent}, ${glow.accent}`,
-      focusWash: `${RING} ${withAlpha(tokens.colors.accentWash, 0.28)}`,
+      focus: standoff(accent),
+      focusSm: standoff(accent),
+      focusLift: standoff(accent, LIFT_SHADOW),
+      focusGlow: standoff(accent, glow.accent),
+      focusGlowSm: standoff(accent, glow.accent),
+      focusWash: standoff(withAlpha(tokens.colors.accentWash, 0.28)),
+      focusInset: standoffInside(accent),
     },
     glow,
   });

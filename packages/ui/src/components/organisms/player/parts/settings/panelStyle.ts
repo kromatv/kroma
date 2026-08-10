@@ -4,6 +4,10 @@
  * Focus is state-driven: a row picks its `*On` / `*Off` style from a boolean,
  * never from CSS `:hover` or `:focus`.
  *
+ * The `On` styles carry the lift as well as the ring, the same step <Focusable>
+ * takes: the ring stands off the row and the row below it, drawn later, would
+ * otherwise paint over that side of it.
+ *
  * One live set rather than a constant per name: `styles()` re-resolves against
  * the active theme, so the focus ring and the inks follow a swap — a bag of
  * module constants would keep the palette of module-load time.
@@ -40,7 +44,7 @@ export const panel = styles({
   },
 
   valueRow: { radius: 14, px: 22, py: 16 },
-  valueRowOn: { bg: 'white/8', ring: 'focusGlowSm' },
+  valueRowOn: { bg: 'white/8', ring: 'focusLift', z: 1 },
   valueLabel: { font: 'ui', fontWeight: '700', fontSize: 15, color: 'text' },
 
   panelHint: {
@@ -54,7 +58,7 @@ export const panel = styles({
   },
   panelEmpty: { px: 2, py: 4, font: 'ui', fontSize: 15, color: 'textDim' },
 
-  rowOn: { bg: 'white/10', ring: 'focusGlowSm' },
+  rowOn: { bg: 'white/10', ring: 'focusLift', z: 1 },
   rowOff: { bg: 'transparent' },
 
   pill: { radius: 9, py: 9, bg: 'white/6' },

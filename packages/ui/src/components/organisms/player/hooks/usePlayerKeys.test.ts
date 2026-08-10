@@ -209,3 +209,31 @@ describe('usePlayerKeys listener lifecycle', () => {
     expect(params.nav.handleKey).not.toHaveBeenCalled();
   });
 });
+
+describe('usePlayerKeys Tab', () => {
+  it('walks the transport row sideways, and backwards with Shift', () => {
+    const { params, press } = setup();
+    expect(press({ key: 'Tab' })).toBe(false);
+    expect(params.nav.handleKey).toHaveBeenCalledWith('Right');
+    press({ key: 'Tab', shiftKey: true });
+    expect(params.nav.handleKey).toHaveBeenCalledWith('Left');
+  });
+
+  it('walks a settings list downwards, since a list is a column', () => {
+    const nav = makeNav();
+    const panel: PanelHandle = { onKey: vi.fn(() => true) };
+    const { press } = setup({
+      nav: { ...nav, overlay: 'settings' },
+      panelRef: { current: panel },
+    });
+    press({ key: 'Tab' });
+    expect(panel.onKey).toHaveBeenCalledWith('Down');
+  });
+
+  it('is ignored while the chrome is locked', () => {
+    const nav = makeNav();
+    const { press } = setup({ nav, locked: true });
+    press({ key: 'Tab' });
+    expect(nav.handleKey).not.toHaveBeenCalled();
+  });
+});

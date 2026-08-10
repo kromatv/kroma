@@ -116,3 +116,20 @@ describe('color() alpha syntax', () => {
     expect(color('white/nope')).toBe('white/nope');
   });
 });
+
+// <Focusable> has its own boolean `ring` prop, and a bag of style props is
+// spread through the same path. Without the guard, `ring={false}` (or `ring`
+// meaning "yes, draw yours") would be looked up as a token name and paint
+// `undefined` into the style.
+describe('the ring shorthand', () => {
+  it('paints the named ring', () => {
+    expect(Object.keys(boxStyle({ ring: 'focus' })).length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ['false', false],
+    ['true', true],
+  ])('paints nothing for a boolean ring (%s)', (_label, value) => {
+    expect(boxStyle({ ring: value as never })).toEqual({});
+  });
+});

@@ -34,3 +34,5 @@ kroma-db = { workspace = true }
 tokio = { workspace = true }
 # `oneshot`, to run one request through a Router without binding a port.
 tower = { workspace = true }
+# The scratch `data_dir` the gate test's AppState is built over.
+kroma-testing = { workspace = true }

@@ -5,6 +5,7 @@ import {
   Box,
   Focusable,
   FocusRegion,
+  FocusSlot,
   gradient,
   Icon,
   Spinner,
@@ -73,11 +74,18 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
       {/* One full-width focus band: a TV moves focus in a straight line, so a
           band is what makes the centred pill reachable by Up from anywhere. */}
       <FocusRegion style={s.band}>
-        {/* For pointer users; the remote's Back key works regardless. */}
-        <Box row align="center" gap={16}>
-          {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
-          <KromaMark size={28} />
-        </Box>
+        {/* A <FocusSlot>, because this bar OUTLIVES the screens it sits on: the
+            back button appears the moment a screen has somewhere to go back to,
+            and a node that registers after the bar is built lands at the END of
+            the band's order however far left it is drawn - the button in the
+            top-left corner was reached by pressing Right past the pill and the
+            avatar. The slot is mounted from the start and holds first place. */}
+        <FocusSlot>
+          <Box row align="center" gap={16}>
+            {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
+            <KromaMark size={28} />
+          </Box>
+        </FocusSlot>
         <NavPill items={items} active={active} />
         <Box row align="center" gap={18}>
           {/* Renders only while a phone or browser is driving this set. */}
@@ -96,7 +104,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
                 seed={user.id}
                 size={44}
                 roundness={0.25}
-                src={client?.resolveArt(user.avatarUrl)}
+                src={client?.resolveArt(user.avatarUrl, 44)}
               />
             </Focusable>
           ) : null}

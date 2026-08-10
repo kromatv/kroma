@@ -1,5 +1,6 @@
 import type { RemoteKey } from '@kroma/core';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { usePanelHeader } from '../lib/panel-header';
 
 /**
  * Reusable 1-D focus for a list of controls, driving BOTH the D-pad and the
@@ -23,6 +24,14 @@ export interface ListFocusOptions {
   onExit?: (edge: 'before' | 'after') => void;
   /** Cross-axis nudge (▲▼ list → ◀▶ adjusts the focused row's value). */
   onHorizontal?: (index: number, dir: -1 | 1) => void;
+  /** A control ABOVE the list - the panel's Back button - reached by ▲ from the
+   *  first row, and run by OK there. Without it that button is pointer-only and
+   *  a remote cannot reach it at all. While it holds the focus, `index` is -1,
+   *  which is what the panel renders it lit from.
+   *
+   *  A list inside a <SettingsPanel> sub-view inherits this from the panel (see
+   *  lib/panel-header) and does not pass it. */
+  header?: () => void;
 }
 
 export interface ListFocus {
@@ -41,14 +50,30 @@ function axisDelta(key: RemoteKey, neg: RemoteKey, pos: RemoteKey): -1 | 0 | 1 {
 
 export function useListFocus(opts: ListFocusOptions): ListFocus {
   const { count, orientation = 'vertical', onActivate, onBack, onExit, onHorizontal } = opts;
+  const panelHeader = usePanelHeader();
+  const header = opts.header ?? panelHeader?.activate;
   const [index, setIndex] = useState(opts.initial ?? 0);
+  const atHeader = index === -1;
+
+  // The panel paints its Back button from this and from nothing else, so the
+  // list stays the one place that knows where the focus is.
+  const report = panelHeader?.report;
+  useEffect(() => {
+    if (!report) return;
+    report(atHeader);
+    return () => report(false);
+  }, [report, atHeader]);
 
   const move = useCallback(
     (dir: -1 | 1): boolean => {
       const next = index + dir;
-      if (next < 0) {
+      // -1 is the header when there is one: ▲ off the first row lands on the
+      // Back button rather than leaving the panel.
+      if (next < (header ? -1 : 0)) {
         onExit?.('before');
-        return onExit != null;
+        // Nothing sits above a header, so the key stops here rather than
+        // reaching the chrome behind the panel.
+        return onExit != null || header != null;
       }
       if (next >= count) {
         onExit?.('after');
@@ -57,7 +82,7 @@ export function useListFocus(opts: ListFocusOptions): ListFocus {
       setIndex(next);
       return true;
     },
-    [index, count, onExit],
+    [index, count, onExit, header],
   );
 
   const onKey = useCallback(
@@ -67,14 +92,19 @@ export function useListFocus(opts: ListFocusOptions): ListFocus {
       const cross = vertical ? axisDelta(key, 'Left', 'Right') : axisDelta(key, 'Up', 'Down');
       if (along !== 0) return move(along as -1 | 1);
       if (cross !== 0) {
-        if (onHorizontal) {
+        if (onHorizontal && !atHeader) {
           onHorizontal(index, cross as -1 | 1);
           return true;
         }
         onExit?.(cross === -1 ? 'before' : 'after');
-        return onExit != null;
+        // Nothing sits beside the header either.
+        return onExit != null || atHeader;
       }
       if (key === 'Enter') {
+        if (atHeader) {
+          header?.();
+          return header != null;
+        }
         onActivate?.(index);
         return onActivate != null;
       }
@@ -84,7 +114,7 @@ export function useListFocus(opts: ListFocusOptions): ListFocus {
       }
       return false;
     },
-    [orientation, move, index, onHorizontal, onExit, onActivate, onBack],
+    [orientation, move, index, atHeader, onHorizontal, onExit, onActivate, onBack, header],
   );
 
   const hover = useCallback((i: number) => () => setIndex(i), []);

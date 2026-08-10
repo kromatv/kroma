@@ -33,3 +33,5 @@ kroma-scene = { workspace = true }
 kroma-module-host = { workspace = true, features = ["testing"] }
 # Only so a test can implement `HostCtx`, whose methods return axum responses.
 axum = { workspace = true }
+# `db::testing::temp_pool`, the throwaway settings store the naming tests read.
+kroma-db = { workspace = true, features = ["testing"] }

@@ -5,7 +5,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter';
 import type { Plugin } from 'vite';
-import { remarkReadingTime } from './reading-time';
+import { remarkReadingTime } from './reading-time.ts';
 
 // MDX must compile BEFORE the React transform, hence `enforce: 'pre'`.
 // Frontmatter is lifted to `export const frontmatter` so the blog index can read

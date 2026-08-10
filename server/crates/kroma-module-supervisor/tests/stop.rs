@@ -10,11 +10,8 @@ use std::time::{Duration, Instant};
 
 use kroma_module_supervisor::{Supervisor, SupervisorConfig};
 
-fn temp_modules_dir(tag: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("kroma-sup-{tag}-{}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
+fn temp_modules_dir(tag: &str) -> kroma_testing::TempDir {
+    kroma_testing::temp_dir(&format!("sup-{tag}"))
 }
 
 fn supervisor(dir: &Path) -> std::sync::Arc<Supervisor> {
@@ -32,6 +29,8 @@ fn supervisor(dir: &Path) -> std::sync::Arc<Supervisor> {
 
 // A stand-in sidecar: on SIGTERM it does what a real module's `on_disable` does
 // (release something outside the process; here, write a file) and then exits.
+// It announces its own readiness, because a signal that arrives before the trap
+// is installed kills the shell on the default action and proves nothing.
 fn install_module(dir: &Path, id: &str, marker: &Path) {
     let module_dir = dir.join(id);
     std::fs::create_dir_all(&module_dir).unwrap();
@@ -44,8 +43,9 @@ fn install_module(dir: &Path, id: &str, marker: &Path) {
     std::fs::write(
         &bin,
         format!(
-            "#!/bin/sh\ntrap 'echo stopped > {} ; exit 0' TERM\nwhile true; do sleep 0.05; done\n",
-            marker.display()
+            "#!/bin/sh\ntrap 'echo stopped > {} ; exit 0' TERM\necho up > {}\nwhile true; do sleep 0.05; done\n",
+            marker.display(),
+            ready_flag(dir, id).display()
         ),
     )
     .unwrap();
@@ -53,37 +53,55 @@ fn install_module(dir: &Path, id: &str, marker: &Path) {
     std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755)).unwrap();
 }
 
+fn ready_flag(dir: &Path, id: &str) -> PathBuf {
+    dir.join(format!("{id}.ready"))
+}
+
+// Waiting for the trap rather than sleeping for it: under the load of a full
+// workspace run a fixed grace was not always enough, and the test failed for a
+// reason it was not written to catch.
+fn await_ready(path: &Path) {
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < deadline {
+        if path.exists() {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    panic!("the stub never installed its trap: {}", path.display());
+}
+
 #[test]
 fn stop_lets_a_module_shut_down_before_killing_it() {
-    let dir = temp_modules_dir("stop");
+    let scratch = temp_modules_dir("stop");
+    let dir = scratch.path();
     let marker = dir.join("stopped.txt");
-    install_module(&dir, "com.example.stub", &marker);
-    let sup = supervisor(&dir);
+    install_module(dir, "com.example.stub", &marker);
+    let sup = supervisor(dir);
 
     sup.spawn("com.example.stub").expect("spawn");
-    // The shell has to install its trap before the signal lands, else it dies on
-    // the default TERM action and proves nothing.
-    std::thread::sleep(Duration::from_millis(300));
+    await_ready(&ready_flag(dir, "com.example.stub"));
 
     sup.stop("com.example.stub");
     assert!(marker.exists(), "the module was killed without a chance to shut down");
     assert!(sup.port_of("com.example.stub").is_none(), "a stopped module must be untracked");
-
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 #[test]
 fn stop_all_shuts_every_module_down() {
-    let dir = temp_modules_dir("stopall");
+    let scratch = temp_modules_dir("stopall");
+    let dir = scratch.path();
     let markers: Vec<PathBuf> = (0..3).map(|i| dir.join(format!("stopped-{i}.txt"))).collect();
     for (i, marker) in markers.iter().enumerate() {
-        install_module(&dir, &format!("com.example.stub{i}"), marker);
+        install_module(dir, &format!("com.example.stub{i}"), marker);
     }
-    let sup = supervisor(&dir);
+    let sup = supervisor(dir);
     for i in 0..3 {
         sup.spawn(&format!("com.example.stub{i}")).expect("spawn");
     }
-    std::thread::sleep(Duration::from_millis(300));
+    for i in 0..3 {
+        await_ready(&ready_flag(dir, &format!("com.example.stub{i}")));
+    }
 
     let started = Instant::now();
     sup.stop_all();
@@ -93,14 +111,13 @@ fn stop_all_shuts_every_module_down() {
     // Signalled together, waited on once: three modules must not cost three
     // grace periods.
     assert!(started.elapsed() < Duration::from_secs(5), "stop_all serialised the grace period");
-
-    let _ = std::fs::remove_dir_all(&dir);
 }
 
 // The grace period is a deadline, not a promise: a wedged module still dies.
 #[test]
 fn stop_kills_a_module_that_ignores_the_signal() {
-    let dir = temp_modules_dir("stubborn");
+    let scratch = temp_modules_dir("stubborn");
+    let dir = scratch.path();
     let module_dir = dir.join("com.example.deaf");
     std::fs::create_dir_all(&module_dir).unwrap();
     std::fs::write(
@@ -121,9 +138,9 @@ fn stop_kills_a_module_that_ignores_the_signal() {
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755)).unwrap();
 
-    let sup = supervisor(&dir);
+    let sup = supervisor(dir);
     sup.spawn("com.example.deaf").expect("spawn");
-    std::thread::sleep(Duration::from_millis(300));
+    await_ready(&pidfile);
     let pid: i32 = std::fs::read_to_string(&pidfile).expect("pidfile").trim().parse().unwrap();
 
     sup.stop("com.example.deaf");
@@ -131,6 +148,4 @@ fn stop_kills_a_module_that_ignores_the_signal() {
     // mean the process outlived the grace period.
     // SAFETY: `kill(pid, 0)` only probes for existence, it delivers no signal.
     assert_eq!(unsafe { libc::kill(pid, 0) }, -1, "a module ignoring SIGTERM was left running");
-
-    let _ = std::fs::remove_dir_all(&dir);
 }

@@ -70,17 +70,28 @@ fn redirect_to_art(url: &str) -> Response {
 }
 
 // A fixed bucket set keeps the on-disk cache bounded and lets clients asking
-// for similar widths share a rendition.
-const IMAGE_WIDTHS: [u32; 4] = [160, 320, 480, 780];
+// for similar widths share a rendition. 960 is the top rung because a backdrop
+// master is a TMDB w1280 (see `infra::metadata::client`): a wider bucket would
+// re-encode the master at its own size rather than downscale it.
+const IMAGE_WIDTHS: [u32; 6] = [160, 240, 320, 480, 780, 960];
+
+const WIDEST_IMAGE: u32 = IMAGE_WIDTHS[IMAGE_WIDTHS.len() - 1];
+
+// Past the widest bucket there is nothing sharper to serve, so the ask is
+// capped instead of falling through to the master: one rendition, one URL.
+fn bucket_for(width: u32) -> u32 {
+    IMAGE_WIDTHS.iter().copied().find(|b| *b >= width).unwrap_or(WIDEST_IMAGE)
+}
 
 #[derive(Debug, Deserialize)]
 pub struct ImageQuery {
     pub w: Option<u32>,
 }
 
-/// `GET /api/images/:name?w=` → locally-cached WebP artwork (poster/backdrop),
-/// optionally downscaled to a bucketed width (`?w=`, see [`IMAGE_WIDTHS`]).
-/// Immutable, content-addressed filenames → cache forever.
+/// `GET /api/images/:name?w=` → locally-cached WebP artwork (poster/backdrop).
+/// `?w=` snaps up to the next [`IMAGE_WIDTHS`] bucket and is capped at the
+/// widest one; omit it for the stored master. Immutable, content-addressed
+/// filenames → cache forever.
 pub async fn image(
     State(state): State<SharedState>,
     Path(name): Path<String>,
@@ -117,10 +128,7 @@ pub async fn image(
 
 async fn sized_rendition_response(state: &SharedState, name: &str, q: &ImageQuery) -> Option<Response> {
     let w = q.w.filter(|_| name.ends_with(".webp"))?;
-    let width = IMAGE_WIDTHS.iter().copied().find(|b| *b >= w).unwrap_or(0);
-    if width == 0 {
-        return None;
-    }
+    let width = bucket_for(w);
     let data_dir = state.config.data_dir.clone();
     let sized_name = name.to_string();
     let made =
@@ -248,4 +256,29 @@ pub async fn item_card(
 
 fn cache_name(url: &str) -> Option<&str> {
     url.strip_prefix(crate::infra::image::PUBLIC_PREFIX)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{bucket_for, IMAGE_WIDTHS};
+
+    #[test]
+    fn a_width_snaps_up_to_the_next_bucket() {
+        assert!(IMAGE_WIDTHS.windows(2).all(|pair| pair[0] < pair[1]));
+        assert_eq!(bucket_for(0), 160);
+        assert_eq!(bucket_for(160), 160);
+        assert_eq!(bucket_for(161), 240);
+        assert_eq!(bucket_for(240), 240);
+        assert_eq!(bucket_for(241), 320);
+        assert_eq!(bucket_for(720), 780);
+        assert_eq!(bucket_for(781), 960);
+        assert_eq!(bucket_for(960), 960);
+    }
+
+    #[test]
+    fn an_ask_past_the_widest_bucket_is_capped_rather_than_served_the_master() {
+        assert_eq!(bucket_for(1280), 960);
+        assert_eq!(bucket_for(2560), 960);
+        assert_eq!(bucket_for(u32::MAX), 960);
+    }
 }

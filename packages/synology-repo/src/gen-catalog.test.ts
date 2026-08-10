@@ -4,7 +4,7 @@
 // real .spk files (tar archives) built here with `tar`, the same tool `extractFromSpk` shells
 // out to, so nothing binary is checked in.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -76,6 +76,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  rmSync(work, { recursive: true, force: true });
   for (const key of Object.keys(process.env)) {
     if (key.startsWith('CATALOG_')) delete process.env[key];
   }

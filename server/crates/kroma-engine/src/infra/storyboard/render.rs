@@ -146,8 +146,8 @@ mod tests {
     #[test]
     #[ignore]
     fn storyboard_generates_a_consistent_sheet() {
-        let tmp = std::env::temp_dir().join(format!("sb_test_{}", std::process::id()));
-        std::fs::create_dir_all(&tmp).unwrap();
+        let scratch = kroma_testing::temp_dir("sb-render");
+        let tmp = scratch.path();
         let clip = tmp.join("clip.mp4");
         let ok = Command::new("ffmpeg")
             .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=size=640x360:rate=24:duration=30"])
@@ -159,7 +159,7 @@ mod tests {
         assert!(ok, "could not create the test clip (is ffmpeg installed?)");
 
         let key = "testkey";
-        generate(clip.to_str().unwrap(), &tmp, key, "x", 30.0, &|| false).expect("generation failed");
+        generate(clip.to_str().unwrap(), tmp, key, "x", 30.0, &|| false).expect("generation failed");
 
         // A sheet (WebP or JPEG) + a parseable manifest landed.
         let plan = Plan::for_duration(30.0);
@@ -183,7 +183,5 @@ mod tests {
         let dims = String::from_utf8_lossy(&dims.stdout);
         let expected = format!("{},{}", plan.cols * TILE_W, plan.rows * TILE_H);
         assert_eq!(dims.trim(), expected, "sheet dimensions != cols*tileW x rows*tileH");
-
-        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

@@ -2,7 +2,7 @@
 // servers, on one screen. Presentation lives in the shared onboarding
 // components; this file owns state, effects and auth calls.
 
-import { apiErrorText, KromaApiError } from '@kroma/core';
+import { apiErrorText, KromaApiError, sizedImageUrl } from '@kroma/core';
 import type { SplashCover } from '@kroma/ui/kit';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -79,7 +79,7 @@ export default function SignIn() {
         if (cancelled) return;
         setCovers(
           entries.map((e) => ({
-            url: e.backdropUrl,
+            url: sizedImageUrl(e.backdropUrl, 640) ?? e.backdropUrl,
             caption: [e.title, e.year].filter(Boolean).join(' · '),
             eyebrow: t(e.kind === 'show' ? 'content.series' : 'content.film'),
           })),

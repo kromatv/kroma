@@ -66,14 +66,10 @@ pub fn set_module_config(settings: &Settings, pool: &Pool, id: &str, values: Map
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::testing::TempPool;
 
-    fn store() -> (Pool, Settings) {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path =
-            std::env::temp_dir().join(format!("kroma-modstate-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::db::init(&path).unwrap();
+    fn store() -> (TempPool, Settings) {
+        let pool = crate::db::testing::temp_pool("modstate");
         let settings = Settings::load(&pool);
         (pool, settings)
     }

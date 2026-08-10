@@ -97,18 +97,6 @@ export const QuickConnectInit = z.object({
 });
 export type QuickConnectInit = z.infer<typeof QuickConnectInit>;
 
-/** `GET /auth/quickconnect/poll` status-tagged union. */
-export const QuickConnectStatus = z.discriminatedUnion('status', [
-  z.object({ status: z.literal('pending') }),
-  z.object({ status: z.literal('expired') }),
-  z.object({
-    status: z.literal('authorized'),
-    token: z.string(),
-    accessToken: z.string(),
-    user: User,
-  }),
-]);
-export type QuickConnectStatus = z.infer<typeof QuickConnectStatus>;
 export type AuthConfig = z.infer<typeof AuthConfig>;
 export type AuthResult = z.infer<typeof AuthResult>;
 export type Permission = z.infer<typeof Permission>;

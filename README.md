@@ -147,8 +147,9 @@ activity never leave your network.
   posters appear live as TMDB resolves, no client relaunch.
 - **Zero-config discovery** the server advertises over mDNS and clients
   subnet-scan the LAN, so TVs find it with no manual IP entry.
-- **Resume, profiles & Quick Connect** picks up where you left off; TV pairs to
-  an account by scanning a QR code.
+- **Resume, profiles & one-tap TV pairing** picks up where you left off; a TV on
+  the same network appears in the phone app and signs in with one tap, with the
+  QR code and Quick Connect code still there for everything else.
 - **Self-hosted & private** a single Rust binary (or Docker image) on your NAS.
   Your library never leaves your network.
 
@@ -285,7 +286,8 @@ See each client's README for full device install steps.
 - **Streaming** `/items/:id/stream` (HTTP range), `/items/:id/hls/…` (audio-only HLS).
 - **Discovery** `/search?q=` (typo-tolerant full-text), `/home` (generated
   sections), `/for-you`, `/items/:id/similar`, `/themed?q=`, `/continue`.
-- **Accounts & control** `/auth/*` (incl. Quick Connect), `/progress`,
+- **Accounts & control** `/auth/*` (incl. Quick Connect), `/handoff/*` (nearby
+  TV pairing, see [`docs/tv-pairing.md`](docs/tv-pairing.md)), `/progress`,
   `/admin/*`, `GET /events` (WebSocket), `POST /scan`.
 
 Configure via `KROMA_HOST` / `KROMA_PORT` / `KROMA_MEDIA_DIRS` / `KROMA_DATA_DIR` /

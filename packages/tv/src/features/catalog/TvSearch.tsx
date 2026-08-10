@@ -1,7 +1,19 @@
 import type { SearchHit } from '@kroma/core';
 import { posterColors, qualityBadge, qualityBadgeForVideo } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { BackButton, Box, Chip, Field, IconButton, styles, Txt, useFocusNav } from '@kroma/ui/kit';
+import {
+  BackButton,
+  Box,
+  Chip,
+  Field,
+  FocusColumn,
+  FocusRegion,
+  IconButton,
+  keyRowWidth,
+  styles,
+  Txt,
+  useFocusNav,
+} from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
@@ -127,7 +139,9 @@ export function TvSearch() {
       <Txt style={s.recentLabel} color="textDim">
         {t('search.recent')}
       </Txt>
-      <Box row wrap gap={10}>
+      {/* A row to the navigator too, or Left/Right do nothing between the pills
+          and Down walks them one by one. */}
+      <FocusRegion style={s.recentRow}>
         {recent.map((term) => (
           <Chip
             key={term}
@@ -138,7 +152,7 @@ export function TvSearch() {
             style={{ maxWidth: 240, paddingHorizontal: 18, paddingVertical: 8 }}
           />
         ))}
-      </Box>
+      </FocusRegion>
     </Box>
   ) : null;
 
@@ -162,7 +176,7 @@ export function TvSearch() {
   }
 
   return (
-    <Box fill z={10} bg="bg" px={64} py={44}>
+    <Box fill z={10} bg="bg" px={SCREEN_PAD} py={44}>
       <Box row align="center" gap={14} mb={28}>
         {/* Back (mouse users); the remote's Back key is wired via useFocusNav. */}
         {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
@@ -173,8 +187,13 @@ export function TvSearch() {
         </Txt>
       </Box>
 
-      <Box row flex gap={52} style={{ minHeight: 0 }}>
-        <Box w={520} shrink={0}>
+      {/* Two columns to the NAVIGATOR, not only to the eye: a plain box is
+          transparent to it, so without these the keys, the recent searches and
+          the posters are one vertical chain - Right at the end of a key row
+          reaches nothing, and the grid beside the keyboard is only reachable by
+          walking Down past every row and every pill. */}
+      <FocusRegion style={s.columns}>
+        <FocusColumn style={s.keyboardColumn}>
           <Field
             value={query}
             onChange={setQuery}
@@ -202,12 +221,10 @@ export function TvSearch() {
 
           {/* recent searches: focusable pills that re-run the query */}
           {recentPills}
-        </Box>
+        </FocusColumn>
 
-        {/* The results pane is a fixed 1180px (1792 content - 520 keyboard -
-            52 gap - 40 padding), so 4 columns of 277px with 24px gaps. */}
         <TvSearchResults hits={hits} query={query} width={RESULTS_WIDTH} onOpen={openHit} />
-      </Box>
+      </FocusRegion>
 
       {/* Spoken words land in the same `query` typing feeds, so the grid behind
           fills in while the user is still talking. */}
@@ -218,13 +235,25 @@ export function TvSearch() {
   );
 }
 
-const RESULTS_WIDTH = 1180;
+// The keyboard is a ten-key row of television keys, and it is the wider of the
+// two columns: the screen is measured FROM it, not the other way round. Taking
+// the width from the kit is what keeps the results pane beside the keys instead
+// of on top of them the next time a key grows.
+const KEYBOARD_W = keyRowWidth('tv');
+const SCREEN_PAD = 64;
+const COLUMN_GAP = 52;
 // The scroller's own horizontal padding, which the grid does not get to use.
 const RESULTS_PADDING = 40;
+// The 1920x1080 stage makes the rest static arithmetic: what the screen's own
+// padding, the keyboard and the gap leave is the results pane.
+const RESULTS_WIDTH = 1920 - SCREEN_PAD * 2 - KEYBOARD_W - COLUMN_GAP - RESULTS_PADDING;
 
 const s = styles({
+  columns: { row: true, flex: true, gap: COLUMN_GAP, minH: 0 },
+  keyboardColumn: { w: KEYBOARD_W, shrink: 0 },
+  recentRow: { row: true, wrap: true, gap: 10 },
   recentLabel: { fontSize: 13, fontWeight: '700', letterSpacing: 0.52 },
 });
 
-// The results grid draws 277pt posters, served from the server's 320 bucket.
+// The results grid draws 254pt posters, served from the server's 320 bucket.
 const RESULT_W = 320;

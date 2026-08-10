@@ -27,7 +27,12 @@ interface MediaCardProps {
   /** Resume position, 0..1, or null for no bar. */
   progress?: number | null;
   watched?: boolean;
-  width?: number;
+  /** Defaults to filling the cell it is placed in, which is what a <Rail>'s
+   *  pitch assumes: the rail fits its pitch to a whole number of columns (see
+   *  `fitPitch`), so a tile pinned to a number of its own overflows the gap the
+   *  cell was holding for it and the row reads as one unbroken strip. Pass a
+   *  number only OUTSIDE a rail. */
+  width?: number | '100%';
   onPress?: () => void;
   onFocus?: () => void;
   autoFocus?: boolean;
@@ -40,7 +45,7 @@ function MediaCard({
   tint,
   progress = null,
   watched = false,
-  width = 328,
+  width = '100%',
   onPress,
   onFocus,
   autoFocus,

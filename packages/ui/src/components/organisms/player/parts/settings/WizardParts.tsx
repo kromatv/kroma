@@ -63,7 +63,7 @@ function CycleArrow({
 
 const s = styles({
   cycleRow: { row: true, align: 'center', between: true, gap: 18, radius: 14, px: 22, py: 18 },
-  cycleOn: { bg: 'white/8', ring: 'focusGlowSm' },
+  cycleOn: { bg: 'white/8', ring: 'focusLift', z: 1 },
   cycleOff: { bg: 'white/4' },
   fieldLabel: { font: 'ui', fontWeight: '600', fontSize: 17, color: 'textMuted' },
   fieldValue: {

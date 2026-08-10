@@ -479,10 +479,15 @@ mod tests {
         })
     }
 
-    // `budget = 0` so only the concurrency cap is exercised.
-    async fn registry(name: &str, cap: usize, sessions: &[(&str, Duration)]) -> Sessions {
-        let data = std::env::temp_dir().join(format!("kroma-hls-test-{}-{name}", std::process::id()));
-        let s = Sessions::new(&data, cap, 0);
+    // `budget = 0` so only the concurrency cap is exercised. The guard comes back
+    // with the registry: its segment directories live under that temp root.
+    async fn registry(
+        name: &str,
+        cap: usize,
+        sessions: &[(&str, Duration)],
+    ) -> (Sessions, kroma_testing::TempDir) {
+        let data = kroma_testing::temp_dir(&format!("hls-test-{name}"));
+        let s = Sessions::new(data.path(), cap, 0);
         let mut map = s.inner.lock().await;
         for (key, age) in sessions {
             let dir = s.root.join(safe_dir(key));
@@ -490,7 +495,7 @@ mod tests {
             map.insert((*key).to_string(), fake_session(dir, *age));
         }
         drop(map);
-        s
+        (s, data)
     }
 
     async fn keys(s: &Sessions) -> Vec<String> {
@@ -502,7 +507,7 @@ mod tests {
     #[tokio::test]
     async fn hard_cap_prefers_the_arriving_clients_own_superseded_sibling() {
         // itA is the LRU; itB toggles the audio filter, minting a third key of its own.
-        let s = registry(
+        let (s, _dir) = registry(
             "sibling",
             2,
             &[("itA:copy:0:a0", Duration::from_secs(3)), ("itB:aac:0:a0", LIVE)],
@@ -518,7 +523,7 @@ mod tests {
 
     #[tokio::test]
     async fn hard_cap_evicts_a_quiet_session_before_a_live_sibling() {
-        let s = registry("quiet", 2, &[("itA:copy:0:a0", QUIET), ("itB:aac:0:a0", LIVE)]).await;
+        let (s, _dir) = registry("quiet", 2, &[("itA:copy:0:a0", QUIET), ("itB:aac:0:a0", LIVE)]).await;
         {
             let mut map = s.inner.lock().await;
             s.make_room(&mut map, "itB:aac-night:0:a0").await;
@@ -528,7 +533,7 @@ mod tests {
 
     #[tokio::test]
     async fn hard_cap_still_frees_a_slot_when_every_session_is_live_and_unrelated() {
-        let s = registry(
+        let (s, _dir) = registry(
             "fallback",
             2,
             &[("itA:copy:0:a0", Duration::from_secs(3)), ("itB:aac:0:a0", LIVE)],
@@ -543,7 +548,7 @@ mod tests {
 
     #[tokio::test]
     async fn superseded_siblings_are_reclaimed_only_once_quiet() {
-        let s = registry(
+        let (s, _dir) = registry(
             "supersede",
             8,
             &[

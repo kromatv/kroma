@@ -7,6 +7,7 @@ import { type ReactNode, useEffect } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { SpatialNavigationView, useLockSpatialNavigation } from 'react-tv-space-navigation';
 import { useFocusEntryScope } from './focus-entry';
+import { FocusLiftHost, LIFTED } from './focus-lift';
 import { FocusPresenceProvider, useInsideFocusScope } from './focus-presence';
 import { useRemoteBridge } from './focus-remote';
 import { FocusRoot } from './focus-root';
@@ -31,6 +32,8 @@ interface ScreenScopeProps extends FocusScopeProps {
    * is in its own view controller and needs its own.
    */
   bridge?: boolean;
+  /** Whether this scope answers the remote. See {@link FocusRootProps.active}. */
+  active?: boolean;
 }
 
 interface FocusColumnProps extends FocusScopeProps {
@@ -46,7 +49,13 @@ interface FocusColumnProps extends FocusScopeProps {
  * browser targets it also resets device-type to remote-keys mode regardless
  * of where the pointer was left.
  */
-function FocusScope({ children, style, entryKey, bridge = true }: Readonly<ScreenScopeProps>) {
+function FocusScope({
+  children,
+  style,
+  entryKey,
+  bridge = true,
+  active = true,
+}: Readonly<ScreenScopeProps>) {
   // Hooks cannot be conditional, so the flag is read INSIDE the bridge rather
   // than around it.
   useRemoteBridge(bridge);
@@ -55,7 +64,9 @@ function FocusScope({ children, style, entryKey, bridge = true }: Readonly<Scree
     // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web
     // page) without registering with a navigator that was never mounted.
     <FocusPresenceProvider value={true}>
-      <FocusRoot style={style}>{children}</FocusRoot>
+      <FocusRoot style={style} active={active}>
+        {children}
+      </FocusRoot>
     </FocusPresenceProvider>
   );
 }
@@ -91,9 +102,16 @@ function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
   // no spatial navigation at all.
   if (!useInsideFocusScope()) return <View style={flat(style)}>{children}</View>;
   return (
-    <SpatialNavigationView direction="horizontal" style={flat(style)}>
-      {children}
-    </SpatialNavigationView>
+    <FocusLiftHost>
+      {(held) => (
+        // The row lifts ITSELF while it holds the focus: rows are separate
+        // stacking contexts, so a lifted tile is still under the whole of the
+        // row after it. No wrapper view - one would collapse the row.
+        <SpatialNavigationView direction="horizontal" style={flat([style, held ? LIFTED : null])}>
+          {children}
+        </SpatialNavigationView>
+      )}
+    </FocusLiftHost>
   );
 }
 
@@ -107,9 +125,17 @@ function FocusColumn({ children, style, grid = false }: Readonly<FocusColumnProp
   // See <FocusRegion>: unscoped, a stack is just a stack.
   if (!useInsideFocusScope()) return <View style={flat(style)}>{children}</View>;
   return (
-    <SpatialNavigationView direction="vertical" alignInGrid={grid} style={flat(style)}>
-      {children}
-    </SpatialNavigationView>
+    <FocusLiftHost>
+      {(held) => (
+        <SpatialNavigationView
+          direction="vertical"
+          alignInGrid={grid}
+          style={flat([style, held ? LIFTED : null])}
+        >
+          {children}
+        </SpatialNavigationView>
+      )}
+    </FocusLiftHost>
   );
 }
 

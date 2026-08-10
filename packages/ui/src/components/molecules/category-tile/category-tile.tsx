@@ -16,7 +16,7 @@ const NO_POINTER: ViewStyle = { pointerEvents: 'none' };
 
 const categoryTileVariants = sv({
   slots: {
-    frame: { shrink: 0, p: 6, radius: 'xl' },
+    frame: { shrink: 0, radius: 'lg' },
     label: { font: 'display', fontWeight: '700', color: 'white' },
     meta: {
       font: 'ui',
@@ -71,7 +71,9 @@ function CategoryTile({
       {...focusProps}
       label={label}
       focusScale={focusScale}
-      // The frame's padding is what keeps the focus ring clear of the artwork.
+      // Frame and artwork are the same box, on the same radius: the ring keeps
+      // itself clear of the art (RING_GAP), so padding here would be a second
+      // gap and a corner nobody could keep concentric.
       style={[s.frame, { width }, style]}
     >
       <Box aspect={aspect} radius="lg" overflow="hidden" bg="surface1" shadow="card">

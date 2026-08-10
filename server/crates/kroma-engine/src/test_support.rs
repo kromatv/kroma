@@ -18,22 +18,8 @@ use crate::ports::{Embedder, NoopEmbedder};
 use crate::services::settings::Settings;
 use crate::state::{AppState, SharedState};
 
-// Monotonic counter making per-test temp paths unique (paired with the pid).
+// Monotonic counter for seeded rows that must not collide across parallel tests.
 static SEQ: AtomicU32 = AtomicU32::new(0);
-
-// A unique temp data dir for one test (removed + recreated so a rerun is
-// clean). Cleanup is *not* here: the dir is removed by the `#[cfg(test)]`
-// `Drop for AppState` once the last `SharedState` clone goes, which is the
-// only point that outlives every thread the test hands the state to. The
-// `remove_dir_all` below is belt-and-braces for a dir left by a previous run
-// that crashed before its state dropped.
-fn unique_data_dir() -> PathBuf {
-    let n = SEQ.fetch_add(1, Ordering::Relaxed);
-    let dir = std::env::temp_dir().join(format!("kroma-engine-test-{}-{n}", std::process::id()));
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).expect("create temp data dir");
-    dir
-}
 
 // A minimal Config: a temp `data_dir`, no media dirs (nothing to scan), no
 // TMDB key (network features cleanly no-op), no `web_dir`.
@@ -47,6 +33,20 @@ fn test_config(data_dir: PathBuf) -> Config {
     }
 }
 
+// The state takes the scratch dir over, so it is removed once the last handle
+// goes rather than when the test body ends - jobs the test triggers keep
+// writing into it from their own threads.
+fn build_state(embedder: Arc<dyn Embedder>, tmdb_api_key: Option<&str>) -> SharedState {
+    let scratch = kroma_testing::temp_dir("engine-test");
+    let db = db::init(&scratch.path().join("kroma.db")).expect("init db");
+    let mut config = test_config(scratch.path().to_path_buf());
+    config.tmdb_api_key = tmdb_api_key.map(str::to_string);
+    let settings = Settings::load(&db);
+    let state = AppState::new(config, false, db, settings, embedder, HashMap::new(), &[]);
+    state.own_scratch_dir(scratch);
+    state
+}
+
 /// Like [`test_state`], but with a TMDB key in the config.
 ///
 /// For services that refuse to start without one. It does NOT make the network
@@ -54,13 +54,7 @@ fn test_config(data_dir: PathBuf) -> Config {
 /// its "TMDB is not configured" guard, so the paths that never reach a request
 /// (an empty library, an un-enriched show, a cancelled run) can be exercised.
 pub(crate) fn test_state_with_tmdb(key: &str) -> SharedState {
-    let data_dir = unique_data_dir();
-    let db = db::init(&data_dir.join("kroma.db")).expect("init db");
-    let mut config = test_config(data_dir);
-    config.tmdb_api_key = Some(key.to_string());
-    let settings = Settings::load(&db);
-    let embedder: Arc<dyn Embedder> = Arc::new(NoopEmbedder);
-    AppState::new(config, false, db, settings, embedder, HashMap::new(), &[])
+    build_state(Arc::new(NoopEmbedder), Some(key))
 }
 
 /// Like [`test_state`], but with a real (if trivial) embedder.
@@ -70,22 +64,14 @@ pub(crate) fn test_state_with_tmdb(key: &str) -> SharedState {
 /// one that stored everything. This one produces a vector of the requested
 /// length so "already at the active dim" is actually distinguishable.
 pub(crate) fn test_state_with_embedder(embedder: Arc<dyn Embedder>) -> SharedState {
-    let data_dir = unique_data_dir();
-    let db = db::init(&data_dir.join("kroma.db")).expect("init db");
-    let config = test_config(data_dir);
-    let settings = Settings::load(&db);
-    AppState::new(config, false, db, settings, embedder, HashMap::new(), &[])
+    build_state(embedder, None)
 }
 
 /// Build a minimal, real [`SharedState`]: fresh temp DB, loaded settings, a no-op
 /// embedder, empty module services, no module jobs, `ffprobe_available = false`.
+/// The state owns the scratch `data_dir`, which goes when its last clone does.
 pub(crate) fn test_state() -> SharedState {
-    let data_dir = unique_data_dir();
-    let db = db::init(&data_dir.join("kroma.db")).expect("init db");
-    let config = test_config(data_dir);
-    let settings = Settings::load(&db);
-    let embedder: Arc<dyn Embedder> = Arc::new(NoopEmbedder);
-    AppState::new(config, false, db, settings, embedder, HashMap::new(), &[])
+    build_state(Arc::new(NoopEmbedder), None)
 }
 
 /// Insert a library row (idempotent). `kind` is `"movies" | "shows" | "mixed"`.
@@ -200,6 +186,23 @@ pub(crate) fn seed_play(state: &SharedState, user_id: &str, item_id: &str, ended
             [],
         )
         .unwrap();
+}
+
+/// A `User` value with no DB row behind it, for services that only read the
+/// struct. Use [`test_state`] + `kroma_db::create_user` when the row must exist.
+pub(crate) fn test_user(id: &str, permissions: Vec<crate::model::Permission>) -> crate::model::User {
+    crate::model::User {
+        id: id.into(),
+        email: format!("{id}@example.test"),
+        username: id.into(),
+        avatar_url: None,
+        language: None,
+        audio_language: None,
+        subtitle_language: None,
+        permissions,
+        created_at: "now".into(),
+        has_pin: false,
+    }
 }
 
 /// Epoch **seconds** "now" for seeding recent `play_history` rows.

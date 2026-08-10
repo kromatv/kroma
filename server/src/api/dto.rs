@@ -7,6 +7,7 @@ use serde::Serialize;
 
 use crate::infra::metrics::DiskInfo;
 use crate::model::{AdminUser, MediaItem, Permission, Show, User};
+use crate::services::pairing::PollState;
 use crate::services::settings::SettingGroup;
 
 /// `GET /api/health`.
@@ -101,10 +102,12 @@ pub struct QuickConnectInit {
     pub authorize_url: Option<String>,
 }
 
-/// `GET /api/auth/quickconnect/poll` result a status-tagged union.
+/// The status-tagged union both pairing polls answer with
+/// (`/auth/quickconnect/poll`, `/handoff/poll`). `Expired` covers an unknown
+/// secret too: a device that cannot tell them apart simply starts over.
 #[derive(Serialize)]
 #[serde(tag = "status", rename_all = "lowercase")]
-pub enum QuickPoll {
+pub enum PairingPoll {
     Pending,
     Expired,
     #[serde(rename_all = "camelCase")]
@@ -113,6 +116,18 @@ pub enum QuickPoll {
         access_token: String,
         user: Box<User>,
     },
+}
+
+impl From<PollState> for PairingPoll {
+    fn from(state: PollState) -> Self {
+        match state {
+            PollState::Authorized { token, access_token, user } => {
+                Self::Authorized { token, access_token, user }
+            }
+            PollState::Pending => Self::Pending,
+            PollState::Unknown => Self::Expired,
+        }
+    }
 }
 
 /// Server identity + uptime for the admin sidebar status card.

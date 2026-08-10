@@ -2,11 +2,23 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { FocusScope } from '#ui/lib/focus-scope';
 import { OnScreenKeyboard } from './keyboard';
 
 afterEach(cleanup);
 
 describe('OnScreenKeyboard', () => {
+  it('opens the search grid on the first letter, not on the digits row', () => {
+    render(
+      <FocusScope>
+        <OnScreenKeyboard value="" onChange={vi.fn()} layout="search" letters="qwerty" />
+      </FocusScope>,
+    );
+    // A key wears no ring (see ./key), so the entry is the one the focus scales.
+    expect(screen.getByLabelText('Q').style.transform).toContain('scale(1.08)');
+    expect(screen.getByLabelText('1').style.transform).not.toContain('scale(1.08)');
+  });
+
   it('appends a lowercase letter from the search grid', () => {
     const onChange = vi.fn();
     render(<OnScreenKeyboard value="ali" onChange={onChange} layout="search" />);

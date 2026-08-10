@@ -132,6 +132,35 @@ describe('activate and back', () => {
   });
 });
 
+describe('the header above the list', () => {
+  // Without this the panel's Back button is pointer-only: a remote can light it
+  // (index -1) but pressing OK there does nothing.
+  it('runs the header on OK while the header holds the focus', () => {
+    const header = vi.fn();
+    const onActivate = vi.fn();
+    const { result } = renderHook(() => useListFocus({ count: 3, header, onActivate }));
+    act(() => void result.current.onKey('Up'));
+    expect(result.current.index).toBe(-1);
+    let consumed = false;
+    act(() => {
+      consumed = result.current.onKey('Enter');
+    });
+    expect(header).toHaveBeenCalledTimes(1);
+    expect(onActivate).not.toHaveBeenCalled();
+    expect(consumed).toBe(true);
+  });
+
+  it('does not consume OK at the header when there is no header to run', () => {
+    const { result } = renderHook(() => useListFocus({ count: 3, onExit: () => undefined }));
+    act(() => result.current.setIndex(-1));
+    let consumed = true;
+    act(() => {
+      consumed = result.current.onKey('Enter');
+    });
+    expect(consumed).toBe(false);
+  });
+});
+
 describe('pointer', () => {
   // §15: the mouse moves the same focus the remote does, so a hover and a
   // D-pad move cannot disagree about which row is lit.

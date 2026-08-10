@@ -2,7 +2,7 @@
 // biometric switch row and the step-at-a-time masked PIN wizard. All state
 // and auth calls stay in the route (app/(app)/profile-pin.tsx).
 
-import { Box, Button, OtpField, Spinner, Switch, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Keypad, OtpField, Spinner, Switch, styles, Txt } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { colors, radius, spacing, type } from '#mobile/lib/theme';
 import { ErrorBanner } from './ui';
@@ -66,16 +66,18 @@ export function PinWizard({
   return (
     <Box style={s.wizard}>
       <Txt style={s.wizardSub}>{subtitle}</Txt>
-      <OtpField
-        self="center"
-        maxLength={4}
-        value={pin}
-        onChange={onChange}
-        mask
-        disabled={busy}
-        physicalKeyboard
-        autoFocus
-      />
+      {/* The kit's own pad, like <ConnectDevice>: it taps back, it cannot be
+          cropped by a system keyboard, and iOS puts no AutoFill chip over it. */}
+      <OtpField self="center" maxLength={4} value={pin} onChange={onChange} mask disabled={busy} />
+      <Box self="center">
+        <Keypad
+          size="compact"
+          autoFocus={false}
+          disabled={busy}
+          onDigit={(digit) => onChange(pin + digit)}
+          onDelete={() => onChange(pin.slice(0, -1))}
+        />
+      </Box>
       {busy ? (
         <Box self="center">
           <Spinner size={24} color={colors.textDim} />

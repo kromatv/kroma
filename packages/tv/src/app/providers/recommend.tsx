@@ -31,6 +31,10 @@ const GENERIC_HOME_ROWS = ['recent', 'for-you', 'trending'] as const;
 
 const MAX_PROGRAMS = 20;
 
+// A launcher card is drawn 1280 wide; asking for the original ships a
+// multi-megabyte still to a shelf that shows a thumbnail.
+const LAUNCHER_ART_W = 1280;
+
 function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
   const art = `${client.baseUrl}/api/items/${encodeURIComponent(movie.id)}/card?v=${encodeURIComponent(movie.addedAt)}`;
   return {
@@ -38,7 +42,7 @@ function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
     title: movie.title,
     subtitle: movie.year ? String(movie.year) : '',
     imageUrl: art,
-    backdropUrl: client.backdropFor(movie) ?? undefined,
+    backdropUrl: client.backdropFor(movie, LAUNCHER_ART_W) ?? undefined,
     kind: 'movie',
   };
 }

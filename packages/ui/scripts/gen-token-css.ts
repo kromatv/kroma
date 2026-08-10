@@ -6,7 +6,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { colors } from '../src/core/tokens/colors';
-import { glow, motion, RING_WIDTH, ring, shadow } from '../src/core/tokens/effects';
+import { glow, motion, RING_GAP, RING_WIDTH, shadow } from '../src/core/tokens/effects';
 import { gutter, radius, rhythm, space } from '../src/core/tokens/layout';
 import { fonts, tracking, typeSpec } from '../src/core/tokens/typography';
 
@@ -137,7 +137,6 @@ const RADIUS_NOTE: Partial<Record<keyof typeof radius, string>> = {
 function effectsCss(): string {
   // Rings reference var(--kroma-accent) rather than the literal hex, so a themed
   // override of the accent still retints them.
-  const accentVar = (s: string) => s.replace(colors.accent, 'var(--kroma-accent)');
   return block([
     '  /* Corner radii */',
     ...Object.entries(radius).map(([k, v]) => {
@@ -149,8 +148,11 @@ function effectsCss(): string {
     ...Object.entries(shadow).map(([k, v]) => `  --shadow-${k}: ${v};`),
     ...section('Focus + glow (10-foot / TV)'),
     `  --ring-width: ${RING_WIDTH}px; /* one width for every focus visual */`,
-    `  --ring-focus: ${accentVar(ring.focus)};`,
-    `  --ring-focus-sm: ${accentVar(ring.focusSm)};`,
+    `  --ring-gap: ${RING_GAP}px; /* how far it stands off the control */`,
+    // An `outline` value, not a `box-shadow` one: the gap is only a gap when
+    // nothing fills it (see tokens/effects). Used as
+    // `outline: var(--ring-outline); outline-offset: var(--ring-gap);`.
+    `  --ring-outline: ${RING_WIDTH}px solid var(--kroma-accent);`,
     ...Object.entries(glow).map(([k, v]) => `  --glow-${k}: ${v};`),
     ...section('Motion'),
     `  --ease-out: ${bezier(motion.bezier.out)};`,

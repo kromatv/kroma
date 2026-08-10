@@ -40,7 +40,7 @@ function resolveHeaderUser(
     return {
       name: activeUser.username,
       seed: activeUser.id,
-      src: activeClient?.resolveArt(activeUser.avatarUrl),
+      src: activeClient?.resolveArt(activeUser.avatarUrl, 118),
     };
   }
   return null;

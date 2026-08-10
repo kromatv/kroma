@@ -287,7 +287,6 @@ mod tests {
         assert!(stable_id("a", "whisper", "French").starts_with("dl"));
     }
 
-    use std::path::PathBuf;
     use std::sync::atomic::AtomicBool;
     use std::sync::Arc;
 
@@ -332,18 +331,14 @@ mod tests {
     }
 
     struct Env {
-        dir: PathBuf,
+        dir: kroma_testing::TempDir,
         pool: Pool,
         settings: Settings,
     }
 
     fn env() -> Env {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("kroma-subgen-{}-{n}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        let pool = crate::db::init(&dir.join("kroma.db")).unwrap();
+        let dir = kroma_testing::temp_dir("subgen");
+        let pool = crate::db::init(&dir.path().join("kroma.db")).unwrap();
         // `downloaded_subtitles.item_id` is a foreign key, so there must be a real item.
         {
             let conn = pool.get().unwrap();
@@ -383,7 +378,7 @@ mod tests {
     fn run(env: &Env, spec: &GenSpec, whisper: &dyn crate::ports::Whisper) -> Result<DownloadedSub, String> {
         generate(
             &env.settings,
-            &env.dir,
+            env.dir.path(),
             &env.pool,
             "itm-1",
             Path::new("/media/itm-1.mkv"),

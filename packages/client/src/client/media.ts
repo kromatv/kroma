@@ -1,11 +1,10 @@
-// Catalogue reads, art/stream URL builders and subtitles.
+// Catalogue reads, stream/subtitle URL builders and storyboards.
 
 import type {
   Activity,
   Health,
   Library,
   MediaItem,
-  Metadata,
   PersonDetailResponse,
   PersonResponse,
   SearchResponse,
@@ -15,6 +14,7 @@ import type {
   ShowDetail,
   SplashEntry,
 } from '../types';
+import { resolveArt } from './artwork';
 import { KromaApiError, libraryQuery, type RequestContext } from './base';
 
 /** Server liveness + counts. Accepts an `init` (e.g. an `AbortSignal`) so a
@@ -203,67 +203,6 @@ export function hlsMasterUrl(
   const clean = aac ? 'aac' : 'copy';
   const mode = filter ? `aac-${filter}` : clean;
   return `${ctx.baseUrl}/api/items/${encodeURIComponent(id)}/hls/${mode}/${anchor}/${a}/index.m3u8`;
-}
-
-/** Generated SVG poster URL for a movie/episode. */
-export function posterUrl(ctx: RequestContext, id: string): string {
-  return `${ctx.baseUrl}/api/items/${encodeURIComponent(id)}/poster`;
-}
-
-/** Generated SVG poster URL for a show. */
-export function showPosterUrl(ctx: RequestContext, id: string): string {
-  return `${ctx.baseUrl}/api/shows/${encodeURIComponent(id)}/poster`;
-}
-
-/** Resolve a metadata image URL against the server origin, at the size it will
- * actually be shown. Cached WebP art is a relative path (`/api/images/…`, sized
- * via `?w=`); TMDB fallbacks are absolute and handed back untouched. Pass
- * `width` for grids (a Samsung TV decoding a hundred full-size images stutters);
- * leave it out for a hero backdrop already wider than the largest bucket. */
-export function resolveArt(
-  ctx: RequestContext,
-  url?: string | null,
-  width?: number,
-): string | null {
-  if (!url) return null;
-  if (/^https?:\/\//.test(url)) return url;
-  const join = url.includes('?') ? '&' : '?';
-  const sized = width ? `${url}${join}w=${Math.round(width)}` : url;
-  return `${ctx.baseUrl}${sized}`;
-}
-
-/** Best poster for a movie/episode: real cached TMDB art if resolved, else the
- * generated SVG placeholder. */
-export function posterFor(
-  ctx: RequestContext,
-  x: { id: string; metadata?: Metadata | null },
-  width?: number,
-): string {
-  return resolveArt(ctx, x.metadata?.posterUrl, width) ?? posterUrl(ctx, x.id);
-}
-
-/** Best poster for a show: real cached TMDB art if resolved, else the SVG. */
-export function showPosterFor(
-  ctx: RequestContext,
-  x: Pick<Show, 'id' | 'metadata'>,
-  width?: number,
-): string {
-  return resolveArt(ctx, x.metadata?.posterUrl, width) ?? showPosterUrl(ctx, x.id);
-}
-
-/** Cover/backdrop art for a movie or show, or `null` when none was resolved. */
-export function backdropFor(
-  ctx: RequestContext,
-  x: { metadata?: Metadata | null },
-  width?: number,
-): string | null {
-  return resolveArt(ctx, x.metadata?.backdropUrl, width);
-}
-
-/** Plex-style theme song for a movie or show, or `null` when none was resolved.
- * Only TV shows carry one (a cached `/api/themes/<tvdb>.mp3`); movies are null. */
-export function themeFor(ctx: RequestContext, x: { metadata?: Metadata | null }): string | null {
-  return resolveArt(ctx, x.metadata?.themeUrl);
 }
 
 /** WebVTT URL for the n-th embedded subtitle track of an item. The server

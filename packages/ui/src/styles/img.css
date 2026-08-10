@@ -1,0 +1,18 @@
+/* The <Img> reveal, for every browser target.
+   Its own file because the two aggregate stylesheets share almost nothing else:
+   the web's `styles.css` carries a reset and body rules the TV supplies itself,
+   so `tv.css` imports the pieces it wants one by one. The fade belongs to the
+   component, so it goes wherever the component does.
+
+   A rule rather than an opacity driven from React: the element's resting state
+   has to be VISIBLE, or art that is already decoded stays invisible whenever
+   the state that would have revealed it never arrives - a load event missed on
+   cached art, a frame that never runs on a busy television. */
+@keyframes kroma-img-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

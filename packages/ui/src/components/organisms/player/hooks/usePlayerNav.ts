@@ -98,7 +98,11 @@ function dpadUp(ctx: DpadContext): void {
       return;
     }
     ctx.setZone('progress');
+  } else if (zone === 'progress') {
+    ctx.setZone('back');
   } else {
+    // Above the Back button there is nothing left to focus, so ▲ dismisses the
+    // chrome, which is what it did from `progress` before this zone existed.
     ctx.clearHide();
     ctx.setRevealed(false);
   }
@@ -106,7 +110,8 @@ function dpadUp(ctx: DpadContext): void {
 
 function dpadDown(ctx: DpadContext): void {
   const { a, zone, focused } = ctx;
-  if (zone === 'progress') ctx.setZone('controls');
+  if (zone === 'back') ctx.setZone('progress');
+  else if (zone === 'progress') ctx.setZone('controls');
   else if (focused === 'volume') a.volumeNudge(-1);
   else ctx.openOverlay('sheet');
 }
@@ -129,7 +134,8 @@ function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
       else ctx.setControlIndex((i) => Math.min(ctx.controlsLen - 1, i + 1));
       return;
     case 'Enter':
-      if (zone === 'progress') a.togglePlay();
+      if (zone === 'back') a.onExit();
+      else if (zone === 'progress') a.togglePlay();
       else if (focused) ctx.activate(focused);
       return;
     case 'Back':

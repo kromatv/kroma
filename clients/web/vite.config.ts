@@ -14,7 +14,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { swScript } from './sw.build';
+import { swScript } from './sw.build.ts';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 

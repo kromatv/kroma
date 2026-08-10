@@ -274,6 +274,7 @@ fn snippet(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::testing::TempPool;
 
     fn cue(timing: &str, text: &str) -> Cue {
         Cue { timing: timing.to_string(), text: text.to_string() }
@@ -405,12 +406,8 @@ mod tests {
         assert!(err.contains("LLM request failed"), "unexpected: {err}");
     }
 
-    fn test_pool() -> crate::db::Pool {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-subs-translate-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        crate::db::init(&path).unwrap()
+    fn test_pool() -> TempPool {
+        crate::db::testing::temp_pool("subs-translate")
     }
 
     #[test]
@@ -450,13 +447,8 @@ mod tests {
     use crate::services::subtitles::progress::GenRegistry;
     use crate::test_support::FakeLlm as FakeEndpoint;
 
-    fn settings_pool() -> (kroma_db::Pool, Settings) {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path =
-            std::env::temp_dir().join(format!("kroma-translate-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::db::init(&path).unwrap();
+    fn settings_pool() -> (TempPool, Settings) {
+        let pool = crate::db::testing::temp_pool("translate");
         let settings = Settings::load(&pool);
         (pool, settings)
     }

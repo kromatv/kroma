@@ -1,4 +1,5 @@
 import '@kroma/tv/tv.css';
 import { mountTv } from '@kroma/tv/mount';
+import { resolveTizenDeviceName } from './deviceName';
 
-mountTv({ platform: 'Tizen' });
+mountTv({ platform: 'Tizen', deviceName: resolveTizenDeviceName() });

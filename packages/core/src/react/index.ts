@@ -4,5 +4,21 @@
 // over a HOST adapter for the pieces that differ per app (session, client
 // instance). No components or styles - that is @kroma/ui's floor.
 
+export type {
+  CheckPrompt,
+  CheckPromptOptions,
+  HandoffAttempt,
+  HandoffOutcome,
+  HandoffPicker,
+  HandoffPickerOptions,
+} from './handoff-picker';
+export {
+  HANDOFF_OUTCOME_MS,
+  handoffRowHint,
+  useCheckPrompt,
+  useHandoffPicker,
+} from './handoff-picker';
 export type { LangPatch, LangPrefs, LangPrefsHost, LangPrefUser } from './lang-prefs';
 export { normalizeLangPref, prefValue, useLangPrefs } from './lang-prefs';
+export type { NearbyTvs } from './nearby-tvs';
+export { useNearbyTvs } from './nearby-tvs';

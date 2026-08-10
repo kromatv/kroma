@@ -20,6 +20,7 @@
     "@gorhom/bottom-sheet": "^5.2.14",
     "@kesha-antonov/react-native-background-downloader": "^4.6.1",
     "@kroma/core": "workspace:*",
+    "@kroma/lan-beacon": "workspace:*",
     "@kroma/ui": "workspace:*",
     "@kroma/workbench": "workspace:*",
     "@tabler/icons-react-native": "^3.46.0",

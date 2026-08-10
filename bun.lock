@@ -108,6 +108,7 @@
       },
       "devDependencies": {
         "@babel/core": "^7.28.0",
+        "@kroma/build-info": "workspace:*",
         "@kroma/bundler": "workspace:*",
         "@react-native-tvos/config-tv": "^0.1.6",
         "@types/node": "^22.10.2",
@@ -126,6 +127,7 @@
         "@gorhom/bottom-sheet": "^5.2.14",
         "@kesha-antonov/react-native-background-downloader": "^4.6.1",
         "@kroma/core": "workspace:*",
+        "@kroma/lan-beacon": "workspace:*",
         "@kroma/ui": "workspace:*",
         "@kroma/workbench": "workspace:*",
         "@tabler/icons-react-native": "^3.46.0",
@@ -214,6 +216,7 @@
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
+        "zod": "^4.4.3",
       },
       "devDependencies": {
         "@kroma/bundler": "workspace:*",
@@ -234,11 +237,13 @@
       "version": "0.1.3",
       "dependencies": {
         "@kroma/core": "workspace:*",
+        "@kroma/lan-beacon": "workspace:*",
         "@kroma/tv": "workspace:*",
         "@kroma/ui": "workspace:*",
         "expo": "~57.0.11",
         "expo-blur": "~57.0.2",
         "expo-constants": "~57.0.9",
+        "expo-device": "~57.0.1",
         "expo-file-system": "~57.0.2",
         "expo-font": "~57.0.1",
         "expo-keep-awake": "~57.0.1",
@@ -342,6 +347,7 @@
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
+        "zod": "^4.4.3",
       },
       "devDependencies": {
         "@kroma/bundler": "workspace:*",
@@ -452,8 +458,10 @@
         "@csstools/postcss-cascade-layers": "^6.0.0",
         "@kroma/build-info": "workspace:*",
         "@kroma/ui": "workspace:*",
+        "@rolldown/plugin-babel": "^0.2.3",
         "@tailwindcss/vite": "^4.3.3",
         "@vitejs/plugin-react": "^6.0.4",
+        "babel-plugin-react-compiler": "^1.0.0",
         "esbuild": "^0.28.2",
         "lightningcss": "^1.33.0",
         "postcss": "^8.5.23",
@@ -483,6 +491,7 @@
       "version": "0.1.3",
       "dependencies": {
         "@kroma/client": "workspace:*",
+        "zod": "^4.4.3",
       },
       "devDependencies": {
         "@types/react": "^19.2.18",
@@ -495,6 +504,17 @@
       "optionalPeers": [
         "react",
       ],
+    },
+    "packages/lan-beacon": {
+      "name": "@kroma/lan-beacon",
+      "version": "0.1.0",
+      "devDependencies": {
+        "typescript": "^7.0.2",
+      },
+      "peerDependencies": {
+        "@kroma/core": "workspace:*",
+        "expo": "*",
+      },
     },
     "packages/module-registry": {
       "name": "@kroma/module-registry",
@@ -1129,6 +1149,8 @@
     "@kroma/desktop": ["@kroma/desktop@workspace:clients/desktop"],
 
     "@kroma/kit": ["@kroma/kit@workspace:clients/kit"],
+
+    "@kroma/lan-beacon": ["@kroma/lan-beacon@workspace:packages/lan-beacon"],
 
     "@kroma/mobile": ["@kroma/mobile@workspace:clients/mobile"],
 

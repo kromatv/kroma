@@ -1,5 +1,6 @@
 import * as accounts from './client/accounts';
 import * as admin from './client/admin';
+import * as artwork from './client/artwork';
 import {
   KromaApiError,
   type KromaClientOptions,
@@ -12,12 +13,16 @@ import {
 import * as cast from './client/cast';
 import type { DiscoverType } from './client/discovery';
 import * as discovery from './client/discovery';
+import type { HandoffAnnounce, HandoffEvidence } from './client/handoff';
+import * as handoff from './client/handoff';
 import * as library from './client/library';
 import * as media from './client/media';
 import { type ModuleApi, moduleApi } from './client/module-api';
 import * as moduleRegistry from './client/modules';
 import * as notifications from './client/notifications';
+import * as passkeysClient from './client/passkeys';
 import * as playback from './client/playback';
+import * as quickConnect from './client/quick-connect';
 import type { RematchKind } from './client/rematch';
 import * as rematch from './client/rematch';
 import type { ReportQuery } from './client/reports';
@@ -43,6 +48,8 @@ import type {
   DiscoverResponse,
   ElementProcessing,
   GrabBody,
+  HandoffBeacon,
+  HandoffDevice,
   Health,
   HistoryStats,
   InteractiveSearchView,
@@ -64,6 +71,7 @@ import type {
   NotificationImages,
   NotificationPrefs,
   NotificationsView,
+  PairingStatus,
   PasskeyInfo,
   Permission,
   PersonDetailResponse,
@@ -76,7 +84,6 @@ import type {
   ProgressEntry,
   PublicUser,
   QuickConnectInit,
-  QuickConnectStatus,
   Report,
   ReportsView,
   RequestsView,
@@ -96,13 +103,16 @@ import type {
   User,
 } from './types';
 
-export type { AccountPatch, WebAuthnCredential, WebAuthnOptions } from './client/accounts';
+export type { AccountPatch } from './client/accounts';
 export type { AdminFsEntry, AdminFsList } from './client/admin';
+export { artworkScaleValue, artworkWidth, setArtworkScale } from './client/artwork';
 export type { KromaClientOptions } from './client/base';
 export { apiErrorText, KromaApiError } from './client/base';
 export type { DiscoverType } from './client/discovery';
+export type { HandoffAnnounce, HandoffEvidence } from './client/handoff';
 export type { HlsAudioFilter, StoryboardManifest } from './client/media';
 export type { ModuleApi } from './client/module-api';
+export type { WebAuthnCredential, WebAuthnOptions } from './client/passkeys';
 export type { ReportQuery } from './client/reports';
 export type {
   DownloadedSub,
@@ -124,6 +134,9 @@ const NO_REFRESH = new Set([
   '/auth/relock',
   '/auth/quickconnect/initiate',
   '/auth/quickconnect/poll',
+  '/handoff/announce',
+  '/handoff/leave',
+  '/handoff/poll',
 ]);
 
 /** Thin typed client over the KROMA server REST API, shared by every client shell.
@@ -309,7 +322,7 @@ export class KromaClient {
     return media.hlsMasterUrl(this.ctx, id, aac, startSec, audio, filter);
   }
   posterUrl(id: string): string {
-    return media.posterUrl(this.ctx, id);
+    return artwork.posterUrl(this.ctx, id);
   }
   /** Real poster bytes (cached TMDB art) for the OS "Now Playing" artwork; prefers
    * a raster over the generated SVG placeholder, which NSImage can't render. */
@@ -328,22 +341,22 @@ export class KromaClient {
     return this.blob(path);
   }
   showPosterUrl(id: string): string {
-    return media.showPosterUrl(this.ctx, id);
+    return artwork.showPosterUrl(this.ctx, id);
   }
   resolveArt(url?: string | null, width?: number): string | null {
-    return media.resolveArt(this.ctx, url, width);
+    return artwork.resolveArt(this.ctx, url, width);
   }
   posterFor(item: { id: string; metadata?: Metadata | null }, width?: number): string {
-    return media.posterFor(this.ctx, item, width);
+    return artwork.posterFor(this.ctx, item, width);
   }
   showPosterFor(show: Pick<Show, 'id' | 'metadata'>, width?: number): string {
-    return media.showPosterFor(this.ctx, show, width);
+    return artwork.showPosterFor(this.ctx, show, width);
   }
   backdropFor(x: { metadata?: Metadata | null }, width?: number): string | null {
-    return media.backdropFor(this.ctx, x, width);
+    return artwork.backdropFor(this.ctx, x, width);
   }
   themeFor(x: { metadata?: Metadata | null }): string | null {
-    return media.themeFor(this.ctx, x);
+    return artwork.themeFor(this.ctx, x);
   }
   subtitleUrl(id: string, index: number): string {
     return media.subtitleUrl(this.ctx, id, index);
@@ -430,30 +443,30 @@ export class KromaClient {
   revokeSession(id: string): Promise<void> {
     return accounts.revokeSession(this.ctx, id);
   }
-  passkeyRegisterStart(): Promise<{ ceremonyId: string; options: accounts.WebAuthnOptions }> {
-    return accounts.passkeyRegisterStart(this.ctx);
+  passkeyRegisterStart(): Promise<{ ceremonyId: string; options: passkeysClient.WebAuthnOptions }> {
+    return passkeysClient.passkeyRegisterStart(this.ctx);
   }
   passkeyRegisterFinish(body: {
     ceremonyId: string;
     name: string;
-    credential: accounts.WebAuthnCredential;
+    credential: passkeysClient.WebAuthnCredential;
   }): Promise<PasskeyInfo> {
-    return accounts.passkeyRegisterFinish(this.ctx, body);
+    return passkeysClient.passkeyRegisterFinish(this.ctx, body);
   }
   listPasskeys(): Promise<PasskeyInfo[]> {
-    return accounts.passkeys(this.ctx);
+    return passkeysClient.passkeys(this.ctx);
   }
   deletePasskey(id: string): Promise<void> {
-    return accounts.deletePasskey(this.ctx, id);
+    return passkeysClient.deletePasskey(this.ctx, id);
   }
-  passkeyAuthStart(): Promise<{ ceremonyId: string; options: accounts.WebAuthnOptions }> {
-    return accounts.passkeyAuthStart(this.ctx);
+  passkeyAuthStart(): Promise<{ ceremonyId: string; options: passkeysClient.WebAuthnOptions }> {
+    return passkeysClient.passkeyAuthStart(this.ctx);
   }
   passkeyAuthFinish(body: {
     ceremonyId: string;
-    credential: accounts.WebAuthnCredential;
+    credential: passkeysClient.WebAuthnCredential;
   }): Promise<AuthResult> {
-    return accounts.passkeyAuthFinish(this.ctx, body);
+    return passkeysClient.passkeyAuthFinish(this.ctx, body);
   }
   users(): Promise<PublicUser[]> {
     return accounts.users(this.ctx);
@@ -474,13 +487,32 @@ export class KromaClient {
     return accounts.uploadAvatar(this.ctx, file);
   }
   quickConnectInitiate(prevSecret?: string): Promise<QuickConnectInit> {
-    return accounts.quickConnectInitiate(this.ctx, prevSecret);
+    return quickConnect.quickConnectInitiate(this.ctx, prevSecret);
   }
-  quickConnectPoll(secret: string): Promise<QuickConnectStatus> {
-    return accounts.quickConnectPoll(this.ctx, secret);
+  quickConnectPoll(secret: string): Promise<PairingStatus> {
+    return quickConnect.quickConnectPoll(this.ctx, secret);
   }
   quickConnectAuthorize(code: string): Promise<void> {
-    return accounts.quickConnectAuthorize(this.ctx, code);
+    return quickConnect.quickConnectAuthorize(this.ctx, code);
+  }
+
+  /** Publish this device's beacon so a phone on the same network can sign it in. */
+  announceHandoff(body: HandoffAnnounce): Promise<HandoffBeacon> {
+    return handoff.announceHandoff(this.ctx, body);
+  }
+  handoffLeave(secret: string): Promise<void> {
+    return handoff.handoffLeave(this.ctx, secret);
+  }
+  handoffPoll(secret: string): Promise<PairingStatus> {
+    return handoff.handoffPoll(this.ctx, secret);
+  }
+  /** The TVs waiting on this device's own network. */
+  handoffDevices(): Promise<HandoffDevice[]> {
+    return handoff.handoffDevices(this.ctx);
+  }
+  /** Hand this account to one of them. */
+  handoffGrant(handle: string, evidence?: HandoffEvidence): Promise<void> {
+    return handoff.handoffGrant(this.ctx, handle, evidence);
   }
 
   progress(): Promise<ProgressEntry[]> {

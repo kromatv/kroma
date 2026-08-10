@@ -70,7 +70,7 @@ export function CastRemotes() {
                   seed={remote.username}
                   size={44}
                   roundness={0.35}
-                  src={client?.resolveArt(remote.avatarUrl ?? undefined)}
+                  src={client?.resolveArt(remote.avatarUrl ?? undefined, 44)}
                 />
               }
               label={remote.username}

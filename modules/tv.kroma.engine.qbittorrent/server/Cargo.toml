@@ -16,6 +16,10 @@ kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
 anyhow = "1"
 serde_json = "1"
 
+[dev-dependencies]
+# The fake WebUI's cookie jar lives in a directory that removes itself.
+kroma-testing = { path = "../../../server/crates/kroma-testing" }
+
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
 # speed cost (opt-level stays 3). Safe for a sidecar: a panic aborts the module

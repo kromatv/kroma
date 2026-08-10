@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use tracing::info;
 
-use super::proc::{run_capturing, run_capturing_cancellable, Cancel, TMP_SEQ};
+use super::proc::{run_capturing, run_capturing_cancellable, Cancel};
 use super::{Plan, TILE_H, TILE_W};
 
 // Wall-clock ceiling for a single tile's keyframe seek (a stalled mount is
@@ -58,8 +58,10 @@ fn probe_hwaccel(abs: &str, dur_s: f64) -> bool {
         return false;
     }
     let t = (dur_s * 0.5) as u32;
-    let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
-    let probe = std::env::temp_dir().join(format!("sb-probe-{}-{seq}.png", std::process::id()));
+    let Ok(scratch) = tempfile::Builder::new().prefix("kroma-sb-probe-").tempdir() else {
+        return false;
+    };
+    let probe = scratch.path().join("frame.png");
     // Warm the GOP into cache (and confirm software decode works at all). This is a
     // one-time, process-lifetime probe, so it is not itself cancellable.
     if extract_one(abs, t, &probe, false, &|| false).is_err() {
@@ -72,7 +74,6 @@ fn probe_hwaccel(abs: &str, dur_s: f64) -> bool {
         extract_one(abs, t, &probe, hw, &|| false).ok().map(|()| s.elapsed())
     };
     let (sw1, hw1, sw2, hw2) = (timed(false), timed(true), timed(false), timed(true));
-    let _ = std::fs::remove_file(&probe);
     let sw = [sw1, sw2].into_iter().flatten().min();
     let hw = [hw1, hw2].into_iter().flatten().min();
     let decision = matches!((sw, hw), (Some(sw), Some(hw)) if hw.as_secs_f64() < sw.as_secs_f64() * HWACCEL_MARGIN);

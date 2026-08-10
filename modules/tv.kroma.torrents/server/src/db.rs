@@ -427,18 +427,12 @@ pub fn delete_download_row(pool: &Pool, id: &str) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use kroma_module_sdk::db::testing::TempPool;
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    // A fresh temp DB with the core schema (via `init`, so the `requests` table
-    // the downloads FK points at exists) plus this module's own tables applied.
-    fn test_db() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path =
-            std::env::temp_dir().join(format!("kroma-torrents-test-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = init(&path).unwrap();
+    // A fresh temp DB with the core schema (via `temp_pool`, so the `requests`
+    // table the downloads FK points at exists) plus this module's own tables.
+    fn test_db() -> TempPool {
+        let pool = kroma_module_sdk::db::testing::temp_pool("torrents-test");
         {
             let conn = pool.get().unwrap();
             apply_migrations(&conn, MIGRATIONS).unwrap();

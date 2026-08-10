@@ -35,7 +35,6 @@ const UP_NEXT = {
     title: `Episode ${at + 2}`,
     subtitle: `S1 E${at + 2}`,
     posterUrl: stillArt(at),
-    durationLabel: '54 min',
     categoryLabel: 'Episode',
   })),
   recommendations: [3, 4, 5].map((at) => ({
@@ -43,7 +42,6 @@ const UP_NEXT = {
     title: `Recommendation ${at}`,
     subtitle: '2021',
     posterUrl: stillArt(at),
-    durationLabel: '2 h 12',
     categoryLabel: 'Science fiction',
   })),
 };

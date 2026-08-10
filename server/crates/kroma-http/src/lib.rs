@@ -9,7 +9,6 @@
 
 use std::path::PathBuf;
 use std::process::Command;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 use anyhow::{bail, Context, Result};
 use serde::de::DeserializeOwned;
@@ -201,12 +200,6 @@ fn snippet(body: &[u8]) -> String {
     s
 }
 
-fn header_dump_path() -> PathBuf {
-    static SEQ: AtomicU64 = AtomicU64::new(0);
-    let n = SEQ.fetch_add(1, Ordering::Relaxed);
-    std::env::temp_dir().join(format!("kroma-http-hdr-{}-{n}", std::process::id()))
-}
-
 fn run(cmd: Command) -> Result<Response> {
     run_with_stdin(cmd, None)
 }
@@ -216,7 +209,13 @@ fn run(cmd: Command) -> Result<Response> {
 fn run_with_stdin(mut cmd: Command, stdin_body: Option<&[u8]>) -> Result<Response> {
     use std::io::Write;
 
-    let hdr_path = header_dump_path();
+    // A guard, not a path: every `?` below returns before the read, and a dump
+    // left behind on a failed spawn is one file per attempt forever.
+    let hdr = tempfile::Builder::new()
+        .prefix("kroma-http-hdr-")
+        .tempfile()
+        .context("create the curl header dump")?;
+    let hdr_path = hdr.path().to_path_buf();
     cmd.arg("-D").arg(&hdr_path);
     let out = match stdin_body {
         None => cmd.output().context("spawn curl")?,
@@ -236,7 +235,6 @@ fn run_with_stdin(mut cmd: Command, stdin_body: Option<&[u8]>) -> Result<Respons
         }
     };
     let raw_headers = std::fs::read_to_string(&hdr_path).unwrap_or_default();
-    let _ = std::fs::remove_file(&hdr_path);
     if !out.status.success() {
         bail!(
             "curl exit {}: {}",
@@ -413,10 +411,8 @@ mod tests {
     #[test]
     fn post_bytes_round_trips_arbitrary_binary() {
         let body: Vec<u8> = (0u8..=255).collect();
-        let dir = std::env::temp_dir().join(format!("kroma-http-bin-{}", std::process::id()));
-        let _ = std::fs::create_dir_all(&dir);
-        let target = dir.join("uploaded.bin");
-        let _ = std::fs::remove_file(&target);
+        let dir = kroma_testing::temp_dir("http-bin");
+        let target = dir.path().join("uploaded.bin");
 
         let out = Command::new("curl")
             .args(["-s", "-S", "--upload-file", "-"])
@@ -435,7 +431,6 @@ mod tests {
         assert!(out.status.success());
         let written = std::fs::read(&target).expect("curl wrote the body");
         assert_eq!(written, body, "every byte value must survive the stdin pipe");
-        let _ = std::fs::remove_file(&target);
     }
 
     #[test]

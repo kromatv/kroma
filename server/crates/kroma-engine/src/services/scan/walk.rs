@@ -343,19 +343,14 @@ mod tests {
         std::env::remove_var("KROMA_WALK_THREADS");
     }
 
-    fn temp_scan_dir() -> std::path::PathBuf {
-        use std::sync::atomic::{AtomicU32, Ordering};
-        static SEQ: AtomicU32 = AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("kroma-scanroot-{}-{n}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        dir
+    fn temp_scan_dir() -> kroma_testing::TempDir {
+        kroma_testing::temp_dir("scanroot")
     }
 
     #[test]
     fn scan_root_groups_movies_and_episodes_and_skips_noise() {
-        let root = temp_scan_dir();
+        let root_dir = temp_scan_dir();
+        let root = root_dir.path();
         // One movie (year in filename), a show with two episodes in its own folder,
         // a non-video file, and a hidden dir that must be pruned from the descent.
         std::fs::write(root.join("The Matrix (1999).mkv"), b"x").unwrap();
@@ -377,7 +372,7 @@ mod tests {
 
         scan_root(
             "lib1",
-            &root,
+            root,
             &mut items,
             &mut shows,
             &mut mtimes,
@@ -406,13 +401,12 @@ mod tests {
             items.values().filter(|i| i.kind == Kind::Episode).collect();
         assert_eq!(episodes.len(), 2);
         assert!(episodes.iter().all(|e| e.show_id.as_deref() == Some(show.id.as_str())));
-
-        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
     fn scan_root_untitled_movie_gets_placeholder_title() {
-        let root = temp_scan_dir();
+        let root_dir = temp_scan_dir();
+        let root = root_dir.path();
         // A bare numeric/year-only name parses to an empty movie title, which
         // index_parsed replaces with "Untitled".
         std::fs::write(root.join("1999.mkv"), b"x").unwrap();
@@ -425,7 +419,7 @@ mod tests {
         let mut episode_seen = false;
         scan_root(
             "lib1",
-            &root,
+            root,
             &mut items,
             &mut shows,
             &mut mtimes,
@@ -438,6 +432,5 @@ mod tests {
         assert!(!episode_seen);
         assert_eq!(items.len(), 1);
         assert_eq!(items.values().next().unwrap().title, "Untitled");
-        let _ = std::fs::remove_dir_all(&root);
     }
 }

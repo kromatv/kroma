@@ -263,11 +263,7 @@ mod tests {
 
     #[test]
     fn load_returns_empty_when_no_taste_row() {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-gen-load-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::db::init(&path).unwrap();
+        let pool = crate::db::testing::temp_pool("gen-load");
         assert!(load(&pool, "nobody").is_empty());
     }
 }

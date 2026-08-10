@@ -211,15 +211,10 @@ fn is_ident(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use crate::testing::TempPool;
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn fresh_pool(tag: &str) -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-bkp-{tag}-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::init(&path).unwrap();
+    fn fresh_pool(tag: &str) -> TempPool {
+        let pool = crate::testing::temp_pool(&format!("bkp-{tag}"));
         // The acquisition module tables (`indexers` / `download_clients`) are owned
         // by the module crates now and created by their `ServerModule::migrations`
         // at boot, not by `init`. Backup still dumps them by name (see `TABLES`),

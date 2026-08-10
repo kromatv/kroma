@@ -5,7 +5,14 @@ import {
   type ReportCategory,
   type Translate,
 } from '@kroma/core';
-import { Player, TV_FLAGS, type UpNextItem, useSubtitleAppearance, useT } from '@kroma/ui';
+import {
+  Player,
+  TV_FLAGS,
+  UP_NEXT_ART_W,
+  type UpNextItem,
+  useSubtitleAppearance,
+  useT,
+} from '@kroma/ui';
 import { Box, Button, Icon, Txt } from '@kroma/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
@@ -126,7 +133,7 @@ export function TvPlayer() {
           next.season != null && next.episode != null
             ? `S${next.season} E${next.episode}`
             : undefined,
-        posterUrl: client.backdropFor(next) ?? client.posterFor(next),
+        posterUrl: client.backdropFor(next, UP_NEXT_ART_W) ?? client.posterFor(next, UP_NEXT_ART_W),
       }
     : null;
 

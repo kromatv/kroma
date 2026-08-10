@@ -152,10 +152,8 @@ mod tests {
 
     #[test]
     fn season_signature_hashes_readable_files_and_depends_on_mode() {
-        use std::sync::atomic::{AtomicU32, Ordering};
-        static SEQ: AtomicU32 = AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-seasonsig-{}-{n}.mkv", std::process::id()));
+        let dir = kroma_testing::temp_dir("seasonsig");
+        let path = dir.path().join("episode.mkv");
         std::fs::write(&path, b"hello").unwrap();
         let abs = path.to_string_lossy().to_string();
 
@@ -164,8 +162,6 @@ mod tests {
         assert_ne!(a, crate::db::pipeline::UNREADABLE_SIG);
         assert_eq!(a, season_signature("chapters", &s).unwrap());
         assert_ne!(a, season_signature("silence", &s).unwrap());
-
-        let _ = std::fs::remove_file(&path);
     }
 
     use super::{enumerate, process};
@@ -183,12 +179,10 @@ mod tests {
         static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
         let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         seed_show_episode(state, show, ep);
-        let path =
-            std::env::temp_dir().join(format!("kroma-marker-{}-{n}-{ep}.mkv", std::process::id()));
+        // Inside the harness's own data dir, so the fixture goes when it does.
+        let path = state.config.data_dir.join(format!("marker-{n}-{ep}.mkv"));
         if on_disk {
             std::fs::write(&path, b"not really a video").unwrap();
-        } else {
-            let _ = std::fs::remove_file(&path);
         }
         state
             .db

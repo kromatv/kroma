@@ -88,7 +88,6 @@ function Key({
       label={label}
       autoFocus={autoFocus}
       focusScale={1.08}
-      ring={false}
       sv={face}
       vars={{ size }}
       style={style}

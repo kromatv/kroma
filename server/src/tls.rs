@@ -184,14 +184,13 @@ mod tests {
 
     #[test]
     fn ensure_self_signed_persists_and_reuses() {
-        let dir = std::env::temp_dir().join(format!("kroma-tls-test-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        let a = ensure_self_signed(&dir, &[]).expect("first");
+        let scratch = kroma_testing::temp_dir("tls-test");
+        let dir = scratch.path();
+        let a = ensure_self_signed(dir, &[]).expect("first");
         let cert1 = std::fs::read(&a.cert_pem).unwrap();
-        let b = ensure_self_signed(&dir, &[]).expect("second");
+        let b = ensure_self_signed(dir, &[]).expect("second");
         let cert2 = std::fs::read(&b.cert_pem).unwrap();
         // Reused, not regenerated: identical bytes on the second call.
         assert_eq!(cert1, cert2);
-        let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -17,6 +17,10 @@ import { TvAiSuggestRow } from '#tv/features/catalog/detail/TvAiSuggestRow';
 /** Film detail backdrop, synopsis, metadata, a Lecture button, my-list, an
  * "ends at" hint and the cast. The movie already carries its TMDB metadata from
  * the catalog list, so no extra fetch. */
+// The backdrop fills the stage and no more: the original is several times
+// this on a modern release.
+const STAGE_W = 1920;
+
 export function TvMovieDetail() {
   const nav = useNav();
   const { item } = useParams('movie');
@@ -40,7 +44,7 @@ export function TvMovieDetail() {
       id={item.id}
       kind={t('content.film')}
       title={item.title}
-      backdrop={client.backdropFor(item) ?? client.posterFor(item)}
+      backdrop={client.backdropFor(item, STAGE_W) ?? client.posterFor(item, STAGE_W)}
       rating={meta?.rating}
       meta={metaLong}
       badge={qualityBadge(item)}

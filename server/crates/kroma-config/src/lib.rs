@@ -31,6 +31,27 @@ pub struct Config {
     // Only takes effect once HTTPS is actually running, and the cert-download
     // route stays on plain HTTP so a device can bootstrap trust first.
     pub https_redirect_override: Option<bool>,
+    /// Peers whose `X-Forwarded-For` / `CF-Connecting-IP` may be believed:
+    /// bare addresses or IPv4 CIDRs. Loopback is always trusted, which covers a
+    /// proxy on the same host and is why this is empty by default.
+    ///
+    /// It exists for the proxy that is NOT on loopback: another container, or
+    /// another machine. Without it the header is discarded and every request
+    /// arrives wearing the proxy's own address, so the server cannot tell two
+    /// clients apart at all: nearby pairing sees one network holding everyone,
+    /// and the login guard counts the whole world as one address. Naming the
+    /// proxy is what lets it see through it.
+    ///
+    /// Never widen this to a range clients live in. Whoever matches it can
+    /// claim to be anyone.
+    pub trusted_proxies: Vec<String>,
+    /// Browser origins allowed to read this server's answers, on top of the
+    /// ones every install trusts: this machine, this network, and a shell
+    /// loaded off the device it runs on.
+    ///
+    /// Naming an origin lets any page served from it act as a client of this
+    /// server, so name only origins you publish yourself.
+    pub allowed_origins: Vec<String>,
 }
 
 impl Config {
@@ -96,15 +117,24 @@ impl Config {
             .ok()
             .and_then(|p| p.trim().parse::<u16>().ok());
 
-        let tls_extra_sans = env::var("KROMA_TLS_SANS")
+        let trusted_proxies = env::var("KROMA_TRUSTED_PROXIES")
+            .ok()
+            .map(|raw| parse_csv_list(&raw))
+            .unwrap_or_default();
+
+        let allowed_origins = env::var("KROMA_ALLOWED_ORIGINS")
             .ok()
             .map(|raw| {
-                raw.split([',', ' ', ';'])
-                    .map(str::trim)
-                    .filter(|s| !s.is_empty())
-                    .map(str::to_string)
+                parse_csv_list(&raw)
+                    .into_iter()
+                    .map(|origin| origin.trim_end_matches('/').to_string())
                     .collect()
             })
+            .unwrap_or_default();
+
+        let tls_extra_sans = env::var("KROMA_TLS_SANS")
+            .ok()
+            .map(|raw| parse_csv_list(&raw))
             .unwrap_or_default();
 
         let https_redirect_override = env::var("KROMA_HTTPS_REDIRECT")
@@ -127,6 +157,8 @@ impl Config {
             https_port_override,
             tls_extra_sans,
             https_redirect_override,
+            trusted_proxies,
+            allowed_origins,
         }
     }
 
@@ -154,6 +186,14 @@ impl Config {
     pub fn logs_dir(&self) -> PathBuf {
         self.data_dir.join("logs")
     }
+}
+
+fn parse_csv_list(raw: &str) -> Vec<String> {
+    raw.split([',', ' ', ';'])
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .collect()
 }
 
 // Also accepts `;`/`,` on top of the native `:` on Unix, since NAS install
@@ -236,6 +276,8 @@ mod tests {
         "KROMA_TMDB_ENRICH",
         "KROMA_WEB_URL",
         "KROMA_WEB_DIR",
+        "KROMA_TRUSTED_PROXIES",
+        "KROMA_ALLOWED_ORIGINS",
     ];
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -269,6 +311,22 @@ mod tests {
         assert!(c.tmdb_enrich);
         assert!(c.web_url.is_none());
         assert!(c.web_dir.is_none());
+        assert!(c.trusted_proxies.is_empty());
+        assert!(c.allowed_origins.is_empty());
+
+        clear_env();
+    }
+
+    #[test]
+    fn allowed_origins_are_split_and_stripped_of_a_trailing_slash() {
+        let _g = env_guard();
+        clear_env();
+
+        env::set_var("KROMA_ALLOWED_ORIGINS", "https://tv.example/, tauri://localhost ;null");
+        assert_eq!(
+            Config::from_env().allowed_origins,
+            vec!["https://tv.example", "tauri://localhost", "null"]
+        );
 
         clear_env();
     }
@@ -279,10 +337,8 @@ mod tests {
         clear_env();
 
         // A web dir counts only when it holds `_shell.html`.
-        let web = std::env::temp_dir().join(format!("kroma-webdir-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&web);
-        std::fs::create_dir_all(&web).unwrap();
-        std::fs::write(web.join("_shell.html"), b"<html></html>").unwrap();
+        let web = kroma_testing::temp_dir("webdir");
+        std::fs::write(web.path().join("_shell.html"), b"<html></html>").unwrap();
 
         env::set_var("KROMA_HOST", "127.0.0.1");
         env::set_var("KROMA_PORT", "9999");
@@ -294,7 +350,7 @@ mod tests {
         env::set_var("KROMA_TMDB_LANGUAGE", "fr-FR");
         env::set_var("KROMA_TMDB_ENRICH", "0");
         env::set_var("KROMA_WEB_URL", "https://kroma.example/");
-        env::set_var("KROMA_WEB_DIR", web.to_str().unwrap());
+        env::set_var("KROMA_WEB_DIR", web.path().to_str().unwrap());
 
         let c = Config::from_env();
         assert_eq!(c.host, "127.0.0.1");
@@ -307,10 +363,9 @@ mod tests {
         assert_eq!(c.tmdb_language, "fr-FR");
         assert!(!c.tmdb_enrich);
         assert_eq!(c.web_url.as_deref(), Some("https://kroma.example"));
-        assert_eq!(c.web_dir, Some(web.clone()));
+        assert_eq!(c.web_dir.as_deref(), Some(web.path()));
 
         clear_env();
-        let _ = std::fs::remove_dir_all(&web);
     }
 
     #[test]
@@ -325,10 +380,8 @@ mod tests {
         // Any other enrich spelling than the off-words stays enabled.
         env::set_var("KROMA_TMDB_ENRICH", "yes-please");
         // A web dir without `_shell.html` is rejected.
-        let bad = std::env::temp_dir().join(format!("kroma-webdir-bad-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&bad);
-        std::fs::create_dir_all(&bad).unwrap();
-        env::set_var("KROMA_WEB_DIR", bad.to_str().unwrap());
+        let bad = kroma_testing::temp_dir("webdir-bad");
+        env::set_var("KROMA_WEB_DIR", bad.path().to_str().unwrap());
 
         let c = Config::from_env();
         assert_eq!(c.port, 4040);
@@ -344,6 +397,5 @@ mod tests {
         assert!(Config::from_env().web_url.is_none());
 
         clear_env();
-        let _ = std::fs::remove_dir_all(&bad);
     }
 }

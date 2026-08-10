@@ -58,6 +58,8 @@ mod schema;
 mod vectors;
 mod home;
 mod backup;
+#[cfg(any(test, feature = "testing"))]
+pub mod testing;
 
 pub use media::*;
 pub use catalog_query::*;

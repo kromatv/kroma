@@ -13,7 +13,7 @@ use crate::infra::metrics::Metrics;
 use crate::infra::storyboard::Storyboard;
 use crate::services::jobs::JobManager;
 use crate::services::playback::Registry;
-use crate::services::quickconnect::{self, QuickConnect};
+use crate::services::pairing::{handoff, quickconnect, Handoff, QuickConnect};
 use crate::services::search::SearchEngine;
 use crate::services::sections::VectorCache;
 use crate::services::settings::Settings;
@@ -31,6 +31,7 @@ pub struct AppState {
     pub hls: hls::HlsEngine,
     pub storyboard: Storyboard,
     pub quickconnect: QuickConnect,
+    pub handoff: Handoff,
     pub playback: Registry,
     pub cast: crate::services::cast::Registry,
     pub metrics: Metrics,
@@ -46,6 +47,11 @@ pub struct AppState {
     me: std::sync::Weak<AppState>,
     pub(crate) services:
         std::collections::HashMap<std::any::TypeId, std::sync::Arc<dyn std::any::Any + Send + Sync>>,
+    // The harness's scratch `data_dir`, held here rather than by the test body:
+    // a test hands clones of this state to background jobs, so the last handle
+    // to go is the only one that outlives everything writing into the dir.
+    #[cfg(test)]
+    scratch_dir: std::sync::OnceLock<kroma_testing::TempDir>,
 }
 
 pub type SharedState = Arc<AppState>;
@@ -55,24 +61,6 @@ impl AppState {
     /// before the self-reference is seeded in [`AppState::new`].
     pub(crate) fn shared(&self) -> Option<SharedState> {
         self.me.upgrade()
-    }
-}
-
-/// Removes the harness's temp `data_dir` once the last [`SharedState`] handle
-/// drops. Guarded to paths under `$TMPDIR` named `kroma-*`, so a test pointed
-/// at a real directory is never deleted.
-#[cfg(test)]
-impl Drop for AppState {
-    fn drop(&mut self) {
-        let dir = &self.config.data_dir;
-        let is_temp_harness_dir = dir.starts_with(std::env::temp_dir())
-            && dir
-                .file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n.starts_with("kroma-"));
-        if is_temp_harness_dir {
-            let _ = std::fs::remove_dir_all(dir);
-        }
     }
 }
 
@@ -151,6 +139,7 @@ impl AppState {
             hls,
             storyboard,
             quickconnect: quickconnect::new(),
+            handoff: handoff::new(),
             playback: Registry::new(),
             cast: crate::services::cast::Registry::new(),
             metrics: Metrics::new(),
@@ -163,6 +152,15 @@ impl AppState {
             downloads,
             me: weak.clone(),
             services,
+            #[cfg(test)]
+            scratch_dir: std::sync::OnceLock::new(),
         })
+    }
+}
+
+#[cfg(test)]
+impl AppState {
+    pub(crate) fn own_scratch_dir(&self, dir: kroma_testing::TempDir) {
+        assert!(self.scratch_dir.set(dir).is_ok(), "the scratch dir is handed over once");
     }
 }

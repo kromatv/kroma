@@ -77,7 +77,84 @@ All configuration is via environment variables:
 | `KROMA_HTTPS_PORT`  | `4443`      | Port for the HTTPS listener (only used when `KROMA_HTTPS=1`).          |
 | `KROMA_TLS_SANS`    | *(empty)*   | Extra cert names/IPs, comma/space separated. See [HTTPS](#https-on-the-lan-optional). |
 | `KROMA_HTTPS_REDIRECT`| `0`       | Set to `1` to redirect all HTTP traffic to HTTPS (needs `KROMA_HTTPS=1`). |
+| `KROMA_TRUSTED_PROXIES`| *(empty)* | Proxies whose forwarding headers may be believed. See [Behind a reverse proxy](#behind-a-reverse-proxy). |
+| `KROMA_ALLOWED_ORIGINS`| *(empty)* | Extra browser origins allowed to read the API. See [Which browsers are answered](#which-browsers-are-answered). |
 | `RUST_LOG`         | `info`      | Standard `tracing` filter, e.g. `kroma_server=debug`.                  |
+
+## Behind a reverse proxy
+
+The server reads `X-Forwarded-For` / `CF-Connecting-IP` only from a peer worth
+believing, because both are set by whoever is calling. Loopback is always
+believed, so **a proxy on the same host needs no configuration**.
+
+A proxy anywhere else does. In another container, or on another machine, its
+requests arrive from its own address, the headers are discarded, and the server
+sees every client as that one address. Two things quietly stop working: nearby
+TV pairing treats the whole world as one network, and the login brute-force
+guard counts everyone as one caller.
+
+Name the proxy and it can be seen through. Bare addresses or IPv4 CIDRs, comma
+or space separated:
+
+```bash
+KROMA_TRUSTED_PROXIES="172.18.0.0/16"     # a docker bridge
+KROMA_TRUSTED_PROXIES="10.0.0.4, 10.0.0.5" # two named front-ends
+```
+
+Only ever name the proxy. Anything matching this list can claim to be any
+client, so a range your clients live in gives that away to all of them.
+
+Also make sure the proxy sets the header the standard way, appending the peer it
+saw rather than replacing what the caller sent. nginx's
+`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for` does this, as do
+Caddy and Traefik by default; the server reads the rightmost entry, which is the
+only one the proxy itself vouched for.
+
+## Which browsers are answered
+
+A page open in a browser on your network reaches this server from inside it, so
+the address it arrives from says nothing about who wrote it. What decides
+whether it may **read** the answer is CORS, and the policy is a list rather than
+the wildcard it used to be:
+
+- this machine and this network: `localhost`, anything under `.localhost`, a
+  loopback address, and any address nothing routes across the internet
+  (`10.x`, `172.16-31.x`, `192.168.x`, link-local, IPv6 unique- and link-local);
+- a shell loaded off the device it runs on, which carries its own scheme rather
+  than `http(s)`: `file://`, `tauri://localhost`;
+- `null`, which is what a current browser engine reports for that same
+  device-loaded document, and which is therefore also what any page on the web
+  can present by sandboxing an iframe;
+- KROMA's own hosted TV client, `https://tv.kroma.tv`;
+- whatever you name in `KROMA_ALLOWED_ORIGINS`.
+
+Everything else gets its request served but no `Access-Control-Allow-Origin`, so
+the browser refuses to hand the answer to the script that asked for it. Native
+clients (iOS, Android, Apple TV, Android TV) send no `Origin` at all and never
+meet this policy, and neither does the web client, which the server serves on
+its own origin.
+
+Name an origin when you serve a KROMA client from somewhere else: the SPA behind
+its own hostname, `VITE_KROMA_SERVER` / `window.__KROMA_API__` pointed at this
+server from another origin, or your own front end.
+
+```bash
+KROMA_ALLOWED_ORIGINS="https://kroma.example"
+KROMA_ALLOWED_ORIGINS="https://kroma.example, https://tv.kroma.example"
+```
+
+Anything named here can act as a client of this server, so name only origins you
+publish yourself.
+
+The one place the list means more than reading is `/api/handoff/*`, the beacon a
+television raises to be signed in by tapping a row on a phone. A page on the open
+web is refused there outright, and `null` announces flagged: because it names
+nobody, the phone is asked for the check string printed on the television's own
+screen before the grant goes through, and three wrong answers take the beacon
+down. Naming `null` yourself places it and drops the confirmation, which is a
+trade rather than a fix. The route is also capped at 30 announces a minute per
+address, far above any cadence a television keeps. See
+[tv-pairing](../docs/tv-pairing.md#who-may-raise-a-beacon).
 
 ## HTTPS on the LAN (optional)
 
@@ -171,7 +248,8 @@ Codec strings are normalized lowercase: `hevc`, `h264`, `av1`, `vp9`, `aac`,
 
 ## API
 
-All routes are prefixed with `/api`. CORS is permissive (self-hosted LAN use).
+All routes are prefixed with `/api`. Which browser origins may read the answers
+is a list, not a wildcard: see [Which browsers are answered](#which-browsers-are-answered).
 
 | Method | Path                       | Description                                   |
 | ------ | -------------------------- | --------------------------------------------- |

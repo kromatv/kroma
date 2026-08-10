@@ -41,7 +41,7 @@ export function CastRow({ cast }: Readonly<{ cast?: CastMember[] | null }>) {
       <Txt style={s.sectionLabel} color="rgba(244, 243, 240, 0.55)">
         {t('content.cast')}
       </Txt>
-      <Rail inset={6} gap={24}>
+      <Rail inset={6}>
         {cast.slice(0, 16).map((p, i) => (
           <PersonCard
             key={`${p.name}-${p.character ?? ''}`}

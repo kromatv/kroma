@@ -9,7 +9,7 @@ afterEach(cleanup);
 describe('CastReceiverProvider', () => {
   it('renders the app before a server is reached', () => {
     render(
-      <CastReceiverProvider client={null}>
+      <CastReceiverProvider client={null} name="Salon">
         <div>picker</div>
       </CastReceiverProvider>,
     );

@@ -14,8 +14,9 @@ import {
 } from '@kroma/bundler/rnw';
 import { tvFrame } from '@kroma/bundler/tv-frame';
 import { kromaUi } from '@kroma/ui/bundler';
+import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import type { ConfigEnv, UserConfig } from 'vite';
 
 export interface TvTarget {
@@ -46,16 +47,38 @@ export function buildDefine(repoRoot: string, shellDir: string): Record<string, 
   };
 }
 
+// Which tier is being built, as a member expression rather than a bare global:
+// the browser client never defines it, and a bare identifier would throw there
+// (same reason as `globalThis.__KROMA_LEGACY_TIER__` below).
+//
+// What reads it today is the kit's frost. A `backdrop-filter` re-blurs whenever
+// anything BEHIND it changes, and a television composites that on the CPU: with
+// the sign-in artwork drifting behind the keyboard and the buttons, a 2024
+// Samsung panel measured 40fps, and 60 with the blur gone. The browser keeps
+// its glass; the sets get the plain wash they already fall back to on the 2019
+// engines that ignore the property outright.
+const TV_TIER = { 'globalThis.__KROMA_TV_TIER__': 'true' } as const;
+
 export function tvShellConfig(shellUrl: string, target: TvTarget) {
   const repoRoot = fileURLToPath(new URL('../..', shellUrl));
   const shellDir = fileURLToPath(new URL('.', shellUrl));
   const deviceDev = target.deviceDev === true && process.env.KROMA_TV_DEVICE === '1';
   const floor = target.chromeFloor ?? 99;
   return ({ command }: ConfigEnv): UserConfig => ({
-    define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE },
+    define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE, ...TV_TIER },
     // tvFrame() is dev-only: letterboxes into a 1920x1080 stage in a desktop
     // browser; off in device mode, where the panel already is that canvas.
-    plugins: [tailwindcss(), react(), tvFrame({ enabled: !deviceDev }), kromaUi.vite({ repoRoot })],
+    plugins: [
+      tailwindcss(),
+      react(),
+      // The same auto-memoisation the web client gets, over the same kit source
+      // (plugin-react v6 dropped its built-in Babel pass, so the compiler runs
+      // as a separate preset). A television has the least CPU to spare for a
+      // re-render nobody needed.
+      babel({ presets: [reactCompilerPreset()] }),
+      tvFrame({ enabled: !deviceDev }),
+      kromaUi.vite({ repoRoot }),
+    ],
     resolve: webResolve({ '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)) }),
     // Packaged TV apps load from a local path: assets must be referenced relatively.
     base: './',
@@ -109,6 +132,10 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
     plugins: [
       tailwindcss(),
       react(),
+      // The legacy tier wants this MORE than the modern one: these are the
+      // slowest engines KROMA ships to, and the compiler's output is ordinary
+      // JS that legacyFinalize goes on to transpile down like everything else.
+      babel({ presets: [reactCompilerPreset()] }),
       legacyFinalize({ distDir: fileURLToPath(new URL('dist', shellUrl)), chrome }),
       // Inlines every chunk into one IIFE; without this it duplicates Tabler.
       kromaUi.vite({ repoRoot }),
@@ -126,6 +153,7 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
     // in the runtimes that never define it.
     define: {
       ...RNW_DEFINE,
+      ...TV_TIER,
       'import.meta.url': 'document.baseURI',
       'globalThis.__KROMA_LEGACY_TIER__': 'true',
     },

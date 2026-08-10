@@ -123,24 +123,26 @@ export const keyFace = {
     border: 'border',
     shadow: 'card',
     // A key under the cursor lifts its own wash rather than borrowing the
-    // amber, which is reserved for where focus is. Focus takes the amber EDGE
-    // and not the wash alone: a 16%-alpha tint over a dark key is invisible
-    // across a room, and what reads instead is whatever ring the platform
-    // draws. Going down takes the lit step of that amber, so a press reads as
-    // a press and not as focus arriving again.
+    // amber, which is reserved for where focus is. Focus is the kit's ring,
+    // the same one a tile and a row wear, over a wash that says which key it
+    // is from across the room; the edge stays a hairline, since an amber one
+    // under an amber ring reads as two rings around one key. Going down takes
+    // the lit step of that amber, so a press reads as a press and not as focus
+    // arriving again.
     _hover: { bg: 'surface3' },
-    _focus: { bg: 'accentSoft', border: 'accent' },
+    _focus: { bg: 'accentSoft' },
     _press: { bg: 'accentSoftHover', border: 'accentHover' },
   },
   label: { color: 'text', fontWeight: '700', _focus: { color: 'accent' } },
   glyph: { color: 'text', stroke: 1.8, _focus: { color: 'accent' } },
 } as const;
 
-/** The field's edge. Focus wins over invalid: while you are fixing the value,
- * the field should look like the thing you are working in, not like a failure. */
-export function edgeColor(focused: boolean, invalid: boolean): string {
+/** The field's edge, which focus does NOT recolour: the ring outside it already
+ * says where the focus is, and an amber edge under an amber ring reads as two
+ * rings around one control. Invalid still speaks, since it says something the
+ * ring does not. */
+export function edgeColor(_focused: boolean, invalid: boolean): string {
   const { colors } = activeTheme();
-  if (focused) return colors.accent;
   return invalid ? colors.danger : colors.borderStrong;
 }
 

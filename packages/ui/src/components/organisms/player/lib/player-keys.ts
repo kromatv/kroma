@@ -18,6 +18,21 @@ export interface PlayerKeysParams {
 }
 
 /**
+ * Which way Tab walks from where the player currently is.
+ *
+ * The chrome is NOT on the spatial navigator - it cannot be, since tvOS's own
+ * focus engine would adopt it in parallel with this machine (see
+ * lib/virtual-focus) - so a keyboard's Tab reaches it the same way a remote
+ * does: as a direction. Along the thing being walked, which is a row for the
+ * transport controls and the up-next grid, and a column for everything else.
+ */
+export function tabDirection(nav: PlayerNav, backwards: boolean): RemoteKey {
+  const row = nav.overlay === 'sheet' || (!nav.overlay && nav.zone === 'controls');
+  if (row) return backwards ? 'Left' : 'Right';
+  return backwards ? 'Up' : 'Down';
+}
+
+/**
  * Route one logical remote key (§3, §15). While locked only Back / OK get
  * through, and both mean "dismiss". Otherwise the chrome reveals first and
  * swallows the key (§16), then the panel, skip-intro and credits card each get

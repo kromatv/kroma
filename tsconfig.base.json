@@ -15,6 +15,11 @@
       "@kroma/ui/bundler": ["./packages/ui/bundler/index.ts"],
       "#web/*": ["./clients/web/src/*"]
     },
+    // Vite 8's native config loader is Node's own type stripping, which does no
+    // extension guessing: a config's relative imports have to name the file it
+    // actually is (`./tv.target.ts`). Every project here is type-check-only, so
+    // nothing is emitted that would have to rewrite the specifier back to `.js`.
+    "allowImportingTsExtensions": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

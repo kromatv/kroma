@@ -273,17 +273,12 @@ pub fn themed_items(pool: &Pool, query: &[f32], n: usize, floor: f32) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    static SEQ: AtomicU32 = AtomicU32::new(0);
+    use crate::testing::TempPool;
 
     // Seed three movies a/b/c (with genres for the guard) + their unit vectors.
     // a=[1,0], b=[0.8,0.6], c=[0,1]: a is nearest b, orthogonal to c.
-    fn seeded() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-vec-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::init(&path).unwrap();
+    fn seeded() -> TempPool {
+        let pool = crate::testing::temp_pool("vec");
         {
             let conn = pool.get().unwrap();
             conn.execute("INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')", []).unwrap();

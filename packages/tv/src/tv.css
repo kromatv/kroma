@@ -18,6 +18,7 @@
 @import "@kroma/ui/tokens/typography.css";
 @import "@kroma/ui/tokens/spacing.css";
 @import "@kroma/ui/tokens/effects.css";
+@import "@kroma/ui/img.css";
 @import "tailwindcss";
 
 /* Tailwind ignores node_modules; the TV components live in this workspace
@@ -114,8 +115,26 @@ html.kroma-native-surface #root {
       background 0.2s var(--ease-out);
   }
   [data-focus]:focus {
+    outline: var(--ring-outline);
+    outline-offset: var(--ring-gap);
+  }
+
+  /* Tab is not a remote, but this app also runs in a browser: the dev shell, the
+     desktop build, a webOS set with a pointer. DOM focus that did not arrive
+     through the navigator carries no `data-focus`, so the rule above never
+     matched it and the engine painted its own ring - blue, in Chromium, which is
+     not a colour this product owns. Same amber, whatever moved the focus. */
+  :focus-visible {
+    outline: var(--ring-outline);
+    outline-offset: var(--ring-gap);
+  }
+
+  /* Except in a field, which owns its focus visual (the accent border): a ring
+     boxing the inner control reads as two focus states at once. */
+  input:focus-visible,
+  textarea:focus-visible {
     outline: none;
-    box-shadow: var(--ring-focus), var(--glow-accent);
+    box-shadow: none;
   }
 }
 
@@ -126,11 +145,13 @@ html.kroma-native-surface #root {
   transition: box-shadow 0.2s var(--ease-out);
 }
 [data-focus].cast-face:focus {
+  outline: none;
   box-shadow: none;
   transform: scale(1.06);
 }
 [data-focus].cast-face:focus .cast-face__avatar {
-  box-shadow: var(--ring-focus), var(--glow-accent);
+  outline: var(--ring-outline);
+  outline-offset: var(--ring-gap);
 }
 [data-focus].cast-face:focus .cast-face__name {
   color: var(--kroma-accent);

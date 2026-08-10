@@ -717,12 +717,8 @@ mod tests {
         assert_eq!(p.to_str().unwrap(), "Show/Pilot.mkv");
     }
 
-    fn store() -> (kroma_db::Pool, Settings) {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-naming-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = kroma_db::init(&path).unwrap();
+    fn store() -> (kroma_db::testing::TempPool, Settings) {
+        let pool = kroma_db::testing::temp_pool("naming");
         let settings = Settings::load(&pool);
         (pool, settings)
     }
@@ -817,7 +813,7 @@ mod tests {
         set(&settings, &pool, "namingCase", "upper");
 
         let direct = NamingTemplates::from_settings(&settings);
-        let host = settings_host(pool, settings);
+        let host = settings_host(pool.clone(), settings);
         let seam = NamingTemplates::from_host(&host);
 
         assert_eq!(seam.movie_folder, direct.movie_folder);
@@ -836,7 +832,7 @@ mod tests {
     fn the_host_seam_also_refuses_a_blank_template() {
         let (pool, settings) = store();
         set(&settings, &pool, "namingEpisodeFile", "");
-        let host = settings_host(pool, settings);
+        let host = settings_host(pool.clone(), settings);
         let episode_file = NamingTemplates::from_host(&host).episode_file;
         assert!(!episode_file.trim().is_empty(), "a blank template names every file alike");
         assert!(episode_file.contains("season"), "{episode_file}");

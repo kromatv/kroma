@@ -44,7 +44,7 @@ export default story({
   usage: `<CategoryTile
   label={genre.name}
   meta={t('genres.count', { count })}
-  art={sizedImageUrl(backdrop, 328)}
+  art={backdrop}
   background={tintGradient(genreColors(genre.name))}
   wash={genreTint(genre.name)}
   accent={genreAccent(genre.name)}

@@ -1,6 +1,6 @@
-// This TV's identity on the cast roster. Minting a new one on each launch
-// would make the TV appear twice in the phone's picker; trusting a stored
-// value blindly would let a hand-edited or stale value wedge casting
+// This TV's identity on the network. Minting a new one on each launch would
+// make the TV appear twice in the phone's pickers; trusting a stored value
+// blindly would let a hand-edited or stale value wedge casting and handoff
 // permanently. Must match the server's shape rule: 8-64 of `[A-Za-z0-9._-]`.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,7 +10,7 @@ const readDeviceValue = vi.hoisted(() => vi.fn((_key: string) => null as string 
 const writeDeviceValue = vi.hoisted(() => vi.fn((_key: string, _value: string) => {}));
 vi.mock('#tv/app/devicePref', () => ({ readDeviceValue, writeDeviceValue }));
 
-import { receiverId, resetReceiverIdCache } from './receiverId';
+import { deviceId, resetDeviceIdCache } from './device';
 
 const KEY = 'kroma:cast-receiver-id';
 
@@ -26,7 +26,7 @@ beforeEach(() => {
   store.clear();
   vi.clearAllMocks();
   readDeviceValue.mockReturnValue(null);
-  resetReceiverIdCache();
+  resetDeviceIdCache();
 });
 
 afterEach(() => {
@@ -36,14 +36,14 @@ afterEach(() => {
 describe('the first launch', () => {
   it('mints an id and persists it', () => {
     persisted();
-    const id = receiverId();
+    const id = deviceId();
     expect(id).toMatch(ACCEPTABLE);
     expect(writeDeviceValue).toHaveBeenCalledWith(KEY, id);
   });
 
   it('mints something the server will accept', () => {
     persisted();
-    expect(receiverId()).toMatch(ACCEPTABLE);
+    expect(deviceId()).toMatch(ACCEPTABLE);
   });
 });
 
@@ -51,20 +51,20 @@ describe('every launch after the first', () => {
   it('re-announces the SAME receiver', () => {
     persisted();
     store.set(KEY, 'tv-abcdef-0-1234');
-    expect(receiverId()).toBe('tv-abcdef-0-1234');
+    expect(deviceId()).toBe('tv-abcdef-0-1234');
   });
 
   it('does not rewrite a value it did not change', () => {
     persisted();
     store.set(KEY, 'tv-abcdef-0-1234');
-    receiverId();
+    deviceId();
     expect(writeDeviceValue).not.toHaveBeenCalled();
   });
 
   it('reads the device once and remembers', () => {
     persisted();
-    const first = receiverId();
-    const second = receiverId();
+    const first = deviceId();
+    const second = deviceId();
     expect(second).toBe(first);
     expect(readDeviceValue).toHaveBeenCalledOnce();
   });
@@ -85,7 +85,7 @@ describe('a stored value the server would reject', () => {
     it(`re-mints rather than wedging on ${why}`, () => {
       persisted();
       store.set(KEY, value);
-      const id = receiverId();
+      const id = deviceId();
       expect(id).not.toBe(value);
       expect(id).toMatch(ACCEPTABLE);
       expect(writeDeviceValue).toHaveBeenCalledWith(KEY, id);
@@ -95,23 +95,23 @@ describe('a stored value the server would reject', () => {
   it('accepts the full range of characters the rule allows', () => {
     persisted();
     store.set(KEY, 'A.z_0-9.receiver');
-    expect(receiverId()).toBe('A.z_0-9.receiver');
+    expect(deviceId()).toBe('A.z_0-9.receiver');
   });
 
   it('accepts a value at each end of the length rule', () => {
     persisted();
     store.set(KEY, 'abcdefgh');
-    expect(receiverId()).toBe('abcdefgh');
+    expect(deviceId()).toBe('abcdefgh');
 
-    resetReceiverIdCache();
+    resetDeviceIdCache();
     store.set(KEY, 'y'.repeat(64));
-    expect(receiverId()).toBe('y'.repeat(64));
+    expect(deviceId()).toBe('y'.repeat(64));
   });
 });
 
 describe('a device that cannot remember', () => {
   it('still answers with a usable id', () => {
-    expect(receiverId()).toMatch(ACCEPTABLE);
+    expect(deviceId()).toMatch(ACCEPTABLE);
   });
 });
 
@@ -124,8 +124,8 @@ describe('minting twice in the same millisecond', () => {
 
     const ids = new Set<string>();
     for (let i = 0; i < 5; i++) {
-      resetReceiverIdCache();
-      ids.add(receiverId());
+      resetDeviceIdCache();
+      ids.add(deviceId());
     }
     expect(ids.size).toBe(5);
     for (const id of ids) expect(id).toMatch(ACCEPTABLE);

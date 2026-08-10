@@ -20,14 +20,19 @@ import { flat } from './nav-style';
 export interface FocusRootProps {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Whether this navigator answers the remote at all. False for a scope that
+   *  is mounted but not in play - a parked sheet, say - whose nodes must stay
+   *  registered (registration order is fixed for good, see the library's
+   *  Node.tsx) without taking presses meant for something else. */
+  active?: boolean;
 }
 
-export function FocusRoot({ children, style }: Readonly<FocusRootProps>) {
+export function FocusRoot({ children, style, active = true }: Readonly<FocusRootProps>) {
   // Android delivers keys to the focused VIEW rather than through a global
   // stream, so the key host below is also where they arrive. Empty elsewhere.
   const hostProps = useRemoteHostProps();
   return (
-    <SpatialNavigationRoot isActive>
+    <SpatialNavigationRoot isActive={active}>
       {/* The one thing tvOS focuses, and the reason the remote is heard at all: a
           directional press reaches the app only when the app owns the focus, and
           with nothing focusable in the window the system keeps every key and

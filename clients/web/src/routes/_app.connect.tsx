@@ -2,10 +2,12 @@ import { useT } from '@kroma/ui';
 import { Button, OtpField } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import { NearbyTvs } from '#web/features/accounts/nearby-tvs';
 import { useAuth } from '#web/shared/lib/auth';
 
-// The approver side of Quick Connect: a signed-in user enters the code a TV
-// shows to grant that device a session. AuthGate guarantees the sign-in.
+// The approver side of pairing: the TVs waiting on this network are one tap
+// each, and under them the code a TV shows for everything that road cannot
+// reach. AuthGate guarantees the sign-in.
 export const Route = createFileRoute('/_app/connect')({
   validateSearch: (s: Record<string, unknown>): { code?: string } => ({
     code: typeof s.code === 'string' ? s.code : undefined,
@@ -40,6 +42,9 @@ function ConnectPage() {
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
       <div className="w-full max-w-105 rounded-2xl border border-border bg-surface-1 p-8 text-center shadow-card">
         <h1 className="mb-2 font-display text-[26px] font-bold">{t('connect.title')}</h1>
+
+        <NearbyTvs />
+
         <p className="mb-7 text-[14px] leading-relaxed text-muted">
           {user ? t('connect.codePromptForUser', { name: user.username }) : t('connect.codePrompt')}
         </p>

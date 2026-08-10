@@ -34,3 +34,7 @@ hex = { workspace = true }
 # SIGTERM to a sidecar so it can run its shutdown hooks before being killed.
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[dev-dependencies]
+# The install/stop tests scratch in a directory that removes itself.
+kroma-testing = { workspace = true }

@@ -26,6 +26,9 @@ kroma-push = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
+# The storyboard hwaccel probe writes a throwaway frame; a guard removes it even
+# when the decode fails and the probe returns early.
+tempfile = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
@@ -46,3 +49,6 @@ rusty-chromaprint = { workspace = true }
 # The shared HostCtx doubles: `testing::Recording` taps a real app host's bus,
 # `testing::StubHost` stands in where there is no app at all.
 kroma-module-host = { workspace = true, features = ["testing"] }
+# `db::testing::temp_pool`, the throwaway database the service tests run against.
+kroma-db = { workspace = true, features = ["testing"] }
+kroma-testing = { workspace = true }

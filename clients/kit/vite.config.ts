@@ -3,6 +3,7 @@
 // shells' legacy tiers or CSS down-leveling apply.
 
 import { fileURLToPath } from 'node:url';
+import { collectBuildInfo } from '@kroma/build-info';
 import { propDocs } from '@kroma/bundler/props-docs';
 import {
   KROMA_SOURCE_PACKAGES,
@@ -12,7 +13,6 @@ import {
 } from '@kroma/bundler/rnw';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { collectBuildInfo } from '../build-info';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const kitDir = fileURLToPath(new URL('.', import.meta.url));

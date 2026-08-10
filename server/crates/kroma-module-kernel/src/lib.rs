@@ -227,24 +227,22 @@ mod gate_tests {
 
     use super::*;
 
-    fn test_state() -> SharedState {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("kroma-kernel-{}-{n}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        let db = kroma_db::init(&dir.join("kroma.db")).unwrap();
+    // The guard comes back with the state: the router built from it keeps
+    // reading the settings store that lives in that directory.
+    fn test_state() -> (SharedState, kroma_testing::TempDir) {
+        let dir = kroma_testing::temp_dir("kernel");
+        let db = kroma_db::init(&dir.path().join("kroma.db")).unwrap();
         let settings = kroma_engine::services::settings::Settings::load(&db);
         let config = kroma_config::Config {
             host: "127.0.0.1".into(),
             port: 0,
-            data_dir: dir,
+            data_dir: dir.path().to_path_buf(),
             tmdb_language: "en-US".into(),
             ..Default::default()
         };
         let embedder: Arc<dyn kroma_engine::ports::Embedder> =
             Arc::new(kroma_engine::ports::NoopEmbedder);
-        kroma_engine::state::AppState::new(
+        let state = kroma_engine::state::AppState::new(
             config,
             false,
             db,
@@ -252,7 +250,8 @@ mod gate_tests {
             embedder,
             std::collections::HashMap::new(),
             &[],
-        )
+        );
+        (state, dir)
     }
 
     fn gated(state: SharedState, id: &'static str) -> Router {
@@ -271,13 +270,13 @@ mod gate_tests {
     #[tokio::test]
     async fn a_modules_admin_routes_answer_while_it_is_enabled() {
         // Default-enabled: a module nobody toggled is on.
-        let state = test_state();
+        let (state, _dir) = test_state();
         assert_eq!(status(gated(state, "tv.kroma.indexer"), "/probe").await, StatusCode::OK);
     }
 
     #[tokio::test]
     async fn a_disabled_modules_admin_routes_are_not_reachable() {
-        let state = test_state();
+        let (state, _dir) = test_state();
         kroma_engine::modules::set_module_enabled(
             &state.settings,
             &state.db,
@@ -289,7 +288,7 @@ mod gate_tests {
 
     #[tokio::test]
     async fn the_gate_reads_the_live_setting_rather_than_a_boot_snapshot() {
-        let state = test_state();
+        let (state, _dir) = test_state();
         let router = gated(state.clone(), "tv.kroma.vpn");
         assert_eq!(status(router.clone(), "/probe").await, StatusCode::OK);
 
@@ -304,7 +303,7 @@ mod gate_tests {
     async fn an_unrelated_path_404s_whether_the_module_is_on_or_off() {
         // Does not pin `route_layer` over `layer`: both answer 404 here since
         // the middleware has no side effect to observe on an unmatched path.
-        let state = test_state();
+        let (state, _dir) = test_state();
         assert_eq!(
             status(gated(state.clone(), "tv.kroma.indexer"), "/not-a-route").await,
             StatusCode::NOT_FOUND
@@ -324,7 +323,7 @@ mod gate_tests {
 
     #[tokio::test]
     async fn one_modules_gate_does_not_close_anothers_routes() {
-        let state = test_state();
+        let (state, _dir) = test_state();
         kroma_engine::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.vpn", false);
 
         let merged = Router::new()
@@ -346,7 +345,7 @@ mod gate_tests {
 
     #[tokio::test]
     async fn a_zero_module_build_mounts_and_migrates_nothing() {
-        let state = test_state();
+        let (state, _dir) = test_state();
         assert!(module_migrations().is_empty());
         assert!(compiled_manifests().is_empty());
         assert!(manifests(&state).is_empty(), "no supervisor, so nothing installed either");

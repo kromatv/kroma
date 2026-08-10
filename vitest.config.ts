@@ -65,6 +65,8 @@ const setupFiles = [dir('./vitest.setup.ts')];
 const include = [
   'packages/*/src/**/*.test.ts',
   'packages/*/src/**/*.test.tsx',
+  // A package whose entry point is its root (`@kroma/lan-beacon`), not `src/`.
+  'packages/*/*.test.ts',
   'packages/*/worker/**/*.test.ts',
   'packages/*/bundler/**/*.test.ts',
   'clients/web/src/**/*.test.ts',
@@ -79,6 +81,7 @@ const include = [
   // Not a client: runs in Node at build time, required by an Expo app.config.ts.
   'clients/build-info/**/*.test.ts',
   'clients/tizen/src/**/*.test.ts',
+  'clients/webos/src/**/*.test.ts',
   'clients/kit/src/**/*.test.ts',
   'clients/kit/src/**/*.test.tsx',
 ];

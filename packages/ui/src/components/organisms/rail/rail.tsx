@@ -20,7 +20,7 @@ import { SpatialNavigationNode, SpatialNavigationView } from 'react-tv-space-nav
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
 import { VirtualRail } from '#ui/components/organisms/virtual';
-import { gutter } from '#ui/core/tokens';
+import { gutter, RING_ROOM } from '#ui/core/tokens';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusRail } from '#ui/lib/focus-scroll';
 import { useGrowingCount } from '#ui/lib/use-growing-count';
@@ -53,12 +53,18 @@ interface RailProps {
 
 const RAIL_CHUNK = 8;
 
-const RING_ROOM = 12;
+/**
+ * A rail's gap between tiles. Tighter than what a focused tile puts outside
+ * itself (it grows by its focus scale and then wears a ring RING_ROOM beyond
+ * that), so a focused tile reaches over its neighbours - which is why the cell
+ * holding the focus is lifted above them rather than fenced off from them.
+ */
+export const RAIL_GAP = 16;
 
 function Rail({
   title,
   titleStyle,
-  gap = 24,
+  gap = RAIL_GAP,
   inset = gutter.tv,
   item,
   grow: growing = true,

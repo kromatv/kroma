@@ -516,18 +516,13 @@ pub fn delete_access_token(pool: &Pool, token: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::TempPool;
     use kroma_domain::Permission;
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    static SEQ: AtomicU32 = AtomicU32::new(0);
 
     const FUTURE: i64 = 9_999_999_999;
 
-    fn pool() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-acct-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        crate::init(&path).unwrap()
+    fn pool() -> TempPool {
+        crate::testing::temp_pool("acct")
     }
 
     fn mk_user(pool: &Pool, email: &str, username: &str) -> User {

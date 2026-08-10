@@ -154,16 +154,11 @@ pub fn delete_core(conn: &Connection, kind: &str, id: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::TempPool;
     use kroma_domain::{CastMember, CrewMember};
-    use std::sync::atomic::{AtomicU32, Ordering};
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn pool() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-core-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        crate::init(&path).unwrap()
+    fn pool() -> TempPool {
+        crate::testing::temp_pool("core")
     }
 
     fn sample_core() -> MetaCore {

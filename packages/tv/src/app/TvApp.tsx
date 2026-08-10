@@ -1,7 +1,9 @@
+import type { LanDiscoveryBridge } from '@kroma/core';
 import { configureRemote, OverlayHost, setEntryDefaults, Toaster } from '@kroma/ui/kit';
 import { useEffect } from 'react';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
+import { type DeviceNameSource, useDeviceName } from '#tv/app/deviceName';
 import { resolveRedirect } from '#tv/app/guard';
 import { GUARD } from '#tv/app/navPolicy';
 import { AuthProvider, useAuth } from '#tv/app/providers/auth';
@@ -15,6 +17,7 @@ import { WatchedProvider } from '#tv/app/providers/watched';
 import { TvClientProvider, TvNavProvider, TvOutlet, type TvScreens, useNav } from '#tv/app/router';
 import { onSearchRequest } from '#tv/app/searchRequest';
 import { useCatalogue } from '#tv/app/useCatalogue';
+import { HandoffBeaconProvider } from '#tv/features/accounts/HandoffBeaconProvider';
 import { TvAbout } from '#tv/features/accounts/TvAbout';
 import { TvAddProfile } from '#tv/features/accounts/TvAddProfile';
 import { TvConnect } from '#tv/features/accounts/TvConnect';
@@ -44,6 +47,17 @@ export interface TvAppProps {
   platform?: string;
   capabilities?: TvEnvOverrides;
   introVideoSrc?: string;
+  /** This television's DNS-SD stack, when the shell has one. Passed down rather
+   * than registered in a module: a capability read deep in the tree through a
+   * module-level `let` is one bundling accident away from being silently null,
+   * and silently null here means the television never announces itself on the
+   * link and nothing anywhere says so. */
+  lan?: LanDiscoveryBridge;
+  /** What this set calls itself, when its platform will say. Passed down for
+   * the same reason as `lan`, and for a second one: the buses that answer at
+   * all answer late, so the name has to be something the tree can re-read, and
+   * a module-level `let` is not. */
+  deviceName?: DeviceNameSource;
 }
 
 // Module scope, so the remote is wired before the first screen renders.
@@ -60,9 +74,16 @@ const LAYERS = [BROWSE_CHROME, AUTH_BACKDROP] as const;
 
 const TOAST_INSET = { x: 64, y: 132 } as const;
 
-export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly<TvAppProps>) {
+export function TvApp({
+  platform = 'TV',
+  capabilities,
+  introVideoSrc,
+  lan,
+  deviceName,
+}: Readonly<TvAppProps>) {
   const { connection, client, activeServerUrl, setActiveServer, setSignedIn } =
     useCatalogue(platform);
+  const name = useDeviceName(deviceName, platform);
 
   return (
     <EnvProvider platform={platform} overrides={capabilities}>
@@ -83,16 +104,20 @@ export function TvApp({ platform = 'TV', capabilities, introVideoSrc }: Readonly
                       <WatchedProvider>
                         {/* Above the router: a TV must be castable from its home
                             screen, not only from the player. */}
-                        <CastReceiverProvider client={client}>
-                          {/* A television cannot use React Native's <Modal>: its
+                        <CastReceiverProvider client={client} lan={lan} name={name}>
+                          {/* Also above the router: the beacon has to be up on
+                              whichever gate screen the TV is showing. */}
+                          <HandoffBeaconProvider client={client} lan={lan} name={name}>
+                            {/* A television cannot use React Native's <Modal>: its
                               view controller never receives a press from a remote
                               (see @kroma/ui lib/overlay-host). */}
-                          <OverlayHost>
-                            <TvRouterGuard />
-                            {/* Above the router so notices survive a screen
+                            <OverlayHost>
+                              <TvRouterGuard />
+                              {/* Above the router so notices survive a screen
                                 change; they never take focus. */}
-                            <Toaster position="top-right" inset={TOAST_INSET} />
-                          </OverlayHost>
+                              <Toaster position="top-right" inset={TOAST_INSET} />
+                            </OverlayHost>
+                          </HandoffBeaconProvider>
                         </CastReceiverProvider>
                       </WatchedProvider>
                     </MyListProvider>

@@ -33,8 +33,10 @@ fn is_private(addr: &IpAddr) -> bool {
     }
 }
 
-// Minimal IPv4 CIDR / prefix match. Accepts `a.b.c.d/n` and bare `a.b.` prefixes.
-fn cidr_contains(net: &str, addr: &IpAddr) -> bool {
+/// Minimal IPv4 CIDR / prefix match. Accepts `a.b.c.d/n` and bare `a.b.`
+/// prefixes. Public because the trusted-proxy list is matched the same way, and
+/// two parsers for one syntax is one too many.
+pub fn cidr_contains(net: &str, addr: &IpAddr) -> bool {
     let IpAddr::V4(ip) = addr else { return false };
     let ip = u32::from(*ip);
     if let Some((base, bits)) = net.split_once('/') {

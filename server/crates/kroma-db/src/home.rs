@@ -186,16 +186,14 @@ pub fn vectors_max_updated_at(pool: &Pool) -> Result<Option<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::TempPool;
     use kroma_domain::SectionItem;
     use std::sync::atomic::{AtomicU32, Ordering};
 
     static SEQ: AtomicU32 = AtomicU32::new(0);
 
-    fn seeded() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-home-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::init(&path).unwrap();
+    fn seeded() -> TempPool {
+        let pool = crate::testing::temp_pool("home");
         let conn = pool.get().unwrap();
         conn.execute("INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')", []).unwrap();
         let movie = |id: &str, added: &str, genres: &str| {

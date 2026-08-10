@@ -114,14 +114,38 @@ describe('usePlayerNav progress zone', () => {
     expect(actions.togglePlay).toHaveBeenCalledTimes(1);
   });
 
-  it('▼ returns to the controls zone; ▲ hides the chrome', () => {
+  it('▼ returns to the controls zone; ▲ climbs to Back, then hides the chrome', () => {
     const { result, key } = nav();
     key('Up');
     key('Down');
     expect(result.current.zone).toBe('controls');
     key('Up');
+    expect(result.current.zone).toBe('progress');
+    // The top chrome's Back button is a zone of its own: without it ▲ ran out of
+    // places to go and dismissed the chrome, leaving the button unreachable.
+    key('Up');
+    expect(result.current.zone).toBe('back');
+    expect(result.current.revealed).toBe(true);
     key('Up');
     expect(result.current.revealed).toBe(false);
+  });
+
+  it('▼ from Back returns to the progress zone', () => {
+    const { result, key } = nav();
+    key('Up');
+    key('Up');
+    expect(result.current.zone).toBe('back');
+    key('Down');
+    expect(result.current.zone).toBe('progress');
+  });
+
+  it('OK on Back leaves the player', () => {
+    const actions = makeActions();
+    const { key } = nav(WEB_FLAGS, false, actions);
+    key('Up');
+    key('Up');
+    key('Enter');
+    expect(actions.onExit).toHaveBeenCalledTimes(1);
   });
 });
 

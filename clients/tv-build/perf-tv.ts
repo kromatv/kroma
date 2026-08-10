@@ -254,7 +254,7 @@ await send('Profiler.start');
 await scenario();
 
 const { profile } = await send<{ profile: CpuProfile }>('Profiler.stop');
-const report = await evaluate<Record<string, number> | null>(
+const report = await evaluate<Record<string, unknown> | null>(
   `(() => { const p = globalThis.KROMA_PERF; if (!p) return null; const r = p.report(); p.stop(); return r; })()`,
 );
 const after = await evaluate<Record<string, number>>(`(() => ({
@@ -266,7 +266,11 @@ const after = await evaluate<Record<string, number>>(`(() => ({
 console.log(`\n  ${SCENARIO}   ${Math.round((profile.endTime - profile.startTime) / 1000)}ms\n`);
 if (report) {
   console.log('  as the viewer feels it');
-  for (const [k, v] of Object.entries(report)) console.log(`    ${k.padEnd(16)} ${v}`);
+  // Scalars only: the report also carries the frame durations the on-screen
+  // chart draws, and as a row they bury every number below them.
+  for (const [k, v] of Object.entries(report)) {
+    if (typeof v === 'number') console.log(`    ${k.padEnd(16)} ${v}`);
+  }
 } else {
   console.log('  (KROMA_PERF is off - enable it in device settings for frame times)');
 }

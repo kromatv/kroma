@@ -116,15 +116,10 @@ pub fn delete_report(pool: &Pool, id: &str) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use crate::testing::TempPool;
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn pool() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-report-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        crate::init(&path).unwrap()
+    fn pool() -> TempPool {
+        crate::testing::temp_pool("report")
     }
 
     fn new_report(id: &str, kind: ReportSubjectKind, category: ReportCategory) -> NewReport {

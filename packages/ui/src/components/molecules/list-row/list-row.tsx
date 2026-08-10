@@ -65,15 +65,11 @@ const listRowVariants = svFor<{
           // keeps the row off the artwork behind it.
           bg: CONTROL.md.bg,
           shadow: 'card',
-          // A solid amber edge rather than a fill, which is why the row draws
-          // no ring: a row is wide, and a filled one at the top of a list
-          // reads as "selected forever" instead of "focused".
-          _focus: { border: 'accent' },
         },
       },
-      // Inside a card there is no edge to recolour, so a focused member takes
-      // the wash instead.
-      false: { root: { _focus: { bg: 'accentSoft' } } },
+      // A member is flush with the card that clips it, so its ring is drawn
+      // INWARD - the same width, ink and gap, on the only side there is.
+      false: { root: { _focus: { bg: 'accentSoft', ring: 'focusInset' } } },
     },
     /** Whether the row leads anywhere. The step before the amber edge, and only
      *  a row that does something on press takes it: a settings list is full of
@@ -126,7 +122,6 @@ function ListRow({
       onPress={onPress}
       label={label}
       focusScale={1.02}
-      ring={false}
       sv={listRowVariants}
       vars={{ size, pressable: onPress !== undefined, standalone }}
       style={style}
@@ -138,7 +133,10 @@ function ListRow({
               of a group is inside the card that already did this. */}
           {standalone ? <Frost radius={radius.xl} /> : null}
           {leading ?? (icon ? <IconWell name={icon} size={size} /> : null)}
-          <Box flex gap={2}>
+          {/* minW 0: without it a long label pushes the trailing slot off the
+              row instead of ellipsing, which is the one thing a row of a
+              settings list must never do. */}
+          <Box flex minW={0} gap={2}>
             {children ?? (
               <>
                 <Txt style={state.slots.label}>{label}</Txt>

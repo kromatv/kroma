@@ -1,4 +1,5 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { lanBeacon } from '@kroma/lan-beacon';
 import { CastProvider, I18nProvider as KitI18nProvider } from '@kroma/ui';
 import { registerFrost, setEntryDefaults, setImageBackend, setTheme } from '@kroma/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -96,6 +97,7 @@ function Shell() {
               client={client}
               enabled={status === 'signedIn'}
               deviceName={Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android')}
+              lan={lanBeacon ?? undefined}
             >
               <NotificationStream />
               <BottomSheetModalProvider>

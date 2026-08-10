@@ -1,19 +1,27 @@
-import { KromaClient } from '@kroma/core';
+import { KromaClient, sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   BackButton,
+  Badge,
   Box,
   colors,
   FocusScroll,
   gradient,
   SplashBackdrop,
   type SplashCover,
+  space,
   styles,
+  Txt,
 } from '@kroma/ui/kit';
 import { memo, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { AUTH_SCREENS } from '#tv/app/navPolicy';
 import { useConnectionMaybe } from '#tv/app/providers/connection';
+import { useHandoffBeacon } from '#tv/app/providers/handoffBeacon';
 import { type TvChrome, useNav } from '#tv/app/router';
+
+// Wide enough to stay sharp on a 1080p panel under the veil, and the widest
+// rendition the server makes. The kit's own home backdrop asks for the same.
+const SPLASH_W = 960;
 
 const BACKDROP = gradient(`radial-gradient(120% 90% at 50% 0%, #15131C, ${colors.bg} 68%)`);
 
@@ -50,7 +58,11 @@ function useSplashCovers(): SplashCover[] {
           if (entries.length === 0) continue;
           setCovers(
             entries.map((e) => ({
-              url: e.backdropUrl,
+              // <Img> never rewrites a URL, so the SIZE is the caller's to ask
+              // for: unsized, a television decodes the full-width master for a
+              // backdrop it then hides under a veil, and pays for that texture
+              // again on every frame of the drift.
+              url: sizedImageUrl(e.backdropUrl, SPLASH_W) ?? e.backdropUrl,
               caption: [e.title, e.year].filter(Boolean).join(' · '),
               eyebrow: t(e.kind === 'show' ? 'content.series' : 'content.film'),
             })),
@@ -100,21 +112,49 @@ export const AUTH_BACKDROP: TvChrome = {
 
 /** The shared centred scaffold for the TV auth / connect / pin screens: the
  * artwork is the outlet's (see {@link AUTH_BACKDROP}), so this brings only the
- * scroll and the pinned Back button, which self-hides at the signed-out
- * root. */
+ * scroll, the pinned Back button - which self-hides at the signed-out root -
+ * and the beacon this TV is waiting under, on whichever gate screen it is
+ * showing. */
 export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
   const nav = useNav();
   const t = useT();
   return (
     <Box fill z={10}>
-      <FocusScroll style={s.scroll} contentStyle={s.content}>
-        {children}
-      </FocusScroll>
+      {/* Before the scroll, not after it: this navigator has no geometry, so a
+          control is where the TREE puts it. Drawn at the top-left but rendered
+          last, the button was the last stop of the screen's vertical chain -
+          reachable only by pressing Down past every row. First, it is one Up
+          from the top of the content, which is where it looks like it is. It
+          still does not open the screen: entry belongs to whichever control
+          carries `autoFocus`. */}
       {nav.canGoBack ? (
         <Box absolute left={32} top={28} z={20}>
           <BackButton onPress={nav.back} label={t('common.back')} />
         </Box>
       ) : null}
+      <FocusScroll style={s.scroll} contentStyle={s.content}>
+        {children}
+      </FocusScroll>
+      <BeaconMark />
+    </Box>
+  );
+}
+
+// Nobody types the check string. It is printed so a person facing two
+// televisions, or a device that named itself after theirs, can tell which row in
+// the phone's list is this screen.
+function BeaconMark() {
+  const t = useT();
+  const beacon = useHandoffBeacon();
+  if (!beacon) return null;
+  return (
+    <Box style={s.beacon} pointerEvents="none">
+      <Txt variant="label" color="textDim">
+        {t('handoff.tvBeacon', { name: beacon.name })}
+      </Txt>
+      <Badge tone="neutral" size="tv">
+        {t('handoff.tvCheck', { check: beacon.check })}
+      </Badge>
     </Box>
   );
 }
@@ -124,4 +164,13 @@ const s = styles({
   // Growth and centring sit on the content, not the box, so it centres when it
   // fits and scrolls from the top when it does not.
   content: { grow: 1, center: true, px: 40, py: 48 },
+  beacon: {
+    absolute: true,
+    left: 0,
+    right: 0,
+    bottom: space[8],
+    row: true,
+    center: true,
+    gap: space[3],
+  },
 });

@@ -1815,6 +1815,7 @@ dependencies = [
  "sha2",
  "sysinfo",
  "tantivy",
+ "tempfile",
  "time",
  "tokio",
  "tokio-util",
@@ -1830,6 +1831,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]

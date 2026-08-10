@@ -27,7 +27,8 @@ export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: str
   // crossOrigin is REQUIRED for the audio filter: the TV shells load the app
   // from their own origin (file:// / tauri://) while media comes from the
   // server, and a non-CORS media element routed into Web Audio outputs SILENCE
-  // (tainted). The server replies permissive CORS, so this is safe.
+  // (tainted). The server's CORS allowlist answers a document loaded off a
+  // device, which is what keeps this element readable (server api/origin.rs).
   return (
     <video ref={pb.videoRef} autoPlay playsInline crossOrigin="anonymous" style={ROUNDED}>
       <track kind="captions" />

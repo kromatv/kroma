@@ -24,7 +24,7 @@ use axum::Router;
 use tokio::io::AsyncReadExt;
 
 fn byte_sink(state: &SharedState, headers: &HeaderMap, addr: &SocketAddr) -> crate::infra::metrics::ByteSink {
-    let ip = client_ip(headers, addr);
+    let ip = client_ip(headers, addr, &state.config.trusted_proxies);
     let is_lan = playback::is_lan(&ip, &settings::local_networks(&state.settings));
     state.metrics.sink(is_lan)
 }

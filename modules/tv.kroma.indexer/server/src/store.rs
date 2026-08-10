@@ -191,53 +191,32 @@ fn pick_version_dir(defs_root: &Path) -> Option<String> {
 mod tests {
     use super::*;
 
+    // A fresh install has never synced, so the cache directory does not exist at
+    // all. Reading it has to come back EMPTY rather than as an error: the module
+    // lists its definitions on the settings screen before anyone has pressed
+    // sync, and an error there reads as a broken module rather than a new one.
+    #[test]
+    fn a_store_that_has_never_synced_is_empty_rather_than_broken() {
+        let dir = kroma_testing::temp_dir("defs-empty");
+        let store = DefinitionStore::new(dir.path());
+        assert!(!store.is_populated());
+        assert!(store.list().expect("listing a store that never synced").is_empty());
+        // Asking for one by name is still an error: nothing is there to load.
+        assert!(store.load("thepiratebay").is_err());
+    }
+
     #[test]
     fn version_dir_picks_highest() {
-        let tmp = std::env::temp_dir().join(format!("kroma-defs-test-{}", std::process::id()));
-        let defs = tmp.join("definitions");
+        let tmp = kroma_testing::temp_dir("defs-test");
+        let defs = tmp.path().join("definitions");
         for v in ["v1", "v9", "v11", "v10", "notaversion"] {
             std::fs::create_dir_all(defs.join(v)).unwrap();
         }
         assert_eq!(pick_version_dir(&defs).as_deref(), Some("v11"));
-        let _ = std::fs::remove_dir_all(&tmp);
     }
 
-    // Live end-to-end sync against the real upstream repo; run with
-    // `cargo test -p kroma-indexer -- --ignored`.
-    #[test]
-    #[ignore]
-    fn real_sync_downloads_and_loads() {
-        let dir = std::env::temp_dir().join(format!("kroma-defs-live-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        let store = DefinitionStore::new(&dir);
-        let report = store.sync().expect("sync");
-        assert!(report.count > 100, "expected many definitions, got {}", report.count);
-        let metas = store.list().unwrap();
-        // A stray non-definition yaml or two is fine.
-        assert!(metas.len() >= report.count - 5, "listed {} of {}", metas.len(), report.count);
-        let tpb = metas.iter().find(|m| m.id == "thepiratebay").expect("thepiratebay present");
-        let def = store.load(&tpb.id).expect("load+parse thepiratebay");
-        assert_eq!(def.id, "thepiratebay");
-        assert!(!def.search.fields.is_empty());
-
-        // Print failures so a schema gap upstream is visible.
-        let (mut ok, mut fail) = (0u32, 0u32);
-        for m in &metas {
-            match store.load(&m.id) {
-                Ok(_) => ok += 1,
-                Err(e) => {
-                    fail += 1;
-                    if fail <= 25 {
-                        eprintln!("[parse-fail] {}: {e:#}", m.id);
-                    }
-                }
-            }
-        }
-        eprintln!("[schema-coverage] {ok} parsed OK, {fail} failed of {}", metas.len());
-        assert!(ok * 100 / metas.len() as u32 >= 90, "only {ok}/{} parsed", metas.len());
-        let _ = std::fs::remove_dir_all(&dir);
-    }
+    // The live end-to-end sync against the real upstream repo lives in
+    // `tests/live_sync.rs`: it is `#[ignore]`d, so nothing here can run it.
 
     #[test]
     fn meta_parses_minimal_yaml() {
@@ -255,16 +234,8 @@ links:
         assert_eq!(meta.links, vec!["https://example.org/"]);
     }
 
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    fn tmpdir(tag: &str) -> PathBuf {
-        static SEQ: AtomicU32 = AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir()
-            .join(format!("kroma-store-test-{tag}-{}-{n}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        dir
+    fn tmpdir(tag: &str) -> kroma_testing::TempDir {
+        kroma_testing::temp_dir(&format!("store-test-{tag}"))
     }
 
     fn valid_definition(id: &str) -> String {
@@ -285,15 +256,14 @@ search:
     #[test]
     fn dir_is_under_the_data_dir() {
         let data = tmpdir("dir");
-        let store = DefinitionStore::new(&data);
-        assert_eq!(store.dir(), data.join("indexer-defs"));
-        let _ = std::fs::remove_dir_all(&data);
+        let store = DefinitionStore::new(data.path());
+        assert_eq!(store.dir(), data.path().join("indexer-defs"));
     }
 
     #[test]
     fn is_populated_reflects_presence_of_yaml_files() {
         let data = tmpdir("pop");
-        let store = DefinitionStore::new(&data);
+        let store = DefinitionStore::new(data.path());
         assert!(!store.is_populated());
 
         std::fs::create_dir_all(store.dir()).unwrap();
@@ -302,22 +272,19 @@ search:
         assert!(!store.is_populated());
         std::fs::write(store.dir().join("t.yml"), b"name: T").unwrap();
         assert!(store.is_populated());
-
-        let _ = std::fs::remove_dir_all(&data);
     }
 
     #[test]
     fn list_returns_empty_when_unsynced() {
         let data = tmpdir("unsynced");
-        let store = DefinitionStore::new(&data);
+        let store = DefinitionStore::new(data.path());
         assert!(store.list().unwrap().is_empty());
-        let _ = std::fs::remove_dir_all(&data);
     }
 
     #[test]
     fn list_sorts_by_name_keys_on_stem_and_skips_non_yaml() {
         let data = tmpdir("list");
-        let store = DefinitionStore::new(&data);
+        let store = DefinitionStore::new(data.path());
         std::fs::create_dir_all(store.dir()).unwrap();
         std::fs::write(store.dir().join("zebra.yml"), b"id: zebra\nname: Zebra").unwrap();
         std::fs::write(store.dir().join("apple.yml"), b"id: apple\nname: apple").unwrap();
@@ -332,14 +299,12 @@ search:
         assert_eq!(metas[1].name, "Dark");
         assert_eq!(metas[2].name, "Zebra");
         assert_eq!(metas[1].id, "darkpeers-api");
-
-        let _ = std::fs::remove_dir_all(&data);
     }
 
     #[test]
     fn load_parses_a_cached_definition() {
         let data = tmpdir("load");
-        let store = DefinitionStore::new(&data);
+        let store = DefinitionStore::new(data.path());
         std::fs::create_dir_all(store.dir()).unwrap();
         std::fs::write(store.dir().join("mytracker.yml"), valid_definition("t").as_bytes()).unwrap();
 
@@ -347,52 +312,45 @@ search:
         // The id comes from the file body, not the file name.
         assert_eq!(def.id, "t");
         assert_eq!(def.name, "My Tracker");
-
-        let _ = std::fs::remove_dir_all(&data);
     }
 
     #[test]
     fn load_missing_definition_errors_with_a_hint() {
         let data = tmpdir("load-miss");
-        let store = DefinitionStore::new(&data);
+        let store = DefinitionStore::new(data.path());
         std::fs::create_dir_all(store.dir()).unwrap();
         let err = store.load("ghost").unwrap_err();
         assert!(format!("{err:#}").contains("not found"), "unexpected error: {err:#}");
-        let _ = std::fs::remove_dir_all(&data);
     }
 
     #[test]
     fn find_definitions_root_prefers_nested_then_falls_back() {
         let nested = tmpdir("root-nested");
-        let want = nested.join("Indexers-master").join("definitions");
+        let want = nested.path().join("Indexers-master").join("definitions");
         std::fs::create_dir_all(&want).unwrap();
-        assert_eq!(find_definitions_root(&nested).as_deref(), Some(want.as_path()));
-        let _ = std::fs::remove_dir_all(&nested);
+        assert_eq!(find_definitions_root(nested.path()).as_deref(), Some(want.as_path()));
 
         let direct = tmpdir("root-direct");
-        let want = direct.join("definitions");
+        let want = direct.path().join("definitions");
         std::fs::create_dir_all(&want).unwrap();
-        assert_eq!(find_definitions_root(&direct).as_deref(), Some(want.as_path()));
-        let _ = std::fs::remove_dir_all(&direct);
+        assert_eq!(find_definitions_root(direct.path()).as_deref(), Some(want.as_path()));
 
         let empty = tmpdir("root-none");
-        assert!(find_definitions_root(&empty).is_none());
-        let _ = std::fs::remove_dir_all(&empty);
+        assert!(find_definitions_root(empty.path()).is_none());
     }
 
     #[test]
     fn version_dir_none_when_no_versioned_subdir() {
         let dir = tmpdir("ver-none");
-        std::fs::create_dir_all(dir.join("stable")).unwrap();
-        std::fs::create_dir_all(dir.join("vX")).unwrap();
-        assert!(pick_version_dir(&dir).is_none());
-        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.path().join("stable")).unwrap();
+        std::fs::create_dir_all(dir.path().join("vX")).unwrap();
+        assert!(pick_version_dir(dir.path()).is_none());
     }
 
     #[test]
     fn yaml_extension_is_recognized_like_yml() {
         let data = tmpdir("yaml-ext");
-        let store = DefinitionStore::new(&data);
+        let store = DefinitionStore::new(data.path());
         std::fs::create_dir_all(store.dir()).unwrap();
         // `.yaml` counts for population + listing; `load` resolves `.yml` only.
         std::fs::write(store.dir().join("tracker.yaml"), valid_definition("t").as_bytes()).unwrap();
@@ -400,7 +358,6 @@ search:
         let metas = store.list().unwrap();
         assert_eq!(metas.len(), 1);
         assert_eq!(metas[0].id, "tracker");
-        let _ = std::fs::remove_dir_all(&data);
     }
 
     // sync() runs against a real socket serving .tar.gz bytes: the transport is
@@ -408,14 +365,9 @@ search:
 
     use std::io::{BufRead, BufReader, Write};
     use std::net::TcpListener;
-    static SEQ: AtomicU32 = AtomicU32::new(0);
 
-    fn scratch(label: &str) -> PathBuf {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("kroma-defs-{label}-{}-{n}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        dir
+    fn scratch(label: &str) -> kroma_testing::TempDir {
+        kroma_testing::temp_dir(&format!("defs-{label}"))
     }
 
     const DEMO_YML: &str = "\
@@ -435,12 +387,12 @@ search:
     fn tarball(layout: &[(&str, &str)]) -> Vec<u8> {
         let root = scratch("tar");
         for (path, body) in layout {
-            let full = root.join(path);
+            let full = root.path().join(path);
             std::fs::create_dir_all(full.parent().unwrap()).unwrap();
             std::fs::write(&full, body).unwrap();
         }
-        let archive = root.join("out.tar.gz");
-        let entries: Vec<String> = std::fs::read_dir(&root)
+        let archive = root.path().join("out.tar.gz");
+        let entries: Vec<String> = std::fs::read_dir(root.path())
             .unwrap()
             .filter_map(|e| e.ok())
             .map(|e| e.file_name().to_string_lossy().into_owned())
@@ -450,14 +402,12 @@ search:
             .arg("-czf")
             .arg(&archive)
             .arg("-C")
-            .arg(&root)
+            .arg(root.path())
             .args(&entries)
             .status()
             .unwrap();
         assert!(ok.success(), "could not build the fixture archive");
-        let bytes = std::fs::read(&archive).unwrap();
-        let _ = std::fs::remove_dir_all(&root);
-        bytes
+        std::fs::read(&archive).unwrap()
     }
 
     fn serve(status: u16, body: Vec<u8>) -> String {
@@ -489,8 +439,22 @@ search:
         format!("http://127.0.0.1:{port}/master.tar.gz")
     }
 
-    fn store_for(source: String) -> DefinitionStore {
-        DefinitionStore { dir: scratch("cache"), source }
+    struct TempStore {
+        store: DefinitionStore,
+        _dir: kroma_testing::TempDir,
+    }
+
+    impl std::ops::Deref for TempStore {
+        type Target = DefinitionStore;
+
+        fn deref(&self) -> &DefinitionStore {
+            &self.store
+        }
+    }
+
+    fn store_for(source: String) -> TempStore {
+        let dir = scratch("cache");
+        TempStore { store: DefinitionStore { dir: dir.path().to_path_buf(), source }, _dir: dir }
     }
 
     #[test]
@@ -611,7 +575,9 @@ search:
     #[test]
     fn listing_a_cache_that_was_never_synced_is_empty_not_an_error() {
         // The admin opens the browse page before ever syncing.
-        let store = DefinitionStore { dir: scratch("empty").join("never-created"), source: String::new() };
+        let empty = scratch("empty");
+        let store =
+            DefinitionStore { dir: empty.path().join("never-created"), source: String::new() };
         assert!(store.list().unwrap().is_empty());
         assert!(!store.is_populated());
     }

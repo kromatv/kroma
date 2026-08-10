@@ -4,11 +4,13 @@
 import { LANG_NO_PREF, LANG_OFF, LOCALES, type Locale, type Translate } from '@kroma/core';
 import { describe, expect, it } from 'vitest';
 import {
+  artworkSetting,
   audioLanguageSetting,
   keyboardLayoutSetting,
   localeSetting,
   subtitleLanguageSetting,
 } from './registry';
+import { ARTWORK_SCALE } from './store';
 
 // langOptions sorts by the translated name, so an identity translator keeps the
 // order stable rather than locale-dependent.
@@ -81,5 +83,19 @@ describe('keyboard layout setting', () => {
     const options = optionsOf(keyboardLayoutSetting);
     expect(options.length).toBeGreaterThan(1);
     for (const option of options) expect(labelOf(keyboardLayoutSetting, option)).toBeTruthy();
+  });
+});
+
+describe('artwork quality setting', () => {
+  it('offers exactly the scales the store knows how to apply', () => {
+    // A row the store cannot resolve would set the scale to `undefined` and
+    // every URL minted after it would ask for NaN pixels.
+    expect(optionsOf(artworkSetting)).toEqual(Object.keys(ARTWORK_SCALE));
+  });
+
+  it('labels every scale it offers', () => {
+    for (const option of optionsOf(artworkSetting)) {
+      expect(labelOf(artworkSetting, option)).toBe(`artworkQuality.${option}`);
+    }
   });
 });

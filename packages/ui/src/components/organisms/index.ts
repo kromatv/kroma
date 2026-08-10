@@ -17,6 +17,7 @@ export {
   DELETE_KEY,
   KEYBOARD_LAYOUTS,
   Key,
+  keyRowWidth,
   LAYOUT_LETTER_ROWS,
   OnScreenKeyboard,
   urlRows,
@@ -25,9 +26,11 @@ export type { KromaIntroProps } from './kroma-intro';
 export { KromaIntro } from './kroma-intro';
 export type { MenuEntry, MenuItem, MenuProps } from './menu';
 export { Menu } from './menu';
+export type { NearbyTvListProps } from './nearby-tv-list';
+export { NearbyTvList } from './nearby-tv-list';
 export { PerfHud } from './perf-hud';
 export type { RailProps } from './rail';
-export { Rail } from './rail';
+export { RAIL_GAP, Rail } from './rail';
 export type { SplashBackdropProps, SplashCover } from './splash-backdrop';
 export { SplashBackdrop } from './splash-backdrop';
 export type { ToasterProps, ToastOptions, ToastPosition } from './toast';

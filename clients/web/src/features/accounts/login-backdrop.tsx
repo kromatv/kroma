@@ -1,3 +1,4 @@
+import { sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { SplashBackdrop } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -14,7 +15,9 @@ export function LoginBackdrop() {
   const covers = useMemo(
     () =>
       entries.map((e) => ({
-        url: e.backdropUrl,
+        // Full-bleed art: 960 is the widest rendition the server keeps, and a
+        // backdrop master is only a TMDB w1280 anyway.
+        url: sizedImageUrl(e.backdropUrl, 960) ?? e.backdropUrl,
         caption: [e.title, e.year].filter(Boolean).join(' · '),
         eyebrow: t(e.kind === 'show' ? 'content.series' : 'content.film'),
       })),

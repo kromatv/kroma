@@ -9,9 +9,15 @@ import type { PlayerFlags } from '../types';
  */
 export type { RemoteKey } from '@kroma/core';
 
-/** The vertical zones the player is split into (§3). The bottom "À suivre" zone
- * is the {@link Overlay} `sheet`, opened by ▼ from the controls (never on hover). */
-export type Zone = 'progress' | 'controls';
+/** The vertical zones the player is split into (§3), top to bottom. The bottom
+ * "À suivre" zone is the {@link Overlay} `sheet`, opened by ▼ from the controls
+ * (never on hover).
+ *
+ * `back` is the top chrome's round Back button. It is a ZONE rather than a
+ * control because this player drives its own D-pad chain instead of the
+ * spatial navigator: anything not named here cannot be reached at all, which
+ * is exactly how the Back button spent its life unreachable by ▲. */
+export type Zone = 'back' | 'progress' | 'controls';
 
 /** An open panel that captures navigation until dismissed. */
 export type Overlay = 'settings' | 'audio' | 'subtitles' | 'sheet' | null;

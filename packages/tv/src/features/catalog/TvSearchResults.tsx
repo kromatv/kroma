@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Txt } from '@kroma/ui/kit';
+import { Box, FocusColumn, FocusScroll, Grid, Hint, PosterCard, styles, Txt } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 
 /** One result, already reduced to what a poster needs. */
@@ -31,8 +31,8 @@ export function TvSearchResults({
   header,
 }: Readonly<TvSearchResultsProps>) {
   const t = useT();
-  // Posters read best around 280pt wide, and the room varies: 1180pt beside our
-  // keyboard, whatever tvOS leaves beside its own.
+  // Posters read best around 250-280pt wide, and the room varies: 812pt beside
+  // our keyboard, whatever tvOS leaves beside its own.
   const columns = Math.max(2, Math.floor((width + GAP) / (POSTER + GAP)));
 
   return (
@@ -51,17 +51,22 @@ export function TvSearchResults({
         />
       </Box>
       {hits.length ? (
-        <Grid width={width} columns={columns} gap={GAP}>
-          {hits.map((h) => (
-            <PosterCard
-              key={h.id}
-              title={h.title}
-              art={h.poster}
-              tint={h.colors}
-              onPress={() => onOpen(h)}
-            />
-          ))}
-        </Grid>
+        // The grid declares its ROWS; this declares the stack of them, so the
+        // whole pane is one thing to arrive at from the keyboard beside it
+        // rather than a loose pile of rows on the screen's own column.
+        <FocusColumn grid>
+          <Grid width={width} columns={columns} gap={GAP}>
+            {hits.map((h) => (
+              <PosterCard
+                key={h.id}
+                title={h.title}
+                art={h.poster}
+                tint={h.colors}
+                onPress={() => onOpen(h)}
+              />
+            ))}
+          </Grid>
+        </FocusColumn>
       ) : (
         <Txt
           style={{ fontSize: 17, fontWeight: '500', paddingTop: 20 }}
@@ -75,7 +80,9 @@ export function TvSearchResults({
 }
 
 const GAP = 24;
-const POSTER = 277;
+// The SMALLEST poster worth drawing, not the drawn width: the grid fits as many
+// of these as the pane holds and then shares the pane between them.
+const POSTER = 250;
 
 const s = styles({
   scroll: { flex: true, minH: 0 },

@@ -305,6 +305,7 @@ fn emit_stats(stage: &Stage, ctx: &JobContext) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::testing::TempPool;
 
     #[test]
     fn fmt_dur_scales_units() {
@@ -330,12 +331,8 @@ mod tests {
         assert_eq!(fmt_dur(Duration::from_secs(3600)), "1 h 00 min");
     }
 
-    fn test_pool() -> db::Pool {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-disp-test-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        db::init(&path).unwrap()
+    fn test_pool() -> TempPool {
+        crate::db::testing::temp_pool("disp-test")
     }
 
     #[test]

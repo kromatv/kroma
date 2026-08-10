@@ -6,11 +6,12 @@ import { PerfHud } from './perf-hud';
 export default story({
   name: 'PerfHud',
   group: 'Feedback',
-  docs: 'The on-device frame read-out, turned on in the device settings. A television is the only place these numbers mean anything and the hardest place to attach a profiler — Samsung blocks the log, the simulator lies about the CPU, and a laptop browser is ten times too fast — so the app carries its own. Read it in order: **RESPONSE** (press-to-focus; over ~120ms the remote feels heavy whatever the frame rate says), **WORST** (one 200ms frame is a visible jolt even at a good average), then **JANK**.',
+  docs: 'The on-device frame read-out, turned on in the device settings. A television is the only place these numbers mean anything and the hardest place to attach a profiler (Samsung blocks the log, the simulator lies about the CPU, and a laptop browser is ten times too fast), so the app carries its own. Read it in order: **RESPONSE** (press-to-focus; over ~120ms the remote feels heavy whatever the frame rate says), **WORST** (one 200ms frame is a visible jolt even at a good average), then **JANK**. The **chart** is the shape those numbers hide: a wall of amber is evenly slow, a flat field with one red spike is a hitch. **HEAP** is worth a trend rather than a value, and **SCREEN** is the surface in device pixels, which is the one number that explains why a full-screen effect costs four times what the layout suggests.',
   usage: `<PerfHud enabled={settings.showPerfHud} />`,
   guidelines: {
     do: [
       'Judge the remote by `RESPONSE`, not by FPS: a heavy-feeling remote can average 60.',
+      'Read `SCREEN` before blaming an effect: a 4K surface under a 1080p layout pays four times the fill.',
       'Leave it mounted and disabled - it costs nothing until `enabled` flips.',
     ],
     dont: [
@@ -28,7 +29,7 @@ export default story({
     // in rather than letting it escape the canvas. A floor rather than a fixed
     // height: absolute children add none of their own, and the read-out has to
     // have somewhere to land.
-    <Box minH={220} bg="surface1" radius="lg" overflow="hidden">
+    <Box minH={320} bg="surface1" radius="lg" overflow="hidden">
       <Box p={20}>
         <Txt variant="meta" color="textDim">
           {enabled

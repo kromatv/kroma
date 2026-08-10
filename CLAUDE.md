@@ -23,6 +23,9 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
   configured** (Radix's part-based API), with the whole row as the control and
   the sugar kept for the common case.
 - [`modules/README.md`](modules/README.md) — authoring a module.
+- [`docs/tv-pairing.md`](docs/tv-pairing.md) — the three roads a television
+  takes to an account, what "the same network" means, and which shells can hear
+  a television on the link rather than being told about it.
 
 ## Checks
 

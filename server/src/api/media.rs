@@ -68,7 +68,7 @@ pub async fn health(
     headers: axum::http::HeaderMap,
 ) -> Result<Response, Response> {
     let (libraries, items, shows) = query(&state.db, move |pool| db::counts(&pool)).await?;
-    let ip = crate::api::util::client_ip(&headers, &addr);
+    let ip = crate::api::util::client_ip(&headers, &addr, &state.config.trusted_proxies);
     let is_lan = crate::services::playback::is_lan(
         &ip,
         &crate::services::settings::local_networks(&state.settings),

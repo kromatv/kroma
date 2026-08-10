@@ -133,6 +133,14 @@ pub fn sized_rendition(data_dir: &Path, name: &str, width: u32) -> Option<(PathB
         return Some((jpg_out, "image/jpeg"));
     }
 
+    // `cwebp -resize` has no shrink-only mode, so a master already narrower than
+    // the ask would come back UPSCALED: more bytes than the original, for fewer
+    // pixels of detail. Posters arrive from TMDB at w500 and the widest bucket is
+    // wider than that. A failed probe falls through and resizes as before.
+    if probe_width(&src).is_some_and(|w| w <= width) {
+        return None;
+    }
+
     let tmp = unique_tmp(&webp_out);
     let cwebp = Command::new("cwebp")
         .args(["-quiet", "-q", "82", "-resize", &width.to_string(), "0"])

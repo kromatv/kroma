@@ -5,6 +5,10 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
+// Names a device chose for itself are rendered in other people's pickers, where
+// a raw control character could forge a line; `clean_label` is what strips them.
+use kroma_primitives::clean_label as clean;
+
 use crate::infra::events::{Bus, ServerEvent};
 use crate::model::{
     CastCommand, CastCommandEnvelope, CastController, CastNowPlaying, CastPlayback, CastReceiver,
@@ -469,15 +473,7 @@ impl Registry {
 /// Whether a receiver id is well-formed. Ids are client-generated but are map
 /// keys echoed to other clients, so the shape is fixed here rather than trusted.
 pub fn valid_receiver_id(id: &str) -> bool {
-    (8..=64).contains(&id.len())
-        && id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
-}
-
-// Control characters are stripped: a name is rendered in other people's pickers,
-// where it could otherwise forge lines.
-fn clean(s: &str, max: usize) -> String {
-    let out: String = s.chars().filter(|c| !c.is_control()).take(max).collect();
-    out.trim().to_string()
+    kroma_primitives::valid_device_id(id)
 }
 
 fn trim_tracks(mut pb: CastPlayback) -> CastPlayback {

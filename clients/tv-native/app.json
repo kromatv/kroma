@@ -19,13 +19,14 @@
           "NSAllowsArbitraryLoads": true,
           "NSAllowsLocalNetworking": true
         },
-        "NSLocalNetworkUsageDescription": "KROMA searches your local network to find your media server.",
-        "NSBonjourServices": ["_http._tcp", "_kroma._tcp"],
+        "NSLocalNetworkUsageDescription": "KROMA finds your media server on your local network, and finds televisions in the same room so you can sign one in with a tap.",
+        "NSBonjourServices": ["_http._tcp", "_kroma._tcp", "_kroma-tv._tcp"],
         "NSSiriUsageDescription": "KROMA lets you ask Siri to search for something to watch in your library."
       }
     },
     "android": {
-      "package": "tv.kroma.tv"
+      "package": "tv.kroma.tv",
+      "permissions": ["android.permission.NEARBY_WIFI_DEVICES", "android.permission.INTERNET"]
     },
     "plugins": [
       [

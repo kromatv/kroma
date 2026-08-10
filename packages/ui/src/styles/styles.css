@@ -4,6 +4,7 @@
 @import "./tokens/typography.css";
 @import "./tokens/spacing.css";
 @import "./tokens/effects.css";
+@import "./img.css";
 
 *,
 *::before,
@@ -42,12 +43,12 @@ button {
 }
 
 /* Amber focus ring visible everywhere, essential for 10-foot TV navigation.
-   The ring is a box-shadow, so it already takes whatever corners the control
-   has - which is why this rule must NEVER set border-radius: doing so repaints
-   the CONTROL itself rather than its ring. */
+   The ring is an outline standing off the control, so it already takes whatever
+   corners the control has - which is why this rule must NEVER set
+   border-radius: doing so repaints the CONTROL itself rather than its ring. */
 :focus-visible {
-  outline: none;
-  box-shadow: var(--ring-focus-sm);
+  outline: var(--ring-outline);
+  outline-offset: var(--ring-gap);
 }
 
 /* Except inside a field: <TextField> owns its focus visual (the accent border),

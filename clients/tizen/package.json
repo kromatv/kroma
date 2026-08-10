@@ -22,7 +22,8 @@
     "@kroma/ui": "workspace:*",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-native-web": "^0.21.2"
+    "react-native-web": "^0.21.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@kroma/bundler": "workspace:*",

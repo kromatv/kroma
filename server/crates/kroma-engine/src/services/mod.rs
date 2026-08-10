@@ -13,7 +13,7 @@ pub mod enrich;
 pub mod rematch;
 pub mod search;
 pub mod sections;
-pub mod quickconnect;
+pub mod pairing;
 pub mod playback;
 pub mod cast;
 pub mod requests;

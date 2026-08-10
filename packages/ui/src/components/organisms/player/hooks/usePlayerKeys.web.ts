@@ -5,7 +5,7 @@
 
 import { resolveRemoteKey } from '@kroma/core';
 import { useEffect, useRef } from 'react';
-import { type PlayerKeysParams, routeRemoteKey } from '../lib/player-keys';
+import { type PlayerKeysParams, routeRemoteKey, tabDirection } from '../lib/player-keys';
 import type { PlayerController, PlayerFlags } from '../types';
 import type { PlayerNav } from './usePlayerNav';
 
@@ -57,6 +57,15 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
         e.preventDefault();
         routeRemoteKey(params, key);
       }
+      return;
+    }
+
+    // Tab walks the chrome, and never the browser's own tab order: the chrome
+    // is the only focus this screen has, so a second one behind it would take
+    // the keyboard somewhere the eye is not.
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      routeRemoteKey(params, tabDirection(nav, e.shiftKey));
       return;
     }
 

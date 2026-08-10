@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { reactivePref, useStoredPref } from './store';
+import { artworkSetting } from './registry';
+import { artworkPrefStore, reactivePref, useStoredPref } from './store';
 
 // jsdom ships no Storage implementation, so this test provides one rather than
 // skipping the assertion that the store actually persists to it.
@@ -61,5 +62,24 @@ describe('reactivePref', () => {
     act(() => result.current[1]('x'));
     expect(result.current[0]).toBe('x');
     expect(pref.get()).toBe('x');
+  });
+});
+
+describe('the artwork quality row', () => {
+  // The row and `applyArtworkScale` have to be looking at ONE store: the scale
+  // is read when a URL is minted, so a row writing somewhere else would move
+  // the setting and change no artwork.
+  it('reads and writes the store the scale is applied from', () => {
+    const use = (artworkSetting as unknown as { use: () => readonly [string, (v: string) => void] })
+      .use;
+    const { result } = renderHook(() => use());
+    expect(result.current[0]).toBe(artworkPrefStore.get());
+
+    act(() => result.current[1]('medium'));
+    expect(artworkPrefStore.get()).toBe('medium');
+    expect(result.current[0]).toBe('medium');
+
+    act(() => result.current[1]('full'));
+    expect(artworkPrefStore.get()).toBe('full');
   });
 });

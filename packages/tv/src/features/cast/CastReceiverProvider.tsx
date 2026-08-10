@@ -2,7 +2,14 @@
 // socket and applies remote commands, with an HTTP polling fallback for
 // when the socket won't come up. Renders nothing.
 
-import { type CastCommand, type CastController, type KromaClient, KromaEvents } from '@kroma/core';
+import {
+  beaconTxt,
+  type CastCommand,
+  type CastController,
+  type KromaClient,
+  KromaEvents,
+  type LanDiscoveryBridge,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Avatar, toast } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
@@ -14,7 +21,7 @@ import { applyCastCommand } from '#tv/features/cast/applyCommand';
 import { castReport, onCastReportChange } from '#tv/features/cast/castBridge';
 import { castReceiverPrefStore } from '#tv/features/cast/castPref';
 import { setCastControllers, setCastUplink } from '#tv/features/cast/controllers';
-import { receiverId } from '#tv/features/cast/receiverId';
+import { deviceId } from '#tv/shared/device';
 
 const DRIFT_MS = 20_000;
 const FALLBACK_BEAT_MS = 10_000;
@@ -26,17 +33,28 @@ const AUTH_WAIT_TICKS = 50;
  * legitimately be null before a server is configured. */
 export function CastReceiverProvider({
   client,
+  lan,
+  name,
   children,
-}: Readonly<{ client: KromaClient | null; children: ReactNode }>) {
+}: Readonly<{
+  client: KromaClient | null;
+  lan?: LanDiscoveryBridge;
+  name: string;
+  children: ReactNode;
+}>) {
   return (
     <>
-      {client ? <CastReceiver client={client} /> : null}
+      {client ? <CastReceiver client={client} lan={lan} name={name} /> : null}
       {children}
     </>
   );
 }
 
-function CastReceiver({ client }: Readonly<{ client: KromaClient }>) {
+function CastReceiver({
+  client,
+  lan,
+  name,
+}: Readonly<{ client: KromaClient; lan?: LanDiscoveryBridge; name: string }>) {
   const nav = useNav();
   const t = useT();
   const { user } = useAuth();
@@ -44,15 +62,42 @@ function CastReceiver({ client }: Readonly<{ client: KromaClient }>) {
   const [castable] = useStoredPref(castReceiverPrefStore);
 
   // Read through a ref so the effect below doesn't reconnect on every render.
-  const deps = useRef({ client, nav, t, platform });
-  deps.current = { client, nav, t, platform };
+  const deps = useRef({ client, nav, t, platform, name });
+  deps.current = { client, nav, t, platform, name };
 
   const applied = useRef(0);
   const signedIn = Boolean(user);
 
+  // Say on the link that this television is up and castable, for as long as it
+  // is. The phone's picker is fed by the server, which knows whose television
+  // this is; hearing the record only makes the row appear at once instead of on
+  // the next beat, and makes it appear at all when the roster is a moment
+  // behind. Nothing here authorizes anything.
+  //
+  // A device can only have ONE record on the link, and this is one of the two
+  // that want it: the handoff beacon publishes the other while signed OUT. They
+  // are mutually exclusive on `signedIn`, and React runs every cleanup in a
+  // commit before any create, so the handover never leaves the link silent.
+  // Adding a third publisher would break that, and should instead go through a
+  // single owner.
   useEffect(() => {
     if (!signedIn || castable === 'off') return;
-    const id = receiverId();
+    const publish = lan?.publish;
+    if (!publish) return;
+    try {
+      return publish({
+        name,
+        txt: beaconTxt({ state: 'ready', name, platform, receiver: deviceId() }),
+      });
+    } catch {
+      // A platform that refuses to publish still casts through the server.
+      return;
+    }
+  }, [signedIn, castable, platform, lan, name]);
+
+  useEffect(() => {
+    if (!signedIn || castable === 'off') return;
+    const id = deviceId();
     let stopped = false;
     let fallback: ReturnType<typeof setTimeout> | undefined;
     let drift: ReturnType<typeof setInterval> | undefined;
@@ -79,7 +124,7 @@ function CastReceiver({ client }: Readonly<{ client: KromaClient }>) {
               seed={who.username}
               size={40}
               roundness={0.35}
-              src={deps.current.client.resolveArt(who.avatarUrl ?? undefined)}
+              src={deps.current.client.resolveArt(who.avatarUrl ?? undefined, 40)}
             />
           ),
           tone: 'success',
@@ -98,7 +143,7 @@ function CastReceiver({ client }: Readonly<{ client: KromaClient }>) {
       try {
         const reply = await deps.current.client.announceCast({
           receiverId: id,
-          name: deviceName(deps.current.platform),
+          name: deps.current.name,
           platform: deps.current.platform,
           lastAppliedSeq: applied.current,
           playback: castReport(deps.current.t) ?? undefined,
@@ -122,7 +167,7 @@ function CastReceiver({ client }: Readonly<{ client: KromaClient }>) {
         events.send({
           type: 'cast.hello',
           receiverId: id,
-          name: deviceName(deps.current.platform),
+          name: deps.current.name,
           platform: deps.current.platform,
         });
         pushState();
@@ -185,10 +230,4 @@ function CastReceiver({ client }: Readonly<{ client: KromaClient }>) {
   }, [signedIn, castable, client]);
 
   return null;
-}
-
-// TVs have no name to read and typing one on a D-pad is a chore, so the
-// platform label is the honest default.
-function deviceName(platform: string): string {
-  return platform && platform !== 'TV' ? platform : 'TV';
 }

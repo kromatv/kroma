@@ -28,10 +28,17 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
-import { type StyleDecl, styles, svFor } from '#ui/core';
+import { RING_ROOM, type StyleDecl, styles, svFor } from '#ui/core';
 import { ease } from '#ui/lib/ease';
 
 const WEB = Platform.OS === 'web';
+
+// The capsule's padding IS the room a focused item's ring needs, plus a hairline
+// of capsule left showing outside it: an item sits this far in from the edge, so
+// its ring lands INSIDE the capsule rather than being shaved off by the rounded
+// clip the frost needs, or sitting exactly on the capsule's own edge, where two
+// concentric lines a couple of pixels apart read as a drawing mistake.
+const PAD = RING_ROOM;
 
 const TRAVEL_MS = 260;
 const CHASE_MS = 160;
@@ -220,15 +227,17 @@ function NavPill({
         row
         align="center"
         gap={size === 'sm' ? 2 : 4}
-        p={6}
+        p={PAD}
         radius="pill"
         border="borderStrong"
         bg={backdrop ? BACKDROP_FILL : PILL_FILL}
-        overflow="hidden"
         style={style}
       >
+        {/* The clip belongs to the frost, which is the only thing that has to
+            stop at the capsule's corner. On the capsule it also cropped the
+            rings of the items inside it. */}
         {backdrop ? (
-          <Box absolute top={0} right={0} bottom={0} left={0}>
+          <Box absolute top={0} right={0} bottom={0} left={0} radius="pill" overflow="hidden">
             {backdrop}
           </Box>
         ) : null}
@@ -257,18 +266,31 @@ function WebLens({ rect, chase }: Readonly<{ rect: LensRect | null; chase: boole
   return (
     <Box
       absolute
-      top={6}
-      bottom={6}
+      top={PAD}
+      bottom={PAD}
       radius="pill"
       bg="accentSoft"
       style={
         {
-          left: box.x,
+          // The travel rides a transform, not `left`. Both land the pill in the
+          // same place, but `left` is laid out and painted on every frame of the
+          // slide while a transform is handed to the compositor - and on a
+          // television that is the difference between a slide and a jump.
+          //
+          // The WIDTH is still a width. `scaleX` would put it on the compositor
+          // too, and would stretch the pill's corner radius into ellipses for
+          // the length of every move; the box is absolutely positioned, so
+          // laying it out disturbs nothing around it.
+          left: 0,
           width: box.width,
+          transform: `translateX(${box.x}px)`,
           opacity: rect ? 1 : 0,
-          transitionProperty: had ? 'left, width, opacity' : 'opacity',
+          transitionProperty: had ? 'transform, width, opacity' : 'opacity',
           transitionDuration: `${chase ? CHASE_MS : TRAVEL_MS}ms`,
           transitionTimingFunction: EASE_CSS,
+          // Asked for up front, so the first frame of a slide is not also the
+          // frame that promotes the layer.
+          willChange: 'transform',
         } as ViewStyle
       }
     />
@@ -436,7 +458,7 @@ const PILL_FILL = 'surface1/78';
 const BACKDROP_FILL = 'surface1/55';
 
 const s = styles({
-  lens: { absolute: true, top: 6, bottom: 6, radius: 'pill', bg: 'accentSoft' },
+  lens: { absolute: true, top: PAD, bottom: PAD, radius: 'pill', bg: 'accentSoft' },
 });
 
 export type { NavPillIcon, NavPillItemProps, NavPillLabels, NavPillProps, NavPillSize };

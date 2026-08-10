@@ -105,16 +105,11 @@ pub fn passkey_exists(pool: &Pool, id: &str) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::TempPool;
     use kroma_domain::Permission;
-    use std::sync::atomic::{AtomicU32, Ordering};
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn pool_with_users() -> (Pool, String, String) {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-pk-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::init(&path).unwrap();
+    fn pool_with_users() -> (TempPool, String, String) {
+        let pool = crate::testing::temp_pool("pk");
         let a = crate::create_user(&pool, "a@b.c", "alice", "h", &[Permission::Playback]).unwrap();
         let b = crate::create_user(&pool, "b@b.c", "bob", "h", &[Permission::Playback]).unwrap();
         (pool, a.id, b.id)

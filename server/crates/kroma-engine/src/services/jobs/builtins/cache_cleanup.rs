@@ -169,11 +169,8 @@ mod tests {
 
     #[test]
     fn dir_size_sums_files_recursively_and_zero_when_missing() {
-        use std::sync::atomic::{AtomicU32, Ordering};
-        static SEQ: AtomicU32 = AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("kroma-dirsize-{}-{n}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
+        let root = kroma_testing::temp_dir("dirsize");
+        let dir = root.path().join("cache");
 
         assert_eq!(dir_size(&dir), 0);
 
@@ -181,8 +178,6 @@ mod tests {
         std::fs::write(dir.join("a.bin"), b"abc").unwrap();
         std::fs::write(dir.join("sub/b.bin"), b"hello").unwrap();
         assert_eq!(dir_size(&dir), 8);
-
-        let _ = std::fs::remove_dir_all(&dir);
     }
 
     // A sparse file: `len` bytes reported by metadata, near-zero bytes on disk -

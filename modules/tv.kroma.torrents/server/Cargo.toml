@@ -69,6 +69,8 @@ tokio = { version = "1", features = ["rt", "time"] }
 [dev-dependencies]
 # The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
 kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
+# `db::testing::temp_pool`, also via the SDK re-export.
+kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
 # The engine_probe example only: session logs for swarm diagnostics.
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 

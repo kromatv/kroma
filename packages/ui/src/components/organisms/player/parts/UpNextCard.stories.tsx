@@ -9,7 +9,6 @@ const ROW = Array.from({ length: UP_NEXT_COLUMNS }, (_, at) => ({
   id: `up-next-${at + 5}`,
   title: `Episode ${at + 5}`,
   subtitle: `S1 E${at + 5}`,
-  durationLabel: '54 min',
   categoryLabel: 'Episode',
   posterUrl: stillArt(at),
 }));
@@ -18,10 +17,10 @@ export default story({
   name: 'UpNextCard',
   group: 'Player',
   docs: 'One candidate in the up-next sheet: a 16:9 still, the title, and the kind of thing it is. With no still it falls back to a deterministic amber-into-charcoal gradient derived from the id, so the same episode always gets the same placeholder rather than flickering between reloads.',
-  usage: `<UpNextCard item={next} focused={nav.at === index} onActivate={play} onFocus={focus} />`,
+  usage: `<UpNextCard item={next} onActivate={play} autoFocus={first} />`,
   guidelines: {
     do: ['Give it a 16:9 still; a poster crops badly at this ratio.'],
-    dont: ["Don't put the duration in the title - `durationLabel` has its own slot."],
+    dont: ["Don't repeat the runtime: the subtitle line is where it goes."],
   },
   matrix: false,
   // The card is `width: 100%` of its cell by default - the sheet computes the
@@ -31,12 +30,11 @@ export default story({
   args: {
     title: 'The Wolf and the Lion',
     subtitle: 'S1 E5',
-    durationLabel: '54 min',
     categoryLabel: 'Episode',
-    focused: false as boolean,
+    interactive: true as boolean,
     artwork: true,
   },
-  render: ({ title, subtitle, durationLabel, categoryLabel, focused, artwork }) => (
+  render: ({ title, subtitle, categoryLabel, interactive, artwork }) => (
     // Capped rather than pinned: one card at 960 would be a hero, not a card.
     <Box maxW={420}>
       <UpNextCard
@@ -44,11 +42,10 @@ export default story({
           id: 'up-next-1',
           title,
           subtitle,
-          durationLabel,
           categoryLabel,
           posterUrl: artwork ? stillArt(2) : null,
         }}
-        focused={focused}
+        interactive={Boolean(interactive)}
         onActivate={() => {}}
       />
     </Box>
@@ -60,15 +57,11 @@ export default story({
       // Thirds of the row rather than three 300pt cards: that IS the sheet's
       // layout - it divides the width it measures by three - so the scene shows
       // the same arithmetic instead of one width where it happens to land.
-      render: ({ focused }) => (
+      render: ({ interactive }) => (
         <Box row gap={UP_NEXT_GAP}>
           {ROW.map((item) => (
             <Box key={item.id} flex>
-              <UpNextCard
-                item={item}
-                focused={Boolean(focused) && item.id === ROW[0]?.id}
-                onActivate={() => {}}
-              />
+              <UpNextCard item={item} interactive={Boolean(interactive)} onActivate={() => {}} />
             </Box>
           ))}
         </Box>

@@ -1,7 +1,7 @@
 // Both halves of the CSS-feature bridge are pinned together: they only work
 // while they agree on which helpers are real and which are deliberate no-ops.
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as native from './css';
 import * as web from './css.web';
 
@@ -51,6 +51,26 @@ describe('the web half', () => {
 
   it('promotes with translateZ(0) plus willChange', () => {
     expect(web.promote()).toEqual({ transform: 'translateZ(0)', willChange: 'transform' });
+  });
+
+  // A backdrop-filter is not paid once: it re-blurs whenever anything BEHIND it
+  // changes, and a television composites that on the CPU. With the sign-in
+  // artwork drifting behind every frosted control, a 2024 Samsung panel measured
+  // 40fps with the blur and 60 without. The sets lose nothing they had, since
+  // the 2019 WebKits ignore the property outright.
+  it('gives a television no blur at all, at any strength', async () => {
+    Object.assign(globalThis, { __KROMA_TV_TIER__: true });
+    vi.resetModules();
+    try {
+      const tv = await import('./css.web');
+      expect(tv.backdropBlur(12)).toEqual({});
+      expect(tv.backdropBlur(1)).toEqual({});
+      // Everything else the tier still gets.
+      expect(tv.promote()).toEqual({ transform: 'translateZ(0)', willChange: 'transform' });
+    } finally {
+      Reflect.deleteProperty(globalThis, '__KROMA_TV_TIER__');
+      vi.resetModules();
+    }
   });
 });
 

@@ -17,6 +17,11 @@
   <tizen:privilege name="http://tizen.org/privilege/filesystem.write"/>
   <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
   <tizen:privilege name="http://developer.samsung.com/privilege/productinfo"/>
+  <!-- `webapis.network.getTVName()`: the name the owner gave this set, which is
+       what a phone shows in its list of televisions. Without this privilege the
+       call is refused and the set falls back to announcing its MODEL. Public
+       level, so a dev certificate carries it. -->
+  <tizen:privilege name="http://developer.samsung.com/privilege/network.public"/>
   <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto"/>
   <tizen:metadata key="http://samsung.com/tv/metadata/use.tv.profile" value="true"/>
   <!-- Smart Hub preview: a background service supplies the home-screen carousel

@@ -14,14 +14,14 @@ use serde_json::json;
 
 use crate::api::error::lerr;
 use crate::api::pin;
-use crate::api::util::{blocking, client_ip, query};
+use crate::api::util::{blocking, client_ip, drop_orphans, query, SecretQuery};
 use crate::api::extract::{bearer_from_headers, AuthUser};
 use crate::services::auth;
 use crate::services::loginguard;
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::{Permission, PublicUser, User};
-use crate::services::quickconnect::PollState;
+use crate::services::pairing::Orphaned;
 use crate::state::SharedState;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, patch, post};
@@ -145,7 +145,7 @@ pub async fn login(
     headers: HeaderMap,
     Json(body): Json<LoginBody>,
 ) -> Response {
-    let ip = client_ip(&headers, &addr);
+    let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
     // Reject while locked out before touching the database or hashing.
     if let Some(secs) = loginguard::lock_remaining(&ip) {
         return login_locked(loc, secs);
@@ -537,8 +537,8 @@ pub struct ChangePasswordBody {
 }
 
 /// `PATCH /api/auth/me/password` (Bearer) `{ current, next }` → 204. Every other
-/// session and device token is revoked — a rotation is how a user evicts a stolen
-/// credential — while the caller's own session keeps working.
+/// session and device token is revoked (a rotation is how a user evicts a stolen
+/// credential) while the caller's own session keeps working.
 pub async fn change_password(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -621,7 +621,7 @@ pub async fn revoke_session(
     }
 }
 
-async fn mint_device_tokens(
+pub(super) async fn mint_device_tokens(
     state: &SharedState,
     user_id: &str,
     user_agent: Option<String>,
@@ -729,18 +729,19 @@ pub struct QuickInitiateBody {
 /// expiring code sends the old secret as `prevSecret` so the server drops it.
 pub async fn quick_initiate(
     State(state): State<SharedState>,
+    ReqLocale(loc): ReqLocale,
     body: Option<Json<QuickInitiateBody>>,
 ) -> Response {
     // Drop the rotated-away code so it stops being approvable, along with any
     // tokens it accrued in the gap (approved but never polled for).
     if let Some(Json(QuickInitiateBody { prev_secret: Some(secret) })) = body {
-        if let Some(revoked) = state.quickconnect.revoke(&secret) {
-            let (token, access) = (revoked.token, revoked.access_token);
-            let _ = query(&state.db, move |pool| db::delete_session(&pool, &token)).await;
-            let _ = query(&state.db, move |pool| db::delete_access_token(&pool, &access)).await;
-        }
+        drop_orphans(&state, state.quickconnect.revoke(&secret)).await;
     }
-    let init = state.quickconnect.initiate();
+    let initiated = state.quickconnect.initiate();
+    drop_orphans(&state, state.quickconnect.take_orphans()).await;
+    let Some(init) = initiated else {
+        return lerr(loc, StatusCode::TOO_MANY_REQUESTS, "connect.tooManyPending");
+    };
     let web_base = state.config.web_url.clone().or_else(|| {
         let url = crate::services::settings::public_url(&state.settings);
         (!url.is_empty()).then_some(url)
@@ -777,30 +778,38 @@ pub async fn quick_authorize(
         Err(resp) => return resp,
     };
 
-    if state.quickconnect.authorize(&code, user, token.clone(), access.clone()) {
+    let approved = state.quickconnect.authorize(&code, user, token.clone(), access.clone());
+    drop_orphans(&state, state.quickconnect.take_orphans()).await;
+    if approved {
         StatusCode::NO_CONTENT.into_response()
     } else {
         // Unknown/expired code → don't leave the just-created tokens dangling.
-        let _ = query(&state.db, move |pool| db::delete_session(&pool, &token)).await;
-        let _ = query(&state.db, move |pool| db::delete_access_token(&pool, &access)).await;
+        drop_orphans(&state, Some(Orphaned { token, access_token: access })).await;
         lerr(loc, StatusCode::NOT_FOUND, "connect.invalidCode")
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct QuickPollQuery {
-    pub secret: String,
-}
-
-/// `GET /api/auth/quickconnect/poll?secret=…` → `{ status }` where status is
-/// `pending` | `authorized` (then `{ token, user }`) | `expired`.
-pub async fn quick_poll(State(state): State<SharedState>, Query(q): Query<QuickPollQuery>) -> Response {
-    let status = match state.quickconnect.poll(&q.secret) {
-        PollState::Authorized { token, access_token, user } => {
-            super::dto::QuickPoll::Authorized { token, access_token, user }
-        }
-        PollState::Pending => super::dto::QuickPoll::Pending,
-        PollState::Unknown => super::dto::QuickPoll::Expired,
-    };
+/// `GET /api/auth/quickconnect/poll` → `{ status }` where status is `pending` |
+/// `authorized` (then `{ token, user }`) | `expired`.
+///
+/// The secret is read from `X-Kroma-Pairing-Secret` when present, and from
+/// `?secret=` otherwise. A URL is written down everywhere a request goes past
+/// (the tracing span records the uri, and every reverse proxy logs it), which
+/// is not where a credential redeeming a 90-day token belongs. The query is
+/// still honoured because televisions already in the world send it that way.
+pub async fn quick_poll(
+    State(state): State<SharedState>,
+    headers: HeaderMap,
+    Query(q): Query<SecretQuery>,
+) -> Response {
+    let secret = headers
+        .get("x-kroma-pairing-secret")
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_string)
+        .or(q.secret)
+        .unwrap_or_default();
+    let status = super::dto::PairingPoll::from(state.quickconnect.poll(&secret));
+    // A code that lapsed after it was approved still has rows behind it.
+    drop_orphans(&state, state.quickconnect.take_orphans()).await;
     Json(status).into_response()
 }

@@ -161,7 +161,7 @@ const RULES = {
   shadow: (v) => ({ boxShadow: activeTheme().shadow[v as ShadowToken] }),
   // Guarded: <Focusable> has its own boolean `ring` prop, and a spread bag must
   // not smuggle it in as a paint.
-  ring: (v) => (typeof v === 'string' ? { boxShadow: activeTheme().ring[v as RingToken] } : {}),
+  ring: (v) => (typeof v === 'string' ? { ...activeTheme().ring[v as RingToken] } : {}),
   opacity: 'opacity',
   overflow: 'overflow',
 } as const satisfies Record<keyof BoxStyleProps, Rule>;

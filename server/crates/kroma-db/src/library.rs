@@ -33,15 +33,10 @@ fn parse_library_kind(s: &str) -> LibraryKind {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use crate::testing::TempPool;
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn pool() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-lib-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        crate::init(&path).unwrap()
+    fn pool() -> TempPool {
+        crate::testing::temp_pool("lib")
     }
 
     #[test]

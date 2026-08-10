@@ -87,6 +87,25 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
   const [errored, setErrored] = useState(false);
   const [under, setUnder] = useState<string | null>(null);
   const loadedSrc = useRef<string | null>(null);
+  const settling = useRef<{
+    frame: number;
+    timer: ReturnType<typeof setTimeout>;
+    src: string | null;
+  } | null>(null);
+  // What the last commit actually put on screen, so a frame armed for one
+  // source can tell that another has taken its place before it ran.
+  const committed = useRef(src);
+  useLayoutEffect(() => {
+    committed.current = src;
+  }, [src]);
+  useEffect(
+    () => () => {
+      if (!settling.current) return;
+      cancelAnimationFrame(settling.current.frame);
+      clearTimeout(settling.current.timer);
+    },
+    [],
+  );
 
   // Adjusted during render, not in an effect: a post-commit update would paint
   // one frame of the new (transparent) image over nothing, which reads as a
@@ -111,8 +130,41 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
     errored,
     under,
     markLoaded: () => {
+      // Idempotent per source: React re-invokes the inline `ref` below on every
+      // render, so a decoded image reports itself again on each one.
+      if (settling.current?.src === src || (loaded && loadedSrc.current === src)) return;
       loadedSrc.current = src;
-      setLoaded(true);
+      // On the web the reveal is a CSS transition, and a transition only runs
+      // when the browser has PAINTED the state it starts from. Artwork already
+      // in the cache is `complete` the moment its ref runs, so this lands in
+      // the same commit: opacity would step 0 -> 1 with the transparent state
+      // never on screen, and the image cuts instead of fading. Waiting a single
+      // frame is all the first paint needs - and the splash pre-decodes its
+      // next cover on purpose, so every handover there took this path.
+      if (!IS_WEB) {
+        setLoaded(true);
+        return;
+      }
+      if (settling.current) {
+        cancelAnimationFrame(settling.current.frame);
+        clearTimeout(settling.current.timer);
+      }
+      const settle = () => {
+        settling.current = null;
+        // The source can move on while this waits - rAF is suspended in a hidden
+        // tab, and a legacy webOS frame is 100ms+ - and a reveal armed for one
+        // image must never show another.
+        if (committed.current === src) setLoaded(true);
+      };
+      const frame = requestAnimationFrame(settle);
+      // A frame is not a promise. It does not run while the tab is hidden, and a
+      // television busy decoding video can skip it for a long time - and until
+      // it runs the image sits at opacity 0 with its bytes already in hand,
+      // which is what "the artwork never loads" actually looked like. The timer
+      // is the floor under that: late is a cut instead of a fade, which is worth
+      // far less than a picture that never appears.
+      const timer = setTimeout(settle, REVEAL_FLOOR_MS);
+      settling.current = { frame, timer, src };
     },
     markErrored: () => {
       setErrored(true);
@@ -127,6 +179,9 @@ interface Size {
 }
 
 const IS_WEB = Platform.OS === 'web';
+
+/** How long the reveal waits for a frame before showing the image anyway. */
+const REVEAL_FLOOR_MS = 250;
 
 function Img({
   src: requested,
@@ -376,11 +431,14 @@ function webLayers(at: Readonly<WebLayersArgs>): ReactNode {
             at.onLoad?.();
           }}
           onError={at.onError}
-          style={{
-            ...layer,
-            opacity: at.loaded ? 1 : 0,
-            transition: `opacity ${at.duration}ms ease`,
-          }}
+          // The fade is an ANIMATION the browser owns, not an opacity this
+          // component drives (`kroma-img-in`, in styles.css): an image whose
+          // reveal depends on React state is an image that stays invisible
+          // whenever that state does not arrive - a load event missed on cached
+          // art, a frame that never runs on a busy television - with its bytes
+          // already decoded. Its resting state is VISIBLE; the keyframes only
+          // decide how it got there.
+          style={{ ...layer, animation: `kroma-img-in ${at.duration}ms ease both` }}
         />
       ) : null}
     </>

@@ -146,15 +146,10 @@ pub fn note_indexer_result(pool: &Pool, id: &str, ok: bool, error: Option<&str>,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use kroma_module_sdk::db::testing::TempPool;
 
-    fn test_pool() -> Pool {
-        static SEQ: AtomicU32 = AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir()
-            .join(format!("kroma-indexer-db-test-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = kroma_module_sdk::db::init(&path).expect("init db");
+    fn test_pool() -> TempPool {
+        let pool = kroma_module_sdk::db::testing::temp_pool("indexer-db-test");
         {
             let conn = pool.get().unwrap();
             kroma_module_sdk::db::apply_migrations(&conn, MIGRATIONS).expect("indexers schema");

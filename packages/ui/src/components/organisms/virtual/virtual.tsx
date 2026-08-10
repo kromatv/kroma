@@ -7,6 +7,8 @@ import {
   SpatialNavigationVirtualizedGrid,
   type SpatialNavigationVirtualizedListRef,
 } from 'react-tv-space-navigation';
+import { FocusReporter } from '#ui/lib/focus-report';
+import { markGridFocus } from '#ui/lib/perf';
 import { clipStyles, OVERSCAN } from './clip';
 
 const NO_POINTER = { pointerEvents: 'none' } as const;
@@ -82,13 +84,29 @@ function VirtualGrid<T>({
           numberOfColumns={columns}
           itemHeight={itemHeight}
           additionalRenderedRows={OVERSCAN}
+          // A GRID is not a rail. The library's default, `stick-to-start`,
+          // parks the focused row at the top of the viewport, so every press of
+          // Down scrolls the grid by exactly one row and the ring never moves:
+          // the posters slide underneath it and the set reads as if the arrow
+          // did nothing. Rails want that behaviour - a rail's focused tile
+          // belongs at the left edge - but a grid has rows above and below worth
+          // seeing, so it scrolls only when the selection reaches an edge.
+          scrollBehavior="jump-on-scroll"
           header={header}
           headerSize={headerHeight}
           rowContainerStyle={rowStyle}
           style={contentStyle}
           freeScrollFraction={fraction}
           onEndReached={onEndReached}
-          renderItem={({ item, index }) => renderItem(item, index)}
+          renderItem={({ item, index }) => (
+            // Reports which cell took focus, for the on-screen read-out: a
+            // remote bug on a television has no inspector to ask.
+            <FocusReporter
+              onFocus={() => markGridFocus(Math.floor(index / columns), index % columns)}
+            >
+              {renderItem(item, index)}
+            </FocusReporter>
+          )}
         />
       </View>
     </View>

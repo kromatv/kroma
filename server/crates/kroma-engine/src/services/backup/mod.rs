@@ -113,16 +113,12 @@ fn is_safe_name(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use kroma_testing::TempDir;
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn fresh(tag: &str) -> (Pool, std::path::PathBuf) {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let data = std::env::temp_dir().join(format!("kroma-bksvc-{tag}-{}-{n}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&data);
-        std::fs::create_dir_all(images_dir(&data)).unwrap();
-        let pool = crate::db::init(&data.join("kroma.db")).unwrap();
+    fn fresh(tag: &str) -> (Pool, TempDir) {
+        let data = kroma_testing::temp_dir(&format!("bksvc-{tag}"));
+        std::fs::create_dir_all(images_dir(data.path())).unwrap();
+        let pool = crate::db::init(&data.path().join("kroma.db")).unwrap();
         (pool, data)
     }
 
@@ -145,44 +141,44 @@ mod tests {
     #[test]
     fn zip_round_trip_restores_rows_and_avatar() {
         let (src, src_dir) = fresh("src");
-        seed_user_with_avatar(&src, &src_dir);
-        let bytes = export(&src, &src_dir, None).unwrap();
+        seed_user_with_avatar(&src, src_dir.path());
+        let bytes = export(&src, src_dir.path(), None).unwrap();
         assert!(bytes.starts_with(b"PK\x03\x04"), "unencrypted .kroma is a zip");
 
         let (dst, dst_dir) = fresh("dst");
-        import(&dst, &dst_dir, &bytes, None, false).unwrap();
+        import(&dst, dst_dir.path(), &bytes, None, false).unwrap();
         assert_eq!(user_count(&dst), 1);
-        assert_eq!(std::fs::read(images_dir(&dst_dir).join("av99.webp")).unwrap(), b"AVATAR");
+        assert_eq!(std::fs::read(images_dir(dst_dir.path()).join("av99.webp")).unwrap(), b"AVATAR");
     }
 
     #[test]
     fn encrypted_round_trip_and_password_errors() {
         let (src, src_dir) = fresh("esrc");
-        seed_user_with_avatar(&src, &src_dir);
-        let sealed = export(&src, &src_dir, Some("hunter2")).unwrap();
+        seed_user_with_avatar(&src, src_dir.path());
+        let sealed = export(&src, src_dir.path(), Some("hunter2")).unwrap();
         assert!(crypto::is_encrypted(&sealed));
 
         let (dst, dst_dir) = fresh("edst");
-        assert!(matches!(import(&dst, &dst_dir, &sealed, None, false), Err(ImportError::PasswordRequired)));
-        assert!(matches!(import(&dst, &dst_dir, &sealed, Some("nope"), false), Err(ImportError::WrongPassword)));
-        import(&dst, &dst_dir, &sealed, Some("hunter2"), false).unwrap();
+        assert!(matches!(import(&dst, dst_dir.path(), &sealed, None, false), Err(ImportError::PasswordRequired)));
+        assert!(matches!(import(&dst, dst_dir.path(), &sealed, Some("nope"), false), Err(ImportError::WrongPassword)));
+        import(&dst, dst_dir.path(), &sealed, Some("hunter2"), false).unwrap();
         assert_eq!(user_count(&dst), 1);
     }
 
     #[test]
     fn reset_wipes_pre_existing_rows() {
         let (src, src_dir) = fresh("rsrc");
-        seed_user_with_avatar(&src, &src_dir);
-        let bytes = export(&src, &src_dir, None).unwrap();
+        seed_user_with_avatar(&src, src_dir.path());
+        let bytes = export(&src, src_dir.path(), None).unwrap();
 
         let (dst, dst_dir) = fresh("rdst");
         // A pre-existing account on the target that's NOT in the backup.
         dst.get().unwrap().execute(
             "INSERT INTO users (id,email,username,password_hash,created_at) VALUES ('keep','k@b.c','K','ph','t')", []).unwrap();
 
-        import(&dst, &dst_dir, &bytes, None, false).unwrap();
+        import(&dst, dst_dir.path(), &bytes, None, false).unwrap();
         assert_eq!(user_count(&dst), 2);
-        import(&dst, &dst_dir, &bytes, None, true).unwrap();
+        import(&dst, dst_dir.path(), &bytes, None, true).unwrap();
         assert_eq!(user_count(&dst), 1);
     }
 }

@@ -32,7 +32,6 @@ function SelectableRail({
         {Array.from({ length: count }, (_, index) => `Title ${index + 1}`).map((title, index) => (
           <MediaCard
             key={title}
-            width={320}
             title={title}
             overline="Science fiction"
             art={stillArt(index)}

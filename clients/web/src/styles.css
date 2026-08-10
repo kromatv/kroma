@@ -78,12 +78,12 @@
   }
 }
 
-/* The field ring: same 3px geometry as the app's 10-foot `--ring-focus-sm`, in
-   an amber a form can carry rather than the solid one, which boxes an input.
-   Drawn by both the field itself and the bordered GROUP that owns focus for a
-   borderless input inside it (a search box, an InputGroup) - they must not
-   drift apart. An OUTLINE rather than a box-shadow, unlike the 10-foot ring:
-   it does not evict a shadow the field already carries. */
+/* The field ring: same width as the app's 10-foot `--ring-outline`, in an amber
+   a form can carry rather than the solid one, which boxes an input. Drawn by
+   both the field itself and the bordered GROUP that owns focus for a borderless
+   input inside it (a search box, an InputGroup) - they must not drift apart.
+   Flush against the control, unlike the 10-foot ring, which stands `--ring-gap`
+   off it: a field is read at arm's length and its border IS its edge. */
 :root {
   --ring-field: var(--ring-width) solid color-mix(in srgb, var(--kroma-accent) 32%, transparent);
 }

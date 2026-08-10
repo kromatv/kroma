@@ -59,7 +59,7 @@ pub async fn events(
     };
     // The bus carries per-user events (notifications) alongside server-wide
     // ones, so this socket needs the id to forward only its own.
-    let ip = client_ip(&headers, &addr);
+    let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
     let who = Viewer {
         network: classify_network(&ip, &settings::local_networks(&state.settings)),
         can_cast: user.can(Permission::Playback),

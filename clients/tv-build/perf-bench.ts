@@ -16,6 +16,7 @@
 // holding a remote.
 
 import { spawn } from 'node:child_process';
+import type { PerfReport } from '@kroma/ui/kit';
 import { chromium } from 'playwright';
 
 const args = process.argv.slice(2);
@@ -49,8 +50,18 @@ const LOADERS = flag('loaders', '');
 const WALK = ['ArrowDown', 'ArrowRight', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
 
 async function serve(): Promise<() => void> {
+  const cwd = new URL('../bench', import.meta.url).pathname;
+  // BUILD, then preview. `vite preview` serves whatever is in dist/, so without
+  // this the bench happily measures a bundle from weeks ago and reports the
+  // difference between two runs as the difference between two commits.
+  await new Promise<void>((done, fail) => {
+    const build = spawn('bunx', ['vite', 'build'], { cwd, stdio: 'inherit' });
+    build.on('exit', (code) =>
+      code === 0 ? done() : fail(new Error(`bench build failed (${code})`)),
+    );
+  });
   const preview = spawn('bunx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
-    cwd: new URL('../bench', import.meta.url).pathname,
+    cwd,
     stdio: 'ignore',
   });
   await new Promise((done) => setTimeout(done, 3000));
@@ -101,12 +112,15 @@ for (let at = 0; at < KEYS; at += 1) {
 }
 
 const report = await page.evaluate(() => {
-  const perf = (globalThis as { KROMA_PERF?: { report(): unknown } }).KROMA_PERF;
-  return {
-    ...(perf?.report() as Record<string, number> | undefined),
-    nodes: document.querySelectorAll('*').length,
-    controls: document.querySelectorAll('[role="button"]').length,
-  };
+  const perf = (globalThis as { KROMA_PERF?: { report(): PerfReport } }).KROMA_PERF;
+  const nodes = document.querySelectorAll('*').length;
+  const controls = document.querySelectorAll('[role="button"]').length;
+  const measured = perf?.report();
+  if (!measured) return { nodes, controls };
+  // The frame durations are the on-screen chart's. Printed as a row they are a
+  // comma-joined list that buries every number below them.
+  const { frames, ...scalars } = measured;
+  return { ...scalars, nodes, controls };
 });
 
 console.log(`\n  ${target}   ${KEYS} presses   CPU /${THROTTLE}\n`);

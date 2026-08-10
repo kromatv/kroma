@@ -194,8 +194,11 @@ describe('silent refresh on 401 (json)', () => {
     expect(calls).toHaveLength(1);
   });
 
-  it('matches NO_REFRESH against the path without its query string', async () => {
-    // quickconnect/poll is NO_REFRESH and carries a `?secret=` query.
+  it('does not refresh a pre-auth handshake path', async () => {
+    // quickconnect/poll is NO_REFRESH: it has no session bearer to refresh, and
+    // trying would recurse. (It no longer carries a query string either: the
+    // secret moved to a header, because a URL is logged everywhere. The path
+    // matcher still strips a query, which no NO_REFRESH path now has.)
     const { fetch, calls } = recordingFetch(() => ({ ok: false, status: 401, json: {} }));
     const client = new KromaClient({ baseUrl: 'http://kroma.test', fetch, authToken: 'old' });
     const refresh = vi.fn(async () => 'fresh');
@@ -339,7 +342,7 @@ describe('delegating methods issue the expected request', () => {
     ['invites', (c) => c.invites(), 'GET', '/invites'],
     ['checkInvite', (c) => c.checkInvite('t'), 'GET', '/invites/t'],
     ['revokeInvite', (c) => c.revokeInvite('t'), 'DELETE', '/invites/t'],
-    ['quickConnectPoll', (c) => c.quickConnectPoll('s'), 'GET', '/auth/quickconnect/poll?secret=s'],
+    ['quickConnectPoll', (c) => c.quickConnectPoll('s'), 'GET', '/auth/quickconnect/poll'],
     ['adminLibraries', (c) => c.adminLibraries(), 'GET', '/admin/libraries'],
     [
       'createLibrary',
@@ -388,6 +391,15 @@ describe('delegating methods issue the expected request', () => {
     ['uploadAvatar', (c) => c.uploadAvatar(new Blob(['x']))],
     ['quickConnectInitiate', (c) => c.quickConnectInitiate()],
     ['quickConnectAuthorize', (c) => c.quickConnectAuthorize('code')],
+    [
+      'announceHandoff',
+      (c) => c.announceHandoff({ deviceId: 'tv-1', name: 'Salon', platform: 'TV' }),
+    ],
+    ['handoffLeave', (c) => c.handoffLeave('s3cr3t')],
+    ['handoffPoll', (c) => c.handoffPoll('s3cr3t')],
+    ['handoffDevices', (c) => c.handoffDevices()],
+    ['handoffGrant', (c) => c.handoffGrant('a1b2c3')],
+    ['handoffGrant with a check string', (c) => c.handoffGrant('a1b2c3', { check: 'K7QMR' })],
     ['progress', (c) => c.progress()],
     ['itemProgress', (c) => c.itemProgress('i1')],
     ['continueWatching', (c) => c.continueWatching()],

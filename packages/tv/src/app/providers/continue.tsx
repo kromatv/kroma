@@ -14,6 +14,10 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 
 // A public endpoint, so a launcher can fetch it without the app's auth.
+// A launcher card is drawn 1280 wide; asking for the original ships a
+// multi-megabyte still to a shelf that shows a thumbnail.
+const LAUNCHER_ART_W = 1280;
+
 function cardArt(c: ContinueItem, client: KromaClient): string {
   const progress = c.durationMs ? c.positionMs / c.durationMs : 0;
   const params = new URLSearchParams({ label: 'Reprendre', v: c.item.addedAt });
@@ -31,7 +35,7 @@ function toWatchNext(items: ContinueItem[], client: KromaClient) {
       title: it.showTitle ?? it.title,
       subtitle: it.episodeTitle ?? (it.year ? String(it.year) : ''),
       imageUrl: cardArt(c, client),
-      backdropUrl: client.backdropFor(it) ?? undefined,
+      backdropUrl: client.backdropFor(it, LAUNCHER_ART_W) ?? undefined,
       // Launchers link an episode card to the SHOW: the movie catalogue cannot
       // resolve an episode id.
       showId: it.showId ?? undefined,

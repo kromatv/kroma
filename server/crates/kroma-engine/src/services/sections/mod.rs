@@ -229,14 +229,11 @@ fn last_title(pool: &Pool, id: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::testing::TempPool;
     use std::collections::HashMap;
 
-    fn test_pool() -> Pool {
-        static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-        let n = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-sections-mod-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        crate::db::init(&path).unwrap()
+    fn test_pool() -> TempPool {
+        crate::db::testing::temp_pool("sections-mod")
     }
 
     #[test]

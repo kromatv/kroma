@@ -47,7 +47,7 @@ const playFill = sv({ base: { _focus: { bg: 'accentHover' } } });
 const volumePill = sv({
   base: {
     bg: 'white/12',
-    _focus: { bg: 'white/22', ring: 'focusGlow', transform: [{ scale: FOCUS_SCALE }] },
+    _focus: { bg: 'white/22', ring: 'focusLift', transform: [{ scale: FOCUS_SCALE }], z: 1 },
   },
 });
 

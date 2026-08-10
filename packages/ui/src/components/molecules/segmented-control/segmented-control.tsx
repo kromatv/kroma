@@ -49,6 +49,11 @@ interface SegmentedOption<T extends string> {
 
 interface SegmentedControlProps<T extends string> {
   value: T;
+  /** Fill the width, every segment an equal share, instead of hugging its
+   *  labels. For a control that names the MODE of the screen under it rather
+   *  than a value in a form: a pill floating mid-page reads as unanchored, and
+   *  a full-width bar reads as the thing the page is currently showing. */
+  stretch?: boolean;
   /** The control shell's size; see <TextField>. */
   size?: ControlSize;
   options: readonly SegmentedOption<T>[];
@@ -78,6 +83,7 @@ function SegmentedControl<T extends string>({
   onChange,
   label,
   size,
+  stretch = false,
   style,
 }: Readonly<SegmentedControlProps<T>>) {
   const shell = size ?? entryDefaultSize();
@@ -91,7 +97,7 @@ function SegmentedControl<T extends string>({
     <FocusRegion>
       <Box
         row
-        self="flex-start"
+        self={stretch ? 'stretch' : 'flex-start'}
         gap={GROUP_PAD}
         p={GROUP_PAD}
         radius={metrics.radius}
@@ -114,6 +120,7 @@ function SegmentedControl<T extends string>({
             option={option}
             size={shell}
             active={option.value === value}
+            stretch={stretch}
             onPress={() => onChange(option.value)}
           />
         ))}
@@ -126,11 +133,13 @@ function Segment<T extends string>({
   option,
   size,
   active,
+  stretch,
   onPress,
 }: Readonly<{
   option: SegmentedOption<T>;
   size: ControlSize;
   active: boolean;
+  stretch: boolean;
   onPress: () => void;
 }>) {
   return (
@@ -142,6 +151,7 @@ function Segment<T extends string>({
       onPress={onPress}
       sv={segmentedControlVariants}
       vars={{ size, active }}
+      style={stretch ? SEGMENT_GROW : undefined}
     >
       {(state) => (
         <>
@@ -152,6 +162,10 @@ function Segment<T extends string>({
     </Focusable>
   );
 }
+
+// An equal share of the row, with the label centred in it. Frozen rather than
+// built per render: it never varies.
+const SEGMENT_GROW = { flex: 1, alignItems: 'center' } as const;
 
 export type { SegmentedControlProps, SegmentedOption };
 export { SegmentedControl, segmentedControlVariants };

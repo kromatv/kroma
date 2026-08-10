@@ -423,6 +423,65 @@ async fn quick_connect_initiate_then_poll_states() {
 }
 
 #[tokio::test]
+async fn the_poll_secret_can_travel_in_a_header_instead_of_the_url() {
+    // A URL is written into every access log the request passes through, so
+    // newer devices send the secret as a header and no query at all. A required
+    // query field would reject them before the handler ever looked.
+    let t = test_app();
+    let (_, init) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    let secret = init["secret"].as_str().expect("a poll secret");
+
+    let (status, _headers, body) = raw(
+        &t.app,
+        "GET",
+        "/api/auth/quickconnect/poll",
+        None,
+        None,
+        &[("x-kroma-pairing-secret", secret)],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["status"], "pending");
+}
+
+#[tokio::test]
+async fn a_poll_with_neither_header_nor_query_is_simply_unknown() {
+    let t = test_app();
+    let (status, body) = get(&t.app, "/api/auth/quickconnect/poll", None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["status"], "expired");
+}
+
+// Nobody authenticates to initiate, so the pending codes are bounded, and the
+// bound REFUSES rather than evicting: evicting would let whoever asks most often
+// decide whose code silently stops working. A device that is refused says so and
+// the person tries again, which is the better failure by a distance.
+#[tokio::test]
+async fn quick_connect_refuses_a_new_code_rather_than_evicting_a_waiting_one() {
+    let t = test_app();
+
+    let mut issued = 0;
+    let refused = loop {
+        let (status, body) =
+            send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+        if status != StatusCode::OK {
+            break (status, body);
+        }
+        issued += 1;
+        // Counted rather than compared against the constant, so the ceiling can
+        // move without this test lying about what it proved.
+        assert!(issued < 1000, "the pending codes never filled up");
+    };
+
+    assert!(issued > 0, "not one code was issued");
+    assert_eq!(refused.0, StatusCode::TOO_MANY_REQUESTS);
+
+    // The first code issued is still pending: it was not the one given up.
+    let (status, _) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS, "asking again does not free a slot");
+}
+
+#[tokio::test]
 async fn quick_connect_initiate_falls_back_to_the_public_url_setting() {
     let t = test_app();
     // Without KROMA_WEB_URL, the admin "Remote access" public URL feeds the QR

@@ -10,11 +10,12 @@ license.workspace = true
 # Compiles `testing::{StubHost, Recording}`, the shared HostCtx doubles. Off by
 # default so nothing reaches a release build; crates that test against the seam
 # turn it on in their dev-dependencies.
-testing = []
+testing = ["dep:kroma-testing"]
 
 [dependencies]
 kroma-domain = { workspace = true }
 kroma-db = { workspace = true }
+kroma-testing = { workspace = true, optional = true }
 axum = { workspace = true }
 async-trait = { workspace = true }
 tokio = { workspace = true }
@@ -27,3 +28,7 @@ tracing = { workspace = true }
 # `oneshot`, to drive the host-token guard without binding a port.
 tower = { workspace = true }
 tokio = { workspace = true }
+# `db::testing::temp_pool` for the pool-handling tests, and the scratch dir the
+# `testing` module hands every StubHost (its own feature cannot switch itself on).
+kroma-db = { workspace = true, features = ["testing"] }
+kroma-testing = { workspace = true }

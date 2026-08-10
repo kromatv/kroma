@@ -93,15 +93,10 @@ pub fn acq_tmdb_by_show(pool: &Pool) -> Result<HashMap<String, u64>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use crate::testing::TempPool;
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn pool() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-dl-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        crate::init(&path).unwrap()
+    fn pool() -> TempPool {
+        crate::testing::temp_pool("dl")
     }
 
     // Insert a movie item with one file at `abs_path`, so the hint join has

@@ -7,7 +7,7 @@ import type { ReactElement } from 'react';
 // claim; the native half is covered by the pure logic tests (focal, sv, boxStyle)
 // plus the platform files' shared contracts.
 
-import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
@@ -285,7 +285,7 @@ describe('Avatar', () => {
     expect(AVATAR_GRADIENTS).toContain(gradientFor('user-1'));
   });
 
-  it('shows the initials until a photo has actually arrived', () => {
+  it('shows the initials until a photo has actually arrived', async () => {
     const { container, rerender } = render(<Avatar name="Marie Curie" />);
     expect(screen.getByText('MC')).toBeTruthy();
     rerender(<Avatar name="Marie Curie" src="https://example.test/a.jpg" />);
@@ -294,6 +294,13 @@ describe('Avatar', () => {
     expect(screen.getByText('MC')).toBeTruthy();
     const img = container.querySelector('img:not([aria-hidden])') as HTMLImageElement;
     fireEvent.load(img);
+    // The reveal waits a frame so the browser paints the transparent state its
+    // CSS transition starts from; the initials hold until it does.
+    await act(async () => {
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => resolve(null));
+      });
+    });
     expect(screen.queryByText('MC')).toBeNull();
     fireEvent.error(img);
     expect(screen.getByText('MC')).toBeTruthy();

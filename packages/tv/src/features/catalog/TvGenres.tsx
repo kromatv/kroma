@@ -5,12 +5,12 @@ import {
   genreColors,
   genreShowcases,
   genreTint,
-  sizedImageUrl,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,
   CategoryTile,
+  FocusColumn,
   FocusRegion,
   FocusScroll,
   styles,
@@ -49,25 +49,31 @@ export function TvGenres() {
         <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
           {/* The field wraps on screen, so it must be declared as a grid: a
               single row would leave Up/Down nowhere to go. One region per
-              visible line, matching what the eye sees. */}
-          {lines(genres, GENRE_COLUMNS).map((line, row) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the line's identity.
-            <FocusRegion key={row} style={s.line}>
-              {line.map((g, column) => {
-                const pick = showcases.get(g.name);
-                return (
-                  <GenreCard
-                    autoFocus={row === 0 && column === 0}
-                    key={g.name}
-                    genre={g}
-                    count={t('person.titleCount', { count: g.count })}
-                    backdrop={pick ? client.backdropFor(pick, CARD_W) : null}
-                    onPress={() => nav.go('genre', { name: g.name })}
-                  />
-                );
-              })}
-            </FocusRegion>
-          ))}
+              visible line, matching what the eye sees.
+              <FocusColumn grid> is what makes the lines a GRID rather than a
+              stack: without it the navigator has no index to align on, so
+              leaving a line forgets which column you were in and Up/Down land
+              on the first card of the next line. */}
+          <FocusColumn grid style={s.grid}>
+            {lines(genres, GENRE_COLUMNS).map((line, row) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the line's identity.
+              <FocusRegion key={row} style={s.line}>
+                {line.map((g, column) => {
+                  const pick = showcases.get(g.name);
+                  return (
+                    <GenreCard
+                      autoFocus={row === 0 && column === 0}
+                      key={g.name}
+                      genre={g}
+                      count={t('person.titleCount', { count: g.count })}
+                      backdrop={pick ? client.backdropFor(pick, CARD_W) : null}
+                      onPress={() => nav.go('genre', { name: g.name })}
+                    />
+                  );
+                })}
+              </FocusRegion>
+            ))}
+          </FocusColumn>
         </FocusScroll>
       ) : (
         <Box flex center px={64}>
@@ -100,7 +106,7 @@ function GenreCard({
     <CategoryTile
       label={genre.name}
       meta={count}
-      art={sizedImageUrl(backdrop, 328)}
+      art={backdrop}
       background={tintGradient(genreColors(genre.name))}
       wash={genreTint(genre.name)}
       accent={genreAccent(genre.name)}
@@ -122,10 +128,16 @@ function lines<T>(items: readonly T[], size: number): T[][] {
 
 const CARD_W = 320;
 
+// One number for both directions: the lines' own gap and the gap BETWEEN them
+// are the same seam, and the grid column is what carries the second one now
+// that it stands between the content and its lines.
+const GAP = 12;
+
 const s = styles({
-  line: { row: true, gap: 12 },
+  line: { row: true, gap: GAP },
+  grid: { gap: GAP },
   scroll: { flex: true, minH: 0 },
   // Padding belongs on the content, not the scroller box: on the box it would
   // pad the viewport and clip the last row instead of the list.
-  content: { px: 64, pt: 8, pb: 72, gap: 12 },
+  content: { px: 64, pt: 8, pb: 72, gap: GAP },
 });

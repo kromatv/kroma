@@ -3,7 +3,11 @@
 
 import { Directions, SpatialNavigation } from 'react-tv-space-navigation';
 import { webDocument } from './dom';
+import { focusBox, focusSeq } from './focus-here';
+import { walkTab } from './focus-tab';
 import { markPress } from './perf';
+
+const PROBE = { seq: focusSeq, box: focusBox };
 
 // Tizen and webOS name the four directions without the `Arrow` prefix.
 const KEYS: Record<string, Directions> = {
@@ -18,12 +22,39 @@ const KEYS: Record<string, Directions> = {
   Right: Directions.RIGHT,
 };
 
+// ONE focus, and it is the navigator's. A click parks DOM focus on whatever was
+// clicked (react-native-web makes every pressable tabbable), and the CSS focus
+// rules then draw a ring there while the navigator's ring is somewhere else -
+// two rings, one of which nothing on a remote can move. The moment a key
+// arrives, the navigator takes the focus back. A field is left alone: a caret
+// belongs where the typing goes.
+function dropStrayFocus(document: Document): void {
+  const held = document.activeElement as (HTMLElement & { blur?: () => void }) | null;
+  if (!held || held === document.body) return;
+  const tag = held.tagName;
+  if (held.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  held.blur?.();
+}
+
 export function configureRemote(): void {
   SpatialNavigation.configureRemoteControl({
     remoteControlSubscriber: (handle: (direction: Directions) => void) => {
       const document = webDocument();
       if (!document) return () => {};
       const onKey = (event: KeyboardEvent) => {
+        // Tab is the browser's OWN focus walk, and it moves DOM focus - a
+        // second focus, landing on a different control from the navigator's.
+        // Two owners means two rings and a remote that resumes from somewhere
+        // the eye is not. So Tab drives the navigator and never the browser -
+        // as reading order, which is Tab's own meaning and not the right arrow's
+        // (see `focus-tab`).
+        if (event.key === 'Tab') {
+          event.preventDefault();
+          dropStrayFocus(document);
+          markPress();
+          walkTab(handle, PROBE, event.shiftKey);
+          return;
+        }
         const direction = KEYS[event.key];
         if (!direction) return;
         // No text-entry guard, deliberately: react-native-web's TextInput calls
@@ -32,6 +63,7 @@ export function configureRemote(): void {
         // Without preventDefault a television's browser scrolls the page on an
         // arrow key and the focused control walks out of the viewport.
         event.preventDefault();
+        dropStrayFocus(document);
         markPress();
         handle(direction);
       };

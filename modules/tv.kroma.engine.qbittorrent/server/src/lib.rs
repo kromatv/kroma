@@ -272,6 +272,7 @@ mod tests {
     struct FakeQbit {
         base: String,
         seen: Arc<Mutex<Vec<String>>>,
+        jar_dir: kroma_testing::TempDir,
     }
 
     // (status, body)
@@ -340,7 +341,11 @@ mod tests {
                 }
             });
 
-            Self { base: format!("http://127.0.0.1:{port}"), seen }
+            Self {
+                base: format!("http://127.0.0.1:{port}"),
+                seen,
+                jar_dir: kroma_testing::temp_dir("qbit-jar"),
+            }
         }
 
         fn client(&self) -> QBittorrent {
@@ -350,13 +355,7 @@ mod tests {
                 username: "u".into(),
                 password: "p".into(),
             };
-            let jar = std::env::temp_dir().join(format!(
-                "kroma-qbit-jar-{}-{}.txt",
-                std::process::id(),
-                self.base.rsplit(':').next().unwrap_or("0")
-            ));
-            let _ = std::fs::remove_file(&jar);
-            QBittorrent::new(&def, jar)
+            QBittorrent::new(&def, self.jar_dir.path().join("cookies.txt"))
         }
 
         fn requests(&self) -> Vec<String> {

@@ -152,17 +152,12 @@ pub fn record_failure(pool: &Pool, id: &str) -> Result<bool> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::{AtomicU32, Ordering};
 
     use super::*;
+    use crate::testing::TempPool;
 
-    static SEQ: AtomicU32 = AtomicU32::new(0);
-
-    fn pool() -> (Pool, String, String) {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-push-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let p = crate::init(&path).unwrap();
+    fn pool() -> (TempPool, String, String) {
+        let p = crate::testing::temp_pool("push");
         let a = crate::create_user(&p, "a@test.dev", "A", "h", &[]).unwrap().id;
         let b = crate::create_user(&p, "b@test.dev", "B", "h", &[]).unwrap().id;
         (p, a, b)

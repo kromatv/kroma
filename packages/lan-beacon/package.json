@@ -1,0 +1,20 @@
+{
+  "name": "@kroma/lan-beacon",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "KROMA DNS-SD beacon: publishes _kroma-tv._tcp on a television and browses for it on a phone, behind the LanDiscoveryBridge shape @kroma/core defines.",
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "@kroma/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

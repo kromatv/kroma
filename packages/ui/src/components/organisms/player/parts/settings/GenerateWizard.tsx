@@ -146,9 +146,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
         radius={14}
         onPointerEnter={focus.hover(0)}
         style={
-          focus.index === 0
-            ? sharedStyle('generate-wizard:tabs-ring', { ring: 'focusGlowSm' })
-            : null
+          focus.index === 0 ? sharedStyle('generate-wizard:tabs-ring', { ring: 'focusLift' }) : null
         }
       >
         <ModeTab

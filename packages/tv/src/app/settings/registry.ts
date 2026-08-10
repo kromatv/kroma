@@ -25,7 +25,13 @@ import {
 import { prefValue, useLangPrefs } from '#tv/app/langPref';
 import { castReceiverPrefStore } from '#tv/features/cast/castPref';
 import { actionItem, choiceItem, type RowIcon, type SettingsItem, toggleItem } from './items';
-import { perfHudPrefStore, useStoredPref } from './store';
+import {
+  ARTWORK_SCALE,
+  type ArtworkQuality,
+  artworkPrefStore,
+  perfHudPrefStore,
+  useStoredPref,
+} from './store';
 
 export const localeSetting: SettingsItem = choiceItem({
   id: 'locale',
@@ -113,6 +119,16 @@ export const gpuRenderingSetting: SettingsItem = toggleItem({
   },
 });
 
+export const artworkSetting: SettingsItem = choiceItem({
+  id: 'artworkQuality',
+  level: 'device',
+  label: 'artworkQuality.title',
+  icon: 'photo',
+  options: () => Object.keys(ARTWORK_SCALE) as ArtworkQuality[],
+  valueLabel: (v) => `artworkQuality.${v}` as MessageKey,
+  use: () => useStoredPref(artworkPrefStore),
+});
+
 export const perfHudSetting: SettingsItem = toggleItem({
   id: 'perfHud',
   level: 'device',
@@ -152,6 +168,7 @@ export const DEVICE_SETTINGS: readonly SettingsItem[] = [
   keyboardLayoutSetting,
   castReceiverSetting,
   gpuRenderingSetting,
+  artworkSetting,
   perfHudSetting,
 ];
 
@@ -163,6 +180,7 @@ export const PROFILE_SETTINGS: readonly SettingsItem[] = [
   engineSetting,
   castReceiverSetting,
   gpuRenderingSetting,
+  artworkSetting,
   perfHudSetting,
 ];
 
@@ -195,7 +213,7 @@ export const SETTINGS_GROUPS: Record<SettingsGroupId, SettingsGroup> = {
     id: 'device',
     label: 'settings.device',
     icon: 'device-tv',
-    items: [keyboardLayoutSetting, castReceiverSetting, gpuRenderingSetting],
+    items: [keyboardLayoutSetting, castReceiverSetting, gpuRenderingSetting, artworkSetting],
   },
 };
 

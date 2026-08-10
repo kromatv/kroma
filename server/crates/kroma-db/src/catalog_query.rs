@@ -250,16 +250,11 @@ fn clean(s: &Option<String>) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU32, Ordering};
-
-    static SEQ: AtomicU32 = AtomicU32::new(0);
+    use crate::testing::TempPool;
 
     // A fresh temp-file DB seeded with a small movies+shows catalog.
-    fn seeded_pool() -> Pool {
-        let n = SEQ.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("kroma-catq-{}-{n}.db", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        let pool = crate::init(&path).unwrap();
+    fn seeded_pool() -> TempPool {
+        let pool = crate::testing::temp_pool("catq");
         let conn = pool.get().unwrap();
         conn.execute(
             "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movie','/x','t')",

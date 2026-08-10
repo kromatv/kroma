@@ -1,4 +1,4 @@
-import type { AudioTrack, MediaItem, VideoTrack } from '@kroma/client';
+import { type AudioTrack, type MediaItem, setArtworkScale, type VideoTrack } from '@kroma/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   audioTrackLabel,
@@ -91,6 +91,8 @@ describe('playerSubtitle', () => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('sizedImageUrl', () => {
+  afterEach(() => setArtworkScale(1));
+
   // jsdom reports a ratio of 1, which is also what a 1920x1080 television
   // reports.
   it('asks for the display width on a 1x screen (a television)', () => {
@@ -110,6 +112,17 @@ describe('sizedImageUrl', () => {
   it('rounds and floors the requested width to at least 1', () => {
     expect(sizedImageUrl('/api/images/x', 100.4)).toBe('/api/images/x?w=100');
     expect(sizedImageUrl('/api/images/x', 0)).toBe('/api/images/x?w=1');
+  });
+
+  it('caps a full-screen ask at the widest rendition the server keeps', () => {
+    expect(sizedImageUrl('/api/images/abc.webp', 1280)).toBe('/api/images/abc.webp?w=960');
+    vi.stubGlobal('devicePixelRatio', 2);
+    expect(sizedImageUrl('/api/images/abc.webp', 960)).toBe('/api/images/abc.webp?w=960');
+  });
+
+  it('honours the artwork-quality setting, like the client art helpers', () => {
+    setArtworkScale(0.5);
+    expect(sizedImageUrl('/api/images/abc.webp', 320)).toBe('/api/images/abc.webp?w=160');
   });
 
   it('passes through remote, non-image, already-queried, and empty URLs', () => {
