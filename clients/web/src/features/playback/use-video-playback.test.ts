@@ -93,7 +93,25 @@ function render(item = movie()) {
   return { ...view, v };
 }
 
+// The engine override is persisted per device, so without a fresh store each
+// test inherits whatever the last `setEnginePref` left behind - which decides
+// `decision.kind`, and with it half of what this suite asserts.
+function memoryStorage(): Storage {
+  const map = new Map<string, string>();
+  return {
+    get length() {
+      return map.size;
+    },
+    key: (i: number) => [...map.keys()][i] ?? null,
+    getItem: (k: string) => map.get(k) ?? null,
+    setItem: (k: string, v: string) => void map.set(k, String(v)),
+    removeItem: (k: string) => void map.delete(k),
+    clear: () => map.clear(),
+  };
+}
+
 beforeEach(() => {
+  vi.stubGlobal('localStorage', memoryStorage());
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => ({ headers: { get: () => '0' } })),
@@ -455,6 +473,23 @@ describe('useVideoPlayback engine override', () => {
     expect(lastAttach().useNativeHls).toBe(false);
     expect(lastAttach().useShaka).toBe(true);
   });
+
+  it('keeps Safari on native HLS unless Shaka is picked', async () => {
+    vi.stubGlobal('navigator', {
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15',
+    });
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    const { result } = render();
+    await settle();
+    expect(lastAttach().useNativeHls).toBe(true);
+    expect(lastAttach().useShaka).toBe(false);
+
+    act(() => result.current.setEnginePref('shaka'));
+    await settle();
+    expect(lastAttach().useNativeHls).toBe(false);
+    expect(lastAttach().useShaka).toBe(true);
+  });
 });
 
 describe('useVideoPlayback direct-play safety net', () => {
@@ -573,6 +608,28 @@ describe('useVideoPlayback without an element', () => {
     await settle();
     expect(result.current.enginePref).toBe('shaka');
     expect(result.current.anchor).toBe(0);
+  });
+
+  it('re-anchors from the stream base offset alone when the element is gone', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        headers: { get: (k: string) => (k === 'X-Hls-Start' ? '12' : null) },
+      })),
+    );
+    const { result } = render();
+    await settle();
+    expect(result.current.baseSec).toBe(12);
+
+    result.current.videoRef.current = null;
+    act(() => result.current.setAudio(1));
+    await settle();
+    expect(result.current.anchor).toBe(12);
+
+    act(() => result.current.setEnginePref('remux'));
+    await settle();
+    expect(result.current.anchor).toBe(12);
   });
 
   it('swallows a rejected play() and tolerates one that returns nothing', () => {
