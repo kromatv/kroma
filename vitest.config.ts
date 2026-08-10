@@ -62,30 +62,13 @@ const environment = 'node';
 // the runner exposes globals, which this project does not.
 const setupFiles = [dir('./vitest.setup.ts')];
 
+// Every workspace, at the four places a test is allowed to live: the package
+// root (`@kroma/lan-beacon`, whose entry point IS its root), its source tree,
+// and the build-time trees beside it (`worker/`, `bundler/`, `vite/`).
 const include = [
-  'packages/*/src/**/*.test.ts',
-  'packages/*/src/**/*.test.tsx',
-  // A package whose entry point is its root (`@kroma/lan-beacon`), not `src/`.
-  'packages/*/*.test.ts',
-  'packages/*/worker/**/*.test.ts',
-  'packages/*/bundler/**/*.test.ts',
-  'modules/*/ui/src/**/*.test.ts',
-  'modules/*/ui/src/**/*.test.tsx',
-  'clients/web/src/**/*.test.ts',
-  'clients/web/src/**/*.test.tsx',
-  'clients/desktop/src/**/*.test.ts',
-  'clients/tv-web/src/**/*.test.ts',
-  'clients/site/src/**/*.test.ts',
-  // React Native screens (`.tsx`) are not testable here; only `.ts` logic is
-  // collected from mobile and tv-native.
-  'clients/mobile/src/**/*.test.ts',
-  'clients/tv-native/src/**/*.test.ts',
-  // Not a client: runs in Node at build time, required by an Expo app.config.ts.
-  'clients/build-info/**/*.test.ts',
-  'clients/tizen/src/**/*.test.ts',
-  'clients/webos/src/**/*.test.ts',
-  'clients/kit/src/**/*.test.ts',
-  'clients/kit/src/**/*.test.tsx',
+  '{packages,clients}/*/*.test.ts',
+  '{packages,clients}/*/{src,worker,bundler,vite}/**/*.test.{ts,tsx}',
+  'modules/*/ui/src/**/*.test.{ts,tsx}',
 ];
 
 // Same roots, spelled `*.native.test.*`; derived rather than duplicated so
