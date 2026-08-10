@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MovieView } from '#web/shared/lib/api';
 
@@ -77,7 +77,9 @@ const movie = (over: Partial<MovieView> = {}): MovieView =>
 
 async function settle() {
   await act(async () => {
-    await new Promise<void>((r) => setTimeout(r, 0));
+    for (let tick = 0; tick < 8; tick += 1) {
+      await new Promise<void>((r) => setTimeout(r, 0));
+    }
   });
 }
 
@@ -458,7 +460,7 @@ describe('useVideoPlayback engine override', () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
     const { result } = render();
     await settle();
-    expect(lastAttach().useNativeHls).toBe(true);
+    await waitFor(() => expect(lastAttach().useNativeHls).toBe(true));
     expect(lastAttach().useShaka).toBe(false);
 
     act(() => result.current.setEnginePref('shaka'));
@@ -579,7 +581,7 @@ describe('useVideoPlayback without an element', () => {
     );
     const { result } = render();
     await settle();
-    expect(result.current.baseSec).toBe(12);
+    await waitFor(() => expect(result.current.baseSec).toBe(12));
 
     result.current.videoRef.current = null;
     act(() => result.current.setAudio(1));
