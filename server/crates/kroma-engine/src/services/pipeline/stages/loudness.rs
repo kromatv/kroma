@@ -117,6 +117,28 @@ mod tests {
     }
 
     #[test]
+    fn a_file_whose_audio_cannot_be_decoded_fails_its_task() {
+        let state = test_support::test_state();
+        test_support::seed_movie(&state, "gone");
+        set_target(
+            &state,
+            "gone-f",
+            "/media/absent.mkv",
+            r#"[{"index":0,"codec":"aac","default":true}]"#,
+        );
+
+        let ctx = JobContext::for_test(state.clone());
+        assert!(process(&ctx, "gone-f").is_err());
+        let n: i64 = state
+            .db
+            .get()
+            .unwrap()
+            .query_row("SELECT count(*) FROM audio_analysis", [], |r| r.get(0))
+            .unwrap_or(0);
+        assert_eq!(n, 0);
+    }
+
+    #[test]
     fn a_demo_row_is_skipped_rather_than_decoded() {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");

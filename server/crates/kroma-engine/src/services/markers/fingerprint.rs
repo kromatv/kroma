@@ -232,6 +232,17 @@ mod tests {
     }
 
     #[test]
+    fn a_file_with_no_decodable_audio_fails_instead_of_fingerprinting_silence() {
+        let dir = kroma_testing::temp_dir("fingerprint");
+        let broken = dir.path().join("not-media.mkv");
+        std::fs::write(&broken, b"this is not a container").unwrap();
+
+        assert!(fingerprint_window(&broken, 30, false, 1800.0).is_err());
+        assert!(fingerprint_window(&broken, 30, true, 1800.0).is_err());
+        assert!(fingerprint_window(&dir.path().join("absent.mkv"), 30, false, 1800.0).is_err());
+    }
+
+    #[test]
     fn samples_are_read_little_endian() {
         // ffmpeg writes s16le; reading it big-endian yields plausible-looking
         // noise that fingerprints to nothing in common.

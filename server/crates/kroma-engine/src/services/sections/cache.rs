@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn new_cache_is_empty() {
-        let c = VectorCache::new();
+        let c = VectorCache::default();
         assert!(c.vectors_for(&["a".into()]).is_empty());
         assert!(c.nearest(&[1.0, 0.0], 5, &HashSet::new()).is_empty());
         assert!(c.similar("a", 5).is_empty());
@@ -192,5 +192,9 @@ mod tests {
         assert_eq!(ids.first(), Some(&"c")); // nearest to [1,0]
         // No embeddable watched ids -> empty (count 0).
         assert!(c.for_you(&["zzz".into()], 5).is_empty());
+
+        let mixed = c.for_you(&["a".into(), "bad".into()], 5);
+        let ids: Vec<&str> = mixed.iter().map(|(id, _)| id.as_str()).collect();
+        assert_eq!(ids, vec!["c", "b"]);
     }
 }

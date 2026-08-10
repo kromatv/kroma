@@ -91,6 +91,32 @@ mod tests {
     }
 
     #[test]
+    fn a_catalogue_half_read_offers_what_it_could_read() {
+        let state = test_support::test_state();
+        test_support::seed_movie(&state, "m1");
+        test_support::seed_show_episode(&state, "sh1", "e1");
+        state.db.get().unwrap().execute("DROP TABLE shows", []).unwrap();
+
+        let ids: Vec<String> = catalog(&state.db).iter().map(|e| e.id().to_string()).collect();
+        assert_eq!(ids, vec!["m1".to_string()]);
+
+        state.db.get().unwrap().execute("DROP TABLE items", []).unwrap();
+        assert!(catalog(&state.db).is_empty());
+    }
+
+    #[test]
+    fn a_history_whose_parents_cannot_be_resolved_still_excludes_what_it_knows() {
+        let state = test_support::test_state();
+        let (_show, ep) = test_support::seed_show_episode(&state, "sh1", "e1");
+        seed_user(&state, "u1");
+        db::mark_watched(&state.db, "u1", &ep).unwrap();
+        state.db.get().unwrap().execute("DROP TABLE items", []).unwrap();
+
+        let seen = seen_ids(&state.db, "u1", &["m1".to_string()]);
+        assert!(seen.contains(&ep) && seen.contains("m1"));
+    }
+
+    #[test]
     fn seen_ids_folds_history_and_parent_shows() {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");

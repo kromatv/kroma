@@ -469,6 +469,45 @@ mod tests {
     }
 
     #[test]
+    fn an_episode_with_no_season_gets_markers_without_a_season_key() {
+        use std::collections::{HashMap, HashSet};
+        let probed: HashSet<String> = HashSet::new();
+        let markset: HashSet<String> = HashSet::new();
+        let vecset: HashSet<String> = HashSet::new();
+        let empty: Ledger = HashMap::new();
+        let show_poster: HashMap<&str, Option<String>> = HashMap::new();
+        let lg = Ledgers {
+            probed: &probed,
+            markset: &markset,
+            vecset: &vecset,
+            meta_l: &empty,
+            story_l: &empty,
+            subs_l: &empty,
+            embed_l: &empty,
+            mark_l: &empty,
+            show_poster: &show_poster,
+        };
+
+        let mut ep = raw_item("episode");
+        ep.show_id = Some("s1".into());
+        ep.season = None;
+        let (treatments, kind, poster) = item_treatments(&ep, &lg);
+        assert_eq!(kind, "episode");
+        assert!(poster.is_none());
+        let keys: Vec<&str> = treatments.iter().map(|t| t.key.as_str()).collect();
+        assert_eq!(keys, vec!["probe", "storyboard", "subtitles", "markers"]);
+    }
+
+    #[test]
+    fn a_status_or_kind_the_rollup_does_not_know_is_counted_in_the_total_only() {
+        let all = vec![row("film", "blocked"), row("collection", "ok")];
+        let c = tally_counts(&all);
+        assert_eq!(c.total, 2);
+        assert_eq!((c.ok, c.failed, c.pending, c.running), (1, 0, 0, 0));
+        assert_eq!((c.film, c.series, c.episode), (1, 0, 0));
+    }
+
+    #[test]
     fn item_treatments_episode_has_four_stages_and_show_poster() {
         use std::collections::{HashMap, HashSet};
         let probed: HashSet<String> = HashSet::new();

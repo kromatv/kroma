@@ -443,6 +443,160 @@ mod tests {
         assert!(!paused.load(Ordering::Relaxed));
     }
 
+    fn log_lines(rx: &mut tokio::sync::broadcast::Receiver<crate::infra::events::Envelope>) -> Vec<String> {
+        let mut out = Vec::new();
+        while let Ok(env) = rx.try_recv() {
+            let v: serde_json::Value = serde_json::from_str(env.payload_unrouted()).unwrap();
+            if let Some(message) = v["message"].as_str() {
+                out.push(message.to_string());
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn a_progress_line_waits_out_the_throttle_and_admits_when_it_cannot_guess() {
+        let state = test_support::test_state();
+        let ctx = JobContext::for_test(state.clone());
+        let mut rx = state.events.subscribe();
+        let started = Instant::now();
+
+        let mut last = now_ms();
+        maybe_log_progress(&ctx, "teststage", 5, 10, 0, started, &mut last);
+        assert!(log_lines(&mut rx).is_empty(), "a line inside the window is skipped");
+
+        let mut last = now_ms() - LOG_EVERY_MS;
+        maybe_log_progress(&ctx, "teststage", 0, 10, 0, started, &mut last);
+        let lines = log_lines(&mut rx);
+        assert_eq!(lines.len(), 1);
+        assert!(lines[0].contains("0/10, 0 failed"), "{}", lines[0]);
+        assert!(lines[0].contains("~? left"), "nothing done yet, so no rate: {}", lines[0]);
+        assert!(now_ms() - last < LOG_EVERY_MS, "the throttle re-armed");
+
+        let mut last = now_ms() - LOG_EVERY_MS;
+        maybe_log_progress(&ctx, "teststage", 4, 10, 1, started, &mut last);
+        let lines = log_lines(&mut rx);
+        assert!(lines[0].contains("4/10, 1 failed"), "{}", lines[0]);
+        assert!(!lines[0].contains("~? left"), "a rate is known now: {}", lines[0]);
+    }
+
+    #[test]
+    fn stage_stats_are_pushed_at_most_once_a_second() {
+        let state = test_support::test_state();
+        let ctx = JobContext::for_test(state.clone());
+        let stage = test_stage(process_ok);
+        let mut rx = state.events.subscribe();
+
+        let mut last = now_ms();
+        maybe_emit_stats(&stage, &ctx, &mut last);
+        assert!(rx.try_recv().is_err(), "the count query is a round-trip; don't repeat it");
+
+        let mut last = now_ms() - 1000;
+        maybe_emit_stats(&stage, &ctx, &mut last);
+        assert!(rx.try_recv().is_ok());
+    }
+
+    #[test]
+    fn a_stage_with_nothing_in_scope_clears_its_ledger_instead_of_draining() {
+        let state = test_state();
+        test_support::seed_task(&state, "teststage", "file", "vanished", "pending", None);
+        run(&test_stage(process_ok), &JobContext::for_test(state.clone())).unwrap();
+
+        let left: i64 = state
+            .db
+            .get()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM pipeline_tasks WHERE stage='teststage'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(left, 0);
+    }
+
+    #[test]
+    fn a_worker_that_parked_says_so_once_the_hold_lifts() {
+        let state = test_support::test_state();
+        let ctx = JobContext::for_test(state.clone());
+        let mut rx = state.events.subscribe();
+        let paused = AtomicBool::new(true);
+        wait_while_held(&ctx, &paused, false);
+        assert!(!paused.load(Ordering::Relaxed));
+        assert_eq!(log_lines(&mut rx), vec!["resuming".to_string()]);
+    }
+
+    #[test]
+    fn a_worker_parked_by_the_admin_hold_gives_up_when_the_run_is_cancelled() {
+        use crate::services::jobs::RunHandle;
+        let state = test_support::test_state();
+        let handle = std::sync::Arc::new(RunHandle::new("r".into(), "k".into()));
+        let ctx = JobContext::from_handle(state.clone(), handle.clone());
+        let mut rx = state.events.subscribe();
+        state.jobs.set_pipeline_paused(true);
+
+        let cancel_after = std::sync::Arc::clone(&handle);
+        std::thread::spawn(move || {
+            thread::sleep(Duration::from_millis(200));
+            cancel_after.request_cancel();
+        });
+
+        let batch = [("f0".to_string(), "sig".to_string())];
+        let next = AtomicUsize::new(0);
+        let paused = AtomicBool::new(false);
+        let slots: Vec<Mutex<Option<db::pipeline::TaskResult>>> = vec![Mutex::new(None)];
+        process_task_worker(&next, &batch, &ctx, &paused, &slots, &test_stage(process_ok));
+
+        assert!(slots[0].lock().unwrap().is_none(), "the held task was never started");
+        assert_eq!(log_lines(&mut rx), vec!["paused (pipeline held by admin)".to_string()]);
+    }
+
+    #[test]
+    fn a_drain_parks_on_the_admin_hold_and_picks_up_where_it_left_off() {
+        let state = test_state();
+        let ctx = JobContext::for_test(state.clone());
+        let mut rx = state.events.subscribe();
+        state.jobs.set_pipeline_paused(true);
+
+        let resume = state.clone();
+        std::thread::spawn(move || {
+            thread::sleep(Duration::from_millis(200));
+            resume.jobs.set_pipeline_paused(false);
+        });
+
+        drain_loop(&test_stage(process_ok), &ctx, 1).unwrap();
+        assert_eq!(
+            log_lines(&mut rx),
+            vec![
+                "teststage: paused (pipeline held by admin)".to_string(),
+                "teststage: resumed".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_drain_cancelled_while_parked_stops_rather_than_waiting_for_the_hold() {
+        use crate::services::jobs::RunHandle;
+        let state = test_state();
+        let handle = std::sync::Arc::new(RunHandle::new("r".into(), "k".into()));
+        let ctx = JobContext::from_handle(state.clone(), handle.clone());
+        let mut rx = state.events.subscribe();
+        state.jobs.set_pipeline_paused(true);
+
+        let cancel_after = std::sync::Arc::clone(&handle);
+        std::thread::spawn(move || {
+            thread::sleep(Duration::from_millis(200));
+            cancel_after.request_cancel();
+        });
+
+        drain_loop(&test_stage(process_ok), &ctx, 1).unwrap();
+        assert_eq!(
+            log_lines(&mut rx),
+            vec![
+                "teststage: paused (pipeline held by admin)".to_string(),
+                "teststage: cancelled while paused".to_string(),
+            ]
+        );
+    }
+
     #[test]
     fn wait_while_held_exits_on_cancel_even_while_paused() {
         use crate::services::jobs::RunHandle;

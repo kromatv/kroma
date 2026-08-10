@@ -210,6 +210,31 @@ mod tests {
     }
 
     #[test]
+    fn an_audience_that_cannot_be_resolved_notifies_nobody_rather_than_failing() {
+        let host = recording_host();
+        user(&host, "ana@t.dev", "Ana", &[]);
+        host.db().get().unwrap().execute("DROP TABLE users", []).unwrap();
+
+        assert_eq!(emit(&host, &Audience::Everyone, &spec()), 0);
+        assert!(host.published().is_empty());
+    }
+
+    #[test]
+    fn a_recipient_whose_row_cannot_be_written_does_not_cost_the_others_theirs() {
+        let host = recording_host();
+        let ana = user(&host, "ana@t.dev", "Ana", &[]);
+        let bo = user(&host, "bo@t.dev", "Bo", &[]);
+        let conn = host.db().get().unwrap();
+        let recipients = db::notifications::recipients(&conn).unwrap();
+        drop(conn);
+        assert_eq!(recipients.len(), 2);
+        host.db().get().unwrap().execute("DROP TABLE notifications", []).unwrap();
+
+        assert_eq!(emit_to(&host, &recipients, &spec()), 0);
+        assert!(host.published().is_empty(), "{ana} and {bo} were never told");
+    }
+
+    #[test]
     fn permission_audience_reaches_only_capability_holders() {
         let host = recording_host();
         let mod_ = user(&host, "mod@t.dev", "Mod", &[Permission::RequestsManage]);

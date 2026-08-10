@@ -239,3 +239,42 @@ fn a_catalogue_with_no_translations_still_indexes() {
         Some("itm-1"),
     );
 }
+
+#[test]
+fn the_title_tmdb_knows_finds_a_file_named_nothing_like_it() {
+    let e = SearchEngine::new().unwrap();
+    let movies = vec![movie(
+        "1",
+        "LFDAP.2001.1080p.BluRay",
+        Some(meta("Le Fabuleux Destin", "Une serveuse timide", &["Romance"], &["Audrey Tautou"])),
+    )];
+    e.rebuild(&movies, &[], &[]).unwrap();
+
+    assert_eq!(top_id(&e, "fabuleux").as_deref(), Some("1"));
+    assert_eq!(top_id(&e, "LFDAP").as_deref(), Some("1"), "the filename still matches");
+}
+
+#[test]
+fn without_the_analyzer_a_query_is_still_split_and_lowercased() {
+    let bare = tantivy::Index::create_in_ram(tantivy::schema::Schema::builder().build());
+    assert_eq!(normalize(&bare, "  Amélie  In   Paris "), ["amélie", "in", "paris"]);
+    assert!(normalize(&bare, "   ").is_empty());
+}
+
+#[test]
+fn a_rebuild_that_fails_keeps_the_index_that_was_working() {
+    let state = test_state();
+    seed_titled_movie(&state, "itm-1", "Amelie");
+    state.search.reindex_from_db(&state.db).unwrap();
+    state.db.get().unwrap().execute("DROP TABLE items", []).unwrap();
+
+    assert!(state.search.reindex_from_db(&state.db).is_err());
+    super::spawn_reindex(state.clone());
+    std::thread::sleep(std::time::Duration::from_millis(50));
+
+    assert_eq!(
+        state.search.search("Amelie", 5).first().map(|h| h.id.clone()).as_deref(),
+        Some("itm-1"),
+        "a failed rebuild must not empty the index",
+    );
+}

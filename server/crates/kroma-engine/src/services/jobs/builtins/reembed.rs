@@ -174,6 +174,77 @@ mod tests {
     }
 
     #[test]
+    fn a_show_is_re_embedded_from_its_own_metadata_like_a_film() {
+        let state = state_with_dim(8);
+        let (show, _ep) = crate::test_support::seed_show_episode(&state, "shw-1", "ep-1");
+        let meta = serde_json::json!({
+            "tmdbId": 99,
+            "title": "A Show",
+            "overview": "Six seasons and a movie.",
+            "genres": ["Comedy"],
+            "tmdbUrl": "https://www.themoviedb.org/tv/99",
+        })
+        .to_string();
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute(&format!("UPDATE shows SET metadata = json('{meta}') WHERE id = '{show}'"), [])
+            .unwrap();
+
+        run(&JobContext::for_test(state.clone())).unwrap();
+
+        assert!(vector_of(&state, &show).is_some());
+        assert!(vector_of(&state, "ep-1").is_none(), "the episode inherits, it is not embedded");
+    }
+
+    #[test]
+    fn a_title_whose_vector_will_not_store_is_reported_and_the_pass_goes_on() {
+        let state = state_with_dim(8);
+        seed_enriched_movie(&state, "itm-1");
+        seed_enriched_movie(&state, "itm-2");
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute(
+                "CREATE TRIGGER no_writes BEFORE INSERT ON item_vectors                  BEGIN SELECT RAISE(ABORT, 'read-only'); END",
+                [],
+            )
+            .unwrap();
+
+        let handle = std::sync::Arc::new(crate::services::jobs::RunHandle::new(
+            "run-ro".into(),
+            "recommendations.reembed".into(),
+        ));
+        run(&JobContext::from_handle(state.clone(), handle)).unwrap();
+
+        assert!(stored_dims(&state).is_empty());
+        let conn = state.db.get().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT message FROM job_logs WHERE run_id = 'run-ro' AND level = 'error'")
+            .unwrap();
+        let errors: Vec<String> =
+            stmt.query_map([], |r| r.get::<_, String>(0)).unwrap().map(|r| r.unwrap()).collect();
+        assert_eq!(errors.len(), 2, "one line per title, not one for the pass: {errors:?}");
+        assert!(errors.iter().all(|e| e.contains("failed to store vector")), "{errors:?}");
+    }
+
+    #[test]
+    fn a_cancelled_pass_stops_before_the_next_chunk() {
+        let state = state_with_dim(8);
+        seed_enriched_movie(&state, "itm-1");
+        let handle = std::sync::Arc::new(crate::services::jobs::RunHandle::new(
+            "r".into(),
+            "recommendations.reembed".into(),
+        ));
+        handle.request_cancel();
+
+        run(&JobContext::from_handle(state.clone(), handle)).unwrap();
+        assert!(stored_dims(&state).is_empty());
+    }
+
+    #[test]
     fn a_second_pass_at_the_same_dimension_rewrites_nothing() {
         let state = state_with_dim(8);
         seed_enriched_movie(&state, "itm-1");

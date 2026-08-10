@@ -349,6 +349,35 @@ mod tests {
     }
 
     #[test]
+    fn a_batch_the_provider_refuses_leaves_those_cues_in_the_source_language() {
+        let pool: TempPool = crate::db::testing::temp_pool("translate-partial");
+        let settings = Settings::load(&pool);
+        let llm = crate::test_support::FakeLlm::routed(|request| {
+            if request.to_string().contains("line 25") {
+                return (500, serde_json::json!({ "error": "out of credits" }));
+            }
+            let content =
+                (1..=BATCH).map(|n| format!("{n}. ligne {n}")).collect::<Vec<_>>().join("\n");
+            (200, serde_json::json!({ "choices": [{ "message": { "content": content } }] }))
+        });
+        llm.configure_settings(&settings, &pool);
+
+        let mut vtt = String::from("WEBVTT\n\n");
+        for n in 1..=BATCH + 2 {
+            vtt.push_str(&format!("00:00:{n:02}.000 --> 00:00:{:02}.000\nline {n}\n\n", n + 1));
+        }
+        let registry =
+            std::sync::Arc::new(crate::services::subtitles::progress::GenRegistry::default());
+        let handle = registry.start("itm-1", "translate", Some("fr".to_string()));
+
+        let out = translate_vtt(&settings, &vtt, "French", &handle).unwrap();
+
+        assert!(out.contains("ligne 1\n"), "the first batch was translated: {out}");
+        assert!(out.contains("line 25\n"), "the refused batch kept its source text: {out}");
+        assert!(out.contains("line 26\n"));
+    }
+
+    #[test]
     fn reassemble_vtt_falls_back_to_original_on_gap_or_missing_batch() {
         let cues0 = vec![cue("00:00:01.000 --> 00:00:02.000", "Hello"), cue("00:00:02.000 --> 00:00:03.000", "World")];
         let cues1 = vec![cue("00:00:03.000 --> 00:00:04.000", "Original")];

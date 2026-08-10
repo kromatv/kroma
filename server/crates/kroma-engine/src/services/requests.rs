@@ -1824,6 +1824,140 @@ mod tests {
         assert!(rows[0].air_date.is_some(), "the release date was not backfilled");
     }
 
+    fn breaking_bad() -> FakeTmdb {
+        FakeTmdb::start(|path| match path {
+            "/tv/1396" => (200, show_detail("Breaking Bad", &[1, 2])),
+            "/tv/1396/season/1" => (200, episodes(&[1, 2, 3], "2008-01-20")),
+            "/tv/1396/season/2" => (200, episodes(&[1, 2], "2009-03-08")),
+            _ => (404, json!({})),
+        })
+    }
+
+    fn show_body(seasons: Option<Vec<u32>>, eps: Option<Vec<EpisodeRef>>) -> CreateRequestBody {
+        CreateRequestBody { kind: RequestKind::Show, tmdb_id: 1396, seasons, episodes: eps }
+    }
+
+    fn wanted_pairs(host: &TestHost, id: &str) -> Vec<(u32, u32)> {
+        let conn = host.db().get().unwrap();
+        let mut pairs: Vec<(u32, u32)> = db::wanted_for_request(&conn, id)
+            .unwrap()
+            .iter()
+            .filter_map(|w| Some((w.season?, w.episode?)))
+            .collect();
+        pairs.sort_unstable();
+        pairs
+    }
+
+    #[test]
+    fn a_season_list_is_sorted_and_deduped_before_it_is_stored() {
+        let host = test_host();
+        let _tmdb = breaking_bad();
+        seed_user(&host, "owner");
+
+        let req = create_request(
+            &host,
+            &user("owner", vec![Permission::Playback]),
+            &show_body(Some(vec![2, 1, 2]), None),
+        )
+        .unwrap();
+        assert_eq!(req.seasons, Some(vec![1, 2]));
+    }
+
+    #[test]
+    fn asking_for_another_season_widens_the_request_already_open_and_its_ledger() {
+        let host = test_host();
+        let _tmdb = breaking_bad();
+        seed_user(&host, "owner");
+        seed_user(&host, "u2");
+
+        let first = create_request(
+            &host,
+            &user("owner", vec![Permission::Playback, Permission::RequestsAuto]),
+            &show_body(Some(vec![1]), None),
+        )
+        .unwrap();
+        assert_eq!(first.status, RequestStatus::Approved);
+        assert_eq!(wanted_pairs(&host, &first.id), [(1, 1), (1, 2), (1, 3)]);
+
+        let widened = create_request(
+            &host,
+            &user("u2", vec![Permission::Playback]),
+            &show_body(Some(vec![2]), Some(vec![ep(1, 1)])),
+        )
+        .unwrap();
+
+        assert_eq!(widened.id, first.id, "one open request, not two");
+        assert_eq!(widened.seasons, Some(vec![1, 2]));
+        assert_eq!(widened.episodes, Some(vec![ep(1, 1)]));
+        assert_eq!(
+            wanted_pairs(&host, &first.id),
+            [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2)],
+            "an approved request rebuilds its ledger on the spot"
+        );
+    }
+
+    #[test]
+    fn a_request_for_single_episodes_materialises_only_those() {
+        let host = test_host();
+        let _tmdb = breaking_bad();
+        seed_user(&host, "owner");
+
+        let req = create_request(
+            &host,
+            &user("owner", vec![Permission::Playback, Permission::RequestsAuto]),
+            &show_body(None, Some(vec![ep(1, 2)])),
+        )
+        .unwrap();
+
+        assert!(req.seasons.is_none(), "no season was asked for, and none is implied");
+        assert_eq!(wanted_pairs(&host, &req.id), [(1, 2)]);
+    }
+
+    #[test]
+    fn a_preview_reports_the_rows_an_approval_would_write_without_writing_them() {
+        let host = test_host();
+        let _tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
+        insert_req(&host, "r-1", RequestKind::Movie, 603, RequestStatus::Pending);
+        let conn = host.db().get().unwrap();
+        let req = db::get_request(&conn, "r-1").unwrap().unwrap();
+        drop(conn);
+
+        let mut out = vec![wanted("stale", "r-1", None, None, None, "wanted")];
+        preview_wanted(&host, &req, &mut out).unwrap();
+
+        assert_eq!(out.len(), 1, "the caller's buffer is replaced, not appended to");
+        assert_eq!(out[0].kind, "movie");
+        assert_eq!(out[0].imdb_id.as_deref(), Some("tt0000001"));
+        let conn = host.db().get().unwrap();
+        assert!(db::wanted_for_request(&conn, "r-1").unwrap().is_empty());
+    }
+
+    #[test]
+    fn the_refresh_pass_extends_a_shows_ledger_with_the_episodes_tmdb_has_since_listed() {
+        let host = test_host();
+        let _tmdb = breaking_bad();
+        insert_req(&host, "r-show", RequestKind::Show, 1396, RequestStatus::Approved);
+        db::insert_wanted(
+            host.db(),
+            &[wanted("w1", "r-show", Some(1), Some(1), None, "wanted")],
+            now_ms(),
+        )
+        .unwrap();
+
+        assert_eq!(refresh_pass(&host).unwrap(), 1);
+
+        assert_eq!(
+            wanted_pairs(&host, "r-show"),
+            [(1, 1), (1, 2), (1, 3), (2, 1), (2, 2)],
+            "additive: the existing row stays and the new ones join it"
+        );
+        let conn = host.db().get().unwrap();
+        let rows = db::wanted_for_request(&conn, "r-show").unwrap();
+        let first = rows.iter().find(|w| w.season == Some(1) && w.episode == Some(1)).unwrap();
+        assert_eq!(first.id, "w1", "matched on (season, episode), not on the id formula");
+        assert_eq!(first.air_date.as_deref(), Some("2008-01-20"), "its air date was backfilled");
+    }
+
     #[test]
     fn the_api_key_and_language_reach_tmdb_on_every_call() {
         let host = test_host();

@@ -34,3 +34,58 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     ));
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::services::notify::digest::WATERMARK_KEY;
+    use crate::test_support::{seed_movie, test_state};
+    use kroma_module_host::HostCtx as _;
+
+    #[test]
+    fn the_first_run_adopts_the_library_instead_of_announcing_all_of_it() {
+        let state = test_state();
+        seed_movie(&state, "m1");
+        let ctx = JobContext::for_test(state.clone());
+
+        run(&ctx).unwrap();
+        assert_eq!(state.setting_str(WATERMARK_KEY, ""), "t", "the head became the baseline");
+
+        let inbox: i64 = state
+            .db
+            .get()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM notifications", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(inbox, 0);
+    }
+
+    #[test]
+    fn a_run_with_nothing_new_leaves_the_watermark_where_it_was() {
+        let state = test_state();
+        seed_movie(&state, "m1");
+        let ctx = JobContext::for_test(state.clone());
+        run(&ctx).unwrap();
+
+        run(&ctx).unwrap();
+        assert_eq!(state.setting_str(WATERMARK_KEY, ""), "t");
+    }
+
+    #[test]
+    fn a_title_added_after_the_baseline_advances_the_watermark_past_it() {
+        let state = test_state();
+        seed_movie(&state, "m1");
+        let ctx = JobContext::for_test(state.clone());
+        run(&ctx).unwrap();
+
+        seed_movie(&state, "m2");
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute("UPDATE items SET added_at='u' WHERE id='m2'", [])
+            .unwrap();
+        run(&ctx).unwrap();
+        assert_eq!(state.setting_str(WATERMARK_KEY, ""), "u");
+    }
+}

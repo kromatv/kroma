@@ -529,6 +529,29 @@ mod tests {
         assert_eq!(pending(&state.db, "subtitles"), 2);
     }
 
+    #[tokio::test]
+    async fn reprocessing_an_element_kicks_a_drain_for_every_stage_it_queued() {
+        let state = test_support::test_state();
+        test_support::seed_movie(&state, "m1");
+
+        let outcome = reprocess(&state, "item", "m1").unwrap();
+
+        assert_eq!(outcome.subjects, 5);
+        assert!(!outcome.stages.is_empty());
+        for key in &outcome.stages {
+            assert!(state.jobs.resolve(key).is_some(), "{key} is not a registered job");
+        }
+    }
+
+    #[tokio::test]
+    async fn a_film_has_no_season_to_retry_markers_for() {
+        let state = test_support::test_state();
+        test_support::seed_movie(&state, "m1");
+
+        stage_for(&state, "item", "m1", "markers").unwrap();
+        assert_eq!(pending(&state.db, "markers"), 0);
+    }
+
     #[test]
     fn reprocess_and_stage_for_reject_unknown_kinds_before_triggering() {
         let state = test_support::test_state();

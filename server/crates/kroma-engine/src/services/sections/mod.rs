@@ -371,6 +371,18 @@ mod tests {
     }
 
     #[test]
+    fn a_row_of_ids_the_catalog_no_longer_holds_is_not_emitted() {
+        let pool = test_pool();
+        seed_movies(&pool, &["a"]);
+        let mut b = Builder { pool: &pool, sections: Vec::new(), seen: HashSet::new() };
+        let ranked: Vec<(String, f32)> =
+            (0..5).map(|i| (format!("ghost{i}"), 1.0)).collect();
+        assert!(!b.push("row1", "Row".into(), None, ranked, NO_FLOOR));
+        assert!(b.sections.is_empty());
+        assert!(b.seen.is_empty(), "a row that was not emitted claims no titles");
+    }
+
+    #[test]
     fn last_title_returns_title_or_none() {
         let pool = test_pool();
         seed_movies(&pool, &["a"]);
@@ -433,5 +445,42 @@ mod tests {
         assert_eq!(b.sections[0].title, "Director Spotlight");
         assert_eq!(b.sections[0].reason.as_deref(), Some("great films"));
         assert_eq!(b.sections[0].items.len(), 5);
+
+        let mut full = Builder { pool: &state.db, sections: Vec::new(), seen: HashSet::new() };
+        push_curated_rows(&mut full, &state.db, "en", 0);
+        assert!(full.sections.is_empty());
+    }
+
+    #[test]
+    fn the_ai_rows_a_user_had_authored_are_offered_to_the_embedder() {
+        let state = test_support::test_state();
+        let ids = ["a", "b", "c", "d", "e"];
+        seed_movies(&state.db, &ids);
+        let user = crate::db::create_user(&state.db, "bo@t.dev", "Bo", "h", &[]).unwrap().id;
+        crate::db::set_user_taste(
+            &state.db,
+            &user,
+            Some("likes slow cinema"),
+            r#"[{"key":"slow","title":"Slow Cinema","query":"quiet contemplative films","reason":"because you watched"}]"#,
+        )
+        .unwrap();
+
+        let mut b = Builder { pool: &state.db, sections: Vec::new(), seen: HashSet::new() };
+        push_ai_rows(&mut b, &state, &state.db, &user, MAX_SECTIONS, 0.0);
+        assert!(b.sections.is_empty());
+
+        let mut capped = Builder { pool: &state.db, sections: Vec::new(), seen: HashSet::new() };
+        push_ai_rows(&mut capped, &state, &state.db, &user, 0, 0.0);
+        assert!(capped.sections.is_empty());
+    }
+
+    #[test]
+    fn a_broken_trending_query_costs_the_row_and_nothing_else() {
+        let state = test_support::test_state();
+        state.db.get().unwrap().execute("DROP TABLE play_history", []).unwrap();
+        assert!(trending_ids(&state.db, 10).is_empty());
+
+        let sections = build_home(&state, &state.db, "en", "u1");
+        assert!(sections.iter().all(|s| s.id != "trending"));
     }
 }

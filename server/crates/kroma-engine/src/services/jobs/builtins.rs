@@ -124,8 +124,19 @@ pub(crate) fn snippet(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{snippet, JOBS};
+    use super::{snippet, str_eq, JOBS};
     use std::collections::HashSet;
+
+    #[test]
+    fn the_rosters_duplicate_guard_compares_keys_exactly() {
+        assert!(str_eq("pipeline.probe", "pipeline.probe"));
+        assert!(str_eq("", ""));
+        assert!(!str_eq("pipeline.probe", "pipeline.embed"), "same length, different bytes");
+        assert!(!str_eq("library.scan", "library.scan2"), "a prefix is not a match");
+        for b in JOBS {
+            assert!(str_eq(b.key.0, b.key.0));
+        }
+    }
 
     #[test]
     fn snippet_collapses_whitespace_and_caps_length() {

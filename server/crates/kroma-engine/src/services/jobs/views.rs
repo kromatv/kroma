@@ -171,6 +171,66 @@ mod tests {
         assert!(detail.info.last_run.is_none());
     }
 
+    #[tokio::test]
+    async fn a_module_job_is_listed_after_the_builtins_with_its_own_schedule() {
+        use crate::model::Category;
+        use crate::services::jobs::RemoteRun;
+
+        let state = test_state();
+        let run: RemoteRun = std::sync::Arc::new(|_ctx| Ok(()));
+        state.jobs.register_remote(
+            "mod.listed",
+            Category::Maintenance,
+            Some("0 4 * * *".into()),
+            run,
+        );
+
+        let infos = state.jobs.list(&state);
+        let listed = infos.last().expect("at least one job");
+        assert_eq!(listed.key, "mod.listed", "module jobs come after the built-ins");
+        assert_eq!(listed.default_schedule.as_deref(), Some("0 4 * * *"));
+        assert!(listed.next_run_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn a_running_job_reports_the_progress_it_last_published() {
+        use crate::model::Category;
+        use crate::services::jobs::{JobKey, RemoteRun};
+
+        let state = test_state();
+        let run: RemoteRun = std::sync::Arc::new(|ctx| {
+            ctx.progress(3, 10);
+            while !ctx.cancelled() {
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+            Ok(())
+        });
+        state.jobs.register_remote("mod.progressing", Category::Maintenance, None, run);
+        let run_id =
+            state.jobs.trigger(state.clone(), JobKey("mod.progressing"), "manual").expect("triggered");
+
+        let mut info = None;
+        for _ in 0..300 {
+            let found = state
+                .jobs
+                .list(&state)
+                .into_iter()
+                .find(|i| i.key == "mod.progressing")
+                .expect("registered");
+            if found.progress_done == Some(3) {
+                info = Some(found);
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        let info = info.expect("the run published its progress");
+        assert!(info.running);
+        assert_eq!(info.run_id.as_deref(), Some(run_id.as_str()));
+        assert_eq!(info.progress_total, Some(10));
+
+        state.jobs.cancel(JobKey("mod.progressing"));
+    }
+
     #[test]
     fn resolves_no_key_for_a_job_that_does_not_exist() {
         let state = test_state();

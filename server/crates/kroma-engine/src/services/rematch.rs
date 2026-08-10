@@ -250,6 +250,28 @@ mod tests {
     }
 
     #[test]
+    fn an_unknown_show_is_refused_by_name_like_an_unknown_film() {
+        let state = crate::test_support::test_state_with_tmdb("test-key");
+        let err = candidates(&state, Subject::Show, "ghost", None).unwrap_err().to_string();
+        assert_eq!(err, "unknown show ghost");
+    }
+
+    #[test]
+    fn a_show_is_searched_against_tmdbs_tv_index_rather_than_its_films() {
+        let state = crate::test_support::test_state_with_tmdb("test-key");
+        crate::test_support::seed_show_episode(&state, "sh1", "e1");
+        let tmdb = crate::test_support::FakeTmdb::start(|_| {
+            (200, serde_json::json!({ "page": 1, "total_pages": 1, "results": [] }))
+        });
+
+        let out = candidates(&state, Subject::Show, "sh1", None).unwrap();
+        assert!(out.results.is_empty());
+        let asked = tmdb.requests();
+        assert!(!asked.is_empty());
+        assert!(asked.iter().all(|r| r.starts_with("/search/tv")), "{asked:?}");
+    }
+
+    #[test]
     fn rank_puts_the_best_scoring_candidate_first() {
         let local = local("It", Some(1990), None);
         let ranked = rank(&local, vec![hit(474350, "It", Some(2017)), hit(437, "It", Some(1990))]);

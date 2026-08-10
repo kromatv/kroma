@@ -270,6 +270,19 @@ mod tests {
     }
 
     #[test]
+    fn a_protected_set_that_could_not_be_read_whole_trims_nothing() {
+        let state = test_state();
+        set_limit(&state, "1 Go");
+        let images = images_dir(&state);
+        sparse(&images.join("avatar.png"), 1500 * 1_000_000, 1);
+        sparse(&images.join("poster.jpg"), 1500 * 1_000_000, 9);
+        state.db.get().unwrap().execute("DROP TABLE users", []).unwrap();
+
+        enforce_image_limit(&JobContext::for_test(state.clone()), &images);
+        assert_eq!(names(&images), vec!["avatar.png", "poster.jpg"]);
+    }
+
+    #[test]
     fn stops_trimming_when_cancelled() {
         let state = test_state();
         set_limit(&state, "1 Go");

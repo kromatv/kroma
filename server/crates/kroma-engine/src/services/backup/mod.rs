@@ -166,6 +166,76 @@ mod tests {
     }
 
     #[test]
+    fn a_backup_from_before_the_zip_format_still_restores() {
+        let (dst, dst_dir) = fresh("legacy");
+        let legacy = br#"
+{"version":1,"exported_at":"t","assets":{"av99.webp":"4156"},
+ "tables":{"users":[{"id":"u1","email":"a@b.c","username":"Al","password_hash":"ph","created_at":"t"}]}}
+"#;
+
+        import(&dst, dst_dir.path(), legacy, None, false).unwrap();
+        assert_eq!(user_count(&dst), 1);
+        assert_eq!(std::fs::read(images_dir(dst_dir.path()).join("av99.webp")).unwrap(), b"AV");
+    }
+
+    #[test]
+    fn bytes_that_are_no_backup_at_all_are_named_as_such() {
+        let (dst, dst_dir) = fresh("junk");
+        for junk in [&b"not a backup"[..], &b""[..], &b"\x89PNG\r\n"[..]] {
+            assert!(matches!(
+                import(&dst, dst_dir.path(), junk, None, false),
+                Err(ImportError::Invalid(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn a_truncated_envelope_is_invalid_rather_than_a_wrong_password() {
+        let (dst, dst_dir) = fresh("trunc");
+        let mut truncated = b"KROMABK1\n".to_vec();
+        truncated.extend_from_slice(&[1, 1, 0, 0, 0, 1]);
+        assert!(crypto::is_encrypted(&truncated));
+        assert!(matches!(
+            import(&dst, dst_dir.path(), &truncated, Some("hunter2"), false),
+            Err(ImportError::Invalid(_))
+        ));
+    }
+
+    #[test]
+    fn an_asset_naming_a_path_is_never_written_outside_the_cache() {
+        let (_pool, dir) = fresh("assets");
+        let assets: Assets = vec![
+            ("../escape.webp".to_string(), b"NOPE".to_vec()),
+            ("sub/dir.webp".to_string(), b"NOPE".to_vec()),
+            (String::new(), b"NOPE".to_vec()),
+            ("ok.webp".to_string(), b"YES".to_vec()),
+        ];
+        write_assets(dir.path(), &assets);
+
+        assert_eq!(std::fs::read(images_dir(dir.path()).join("ok.webp")).unwrap(), b"YES");
+        assert!(!images_dir(dir.path()).parent().unwrap().join("escape.webp").exists());
+    }
+
+    #[test]
+    fn an_avatar_that_is_not_a_cached_image_is_not_gathered() {
+        let (pool, dir) = fresh("gather");
+        seed_user_with_avatar(&pool, dir.path());
+        pool.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO users (id,email,username,password_hash,avatar_url,created_at) \
+                 VALUES ('u2','b@b.c','Bo','ph','https://gravatar.example/x.png','t')",
+                [],
+            )
+            .unwrap();
+
+        let doc = crate::db::export_portable(&pool).unwrap();
+        let assets = gather_assets(&doc, dir.path());
+        assert_eq!(assets.len(), 1);
+        assert_eq!(assets[0].0, "av99.webp");
+    }
+
+    #[test]
     fn reset_wipes_pre_existing_rows() {
         let (src, src_dir) = fresh("rsrc");
         seed_user_with_avatar(&src, src_dir.path());

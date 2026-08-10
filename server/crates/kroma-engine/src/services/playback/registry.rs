@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn upsert_creates_then_refreshes() {
-        let reg = Registry::new();
+        let reg = Registry::default();
         assert!(reg.upsert(ping("s1", 1000, "playing"), Some("u1".into()), "Alice".into(), "1.2.3.4".into(), "WAN".into(), None));
         assert!(!reg.upsert(ping("s1", 5000, "paused"), Some("u1".into()), "Alice".into(), "1.2.3.4".into(), "LAN".into(), None));
         let list = reg.list();

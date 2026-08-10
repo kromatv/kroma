@@ -512,7 +512,7 @@ mod tests {
 
     #[test]
     fn manager_starts_empty_and_pause_toggles() {
-        let m = JobManager::new();
+        let m = JobManager::default();
         assert_eq!(m.running_count(), 0);
         assert!(!m.pipeline_paused());
         m.set_pipeline_paused(true);
@@ -582,6 +582,17 @@ mod tests {
         db::upsert_job_schedule(&pool, "ghost.job", Some("0 1 * * *"), true).unwrap();
         m.load_schedules(&pool);
         assert!(m.jobs_for_trigger(Trigger::LibraryChange).is_empty());
+    }
+
+    #[test]
+    fn schedules_that_cannot_be_read_leave_the_built_in_defaults_in_place() {
+        let pool = test_pool();
+        let mut m = JobManager::new();
+        m.register(&TEST_BUILTIN);
+        pool.get().unwrap().execute("DROP TABLE job_schedules", []).unwrap();
+
+        m.load_schedules(&pool);
+        assert_eq!(m.jobs_for_trigger(Trigger::LibraryChange), vec![JobKey("test.job")]);
     }
 
     #[test]
@@ -704,6 +715,83 @@ mod tests {
         wait_idle(&state.jobs).await;
     }
 
+    fn until_cancelled() -> RemoteRun {
+        Arc::new(|ctx: &JobContext| {
+            while !ctx.cancelled() {
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+            Ok(())
+        })
+    }
+
+    #[tokio::test]
+    async fn cancelling_by_key_answers_whether_there_was_a_run_to_cancel() {
+        let state = test_support::test_state();
+        state.jobs.register_remote(
+            "test.remote.cancel",
+            Category::Maintenance,
+            None,
+            until_cancelled(),
+        );
+        state.jobs.trigger(state.clone(), JobKey("test.remote.cancel"), "manual").expect("triggered");
+
+        assert!(state.jobs.cancel(JobKey("test.remote.cancel")), "the run was in flight");
+        wait_idle(&state.jobs).await;
+        assert!(!state.jobs.cancel(JobKey("test.remote.cancel")), "and is not, once it is over");
+
+        let runs = db::list_job_runs(&state.db, "test.remote.cancel", 10).unwrap();
+        assert_eq!(runs[0].status, "cancelled");
+    }
+
+    #[tokio::test]
+    async fn cancel_all_reaches_every_run_at_once() {
+        let state = test_support::test_state();
+        for key in ["test.remote.all.a", "test.remote.all.b"] {
+            state.jobs.register_remote(key, Category::Maintenance, None, until_cancelled());
+            state.jobs.trigger(state.clone(), JobKey(key), "manual").expect("triggered");
+        }
+        assert_eq!(state.jobs.running_count(), 2);
+
+        state.jobs.cancel_all();
+        wait_idle(&state.jobs).await;
+        for key in ["test.remote.all.a", "test.remote.all.b"] {
+            assert_eq!(db::list_job_runs(&state.db, key, 10).unwrap()[0].status, "cancelled");
+        }
+    }
+
+    #[tokio::test]
+    async fn a_builtin_runs_through_the_same_path_as_a_module_job() {
+        let state = test_support::test_state();
+        let manager = Arc::new({
+            let mut m = JobManager::new();
+            m.register(&TEST_BUILTIN);
+            m
+        });
+
+        let run_id = manager.trigger(state.clone(), JobKey("test.job"), "manual").expect("triggered");
+        wait_idle(&manager).await;
+
+        let runs = db::list_job_runs(&state.db, "test.job", 10).unwrap();
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].id, run_id);
+        assert_eq!(runs[0].status, "success");
+    }
+
+    #[tokio::test]
+    async fn a_run_whose_ledger_refuses_every_write_still_releases_its_slot() {
+        let state = test_support::test_state();
+        state.db.get().unwrap().execute("DROP TABLE job_runs", []).unwrap();
+        let run: RemoteRun = Arc::new(|_ctx: &JobContext| Ok(()));
+        state.jobs.register_remote("test.remote.noledger", Category::Maintenance, None, run);
+
+        state
+            .jobs
+            .trigger(state.clone(), JobKey("test.remote.noledger"), "manual")
+            .expect("triggered");
+        wait_idle(&state.jobs).await;
+        assert_eq!(state.jobs.running_count(), 0);
+    }
+
     #[test]
     fn trigger_unknown_job_is_rejected() {
         let state = test_support::test_state();
@@ -711,6 +799,43 @@ mod tests {
             state.jobs.trigger(state.clone(), JobKey("does.not.exist"), "manual"),
             Err(TriggerError::Unknown)
         );
+    }
+
+    static CHAIN_GATE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+    fn wait_for_the_gate(_ctx: &JobContext) -> anyhow::Result<()> {
+        while !CHAIN_GATE.load(Ordering::Relaxed) {
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        Ok(())
+    }
+
+    static CHAINED_BUILTIN: Builtin = Builtin {
+        key: JobKey("test.chained"),
+        category: Category::Maintenance,
+        schedule: None,
+        triggers: &[Trigger::AfterJob(JobKey("test.job"))],
+        run: wait_for_the_gate,
+    };
+
+    #[tokio::test]
+    async fn a_dependent_still_running_from_the_last_pass_is_not_started_twice() {
+        let state = test_support::test_state();
+        let manager = Arc::new({
+            let mut m = JobManager::new();
+            m.register(&TEST_BUILTIN);
+            m.register(&CHAINED_BUILTIN);
+            m
+        });
+        CHAIN_GATE.store(false, Ordering::Relaxed);
+        manager.trigger(state.clone(), JobKey("test.chained"), "manual").expect("triggered");
+
+        chain_after(&manager, &state, JobKey("test.job"), "test.job", "success");
+
+        assert_eq!(manager.running_count(), 1, "the chain must not queue a second run");
+        CHAIN_GATE.store(true, Ordering::Relaxed);
+        wait_idle(&manager).await;
+        assert_eq!(db::list_job_runs(&state.db, "test.chained", 10).unwrap().len(), 1);
     }
 
     #[test]

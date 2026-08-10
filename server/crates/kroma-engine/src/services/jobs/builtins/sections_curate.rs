@@ -398,6 +398,57 @@ mod tests {
         assert!(curate_with_tools(&ctx, &unparseable, &catalog(), 4096).is_err());
     }
 
+    fn library_of_eight() -> crate::state::SharedState {
+        let state = test_state();
+        for n in 1..=8 {
+            seed_movie(&state, &format!("itm-{n}"));
+        }
+        state
+    }
+
+    #[test]
+    fn a_model_that_answers_with_catalog_ids_has_its_collection_published() {
+        let state = library_of_eight();
+        let llm = crate::test_support::FakeLlm::always(&reply_with(&[
+            "itm-1", "itm-2", "itm-3", "itm-4", "itm-5",
+        ]));
+        llm.configure(&state);
+
+        run(&JobContext::for_test(state.clone())).unwrap();
+
+        let rows = crate::db::get_curated(&state.db).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].rank, 0);
+        assert_eq!(rows[0].item_ids.len(), 5);
+        assert_eq!(rows[0].source, "llm");
+    }
+
+    #[test]
+    fn a_tool_reply_naming_nothing_we_own_falls_back_to_the_catalog_prompt() {
+        let state = library_of_eight();
+        let llm = crate::test_support::FakeLlm::always(&reply_with(&[
+            "tt-1", "tt-2", "tt-3", "tt-4", "tt-5",
+        ]));
+        llm.configure(&state);
+
+        run(&JobContext::for_test(state.clone())).unwrap();
+
+        assert!(crate::db::get_curated(&state.db).unwrap().is_empty());
+        assert_eq!(llm.requests().len(), 2, "the tool pass and then the prompt pass");
+    }
+
+    #[test]
+    fn a_reply_the_tool_pass_cannot_parse_is_retried_as_a_catalog_prompt() {
+        let state = library_of_eight();
+        let llm = crate::test_support::FakeLlm::always("I'm sorry, I can't help with that.");
+        llm.configure(&state);
+
+        run(&JobContext::for_test(state.clone())).unwrap();
+
+        assert!(crate::db::get_curated(&state.db).unwrap().is_empty());
+        assert_eq!(llm.requests().len(), 2);
+    }
+
     #[test]
     fn a_reply_wrapped_in_prose_or_fences_is_still_read() {
         // Small local models routinely do both.

@@ -150,6 +150,37 @@ mod tests {
     }
 
     #[test]
+    fn a_key_longer_than_the_hmac_block_is_hashed_down_first() {
+        let mac = hmac_sha256(&[0xaa; 131], b"Test Using Larger Than Block-Size Key - Hash Key First");
+        assert_eq!(
+            hex::encode(mac),
+            "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+        );
+    }
+
+    #[test]
+    fn a_passphrase_longer_than_the_hmac_block_still_round_trips() {
+        let long = "correct horse battery staple ".repeat(8);
+        let stored = hash_password(&long);
+        assert!(verify_password(&long, &stored));
+        assert!(!verify_password(&long[..long.len() - 1], &stored));
+    }
+
+    #[test]
+    fn a_stored_hash_broken_in_any_field_verifies_nothing() {
+        for broken in [
+            "",
+            "scrypt$20000$00$00",
+            "pbkdf2$many$00$00",
+            "pbkdf2$20000$nothex$00",
+            "pbkdf2$20000$00$nothex",
+            "pbkdf2$20000$00",
+        ] {
+            assert!(!verify_password("s3cret!", broken), "{broken:?} must not authenticate");
+        }
+    }
+
+    #[test]
     fn tokens_are_unique_and_long() {
         let a = random_token();
         let b = random_token();
