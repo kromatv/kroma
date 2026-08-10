@@ -77,3 +77,29 @@ fn l2_normalize(v: &mut [f32]) {
 
 pub mod module;
 pub use module::MODULE;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_compiled_in_backend_answers_with_a_unit_vector_of_its_own_dimension() {
+        let e = default_embedder();
+        let v = e.embed("a heist thriller set in Paris");
+        assert_eq!(v.len(), e.dim());
+        let norm: f32 = v.iter().map(|x| x * x).sum::<f32>().sqrt();
+        assert!((norm - 1.0).abs() < 1e-5, "storage treats cosine as a dot product: {norm}");
+        assert!(e.relevance_floor() > 0.0 && e.relevance_floor() < 1.0);
+    }
+
+    #[test]
+    fn normalizing_the_zero_vector_leaves_it_alone_instead_of_producing_nan() {
+        let mut zero = [0.0f32; 4];
+        l2_normalize(&mut zero);
+        assert_eq!(zero, [0.0; 4]);
+
+        let mut v = [3.0f32, 4.0];
+        l2_normalize(&mut v);
+        assert!((v[0] - 0.6).abs() < 1e-6 && (v[1] - 0.8).abs() < 1e-6, "{v:?}");
+    }
+}

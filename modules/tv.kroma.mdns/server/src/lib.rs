@@ -146,4 +146,16 @@ mod tests {
     fn asking_twice_gives_the_same_address() {
         assert_eq!(primary_lan_ip(), primary_lan_ip());
     }
+
+    #[test]
+    fn the_advertised_port_is_read_off_the_core_url_not_this_sidecars_own() {
+        std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040");
+        assert_eq!(core_port(), Some(4040));
+        std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040/");
+        assert_eq!(core_port(), Some(4040));
+        std::env::set_var("KROMA_CORE_URL", "http://kroma.local");
+        assert_eq!(core_port(), None, "a URL with no port must not advertise a guess");
+        std::env::remove_var("KROMA_CORE_URL");
+        assert_eq!(core_port(), None);
+    }
 }

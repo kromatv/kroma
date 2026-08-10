@@ -479,6 +479,35 @@ mod tests {
         assert_eq!(run("Amélie Café", &[f("diacritics", &[])]), "Amelie Cafe");
         // Uppercase accents + cedilla map to their ASCII base letter too.
         assert_eq!(run("ÀÉÎÕÜ Ñ Ç", &[f("diacritics", &[])]), "AEIOU N C");
+        assert_eq!(
+            run("àáâãäå ìíîï òóôõö ùúûü ñ ç ýÿ", &[f("diacritics", &[])]),
+            "aaaaaa iiii ooooo uuuu n c yy"
+        );
+    }
+
+    #[test]
+    fn querystring_returns_empty_when_the_key_is_absent() {
+        assert_eq!(run("https://x/dl?id=99&k=v", &[f("querystring", &["missing"])]), "");
+        assert_eq!(run("https://x/dl", &[f("querystring", &["id"])]), "");
+    }
+
+    #[test]
+    fn a_date_only_value_parses_to_midnight() {
+        let out = run("2023-05-01", &[f("timeago", &[])]);
+        assert!(out.starts_with("2023-05-01T00:00:00"), "got {out}");
+        let out = run("15/03/2024", &[f("dateparse", &["02/01/2006"])]);
+        assert!(out.starts_with("2024-03-15T00:00:00"), "got {out}");
+    }
+
+    #[test]
+    fn relative_dates_reach_back_by_month_and_year() {
+        use chrono::Datelike;
+        let now = chrono::Local::now().naive_local();
+        let out = run("2 years ago", &[f("timeago", &[])]);
+        assert!(out.starts_with(&format!("{}-", now.year() - 2)), "got {out}");
+        let out = run("a month ago", &[f("timeago", &[])]);
+        assert!(out.contains('T') && out.len() >= 19, "got {out}");
+        assert_eq!(run("whenever", &[f("timeago", &[])]), "whenever");
     }
 
     #[test]

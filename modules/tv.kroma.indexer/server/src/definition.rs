@@ -464,6 +464,33 @@ search:
     }
 
     #[test]
+    fn a_key_written_with_no_value_at_all_normalizes_to_empty() {
+        let d = parse_ok(
+            "\
+id: demo
+name: Demo
+caps:
+  categorymappings:
+    - {id: , cat: Movies/HD}
+login:
+  method: post
+  cookies:
+  inputs:
+    username:
+search:
+  rows: {}
+  inputs:
+    q:
+",
+        );
+        assert_eq!(d.caps.categorymappings[0].id, "");
+        let login = d.login.expect("login block");
+        assert!(login.cookies.is_empty());
+        assert_eq!(&*login.inputs["username"], "");
+        assert_eq!(&*d.search.inputs["q"], "");
+    }
+
+    #[test]
     fn a_setting_default_normalizes_every_scalar_shape_to_a_string() {
         let d = parse_ok(
             "\

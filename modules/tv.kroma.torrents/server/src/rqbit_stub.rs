@@ -33,3 +33,18 @@ impl RqbitEngine {
         unreachable!("stub RqbitEngine cannot be constructed")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn starting_the_embedded_engine_says_it_was_not_compiled_in() {
+        let err = match RqbitEngine::start(&RqbitConfig::default()).await {
+            Ok(_) => panic!("a build without the feature must not produce an engine"),
+            Err(e) => e.to_string(),
+        };
+        assert!(err.contains("not compiled"), "{err}");
+        assert!(err.contains("rqbit"), "{err}");
+    }
+}

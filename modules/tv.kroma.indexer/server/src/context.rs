@@ -89,3 +89,25 @@ impl Context {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_list_value_is_truthy_only_when_it_has_members_and_renders_space_joined() {
+        assert!(Value::List(vec!["a".into(), "b".into()]).truthy());
+        assert!(!Value::List(Vec::new()).truthy());
+        assert_eq!(Value::List(vec!["100".into(), "200".into()]).render(), "100 200");
+        assert_eq!(Value::List(Vec::new()).render(), "");
+    }
+
+    #[test]
+    fn a_path_the_context_does_not_model_resolves_to_nil_rather_than_panicking() {
+        let ctx = Context { keywords: "kw".into(), ..Context::default() };
+        assert_eq!(ctx.resolve(&["Keywords"]), Value::Str("kw".into()));
+        assert_eq!(ctx.resolve(&["Config", "sitelink", "extra"]), Value::Nil);
+        assert_eq!(ctx.resolve(&["Whatever"]), Value::Nil);
+        assert_eq!(ctx.resolve(&[]), Value::Nil);
+    }
+}

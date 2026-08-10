@@ -384,6 +384,66 @@ mod tests {
     }
 
     #[test]
+    fn an_enclosure_supplies_the_link_when_the_item_has_no_link_element() {
+        let xml = r#"<rss><channel><item>
+          <title>Rel 1080p</title><guid>g</guid>
+          <enclosure url="https://jackett.local/dl/abc.torrent" length="10" />
+        </item></channel></rss>"#;
+        let items = parse_items(xml.as_bytes()).unwrap();
+        assert_eq!(items[0].link.as_deref(), Some("https://jackett.local/dl/abc.torrent"));
+    }
+
+    #[test]
+    fn feed_level_elements_outside_an_item_are_ignored() {
+        let xml = r#"<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:torznab="http://torznab.com/"><channel>
+          <atom:link href="https://jackett.local/api" rel="self" />
+          <enclosure url="https://jackett.local/not-a-release.torrent" />
+          <torznab:attr name="seeders" value="999" />
+          <item><title>Rel 1080p</title><guid>g</guid>
+            <torznab:attr name="seeders" value="4" /></item>
+        </channel></rss>"#;
+        let items = parse_items(xml.as_bytes()).unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].seeders, Some(4));
+        assert_eq!(items[0].link, None);
+    }
+
+    #[test]
+    fn attributes_the_parser_does_not_model_are_skipped_rather_than_confused() {
+        let xml = r#"<rss xmlns:torznab="http://torznab.com/"><channel><item>
+          <title>Rel 1080p</title><guid>g</guid>
+          <torznab:attr name="seeders" value="7" type="int" />
+        </item></channel></rss>"#;
+        let items = parse_items(xml.as_bytes()).unwrap();
+        assert_eq!(items[0].seeders, Some(7));
+
+        let err = r#"<error code="100" description="bad key" xmlns="http://x" other="ignored" />"#;
+        let message = parse_items(err.as_bytes()).unwrap_err().to_string();
+        assert!(message.contains("100") && message.contains("bad key"), "{message}");
+    }
+
+    #[test]
+    fn a_blank_element_leaves_its_field_unset() {
+        let xml = r#"<rss><channel><item>
+          <title>Rel 1080p</title><guid>g</guid>
+          <size>   </size><pubDate></pubDate>
+        </item></channel></rss>"#;
+        let items = parse_items(xml.as_bytes()).unwrap();
+        assert_eq!(items[0].size_bytes, None);
+        assert_eq!(items[0].published_at, None);
+    }
+
+    #[test]
+    fn a_comments_element_that_is_not_a_url_is_not_a_details_link() {
+        let xml = r#"<rss><channel><item>
+          <title>Rel 1080p</title><guid>g</guid>
+          <comments>42 comments</comments>
+        </item></channel></rss>"#;
+        let items = parse_items(xml.as_bytes()).unwrap();
+        assert_eq!(items[0].details_url, None);
+    }
+
+    #[test]
     fn caps_without_search_flags_defaults_false() {
         let xml = r#"<caps><server title="X" /></caps>"#;
         let caps = parse_caps(xml.as_bytes()).unwrap();

@@ -384,4 +384,21 @@ mod tests {
         let item = select_first(&doc, "item").unwrap();
         assert_eq!(select_first(item, "title").unwrap().text(), "X 1080p");
     }
+
+    #[test]
+    fn a_feed_that_stops_being_well_formed_keeps_what_was_read_before_the_break() {
+        let xml = r#"<rss><channel><item><title>Good 1080p</title></item></wrong>
+          <item><title>Never Read</title></item></channel></rss>"#;
+        let doc = parse(xml);
+        let items = select_all(&doc, "item");
+        assert_eq!(items.len(), 1, "the parser must stop at the fault, not restart after it");
+        assert_eq!(select_first(items[0], "title").unwrap().text(), "Good 1080p");
+    }
+
+    #[test]
+    fn a_contains_with_an_empty_argument_filters_nothing() {
+        let doc = parse(RSS);
+        assert_eq!(select_all(&doc, "item:contains()").len(), 2);
+        assert_eq!(select_all(&doc, r#"item:contains("")"#).len(), 2);
+    }
 }

@@ -1248,6 +1248,247 @@ search:
     }
 
     #[test]
+    fn parse_html_auto_runs_a_css_definition_through_the_css_engine() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "tr.r"
+  fields:
+    title:
+      selector: "td.title"
+"#,
+        );
+        let body = r#"<table><tr class="r"><td class="title">A</td></tr></table>"#;
+        let rels = parse_html_auto(&def, &cfg("https://x/"), body).unwrap();
+        assert_eq!(rels.len(), 1);
+        assert_eq!(rels[0].title, "A");
+    }
+
+    #[cfg(not(feature = "xpath"))]
+    #[test]
+    fn an_xpath_definition_says_which_feature_is_missing_rather_than_returning_nothing() {
+        let def = build_def(
+            r#"
+id: brokentracker
+name: T
+caps: {}
+search:
+  rows:
+    selector: "//tr[@class='r']"
+  fields:
+    title:
+      selector: "td"
+"#,
+        );
+        let err = parse_html_auto(&def, &cfg("https://x/"), "<html></html>").unwrap_err().to_string();
+        assert!(err.contains("brokentracker"), "{err}");
+        assert!(err.contains("xpath"), "{err}");
+    }
+
+    #[test]
+    fn a_field_with_no_selector_reads_the_row_and_remove_strips_descendants() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "td.name"
+  fields:
+    title:
+      remove: "span.tag"
+    guid: {}
+"#,
+        );
+        let body =
+            r#"<table><tr><td class="name">Cool Movie <span class="tag">FREELEECH</span></td></tr></table>"#;
+        let rels = parse_html(&def, &cfg("https://x/"), body).unwrap();
+        assert_eq!(rels.len(), 1);
+        assert_eq!(rels[0].title, "Cool Movie");
+        assert_eq!(rels[0].guid, "Cool Movie FREELEECH");
+    }
+
+    #[test]
+    fn a_json_field_with_no_selector_reads_the_whole_row() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "items"
+  fields:
+    title: {}
+"#,
+        );
+        let body = r#"{"items":["Rel One 1080p","Rel Two 720p"]}"#;
+        let rels = parse_json(&def, &cfg("https://x/"), body).unwrap();
+        assert_eq!(rels.len(), 2);
+        assert_eq!(rels[0].title, "Rel One 1080p");
+        assert_eq!(rels[1].title, "Rel Two 720p");
+    }
+
+    #[test]
+    fn a_json_row_missing_a_required_field_is_dropped_and_defaults_fill_the_rest() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "items"
+  fields:
+    title:
+      selector: name
+    size:
+      selector: size
+      default: "3 GB"
+    seeders:
+      selector: seeders
+      optional: true
+    grabs:
+      selector: grabs
+"#,
+        );
+        let body = r#"{"items":[{"name":"Good","grabs":7},{"name":"NoGrabs"}]}"#;
+        let rels = parse_json(&def, &cfg("https://x/"), body).unwrap();
+        assert_eq!(rels.len(), 1);
+        assert_eq!(rels[0].title, "Good");
+        assert_eq!(rels[0].size_bytes, Some(3 * 1024 * 1024 * 1024));
+        assert_eq!(rels[0].seeders, None);
+        assert_eq!(rels[0].grabs, Some(7));
+    }
+
+    #[test]
+    fn an_xml_row_missing_a_required_field_is_dropped_and_defaults_fill_the_rest() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps:
+  categorymappings:
+    - {id: "2000", cat: "Movies"}
+search:
+  rows:
+    selector: "item"
+  fields:
+    title:
+      selector: "title"
+    category:
+      text: "2000"
+    size:
+      selector: "[name=size]"
+      attribute: value
+      default: "3 GB"
+    leechers:
+      selector: "[name=leechers]"
+      attribute: value
+      optional: true
+    guid:
+      selector: "guid"
+"#,
+        );
+        let feed = r#"<?xml version="1.0"?>
+          <rss xmlns:torznab="http://torznab.com/"><channel>
+            <item><title>Has A Guid</title><guid>g1</guid></item>
+            <item><title>No Guid</title></item>
+          </channel></rss>"#;
+        let rels = parse_xml(&def, &cfg("https://x/"), feed).unwrap();
+        assert_eq!(rels.len(), 1);
+        assert_eq!(rels[0].title, "Has A Guid");
+        assert_eq!(rels[0].guid, "g1");
+        assert_eq!(rels[0].categories, vec![2000]);
+        assert_eq!(rels[0].size_bytes, Some(3 * 1024 * 1024 * 1024));
+        assert_eq!(rels[0].leechers, None);
+    }
+
+    #[test]
+    fn an_xml_field_with_no_selector_reads_the_row_and_a_missing_attribute_is_empty() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "guid"
+  fields:
+    title: {}
+    seeders:
+      attribute: nosuchattr
+      optional: true
+"#,
+        );
+        let feed = r#"<?xml version="1.0"?><rss><channel><item><guid>abc123</guid></item></channel></rss>"#;
+        let rels = parse_xml(&def, &cfg("https://x/"), feed).unwrap();
+        assert_eq!(rels.len(), 1);
+        assert_eq!(rels[0].title, "abc123");
+        assert_eq!(rels[0].seeders, None);
+    }
+
+    #[test]
+    fn an_xml_case_switch_falls_through_to_its_star_default() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "item"
+  fields:
+    title:
+      selector: "title"
+    seeders:
+      case:
+        "[name=freeleech]": "100"
+        "*": "7"
+"#,
+        );
+        let rels = parse_xml(&def, &cfg("https://x/"), XML_FEED).unwrap();
+        assert_eq!(rels.len(), 2);
+        assert_eq!(rels[0].seeders, Some(7));
+        assert_eq!(rels[1].seeders, Some(7));
+    }
+
+    #[test]
+    fn an_xml_case_switch_with_no_match_and_no_default_drops_the_row() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "item"
+  fields:
+    title:
+      selector: "title"
+    seeders:
+      case:
+        "[name=freeleech]": "100"
+"#,
+        );
+        assert!(parse_xml(&def, &cfg("https://x/"), XML_FEED).unwrap().is_empty());
+    }
+
+    #[test]
+    fn json_get_resolves_a_bare_index_segment() {
+        let v: serde_json::Value = serde_json::from_str(r#"{"a":{"b":[10,20,{"c":"deep"}]}}"#).unwrap();
+        assert_eq!(json_get(&v, "a.b.[1]").unwrap().as_i64(), Some(20));
+        assert_eq!(json_get(&v, "a.b.[2].c").unwrap().as_str(), Some("deep"));
+        assert!(json_get(&v, "a.b.[9]").is_none());
+        assert!(json_get(&v, "a.b[x]").is_none());
+    }
+
+    #[test]
     fn uses_xpath_detection() {
         let css = build_def(
             r#"

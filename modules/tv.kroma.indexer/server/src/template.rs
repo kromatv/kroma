@@ -821,6 +821,63 @@ mod tests {
     }
 
     #[test]
+    fn a_pipeline_feeds_its_value_in_as_the_last_argument() {
+        let d = Context::default();
+        assert_eq!(render(r#"{{ "x" | printf "%s!" }}"#, &d), "x!");
+        assert_eq!(render(r#"{{ .Keywords | printf "q=%s" }}"#, &ctx()), "q=the matrix 1999");
+    }
+
+    #[test]
+    fn a_command_whose_head_is_not_a_function_evaluates_only_its_head() {
+        assert_eq!(render(r#"{{ .Keywords "ignored" }}"#, &ctx()), "the matrix 1999");
+        assert_eq!(render(r#"{{ "just-this" "ignored" }}"#, &Context::default()), "just-this");
+    }
+
+    #[test]
+    fn a_function_called_with_no_arguments_at_all_renders_empty() {
+        assert_eq!(render("{{ join }}", &ctx()), "");
+        assert_eq!(render("{{ or }}", &Context::default()), "false");
+        assert_eq!(render("{{ and }}", &Context::default()), "true");
+    }
+
+    #[test]
+    fn or_falls_back_to_its_last_argument_when_nothing_is_truthy() {
+        let d = Context::default();
+        assert_eq!(render(r#"{{ or "" "fallback" }}"#, &d), "fallback");
+        assert_eq!(render(r#"{{ or .Config.a .Config.b }}"#, &d), "");
+    }
+
+    #[test]
+    fn a_comparison_missing_an_operand_is_false_rather_than_a_parse_error() {
+        let c = ctx();
+        assert_eq!(render("{{ if eq .Keywords }}Y{{ else }}N{{ end }}", &c), "N");
+        assert_eq!(render(r#"{{ if lt "5" }}Y{{ else }}N{{ end }}"#, &c), "N");
+        assert_eq!(render(r#"{{ if lt "NaN" "5" }}Y{{ else }}N{{ end }}"#, &c), "N");
+    }
+
+    #[test]
+    fn escape_sequences_inside_a_double_quoted_literal_are_decoded() {
+        let d = Context::default();
+        assert_eq!(render(r#"{{ replace "a b" " " "\n" }}"#, &d), "a\nb");
+        assert_eq!(render(r#"{{ replace "a b" " " "\t" }}"#, &d), "a\tb");
+        assert_eq!(render(r#"{{ replace "a b" " " "\r" }}"#, &d), "a\rb");
+        assert_eq!(render(r#"{{ replace "a b" " " "\q" }}"#, &d), "aqb");
+        assert_eq!(render("{{ `raw\\nliteral` }}", &d), "raw\\nliteral");
+    }
+
+    #[test]
+    fn an_else_branch_without_an_end_is_left_as_written() {
+        unchanged("{{ if .Config.freeleech }}&free=1{{ else }}&free=0");
+    }
+
+    #[test]
+    fn a_four_byte_character_is_not_split_mid_character() {
+        let c = ctx();
+        assert_eq!(render("&q=𠜎", &c), "&q=𠜎");
+        assert_eq!(render("𠜎{{ .Keywords }}𠜎", &c), "𠜎the matrix 1999𠜎");
+    }
+
+    #[test]
     fn an_unknown_field_renders_empty_rather_than_the_expression() {
         // The tracker gets `&x=` instead of `&x={{ .Config.nope }}`, which at
         // worst returns nothing - sending the raw expression would look like a

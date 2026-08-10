@@ -455,6 +455,27 @@ mod tests {
         assert!(!jackett.queries()[0].contains("apikey"), "{}", jackett.queries()[0]);
     }
 
+    #[test]
+    fn the_registered_port_is_the_same_engine_behind_the_trait() {
+        use kroma_module_sdk::ports::TorznabPort;
+        let jackett = FakeJackett::routed(|q| {
+            if q.contains("t=caps") {
+                (200, CAPS_XML.to_string())
+            } else {
+                (200, ONE_ITEM.to_string())
+            }
+        });
+        let port: &dyn TorznabPort = &TorznabEngine;
+
+        let caps = port.caps(&jackett.endpoint()).unwrap();
+        assert_eq!(caps.server_title.as_deref(), Some("Jackett"));
+        assert!(caps.search_tmdb && caps.search_imdb);
+
+        let releases = port.search(&jackett.endpoint(), &movie_query(), &caps).unwrap();
+        assert_eq!(releases.len(), 1);
+        assert_eq!(releases[0].title, "The.Matrix.1999.1080p");
+        assert!(jackett.queries()[1].contains("tmdbid=603"), "{}", jackett.queries()[1]);
+    }
 }
 
 pub mod module;

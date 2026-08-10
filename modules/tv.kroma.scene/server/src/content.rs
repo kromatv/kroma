@@ -159,4 +159,13 @@ mod tests {
         let c = classify(&f(&["readme.nfo", "cover.jpg"]));
         assert_eq!(c.kind, ContentKind::Unknown);
     }
+
+    #[test]
+    fn every_kind_has_the_wire_spelling_the_frontend_switches_on() {
+        assert_eq!(ContentKind::Movie.as_str(), "movie");
+        assert_eq!(ContentKind::Episode.as_str(), "episode");
+        assert_eq!(ContentKind::Season.as_str(), "season");
+        assert_eq!(ContentKind::Series.as_str(), "series");
+        assert_eq!(ContentKind::Unknown.as_str(), "unknown");
+    }
 }

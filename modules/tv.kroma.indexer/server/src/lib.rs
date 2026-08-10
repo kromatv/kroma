@@ -576,6 +576,58 @@ search:
         );
     }
 
+    struct FakeTorznab;
+
+    impl kroma_module_sdk::ports::TorznabPort for FakeTorznab {
+        fn caps(
+            &self,
+            endpoint: &kroma_module_sdk::ports::IndexerEndpoint,
+        ) -> anyhow::Result<kroma_module_sdk::ports::Caps> {
+            Ok(kroma_module_sdk::ports::Caps {
+                search_tmdb: true,
+                search_imdb: false,
+                tv_search_tmdb: false,
+                server_title: Some(endpoint.url.clone()),
+            })
+        }
+
+        fn search(
+            &self,
+            endpoint: &kroma_module_sdk::ports::IndexerEndpoint,
+            _query: &kroma_module_sdk::ports::Query,
+            caps: &kroma_module_sdk::ports::Caps,
+        ) -> anyhow::Result<Vec<kroma_module_sdk::ports::Release>> {
+            assert!(caps.search_tmdb, "the caps probe result must reach the search call");
+            Ok(vec![kroma_module_sdk::ports::Release {
+                title: "From The Endpoint".into(),
+                guid: endpoint.url.clone(),
+                ..Default::default()
+            }])
+        }
+    }
+
+    #[test]
+    fn a_torznab_search_goes_out_through_the_resolved_engine() {
+        use kroma_module_sdk::ports::{IndexerSearchPort, TorznabPort};
+        let pool = db_pool();
+        let mut row = seed_row("tz-engine", "torznab", true, 100);
+        row.url = "http://tracker.example/api".into();
+        db::insert_indexer(&pool, &row).unwrap();
+        let port: std::sync::Arc<dyn TorznabPort> = std::sync::Arc::new(FakeTorznab);
+        let host = DbHost::with_pool(pool.clone())
+            .with_service_raw(kroma_module_sdk::host::port_service(port));
+
+        let outcome = IndexerSearch.search(&host, &row, &port_query(), &[2000]).unwrap();
+        assert!(outcome.errors.is_empty());
+        assert_eq!(outcome.releases.len(), 1);
+        assert_eq!(outcome.releases[0].title, "From The Endpoint");
+        assert_eq!(outcome.releases[0].guid, "http://tracker.example/api");
+
+        let stored = db::get_indexer(&pool.get().unwrap(), "tz-engine").unwrap().unwrap();
+        assert!(stored.last_ok_at.is_some(), "a successful probe must clear the row's error state");
+        assert_eq!(stored.last_error, None);
+    }
+
     #[test]
     fn a_builtin_search_for_a_definition_that_is_not_installed_fails_loudly() {
         // A row can outlive its Cardigann definition; erroring beats reporting

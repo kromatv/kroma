@@ -69,6 +69,8 @@ const include = [
   'packages/*/*.test.ts',
   'packages/*/worker/**/*.test.ts',
   'packages/*/bundler/**/*.test.ts',
+  'modules/*/ui/src/**/*.test.ts',
+  'modules/*/ui/src/**/*.test.tsx',
   'clients/web/src/**/*.test.ts',
   'clients/web/src/**/*.test.tsx',
   'clients/desktop/src/**/*.test.ts',

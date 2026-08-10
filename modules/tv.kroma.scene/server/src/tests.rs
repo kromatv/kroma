@@ -224,6 +224,89 @@ fn source_codec_and_group_edge_branches() {
     assert_eq!((d.season, d.episode), (None, None));
 }
 
+#[test]
+fn dolby_vision_spelled_out_across_two_tokens_is_still_dolby_vision() {
+    let r = p("Movie.2024.2160p.WEB-DL.Dolby.Vision.HEVC");
+    assert!(r.dolby_vision);
+    assert!(!p("Movie.2024.2160p.WEB-DL.Vision.HEVC").dolby_vision);
+}
+
+#[test]
+fn a_season_word_with_nothing_countable_after_it_is_not_a_season() {
+    let r = p("Show Season Finale 1080p WEB");
+    assert_eq!(r.season, None);
+    assert!(!r.full_season);
+}
+
+#[test]
+fn malformed_episode_codes_are_refused_rather_than_half_read() {
+    let bad_episode = p("Show.S01Exx.1080p.WEB");
+    assert_eq!((bad_episode.season, bad_episode.episode), (None, None));
+
+    let no_episode_digits = p("Show.S01E.1080p.WEB");
+    assert_eq!((no_episode_digits.season, no_episode_digits.episode), (None, None));
+
+    let dash_instead_of_e = p("Show.S01-02.1080p.WEB");
+    assert_eq!((dash_instead_of_e.season, dash_instead_of_e.episode), (None, None));
+
+    let season_too_high_for_nxmm = p("Show 60x02 1080p WEB");
+    assert_eq!((season_too_high_for_nxmm.season, season_too_high_for_nxmm.episode), (None, None));
+}
+
+#[test]
+fn a_cam_release_is_refused_even_when_no_keyword_rule_names_it() {
+    let mut pr = profile();
+    pr.forbidden_keywords = vec![];
+    let t = Target::Movie { year: Some(2020) };
+    let ts = "Movie.2020.1080p.TELESYNC.x264";
+    assert_eq!(score(&p(ts), &cand(2, 50), &t, &pr, ts).unwrap_err().rule, "cam-source");
+}
+
+#[test]
+fn a_release_with_no_recognizable_resolution_is_refused() {
+    let t = Target::Movie { year: Some(2020) };
+    let name = "Movie.2020.WEB-DL.x265";
+    let err = score(&p(name), &cand(2, 50), &t, &profile(), name).unwrap_err();
+    assert_eq!(err.rule, "resolution");
+}
+
+#[test]
+fn an_episode_target_refuses_a_release_carrying_no_episode_marker() {
+    let t = Target::Episode { season: 1, episode: 2 };
+    let name = "Show.1080p.WEB.x265";
+    let err = score(&p(name), &cand(2, 10), &t, &profile(), name).unwrap_err();
+    assert_eq!(err.rule, "wrong-shape");
+    assert!(err.note.contains("SxxEyy"), "{}", err.note);
+}
+
+#[test]
+fn a_season_target_refuses_a_pack_of_the_wrong_season() {
+    let t = Target::Season { season: 1, episodes: 10 };
+    let name = "Show.S02.COMPLETE.1080p.WEB.x265";
+    let err = score(&p(name), &cand(5, 10), &t, &profile(), name).unwrap_err();
+    assert_eq!(err.rule, "wrong-season");
+}
+
+#[test]
+fn a_webrip_source_scores_below_a_web_dl() {
+    let t = Target::Movie { year: None };
+    let pr = profile();
+    let rip = "Movie.2020.1080p.WEBRip.x264";
+    let dl = "Movie.2020.1080p.WEB-DL.x264";
+    assert_eq!(line(&score(&p(rip), &cand(6, 10), &t, &pr, rip).unwrap(), "source"), Some(100));
+    assert_eq!(line(&score(&p(dl), &cand(6, 10), &t, &pr, dl).unwrap(), "source"), Some(200));
+}
+
+#[test]
+fn a_candidate_whose_indexer_reported_no_size_is_still_scored() {
+    let t = Target::Movie { year: None };
+    let name = "Movie.2020.1080p.BluRay.x265";
+    let sizeless = Candidate { size_bytes: None, seeders: Some(10), indexer_priority: 0 };
+    let s = score(&p(name), &sizeless, &t, &profile(), name).unwrap();
+    assert_eq!(line(&s, "size"), None, "an unknown size must not earn the sweet-spot bonus");
+    assert_eq!(res_delta(&s), 1000);
+}
+
 fn res_delta(s: &Scored) -> i32 {
     s.breakdown.iter().find(|l| l.rule == "resolution").unwrap().delta
 }

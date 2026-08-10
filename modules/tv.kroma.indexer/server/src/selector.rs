@@ -322,4 +322,21 @@ mod tests {
         let out = strip_has("tr:has(a.download");
         assert!(out.len() <= "tr:has(a.download".len(), "{out}");
     }
+
+    #[test]
+    fn a_selector_the_engine_rejects_is_retried_without_its_has_group() {
+        let doc = parse_document(DOC);
+        let root = doc.root_element();
+        assert!(Selector::parse("tr.torrent:has(td:bogus)").is_err(), "fixture is no longer rejected");
+        assert_eq!(select_all(root, "tr.torrent:has(td:bogus)").len(), 2);
+    }
+
+    #[test]
+    fn a_selector_neither_attempt_can_parse_matches_nothing() {
+        let doc = parse_document(DOC);
+        let root = doc.root_element();
+        assert!(select_all(root, "tr:bogus-pseudo").is_empty());
+        assert!(select_first(root, "tr[[").is_none());
+    }
 }
+
