@@ -1,7 +1,7 @@
 // Browser-facing landing page, styled to match the static Pages landing
 // (packages/synology-repo/src/landing.template.html).
 import { KROMA_MARK_DATA_URI, KROMA_MARK_SVG } from './brand';
-import { type Catalog, type Entry, entryVersion } from './catalog';
+import { type Catalog, dsmVersion, type Entry, entryVersion } from './catalog';
 
 const esc = (s: string) =>
   s.replace(
@@ -11,10 +11,11 @@ const esc = (s: string) =>
 
 const mb = (bytes: number) => `${(bytes / 1048576).toFixed(1)} MB`;
 const day = (iso: string) => (iso ? iso.slice(0, 10) : '');
+const shown = (e: Entry) => dsmVersion(entryVersion(e));
 
 function row(e: Entry): string {
   return `<tr>
-    <td><code>${esc(entryVersion(e))}</code>${e.channel === 'nightly' ? ' <span class="tag">nightly</span>' : ''}</td>
+    <td><code>${esc(shown(e))}</code>${e.channel === 'nightly' ? ' <span class="tag">nightly</span>' : ''}</td>
     <td>${day(e.publishedAt)}</td>
     <td>${mb(e.info?.size ?? e.spkSize)}</td>
     <td><a href="${esc(e.spkUrl)}">.spk</a> · <a href="${esc(e.releaseUrl)}">notes</a></td>
@@ -59,14 +60,14 @@ Enable <b>beta packages</b> (Settings → General → Channel) to ride the night
 ${
   latest
     ? `<h2>Latest stable</h2>
-<p><code>${esc(entryVersion(latest))}</code> · ${day(latest.publishedAt)} · ${mb(latest.info?.size ?? latest.spkSize)}
+<p><code>${esc(shown(latest))}</code> · ${day(latest.publishedAt)} · ${mb(latest.info?.size ?? latest.spkSize)}
 · <a href="${esc(latest.spkUrl)}">download .spk</a> · <a href="${esc(latest.releaseUrl)}">release notes</a></p>`
     : '<p>No stable release published yet.</p>'
 }
 ${
   nightly
     ? `<h2>Nightly</h2>
-<p><code>${esc(entryVersion(nightly))}</code> · updated ${day(nightly.publishedAt)} · ${mb(nightly.info?.size ?? nightly.spkSize)}
+<p><code>${esc(shown(nightly))}</code> · updated ${day(nightly.publishedAt)} · ${mb(nightly.info?.size ?? nightly.spkSize)}
 · <a href="${esc(nightly.spkUrl)}">download .spk</a> · <a href="${esc(nightly.releaseUrl)}">release page</a></p>`
     : ''
 }

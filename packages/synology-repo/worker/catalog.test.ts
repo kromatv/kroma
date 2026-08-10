@@ -111,12 +111,17 @@ describe('dsmVersion', () => {
     expect(dsmVersion('0.1.31-3447024')).toBe('0.1.31-3447024');
   });
 
-  it('collapses a nightly X.Y.Z.BUILD-BUILD to X.Y.Z-BUILD (DSM hides the 4th segment)', () => {
+  it('collapses a canary X.Y.Z.BUILD to X.Y.Z-BUILD (DSM hides the 4th segment)', () => {
+    expect(dsmVersion('0.1.37.3480000')).toBe('0.1.37-3480000');
+  });
+
+  it('collapses the older doubly-stamped X.Y.Z.BUILD-BUILD to the same string', () => {
     expect(dsmVersion('0.1.31.3447024-3447024')).toBe('0.1.31-3447024');
+    expect(dsmVersion('0.1.36.3461233-3461233')).toBe(dsmVersion('0.1.36.3461233'));
   });
 
   it('handles a build-less and a short version', () => {
-    expect(dsmVersion('1.2.3.4')).toBe('1.2.3');
+    expect(dsmVersion('1.2.3')).toBe('1.2.3');
     expect(dsmVersion('23.10-3')).toBe('23.10-3');
   });
 });
@@ -262,7 +267,7 @@ describe('loadCatalog', () => {
     expect(catalog.entries.map((e) => e.tag)).toEqual(['v1.0.0']);
   });
 
-  it('treats the moving `nightly` tag as the nightly channel and sorts it first', async () => {
+  it('treats the moving `nightly` tag as the nightly channel', async () => {
     ghServing([
       release({ tag_name: 'v1.0.0', published_at: '2026-07-01T00:00:00Z' }),
       release({ tag_name: 'v1.1.0', published_at: '2026-07-05T00:00:00Z' }),
@@ -279,6 +284,65 @@ describe('loadCatalog', () => {
       ['stable', 'v1.1.0'],
       ['stable', 'v1.0.0'],
     ]);
+  });
+
+  it('orders by version, not by publish date', async () => {
+    ghServing([
+      release({
+        tag_name: 'v1.9.0',
+        published_at: '2026-07-01T00:00:00Z',
+        assets: [asset('kroma-1.9.0-10-x86_64.spk')],
+      }),
+      release({
+        tag_name: 'v1.10.0',
+        published_at: '2026-07-05T00:00:00Z',
+        assets: [asset('kroma-1.10.0-11-x86_64.spk')],
+      }),
+      // Republished later than both, but an older version: date must not win.
+      release({
+        tag_name: 'v1.2.0',
+        published_at: '2026-07-30T00:00:00Z',
+        assets: [asset('kroma-1.2.0-3-x86_64.spk')],
+      }),
+    ]);
+    const catalog = await loadCatalog({}, () => undefined);
+    expect(catalog.entries.map((e) => e.tag)).toEqual(['v1.10.0', 'v1.9.0', 'v1.2.0']);
+  });
+
+  it('sorts a nightly below a stable it is behind, channel notwithstanding', async () => {
+    ghServing([
+      release({ tag_name: 'v2.0.0', assets: [asset('kroma-2.0.0-9-x86_64.spk')] }),
+      release({
+        tag_name: 'nightly',
+        prerelease: true,
+        assets: [asset('kroma-1.0.0-1-x86_64.spk')],
+      }),
+    ]);
+    const catalog = await loadCatalog({}, () => undefined);
+    expect(catalog.entries.map((e) => e.channel)).toEqual(['stable', 'nightly']);
+  });
+
+  it('dates the rolling nightly by its .spk asset, not the tag it reuses', async () => {
+    ghServing([
+      release({
+        tag_name: 'nightly',
+        prerelease: true,
+        published_at: '2026-07-10T19:42:27Z',
+        assets: [
+          {
+            ...asset('kroma-nightly-x86_64.spk'),
+            updated_at: '2026-08-10T11:27:55Z',
+          },
+        ],
+      }),
+      release({ tag_name: 'v1.0.0', published_at: '2026-07-31T00:00:00Z' }),
+    ]);
+    const catalog = await loadCatalog({}, () => undefined);
+    const nightly = catalog.entries.find((e) => e.channel === 'nightly');
+    const stable = catalog.entries.find((e) => e.channel === 'stable');
+    expect(nightly?.publishedAt).toBe('2026-08-10T11:27:55Z');
+    // A tagged release keeps the release date; only the rolling tag is special.
+    expect(stable?.publishedAt).toBe('2026-07-31T00:00:00Z');
   });
 
   it('names an unnamed release by its tag and tolerates a missing publish date', async () => {
