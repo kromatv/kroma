@@ -67,7 +67,9 @@ function hostLabel(instance: string): string {
     instance
       .toLowerCase()
       .replace(/[^a-z0-9-]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'kroma-tv';
+      .split('-')
+      .filter(Boolean)
+      .join('-') || 'kroma-tv';
   return `${slug}.local`;
 }
 
