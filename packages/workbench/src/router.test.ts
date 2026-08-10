@@ -128,14 +128,14 @@ describe('pathRouter', () => {
     const { result } = renderHook(pathRouter());
     const start = window.history.length;
     act(() => result.current[1]({ story: 'button' }));
-    expect(window.history.length).toBe(start + 1);
+    expect(window.history).toHaveLength(start + 1);
 
     act(() => result.current[1]({ view: 'matrix' }));
     act(() => result.current[1]({ story: 'button' }));
-    expect(window.history.length).toBe(start + 1);
+    expect(window.history).toHaveLength(start + 1);
 
     act(() => result.current[1]({ story: 'card' }, { replace: true }));
-    expect(window.history.length).toBe(start + 1);
+    expect(window.history).toHaveLength(start + 1);
     expect(window.location.pathname).toBe('/story/card/matrix');
   });
 

@@ -59,7 +59,7 @@ describe('coverRect', () => {
   it('has no rectangle for artwork whose size is not known yet', () => {
     expect(
       coverRect({ width: 200, height: 300 }, { width: 0, height: 0 }, { x: 0.5, y: 0.5 }),
-    ).toBe(null);
+    ).toBeNull();
   });
 
   it('overflows horizontally when the artwork is wider than the box', () => {
