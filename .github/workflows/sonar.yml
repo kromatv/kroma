@@ -135,6 +135,12 @@ jobs:
         with:
           tool: cargo-llvm-cov
 
+      # The audio stages decode through a real ffmpeg; without it their tests
+      # fail and the lines they cover read as uncovered. Same step as ci.yml.
+      - name: Install ffmpeg
+        if: steps.rustgate.outputs.run == 'true'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Rust coverage (cargo-llvm-cov -> server/lcov.info)
         # Skipped on PRs that touch no Rust: Sonar's gate scores NEW code, and a
         # frontend-only PR adds no Rust lines to cover. main always runs it, so

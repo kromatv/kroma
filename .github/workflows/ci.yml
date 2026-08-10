@@ -322,6 +322,12 @@ jobs:
         run: cargo fmt --check
         continue-on-error: true
 
+      # The loudness and fingerprint stages measure real audio through a real
+      # decoder, so their tests need the binary the server itself requires
+      # (see CONTRIBUTING.md); the runner image does not ship it.
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       # Hard gates. clippy without `-D warnings` (a couple of pre-existing
       # warnings are surfaced in the log but don't fail the build).
       - name: clippy
