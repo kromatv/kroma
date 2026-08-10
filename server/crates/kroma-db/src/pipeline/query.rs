@@ -285,6 +285,30 @@ mod tests {
     }
 
     #[test]
+    fn a_blocked_task_is_counted_and_ranks_below_every_named_status() {
+        let p = pool();
+        {
+            let conn = p.get().unwrap();
+            task(&conn, "st", "f1", "blocked", None, None);
+            task(&conn, "st", "f2", "blocked", None, None);
+            task(&conn, "st", "f3", "done", None, Some(1));
+            task(&conn, "st", "f4", "quarantined", None, None);
+        }
+        let stat = stage_stat(&p, "st", "k", "file").unwrap();
+        assert_eq!((stat.pending, stat.running, stat.done, stat.failed, stat.blocked), (0, 0, 1, 0, 2));
+
+        assert_eq!(
+            worst_status(&p, "st", &["f1".into(), "f3".into()]).unwrap().as_deref(),
+            Some("done")
+        );
+        assert_eq!(
+            worst_status(&p, "st", &["f4".into()]).unwrap().as_deref(),
+            Some("quarantined"),
+            "the only row is still the worst one"
+        );
+    }
+
+    #[test]
     fn failed_tasks_newest_first() {
         let p = pool();
         {

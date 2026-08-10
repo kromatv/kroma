@@ -297,6 +297,27 @@ mod tests {
     }
 
     #[test]
+    fn an_engine_built_from_the_registry_answers_the_whole_client_contract() {
+        let mut reg = DownloadClientRegistry::default();
+        reg.register("stub", |_def, _ctx| Ok(Box::new(Stub) as Box<dyn DownloadClient>));
+        let engine = reg.build(&def("stub"), &ctx()).unwrap();
+
+        assert_eq!(engine.test().unwrap(), "v1");
+        let req = AddTorrentReq {
+            magnet_or_url: "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567",
+            download_dir: Some("/downloads"),
+            label: "kroma",
+            only_files: Some(&[0, 2]),
+            torrent_bytes: None,
+        };
+        assert_eq!(engine.add(&req).unwrap(), "ref");
+        assert!(engine.status("ref").unwrap().is_none(), "a forgotten torrent is None, not an error");
+        engine.pause("ref").unwrap();
+        engine.resume("ref").unwrap();
+        engine.remove("ref", true).unwrap();
+    }
+
+    #[test]
     fn default_trait_methods_on_engine() {
         assert!(Stub.list_files("magnet:?x", None).is_err());
         assert!(Stub.reannounce("ref").is_ok());

@@ -365,6 +365,55 @@ mod tests {
     }
 
     #[test]
+    fn the_keyword_filter_matches_the_title_or_the_overview() {
+        let pool = seeded_pool();
+        let ids = |filter: TitleFilter| {
+            find_titles(&pool, &filter).unwrap().into_iter().map(|t| t.id).collect::<Vec<_>>()
+        };
+
+        assert_eq!(ids(TitleFilter { keyword: Some("shin".into()), ..Default::default() }), ["m3"]);
+        let by_overview = ids(TitleFilter { keyword: Some("A FILM ABOUT".into()), limit: Some(50), ..Default::default() });
+        assert!(by_overview.contains(&"m1".to_string()), "{by_overview:?}");
+        assert!(!by_overview.contains(&"m5".to_string()), "m5 has no overview: {by_overview:?}");
+        assert!(ids(TitleFilter { keyword: Some("nothing matches".into()), ..Default::default() }).is_empty());
+    }
+
+    #[test]
+    fn the_year_bounds_are_inclusive_on_both_ends() {
+        let pool = seeded_pool();
+        let ids = |min, max| {
+            find_titles(
+                &pool,
+                &TitleFilter { year_min: min, year_max: max, sort: Some("year".into()), limit: Some(50), ..Default::default() },
+            )
+            .unwrap()
+            .into_iter()
+            .map(|t| t.id)
+            .collect::<Vec<_>>()
+        };
+
+        assert_eq!(ids(Some(2018), None), ["s1", "m1", "m4"]);
+        assert_eq!(ids(None, Some(1990)), ["m5", "m3"]);
+        assert_eq!(ids(Some(1980), Some(1980)), ["m3"], "both bounds include their year");
+        assert!(ids(Some(2030), None).is_empty());
+    }
+
+    #[test]
+    fn a_blank_lookup_finds_nothing_and_an_unknown_kind_reads_as_movie() {
+        let pool = seeded_pool();
+        assert!(get_title(&pool, "   ").unwrap().is_none());
+        assert!(get_title(&pool, "").unwrap().is_none());
+
+        let unknown_kind = find_titles(
+            &pool,
+            &TitleFilter { kind: Some("documentary".into()), limit: Some(50), ..Default::default() },
+        )
+        .unwrap();
+        assert!(unknown_kind.iter().all(|t| t.kind == "movie"));
+        assert_eq!(unknown_kind.len(), 5);
+    }
+
+    #[test]
     fn titles_by_person_spans_cast_and_crew() {
         let pool = seeded_pool();
 

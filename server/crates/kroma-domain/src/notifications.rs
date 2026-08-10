@@ -455,6 +455,9 @@ mod tests {
         assert_eq!(NotificationEvent::RequestDenied.category(), NotificationCategory::Requests);
         assert_eq!(NotificationEvent::MediaEpisode.category(), NotificationCategory::Media);
         assert_eq!(NotificationEvent::SystemDiskLow.category(), NotificationCategory::System);
+        assert_eq!(NotificationEvent::ReportResolved.category(), NotificationCategory::Reports);
+        assert_eq!(NotificationEvent::DownloadImported.category(), NotificationCategory::Downloads);
+        assert_eq!(NotificationEvent::DownloadFailed.category(), NotificationCategory::Downloads);
     }
 
     #[test]

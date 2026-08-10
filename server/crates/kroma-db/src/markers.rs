@@ -172,4 +172,22 @@ mod tests {
         let m = &markers_for_item(&conn, "e1").unwrap()[0];
         assert_eq!((m.start_ms, m.end_ms), (100, 200));
     }
+
+    #[test]
+    fn a_marker_kind_this_build_does_not_know_is_skipped_rather_than_fatal() {
+        let p = pool_with_item();
+        let conn = p.get().unwrap();
+        conn.execute_batch(
+            "INSERT INTO markers (item_id,kind,start_ms,end_ms,source,updated_at) VALUES ('e1','intro',0,30000,'chapters','t');\
+             INSERT INTO markers (item_id,kind,start_ms,end_ms,source,updated_at) VALUES ('e1','recap',30000,45000,'chapters','t');\
+             INSERT INTO markers (item_id,kind,start_ms,end_ms,source,updated_at) VALUES ('e1','credits',3500000,3600000,'chapters','t');",
+        )
+        .unwrap();
+
+        let markers = markers_for_item(&conn, "e1").unwrap();
+        assert_eq!(markers.len(), 2, "the future 'recap' kind is dropped, not surfaced");
+        assert_eq!(markers[0].kind, MarkerKind::Intro);
+        assert_eq!(markers[1].kind, MarkerKind::Credits);
+        assert_eq!(markers_for_items(&conn, &["e1"]).unwrap()["e1"].len(), 2);
+    }
 }

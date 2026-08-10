@@ -180,6 +180,13 @@ mod tests {
     }
 
     #[test]
+    fn half_a_marker_is_not_a_marker() {
+        assert!(find_marker("Show S01 Complete").is_none());
+        assert!(find_marker("Kill Bill Vol 2").is_none());
+        assert!(find_marker("Show 1x").is_none());
+    }
+
+    #[test]
     fn no_marker_returns_none() {
         assert!(find_marker("The Matrix 1999").is_none());
     }

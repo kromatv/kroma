@@ -209,6 +209,8 @@ impl DownloadDbPort for DownloadDbClient {
 mod tests {
     use super::*;
 
+    use crate::testing::{blocking, serve};
+
     use kroma_module_host::testing::StubHost;
 
     fn sample_download_row(id: &str) -> DownloadRow {
@@ -243,11 +245,31 @@ mod tests {
         }
     }
 
-    struct OkGrab {
+    #[derive(Default)]
+    struct StubGrab {
         gate: bool,
+        fail: bool,
+        activated: std::sync::Mutex<Vec<String>>,
+        dropped: std::sync::Mutex<Vec<String>>,
     }
-    impl DownloadGrabPort for OkGrab {
+
+    impl StubGrab {
+        fn open() -> Self {
+            Self { gate: true, ..Default::default() }
+        }
+        fn closed() -> Self {
+            Self::default()
+        }
+        fn failing() -> Self {
+            Self { fail: true, ..Default::default() }
+        }
+    }
+
+    impl DownloadGrabPort for StubGrab {
         fn grab(&self, _h: &dyn HostCtx, _spec: GrabSpec) -> anyhow::Result<DownloadRow> {
+            if self.fail {
+                anyhow::bail!("boom");
+            }
             Ok(sample_download_row("grabbed"))
         }
         fn list_files(
@@ -255,37 +277,38 @@ mod tests {
             _h: &dyn HostCtx,
             _magnet_or_url: &str,
         ) -> anyhow::Result<Vec<TorrentFileEntry>> {
+            if self.fail {
+                anyhow::bail!("boom");
+            }
             Ok(vec![TorrentFileEntry { index: 0, path: "a.mkv".into(), size_bytes: 10 }])
         }
         fn gate_open(&self) -> bool {
             self.gate
         }
-        fn activate(&self, _h: &dyn HostCtx, _row: &DownloadRow) {}
-        fn drop_data(&self, _h: &dyn HostCtx, _row: &DownloadRow) {}
+        fn activate(&self, _h: &dyn HostCtx, row: &DownloadRow) {
+            self.activated.lock().unwrap().push(row.id.clone());
+        }
+        fn drop_data(&self, _h: &dyn HostCtx, row: &DownloadRow) {
+            self.dropped.lock().unwrap().push(row.id.clone());
+        }
     }
 
-    struct ErrGrab;
-    impl DownloadGrabPort for ErrGrab {
-        fn grab(&self, _h: &dyn HostCtx, _spec: GrabSpec) -> anyhow::Result<DownloadRow> {
-            Err(anyhow::anyhow!("boom"))
-        }
-        fn list_files(
-            &self,
-            _h: &dyn HostCtx,
-            _magnet_or_url: &str,
-        ) -> anyhow::Result<Vec<TorrentFileEntry>> {
-            Err(anyhow::anyhow!("boom"))
-        }
-        fn gate_open(&self) -> bool {
-            false
-        }
-        fn activate(&self, _h: &dyn HostCtx, _row: &DownloadRow) {}
-        fn drop_data(&self, _h: &dyn HostCtx, _row: &DownloadRow) {}
+    #[derive(Default)]
+    struct StubDb {
+        fail: bool,
     }
 
-    struct OkDb;
-    impl DownloadDbPort for OkDb {
+    impl StubDb {
+        fn failing() -> Self {
+            Self { fail: true }
+        }
+    }
+
+    impl DownloadDbPort for StubDb {
         fn completed_downloads(&self, _h: &dyn HostCtx) -> anyhow::Result<Vec<DownloadRow>> {
+            if self.fail {
+                anyhow::bail!("boom");
+            }
             Ok(vec![sample_download_row("done")])
         }
         fn mark_download_imported(
@@ -295,6 +318,9 @@ mod tests {
             _paths: &[String],
             _now_ms: i64,
         ) -> anyhow::Result<()> {
+            if self.fail {
+                anyhow::bail!("boom");
+            }
             Ok(())
         }
         fn set_download_status(
@@ -304,32 +330,10 @@ mod tests {
             _status: &str,
             _error: Option<&str>,
         ) -> anyhow::Result<bool> {
+            if self.fail {
+                anyhow::bail!("boom");
+            }
             Ok(true)
-        }
-    }
-
-    struct ErrDb;
-    impl DownloadDbPort for ErrDb {
-        fn completed_downloads(&self, _h: &dyn HostCtx) -> anyhow::Result<Vec<DownloadRow>> {
-            Err(anyhow::anyhow!("boom"))
-        }
-        fn mark_download_imported(
-            &self,
-            _h: &dyn HostCtx,
-            _id: &str,
-            _paths: &[String],
-            _now_ms: i64,
-        ) -> anyhow::Result<()> {
-            Err(anyhow::anyhow!("boom"))
-        }
-        fn set_download_status(
-            &self,
-            _h: &dyn HostCtx,
-            _id: &str,
-            _status: &str,
-            _error: Option<&str>,
-        ) -> anyhow::Result<bool> {
-            Err(anyhow::anyhow!("boom"))
         }
     }
 
@@ -339,7 +343,7 @@ mod tests {
 
     #[tokio::test]
     async fn grab_handler_returns_row() {
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::open());
         let spec = GrabSpec { magnet_or_url: "magnet:?xt=1".into(), ..Default::default() };
         let Json(res) = grab_h::<StubHost>(State(StubHost::new()), Extension(grab), Json(spec)).await;
         assert_eq!(res.unwrap().id, "grabbed");
@@ -347,7 +351,7 @@ mod tests {
 
     #[tokio::test]
     async fn grab_handler_maps_error() {
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(ErrGrab);
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::failing());
         let Json(res) =
             grab_h::<StubHost>(State(StubHost::new()), Extension(grab), Json(GrabSpec::default())).await;
         assert_eq!(res.unwrap_err(), "boom");
@@ -355,7 +359,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_files_handler_returns_entries() {
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::open());
         let req = MagnetReq { magnet_or_url: "magnet:?xt=1".into() };
         let Json(res) =
             list_files_h::<StubHost>(State(StubHost::new()), Extension(grab), Json(req)).await;
@@ -366,18 +370,18 @@ mod tests {
 
     #[tokio::test]
     async fn gate_open_handler_reflects_engine() {
-        let open: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
+        let open: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::open());
         let Json(v) = gate_open_h::<StubHost>(Extension(open)).await;
         assert!(v);
 
-        let closed: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: false });
+        let closed: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::closed());
         let Json(v) = gate_open_h::<StubHost>(Extension(closed)).await;
         assert!(!v);
     }
 
     #[tokio::test]
     async fn activate_and_drop_handlers_ack() {
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::open());
         let row = sample_download_row("x");
         let Json(()) =
             activate_h::<StubHost>(State(StubHost::new()), Extension(grab.clone()), Json(row.clone())).await;
@@ -386,21 +390,21 @@ mod tests {
 
     #[tokio::test]
     async fn completed_handler_returns_rows() {
-        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::default());
         let Json(res) = completed_h::<StubHost>(State(StubHost::new()), Extension(db)).await;
         assert_eq!(res.unwrap().len(), 1);
     }
 
     #[tokio::test]
     async fn completed_handler_maps_error() {
-        let db: Arc<dyn DownloadDbPort> = Arc::new(ErrDb);
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::failing());
         let Json(res) = completed_h::<StubHost>(State(StubHost::new()), Extension(db)).await;
         assert_eq!(res.unwrap_err(), "boom");
     }
 
     #[tokio::test]
     async fn mark_imported_handler_acks() {
-        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::default());
         let req = MarkImportedReq { id: "id".into(), paths: vec!["a".into()], now_ms: 7 };
         let Json(res) = mark_imported_h::<StubHost>(State(StubHost::new()), Extension(db), Json(req)).await;
         assert!(res.is_ok());
@@ -408,7 +412,7 @@ mod tests {
 
     #[tokio::test]
     async fn set_status_handler_returns_bool() {
-        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::default());
         let req = SetStatusReq { id: "id".into(), status: "done".into(), error: None };
         let Json(res) = set_status_h::<StubHost>(State(StubHost::new()), Extension(db), Json(req)).await;
         assert!(res.unwrap());
@@ -466,29 +470,10 @@ mod tests {
     // boundary type. Those only ever disagree at runtime, in a sidecar,
     // which is the worst place to find out.
 
-    async fn serve<S: HostCtx + Clone + Send + Sync + 'static>(
-        router: Router<S>,
-        state: S,
-    ) -> Resolver {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let app = router.with_state(state);
-        tokio::spawn(async move {
-            let _ = axum::serve(listener, app).await;
-        });
-        let base = format!("http://{addr}");
-        Arc::new(move || Some((base.clone(), "test-token".to_string())))
-    }
-
-    // Off the runtime thread so the server (on the same runtime) can answer.
-    async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
-        tokio::task::spawn_blocking(job).await.unwrap()
-    }
-
     #[tokio::test(flavor = "multi_thread")]
     async fn every_grab_verb_survives_the_round_trip() {
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
-        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::open());
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::default());
         let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadGrabClient::new(resolve);
@@ -509,8 +494,8 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_file_listing_survives_the_round_trip() {
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
-        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::open());
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::default());
         let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadGrabClient::new(resolve);
@@ -526,8 +511,8 @@ mod tests {
         // The client defaults OPEN when the bridge is down, so a closed gate is
         // only ever observable through a working round trip - which makes this
         // the test that proves the default is not masking everything.
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: false });
-        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::closed());
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::default());
         let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadGrabClient::new(resolve);
@@ -538,8 +523,8 @@ mod tests {
     async fn a_provider_error_crosses_the_wire_as_an_error() {
         // The envelope is `Result<T, String>`; losing the Err arm would turn a
         // failed grab into a successful one carrying nonsense.
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(ErrGrab);
-        let db: Arc<dyn DownloadDbPort> = Arc::new(ErrDb);
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::failing());
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::failing());
         let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let grab_client = DownloadGrabClient::new(resolve.clone());
@@ -562,8 +547,8 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn the_ledger_verbs_survive_the_round_trip() {
-        let grab: Arc<dyn DownloadGrabPort> = Arc::new(OkGrab { gate: true });
-        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::open());
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::default());
         let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadDbClient::new(resolve);
@@ -594,36 +579,9 @@ mod tests {
         // `activate` and `drop_data` return nothing, so a broken route would be
         // completely silent. Counting them on the provider side is the only way
         // to see they arrived.
-        #[derive(Default)]
-        struct CountingGrab {
-            activated: std::sync::Mutex<Vec<String>>,
-            dropped: std::sync::Mutex<Vec<String>>,
-        }
-        impl DownloadGrabPort for CountingGrab {
-            fn grab(&self, _h: &dyn HostCtx, _s: GrabSpec) -> anyhow::Result<DownloadRow> {
-                Ok(sample_download_row("x"))
-            }
-            fn list_files(
-                &self,
-                _h: &dyn HostCtx,
-                _m: &str,
-            ) -> anyhow::Result<Vec<TorrentFileEntry>> {
-                Ok(Vec::new())
-            }
-            fn gate_open(&self) -> bool {
-                true
-            }
-            fn activate(&self, _h: &dyn HostCtx, row: &DownloadRow) {
-                self.activated.lock().unwrap().push(row.id.clone());
-            }
-            fn drop_data(&self, _h: &dyn HostCtx, row: &DownloadRow) {
-                self.dropped.lock().unwrap().push(row.id.clone());
-            }
-        }
-
-        let counting = Arc::new(CountingGrab::default());
+        let counting = Arc::new(StubGrab::open());
         let grab: Arc<dyn DownloadGrabPort> = counting.clone();
-        let db: Arc<dyn DownloadDbPort> = Arc::new(OkDb);
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::default());
         let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
 
         let client = DownloadGrabClient::new(resolve);
@@ -636,5 +594,65 @@ mod tests {
 
         assert_eq!(&*counting.activated.lock().unwrap(), &["moved".to_string()]);
         assert_eq!(&*counting.dropped.lock().unwrap(), &["moved".to_string()]);
+    }
+
+    #[tokio::test]
+    async fn list_files_handler_maps_error() {
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::failing());
+        let req = MagnetReq { magnet_or_url: "magnet:?xt=1".into() };
+        let Json(res) =
+            list_files_h::<StubHost>(State(StubHost::new()), Extension(grab), Json(req)).await;
+        assert_eq!(res.unwrap_err(), "boom");
+    }
+
+    #[tokio::test]
+    async fn a_failing_grab_provider_still_reports_its_gate() {
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::failing());
+        let Json(open) = gate_open_h::<StubHost>(Extension(grab)).await;
+        assert!(!open, "a provider that cannot grab must not advertise an open gate");
+    }
+
+    #[tokio::test]
+    async fn the_ledger_writes_map_their_errors() {
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::failing());
+        let req = MarkImportedReq { id: "d1".into(), paths: vec!["a.mkv".into()], now_ms: 7 };
+        let Json(res) =
+            mark_imported_h::<StubHost>(State(StubHost::new()), Extension(db.clone()), Json(req)).await;
+        assert_eq!(res.unwrap_err(), "boom");
+
+        let req = SetStatusReq { id: "d1".into(), status: "failed".into(), error: Some("nope".into()) };
+        let Json(res) =
+            set_status_h::<StubHost>(State(StubHost::new()), Extension(db), Json(req)).await;
+        assert_eq!(res.unwrap_err(), "boom");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_ledger_write_failure_crosses_the_wire_as_an_error() {
+        let grab: Arc<dyn DownloadGrabPort> = Arc::new(StubGrab::failing());
+        let db: Arc<dyn DownloadDbPort> = Arc::new(StubDb::failing());
+        let resolve = serve(download_routes::<StubHost>(grab, db), StubHost::new()).await;
+
+        let client = DownloadDbClient::new(resolve.clone());
+        let err = blocking(move || {
+            client.mark_download_imported(&StubHost::new(), "d1", &["a.mkv".to_string()], 1)
+        })
+        .await
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("boom"), "{err}");
+
+        let client = DownloadDbClient::new(resolve.clone());
+        let err = blocking(move || client.set_download_status(&StubHost::new(), "d1", "failed", None))
+            .await
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("boom"), "{err}");
+
+        let client = DownloadGrabClient::new(resolve);
+        let err = blocking(move || client.list_files(&StubHost::new(), "magnet:?xt=1"))
+            .await
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("boom"), "{err}");
     }
 }

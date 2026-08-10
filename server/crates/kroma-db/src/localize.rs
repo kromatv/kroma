@@ -268,6 +268,31 @@ mod tests {
     }
 
     #[test]
+    fn a_translation_overlays_every_text_field_it_carries() {
+        let p = pool();
+        let tr = TransData {
+            title: Some("Titre FR".into()),
+            tagline: Some("Accroche FR".into()),
+            overview: Some("Synopsis FR".into()),
+            genres: vec!["Science-fiction".into()],
+            characters: vec![Some("Perso FR".into())],
+            ..Default::default()
+        };
+        translations::put(&p, metadata_core::ITEM, "m1", "fr", translations::TMDB, &tr).unwrap();
+
+        let mut items = vec![item("m1", Kind::Movie)];
+        overlay_items(&p, &mut items, "fr").unwrap();
+        let m = items[0].metadata.as_ref().unwrap();
+        assert_eq!(m.title.as_deref(), Some("Titre FR"));
+        assert_eq!(m.tagline.as_deref(), Some("Accroche FR"));
+        assert_eq!(m.overview.as_deref(), Some("Synopsis FR"));
+        assert_eq!(m.genres, vec!["Science-fiction".to_string()]);
+        assert_eq!(m.cast[0].character.as_deref(), Some("Perso FR"));
+
+        overlay_section_items(&p, &mut [], "fr").unwrap();
+    }
+
+    #[test]
     fn overlay_shows_and_section_items() {
         let p = pool();
         translations::put(&p, metadata_core::SHOW, "s1", "fr", translations::TMDB, &td("Serie FR", vec![])).unwrap();

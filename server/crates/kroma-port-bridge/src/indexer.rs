@@ -266,6 +266,8 @@ impl TorrentFetchPort for TorrentFetchClient {
 mod tests {
     use super::*;
 
+    use crate::testing::{blocking, serve};
+
     use kroma_module_host::testing::StubHost;
 
     fn sample_row(id: &str) -> IndexerRow {
@@ -386,6 +388,22 @@ mod tests {
     async fn list_handler_maps_error_into_envelope() {
         let db: Arc<dyn IndexerDbPort> = Arc::new(ErrDb);
         let Json(res) = list_h::<StubHost>(State(StubHost::new()), Extension(db)).await;
+        assert_eq!(res.unwrap_err(), "boom");
+    }
+
+    #[tokio::test]
+    async fn every_ledger_verb_maps_its_error_into_the_envelope() {
+        let db: Arc<dyn IndexerDbPort> = Arc::new(ErrDb);
+        let Json(res) = enabled_h::<StubHost>(State(StubHost::new()), Extension(db.clone())).await;
+        assert_eq!(res.unwrap_err(), "boom");
+
+        let Json(res) =
+            get_h::<StubHost>(State(StubHost::new()), Extension(db.clone()), Json(IdReq { id: "a".into() }))
+                .await;
+        assert_eq!(res.unwrap_err(), "boom");
+
+        let req = NoteReq { id: "a".into(), ok: true, error: None, now_ms: 1 };
+        let Json(res) = note_h::<StubHost>(State(StubHost::new()), Extension(db), Json(req)).await;
         assert_eq!(res.unwrap_err(), "boom");
     }
 
@@ -511,24 +529,6 @@ mod tests {
     // under test: paths, the `Result<T, String>` envelope, and the JSON
     // shape of every boundary type. Those only disagree at runtime, in a
     // sidecar.
-
-    async fn serve<S: HostCtx + Clone + Send + Sync + 'static>(
-        router: Router<S>,
-        state: S,
-    ) -> Resolver {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let app = router.with_state(state);
-        tokio::spawn(async move {
-            let _ = axum::serve(listener, app).await;
-        });
-        let base = format!("http://{addr}");
-        Arc::new(move || Some((base.clone(), "test-token".to_string())))
-    }
-
-    async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
-        tokio::task::spawn_blocking(job).await.unwrap()
-    }
 
     async fn live(fetch: FetchMode) -> Resolver {
         let db: Arc<dyn IndexerDbPort> = Arc::new(OkDb);

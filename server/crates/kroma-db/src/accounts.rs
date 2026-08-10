@@ -722,4 +722,36 @@ mod tests {
         assert!(session_user(&p, "sess-alice").unwrap().is_none());
         assert!(!delete_access_token_by_id(&p, &alice.id, "deadbeef").unwrap());
     }
+
+    #[test]
+    fn revoking_other_sessions_keeps_the_caller_and_the_device_it_came_from() {
+        let p = pool();
+        let user = mk_user(&p, "a@b.c", "alice");
+
+        create_access_token(&p, "dev-phone", &user.id, FUTURE, true, Some("iPhone")).unwrap();
+        create_access_token(&p, "dev-laptop", &user.id, FUTURE, true, Some("Mac")).unwrap();
+        create_session(&p, "sess-phone", &user.id, FUTURE, Some("dev-phone")).unwrap();
+        create_session(&p, "sess-laptop", &user.id, FUTURE, Some("dev-laptop")).unwrap();
+
+        revoke_other_sessions(&p, &user.id, "sess-phone").unwrap();
+
+        assert!(session_user(&p, "sess-phone").unwrap().is_some());
+        assert!(session_user(&p, "sess-laptop").unwrap().is_none());
+        assert!(access_token_user(&p, "dev-phone").unwrap().is_some());
+        assert!(access_token_user(&p, "dev-laptop").unwrap().is_none());
+    }
+
+    #[test]
+    fn an_unknown_keep_token_revokes_every_device_credential() {
+        let p = pool();
+        let user = mk_user(&p, "a@b.c", "alice");
+        create_access_token(&p, "dev-phone", &user.id, FUTURE, true, Some("iPhone")).unwrap();
+        create_session(&p, "sess-phone", &user.id, FUTURE, Some("dev-phone")).unwrap();
+
+        revoke_other_sessions(&p, &user.id, "sess-gone").unwrap();
+
+        assert!(session_user(&p, "sess-phone").unwrap().is_none());
+        assert!(access_token_user(&p, "dev-phone").unwrap().is_none());
+        assert!(list_access_tokens(&p, &user.id).unwrap().is_empty());
+    }
 }

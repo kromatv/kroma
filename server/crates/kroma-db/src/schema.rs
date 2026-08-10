@@ -719,3 +719,30 @@ fn migrate(conn: &Connection) {
 pub fn apply_migrations(conn: &Connection, sql: &str) -> Result<()> {
     conn.execute_batch(sql).context("failed to apply module schema")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_modules_schema_applies_beside_the_core_one_and_a_broken_batch_names_itself() {
+        let pool = crate::testing::temp_pool("schema-module");
+        let conn = pool.get().unwrap();
+
+        apply_migrations(
+            &conn,
+            "CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY, body TEXT NOT NULL);\
+             CREATE INDEX IF NOT EXISTS idx_notes_body ON notes(body);",
+        )
+        .unwrap();
+        conn.execute("INSERT INTO notes (id, body) VALUES ('n1', 'hi')", []).unwrap();
+
+        apply_migrations(&conn, "CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY, body TEXT NOT NULL);")
+            .unwrap();
+        let rows: i64 = conn.query_row("SELECT COUNT(*) FROM notes", [], |r| r.get(0)).unwrap();
+        assert_eq!(rows, 1, "re-applying the schema must not drop the module's data");
+
+        let err = apply_migrations(&conn, "CREATE TABL oops (").unwrap_err();
+        assert!(format!("{err:#}").contains("failed to apply module schema"), "{err:#}");
+    }
+}

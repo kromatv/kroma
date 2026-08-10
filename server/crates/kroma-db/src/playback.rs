@@ -758,4 +758,45 @@ mod tests {
         assert_eq!(show_progress_one(&pool, &uid, "s2").unwrap(), None);
         assert_eq!(show_progress_one(&pool, &uid, "no-such-show").unwrap(), None);
     }
+
+    #[test]
+    fn an_episode_of_an_unenriched_show_keeps_its_own_metadata() {
+        let (pool, uid) = pool_with_user();
+        {
+            let conn = pool.get().unwrap();
+            conn.execute(
+                "INSERT INTO shows (id,library,title,added_at) VALUES ('s1','lib','Show','t')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,metadata,added_at) \
+                 VALUES ('e1','episode','Ep','mkv','lib','s1',1,1,?1,'t')",
+                params![r#"{"tmdbId":11,"genres":[],"tmdbUrl":"http://tmdb/ep","backdropUrl":"episode-still.jpg"}"#],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
+                 VALUES (?1,'e1',20000,100000,'2021-01-01T00:00:00Z')",
+                params![uid],
+            )
+            .unwrap();
+        }
+
+        let cw = continue_watching(&pool, &uid).unwrap();
+        let meta = cw[0].item.metadata.as_ref().expect("the episode's own metadata is kept");
+        assert_eq!(meta.backdrop_url.as_deref(), Some("episode-still.jpg"));
+        assert!(meta.poster_url.is_none(), "there is no show artwork to borrow");
+    }
+
+    #[test]
+    fn an_in_progress_episode_of_unknown_length_counts_as_no_fraction() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "e", 4);
+        mark_watched(&pool, &uid, "e1").unwrap();
+        upsert_progress(&pool, &uid, "e2", 30_000, None).unwrap();
+
+        assert_eq!(show_progress(&pool, &uid).unwrap().get("s1"), Some(&25));
+        assert_eq!(show_progress_one(&pool, &uid, "s1").unwrap(), Some(25));
+    }
 }

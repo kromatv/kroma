@@ -352,6 +352,37 @@ mod tests {
     }
 
     #[test]
+    fn the_first_character_token_buckets_on_the_sort_title() {
+        let c = NameContext { title: "The Matrix".into(), ..Default::default() };
+        assert_eq!(render("{Movie Title First Character}/{Movie Title}", &c), "M/The Matrix");
+
+        let digits = NameContext { title: "2001: A Space Odyssey".into(), ..Default::default() };
+        assert_eq!(render("{Title First Character}", &digits), "2");
+
+        let punctuation = NameContext { title: "...And Justice for All".into(), ..Default::default() };
+        assert_eq!(render("{Title First Character}", &punctuation), "A");
+
+        let empty = NameContext { title: "!!!".into(), ..Default::default() };
+        assert_eq!(render("{Title First Character}", &empty), "");
+    }
+
+    #[test]
+    fn an_empty_language_filter_token_is_ignored() {
+        let all = ["EN".to_string(), "FR".to_string(), "DE".to_string()];
+        assert_eq!(langs(&all, Some("EN++FR"), true), "[EN+FR]");
+        assert_eq!(langs(&all, Some("+"), true), "[EN+FR+DE]");
+    }
+
+    #[test]
+    fn truncation_never_splits_a_multi_byte_character() {
+        let title = "日本語の映画";
+        let head = truncate(title, 8);
+        assert_eq!(head, "日...");
+        let tail = truncate(title, -8);
+        assert_eq!(tail, "...画");
+    }
+
+    #[test]
     fn string_token_truncation_spec() {
         let c = NameContext { title: "A Very Long Movie Title Here".into(), ..Default::default() };
         assert_eq!(render("{Movie Title:13}", &c), "A Very Lon...");

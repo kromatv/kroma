@@ -67,3 +67,13 @@ fn find_icon(dir: &Path) -> Option<(PathBuf, &'static str)> {
 fn compile_error(message: &str) -> TokenStream {
     format!("compile_error!({message:?})").parse().expect("compile_error! parses")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_module_root_with_no_icon_file_is_not_an_error() {
+        assert!(find_icon(Path::new(env!("CARGO_MANIFEST_DIR"))).is_none());
+    }
+}

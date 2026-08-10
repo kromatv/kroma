@@ -157,6 +157,56 @@ mod tests {
         assert_eq!(map.get("item-b"), None);
     }
 
+    fn seed_episode(pool: &Pool, show_id: &str, item_id: &str, abs_path: &str) {
+        let conn = pool.get().unwrap();
+        conn.execute(
+            "INSERT OR IGNORE INTO libraries (id, name, kind, path, added_at) \
+             VALUES ('lib', 'Lib', 'shows', '/lib', '2026-01-01')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT OR IGNORE INTO shows (id, library, title, added_at) \
+             VALUES (?1, 'lib', 'Show', '2026-01-01')",
+            params![show_id],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO items (id, title, kind, container, library, show_id, season, episode, added_at) \
+             VALUES (?1, 'E', 'episode', 'mkv', 'lib', ?2, 1, 1, '2026-01-01')",
+            params![item_id, show_id],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO files (id, item_id, abs_path, container) VALUES (?1, ?2, ?3, 'mkv')",
+            params![format!("f-{item_id}"), item_id, abs_path],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn a_shows_hint_is_resolved_through_any_one_of_its_episode_files() {
+        let p = pool();
+        seed_episode(&p, "show-1", "ep-1", "/lib/Show/S01E01.mkv");
+        seed_episode(&p, "show-1", "ep-2", "/lib/Show/S01E02.mkv");
+        seed_episode(&p, "show-2", "ep-3", "/lib/Other/S01E01.mkv");
+        set_file_tmdb(&p, "/lib/Show/S01E02.mkv", 76331).unwrap();
+
+        {
+            let conn = p.get().unwrap();
+            assert_eq!(acq_tmdb_for_show(&conn, "show-1").unwrap(), Some(76331));
+            assert!(acq_tmdb_for_show(&conn, "show-2").unwrap().is_none());
+            assert!(acq_tmdb_for_show(&conn, "unknown-show").unwrap().is_none());
+        }
+
+        let by_show = acq_tmdb_by_show(&p).unwrap();
+        assert_eq!(by_show.get("show-1"), Some(&76331));
+        assert_eq!(by_show.get("show-2"), None);
+        seed_movie(&p, "item-m", "/lib/M/M.mkv");
+        set_file_tmdb(&p, "/lib/M/M.mkv", 603).unwrap();
+        assert_eq!(acq_tmdb_by_show(&p).unwrap().len(), 1);
+    }
+
     #[test]
     fn a_hint_for_a_path_no_file_scanned_yet_resolves_nothing() {
         // The import may write the hint before the scan has indexed the file.

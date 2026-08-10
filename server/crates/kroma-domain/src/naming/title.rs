@@ -206,6 +206,12 @@ mod tests {
     }
 
     #[test]
+    fn a_leading_year_hands_the_title_back_to_the_text_behind_it() {
+        assert_eq!(clean_title("2018 - LaserGame - Indian Forest"), "LaserGame - Indian Forest");
+        assert_eq!(clean_title("2018"), "");
+    }
+
+    #[test]
     fn clean_title_paren_year_is_authoritative() {
         assert_eq!(clean_title("Blade Runner 2049 (2017) 2160p"), "Blade Runner 2049");
         assert_eq!(clean_title("Uncut Gems (2019) WEBDL-1080p"), "Uncut Gems");

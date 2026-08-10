@@ -360,6 +360,60 @@ mod tests {
     }
 
     #[test]
+    fn a_taste_window_of_never_embedded_titles_recommends_nothing() {
+        let p = seeded();
+        {
+            let conn = p.get().unwrap();
+            conn.execute(
+                "INSERT INTO items (id,kind,title,container,library,added_at) \
+                 VALUES ('z','movie','Z','mkv','lib','t')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO play_history (id,user_id,item_id,kind,title,started_at,ended_at) \
+                 VALUES ('h1','u1','z','movie','Z',0,100)",
+                [],
+            )
+            .unwrap();
+        }
+        assert_eq!(recent_watched_ids(&p, "u1").unwrap(), vec!["z".to_string()]);
+        assert!(for_you(&p, "u1", 10).unwrap().is_empty(), "no vector, so no centroid to rank from");
+    }
+
+    #[test]
+    fn a_centroid_averages_only_the_vectors_of_its_own_width() {
+        assert!(centroid_of(&[], &["a".to_string()]).is_none());
+
+        let vectors =
+            vec![("a".to_string(), vec![1.0, 0.0]), ("b".to_string(), vec![0.0, 1.0, 0.0])];
+        assert!(centroid_of(&vectors, &["ghost".to_string()]).is_none());
+        assert_eq!(
+            centroid_of(&vectors, &["a".to_string(), "b".to_string()]),
+            Some(vec![1.0, 0.0])
+        );
+    }
+
+    #[test]
+    fn normalizing_a_zero_vector_leaves_it_alone() {
+        let mut zero = vec![0.0f32, 0.0];
+        l2_normalize(&mut zero);
+        assert_eq!(zero, vec![0.0, 0.0], "dividing by a zero norm would yield NaN");
+
+        let mut v = vec![3.0f32, 4.0];
+        l2_normalize(&mut v);
+        assert_eq!(v, vec![0.6, 0.8]);
+    }
+
+    #[test]
+    fn a_rail_that_the_genre_guard_already_fills_is_not_topped_up() {
+        let p = seeded();
+        let one = similar_items(&p, "a", 1).unwrap();
+        assert_eq!(one.len(), 1);
+        assert_eq!(one[0].id, "b");
+    }
+
+    #[test]
     fn prune_orphans_drops_vectors_without_a_title() {
         let p = seeded();
         // Add a vector for an id that is neither an item nor a show.

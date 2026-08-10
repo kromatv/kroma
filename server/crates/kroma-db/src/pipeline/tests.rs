@@ -50,6 +50,27 @@ fn reconcile_is_incremental_and_idempotent() {
 }
 
 #[test]
+fn a_task_a_worker_already_claimed_is_left_alone_when_its_input_changes() {
+    let p = pool();
+    reconcile(&p, "s", "item", &subj(&[("a", "v1")]), 1).unwrap();
+    assert_eq!(claim_batch(&p, "s", 10, 2).unwrap(), vec![("a".to_string(), "v1".to_string())]);
+    assert_eq!(c(&p), (0, 1, 0, 0, 0));
+
+    reconcile(&p, "s", "item", &subj(&[("a", "v2")]), 3).unwrap();
+    assert_eq!(c(&p), (0, 1, 0, 0, 0));
+    let sig: Option<String> = p
+        .get()
+        .unwrap()
+        .query_row(
+            "SELECT input_sig FROM pipeline_tasks WHERE stage='s' AND subject_id='a'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(sig.as_deref(), Some("v1"));
+}
+
+#[test]
 fn failures_retry_up_to_max_then_stick() {
     let p = pool();
     reconcile(&p, "s", "item", &subj(&[("a", "v1")]), 1).unwrap();

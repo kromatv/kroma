@@ -207,4 +207,15 @@ mod tests {
         assert!(tracks.contains("eac3"));
         assert!(loudness_target(&p, "ghost").unwrap().is_none());
     }
+
+    #[test]
+    fn a_verdict_written_by_a_newer_server_reads_as_no_analysis() {
+        let p = pool_with_file();
+        set_audio_analysis(&p, "f1", 0, &analysis(AudioVerdict::QuietDialog)).unwrap();
+        let conn = p.get().unwrap();
+        conn.execute("UPDATE audio_analysis SET verdict='clipping' WHERE file_id='f1'", []).unwrap();
+
+        assert!(audio_analysis_for_file(&conn, "f1").unwrap().is_none());
+        assert!(audio_analysis_for_files(&conn, &["f1"]).unwrap().is_empty());
+    }
 }

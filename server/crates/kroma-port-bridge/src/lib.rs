@@ -68,6 +68,33 @@ pub use torznab::{torznab_routes, TorznabClient};
 pub use vpn::{downloadvpn_routes, vpnproxy_routes, DownloadVpnClient, VpnProxyClient};
 
 #[cfg(test)]
+pub(crate) mod testing {
+    use std::sync::Arc;
+
+    use axum::Router;
+
+    use crate::Resolver;
+
+    pub(crate) async fn serve<S: Clone + Send + Sync + 'static>(
+        router: Router<S>,
+        state: S,
+    ) -> Resolver {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = router.with_state(state);
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+        let base = format!("http://{addr}");
+        Arc::new(move || Some((base.clone(), "test-token".to_string())))
+    }
+
+    pub(crate) async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
+        tokio::task::spawn_blocking(job).await.unwrap()
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

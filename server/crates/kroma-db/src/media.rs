@@ -576,6 +576,40 @@ mod tests {
     }
 
     #[test]
+    fn a_shows_poster_comes_from_its_stored_metadata() {
+        let p = pool();
+        {
+            let conn = p.get().unwrap();
+            conn.execute(
+                "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','shows','/x','t')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO shows (id,library,title,added_at,metadata) VALUES ('s1','lib','Show','t',?1)",
+                params![
+                    r#"{"tmdbId":1,"tmdbUrl":"x","genres":[],"posterUrl":"/art/poster.jpg"}"#
+                ],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO shows (id,library,title,added_at,metadata) VALUES ('s2','lib','Bare','t',?1)",
+                params![r#"{"tmdbId":2,"tmdbUrl":"x","genres":[]}"#],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO shows (id,library,title,added_at) VALUES ('s3','lib','Raw','t')",
+                [],
+            )
+            .unwrap();
+        }
+        assert_eq!(show_poster_art(&p, "s1").unwrap().as_deref(), Some("/art/poster.jpg"));
+        assert!(show_poster_art(&p, "s2").unwrap().is_none());
+        assert!(show_poster_art(&p, "s3").unwrap().is_none());
+        assert!(show_poster_art(&p, "missing").unwrap().is_none());
+    }
+
+    #[test]
     fn by_ids_and_index_snapshot() {
         let p = pool();
         {

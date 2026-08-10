@@ -115,6 +115,29 @@ mod tests {
     }
 
     #[test]
+    fn an_episode_under_a_bare_season_folder_falls_back_to_the_filename() {
+        assert_eq!(
+            p("/tv", "/tv/Season 01/S01E02.mkv"),
+            Parsed::Episode {
+                show_title: "S01E02".into(),
+                show_year: None,
+                season: 1,
+                episode: 2,
+                episode_end: None,
+                episode_title: None,
+            }
+        );
+    }
+
+    #[test]
+    fn a_movie_with_no_year_anywhere_keeps_the_filename_title() {
+        assert_eq!(
+            p("/m", "/m/Movies/Inception.mkv"),
+            Parsed::Movie { title: "Inception".into(), year: None }
+        );
+    }
+
+    #[test]
     fn movie_in_year_folder() {
         assert_eq!(
             p("/m", "/m/Blade Runner 2049 (2017)/Blade Runner 2049 (2017) 2160p BluRay x265.mkv"),

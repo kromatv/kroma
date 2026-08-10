@@ -80,9 +80,26 @@ impl TorznabPort for TorznabClient {
 mod tests {
     use super::*;
 
-    struct OkTz;
-    impl TorznabPort for OkTz {
+    use crate::testing::{blocking, serve};
+
+    struct StubTz {
+        fail: bool,
+    }
+
+    impl StubTz {
+        fn working() -> Self {
+            Self { fail: false }
+        }
+        fn failing() -> Self {
+            Self { fail: true }
+        }
+    }
+
+    impl TorznabPort for StubTz {
         fn caps(&self, _endpoint: &IndexerEndpoint) -> anyhow::Result<Caps> {
+            if self.fail {
+                anyhow::bail!("boom");
+            }
             Ok(Caps { search_tmdb: true, ..Default::default() })
         }
         fn search(
@@ -91,22 +108,10 @@ mod tests {
             _query: &Query,
             _caps: &Caps,
         ) -> anyhow::Result<Vec<Release>> {
+            if self.fail {
+                anyhow::bail!("boom");
+            }
             Ok(vec![Release { title: "R".into(), guid: "g".into(), ..Default::default() }])
-        }
-    }
-
-    struct ErrTz;
-    impl TorznabPort for ErrTz {
-        fn caps(&self, _endpoint: &IndexerEndpoint) -> anyhow::Result<Caps> {
-            Err(anyhow::anyhow!("boom"))
-        }
-        fn search(
-            &self,
-            _endpoint: &IndexerEndpoint,
-            _query: &Query,
-            _caps: &Caps,
-        ) -> anyhow::Result<Vec<Release>> {
-            Err(anyhow::anyhow!("boom"))
         }
     }
 
@@ -120,18 +125,18 @@ mod tests {
 
     #[tokio::test]
     async fn caps_handler_ok_and_err() {
-        let ok: Arc<dyn TorznabPort> = Arc::new(OkTz);
+        let ok: Arc<dyn TorznabPort> = Arc::new(StubTz::working());
         let Json(res) = caps_h(Extension(ok), Json(endpoint())).await;
         assert!(res.unwrap().search_tmdb);
 
-        let err: Arc<dyn TorznabPort> = Arc::new(ErrTz);
+        let err: Arc<dyn TorznabPort> = Arc::new(StubTz::failing());
         let Json(res) = caps_h(Extension(err), Json(endpoint())).await;
         assert_eq!(res.unwrap_err(), "boom");
     }
 
     #[tokio::test]
     async fn search_handler_returns_releases() {
-        let engine: Arc<dyn TorznabPort> = Arc::new(OkTz);
+        let engine: Arc<dyn TorznabPort> = Arc::new(StubTz::working());
         let req = SearchReq {
             endpoint: endpoint(),
             query: Query::Episode { tmdb_id: Some(1), title: "T".into(), season: 1, episode: 2 },
@@ -143,6 +148,18 @@ mod tests {
         assert_eq!(releases[0].guid, "g");
     }
 
+    #[tokio::test]
+    async fn search_handler_maps_error() {
+        let engine: Arc<dyn TorznabPort> = Arc::new(StubTz::failing());
+        let req = SearchReq {
+            endpoint: endpoint(),
+            query: Query::Season { tmdb_id: None, title: "T".into(), season: 3 },
+            caps: Caps::default(),
+        };
+        let Json(res) = search_h(Extension(engine), Json(req)).await;
+        assert_eq!(res.unwrap_err(), "boom");
+    }
+
     #[test]
     fn client_offline_errors() {
         let c = TorznabClient::new(offline());
@@ -150,5 +167,41 @@ mod tests {
         assert!(c
             .search(&endpoint(), &Query::Movie { tmdb_id: None, imdb_id: None, title: "T".into(), year: None }, &Caps::default())
             .is_err());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn caps_and_releases_survive_the_round_trip() {
+        let engine: Arc<dyn TorznabPort> = Arc::new(StubTz::working());
+        let resolve = serve(torznab_routes::<()>(engine), ()).await;
+
+        let client = TorznabClient::new(resolve.clone());
+        let caps = blocking(move || client.caps(&endpoint())).await.unwrap();
+        assert!(caps.search_tmdb);
+
+        let client = TorznabClient::new(resolve);
+        let releases = blocking(move || {
+            let query = Query::Movie {
+                tmdb_id: Some(603),
+                imdb_id: None,
+                title: "The Matrix".into(),
+                year: Some(1999),
+            };
+            client.search(&endpoint(), &query, &Caps { search_tmdb: true, ..Default::default() })
+        })
+        .await
+        .unwrap();
+        assert_eq!(releases.len(), 1);
+        assert_eq!(releases[0].title, "R");
+        assert_eq!(releases[0].guid, "g");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn an_indexer_failure_crosses_the_wire_as_an_error() {
+        let engine: Arc<dyn TorznabPort> = Arc::new(StubTz::failing());
+        let resolve = serve(torznab_routes::<()>(engine), ()).await;
+
+        let client = TorznabClient::new(resolve);
+        let err = blocking(move || client.caps(&endpoint())).await.unwrap_err().to_string();
+        assert!(err.contains("boom"), "{err}");
     }
 }

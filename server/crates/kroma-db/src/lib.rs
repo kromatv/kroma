@@ -581,3 +581,68 @@ mod apply_files_tests {
         assert_eq!(item.default_file_id.as_deref(), Some("b"));
     }
 }
+
+#[cfg(test)]
+mod pool_tests {
+    #[test]
+    fn a_returned_connection_is_reused_and_the_idle_set_stays_capped() {
+        let pool = crate::testing::temp_pool("pool-cap");
+        let max_idle = pool.max_idle;
+
+        {
+            let first = pool.get().unwrap();
+            first.query_row("SELECT 1", [], |r| r.get::<_, i64>(0)).unwrap();
+        }
+        assert_eq!(pool.idle.lock().unwrap().len(), 1, "a dropped connection goes back");
+
+        let checked_out: Vec<_> = (0..max_idle + 3).map(|_| pool.get().unwrap()).collect();
+        assert!(pool.idle.lock().unwrap().is_empty());
+        drop(checked_out);
+        assert_eq!(
+            pool.idle.lock().unwrap().len(),
+            max_idle,
+            "connections past the cap are closed, not hoarded"
+        );
+    }
+}
+
+#[cfg(test)]
+mod row_tests {
+    use super::*;
+
+    #[test]
+    fn permissions_that_are_not_a_json_array_fall_back_to_playback_alone() {
+        assert_eq!(parse_permissions(r#"["playback","users.manage"]"#), vec![
+            Permission::Playback,
+            Permission::UsersManage
+        ]);
+        assert_eq!(parse_permissions(r#"["playback","modules.manage"]"#), vec![Permission::Playback]);
+        assert_eq!(parse_permissions("not json"), vec![Permission::Playback]);
+        assert_eq!(parse_permissions(""), vec![Permission::Playback]);
+    }
+
+    #[test]
+    fn a_file_probed_before_audio_tracks_existed_still_reports_its_audio() {
+        let pool = crate::testing::temp_pool("row-file");
+        let conn = pool.get().unwrap();
+        conn.execute_batch(
+            "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movie','/x','t');\
+             INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('it','movie','F','mkv','lib','t');\
+             INSERT INTO files (id,item_id,abs_path,container,probed,a_codec,a_channels,a_language,audio_tracks) \
+             VALUES ('f1','it','/m/a.mkv','mkv',1,'eac3',6,'fr','[]');",
+        )
+        .unwrap();
+
+        let file = conn
+            .query_row(&format!("SELECT {FILE_COLS} FROM files WHERE id='f1'"), [], row_to_file)
+            .unwrap();
+        let audio = file.audio.expect("the legacy columns stand in for an empty audio_tracks");
+        assert_eq!(audio.codec, "eac3");
+        assert_eq!(audio.channels, Some(6));
+        assert_eq!(audio.language.as_deref(), Some("fr"));
+        assert_eq!(audio.index, 0);
+        assert!(audio.default);
+        assert!(audio.title.is_none());
+        assert!(file.audio_tracks.is_empty());
+    }
+}

@@ -230,6 +230,15 @@ mod gate_tests {
     // The guard comes back with the state: the router built from it keeps
     // reading the settings store that lives in that directory.
     fn test_state() -> (SharedState, kroma_testing::TempDir) {
+        state_with_services(|_| std::collections::HashMap::new())
+    }
+
+    type ModuleServices =
+        std::collections::HashMap<std::any::TypeId, Arc<dyn std::any::Any + Send + Sync>>;
+
+    fn state_with_services(
+        services: impl FnOnce(&std::path::Path) -> ModuleServices,
+    ) -> (SharedState, kroma_testing::TempDir) {
         let dir = kroma_testing::temp_dir("kernel");
         let db = kroma_db::init(&dir.path().join("kroma.db")).unwrap();
         let settings = kroma_engine::services::settings::Settings::load(&db);
@@ -248,7 +257,7 @@ mod gate_tests {
             db,
             settings,
             embedder,
-            std::collections::HashMap::new(),
+            services(dir.path()),
             &[],
         );
         (state, dir)
@@ -353,5 +362,65 @@ mod gate_tests {
         assert!(icon(&state, "tv.kroma.indexer").is_none());
         assert!(find_server("tv.kroma.indexer").is_none());
         apply_enabled_states(&state).await;
+    }
+
+    fn install_module(modules_dir: &std::path::Path, id: &str, module_json: &str) {
+        let dir = modules_dir.join(id);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("module.json"), module_json).unwrap();
+    }
+
+    fn state_with_installed_modules() -> (SharedState, kroma_testing::TempDir) {
+        state_with_services(|data_dir| {
+            let modules_dir = data_dir.join("modules");
+            install_module(
+                &modules_dir,
+                "tv.kroma.notes",
+                r#"{ "id": "tv.kroma.notes", "name": "Notes", "version": "1.2.3" }"#,
+            );
+            install_module(&modules_dir, "tv.kroma.broken", r#"{ "name": "no id, no version" }"#);
+            std::fs::write(modules_dir.join("tv.kroma.notes").join("icon.svg"), b"<svg/>").unwrap();
+
+            let supervisor =
+                kroma_module_supervisor::Supervisor::new(kroma_module_supervisor::SupervisorConfig {
+                    modules_dir,
+                    core_url: "http://127.0.0.1:0".into(),
+                    host_token: "token".into(),
+                    db_path: data_dir.join("kroma.db"),
+                    data_dir: data_dir.to_path_buf(),
+                    reserved_ids: Vec::new(),
+                    server_version: "0.0.0".into(),
+                    log_line: None,
+                });
+            std::collections::HashMap::from([(
+                std::any::TypeId::of::<kroma_module_supervisor::Supervisor>(),
+                supervisor as Arc<dyn std::any::Any + Send + Sync>,
+            )])
+        })
+    }
+
+    #[test]
+    fn an_installed_kmod_joins_the_manifest_list() {
+        let (state, _dir) = state_with_installed_modules();
+        let listed = manifests(&state);
+        assert_eq!(listed.len(), 1, "only the readable manifest is listed: {listed:?}");
+        assert_eq!(listed[0].id, "tv.kroma.notes");
+        assert_eq!(listed[0].version, "1.2.3");
+        assert_eq!(installed_ids(&state), vec!["tv.kroma.notes".to_string()]);
+    }
+
+    #[test]
+    fn a_module_json_that_is_not_a_manifest_is_skipped_rather_than_blanking_the_list() {
+        let (state, _dir) = state_with_installed_modules();
+        assert!(!manifests(&state).iter().any(|m| m.id == "tv.kroma.broken"));
+    }
+
+    #[test]
+    fn an_installed_modules_icon_is_served_from_its_directory() {
+        let (state, _dir) = state_with_installed_modules();
+        let (content_type, bytes) = icon(&state, "tv.kroma.notes").expect("the installed icon");
+        assert_eq!(content_type, "image/svg+xml");
+        assert_eq!(bytes, b"<svg/>");
+        assert!(icon(&state, "tv.kroma.absent").is_none());
     }
 }

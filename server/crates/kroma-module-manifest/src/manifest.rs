@@ -322,4 +322,21 @@ mod tests {
         .unwrap();
         assert_eq!(m.depends_on[0], Dependency::new("lib"));
     }
+
+    #[test]
+    fn a_depends_on_that_is_neither_a_map_nor_a_list_says_what_was_expected() {
+        let err = serde_json::from_str::<ModuleManifest>(
+            r#"{ "id": "a", "name": "A", "version": "1.0.0", "dependsOn": 7 }"#,
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(err.contains("a { id: range } map or a list of dependencies"), "{err}");
+    }
+
+    #[test]
+    fn describe_sets_the_description_the_admin_lists() {
+        let m = ModuleManifest::new("a", "A", "1.0.0").describe("Grabs torrents");
+        assert_eq!(m.description, "Grabs torrents");
+        assert_eq!(serde_json::to_value(&m).unwrap()["description"], "Grabs torrents");
+    }
 }

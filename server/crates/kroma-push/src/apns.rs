@@ -411,4 +411,45 @@ mod tests {
         assert!(!flip_environment(&mut foreign));
         assert_eq!(foreign.url, "https://fcm.googleapis.com/v1/x");
     }
+
+    #[test]
+    fn the_stored_environment_string_parses_back_to_the_same_environment() {
+        assert_eq!(Environment::Production.as_str(), "production");
+        assert_eq!(Environment::Sandbox.as_str(), "sandbox");
+        assert_eq!(Environment::parse(Environment::Sandbox.as_str()), Environment::Sandbox);
+        assert_eq!(Environment::parse(Environment::Production.as_str()), Environment::Production);
+
+        let key = test_key(Environment::Sandbox);
+        assert_eq!(key.environment(), Environment::Sandbox);
+        assert_eq!(test_key(Environment::Production).environment(), Environment::Production);
+    }
+
+    #[test]
+    fn debugging_a_key_never_prints_the_key_material() {
+        let rendered = format!("{:?}", test_key(Environment::Sandbox));
+        assert!(rendered.contains("ABC1234567"), "{rendered}");
+        assert!(rendered.contains("TEAM123456"), "{rendered}");
+        assert!(rendered.contains("tv.kroma.mobile"), "{rendered}");
+        assert!(rendered.contains("Sandbox"), "{rendered}");
+        assert!(!rendered.contains("secret"), "{rendered}");
+        assert!(!rendered.contains("PRIVATE KEY"), "{rendered}");
+    }
+
+    #[test]
+    fn actions_reach_the_device_as_an_id_method_and_href_each() {
+        let actions = [
+            ("approve".to_string(), "POST".to_string(), "/api/requests/r1/approve".to_string()),
+            ("open".to_string(), "GET".to_string(), "/movie/ab12".to_string()),
+        ];
+        let alert = Alert { id: "n1", title: "T", body: "B", actions: &actions, ..Default::default() };
+        let req =
+            build_request(&test_key(Environment::Production), "D", &alert, Urgency::High, 0).unwrap();
+
+        let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
+        assert_eq!(body["actions"].as_array().unwrap().len(), 2);
+        assert_eq!(body["actions"][0]["id"], "approve");
+        assert_eq!(body["actions"][0]["method"], "POST");
+        assert_eq!(body["actions"][0]["href"], "/api/requests/r1/approve");
+        assert_eq!(body["actions"][1]["id"], "open");
+    }
 }

@@ -45,3 +45,27 @@ pub fn one_other(_locale: &str, count: i64) -> Category {
         Category::Other
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_suffix_is_the_cldr_category_name_catalog_keys_are_written_with() {
+        assert_eq!(Category::Zero.suffix(), "zero");
+        assert_eq!(Category::One.suffix(), "one");
+        assert_eq!(Category::Two.suffix(), "two");
+        assert_eq!(Category::Few.suffix(), "few");
+        assert_eq!(Category::Many.suffix(), "many");
+        assert_eq!(Category::Other.suffix(), "other");
+    }
+
+    #[test]
+    fn the_default_rule_is_singular_at_one_and_plural_everywhere_else() {
+        assert_eq!(one_other("en", 1), Category::One);
+        assert_eq!(one_other("fr", 1), Category::One);
+        assert_eq!(one_other("en", 0), Category::Other);
+        assert_eq!(one_other("en", 2), Category::Other);
+        assert_eq!(one_other("en", -1), Category::Other);
+    }
+}

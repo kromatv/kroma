@@ -384,4 +384,40 @@ mod tests {
         assert!(!is_gone(503, ""));
         assert!(!is_gone(400, "not json"));
     }
+
+    #[test]
+    fn the_project_id_names_the_send_endpoint() {
+        let key = key();
+        assert_eq!(key.project_id(), "kroma-test");
+        let req = build_request(&key, "AT", "DEV", &alert(), Urgency::High).unwrap();
+        assert_eq!(req.url, "https://fcm.googleapis.com/v1/projects/kroma-test/messages:send");
+    }
+
+    #[test]
+    fn debugging_a_key_never_prints_the_private_key() {
+        let rendered = format!("{:?}", key());
+        assert!(rendered.contains("kroma-test"), "{rendered}");
+        assert!(rendered.contains("push@kroma-test.iam.gserviceaccount.com"), "{rendered}");
+        assert!(!rendered.contains("PRIVATE KEY"), "{rendered}");
+        assert!(!rendered.contains("private_key"), "{rendered}");
+    }
+
+    #[test]
+    fn actions_travel_as_a_json_string_because_fcm_data_is_string_only() {
+        let actions = [
+            ("approve".to_string(), "POST".to_string(), "/api/requests/r1/approve".to_string()),
+            ("open".to_string(), "GET".to_string(), "/movie/ab12".to_string()),
+        ];
+        let alert = Alert { id: "n1", title: "T", body: "B", actions: &actions, ..Default::default() };
+        let req = build_request(&key(), "AT", "DEV", &alert, Urgency::High).unwrap();
+
+        let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
+        let encoded = body["message"]["data"]["actions"].as_str().expect("a string, not an array");
+        let decoded: serde_json::Value = serde_json::from_str(encoded).unwrap();
+        assert_eq!(decoded.as_array().unwrap().len(), 2);
+        assert_eq!(decoded[0]["id"], "approve");
+        assert_eq!(decoded[0]["method"], "POST");
+        assert_eq!(decoded[0]["href"], "/api/requests/r1/approve");
+        assert_eq!(decoded[1]["id"], "open");
+    }
 }

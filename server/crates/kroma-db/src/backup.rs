@@ -315,4 +315,90 @@ mod tests {
         let fk: i64 = dst.get().unwrap().query_row("PRAGMA foreign_keys", [], |r| r.get(0)).unwrap();
         assert_eq!(fk, 1);
     }
+
+    fn empty_doc() -> BackupDoc {
+        BackupDoc {
+            version: VERSION,
+            exported_at: "t".into(),
+            tables: BTreeMap::new(),
+            assets: BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn a_backup_from_a_newer_server_is_refused_rather_than_half_restored() {
+        let dst = fresh_pool("newer");
+        let doc = BackupDoc { version: VERSION + 1, ..empty_doc() };
+        let err = import_portable(&dst, &doc, false).unwrap_err().to_string();
+        assert!(err.contains("newer than supported"), "{err}");
+    }
+
+    #[test]
+    fn a_table_the_target_does_not_have_is_skipped_rather_than_failing_the_restore() {
+        let dst = crate::testing::temp_pool("bkp-no-module");
+        let mut doc = empty_doc();
+        doc.tables.insert(
+            "indexers".into(),
+            vec![Map::from_iter([("id".to_string(), Value::from("ix1"))])],
+        );
+        doc.tables.insert(
+            "users".into(),
+            vec![Map::from_iter([
+                ("id".to_string(), Value::from("u1")),
+                ("email".to_string(), Value::from("a@b.c")),
+                ("username".to_string(), Value::from("Al")),
+                ("password_hash".to_string(), Value::from("ph")),
+                ("created_at".to_string(), Value::from("t")),
+            ])],
+        );
+
+        let summary = import_portable(&dst, &doc, true).unwrap();
+        assert_eq!(summary, vec![("users".to_string(), 1)]);
+        assert_eq!(count(&dst, "users"), 1);
+    }
+
+    #[test]
+    fn a_row_whose_columns_are_all_unsafe_identifiers_is_skipped() {
+        let dst = fresh_pool("idents");
+        let mut doc = empty_doc();
+        doc.tables.insert(
+            "users".into(),
+            vec![Map::from_iter([("id); DROP TABLE users --".to_string(), Value::from("u1"))])],
+        );
+        assert_eq!(import_portable(&dst, &doc, false).unwrap(), vec![("users".to_string(), 0)]);
+        assert_eq!(count(&dst, "users"), 0);
+    }
+
+    #[test]
+    fn every_json_value_kind_maps_onto_a_sqlite_value() {
+        assert_eq!(json_to_sql(&Value::Null), SqlValue::Null);
+        assert_eq!(json_to_sql(&Value::Bool(true)), SqlValue::Integer(1));
+        assert_eq!(json_to_sql(&Value::Bool(false)), SqlValue::Integer(0));
+        assert_eq!(json_to_sql(&serde_json::json!(42)), SqlValue::Integer(42));
+        assert_eq!(json_to_sql(&serde_json::json!(1.5)), SqlValue::Real(1.5));
+        assert_eq!(json_to_sql(&serde_json::json!("hi")), SqlValue::Text("hi".into()));
+        assert_eq!(json_to_sql(&serde_json::json!([1, 2, 255])), SqlValue::Blob(vec![1, 2, 255]));
+        assert_eq!(
+            json_to_sql(&serde_json::json!({ "a": 1 })),
+            SqlValue::Text(r#"{"a":1}"#.into())
+        );
+    }
+
+    #[test]
+    fn every_sqlite_value_kind_survives_the_dump_as_json() {
+        let pool = crate::testing::temp_pool("bkp-values");
+        let conn = pool.get().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE v (i INTEGER, r REAL, t TEXT, b BLOB, n TEXT);\
+             INSERT INTO v VALUES (7, 1.5, 'text', x'00ff', NULL);",
+        )
+        .unwrap();
+
+        let rows = dump_query(&conn, "SELECT * FROM v").unwrap();
+        assert_eq!(rows[0]["i"], Value::from(7));
+        assert_eq!(rows[0]["r"], Value::from(1.5));
+        assert_eq!(rows[0]["t"], Value::from("text"));
+        assert_eq!(rows[0]["b"], serde_json::json!([0, 255]));
+        assert_eq!(rows[0]["n"], Value::Null);
+    }
 }

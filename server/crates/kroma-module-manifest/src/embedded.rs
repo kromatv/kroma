@@ -101,4 +101,30 @@ mod tests {
         assert_eq!(cap.fields.len(), 2);
         assert!(cap.fields[1].secret, "the secret flag must survive registration");
     }
+
+    const BARE: &str = r#"{ "id": "tv.kroma.example", "name": "Example", "version": "0.1.0" }"#;
+
+    #[test]
+    fn each_constructor_labels_the_icon_with_the_content_type_the_route_will_serve() {
+        let svg = EmbeddedModule::new(BARE, b"<svg/>").icon().expect("an svg icon");
+        assert_eq!(svg.content_type, "image/svg+xml");
+        assert_eq!(svg.bytes, b"<svg/>");
+
+        let png = EmbeddedModule::with_png(BARE, b"\x89PNG").icon().expect("a png icon");
+        assert_eq!(png.content_type, "image/png");
+        assert_eq!(png.bytes, b"\x89PNG");
+
+        let webp = EmbeddedModule::with_icon(BARE, b"RIFF", "image/webp").icon().expect("a webp icon");
+        assert_eq!(webp.content_type, "image/webp");
+
+        assert!(EmbeddedModule::iconless(BARE).icon().is_none());
+    }
+
+    #[test]
+    fn the_registry_serves_an_embedded_modules_icon_by_id() {
+        let mut reg = Registry::new();
+        reg.register(Box::new(EmbeddedModule::new(BARE, b"<svg/>")));
+        assert_eq!(reg.icon_of("tv.kroma.example").expect("icon").content_type, "image/svg+xml");
+        assert!(reg.icon_of("tv.kroma.absent").is_none());
+    }
 }

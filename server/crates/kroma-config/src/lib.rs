@@ -245,6 +245,14 @@ mod tests {
     }
 
     #[test]
+    fn the_tls_material_lives_under_the_data_dir() {
+        assert_eq!(
+            cfg_with("0.0.0.0", 4040, "/var/lib/kroma").tls_dir(),
+            PathBuf::from("/var/lib/kroma/tls")
+        );
+    }
+
+    #[test]
     fn socket_addr_parses_ipv4_ipv6_and_falls_back() {
         assert_eq!(
             cfg_with("127.0.0.1", 8080, "./data").socket_addr(),

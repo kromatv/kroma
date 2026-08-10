@@ -155,3 +155,72 @@ pub struct MatchCandidates {
     pub pinned: bool,
     pub results: Vec<MatchCandidate>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cast(name: &str) -> CastMember {
+        CastMember { name: name.into(), character: None, profile_url: None }
+    }
+
+    fn metadata() -> Metadata {
+        Metadata {
+            provider: default_provider(),
+            tmdb_id: 603,
+            imdb_id: None,
+            title: Some("The Matrix".into()),
+            tagline: None,
+            overview: None,
+            release_date: None,
+            genres: Vec::new(),
+            rating: None,
+            poster_url: None,
+            backdrop_url: None,
+            logo_url: None,
+            theme_url: None,
+            cast: Vec::new(),
+            crew: Vec::new(),
+            keywords: Vec::new(),
+            tvdb_id: None,
+            tmdb_url: "https://themoviedb.org/movie/603".into(),
+        }
+    }
+
+    #[test]
+    fn the_embedded_doc_carries_every_discriminating_field_in_order() {
+        let meta = Metadata {
+            genres: vec!["Science Fiction".into(), "Action".into()],
+            keywords: vec!["dystopia".into(), "simulation".into()],
+            cast: vec![cast("Keanu Reeves"), cast("Carrie-Anne Moss")],
+            tagline: Some("Welcome to the Real World".into()),
+            overview: Some("A hacker learns the truth.".into()),
+            ..metadata()
+        };
+        assert_eq!(
+            build_doc("The Matrix", Some(1999), &meta),
+            "The Matrix. 1999. \
+             Science Fiction Action. Science Fiction Action. \
+             dystopia simulation. \
+             Keanu Reeves. Carrie-Anne Moss. \
+             Welcome to the Real World. \
+             A hacker learns the truth."
+        );
+    }
+
+    #[test]
+    fn the_embedded_doc_keeps_only_the_first_six_cast_members() {
+        let meta = Metadata {
+            cast: (1..=8).map(|n| cast(&format!("Actor {n}"))).collect(),
+            ..metadata()
+        };
+        let doc = build_doc("Ensemble", None, &meta);
+        assert!(doc.contains("Actor 6"), "{doc}");
+        assert!(!doc.contains("Actor 7"), "{doc}");
+    }
+
+    #[test]
+    fn an_empty_metadata_embeds_as_the_title_alone() {
+        assert_eq!(build_doc("Untitled", None, &metadata()), "Untitled");
+    }
+}

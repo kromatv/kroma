@@ -408,4 +408,102 @@ mod tests {
         reg.register(boxed_manifest(app));
         assert!(matches!(reg.resolve(), Err(ResolveError::UnsatisfiedCapability { .. })));
     }
+
+    #[test]
+    fn a_module_that_provides_what_it_requires_is_not_a_cycle() {
+        let mut reg = Registry::new();
+        reg.register(Fake::boxed("indexers", &[], &[("indexer", "torznab")]));
+        let mut manifest = ModuleManifest::new("indexers", "indexers", "0.1.0");
+        manifest.requires.push(CapabilityReq { kind: "indexer".into(), id: None });
+
+        let mut solo = Registry::new();
+        solo.register(Box::new(Fake { manifest, provides: vec![("indexer", "torznab")] }));
+        assert_eq!(solo.resolve().expect("a self-provided capability adds no edge"), vec!["indexers"]);
+    }
+
+    #[test]
+    fn an_unreadable_version_on_either_side_is_ignored_rather_than_failing_the_graph() {
+        let mut unreadable_range = Registry::new();
+        unreadable_range.register(Fake::boxed("lib", &[], &[]));
+        let mut app = ModuleManifest::new("app", "app", "1.0.0");
+        app.depends_on.push(Dependency { id: "lib".into(), version: Some("latest".into()) });
+        unreadable_range.register(boxed_manifest(app));
+        assert!(unreadable_range.resolve().is_ok());
+
+        let mut unreadable_target = Registry::new();
+        unreadable_target.register(boxed_manifest(ModuleManifest::new("lib", "lib", "nightly")));
+        let mut app = ModuleManifest::new("app", "app", "1.0.0");
+        app.depends_on.push(Dependency { id: "lib".into(), version: Some("^1".into()) });
+        unreadable_target.register(boxed_manifest(app));
+        assert!(unreadable_target.resolve().is_ok());
+    }
+
+    #[test]
+    fn a_module_without_a_packaged_icon_reports_none() {
+        let mut reg = Registry::new();
+        reg.register(Fake::boxed("plain", &[], &[]));
+        assert!(reg.icon_of("plain").is_none());
+        assert!(reg.icon_of("unknown").is_none());
+    }
+
+    #[test]
+    fn registration_collects_the_capabilities_in_declaration_order() {
+        let mut reg = ModuleRegistration::default();
+        reg.provide("download-client", "rqbit").provide("indexer", "torznab");
+        let kinds: Vec<&str> = reg.capabilities().iter().map(|c| c.kind.as_str()).collect();
+        assert_eq!(kinds, vec!["download-client", "indexer"]);
+        assert_eq!(reg.capabilities()[1].id, "torznab");
+    }
+
+    #[test]
+    fn every_resolve_error_says_which_module_and_what_it_wanted() {
+        let missing = ResolveError::MissingDependency {
+            module: "acquisition".into(),
+            needs: "torrents".into(),
+        };
+        assert_eq!(
+            missing.to_string(),
+            r#"module "acquisition" depends on "torrents", which is not registered"#
+        );
+
+        let mismatch = ResolveError::VersionMismatch {
+            module: "acquisition".into(),
+            needs: "torrents".into(),
+            req: "^2".into(),
+            found: "0.1.0".into(),
+        };
+        assert_eq!(
+            mismatch.to_string(),
+            r#"module "acquisition" needs "torrents" ^2 but 0.1.0 is registered"#
+        );
+
+        let any = ResolveError::UnsatisfiedCapability {
+            module: "acquisition".into(),
+            kind: "download-client".into(),
+            id: None,
+        };
+        assert_eq!(
+            any.to_string(),
+            r#"module "acquisition" needs capability "download-client", which no module provides"#
+        );
+
+        let named = ResolveError::UnsatisfiedCapability {
+            module: "acquisition".into(),
+            kind: "download-client".into(),
+            id: Some("rqbit".into()),
+        };
+        assert_eq!(
+            named.to_string(),
+            r#"module "acquisition" needs capability "download-client":"rqbit", which no module provides"#
+        );
+
+        assert_eq!(
+            ResolveError::DuplicateId("tv.kroma.torrents".into()).to_string(),
+            r#"two modules registered the id "tv.kroma.torrents""#
+        );
+        assert_eq!(
+            ResolveError::Cycle(vec!["a".into(), "b".into()]).to_string(),
+            r#"module dependency cycle among ["a", "b"]"#
+        );
+    }
 }

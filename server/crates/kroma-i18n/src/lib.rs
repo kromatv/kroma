@@ -415,6 +415,16 @@ mod tests {
     }
 
     #[test]
+    fn a_missing_plural_variant_falls_back_to_other_before_the_bare_key() {
+        let i = I18n::builder()
+            .default_locale("en")
+            .catalog_json("en", r#"{ "seasons_other": "{count} seasons" }"#)
+            .build()
+            .unwrap();
+        assert_eq!(i.t("en", "seasons", &[("count", "1")]), "1 seasons");
+    }
+
+    #[test]
     fn plural_rule_is_pluggable() {
         // No baked-in language table: making French treat 0 as singular takes a
         // custom rule, proving the engine doesn't hardcode CLDR.

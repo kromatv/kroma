@@ -152,3 +152,45 @@ pub struct CreateReportBody {
     #[serde(default)]
     pub message: Option<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_subject_kind_spells_the_same_stored_as_on_the_wire() {
+        for kind in [ReportSubjectKind::Movie, ReportSubjectKind::Show, ReportSubjectKind::Episode] {
+            let stored = kind.as_str();
+            assert_eq!(serde_json::to_string(&kind).unwrap(), format!("\"{stored}\""));
+            assert_eq!(ReportSubjectKind::parse(stored), Some(kind));
+        }
+        assert_eq!(ReportSubjectKind::parse("season"), None);
+        assert_eq!(ReportSubjectKind::parse("Movie"), None);
+    }
+
+    #[test]
+    fn every_category_spells_the_same_stored_as_on_the_wire() {
+        for category in [
+            ReportCategory::Metadata,
+            ReportCategory::Video,
+            ReportCategory::Audio,
+            ReportCategory::Subtitles,
+            ReportCategory::Other,
+        ] {
+            let stored = category.as_str();
+            assert_eq!(serde_json::to_string(&category).unwrap(), format!("\"{stored}\""));
+            assert_eq!(ReportCategory::parse(stored), Some(category));
+        }
+        assert_eq!(ReportCategory::parse("artwork"), None);
+    }
+
+    #[test]
+    fn every_status_spells_the_same_stored_as_on_the_wire() {
+        for status in [ReportStatus::Open, ReportStatus::Resolved, ReportStatus::Dismissed] {
+            let stored = status.as_str();
+            assert_eq!(serde_json::to_string(&status).unwrap(), format!("\"{stored}\""));
+            assert_eq!(ReportStatus::parse(stored), Some(status));
+        }
+        assert_eq!(ReportStatus::parse("closed"), None);
+    }
+}

@@ -143,3 +143,36 @@ pub struct Invite {
     pub expires_at: i64,
     pub used: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_permission_parses_back_from_its_stored_key() {
+        for perm in Permission::all() {
+            let stored = serde_json::to_string(&perm).unwrap();
+            let key = stored.trim_matches('"');
+            assert_eq!(Permission::parse(key), Some(perm), "{key}");
+        }
+    }
+
+    #[test]
+    fn an_unknown_permission_key_is_ignored_rather_than_failing_the_account() {
+        assert_eq!(Permission::parse("modules.manage"), None);
+        assert_eq!(Permission::parse(""), None);
+    }
+
+    #[test]
+    fn the_role_badge_follows_the_capability_set() {
+        assert_eq!(role_label(&Permission::all()), "Propriétaire");
+        assert_eq!(
+            role_label(&[Permission::UsersManage, Permission::SettingsManage]),
+            "Propriétaire"
+        );
+        assert_eq!(role_label(&[Permission::Playback, Permission::RequestsCreate]), "Membre");
+        assert_eq!(role_label(&[Permission::RequestsCreate]), "Restreint");
+        assert_eq!(role_label(&[]), "Restreint");
+        assert_eq!(role_label(&[Permission::UsersManage]), "Restreint");
+    }
+}

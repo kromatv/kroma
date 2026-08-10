@@ -445,6 +445,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn a_panicking_blocking_task_becomes_a_500_rather_than_taking_the_server_down() {
+        let panicked = blocking::<i32, _>(|| panic!("a module's closure panicked")).await;
+        assert_eq!(panicked.unwrap_err().status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn optional_auth_is_none_when_the_request_carries_no_bearer() {
+        let (mut parts, ()) = axum::http::Request::builder().body(()).unwrap().into_parts();
+        let host = testing::StubHost::new();
+        let OptionalAuthUser(user) =
+            OptionalAuthUser::from_request_parts(&mut parts, &host).await.unwrap();
+        assert!(user.is_none(), "a public endpoint must not reject an anonymous caller");
+    }
+
+    #[tokio::test]
     async fn query_hands_the_closure_its_own_pool() {
         let pool = kroma_db::testing::temp_pool("host-query");
         let n: Result<i64, Response> = query(&pool, |p| {

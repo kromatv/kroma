@@ -138,12 +138,13 @@ mod tests {
 
     #[test]
     fn transports_and_push_categories_round_trip() {
-        for t in [PushTransport::WebPush, PushTransport::Apns, PushTransport::Fcm] {
+        for t in [PushTransport::WebPush, PushTransport::Apns, PushTransport::Fcm, PushTransport::Relay] {
             assert_eq!(PushTransport::parse(t.as_str()), Some(t));
         }
         for c in [PushCategory::RequestReview, PushCategory::MediaAvailable] {
             assert_eq!(PushCategory::parse(c.as_str()), Some(c));
         }
         assert_eq!(PushTransport::parse("expo"), None);
+        assert_eq!(PushCategory::parse("digest"), None);
     }
 }

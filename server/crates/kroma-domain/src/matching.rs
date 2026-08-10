@@ -234,6 +234,15 @@ mod tests {
     }
 
     #[test]
+    fn every_latin_accent_and_ligature_folds_to_ascii() {
+        assert_eq!(normalize("Ångström Ça Ñandú Øst Ünter Ýes"), "angstrom ca nandu ost unter yes");
+        assert_eq!(normalize("Àáâãä Òóôõöø Ùúûü ÿÝ"), "aaaaa oooooo uuuu yy");
+        assert_eq!(normalize("Æon Flux"), "aeon flux");
+        assert_eq!(normalize("Œuvre"), "oeuvre");
+        assert_eq!(normalize("Straße"), "strasse");
+    }
+
+    #[test]
     fn normalize_folds_case_accents_and_punctuation() {
         assert_eq!(normalize("Amélie"), "amelie");
         assert_eq!(normalize("Spider-Man: No Way Home"), "spider man no way home");

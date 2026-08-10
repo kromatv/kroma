@@ -940,4 +940,15 @@ mod tests {
         assert!(!crate::has_vector(&p, "m1").unwrap());
         assert!(seasons_with_cast(&p, "s1").unwrap().is_empty());
     }
+
+    #[test]
+    fn every_kind_is_stored_under_the_spelling_the_queries_filter_on() {
+        assert_eq!(kind_str(&Kind::Movie), "movie");
+        assert_eq!(kind_str(&Kind::Episode), "episode");
+        assert_eq!(kind_str(&Kind::Video), "video");
+
+        assert_eq!(library_kind_str(&LibraryKind::Movies), "movies");
+        assert_eq!(library_kind_str(&LibraryKind::Shows), "shows");
+        assert_eq!(library_kind_str(&LibraryKind::Mixed), "mixed");
+    }
 }
