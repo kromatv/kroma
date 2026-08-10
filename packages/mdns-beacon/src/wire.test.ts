@@ -72,6 +72,80 @@ describe('readQuestions', () => {
   });
 });
 
+describe('answerPacket rejects what no resolver could read', () => {
+  it('refuses a label past the 63-byte limit rather than writing a truncated name', () => {
+    expect(() => answerPacket({ ...SERVICE, instance: 'x'.repeat(64) })).toThrow(/label too long/);
+  });
+
+  it('refuses a TXT entry past 255 bytes', () => {
+    expect(() => answerPacket({ ...SERVICE, txt: { proof: 'x'.repeat(300) } })).toThrow(
+      /txt entry too long/,
+    );
+  });
+
+  it('refuses an address that is not IPv4', () => {
+    expect(() => answerPacket({ ...SERVICE, addresses: ['fe80::1'] })).toThrow(/not an IPv4/);
+    expect(() => answerPacket({ ...SERVICE, addresses: ['192.168.1'] })).toThrow(/not an IPv4/);
+  });
+
+  it('writes an empty TXT as a single empty string', () => {
+    const packet = answerPacket({ ...SERVICE, txt: {}, addresses: [] });
+    expect(packet.readUInt16BE(6)).toBe(3);
+    expect(packet.includes(Buffer.from('proof'))).toBe(false);
+  });
+});
+
+describe('readQuestions on packets a stranger sent', () => {
+  it('ignores anything too short to be a header', () => {
+    expect(readQuestions(Buffer.alloc(4))).toEqual([]);
+  });
+
+  it('follows a backwards compression pointer to the name it names', () => {
+    const name = Buffer.concat([
+      Buffer.from([9]),
+      Buffer.from('_kroma-tv'),
+      Buffer.from([4]),
+      Buffer.from('_tcp'),
+      Buffer.from([5]),
+      Buffer.from('local'),
+      Buffer.from([0]),
+    ]);
+    const tail = Buffer.alloc(4);
+    tail.writeUInt16BE(TYPE.PTR, 0);
+    tail.writeUInt16BE(1, 2);
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(2, 4);
+    const pointer = Buffer.from([0xc0, 12]);
+    const packet = Buffer.concat([header, name, tail, pointer, tail]);
+
+    expect(readQuestions(packet)).toEqual([
+      { name: '_kroma-tv._tcp.local', type: TYPE.PTR },
+      { name: '_kroma-tv._tcp.local', type: TYPE.PTR },
+    ]);
+  });
+
+  it('stops rather than reading past the end of a truncated question', () => {
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(1, 4);
+    const truncated = Buffer.concat([
+      header,
+      Buffer.from([5]),
+      Buffer.from('local'),
+      Buffer.from([0]),
+      Buffer.from([0x00]),
+    ]);
+    expect(readQuestions(truncated)).toEqual([]);
+  });
+
+  it('trusts the question count no further than the bytes that follow it', () => {
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(50, 4);
+    expect(readQuestions(Buffer.concat([header, query('a.local', TYPE.PTR).subarray(12)]))).toEqual(
+      [{ name: 'a.local', type: TYPE.PTR }],
+    );
+  });
+});
+
 describe('asksAbout', () => {
   it('answers the service type, the instance, the host and the meta-query', () => {
     for (const name of [
@@ -86,5 +160,12 @@ describe('asksAbout', () => {
 
   it('stays quiet for someone else’s service', () => {
     expect(asksAbout({ name: '_airplay._tcp.local', type: TYPE.PTR }, SERVICE)).toBe(false);
+  });
+
+  it('answers every record type it can supply, and no other', () => {
+    for (const type of [TYPE.ANY, TYPE.PTR, TYPE.SRV, TYPE.TXT, TYPE.A]) {
+      expect(asksAbout({ name: SERVICE.type, type }, SERVICE)).toBe(true);
+    }
+    expect(asksAbout({ name: SERVICE.type, type: 28 }, SERVICE)).toBe(false);
   });
 });

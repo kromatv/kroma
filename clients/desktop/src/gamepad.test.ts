@@ -212,6 +212,74 @@ describe('startGamepadBridge', () => {
     expect(names()).toContain('keydown:Escape');
   });
 
+  it('falls back to the wall clock where performance.now is absent', () => {
+    vi.stubGlobal('performance', undefined);
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValue(0);
+    const live = livePad();
+    startGamepadBridge();
+    calibrate();
+    live.set(pad([DPAD_UP]));
+    tick();
+    keys = [];
+
+    now.mockReturnValue(REPEAT_DELAY_MS + 1);
+    tick();
+    expect(names()).toEqual(['keydown:ArrowUp*']);
+    now.mockRestore();
+  });
+
+  it('says nothing on the console until the debug flag is set', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    vi.stubGlobal('localStorage', { getItem: () => null });
+    const live = livePad();
+    startGamepadBridge();
+    calibrate();
+    live.set(pad([DPAD_UP]));
+    tick();
+    expect(debug).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it('dumps the raw pad state alongside the key it decoded when debugging', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => (key === 'kroma.gamepadDebug' ? '1' : null),
+    });
+
+    const live = livePad();
+    startGamepadBridge();
+    calibrate();
+    live.set(pad([DPAD_UP]));
+    tick();
+
+    const lines = debug.mock.calls.map(([line]) => String(line));
+    expect(lines.some((line) => line.includes('buttons=[12]'))).toBe(true);
+    expect(lines).toContain('[gamepad] keydown ArrowUp');
+
+    debug.mockClear();
+    tick(REPEAT_DELAY_MS + 1);
+    expect(debug).not.toHaveBeenCalled();
+
+    vi.restoreAllMocks();
+  });
+
+  it('re-reads a pad that was swapped for another at the same index', () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    let current = pad([], 'First Pad', 0);
+    vi.stubGlobal('navigator', { ...navigator, getGamepads: () => [current] });
+    startGamepadBridge();
+    calibrate();
+
+    current = pad([DPAD_UP], 'Second Pad', 0);
+    tick();
+    expect(names()).toEqual([]);
+    expect(info.mock.calls.map(([line]) => String(line)).join(' ')).toContain('Second Pad');
+    vi.restoreAllMocks();
+  });
+
   it('stops polling once stopped', () => {
     const live = livePad();
     const stop = startGamepadBridge();

@@ -1,7 +1,15 @@
-import { describe, expect, it } from 'vitest';
-import { standaloneOptions, standaloneScript } from './standalone-script';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const esbuild = vi.hoisted(() => ({ build: vi.fn(async () => ({ errors: [] })) }));
+vi.mock('esbuild', () => esbuild);
+
+const { standaloneOptions, standaloneScript } = await import('./standalone-script');
 
 const OPTS = { entry: '/repo/src/sw.ts', outfile: '/repo/public/sw.js' };
+
+beforeEach(() => {
+  esbuild.build.mockClear().mockResolvedValue({ errors: [] });
+});
 
 describe('the options', () => {
   it('produce one self-contained, minified IIFE', () => {
@@ -44,9 +52,50 @@ describe('the plugin', () => {
     expect(applyTo(env('ssr'))).toBe(false);
   });
 
-  it('bundles at buildStart, which covers both dev and build', () => {
+  it('bundles at buildStart, which covers both dev and build', async () => {
     const plugin = standaloneScript(OPTS);
-    expect(plugin.buildStart).toBeTypeOf('function');
     expect(plugin.configureServer).toBeTypeOf('function');
+    await (plugin.buildStart as () => Promise<void>).call(null);
+    expect(esbuild.build).toHaveBeenCalledWith(standaloneOptions(OPTS));
+  });
+});
+
+describe('watching in dev', () => {
+  function serve(options = OPTS) {
+    const listeners: ((file: string) => void)[] = [];
+    const watcher = {
+      add: vi.fn(),
+      on: vi.fn((event: string, handler: (file: string) => void) => {
+        if (event === 'change') listeners.push(handler);
+      }),
+    };
+    const error = vi.fn();
+    const server = { watcher, config: { logger: { error } } };
+    const configure = standaloneScript(options).configureServer as (s: unknown) => void;
+    configure.call(null, server);
+    const change = (file: string) => {
+      for (const listener of listeners) listener(file);
+    };
+    return { watcher, error, change };
+  }
+
+  it('watches the entry itself, wherever it sits', () => {
+    expect(serve().watcher.add).toHaveBeenCalledWith(OPTS.entry);
+  });
+
+  it('rebuilds on an edit to the entry, and ignores every other file', () => {
+    const dev = serve();
+    dev.change('/repo/src/other.ts');
+    expect(esbuild.build).not.toHaveBeenCalled();
+    dev.change(OPTS.entry);
+    expect(esbuild.build).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs a failed rebuild rather than crashing the dev server', async () => {
+    esbuild.build.mockRejectedValue(new Error('Unexpected "}"'));
+    const dev = serve();
+    dev.change(OPTS.entry);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(dev.error).toHaveBeenCalledWith(expect.stringContaining('Unexpected'));
   });
 });

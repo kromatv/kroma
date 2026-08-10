@@ -198,10 +198,129 @@ describe('spending a grant', () => {
   });
 });
 
+describe('spending a grant on Google', () => {
+  async function serviceAccount(): Promise<string> {
+    const pair = await crypto.subtle.generateKey(
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256',
+      },
+      true,
+      ['sign', 'verify'],
+    );
+    const pkcs8 = new Uint8Array(await crypto.subtle.exportKey('pkcs8', pair.privateKey));
+    const body = btoa(String.fromCharCode(...pkcs8))
+      .match(/.{1,64}/g)
+      ?.join('\n');
+    return JSON.stringify({
+      project_id: 'kroma-push',
+      client_email: `relay-${Math.random()}@kroma-push.iam.gserviceaccount.com`,
+      private_key: `-----BEGIN PRIVATE KEY-----\n${body}\n-----END PRIVATE KEY-----\n`,
+    });
+  }
+
+  function stubGoogle(sendStatus: number, sendBody = ''): string[] {
+    const urls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(String(url));
+        return String(url).includes('oauth2')
+          ? new Response(JSON.stringify({ access_token: 'ya29.fake' }), { status: 200 })
+          : new Response(sendBody, { status: sendStatus });
+      }),
+    );
+    return urls;
+  }
+
+  it('delivers over FCM when the relay holds a service account', async () => {
+    env.FCM_SERVICE_ACCOUNT = await serviceAccount();
+    const urls = stubGoogle(200);
+    const grant = await seal(SECRET, { t: 'fcm', d: 'DEVICE-G', e: 4_000_000_000 });
+    const res = await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+    expect(res.status).toBe(200);
+    expect(urls[1]).toBe('https://fcm.googleapis.com/v1/projects/kroma-push/messages:send');
+  });
+
+  it('evicts a device Google says it no longer knows', async () => {
+    env.FCM_SERVICE_ACCOUNT = await serviceAccount();
+    stubGoogle(404);
+    const grant = await seal(SECRET, { t: 'fcm', d: 'DEVICE-G', e: 4_000_000_000 });
+    const res = await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+    expect(res.status).toBe(410);
+  });
+
+  it('answers 502 when the transport throws rather than returning a delivery', async () => {
+    env.FCM_SERVICE_ACCOUNT = await serviceAccount();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('nope', { status: 500 })),
+    );
+    const grant = await seal(SECRET, { t: 'fcm', d: 'DEVICE-G', e: 4_000_000_000 });
+    const res = await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+    expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: 'upstream push service failed' });
+  });
+});
+
+describe('what Apple is told about one notification', () => {
+  it('demotes a low-urgency push and truncates the collapse id Apple caps at 64', async () => {
+    const calls = stubApple(200);
+    const grant = await seal(SECRET, { t: 'apns', d: 'DEVICE-A', e: 4_000_000_000 });
+    await worker.fetch(
+      post('/v1/push', {
+        grant,
+        notification: { id: 'n'.repeat(100), title: 'Digest', urgency: 'low' },
+      }),
+      env,
+    );
+    const headers = calls[0]?.init.headers as Record<string, string>;
+    expect(headers['apns-priority']).toBe('5');
+    expect(headers['apns-collapse-id']).toHaveLength(64);
+    expect(headers['apns-push-type']).toBe('alert');
+  });
+
+  it('evicts only on the rejections that mean the device, not on our own bugs', async () => {
+    const grant = await seal(SECRET, { t: 'apns', d: 'DEVICE-A', e: 4_000_000_000 });
+    for (const [reason, status] of [
+      ['DeviceTokenNotForTopic', 410],
+      ['Unregistered', 410],
+      ['PayloadTooLarge', 502],
+      ['BadCollapseId', 502],
+    ] as const) {
+      resetApns();
+      stubApple(400, JSON.stringify({ reason }));
+      const res = await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+      expect([reason, res.status]).toEqual([reason, status]);
+    }
+  });
+
+  it('reads no reason out of a body that is not one', async () => {
+    const grant = await seal(SECRET, { t: 'apns', d: 'DEVICE-A', e: 4_000_000_000 });
+    for (const body of ['<html>502 Bad Gateway</html>', '{"reason":{"code":7}}']) {
+      resetApns();
+      stubApple(400, body);
+      const res = await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+      expect(res.status).toBe(502);
+    }
+  });
+});
+
 describe('the request surface', () => {
   it('answers /health with which transports are armed', async () => {
     const res = await worker.fetch(new Request('https://push.kroma.tv/health'), env);
     expect(await res.json()).toEqual({ ok: true, apns: true, fcm: false });
+  });
+
+  it('reports apns as unarmed when any part of the Apple key is missing', async () => {
+    for (const missing of ['APNS_KEY_P8', 'APNS_KEY_ID', 'APNS_TEAM_ID'] as const) {
+      const partial = { ...env, FCM_SERVICE_ACCOUNT: '{}' };
+      delete partial[missing];
+      const res = await worker.fetch(new Request('https://push.kroma.tv/health'), partial);
+      expect(await res.json()).toEqual({ ok: true, apns: false, fcm: true });
+    }
   });
 
   it('offers nothing else, and does not say what it has', async () => {
