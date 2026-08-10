@@ -1,5 +1,5 @@
 import type { AudioTrack, Translate } from '@kroma/core';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MovieView } from '../../shared/lib/api';
 import { buildWebStats, type WebStatsInput } from './web-stats';
 
@@ -166,5 +166,99 @@ describe('buildWebStats', () => {
       buildWebStats(input({ engine: { estBandwidthKbps: 512, streamBitrateKbps: 8200 } })).meters ??
       [];
     expect(meters.every((m) => m.color === undefined)).toBe(true);
+  });
+
+  it('falls back to the file audio, then to a dash, when the track says nothing', () => {
+    expect(buildWebStats(input({ audioTracks: [] })).audioFormat).toBe('EAC3');
+    const noAudio = { ...item, audio: null } as unknown as MovieView;
+    expect(buildWebStats(input({ audioTracks: [], item: noAudio })).audioFormat).toBe('-');
+    expect(
+      buildWebStats(input({ audioTracks: [{ index: 0, codec: 'aac' } as AudioTrack] })).audioFormat,
+    ).toBe('AAC');
+  });
+
+  it('omits an engine figure it has not measured, and scales the byte counter', () => {
+    const rows =
+      buildWebStats(
+        input({
+          engine: {
+            streamBitrateKbps: 0,
+            estBandwidthKbps: 0,
+            stalls: 3,
+            bytesDownloaded: 1_500_000,
+            currentCodecs: '',
+          },
+        }),
+      ).extra ?? [];
+    const val = (label: string) => rows.find((r) => r.label === label)?.value;
+    expect(val('stats.streamBitrate')).toBeUndefined();
+    expect(val('stats.bandwidth')).toBeUndefined();
+    expect(val('stats.stalls')).toBe('3');
+    expect(val('stats.downloaded')).toBe('1.5 Mo');
+    expect(val('stats.codecs')).toBeUndefined();
+  });
+
+  it('reports a sub-megabyte download in kilobytes', () => {
+    const rows = buildWebStats(input({ engine: { bytesDownloaded: 4_400 } })).extra ?? [];
+    expect(rows.find((r) => r.label === 'stats.downloaded')?.value).toBe('4 Ko');
+  });
+
+  it('shows a nonsense negative reading as absent rather than a negative rate', () => {
+    const meters =
+      buildWebStats(input({ engine: { estBandwidthKbps: -5, streamBitrateKbps: -9 } })).meters ??
+      [];
+    expect(meters.find((m) => m.key === 'bandwidth')?.display).toBe('-');
+    expect(meters.find((m) => m.key === 'bitrate')?.display).toBe('-');
+  });
+});
+
+describe('buildWebStats against a live element', () => {
+  const videoEl = (over: Record<string, unknown> = {}) =>
+    ({
+      videoWidth: 1920,
+      videoHeight: 1080,
+      clientWidth: 800,
+      clientHeight: 450,
+      volume: 0.5,
+      muted: true,
+      playbackRate: 1.5,
+      currentTime: 33,
+      readyState: 4,
+      networkState: 2,
+      getVideoPlaybackQuality: () => ({ droppedVideoFrames: 3, totalVideoFrames: 900 }),
+      ...over,
+    }) as unknown as HTMLVideoElement;
+
+  const rowValue = (s: ReturnType<typeof buildWebStats>, label: string) =>
+    (s.extra ?? []).find((r) => r.label === label)?.value;
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('prefers the decoded frame size, the CSS box in device pixels, and the live volume', () => {
+    vi.stubGlobal('window', { devicePixelRatio: 2 });
+    vi.stubGlobal('navigator', { connection: { downlink: 12, effectiveType: '4g' } });
+    const s = buildWebStats(input({ v: videoEl() }));
+
+    expect(s.resolution).toBe('1920×1080');
+    expect(s.dropped).toBe('3 / 900');
+    expect(rowValue(s, 'stats.display')).toBe('1600×900 @2x');
+    expect(rowValue(s, 'stats.volume')).toBe('50%stats.volumeMuted');
+    expect(rowValue(s, 'stats.speed')).toBe('1.50×');
+    expect(rowValue(s, 'stats.state')).toBe('HAVE_ENOUGH · NET_LOADING');
+    expect(rowValue(s, 'stats.connection')).toBe('12 Mb/s · 4g');
+    expect(rowValue(s, 'stats.position')).toBe('0:40 · rel 33s');
+  });
+
+  it('omits the speed row at normal rate and names an unlabelled connection tier', () => {
+    vi.stubGlobal('navigator', { connection: { downlink: 3.5 } });
+    const s = buildWebStats(input({ v: videoEl({ playbackRate: 1, muted: false }) }));
+    expect(rowValue(s, 'stats.speed')).toBeUndefined();
+    expect(rowValue(s, 'stats.volume')).toBe('50%');
+    expect(rowValue(s, 'stats.connection')).toBe('3.5 Mb/s · ');
+  });
+
+  it('reports no connection where the browser exposes none', () => {
+    vi.stubGlobal('navigator', undefined);
+    expect(rowValue(buildWebStats(input()), 'stats.connection')).toBe('-');
   });
 });

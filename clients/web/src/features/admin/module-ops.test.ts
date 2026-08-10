@@ -1,5 +1,39 @@
-import { describe, expect, it } from 'vitest';
-import { foldOpEvent, type OpModule, opPct, type StoreOp } from '#web/features/admin/module-ops';
+// @vitest-environment jsdom
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  foldOpEvent,
+  type OpModule,
+  opPct,
+  runningPct,
+  type StoreOp,
+  useStoreOps,
+} from '#web/features/admin/module-ops';
+
+type SocketEvent = { type: string } & Record<string, unknown>;
+
+const H = vi.hoisted(() => ({
+  sockets: [] as Array<{
+    onEvent: (e: SocketEvent) => void;
+    connect: ReturnType<typeof vi.fn>;
+    close: ReturnType<typeof vi.fn>;
+  }>,
+}));
+
+vi.mock('@kroma/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/core')>()),
+  KromaEvents: class {
+    connect = vi.fn();
+    close = vi.fn();
+    constructor(_base: string, opts: { onEvent: (e: SocketEvent) => void }) {
+      H.sockets.push({ onEvent: opts.onEvent, connect: this.connect, close: this.close });
+    }
+  },
+}));
+
+vi.mock('#web/shared/lib/api', () => ({ apiBase: () => 'http://kroma.test' }));
+
+afterEach(() => cleanup());
 
 const started = {
   type: 'module.op.started' as const,
@@ -107,5 +141,84 @@ describe('foldOpEvent', () => {
       received: 5,
     });
     expect(opPct(mod(op(ops, 'op1'), 'tv.kroma.vpn'))).toBeNull();
+  });
+
+  it('ignores a done or finished frame for an op it never saw start', () => {
+    expect(
+      foldOpEvent({}, { type: 'module.op.done', op: 'ghost', id: 'x', version: '1.0.0' }),
+    ).toEqual({});
+    expect(foldOpEvent({}, { type: 'module.op.finished', op: 'ghost', ok: false })).toEqual({});
+  });
+
+  it('appends a module it first hears of in a done frame', () => {
+    let ops = foldOpEvent({}, started);
+    ops = foldOpEvent(ops, {
+      type: 'module.op.done',
+      op: 'op1',
+      id: 'tv.kroma.vpn',
+      version: '2.0.0',
+    });
+    expect(op(ops, 'op1').order).toEqual(['tv.kroma.indexer', 'tv.kroma.torrents', 'tv.kroma.vpn']);
+    expect(mod(op(ops, 'op1'), 'tv.kroma.vpn')).toMatchObject({ phase: 'done', version: '2.0.0' });
+  });
+
+  it('leaves a module the registry gave no size for indeterminate', () => {
+    const ops = foldOpEvent(
+      {},
+      {
+        ...started,
+        modules: [{ id: 'tv.kroma.notes', name: 'Notes', version: '0.1.0' }],
+      },
+    );
+    expect(mod(op(ops, 'op1'), 'tv.kroma.notes').total).toBeNull();
+  });
+
+  it('keeps the error a failed op finished with', () => {
+    let ops = foldOpEvent({}, started);
+    ops = foldOpEvent(ops, {
+      type: 'module.op.finished',
+      op: 'op1',
+      ok: false,
+      error: 'checksum mismatch',
+    });
+    expect(op(ops, 'op1')).toMatchObject({ finished: true, ok: false, error: 'checksum mismatch' });
+  });
+});
+
+describe('runningPct', () => {
+  it('fills the bar for done and install, empties it while waiting', () => {
+    expect(runningPct('done', null)).toBe(100);
+    expect(runningPct('done', 12)).toBe(100);
+    expect(runningPct('download', 42)).toBe(42);
+    expect(runningPct('wait', null)).toBe(0);
+    expect(runningPct('install', null)).toBe(100);
+  });
+});
+
+describe('useStoreOps', () => {
+  it('shares one socket across consumers and closes it with the last of them', () => {
+    const page = renderHook(() => useStoreOps());
+    const dialog = renderHook(() => useStoreOps());
+    expect(H.sockets).toHaveLength(1);
+    const socket = H.sockets[0];
+    expect(socket?.connect).toHaveBeenCalledTimes(1);
+
+    act(() => socket?.onEvent({ type: 'library.changed' }));
+    expect(page.result.current.ops).toEqual({});
+
+    act(() => socket?.onEvent({ ...started, op: 'live' }));
+    expect(dialog.result.current.ops).toBe(page.result.current.ops);
+    expect(page.result.current.activeByModule.get('tv.kroma.indexer')).toMatchObject({
+      op: 'live',
+      phase: 'wait',
+    });
+
+    act(() => socket?.onEvent({ type: 'module.op.finished', op: 'live', ok: true }));
+    expect(page.result.current.activeByModule.size).toBe(0);
+
+    page.unmount();
+    expect(socket?.close).not.toHaveBeenCalled();
+    dialog.unmount();
+    expect(socket?.close).toHaveBeenCalledTimes(1);
   });
 });

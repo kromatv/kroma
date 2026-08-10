@@ -46,6 +46,7 @@ describe('formatMbps', () => {
   it('one decimal, French comma', () => {
     expect(formatMbps(5)).toBe('5,0');
     expect(formatMbps(12.34)).toBe('12,3');
+    expect(formatMbps(Number.NaN)).toBe('0,0');
   });
 });
 

@@ -190,6 +190,14 @@ describe('the show bundle', () => {
     expect(similarShows.map((s: { id: string }) => s.id)).toEqual(['a', 'b', 'c']);
   });
 
+  it('tolerates a show, and a catalogue, with no metadata at all', async () => {
+    c.show.mockResolvedValue({ show: { id: 's1' } });
+    c.shows.mockResolvedValue([{ id: 's1' }, { id: 'a' }, { id: 'b' }]);
+
+    const { similarShows } = await run(catalogQueries.showBundle('s1'));
+    expect(similarShows.map((s: { id: string }) => s.id)).toEqual(['a', 'b']);
+  });
+
   it('never suggests the show you are already looking at', async () => {
     c.show.mockResolvedValue(detail('s1', ['Drama']));
     c.shows.mockResolvedValue([show('s1', ['Drama']), show('a', ['Drama'])]);

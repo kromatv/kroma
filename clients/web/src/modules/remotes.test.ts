@@ -8,10 +8,23 @@ vi.mock('@module-federation/runtime', () => ({
   loadRemote: vi.fn(),
 }));
 
+import { setSessionToken } from '@kroma/core';
 import * as mfRuntime from '@module-federation/runtime';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import { forgetRemote, isLoadedRemote, loadRuntimeRemotes } from './remotes';
 
 const WIN = { location: { origin: 'http://localhost:3000' } };
+
+interface FakeLink {
+  rel?: string;
+  href?: string;
+  dataset: Record<string, string>;
+  onerror?: () => void;
+  remove: ReturnType<typeof vi.fn>;
+}
+
+const createdLinks: FakeLink[] = [];
 
 function stubFetch(impl: (url: string) => Response | Promise<Response>) {
   vi.stubGlobal(
@@ -23,12 +36,17 @@ function stubFetch(impl: (url: string) => Response | Promise<Response>) {
 function stubBrowserGlobals() {
   vi.stubGlobal('window', WIN);
   vi.stubGlobal('document', {
-    createElement: () => ({ dataset: {} }) as unknown,
+    createElement: () => {
+      const link: FakeLink = { dataset: {}, remove: vi.fn() };
+      createdLinks.push(link);
+      return link as unknown;
+    },
     head: { appendChild: () => undefined },
   });
 }
 
 beforeEach(() => {
+  createdLinks.length = 0;
   vi.restoreAllMocks();
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -90,6 +108,84 @@ describe('loadRuntimeRemotes (deterministic branches)', () => {
         ),
     );
     await expect(loadRuntimeRemotes(new ModuleRegistry())).resolves.toEqual([]);
+  });
+});
+
+describe('loadRuntimeRemotes (before anything has initialised federation)', () => {
+  const oneRemote = (id: string) =>
+    new Response(JSON.stringify([{ id, enabled: true, feRemote: { module: './P' } }]), {
+      status: 200,
+    });
+
+  it('returns [] when the federation runtime refuses to initialise', async () => {
+    stubBrowserGlobals();
+    stubFetch(() => oneRemote('initFail'));
+    vi.mocked(mfRuntime.init).mockImplementationOnce(() => {
+      throw new Error('shared scope clash');
+    });
+    await expect(loadRuntimeRemotes(new ModuleRegistry())).resolves.toEqual([]);
+    expect(isLoadedRemote('initFail')).toBe(false);
+    expect(mfRuntime.registerRemotes).not.toHaveBeenCalled();
+  });
+
+  it('shares the host React and ReactDOM as singletons', async () => {
+    stubBrowserGlobals();
+    stubFetch(() => oneRemote('sharedReact'));
+    vi.mocked(mfRuntime.loadRemote).mockRejectedValue(new Error('boom'));
+    await loadRuntimeRemotes(new ModuleRegistry());
+
+    const config = vi.mocked(mfRuntime.init).mock.calls.at(-1)?.[0] as unknown as {
+      shared: Record<string, { lib: () => unknown; shareConfig: { singleton: boolean } }>;
+    };
+    expect(config.shared.react?.lib()).toBe(React);
+    expect(config.shared['react-dom']?.lib()).toBe(ReactDOM);
+    expect(config.shared.react?.shareConfig.singleton).toBe(true);
+  });
+
+  it('links the remote stylesheet once, and drops it when the module ships none', async () => {
+    stubBrowserGlobals();
+    stubFetch(() => oneRemote('styled'));
+    vi.mocked(mfRuntime.loadRemote).mockRejectedValue(new Error('boom'));
+    await loadRuntimeRemotes(new ModuleRegistry());
+
+    expect(createdLinks).toHaveLength(1);
+    const link = createdLinks[0];
+    expect(link?.rel).toBe('stylesheet');
+    expect(link?.href).toBe('http://localhost:3000/modules/styled/style.css');
+    expect(link?.dataset.kromaModuleStyles).toBe('');
+    link?.onerror?.();
+    expect(link?.remove).toHaveBeenCalledTimes(1);
+
+    await loadRuntimeRemotes(new ModuleRegistry());
+    expect(createdLinks).toHaveLength(1);
+  });
+
+  it('carries the session bearer into discovery', async () => {
+    setSessionToken('tok123');
+    stubBrowserGlobals();
+    const inits: RequestInit[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: RequestInit) => {
+        inits.push(init);
+        return new Response('[]', { status: 200 });
+      }),
+    );
+    await loadRuntimeRemotes(new ModuleRegistry());
+    const headers = inits[0]?.headers as Record<string, string> | undefined;
+    expect(headers?.Authorization).toBe('Bearer tok123');
+    setSessionToken(undefined);
+  });
+
+  it('leaves a module the registry already holds alone', async () => {
+    stubBrowserGlobals();
+    stubFetch(() => oneRemote('dup'));
+    const reg = new ModuleRegistry();
+    reg.register({ id: 'dup', version: '1.0.0' } as never);
+    vi.mocked(mfRuntime.loadRemote).mockResolvedValue({
+      default: { id: 'dup', version: '1.0.0' },
+    });
+    await expect(loadRuntimeRemotes(reg)).resolves.toEqual([]);
   });
 });
 

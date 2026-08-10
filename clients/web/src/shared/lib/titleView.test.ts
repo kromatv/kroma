@@ -267,6 +267,47 @@ describe('buildTitleView: show source', () => {
     });
   });
 
+  it('coalesces a show with no metadata and nothing to play', () => {
+    const bare = { show: { id: 'nobd', title: 'Bare Show' }, seasons: [] };
+    const v = build({
+      source: 'show',
+      detail: bare as never,
+      similarShows: [],
+      upNext: null,
+      discover: null,
+    });
+    expect(v.tmdbId).toBeNull();
+    expect(v.year).toBeNull();
+    expect(v.rating).toBeNull();
+    expect(v.overview).toBeNull();
+    expect(v.tagline).toBeNull();
+    expect(v.genres).toEqual([]);
+    expect(v.cast).toEqual([]);
+    expect(v.directors).toEqual([]);
+    expect(v.backdrop).toBeNull();
+    expect(v.playable).toBeNull();
+    expect(v.playLabel).toBeNull();
+    expect(v.requestStatus).toBeNull();
+    expect(v.requestProgress).toBeNull();
+  });
+
+  it('counts a TMDB season the overlay gave no counts for as zero', () => {
+    const discover = { seasons: [{ season: 4, available: false }] };
+    const v = build({
+      source: 'show',
+      detail: detail as never,
+      similarShows: [],
+      upNext: null,
+      discover: discover as never,
+    });
+    expect(v.seasons[1]).toMatchObject({
+      number: 4,
+      episodeCount: 0,
+      episodesAvailable: 0,
+      episodes: [],
+    });
+  });
+
   it('does not grant canRequest to a user lacking requests.create', () => {
     const v = build(
       {

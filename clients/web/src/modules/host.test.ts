@@ -188,6 +188,24 @@ describe('starting the modules', () => {
     await Promise.resolve();
     expect(result.current).toBeNull();
   });
+
+  it('does not fall back to a no-op host after the page is gone', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const finish: { fail: ((e: unknown) => void) | null } = { fail: null };
+    registry.start.mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          finish.fail = reject;
+        }),
+    );
+    const { result, unmount } = renderHook(() => useModuleHost());
+    await waitFor(() => expect(registry.start).toHaveBeenCalled());
+
+    unmount();
+    finish.fail?.(new Error('federation blew up'));
+    await Promise.resolve();
+    expect(result.current).toBeNull();
+  });
 });
 
 describe('the api the host grants', () => {

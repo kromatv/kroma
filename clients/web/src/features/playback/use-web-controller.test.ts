@@ -8,6 +8,9 @@ const H = vi.hoisted(() => ({
   subs: null as Record<string, unknown> | null,
   filter: { mode: 'off', setMode: vi.fn(), supported: true },
   endedHandler: null as (() => void) | null,
+  handlers: {} as Record<string, () => void>,
+  badge: 'HDR' as string | null,
+  statsInput: null as Record<string, unknown> | null,
   rememberAudio: vi.fn(),
 }));
 
@@ -17,7 +20,12 @@ vi.mock('#web/features/playback/use-video-playback', () => ({
 vi.mock('#web/features/playback/use-web-subtitles', () => ({
   useWebSubtitles: () => H.subs,
 }));
-vi.mock('#web/features/playback/web-stats', () => ({ buildWebStats: () => ({}) }));
+vi.mock('#web/features/playback/web-stats', () => ({
+  buildWebStats: (s: Record<string, unknown>) => {
+    H.statsInput = s;
+    return { mode: 'stub' };
+  },
+}));
 vi.mock('@kroma/ui', () => ({
   useAudioFilter: () => H.filter,
   useT: () => (k: string) => k,
@@ -26,7 +34,7 @@ vi.mock('@kroma/ui', () => ({
 vi.mock('@kroma/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@kroma/core')>()),
   audioTrackLabel: () => 'English 5.1',
-  qualityBadgeForVideo: () => 'HDR',
+  qualityBadgeForVideo: () => H.badge,
 }));
 vi.mock('#web/shared/lib/lang-pref', () => ({
   useLangPrefs: () => ({ setAudio: H.rememberAudio }),
@@ -37,9 +45,11 @@ const { useWebController } = await import('#web/features/playback/use-web-contro
 function fakeVideo() {
   return {
     addEventListener: vi.fn((ev: string, h: () => void) => {
+      H.handlers[ev] = h;
       if (ev === 'ended') H.endedHandler = h;
     }),
     removeEventListener: vi.fn(),
+    requestPictureInPicture: vi.fn(() => Promise.resolve()),
   };
 }
 
@@ -64,6 +74,9 @@ function makePb(over: Record<string, unknown> = {}) {
     fs: false,
     audioTracks: [{ index: 0, language: 'eng' }],
     hlsRef: { current: null },
+    shakaRef: { current: null },
+    enginePref: 'auto',
+    setEnginePref: vi.fn(),
     togglePlay: vi.fn(),
     seekTo: vi.fn(),
     skip: vi.fn(),
@@ -106,6 +119,9 @@ beforeEach(() => {
     vi.fn(async () => ({ headers: { get: () => null } })),
   );
   H.endedHandler = null;
+  H.handlers = {};
+  H.badge = 'HDR';
+  H.statsInput = null;
   H.filter = { mode: 'off', setMode: vi.fn(), supported: true };
   H.pb = makePb();
   H.subs = makeSubs();
@@ -212,5 +228,151 @@ describe('useWebController ended nonce', () => {
     expect(H.endedHandler).toBeTypeOf('function');
     act(() => H.endedHandler?.());
     expect(result.current.controller.endedNonce).toBe(1);
+  });
+
+  it('binds nothing before the element mounts', () => {
+    H.pb = makePb({ videoRef: { current: null } });
+    const { result } = render();
+    expect(result.current.controller.endedNonce).toBe(0);
+    expect(result.current.controller.pipActive).toBe(false);
+    expect(H.handlers.ended).toBeUndefined();
+  });
+
+  it('drops a scrub commit that was never previewed', () => {
+    const { result } = render();
+    act(() => result.current.controller.scrubCommit());
+    expect(H.pb?.seekTo).not.toHaveBeenCalled();
+  });
+
+  it('offers a bare quality label for a file with no codec badge', () => {
+    H.badge = null;
+    const { result } = render();
+    expect(result.current.controller.qualities).toEqual([
+      { id: 'auto', label: 'player.qualityAuto' },
+    ]);
+  });
+
+  it('honours the shared contract for quality and engine picks', () => {
+    const { result } = render();
+    expect(() => result.current.controller.setQuality?.('auto')).not.toThrow();
+    result.current.controller.setEngine?.('shaka');
+    expect(H.pb?.setEnginePref).toHaveBeenCalledWith('shaka');
+    expect(result.current.controller.engineId).toBe('auto');
+    expect(result.current.controller.engines?.map((e) => e.id)).toEqual([
+      'auto',
+      'direct',
+      'remux',
+      'shaka',
+    ]);
+  });
+});
+
+describe('useWebController picture-in-picture', () => {
+  const setDoc = (key: string, value: unknown) =>
+    Object.defineProperty(document, key, { value, configurable: true });
+
+  afterEach(() => {
+    setDoc('pictureInPictureEnabled', false);
+    setDoc('pictureInPictureElement', null);
+  });
+
+  it('follows the browser floating window in and out', () => {
+    const { result } = render();
+    expect(result.current.controller.pipActive).toBe(false);
+    act(() => H.handlers.enterpictureinpicture?.());
+    expect(result.current.controller.pipActive).toBe(true);
+    act(() => H.handlers.leavepictureinpicture?.());
+    expect(result.current.controller.pipActive).toBe(false);
+  });
+
+  it('does nothing where the browser has no picture-in-picture', () => {
+    const { result } = render();
+    const v = H.pb?.videoRef as { current: { requestPictureInPicture: ReturnType<typeof vi.fn> } };
+    act(() => result.current.controller.togglePip());
+    expect(v.current.requestPictureInPicture).not.toHaveBeenCalled();
+  });
+
+  it('opens the floating window, and closes it when it is already open', () => {
+    setDoc('pictureInPictureEnabled', true);
+    const { result } = render();
+    const v = H.pb?.videoRef as { current: { requestPictureInPicture: ReturnType<typeof vi.fn> } };
+    act(() => result.current.controller.togglePip());
+    expect(v.current.requestPictureInPicture).toHaveBeenCalledTimes(1);
+
+    const exitPictureInPicture = vi.fn(() => Promise.resolve());
+    setDoc('pictureInPictureElement', {});
+    setDoc('exitPictureInPicture', exitPictureInPicture);
+    act(() => result.current.controller.togglePip());
+    expect(exitPictureInPicture).toHaveBeenCalledTimes(1);
+    expect(v.current.requestPictureInPicture).toHaveBeenCalledTimes(1);
+  });
+
+  it('swallows a request or an exit the browser refuses', async () => {
+    setDoc('pictureInPictureEnabled', true);
+    const refuse = () => Promise.reject(new Error('user gesture required'));
+    H.pb = makePb();
+    const v = H.pb.videoRef as { current: { requestPictureInPicture: () => Promise<void> } };
+    v.current.requestPictureInPicture = vi.fn(refuse);
+    const { result } = render();
+
+    await act(async () => {
+      result.current.controller.togglePip();
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+
+    setDoc('pictureInPictureElement', {});
+    setDoc('exitPictureInPicture', vi.fn(refuse));
+    await act(async () => {
+      result.current.controller.togglePip();
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+    expect(result.current.controller.pipActive).toBe(false);
+  });
+});
+
+describe('useWebController stream size probe', () => {
+  const headers = (map: Record<string, string>) => ({
+    headers: { get: (k: string) => map[k] ?? null },
+  });
+
+  async function settle() {
+    await act(async () => {
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+  }
+
+  it('takes the total from a Content-Range and feeds it to the stats snapshot', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => headers({ 'Content-Range': 'bytes 0-1/1234567' })),
+    );
+    const { result } = render();
+    await settle();
+    result.current.controller.getStats();
+    expect(H.statsInput).toMatchObject({ bytes: 1234567, item, audioIndex: 0, useHls: false });
+  });
+
+  it('falls back to a Content-Length', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => headers({ 'Content-Length': '999' })),
+    );
+    const { result } = render();
+    await settle();
+    result.current.controller.getStats();
+    expect(H.statsInput).toMatchObject({ bytes: 999 });
+  });
+
+  it('reports no size when the probe fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('offline');
+      }),
+    );
+    const { result } = render();
+    await settle();
+    result.current.controller.getStats();
+    expect(H.statsInput).toMatchObject({ bytes: 0 });
   });
 });

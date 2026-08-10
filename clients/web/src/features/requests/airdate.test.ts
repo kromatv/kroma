@@ -59,3 +59,17 @@ describe('monthKey', () => {
     expect(monthKey('2027-01-02')).toBe('2027-01');
   });
 });
+
+describe('the default clock', () => {
+  const today = new Date();
+  const iso = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  it('measures against today when no clock is given', () => {
+    expect(daysFromToday(iso)).toBe(0);
+    expect(relativeAirDate(iso, 'en')).toBe('today');
+  });
+});

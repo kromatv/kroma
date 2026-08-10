@@ -39,11 +39,14 @@ const H = vi.hoisted(() => {
   }> = [];
   class FakeShakaPlayer {
     static supported = true;
+    static loadFails = false;
     static isBrowserSupported() {
       return FakeShakaPlayer.supported;
     }
     attach = vi.fn(() => Promise.resolve());
-    load = vi.fn(() => Promise.resolve());
+    load = vi.fn(() =>
+      FakeShakaPlayer.loadFails ? Promise.reject(new Error('manifest 404')) : Promise.resolve(),
+    );
     destroy = vi.fn(() => Promise.resolve());
     configure = vi.fn(() => true);
     constructor() {
@@ -153,6 +156,7 @@ afterEach(() => {
   H.FakeHls.supported = true;
   H.shakaInstances.length = 0;
   H.FakeShaka.Player.supported = true;
+  H.FakeShaka.Player.loadFails = false;
   H.installAll.mockClear();
 });
 
@@ -236,6 +240,31 @@ describe('bindMediaEvents', () => {
     expect(fv.playCalls()).toBe(1);
   });
 
+  it('anchors at the element clock when no offset is given', () => {
+    const fv = fakeVideo();
+    const s = mkSetters();
+    bindMediaEvents(fv.el, item, s);
+    fv.set('currentTime', 12);
+    fv.fire('timeupdate');
+    expect(s.setCur).toHaveBeenCalledWith(12);
+  });
+
+  it('reports no duration at all while neither source knows one', () => {
+    const fv = fakeVideo();
+    const s = mkSetters();
+    bindMediaEvents(fv.el, { ...item, durationMs: 0 } as MovieView, s, 0);
+    fv.fire('durationchange');
+    expect(s.setDur).not.toHaveBeenCalled();
+  });
+
+  it('swallows an autoplay the browser refuses', () => {
+    const fv = fakeVideo({ play: () => Promise.reject(new Error('NotAllowedError')) });
+    const s = mkSetters();
+    bindMediaEvents(fv.el, item, s, 0);
+    expect(() => fv.fire('canplay')).not.toThrow();
+    expect(s.setReady).toHaveBeenCalledWith(true);
+  });
+
   it('cleanup detaches every listener', () => {
     const fv = fakeVideo();
     const s = mkSetters();
@@ -290,6 +319,12 @@ describe('attachMediaSource direct-play', () => {
     attachMediaSource(base({ v: fv.el, startSec: 300 }));
     expect(fv.get('currentTime')).toBe(300);
   });
+
+  it('leaves a clock already within a second of the anchor alone', () => {
+    const fv = fakeVideo({ readyState: 1, currentTime: 300 });
+    attachMediaSource(base({ v: fv.el, startSec: 300.5 }));
+    expect(fv.get('currentTime')).toBe(300);
+  });
 });
 
 describe('attachMediaSource HLS master', () => {
@@ -341,6 +376,23 @@ describe('attachMediaSource HLS master', () => {
     await tick();
     expect(H.instances).toHaveLength(0);
     expect(fv.get('src')).toBe('hls:w1:true:600:2');
+  });
+
+  it('never builds an engine for an element already detached', async () => {
+    const fv = fakeVideo();
+    const cleanup = attachMediaSource(hlsOpts({ v: fv.el }));
+    cleanup();
+    await tick();
+    expect(H.instances).toHaveLength(0);
+    expect(fv.get('src')).toBe('');
+  });
+
+  it('native HLS releases the element on cleanup', () => {
+    const fv = fakeVideo();
+    const cleanup = attachMediaSource(hlsOpts({ v: fv.el, useNativeHls: true }));
+    expect(fv.get('src')).toBe('hls:w1:true:600:2');
+    cleanup();
+    expect(fv.get('src')).toBe('');
   });
 });
 
@@ -397,5 +449,23 @@ describe('attachMediaSource HLS master via Shaka', () => {
     await tick();
     expect(H.shakaInstances).toHaveLength(0);
     expect(fv.get('src')).toBe('hls:w1:true:600:2');
+  });
+
+  it('never builds a player for an element already detached', async () => {
+    const fv = fakeVideo();
+    const cleanup = attachMediaSource(shakaOpts({ v: fv.el }));
+    cleanup();
+    await tick();
+    expect(H.shakaInstances).toHaveLength(0);
+    expect(H.installAll).not.toHaveBeenCalled();
+  });
+
+  it('survives a manifest Shaka cannot load', async () => {
+    H.FakeShaka.Player.loadFails = true;
+    const fv = fakeVideo();
+    attachMediaSource(shakaOpts({ v: fv.el }));
+    await tick();
+    await tick();
+    expect(H.shakaInstances[0]?.load).toHaveBeenCalled();
   });
 });

@@ -46,6 +46,14 @@ vi.mock('#web/shared/lib/auth', () => ({
 }));
 
 const { useVideoPlayback } = await import('#web/features/playback/use-video-playback');
+const { attachMediaSource } = await import('#web/features/playback/video-engine');
+
+const lastAttach = () => {
+  const calls = vi.mocked(attachMediaSource).mock.calls;
+  const last = calls.at(-1)?.[0];
+  if (!last) throw new Error('expected attachMediaSource to have been called');
+  return last;
+};
 
 function fakeVideo(over: Partial<Record<string, unknown>> = {}) {
   return {
@@ -174,8 +182,9 @@ describe('useVideoPlayback seeking (HLS remux)', () => {
     expect(result.current.videoRef.current?.currentTime).toBe(50);
     expect(result.current.anchor).toBe(0);
 
-    // Unbuffered target → re-anchor (remount at the target).
-    result.current.videoRef.current = fakeVideo() as unknown as HTMLVideoElement;
+    result.current.videoRef.current = fakeVideo({
+      buffered: { length: 1, start: () => 0, end: () => 10 },
+    }) as unknown as HTMLVideoElement;
     act(() => result.current.seekTo(80));
     await settle();
     expect(result.current.anchor).toBe(80);
@@ -213,5 +222,449 @@ describe('useVideoPlayback preferred audio', () => {
     const { result } = render();
     await settle();
     expect(result.current.audioIndex).toBe(1); // the 'fra' track
+  });
+
+  it('leaves the default track alone when no track speaks the preferred language', async () => {
+    H.user = { audioLanguage: 'de' };
+    const { result } = render();
+    await settle();
+    expect(result.current.audioIndex).toBe(0);
+  });
+
+  it('falls back to index 0 for a file that declares no audio track at all', async () => {
+    H.tracks = [];
+    const { result } = render();
+    await settle();
+    expect(result.current.audioIndex).toBe(0);
+    expect(result.current.audioTracks).toEqual([]);
+  });
+
+  it('re-selecting the current track changes nothing', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    const { result } = render();
+    await settle();
+    result.current.videoRef.current = fakeVideo({ currentTime: 42 }) as unknown as HTMLVideoElement;
+    act(() => result.current.setAudio(0));
+    await settle();
+    expect(result.current.audioIndex).toBe(0);
+    expect(result.current.anchor).toBe(0);
+  });
+});
+
+describe('useVideoPlayback resume', () => {
+  it('anchors at the stored position once it is past the 15s floor', async () => {
+    H.user = {};
+    H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: 100_000 });
+    const { result } = render();
+    await settle();
+    expect(result.current.anchor).toBe(40);
+  });
+
+  it('starts over below the floor and past the 95% credits mark', async () => {
+    H.user = {};
+    H.itemProgress.mockResolvedValue({ positionMs: 10_000, durationMs: 100_000 });
+    const early = render();
+    await settle();
+    expect(early.result.current.anchor).toBe(0);
+    early.unmount();
+
+    H.itemProgress.mockResolvedValue({ positionMs: 99_000, durationMs: 100_000 });
+    const late = render();
+    await settle();
+    expect(late.result.current.anchor).toBe(0);
+  });
+
+  it('resumes a progress row whose duration nobody knows', async () => {
+    H.user = {};
+    H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: null });
+    const { result } = render(movie({ durationMs: undefined }));
+    await settle();
+    expect(result.current.dur).toBe(0);
+    expect(result.current.anchor).toBe(40);
+  });
+
+  it('starts at zero when the progress lookup fails', async () => {
+    H.user = {};
+    H.itemProgress.mockRejectedValue(new Error('offline'));
+    const { result } = render();
+    await settle();
+    expect(result.current.anchor).toBe(0);
+  });
+
+  it('ignores a progress reply that lands after unmount', async () => {
+    H.user = {};
+    let resolveProgress: (p: unknown) => void = () => undefined;
+    H.itemProgress.mockReturnValue(
+      new Promise((resolve) => {
+        resolveProgress = resolve;
+      }),
+    );
+    const view = render();
+    view.unmount();
+    await act(async () => {
+      resolveProgress({ positionMs: 60_000, durationMs: 100_000 });
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+    expect(view.result.current.anchor).toBe(0);
+  });
+
+  it('ignores a failed progress lookup that lands after unmount', async () => {
+    H.user = {};
+    let rejectProgress: (e: unknown) => void = () => undefined;
+    H.itemProgress.mockReturnValue(
+      new Promise((_resolve, reject) => {
+        rejectProgress = reject;
+      }),
+    );
+    const view = render();
+    view.unmount();
+    await act(async () => {
+      rejectProgress(new Error('offline'));
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+    expect(view.result.current.anchor).toBe(0);
+  });
+});
+
+describe('useVideoPlayback HLS master headers', () => {
+  it("adopts the server's keyframe start and true duration", async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        headers: { get: (k: string) => (k === 'X-Hls-Start' ? '12' : '5400') },
+      })),
+    );
+    const { result } = render(movie({ durationMs: 0 }));
+    await settle();
+    expect(result.current.baseSec).toBe(12);
+    expect(result.current.dur).toBe(5400);
+  });
+
+  it('keeps the requested anchor when the headers are unusable', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    H.user = {};
+    H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: 100_000 });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ headers: { get: () => 'not-a-number' } })),
+    );
+    const { result } = render(movie({ durationMs: 0 }));
+    await settle();
+    expect(result.current.baseSec).toBe(40);
+    expect(result.current.dur).toBe(0);
+  });
+
+  it('ignores master headers that land after unmount', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    let resolveMaster: (r: unknown) => void = () => undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveMaster = resolve;
+          }),
+      ),
+    );
+    const view = render();
+    view.unmount();
+    await act(async () => {
+      resolveMaster({ headers: { get: () => '12' } });
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+    expect(view.result.current.baseSec).toBe(0);
+  });
+
+  it('ignores a failed master fetch that lands after unmount', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    let rejectMaster: (e: unknown) => void = () => undefined;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectMaster = reject;
+          }),
+      ),
+    );
+    const view = render();
+    view.unmount();
+    await act(async () => {
+      rejectMaster(new Error('master 500'));
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+    expect(view.result.current.baseSec).toBe(0);
+  });
+
+  it('keeps the requested anchor when the master fetch fails', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    H.user = {};
+    H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: 100_000 });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('master 500');
+      }),
+    );
+    const { result } = render();
+    await settle();
+    expect(result.current.baseSec).toBe(40);
+  });
+});
+
+describe('useVideoPlayback engine override', () => {
+  it('persists the pick and re-anchors at the position it was made from', async () => {
+    const { result } = render();
+    await settle();
+    result.current.videoRef.current = fakeVideo({
+      currentTime: 30.9,
+    }) as unknown as HTMLVideoElement;
+    act(() => result.current.setEnginePref('remux'));
+    await settle();
+    expect(result.current.enginePref).toBe('remux');
+    expect(result.current.anchor).toBe(30);
+    expect(lastAttach().decision.kind).toBe('web-mse');
+    expect(lastAttach().useShaka).toBe(false);
+  });
+
+  it('sends the shaka override through Shaka and the direct override to a bare element', async () => {
+    const view = render();
+    await settle();
+    act(() => view.result.current.setEnginePref('shaka'));
+    await settle();
+    expect(lastAttach().decision.kind).toBe('web-mse');
+    expect(lastAttach().useShaka).toBe(true);
+
+    act(() => view.result.current.setEnginePref('direct'));
+    await settle();
+    expect(lastAttach().decision).toEqual({ kind: 'direct', aacMaster: false });
+  });
+
+  it('assumes a non-Safari environment when there is no navigator', async () => {
+    vi.stubGlobal('navigator', undefined);
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    render();
+    await settle();
+    expect(lastAttach().useNativeHls).toBe(false);
+    expect(lastAttach().useShaka).toBe(true);
+  });
+
+  it('keeps Safari on native HLS unless Shaka is picked', async () => {
+    vi.stubGlobal('navigator', {
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/17.0 Safari/605.1.15',
+    });
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    const { result } = render();
+    await settle();
+    expect(lastAttach().useNativeHls).toBe(true);
+    expect(lastAttach().useShaka).toBe(false);
+
+    act(() => result.current.setEnginePref('shaka'));
+    await settle();
+    expect(lastAttach().useNativeHls).toBe(false);
+    expect(lastAttach().useShaka).toBe(true);
+  });
+});
+
+describe('useVideoPlayback direct-play safety net', () => {
+  it('re-anchors on the HLS master at the position a media error killed', async () => {
+    const { result } = render();
+    await settle();
+    let onError: (() => void) | undefined;
+    result.current.videoRef.current = fakeVideo({
+      currentTime: 31.7,
+      addEventListener: vi.fn((type: string, handler: () => void) => {
+        if (type === 'error') onError = handler;
+      }),
+    }) as unknown as HTMLVideoElement;
+    act(() => result.current.setAudio(1));
+    await settle();
+
+    expect(onError).toBeTypeOf('function');
+    act(() => onError?.());
+    await settle();
+    expect(result.current.anchor).toBe(31);
+    expect(lastAttach().decision.kind).toBe('web-mse');
+  });
+});
+
+describe('useVideoPlayback fullscreen', () => {
+  const setDoc = (key: string, value: unknown) =>
+    Object.defineProperty(document, key, { value, configurable: true });
+
+  afterEach(() => {
+    setDoc('fullscreenElement', null);
+    setDoc('fullscreenEnabled', false);
+  });
+
+  it('follows the document fullscreen state', () => {
+    const { result } = render();
+    expect(result.current.fs).toBe(false);
+    act(() => {
+      setDoc('fullscreenElement', {});
+      document.dispatchEvent(new Event('fullscreenchange'));
+    });
+    expect(result.current.fs).toBe(true);
+  });
+
+  it('requests element fullscreen, and exits when already in it', () => {
+    const { result } = render();
+    act(() => result.current.toggleFullscreen());
+
+    const requestFullscreen = vi.fn();
+    result.current.containerRef.current = { requestFullscreen } as unknown as HTMLDivElement;
+    setDoc('fullscreenEnabled', true);
+    act(() => result.current.toggleFullscreen());
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
+
+    const exitFullscreen = vi.fn();
+    setDoc('fullscreenElement', {});
+    setDoc('exitFullscreen', exitFullscreen);
+    act(() => result.current.toggleFullscreen());
+    expect(exitFullscreen).toHaveBeenCalledTimes(1);
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the video element API where there is no element fullscreen', () => {
+    const { result } = render();
+    result.current.containerRef.current = {} as unknown as HTMLDivElement;
+    const webkitEnterFullscreen = vi.fn();
+    result.current.videoRef.current = fakeVideo({
+      webkitEnterFullscreen,
+    }) as unknown as HTMLVideoElement;
+
+    setDoc('fullscreenEnabled', true);
+    act(() => result.current.toggleFullscreen());
+    expect(webkitEnterFullscreen).toHaveBeenCalledTimes(1);
+
+    setDoc('fullscreenEnabled', false);
+    act(() => result.current.toggleFullscreen());
+    expect(webkitEnterFullscreen).toHaveBeenCalledTimes(2);
+  });
+
+  it('does nothing when neither API is available', () => {
+    const { result } = render();
+    result.current.containerRef.current = {} as unknown as HTMLDivElement;
+    expect(() => act(() => result.current.toggleFullscreen())).not.toThrow();
+  });
+});
+
+describe('useVideoPlayback without an element', () => {
+  it('leaves every transport action a no-op', () => {
+    const { result } = renderHook(() => useVideoPlayback(movie()));
+    act(() => {
+      result.current.togglePlay();
+      result.current.seekTo(10);
+      result.current.skip(5);
+      result.current.setVol(0.5);
+      result.current.toggleMute();
+      result.current.applyRate(2);
+      result.current.scrubToClientX(10);
+      result.current.seekToClientX(10);
+    });
+    expect(result.current.scrubPreview).toBeNull();
+    expect(result.current.anchor).toBe(0);
+    expect(result.current.getPosition()).toBe(0);
+  });
+
+  it('re-anchors from the stream base offset alone when the element is gone', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        headers: { get: (k: string) => (k === 'X-Hls-Start' ? '12' : null) },
+      })),
+    );
+    const { result } = render();
+    await settle();
+    expect(result.current.baseSec).toBe(12);
+
+    result.current.videoRef.current = null;
+    act(() => result.current.setAudio(1));
+    await settle();
+    expect(result.current.anchor).toBe(12);
+
+    act(() => result.current.setEnginePref('remux'));
+    await settle();
+    expect(result.current.anchor).toBe(12);
+  });
+
+  it('swallows a rejected play() and tolerates one that returns nothing', () => {
+    const { result, v } = render();
+    v.play = vi.fn(() => Promise.reject(new Error('NotAllowedError')));
+    act(() => result.current.togglePlay());
+    expect(v.play).toHaveBeenCalledTimes(1);
+
+    v.play = vi.fn(() => undefined as unknown as Promise<void>);
+    expect(() => act(() => result.current.togglePlay())).not.toThrow();
+  });
+});
+
+describe('useVideoPlayback bar geometry', () => {
+  const bar = (left: number, width: number) =>
+    ({ getBoundingClientRect: () => ({ left, width }) as DOMRect }) as unknown as HTMLDivElement;
+
+  it('maps a clientX against the element duration when the catalogue has none', () => {
+    const { result } = render(movie({ durationMs: 0 }));
+    const v = fakeVideo({ duration: 200 });
+    result.current.videoRef.current = v as unknown as HTMLVideoElement;
+    result.current.barRef.current = bar(0, 100);
+    act(() => result.current.scrubToClientX(25));
+    expect(result.current.scrubPreview).toBe(50);
+    act(() => result.current.commitScrub());
+    expect(v.currentTime).toBe(50);
+  });
+
+  it('reports no position while no duration is known at all', () => {
+    const { result } = render(movie({ durationMs: 0 }));
+    result.current.barRef.current = bar(0, 100);
+    act(() => result.current.scrubToClientX(50));
+    expect(result.current.scrubPreview).toBeNull();
+  });
+
+  it('reports no position before the bar is laid out', () => {
+    const { result } = render();
+    act(() => result.current.scrubToClientX(50));
+    expect(result.current.scrubPreview).toBeNull();
+  });
+
+  it('seekToClientX seeks straight to the mapped position', () => {
+    const { result, v } = render();
+    result.current.barRef.current = bar(0, 200);
+    act(() => result.current.seekToClientX(100));
+    expect(v.currentTime).toBe(50);
+  });
+
+  it('commitScrub without a preview leaves the position alone', () => {
+    const { result, v } = render();
+    v.currentTime = 20;
+    act(() => result.current.commitScrub());
+    expect(v.currentTime).toBe(20);
+  });
+
+  it('reports the hovered position, and follows the drag once scrubbing', () => {
+    const { result } = render();
+    result.current.barRef.current = bar(10, 100);
+    act(() => result.current.onBarMove({ clientX: 60 } as React.PointerEvent));
+    expect(result.current.hover).toEqual({ x: 50, t: 50, w: 100 });
+    expect(result.current.scrubPreview).toBeNull();
+
+    act(() => result.current.setScrubbing(true));
+    act(() => result.current.onBarMove({ clientX: 500 } as React.PointerEvent));
+    expect(result.current.scrubPreview).toBe(100);
+  });
+
+  it('ignores a move before the bar or the duration are known', () => {
+    const noBar = render();
+    act(() => noBar.result.current.onBarMove({ clientX: 10 } as React.PointerEvent));
+    expect(noBar.result.current.hover).toBeNull();
+    noBar.unmount();
+
+    const noDur = render(movie({ durationMs: 0 }));
+    noDur.result.current.barRef.current = bar(0, 100);
+    act(() => noDur.result.current.onBarMove({ clientX: 10 } as React.PointerEvent));
+    expect(noDur.result.current.hover).toBeNull();
   });
 });

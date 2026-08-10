@@ -117,6 +117,14 @@ describe('makeFpsSampler', () => {
     expect(sample({} as HTMLVideoElement)).toBeUndefined();
   });
 
+  it('reports nothing when the second tick arrives before the measurement floor', () => {
+    let t = 1000;
+    const sample = makeFpsSampler(() => t);
+    sample(video(0));
+    t += 100;
+    expect(sample(video(24))).toBeUndefined();
+  });
+
   it('ignores a tick that arrives too soon to measure', () => {
     let t = 1000;
     const sample = makeFpsSampler(() => t);
