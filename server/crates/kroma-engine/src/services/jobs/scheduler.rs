@@ -30,19 +30,22 @@ impl JobManager {
             loop {
                 ticker.tick().await;
                 let now = now_local(&state);
-                let due = self.due_jobs(last, now);
-                for job in due {
-                    match self.trigger(state.clone(), job, "schedule") {
-                        Ok(_) => {}
-                        Err(TriggerError::AlreadyRunning) => {
-                            info!(job = job.as_str(), "skipped scheduled run; previous run still active")
-                        }
-                        Err(TriggerError::Unknown) => {}
-                    }
-                }
+                self.trigger_due(&state, last, now);
                 last = now;
             }
         });
+    }
+
+    fn trigger_due(self: &Arc<Self>, state: &SharedState, last: OffsetDateTime, now: OffsetDateTime) {
+        for job in self.due_jobs(last, now) {
+            match self.trigger(state.clone(), job, "schedule") {
+                Ok(_) => {}
+                Err(TriggerError::AlreadyRunning) => {
+                    info!(job = job.as_str(), "skipped scheduled run; previous run still active")
+                }
+                Err(TriggerError::Unknown) => {}
+            }
+        }
     }
 
     // A fire-time exactly equal to `now` is included here and excluded from the
@@ -65,25 +68,36 @@ impl JobManager {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{Builtin, JobKey, JobManager};
+    use std::sync::Arc;
+
+    use super::super::{Builtin, JobKey, JobManager, RunHandle, ScheduleState};
+    use super::TICK;
+    use crate::db;
     use crate::model::Category;
+    use crate::test_support;
     use time::macros::datetime;
     use time::OffsetDateTime;
 
     const CACHE_CLEANUP: JobKey = JobKey("cache.cleanup");
+    const ARTWORK_SWEEP: JobKey = JobKey("artwork.sweep");
+    const NEVER_REGISTERED: JobKey = JobKey("ghost.job");
 
     // `register` wants a `'static` descriptor, so leak one — the test process is
     // short-lived.
-    fn with_job(schedule: Option<&'static str>) -> JobManager {
-        let mut jm = JobManager::new();
+    fn add_job(jm: &mut JobManager, key: JobKey, schedule: Option<&'static str>) {
         let builtin: &'static Builtin = Box::leak(Box::new(Builtin {
-            key: CACHE_CLEANUP,
+            key,
             category: Category::Maintenance,
             schedule,
             triggers: &[],
             run: |_| Ok(()),
         }));
         jm.register(builtin);
+    }
+
+    fn with_job(schedule: Option<&'static str>) -> JobManager {
+        let mut jm = JobManager::new();
+        add_job(&mut jm, CACHE_CLEANUP, schedule);
         jm
     }
 
@@ -119,5 +133,57 @@ mod tests {
         let jm = with_job(Some("0 4 * * *"));
         jm.schedules.write().unwrap().get_mut("cache.cleanup").unwrap().enabled = false;
         assert!(due(&jm, datetime!(2026-06-29 03:59:50 UTC), datetime!(2026-06-29 04:00:10 UTC)).is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_due_job_starts_while_one_already_running_and_one_unregistered_are_left_alone() {
+        let state = test_support::test_state();
+        let mut jm = JobManager::new();
+        add_job(&mut jm, CACHE_CLEANUP, Some("0 4 * * *"));
+        add_job(&mut jm, ARTWORK_SWEEP, Some("0 4 * * *"));
+        jm.schedules.write().unwrap().insert(
+            NEVER_REGISTERED,
+            ScheduleState {
+                schedule: Some("0 4 * * *".to_string()),
+                enabled: true,
+                customized: false,
+            },
+        );
+        let jm = Arc::new(jm);
+        jm.running.write().unwrap().insert(
+            ARTWORK_SWEEP,
+            Arc::new(RunHandle::new("run-1".into(), ARTWORK_SWEEP.as_str().into())),
+        );
+        let mut events = state.events.subscribe();
+
+        jm.trigger_due(
+            &state,
+            datetime!(2026-06-29 03:59:50 UTC),
+            datetime!(2026-06-29 04:00:10 UTC),
+        );
+
+        let announced = events.try_recv().expect("the job that could start announced itself");
+        let payload = announced.payload_unrouted();
+        assert!(payload.contains("job.started"), "{payload}");
+        assert!(payload.contains(CACHE_CLEANUP.as_str()), "{payload}");
+        assert!(db::list_job_runs(&state.db, ARTWORK_SWEEP.as_str(), 10).unwrap().is_empty());
+        assert!(db::list_job_runs(&state.db, NEVER_REGISTERED.as_str(), 10).unwrap().is_empty());
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn the_tick_loop_sweeps_without_starting_a_job_whose_time_has_not_come() {
+        let state = test_support::test_state();
+        let jm = Arc::new(with_job(Some("0 4 1 1 *")));
+        let mut events = state.events.subscribe();
+
+        jm.clone().spawn_scheduler(state.clone());
+        for _ in 0..3 {
+            tokio::task::yield_now().await;
+            tokio::time::advance(TICK * 2).await;
+            tokio::task::yield_now().await;
+        }
+
+        assert!(events.try_recv().is_err(), "no schedule was due, so no run was announced");
+        assert_eq!(jm.running_count(), 0);
     }
 }

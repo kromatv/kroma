@@ -407,4 +407,56 @@ mod tests {
     fn unix_now_is_positive() {
         assert!(unix_now() > 1_600_000_000);
     }
+
+    #[test]
+    fn only_the_viewer_of_a_session_can_end_it() {
+        let reg = Registry::new();
+        reg.upsert(ping("s1", 0, "playing"), Some("u1".into()), "Alice".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(ping("anon", 0, "playing"), None, "Anon".into(), "ip".into(), "LAN".into(), None);
+
+        assert!(reg.remove_owned("s1", "u2").is_none(), "another account cannot end it");
+        assert!(reg.remove_owned("ghost", "u1").is_none(), "and an unknown id is indistinguishable");
+        assert!(reg.remove_owned("anon", "u1").is_none(), "nor can anyone claim a signed-out session");
+        assert_eq!(reg.remove_owned("s1", "u1").map(|s| s.id), Some("s1".to_string()));
+        assert!(reg.remove_owned("s1", "u1").is_none());
+        assert!(reg.contains("anon"));
+    }
+
+    async fn let_the_reaper_sweep() {
+        tokio::task::yield_now().await;
+        tokio::time::advance(REAP_INTERVAL * 2).await;
+        tokio::task::yield_now().await;
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn the_reaper_ends_stale_sessions_and_writes_them_to_history() {
+        let pool = test_pool();
+        let events = Bus::new();
+        let mut seen = events.subscribe();
+        let reg = Registry::new();
+        reg.upsert(ping("live", 0, "playing"), Some("u1".into()), "Alice".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(ping("dead", 0, "playing"), Some("u1".into()), "Alice".into(), "ip".into(), "LAN".into(), None);
+        {
+            let mut map = reg.inner.write().unwrap();
+            map.get_mut("dead").unwrap().last_seen = Instant::now() - Duration::from_secs(120);
+        }
+
+        reg.spawn_reaper(Pool::clone(&pool), events);
+        let_the_reaper_sweep().await;
+
+        let stopped = seen.try_recv().expect("the end of a session is announced");
+        let payload = stopped.payload_unrouted();
+        assert!(payload.contains("playback.stopped"), "{payload}");
+        assert!(!reg.contains("dead"));
+        assert!(reg.contains("live"));
+        let logged: i64 = pool
+            .get()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM play_history", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(logged, 1);
+
+        let_the_reaper_sweep().await;
+        assert!(seen.try_recv().is_err(), "a sweep that finds nothing says nothing");
+    }
 }

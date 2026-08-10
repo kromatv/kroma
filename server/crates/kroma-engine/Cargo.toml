@@ -52,3 +52,6 @@ kroma-module-host = { workspace = true, features = ["testing"] }
 # `db::testing::temp_pool`, the throwaway database the service tests run against.
 kroma-db = { workspace = true, features = ["testing"] }
 kroma-testing = { workspace = true }
+# `test-util` gives the runtime a clock a test can advance, so the loops that
+# sleep between sweeps are reachable without waiting out their interval.
+tokio = { workspace = true, features = ["test-util"] }
