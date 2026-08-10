@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { sv } from './recipe';
-import { createTheme, KROMA, onThemeChange, setTheme, themeVersion } from './theme';
+import { createTheme, KROMA, onThemeChange, setTheme, themed, themeVersion } from './theme';
 
 afterEach(() => setTheme(KROMA));
 
@@ -33,6 +33,28 @@ describe('createTheme', () => {
   it('carries palette names the base never had', () => {
     const branded = createTheme({ colors: { brand: '#123456' } as never });
     expect((branded.colors as Record<string, string>).brand).toBe('#123456');
+  });
+
+  it('reads an explicit undefined as "leave the base alone", not as a blank', () => {
+    const same = createTheme({ colors: { accent: undefined } });
+    expect(same.colors.accent).toBe(KROMA.colors.accent);
+  });
+});
+
+describe('themed', () => {
+  it('computes once per theme, and again after a swap', () => {
+    let calls = 0;
+    const accent = themed((theme) => {
+      calls += 1;
+      return theme.colors.accent;
+    });
+    expect(accent()).toBe(KROMA.colors.accent);
+    expect(accent()).toBe(KROMA.colors.accent);
+    expect(calls).toBe(1);
+
+    setTheme(createTheme({ colors: { accent: '#3FB6F2' } }));
+    expect(accent()).toBe('#3FB6F2');
+    expect(calls).toBe(2);
   });
 });
 

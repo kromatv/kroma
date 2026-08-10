@@ -1,4 +1,5 @@
 import type { KromaClient, MediaItem } from '@kroma/core';
+import type { AudioFilterMode } from '@kroma/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { BaseTvEngine, type EngineOptions } from './baseEngine';
 import type { EngineListeners } from './engine';
@@ -19,6 +20,7 @@ function mkListeners(): EngineListeners {
     onEnded: vi.fn(),
     onError: vi.fn(),
     onReady: vi.fn(),
+    onAudioFilterUnavailable: vi.fn(),
   };
 }
 
@@ -58,8 +60,17 @@ class TestEngine extends BaseTvEngine {
   url(): string {
     return this.sourceUrl();
   }
-  triggerFail(): void {
-    this.fail();
+  triggerFail(audioUnsupported = false): void {
+    this.fail(audioUnsupported);
+  }
+  wantFilterOnMaster(): void {
+    this.filterMaster = true;
+  }
+  get aacForced(): boolean {
+    return this.forceAac;
+  }
+  get filterNow(): AudioFilterMode {
+    return this.filter;
   }
   get modeNow(): 'direct' | 'master' {
     return this.mode;
@@ -166,6 +177,39 @@ describe('BaseTvEngine fail / direct->master fallback', () => {
     expect(listeners.onError).toHaveBeenCalledTimes(1);
     expect(listeners.onWaiting).not.toHaveBeenCalled();
     expect(e.reanchorCalls).toEqual([]);
+  });
+
+  it('audio the device cannot decode moves to a master that transcodes it', () => {
+    const listeners = mkListeners();
+    const e = make({ direct: true, startSec: 20, listeners });
+    e.triggerFail(true);
+    expect(e.modeNow).toBe('master');
+    expect(e.aacForced).toBe(true);
+    expect(e.url()).toBe('master:m1:true:0:0');
+    expect(e.reanchorCalls).toEqual([20]);
+    expect(listeners.onError).not.toHaveBeenCalled();
+  });
+
+  it('asks for the AAC master once, then gives up', () => {
+    const listeners = mkListeners();
+    const e = make({ direct: true, startSec: 20, listeners });
+    e.triggerFail(true);
+    e.triggerFail(true);
+    expect(listeners.onError).toHaveBeenCalledTimes(1);
+    expect(e.reanchorCalls).toEqual([20]);
+  });
+
+  it('a master the server cannot produce costs the filter, not the title', () => {
+    const listeners = mkListeners();
+    const e = make({ direct: false, startSec: 30, listeners });
+    e.wantFilterOnMaster();
+    e.triggerFail();
+    expect(e.modeNow).toBe('direct');
+    expect(e.filterNow).toBe('off');
+    expect(listeners.onAudioFilterUnavailable).toHaveBeenCalledTimes(1);
+    expect(listeners.onWaiting).toHaveBeenCalledTimes(1);
+    expect(listeners.onError).not.toHaveBeenCalled();
+    expect(e.reanchorCalls).toEqual([30]);
   });
 
   it('is inert once destroyed', () => {

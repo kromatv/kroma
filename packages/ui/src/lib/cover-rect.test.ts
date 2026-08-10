@@ -19,6 +19,10 @@ describe('parsePosition', () => {
     expect(parsePosition('')).toEqual({ x: 0.5, y: 0.5 });
     expect(parsePosition('nonsense here')).toEqual({ x: 0.5, y: 0.5 });
   });
+
+  it('centres an axis whose percentage is not a number', () => {
+    expect(parsePosition('..% 28%')).toEqual({ x: 0.5, y: 0.28 });
+  });
 });
 
 describe('coverRect', () => {
@@ -50,6 +54,12 @@ describe('coverRect', () => {
     );
     expect(r?.left).toBeCloseTo(0);
     expect(r?.top).toBeCloseTo(0);
+  });
+
+  it('has no rectangle for artwork whose size is not known yet', () => {
+    expect(
+      coverRect({ width: 200, height: 300 }, { width: 0, height: 0 }, { x: 0.5, y: 0.5 }),
+    ).toBe(null);
   });
 
   it('overflows horizontally when the artwork is wider than the box', () => {

@@ -75,4 +75,10 @@ describe('the escape guard', () => {
     expect(modal.closed).not.toHaveBeenCalled();
     modal.dispose();
   });
+
+  it('is a no-op on a target with no document to guard', () => {
+    vi.stubGlobal('document', undefined);
+    expect(() => armEscapeGuard()).not.toThrow();
+    vi.unstubAllGlobals();
+  });
 });

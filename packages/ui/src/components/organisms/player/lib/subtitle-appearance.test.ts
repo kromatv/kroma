@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+// @vitest-environment jsdom
+import { setSessionStorage } from '@kroma/core';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_SUB_APPEARANCE,
   migrateAppearance,
@@ -6,6 +9,7 @@ import {
   type SubtitleAppearance,
   subtitleStyle,
   subtitleWindowStyle,
+  useSubtitleAppearance,
   withOpacity,
 } from './subtitle-appearance';
 
@@ -219,5 +223,59 @@ describe('migrateAppearance', () => {
   it('passes a value already on the new model straight through', () => {
     const current = base({ edge: 'raised', font: 'cursive', bgColor: '#FF0000', bgOpacity: 30 });
     expect(migrateAppearance(current)).toEqual(current);
+  });
+});
+
+const KEY = 'kroma.subtitleStyle';
+
+function deviceStore(initial: Record<string, string> = {}) {
+  const map = new Map(Object.entries(initial));
+  setSessionStorage({
+    getItem: (k) => map.get(k) ?? null,
+    setItem: (k, v) => void map.set(k, v),
+    removeItem: (k) => void map.delete(k),
+  });
+  return map;
+}
+
+afterEach(() => setSessionStorage(null));
+
+describe('useSubtitleAppearance', () => {
+  it('starts from the defaults, so a server render and the client agree', () => {
+    const { result } = renderHook(() => useSubtitleAppearance());
+    expect(result.current[0]).toEqual(DEFAULT_SUB_APPEARANCE);
+  });
+
+  it('hydrates a stored choice, migrating the names it was written under', () => {
+    deviceStore({ [KEY]: JSON.stringify({ edge: 'outline', font: 'sans' }) });
+    const { result } = renderHook(() => useSubtitleAppearance());
+    expect(result.current[0]).toMatchObject({ edge: 'uniform', font: 'propSans' });
+  });
+
+  it('keeps the defaults when the stored value is not JSON at all', () => {
+    deviceStore({ [KEY]: '{oops' });
+    const { result } = renderHook(() => useSubtitleAppearance());
+    expect(result.current[0]).toEqual(DEFAULT_SUB_APPEARANCE);
+  });
+
+  it('merges a partial change and writes the whole appearance back', () => {
+    const map = deviceStore();
+    const { result } = renderHook(() => useSubtitleAppearance());
+    act(() => result.current[1]({ size: 'xl' }));
+    expect(result.current[0]).toEqual({ ...DEFAULT_SUB_APPEARANCE, size: 'xl' });
+    expect(JSON.parse(map.get(KEY) ?? '{}')).toEqual({ ...DEFAULT_SUB_APPEARANCE, size: 'xl' });
+  });
+
+  it('honours the change even when the device store refuses to keep it', () => {
+    setSessionStorage({
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota');
+      },
+      removeItem: () => {},
+    });
+    const { result } = renderHook(() => useSubtitleAppearance());
+    act(() => result.current[1]({ size: 'sm' }));
+    expect(result.current[0].size).toBe('sm');
   });
 });

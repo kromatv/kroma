@@ -39,6 +39,18 @@ describe('useGridFocus', () => {
     expect(result.current.index).toBe(2);
   });
 
+  it('moves ◀ within a row', () => {
+    const { result, press } = grid({ count: 6, cols: 3, initial: 2 });
+    expect(press('Left')).toBe(true);
+    expect(result.current.index).toBe(1);
+  });
+
+  it('leaves a key it has no opinion about to whoever is behind it', () => {
+    const { result, press } = grid({ count: 6, cols: 3, initial: 2 });
+    expect(press('FastForward')).toBe(false);
+    expect(result.current.index).toBe(2);
+  });
+
   it('stops ▶ at the last populated cell of a ragged final row', () => {
     // count 5, cols 3: index 4 sits at col 1 with no cell to its right.
     const { result, press } = grid({ count: 5, cols: 3, initial: 4 });

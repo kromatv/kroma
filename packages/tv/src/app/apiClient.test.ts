@@ -42,6 +42,24 @@ describe('tvIdentity', () => {
     expect(tvIdentity()).toEqual({ version: '0.1.35', model: 'BRAVIA 4K', os: 'Android TV 14' });
   });
 
+  it('does not claim to be a television when the same bundle runs on a phone', () => {
+    platform.current = {
+      OS: 'ios',
+      isTV: false,
+      constants: { systemName: 'iOS', osVersion: '18.2' },
+    };
+    expect(tvIdentity()).toEqual({ version: '0.1.35', model: 'Apple device', os: 'iOS 18.2' });
+  });
+
+  it('leaves "TV" off an Android device that is not one', () => {
+    platform.current = {
+      OS: 'android',
+      isTV: false,
+      constants: { Model: 'Pixel 8', Release: '14', uiMode: 'normal' },
+    };
+    expect(tvIdentity()).toEqual({ version: '0.1.35', model: 'Pixel 8', os: 'Android 14' });
+  });
+
   it('says nothing in a browser shell, which owns its own User-Agent', () => {
     platform.current = { OS: 'web' };
     expect(tvIdentity()).toBeNull();

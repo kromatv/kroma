@@ -37,6 +37,15 @@ describe('useSeekGesture scrub (pointer drag)', () => {
   });
 });
 
+describe('useSeekGesture commit with nothing pending', () => {
+  it('seeks nowhere when no scrub is in flight', () => {
+    const { result, seekTo } = gesture();
+    act(() => result.current.commit());
+    expect(seekTo).not.toHaveBeenCalled();
+    expect(result.current.preview).toBeNull();
+  });
+});
+
 describe('useSeekGesture unmount flush', () => {
   it('flushes a pending preview as a seek when unmounted mid-gesture', () => {
     const seekTo = vi.fn();

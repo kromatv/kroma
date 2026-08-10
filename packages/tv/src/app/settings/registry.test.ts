@@ -1,16 +1,39 @@
-// The settings registry's option lists and value labels; the group wiring is
-// covered in groups.test.tsx.
+// @vitest-environment jsdom
 
 import { LANG_NO_PREF, LANG_OFF, LOCALES, type Locale, type Translate } from '@kroma/core';
-import { describe, expect, it } from 'vitest';
-import {
+import { I18nProvider } from '@kroma/ui';
+import { act, renderHook } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const H = vi.hoisted(() => ({
+  user: {} as Record<string, string | null> | null,
+  updateUser: vi.fn(),
+  updateAccount: vi.fn(),
+  setLocale: vi.fn(),
+  invoke: vi.fn(),
+}));
+
+vi.mock('#tv/app/providers/auth', () => ({
+  useAuth: () => ({ user: H.user, updateUser: H.updateUser }),
+}));
+vi.mock('#tv/app/router', () => ({ useClient: () => ({ updateAccount: H.updateAccount }) }));
+
+const {
+  aboutItem,
   artworkSetting,
   audioLanguageSetting,
+  castReceiverSetting,
+  engineSetting,
+  gpuRenderingSetting,
   keyboardLayoutSetting,
   localeSetting,
+  perfHudSetting,
   subtitleLanguageSetting,
-} from './registry';
-import { ARTWORK_SCALE } from './store';
+} = await import('./registry');
+const { ARTWORK_SCALE, perfHudPrefStore } = await import('./store');
+const { castReceiverPrefStore } = await import('#tv/features/cast/castPref');
+type SettingsItem = typeof localeSetting;
 
 // langOptions sorts by the translated name, so an identity translator keeps the
 // order stable rather than locale-dependent.
@@ -86,6 +109,16 @@ describe('keyboard layout setting', () => {
   });
 });
 
+describe('playback engine setting', () => {
+  it('labels every engine it offers', () => {
+    const options = optionsOf(engineSetting);
+    expect(options).toContain('auto');
+    for (const option of options) {
+      expect(labelOf(engineSetting, option)).toBe(`playbackEngine.${option}`);
+    }
+  });
+});
+
 describe('artwork quality setting', () => {
   it('offers exactly the scales the store knows how to apply', () => {
     // A row the store cannot resolve would set the scale to `undefined` and
@@ -97,5 +130,105 @@ describe('artwork quality setting', () => {
     for (const option of optionsOf(artworkSetting)) {
       expect(labelOf(artworkSetting, option)).toBe(`artworkQuality.${option}`);
     }
+  });
+});
+
+const choiceBinding = (item: SettingsItem) =>
+  (item as { use: () => readonly [string, (value: string) => void] }).use();
+const toggleBinding = (item: SettingsItem) =>
+  (item as { use: () => readonly [boolean, (value: boolean) => void] }).use();
+
+const wrapper = ({ children }: { children: ReactNode }) =>
+  createElement(I18nProvider, { locale: 'fr' as Locale, onLocaleChange: H.setLocale, children });
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  H.user = {};
+  H.updateAccount.mockResolvedValue(undefined);
+});
+afterEach(() => vi.unstubAllGlobals());
+
+describe('what each row is bound to', () => {
+  it('locale shows the running one and hands a change back to the app', () => {
+    const { result } = renderHook(() => choiceBinding(localeSetting), { wrapper });
+    expect(result.current[0]).toBe('fr');
+    act(() => result.current[1]('en'));
+    expect(H.setLocale).toHaveBeenCalledWith('en');
+  });
+
+  it('the language rows read the account and write straight back to it', () => {
+    H.user = { audioLanguage: 'fr', subtitleLanguage: null };
+    const audio = renderHook(() => choiceBinding(audioLanguageSetting), { wrapper });
+    const subtitle = renderHook(() => choiceBinding(subtitleLanguageSetting), { wrapper });
+    expect(audio.result.current[0]).toBe('fr');
+    expect(subtitle.result.current[0]).toBe(LANG_NO_PREF);
+
+    act(() => subtitle.result.current[1](LANG_OFF));
+    expect(H.updateUser).toHaveBeenCalledWith({ subtitleLanguage: LANG_OFF });
+  });
+
+  it('the device choices round-trip through their stored preference', () => {
+    const layout = renderHook(() => choiceBinding(keyboardLayoutSetting), { wrapper });
+    act(() => layout.result.current[1]('azerty'));
+    expect(layout.result.current[0]).toBe('azerty');
+
+    const engine = renderHook(() => choiceBinding(engineSetting), { wrapper });
+    act(() => engine.result.current[1]('remux'));
+    expect(engine.result.current[0]).toBe('remux');
+
+    const artwork = renderHook(() => choiceBinding(artworkSetting), { wrapper });
+    act(() => artwork.result.current[1]('medium'));
+    expect(artwork.result.current[0]).toBe('medium');
+  });
+
+  it('the on/off rows store a word and present a boolean', () => {
+    const hud = renderHook(() => toggleBinding(perfHudSetting), { wrapper });
+    expect(hud.result.current[0]).toBe(false);
+    act(() => hud.result.current[1](true));
+    expect(hud.result.current[0]).toBe(true);
+    expect(perfHudPrefStore.get()).toBe('on');
+    act(() => hud.result.current[1](false));
+    expect(perfHudPrefStore.get()).toBe('off');
+
+    const cast = renderHook(() => toggleBinding(castReceiverSetting), { wrapper });
+    expect(cast.result.current[0]).toBe(true);
+    act(() => cast.result.current[1](false));
+    expect(cast.result.current[0]).toBe(false);
+    expect(castReceiverPrefStore.get()).toBe('off');
+    act(() => cast.result.current[1](true));
+    expect(castReceiverPrefStore.get()).toBe('on');
+  });
+
+  it('GPU rendering reads the desktop shell, then writes and relaunches it', async () => {
+    H.invoke.mockImplementation(async (command: string) => command === 'webview_gpu_get');
+    vi.stubGlobal('__TAURI__', {
+      core: { invoke: H.invoke },
+      event: { listen: async () => () => {} },
+    });
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) Tauri' });
+
+    const { result } = renderHook(() => toggleBinding(gpuRenderingSetting), { wrapper });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current[0]).toBe(true);
+
+    await act(async () => {
+      result.current[1](false);
+      await Promise.resolve();
+    });
+    expect(result.current[0]).toBe(false);
+    expect(H.invoke).toHaveBeenCalledWith('webview_gpu_set', { enabled: false });
+    expect(H.invoke).toHaveBeenCalledWith('app_relaunch');
+  });
+});
+
+describe('aboutItem', () => {
+  it('is an action row that opens whatever it was handed', () => {
+    const open = vi.fn();
+    const item = aboutItem(open);
+    expect(item).toMatchObject({ kind: 'action', id: 'about', label: 'about.title' });
+    (item as { run: () => void }).run();
+    expect(open).toHaveBeenCalled();
   });
 });

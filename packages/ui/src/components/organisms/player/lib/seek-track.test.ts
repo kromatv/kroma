@@ -22,9 +22,21 @@ describe('segmentWidths', () => {
     expect(widths[0]).toBeCloseTo((content * 96) / 9840, 4);
     expect(widths[2]).toBeCloseTo((content * 3180) / 9840, 4);
   });
+
+  it('has nothing to lay out for a film with no chapters', () => {
+    expect(segmentWidths([], WIDTH)).toEqual([]);
+  });
 });
 
 describe('offsetAt', () => {
+  it('is the full width past the last chapter, so the playhead never falls off', () => {
+    expect(offsetAt(9_999_000, CHAPTERS, WIDTH)).toBe(WIDTH);
+  });
+
+  it('has nothing to place with no chapters at all', () => {
+    expect(offsetAt(2_940_000, [], WIDTH)).toBe(0);
+  });
+
   it('is 0 at the start and the full width at the end', () => {
     expect(offsetAt(0, CHAPTERS, WIDTH)).toBe(0);
     expect(offsetAt(9_840_000, CHAPTERS, WIDTH)).toBeCloseTo(WIDTH, 6);
@@ -61,6 +73,19 @@ describe('msAtOffset', () => {
   it('clamps past either end', () => {
     expect(msAtOffset(-40, CHAPTERS, WIDTH)).toBe(0);
     expect(msAtOffset(WIDTH + 40, CHAPTERS, WIDTH)).toBeCloseTo(9_840_000, 6);
+  });
+
+  it('has no moment to name before the track is measured, or with no chapters', () => {
+    expect(msAtOffset(120, CHAPTERS, 0)).toBe(0);
+    expect(msAtOffset(120, [], WIDTH)).toBe(0);
+  });
+
+  it('lands on a chapter start rather than dividing by a track the gaps ate', () => {
+    const pair = [
+      { startMs: 0, endMs: 10_000 },
+      { startMs: 10_000, endMs: 20_000 },
+    ];
+    expect(msAtOffset(0, pair, SEGMENT_GAP)).toBe(0);
   });
 
   it('resolves a press in a gap to the chapter boundary it sits on', () => {

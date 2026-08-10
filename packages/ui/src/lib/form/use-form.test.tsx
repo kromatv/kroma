@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { Translate, TVars } from '@kroma/core';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { msg } from './message';
@@ -75,6 +75,15 @@ function Probe({
       </button>
       <button type="button" onClick={() => form.reset()}>
         reset
+      </button>
+      <button type="button" onClick={() => form.reset({ email: 'seeded@example.org' })}>
+        reset seeded
+      </button>
+      <button type="button" onClick={() => form.setError('email', 'form.required')}>
+        blame email
+      </button>
+      <button type="button" onClick={() => form.setError('email')}>
+        clear email
       </button>
     </div>
   );
@@ -202,6 +211,87 @@ describe('useForm', () => {
     render(<Probe />);
     await press('submit');
     expect(shown('password-error')).toBe('form.tooShort');
+  });
+
+  it('falls back to a generic message when the throw carries none', async () => {
+    render(
+      <Probe
+        translate={t}
+        onSubmit={() => {
+          throw new Error('');
+        }}
+      />,
+    );
+    await type('email', 'ada@example.org');
+    await type('password', 'hunter2!');
+    await press('submit');
+    expect(shown('form-error')).toBe('form.submitFailed');
+  });
+
+  it('reads a thrown string as the message it is', async () => {
+    render(
+      <Probe
+        translate={t}
+        onSubmit={() => {
+          throw 'form.required';
+        }}
+      />,
+    );
+    await type('email', 'ada@example.org');
+    await type('password', 'hunter2!');
+    await press('submit');
+    expect(shown('form-error')).toBe('This one is required.');
+  });
+
+  it('setError blames a field by hand, and clears it again', async () => {
+    render(<Probe translate={t} />);
+    await press('blame email');
+    expect(shown('email-error')).toBe('This one is required.');
+    await press('clear email');
+    expect(shown('email-error')).toBe('');
+  });
+
+  it('reset(values) seeds the fields it names and defaults the rest', async () => {
+    render(<Probe translate={t} />);
+    await type('email', 'ada@example.org');
+    await type('password', 'hunter2!');
+    await press('reset seeded');
+    expect(entry('email').value).toBe('seeded@example.org');
+    expect(entry('password').value).toBe('');
+  });
+});
+
+describe('overlapping validations', () => {
+  it('lets the newest answer win when an older one lands late', async () => {
+    const pending: Array<(result: unknown) => void> = [];
+    const schema = {
+      '~standard': {
+        version: 1,
+        vendor: 'test',
+        validate: () =>
+          new Promise((resolve) => {
+            pending.push(resolve);
+          }),
+      },
+    } as never;
+
+    const { result } = renderHook(() =>
+      useForm({ schema, defaultValues: { code: '' } as Record<string, unknown> }),
+    );
+
+    await act(async () => {
+      void result.current.submit();
+    });
+    await act(async () => {
+      result.current.setValue('code', 'ab');
+    });
+    expect(pending).toHaveLength(2);
+
+    await act(async () => {
+      pending[1]?.({ issues: [{ message: 'newest' }] });
+      pending[0]?.({ issues: [{ message: 'oldest' }] });
+    });
+    expect(result.current.error).toBe('newest');
   });
 });
 

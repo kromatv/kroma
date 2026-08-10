@@ -72,6 +72,37 @@ describe('buildLeanStats', () => {
     expect(rows.find((r) => r.label === 'stats.position')?.value).toBe('30s / 8880s');
   });
 
+  it('names a plain 8-bit SDR stream without inventing depth or HDR', () => {
+    const plain = {
+      ...item,
+      video: { codec: 'h264', width: 1920, height: 1080 },
+    } as unknown as MediaItem;
+    const s = buildLeanStats(input({ item: plain }));
+    expect(s.videoCodec).toBe('H264');
+  });
+
+  it('names an audio track that says nothing but its codec', () => {
+    const bare = [{ index: 0, codec: 'aac', default: true }] as unknown as AudioTrack[];
+    expect(buildLeanStats(input({ audioTracks: bare })).audioFormat).toBe('AAC');
+  });
+
+  it('reports dropped frames on a surface that counts them', () => {
+    const video = {
+      videoWidth: 1920,
+      videoHeight: 800,
+      getVideoPlaybackQuality: () => ({ droppedVideoFrames: 7, totalVideoFrames: 4200 }),
+    };
+    const s = buildLeanStats(input({ video }));
+    expect(s.dropped).toBe('7 / 4200');
+    expect(s.resolution).toBe('1920×800');
+  });
+
+  it('leaves the container row blank rather than saying "undefined"', () => {
+    const noContainer = { ...item, container: null } as unknown as MediaItem;
+    const rows = buildLeanStats(input({ item: noContainer })).extra ?? [];
+    expect(rows.find((r) => r.label === 'stats.container')?.value).toBe('');
+  });
+
   it('appends surface-specific extra rows after the shared ones', () => {
     const rows =
       buildLeanStats(input({ extra: [{ label: 'stats.speed', value: '1.5×', group: 'Playback' }] }))

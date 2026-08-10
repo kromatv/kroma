@@ -1,4 +1,16 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const platform = vi.hoisted(() => ({ current: { OS: 'web' } as Record<string, unknown> }));
+vi.mock('react-native', async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    get Platform() {
+      return platform.current;
+    },
+  };
+});
+
 import { availableEngines, ENGINE_LABEL_KEY, type EnginePref } from './enginePref';
 
 function fakeStorage(initial: Record<string, string> = {}) {
@@ -11,6 +23,10 @@ function fakeStorage(initial: Record<string, string> = {}) {
 }
 
 const tauri = { core: { invoke: () => undefined }, event: { listen: () => undefined } };
+
+beforeEach(() => {
+  platform.current = { OS: 'web' };
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -91,6 +107,24 @@ describe('availableEngines', () => {
     vi.stubGlobal('__KROMA_MPV__', true);
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X) Tauri' });
     expect(availableEngines()).toEqual(['auto', 'mpv', 'webview', 'shaka', 'remux']);
+  });
+
+  it('offers only the original file or the remux on a native shell', () => {
+    platform.current = { OS: 'ios', isTV: true };
+    expect(availableEngines()).toEqual(['auto', 'remux']);
+    platform.current = { OS: 'android', isTV: true };
+    expect(availableEngines()).toEqual(['auto', 'remux']);
+  });
+
+  it('drops shaka on the legacy tier, which does not ship it', () => {
+    vi.stubGlobal('__KROMA_LEGACY_TIER__', true);
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Web0S; LG)' });
+    expect(availableEngines()).toEqual(['auto', 'webview', 'remux']);
+  });
+
+  it('falls back to the browser list where there is no navigator to read', () => {
+    vi.stubGlobal('navigator', undefined);
+    expect(availableEngines()).toEqual(['auto', 'webview', 'shaka', 'remux']);
   });
 
   it('does NOT insert mpv on a Tauri Android shell', () => {

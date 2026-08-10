@@ -15,6 +15,11 @@ describe('normalizeChapters', () => {
     expect(normalizeChapters([raw(0)], 1000)).toEqual([]);
   });
 
+  it('returns [] when filtering leaves fewer than two chapters to segment', () => {
+    expect(normalizeChapters([raw(0), raw(1200), raw(4000)], 1000)).toEqual([]);
+    expect(normalizeChapters([raw(0), raw(Number.NaN)], 1000)).toEqual([]);
+  });
+
   it('sorts by start and gap-fills endMs to the next start / runtime', () => {
     const out = normalizeChapters([raw(600, 'b'), raw(0, 'a'), raw(300, 'c')], 1000);
     expect(out.map((c) => [c.startMs, c.endMs])).toEqual([

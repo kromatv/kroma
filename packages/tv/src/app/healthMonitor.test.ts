@@ -105,6 +105,34 @@ describe('startHealthMonitor', () => {
     m.stop();
   });
 
+  it('polls slowly by default, and quickly once the server is down', async () => {
+    let up = true;
+    const probe = vi.fn(() => Promise.resolve(up));
+    const m = startHealthMonitor({ probe, onChange: () => {} });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(probe).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(7999);
+    expect(probe).toHaveBeenCalledTimes(1);
+    up = false;
+    await vi.advanceTimersByTimeAsync(1);
+    expect(probe).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(probe).toHaveBeenCalledTimes(3);
+    m.stop();
+  });
+
+  it('schedules nothing more when stop() lands while a probe is in flight', async () => {
+    let resolve: (v: boolean) => void = () => {};
+    const probe = vi.fn(() => new Promise<boolean>((r) => (resolve = r)));
+    const m = startHealthMonitor({ probe, onChange: () => {}, onlineMs: 100, offlineMs: 100 });
+    m.stop();
+    resolve(true);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(probe).toHaveBeenCalledTimes(1);
+  });
+
   it('stop() halts the loop (no further probes)', async () => {
     const probe = vi.fn(() => Promise.resolve(true));
     const m = startHealthMonitor({

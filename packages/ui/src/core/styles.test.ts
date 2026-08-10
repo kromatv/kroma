@@ -2,7 +2,7 @@
 import { StyleSheet } from 'react-native';
 import { describe, expect, it } from 'vitest';
 import { colors } from '#ui/core/tokens';
-import { style, styles } from './styles';
+import { sharedStyle, style, styles } from './styles';
 
 const flat = (s: unknown) => StyleSheet.flatten(s as never) as Record<string, unknown>;
 
@@ -43,6 +43,17 @@ describe('styles', () => {
 
   it('names every key it was given, and only those', () => {
     expect(Object.keys(s)).toEqual(['row', 'label', 'wash']);
+    expect('row' in s).toBe(true);
+    expect('nope' in s).toBe(false);
+    expect(Object.getOwnPropertyDescriptor(s, 'nope')).toBeUndefined();
+  });
+
+  it('rejects redefining or deleting an entry as firmly as writing one', () => {
+    expect(() => Object.defineProperty(s, 'row', { value: {} })).toThrow();
+    expect(() => {
+      delete (s as Record<string, unknown>).row;
+    }).toThrow();
+    expect(Object.keys(s)).toEqual(['row', 'label', 'wash']);
   });
 
   it('registers through StyleSheet, so the web compiles atomic classes', () => {
@@ -66,5 +77,21 @@ describe('style', () => {
       paddingRight: 12,
       backgroundColor: colors.surface2,
     });
+  });
+});
+
+describe('sharedStyle', () => {
+  it('hands the same object to every caller of one key', () => {
+    const a = sharedStyle('bar:40', { width: 40 });
+    expect(sharedStyle('bar:40', { width: 40 })).toBe(a);
+    expect(sharedStyle('bar:41', { width: 41 })).not.toBe(a);
+  });
+
+  it('stops remembering past its cap, and still resolves correctly', () => {
+    for (let i = 0; i < 4096; i++) sharedStyle(`fill:${i}`, { width: i });
+    const first = sharedStyle('overflow', { width: 7 });
+    const second = sharedStyle('overflow', { width: 7 });
+    expect(flat(first)).toEqual({ width: 7 });
+    expect(second).not.toBe(first);
   });
 });

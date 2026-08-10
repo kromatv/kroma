@@ -18,6 +18,7 @@ describe('the native half', () => {
     // Empty, not undefined: the result is spread into a style array.
     expect(native.maskImage('linear-gradient(to right, transparent, #000 32px)')).toEqual({});
     expect(native.backdropBlur(12)).toEqual({});
+    expect(native.fieldSizing()).toEqual({});
   });
 
   it('promotes nothing: the OS compositor already decides layers', () => {

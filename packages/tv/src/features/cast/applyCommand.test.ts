@@ -63,6 +63,24 @@ describe('play', () => {
     expect(c.togglePlay).toHaveBeenCalled();
   });
 
+  it('leaves a title that is already playing exactly where it is', async () => {
+    const c = controller({ playing: true });
+    setCastTarget({ item: item('it1'), controller: c });
+    const d = deps();
+    await applyCastCommand({ type: 'play', itemId: 'it1' as never }, d);
+    expect(c.seekTo).not.toHaveBeenCalled();
+    expect(c.togglePlay).not.toHaveBeenCalled();
+    expect(d.nav.reset).not.toHaveBeenCalled();
+  });
+
+  it('launches from the start when the sender named no position', async () => {
+    const d = deps();
+    await applyCastCommand({ type: 'play', itemId: 'it1' as never }, d);
+    expect(d.nav.reset).toHaveBeenCalledWith('player', {
+      item: expect.objectContaining({ id: 'it1' }),
+    });
+  });
+
   it('does nothing when the title cannot be resolved', async () => {
     const d = deps();
     (d.client.item as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('404'));
@@ -122,6 +140,14 @@ describe('skipNext / stop', () => {
     setCastTarget({ item: item('film'), controller: controller() });
     const d = deps();
     (d.client.nextEpisode as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
+    await applyCastCommand({ type: 'skipNext' }, d);
+    expect(d.nav.swap).not.toHaveBeenCalled();
+  });
+
+  it('stays on the current episode when the lookup fails', async () => {
+    setCastTarget({ item: item('s01e01'), controller: controller() });
+    const d = deps();
+    (d.client.nextEpisode as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('offline'));
     await applyCastCommand({ type: 'skipNext' }, d);
     expect(d.nav.swap).not.toHaveBeenCalled();
   });

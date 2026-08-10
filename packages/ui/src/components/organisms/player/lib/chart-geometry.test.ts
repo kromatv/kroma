@@ -60,6 +60,12 @@ describe('xAt', () => {
   it('reaches the left edge once the window is full', () => {
     expect(xAt(0, 11, box)).toBe(0);
   });
+
+  it('stacks every sample on the right edge for a window of one', () => {
+    const single: ChartBox = { width: 100, height: 40, padY: 5, window: 1 };
+    expect(xAt(0, 3, single)).toBe(100);
+    expect(xAt(2, 3, single)).toBe(100);
+  });
 });
 
 describe('yAt', () => {
@@ -131,6 +137,10 @@ describe('endPoint', () => {
 
   it('is null while there is no line to anchor to', () => {
     expect(endPoint([5], { min: 0, max: 10 }, box)).toBeNull();
+  });
+
+  it('drops to the floor rather than off the chart for a value that is not one', () => {
+    expect(endPoint([0, Number.NaN], { min: 0, max: 10 }, box)).toEqual({ x: 100, y: 35 });
   });
 });
 

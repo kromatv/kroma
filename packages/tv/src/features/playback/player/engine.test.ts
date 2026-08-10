@@ -1,5 +1,13 @@
+import type { AudioTrack, MediaItem } from '@kroma/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { avplayAvailable, getAvplay, getTauri, mpvAvailable, resolveMasterStart } from './engine';
+import {
+  avplayAvailable,
+  getAvplay,
+  getTauri,
+  mpvAvailable,
+  renditionFor,
+  resolveMasterStart,
+} from './engine';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -104,5 +112,40 @@ describe('resolveMasterStart', () => {
       vi.fn(() => Promise.reject(new Error('offline'))),
     );
     expect(await resolveMasterStart('http://x/master.m3u8', 42)).toBe(42);
+  });
+});
+
+describe('renditionFor', () => {
+  const track = (index: number, language: string, isDefault = false): AudioTrack =>
+    ({
+      index,
+      codec: 'eac3',
+      channels: 6,
+      language,
+      title: null,
+      default: isDefault,
+    }) as AudioTrack;
+
+  const withTracks = (tracks: AudioTrack[]): MediaItem =>
+    ({ audio: tracks[0] ?? null, audioTracks: tracks }) as unknown as MediaItem;
+
+  it('resolves the asked-for track from its identity, not its position', () => {
+    const item = withTracks([track(1, 'en'), track(3, 'fr'), track(7, 'de')]);
+    expect(renditionFor(item, 3)).toBe(3);
+    expect(renditionFor(item, 7)).toBe(7);
+  });
+
+  it('falls back to the default track when the stored index is gone', () => {
+    const item = withTracks([track(1, 'en'), track(3, 'fr', true), track(7, 'de')]);
+    expect(renditionFor(item, 99)).toBe(3);
+  });
+
+  it('falls back to the first track when nothing is marked default', () => {
+    const item = withTracks([track(4, 'en'), track(9, 'fr')]);
+    expect(renditionFor(item, 99)).toBe(4);
+  });
+
+  it('is the first rendition for an item with no audio at all', () => {
+    expect(renditionFor(withTracks([]), 0)).toBe(0);
   });
 });

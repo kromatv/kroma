@@ -18,7 +18,7 @@ interface FakeAvplay {
   setDuration(ms: number): void;
 }
 
-function fakeAvplay(): FakeAvplay {
+function fakeAvplay(refuses: string[] = []): FakeAvplay {
   const calls: Array<{ m: string; args: unknown[] }> = [];
   let listener: AvplayListeners = {};
   let ok: () => void = () => {};
@@ -27,8 +27,10 @@ function fakeAvplay(): FakeAvplay {
   let duration = 0;
   const rec =
     (m: string) =>
-    (...args: unknown[]) =>
+    (...args: unknown[]) => {
       calls.push({ m, args });
+      if (refuses.includes(m)) throw new Error(m);
+    };
   const api = {
     open: rec('open'),
     close: rec('close'),
@@ -45,7 +47,10 @@ function fakeAvplay(): FakeAvplay {
     getCurrentTime: () => 0,
     getState: () => 'PLAYING',
     getDuration: () => duration,
-    getTotalTrackInfo: () => tracks,
+    getTotalTrackInfo: () => {
+      if (refuses.includes('getTotalTrackInfo')) throw new Error('getTotalTrackInfo');
+      return tracks;
+    },
     setListener: (l: AvplayListeners) => {
       listener = l;
       calls.push({ m: 'setListener', args: [] });
@@ -108,8 +113,8 @@ function opts(over: Partial<EngineOptions> = {}): EngineOptions {
   };
 }
 
-function make(over: Partial<EngineOptions> = {}) {
-  const a = fakeAvplay();
+function make(over: Partial<EngineOptions> = {}, refuses: string[] = []) {
+  const a = fakeAvplay(refuses);
   vi.stubGlobal('webapis', { avplay: a.api });
   const listeners = over.listeners ?? mkListeners();
   const e = new AvplayEngine(opts({ ...over, listeners }));
@@ -322,5 +327,86 @@ describe('AvplayEngine audio filter (server-side remux)', () => {
     const { e, lastArgs } = make({ direct: false, startSec: 0 });
     e.setAudioFilter('night');
     expect(lastArgs('open')).toEqual(['master:sm1:false:0:0:night']);
+  });
+});
+
+describe('AvplayEngine when the firmware refuses', () => {
+  it('a failed prepare falls back to the master', async () => {
+    const { a, listeners, lastArgs } = make({ direct: true, startSec: 0 });
+    a.prepareErr();
+    await tick();
+    expect(listeners.onWaiting).toHaveBeenCalledTimes(1);
+    expect(lastArgs('open')).toEqual(['master:sm1:false:0:0']);
+  });
+
+  it('an open the firmware rejects on the master is a playback failure', () => {
+    const { listeners } = make({ direct: false, startSec: 0 }, ['open']);
+    expect(listeners.onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('a native seek it refuses re-anchors the master instead', async () => {
+    const { e, names, lastArgs } = make({ direct: false, startSec: 0 }, ['seekTo']);
+    e.seekTo(40);
+    await tick();
+    expect(names()).toContain('stop');
+    expect(lastArgs('open')).toEqual(['master:sm1:false:40:0']);
+  });
+
+  it('re-anchors when the track list cannot be read at all', async () => {
+    const { e, names } = make({ direct: true, initialRendition: 0 }, ['getTotalTrackInfo']);
+    e.setAudioRendition(1);
+    await tick();
+    expect(names()).toContain('stop');
+  });
+
+  it('ignores a prepare that lands after the engine was destroyed', () => {
+    const { e, a, listeners } = make({ direct: true, startSec: 30 });
+    e.destroy();
+    a.prepareOk();
+    expect(listeners.onReady).not.toHaveBeenCalled();
+  });
+
+  it('runs on a shell with no document to watch for visibility', () => {
+    vi.stubGlobal('document', undefined);
+    const { e, names } = make({ direct: true });
+    expect(names()).toContain('open');
+    expect(() => e.destroy()).not.toThrow();
+  });
+});
+
+describe('AvplayEngine no-ops', () => {
+  it('re-selecting the running rendition or filter touches nothing', () => {
+    const { e, names } = make({ direct: true, initialRendition: 1, audioFilter: 'off' });
+    const before = names().length;
+    e.setAudioRendition(1);
+    e.setAudioFilter('off');
+    expect(names()).toHaveLength(before);
+  });
+
+  it('a resize to the rect already on screen does not hit the compositor', () => {
+    const { e, names } = make({ direct: true });
+    const before = names().filter((n) => n === 'setDisplayRect').length;
+    e.setRect(null);
+    expect(names().filter((n) => n === 'setDisplayRect')).toHaveLength(before);
+  });
+
+  it('reports the buffered edge as the absolute position it has reached', () => {
+    const { e, a } = make({ direct: false, startSec: 0 });
+    a.listener().oncurrentplaytime?.(25000);
+    expect(e.bufferedEnd()).toBe(25);
+  });
+
+  it('a direct source with nothing to resume prepares without seeking', () => {
+    const { a, names } = make({ direct: true, startSec: 0 });
+    a.prepareOk();
+    expect(names()).not.toContain('seekTo');
+  });
+
+  it('drops a master anchor resolved after the source was replaced', async () => {
+    const { e, a, lastArgs } = make({ direct: false, startSec: 30 });
+    e.setAudioFilter('night');
+    await tick();
+    expect(lastArgs('open')).toEqual(['master:sm1:false:30:0:night']);
+    expect(a.calls().filter((c) => c.m === 'open')).toHaveLength(1);
   });
 });

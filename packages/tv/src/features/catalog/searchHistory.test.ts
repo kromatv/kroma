@@ -34,6 +34,11 @@ describe('getRecentSearches', () => {
     expect(getRecentSearches()).toEqual([]);
   });
 
+  it('ignores a stored value that is valid JSON but not a list', () => {
+    vi.stubGlobal('localStorage', fakeStorage({ [KEY]: '{"dune":1}' }));
+    expect(getRecentSearches()).toEqual([]);
+  });
+
   it('swallows storage errors', () => {
     vi.stubGlobal('localStorage', {
       getItem: () => {
