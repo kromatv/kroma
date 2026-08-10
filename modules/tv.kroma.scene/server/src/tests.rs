@@ -382,3 +382,15 @@ fn size_sweet_spot_and_proper_lines() {
     let tiny = score(&p(name), &cand(1, 10), &t, &pr, name).unwrap();
     assert_eq!(line(&tiny, "size"), None);
 }
+
+#[test]
+fn a_profile_with_no_size_ceiling_lets_any_release_through() {
+    let t = Target::Movie { year: None };
+    let pr = Profile { max_size_bytes_movie: 0, ..profile() };
+    let name = "Movie.2020.1080p.BluRay.REMUX.x265";
+
+    let s = score(&p(name), &cand(200, 10), &t, &pr, name).unwrap();
+
+    assert_eq!(line(&s, "size"), None);
+    assert_eq!(line(&s, "source"), Some(250));
+}

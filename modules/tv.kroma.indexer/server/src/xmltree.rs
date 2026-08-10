@@ -401,4 +401,10 @@ mod tests {
         assert_eq!(select_all(&doc, "item:contains()").len(), 2);
         assert_eq!(select_all(&doc, r#"item:contains("")"#).len(), 2);
     }
+
+    #[test]
+    fn a_contains_the_definition_never_closed_filters_nothing_rather_than_everything() {
+        let doc = parse(RSS);
+        assert_eq!(select_all(&doc, "item:contains(Alpha").len(), 2);
+    }
 }

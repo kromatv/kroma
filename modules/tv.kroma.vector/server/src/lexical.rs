@@ -131,12 +131,9 @@ mod tests {
         let heist = e.embed("bank heist crew safecracker vault");
         let heist2 = e.embed("safecracker joins a vault heist crew");
         let romance = e.embed("wedding proposal countryside romance");
-        assert!(
-            cosine(&heist, &heist2) > cosine(&heist, &romance),
-            "{} vs {}",
-            cosine(&heist, &heist2),
-            cosine(&heist, &romance)
-        );
+        let related = cosine(&heist, &heist2);
+        let unrelated = cosine(&heist, &romance);
+        assert!(related > unrelated, "{related} vs {unrelated}");
         // Identical text is a perfect match.
         assert!((cosine(&heist, &heist) - 1.0).abs() < 1e-5);
     }

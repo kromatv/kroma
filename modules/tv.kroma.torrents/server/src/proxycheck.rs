@@ -99,11 +99,10 @@ mod tests {
         std::thread::spawn(move || {
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
-                if socks5_handshake(&mut stream).is_none() {
-                    continue;
+                if socks5_handshake(&mut stream).is_some() {
+                    read_http_request(&mut stream);
+                    write_http_response(&mut stream, body);
                 }
-                read_http_request(&mut stream);
-                write_http_response(&mut stream, body);
             }
         });
         format!("127.0.0.1:{port}")
@@ -177,6 +176,17 @@ mod tests {
         assert!(out.error.is_some(), "a dead proxy must say why");
         assert_eq!(out.direct_ip.as_deref(), Some("203.0.113.7"));
         assert!(!out.sealed());
+    }
+
+    #[test]
+    fn the_proxy_is_given_the_hostname_to_resolve_rather_than_an_address_we_resolved() {
+        let url = http_echo("203.0.113.7").replace("127.0.0.1", "localhost");
+
+        let out = check(&socks5_echo("198.51.100.9"), &url);
+
+        assert_eq!(out.proxied_ip.as_deref(), Some("198.51.100.9"));
+        assert_eq!(out.error, None);
+        assert!(out.sealed());
     }
 
     #[test]

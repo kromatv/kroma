@@ -223,6 +223,22 @@ mod tests {
     }
 
     #[test]
+    fn a_tracker_that_advertises_no_tv_id_search_is_only_ever_asked_in_words() {
+        let caps = Caps::default();
+
+        let episode =
+            Query::Episode { tmdb_id: Some(1396), title: "Breaking Bad".into(), season: 1, episode: 2 };
+        let a = attempts(&episode, &caps);
+        assert_eq!(a.len(), 1);
+        assert!(a[0].contains(&("q", "Breaking Bad S01E02".to_string())));
+
+        let season = Query::Season { tmdb_id: Some(1396), title: "Breaking Bad".into(), season: 3 };
+        let a = attempts(&season, &caps);
+        assert_eq!(a.len(), 1);
+        assert!(a[0].contains(&("q", "Breaking Bad S03".to_string())));
+    }
+
+    #[test]
     fn movie_tmdb_only_when_imdb_cap_absent() {
         // tmdb cap on, imdb cap off: only the tmdb id attempt precedes the text.
         let caps = Caps { search_tmdb: true, search_imdb: false, ..Caps::default() };
@@ -266,9 +282,7 @@ mod tests {
                     let Ok(mut stream) = stream else { break };
                     let mut reader = BufReader::new(stream.try_clone().unwrap());
                     let mut request = String::new();
-                    if reader.read_line(&mut request).unwrap_or(0) == 0 {
-                        continue;
-                    }
+                    let _ = reader.read_line(&mut request);
                     loop {
                         let mut header = String::new();
                         if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {

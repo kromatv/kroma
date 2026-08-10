@@ -807,4 +807,48 @@ mod tests {
         assert!(!r2.importing);
         assert!((r2.progress - 0.2).abs() < 1e-9);
     }
+
+    #[test]
+    fn a_client_update_the_database_refuses_surfaces_instead_of_reading_as_no_such_row() {
+        let pool = test_db();
+        insert_download_client(&pool, &client("a", 0, true, 100)).unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER refuse_client BEFORE UPDATE ON download_clients \
+                 BEGIN SELECT RAISE(ABORT, 'read only'); END",
+            )
+            .unwrap();
+
+        let err = update_download_client(&pool, "a", Some("x"), None, None, None, None, None)
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("read only"), "{err}");
+    }
+
+    #[test]
+    fn a_grab_the_database_refuses_to_record_fails_rather_than_being_lost() {
+        let pool = test_db();
+        pool.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER refuse_download BEFORE INSERT ON downloads \
+                 BEGIN SELECT RAISE(ABORT, 'read only'); END",
+            )
+            .unwrap();
+
+        let err = insert_download(&pool, &download("a", "downloading", 10)).unwrap_err().to_string();
+
+        assert!(err.contains("read only"), "{err}");
+    }
+
+    #[test]
+    fn deriving_request_status_from_a_missing_downloads_table_errors_rather_than_reading_as_idle() {
+        let pool = test_db();
+        let conn = pool.get().unwrap();
+        conn.execute_batch("DROP TABLE downloads").unwrap();
+
+        assert!(requests_with_active_downloads(&conn).is_err());
+    }
 }

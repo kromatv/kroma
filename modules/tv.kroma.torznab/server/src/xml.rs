@@ -444,6 +444,16 @@ mod tests {
     }
 
     #[test]
+    fn an_item_nested_inside_another_yields_one_release_not_a_duplicate() {
+        let xml = r#"<rss><channel><item><item>
+          <title>Rel 1080p</title><guid>g</guid>
+        </item></item></channel></rss>"#;
+        let items = parse_items(xml.as_bytes()).unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].title, "Rel 1080p");
+    }
+
+    #[test]
     fn caps_without_search_flags_defaults_false() {
         let xml = r#"<caps><server title="X" /></caps>"#;
         let caps = parse_caps(xml.as_bytes()).unwrap();

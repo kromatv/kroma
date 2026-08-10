@@ -15,25 +15,26 @@ pub const SERVICE_TYPE: &str = "_kroma._tcp.local.";
 /// unregisters the service.
 pub fn advertise(port: u16, instance: &str) -> Result<ServiceDaemon> {
     let daemon = ServiceDaemon::new()?;
+    daemon.register(service_info(primary_lan_ip(), port, instance)?)?;
+    Ok(daemon)
+}
 
+// Only the primary LAN IP. `enable_addr_auto` would publish every interface
+// (Docker bridges, VPNs, …), and a client could pick a dead one.
+fn service_info(ip: Option<IpAddr>, port: u16, instance: &str) -> Result<ServiceInfo> {
     let props = [("path", "/api"), ("version", env!("CARGO_PKG_VERSION"))];
-
-    // Only the primary LAN IP. `enable_addr_auto` would publish every interface
-    // (Docker bridges, VPNs, …), and a client could pick a dead one.
-    let service = match primary_lan_ip() {
+    match ip {
         Some(ip) => {
             let ip = ip.to_string();
             info!("mDNS: advertising {HOSTNAME} → {ip}:{port} ({SERVICE_TYPE})");
-            ServiceInfo::new(SERVICE_TYPE, instance, HOSTNAME, ip.as_str(), port, &props[..])?
+            Ok(ServiceInfo::new(SERVICE_TYPE, instance, HOSTNAME, ip.as_str(), port, &props[..])?)
         }
         None => {
             info!("mDNS: advertising {SERVICE_TYPE} on :{port} (auto addresses)");
-            ServiceInfo::new(SERVICE_TYPE, instance, HOSTNAME, "", port, &props[..])?.enable_addr_auto()
+            Ok(ServiceInfo::new(SERVICE_TYPE, instance, HOSTNAME, "", port, &props[..])?
+                .enable_addr_auto())
         }
-    };
-
-    daemon.register(service)?;
-    Ok(daemon)
+    }
 }
 
 // Connecting a UDP socket sends no packets; it only consults the routing table.
@@ -135,14 +136,34 @@ mod tests {
 
     #[test]
     fn the_primary_lan_ip_is_never_one_a_client_could_not_reach() {
-        match primary_lan_ip() {
-            Some(ip) => {
-                assert!(!ip.is_loopback(), "advertised loopback: {ip}");
-                assert!(!ip.is_unspecified(), "advertised the wildcard: {ip}");
-            }
-            // A sandbox with no route at all: the fallback path, not a failure.
-            None => {}
-        }
+        let ip = primary_lan_ip();
+        assert!(ip.is_none_or(|a| !a.is_loopback() && !a.is_unspecified()), "{ip:?}");
+    }
+
+    #[test]
+    fn the_advertised_service_carries_the_lan_address_and_the_api_path() {
+        let ip = IpAddr::V4(std::net::Ipv4Addr::new(192, 168, 1, 42));
+        let info = service_info(Some(ip), 4040, "KROMA").unwrap();
+
+        assert_eq!(info.get_type(), SERVICE_TYPE);
+        assert_eq!(info.get_hostname(), HOSTNAME);
+        assert_eq!(info.get_port(), 4040);
+        assert_eq!(
+            info.get_addresses_v4().into_iter().collect::<Vec<_>>(),
+            [&std::net::Ipv4Addr::new(192, 168, 1, 42)]
+        );
+        assert_eq!(info.get_property_val_str("path"), Some("/api"));
+        assert_eq!(info.get_property_val_str("version"), Some(env!("CARGO_PKG_VERSION")));
+    }
+
+    #[test]
+    fn a_machine_with_no_usable_address_advertises_nothing_and_lets_mdns_fill_it_in() {
+        let info = service_info(None, 4040, "KROMA").unwrap();
+
+        assert!(info.get_addresses().is_empty());
+        assert_eq!(info.get_hostname(), HOSTNAME);
+        assert_eq!(info.get_port(), 4040);
+        assert_eq!(info.get_property_val_str("path"), Some("/api"));
     }
 
     #[test]

@@ -294,6 +294,25 @@ mod tests {
     }
 
     #[test]
+    fn a_write_the_database_refuses_surfaces_instead_of_reading_as_no_such_row() {
+        let pool = test_pool();
+        insert_indexer(&pool, &row("a", 100)).unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER refuse BEFORE UPDATE ON indexers \
+                 BEGIN SELECT RAISE(ABORT, 'read only'); END",
+            )
+            .unwrap();
+
+        let err = update_indexer(&pool, "a", Some("x"), None, None, None, None, None, None)
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("read only"), "{err}");
+    }
+
+    #[test]
     fn delete_removes_row_and_reports_hit_or_miss() {
         let pool = test_pool();
         insert_indexer(&pool, &row("a", 100)).unwrap();

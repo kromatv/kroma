@@ -417,13 +417,9 @@ search:
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
                 let mut reader = BufReader::new(stream.try_clone().unwrap());
-                let mut line = String::new();
-                if reader.read_line(&mut line).unwrap_or(0) == 0 {
-                    continue;
-                }
                 loop {
-                    let mut header = String::new();
-                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header == "\r\n" {
+                    let mut line = String::new();
+                    if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
                         break;
                     }
                 }
@@ -590,6 +586,17 @@ search:
         std::fs::write(store.dir().join("good.yml"), DEMO_YML).unwrap();
         std::fs::write(store.dir().join("broken.yml"), "\t- : :\n").unwrap();
         std::fs::write(store.dir().join("notes.txt"), "ignored").unwrap();
+
+        let listed = store.list().unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].id, "good");
+    }
+
+    #[test]
+    fn a_yml_entry_that_cannot_be_read_is_skipped_rather_than_fatal() {
+        let store = store_for(String::new());
+        std::fs::create_dir_all(store.dir().join("interrupted.yml")).unwrap();
+        std::fs::write(store.dir().join("good.yml"), DEMO_YML).unwrap();
 
         let listed = store.list().unwrap();
         assert_eq!(listed.len(), 1);
