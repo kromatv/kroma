@@ -5,6 +5,7 @@ import {
   langBase,
   langKey,
   langOptions,
+  langRegion,
   matchesLang,
   PREF_LANGS,
   preferredAudioIndex,
@@ -42,6 +43,25 @@ describe('langBase', () => {
     expect(langBase(null)).toBeNull();
     expect(langBase(undefined)).toBeNull();
     expect(langBase('  ')).toBeNull();
+  });
+
+  it('is null for a tag that starts with its separator', () => {
+    expect(langBase('-FR')).toBeNull();
+    expect(langBase('_BR')).toBeNull();
+  });
+});
+
+describe('langRegion', () => {
+  it('upper-cases the region of a tag that carries one', () => {
+    expect(langRegion('pt_br')).toBe('BR');
+    expect(langRegion('fr-CA')).toBe('CA');
+  });
+
+  it('is null without a region or without a code at all', () => {
+    expect(langRegion('fr')).toBeNull();
+    expect(langRegion(null)).toBeNull();
+    expect(langRegion(undefined)).toBeNull();
+    expect(langRegion('')).toBeNull();
   });
 });
 
@@ -105,6 +125,14 @@ describe('PREF_LANGS / langOptions', () => {
     const labels = langOptions(t, 'fr').map((o) => o.label);
     expect(labels.indexOf('Allemand')).toBeLessThan(labels.indexOf('Français'));
     expect(labels.indexOf('Français')).toBeLessThan(labels.indexOf('Suédois'));
+  });
+
+  it('still orders rows on a runtime that rejects the locale', () => {
+    const sharing = ((key: string) =>
+      key === 'lang.fr-CA' ? 'Français' : (NAMES[key] ?? key)) as Translate;
+    const labels = langOptions(sharing, 'not a language tag').map((o) => o.label);
+    expect(labels.indexOf('Allemand')).toBeLessThan(labels.indexOf('Suédois'));
+    expect(labels.filter((l) => l === 'Français')).toHaveLength(2);
   });
 });
 
@@ -197,6 +225,8 @@ describe('titleLangVariant', () => {
     expect(titleLangVariant('Español Castellano')).toBe('es-ES');
     expect(titleLangVariant('Latino 2.0')).toBe('es-419');
     expect(titleLangVariant('Português Brasil')).toBe('pt-BR');
+    expect(titleLangVariant('Portugues PT-PT')).toBe('pt-PT');
+    expect(titleLangVariant('European Portuguese 2.0')).toBe('pt-PT');
   });
 });
 

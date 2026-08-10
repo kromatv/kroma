@@ -7,12 +7,15 @@ import {
   exportBackup,
   importBackup,
   listNotificationImages,
+  notificationSamples,
   pipelineElements,
   playHistory,
   runJob,
+  sendNotification,
   terminateSession,
   topUsers,
   updateUser,
+  uploadNotificationImage,
 } from './admin';
 import type { RequestContext } from './base';
 
@@ -58,6 +61,49 @@ describe('pipelineElements', () => {
     const { ctx, json } = recordCtx();
     void pipelineElements(ctx, { kind: 'item', q: 'dune' });
     expect(json[0]?.path).toBe('/admin/pipeline/elements?kind=item&q=dune');
+  });
+
+  it('includes a status filter, and builds no query at all with none', () => {
+    const { ctx, json } = recordCtx();
+    void pipelineElements(ctx, { status: 'failed' });
+    void pipelineElements(ctx);
+    expect(json[0]?.path).toBe('/admin/pipeline/elements?status=failed');
+    expect(json[1]?.path).toBe('/admin/pipeline/elements');
+  });
+});
+
+describe('notifications console', () => {
+  it('reads the server-rendered samples', () => {
+    const { ctx, json } = recordCtx();
+    void notificationSamples(ctx);
+    expect(json[0]).toEqual({ path: '/admin/notifications/samples', init: undefined });
+  });
+
+  it('addresses a hand-written notification to the sender unless told otherwise', () => {
+    const { ctx, json } = recordCtx();
+    void sendNotification(ctx, { title: 'Maintenance', body: 'Back in 5 min' });
+    void sendNotification(ctx, { event: 'request.approved', target: 'everyone' });
+    expect(json[0]).toMatchObject({ path: '/admin/notifications', init: { method: 'POST' } });
+    expect(JSON.parse(json[0]?.init?.body as string)).toEqual({
+      target: 'me',
+      title: 'Maintenance',
+      body: 'Back in 5 min',
+    });
+    expect(JSON.parse(json[1]?.init?.body as string)).toEqual({
+      target: 'everyone',
+      event: 'request.approved',
+    });
+  });
+
+  it('uploads an image under its own type, falling back to octet-stream', () => {
+    const { ctx, json } = recordCtx();
+    void uploadNotificationImage(ctx, new Blob(['x'], { type: 'image/png' }));
+    void uploadNotificationImage(ctx, new Blob(['x']));
+    expect(json[0]).toMatchObject({
+      path: '/admin/notifications/image',
+      init: { method: 'POST', headers: { 'content-type': 'image/png' } },
+    });
+    expect(json[1]?.init?.headers).toEqual({ 'content-type': 'application/octet-stream' });
   });
 });
 

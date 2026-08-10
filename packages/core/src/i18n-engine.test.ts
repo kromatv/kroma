@@ -44,6 +44,11 @@ describe('translateIn', () => {
     expect(translateIn(catalogs, 'en', 'en', 'plural', { count: 0 })).toBe('0 items');
   });
 
+  it('falls back to the _other variant when the plural category has no entry', () => {
+    const russian = { en: { apples_other: '{count} apples' }, ru: {} };
+    expect(translateIn(russian, 'ru', 'en', 'apples', { count: 3 })).toBe('3 apples');
+  });
+
   it('returns undefined for missing keys', () => {
     expect(translateIn(catalogs, 'en', 'en', 'missing')).toBeUndefined();
   });

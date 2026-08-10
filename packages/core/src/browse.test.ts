@@ -99,6 +99,67 @@ describe('sortTitles', () => {
   });
 });
 
+describe('comparator tiebreaks', () => {
+  it('breaks an identical added date on the title, and an identical title on the date', () => {
+    const added = compareTitles('added');
+    const a = title({ title: 'Alien', addedAt: '2020-01-01T00:00:00Z' });
+    const b = title({ title: 'Brazil', addedAt: '2020-01-01T00:00:00Z' });
+    expect(added(a, b)).toBeLessThan(0);
+    expect(added(b, a)).toBeGreaterThan(0);
+
+    const byTitle = compareTitles('title');
+    const old = title({ title: 'Dune', addedAt: '2019-01-01T00:00:00Z' });
+    const recent = title({ title: 'Dune', addedAt: '2024-01-01T00:00:00Z' });
+    expect(byTitle(recent, old)).toBeLessThan(0);
+    expect(byTitle(old, recent)).toBeGreaterThan(0);
+  });
+
+  it('files an undated title after a dated one, whichever side it is on', () => {
+    const release = compareTitles('release');
+    const dated = title({ title: 'Alien', releaseDate: '1979-05-25' });
+    const undated = title({ title: 'Brazil' });
+    expect(release(dated, undated)).toBe(-1);
+    expect(release(undated, dated)).toBe(1);
+  });
+
+  it('breaks two undated titles, and two same-day releases, on the title', () => {
+    const release = compareTitles('release');
+    expect(release(title({ title: 'Alien' }), title({ title: 'Brazil' }))).toBeLessThan(0);
+    const sameDay = (t: string) => title({ title: t, releaseDate: '2010-06-01' });
+    expect(release(sameDay('Alien'), sameDay('Brazil'))).toBeLessThan(0);
+  });
+
+  it('falls back to the year when the release date is unparseable', () => {
+    const release = compareTitles('release');
+    const broken = title({ title: 'Alien', year: 2015, releaseDate: 'unknown' });
+    const older = title({ title: 'Brazil', releaseDate: '1985-02-20' });
+    expect(release(broken, older)).toBeLessThan(0);
+  });
+
+  it('orders two unrated titles by year, then by title', () => {
+    const rating = compareTitles('rating');
+    expect(
+      rating(title({ title: 'Alien', year: 1979 }), title({ title: 'Brazil', year: 1985 })),
+    ).toBeGreaterThan(0);
+    expect(rating(title({ title: 'Alien' }), title({ title: 'Brazil' }))).toBeLessThan(0);
+  });
+
+  it('breaks an equal rating and an equal year on the title', () => {
+    const rating = compareTitles('rating');
+    const a = title({ title: 'Alien', rating: 7, year: 1979 });
+    const b = title({ title: 'Brazil', rating: 7, year: 1979 });
+    expect(rating(a, b)).toBeLessThan(0);
+    expect(rating(b, a)).toBeGreaterThan(0);
+  });
+
+  it('breaks an equal rating on the title when neither title has a year', () => {
+    const rating = compareTitles('rating');
+    expect(
+      rating(title({ title: 'Alien', rating: 7 }), title({ title: 'Brazil', rating: 7 })),
+    ).toBeLessThan(0);
+  });
+});
+
 describe('collectGenres', () => {
   it('unions genres with counts, most common first then alphabetical', () => {
     const items = [

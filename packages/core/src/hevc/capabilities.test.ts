@@ -22,6 +22,16 @@ describe('detectCapabilities (node baseline: no DOM, no MediaSource)', () => {
     expect(caps.audio.aac).toBe(false);
     expect(caps.audio.dts).toBe(false);
   });
+
+  it('probes a runtime that has no navigator to read a user agent from', () => {
+    const real = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+    Object.defineProperty(globalThis, 'navigator', { value: undefined, configurable: true });
+    try {
+      expect(detectCapabilities().source).toBe('videoElement');
+    } finally {
+      if (real) Object.defineProperty(globalThis, 'navigator', real);
+    }
+  });
 });
 
 describe('detectCapabilities (TV platforms)', () => {
@@ -69,6 +79,16 @@ describe('detectCapabilities (browser detection paths)', () => {
   it('detects HDR through matchMedia', () => {
     g.matchMedia = (q: string) => ({ matches: q.includes('dynamic-range: high') });
     expect(detectCapabilities().hdr).toBe(true);
+  });
+
+  it('accepts the video-dynamic-range spelling a TV browser answers instead', () => {
+    g.matchMedia = (q: string) => ({ matches: q.includes('video-dynamic-range: high') });
+    expect(detectCapabilities().hdr).toBe(true);
+  });
+
+  it('reports no HDR when neither query matches', () => {
+    g.matchMedia = () => ({ matches: false });
+    expect(detectCapabilities().hdr).toBe(false);
   });
 });
 

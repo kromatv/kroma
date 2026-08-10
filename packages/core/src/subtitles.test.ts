@@ -71,6 +71,11 @@ describe('parseVtt', () => {
     expect(parseVtt('')).toEqual([]);
     expect(parseVtt('no cues here at all')).toEqual([]);
   });
+
+  it('counts an unreadable timestamp field as zero instead of dropping the cue', () => {
+    const raw = ['00:xx:05.000 --> 00:00:07.000', 'Still readable'].join('\n');
+    expect(parseVtt(raw)).toEqual([{ start: 5, end: 7, text: 'Still readable' }]);
+  });
 });
 
 describe('activeCueText', () => {

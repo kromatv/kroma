@@ -55,8 +55,28 @@ describe('subnetCandidates', () => {
   });
 });
 
+const hangingFetch = ((_input: RequestInfo | URL, init?: RequestInit) =>
+  new Promise<Response>((_resolve, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+  })) as typeof globalThis.fetch;
+
+describe('a runtime with no fetch', () => {
+  it('gives up rather than throwing', async () => {
+    const real = globalThis.fetch;
+    (globalThis as { fetch?: typeof globalThis.fetch }).fetch = undefined;
+    try {
+      await expect(discoverServer()).resolves.toBeNull();
+      await expect(discoverServers()).resolves.toEqual([]);
+      await expect(resolveServerOrigin('kroma.local')).resolves.toBeNull();
+    } finally {
+      globalThis.fetch = real;
+    }
+  });
+});
+
 describe('getLocalIPv4', () => {
   afterEach(() => {
+    vi.useRealTimers();
     for (const key of ['tizen', 'webOS', 'RTCPeerConnection']) {
       delete (globalThis as Record<string, unknown>)[key];
     }
@@ -98,6 +118,11 @@ describe('getLocalIPv4', () => {
     await expect(getLocalIPv4()).resolves.toBe('10.0.0.7');
   });
 
+  it('resolves null when Tizen Wi-Fi is unset and the Ethernet query then fails', async () => {
+    tizenWith({ WIFI_NETWORK: { ipAddress: '0.0.0.0' } });
+    await expect(getLocalIPv4()).resolves.toBeNull();
+  });
+
   it('falls back to Tizen Ethernet when the Wi-Fi query itself fails', async () => {
     tizenWith({ WIFI_NETWORK: 'error', ETHERNET_NETWORK: { ipAddress: '10.0.0.8' } });
     await expect(getLocalIPv4()).resolves.toBe('10.0.0.8');
@@ -106,6 +131,26 @@ describe('getLocalIPv4', () => {
   it('resolves null when neither Tizen interface answers', async () => {
     tizenWith({ WIFI_NETWORK: 'error', ETHERNET_NETWORK: 'error' });
     await expect(getLocalIPv4()).resolves.toBeNull();
+  });
+
+  it('keeps the first answer when the Tizen bridge fires its callback twice', async () => {
+    (globalThis as Record<string, unknown>).tizen = {
+      systeminfo: {
+        getPropertyValue(_prop: string, onSuccess: (v: { ipAddress?: string }) => void) {
+          onSuccess({ ipAddress: '192.168.1.11' });
+          onSuccess({ ipAddress: '192.168.1.22' });
+        },
+      },
+    };
+    await expect(getLocalIPv4()).resolves.toBe('192.168.1.11');
+  });
+
+  it('gives up on a Tizen bridge that never calls back', async () => {
+    vi.useFakeTimers();
+    (globalThis as Record<string, unknown>).tizen = { systeminfo: { getPropertyValue() {} } };
+    const pending = getLocalIPv4();
+    await vi.advanceTimersByTimeAsync(1500);
+    await expect(pending).resolves.toBeNull();
   });
 
   it('survives a Tizen bridge that throws outright', async () => {
@@ -145,6 +190,30 @@ describe('getLocalIPv4', () => {
     await expect(getLocalIPv4()).resolves.toBeNull();
   });
 
+  it('resolves null when webOS reports neither interface', async () => {
+    webOsWith({});
+    await expect(getLocalIPv4()).resolves.toBeNull();
+  });
+
+  it('survives a webOS bridge whose request throws', async () => {
+    (globalThis as Record<string, unknown>).webOS = {
+      service: {
+        request() {
+          throw new Error('luna bus unavailable');
+        },
+      },
+    };
+    await expect(getLocalIPv4()).resolves.toBeNull();
+  });
+
+  it('gives up on a webOS bridge that never calls back', async () => {
+    vi.useFakeTimers();
+    (globalThis as Record<string, unknown>).webOS = { service: { request() {} } };
+    const pending = getLocalIPv4();
+    await vi.advanceTimersByTimeAsync(1500);
+    await expect(pending).resolves.toBeNull();
+  });
+
   function rtcEmitting(candidates: (string | null)[]) {
     (globalThis as Record<string, unknown>).RTCPeerConnection = class {
       onicecandidate: ((e: { candidate: { candidate: string } | null }) => void) | null = null;
@@ -176,6 +245,22 @@ describe('getLocalIPv4', () => {
       'candidate:3 1 udp 2113 172.16.3.9 54321 typ host',
     ]);
     await expect(getLocalIPv4()).resolves.toBe('172.16.3.9');
+  });
+
+  it('keeps the first private candidate and ignores the ones after it', async () => {
+    rtcEmitting([
+      'candidate:1 1 udp 2113 10.0.0.4 54321 typ host',
+      'candidate:2 1 udp 2113 10.0.0.5 54321 typ host',
+    ]);
+    await expect(getLocalIPv4()).resolves.toBe('10.0.0.4');
+  });
+
+  it('ignores an end-of-candidates event and gives up on the timeout', async () => {
+    vi.useFakeTimers();
+    rtcEmitting([null]);
+    const pending = getLocalIPv4();
+    await vi.advanceTimersByTimeAsync(1500);
+    await expect(pending).resolves.toBeNull();
   });
 
   it('resolves null when the peer connection cannot be built', async () => {
@@ -242,6 +327,30 @@ describe('discoverServer', () => {
   it('resolves null with no candidates and scanning disabled', async () => {
     const fetch = fakeFetch({});
     await expect(discoverServer({ candidates: [], scanSubnet: false, fetch })).resolves.toBeNull();
+  });
+
+  it('sweeps the /24 around the local address when no candidate answers', async () => {
+    const fetch = fakeFetch({ 'http://192.168.1.9:4040/api/health': {} });
+    await expect(
+      discoverServer({ candidates: ['http://dead:4040'], localIp: '192.168.1.5', fetch }),
+    ).resolves.toBe('http://192.168.1.9:4040');
+  });
+
+  it('resolves null when the sweep finds nothing either', async () => {
+    await expect(
+      discoverServer({ candidates: [], localIp: '192.168.1.5', fetch: fakeFetch({}) }),
+    ).resolves.toBeNull();
+  });
+
+  it('abandons a candidate that accepts the connection and never answers', async () => {
+    await expect(
+      discoverServer({
+        candidates: ['http://slow:4040'],
+        scanSubnet: false,
+        fetch: hangingFetch,
+        timeoutMs: 0,
+      }),
+    ).resolves.toBeNull();
   });
 });
 
@@ -315,6 +424,14 @@ describe('discoverServers', () => {
     });
     expect(found).toEqual([]);
   });
+
+  it('skips the sweep entirely when the device has no local address', async () => {
+    const fetch = fakeFetch({
+      'http://kroma.local:4040/api/health': { body: { instanceId: 'salon' } },
+    });
+    const found = await discoverServers({ fetch });
+    expect(found.map((f) => f.url)).toEqual(['http://kroma.local:4040']);
+  });
 });
 
 describe('resolveServerOrigin', () => {
@@ -378,6 +495,33 @@ describe('resolveServerOrigin', () => {
 
   it('ignores an empty address', async () => {
     expect(await resolveServerOrigin('   ', { fetch: fakeFetch({}) })).toBeNull();
+  });
+
+  it('ignores a host that serves /api/health without an ok status', async () => {
+    const fetch = fakeFetch({ [`https://media.example.net${H}`]: { status: 'starting' } });
+    expect(await resolveServerOrigin('media.example.net', { fetch })).toBeNull();
+  });
+
+  it('keeps the probed origin when the fetch implementation omits res.url', async () => {
+    const fetch = fakeFetch({ [`https://media.example.net${H}`]: { url: '' } });
+    expect(await resolveServerOrigin('media.example.net', { fetch })).toEqual({
+      url: 'https://media.example.net',
+      secure: true,
+    });
+  });
+
+  it('keeps the probed origin when res.url is not a parseable URL', async () => {
+    const fetch = fakeFetch({ [`https://media.example.net${H}`]: { url: 'kroma-health' } });
+    expect(await resolveServerOrigin('media.example.net', { fetch })).toEqual({
+      url: 'https://media.example.net',
+      secure: true,
+    });
+  });
+
+  it('abandons a host that accepts the connection and never answers', async () => {
+    expect(
+      await resolveServerOrigin('media.example.net', { fetch: hangingFetch, timeoutMs: 0 }),
+    ).toBeNull();
   });
 });
 

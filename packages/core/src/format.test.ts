@@ -4,8 +4,10 @@ import {
   audioTrackLabel,
   channelLabel,
   codecLabel,
+  commitLabel,
   decimal,
   episodeTag,
+  formatBuildDate,
   formatBytes,
   formatTimecode,
   hueFromString,
@@ -16,6 +18,7 @@ import {
   posterColors,
   qualityBadge,
   qualityBadgeForVideo,
+  repoLabel,
   resolveImageUrl,
   safeImageUrl,
   sizedImageUrl,
@@ -83,6 +86,11 @@ describe('playerSubtitle', () => {
 
   it('uses the movie meta line for non-episodes', () => {
     expect(playerSubtitle(MOVIE)).toBe(metaLine(MOVIE));
+  });
+
+  it('falls back to the meta line for an episode with neither show nor numbering', () => {
+    const orphan = episode({ showTitle: null, season: null, episode: null });
+    expect(playerSubtitle(orphan)).toBe(metaLine(orphan));
   });
 });
 
@@ -199,6 +207,11 @@ describe('qualityBadgeForVideo', () => {
     expect(qualityBadgeForVideo(undefined)).toBeNull();
   });
 
+  it('does not claim 4K for a track whose width was never probed', () => {
+    expect(qualityBadgeForVideo(v({ codec: 'hevc' }))).toBe('H.265');
+    expect(qualityBadgeForVideo(v({ codec: 'h264' }))).toBeNull();
+  });
+
   it('qualityBadge reads the item video', () => {
     expect(qualityBadge({ video: { codec: 'hevc', width: 3840 } } as unknown as MediaItem)).toBe(
       '4K',
@@ -294,6 +307,57 @@ describe('audioTrackLabel', () => {
   it('returns undefined for no track', () => {
     expect(audioTrackLabel(t, null)).toBeUndefined();
     expect(audioTrackLabel(t, undefined)).toBeUndefined();
+  });
+
+  it('returns undefined rather than an empty label for a track with nothing to say', () => {
+    expect(audioTrackLabel(t, track({}))).toBeUndefined();
+  });
+});
+
+describe('commitLabel', () => {
+  it('flags a commit built from a dirty tree, since the hash no longer describes it', () => {
+    expect(commitLabel('a1b2c3d', false)).toBe('a1b2c3d');
+    expect(commitLabel('a1b2c3d', true)).toBe('a1b2c3d-dirty');
+  });
+
+  it('is null without a commit', () => {
+    expect(commitLabel(null, true)).toBeNull();
+    expect(commitLabel(undefined, false)).toBeNull();
+    expect(commitLabel('', false)).toBeNull();
+  });
+});
+
+describe('repoLabel', () => {
+  it('trims the scheme, leaving something a viewer can type elsewhere', () => {
+    expect(repoLabel('https://github.com/owner/repo')).toBe('github.com/owner/repo');
+    expect(repoLabel('http://git.local/owner/repo')).toBe('git.local/owner/repo');
+    expect(repoLabel('github.com/owner/repo')).toBe('github.com/owner/repo');
+  });
+
+  it('is null without a repository', () => {
+    expect(repoLabel(null)).toBeNull();
+    expect(repoLabel(undefined)).toBeNull();
+  });
+});
+
+describe('formatBuildDate', () => {
+  it('writes the stamp in the reader locale', () => {
+    expect(formatBuildDate('2026-03-04T09:05:00Z', 'en-US')).toContain('Mar 4, 2026');
+  });
+
+  it('is null without a stamp', () => {
+    expect(formatBuildDate(null, 'en-US')).toBeNull();
+    expect(formatBuildDate('', 'en-US')).toBeNull();
+  });
+
+  it('shows an unparseable stamp verbatim rather than nothing', () => {
+    expect(formatBuildDate('built yesterday', 'en-US')).toBe('built yesterday');
+  });
+
+  it('falls back to ISO when the runtime rejects the locale', () => {
+    expect(formatBuildDate('2026-03-04T09:05:00Z', 'not a language tag')).toBe(
+      '2026-03-04T09:05:00.000Z',
+    );
   });
 });
 

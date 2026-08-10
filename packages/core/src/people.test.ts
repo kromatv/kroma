@@ -42,6 +42,10 @@ describe('creditsPerson', () => {
     expect(creditsPerson(undefined, 'Ana de Armas')).toBe(false);
     expect(creditsPerson(m, '   ')).toBe(false);
   });
+
+  it('tolerates metadata that carries no credit lists at all', () => {
+    expect(creditsPerson({} as Metadata, 'Ana de Armas')).toBe(false);
+  });
 });
 
 describe('personInvolvement', () => {
@@ -69,9 +73,44 @@ describe('personInvolvement', () => {
     expect(inv.profileUrl).toBeNull();
   });
 
+  it('walks past crew credits that name someone else', () => {
+    const inv = personInvolvement(
+      [
+        meta({
+          crew: [
+            { name: 'Someone Else', job: 'Director' },
+            { name: 'Z', job: 'Writer' },
+          ],
+        }),
+      ],
+      'Z',
+    );
+    expect(inv.jobs).toEqual(['Writer']);
+  });
+
   it('reports no involvement for an unknown person', () => {
     const inv = personInvolvement([meta({ cast: [{ name: 'X' }] })], 'Y');
     expect(inv).toEqual({ acted: false, jobs: [], profileUrl: null });
+  });
+
+  it('takes the profile photo from the cast credit that carries one', () => {
+    const inv = personInvolvement(
+      [
+        meta({ cast: [{ name: 'Z' }] }),
+        meta({ cast: [{ name: 'Z', profileUrl: '/z.jpg' }] }),
+        meta({ cast: [{ name: 'Z', profileUrl: '/later.jpg' }] }),
+      ],
+      'Z',
+    );
+    expect(inv.profileUrl).toBe('/z.jpg');
+  });
+
+  it('tolerates metadata that carries no credit lists at all', () => {
+    expect(personInvolvement([{} as Metadata], 'Z')).toEqual({
+      acted: false,
+      jobs: [],
+      profileUrl: null,
+    });
   });
 
   it('takes the profile photo from a crew credit when cast has none', () => {
@@ -101,6 +140,16 @@ describe('personDisplayName', () => {
 
   it('falls back to the given name when uncredited', () => {
     expect(personDisplayName([meta({ cast: [{ name: 'A' }] })], 'unknown')).toBe('unknown');
+  });
+
+  it('walks past null entries and credits that name someone else', () => {
+    const metas = [
+      null,
+      {} as Metadata,
+      meta({ cast: [{ name: 'A' }], crew: [{ name: 'B', job: 'Director' }] }),
+      meta({ crew: [{ name: 'Hans Zimmer', job: 'Composer' }] }),
+    ];
+    expect(personDisplayName(metas, 'hans zimmer')).toBe('Hans Zimmer');
   });
 });
 

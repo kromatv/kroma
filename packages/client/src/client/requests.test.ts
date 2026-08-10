@@ -31,11 +31,13 @@ describe('mine filter', () => {
     void listRequests(ctx, { mine: true });
     void getCalendar(ctx, { mine: true });
     void getMissing(ctx);
+    void getMissing(ctx, { mine: true });
     expect(calls.map((c) => c.path)).toEqual([
       '/requests',
       '/requests?mine=true',
       '/requests/calendar?mine=true',
       '/requests/missing',
+      '/requests/missing?mine=true',
     ]);
   });
 });

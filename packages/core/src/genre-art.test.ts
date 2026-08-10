@@ -64,6 +64,26 @@ describe('genreShowcases', () => {
     expect(picks.get('Drame')?.title).toBe('other');
   });
 
+  it('takes the best-rated unused candidate when a genre has several', () => {
+    const items = [
+      title({ title: 'mid', rating: 7, genres: ['Drame'], backdropUrl: '/api/images/a.webp' }),
+      title({ title: 'best', rating: 9, genres: ['Drame'], backdropUrl: '/api/images/b.webp' }),
+      title({ title: 'low', rating: 3, genres: ['Drame'], backdropUrl: '/api/images/c.webp' }),
+    ];
+    expect(genreShowcases(items).get('Drame')?.title).toBe('best');
+  });
+
+  it('ignores a backdropped title whose metadata carries no genre list', () => {
+    const ungenred: Sortable = {
+      title: 'ungenred',
+      year: null,
+      addedAt: '2020-01-01T00:00:00Z',
+      metadata: { rating: 10, backdropUrl: '/api/images/z.webp' } as unknown as Metadata,
+    };
+    const drama = title({ title: 'x', genres: ['Drame'], backdropUrl: '/api/images/a.webp' });
+    expect([...genreShowcases([ungenred, drama]).keys()]).toEqual(['Drame']);
+  });
+
   it('reuses a title rather than leaving a genre bare', () => {
     const only = title({
       title: 'only',

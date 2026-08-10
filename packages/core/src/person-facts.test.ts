@@ -28,6 +28,10 @@ describe('personAge', () => {
     expect(personAge('')).toBeNull();
     expect(personAge('sometime in 1988')).toBeNull();
   });
+
+  it('is null rather than negative for a birth date in the future', () => {
+    expect(personAge('2030-01-01', null, new Date(2026, 6, 23))).toBeNull();
+  });
 });
 
 describe('formatDay', () => {
@@ -43,6 +47,10 @@ describe('formatDay', () => {
   it('is null for a missing or unparseable date', () => {
     expect(formatDay(null)).toBeNull();
     expect(formatDay('unknown')).toBeNull();
+  });
+
+  it('falls back to the raw string when the runtime rejects the locale', () => {
+    expect(formatDay('1988-04-30', 'not a language tag')).toBe('1988-04-30');
   });
 });
 
@@ -69,11 +77,21 @@ describe('personFacts', () => {
     expect(personFacts(t, { biography: 'A life.' })).toEqual([]);
     expect(personFacts(t, null)).toEqual([]);
   });
+
+  it('gives the death line no age when the birth date is unknown', () => {
+    const facts = personFacts(t, { deathday: '2014-08-11' }, 'en-US');
+    expect(facts).toEqual([{ key: 'died', label: 'person.died', value: 'August 11, 2014' }]);
+  });
 });
 
 describe('departmentLabel', () => {
   it('translates the departments we know', () => {
+    expect(departmentLabel(t, 'Acting')).toBe('person.dept.acting');
     expect(departmentLabel(t, 'Directing')).toBe('person.dept.directing');
+    expect(departmentLabel(t, 'Writing')).toBe('person.dept.writing');
+    expect(departmentLabel(t, 'Production')).toBe('person.dept.production');
+    expect(departmentLabel(t, 'Sound')).toBe('person.dept.sound');
+    expect(departmentLabel(t, 'Camera')).toBe('person.dept.camera');
   });
 
   it('shows an untranslated department verbatim, and nothing at all for none', () => {

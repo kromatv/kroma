@@ -105,6 +105,39 @@ describe('auth token, locale and hasAuth', () => {
   });
 });
 
+describe('the bearer for callers that bypass json/blob', () => {
+  it('exposes the token for the event socket, which carries it as a subprotocol', () => {
+    const c = new KromaClient({ baseUrl: 'http://x' });
+    expect(c.sessionToken).toBeUndefined();
+    c.setAuthToken('tok');
+    expect(c.sessionToken).toBe('tok');
+  });
+
+  it('hands out an Authorization header only when there is a token', () => {
+    const c = new KromaClient({ baseUrl: 'http://x' });
+    expect(c.authHeaders()).toEqual({});
+    c.setAuthToken('tok');
+    expect(c.authHeaders()).toEqual({ Authorization: 'Bearer tok' });
+  });
+});
+
+describe('module admin API', () => {
+  it("mounts a module's routes under its own encoded id", async () => {
+    const { client, calls } = makeClient();
+    const api = client.module('tv.kroma.torrents');
+    await api.get('/clients');
+    await api.post('/clients', { url: 'http://qb' });
+    await api.put('/clients/1', { url: 'http://qb' });
+    await api.delete('/clients/1');
+    expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
+      'GET http://kroma.test/api/admin/m/tv.kroma.torrents/clients',
+      'POST http://kroma.test/api/admin/m/tv.kroma.torrents/clients',
+      'PUT http://kroma.test/api/admin/m/tv.kroma.torrents/clients/1',
+      'DELETE http://kroma.test/api/admin/m/tv.kroma.torrents/clients/1',
+    ]);
+  });
+});
+
 // A native shell's own name (see `clientUserAgent`). The account page lists a
 // device by what it sent when it signed in, so this has to ride on requests the
 // user never sees - the login itself, and the token exchange after it.
@@ -229,6 +262,27 @@ describe('silent refresh on 401 (json)', () => {
   });
 });
 
+describe('me', () => {
+  const USER = {
+    id: 'u1',
+    email: 'max@kroma.tv',
+    username: 'max',
+    permissions: ['playback'],
+    createdAt: '2026-01-01T00:00:00Z',
+    hasPin: false,
+  };
+
+  it('validates the account the server returns', async () => {
+    const { client } = makeClient(() => ({ json: { user: USER } }));
+    await expect(client.me()).resolves.toEqual({ user: USER });
+  });
+
+  it('rejects an account the schema does not recognize', async () => {
+    const { client } = makeClient(() => ({ json: { user: { ...USER, permissions: 'all' } } }));
+    await expect(client.me()).rejects.toThrow();
+  });
+});
+
 describe('posterBlob', () => {
   it('fetches an absolute (TMDB) poster directly, no /api prefix or auth', async () => {
     const { client, calls } = makeClient(undefined, { authToken: 'tok' });
@@ -270,6 +324,16 @@ describe('posterBlob', () => {
 
 describe('URL builders (pure, no request)', () => {
   const c = new KromaClient({ baseUrl: 'http://kroma.test' });
+
+  it('builds the offline download URL, distinguishing an omitted codec list from an empty one', () => {
+    expect(c.downloadUrl('a b')).toBe('http://kroma.test/api/items/a%20b/download');
+    expect(c.downloadUrl('i1', [], [])).toBe(
+      'http://kroma.test/api/items/i1/download?copy=&video=',
+    );
+    expect(c.downloadUrl('i1', ['aac', 'ac3'])).toBe(
+      'http://kroma.test/api/items/i1/download?copy=aac%2Cac3',
+    );
+  });
 
   it('build stream / hls / poster / subtitle / storyboard / logs URLs', () => {
     expect(c.streamUrl('a b')).toBe('http://kroma.test/api/items/a%20b/stream');
@@ -475,6 +539,36 @@ describe('delegating methods issue the expected request', () => {
     ['testLlm', (c) => c.testLlm({} as never)],
     ['logs', (c) => c.logs()],
     ['storyboard', (c) => c.storyboard('i1')],
+    ['featured', (c) => c.featured()],
+    ['personDetails', (c) => c.personDetails('Denis Villeneuve')],
+    ['announceCast', (c) => c.announceCast({ receiverId: 'r1' } as never)],
+    ['unregisterCast', (c) => c.unregisterCast('r1')],
+    ['castReceivers', (c) => c.castReceivers()],
+    ['sendCastCommand', (c) => c.sendCastCommand('r1', { type: 'pause' } as never)],
+    ['matchCandidates', (c) => c.matchCandidates('movie', 'i1')],
+    ['setMatch', (c) => c.setMatch('show', 's1', 42)],
+    ['createReport', (c) => c.createReport({} as never)],
+    ['listMyReports', (c) => c.listMyReports()],
+    ['adminReports', (c) => c.adminReports({ status: 'open' })],
+    ['resolveReport', (c) => c.resolveReport('r1')],
+    ['dismissReport', (c) => c.dismissReport('r1')],
+    ['reopenReport', (c) => c.reopenReport('r1')],
+    ['deleteReport', (c) => c.deleteReport('r1')],
+    ['listNotifications', (c) => c.listNotifications()],
+    ['markNotificationsRead', (c) => c.markNotificationsRead(['n1'])],
+    ['markAllNotificationsRead', (c) => c.markAllNotificationsRead()],
+    ['deleteNotification', (c) => c.deleteNotification('n1')],
+    ['getNotificationPrefs', (c) => c.getNotificationPrefs()],
+    ['setNotificationPrefs', (c) => c.setNotificationPrefs({} as never)],
+    ['runNotificationAction', (c) => c.runNotificationAction({ href: '/api/requests/r1/approve' })],
+    ['pushKey', (c) => c.pushKey()],
+    ['subscribePush', (c) => c.subscribePush({} as never)],
+    ['unsubscribePush', (c) => c.unsubscribePush('https://push/e')],
+    ['testPush', (c) => c.testPush()],
+    ['notificationSamples', (c) => c.notificationSamples()],
+    ['sendNotification', (c) => c.sendNotification({ title: 'hi' })],
+    ['uploadNotificationImage', (c) => c.uploadNotificationImage(new Blob(['x']))],
+    ['listNotificationImages', (c) => c.listNotificationImages()],
   ];
 
   it.each(others)('%s issues exactly one request', async (_name, call) => {

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearSession,
+  deviceStorage,
   forgetAccount,
   forgetServer,
   loadAccounts,
@@ -13,6 +14,9 @@ import {
   saveLocalePref,
   saveServer,
   saveSession,
+  sessionToken,
+  setSessionStorage,
+  setSessionToken,
   sharedTokenExchange,
   touchServer,
 } from './session';
@@ -53,6 +57,33 @@ const session = (id: string, serverUrl?: string): StoredSession => ({
   accessToken: `tok-${id}`,
   user: U(id),
   serverUrl,
+});
+
+describe('the in-memory session bearer', () => {
+  it('is never persisted: it starts empty, is set, and clears again', () => {
+    expect(sessionToken()).toBeUndefined();
+    setSessionToken('short-lived');
+    expect(sessionToken()).toBe('short-lived');
+    expect(
+      (globalThis as { localStorage: Storage }).localStorage.getItem('kroma.session'),
+    ).toBeNull();
+    setSessionToken(undefined);
+    expect(sessionToken()).toBeUndefined();
+  });
+});
+
+describe('deviceStorage', () => {
+  afterEach(() => setSessionStorage(null));
+
+  it('hands out the installed store, the browser one, or null where there is neither', () => {
+    expect(deviceStorage()).toBe((globalThis as { localStorage: Storage }).localStorage);
+    const custom = { getItem: () => null, setItem() {}, removeItem() {} };
+    setSessionStorage(custom);
+    expect(deviceStorage()).toBe(custom);
+    setSessionStorage(null);
+    delete (globalThis as { localStorage?: Storage }).localStorage;
+    expect(deviceStorage()).toBeNull();
+  });
 });
 
 describe('normalizeServerUrl', () => {
@@ -140,6 +171,21 @@ describe('saved servers', () => {
     expect(loadAccounts()).toHaveLength(0);
     expect(loadSession()).toBeNull();
   });
+
+  it('forgetServer leaves a session signed into another server standing', () => {
+    saveServer({ url: 'http://a' });
+    saveSession(session('u1', 'http://b'));
+    forgetServer('http://a');
+    expect(loadSession()?.user.id).toBe('u1');
+  });
+
+  it('reads a stored server that predates the recency stamp as never used', () => {
+    (globalThis as { localStorage: Storage }).localStorage.setItem(
+      'kroma.servers',
+      JSON.stringify([{ url: 'http://a/' }]),
+    );
+    expect(loadServers()).toEqual([{ url: 'http://a', name: null, lastUsedAt: 0 }]);
+  });
 });
 
 describe('locale preference', () => {
@@ -171,12 +217,65 @@ describe('migrateStorage', () => {
     migrateStorage();
     expect(loadServers()).toHaveLength(0);
   });
+
+  it('leaves an already-scoped store alone but still drops the legacy key', () => {
+    const ls = (globalThis as { localStorage: Storage }).localStorage;
+    ls.setItem('kroma.serverUrl', 'http://old');
+    ls.setItem('kroma.servers', JSON.stringify([{ url: 'http://new', name: 'N', lastUsedAt: 5 }]));
+    const scoped = { accessToken: 't', user: { id: 'u1' }, serverUrl: 'http://new' };
+    ls.setItem('kroma.accounts', JSON.stringify([scoped]));
+    ls.setItem('kroma.session', JSON.stringify(scoped));
+
+    migrateStorage();
+
+    expect(loadServers().map((s) => s.url)).toEqual(['http://new']);
+    expect(loadAccounts()[0]?.serverUrl).toBe('http://new');
+    expect(loadSession()?.serverUrl).toBe('http://new');
+    expect(ls.getItem('kroma.serverUrl')).toBeNull();
+  });
 });
 
 describe('malformed storage', () => {
   it('falls back gracefully on unparseable JSON', () => {
     (globalThis as { localStorage: Storage }).localStorage.setItem('kroma.session', '{not json');
     expect(loadSession()).toBeNull();
+  });
+});
+
+describe('a store that refuses to answer', () => {
+  afterEach(() => setSessionStorage(null));
+
+  it('degrades to signed-out when reading localStorage itself throws', () => {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('access denied');
+      },
+    });
+    expect(loadSession()).toBeNull();
+    expect(loadAccounts()).toEqual([]);
+    expect(loadLocalePref()).toBeNull();
+    expect(() => saveSession(session('u1'))).not.toThrow();
+    expect(() => saveLocalePref('fr')).not.toThrow();
+    expect(() => clearSession()).not.toThrow();
+    expect(() => migrateStorage()).not.toThrow();
+  });
+
+  it('degrades when the installed device store throws on every read', () => {
+    setSessionStorage({
+      getItem() {
+        throw new Error('device store unavailable');
+      },
+      setItem() {
+        throw new Error('device store unavailable');
+      },
+      removeItem() {
+        throw new Error('device store unavailable');
+      },
+    });
+    expect(loadLocalePref()).toBeNull();
+    expect(() => migrateStorage()).not.toThrow();
+    expect(() => saveLocalePref('fr')).not.toThrow();
   });
 });
 

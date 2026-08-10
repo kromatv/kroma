@@ -17,6 +17,13 @@ describe('compareVersions', () => {
   });
 });
 
+describe('non-numeric version parts', () => {
+  it('reads an unparseable segment as zero', () => {
+    expect(compareVersions('1.x.3', '1.0.3')).toBe(0);
+    expect(compareVersions('1.x.3', '1.0.4')).toBe(-1);
+  });
+});
+
 describe('checkServerCompat', () => {
   const client = (over: Partial<ClientBuild> = {}): ClientBuild => ({
     version: '0.1.31',
