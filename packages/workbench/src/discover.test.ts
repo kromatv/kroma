@@ -58,6 +58,14 @@ describe('discoverVite', () => {
     expect(button?.demos.map((d) => d.name)).toEqual(['Arrangements', 'Detail actions']);
   });
 
+  it('keeps an already-ascending enumeration in exactly that order', () => {
+    const found: Modules = {
+      [BUTTON]: { default: story({ name: 'Button', group: 'Actions', render: () => null }) },
+      [CARD]: { default: story({ name: 'Card', group: 'Input', render: () => null }) },
+    };
+    expect(discoverVite(found).map((s) => s.tier)).toEqual(['Atoms', 'Molecules']);
+  });
+
   it('refuses a demo naming a story that does not exist, rather than hiding it', () => {
     const found = modules();
     found['src/components/atoms/button/buton.typo.demo.tsx'] = { default: demoComponent };

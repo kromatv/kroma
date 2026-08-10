@@ -137,6 +137,61 @@ describe('readQuestions on packets a stranger sent', () => {
     expect(readQuestions(truncated)).toEqual([]);
   });
 
+  it('drops a question whose label runs off the end of the packet', () => {
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(2, 4);
+    const tail = Buffer.alloc(4);
+    tail.writeUInt16BE(TYPE.PTR, 0);
+    tail.writeUInt16BE(1, 2);
+    const packet = Buffer.concat([
+      header,
+      Buffer.from([1]),
+      Buffer.from('a'),
+      Buffer.from([0]),
+      tail,
+      Buffer.from([9]),
+      Buffer.from('trunc'),
+    ]);
+    expect(readQuestions(packet)).toEqual([{ name: 'a', type: TYPE.PTR }]);
+  });
+
+  it('drops a question whose compression pointer is missing its second byte', () => {
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(2, 4);
+    const tail = Buffer.alloc(4);
+    tail.writeUInt16BE(TYPE.PTR, 0);
+    tail.writeUInt16BE(1, 2);
+    const packet = Buffer.concat([
+      header,
+      Buffer.from([1]),
+      Buffer.from('a'),
+      Buffer.from([0]),
+      tail,
+      Buffer.from([0xc0]),
+    ]);
+    expect(readQuestions(packet)).toEqual([{ name: 'a', type: TYPE.PTR }]);
+  });
+
+  it('follows a chain of pointers back to the labels at its end', () => {
+    const header = Buffer.alloc(12);
+    header.writeUInt16BE(2, 4);
+    const packet = Buffer.concat([
+      header,
+      Buffer.from([1]),
+      Buffer.from('a'),
+      Buffer.from([0]),
+      Buffer.from([0x00, TYPE.PTR]),
+      Buffer.from([0xc0, 12]),
+      Buffer.from([0xc0, 17]),
+      Buffer.from([0x00, TYPE.SRV]),
+      Buffer.from([0x00, 0x01]),
+    ]);
+    expect(readQuestions(packet)).toEqual([
+      { name: 'a', type: TYPE.PTR },
+      { name: 'a', type: TYPE.SRV },
+    ]);
+  });
+
   it('trusts the question count no further than the bytes that follow it', () => {
     const header = Buffer.alloc(12);
     header.writeUInt16BE(50, 4);

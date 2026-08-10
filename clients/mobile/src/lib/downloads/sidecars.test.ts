@@ -171,6 +171,17 @@ describe('the storyboard', () => {
     expect(downloadAsync).not.toHaveBeenCalled();
   });
 
+  it('falls back to the raw sprite url when nothing resolves it', async () => {
+    await fetchSidecars(
+      client({
+        resolveArt: () => null,
+        storyboard: async () => ({ url: 'https://cdn.test/sb.jpg' }),
+      }),
+      item([]),
+    );
+    expect(downloadAsync).toHaveBeenCalledWith('https://cdn.test/sb.jpg', expect.any(String));
+  });
+
   it('gives up quietly when the sprite cannot be fetched', async () => {
     downloadAsync.mockRejectedValue(new Error('offline'));
     const { storyboard } = await fetchSidecars(

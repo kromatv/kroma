@@ -9,6 +9,36 @@ const ctx = () => ({
   passThroughOnException: vi.fn(),
   props: {},
 });
+
+function collectingCtx() {
+  const pending: Promise<unknown>[] = [];
+  return {
+    waitUntil: (p: Promise<unknown>) => {
+      pending.push(p);
+    },
+    passThroughOnException: vi.fn(),
+    props: {},
+    settled: () => Promise.all(pending),
+  };
+}
+
+function stubEdgeCache() {
+  const store = new Map<string, string>();
+  const cache = {
+    match: vi.fn(async (key: string) => {
+      const body = store.get(key);
+      return body === undefined ? undefined : new Response(body);
+    }),
+    put: vi.fn(async (key: string, res: Response) => {
+      store.set(key, await res.text());
+    }),
+  };
+  vi.stubGlobal('caches', { default: cache });
+  return {
+    cache,
+    expireFresh: () => store.delete(String(cache.put.mock.calls[0]?.[0])),
+  };
+}
 const req = (path: string, init?: RequestInit) =>
   new Request(`https://modules.kroma.tv${path}`, init);
 
@@ -44,10 +74,20 @@ afterEach(() => {
 });
 
 function stubFetchOk(body: unknown) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })),
+  const fetchMock = vi.fn(
+    async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(JSON.stringify(body), { status: 200 }),
   );
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+function stubFetchFailing() {
+  const fetchMock = vi.fn(async () => {
+    throw new Error('offline');
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
 }
 
 describe('module-registry worker', () => {
@@ -195,5 +235,89 @@ describe('module-registry worker', () => {
     const html = readFileSync(join(__dirname, '..', 'index.html'), 'utf8');
     expect(html).toContain('__CATALOG__');
     expect(html).toContain('rel="kroma-modules"');
+  });
+
+  it('authenticates to GitHub when the operator configured a token', async () => {
+    const fetchMock = stubFetchOk(CATALOG);
+    await worker.fetch(req('/modules.json'), { GITHUB_TOKEN: 'ghp_secret' }, ctx());
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers.authorization).toBe('Bearer ghp_secret');
+  });
+
+  it('sends no authorization header when no token is configured', async () => {
+    const fetchMock = stubFetchOk(CATALOG);
+    await worker.fetch(req('/modules.json'), {}, ctx());
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers.authorization).toBeUndefined();
+  });
+
+  it('falls through to the catalog when the asset server has no such file', async () => {
+    stubFetchOk(CATALOG);
+    const res = await worker.fetch(
+      req('/not-a-real-asset.txt'),
+      { ASSETS: assets('not found', 404) },
+      ctx(),
+    );
+    expect(await res.json()).toEqual(CATALOG);
+  });
+
+  it('still paints the page when the catalog cannot be loaded', async () => {
+    stubFetchFailing();
+    const res = await worker.fetch(
+      req('/', { headers: { accept: 'text/html' } }),
+      { ASSETS: assets() },
+      ctx(),
+    );
+    const html = await res.text();
+    expect(html).not.toContain('__CATALOG__');
+    expect(html).toContain('catalog unavailable');
+  });
+
+  it('answers the bare origin with the empty catalog when GitHub is unreachable', async () => {
+    stubFetchFailing();
+    const res = await worker.fetch(req('/'), {}, ctx());
+    expect(res.headers.get('cache-control')).toBe('public, max-age=60');
+    const body = (await res.json()) as { modules: unknown[]; error: string };
+    expect(body.modules).toEqual([]);
+    expect(body.error).toBe('catalog unavailable');
+  });
+});
+
+describe('the edge cache', () => {
+  it('serves the fresh copy rather than asking GitHub twice', async () => {
+    const { cache } = stubEdgeCache();
+    const fetchMock = stubFetchOk(CATALOG);
+
+    const first = collectingCtx();
+    await worker.fetch(req('/modules.json'), {}, first);
+    await first.settled();
+    expect(cache.put).toHaveBeenCalledTimes(2);
+
+    const second = await worker.fetch(req('/modules.json'), {}, ctx());
+    expect(await second.json()).toEqual(CATALOG);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('caches what the bare origin serves too', async () => {
+    const { cache } = stubEdgeCache();
+    stubFetchOk(CATALOG);
+
+    const c = collectingCtx();
+    await worker.fetch(req('/'), {}, c);
+    await c.settled();
+    expect(cache.put).toHaveBeenCalledTimes(2);
+  });
+
+  it('serves the week-old copy once the fresh one has expired and GitHub is down', async () => {
+    const { expireFresh } = stubEdgeCache();
+    stubFetchOk(CATALOG);
+    const warm = collectingCtx();
+    await worker.fetch(req('/modules.json'), {}, warm);
+    await warm.settled();
+
+    expireFresh();
+    stubFetchFailing();
+    const res = await worker.fetch(req('/modules.json'), {}, ctx());
+    expect(await res.json()).toEqual(CATALOG);
   });
 });

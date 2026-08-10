@@ -1,8 +1,16 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { memoryRouter, parseView, pathRouter, searchParamsRouter, viewPath } from './router';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const offWeb = vi.hoisted(() => ({ value: false }));
+vi.mock('@kroma/ui/kit', () => ({
+  webWindow: () => (offWeb.value ? null : window),
+}));
+
+const { memoryRouter, parseView, pathRouter, searchParamsRouter, viewPath } = await import(
+  './router'
+);
 
 describe('parseView', () => {
   it('takes the two named views', () => {
@@ -66,7 +74,10 @@ describe('memoryRouter', () => {
 
 const at = (url: string) => window.history.replaceState(null, '', url);
 
-beforeEach(() => at('/'));
+beforeEach(() => {
+  offWeb.value = false;
+  at('/');
+});
 afterEach(cleanup);
 
 describe('searchParamsRouter', () => {
@@ -92,6 +103,16 @@ describe('searchParamsRouter', () => {
     expect(params.has('workbench')).toBe(true);
     expect(params.has('view')).toBe(false);
     expect(result.current[0]).toMatchObject({ story: 'button', view: 'preview' });
+  });
+
+  it('leaves the params it did not name where they were', () => {
+    at('/?workbench&story=button&view=matrix');
+    const { result } = renderHook(searchParamsRouter());
+    act(() => result.current[1]({ shot: true }));
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get('story')).toBe('button');
+    expect(params.get('view')).toBe('matrix');
+    expect(result.current[0]).toMatchObject({ story: 'button', view: 'matrix', shot: true });
   });
 });
 
@@ -161,5 +182,35 @@ describe('pathRouter', () => {
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     expect(result.current[0]).toMatchObject({ story: 'card', view: 'matrix' });
+  });
+
+  it('reads a path sitting outside its base through the query string instead', () => {
+    at('/elsewhere/story/button/matrix?story=card&view=scene-1');
+    const { result } = renderHook(pathRouter({ base: '/kit' }));
+    expect(result.current[0]).toMatchObject({ story: 'card', view: 'scene:1' });
+  });
+});
+
+describe('off the web', () => {
+  beforeEach(() => {
+    offWeb.value = true;
+  });
+
+  it('degrades the query-string adapter to memory, touching no address bar', () => {
+    at('/host?story=button&view=matrix');
+    const { result } = renderHook(searchParamsRouter());
+    expect(result.current[0]).toEqual({});
+    act(() => result.current[1]({ story: 'card' }));
+    expect(result.current[0]).toEqual({ story: 'card' });
+    expect(window.location.search).toBe('?story=button&view=matrix');
+  });
+
+  it('degrades the path adapter to memory, subscribing to no history', () => {
+    at('/story/button/matrix');
+    const { result } = renderHook(pathRouter());
+    expect(result.current[0]).toEqual({});
+    act(() => result.current[1]({ story: 'card', view: 'matrix' }));
+    expect(result.current[0]).toEqual({ story: 'card', view: 'matrix' });
+    expect(window.location.pathname).toBe('/story/button/matrix');
   });
 });

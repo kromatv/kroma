@@ -62,6 +62,14 @@ describe('mpvAvailable', () => {
     expect(mpvAvailable()).toBe(false);
   });
 
+  it('needs the in-process libmpv flag in a runtime with no navigator at all', () => {
+    vi.stubGlobal('__TAURI__', tauri);
+    vi.stubGlobal('navigator', undefined);
+    expect(mpvAvailable()).toBe(false);
+    vi.stubGlobal('__KROMA_MPV__', true);
+    expect(mpvAvailable()).toBe(true);
+  });
+
   it('needs the in-process libmpv flag on macOS', () => {
     vi.stubGlobal('__TAURI__', tauri);
     vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' });

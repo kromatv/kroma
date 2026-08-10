@@ -145,6 +145,28 @@ describe('MpvEngine construction / open', () => {
     await tick();
     expect(listeners.onError).toHaveBeenCalledTimes(1);
   });
+
+  it('a status probe answered after the engine is gone raises nothing', async () => {
+    const listeners = mkListeners();
+    let engine: MpvEngine | undefined;
+    let probed = false;
+    const bridge = {
+      core: {
+        invoke: (cmd: string) => {
+          if (cmd !== 'mpv_status') return Promise.resolve(undefined);
+          engine?.destroy();
+          probed = true;
+          return Promise.resolve('dead');
+        },
+      },
+      event: { listen: () => Promise.resolve(() => undefined) },
+    };
+    vi.stubGlobal('__TAURI__', bridge);
+    engine = new MpvEngine(opts({ listeners }));
+    engine.start();
+    await vi.waitFor(() => expect(probed).toBe(true));
+    expect(listeners.onError).not.toHaveBeenCalled();
+  });
 });
 
 describe('MpvEngine observed properties', () => {

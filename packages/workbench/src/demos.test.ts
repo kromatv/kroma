@@ -61,6 +61,14 @@ describe('metaFrom', () => {
   it('has nothing to say about a file whose source is unavailable', () => {
     expect(metaFrom(undefined)).toEqual({});
   });
+
+  it('keeps the file name when @name carries no value, rather than blanking the tab', () => {
+    const source = '/**\n * @name\n */\nexport default function Demo() {}\n';
+    expect(metaFrom(source)).toEqual({});
+    expect(demoFrom({ path: 'a/chip.filter-row.demo.tsx', component: noop, source })).toMatchObject(
+      { name: 'Filter row' },
+    );
+  });
 });
 
 describe('codeFrom', () => {
@@ -76,6 +84,10 @@ describe('codeFrom', () => {
   it('is absent where the bundler cannot read the file', () => {
     expect(codeFrom(undefined)).toBeUndefined();
   });
+
+  it('is absent for a file with nothing but whitespace in it', () => {
+    expect(codeFrom('\n   \n')).toBeUndefined();
+  });
 });
 
 describe('demoFrom', () => {
@@ -83,6 +95,11 @@ describe('demoFrom', () => {
     const demo = demoFrom({ path: 'a/chip.filter-row.demo.tsx', component: noop });
     expect(demo).toMatchObject({ story: 'chip', name: 'Filter row' });
     expect(demo.code).toBeUndefined();
+  });
+
+  it('mounts the component rather than calling it, so its own hooks are legal', () => {
+    const demo = demoFrom({ path: 'a/chip.filter-row.demo.tsx', component: noop });
+    expect(demo.render()).toMatchObject({ type: noop });
   });
 });
 

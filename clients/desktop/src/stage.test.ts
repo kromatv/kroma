@@ -156,6 +156,13 @@ describe('the letterbox surround', () => {
     expect(css()).not.toContain('background: transparent');
   });
 
+  it('is painted where there is no navigator to ask', () => {
+    vi.stubGlobal('__TAURI_INTERNALS__', {});
+    vi.stubGlobal('navigator', undefined);
+    installStage();
+    expect(css()).not.toContain('background: transparent');
+  });
+
   it('accepts either spelling of the Tauri global', () => {
     vi.stubGlobal('__TAURI__', {});
     Object.defineProperty(navigator, 'userAgent', {

@@ -91,6 +91,18 @@ function deps(over: Record<string, unknown> = {}) {
   return { d: d as never, state };
 }
 
+function deferred<T>() {
+  let settle!: { resolve: (value: T) => void; reject: (reason: unknown) => void };
+  const promise = new Promise<T>((resolve, reject) => {
+    settle = { resolve, reject };
+  });
+  return { promise, ...settle };
+}
+
+async function flush() {
+  for (let i = 0; i < 20; i += 1) await Promise.resolve();
+}
+
 async function boot(over: Record<string, unknown> = {}) {
   const { d, state } = deps(over);
   const view = renderHook(() => useBootRestore(d));
@@ -330,6 +342,22 @@ describe('the dev rig', () => {
     expect(state.signedOut).toBe(1);
   });
 
+  it('reads a rig credential with no password as an empty one', async () => {
+    vi.stubGlobal('__DEV__', true);
+    vi.stubEnv('EXPO_PUBLIC_KROMA_SERVER', 'https://rig.local');
+    vi.stubEnv('EXPO_PUBLIC_KROMA_DEV_LOGIN', 'dev');
+    const login = vi.fn(async () => ({
+      accessToken: 'dev-access',
+      token: 'dev-live',
+      user: { id: 'dev' },
+    }));
+
+    const { d } = deps({ makeClient: () => ({ login }) });
+    renderHook(() => useBootRestore(d));
+
+    await waitFor(() => expect(login).toHaveBeenCalledWith('dev', ''));
+  });
+
   it('needs BOTH the server and the credentials', async () => {
     vi.stubGlobal('__DEV__', true);
     vi.stubEnv('EXPO_PUBLIC_KROMA_SERVER', 'https://rig.local');
@@ -351,6 +379,79 @@ describe('leaving before the restore finishes', () => {
     rerender();
     rerender();
     expect(loadAccounts).toHaveBeenCalledOnce();
+  });
+
+  it('does not enter the session when the exchange lands after unmount', async () => {
+    const gate = deferred<{ token: string; user: { id: string } }>();
+    const exchangeToken = vi.fn(() => gate.promise);
+    loadAccounts.mockResolvedValue([account()]);
+    loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
+
+    const { d, state } = deps({ makeClient: () => ({ exchangeToken }) });
+    const { unmount } = renderHook(() => useBootRestore(d));
+    await waitFor(() => expect(exchangeToken).toHaveBeenCalled());
+
+    unmount();
+    gate.resolve({ token: 'live', user: { id: 'u1' } });
+    await flush();
+
+    expect(state.entered).toBeNull();
+    expect(state.signedOut).toBe(0);
+  });
+
+  it('does not sign out when the exchange FAILS after unmount', async () => {
+    const gate = deferred<never>();
+    const exchangeToken = vi.fn(() => gate.promise);
+    loadAccounts.mockResolvedValue([account()]);
+    loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
+
+    const { d, state } = deps({ makeClient: () => ({ exchangeToken }) });
+    const { unmount } = renderHook(() => useBootRestore(d));
+    await waitFor(() => expect(exchangeToken).toHaveBeenCalled());
+
+    unmount();
+    gate.reject(new KromaApiError(401, 'unauthorized', { error: 'revoked' }));
+    await flush();
+
+    expect(state.signedOut).toBe(0);
+    expect(state.forgotten).toEqual([]);
+  });
+
+  it('does not resume when the biometric prompt answers after unmount', async () => {
+    const gate = deferred<boolean>();
+    passBootBiometricGate.mockReturnValue(gate.promise);
+    loadAccounts.mockResolvedValue([account()]);
+    loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
+
+    const { d, state } = deps();
+    const { unmount } = renderHook(() => useBootRestore(d));
+    await waitFor(() => expect(passBootBiometricGate).toHaveBeenCalled());
+
+    unmount();
+    gate.resolve(true);
+    await flush();
+
+    expect(state.entered).toBeNull();
+    expect(state.signedOut).toBe(0);
+  });
+
+  it('does not enter a dev session that logged in after unmount', async () => {
+    vi.stubGlobal('__DEV__', true);
+    vi.stubEnv('EXPO_PUBLIC_KROMA_SERVER', 'https://rig.local');
+    vi.stubEnv('EXPO_PUBLIC_KROMA_DEV_LOGIN', 'dev:hunter2');
+    const gate = deferred<{ accessToken: string; token: string; user: { id: string } }>();
+    const login = vi.fn(() => gate.promise);
+
+    const { d, state } = deps({ makeClient: () => ({ login }) });
+    const { unmount } = renderHook(() => useBootRestore(d));
+    await waitFor(() => expect(login).toHaveBeenCalled());
+
+    unmount();
+    gate.resolve({ accessToken: 'dev-access', token: 'dev-live', user: { id: 'dev' } });
+    await flush();
+
+    expect(state.entered).toBeNull();
+    expect(state.signedOut).toBe(0);
   });
 
   it('writes nothing after unmount', async () => {

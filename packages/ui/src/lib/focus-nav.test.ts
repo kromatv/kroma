@@ -94,6 +94,22 @@ describe('useFocusNav handlers', () => {
   });
 });
 
+describe('useFocusNav and a key another listener already consumed', () => {
+  it('leaves a Back the typing bridge turned into a delete alone', () => {
+    grid2x2();
+    const onBack = vi.fn();
+    const consume = (e: Event) => e.preventDefault();
+    window.addEventListener('keydown', consume);
+    try {
+      renderHook(() => useFocusNav({ onBack }));
+      key('Escape');
+      expect(onBack).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener('keydown', consume);
+    }
+  });
+});
+
 describe('useFocusNav text-field handling', () => {
   it('leaves Backspace to a text field but lets Escape leave the screen', () => {
     const input = document.createElement('input');

@@ -1,6 +1,10 @@
-import { StyleSheet } from 'react-native';
-import { describe, expect, it } from 'vitest';
+import { StyleSheet, type ViewStyle } from 'react-native';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { splitBoxLayers } from './box-layers';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('splitBoxLayers', () => {
   it('sends the props the parent lays out to the box and the rest to the face', () => {
@@ -30,6 +34,11 @@ describe('splitBoxLayers', () => {
 
   it('handles no style at all', () => {
     expect(splitBoxLayers(undefined)).toEqual({ face: undefined });
+  });
+
+  it('hands the style straight back where flatten reports nothing', () => {
+    vi.spyOn(StyleSheet, 'flatten').mockReturnValue(undefined as unknown as ViewStyle);
+    expect(splitBoxLayers({ flex: 1 })).toEqual({ face: { flex: 1 } });
   });
 
   it('flattens an array before splitting, last value winning', () => {

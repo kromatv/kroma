@@ -76,6 +76,14 @@ describe('useWheelScroll', () => {
     expect(result.current).toBeCloseTo(5, 5);
   });
 
+  it('starts from the top when the list has not mounted yet', () => {
+    const ref = { current: null } as RefObject<SpatialNavigationVirtualizedListRef | null>;
+    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    wheel(PITCH * 2);
+    rerender();
+    expect(result.current).toBeCloseTo(2, 5);
+  });
+
   it('clamps at the ends instead of running off the list', () => {
     const { ref } = listRef();
     const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 3, 0, PITCH));

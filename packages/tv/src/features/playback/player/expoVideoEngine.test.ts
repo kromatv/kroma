@@ -76,6 +76,9 @@ const { players, FakePlayer } = vi.hoisted(() => {
     emit(event: string, payload: unknown = {}): void {
       for (const sub of this.subs) if (sub.event === event && !sub.removed) sub.handler(payload);
     }
+    emitStale(event: string, payload: unknown = {}): void {
+      for (const sub of this.subs) if (sub.event === event) sub.handler(payload);
+    }
   }
 
   return { players: [] as FakePlayer[], FakePlayer };
@@ -256,6 +259,40 @@ describe('ExpoVideoEngine event mapping', () => {
     current(e).emit('playToEnd');
     expect(listeners.onEnded).toHaveBeenCalledTimes(1);
   });
+
+  it('ignores a status the player reports that the chrome has no state for', () => {
+    const { e, listeners } = make();
+    current(e).emit('statusChange', { status: 'idle' });
+    expect(listeners.onWaiting).not.toHaveBeenCalled();
+    expect(listeners.onReady).not.toHaveBeenCalled();
+    expect(listeners.onError).not.toHaveBeenCalled();
+  });
+});
+
+describe('ExpoVideoEngine transport', () => {
+  it('play and pause drive the open player and the reported state', () => {
+    const { e } = make({ direct: true });
+    const player = current(e);
+    const played = player.plays;
+    e.pause();
+    expect(player.pauses).toBe(1);
+    expect(e.isPaused()).toBe(true);
+    e.play();
+    expect(player.plays).toBe(played + 1);
+    expect(e.isPaused()).toBe(false);
+  });
+
+  it('play and pause are inert once the engine is destroyed', () => {
+    const { e } = make({ direct: true });
+    const player = current(e);
+    const played = player.plays;
+    const pausedCount = player.pauses;
+    e.destroy();
+    e.play();
+    e.pause();
+    expect(player.plays).toBe(played);
+    expect(player.pauses).toBe(pausedCount + 1);
+  });
 });
 
 describe('ExpoVideoEngine direct -> master fallback', () => {
@@ -362,6 +399,27 @@ describe('ExpoVideoEngine seeking', () => {
     expect(player.plays).toBe(before);
     expect(e.isPaused()).toBe(true);
   });
+
+  it('a replacement player opened while paused stays paused', () => {
+    const { e } = make({ direct: false, startSec: 300 });
+    const first = current(e);
+    first.replaceThrows = true;
+    e.pause();
+    e.seekTo(120);
+    expect(current(e)).not.toBe(first);
+    expect(current(e).plays).toBe(0);
+    expect(e.isPaused()).toBe(true);
+  });
+
+  it('seekTo is inert once the engine is destroyed', () => {
+    const { e } = make({ direct: false, startSec: 300 });
+    const player = current(e);
+    e.destroy();
+    e.seekTo(120);
+    expect(players).toHaveLength(1);
+    expect(player.replaced).toEqual([]);
+    expect(e.position()).toBe(300);
+  });
 });
 
 describe('ExpoVideoEngine audio', () => {
@@ -382,6 +440,28 @@ describe('ExpoVideoEngine audio', () => {
     player.availableAudioTracks = [{ id: 'en' }];
     e.setAudioRendition(1);
     expect(player.replaced).toEqual(['stream:ev1']);
+  });
+
+  it('direct: re-opening for a missing track holds the resume seek until ready', () => {
+    const { e } = make({ direct: true, startSec: 42 });
+    const player = current(e);
+    player.emit('statusChange', { status: 'readyToPlay' });
+    player.availableAudioTracks = [{ id: 'en' }];
+    player.currentTime = 0;
+    e.setAudioRendition(1);
+    expect(player.replaced).toEqual(['stream:ev1']);
+    expect(player.currentTime).toBe(0);
+    player.emit('statusChange', { status: 'readyToPlay' });
+    expect(player.currentTime).toBe(42);
+  });
+
+  it('setAudioRendition is inert once the engine is destroyed', () => {
+    const { e } = make({ direct: false, startSec: 300 });
+    const player = current(e);
+    e.destroy();
+    e.setAudioRendition(1);
+    expect(players).toHaveLength(1);
+    expect(player.replaced).toEqual([]);
   });
 
   it('master: a new track means a new master at the current position', () => {
@@ -454,6 +534,39 @@ describe('ExpoVideoEngine player lifetime', () => {
     const { e } = make({ direct: true });
     current(e).bufferedPosition = Number.NaN;
     expect(e.bufferedEnd()).toBe(0);
+  });
+
+  it('an engine with no player left reports only its anchor as buffered', () => {
+    const { e } = make({ direct: false, startSec: 300 });
+    e.destroy();
+    expect(e.videoPlayer).toBeNull();
+    expect(e.bufferedEnd()).toBe(300);
+  });
+
+  it('an in-flight event from a retired player cannot move the successor', () => {
+    const { e, listeners } = make({ direct: false, startSec: 300 });
+    const first = current(e);
+    first.replaceThrows = true;
+    e.seekTo(120);
+    const second = current(e);
+    expect(second).not.toBe(first);
+
+    first.emitStale('timeUpdate', { currentTime: 900 });
+    first.emitStale('statusChange', { status: 'error' });
+    expect(e.position()).toBe(120);
+    expect(listeners.onError).not.toHaveBeenCalled();
+    expect(listeners.onWaiting).not.toHaveBeenCalled();
+  });
+
+  it('an in-flight event after destroy reaches nothing', () => {
+    const { e, listeners } = make({ direct: true });
+    const player = current(e);
+    e.destroy();
+    player.emitStale('timeUpdate', { currentTime: 900 });
+    player.emitStale('statusChange', { status: 'error' });
+    expect(e.position()).toBe(0);
+    expect(listeners.onTime).not.toHaveBeenCalled();
+    expect(listeners.onError).not.toHaveBeenCalled();
   });
 
   it('destroy detaches the listeners and retires the player', () => {

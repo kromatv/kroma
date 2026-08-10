@@ -168,6 +168,12 @@ describe('deciding the streaming source', () => {
     // ffprobe reports `MOV` on some files and `mov` on others.
     expect(decideSource(item({ container: 'MP4' })).direct).toBe(true);
   });
+
+  it('takes the only audio track when none is flagged default', () => {
+    rn.os = 'ios';
+    expect(decideSource(item({ audio: [{ codec: 'aac' }] })).direct).toBe(true);
+    expect(decideSource(item({ audio: [{ codec: 'opus' }] })).direct).toBe(false);
+  });
 });
 
 describe('deciding whether the raw file can be downloaded', () => {
@@ -225,5 +231,10 @@ describe('deciding whether the raw file can be downloaded', () => {
   it('refuses a track with no codec reported', () => {
     rn.os = 'android';
     expect(canRawDownload(item({ audio: [{ codec: '' as string }] }))).toBe(false);
+  });
+
+  it('refuses a file whose container the server never reported', () => {
+    rn.os = 'ios';
+    expect(canRawDownload(item({ container: undefined }))).toBe(false);
   });
 });

@@ -46,6 +46,14 @@ describe('a list that is its own surface scroll', () => {
     expect(onTravel).toHaveBeenCalledWith(48);
   });
 
+  it('reads a page delta as a viewport', () => {
+    const onTravel = vi.fn();
+    const at = host();
+    renderHook(() => useWheelTravel(at, onTravel));
+    wheel(at, { deltaY: 2, deltaMode: WheelEvent.DOM_DELTA_PAGE });
+    expect(onTravel).toHaveBeenCalledWith(2 * window.innerHeight);
+  });
+
   it('leaves a pinch zoom to the browser', () => {
     const onTravel = vi.fn();
     const at = host();

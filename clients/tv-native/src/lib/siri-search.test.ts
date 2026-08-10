@@ -112,6 +112,10 @@ describe('reading a search link', () => {
     expect(parseSearchUrl('kroma://search?q=%ZZ')).toBe('%ZZ');
   });
 
+  it('reads a bare `q` as an empty query', () => {
+    expect(parseSearchUrl('kroma://search?q')).toBe('');
+  });
+
   it('ignores a link with no query to run', () => {
     for (const url of [
       'kroma://search',

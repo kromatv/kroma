@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { deviceKey, GRANT_TTL_SECS, open, seal } from './grant';
 import { b64url, fromB64url } from './jwt';
 
@@ -91,6 +91,29 @@ describe('grants', () => {
 
   it('refuses to be minted without a secret', async () => {
     await expect(seal('', { t: 'apns', d: 'x', e: NOW + 10 })).rejects.toThrow('GRANT_SECRET');
+  });
+
+  it('does not remember a failed derivation as that secret’s answer', async () => {
+    const importKey = vi
+      .spyOn(crypto.subtle, 'importKey')
+      .mockRejectedValue(new Error('HKDF unavailable'));
+
+    const one = seal('a-secret-that-cannot-be-derived', { t: 'apns', d: 'x', e: NOW + 10 });
+    const two = seal('another-secret-that-cannot-either', { t: 'apns', d: 'x', e: NOW + 10 });
+    await expect(one).rejects.toThrow('HKDF unavailable');
+    await expect(two).rejects.toThrow('HKDF unavailable');
+
+    importKey.mockRestore();
+    const grant = await seal('a-secret-that-cannot-be-derived', {
+      t: 'apns',
+      d: 'DEVICE-TOKEN-A',
+      e: NOW + 10,
+    });
+    expect(await open('a-secret-that-cannot-be-derived', grant, NOW)).toEqual({
+      t: 'apns',
+      d: 'DEVICE-TOKEN-A',
+      e: NOW + 10,
+    });
   });
 
   it('keys rate limits by device, stably, without revealing the token', async () => {

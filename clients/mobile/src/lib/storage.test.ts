@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const store = new Map<string, string>();
 const unreadable = new Set<string>();
 const unwritable = new Set<string>();
+const undeletable = new Set<string>();
 
 vi.mock('expo-secure-store', () => ({
   getItemAsync: vi.fn(async (key: string) => {
@@ -17,13 +18,17 @@ vi.mock('expo-secure-store', () => ({
     if (unwritable.has(key)) throw new Error('no biometrics enrolled');
     store.set(key, value);
   }),
-  deleteItemAsync: vi.fn(async (key: string) => void store.delete(key)),
+  deleteItemAsync: vi.fn(async (key: string) => {
+    if (undeletable.has(key)) throw new Error('keychain locked');
+    store.delete(key);
+  }),
   canUseBiometricAuthentication: vi.fn(() => true),
 }));
 
 import * as SecureStore from 'expo-secure-store';
 import {
   canStoreBiometricPin,
+  deletePinBehindBiometrics,
   isBiometricLockEnabled,
   isBiometricUnlockEnabled,
   loadAccounts,
@@ -56,6 +61,7 @@ beforeEach(() => {
   store.clear();
   unreadable.clear();
   unwritable.clear();
+  undeletable.clear();
   vi.clearAllMocks();
 });
 
@@ -93,6 +99,18 @@ describe('accounts', () => {
     store.set(ACCOUNTS_KEY, '{not json');
     await expect(loadAccounts()).resolves.toEqual([]);
   });
+
+  it('reads as empty on a device that has never signed in', async () => {
+    await expect(loadAccounts()).resolves.toEqual([]);
+  });
+
+  it('keeps the migrated account even when the legacy blob cannot be erased', async () => {
+    store.set(LEGACY_KEY, JSON.stringify(account({ accessToken: 'old' })));
+    undeletable.add(LEGACY_KEY);
+    const loaded = await loadAccounts();
+    expect(loaded).toHaveLength(1);
+    expect(store.has(ACCOUNTS_KEY)).toBe(true);
+  });
 });
 
 describe('servers and the active pointer', () => {
@@ -104,6 +122,15 @@ describe('servers and the active pointer', () => {
   it('reads an empty list rather than throwing on corrupt json', async () => {
     await savePref('servers', '{not json');
     await expect(loadServers()).resolves.toEqual([]);
+  });
+
+  it('reads an empty list on a device with no saved server', async () => {
+    await expect(loadServers()).resolves.toEqual([]);
+  });
+
+  it('reads no active pointer rather than throwing on corrupt json', async () => {
+    await savePref('active', '{not json');
+    await expect(loadActive()).resolves.toBeNull();
   });
 
   it('round-trips the active pointer, and clearing it reads as null', async () => {
@@ -162,6 +189,18 @@ describe('the PIN vault', () => {
   it('reports whether the device can guard the vault at all', () => {
     expect(canStoreBiometricPin()).toBe(true);
   });
+
+  it('forgets a stored PIN', async () => {
+    await savePinBehindBiometrics('https://a', 'u1', '1234');
+    await deletePinBehindBiometrics('https://a', 'u1');
+    await expect(readPinBehindBiometrics('https://a', 'u1', 'Unlock')).resolves.toBeNull();
+  });
+
+  it('does not throw when the PIN cannot be erased', async () => {
+    await savePinBehindBiometrics('https://a', 'u1', '1234');
+    undeletable.add('kroma.mobile.pin.https___a.u1');
+    await expect(deletePinBehindBiometrics('https://a', 'u1')).resolves.toBeUndefined();
+  });
 });
 
 describe('the biometric profile lock', () => {
@@ -187,6 +226,13 @@ describe('the biometric profile lock', () => {
     unwritable.add('kroma.mobile.biolock.https___a.u1');
     await expect(setBiometricLockEnabled('https://a', 'u1', true)).resolves.toBe(false);
     // A lock the device cannot enforce must not be recorded either.
+    await expect(isBiometricLockEnabled('https://a', 'u1')).resolves.toBe(false);
+  });
+
+  it('turns off even when the sentinel cannot be erased', async () => {
+    await setBiometricLockEnabled('https://a', 'u1', true);
+    undeletable.add('kroma.mobile.biolock.https___a.u1');
+    await expect(setBiometricLockEnabled('https://a', 'u1', false)).resolves.toBe(true);
     await expect(isBiometricLockEnabled('https://a', 'u1')).resolves.toBe(false);
   });
 

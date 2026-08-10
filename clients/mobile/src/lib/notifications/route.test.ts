@@ -39,5 +39,7 @@ describe('mobileRoute', () => {
     expect(mobileRoute('/movie/ab12?from=notification')).toBe('/item/ab12');
     // A head with no id is not a screen.
     expect(mobileRoute('/movie')).toBeNull();
+    expect(mobileRoute('/show')).toBeNull();
+    expect(mobileRoute('/watch')).toBeNull();
   });
 });

@@ -165,6 +165,16 @@ describe('usePlayerNav global + overlay behaviour', () => {
     expect(actions.onExit).toHaveBeenCalled();
   });
 
+  it('Play, Pause and Prev act like their aliases', () => {
+    const actions = makeActions();
+    const { key } = nav(WEB_FLAGS, false, actions);
+    key('Play');
+    key('Pause');
+    expect(actions.togglePlay).toHaveBeenCalledTimes(2);
+    key('Prev');
+    expect(actions.seekNudge).toHaveBeenCalledWith(-1);
+  });
+
   it('Back at the top level exits', () => {
     const { key, actions } = nav();
     key('Back');
@@ -210,6 +220,8 @@ describe('usePlayerNav activate() maps every control', () => {
     expect(actions.toggleFullscreen).toHaveBeenCalled();
     act(() => result.current.activate('audio'));
     expect(result.current.overlay).toBe('audio');
+    act(() => result.current.activate('settings'));
+    expect(result.current.overlay).toBe('settings');
   });
 
   it('offers the cast control only while a set is live, and hands the film over', () => {
@@ -224,6 +236,34 @@ describe('usePlayerNav activate() maps every control', () => {
     // No receiver on the network: no button, no focus stop to walk into.
     const { result: none } = nav(WEB_FLAGS, false);
     expect(none.current.controls).not.toContain('cast');
+  });
+});
+
+describe('usePlayerNav pointer focus helpers', () => {
+  it('ignores a hover over a control the row does not draw', () => {
+    const { result } = nav(TV_FLAGS);
+    act(() => result.current.focusControl('fullscreen'));
+    expect(result.current.focusedControl).toBe('play');
+  });
+
+  it('focusProgress leaves the controls row', () => {
+    const { result } = nav();
+    act(() => result.current.focusProgress());
+    expect(result.current.zone).toBe('progress');
+    expect(result.current.focusedControl).toBeNull();
+  });
+});
+
+describe('usePlayerNav with an empty control row', () => {
+  it('focuses nothing, and ◀ ▶ and OK have nowhere to land', () => {
+    const actions = makeActions();
+    const { result } = renderHook(() => usePlayerNav(false, actions, []));
+    expect(result.current.focusedControl).toBeNull();
+    act(() => result.current.handleKey('Right'));
+    act(() => result.current.handleKey('Left'));
+    expect(result.current.focusedControl).toBeNull();
+    act(() => result.current.handleKey('Enter'));
+    expect(actions.togglePlay).not.toHaveBeenCalled();
   });
 });
 

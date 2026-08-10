@@ -102,6 +102,14 @@ describe('ModuleRegistry.order (topological)', () => {
     expect(r2.order().map((m) => m.id)).toEqual(['b']);
   });
 
+  it('holds a module back until every one of its dependencies is ordered', () => {
+    const r = new ModuleRegistry();
+    r.register(mod('c', { dependsOn: { a: '*', b: '*' } }));
+    r.register(mod('a'));
+    r.register(mod('b'));
+    expect(r.order().map((m) => m.id)).toEqual(['a', 'b', 'c']);
+  });
+
   it('throws on a missing hard dependency', () => {
     const r = new ModuleRegistry();
     r.register(mod('b', { dependsOn: { a: '*' } }));
@@ -178,6 +186,19 @@ describe('ModuleRegistry route/nav/panel collection', () => {
       { to: '/b', label: 'B', moduleId: 'b' },
     ]);
     expect(r.settingsPanels().map((p) => [p.id, p.moduleId])).toEqual([['bp', 'b']]);
+  });
+
+  it('contributes nothing for a module that ships no nav item and no route', () => {
+    const r = new ModuleRegistry();
+    r.register(mod('quiet'));
+    r.register(
+      mod('loud', {
+        navItems: [{ to: '/loud', label: 'Loud' }],
+        routes: [{ path: 'loud', component: comp as never }],
+      }),
+    );
+    expect(r.navItems()).toEqual([{ to: '/loud', label: 'Loud', moduleId: 'loud' }]);
+    expect(r.routes().map((route) => route.moduleId)).toEqual(['loud']);
   });
 
   it('routes keeps the first registrant and warns on a colliding path', () => {

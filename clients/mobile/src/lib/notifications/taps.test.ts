@@ -7,7 +7,7 @@ import { handleTap, pushData } from './taps';
 
 type Notification = Parameters<typeof pushData>[0];
 
-function notification(data: Record<string, unknown>): Notification {
+function notification(data: unknown): Notification {
   return { request: { content: { data } } } as unknown as Notification;
 }
 
@@ -52,6 +52,18 @@ describe('pushData', () => {
   it('defaults a missing method rather than dropping the action', () => {
     const d = pushData(notification({ actions: [{ id: 'a', href: '/api/x' }] }));
     expect(d.actions[0]).toEqual({ id: 'a', href: '/api/x', method: 'POST' });
+  });
+
+  it('reads a notification that carries no payload at all', () => {
+    const d = pushData(notification(undefined));
+    expect(d.actions).toEqual([]);
+    expect(d.link).toBeUndefined();
+  });
+
+  it('still opens the app on a payload that is not an object', () => {
+    const d = pushData(notification('nonsense'));
+    expect(d.actions).toEqual([]);
+    expect(d.link).toBeUndefined();
   });
 });
 

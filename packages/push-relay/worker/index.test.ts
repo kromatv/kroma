@@ -196,6 +196,27 @@ describe('spending a grant', () => {
     const res = await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
     expect(res.status).toBe(503);
   });
+
+  it('says so too when the Apple key was never installed', async () => {
+    stubApple(200);
+    env.APNS_KEY_P8 = undefined;
+    const grant = await seal(SECRET, { t: 'apns', d: 'DEVICE-A', e: 4_000_000_000 });
+    const res = await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: 'apple push is not configured on this relay' });
+    expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled();
+  });
+
+  it('signs one Apple token and spends it on every push in the window', async () => {
+    const calls = stubApple(200);
+    const grant = await seal(SECRET, { t: 'apns', d: 'DEVICE-A', e: 4_000_000_000 });
+    await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+    await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+
+    const first = calls[0]?.init.headers as Record<string, string>;
+    const second = calls[1]?.init.headers as Record<string, string>;
+    expect(second.authorization).toBe(first.authorization);
+  });
 });
 
 describe('spending a grant on Google', () => {
@@ -342,6 +363,18 @@ describe('the request surface', () => {
       env,
     );
     expect(res.status).toBe(413);
+  });
+
+  it('answers an unexpected failure as JSON, saying nothing about it', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    env.MINT_LIMIT = { limit: vi.fn().mockRejectedValue(new Error('rate limiter is down')) };
+    const res = await worker.fetch(
+      post('/v1/grant', { transport: 'apns', token: 'DEVICE-A' }),
+      env,
+    );
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: 'internal error' });
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('relay.unhandled'));
   });
 
   it('names the offending field rather than echoing the request back', async () => {

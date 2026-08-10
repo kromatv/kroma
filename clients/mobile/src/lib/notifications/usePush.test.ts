@@ -250,4 +250,25 @@ describe('routing a tap', () => {
 
     expect(notifications.setNotificationHandler).not.toHaveBeenCalled();
   });
+
+  it('does not start listening when the screen goes away mid-tap', async () => {
+    const tap: { fire: ((route: string | null) => void) | null } = { fire: null };
+    handleTap.mockReturnValue(
+      new Promise<string | null>((resolve) => {
+        tap.fire = resolve;
+      }),
+    );
+    notifications.getLastNotificationResponse.mockReturnValue({ id: 'cold' });
+    const taps = await freshLaunch();
+
+    const { unmount } = renderHook(() => taps());
+    await vi.waitFor(() => expect(handleTap).toHaveBeenCalled());
+
+    unmount();
+    tap.fire?.('/show/abc');
+    for (let i = 0; i < 20; i += 1) await Promise.resolve();
+
+    expect(push).not.toHaveBeenCalled();
+    expect(notifications.addNotificationResponseReceivedListener).not.toHaveBeenCalled();
+  });
 });

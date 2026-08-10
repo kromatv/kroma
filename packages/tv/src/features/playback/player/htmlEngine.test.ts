@@ -169,6 +169,18 @@ function makeEngine(opts: {
   return { engine, listeners, hlsMasterUrl, streamUrl };
 }
 
+function watchLegacyTier(value: boolean) {
+  const seen = { reads: 0 };
+  Object.defineProperty(globalThis, '__KROMA_LEGACY_TIER__', {
+    configurable: true,
+    get() {
+      seen.reads += 1;
+      return value;
+    },
+  });
+  return seen;
+}
+
 beforeEach(() => {
   // resolveMasterStart fetches the playlist for the X-Hls-Start correction.
   vi.stubGlobal(
@@ -178,7 +190,10 @@ beforeEach(() => {
     ),
   );
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  Reflect.deleteProperty(globalThis, '__KROMA_LEGACY_TIER__');
+});
 
 describe('HtmlEngine master construction', () => {
   it('points the element at the anchored master with the chosen audio rendition', async () => {
@@ -253,6 +268,53 @@ describe('HtmlEngine Shaka master', () => {
     engine.destroy();
     expect(shakaMock.destroy).toHaveBeenCalled();
   });
+
+  it('swallows a Shaka attach failure instead of loading the master', async () => {
+    shakaMock.attach.mockImplementationOnce(() => Promise.reject(new Error('no mse')));
+    const fv = fakeVideo();
+    makeEngine({ fv, direct: false, masterShaka: true, forceNativeHls: false });
+    await vi.waitFor(() => expect(shakaMock.attach).toHaveBeenCalledWith(fv.el));
+    await tick();
+    expect(shakaMock.load).not.toHaveBeenCalled();
+  });
+
+  it('the legacy tier drives the master through hls.js and never loads Shaka', async () => {
+    hlsMock.supported = true;
+    watchLegacyTier(true);
+    const fv = fakeVideo();
+    makeEngine({ fv, direct: false, masterShaka: true, forceNativeHls: false });
+    await vi.waitFor(() =>
+      expect(hlsMock.loadSource).toHaveBeenCalledWith('master:vid1:false:0:0'),
+    );
+    expect(shakaMock.installAll).not.toHaveBeenCalled();
+  });
+
+  it('a destroy while Shaka is still loading never attaches a player', async () => {
+    const seen = watchLegacyTier(false);
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, masterShaka: true, forceNativeHls: false });
+    for (let i = 0; i < 200 && seen.reads === 0; i += 1) await Promise.resolve();
+    expect(seen.reads).toBe(1);
+    engine.destroy();
+    await import('shaka-player/dist/shaka-player.compiled.js');
+    await tick();
+    expect(shakaMock.installAll).not.toHaveBeenCalled();
+    expect(shakaMock.attach).not.toHaveBeenCalled();
+  });
+
+  it('a destroy while hls.js is still loading never attaches the media', async () => {
+    hlsMock.supported = true;
+    const seen = watchLegacyTier(true);
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, masterShaka: true, forceNativeHls: false });
+    for (let i = 0; i < 200 && seen.reads === 0; i += 1) await Promise.resolve();
+    expect(seen.reads).toBe(1);
+    engine.destroy();
+    await import('hls.js');
+    await tick();
+    expect(hlsMock.loadSource).not.toHaveBeenCalled();
+    expect(hlsMock.attachMedia).not.toHaveBeenCalled();
+  });
 });
 
 describe('HtmlEngine native-event mapping (master)', () => {
@@ -291,6 +353,21 @@ describe('HtmlEngine native-event mapping (master)', () => {
     const { listeners } = makeEngine({ fv, direct: false, durationSec: 0 });
     fv.fire('durationchange');
     expect(listeners.onDuration).toHaveBeenCalledWith(321);
+  });
+
+  it('durationchange stays silent while neither the catalogue nor the element knows', () => {
+    const fv = fakeVideo();
+    const { listeners } = makeEngine({ fv, direct: false, durationSec: 0 });
+    fv.fire('durationchange');
+    expect(listeners.onDuration).not.toHaveBeenCalled();
+  });
+
+  it('progress reports an empty buffer as zero rather than an anchored offset', async () => {
+    const fv = fakeVideo();
+    const { engine, listeners } = makeEngine({ fv, direct: false, startSec: 30 });
+    await vi.waitFor(() => expect(engine.position()).toBe(7.5));
+    fv.fire('progress');
+    expect(listeners.onBuffered).toHaveBeenCalledWith(0);
   });
 });
 
@@ -332,6 +409,15 @@ describe('HtmlEngine transport getters', () => {
     engine.pause();
     expect(engine.isPaused()).toBe(true);
   });
+
+  it('a rejected play() leaves the element paused without an unhandled rejection', async () => {
+    const rejected = Promise.reject(new Error('gesture required'));
+    const fv = fakeVideo({ play: () => rejected });
+    const { engine } = makeEngine({ fv, direct: false });
+    engine.play();
+    await expect(rejected).rejects.toThrow('gesture required');
+    expect(engine.isPaused()).toBe(true);
+  });
 });
 
 describe('HtmlEngine seek (master)', () => {
@@ -355,6 +441,28 @@ describe('HtmlEngine seek (master)', () => {
     engine.seekTo(600);
     expect(hlsMasterUrl).toHaveBeenCalledTimes(1);
     expect(hlsMasterUrl).toHaveBeenLastCalledWith('vid1', false, 600, 0);
+  });
+
+  it('resumes playback once the re-anchored master can play', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false });
+    await tick();
+    engine.play();
+    fv.setBuffered([]);
+    engine.seekTo(600);
+    fv.set('paused', true);
+    fv.fire('canplay');
+    expect(engine.isPaused()).toBe(false);
+  });
+
+  it('leaves a re-anchor from a paused element paused', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false });
+    await tick();
+    fv.setBuffered([]);
+    engine.seekTo(600);
+    fv.fire('canplay');
+    expect(engine.isPaused()).toBe(true);
   });
 
   it('re-anchors on a backward seek before the anchor', async () => {
@@ -426,5 +534,15 @@ describe('HtmlEngine destroy', () => {
     expect(fv.get('src')).toBe('');
     fv.fire('timeupdate');
     expect(listeners.onTime).not.toHaveBeenCalled();
+  });
+
+  it('drops the pending direct-play resume seek so the next item is not moved', () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: true, startSec: 20 });
+    expect(fv.listenerCount('loadedmetadata')).toBe(2);
+    engine.destroy();
+    expect(fv.listenerCount('loadedmetadata')).toBe(0);
+    fv.fire('loadedmetadata');
+    expect(fv.get('currentTime')).toBe(0);
   });
 });

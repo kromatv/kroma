@@ -280,6 +280,15 @@ describe('startGamepadBridge', () => {
     vi.restoreAllMocks();
   });
 
+  it('names an unmapped pad in the connect log', () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    setPads({ ...pad([], 'Raw Pad', 0), mapping: '' } as unknown as Gamepad);
+    startGamepadBridge();
+    tick();
+    expect(info.mock.calls.map(([line]) => String(line)).join(' ')).toContain('mapping=none');
+    vi.restoreAllMocks();
+  });
+
   it('stops polling once stopped', () => {
     const live = livePad();
     const stop = startGamepadBridge();
@@ -289,6 +298,18 @@ describe('startGamepadBridge', () => {
     keys = [];
     stop();
     // The loop is cancelled: no further frame was scheduled.
+    expect(frame).toBeNull();
+  });
+
+  it('ignores a frame that was already in flight when it was stopped', () => {
+    const live = livePad();
+    const stop = startGamepadBridge();
+    calibrate();
+    const inFlight = frame;
+    live.set(pad([DPAD_UP]));
+    stop();
+    inFlight?.();
+    expect(names()).toEqual([]);
     expect(frame).toBeNull();
   });
 });

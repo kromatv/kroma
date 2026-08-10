@@ -280,6 +280,26 @@ describe('a store that refuses to answer', () => {
 });
 
 describe('sharedTokenExchange', () => {
+  it('leaves the newer in-flight exchange alone when a nested one settles', async () => {
+    let release: (v: { token: string; user: string }) => void = () => {};
+    let nested: Promise<{ token: string; user: string }> | undefined;
+
+    const outer = sharedTokenExchange<string>(() => {
+      nested = sharedTokenExchange<string>(async () => ({ token: 'inner', user: 'i' }));
+      return new Promise<{ token: string; user: string }>((r) => {
+        release = r;
+      });
+    });
+
+    await expect(nested).resolves.toEqual({ token: 'inner', user: 'i' });
+
+    const joined = sharedTokenExchange<string>(async () => ({ token: 'never', user: 'n' }));
+    expect(joined).toBe(outer);
+
+    release({ token: 'outer', user: 'o' });
+    await expect(outer).resolves.toEqual({ token: 'outer', user: 'o' });
+  });
+
   it('coalesces overlapping exchanges into one, then allows a fresh one after settle', async () => {
     let resolveFn: (v: { token: string; user: unknown }) => void = () => {};
     const exchange = vi.fn(

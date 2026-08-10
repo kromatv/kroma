@@ -67,6 +67,13 @@ describe('standard mapping', () => {
     frame(makePad({ buttons: zeros(16) }), state); // calibrate at rest first
     expect(frame(pad, state)).toEqual(['Right']);
   });
+
+  it('reads the left stick pushed straight down', () => {
+    const state = freshPadState('test-pad');
+    frame(makePad({ buttons: zeros(16) }), state);
+    const pad = makePad({ buttons: zeros(16), axes: [0.1, 0.9, 0, 0] });
+    expect(frame(pad, state)).toEqual(['Down']);
+  });
 });
 
 describe('raw (non-standard) layout', () => {
@@ -124,6 +131,12 @@ describe('rest calibration', () => {
     ]);
   });
 
+  it('ignores every stick and hat axis still away from rest on the first frame', () => {
+    const state = freshPadState('test-pad');
+    const stuck = [-1, 1, 0, 0, 0, 0, 0, 1];
+    expect(frame(makePad({ mapping: '', buttons: zeros(11), axes: stuck }), state)).toEqual([]);
+  });
+
   it('never trusts a button that has not been seen released', () => {
     const state = freshPadState('test-pad');
     const buttons = zeros(16);
@@ -161,6 +174,14 @@ describe('single-axis hat (axis 9)', () => {
     const state = freshPadState('test-pad');
     const axes = zeros(10);
     axes[9] = 1; // looks like the up-left notch, but never seen at rest
+    expect(frame(makePad({ mapping: '', buttons: zeros(11), axes }), state)).toEqual([]);
+  });
+
+  it('ignores a hat axis a driver reports as not a number', () => {
+    const state = freshPadState('test-pad');
+    frame(makePad({ mapping: '', buttons: zeros(11), axes: rest() }), state);
+    const axes = rest();
+    axes[9] = Number.NaN;
     expect(frame(makePad({ mapping: '', buttons: zeros(11), axes }), state)).toEqual([]);
   });
 

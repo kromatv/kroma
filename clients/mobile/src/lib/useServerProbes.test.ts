@@ -169,6 +169,32 @@ describe('when the screen goes away', () => {
     expect(result.current).toEqual({});
   });
 
+  it('drops the answer of a probe the list has already moved past', async () => {
+    const stale: { fail: (() => void) | null } = { fail: null };
+    health.answers.set(
+      'https://gone',
+      () =>
+        new Promise<{ name?: string }>((_resolve, reject) => {
+          stale.fail = () => reject(new Error('offline'));
+        }),
+    );
+    online('https://a');
+    online('https://b');
+    const { result, rerender } = renderHook(({ urls }) => useServerProbes(urls), {
+      initialProps: { urls: ['https://gone'] },
+    });
+    await waitFor(() => expect(health.calls).toHaveLength(1));
+
+    rerender({ urls: ['https://a'] });
+    await waitFor(() => expect(result.current['https://a']?.online).toBe(true));
+
+    stale.fail?.();
+    rerender({ urls: ['https://a', 'https://b'] });
+    await waitFor(() => expect(result.current['https://b']?.online).toBe(true));
+
+    expect(result.current['https://gone']).toBeUndefined();
+  });
+
   it('re-probes when the saved list changes', async () => {
     online('https://a');
     online('https://b');

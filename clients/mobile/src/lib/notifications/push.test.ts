@@ -7,8 +7,17 @@ const notifications = vi.hoisted(() => ({
   getPermissionsAsync: vi.fn(async () => ({ status: 'granted' })),
   requestPermissionsAsync: vi.fn(async () => ({ status: 'granted' })),
   getDevicePushTokenAsync: vi.fn(async () => ({ type: 'ios', data: 'DEVICE-TOKEN' })),
-  setNotificationCategoryAsync: vi.fn(async () => undefined),
-  setNotificationChannelAsync: vi.fn(async () => undefined),
+  setNotificationCategoryAsync: vi.fn(
+    async (
+      _name: string,
+      _actions: Array<{
+        identifier: string;
+        buttonTitle: string;
+        options: { opensAppToForeground: boolean };
+      }>,
+    ) => undefined,
+  ),
+  setNotificationChannelAsync: vi.fn(async (_id: string, _channel: unknown) => undefined),
   AndroidImportance: { HIGH: 4, DEFAULT: 3 },
   AndroidNotificationVisibility: { PRIVATE: 0 },
 }));
@@ -23,16 +32,27 @@ const relay = vi.hoisted(() => ({
 vi.mock('./relay', () => relay);
 
 vi.mock('#mobile/lib/device', () => ({ deviceLabel: () => 'iPhone 17 Pro' }));
-vi.mock('expo-device', () => ({ isDevice: true }));
 
-const { nativePush } = await import('./push');
+const hardware = vi.hoisted(() => ({ isDevice: true }));
+vi.mock('expo-device', () => ({
+  get isDevice() {
+    return hardware.isDevice;
+  },
+}));
+
+const { nativePush, registerAndroidChannels, registerCategories, setPushTranslator } = await import(
+  './push'
+);
 
 beforeEach(() => {
   platform.OS = 'ios';
+  hardware.isDevice = true;
   loadPush.mockReturnValue(notifications as unknown);
   notifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' });
   notifications.requestPermissionsAsync.mockResolvedValue({ status: 'granted' });
   notifications.getDevicePushTokenAsync.mockResolvedValue({ type: 'ios', data: 'DEVICE-TOKEN' });
+  notifications.setNotificationCategoryAsync.mockClear();
+  notifications.setNotificationChannelAsync.mockClear();
   relay.grantFor.mockClear().mockResolvedValue('v1.sealed');
   relay.storedGrant.mockClear().mockResolvedValue('v1.sealed');
   relay.forgetGrant.mockClear();
@@ -115,6 +135,64 @@ describe('turning push on', () => {
     await expect(nativePush.subscribe({ applicationServerKey: '' })).rejects.toThrow(
       'needs-rebuild',
     );
+  });
+
+  it('tells a simulator apart from a phone that simply cannot register', async () => {
+    hardware.isDevice = false;
+    notifications.getDevicePushTokenAsync.mockRejectedValue(new Error('no APNs'));
+    await expect(nativePush.subscribe({ applicationServerKey: '' })).rejects.toThrow('simulator');
+  });
+});
+
+describe('the labels handed to the OS', () => {
+  it('registers the action buttons in the reader s language', async () => {
+    setPushTranslator(((key: string) => `fr:${key}`) as never);
+    await registerCategories();
+
+    const [name, actions] = notifications.setNotificationCategoryAsync.mock.calls[0] ?? [];
+    expect(name).toBe('request_review');
+    expect(actions?.[0]).toEqual({
+      identifier: 'approve',
+      buttonTitle: 'fr:notifications.action.approve',
+      options: { opensAppToForeground: false },
+    });
+  });
+
+  it('opens the app for "watch" and leaves the lock screen alone for a review', async () => {
+    await registerCategories();
+    const opens = new Map(
+      notifications.setNotificationCategoryAsync.mock.calls.map(([name, actions]) => [
+        name,
+        actions[0]?.options,
+      ]),
+    );
+    expect(opens.get('media_available')).toEqual({ opensAppToForeground: true });
+    expect(opens.get('request_review')).toEqual({ opensAppToForeground: false });
+  });
+
+  it('registers no category on a build with no native push module', async () => {
+    loadPush.mockReturnValue(null);
+    await registerCategories();
+    expect(notifications.setNotificationCategoryAsync).not.toHaveBeenCalled();
+  });
+
+  it('gives every Android channel its own importance', async () => {
+    platform.OS = 'android';
+    await registerAndroidChannels();
+    const ids = notifications.setNotificationChannelAsync.mock.calls.map(([id]) => id);
+    expect(ids).toEqual(['default', 'request_review', 'media_available']);
+  });
+
+  it('registers no channel on iOS, which has none', async () => {
+    await registerAndroidChannels();
+    expect(notifications.setNotificationChannelAsync).not.toHaveBeenCalled();
+  });
+
+  it('registers no channel on a build with no native push module', async () => {
+    platform.OS = 'android';
+    loadPush.mockReturnValue(null);
+    await registerAndroidChannels();
+    expect(notifications.setNotificationChannelAsync).not.toHaveBeenCalled();
   });
 });
 

@@ -30,6 +30,8 @@ const fs = vi.hoisted(() => ({
   lying: new Set<string>(),
   // Directories that throw on any access at all.
   refusing: new Set<string>(),
+  failing: new Set<string>(),
+  unreadable: new Set<string>(),
   files: new Map<string, FakeFile>(),
   created: [] as string[],
   writes: [] as Array<{ dir: string; data: string }>,
@@ -62,6 +64,7 @@ vi.mock('expo-file-system', () => {
       return fs.files.has(this.key);
     }
     write(data: string) {
+      if (fs.failing.has(this.dir)) throw new Error(`cannot write to ${this.dir}`);
       fs.writes.push({ dir: this.dir, data });
       // The tvOS lie: the call succeeds and nothing is kept.
       if (fs.lying.has(this.dir)) return;
@@ -73,6 +76,7 @@ vi.mock('expo-file-system', () => {
       });
     }
     async text() {
+      if (fs.unreadable.has(this.dir)) throw new Error(`cannot read ${this.key}`);
       const file = fs.files.get(this.key);
       if (!file) throw new Error(`no such file: ${this.key}`);
       return file.contents ?? '';
@@ -117,6 +121,8 @@ const onDisk = (dir: string) => {
 beforeEach(() => {
   fs.lying.clear();
   fs.refusing.clear();
+  fs.failing.clear();
+  fs.unreadable.clear();
   fs.files.clear();
   fs.created = [];
   fs.writes = [];
@@ -134,6 +140,12 @@ describe('choosing where to write', () => {
   it('creates the folder it needs', async () => {
     await launch();
     expect(fs.created).toContain(DOC);
+  });
+
+  it('leaves a folder that is already there alone', async () => {
+    await launch();
+    await launch();
+    expect(fs.created.filter((path) => path === DOC)).toHaveLength(1);
   });
 
   it('FALLS BACK to caches when a write reports success and keeps nothing', async () => {
@@ -238,6 +250,24 @@ describe('reading what was there', () => {
     expect(store().getItem('session')).toBeNull();
   });
 
+  it('starts empty, and says so, when the file cannot be read back', async () => {
+    fs.files.set(`${DOC}/${FILE}`, {
+      exists: true,
+      contents: '{"session":"abc"}',
+      write: () => undefined,
+      text: async () => '{"session":"abc"}',
+    });
+    fs.unreadable.add(DOC);
+    await launch();
+
+    expect(store().getItem('session')).toBeNull();
+    expect(console.warn).toHaveBeenCalledWith(
+      '[kroma] session store unreadable, starting empty:',
+      expect.any(Error),
+    );
+    expect(setSessionStorage).toHaveBeenCalledOnce();
+  });
+
   it('reports nothing for a key it does not hold', async () => {
     await launch();
     // null, not undefined: the shared session store checks for null.
@@ -261,17 +291,15 @@ describe('writing', () => {
     expect(onDisk(DOC)).toEqual({});
   });
 
-  it('does not throw when the write fails', async () => {
+  it('does not throw when the write fails, and does not do it silently', async () => {
     await launch();
-    fs.refusing.add(DOC);
-    const file = fs.files.get(`${DOC}/${FILE}`);
-    if (file) {
-      file.write = () => {
-        throw new Error('disk full');
-      };
-    }
+    fs.failing.add(DOC);
     // A failed write costs the NEXT launch's session, never this one, so it must
-    // not take down the screen the user is on.
     expect(() => store().setItem('session', 'abc')).not.toThrow();
+    expect(store().getItem('session')).toBe('abc');
+    expect(console.warn).toHaveBeenCalledWith(
+      '[kroma] session store write failed:',
+      expect.any(Error),
+    );
   });
 });

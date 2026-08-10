@@ -1,0 +1,18 @@
+// @vitest-environment jsdom
+
+import { render } from '@testing-library/react';
+import { createElement, Suspense } from 'react';
+import { describe, expect, it } from 'vitest';
+import { acquisitionModule } from './index';
+
+describe('acquisitionModule pages', () => {
+  it('keeps /acquisition out of the admin bundle behind a lazy boundary', () => {
+    const route = acquisitionModule.routes?.find((r) => r.path === 'acquisition');
+    const { container, unmount } = render(
+      createElement(Suspense, { fallback: 'pending' }, createElement(route?.component ?? 'div')),
+    );
+
+    expect(container.textContent).toBe('pending');
+    unmount();
+  });
+});

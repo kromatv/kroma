@@ -6,7 +6,17 @@
 
 import { sv } from '@kroma/ui/kit';
 import { describe, expect, it } from 'vitest';
-import { GROUP_ORDER, orderStories, type Story, slug, story, TIER_ORDER, tierFor } from './story';
+import {
+  attachTiers,
+  GROUP_ORDER,
+  matches,
+  orderStories,
+  type Story,
+  slug,
+  story,
+  TIER_ORDER,
+  tierFor,
+} from './story';
 
 const variants = sv({
   slots: { root: { borderRadius: 4 } },
@@ -116,6 +126,65 @@ describe('explicit controls', () => {
     // fallback glyph rather than failing. See resolveSpec.
     expect(byKey.icon).toEqual({ kind: 'text' });
   });
+
+  it('takes each named kind, and gives a range with no step one of 1', () => {
+    const built = story({
+      name: 'Named kinds',
+      group: 'State',
+      args: { label: 'x', open: false, weight: 2 },
+      controls: { label: 'text', open: 'boolean', weight: { min: 1, max: 5 } },
+      render: () => null,
+    });
+    const byKey = Object.fromEntries(built.controls.map((c) => [c.key, c.control]));
+    expect(byKey.label).toEqual({ kind: 'text' });
+    expect(byKey.open).toEqual({ kind: 'boolean' });
+    expect(byKey.weight).toEqual({ kind: 'number', min: 1, max: 5, step: 1 });
+  });
+
+  it('reads a number spec that spells no bounds as the default 0-100 slider', () => {
+    const built = story({
+      name: 'Bare number',
+      group: 'State',
+      args: { count: 3 },
+      controls: { count: 'number' },
+      render: () => null,
+    });
+    expect(built.controls[0]?.control).toEqual({ kind: 'number', min: 0, max: 100, step: 1 });
+  });
+});
+
+describe('a variant group with no declared default', () => {
+  const lone = sv({ base: {}, variants: { tone: { calm: {}, loud: {} } } });
+
+  it('seeds the arg from the first option, so the story renders as declared', () => {
+    const built = story({ name: 'Toneless', group: 'Media', variants: lone, render: () => null });
+    expect(built.args.tone).toBe('calm');
+  });
+
+  it('lets an explicit arg win, and does not add a second control for it', () => {
+    const built = story({
+      name: 'Toneful',
+      group: 'Media',
+      variants: lone,
+      args: { tone: 'loud' },
+      render: () => null,
+    });
+    expect(built.args.tone).toBe('loud');
+    expect(built.controls.filter((control) => control.key === 'tone')).toHaveLength(1);
+    expect(built.controls[0]?.variant).toBe(true);
+  });
+});
+
+describe('the compiled render', () => {
+  it('passes the live args straight through to the story author’s function', () => {
+    const built = story({
+      name: 'Passthrough',
+      group: 'Media',
+      args: { title: 'Declared' },
+      render: (args) => `render:${args.title}` as unknown as null,
+    });
+    expect(built.render({ title: 'Live' })).toBe('render:Live');
+  });
 });
 
 describe('scenes and matrix opt-out', () => {
@@ -199,5 +268,50 @@ describe('orderStories', () => {
   it('sorts a story whose tier was never attached instead of crashing', () => {
     const orphan = { id: 'orphan', group: 'Media', name: 'Orphan' } as Story;
     expect(() => orderStories([orphan, make('Atoms', 'Actions', 'Button')])).not.toThrow();
+  });
+});
+
+describe('attachTiers', () => {
+  const stories = [
+    story({ name: 'Button', group: 'Actions', render: () => null }),
+    story({ name: 'Card', group: 'Media', render: () => null }),
+  ];
+
+  it('attaches the level each story’s own path implies', () => {
+    const paths = [
+      '../components/atoms/button/button.stories.tsx',
+      '../components/molecules/card/card.stories.tsx',
+    ];
+    expect(attachTiers(stories, paths).map((entry) => entry.tier)).toEqual(['Atoms', 'Molecules']);
+  });
+
+  it('leaves a story the bundler listed no path for unplaced rather than crashing', () => {
+    const paths = ['./foundations/colors.stories.tsx'];
+    expect(attachTiers(stories, paths).map((entry) => entry.tier)).toEqual([
+      'Foundations',
+      'Other',
+    ]);
+  });
+});
+
+describe('matches', () => {
+  const built = { ...story({ name: 'Poster card', group: 'Media', render: () => null }) };
+
+  it('takes every story while the search box is empty', () => {
+    expect(matches(built, '')).toBe(true);
+  });
+
+  it('reads the name, the group and the atomic level, case-insensitively', () => {
+    const placed = { ...built, tier: 'Molecules' };
+    expect(matches(placed, 'poSTer')).toBe(true);
+    expect(matches(placed, 'MEDIA')).toBe(true);
+    expect(matches(placed, 'molecul')).toBe(true);
+    expect(matches(placed, 'switch')).toBe(false);
+  });
+
+  it('searches a story whose tier was never attached instead of crashing', () => {
+    const orphan = { id: 'orphan', group: 'Media', name: 'Orphan' } as Story;
+    expect(matches(orphan, 'orphan')).toBe(true);
+    expect(matches(orphan, 'atoms')).toBe(false);
   });
 });

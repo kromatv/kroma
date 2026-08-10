@@ -57,6 +57,11 @@ describe('sv', () => {
     expect(sv({ slots: {} })()).toEqual({});
   });
 
+  it('leaves out a group nobody picked and nothing defaulted', () => {
+    const r = sv({ base: { flex: 1 }, variants: { tone: { loud: { padding: 8 } } } });
+    expect(r().root).toEqual({ flex: 1 });
+  });
+
   it('returns the SAME object for the same combination, so a re-render is identity-equal', () => {
     expect(card({ size: 'sm' })).toBe(card({ size: 'sm' }));
     expect(card()).toBe(card({ size: 'md', tone: 'plain' }));

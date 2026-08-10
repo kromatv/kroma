@@ -3,7 +3,15 @@
 // the behaviour a broken scan would break — aliases survive, the fallback is
 // always present, a renamed target fails loudly — not the exact icon count.
 // They run against the real Tabler install and the real repo on purpose.
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
@@ -42,6 +50,22 @@ function loadGlyphSource(options: Parameters<typeof kromaUi.vite>[0] = { repoRoo
     join(REPO_ROOT, GLYPH_SOURCE),
   );
   return { code, notes };
+}
+
+function rootWithBarrel(barrel: string): string {
+  const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-barrel-'));
+  const icons = join(dir, 'packages', 'ui', 'src', 'lib', 'icons');
+  mkdirSync(icons, { recursive: true });
+  writeFileSync(join(icons, 'glyph-source.ts'), 'export const EXPORTS = {};\n');
+  const pkg = join(dir, 'node_modules', '@tabler', 'icons-react');
+  mkdirSync(join(pkg, 'dist', 'esm'), { recursive: true });
+  writeFileSync(
+    join(pkg, 'package.json'),
+    JSON.stringify({ name: '@tabler/icons-react', main: 'dist/esm/index.js' }),
+  );
+  writeFileSync(join(pkg, 'dist', 'esm', 'index.js'), '');
+  writeFileSync(join(pkg, 'dist', 'esm', 'tabler-icons-react.mjs'), barrel);
+  return dir;
 }
 
 describe('the vite half', () => {
@@ -212,6 +236,27 @@ describe('the scan', () => {
     // The one failure that matters: an icon the app draws going missing. This
     // name is written as a literal in @kroma/ui's own source.
     expect(loadGlyphSource().code).toContain(exportNameOf(A_NAME_THE_SOURCE_USES));
+  });
+
+  it('skips a barrel line that re-exports no name, and a workspace root that is not there', () => {
+    const dir = rootWithBarrel(
+      [
+        "export {} from './icons/Ghost.mjs';",
+        "export { default as IconHelpCircle } from './icons/IconHelpCircle.mjs';",
+      ].join('\n'),
+    );
+    try {
+      const plugin = kromaUi.vite({ repoRoot: dir });
+      const notes: string[] = [];
+      const code = plugin.load.call(
+        { info: (m: string) => notes.push(m) },
+        join(dir, GLYPH_SOURCE),
+      );
+      expect(code).not.toContain('Ghost');
+      expect(notes).toEqual(['[kroma-ui] 1 of 1 Tabler icons kept']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('leaves out a real Tabler icon that nothing mentions', () => {

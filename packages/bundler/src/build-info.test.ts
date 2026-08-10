@@ -2,7 +2,8 @@
 // with no file on disk. The web app is a static SPA, so identity is
 // collected once at build time here rather than read at runtime.
 
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -84,8 +85,9 @@ describe('serving the module', () => {
 });
 
 describe('the stamp it serves', () => {
-  function stamp() {
-    const code = hooks().load(RESOLVED) ?? '';
+  function stamp(projectRoot = PROJECT_ROOT) {
+    const plugin = buildInfoPlugin({ projectRoot }) as { load: (id: string) => string | null };
+    const code = plugin.load(RESOLVED) ?? '';
     const json = /export default (\{.*?\});/s.exec(code)?.[1];
     if (!json) throw new Error('no default export in the generated module');
     return JSON.parse(json) as Record<string, unknown>;
@@ -118,6 +120,21 @@ describe('the stamp it serves', () => {
       expect(stamp()[key]).not.toBe('');
     }
     expect(stamp().dirty).toBeTypeOf('boolean');
+  });
+
+  it('reads `unknown` off a source tree with no git in it', () => {
+    const root = mkdtempSync(join(tmpdir(), 'kroma-build-info-'));
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ version: '9.9.9' }));
+    try {
+      const outside = stamp(root);
+      expect(outside.version).toBe('9.9.9');
+      expect(outside.commit).toBe('unknown');
+      expect(outside.commitFull).toBe('unknown');
+      expect(outside.branch).toBe('unknown');
+      expect(outside.repository).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('is the same object on every load, collected ONCE', () => {

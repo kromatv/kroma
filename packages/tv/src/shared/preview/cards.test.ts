@@ -91,6 +91,13 @@ describe('buildPreviewData', () => {
     expect(out.sections[0]?.tiles[0]?.image_url).not.toContain('progress=');
   });
 
+  it('leaves the subtitle as the kind alone when nothing else is known', () => {
+    const out = parse(
+      buildPreviewData(client, [mov({ id: 'bare', year: null, durationMs: null })]),
+    );
+    expect(out.sections[0]?.tiles[0]?.subtitle).toBe('Film');
+  });
+
   it('points an episode tile at its show', () => {
     const out = parse(
       buildPreviewData(client, [

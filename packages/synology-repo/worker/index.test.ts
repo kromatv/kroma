@@ -140,6 +140,33 @@ describe('synology repo worker', () => {
     expect(res.status).toBe(200);
   });
 
+  it('answers /nightly.json with nothing when only a stable release exists', async () => {
+    githubServing(RELEASES);
+    const res = await worker.fetch(req('/nightly.json'), {}, ctx());
+    expect(await res.json()).toEqual({ packages: [] });
+  });
+
+  it('hands the edge cache the catalog it just fetched', async () => {
+    githubServing(RELEASES);
+    const cache = {
+      match: vi.fn(async () => undefined),
+      put: vi.fn(async () => undefined),
+    };
+    vi.stubGlobal('caches', { default: cache });
+    const kept: Promise<unknown>[] = [];
+    await worker.fetch(
+      req('/catalog.json'),
+      {},
+      {
+        waitUntil: (p: Promise<unknown>) => {
+          kept.push(p);
+        },
+      },
+    );
+    await Promise.all(kept);
+    expect(cache.put).toHaveBeenCalledTimes(2);
+  });
+
   it('answers /nightly.json with the nightly entry, and /catalog.json with neither', async () => {
     githubServing([NIGHTLY]);
     const nightly = (await (await worker.fetch(req('/nightly.json'), {}, ctx())).json()) as {
@@ -247,6 +274,25 @@ describe('the DSM feed at the root', () => {
       ctx(),
     );
     expect(((await res.json()) as { packages: unknown[] }).packages).toHaveLength(1);
+  });
+
+  it('offers nothing when the only release is one this subscriber cannot see', async () => {
+    githubServing([NIGHTLY]);
+    const res = await worker.fetch(
+      req('/', { method: 'POST', body: 'arch=x86_64&package_update_channel=stable' }),
+      {},
+      ctx(),
+    );
+    expect(await res.json()).toEqual({ packages: [] });
+  });
+
+  it('answers a GET carrying no Accept header at all as DSM, not as a browser', async () => {
+    githubServing(RELEASES);
+    const res = await worker.fetch(new Request('https://repo.kroma.tv/'), {}, ctx());
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('application/json');
+    const body = (await res.json()) as { packages: { version: string }[] };
+    expect(body.packages[0]?.version).toBe('1.2.3-3439372');
   });
 
   it('sends a browser to the landing page but answers DSM’s probe with JSON', async () => {

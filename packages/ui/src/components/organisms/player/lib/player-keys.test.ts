@@ -6,9 +6,9 @@
 // direction is the SHAPE of the thing being walked, and getting that wrong
 // gives a keyboard user a Tab key that walks across a column or down a row.
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { PlayerNav } from '../hooks/usePlayerNav';
-import { tabDirection } from './player-keys';
+import { type PlayerKeysParams, routeRemoteKey, tabDirection } from './player-keys';
 
 const nav = (over: Partial<PlayerNav>): PlayerNav => over as PlayerNav;
 
@@ -32,5 +32,34 @@ describe('tabDirection', () => {
   ])('walks down %s', (_label, over) => {
     expect(tabDirection(nav(over as Partial<PlayerNav>), false)).toBe('Down');
     expect(tabDirection(nav(over as Partial<PlayerNav>), true)).toBe('Up');
+  });
+});
+
+describe('routeRemoteKey while locked', () => {
+  function locked() {
+    const handleKey = vi.fn();
+    const poke = vi.fn();
+    const params = {
+      nav: nav({ handleKey, poke, revealed: true, overlay: null }),
+      panelRef: { current: null },
+      locked: true,
+    } as unknown as PlayerKeysParams;
+    return { params, handleKey, poke };
+  }
+
+  it.each<[string, 'Back' | 'Enter']>([
+    ['Back', 'Back'],
+    ['OK', 'Enter'],
+  ])('lets %s through as a dismissal', (_label, key) => {
+    const { params, handleKey } = locked();
+    routeRemoteKey(params, key);
+    expect(handleKey).toHaveBeenCalledWith('Back');
+  });
+
+  it('swallows every other key, chrome included', () => {
+    const { params, handleKey, poke } = locked();
+    for (const key of ['Right', 'Down', 'PlayPause'] as const) routeRemoteKey(params, key);
+    expect(handleKey).not.toHaveBeenCalled();
+    expect(poke).not.toHaveBeenCalled();
   });
 });

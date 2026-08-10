@@ -12,6 +12,9 @@ const H = vi.hoisted(() => {
     tracks: [] as { index: number; default?: boolean; language?: string | null }[],
     user: null as { audioLanguage?: string | null } | null,
     itemProgress,
+    masterNeedsAac: vi.fn(),
+    mseCaps: { caps: 'mse' },
+    safariCaps: { caps: 'safari' },
     // A STABLE client reference: the resume effect keys on client identity, so a
     // fresh object each render would loop and clobber `anchor`.
     client: { itemProgress },
@@ -24,9 +27,9 @@ vi.mock('@kroma/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@kroma/core')>()),
   audioTracksOf: () => H.tracks,
   capabilities: () => ({}),
-  MSE_CAPS: {},
-  SAFARI_CAPS: {},
-  masterNeedsAac: () => false,
+  MSE_CAPS: H.mseCaps,
+  SAFARI_CAPS: H.safariCaps,
+  masterNeedsAac: H.masterNeedsAac,
   selectEngine: () => H.decision,
 }));
 
@@ -102,6 +105,7 @@ beforeEach(() => {
   ];
   H.user = null;
   H.itemProgress.mockResolvedValue(null);
+  H.masterNeedsAac.mockReturnValue(false);
 });
 afterEach(() => {
   cleanup();
@@ -554,6 +558,23 @@ describe('useVideoPlayback without an element', () => {
     expect(result.current.getPosition()).toBe(0);
   });
 
+  it('re-anchors from zero when audio or engine changes before it exists', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    const item = movie();
+    const { result } = renderHook(() => useVideoPlayback(item));
+    await settle();
+
+    act(() => result.current.setAudio(1));
+    await settle();
+    expect(result.current.audioIndex).toBe(1);
+    expect(result.current.anchor).toBe(0);
+
+    act(() => result.current.setEnginePref('shaka'));
+    await settle();
+    expect(result.current.enginePref).toBe('shaka');
+    expect(result.current.anchor).toBe(0);
+  });
+
   it('swallows a rejected play() and tolerates one that returns nothing', () => {
     const { result, v } = render();
     v.play = vi.fn(() => Promise.reject(new Error('NotAllowedError')));
@@ -629,5 +650,35 @@ describe('useVideoPlayback bar geometry', () => {
     noDur.result.current.barRef.current = bar(0, 100);
     act(() => noDur.result.current.onBarMove({ clientX: 10 } as React.PointerEvent));
     expect(noDur.result.current.hover).toBeNull();
+  });
+});
+
+describe('useVideoPlayback on Safari', () => {
+  const SAFARI_UA =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15';
+
+  beforeEach(() => {
+    vi.stubGlobal('navigator', { userAgent: SAFARI_UA });
+  });
+
+  it('builds the master against the Safari codec set and keeps it on native HLS', async () => {
+    const item = movie();
+    const { result } = render(item);
+    await settle();
+    act(() => result.current.setEnginePref('remux'));
+    await settle();
+
+    expect(H.masterNeedsAac).toHaveBeenCalledWith(item, H.safariCaps);
+    expect(lastAttach().useNativeHls).toBe(true);
+    expect(lastAttach().useShaka).toBe(false);
+  });
+
+  it('hands the master to Shaka when the user asks for it outright', async () => {
+    const { result } = render();
+    await settle();
+    act(() => result.current.setEnginePref('shaka'));
+    await settle();
+    expect(lastAttach().useNativeHls).toBe(false);
+    expect(lastAttach().useShaka).toBe(true);
   });
 });

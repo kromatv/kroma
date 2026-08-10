@@ -24,6 +24,7 @@ const H = vi.hoisted(() => {
     checkServerCompat: vi.fn(),
     instances: [] as { baseUrl: string }[],
     streams: [] as { url: string; opts: StreamHooks }[],
+    reconnect: undefined as (() => void) | undefined,
   };
 });
 
@@ -64,6 +65,16 @@ vi.mock('@kroma/core', () => {
     normalizeServerUrl: H.norm,
     checkServerCompat: H.checkServerCompat,
   };
+});
+
+type HealthModule = typeof import('#tv/app/useServerHealth');
+vi.mock('#tv/app/useServerHealth', async (importOriginal) => {
+  const actual = await importOriginal<HealthModule>();
+  const useServerHealth: HealthModule['useServerHealth'] = (client, enabled, onReconnect) => {
+    H.reconnect = onReconnect;
+    return actual.useServerHealth(client, enabled, onReconnect);
+  };
+  return { useServerHealth };
 });
 
 vi.mock('#tv/shared/server', () => ({ initialServers: H.initialServers }));
@@ -278,6 +289,19 @@ describe('useCatalogue server management', () => {
     expect(result.current.activeServerUrl).toBeNull();
     expect(result.current.client).toBeNull();
     expect(result.current.connection.activeServerName).toBeNull();
+  });
+
+  it('fetches nothing when a reconnect lands after the last server was forgotten', async () => {
+    const { result } = signedIn();
+    await settle();
+
+    act(() => result.current.connection.forgetServer('http://tv.local'));
+    await settle();
+    expect(result.current.client).toBeNull();
+
+    const before = H.movies.mock.calls.length;
+    await act(async () => H.reconnect?.());
+    expect(H.movies).toHaveBeenCalledTimes(before);
   });
 });
 

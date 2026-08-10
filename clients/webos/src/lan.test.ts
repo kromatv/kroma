@@ -58,6 +58,14 @@ describe('webOsLan', () => {
     expect(bus.calls[1]?.payload).toBe('{}');
   });
 
+  it('withdraws nothing, and throws nothing, once the bus is gone', () => {
+    const bus = withBus();
+    const stop = webOsLan()?.publish?.({ name: 'Salon', txt: {} });
+    vi.stubGlobal('PalmServiceBridge', undefined);
+    expect(() => stop?.()).not.toThrow();
+    expect(bus.calls).toHaveLength(1);
+  });
+
   it('survives the service answering after the call returned', () => {
     const bus = withBus();
     webOsLan()?.publish?.({ name: 'Salon', txt: {} });

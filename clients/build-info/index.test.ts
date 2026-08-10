@@ -144,6 +144,16 @@ describe('productVersion', () => {
   it('answers null when there is no Cargo.toml to read', () => {
     expect(productVersion(join(work, 'nowhere'))).toBeNull();
   });
+
+  it('answers null for a Cargo.toml that declares no version', () => {
+    const root = join(work, 'repo-unversioned');
+    mkdirSync(join(root, 'server'), { recursive: true });
+    writeFileSync(
+      join(root, 'server', 'Cargo.toml'),
+      '[package]\nname = "kroma-server"\nedition = "2021"\n',
+    );
+    expect(productVersion(root)).toBeNull();
+  });
 });
 
 describe('collectBuildInfo', () => {

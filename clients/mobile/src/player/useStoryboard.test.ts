@@ -91,6 +91,24 @@ describe('fetching the manifest', () => {
     expect(storyboard).toHaveBeenCalledOnce();
   });
 
+  it('stops mid-poll when the player closes before the answer arrives', async () => {
+    vi.useFakeTimers();
+    const answer: { fire: ((m: unknown) => void) | null } = { fire: null };
+    storyboard.mockReturnValue(
+      new Promise((resolve) => {
+        answer.fire = resolve;
+      }),
+    );
+    const { unmount } = renderHook(() => useStoryboard(client, item, true));
+    await vi.waitFor(() => expect(storyboard).toHaveBeenCalledOnce());
+
+    unmount();
+    answer.fire?.('pending');
+    await vi.advanceTimersByTimeAsync(POLL_MS * 2);
+
+    expect(storyboard).toHaveBeenCalledOnce();
+  });
+
   it('gives up quietly when the request fails', async () => {
     storyboard.mockRejectedValue(new Error('offline'));
     const { result } = renderHook(() => useStoryboard(client, item, true));
@@ -172,6 +190,13 @@ describe('resolving a tile', () => {
   it('has no tile before the manifest arrives', () => {
     storyboard.mockReturnValue(new Promise(() => undefined));
     const { result } = renderHook(() => useStoryboard(client, item, true));
+    expect(result.current(30)).toBeNull();
+  });
+
+  it('has no tile when the server has no storyboard for the title', async () => {
+    storyboard.mockResolvedValue(null);
+    const { result } = renderHook(() => useStoryboard(client, item, true));
+    await waitFor(() => expect(storyboard).toHaveBeenCalled());
     expect(result.current(30)).toBeNull();
   });
 

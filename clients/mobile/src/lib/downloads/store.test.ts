@@ -17,8 +17,18 @@ const fs = vi.hoisted(() => ({
 
 vi.mock('expo-file-system/legacy', () => fs);
 
-const { DIR, deleteEntryFiles, formatBytes, mediaPath, readIndex, sweepOrphans, writeIndex } =
-  await import('./store');
+const {
+  DIR,
+  deleteEntryFiles,
+  ensureDir,
+  formatBytes,
+  mediaPath,
+  readIndex,
+  readWanted,
+  sweepOrphans,
+  writeIndex,
+  writeWanted,
+} = await import('./store');
 
 // The shape sweepOrphans reads: a media file plus whatever sidecars it owns.
 const entry = (id: string, extras: { subs?: string[]; sprite?: string } = {}) =>
@@ -70,6 +80,36 @@ describe('writeIndex', () => {
   });
 });
 
+describe('ensureDir', () => {
+  it('says nothing about a directory that already exists', async () => {
+    fs.makeDirectoryAsync.mockRejectedValueOnce(new Error('EEXIST'));
+    await expect(ensureDir()).resolves.toBeUndefined();
+  });
+});
+
+describe('the wanted list', () => {
+  it('round-trips the titles still waiting for a transfer', async () => {
+    await writeWanted([{ id: 'itm_1' }] as never);
+    const [uri, contents] = fs.writeAsStringAsync.mock.calls.at(-1) ?? [];
+    expect(uri).toBe(`${DIR}wanted.json`);
+
+    fs.readAsStringAsync.mockResolvedValueOnce(contents ?? '');
+    await expect(readWanted()).resolves.toEqual([{ id: 'itm_1' }]);
+  });
+
+  it('creates the directory before writing into it', async () => {
+    await writeWanted([]);
+    expect(fs.makeDirectoryAsync).toHaveBeenCalled();
+  });
+
+  it('reads as empty when the list is missing or corrupt', async () => {
+    fs.readAsStringAsync.mockRejectedValueOnce(new Error('ENOENT'));
+    await expect(readWanted()).resolves.toEqual([]);
+    fs.readAsStringAsync.mockResolvedValueOnce('{not json');
+    await expect(readWanted()).resolves.toEqual([]);
+  });
+});
+
 describe('sweepOrphans', () => {
   it('reclaims a file no entry claims', async () => {
     fs.readDirectoryAsync.mockResolvedValueOnce(['keep.mp4', 'orphan.mp4']);
@@ -103,6 +143,13 @@ describe('sweepOrphans', () => {
     await expect(sweepOrphans([])).resolves.toBeUndefined();
     expect(deleted()).toEqual([]);
   });
+
+  it('keeps reclaiming after a file it cannot remove', async () => {
+    fs.readDirectoryAsync.mockResolvedValueOnce(['locked.mp4', 'orphan.mp4']);
+    fs.deleteAsync.mockRejectedValueOnce(new Error('EBUSY'));
+    await expect(sweepOrphans([])).resolves.toBeUndefined();
+    expect(deleted()).toEqual([`${DIR}locked.mp4`, `${DIR}orphan.mp4`]);
+  });
 });
 
 describe('deleteEntryFiles', () => {
@@ -111,6 +158,16 @@ describe('deleteEntryFiles', () => {
     expect(deleted().sort()).toEqual(
       [`${DIR}a.en.vtt`, `${DIR}a.mp4`, `${DIR}a.sprite.jpg`].sort(),
     );
+  });
+
+  it('removes an entry that owns nothing but its media', async () => {
+    await deleteEntryFiles(entry('a'));
+    expect(deleted()).toEqual([`${DIR}a.mp4`]);
+  });
+
+  it('does not throw when a file cannot be removed', async () => {
+    fs.deleteAsync.mockRejectedValueOnce(new Error('EBUSY'));
+    await expect(deleteEntryFiles(entry('a'))).resolves.toBeUndefined();
   });
 });
 

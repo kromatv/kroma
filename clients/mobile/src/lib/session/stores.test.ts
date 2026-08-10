@@ -155,6 +155,18 @@ describe('useServerStore', () => {
     expect(saveServers).toHaveBeenCalledTimes(1);
   });
 
+  it('rename leaves every other saved server untouched', () => {
+    const { result } = renderHook(() => useServerStore());
+    act(() =>
+      result.current.hydrate([
+        server('https://a', { name: 'Old' }),
+        server('https://b', { name: 'Salon' }),
+      ]),
+    );
+    act(() => result.current.rename('https://a', 'New'));
+    expect(result.current.servers.map((s) => s.name)).toEqual(['New', 'Salon']);
+  });
+
   it('rename is a NO-OP when the name is unchanged', () => {
     const { result } = renderHook(() => useServerStore());
     act(() => result.current.hydrate([server('https://a', { name: 'Same' })]));

@@ -76,6 +76,11 @@ describe('readDeepLink', () => {
     expect(readDeepLink()).toBeNull();
   });
 
+  it('returns null for a payload that is not an object at all', () => {
+    stubTizen({ payload: 'null' });
+    expect(readDeepLink()).toBeNull();
+  });
+
   it('returns null when there is no PAYLOAD entry', () => {
     stubTizen({ noPayloadKey: true });
     expect(readDeepLink()).toBeNull();
@@ -124,6 +129,20 @@ describe('onDeepLink', () => {
     // With nobody listening it is kept, exactly like a cold start - which also
     // drains it, so the module is left clean for the next test.
     expect(readDeepLink()).toEqual({ type: 'movie', id: 'gone' });
+  });
+
+  it('subscribes to nothing on a browser shell with no tizen platform', () => {
+    const listeners = new Map<string, () => void>();
+    vi.stubGlobal('window', {
+      addEventListener: (type: string, h: () => void) => listeners.set(type, h),
+      removeEventListener: (type: string) => listeners.delete(type),
+    });
+    const cb = vi.fn();
+    const cleanup = onDeepLink(cb);
+    expect(listeners.has('appcontrol')).toBe(false);
+    requestDeepLink({ type: 'movie', id: 'web1' });
+    expect(cb).toHaveBeenCalledWith({ type: 'movie', id: 'web1' });
+    cleanup();
   });
 
   it('subscribes to appcontrol and fires cb with the decoded link', () => {

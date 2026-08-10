@@ -133,6 +133,13 @@ describe('perfReport', () => {
     expect(report.frames.at(-1)).toBe(200);
   });
 
+  it('keeps a bounded window, dropping the oldest frames', () => {
+    const frames = frameClock();
+    startPerf();
+    frames.paint(...Array.from({ length: 300 }, (_, i) => 100 + i * 16));
+    expect(perfReport().frameCount).toBe(240);
+  });
+
   it('derives fps from the total elapsed time', () => {
     const frames = frameClock();
     startPerf();
