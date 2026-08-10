@@ -84,13 +84,14 @@ FF="$CACHE/ffmpeg-amd64-static"
 # `--retry-all-errors`: the primary intermittently answers a spurious 4xx.
 fetch_ffmpeg() {
   curl -fSL --connect-timeout 20 --retry 3 --retry-delay 4 --retry-all-errors \
-    --proto '=https' --proto-redir '=https' "$1" -o "$2"
+    --proto '=https' --proto-redir '=https' "$1" -o "$2" \
+    && xz -t "$2" 2>/dev/null
 }
 
 if [ ! -x "$FF/ffmpeg" ]; then
   say "Fetching static ffmpeg/ffprobe"
   if ! fetch_ffmpeg "$FFMPEG_URL" "$WORK/ff.tar.xz"; then
-    say "Primary ffmpeg source unreachable, trying the fallback"
+    say "Primary ffmpeg source did not answer with an archive, trying the fallback"
     fetch_ffmpeg "$FFMPEG_FALLBACK_URL" "$WORK/ff.tar.xz" \
       || { echo "both ffmpeg sources failed"; exit 1; }
   fi
