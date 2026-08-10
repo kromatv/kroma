@@ -15,7 +15,7 @@ use serde_json::json;
 use crate::api::error::lerr;
 use crate::api::pin;
 use crate::api::util::{blocking, client_ip, drop_orphans, query, SecretQuery};
-use crate::api::extract::{bearer_from_headers, AuthUser};
+use crate::api::extract::{bearer_from_headers, AuthToken, AuthUser};
 use crate::services::auth;
 use crate::services::loginguard;
 use crate::db;
@@ -542,7 +542,7 @@ pub struct ChangePasswordBody {
 pub async fn change_password(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    headers: HeaderMap,
+    AuthToken(keep): AuthToken,
     AuthUser(user): AuthUser,
     Json(body): Json<ChangePasswordBody>,
 ) -> Response {
@@ -564,10 +564,8 @@ pub async fn change_password(
         return resp;
     }
     // Best-effort: failing to evict the other credentials must not fail the change.
-    if let Some(keep) = bearer_from_headers(&headers) {
-        let uid = user.id.clone();
-        let _ = query(&state.db, move |pool| db::revoke_other_sessions(&pool, &uid, &keep)).await;
-    }
+    let uid = user.id.clone();
+    let _ = query(&state.db, move |pool| db::revoke_other_sessions(&pool, &uid, &keep)).await;
     StatusCode::NO_CONTENT.into_response()
 }
 
@@ -575,7 +573,7 @@ pub async fn change_password(
 /// signed-in devices, newest first, with the calling device flagged `current`.
 pub async fn list_sessions(
     State(state): State<SharedState>,
-    headers: HeaderMap,
+    AuthToken(bearer): AuthToken,
     AuthUser(user): AuthUser,
 ) -> Response {
     let uid = user.id.clone();
@@ -583,14 +581,10 @@ pub async fn list_sessions(
         Ok(r) => r,
         Err(resp) => return resp,
     };
-    let current_id = match bearer_from_headers(&headers) {
-        Some(bearer) => {
-            match query(&state.db, move |pool| db::session_device_id(&pool, &bearer)).await {
-                Ok(id) => id,
-                Err(resp) => return resp,
-            }
-        }
-        None => None,
+    let current_id = match query(&state.db, move |pool| db::session_device_id(&pool, &bearer)).await
+    {
+        Ok(id) => id,
+        Err(resp) => return resp,
     };
     let out: Vec<super::dto::SessionInfo> = rows
         .into_iter()
@@ -697,9 +691,6 @@ pub async fn upload_avatar(
 ) -> Response {
     if body.is_empty() {
         return lerr(loc, StatusCode::BAD_REQUEST, "error.emptyBody");
-    }
-    if body.len() > MAX_AVATAR_BYTES {
-        return lerr(loc, StatusCode::PAYLOAD_TOO_LARGE, "error.imageTooLarge");
     }
 
     let data_dir = state.config.data_dir.clone();

@@ -107,16 +107,8 @@ pub async fn delete_user(
         return Err(lerr(super::user_locale(&user), StatusCode::BAD_REQUEST, "admin.cantDeleteSelf"));
     }
     let id2 = id.clone();
-    let all = query(&state.db, move |pool| db::admin_users(&pool)).await?;
-    let Some(target) = all.iter().find(|u| u.id == id2) else {
+    if query(&state.db, move |pool| db::user_by_id(&pool, &id2)).await?.is_none() {
         return Err(lerr(super::user_locale(&user), StatusCode::NOT_FOUND, "error.userNotFound"));
-    };
-    let owners = all
-        .iter()
-        .filter(|u| u.permissions.contains(&Permission::UsersManage))
-        .count();
-    if target.permissions.contains(&Permission::UsersManage) && owners <= 1 {
-        return Err(lerr(super::user_locale(&user), StatusCode::BAD_REQUEST, "admin.cantDeleteLastOwner"));
     }
     query(&state.db, move |pool| db::delete_user(&pool, &id)).await?;
     state.events.publish(ServerEvent::LibraryUpdated);

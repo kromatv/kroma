@@ -647,10 +647,8 @@ async fn an_avatar_upload_needs_a_signed_in_account() {
 
 #[tokio::test]
 async fn an_oversized_avatar_is_rejected_by_the_body_limit() {
-    // Belt and braces: the route carries a DefaultBodyLimit AND the handler
-    // re-checks the length. The limit answers first, so an 8 MB+ upload never
-    // reaches the handler - which is the point, since the whole body would
-    // otherwise be buffered in memory first.
+    // The layer answers before the handler, which is the point: the whole body
+    // would otherwise be buffered in memory first.
     let t = test_app();
     let (_uid, token) = seed_session(&t.state, "ana@test.dev", "ana", &[Permission::Playback]);
 

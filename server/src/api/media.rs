@@ -10,7 +10,7 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
-use crate::api::extract::OptionalAuthUser;
+use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::db;
 use crate::i18n::ReqLocale;
@@ -123,21 +123,19 @@ pub async fn list_movies(
 }
 
 /// `GET /api/shows` (optional `?library=`) → `Show[]`. Personalises each show's
-/// `progress` (series completion) when the request carries a valid Bearer token.
+/// `progress` (series completion) for the calling account.
 pub async fn list_shows(
     State(state): State<SharedState>,
-    OptionalAuthUser(user): OptionalAuthUser,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Query(q): Query<LibraryQuery>,
 ) -> Result<Response, Response> {
-    let uid = user.map(|u| u.id);
+    let uid = user.id;
     let shows = query(&state.db, move |pool| {
         let mut shows = db::list_shows(&pool, q.library.as_deref())?;
-        if let Some(uid) = &uid {
-            let prog = db::show_progress(&pool, uid).unwrap_or_default();
-            for s in &mut shows {
-                s.progress = prog.get(&s.id).copied();
-            }
+        let prog = db::show_progress(&pool, &uid).unwrap_or_default();
+        for s in &mut shows {
+            s.progress = prog.get(&s.id).copied();
         }
         db::localize::overlay_shows(&pool, &mut shows, locale)?;
         Ok(shows)
@@ -146,19 +144,18 @@ pub async fn list_shows(
     Ok(Json(shows).into_response())
 }
 
-/// `GET /api/shows/:id` → `{ show, seasons[] }`. Fills `show.progress` when authed.
+/// `GET /api/shows/:id` → `{ show, seasons[] }`. Fills `show.progress` for the
+/// calling account.
 pub async fn get_show(
     State(state): State<SharedState>,
-    OptionalAuthUser(user): OptionalAuthUser,
+    AuthUser(user): AuthUser,
     ReqLocale(locale): ReqLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    let uid = user.map(|u| u.id);
+    let uid = user.id;
     let detail = query(&state.db, move |pool| {
         let Some(mut detail) = db::get_show(&pool, &id)? else { return Ok(None) };
-        if let Some(uid) = &uid {
-            detail.show.progress = db::show_progress_one(&pool, uid, &detail.show.id).unwrap_or(None);
-        }
+        detail.show.progress = db::show_progress_one(&pool, &uid, &detail.show.id).unwrap_or(None);
         db::localize::overlay_show_detail(&pool, &mut detail, locale)?;
         Ok(Some(detail))
     })
