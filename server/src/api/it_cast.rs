@@ -329,3 +329,24 @@ async fn a_command_addressed_to_a_malformed_receiver_id_never_reaches_the_roster
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn a_remote_the_television_kicked_is_refused_rather_than_obeyed() {
+    let t = test_app();
+    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    t.state
+        .cast
+        .attach_controller("tv-salon-01", "sock-a", "Téléphone", &t.user_id, "owner", None)
+        .expect("attach the remote");
+    t.state.cast.kick_controller("tv-salon-01", "sock-a").expect("kick it off");
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/cast/receivers/tv-salon-01/command",
+        Some(&t.token),
+        Some(json!({ "type": "pause" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}

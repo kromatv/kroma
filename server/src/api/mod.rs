@@ -50,6 +50,10 @@ mod it_auth;
 #[cfg(test)]
 mod it_accounts;
 #[cfg(test)]
+mod it_accounts_faults;
+#[cfg(test)]
+mod it_auth_faults;
+#[cfg(test)]
 mod it_pin;
 #[cfg(test)]
 mod it_content;
@@ -59,6 +63,8 @@ mod it_rematch;
 mod it_media;
 #[cfg(test)]
 mod it_playback;
+#[cfg(test)]
+mod it_playback_faults;
 #[cfg(test)]
 mod it_cast;
 #[cfg(test)]

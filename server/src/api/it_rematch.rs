@@ -150,3 +150,14 @@ async fn an_unknown_element_does_not_leave_a_dangling_pin() {
         None
     );
 }
+
+#[tokio::test]
+async fn listing_candidates_without_a_metadata_key_refuses_instead_of_calling_out() {
+    let t = crate::api::test_support::test_app();
+    let id = demo_item_id("The Matrix");
+
+    let (status, _) =
+        send(&t.app, "GET", &format!("/api/rematch/movie/{id}/candidates"), Some(&t.token), None)
+            .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+}

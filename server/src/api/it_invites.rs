@@ -247,3 +247,17 @@ async fn only_the_very_first_account_skips_the_invite() {
     assert_eq!(second, StatusCode::FORBIDDEN);
     assert!(body["error"].as_str().is_some_and(|m| !m.is_empty()), "{body}");
 }
+
+#[tokio::test]
+async fn checking_an_invite_refuses_when_the_invites_are_gone() {
+    let t = test_app();
+    t.state
+        .db
+        .get()
+        .expect("a connection")
+        .execute_batch("DROP TABLE invites")
+        .expect("drop the table the check reads");
+
+    let (status, _) = get(&t.app, "/api/invites/whatever", None).await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+}

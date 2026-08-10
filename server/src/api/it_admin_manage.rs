@@ -91,6 +91,11 @@ async fn library_browse_reads_a_real_directory_and_404s_a_missing_one() {
     let (status, _) =
         get(&t.app, "/api/admin/libraries/browse?path=/no/such/kroma/dir/xyz", Some(&t.token)).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let (status, body) = get(&t.app, "/api/admin/libraries/browse?path=/", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["path"], json!("/"));
+    assert!(body["parent"].is_null());
 }
 
 #[tokio::test]

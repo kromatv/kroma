@@ -375,3 +375,20 @@ async fn a_manual_scan_goes_through_the_tracked_job_so_it_cannot_race_a_watcher(
     assert_eq!(status, StatusCode::OK);
     assert!(body["runId"].as_str().is_some_and(|id| !id.is_empty()), "{body}");
 }
+
+#[tokio::test]
+async fn a_second_manual_scan_is_refused_while_the_first_still_holds_the_slot() {
+    let t = test_app();
+    let held = t.state.db.get().expect("a connection");
+    held.execute_batch("BEGIN IMMEDIATE").expect("take the write lock");
+
+    let (status, _) =
+        crate::api::test_support::send(&t.app, "POST", "/api/scan", Some(&t.token), None).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, body) =
+        crate::api::test_support::send(&t.app, "POST", "/api/scan", Some(&t.token), None).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(body["error"], json!("a scan is already running"));
+
+    held.execute_batch("ROLLBACK").expect("let the run through");
+}

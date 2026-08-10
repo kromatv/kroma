@@ -122,3 +122,22 @@ async fn the_listing_is_closed_without_settings_manage() {
     let (status, _) = get(&t.app, "/api/admin/notifications/images", None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn an_upload_the_store_already_holds_is_adopted_without_an_encoder() {
+    let t = test_app();
+    let bytes = "a poster this store has seen before";
+    let name = format!("notif-{}-w1280.webp", crate::services::scan::short_hash(bytes));
+    let dir = crate::infra::image::images_dir(&t.state.config.data_dir);
+    seed_image(&dir, &name, Duration::from_secs(0));
+
+    let (status, _h, body) =
+        raw_bytes(&t.app, "/api/admin/notifications/image", &t.token, bytes.as_bytes().to_vec())
+            .await;
+    assert_eq!(status, StatusCode::OK);
+    let body: serde_json::Value = serde_json::from_slice(&body).expect("json body");
+    assert_eq!(body["imageUrl"], json!(format!("/api/images/{name}")));
+
+    let (_, listed) = get(&t.app, "/api/admin/notifications/images", Some(&t.token)).await;
+    assert_eq!(listed["images"][0]["name"], json!(name));
+}

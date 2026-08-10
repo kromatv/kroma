@@ -97,14 +97,7 @@ fn collect_sans(extra: &[String]) -> Vec<rcgen::SanType> {
     let mut ips: Vec<IpAddr> = vec![IpAddr::from([127, 0, 0, 1]), IpAddr::from([0, 0, 0, 0, 0, 0, 0, 1])];
 
     if let Ok(host) = hostname::get() {
-        let host = host.to_string_lossy().trim().to_string();
-        if !host.is_empty() && host != "localhost" {
-            // The `.local` mDNS name lets a client reach the box by name without
-            // DNS (the mDNS module advertises it).
-            let local = format!("{}.local", host.split('.').next().unwrap_or(&host));
-            dns.push(host);
-            dns.push(local);
-        }
+        dns.extend(host_names(&host.to_string_lossy()));
     }
 
     if let Some(ip) = primary_lan_ip() {
@@ -131,6 +124,15 @@ fn collect_sans(extra: &[String]) -> Vec<rcgen::SanType> {
     }
     out.extend(ips.into_iter().map(SanType::IpAddress));
     out
+}
+
+fn host_names(host: &str) -> Vec<String> {
+    let host = host.trim();
+    if host.is_empty() || host == "localhost" {
+        return Vec::new();
+    }
+    let local = format!("{}.local", host.split('.').next().unwrap_or(host));
+    vec![host.to_string(), local]
 }
 
 // The classic "connect a UDP socket to a public address and read back the
@@ -176,6 +178,15 @@ mod tests {
     }
 
     #[test]
+    fn a_hostname_that_says_nothing_new_contributes_no_san() {
+        assert!(host_names("").is_empty());
+        assert!(host_names("   ").is_empty());
+        assert!(host_names("localhost").is_empty());
+        assert_eq!(host_names("nas.lan"), ["nas.lan", "nas.local"]);
+        assert_eq!(host_names(" kroma "), ["kroma", "kroma.local"]);
+    }
+
+    #[test]
     fn generate_produces_pem_pair() {
         let (cert, key) = generate(&[]).expect("generate");
         assert!(cert.contains("BEGIN CERTIFICATE"));
@@ -205,5 +216,25 @@ mod tests {
         let cert2 = std::fs::read(&b.cert_pem).unwrap();
         // Reused, not regenerated: identical bytes on the second call.
         assert_eq!(cert1, cert2);
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = std::fs::metadata(&b.key_pem).expect("key metadata").permissions().mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
+    }
+
+    #[test]
+    fn a_half_written_pair_is_regenerated_rather_than_served() {
+        let scratch = kroma_testing::temp_dir("tls-heal");
+        let dir = scratch.path();
+        let first = ensure_self_signed(dir, &["nas.home".to_string()]).expect("first");
+        let cert1 = std::fs::read(&first.cert_pem).unwrap();
+        std::fs::remove_file(&first.key_pem).expect("lose the key");
+
+        let healed = ensure_self_signed(dir, &[]).expect("healed");
+        assert!(healed.key_pem.is_file());
+        assert_ne!(std::fs::read(&healed.cert_pem).unwrap(), cert1);
     }
 }

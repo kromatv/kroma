@@ -281,3 +281,82 @@ async fn resolving_a_show_report_deep_links_the_reporter_to_the_show() {
     assert_eq!(row["event"], json!("report.resolved"));
     assert_eq!(row["link"], json!(format!("/show/{show}")));
 }
+
+#[tokio::test]
+async fn an_episode_with_no_numbering_is_named_by_its_own_title() {
+    let t = test_app();
+    let m = member(&t, "loosereporter");
+    let episode = demo_item_id("Islands");
+    t.state
+        .db
+        .get()
+        .expect("a connection")
+        .execute(
+            "UPDATE items SET season = NULL, episode = NULL WHERE id = ?1",
+            rusqlite::params![episode],
+        )
+        .expect("strip the numbering");
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/reports",
+        Some(&m),
+        Some(json!({ "subjectKind": "episode", "subjectId": episode, "category": "video" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["subjectTitle"], json!("Islands"));
+}
+
+#[tokio::test]
+async fn a_report_that_cannot_be_written_refuses_rather_than_answering_empty() {
+    let t = test_app();
+    let m = member(&t, "unwritable");
+    let movie = demo_item_id("The Matrix");
+    t.state
+        .db
+        .get()
+        .expect("a connection")
+        .execute_batch(
+            "CREATE TRIGGER no_reports BEFORE INSERT ON reports \
+             BEGIN SELECT RAISE(ABORT,'sealed'); END",
+        )
+        .expect("seal the table");
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/reports",
+        Some(&m),
+        Some(json!({ "subjectKind": "movie", "subjectId": movie, "category": "video" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+}
+
+#[tokio::test]
+async fn resolving_a_report_filed_by_nobody_notifies_nobody() {
+    let t = test_app();
+    let movie = demo_item_id("The Matrix");
+    crate::db::insert_report(
+        &t.state.db,
+        &crate::db::NewReport {
+            id: "anon-report".into(),
+            subject_kind: crate::model::ReportSubjectKind::Movie,
+            subject_id: movie,
+            subject_title: "The Matrix".into(),
+            category: crate::model::ReportCategory::Video,
+            message: None,
+            reported_by: None,
+        },
+        crate::services::jobs::now_ms(),
+    )
+    .expect("seed an anonymous report");
+
+    let (status, body) =
+        send(&t.app, "POST", "/api/admin/reports/anon-report/resolve", Some(&t.token), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["status"], json!("resolved"));
+    assert_eq!(body["reportedBy"], json!(null));
+}

@@ -174,6 +174,77 @@ async fn wrong_pins_at_the_profile_switch_lock_the_profile_out_too() {
 }
 
 #[tokio::test]
+async fn clearing_a_pin_needs_the_current_one_and_is_a_no_op_without_any() {
+    let t = test_app();
+    let (_uid, token) = seed_session(&t.state, "clear@test.dev", "clearer", &[Permission::Playback]);
+
+    let (status, body) =
+        send(&t.app, "DELETE", "/api/auth/me/pin", Some(&token), Some(json!({ "current": "0000" })))
+            .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["user"]["hasPin"], json!(false));
+
+    send(&t.app, "PATCH", "/api/auth/me/pin", Some(&token), Some(json!({ "pin": "1234" }))).await;
+    let (status, _) =
+        send(&t.app, "DELETE", "/api/auth/me/pin", Some(&token), Some(json!({ "current": "0000" })))
+            .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn every_pin_handler_refuses_when_the_stored_pin_is_unreadable() {
+    let t = test_app();
+    let (uid, token) = seed_session(&t.state, "broken@test.dev", "broken", &[Permission::Playback]);
+    t.state
+        .db
+        .get()
+        .expect("a connection")
+        .execute("UPDATE users SET pin_hash = X'00ff' WHERE id = ?1", rusqlite::params![uid])
+        .expect("corrupt the stored pin");
+
+    for (method, body) in [
+        ("POST", json!({ "pin": "1234" })),
+        ("PATCH", json!({ "pin": "1234" })),
+        ("DELETE", json!({ "current": "1234" })),
+    ] {
+        let uri = if method == "POST" { "/api/auth/pin/verify" } else { "/api/auth/me/pin" };
+        let (status, _) = send(&t.app, method, uri, Some(&token), Some(body)).await;
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR, "{method} {uri}");
+    }
+}
+
+#[tokio::test]
+async fn a_pin_that_cannot_be_written_is_refused_rather_than_reported_set() {
+    let t = test_app();
+    let (_uid, token) = seed_session(&t.state, "sealed@test.dev", "sealed", &[Permission::Playback]);
+    send(&t.app, "PATCH", "/api/auth/me/pin", Some(&token), Some(json!({ "pin": "1234" }))).await;
+    t.state
+        .db
+        .get()
+        .expect("a connection")
+        .execute_batch(
+            "CREATE TRIGGER no_pin_writes BEFORE UPDATE OF pin_hash ON users \
+             BEGIN SELECT RAISE(ABORT,'sealed'); END",
+        )
+        .expect("seal the column");
+
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me/pin",
+        Some(&token),
+        Some(json!({ "pin": "5678", "current": "1234" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+
+    let (status, _) =
+        send(&t.app, "DELETE", "/api/auth/me/pin", Some(&token), Some(json!({ "current": "1234" })))
+            .await;
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+}
+
+#[tokio::test]
 async fn a_dead_access_token_says_so_rather_than_asking_for_a_pin() {
     let t = test_app();
     for body in [json!({ "accessToken": "" }), json!({ "accessToken": "   " }), json!({ "accessToken": "no-such-token" })] {
