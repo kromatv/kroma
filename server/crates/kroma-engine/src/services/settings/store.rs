@@ -69,6 +69,17 @@ impl Settings {
             .unwrap_or(fallback)
     }
 
+    /// Persist one server-owned value, bypassing the [`defaults`] allow-list.
+    ///
+    /// [`Self::set_patch`] takes its keys from an HTTP body, so it writes only
+    /// what `defaults` declares. Identity the server mints for itself is not a
+    /// preference and must not be settable by a caller, so it is stored through
+    /// here and stays out of `defaults` on purpose.
+    pub fn set_internal(&self, pool: &Pool, key: &str, value: Value) {
+        let _ = crate::db::settings_set(pool, key, &value);
+        self.inner.write().unwrap().insert(key.to_string(), value);
+    }
+
     /// Apply a patch in-memory and persist it. Keys absent from [`defaults`] are
     /// silently dropped; returns the keys actually written.
     pub fn set_patch(&self, pool: &Pool, patch: BTreeMap<String, Value>) -> Vec<String> {

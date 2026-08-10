@@ -37,7 +37,7 @@ pub fn ensure_instance_id(settings: &Settings, pool: &Pool) -> String {
         return existing;
     }
     let id = crate::services::auth::random_token();
-    settings.set_patch(pool, BTreeMap::from([("instanceId".to_string(), json!(id.clone()))]));
+    settings.set_internal(pool, "instanceId", json!(id.clone()));
     id
 }
 
@@ -407,6 +407,29 @@ mod tests {
         let id = ensure_instance_id(&s, &pool);
         assert_eq!(id.len(), 64, "a 32-byte token, hex-encoded");
         assert!(id.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn the_instance_id_a_box_mints_survives_its_next_start() {
+        let pool = test_pool();
+        let first = ensure_instance_id(&settings(&pool), &pool);
+
+        let restarted = settings(&pool);
+        assert_eq!(restarted.get_str("instanceId", ""), first);
+        assert_eq!(ensure_instance_id(&restarted, &pool), first);
+    }
+
+    #[test]
+    fn no_caller_can_choose_the_instance_id_through_the_settings_patch() {
+        let pool = test_pool();
+        let s = settings(&pool);
+        let minted = ensure_instance_id(&s, &pool);
+
+        let written =
+            s.set_patch(&pool, BTreeMap::from([("instanceId".to_string(), json!("chosen"))]));
+
+        assert!(written.is_empty(), "the patch allow-list let it through: {written:?}");
+        assert_eq!(ensure_instance_id(&s, &pool), minted);
     }
 
     #[test]
