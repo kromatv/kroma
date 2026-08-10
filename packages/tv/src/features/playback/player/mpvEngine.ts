@@ -189,7 +189,6 @@ export class MpvEngine extends BaseTvEngine {
   }
 
   private onEndFile(p: { reason?: string }): void {
-    if (this.destroyed) return;
     if (p.reason === 'eof') {
       this.listeners.onEnded();
       return;
