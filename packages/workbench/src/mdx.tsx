@@ -141,7 +141,13 @@ function InlineCode({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
+// A doc's link is prose, and `openURL` will hand any scheme it is given to the
+// platform: `javascript:` runs on a webview, `file:` reads the disk. The two a
+// component's documentation ever needs are the two allowed.
+const WEB_LINK = /^https?:\/\//i;
+
 function openLink(href: string): void {
+  if (!WEB_LINK.test(href)) return;
   Linking.openURL(href).catch(() => undefined);
 }
 

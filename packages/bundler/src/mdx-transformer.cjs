@@ -62,7 +62,7 @@ async function transform({ src, filename, options, plugins }) {
 function getCacheKey() {
   const parent = upstream();
   const inherited = typeof parent.getCacheKey === 'function' ? parent.getCacheKey() : '';
-  const own = createHash('sha1')
+  const own = createHash('sha256')
     .update(readFileSync(__filename))
     .update(readFileSync(join(__dirname, 'mdx.mjs')))
     .digest('hex');

@@ -4,8 +4,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { compileMdx } from '@kroma/bundler/mdx';
 import { onScreen } from '@kroma/ui/testing';
-import { cleanup, render } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { Linking } from 'react-native';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Markdown } from './docs';
 import KitchenSink from './kitchen-sink.fixture.mdx';
 import { MDX_COMPONENTS, MdxDoc } from './mdx';
@@ -22,7 +23,9 @@ const FIXTURE = join(process.cwd(), 'packages/workbench/src/kitchen-sink.fixture
 // list of intrinsics this document reaches for.
 async function elementsOf(path: string): Promise<string[]> {
   const compiled = await compileMdx(readFileSync(path, 'utf8'), path);
-  const table = /const _components = \{([\s\S]*?)\.\.\.props\.components/.exec(compiled)?.[1];
+  const table = /const _components = \{([\s\S]{0,4000}?)\.\.\.props\.components/.exec(
+    compiled,
+  )?.[1];
   if (!table) throw new Error('MDX emitted no element table: the fixture compiled to nothing.');
   return [...table.matchAll(/(\w{1,64}): "\w{1,64}"/g)].map((pair) => pair[1] as string);
 }
@@ -148,5 +151,55 @@ describe('an inline docs string', () => {
     expect(text).toContain('A heading');
     expect(text).toContain('another');
     expect(text).toContain('<Button label="Play" />');
+  });
+});
+
+describe('a code fence', () => {
+  const Pre = MDX_COMPONENTS.pre;
+  const Code = MDX_COMPONENTS.code;
+
+  it('draws the code MDX wrapped in the <code> element below it', () => {
+    const { container } = render(
+      onScreen(
+        <Pre>
+          <Code>{'<Box gap={8} />'}</Code>
+        </Pre>,
+      ),
+    );
+    expect(container.textContent).toContain('<Box gap={8} />');
+  });
+
+  it('draws nothing for a fence with no code in it', () => {
+    const { container } = render(
+      onScreen(
+        <Pre>
+          <Code />
+        </Pre>,
+      ),
+    );
+    expect(container.textContent?.trim()).toBe('');
+  });
+});
+
+describe('a link in a doc', () => {
+  const Anchor = MDX_COMPONENTS.a;
+
+  it('opens the web schemes a component doc has any reason to name', () => {
+    const open = vi.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    render(onScreen(<Anchor href="https://kroma.tv">kroma</Anchor>));
+    fireEvent.click(screen.getByText('kroma'));
+    expect(open).toHaveBeenCalledWith('https://kroma.tv');
+    open.mockRestore();
+  });
+
+  it('hands the platform nothing else, so prose cannot run a script or read a disk', () => {
+    const open = vi.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    for (const href of ['javascript:alert(1)', 'file:///etc/passwd', 'data:text/html,x']) {
+      cleanup();
+      render(onScreen(<Anchor href={href}>x</Anchor>));
+      fireEvent.click(screen.getByText('x'));
+    }
+    expect(open).not.toHaveBeenCalled();
+    open.mockRestore();
   });
 });

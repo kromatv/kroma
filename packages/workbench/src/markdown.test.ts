@@ -35,6 +35,43 @@ describe('segments', () => {
   it('keeps a mark inside a code span literal: the span wins', () => {
     expect(segments('`a **b** c`')).toEqual([{ text: 'a **b** c', mark: 'code' }]);
   });
+
+  it('reads a lone star as a star, so **a*b** is not bold', () => {
+    expect(segments('**a*b**')).toEqual([{ text: '**a*b**', mark: 'plain' }]);
+  });
+
+  it('leaves an empty mark literal', () => {
+    expect(segments('`` and **** and []()')).toEqual([
+      { text: '`` and **** and []()', mark: 'plain' },
+    ]);
+  });
+
+  it('leaves a bracket that opens no destination alone', () => {
+    expect(segments('[words] then (later)')).toEqual([
+      { text: '[words] then (later)', mark: 'plain' },
+    ]);
+  });
+
+  it('leaves a destination with a space in it literal, since a URL has none', () => {
+    expect(segments('[words](not a url)')).toEqual([{ text: '[words](not a url)', mark: 'plain' }]);
+  });
+
+  it('leaves an unclosed destination literal', () => {
+    expect(segments('[words](https://kroma.tv')).toEqual([
+      { text: '[words](https://kroma.tv', mark: 'plain' },
+    ]);
+  });
+
+  // The scanner looks a fixed window ahead for a closing delimiter, which is
+  // what keeps a line of unclosed brackets from being quadratic. Past it the
+  // mark is prose.
+  it('stops looking for a close after a span, however well-formed the rest is', () => {
+    const long = 'x'.repeat(401);
+    expect(segments(`\`${long}\``)).toEqual([{ text: `\`${long}\``, mark: 'plain' }]);
+    expect(segments(`**${long}**`)).toEqual([{ text: `**${long}**`, mark: 'plain' }]);
+    expect(segments(`[${long}](u)`)).toEqual([{ text: `[${long}](u)`, mark: 'plain' }]);
+    expect(segments(`[a](${long})`)).toEqual([{ text: `[a](${long})`, mark: 'plain' }]);
+  });
 });
 
 describe('blocks', () => {
@@ -77,6 +114,10 @@ describe('blocks', () => {
       { kind: 'code', code: '<Button />\n\n<Card />', lang: 'tsx' },
       { kind: 'paragraph', text: 'after' },
     ]);
+  });
+
+  it('carries no language when the fence names none', () => {
+    expect(blocks('```\nplain\n```')).toEqual([{ kind: 'code', code: 'plain' }]);
   });
 
   it('leaves an unclosed fence literal rather than eating the rest of the file', () => {

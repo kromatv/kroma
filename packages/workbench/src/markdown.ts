@@ -23,37 +23,100 @@ type Block =
   | { kind: 'list'; items: string[] }
   | { kind: 'code'; code: string; lang?: string };
 
-// Split rather than scan: the capture group keeps the marked spans in place, so
-// the pass cannot lose text it did not recognise. Leftmost wins, which is what
-// puts a `**bold**` inside a code span on the code span's side.
+// Scanned by hand rather than split on one alternation. A regex that looks for
+// a closing delimiter rescans from every position that could open one, which is
+// quadratic on a line of unclosed `[`, and no bound on the run expresses that to
+// the engine - it only caps how far each rescan goes. The scanner below reads
+// each character once and looks ahead a fixed window for the close, so the work
+// is bounded by construction.
 //
-// Every run is bounded. An unclosed `**` would otherwise make each start
-// position rescan to the end of the line, which is quadratic in its length; a
-// bound also states the real limit, since an inline span longer than this is
-// prose that wanted a paragraph.
+// The window doubles as the real limit: an inline span longer than this is prose
+// that wanted a paragraph.
 const SPAN = 400;
-const INLINE = new RegExp(
-  `(\`[^\`]{1,${SPAN}}\`|\\*\\*[^*]{1,${SPAN}}\\*\\*|\\[[^\\]]{1,${SPAN}}\\]\\([^\\s)]{1,${SPAN}}\\))`,
-  'g',
-);
-const LINK = /^\[([^\]]+)\]\(([^\s)]+)\)$/;
+
+const WHITESPACE = /\s/;
+
+// -1 when `needle` is not within a span's reach of `from`. The slice is what
+// bounds the search: `indexOf` alone would walk to the end of the line before
+// answering that it is not there.
+function within(text: string, needle: string, from: number): number {
+  const at = text.slice(from, from + SPAN + needle.length).indexOf(needle);
+  return at === -1 ? -1 : from + at;
+}
+
+// The index just past a `` `code` `` opening at `at`, or -1.
+function codeSpan(text: string, at: number): number {
+  const close = within(text, '`', at + 1);
+  return close === -1 || close === at + 1 ? -1 : close + 1;
+}
+
+// The index just past a `**bold**` opening at `at`, or -1. A lone `*` inside is
+// not bold: `**a*b**` is three stars and a word, the way markdown reads it.
+function boldSpan(text: string, at: number): number {
+  if (!text.startsWith('**', at)) return -1;
+  const close = within(text, '**', at + 2);
+  if (close === -1 || close === at + 2) return -1;
+  return text.slice(at + 2, close).includes('*') ? -1 : close + 2;
+}
+
+interface Link {
+  end: number;
+  label: string;
+  href: string;
+}
+
+function linkSpan(text: string, at: number): Link | null {
+  const close = within(text, ']', at + 1);
+  if (close === -1 || close === at + 1 || text[close + 1] !== '(') return null;
+  const paren = within(text, ')', close + 2);
+  if (paren === -1 || paren === close + 2) return null;
+  const href = text.slice(close + 2, paren);
+  if (WHITESPACE.test(href)) return null;
+  return { end: paren + 1, label: text.slice(at + 1, close), href };
+}
 
 /** The inline spans of one line of prose, in order. */
 function segments(text: string): Segment[] {
   const out: Segment[] = [];
-  for (const part of text.split(INLINE)) {
-    if (!part) continue;
-    const link = LINK.exec(part);
-    if (link?.[1] && link[2]) {
-      out.push({ text: link[1], mark: 'link', href: link[2] });
-    } else if (part.startsWith('**') && part.endsWith('**')) {
-      out.push({ text: part.slice(2, -2), mark: 'bold' });
-    } else if (part.startsWith('`') && part.endsWith('`') && part.length > 1) {
-      out.push({ text: part.slice(1, -1), mark: 'code' });
-    } else {
-      out.push({ text: part, mark: 'plain' });
+  let plain = '';
+  const flush = () => {
+    if (plain) out.push({ text: plain, mark: 'plain' });
+    plain = '';
+  };
+
+  let at = 0;
+  while (at < text.length) {
+    const char = text[at];
+    if (char === '`') {
+      const end = codeSpan(text, at);
+      if (end !== -1) {
+        flush();
+        out.push({ text: text.slice(at + 1, end - 1), mark: 'code' });
+        at = end;
+        continue;
+      }
+    } else if (char === '*') {
+      const end = boldSpan(text, at);
+      if (end !== -1) {
+        flush();
+        out.push({ text: text.slice(at + 2, end - 2), mark: 'bold' });
+        at = end;
+        continue;
+      }
+    } else if (char === '[') {
+      const link = linkSpan(text, at);
+      if (link) {
+        flush();
+        out.push({ text: link.label, mark: 'link', href: link.href });
+        at = link.end;
+        continue;
+      }
     }
+    plain += char;
+    at += 1;
   }
+
+  flush();
   return out;
 }
 

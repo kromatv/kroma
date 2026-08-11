@@ -3,9 +3,25 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import * as webStyle from './web-style';
 
-const CSS = readFileSync(fileURLToPath(new URL('../../styles.css', import.meta.url)), 'utf8')
-  // A declaration inside a comment is prose, not paint.
-  .replace(/\/\*[\s\S]*?\*\//g, '');
+// A declaration inside a comment is prose, not paint. Scanned rather than
+// matched: a lazy run before a required `*/` rescans from every `/*`, which is
+// quadratic on a stylesheet whose last comment is unclosed.
+function uncommented(css: string): string {
+  let out = '';
+  let at = 0;
+  for (;;) {
+    const open = css.indexOf('/*', at);
+    if (open === -1) return out + css.slice(at);
+    out += css.slice(at, open);
+    const close = css.indexOf('*/', open + 2);
+    if (close === -1) return out;
+    at = close + 2;
+  }
+}
+
+const CSS = uncommented(
+  readFileSync(fileURLToPath(new URL('../../styles.css', import.meta.url)), 'utf8'),
+);
 
 // `[^{}]` on both sides, so a nested rule is read on its own and the @media
 // wrapping it never counts as one.
@@ -18,8 +34,19 @@ const CLASSES = Object.entries(webStyle).flatMap(([role, value]) =>
   typeof value === 'string' ? [[role, value] as [string, string]] : [],
 );
 
-const rulesFor = (name: string) =>
-  RULES.filter((rule) => new RegExp(`\\.${name}(?![\\w-])`).test(rule.selector));
+// `.card` must not answer for `.card-header`, so the character after the name
+// has to end it.
+function names(selector: string, name: string): boolean {
+  let at = selector.indexOf(`.${name}`);
+  while (at !== -1) {
+    const next = selector[at + name.length + 1] ?? '';
+    if (next === '' || !/[\w-]/.test(next)) return true;
+    at = selector.indexOf(`.${name}`, at + 1);
+  }
+  return false;
+}
+
+const rulesFor = (name: string) => RULES.filter((rule) => names(rule.selector, name));
 
 const propertiesIn = (body: string) =>
   [...body.matchAll(/var\((--[\w-]+)/g)].map(([, property]) => property ?? '');
