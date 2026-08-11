@@ -6,6 +6,24 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react from '@vitejs/plugin-react';
 import type { Plugin, UserConfig } from 'vite';
 
+const WORKERD_ONLY = 'cloudflare:workers';
+
+// That module exists only inside workerd. `vite dev` resolves it like any other
+// import, fails the transform, and drops an error overlay over the page which
+// swallows every click - the app looks dead rather than broken. Standing in a
+// module that throws puts the runtime on the same fallback path it already takes
+// off workerd, so dev keeps reading process.env. `apply: 'serve'` leaves the
+// deployed worker with the real builtin.
+const workerdBuiltins = (): Plugin => ({
+  name: 'kroma:workerd-builtins-dev',
+  apply: 'serve',
+  resolveId: (id) => (id === WORKERD_ONLY ? `\0${WORKERD_ONLY}` : undefined),
+  load: (id) =>
+    id === `\0${WORKERD_ONLY}`
+      ? `throw new Error(${JSON.stringify(`${WORKERD_ONLY} is unavailable outside workerd`)})`
+      : undefined,
+});
+
 export interface KromaSiteOptions {
   alias?: Record<string, string>;
   plugins?: Plugin[];
@@ -28,6 +46,7 @@ export function kromaSite(siteUrl: string, options: KromaSiteOptions = {}): User
       ...(options.appMessages ? [] : [messageSubset({ roots: [`${root}src`] })]),
       kromaUI(),
       tanstackStart(options.prerender ? { prerender: { enabled: true, crawlLinks: true } } : {}),
+      workerdBuiltins(),
       react(),
       ...(options.plugins ?? []),
     ],

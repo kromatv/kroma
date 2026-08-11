@@ -58,6 +58,23 @@ describe('kromaSite', () => {
     expect(listed.at(-1)).toMatch(/^vite:react/);
   });
 
+  it('stands in for the workerd-only builtin, in dev alone, with a module that throws', () => {
+    const shim = plugins(config(siteRoot())).find((p) => p.name === 'kroma:workerd-builtins-dev');
+    if (!shim) throw new Error('the site must shim cloudflare:workers for dev');
+    const resolve = shim.resolveId as (id: string) => string | undefined;
+    const load = shim.load as (id: string) => string | undefined;
+
+    // Only in `vite dev` - the deployed worker keeps the real builtin.
+    expect(shim.apply).toBe('serve');
+    const resolved = resolve.call(null as never, 'cloudflare:workers');
+    expect(resolved).toBe('\0cloudflare:workers');
+    expect(resolve.call(null as never, 'node:fs')).toBeUndefined();
+    // Throwing is what puts workerContext() on its off-workerd fallback, so dev
+    // still reads process.env instead of silently seeing an empty env.
+    expect(load.call(null as never, resolved as string)).toContain('throw new Error');
+    expect(load.call(null as never, 'cloudflare:workers')).toBeUndefined();
+  });
+
   it('roots the site at the directory of the config file it was handed', () => {
     const root = siteRoot();
     expect(find(config(root), '#site')).toBe(join(root, 'src'));

@@ -3,7 +3,14 @@
 // cannot reach — or fire OK on — anything under the panel.
 
 import { Children, isValidElement, type ReactNode, useId, useMemo, useRef } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, type View } from 'react-native';
+import {
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  type View,
+} from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
@@ -100,6 +107,9 @@ function DialogSurface({
 >) {
   useFocusNav({ onBack: onClose });
   const t = useTDefault();
+  // A 64pt gutter is a frame on a television and a squeeze on a phone, where it
+  // costs a third of the width the panel has to say anything in.
+  const gutter = useWindowDimensions().width < 600 ? 16 : 64;
   const backdrop = useRef<View>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -130,7 +140,7 @@ function DialogSurface({
         }
       : { accessibilityLabel: title };
   const panel = (
-    <Box flex center bg="overlay" p={64}>
+    <Box flex center bg="overlay" p={gutter}>
       {/* Web only: on a TV, Back/Menu is the platform's way out and an extra
           Pressable is one more thing for the D-pad to land on. */}
       {onClose && Platform.OS === 'web' ? (
