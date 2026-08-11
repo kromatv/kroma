@@ -94,7 +94,7 @@ sdb connect 192.168.1.50
 sdb devices                                # note the device id, e.g. UE50AU7172...
 
 # 4. Install
-tizen install -n KROMA.wgt -t <device-id>
+tizen install -n KROMA-tizen-*.wgt -t <device-id>
 ```
 
 ### Or build + deploy from the repo

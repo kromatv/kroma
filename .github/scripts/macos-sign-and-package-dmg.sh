@@ -147,8 +147,19 @@ if [[ "$SIGN" = "true" ]]; then
   fi
 fi
 
+# Name it exactly as tauri's own bundler names the other installers -
+# <product>_<version>_<arch> - from the version the build was stamped with, so
+# the .dmg is identifiable once downloaded and two channels never collide.
+VERSION=$(sed -nE 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
+  clients/desktop/src-tauri/tauri.conf.json | head -1)
+case "$(uname -m)" in
+  arm64 | aarch64) DMG_ARCH=aarch64 ;;
+  x86_64) DMG_ARCH=x64 ;;
+  *) DMG_ARCH=$(uname -m) ;;
+esac
+
 mkdir -p "$BUNDLE/dmg"
-DMG="$BUNDLE/dmg/KROMA_$(uname -m).dmg"
+DMG="$BUNDLE/dmg/KROMA_${VERSION:+${VERSION}_}${DMG_ARCH}.dmg"
 hdiutil create -volname KROMA -srcfolder "$APP" -ov -format UDZO "$DMG"
 
 if [[ "$SIGN" = "true" ]]; then

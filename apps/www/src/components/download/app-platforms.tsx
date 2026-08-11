@@ -66,7 +66,7 @@ export function AppPlatforms() {
             m.download_family_tv_samsung_body(),
           ),
           code: `sdb connect 192.168.1.50
-tizen install -n KROMA.wgt -t <device-id>`,
+tizen install -n KROMA-tizen-*.wgt -t <device-id>`,
         },
         {
           icon: IconDeviceTvOld,

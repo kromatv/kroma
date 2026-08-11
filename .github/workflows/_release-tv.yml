@@ -157,8 +157,19 @@ jobs:
           sed -i "s|password=\"[^\"]*kroma-ci\.pwd\"|password=\"$TIZEN_CERT_PASS\"|g" "$P"
           sed -i "s|password=\"[^\"]*tizen-distributor-signer\.pwd\"|password=\"tizenpkcs12passfordsigner\"|g" "$P"
 
+      # `tizen package` names the .wgt after <name> in config.xml, so every
+      # channel produced the same KROMA.wgt: indistinguishable once downloaded,
+      # and a nightly overwrote a stable in ~/Downloads. Carry the version, in
+      # the shape the .apk/.ipa of the same fleet already use.
       - name: Package .wgt
-        run: tizen package -t wgt -s kroma-ci -- clients/tizen/dist
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          tizen package -t wgt -s kroma-ci -- clients/tizen/dist
+          WGT=$(find clients/tizen/dist -maxdepth 1 -name '*.wgt' | head -1)
+          TARGET="clients/tizen/dist/KROMA-tizen-${VERSION}.wgt"
+          [ "$WGT" = "$TARGET" ] || mv "$WGT" "$TARGET"
+          ls -l "$TARGET"
 
       - name: Upload .wgt artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
