@@ -1,7 +1,7 @@
 // Whole-surface states: what a screen shows instead of content while it is
 // loading, empty, or broken, plus the inline error banner forms use.
 
-import { Box, Button, Icon, Spinner, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Icon, Spinner, styles, Text } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';
@@ -28,7 +28,7 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   return (
     <Animated.View style={[s.box, { opacity: fade, transform: [{ translateX: shake }] }]}>
       <Icon name="alert-circle" size={17} stroke={2} color="danger" />
-      <Txt style={s.boxText}>{message}</Txt>
+      <Text style={s.boxText}>{message}</Text>
     </Animated.View>
   );
 }
@@ -37,7 +37,7 @@ export function Loading({ label }: Readonly<{ label?: string }>) {
   return (
     <Box style={s.center}>
       <Spinner size={36} color="textMuted" />
-      {label ? <Txt style={[s.centerText, s.loadingLabel]}>{label}</Txt> : null}
+      {label ? <Text style={[s.centerText, s.loadingLabel]}>{label}</Text> : null}
     </Box>
   );
 }
@@ -53,7 +53,7 @@ export function ErrorView({
 }>) {
   return (
     <Box style={s.center}>
-      <Txt style={s.centerText}>{message}</Txt>
+      <Text style={s.centerText}>{message}</Text>
       {onRetry && retryLabel ? (
         <Box style={s.retry}>
           <Button variant="glass" label={retryLabel} onPress={onRetry} />
@@ -79,8 +79,8 @@ export function EmptyState({
   return (
     <Box style={s.emptyBox}>
       <Box style={s.emptyDisc}>{icon}</Box>
-      <Txt style={s.emptyTitle}>{title}</Txt>
-      {hint ? <Txt style={s.emptyHint}>{hint}</Txt> : null}
+      <Text style={s.emptyTitle}>{title}</Text>
+      {hint ? <Text style={s.emptyHint}>{hint}</Text> : null}
       {actionLabel && onAction ? (
         <Box style={s.emptyAction}>
           <Button variant="glass" label={actionLabel} onPress={onAction} />
@@ -101,7 +101,7 @@ const s = styles({
     radius: radius.md,
     border: 'danger/35',
   },
-  boxText: { ...type.caption, flex: true, color: '#FF8A80', fontWeight: '600' },
+  boxText: { ...type.caption, flex: true, color: 'dangerHover', fontWeight: '600' },
   center: { flex: true, center: true, p: spacing.lg },
   centerText: { ...type.caption, textAlign: 'center' },
   loadingLabel: { mt: spacing.md },

@@ -4,7 +4,7 @@ import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Progress } from '#ui/components/atoms/progress';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { IconAi } from '#ui/components/organisms/player/parts/icons';
@@ -160,7 +160,7 @@ function AiBadge() {
       bg="rgba(124, 92, 255, 0.18)"
     >
       <IconAi size={11} color="#B7A6FF" />
-      <Txt style={s.aiBadgeLabel}>IA</Txt>
+      <Text style={s.aiBadgeLabel}>IA</Text>
     </Box>
   );
 }
@@ -196,22 +196,22 @@ function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel:
       p={16}
     >
       <Box row align="center" gap={14}>
-        <Txt style={s.genLang}>{gen.lang ?? ''}</Txt>
+        <Text style={s.genLang}>{gen.lang ?? ''}</Text>
         <AiBadge />
         <TrashButton label={t('player.subGenCancel')} onPress={onCancel} />
       </Box>
       <Box row align="center" between mt={8}>
         <Box row align="center" gap={8}>
           {!err ? <Box w={6} h={6} radius="circle" bg="#8B7FF0" /> : null}
-          <Txt style={s.genStage} color={err ? '#E8536A' : '#9A8FF0'}>
+          <Text style={s.genStage} color={err ? '#E8536A' : '#9A8FF0'}>
             {err
               ? (gen.error ?? t(subtitleStageKey(gen.stage)))
               : `${engine} · ${t(subtitleStageKey(gen.stage))}`}
-          </Txt>
+          </Text>
         </Box>
-        <Txt style={s.pct} color="#B3A9F5">
+        <Text style={s.pct} color="#B3A9F5">
           {err ? '' : `${pct} %`}
-        </Txt>
+        </Text>
       </Box>
       {!err ? (
         <>
@@ -219,9 +219,9 @@ function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel:
             <Progress value={gen.progress} color="#7C6FF5" trackColor="white/10" rounded />
           </Box>
           {gen.etaSec != null ? (
-            <Txt style={s.eta} color="white/40">
+            <Text style={s.eta} color="white/40">
               {t('player.subEta', { time: subtitleEtaTime(gen.etaSec) })}
-            </Txt>
+            </Text>
           ) : null}
         </>
       ) : null}
@@ -230,9 +230,9 @@ function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel:
 }
 
 const s = styles({
-  pct: { font: 'ui', fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  eta: { font: 'ui', fontSize: 12, mt: 6 },
-  aiBadgeLabel: { font: 'ui', fontWeight: '700', fontSize: 10, color: '#B7A6FF' },
-  genLang: { flex: 1, font: 'ui', fontWeight: '600', fontSize: 16 },
-  genStage: { font: 'ui', fontSize: 13 },
+  pct: { text: 'footnoteTv', fontVariant: ['tabular-nums'] },
+  eta: { text: 'footnoteTv', mt: 6 },
+  aiBadgeLabel: { text: 'overline', color: '#B7A6FF' },
+  genLang: { flex: 1, text: 'labelTv' },
+  genStage: { text: 'footnoteTv' },
 });

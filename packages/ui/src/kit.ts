@@ -13,6 +13,7 @@ export type {
   Resolved,
   StyleDecl,
   SvState,
+  TextLayoutProps,
   Theme,
   ThemeMode,
   ThemeOverrides,

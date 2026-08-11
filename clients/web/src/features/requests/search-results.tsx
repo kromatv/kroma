@@ -4,7 +4,7 @@
 
 import { posterColors, type SearchHit } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, Txt } from '@kroma/ui/kit';
+import { Box, EmptyState, Text } from '@kroma/ui/kit';
 
 import { useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -27,12 +27,12 @@ function Section({
 }: Readonly<{ title: string; count: number; children: ReactNode }>) {
   return (
     <section className="mb-9 animate-[fade-in_.25s_var(--ease-out)]">
-      {/* Still an <h2>: <Txt accessibilityRole="header"> can only render an h1. */}
+      {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
       <h2 className="mb-4 flex items-baseline gap-2.5">
-        <Txt variant="title">{title}</Txt>
-        <Txt variant="meta" color="textDim" style={COUNT}>
+        <Text variant="title">{title}</Text>
+        <Text variant="meta" color="textDim" style={COUNT}>
           {count}
-        </Txt>
+        </Text>
       </h2>
       <div className={GRID}>{children}</div>
     </section>
@@ -81,7 +81,7 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
   const nothing = state.local.length === 0 && state.discover.length === 0;
   if (nothing) {
     return (
-      <EmptyState
+      <EmptyState.Root
         icon="mood-empty"
         title={t('discover.noResults')}
         hint={t('discover.noResultsHint')}

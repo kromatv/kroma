@@ -4,7 +4,7 @@
 
 import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, gradient, Hint, shade, styles, Txt } from '@kroma/ui/kit';
+import { Box, gradient, Hint, shade, styles, Text } from '@kroma/ui/kit';
 
 const s = styles({
   hint: { fontSize: 13, fontWeight: '600' },
@@ -33,12 +33,12 @@ export function HintBar({
     >
       <Hint text={t(browseKey)} size={13} gap={3} color="textDim" textStyle={s.hint} />
       <Hint text={t('content.hintRows')} size={13} gap={3} color="textDim" textStyle={s.hint} />
-      <Txt style={s.hint} color="textDim">
-        <Txt style={s.hintKey} color="accentText">
+      <Text style={s.hint} color="textDim">
+        <Text style={s.hintKey} color="accentText">
           {t('content.hintOk')}
-        </Txt>
+        </Text>
         {` ${t('content.hintOpen')}`}
-      </Txt>
+      </Text>
     </Box>
   );
 }

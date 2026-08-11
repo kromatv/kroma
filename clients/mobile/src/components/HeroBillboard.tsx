@@ -3,7 +3,7 @@
 
 import type { SectionItem } from '@kroma/core';
 import { sizedImageUrl } from '@kroma/core';
-import { Box, Button, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, styles, Text } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -72,13 +72,13 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
         />
       </Pressable>
       <Box style={s.content} pointerEvents="box-none">
-        <Txt lines={2} style={s.title}>
+        <Text lines={2} style={s.title}>
           {title}
-        </Txt>
+        </Text>
         {genres.length > 0 ? (
-          <Txt lines={1} style={s.genres}>
+          <Text lines={1} style={s.genres}>
             {genres.join('  ·  ')}
-          </Txt>
+          </Text>
         ) : null}
         <Box style={s.buttons}>
           <Button icon="player-play-filled" label={t('player.play')} style={s.cta} onPress={play} />

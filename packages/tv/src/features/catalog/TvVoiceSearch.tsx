@@ -3,7 +3,7 @@
 // arrive — is a backend the shell registers; see `#tv/app/voiceSearch`.
 
 import { useLocale, useT } from '@kroma/ui';
-import { Box, Button, colors, Dialog, DialogFooter, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, colors, Dialog, Icon, styles, Text } from '@kroma/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing } from 'react-native';
 import type { VoiceSearchBackend } from '#tv/app/voiceSearch';
@@ -34,21 +34,21 @@ export function TvVoiceSearch({
           <Icon name="microphone" size={34} color="accentText" />
         </Pulse>
         <Box flex gap={6}>
-          <Txt variant="h2" lines={2} color={heard ? 'text' : 'textMuted'}>
+          <Text variant="h2" lines={2} color={heard ? 'text' : 'textMuted'}>
             {heard || t('search.voiceListening')}
-          </Txt>
-          <Txt variant="meta" color="textDim">
+          </Text>
+          <Text variant="meta" color="textDim">
             {t('search.voiceHint')}
-          </Txt>
+          </Text>
         </Box>
       </Box>
 
       {/* The recogniser itself: no UI of its own, the panel is all there is. */}
       <Session onText={hear} onDone={onDone} locale={locale} />
 
-      <DialogFooter>
+      <Dialog.Actions>
         <Button variant="glass" label={t('common.cancel')} onPress={onDone} />
-      </DialogFooter>
+      </Dialog.Actions>
     </Dialog>
   );
 }
@@ -82,7 +82,7 @@ function Pulse({ children }: Readonly<{ children: React.ReactNode }>) {
   }, [value]);
 
   return (
-    <Box style={{ width: CIRCLE, height: CIRCLE, alignItems: 'center', justifyContent: 'center' }}>
+    <Box w={CIRCLE} h={CIRCLE} center>
       <Animated.View
         style={[
           s.halo,

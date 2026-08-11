@@ -1,5 +1,5 @@
 import { commitLabel } from '@kroma/core';
-import { Box, Txt } from '@kroma/ui/kit';
+import { Box, Text } from '@kroma/ui/kit';
 import { BUILD } from './buildInfo';
 
 export function BuildStamp() {
@@ -8,12 +8,12 @@ export function BuildStamp() {
   if (!version && !commit) return null;
   return (
     <Box gap={2}>
-      <Txt color="textDim" style={LINE}>
+      <Text color="textDim" style={LINE}>
         {[version, commit].filter(Boolean).join(' · ')}
-      </Txt>
-      <Txt color="textDim" style={LINE}>
+      </Text>
+      <Text color="textDim" style={LINE}>
         {[formatBuildDate(BUILD.buildDate), BUILD.branch].filter(Boolean).join(' · ')}
-      </Txt>
+      </Text>
     </Box>
   );
 }

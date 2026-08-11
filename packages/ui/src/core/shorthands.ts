@@ -1,9 +1,9 @@
 // The shorthand vocabulary: the short names a style may be authored in, and the
 // rule table that turns them into plain React Native longhands.
 //
-// One table serves both consumers - <Box>'s props and a recipe's declarations -
-// so `bg: 'surface1'` means the same thing wherever it is written. Each entry is
-// one of four rule shapes:
+// One table serves every consumer - <Box>'s props, <Text>'s props and a recipe's
+// declarations - so `bg: 'surface1'` means the same thing wherever it is written.
+// Each entry is one of four rule shapes:
 //
 //   'width'                    rename: the value passes through under this key
 //   ['paddingLeft', ...]       expand: the value lands under every key
@@ -19,7 +19,8 @@
 // what genuinely is a token takes a name - and those resolve through the active
 // theme, so a theme's palette or corner language reaches every declaration.
 
-import type { DimensionValue, ViewStyle } from 'react-native';
+import type { DimensionValue, TextStyle, ViewStyle } from 'react-native';
+import { breakpointBits, breakpointIndex, type Responsive, valueAt } from '#ui/core/breakpoint';
 import { type ColorValue, color } from '#ui/core/color';
 import { activeTheme, type RingToken, radiusValue } from '#ui/core/theme';
 import {
@@ -30,39 +31,44 @@ import {
   type TypeRole,
 } from '#ui/core/tokens';
 
-export type Spacing = DimensionValue;
-export type Align = NonNullable<ViewStyle['alignItems']>;
-export type Justify = NonNullable<ViewStyle['justifyContent']>;
+// Every value below is {@link Responsive}: the value itself, or one per
+// breakpoint (`px={{ base: 16, md: 40 }}`), which resolves through the same
+// rules - a token named at `lg` is the same token named flat.
+export type Spacing = Responsive<DimensionValue>;
+export type Size = Responsive<DimensionValue>;
+export type Flag = Responsive<boolean>;
+export type Align = Responsive<NonNullable<ViewStyle['alignItems']>>;
+export type Justify = Responsive<NonNullable<ViewStyle['justifyContent']>>;
 
 export interface BoxStyleProps {
-  flex?: boolean | number;
-  row?: boolean;
-  wrap?: boolean;
-  center?: boolean;
+  flex?: Responsive<boolean | number>;
+  row?: Flag;
+  wrap?: Flag;
+  center?: Flag;
   align?: Align;
   justify?: Justify;
-  self?: NonNullable<ViewStyle['alignSelf']>;
-  shrink?: number;
-  grow?: number;
-  basis?: DimensionValue;
+  self?: Responsive<NonNullable<ViewStyle['alignSelf']>>;
+  shrink?: Responsive<number>;
+  grow?: Responsive<number>;
+  basis?: Size;
   gap?: Spacing;
-  between?: boolean;
+  between?: Flag;
 
-  w?: DimensionValue;
-  h?: DimensionValue;
-  minW?: DimensionValue;
-  minH?: DimensionValue;
-  maxW?: DimensionValue;
-  maxH?: DimensionValue;
-  aspect?: number;
+  w?: Size;
+  h?: Size;
+  minW?: Size;
+  minH?: Size;
+  maxW?: Size;
+  maxH?: Size;
+  aspect?: Responsive<number>;
 
-  fill?: boolean;
-  absolute?: boolean;
-  top?: DimensionValue;
-  right?: DimensionValue;
-  bottom?: DimensionValue;
-  left?: DimensionValue;
-  z?: number;
+  fill?: Flag;
+  absolute?: Flag;
+  top?: Size;
+  right?: Size;
+  bottom?: Size;
+  left?: Size;
+  z?: Responsive<number>;
 
   p?: Spacing;
   px?: Spacing;
@@ -79,16 +85,67 @@ export interface BoxStyleProps {
   mb?: Spacing;
   ml?: Spacing;
 
-  bg?: ColorValue;
+  bg?: Responsive<ColorValue>;
   /** A radius token, a raw px value, or `'circle'`; see {@link CornerValue}. */
-  radius?: CornerValue;
-  border?: ColorValue;
-  borderWidth?: number;
-  shadow?: ShadowToken;
+  radius?: Responsive<CornerValue>;
+  border?: Responsive<ColorValue>;
+  borderWidth?: Responsive<number>;
+  shadow?: Responsive<ShadowToken>;
   /** The focus treatment, derived from the theme's accent. */
-  ring?: RingToken;
-  opacity?: number;
-  overflow?: NonNullable<ViewStyle['overflow']>;
+  ring?: Responsive<RingToken>;
+  opacity?: Responsive<number>;
+  overflow?: Responsive<NonNullable<ViewStyle['overflow']>>;
+  /** Paints into its own stacking context, so a blend or a z-index inside cannot
+   *  reach the page behind it. Browser targets only; native has no equivalent. */
+  isolate?: Flag;
+}
+
+/** The rows a React Native <Text> honours: it lays ITSELF out, so the container
+ *  rows (`row`, `gap`, `align`) and the surface paints (`bg`, `radius`, `border`)
+ *  stay on <Box>. */
+const TEXT_LAYOUT_ROWS = [
+  'flex',
+  'self',
+  'shrink',
+  'grow',
+  'basis',
+  'w',
+  'h',
+  'minW',
+  'minH',
+  'maxW',
+  'maxH',
+  'absolute',
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'z',
+  'p',
+  'px',
+  'py',
+  'pt',
+  'pr',
+  'pb',
+  'pl',
+  'm',
+  'mx',
+  'my',
+  'mt',
+  'mr',
+  'mb',
+  'ml',
+  'opacity',
+] as const satisfies readonly (keyof BoxStyleProps)[];
+
+/**
+ * The text half of the layout vocabulary: what <Text> takes as props.
+ *
+ * `textAlign` is spelled in full because `align` already means `alignItems` on
+ * <Box>, and one name means one role across the kit.
+ */
+export interface TextLayoutProps extends Pick<BoxStyleProps, (typeof TEXT_LAYOUT_ROWS)[number]> {
+  textAlign?: Responsive<NonNullable<TextStyle['textAlign']>>;
 }
 
 type Rule =
@@ -98,10 +155,10 @@ type Rule =
   | ((value: unknown) => Readonly<Record<string, unknown>>);
 
 /**
- * `satisfies Record<keyof BoxStyleProps, Rule>` is what makes the interface and
- * the table one source of truth: a prop added to `BoxStyleProps` and forgotten
- * here is a compile error. Without that link the two drift silently and in two
- * different ways - <Box> forwards the unknown name to the host view as a DOM
+ * The `satisfies` below is what makes the interfaces and the table one source of
+ * truth: a prop added to `BoxStyleProps` or `TextLayoutProps` and forgotten here
+ * is a compile error. Without that link they drift silently and in two different
+ * ways - <Box> and <Text> forward the unknown name to the host node as a DOM
  * attribute, and a recipe emits it verbatim as a bogus style key.
  */
 const RULES = {
@@ -165,7 +222,9 @@ const RULES = {
   ring: (v) => (typeof v === 'string' ? { ...activeTheme().ring[v as RingToken] } : {}),
   opacity: 'opacity',
   overflow: 'overflow',
-} as const satisfies Record<keyof BoxStyleProps, Rule>;
+  isolate: { isolation: 'isolate' },
+  textAlign: 'textAlign',
+} as const satisfies Record<keyof BoxStyleProps | keyof TextLayoutProps, Rule>;
 
 const RULE_KEYS = Object.keys(RULES) as (keyof typeof RULES)[];
 
@@ -173,29 +232,76 @@ const RULE_KEYS = Object.keys(RULES) as (keyof typeof RULES)[];
  *  resolver below. */
 export const BOX_STYLE_PROPS: ReadonlySet<string> = new Set(RULE_KEYS);
 
+/** The subset <Text> speaks, in the table's own cascade order. */
+export const TEXT_STYLE_PROPS: ReadonlySet<string> = new Set([
+  ...TEXT_LAYOUT_ROWS,
+  'textAlign',
+] as string[]);
+
 /**
  * Split a prop bag into the shorthands and everything else.
  *
- * Both consumers need exactly this partition - <Box> to tell a style prop from a
- * real View prop, a recipe to tell what needs resolving from what passes through
- * - so the rule for recognising a shorthand lives in one place.
+ * Every consumer needs exactly this partition - <Box> and <Text> to tell a style
+ * prop from a real host prop, a recipe to tell what needs resolving from what
+ * passes through - so the rule for recognising a shorthand lives in one place.
+ *
+ * `key` canonicalises the caller's prop order, so `row gap={4}` and `gap={4} row`
+ * are one entry in whatever cache the caller keys on it; it is empty when nothing
+ * needs resolving.
  */
-export function splitShorthand(props: Readonly<Record<string, unknown>>): {
+export function splitShorthand(
+  props: Readonly<Record<string, unknown>>,
+  names: ReadonlySet<string> = BOX_STYLE_PROPS,
+): {
   shorthand: Record<string, unknown>;
   rest: Record<string, unknown>;
   /** Whether any shorthand was found, so a caller can skip the resolver. */
   any: boolean;
+  key: string;
+  /** The breakpoints the bag names, 0 when it names none; see
+   *  {@link breakpointBits}. */
+  breakpoints: number;
 } {
   const shorthand: Record<string, unknown> = {};
   const rest: Record<string, unknown> = {};
+  const parts: string[] = [];
   let any = false;
-  for (const key of Object.keys(props)) {
-    if (BOX_STYLE_PROPS.has(key)) {
-      shorthand[key] = props[key];
-      any = true;
-    } else rest[key] = props[key];
+  let breakpoints = 0;
+  for (const name of Object.keys(props)) {
+    const value = props[name];
+    if (!names.has(name)) {
+      rest[name] = value;
+      continue;
+    }
+    shorthand[name] = value;
+    any = true;
+    if (value === undefined) continue;
+    // A breakpoint object and a transform are objects; everything else is a
+    // primitive. The primitive side is named explicitly so String() never meets
+    // an object.
+    const primitive =
+      typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+    if (!primitive) breakpoints |= breakpointBits(value);
+    parts.push(`${name}:${primitive ? String(value) : JSON.stringify(value)}`);
   }
-  return { shorthand, rest, any };
+  parts.sort((a, b) => (a < b ? -1 : 1));
+  return { shorthand, rest, any, key: parts.join(';'), breakpoints };
+}
+
+/**
+ * Which breakpoints a whole declaration names, for a consumer that compiles one
+ * ahead of time (a recipe layer, a `styles()` value) and has to know whether it
+ * belongs on the breakpoint axis at all.
+ */
+export function declaredBreakpoints(
+  decl: Readonly<Record<string, unknown>>,
+  names: ReadonlySet<string> = BOX_STYLE_PROPS,
+): number {
+  let breakpoints = 0;
+  for (const name of Object.keys(decl)) {
+    if (names.has(name)) breakpoints |= breakpointBits(decl[name]);
+  }
+  return breakpoints;
 }
 
 function applyRule(out: Record<string, unknown>, rule: Rule, value: unknown): void {
@@ -210,19 +316,38 @@ function applyRule(out: Record<string, unknown>, rule: Rule, value: unknown): vo
   }
 }
 
-export function boxStyle(p: Readonly<BoxStyleProps>): ViewStyle {
+/**
+ * Resolves a prop bag into React Native longhands at a breakpoint, defaulting to
+ * the active one. A bag stating nothing per breakpoint never walks a cascade and
+ * resolves exactly as it did before there was an axis at all.
+ */
+export function boxStyle(p: Readonly<BoxStyleProps>, index?: number): ViewStyle {
   const out: Record<string, unknown> = {};
+  let at = index ?? -1;
   for (const key of RULE_KEYS) {
-    const value = (p as Record<string, unknown>)[key];
-    if (value === undefined) continue;
-    applyRule(out, RULES[key], value);
+    const raw = (p as Record<string, unknown>)[key];
+    if (raw === undefined) continue;
+    if (typeof raw !== 'object' || raw === null) {
+      applyRule(out, RULES[key], raw);
+      continue;
+    }
+    if (at < 0) at = breakpointIndex();
+    const value = valueAt(raw, at);
+    if (value !== undefined) applyRule(out, RULES[key], value);
   }
+  if (p.radius === undefined) return out as ViewStyle;
+  if (at < 0) at = breakpointIndex();
   // A disc is half of ITSELF, so a stated side beats the clamped fallback.
-  if (p.radius === 'circle') {
-    const stated = typeof p.h === 'number' ? p.h : p.w;
+  if (flatAt(p.radius, at) === 'circle') {
+    const height = flatAt(p.h, at);
+    const stated = typeof height === 'number' ? height : flatAt(p.w, at);
     out.borderRadius = radiusValue('circle', typeof stated === 'number' ? stated : undefined);
   }
   return out as ViewStyle;
+}
+
+function flatAt(raw: unknown, index: number): unknown {
+  return typeof raw === 'object' && raw !== null ? valueAt(raw, index) : raw;
 }
 
 /**

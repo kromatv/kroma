@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import type { ColorValue } from '#ui/core';
 import { sv } from '#ui/core';
 import { gradient } from '#ui/lib/css';
@@ -81,8 +81,8 @@ function CategoryTile({
         {wash ? <Box fill style={[NO_POINTER, gradient(wash)]} /> : null}
         <Box absolute left={20} right={20} bottom={16} gap={2}>
           {accent ? <Box h={4} w={28} radius="pill" bg={accent} mb={8} /> : null}
-          <Txt style={s.label}>{label}</Txt>
-          {meta ? <Txt style={s.meta}>{meta}</Txt> : null}
+          <Text style={s.label}>{label}</Text>
+          {meta ? <Text style={s.meta}>{meta}</Text> : null}
           {children}
         </Box>
       </Box>

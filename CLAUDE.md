@@ -14,14 +14,19 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
 ## Read before writing code
 
 - [`CODE_STYLE.md`](CODE_STYLE.md) — how code is written here. **The default is no
-  comment.** Document exported API only; never private functions, fields, or props.
+  comment.** Document exported API only; never private functions or fields. The one
+  exception is a kit component's props, which are its public API.
   Never narrate your work in a source file.
 - [`CONVENTIONS.md`](CONVENTIONS.md) — cross-file house rules (zod at trust
-  boundaries, where secrets live).
+  boundaries, where secrets live, the values that are never written raw).
 - [`packages/ui/src/components/README.md`](packages/ui/src/components/README.md) —
-  the component hierarchy, and how a kit component is shaped: **composed, not
-  configured** (Radix's part-based API), with the whole row as the control and
-  the sugar kept for the common case.
+  the component hierarchy: the six levels, what earns a place at each, and the
+  three doors out of the kit.
+- [`packages/ui/src/components/DESIGN.md`](packages/ui/src/components/DESIGN.md) —
+  **how a component's API is shaped**: the part vocabulary, when a `data` prop
+  beats children, the controlled/uncontrolled signature, prop naming, and why
+  this kit has no `asChild`. Read it before adding a component or changing
+  one's props.
 - [`modules/README.md`](modules/README.md) — authoring a module.
 - [`docs/tv-pairing.md`](docs/tv-pairing.md) — the three roads a television
   takes to an account, what "the same network" means, and which shells can hear
@@ -215,7 +220,7 @@ clients/    thin shells only: web · tizen · webos · tv-web · tv-native · mo
 ### TV shells
 
 Each shell is driven by its `tv.target.ts` (platform, dev port, engine floors)
-through the shared pipeline in [`clients/tv-build/shell.ts`](clients/tv-build/shell.ts).
+through the shared pipeline in [`packages/bundler/src/shell.ts`](packages/bundler/src/shell.ts).
 webOS additionally ships a **legacy tier** (ES2015 + flattened Tailwind CSS,
 runtime-gated) for Chromium 53–94 TVs; `build:webos` runs a compat guard that fails
 the build on anything a legacy engine cannot parse.

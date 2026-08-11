@@ -148,9 +148,9 @@ export function ReportsQueuePage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.reportsTitle')}
-        action={
+        actions={
           <ConsoleSearch value={q} onChange={setQ} placeholder={t('reports.searchPlaceholder')} />
         }
       />
@@ -165,21 +165,21 @@ export function ReportsQueuePage() {
         <Chip
           label={t('reports.status.open')}
           count={c?.open}
-          dot="#F4B642"
+          dot="accent"
           on={status === 'open'}
           onClick={() => setStatus('open')}
         />
         <Chip
           label={t('reports.status.resolved')}
           count={c?.resolved}
-          dot="#46D08D"
+          dot="success"
           on={status === 'resolved'}
           onClick={() => setStatus('resolved')}
         />
         <Chip
           label={t('reports.status.dismissed')}
           count={c?.dismissed}
-          dot="#9AA0AA"
+          dot="glyph"
           on={status === 'dismissed'}
           onClick={() => setStatus('dismissed')}
         />
@@ -210,8 +210,8 @@ export function ReportsQueuePage() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#121216] shadow-[0_10px_28px_rgba(0,0,0,.3)]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-[#15151A] px-5 py-3 md:grid-cols-[minmax(0,1fr)_128px_150px_96px_116px]">
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-surface-1 shadow-[0_10px_28px_rgba(0,0,0,.3)]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-surface-1 px-5 py-3 md:grid-cols-[minmax(0,1fr)_128px_150px_96px_116px]">
           <Head>{t('reports.colTitle')}</Head>
           <Head className="max-md:hidden">{t('reports.colCategory')}</Head>
           <Head className="max-md:hidden">{t('reports.colReporter')}</Head>
@@ -227,7 +227,7 @@ export function ReportsQueuePage() {
 
         {data && rows.length === 0 ? (
           <div className="py-6">
-            <EmptyState
+            <EmptyState.Root
               icon="flag"
               title={all.length === 0 ? t('reports.empty') : t('reports.noMatch')}
             />

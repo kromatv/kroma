@@ -59,7 +59,7 @@ function MyListPage() {
     <main className={PAGE_MAIN}>
       <h1 className={PAGE_TITLE}>{t('nav.myList')}</h1>
       {ready && entries.length === 0 ? (
-        <EmptyState icon="list-details" title={t('content.myListEmpty')} />
+        <EmptyState.Root icon="list-details" title={t('content.myListEmpty')} />
       ) : (
         <div className="mt-6">
           <CatalogGrid entries={entries} />

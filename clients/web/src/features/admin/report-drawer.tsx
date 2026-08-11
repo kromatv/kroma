@@ -4,7 +4,7 @@
 
 import type { Report, ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, Drawer, IconButton } from '@kroma/ui/kit';
+import { Avatar, Button, color, Drawer, IconButton } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
@@ -104,7 +104,7 @@ export const ReportDrawer = createCallable<
         <div className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
           {t('reports.reportedBy')}
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5">
+        <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-surface-1 px-4 py-3.5">
           <Avatar name={report.reportedByName ?? '?'} size={34} circle shadow={false} />
           <div className="min-w-0">
             <div className="truncate text-[14px] font-bold">
@@ -121,7 +121,7 @@ export const ReportDrawer = createCallable<
         </div>
 
         {report.message ? (
-          <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5 text-[13.5px] leading-[1.5] text-white/80">
+          <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/[0.07] bg-surface-1 px-4 py-3.5 text-[13.5px] leading-[1.5] text-white/80">
             {report.message}
           </div>
         ) : (
@@ -185,4 +185,4 @@ export const ReportDrawer = createCallable<
 }, 400);
 
 // The drawers' darker fill, kept from the hand-rolled asides they replace.
-const DRAWER_FILL = { backgroundColor: '#0E0E12' } as const;
+const DRAWER_FILL = { backgroundColor: color('bg') } as const;

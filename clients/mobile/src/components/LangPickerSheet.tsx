@@ -10,7 +10,7 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import { LANG_OFF, langOptions, offeredLang } from '@kroma/core';
-import { Box, color, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, color, Icon, styles, Text } from '@kroma/ui/kit';
 import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -168,7 +168,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
               onPress={() => onPick(item.value)}
             />
           )}
-          ListEmptyComponent={<Txt style={s.empty}>{t('search.noResults')}</Txt>}
+          ListEmptyComponent={<Text style={s.empty}>{t('search.noResults')}</Text>}
         />
       </BottomSheetModal>
     );
@@ -188,11 +188,11 @@ function LangRow({
       accessibilityState={{ selected: active }}
       style={({ pressed }) => [s.row, ruled && s.ruled, pressed && s.rowPressed]}
     >
-      <Txt lines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
+      <Text lines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
         {row.label}
-      </Txt>
+      </Text>
       {active ? <Icon name="check" size={17} stroke={2.4} color="accentText" /> : null}
-      {row.code && !active ? <Txt style={s.rowCode}>{row.code.toUpperCase()}</Txt> : null}
+      {row.code && !active ? <Text style={s.rowCode}>{row.code.toUpperCase()}</Text> : null}
     </Pressable>
   );
 }

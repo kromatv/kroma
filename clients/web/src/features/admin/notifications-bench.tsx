@@ -16,7 +16,7 @@ import {
   Row,
   Select,
   Surface,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
@@ -78,44 +78,45 @@ export function NotificationBench() {
   return (
     <div className="mt-6 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
       <Surface elevated pad="none" radius={16} px={22} py={20} gap={16} minW={0}>
-        <Field
-          icon="tag"
-          label={t('admin.notifFieldTitle')}
-          value={draft.title}
-          onChange={(v) => edit({ title: v })}
-          placeholder={t('admin.notifTitlePlaceholder')}
-        />
+        <Field.Root label={t('admin.notifFieldTitle')}>
+          <Field.Input
+            icon="tag"
+            value={draft.title}
+            onValueChange={(v) => edit({ title: v })}
+            placeholder={t('admin.notifTitlePlaceholder')}
+          />
+        </Field.Root>
 
-        <Field
-          label={t('admin.notifFieldBody')}
-          multiline
-          rows={3}
-          value={draft.body}
-          onChange={(v) => edit({ body: v })}
-          placeholder={t('admin.notifBodyPlaceholder')}
-        />
+        <Field.Root label={t('admin.notifFieldBody')}>
+          <Field.Textarea
+            rows={3}
+            value={draft.body}
+            onValueChange={(v) => edit({ body: v })}
+            placeholder={t('admin.notifBodyPlaceholder')}
+          />
+        </Field.Root>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t('admin.notifFieldCategory')} minW={0}>
-            <Select
-              block
+          <Field.Root label={t('admin.notifFieldCategory')} minW={0}>
+            <Select.Root
               label={t('admin.notifFieldCategory')}
               value={draft.category}
-              onChange={(v) => edit({ category: v as Category })}
-              options={(Object.keys(NOTIFICATION_CATEGORY_LABEL) as Category[]).map((c) => ({
-                value: c,
-                label: t(NOTIFICATION_CATEGORY_LABEL[c]),
-              }))}
+              onValueChange={(v) => edit({ category: v as Category })}
+            >
+              <Select.Trigger block />
+              {(Object.keys(NOTIFICATION_CATEGORY_LABEL) as Category[]).map((c) => (
+                <Select.Item key={c} value={c} label={t(NOTIFICATION_CATEGORY_LABEL[c])} />
+              ))}
+            </Select.Root>
+          </Field.Root>
+          <Field.Root label={t('admin.notifFieldLink')} minW={0}>
+            <Field.Input
+              icon="link"
+              value={draft.link}
+              onValueChange={(v) => edit({ link: v })}
+              placeholder="/movie/…"
             />
-          </Field>
-          <Field
-            icon="link"
-            label={t('admin.notifFieldLink')}
-            value={draft.link}
-            onChange={(v) => edit({ link: v })}
-            placeholder="/movie/…"
-            minW={0}
-          />
+          </Field.Root>
         </div>
 
         <NotificationImageField
@@ -126,15 +127,15 @@ export function NotificationBench() {
 
       <div className="xl:sticky xl:top-5">
         <Surface elevated pad="none" radius={16} p={20} gap={16}>
-          <Txt variant="label">{t('admin.notifPreview')}</Txt>
+          <Text variant="label">{t('admin.notifPreview')}</Text>
           <PreviewRow draft={draft} empty={t('admin.notifTitlePlaceholder')} />
 
           <Divider />
 
           <Box gap={10}>
-            <Txt variant="meta" color="textDim">
+            <Text variant="meta" color="textDim">
               {t('admin.notifTestTarget')}
-            </Txt>
+            </Text>
             <ChoiceList.Root
               label={t('admin.notifTestTarget')}
               value={target}
@@ -159,9 +160,9 @@ export function NotificationBench() {
           {target === 'everyone' ? (
             <Row gap={10} align="flex-start" bg="accent/12" radius={10} px={12} py={10}>
               <Icon name="alert-triangle" size={16} color="accent" />
-              <Txt variant="meta" color="accent" style={NOTE}>
+              <Text variant="meta" color="accent" style={NOTE}>
                 {t('admin.notifTestEveryoneWarning')}
-              </Txt>
+              </Text>
             </Row>
           ) : null}
 
@@ -175,19 +176,19 @@ export function NotificationBench() {
           />
 
           {sent !== null ? (
-            <Txt variant="meta" color={sent > 0 ? 'success' : 'textDim'} style={CENTRED}>
+            <Text variant="meta" color={sent > 0 ? 'success' : 'textDim'} style={CENTRED}>
               {sent > 0 ? t('admin.notifTestSent', { n: sent }) : t('admin.notifTestMuted')}
-            </Txt>
+            </Text>
           ) : null}
           {error ? (
-            <Txt variant="meta" color="danger" style={CENTRED}>
+            <Text variant="meta" color="danger" style={CENTRED}>
               {error}
-            </Txt>
+            </Text>
           ) : null}
 
-          <Txt variant="meta" color="textDim">
+          <Text variant="meta" color="textDim">
             {t('admin.notifSendHint')}
-          </Txt>
+          </Text>
         </Surface>
       </div>
     </div>
@@ -204,7 +205,7 @@ function PreviewRow({ draft, empty }: Readonly<{ draft: Draft; empty: string }>)
   const art = draft.imageUrl ? kromaClient().resolveArt(draft.imageUrl) : null;
   return (
     <NotificationCard
-      className="rounded-xl bg-surface-2"
+      className="rounded-xl bg-surface-2 p-2.5 pl-2"
       event="custom"
       src={art}
       unread

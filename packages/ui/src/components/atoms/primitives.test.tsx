@@ -23,7 +23,7 @@ import { Icon } from './icon';
 import { IconButton } from './icon-button';
 import { clamp01, Progress } from './progress';
 import { Skeleton } from './skeleton';
-import { Txt } from './text';
+import { Text } from './text';
 import { TextArea } from './text-area';
 import { TextField } from './text-field';
 
@@ -247,7 +247,11 @@ describe('TextField', () => {
 describe('TextArea', () => {
   it('is a real multi-line entry, named by its field, reporting what is typed', () => {
     const onChange = vi.fn();
-    render(<Field label="Message" multiline rows={3} physicalKeyboard onChange={onChange} />);
+    render(
+      <Field.Root label="Message">
+        <Field.Textarea rows={3} physicalKeyboard onValueChange={onChange} />
+      </Field.Root>,
+    );
     const entry = screen.getByLabelText('Message');
     expect(entry.tagName).toBe('TEXTAREA');
     // `rows` is a floor in the kit's own line box, not a DOM rows attribute:
@@ -415,12 +419,12 @@ describe('Skeleton', () => {
   });
 });
 
-describe('Txt', () => {
+describe('Text', () => {
   it('applies the design type role and palette colour', () => {
     render(
-      <Txt variant="h1" color="accent">
+      <Text variant="h1" color="accent">
         Films
-      </Txt>,
+      </Text>,
     );
     const el = screen.getByText('Films');
     expect(css(el).fontSize).toBe('38px');
@@ -429,12 +433,12 @@ describe('Txt', () => {
 
   it('rescales the line height when a style overrides the font size', () => {
     // Keeping the role's absolute line height would clip the glyph on native.
-    render(<Txt style={{ fontSize: 28 }}>1</Txt>);
+    render(<Text style={{ fontSize: 28 }}>1</Text>);
     expect(css(screen.getByText('1')).lineHeight).toBe('43px');
   });
 
   it('leaves an explicit line height alone', () => {
-    render(<Txt style={{ fontSize: 28, lineHeight: 30 }}>2</Txt>);
+    render(<Text style={{ fontSize: 28, lineHeight: 30 }}>2</Text>);
     expect(css(screen.getByText('2')).lineHeight).toBe('30px');
   });
 
@@ -442,20 +446,49 @@ describe('Txt', () => {
     // The overline is authored in em; keeping 13px's absolute tracking at 14px
     // is the drift that had every 10-foot screen writing the style by hand.
     render(
-      <Txt variant="overlineTv" style={{ fontSize: 14 }}>
+      <Text variant="overlineTv" style={{ fontSize: 14 }}>
         3
-      </Txt>,
+      </Text>,
     );
     expect(css(screen.getByText('3')).letterSpacing).toBe('3.08px');
   });
 
   it('leaves an explicit tracking alone', () => {
     render(
-      <Txt variant="overlineTv" style={{ fontSize: 14, letterSpacing: 1 }}>
+      <Text variant="overlineTv" style={{ fontSize: 14, letterSpacing: 1 }}>
         4
-      </Txt>,
+      </Text>,
     );
     expect(css(screen.getByText('4')).letterSpacing).toBe('1px');
+  });
+
+  it('lays a string out from the shorthand vocabulary', () => {
+    render(
+      <Text mt={24} px={8} maxW={640} textAlign="center">
+        Sur le vif
+      </Text>,
+    );
+    const el = screen.getByText('Sur le vif');
+    expect(css(el).marginTop).toBe('24px');
+    expect(css(el).paddingLeft).toBe('8px');
+    expect(css(el).maxWidth).toBe('640px');
+    expect(css(el).textAlign).toBe('center');
+  });
+
+  it('keeps the shorthands off the host element', () => {
+    render(<Text maxW={200}>Rien</Text>);
+    const el = screen.getByText('Rien');
+    expect(el.getAttribute('maxW')).toBeNull();
+    expect(el.getAttribute('textAlign')).toBeNull();
+  });
+
+  it('still lets `style` win over a shorthand', () => {
+    render(
+      <Text mt={24} style={{ marginTop: 4 }}>
+        Dernier mot
+      </Text>,
+    );
+    expect(css(screen.getByText('Dernier mot')).marginTop).toBe('4px');
   });
 });
 

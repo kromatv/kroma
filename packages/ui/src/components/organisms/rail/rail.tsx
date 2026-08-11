@@ -2,56 +2,17 @@
 // A rail IS a row: the spatial navigator moves between rows vertically and
 // inside one horizontally, so nothing needs measuring for that to hold.
 //
-// <FocusRail> keeps the focused tile in view on every target, including
-// browser TVs with no OS focus engine. It exists separately from the
-// navigator's own handling because React 19 spreads `ref` like any other
-// prop: the navigator's ref and <Focusable>'s own ref on the same view can't
-// coexist, and the last one written silently wins.
-//
-// A rail also mounts only what is reachable: benchmarked under CPU throttling,
-// mounting every tile of a dozen home rails collapses frame rate, so a rail
-// starts with a screenful and grows as focus approaches its end, never
-// unmounting what's already been reached (the navigator can only move to a
-// node that exists).
+// Yoga has no `order`, so the Root sorts its direct children once - the same
+// shape <PageHeader> and <ListRow> take - and publishes the two measurements a
+// heading and a row have to agree on through context.
 
-import { Children, type ReactElement, type ReactNode, useMemo } from 'react';
-import { ScrollView, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import { SpatialNavigationNode, SpatialNavigationView } from 'react-tv-space-navigation';
+import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import type { StyleProp, TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
-import { VirtualRail } from '#ui/components/organisms/virtual';
-import { gutter, RING_ROOM } from '#ui/core/tokens';
-import { useInsideFocusScope } from '#ui/lib/focus-presence';
-import { FocusRail } from '#ui/lib/focus-scroll';
-import { useGrowingCount } from '#ui/lib/use-growing-count';
-
-interface RailProps {
-  title?: string;
-  /** Override the title's type. The home rows run larger than the default h2. */
-  titleStyle?: StyleProp<TextStyle>;
-  gap?: number;
-  /** Defaults to the overscan-safe 10-foot gutter, applied inside the
-   *  scroller so the first tile's focus ring is never clipped by the
-   *  viewport edge. */
-  inset?: number;
-  /**
-   * Virtualise this rail: pass the tile pitch (its width plus the gap after
-   * it) and the row's height, since the list positions tiles rather than
-   * laying them out. Opt-in per call site — worth it only for long rows; a
-   * short strip (chips, cast faces) is cheaper mounted whole.
-   */
-  item?: { width: number; height: number };
-  /**
-   * Mount every child at once instead of a chunk at a time. The growing
-   * window suits a rail of dozens of posters where only a few are ever
-   * visible; a short strip of controls (e.g. sort + genre chips) should pass
-   * `grow={false}` so it doesn't open showing just its first chunk.
-   */
-  grow?: boolean;
-  children: ReactNode;
-}
-
-const RAIL_CHUNK = 8;
+import { Text } from '#ui/components/atoms/text';
+import { gutter, type TypeRole } from '#ui/core/tokens';
+import { RailContext, useRail } from './rail-context';
+import { GrowingRow, List, type RailListProps } from './rail-row';
 
 /**
  * A rail's gap between tiles. Tighter than what a focused tile puts outside
@@ -59,121 +20,99 @@ const RAIL_CHUNK = 8;
  * that), so a focused tile reaches over its neighbours - which is why the cell
  * holding the focus is lifted above them rather than fenced off from them.
  */
-export const RAIL_GAP = 16;
+const RAIL_GAP = 16;
 
-function Rail({
+interface RailTitleProps {
+  /** The heading's type role. The home rows run larger than the default h2. */
+  variant?: TypeRole;
+  style?: StyleProp<TextStyle>;
+  children: ReactNode;
+}
+
+/** The row's heading, inset to the same gutter its first tile starts at. */
+function Title({ variant = 'h2', style, children }: Readonly<RailTitleProps>) {
+  const { inset } = useRail('Title');
+  return (
+    <Text variant={variant} style={[{ paddingLeft: inset }, style]}>
+      {children}
+    </Text>
+  );
+}
+
+interface RailRootProps {
+  /** Sugar for a `<Rail.Title>`, so the common row is one line. */
+  title?: string;
+  gap?: number;
+  /** Defaults to the overscan-safe 10-foot gutter, applied inside the
+   *  scroller so the first tile's focus ring is never clipped by the
+   *  viewport edge. */
+  inset?: number;
+  /**
+   * Mount every tile at once instead of a chunk at a time. The growing window
+   * suits a rail of dozens of posters where only a few are ever visible; a
+   * short strip of controls (e.g. sort + genre chips) should pass
+   * `grow={false}` so it doesn't open showing just its first chunk. It says
+   * nothing about a `<Rail.List>`, which windows itself.
+   */
+  grow?: boolean;
+  /** A `<Rail.Title>` and a `<Rail.List>` must be DIRECT children to take
+   *  their slot; every other child is a tile of the growing row. Given a
+   *  `<Rail.List>`, it IS the row and stray tiles beside it are dropped. */
+  children?: ReactNode;
+}
+
+interface Sorted {
+  title: ReactNode[];
+  list: ReactNode[];
+  tiles: ReactNode[];
+}
+
+function sort(children: ReactNode): Sorted {
+  const at: Sorted = { title: [], list: [], tiles: [] };
+  for (const child of Children.toArray(children)) {
+    const part = isValidElement(child) ? child.type : null;
+    if (part === Title) at.title.push(child);
+    else if (part === List) at.list.push(child);
+    else at.tiles.push(child);
+  }
+  return at;
+}
+
+function Root({
   title,
-  titleStyle,
   gap = RAIL_GAP,
   inset = gutter.tv,
-  item,
-  grow: growing = true,
+  grow = true,
   children,
-}: Readonly<RailProps>) {
-  const tiles = useMemo(() => Children.toArray(children), [children]);
-  // `grow={false}` asks for the whole strip up front: one chunk big enough to
-  // hold it, so `isNearEnd` never fires.
-  const { count, isNearEnd, grow } = useGrowingCount(
-    tiles.length,
-    growing ? RAIL_CHUNK : tiles.length,
-  );
-  // Same rule as <Focusable>: no navigator above means this is a thumb (or a
-  // bare web page), not a remote.
-  const scoped = useInsideFocusScope();
-  const heading = title ? (
-    <Txt variant="h2" style={[{ paddingLeft: inset }, titleStyle]}>
-      {title}
-    </Txt>
-  ) : null;
-
-  // Only the tiles near the viewport exist, so a row of forty costs what a
-  // row of eight costs. The list translates the whole content and parks the
-  // focused tile at the content's origin, so the left inset keeps it off the
-  // screen edge.
-  if (item) {
-    return (
-      <Box gap={16}>
-        {heading}
-        <VirtualRail
-          data={tiles}
-          itemWidth={item.width}
-          // The pitch is the cell; a tile fills it (every kit tile is width
-          // 100% by default), and the gap is padding applied by the cell
-          // itself so a tile stays one view.
-          renderItem={(tile) => tile as ReactElement}
-          gap={gap}
-          style={{ height: item.height + RING_ROOM * 2 }}
-          // Right padding stops the last tile sitting flush against the edge
-          // once the row is walked to its end.
-          contentStyle={{ paddingLeft: inset, paddingRight: inset, paddingVertical: RING_ROOM }}
-        />
-      </Box>
-    );
-  }
-
-  // No navigator: a plain scrolled row. Everything mounts at once — the
-  // unscoped rails are the short ones (chip strips, cast faces); a long
-  // uniform row should pass `item` and virtualise instead.
-  if (!scoped) {
-    return (
-      <Box gap={16}>
-        {heading}
-        <ScrolledRow contentStyle={{ gap, paddingHorizontal: inset, paddingVertical: 12 }}>
-          {tiles}
-        </ScrolledRow>
-      </Box>
-    );
-  }
-
+}: Readonly<RailRootProps>) {
+  const ctx = useMemo(() => ({ gap, inset }), [gap, inset]);
+  const at = useMemo(() => sort(children), [children]);
   return (
-    <Box gap={16}>
-      {heading}
-      <FocusRail
-        // Keeps the focused tile off the very edge, so there is always a hint of
-        // the next one.
-        offsetFromStart={inset}
-      >
-        {/* The scroller scrolls; this is the row itself. A focus ring is drawn
-            OUTSIDE the tile's box and a focused tile scales up, so it needs
-            vertical room or the ring is clipped. */}
-        <SpatialNavigationView
-          direction="horizontal"
-          style={{ gap, paddingHorizontal: inset, paddingVertical: 12 }}
-        >
-          {/* Each tile gets a node keyed by its POSITION, and that is not
-              ceremony: the navigator registers nodes in the order they mount,
-              and a rail's tiles arrive as the data does. Without a stable slot
-              per position, Right walks the row in the order the server answered
-              rather than the order you can see. */}
-          {tiles.slice(0, count).map((child, index) => (
-            // `onActive`, not `onFocus`: this node is a container, and its tile
-            // is what takes the focus. A container asked for `onFocus` is a
-            // focusable that can never be focused, and the remote dies on it.
-            // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity here - it is the slot in the row.
-            <SpatialNavigationNode key={index} onActive={isNearEnd(index) ? grow : undefined}>
-              {child as ReactElement}
-            </SpatialNavigationNode>
-          ))}
-        </SpatialNavigationView>
-      </FocusRail>
-    </Box>
+    <RailContext.Provider value={ctx}>
+      <Box gap={16}>
+        {title === undefined ? null : <Title>{title}</Title>}
+        {at.title}
+        {at.list.length > 0 ? at.list : <GrowingRow grow={grow}>{at.tiles}</GrowingRow>}
+      </Box>
+    </RailContext.Provider>
   );
 }
 
-function ScrolledRow({
-  contentStyle,
-  children,
-}: Readonly<{ contentStyle: ViewStyle; children: ReactNode }>) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={contentStyle}
-    >
-      {children}
-    </ScrollView>
-  );
-}
+/**
+ * A titled horizontal row of tiles.
+ *
+ * ```tsx
+ * <Rail.Root title="Reprendre">{cards}</Rail.Root>
+ *
+ * <Rail.Root>
+ *   <Rail.Title variant="subheadingTv">Reprendre</Rail.Title>
+ *   <Rail.List pitch={320 + RAIL_GAP} height={180}>
+ *     {cards}
+ *   </Rail.List>
+ * </Rail.Root>
+ * ```
+ */
+const Rail = { Root, Title, List };
 
-export type { RailProps };
-export { Rail };
+export type { RailListProps, RailRootProps, RailTitleProps };
+export { RAIL_GAP, Rail };

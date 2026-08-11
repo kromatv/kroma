@@ -1,6 +1,6 @@
 import type { AuthResult, KromaClient, MessageKey, QuickConnectInit } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Spinner, SvgXml, styles, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Spinner, SvgXml, styles, Text, useFocusNav } from '@kroma/ui/kit';
 // Static import on purpose: Metro has no code splitting, and a dynamic `import()`
 // throws "Expected HMRClient.setup() call at startup" without the dev server.
 import qrcode from 'qrcode-generator';
@@ -108,12 +108,9 @@ export function TvQuickConnect() {
       <Box mb={36}>
         <KromaMark size={GATE_MARK} />
       </Box>
-      <Txt
-        variant="hero"
-        style={{ fontSize: 44, lineHeight: 44, fontWeight: '600', marginBottom: 16 }}
-      >
+      <Text variant="titleTv" mb={16}>
         {t('connect.quickConnect')}
-      </Txt>
+      </Text>
       <Box
         row
         align="center"
@@ -123,41 +120,34 @@ export function TvQuickConnect() {
         py={9}
         radius="pill"
         border="border"
-        bg="rgba(255, 255, 255, 0.05)"
+        bg="white/5"
       >
         <Box w={8} h={8} radius="pill" bg="accent" />
-        <Txt style={{ fontSize: 15, fontWeight: '600' }} color="rgba(244, 243, 240, 0.88)">
+        <Text variant="label" color="text/88">
           {activeServerName ?? 'KROMA'}
-        </Txt>
+        </Text>
       </Box>
 
-      {error ? (
-        <Txt style={{ fontSize: 16 }} color="danger">
-          {t(error)}
-        </Txt>
-      ) : null}
+      {error ? <Text color="danger">{t(error)}</Text> : null}
 
       {!error && info ? (
         <>
           {qr ? (
-            <Box w={280} h={280} center radius={28} bg="#FFFFFF" p={20} shadow="pop">
+            <Box w={280} h={280} center radius={28} bg="white" p={20} shadow="pop">
               <SvgXml xml={qr} width="100%" height="100%" />
             </Box>
           ) : null}
-          <Txt style={{ fontSize: 17, fontWeight: '500', marginTop: 20 }} color="textDim">
+          <Text variant="leadTv" mt={20} color="textDim">
             {t('connect.scanQrConnected')}
-          </Txt>
-          <Txt
-            style={{ fontSize: 17, fontWeight: '500', marginTop: 24, textAlign: 'center' }}
-            color="textMuted"
-          >
+          </Text>
+          <Text variant="leadTv" mt={24} textAlign="center" color="textMuted">
             {t('connect.orInAppPrefix')}
-            <Txt style={{ fontSize: 17, fontWeight: '700' }}>{t('nav.connectDevice')}</Txt>
+            <Text variant="strongTv">{t('nav.connectDevice')}</Text>
             {t('connect.orInAppSuffix')}
-          </Txt>
-          <Txt style={s.code} color="accentText">
+          </Text>
+          <Text style={s.code} color="accentText">
             {info.code}
-          </Txt>
+          </Text>
           <Box
             row
             align="center"
@@ -166,21 +156,21 @@ export function TvQuickConnect() {
             px={18}
             py={10}
             radius="pill"
-            border="rgba(70, 208, 141, 0.25)"
-            bg="rgba(70, 208, 141, 0.1)"
+            border="success/25"
+            bg="success/10"
           >
             <Box w={9} h={9} radius="pill" bg="success" />
-            <Txt style={{ fontSize: 14, fontWeight: '600' }} color="success">
+            <Text variant="label" color="success">
               {t('connect.waitingApproval')}
-            </Txt>
+            </Text>
           </Box>
         </>
       ) : null}
       {!error && !info ? <Spinner size={40} thickness={3} /> : null}
 
-      <Txt style={{ fontSize: 15, fontWeight: '500', marginTop: 24 }} color="textDim">
+      <Text variant="meta" mt={24} color="textDim">
         {t('connect.backToProfiles')}
-      </Txt>
+      </Text>
     </AuthScreen>
   );
 }

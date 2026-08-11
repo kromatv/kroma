@@ -16,7 +16,7 @@ import { Box, Column, Row } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Icon } from '#ui/components/atoms/icon';
 import { Img } from '#ui/components/atoms/img';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { CopyButton } from '#ui/components/molecules/copy-button';
 import { EmptyState } from '#ui/components/molecules/empty-state';
 import { PageMain } from '#ui/lib/landmark';
@@ -70,37 +70,37 @@ function Hero({ module: m }: Readonly<{ module: ModuleEntry }>) {
       </Box>
       <Column gap={10} grow={1} shrink={1} basis={320} minW={0}>
         <Row gap={10} align="baseline" wrap>
-          <Txt variant="h1">{m.name}</Txt>
+          <Text variant="h1">{m.name}</Text>
           <Badge tone="neutral">v{m.version}</Badge>
           {m.library ? <Badge tone="info">Library</Badge> : null}
         </Row>
         <Row gap={8}>
           <Box shrink={1} minW={0}>
-            <Txt color="textDim" font="mono" lines={1}>
+            <Text color="textDim" font="mono" lines={1}>
               {m.id}
-            </Txt>
+            </Text>
           </Box>
           <Box shrink={0}>
             <CopyButton value={m.id} label="Copy id" iconOnly />
           </Box>
         </Row>
-        {m.description ? <Txt color="textMuted">{m.description}</Txt> : null}
+        {m.description ? <Text color="textMuted">{m.description}</Text> : null}
         {m.minServer || deps.length > 0 ? (
           <Row gap={12} wrap align="center">
             {m.minServer ? (
               <Row gap={6}>
                 <Icon name="server" size={14} color="textDim" />
-                <Txt color="textDim" variant="meta">
+                <Text color="textDim" variant="meta">
                   KROMA {m.minServer}+
-                </Txt>
+                </Text>
               </Row>
             ) : null}
             {deps.map((dep) => (
               <Row gap={6} key={dep.id}>
                 <Icon name="packages" size={14} color="textDim" />
-                <Txt color="textDim" variant="meta">
+                <Text color="textDim" variant="meta">
                   {dep.range ? `${dep.id} ${dep.range}` : dep.id}
-                </Txt>
+                </Text>
               </Row>
             ))}
           </Row>
@@ -117,7 +117,7 @@ function ModulePage() {
   if (!module) {
     return (
       <Page registry={registry}>
-        <EmptyState
+        <EmptyState.Root
           icon="package-off"
           title="No such module"
           hint={`The registry does not list ${id}.`}

@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import type { ControlId, Overlay, Zone } from '../lib/nav';
+import type { PlayerCloseReason } from '../types';
 
 const HIDE_MS = 3500;
 
@@ -27,8 +28,9 @@ export interface PlayerNavActions {
   /** Hand this film to a TV. Only reachable when `flags.cast` is on, which the
    *  host sets while a receiver is live. */
   onCast?(): void;
-  /** Leave the player (Back at the top level, or the Stop media key). */
-  onExit(): void;
+  /** Leave the player, told why: OK on the back button, Back at the top level,
+   *  or the Stop media key. */
+  onExit(reason: PlayerCloseReason): void;
 }
 
 export interface PlayerNav {
@@ -83,7 +85,7 @@ function handleMediaKey(key: RemoteKey, a: PlayerNavActions): boolean {
       a.seekNudge(1);
       return true;
     case 'Stop':
-      a.onExit();
+      a.onExit('stop');
       return true;
     default:
       return false;
@@ -134,12 +136,12 @@ function handleDpadKey(key: RemoteKey, ctx: DpadContext): void {
       else ctx.setControlIndex((i) => Math.min(ctx.controlsLen - 1, i + 1));
       return;
     case 'Enter':
-      if (zone === 'back') a.onExit();
+      if (zone === 'back') a.onExit('close');
       else if (zone === 'progress') a.togglePlay();
       else if (focused) ctx.activate(focused);
       return;
     case 'Back':
-      a.onExit();
+      a.onExit('back');
       return;
   }
 }

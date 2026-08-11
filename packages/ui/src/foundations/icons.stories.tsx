@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { iconNames } from '#ui/lib/glyph';
 
@@ -35,25 +35,25 @@ export default story({
     const shown = matches.slice(0, PAGE);
     return (
       <Box gap={20}>
-        <Txt variant="meta" color="textDim">
+        <Text variant="meta" color="textDim">
           {`${matches.length} of ${all.length} glyphs${
             matches.length > shown.length ? `, showing the first ${PAGE}` : ''
           }`}
-        </Txt>
+        </Text>
         <Box row wrap gap={20}>
           {shown.map((name) => (
             <Box key={name} w={104} align="center" gap={8}>
               <Icon name={name} size={size} />
-              <Txt variant="meta" color="textDim" lines={1} style={s.caption}>
+              <Text variant="meta" color="textDim" lines={1} style={s.caption}>
                 {name}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>
         {shown.length === 0 ? (
-          <Txt variant="meta" color="textDim">
+          <Text variant="meta" color="textDim">
             {`No glyph matches "${find}".`}
-          </Txt>
+          </Text>
         ) : null}
       </Box>
     );

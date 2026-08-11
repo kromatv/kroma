@@ -6,7 +6,7 @@ import {
   setTheme,
   styles,
   sv,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import type { ColorToken } from '@kroma/ui/tokens';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
@@ -55,7 +55,7 @@ function shotStage(at: {
   width: number;
 }): ReactNode {
   if (at.listOnly) {
-    return <Txt>{`KROMA_STORY_IDS:${at.stories.map((entry) => entry.id).join(',')}`}</Txt>;
+    return <Text>{`KROMA_STORY_IDS:${at.stories.map((entry) => entry.id).join(',')}`}</Text>;
   }
   // A story that declares a width measures itself and has to be given one;
   // measured against the window, because a shot has no stage card.
@@ -285,12 +285,12 @@ function NavDrawer({ onClose, children }: Readonly<{ onClose: () => void; childr
 function StoryHeading({ story, layout }: Readonly<{ story: Story; layout: WorkbenchLayout }>) {
   return (
     <Box px={layout.gutter} pt={layout.mode === 'compact' ? 16 : 22} gap={4}>
-      <Txt variant="overline" color="accent">
+      <Text variant="overline" color="accent">
         {story.group}
-      </Txt>
-      <Txt variant="title" style={layout.mode === 'compact' ? s.titleCompact : s.title} lines={1}>
+      </Text>
+      <Text variant="title" style={layout.mode === 'compact' ? s.titleCompact : s.title} lines={1}>
         {story.name}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -365,9 +365,9 @@ function Tabs({
                   {tab.demo ? (
                     <Box w={5} h={5} radius="pill" bg={tabInk(active, focused, 'accent')} />
                   ) : null}
-                  <Txt variant="meta" color={tabInk(active, focused, 'text')} style={s.tabLabel}>
+                  <Text variant="meta" color={tabInk(active, focused, 'text')} style={s.tabLabel}>
                     {tab.name}
-                  </Txt>
+                  </Text>
                 </Box>
               )}
             </Focusable>
@@ -394,12 +394,12 @@ function CodeBar({
         style={{ paddingHorizontal: layout.gutter }}
       >
         <Box row align="center" gap={8}>
-          <Txt variant="overline" color={open ? 'accent' : 'textDim'}>
+          <Text variant="overline" color={open ? 'accent' : 'textDim'}>
             Code
-          </Txt>
-          <Txt variant="meta" color="textDim" style={s.codeHint}>
+          </Text>
+          <Text variant="meta" color="textDim" style={s.codeHint}>
             {open ? '▾' : '▸'}
-          </Txt>
+          </Text>
         </Box>
       </Focusable>
       {/* No scroller of its own: <CodeBlock> owns both axes. */}

@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { StatusDot } from './status-dot';
 
 export default story({
@@ -36,9 +36,9 @@ export default story({
           ].map((s) => (
             <Box key={s.label} row align="center" gap={8}>
               <StatusDot online={s.online} size={size} overArt={overArt} />
-              <Txt variant="meta" color="textDim">
+              <Text variant="meta" color="textDim">
                 {s.label}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>

@@ -5,6 +5,7 @@
 
 import { apiErrorText, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { type IconName, IconWell, ListRow } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -31,27 +32,21 @@ export function Panel({
   );
 }
 
-/** A preference row inside a {@link Panel}: an amber-tinted icon, a label with a
- * muted description, and a right-aligned control (a select or a button). */
+/** A preference row inside a {@link ListRow.Group}: an amber-tinted glyph, a
+ * label with a muted description, and a right-aligned control. */
 export function PrefRow({
   icon,
   label,
   desc,
   control,
-}: Readonly<{ icon: ReactNode; label: string; desc: string; control: ReactNode }>) {
+}: Readonly<{ icon: IconName; label: string; desc: string; control: ReactNode }>) {
   return (
-    <div className="flex items-center justify-between gap-5 px-5.5 py-4">
-      <div className="flex min-w-0 items-center gap-3.5">
-        <span className="flex size-8.5 flex-none items-center justify-center rounded-lg bg-accent-soft text-accent">
-          {icon}
-        </span>
-        <div className="min-w-0">
-          <div className="text-[14.5px] font-bold text-text">{label}</div>
-          <div className="mt-0.5 text-[12.5px] text-muted">{desc}</div>
-        </div>
-      </div>
-      <div className="flex-none">{control}</div>
-    </div>
+    <ListRow.Root size="md" label={label} hint={desc}>
+      <ListRow.Leading>
+        <IconWell name={icon} size="sm" tone="accent" />
+      </ListRow.Leading>
+      <ListRow.Trailing>{control}</ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
@@ -75,7 +70,7 @@ export function passwordStrength(pw: string): Strength {
   const score = Math.max(1, s) as 1 | 2 | 3 | 4;
   const map = {
     1: { width: '25%', color: 'var(--kroma-danger)', labelKey: 'account.passwordStrengthWeak' },
-    2: { width: '50%', color: '#E8A23B', labelKey: 'account.passwordStrengthFair' },
+    2: { width: '50%', color: 'var(--kroma-accent)', labelKey: 'account.passwordStrengthFair' },
     3: { width: '75%', color: 'var(--kroma-info)', labelKey: 'account.passwordStrengthGood' },
     4: { width: '100%', color: 'var(--kroma-success)', labelKey: 'account.passwordStrengthStrong' },
   } as const;

@@ -1,5 +1,5 @@
 import { story } from '@kroma/workbench/story';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Box } from './box';
 
 export default story({
@@ -7,7 +7,7 @@ export default story({
   group: 'Layout',
   docs: "The layout atom, and the most-used component in the kit. React Native has no `className`, and a screen written as a StyleSheet lookup table reads terribly, so `<Box>` takes the design's vocabulary as props instead. Sizes are plain **numbers** on purpose: every TV screen is authored against the fixed 1920x1080 stage, so a number IS the design's px value. Only what genuinely is a token — colour, radius, elevation — takes a token name.",
   usage: `<Box row center gap={12} px={64} py={24} bg="surface1" radius="lg" flex>
-  <Txt>Anything</Txt>
+  <Text>Anything</Text>
 </Box>`,
   guidelines: {
     do: [
@@ -38,7 +38,7 @@ export default story({
     <Box {...props} radius={radius as 'lg'} bg={bg as 'surface1'}>
       {['One', 'Two', 'Three'].map((label) => (
         <Box key={label} px={16} py={10} radius="md" bg="surface2">
-          <Txt variant="meta">{label}</Txt>
+          <Text variant="meta">{label}</Text>
         </Box>
       ))}
     </Box>

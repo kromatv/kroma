@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { sv, type Variant } from '#ui/core';
 
 type BadgeTone = Variant<typeof badgeVariants, 'tone'>;
@@ -56,7 +56,7 @@ function Badge({ tone = '4K', size = 'sm', children }: Readonly<BadgeProps>) {
   const s = badgeVariants({ tone: known, size });
   return (
     <Box style={s.root}>
-      <Txt style={s.label}>{children ?? tone}</Txt>
+      <Text style={s.label}>{children ?? tone}</Text>
     </Box>
   );
 }

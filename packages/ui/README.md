@@ -18,25 +18,26 @@ tile.
 
 ```
 src/
-  core/             the styling engine: the vocabulary, `sv`, themes (see "Styling")
-  core/tokens/      LEVEL 1  the raw values every other level is made of
-  components/atoms/         LEVEL 2  indivisible controls: Button, Txt, Icon, Switch...
-  ui/molecules/     LEVEL 3  named arrangements: PosterCard, Field, ListRow...
-  ui/organisms/     LEVEL 4  whole regions that behave: Rail, Dialog, Virtual...
-  ui/templates/     LEVEL 5  page skeletons with no data: TvStage
-                    LEVEL 6  pages are NOT here - they live in the app packages
-  lib/              the focus engine, pure maths
-  icons/            the icon set, resolved from Tabler by name (see "Icons")
-  workbench/        the component atelier: stories, demos, controls, matrix
-  player/           the unified player chrome (a family of organisms)
-  components/       the older DOM-only components the browser admin app still uses
+  core/                     the styling engine: the vocabulary, `sv`, themes (see "Styling")
+  core/tokens/              LEVEL 1  the raw values every other level is made of
+  components/atoms/         LEVEL 2  indivisible controls: Button, Text, Icon, Switch...
+  components/molecules/     LEVEL 3  named arrangements: PosterCard, Field, ListRow...
+  components/organisms/     LEVEL 4  whole regions that behave: Rail, Dialog, Player...
+  components/templates/     LEVEL 5  page skeletons with no data: TvStage
+                            LEVEL 6  pages are NOT here - they live in the app packages
+  lib/                      the focus engine, pure maths, the form runtime
+  lib/icons/                the icon set, resolved from Tabler by name (see "Icons")
+  foundations/              stories for what has no component: the palette, the type ramp
+  services/                 React contexts the shells share (auth, cast, i18n, playback)
+  styles/                   the CSS the web targets import, expanded by `kromaUI()`
+  assets/                   the fonts and the intro sting
 
 Every component is a FOLDER holding its code, its story, its demos and its tests.
 See src/components/README.md for the hierarchy and the three ways to import from it.
 ```
 
 ```tsx
-import { Box, Button, MediaCard, PosterCard, Txt } from '@kroma/ui/kit';
+import { Box, Button, MediaCard, PosterCard, Text } from '@kroma/ui/kit';
 
 <Box row center gap={16} px={64}>
   <Button variant="primary" size="tv" icon="player-play-filled" label="Lecture" />
@@ -59,29 +60,31 @@ component, its filename is its name. Helpers only one component uses live in tha
 file; helpers that are genuinely shared (pure maths, tokens, the focus engine)
 live in `lib/`.
 
-**Two tiers: primitives and molecules.** A **primitive** owns one visual idea and
-composes nothing but React Native hosts. It knows about tokens and about focus;
-it knows nothing about the app. A **molecule** composes primitives into an
-arrangement the design names: the scrim over a poster, the glyph well on a
-settings row, the rule that a field's error replaces its hint. It may know the
-shape of the data it lays out (a title, a progress fraction) but never where that
-data came from.
+**Four levels under `components/`**: atoms, molecules, organisms, templates, each
+knowing only the ones below it.
+[`src/components/README.md`](src/components/README.md) owns that hierarchy — what
+earns a place at each level, and how a component is shaped once it has one. It is
+the document to read before adding anything.
 
-The test for adding a molecule is simply: *has this arrangement now been written
+The test for moving up a level is simply: *has this arrangement now been written
 twice?* `ListRow` earned its place after the third copy.
 
-Both tiers are re-exported flat, so a consumer writes
+Every level is re-exported flat, so a consumer writes
 `import { Button, ListRow } from '@kroma/ui/kit'` and never has to care which
-tier something is in. The split is for the people editing the kit, not for the
+level something is at. The split is for the people editing the kit, not for the
 people using it.
 
 **The design is declared once, at the top of the file, with `sv`.** The whole
 styling engine — the vocabulary, recipes, interaction states, themes — has its
 own section below ("Styling").
 
-**Props carry their documentation.** Every non-obvious prop has a JSDoc line
-saying what it is FOR, not what it is. `focusScale` does not say "the focus
-scale"; it says which controls the design scales, and by how much.
+**Props carry their documentation** — the kit's one exception to the repo's
+no-comment default, because a component's props are the whole of its public API.
+A prop takes ONE line when its contract is not visible from its name and its
+type: a default, a unit, a fallback chain, how it interacts with another prop.
+`focusScale` does not say "the focus scale"; it says which controls the design
+scales, and by how much. A prop whose name already says it takes nothing. The
+rule and its limits live in [`CODE_STYLE.md`](../../CODE_STYLE.md).
 
 **`ref` is a plain prop.** React 19 forwards it without `forwardRef`, so
 components take it directly where a host node is useful.
@@ -109,6 +112,36 @@ treatment, derived from the theme's accent; declarations (not `<Box>`, which is
 a View) additionally take `text: 'label'` — a whole type role, spread under the
 layer so longhands beside it win — and `font: 'ui' | 'display'`.
 
+`<Text>` speaks the half of that vocabulary a React Native `Text` honours — the
+spacing, sizing and position rows, plus `textAlign` — so a string is laid out
+without a style object either:
+
+```tsx
+<Text variant="leadTv" textAlign="center" maxW={640} mt={24} color="textDim">
+```
+
+It does NOT take the container rows (`row`, `gap`, `align`) or the surface
+paints (`bg`, `radius`, `border`): a Text lays itself out, a Box lays out
+children. `textAlign` is spelled in full because `align` already means
+`alignItems` on `<Box>`, and one name means one role across the kit.
+
+**Type is set by a role, never at a call site.** There is no `size`/`weight`
+prop and `style={{ fontSize }}` is drift: if no role fits, the ramp is missing
+one. The ramp has a base tier and a 10-foot tier authored for three metres
+rather than scaled up from the phone's. `TV_RAMP` is the 10-foot ladder in
+order, 96 down to 13:
+
+| Face | Roles, largest first |
+| --- | --- |
+| `display` | `codeTv` 96 · `heroTv` 82 · `bannerTv` 59 · `titleTv` 44 · `headingTv` 32 · `subheadingTv` 28 |
+| `ui` | `bodyTv` 20 · `leadTv`/`labelTv`/`strongTv` 17 · `captionTv`/`metaTv`/`sectionTv` 15 · `footnoteTv`/`overlineTv` 13 |
+
+A step is a size AND its leading (and its tracking where the design has one),
+which is why a role carries a `ratio` rather than a second number to keep in
+step. Where one size holds several roles, they differ in weight and leading:
+`labelTv` is the 600 at 17, `strongTv` the 700. A one-off weight bump at a call
+site is legal; a one-off `fontSize` is not.
+
 Sizes are plain numbers, deliberately. Every TV screen is authored against the
 fixed 1920x1080 canvas (see below), so a number IS the design's px value: there
 is no scale to memorise. Only what genuinely IS a token (colour, radius,
@@ -117,6 +150,54 @@ elevation, type) takes a name.
 The whole vocabulary is one rule table in `core/shorthands.ts`; **adding a
 shorthand is adding a row**, and the `satisfies` link to `BoxStyleProps` makes
 forgetting one a compile error.
+
+### Responsive values
+
+Every value in the vocabulary can be stated per breakpoint instead of flat, so a
+screen that changes shape needs neither a raw `style` object nor a
+`useWindowDimensions()` branch at the call site:
+
+```tsx
+<Box px={{ base: 16, md: 40, lg: 64 }} row={{ base: false, md: true }} gap={{ base: 12, md: 24 }} />
+
+sv({ base: { p: { base: 12, lg: 24 } } })
+```
+
+| Step | From | What it is for |
+| --- | --- | --- |
+| `base` | 0 | a phone, and anything narrower than the next step |
+| `md` | 600 | a tablet in portrait, or a half-screen split view on one |
+| `lg` | 1024 | a desktop window, or a tablet in landscape |
+| `tv` | 1920 | the 10-foot stage, which IS `CANVAS.width`, and the widest desktop |
+
+Four steps, named once in `core/tokens/layout.ts` and closed on purpose: an
+augmentable set would make `{ base: 16, xl: 40 }` legal instead of a compile
+error.
+
+**Mobile-first.** `base` is mandatory and means "no minimum". A step holds until
+the next one the value itself names, and a missing middle step inherits from
+below, never from above: `{ base: 12, tv: 48 }` is still 12 at `md` and at `lg`.
+
+**The values are still values.** `bg={{ base: 'surface1', lg: 'surface2' }}`
+resolves tokens exactly as the flat form does, through the same rule table, so
+nothing is written raw to get it responsive.
+
+**Where the width comes from.** React Native has no media query, so the active
+breakpoint is a store fed by `Dimensions` at the app level, and it is NOT always
+the window's: `<TvStage>` scales a fixed 1920x1080 canvas to fit the panel, so on
+a television the design's width is the canvas (Android TV reports 960x540 dp for
+the same screen Tizen reports as 1920x1080). `Platform.isTV` pins that for the
+native TV shells; any other surface painting on a fixed stage states it once with
+`pinDesignWidth(CANVAS.width)`.
+
+**Who re-renders.** `<Box>` and `<Text>` follow a crossing by themselves, and
+only when they hold a breakpoint object. Anywhere else, `useBreakpoint()` is the
+subscription: it is what a recipe read by a component of your own needs, and what
+a decision no style can carry uses (a different tree, one rail fewer).
+
+**A declaration naming no breakpoint pays nothing.** No subscription, no rebuild,
+and the same single cache entry it minted before there was an axis at all, the
+way a recipe declaring no interaction states pays nothing for the state axis.
 
 ### Recipes: `sv`
 
@@ -270,17 +351,21 @@ after every screen mounts.
 Three mechanisms carry the entire cross-platform story.
 
 **`.web.ts` / `.web.tsx` siblings.** Vite resolves them first
-(`resolve.extensions`); Metro never sees them. There are only six, and each
-exists for a real reason:
+(`resolve.extensions`); Metro never sees them. `find src -name '*.web.ts*'` is
+the live list; they fall into five reasons, and a new one needs to name its
+reason too:
 
-| Split | Why |
-| --- | --- |
-| `lib/focus-nav` | the OS focus engine vs geometric spatial navigation |
-| `lib/focus-transition` | a CSS transition vs an Animated value |
-| `lib/css` | React Native prefixes gradients `experimental_` |
-| `lib/svg` | react-native-svg vs the browser's own SVG parser |
-| `lib/spatial-nav.web` | web-only: a TV has nothing to navigate geometrically |
-| `workbench/registry` | Metro's `require.context` vs Vite's `import.meta.glob` |
+| Reason | Where | Why the two platforms cannot share the file |
+| --- | --- | --- |
+| Focus and the remote | `lib/focus-{nav,here,remote,root,transition}`, `player/lib/virtual-focus`, `player/hooks/usePlayerKeys` | the OS focus engine owns movement natively; on the web there is none, so movement is geometric |
+| Browser APIs with no RN equivalent | `lib/{portal,modal-portal,landmark,scroll-lock,drag-select,loop,wheel-pan,perf-memory}` | a DOM portal, a landmark role, pointer capture and `performance.memory` have no React Native spelling |
+| Drawing primitives | `lib/{css,svg}`, `lib/icons/stroke-prop` | React Native prefixes gradients `experimental_`; react-native-svg vs the browser's own SVG parser |
+| Motion | `lib/{progress-motion,splash-motion}`, `organisms/kroma-intro` | a CSS transition vs an `Animated` value |
+| Layered surfaces | `molecules/{select,tooltip}`, `organisms/menu` | the web stacks them in a portal above the document; native stacks them in a modal host |
+
+Each split is a whole-module swap, so the two halves must export the same
+names. A split that exists only to change a few lines belongs in
+`Platform.OS` instead.
 
 **`Platform.OS`, inside one file**, where the split is a single element rather
 than a whole module. `<Img>` uses this: its leaf is a real `<img>` on the web
@@ -319,14 +404,19 @@ could ever be complete.
 Tabler ships the same icons twice, with the same export names:
 `@tabler/icons-react` draws DOM `<svg>`, `@tabler/icons-react-native` draws
 through react-native-svg. `glyphs.ts` imports the React Native one, and every
-web bundler aliases that specifier to the DOM one (`clients/tv-build/rnw.ts`,
+web bundler aliases that specifier to the DOM one (`packages/bundler/src/rnw.ts`,
 the same trick as `react-native` → `react-native-web`). So a browser gets native
 SVG and never loads react-native-svg's runtime; native gets react-native-svg,
 where it is the only way to draw at all. The one prop the two disagree on is the
 outline weight — see `src/icons/stroke-prop.ts`.
 
-The cost, measured: a namespace import cannot be tree-shaken, so the whole set
-ships. The kit site went from 258 KB to 741 KB gzipped. Lazy loading does not
+The cost, measured: a namespace import cannot be tree-shaken, so left alone the
+whole set ships, and the kit site went from 258 KB to 741 KB gzipped. A build-time
+subset in `@kroma/ui/bundler` buys it back everywhere except `apps/kit`, which
+opts into `icons: 'full'` because it reflects over the catalogue: 270 of 6,250
+glyphs kept, and `<Icon>` costs 49 KB gzipped instead of 573 KB. `vite dev` is
+not subset (`apply: 'build'`); Metro is, in both `start` and `export`. Lazy
+loading does not
 recover it on the targets that care — Metro has no dynamic import with a
 computed specifier, and the webOS legacy tier inlines every chunk back into one
 IIFE — so it would only help the modern web tier, at the price of thousands of

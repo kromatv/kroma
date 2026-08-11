@@ -3,14 +3,14 @@
 // `onCancel` adds a cancel button for callers that show the browser on demand.
 import type { AdminFsList } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, IconButton } from '@kroma/ui/kit';
+import { Button, color, IconButton } from '@kroma/ui/kit';
 import { IconChevronRight, IconFolder } from '@tabler/icons-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 
 const SELECTED_FILL = {
-  backgroundColor: 'rgba(70, 208, 141, 0.15)',
-  borderColor: 'rgba(70, 208, 141, 0.35)',
+  backgroundColor: color('success/15'),
+  borderColor: color('success/35'),
 } as const;
 
 const DASHED = {
@@ -80,7 +80,7 @@ export function FolderPicker({
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-border-strong bg-[#0F0F13]">
+    <div className="overflow-hidden rounded-md border border-border-strong bg-bg">
       <div className="flex items-center gap-2 border-b border-white/6 px-3 py-2.5">
         <IconButton
           variant="ghost"
@@ -161,7 +161,7 @@ export function FolderField({
     );
   }
   return (
-    <div className="flex items-center gap-2.5 rounded-md border border-border bg-[#0F0F13] px-3 py-2">
+    <div className="flex items-center gap-2.5 rounded-md border border-border bg-bg px-3 py-2">
       <IconFolder size={16} stroke={1.8} className="shrink-0 text-accent" />
       <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text/78">
         {value}

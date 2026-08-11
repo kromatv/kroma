@@ -5,7 +5,6 @@ import { createContext, type ReactNode, useContext } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
-import { FocusRegion } from '#ui/lib/focus-scope';
 
 interface Shell {
   pad: number;
@@ -49,21 +48,9 @@ function Content({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-/** The pinned bottom, where the actions live. */
+/** The pinned bottom: a shelf, not a row. Put a <Dialog.Actions> in it, which
+ *  is what the `footer` prop wraps for you. */
 function Footer({ children }: Readonly<{ children: ReactNode }>) {
-  const { pad } = useShell();
-  return (
-    <FocusRegion style={s.footerPinned}>
-      <Box row justify="flex-end" gap={12} px={pad} pt={pad > 0 ? GAP : 0} pb={pad}>
-        {children}
-      </Box>
-    </FocusRegion>
-  );
-}
-
-// The `footer` prop's home: a plain shelf, since what a caller passes is already
-// a <DialogFooter> or <DialogActions> and would nest a second focus region.
-function FooterSlot({ children }: Readonly<{ children: ReactNode }>) {
   const { pad } = useShell();
   return (
     <Box shrink={0} px={pad} pt={pad > 0 ? GAP : 0} pb={pad}>
@@ -74,8 +61,7 @@ function FooterSlot({ children }: Readonly<{ children: ReactNode }>) {
 
 const s = styles({
   content: { shrink: 1 },
-  footerPinned: { shrink: 0 },
 });
 
 export type { Shell };
-export { Content, Footer, FooterSlot, Header, ShellContext };
+export { Content, Footer, Header, ShellContext };

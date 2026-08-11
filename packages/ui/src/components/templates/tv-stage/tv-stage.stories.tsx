@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { TvStage } from './tv-stage';
 
 export default story({
@@ -32,13 +32,13 @@ export default story({
     <Box aspect={16 / 9} overflow="hidden" bg="surface1" radius="lg">
       <TvStage>
         <Box flex px={64} py={48} gap={24} justify="center">
-          <Txt variant="overline" color="accentText">
+          <Text variant="overline" color="accentText">
             1920 x 1080
-          </Txt>
-          <Txt variant="hero">Everything is authored here</Txt>
-          <Txt variant="body" color="textMuted">
+          </Text>
+          <Text variant="hero">Everything is authored here</Text>
+          <Text variant="body" color="textMuted">
             The gutters are the design's 64pt, overscan-safe on every panel we ship to.
-          </Txt>
+          </Text>
           <Box row gap={16}>
             <Button size="tv" icon="player-play-filled" label="Play" />
             <Button variant="glass" size="tv" label="More" />

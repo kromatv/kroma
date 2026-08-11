@@ -12,7 +12,7 @@ import {
   StatusDot,
   shade,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
@@ -91,7 +91,9 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
           {/* Renders only while a phone or browser is driving this set. */}
           <CastRemotes />
           <ConnectionStatus online={online} label={t('connection.reconnecting')} />
-          <Txt style={s.clock}>{clock}</Txt>
+          <Text variant="labelTv" style={s.clock}>
+            {clock}
+          </Text>
           {user ? (
             <Focusable
               onPress={() => nav.go('profileMenu')}
@@ -119,10 +121,10 @@ function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: 
   return (
     <Box w={36} h={36} center accessibilityLabel={label} accessibilityRole="progressbar">
       <Box absolute>
-        <Spinner size={34} thickness={2} color="rgba(229, 57, 53, 0.8)" />
+        <Spinner size={34} thickness={2} color="danger/80" />
       </Box>
       <Box w={28} h={28} center radius="pill" bg="danger" style={s.offlineBadge}>
-        <Icon name="wifi-off" size={16} stroke={2.2} color="#FFFFFF" />
+        <Icon name="wifi-off" size={16} stroke={2.2} color="white" />
       </Box>
     </Box>
   );
@@ -131,8 +133,6 @@ function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: 
 const s = styles({
   band: { w: '100%', align: 'center', justify: 'space-between' },
   clock: {
-    fontSize: 17,
-    fontWeight: '600',
     fontVariant: ['tabular-nums'],
     textShadow: '0 1px 4px rgba(0, 0, 0, 0.6)',
   },

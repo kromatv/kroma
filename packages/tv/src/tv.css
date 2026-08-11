@@ -1,37 +1,43 @@
-/* KROMA TV Tailwind v4, themed with the KROMA design tokens. Built through
-   Lightning CSS, which down-levels color-mix()/oklch() but not cascade layers,
-   so the modern bundle floors at Chrome 99 (Tizen 8 / webOS 24); older webOS
-   engines get a separate legacy bundle (clients/webos/vite.config.legacy.ts)
-   that flattens @layer and shims flex-gap / aspect-ratio / scale at build time.
-   Keep this file inside what that pipeline handles: flex (never grid), no
-   `/opacity` modifiers.
+/* The whole 10-foot stylesheet, shared by every browser TV shell. Built through
+   Lightning CSS, which down-levels color-mix()/oklch() for the modern bundle;
+   older webOS engines get a separate legacy bundle
+   (clients/webos/vite.config.legacy.ts) that shims flex-gap and aspect-ratio at
+   build time. Keep this file inside what that pipeline handles: flex, never
+   grid.
 
-   Tokens are imported individually rather than through `@kroma/ui/styles.css`:
-   that aggregate also carries the web's reset, body and focus rules, which the
-   TV supplies itself below.
+   The kit is taken in parts rather than through `@kroma/ui/css`: that aggregate
+   also carries the web's body, focus and scrollbar rules, which the TV supplies
+   itself below.
 
-   `@kroma/ui/fonts.css` is woff2 the bundler emits into the package rather than
-   a CDN <link>: a TV with no route to the internet is a normal deployment for a
+   The fonts part is woff2 the bundler emits into the package rather than a CDN
+   <link>: a TV with no route to the internet is a normal deployment for a
    self-hosted server, and there a <link> can only block first paint. */
-@import "tailwindcss";
 @import "@kroma/ui/css/fonts";
 @import "@kroma/ui/css/tokens";
 @import "@kroma/ui/css/motion";
-
-/* Tailwind ignores node_modules; the TV components live in this workspace
-   package (symlinked), so scan them explicitly for utility class names. */
-@source './';
-/* The shared unified player (packages/ui/src/player) is styled with Tailwind
-   too, so scan it here for the TV bundle (Tailwind does not follow the symlink
-   automatically). Keep it flex-only + no `/opacity` modifiers for the legacy
-   webOS tier (see check-legacy). */
-@source '../../ui/src/player/**/*.{ts,tsx}';
+@import "@kroma/ui/css/reset";
 
 /* TV-only focus depth shadow. The design's focus state is a CLEAN solid amber
    ring + a dark drop shadow for lift NOT an amber glow/bloom so the ring
    reads as a crisp border. (`0 0 0 4px #F4B642, 0 10px 28px rgba(0,0,0,.5)`.) */
 :root {
   --glow-accent: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--kroma-bg);
+  color: var(--kroma-text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
 }
 
 /* Native video surfaces (mpv / AVPlay) render a plane BEHIND the page. While the
@@ -41,103 +47,45 @@
 html.kroma-native-surface,
 html.kroma-native-surface body,
 html.kroma-native-surface #root {
-  /* biome-ignore lint/complexity/noImportantStyles: needed to override the layered opaque --kroma-bg so the native video plane shows through. */
+  /* biome-ignore lint/complexity/noImportantStyles: an inline background on the same element must not win here, or the native video plane stays hidden. */
   background: transparent !important;
 }
 
-@theme {
-  --color-bg: var(--kroma-bg);
-  --color-surface-1: var(--kroma-surface-1);
-  --color-surface-2: var(--kroma-surface-2);
-  --color-surface-3: var(--kroma-surface-3);
-  --color-border: var(--kroma-border);
-  --color-border-strong: var(--kroma-border-strong);
-  --color-text: var(--kroma-text);
-  --color-muted: var(--kroma-text-muted);
-  --color-dim: var(--kroma-text-dim);
-  --color-accent: var(--kroma-accent);
-  --color-accent-hover: var(--kroma-accent-hover);
-  --color-accent-bright: var(--kroma-accent-bright);
-  --color-accent-soft: var(--kroma-accent-soft);
-  --color-accent-ink: var(--kroma-accent-ink);
-  --color-hdr: var(--kroma-hdr);
-  --color-h265: var(--kroma-h265);
-  --color-success: var(--kroma-success);
-  --color-info: var(--kroma-info);
-  --color-danger: var(--kroma-danger);
-
-  /* Fonts (literal Tailwind's --font-* namespace collides with KROMA tokens). */
-  --font-sans: 'Hanken Grotesk', system-ui, sans-serif;
-  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
-
-  /* Radii (literal KROMA values; override Tailwind defaults). */
-  --radius-md: 10px;
-  --radius-lg: 13px;
-  --radius-xl: 16px;
-  --radius-2xl: 22px;
-
-  --shadow-card: 0 10px 28px rgba(0, 0, 0, 0.45);
-  --shadow-pop: 0 20px 50px rgba(0, 0, 0, 0.55);
-  --shadow-hero: 0 20px 50px rgba(0, 0, 0, 0.6);
-
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+/* Amber focus ring on any remote-focusable element. The signature 10-foot
+   affordance. */
+[data-focus] {
+  transition:
+    transform 0.2s var(--ease-out),
+    box-shadow 0.2s var(--ease-out),
+    background 0.2s var(--ease-out);
+}
+[data-focus]:focus {
+  outline: var(--ring-outline);
+  outline-offset: var(--ring-gap);
 }
 
-@layer base {
-  html,
-  /* biome-ignore lint/style/noDescendingSpecificity: cascade order is intentional (this layered base rule deliberately sits below the unlayered .kroma-native-surface overrides). */
-  body,
-  /* biome-ignore lint/style/noDescendingSpecificity: cascade order is intentional (this layered base rule deliberately sits below the unlayered .kroma-native-surface overrides). */
-  #root {
-    height: 100%;
-  }
-  /* biome-ignore lint/style/noDescendingSpecificity: cascade order is intentional (this layered base rule deliberately sits below the unlayered .kroma-native-surface overrides). */
-  body {
-    margin: 0;
-    background: var(--kroma-bg);
-    color: var(--kroma-text);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-    overflow: hidden;
-  }
+/* Tab is not a remote, but this app also runs in a browser: the dev shell, the
+   desktop build, a webOS set with a pointer. DOM focus that did not arrive
+   through the navigator carries no `data-focus`, so the rule above never
+   matched it and the engine painted its own ring - blue, in Chromium, which is
+   not a colour this product owns. Same amber, whatever moved the focus. */
+:focus-visible {
+  outline: var(--ring-outline);
+  outline-offset: var(--ring-gap);
+}
 
-  /* Amber focus ring on any remote-focusable element. The signature 10-foot
-     affordance; individual elements tune the scale with `focus:scale-*`. */
-  [data-focus] {
-    transition:
-      transform 0.2s var(--ease-out),
-      box-shadow 0.2s var(--ease-out),
-      background 0.2s var(--ease-out);
-  }
-  [data-focus]:focus {
-    outline: var(--ring-outline);
-    outline-offset: var(--ring-gap);
-  }
-
-  /* Tab is not a remote, but this app also runs in a browser: the dev shell, the
-     desktop build, a webOS set with a pointer. DOM focus that did not arrive
-     through the navigator carries no `data-focus`, so the rule above never
-     matched it and the engine painted its own ring - blue, in Chromium, which is
-     not a colour this product owns. Same amber, whatever moved the focus. */
-  :focus-visible {
-    outline: var(--ring-outline);
-    outline-offset: var(--ring-gap);
-  }
-
-  /* Except in a field, which owns its focus visual (the accent border): a ring
-     boxing the inner control reads as two focus states at once. */
-  input:focus-visible,
-  textarea:focus-visible {
-    outline: none;
-    box-shadow: none;
-  }
+/* Except in a field, which owns its focus visual (the accent border): a ring
+   boxing the inner control reads as two focus states at once. */
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* Cast faces: the whole card (avatar + text) zooms on focus, with a round ring
-   on the avatar only never a square box around the card. Un-layered so it wins
-   over both the base `[data-focus]:focus` ring and the avatar's `shadow-card`. */
+   on the avatar only never a square box around the card. More specific than the
+   `[data-focus]:focus` ring above, so it wins over it and over the avatar's own
+   elevation. */
 .cast-face__avatar {
   transition: box-shadow 0.2s var(--ease-out);
 }
@@ -155,7 +103,7 @@ html.kroma-native-surface #root {
 }
 
 /* Hide scrollbars on TV scroll regions (no pointer; smooth focus scrolling). */
-@utility scrollbar-none {
+.scrollbar-none {
   scrollbar-width: none;
 }
 .scrollbar-none::-webkit-scrollbar {

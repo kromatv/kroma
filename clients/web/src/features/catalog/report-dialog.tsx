@@ -21,6 +21,7 @@ import {
 import { type ComponentType, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';
+import { MODAL_SCRIM } from '#web/shared/ui';
 
 // Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
@@ -96,10 +97,10 @@ export const ReportDialog = createCallable<
         type="button"
         aria-label={t('common.close')}
         onClick={() => call.end()}
-        className="fixed inset-0 z-60 bg-[rgba(4,4,6,.66)] backdrop-blur-[3px]"
+        className={MODAL_SCRIM}
       />
       <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-        <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0E0E12] shadow-[0_30px_90px_rgba(0,0,0,.6)]">
+        <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg shadow-[0_30px_90px_rgba(0,0,0,.6)]">
           <header className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-7 py-5">
             <div className="min-w-0">
               <div className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
@@ -117,7 +118,7 @@ export const ReportDialog = createCallable<
 
           {sent ? (
             <div className="flex flex-col items-center gap-4 px-7 py-12 text-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#46D08D]/15 text-[#46D08D]">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
                 <IconCheck size={30} stroke={2.4} />
               </span>
               <p className="text-[15px] font-semibold text-white/85">{t('report.submitted')}</p>
@@ -141,7 +142,7 @@ export const ReportDialog = createCallable<
                         className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors ${
                           on
                             ? 'border-accent/45 bg-accent/[0.12]'
-                            : 'border-white/8 bg-[#15151A] hover:bg-[#1a1a20]'
+                            : 'border-white/8 bg-surface-1 hover:bg-surface-2'
                         }`}
                       >
                         <span className={`mt-0.5 shrink-0 ${on ? 'text-accent' : 'text-white/45'}`}>
@@ -165,19 +166,18 @@ export const ReportDialog = createCallable<
                 <div className="mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/40">
                   {t('report.message')}
                 </div>
-                <Field
-                  label={t('report.message')}
-                  hideLabel
-                  multiline
-                  rows={3}
-                  value={message}
-                  onChange={(v) => setMessage(v.slice(0, 2000))}
-                  placeholder={t('report.messagePlaceholder')}
-                />
+                <Field.Root label={t('report.message')} hideLabel>
+                  <Field.Textarea
+                    rows={3}
+                    value={message}
+                    onValueChange={(v) => setMessage(v.slice(0, 2000))}
+                    placeholder={t('report.messagePlaceholder')}
+                  />
+                </Field.Root>
               </div>
 
               {error ? (
-                <div className="rounded-lg border border-[#E8536A]/18 bg-[#E8536A]/8 px-3.5 py-2.5 text-[12.5px] font-semibold text-[#EF8091]">
+                <div className="rounded-lg border border-danger/18 bg-danger/8 px-3.5 py-2.5 text-[12.5px] font-semibold text-danger-hover">
                   {error}
                 </div>
               ) : null}

@@ -1,7 +1,7 @@
-// A small TSX syntax highlighter and code block: renders via <Txt>/<Box> so
+// A small TSX syntax highlighter and code block: renders via <Text>/<Box> so
 // it works on web and Apple TV without an HTML-emitting dependency.
 
-import { Box, Icon, IconButton, type IconName, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, IconButton, type IconName, styles, Text } from '@kroma/ui/kit';
 import { type ColorToken, colors } from '@kroma/ui/tokens';
 import { useCallback, useMemo } from 'react';
 import { Platform, ScrollView } from 'react-native';
@@ -177,9 +177,9 @@ function CodeBlock({ code, numbers, copy = true, maxHeight = 320 }: Readonly<Cod
                 // Line order is fixed for a given snippet, so the index IS the
                 // identity.
                 // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                <Txt key={at} style={s.gutter} color="textDim">
+                <Text key={at} style={s.gutter} color="textDim">
                   {String(at + 1).padStart(digits, ' ')}
-                </Txt>
+                </Text>
               ))}
             </Box>
           ) : null}
@@ -190,16 +190,16 @@ function CodeBlock({ code, numbers, copy = true, maxHeight = 320 }: Readonly<Cod
             <Box style={s.codeLines}>
               {rows.map((row, at) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                <Txt key={at} style={s.line}>
+                <Text key={at} style={s.line}>
                   {row.length === 0
                     ? ' '
                     : row.map((token, index) => (
                         // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                        <Txt key={index} style={INK_STYLE[token.kind]}>
+                        <Text key={index} style={INK_STYLE[token.kind]}>
                           {token.text}
-                        </Txt>
+                        </Text>
                       ))}
-                </Txt>
+                </Text>
               ))}
             </Box>
           </ScrollView>

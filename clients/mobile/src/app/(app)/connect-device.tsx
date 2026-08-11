@@ -19,7 +19,7 @@
 // The same televisions also appear in the cast picker (<CastDeviceList>), which
 // is where somebody already choosing a screen will look for them.
 
-import { Box, Icon, SegmentedControl, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, SegmentedControl, styles, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { NearbyTvs } from '#mobile/components/connect/NearbyTvs';
 import { ScanCode } from '#mobile/components/connect/ScanCode';
@@ -45,8 +45,8 @@ export default function ConnectDevice() {
           <Box style={s.doneBadge}>
             <Icon name="check" size={34} stroke={2.4} color="accentInk" />
           </Box>
-          <Txt style={s.doneTitle}>{t('connect.connected')}</Txt>
-          <Txt style={s.modeDesc}>{t('connect.willConnectSoon')}</Txt>
+          <Text style={s.doneTitle}>{t('connect.connected')}</Text>
+          <Text style={s.modeDesc}>{t('connect.willConnectSoon')}</Text>
         </Box>
       </Screen>
     );
@@ -66,9 +66,9 @@ export default function ConnectDevice() {
 
         {/* Under the control, because it describes the mode the control just
             selected. Above it, it read as a description of the title. */}
-        <Txt style={s.modeDesc}>
+        <Text style={s.modeDesc}>
           {mode === 'network' ? t('handoff.nearbySub') : t('connect.scanOrType')}
-        </Txt>
+        </Text>
 
         {mode === 'network' ? <NearbyTvs /> : <ScanCode onConnected={() => setDone(true)} />}
       </Box>

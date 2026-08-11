@@ -4,6 +4,7 @@ import { IconCheck } from '@tabler/icons-react';
 import { useState } from 'react';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import type { TitleSeason } from '#web/shared/lib/titleView';
+import { DRAWER_SCRIM } from '#web/shared/ui';
 
 export function SeasonPicker({
   seasons,
@@ -48,9 +49,9 @@ export function SeasonPicker({
         type="button"
         aria-label={t('common.close')}
         onClick={onClose}
-        className="fixed inset-0 z-60 bg-[rgba(4,4,6,.6)] backdrop-blur-[2px]"
+        className={DRAWER_SCRIM}
       />
-      <aside className="fixed right-0 top-0 z-61 flex h-screen w-[420px] max-w-[92vw] flex-col border-l border-white/9 bg-[#0E0E12] shadow-[-20px_0_60px_rgba(0,0,0,.6)]">
+      <aside className="fixed right-0 top-0 z-61 flex h-screen w-[420px] max-w-[92vw] flex-col border-l border-white/9 bg-bg shadow-[-20px_0_60px_rgba(0,0,0,.6)]">
         <div className="flex items-center justify-between border-b border-white/[0.07] px-6 py-5">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
@@ -66,7 +67,7 @@ export function SeasonPicker({
             <button
               type="button"
               onClick={toggleAll}
-              className="mb-2 flex w-full items-center gap-3 rounded-xl border border-white/8 bg-[#15151A] px-4 py-3 text-left"
+              className="mb-2 flex w-full items-center gap-3 rounded-xl border border-white/8 bg-surface-1 px-4 py-3 text-left"
             >
               <Box on={allOpen} />
               <span className="text-[14px] font-bold">{t('discover.allSeasons')}</span>
@@ -114,7 +115,7 @@ function SeasonRow({
       type="button"
       disabled={locked}
       onClick={onToggle}
-      className={`mb-2 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left ${locked ? 'border-white/5 bg-[#101014] opacity-70' : 'border-white/8 bg-[#15151A] hover:bg-[#1a1a20]'}`}
+      className={`mb-2 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left ${locked ? 'border-white/5 bg-bg opacity-70' : 'border-white/8 bg-surface-1 hover:bg-surface-2'}`}
     >
       {locked ? (
         <span className="flex-[0_0_auto]">

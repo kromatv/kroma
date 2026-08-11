@@ -9,7 +9,6 @@ import { FocusScope } from '#ui/lib/focus-scope';
 import { OverlayHost } from '#ui/lib/overlay-host';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { Dialog } from './dialog';
-import { DialogFooter } from './dialog-actions';
 
 beforeAll(() => configureRemote());
 
@@ -37,10 +36,10 @@ function Screen({ open, onConfirm }: Readonly<{ open: boolean; onConfirm?: () =>
       <Focusable label="Derriere" autoFocus />
       <Focusable label="Voisin" />
       <Dialog open={open} title="Supprimer">
-        <DialogFooter>
+        <Dialog.Actions>
           <Focusable label="Annuler" />
           <Focusable label="Confirmer" autoFocus onPress={onConfirm} />
-        </DialogFooter>
+        </Dialog.Actions>
       </Dialog>
     </FocusScope>
   );
@@ -76,9 +75,9 @@ describe('a dialog over a navigated screen', () => {
       <FocusScope>
         <Focusable label="Derriere" autoFocus onPress={behind} />
         <Dialog open title="Supprimer">
-          <DialogFooter>
+          <Dialog.Actions>
             <Focusable label="Confirmer" autoFocus onPress={confirm} />
-          </DialogFooter>
+          </Dialog.Actions>
         </Dialog>
       </FocusScope>,
     );
@@ -100,10 +99,10 @@ describe('a dialog over a navigated screen', () => {
         <FocusScope>
           <Focusable label="Derriere" autoFocus />
           <Dialog open title="Supprimer">
-            <DialogFooter>
+            <Dialog.Actions>
               <Focusable label="Annuler" />
               <Focusable label="Confirmer" autoFocus />
-            </DialogFooter>
+            </Dialog.Actions>
           </Dialog>
         </FocusScope>
       </OverlayHost>,
@@ -122,9 +121,9 @@ describe('a dialog over a navigated screen', () => {
     const { container } = render(
       <FocusScope>
         <Dialog open title="Supprimer">
-          <DialogFooter>
+          <Dialog.Actions>
             <Focusable label="Confirmer" autoFocus />
-          </DialogFooter>
+          </Dialog.Actions>
         </Dialog>
       </FocusScope>,
     );
@@ -140,9 +139,9 @@ describe('a dialog over a navigated screen', () => {
         <FocusScope>
           <Focusable label="Derriere" autoFocus />
           <Dialog open title="Supprimer">
-            <DialogFooter>
+            <Dialog.Actions>
               <Focusable label="Confirmer" autoFocus />
-            </DialogFooter>
+            </Dialog.Actions>
           </Dialog>
         </FocusScope>
       </OverlayHost>,
@@ -154,9 +153,9 @@ describe('a dialog over a navigated screen', () => {
         <FocusScope>
           <Focusable label="Derriere" autoFocus />
           <Dialog open={false} title="Supprimer">
-            <DialogFooter>
+            <Dialog.Actions>
               <Focusable label="Confirmer" autoFocus />
-            </DialogFooter>
+            </Dialog.Actions>
           </Dialog>
         </FocusScope>
       </OverlayHost>,

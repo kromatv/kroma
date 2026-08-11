@@ -1,5 +1,5 @@
 import { KromaApiError, LANG_OFF, langName } from '@kroma/core';
-import { Box, Button, Field, Icon, type IconName, Spinner, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Field, Icon, type IconName, Spinner, styles, Text } from '@kroma/ui/kit';
 import * as ImagePicker from 'expo-image-picker';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
@@ -18,7 +18,7 @@ type Note = { text: string; ok: boolean } | null;
 function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (
     <Box style={s.section}>
-      <Txt style={s.sectionTitle}>{title}</Txt>
+      <Text style={s.sectionTitle}>{title}</Text>
       {children}
     </Box>
   );
@@ -26,7 +26,7 @@ function Section({ title, children }: Readonly<{ title: string; children: React.
 
 function Message({ note }: Readonly<{ note: Note }>) {
   if (!note) return null;
-  return <Txt style={[s.message, note.ok ? s.messageOk : s.messageBad]}>{note.text}</Txt>;
+  return <Text style={[s.message, note.ok ? s.messageOk : s.messageBad]}>{note.text}</Text>;
 }
 
 function PrefRow({
@@ -46,14 +46,14 @@ function PrefRow({
           <Icon name={icon} size={19} stroke={1.8} color="accentText" />
         </Box>
         {/* The label yields to an ellipsis, the value never does. */}
-        <Txt lines={1} style={s.rowLabel}>
+        <Text lines={1} style={s.rowLabel}>
           {label}
-        </Txt>
+        </Text>
       </Box>
       <Box style={s.rowRight}>
-        <Txt lines={1} style={s.rowValue}>
+        <Text lines={1} style={s.rowValue}>
           {value}
-        </Txt>
+        </Text>
         <Icon name="selector" size={16} stroke={2} color="textDim" />
       </Box>
     </Pressable>
@@ -191,25 +191,18 @@ export default function EditProfile() {
                 )}
               </Box>
             </Pressable>
-            <Txt style={s.photoHint}>{t('account.photoHint')}</Txt>
+            <Text style={s.photoHint}>{t('account.photoHint')}</Text>
             <Message note={avatarNote} />
           </Box>
 
           <Section title={t('account.sectionInfo')}>
             <Box style={s.card}>
-              <Field
-                label={t('auth.username')}
-                icon="user"
-                value={username}
-                onChange={setUsername}
-              />
-              <Field
-                label={t('auth.email')}
-                icon="mail"
-                value={email}
-                onChange={setEmail}
-                keyboardType="email-address"
-              />
+              <Field.Root label={t('auth.username')} value={username} onValueChange={setUsername}>
+                <Field.Input icon="user" />
+              </Field.Root>
+              <Field.Root label={t('auth.email')} value={email} onValueChange={setEmail}>
+                <Field.Input icon="mail" keyboardType="email-address" />
+              </Field.Root>
               <Button
                 label={t('common.save')}
                 onPress={() => void saveInfo()}
@@ -240,27 +233,23 @@ export default function EditProfile() {
 
           <Section title={t('account.sectionSecurity')}>
             <Box style={s.card}>
-              <Field
+              <Field.Root
                 label={t('account.currentPassword')}
-                icon="lock"
                 value={current}
-                onChange={setCurrent}
-                type="password"
-              />
-              <Field
-                label={t('account.newPassword')}
-                icon="lock"
-                value={next}
-                onChange={setNext}
-                type="password"
-              />
-              <Field
+                onValueChange={setCurrent}
+              >
+                <Field.Input icon="lock" type="password" />
+              </Field.Root>
+              <Field.Root label={t('account.newPassword')} value={next} onValueChange={setNext}>
+                <Field.Input icon="lock" type="password" />
+              </Field.Root>
+              <Field.Root
                 label={t('account.confirmPassword')}
-                icon="lock"
                 value={confirm}
-                onChange={setConfirm}
-                type="password"
-              />
+                onValueChange={setConfirm}
+              >
+                <Field.Input icon="lock" type="password" />
+              </Field.Root>
               <Button
                 variant="glass"
                 label={t('account.updatePassword')}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createI18n, interpolate, translateIn } from './i18n-engine';
+import { createI18n, createLocales, interpolate, translateIn } from './i18n-engine';
 
 describe('interpolate', () => {
   it('replaces tokens with values', () => {
@@ -54,26 +54,39 @@ describe('translateIn', () => {
   });
 });
 
+describe('createLocales', () => {
+  const locales = createLocales({ en: 'English', fr: 'Français' }, 'en');
+
+  it('isLocale identifies supported locales', () => {
+    expect(locales.isLocale('en')).toBe(true);
+    expect(locales.isLocale('fr')).toBe(true);
+    expect(locales.isLocale('de')).toBe(false);
+  });
+
+  it('normalizeLocale maps tags and names', () => {
+    expect(locales.normalizeLocale('en-US')).toBe('en');
+    expect(locales.normalizeLocale('fr')).toBe('fr');
+    expect(locales.normalizeLocale('English')).toBe('en');
+    expect(locales.normalizeLocale('Français')).toBe('fr');
+    expect(locales.normalizeLocale('Deutsch')).toBeNull();
+  });
+
+  it('exposes the codes, the default and a label key per locale', () => {
+    expect(locales.DEFAULT_LOCALE).toBe('en');
+    expect([...locales.SUPPORTED_LOCALES]).toEqual(['en', 'fr']);
+    expect(locales.LOCALES).toEqual([
+      { code: 'en', labelKey: 'lang.en' },
+      { code: 'fr', labelKey: 'lang.fr' },
+    ]);
+  });
+});
+
 describe('createI18n', () => {
   const catalogs = {
     en: { 'lang.en': 'English', greeting: 'Hi', item: '{count} items', item_one: '{count} item' },
     fr: { 'lang.fr': 'Français', greeting: 'Bonjour' },
   };
   const i18n = createI18n(catalogs, 'en');
-
-  it('isLocale identifies supported locales', () => {
-    expect(i18n.isLocale('en')).toBe(true);
-    expect(i18n.isLocale('fr')).toBe(true);
-    expect(i18n.isLocale('de')).toBe(false);
-  });
-
-  it('normalizeLocale maps tags and names', () => {
-    expect(i18n.normalizeLocale('en-US')).toBe('en');
-    expect(i18n.normalizeLocale('fr')).toBe('fr');
-    expect(i18n.normalizeLocale('English')).toBe('en');
-    expect(i18n.normalizeLocale('Français')).toBe('fr');
-    expect(i18n.normalizeLocale('Deutsch')).toBeNull();
-  });
 
   it('translate works with plural and fallback', () => {
     expect(i18n.translate('fr', 'greeting')).toBe('Bonjour');

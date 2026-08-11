@@ -65,10 +65,10 @@ function ConnectPage() {
             }}
             className="flex flex-col items-center gap-4"
           >
-            <OtpField
+            <OtpField.Root
               maxLength={4}
               value={code}
-              onChange={(v) => {
+              onValueChange={(v) => {
                 setCode(v);
                 setStatus('idle');
               }}

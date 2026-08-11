@@ -4,7 +4,7 @@
 // show, the component renders nothing and the grid keeps its header-less look.
 
 import { type PersonDetail, personFacts } from '@kroma/core';
-import { Box, styles, Txt } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kroma/ui/kit';
 import { Avatar } from '#mobile/components/Avatar';
 import { ExpandableText } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
@@ -35,11 +35,11 @@ export function PersonProfile({
       <Box style={s.identity}>
         <Avatar uri={photo} name={name} size={92} />
         <Box style={s.facts}>
-          {roles.length ? <Txt style={s.roles}>{roles.join(' · ')}</Txt> : null}
+          {roles.length ? <Text style={s.roles}>{roles.join(' · ')}</Text> : null}
           {facts.map((f) => (
             <Box key={f.key} style={s.fact}>
-              <Txt style={s.factLabel}>{f.label}</Txt>
-              <Txt style={s.factValue}>{f.value}</Txt>
+              <Text style={s.factLabel}>{f.label}</Text>
+              <Text style={s.factValue}>{f.value}</Text>
             </Box>
           ))}
         </Box>
@@ -47,7 +47,7 @@ export function PersonProfile({
 
       {biography ? (
         <Box>
-          <Txt style={s.group}>{t('person.biography')}</Txt>
+          <Text style={s.group}>{t('person.biography')}</Text>
           {/* The kit's paragraph, like the film and series overviews on this
               app: it GROWS into its full height rather than jumping, and it
               only offers "read more" when the copy actually overflows - the

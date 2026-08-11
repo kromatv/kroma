@@ -7,8 +7,6 @@ import { useState } from 'react';
 import { Panel, passwordStrength, StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 
-const NEW_PASSWORD_ENTRY = { autoComplete: 'new-password' } as const;
-
 export function SecurityCard() {
   const t = useT();
   const { client } = useAuth();
@@ -41,24 +39,26 @@ export function SecurityCard() {
 
       <form onSubmit={submit} className="grid grid-cols-1 gap-4.5 sm:grid-cols-2">
         <div className="sm:col-span-2 sm:max-w-[calc(50%-0.5625rem)]">
-          <Field
-            label={t('account.currentPassword')}
-            type="password"
-            placeholder="••••••••"
-            value={current}
-            onChange={setCurrent}
-          />
+          <Field.Root label={t('account.currentPassword')}>
+            <Field.Input
+              type="password"
+              placeholder="••••••••"
+              value={current}
+              onValueChange={setCurrent}
+            />
+          </Field.Root>
         </div>
 
         <div className="flex flex-col gap-2.5">
-          <Field
-            label={t('account.newPassword')}
-            type="password"
-            placeholder="••••••••"
-            value={next}
-            onChange={setNext}
-            entry={NEW_PASSWORD_ENTRY}
-          />
+          <Field.Root label={t('account.newPassword')}>
+            <Field.Input
+              type="password"
+              placeholder="••••••••"
+              value={next}
+              onValueChange={setNext}
+              autoComplete="new-password"
+            />
+          </Field.Root>
           <div className="flex items-center gap-2.5">
             <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-white/10">
               <div
@@ -77,15 +77,18 @@ export function SecurityCard() {
           </div>
         </div>
 
-        <Field
+        <Field.Root
           label={t('account.confirmPassword')}
-          type="password"
-          placeholder="••••••••"
-          value={confirm}
-          onChange={setConfirm}
           error={mismatch ? t('account.passwordMismatch') : undefined}
-          entry={NEW_PASSWORD_ENTRY}
-        />
+        >
+          <Field.Input
+            type="password"
+            placeholder="••••••••"
+            value={confirm}
+            onValueChange={setConfirm}
+            autoComplete="new-password"
+          />
+        </Field.Root>
 
         <div className="flex items-center gap-3 sm:col-span-2">
           <Button

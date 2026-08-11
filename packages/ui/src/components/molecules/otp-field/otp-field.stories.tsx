@@ -4,19 +4,33 @@ import { OtpField, type OtpSize } from './otp-field';
 export default story({
   name: 'OtpField',
   group: 'Input',
-  docs: "The one-time-code entry: a row of character slots with the caret on the next empty one. It replaces the web client's `input-otp` wrapper, which was a hidden DOM `<input>` and therefore could never run on a television. Here one off-screen entry owns the text - so paste, SMS autofill and typing all still work - while the slots are ordinary views. The API mirrors shadcn's **InputOTP** (`maxLength`, `pattern`, `onComplete`), and `groups={[3, 3]}` is how the separator is spelled.\n\nThe caret blinks only while that entry holds focus, so a form stacking three codes (current PIN, new, confirm) shows one caret rather than three. Click a row below to give it the focus and watch the caret appear.",
-  usage: `<OtpField maxLength={6} groups={[3, 3]} physicalKeyboard onComplete={verify} />
-<OtpField maxLength={4} mask pattern={REGEXP_ONLY_DIGITS} onChange={setPin} />`,
+  docs: "The one-time-code entry: a row of character slots with the caret on the next empty one. It replaces the web client's `input-otp` wrapper, which was a hidden DOM `<input>` and therefore could never run on a television. Here one off-screen entry owns the text - so paste, SMS autofill and typing all still work - while the slots are ordinary views.\n\nThe parts are shadcn's **InputOTP** anatomy: **OtpField.Root** holds the code, **OtpField.Group** is a run of slots, **OtpField.Slot** is one character and **OtpField.Separator** divides two groups. A slot takes no `index`: its place in the code comes from where it sits in its group. `groups={[3, 3]}` writes that arrangement for you.\n\nThe caret blinks only while the entry holds focus, so a form stacking three codes (current PIN, new, confirm) shows one caret rather than three. Click a row below to give it the focus and watch the caret appear.",
+  usage: `<OtpField.Root maxLength={6} groups={[3, 3]} physicalKeyboard onComplete={verify} />
+
+<OtpField.Root maxLength={6} physicalKeyboard onComplete={verify}>
+  <OtpField.Group>
+    <OtpField.Slot />
+    <OtpField.Slot />
+    <OtpField.Slot />
+  </OtpField.Group>
+  <OtpField.Separator />
+  <OtpField.Group>
+    <OtpField.Slot />
+    <OtpField.Slot />
+    <OtpField.Slot />
+  </OtpField.Group>
+</OtpField.Root>`,
   guidelines: {
     do: [
       'Submit from `onComplete`: a full code should verify with no OK press.',
-      'Pass `physicalKeyboard` where a real keyboard exists; a TV keypad feeds `onChange` instead.',
+      'Pass `physicalKeyboard` where a real keyboard exists; a TV keypad feeds `onValueChange` instead.',
       'Use `mask` for a secret PIN, or `PinField` when the design wants dots rather than slots.',
       'Pass `label`: with the entry off screen, it is the only accessible name the field has.',
     ],
     dont: [
       "Don't set a `pattern` the keyboard contradicts - `REGEXP_ONLY_DIGITS` and a text keypad fight each other.",
-      "Don't leave `invalid` on after the user starts retyping; clear it in `onChange`.",
+      "Don't leave `invalid` on after the user starts retyping; clear it in `onValueChange`.",
+      "Don't put a separator inside a group: it would take a slot's place in the code.",
     ],
   },
   // Not wired to `otpVariants`: those describe one slot's states, derived from
@@ -33,9 +47,35 @@ export default story({
   },
   controls: { maxLength: { min: 3, max: 8 }, size: ['md', 'tv'] },
   render: ({ value, ...props }) => (
-    <OtpField {...props} key={`${props.maxLength}-${value}`} defaultValue={value} />
+    <OtpField.Root {...props} key={`${props.maxLength}-${value}`} defaultValue={value} />
   ),
   scenes: [
+    {
+      name: 'Grouped',
+      docs: 'The sugar: `groups={[3, 3]}` is the classic six-digit code, one separator in the middle.',
+      render: ({ value, ...props }) => (
+        <OtpField.Root {...props} groups={[3, 3]} defaultValue={value} />
+      ),
+    },
+    {
+      name: 'Composed',
+      docs: 'The same row written out of the parts. Delete the sugar and nothing is lost.',
+      render: ({ value, ...props }) => (
+        <OtpField.Root {...props} maxLength={6} defaultValue={value}>
+          <OtpField.Group>
+            <OtpField.Slot />
+            <OtpField.Slot />
+            <OtpField.Slot />
+          </OtpField.Group>
+          <OtpField.Separator />
+          <OtpField.Group>
+            <OtpField.Slot />
+            <OtpField.Slot />
+            <OtpField.Slot />
+          </OtpField.Group>
+        </OtpField.Root>
+      ),
+    },
     {
       name: 'Masked',
       docs: 'A secret PIN: the slots hold dots, and the value never renders.',

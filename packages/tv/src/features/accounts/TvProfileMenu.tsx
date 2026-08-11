@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Avatar, Box, Hint, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Avatar, Box, Hint, Text, useFocusNav } from '@kroma/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
@@ -68,9 +68,7 @@ export function TvProfileMenu() {
           roundness={0.27}
           src={client?.resolveArt(user.avatarUrl, 96)}
         />
-        <Txt variant="h1" style={{ fontSize: 32, fontWeight: '600' }}>
-          {user.username}
-        </Txt>
+        <Text variant="headingTv">{user.username}</Text>
       </Box>
 
       <Box w="100%" maxW={560} gap={12}>
@@ -82,7 +80,7 @@ export function TvProfileMenu() {
         size={14}
         gap={4}
         mt={28}
-        color="rgba(244, 243, 240, 0.4)"
+        color="text/40"
         textStyle={{ fontWeight: '500' }}
       />
     </AuthScreen>

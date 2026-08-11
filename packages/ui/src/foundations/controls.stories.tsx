@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { SegmentedControl } from '#ui/components/molecules/segmented-control';
 import { Select } from '#ui/components/molecules/select';
@@ -35,17 +35,18 @@ function Row({ size }: Readonly<{ size: ControlSize }>) {
         options={LEVELS}
         onValueChange={setLevel}
       />
-      <Select size={size} label="Source" value={source} options={SOURCES} onChange={setSource} />
-      <Field
-        label="Filtrer les lignes"
-        hideLabel
-        icon="search"
-        placeholder="Filtrer les lignes…"
-        size={size}
-        // The console row is a browser page: a real input, not the TV caret form.
-        entry={{ physicalKeyboard: true }}
-        w={240}
-      />
+      <Select.Root label="Source" value={source} onValueChange={setSource}>
+        <Select.Trigger size={size} />
+        {SOURCES.map((option) => (
+          <Select.Item key={option.value} value={option.value}>
+            {option.label}
+          </Select.Item>
+        ))}
+      </Select.Root>
+      <Field.Root label="Filtrer les lignes" hideLabel size={size} w={240}>
+        {/* The console row is a browser page: a real input, not the TV caret form. */}
+        <Field.Input icon="search" placeholder="Filtrer les lignes…" physicalKeyboard />
+      </Field.Root>
       <Button size={size} variant="glass" icon="refresh" label="Rafraîchir" />
       <IconButton control={size} variant="glass" icon="dots-vertical" label="Plus" />
     </Box>
@@ -56,9 +57,9 @@ function Sized({ size }: Readonly<{ size: ControlSize }>) {
   const m = CONTROL[size];
   return (
     <Box gap={10}>
-      <Txt variant="overline" color="textDim">
+      <Text variant="overline" color="textDim">
         {`${size} · corner ${m.radius} · pad ${m.px}/${m.py} · line ${m.line}`}
-      </Txt>
+      </Text>
       <Row size={size} />
     </Box>
   );
@@ -73,8 +74,15 @@ setEntryDefaults({ physicalKeyboard: true, size: 'sm' });
 
 // ...and every control follows, or says so itself.
 <SegmentedControl.Root label="Niveau" value={level} options={LEVELS} onValueChange={setLevel} />
-<Select label="Source" value={source} options={SOURCES} onChange={setSource} />
-<Field label="Filtrer" hideLabel icon="search" placeholder="Filtrer les lignes…" />`,
+
+<Select.Root label="Source" value={source} onValueChange={setSource}>
+  <Select.Trigger />
+  <Select.Item value="server">kroma_server</Select.Item>
+</Select.Root>
+
+<Field.Root label="Filtrer" hideLabel>
+  <Field.Input icon="search" placeholder="Filtrer les lignes…" />
+</Field.Root>`,
   guidelines: {
     do: [
       'Let the shell decide the height: pin a width if you must, never an `h-*`.',

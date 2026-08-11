@@ -1,9 +1,3 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 html,
 body,
 #root {
@@ -41,15 +35,6 @@ body {
 ::selection {
   background: var(--kroma-accent-soft);
   color: var(--kroma-text);
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-button {
-  font-family: var(--font-ui);
 }
 
 /* The ring is an outline standing off the control, so it already takes the

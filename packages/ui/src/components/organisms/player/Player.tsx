@@ -53,33 +53,46 @@ import type { SubtitleGenBundle } from './parts/settings/gen';
 import { SurfaceRadiusProvider } from './parts/surface-radius';
 import { TopBar } from './parts/TopBar';
 import { PEEK_HEIGHT, type UpNextData, type UpNextItem, UpNextSheet } from './parts/UpNextSheet';
-import type { Chapter, PlaneRect, PlayerController, PlayerFlags } from './types';
+import { Actions, Media, Panel, PlayerSlotContext, sortSlots } from './player-parts';
+import type {
+  Chapter,
+  PlaneRect,
+  PlayerCloseDetails,
+  PlayerCloseReason,
+  PlayerController,
+  PlayerFlags,
+} from './types';
 
-export interface PlayerProps {
+export interface PlayerRootProps {
   controller: PlayerController;
   flags: PlayerFlags;
   title: string;
   subtitle?: string;
+  /** Pre-translated warning, drawn as a pill in the top bar; null to hide it. */
   warn?: string | null;
   chapters?: Chapter[];
   markers?: readonly Marker[];
   tileAt: (sec: number) => StoryboardTile | null;
   appearance: SubtitleAppearance;
-  onAppearance: (next: Partial<SubtitleAppearance>) => void;
+  onAppearanceChange: (next: Partial<SubtitleAppearance>) => void;
   subtitleGen: SubtitleGenBundle;
-  onReport?: (category: ReportCategory) => Promise<void>;
   upNext: UpNextData;
+  onReport?: (category: ReportCategory) => Promise<void>;
   onPlayItem?: (item: UpNextItem) => void;
+  /** Given one, the chrome grows a "next" control and plays the credits card. */
   onPlayNext?: () => void;
   nextTitle?: CreditsCardItem | null;
-  intro?: { active: boolean; onSkip: () => void };
-  surface: ReactNode;
-  terminated?: ReactNode;
-  children?: ReactNode;
-  actions?: ReactNode;
+  /** Whether the film is inside its detected intro window. The skip pill is only
+   *  offered while this is true AND `onSkipIntro` is given. */
+  introActive?: boolean;
+  onSkipIntro?: () => void;
   onCast?: () => void;
-  rootRef?: React.Ref<View>;
-  onClose: () => void;
+  onClose: (details: PlayerCloseDetails) => void;
+  ref?: React.Ref<View>;
+  /** A <Player.Media>, then any of <Player.Actions> and <Player.Panel>. Only a
+   *  DIRECT child takes its slot; anything else is drawn over the chrome, in the
+   *  order it was written. */
+  children?: ReactNode;
 }
 
 function initialSettingsView(overlay: string | null): 'audio' | 'subtitles' | 'menu' {
@@ -163,7 +176,7 @@ function useNativePlaneShrink(
 function deriveChrome(
   nav: ReturnType<typeof usePlayerNav>,
   c: PlayerController,
-  props: Readonly<PlayerProps>,
+  props: Readonly<PlayerRootProps>,
   panelCovers: boolean,
 ) {
   const settingsOpen =
@@ -227,11 +240,13 @@ function playerInputHandlers(
 /**
  * The unified player chrome (§14): one component for web + TV. The platform
  * provides a {@link PlayerController} and feature flags; nothing here talks to an
- * engine directly.
+ * engine directly. It owns the stage, so give it the whole screen and exactly
+ * one `<Player.Media>`.
  */
-export function Player(props: Readonly<PlayerProps>) {
+function Root(props: Readonly<PlayerRootProps>) {
   useEffect(injectStageStyles, []);
-  const { controller: c, flags } = props;
+  const { controller: c, flags, onClose } = props;
+  const slots = useMemo(() => sortSlots(props.children), [props.children]);
   // Seeded from the window so the first frame is not measured at zero, then kept
   // honest by the root's own layout. Read once rather than through
   // `useWindowDimensions`, which would subscribe to every resize event.
@@ -246,7 +261,16 @@ export function Player(props: Readonly<PlayerProps>) {
 
   const [statsOn, setStatsOn] = useState(false);
   const panelRef = useRef<PanelHandle>(null);
-  const locked = Boolean(props.terminated);
+  const locked = slots.panel != null;
+  const close = useCallback((reason: PlayerCloseReason) => onClose({ reason }), [onClose]);
+  const closeFromChrome = useCallback(() => close('close'), [close]);
+  const intro = useMemo(
+    () =>
+      props.onSkipIntro
+        ? { active: props.introActive === true, onSkip: props.onSkipIntro }
+        : undefined,
+    [props.introActive, props.onSkipIntro],
+  );
 
   const chapters = useMemo(
     () => normalizeChapters(props.chapters, c.dur * 1000),
@@ -292,7 +316,7 @@ export function Player(props: Readonly<PlayerProps>) {
       togglePip: c.togglePip,
       toggleFullscreen: c.toggleFullscreen,
       onCast: props.onCast,
-      onExit: props.onClose,
+      onExit: close,
     },
     metrics.controls,
   );
@@ -312,7 +336,7 @@ export function Player(props: Readonly<PlayerProps>) {
     flags,
     panelRef,
     locked,
-    intro: props.intro,
+    intro,
     credits: { active: credits.show, onKey: creditsKey },
   });
 
@@ -369,205 +393,207 @@ export function Player(props: Readonly<PlayerProps>) {
   );
 
   return (
-    <Box
-      ref={props.rootRef}
-      fill
-      z={60}
-      bg={c.surface === 'video' ? '#000000' : 'transparent'}
-      onLayout={onStageLayout}
-      onPointerMove={input.onPointerMove}
-    >
-      <Ground tone="dark" flex>
-        {/* The id is what injectStageStyles hooks to size an in-page <video>; a
+    <PlayerSlotContext.Provider value={true}>
+      <Box
+        ref={props.ref}
+        fill
+        z={60}
+        bg={c.surface === 'video' ? '#000000' : 'transparent'}
+        onLayout={onStageLayout}
+        onPointerMove={input.onPointerMove}
+      >
+        <Ground tone="dark" flex>
+          {/* The id is what injectStageStyles hooks to size an in-page <video>; a
             native surface sizes itself and never sees that rule. */}
-        <AnimatedPressable
-          {...VIRTUAL_FOCUS}
-          accessibilityRole="button"
-          accessibilityLabel={c.playing ? t('player.pause') : t('player.play')}
-          onPress={input.onStagePress}
-          onLongPress={input.onStageLongPress}
-          nativeID={STAGE_ID}
-          style={[
-            s.stage,
-            settingsShrink ? { backgroundColor: '#000000', boxShadow: STAGE_SHADOW } : null,
-            stage.style,
-          ]}
-        >
-          {/* The surface rounds ITSELF: a rounded parent does not clip a native
+          <AnimatedPressable
+            {...VIRTUAL_FOCUS}
+            accessibilityRole="button"
+            accessibilityLabel={c.playing ? t('player.pause') : t('player.play')}
+            onPress={input.onStagePress}
+            onLongPress={input.onStageLongPress}
+            nativeID={STAGE_ID}
+            style={[
+              s.stage,
+              settingsShrink ? { backgroundColor: '#000000', boxShadow: STAGE_SHADOW } : null,
+              stage.style,
+            ]}
+          >
+            {/* The surface rounds ITSELF: a rounded parent does not clip a native
               video layer. Renders no element, so the web client's direct-child
               `<video>` rule still matches. */}
-          <SurfaceRadiusProvider radius={stage.radius}>{props.surface}</SurfaceRadiusProvider>
-          {/* Carries the spinner + subtitles into the card when a native plane
+            <SurfaceRadiusProvider radius={stage.radius}>{slots.media}</SurfaceRadiusProvider>
+            {/* Carries the spinner + subtitles into the card when a native plane
               shrinks; the stage itself must not move then. */}
-          <Box fill overflow="hidden" style={[s.inert, contentShrink]}>
-            <SubtitleRenderer
-              positionSec={c.cur}
-              playing={c.playing}
-              subtitles={c.subtitles}
-              activeIndex={c.subtitleIndex}
-              appearance={props.appearance}
-              raised={nav.revealed}
-            />
-            {c.waiting && !locked ? (
-              <Box fill z={4} center>
-                <Spinner size={56} thickness={3} />
-              </Box>
-            ) : null}
-          </Box>
-        </AnimatedPressable>
+            <Box fill overflow="hidden" style={[s.inert, contentShrink]}>
+              <SubtitleRenderer
+                positionSec={c.cur}
+                playing={c.playing}
+                subtitles={c.subtitles}
+                activeIndex={c.subtitleIndex}
+                appearance={props.appearance}
+                raised={nav.revealed}
+              />
+              {c.waiting && !locked ? (
+                <Box fill z={4} center>
+                  <Spinner size={56} thickness={3} />
+                </Box>
+              ) : null}
+            </Box>
+          </AnimatedPressable>
 
-        {/* A hardware plane has no corner radius of its own, so this masks the
+          {/* A hardware plane has no corner radius of its own, so this masks the
             card. Static geometry with only the opacity animated, so the surround
             shadow rasterizes once instead of repainting every frame. */}
-        {hasPlane ? (
+          {hasPlane ? (
+            <Box
+              absolute
+              left={`${card.rect.x * 100}%`}
+              top={`${card.rect.y * 100}%`}
+              w={`${card.rect.w * 100}%`}
+              h={`${card.rect.h * 100}%`}
+              z={3}
+              radius={24}
+              opacity={nativeShrink ? 1 : 0}
+              style={s.maskSurround}
+            />
+          ) : null}
+
+          {/* skip intro (§13) */}
+          {intro ? (
+            <SkipIntroButton
+              visible={intro.active}
+              focused={intro.active && !nav.overlay && !credits.show}
+              scale={metrics.scale}
+              lift={introLift}
+              onSkip={intro.onSkip}
+            />
+          ) : null}
+
+          {/* credits autoplay (§11) */}
+          {credits.show && props.nextTitle ? (
+            <CreditsCard
+              item={props.nextTitle}
+              secondsLeft={credits.secondsLeft}
+              total={credits.total}
+              playFocused={creditsFocus === 'play'}
+              cancelFocused={creditsFocus === 'cancel'}
+              scale={metrics.scale}
+              onPlay={() => props.onPlayNext?.()}
+              onCancel={credits.cancel}
+            />
+          ) : null}
+
+          {/* stats (§9) */}
+          {statsOn ? <StatsPanel controller={c} onClose={() => setStatsOn(false)} /> : null}
+
+          {/* top bar */}
           <Box
             absolute
-            left={`${card.rect.x * 100}%`}
-            top={`${card.rect.y * 100}%`}
-            w={`${card.rect.w * 100}%`}
-            h={`${card.rect.h * 100}%`}
-            z={3}
-            radius={24}
-            opacity={nativeShrink ? 1 : 0}
-            style={s.maskSurround}
-          />
-        ) : null}
-
-        {/* skip intro (§13) */}
-        {props.intro ? (
-          <SkipIntroButton
-            visible={props.intro.active}
-            focused={props.intro.active && !nav.overlay && !credits.show}
-            scale={metrics.scale}
-            lift={introLift}
-            onSkip={props.intro.onSkip}
-          />
-        ) : null}
-
-        {/* credits autoplay (§11) */}
-        {credits.show && props.nextTitle ? (
-          <CreditsCard
-            item={props.nextTitle}
-            secondsLeft={credits.secondsLeft}
-            total={credits.total}
-            playFocused={creditsFocus === 'play'}
-            cancelFocused={creditsFocus === 'cancel'}
-            scale={metrics.scale}
-            onPlay={() => props.onPlayNext?.()}
-            onCancel={credits.cancel}
-          />
-        ) : null}
-
-        {/* stats (§9) */}
-        {statsOn ? <StatsPanel controller={c} onClose={() => setStatsOn(false)} /> : null}
-
-        {/* top bar */}
-        <Box
-          absolute
-          left={0}
-          right={0}
-          top={0}
-          z={20}
-          opacity={chromeShown ? 1 : 0}
-          style={chromeShown ? s.chromeLive : s.inert}
-        >
-          <TopBar
-            title={props.title}
-            subtitle={props.subtitle}
-            warn={props.warn}
-            actions={props.actions}
-            scale={metrics.scale}
-            backFocused={nav.zone === 'back'}
-            onBack={props.onClose}
-          />
-        </Box>
-
-        {/* up-next sheet (peek + expand, §10) */}
-        <UpNextSheet
-          ref={sheetOpen ? panelRef : null}
-          data={props.upNext}
-          open={sheetOpen}
-          revealed={peekVisible || sheetOpen}
-          onOpen={openSheet}
-          onClose={nav.closeOverlay}
-          onPlay={playUpNextItem}
-        />
-
-        {/* The gradient stays anchored to the screen bottom and the controls are
-            lifted above the up-next peek with padding instead, so the peek overlays
-            its dark foot rather than the gradient ending in a hard band. */}
-        <Box
-          absolute
-          left={0}
-          right={0}
-          bottom={0}
-          z={15}
-          px={px(GUTTER)}
-          pt={px(80)}
-          // Not scaled: it is the peek's own height, from the sheet that draws it.
-          pb={bottomInset}
-          opacity={chromeShown ? 1 : 0}
-          style={[chromeShown ? s.chromeLive : s.inert, BOTTOM_SCRIM]}
-        >
-          {/* Measured so the skip-intro pill can sit clear of it; the layout is
-              kept while the chrome fades (opacity, not display). */}
-          <Box onLayout={onTransportLayout}>
-            <SeekBar
-              cur={c.cur}
-              dur={c.dur}
-              bufEnd={c.bufEnd}
-              seekPreview={c.seekPreview}
-              chapters={chapters}
-              tileAt={props.tileAt}
-              focused={nav.zone === 'progress'}
-              elapsed={fmtTime(shown)}
-              chapterLabel={curChapter?.title || undefined}
-              total={fmtTime(c.dur)}
-              endsAt={endsAt ? t('content.endsAtShort', { time: endsAt }) : ''}
+            left={0}
+            right={0}
+            top={0}
+            z={20}
+            opacity={chromeShown ? 1 : 0}
+            style={chromeShown ? s.chromeLive : s.inert}
+          >
+            <TopBar
+              title={props.title}
+              subtitle={props.subtitle}
+              warn={props.warn}
+              actions={slots.actions}
               scale={metrics.scale}
-              onScrub={c.scrubPreview}
-              onScrubCommit={c.scrubCommit}
-            />
-            <ControlCluster
-              focused={nav.focusedControl}
-              playing={c.playing}
-              muted={c.muted}
-              volume={c.volume}
-              pipActive={c.pipActive}
-              fullscreen={c.fullscreen}
-              metrics={metrics}
-              onActivate={nav.activate}
-              onFocus={nav.focusControl}
-              onVolume={c.setVolume}
+              backFocused={nav.zone === 'back'}
+              onBack={closeFromChrome}
             />
           </Box>
-        </Box>
 
-        {/* settings / audio / subtitles panel (§5) */}
-        {settingsOpen ? (
-          <SettingsPanel
-            ref={panelRef}
-            initialView={initialView}
-            width={panel.width}
-            covers={panel.covers}
-            scale={metrics.scale}
-            controller={c}
-            appearance={props.appearance}
-            onAppearance={props.onAppearance}
-            statsOn={statsOn}
-            onToggleStats={() => setStatsOn((s) => !s)}
-            subtitleGen={props.subtitleGen}
-            onReport={props.onReport}
-            overflow={metrics.overflow}
-            onControl={runOverflow}
-            onClose={() => nav.closeOverlay()}
+          {/* up-next sheet (peek + expand, §10) */}
+          <UpNextSheet
+            ref={sheetOpen ? panelRef : null}
+            data={props.upNext}
+            open={sheetOpen}
+            revealed={peekVisible || sheetOpen}
+            onOpen={openSheet}
+            onClose={nav.closeOverlay}
+            onPlay={playUpNextItem}
           />
-        ) : null}
 
-        {props.terminated}
-        {props.children}
-      </Ground>
-    </Box>
+          {/* The gradient stays anchored to the screen bottom and the controls are
+            lifted above the up-next peek with padding instead, so the peek overlays
+            its dark foot rather than the gradient ending in a hard band. */}
+          <Box
+            absolute
+            left={0}
+            right={0}
+            bottom={0}
+            z={15}
+            px={px(GUTTER)}
+            pt={px(80)}
+            // Not scaled: it is the peek's own height, from the sheet that draws it.
+            pb={bottomInset}
+            opacity={chromeShown ? 1 : 0}
+            style={[chromeShown ? s.chromeLive : s.inert, BOTTOM_SCRIM]}
+          >
+            {/* Measured so the skip-intro pill can sit clear of it; the layout is
+              kept while the chrome fades (opacity, not display). */}
+            <Box onLayout={onTransportLayout}>
+              <SeekBar
+                cur={c.cur}
+                dur={c.dur}
+                bufEnd={c.bufEnd}
+                seekPreview={c.seekPreview}
+                chapters={chapters}
+                tileAt={props.tileAt}
+                focused={nav.zone === 'progress'}
+                elapsed={fmtTime(shown)}
+                chapterLabel={curChapter?.title || undefined}
+                total={fmtTime(c.dur)}
+                endsAt={endsAt ? t('content.endsAtShort', { time: endsAt }) : ''}
+                scale={metrics.scale}
+                onScrub={c.scrubPreview}
+                onScrubCommit={c.scrubCommit}
+              />
+              <ControlCluster
+                focused={nav.focusedControl}
+                playing={c.playing}
+                muted={c.muted}
+                volume={c.volume}
+                pipActive={c.pipActive}
+                fullscreen={c.fullscreen}
+                metrics={metrics}
+                onActivate={nav.activate}
+                onFocus={nav.focusControl}
+                onVolume={c.setVolume}
+              />
+            </Box>
+          </Box>
+
+          {/* settings / audio / subtitles panel (§5) */}
+          {settingsOpen ? (
+            <SettingsPanel
+              ref={panelRef}
+              initialView={initialView}
+              width={panel.width}
+              covers={panel.covers}
+              scale={metrics.scale}
+              controller={c}
+              appearance={props.appearance}
+              onAppearanceChange={props.onAppearanceChange}
+              statsOn={statsOn}
+              onToggleStats={() => setStatsOn((s) => !s)}
+              subtitleGen={props.subtitleGen}
+              onReport={props.onReport}
+              overflow={metrics.overflow}
+              onControl={runOverflow}
+              onClose={() => nav.closeOverlay()}
+            />
+          ) : null}
+
+          {slots.panel}
+          {slots.rest}
+        </Ground>
+      </Box>
+    </PlayerSlotContext.Provider>
   );
 }
 
@@ -582,3 +608,7 @@ const s = styles({
   inert: { pointerEvents: 'none' },
   chromeLive: { pointerEvents: 'box-none' },
 });
+
+const Player = { Root, Media, Actions, Panel };
+
+export { Player };

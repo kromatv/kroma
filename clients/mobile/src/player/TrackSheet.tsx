@@ -12,7 +12,7 @@ import {
 } from '@kroma/core';
 import type { SubtitleAppearance } from '@kroma/ui';
 import { AUDIO_FILTER_KEY, SUB_COLORS } from '@kroma/ui';
-import { Box, Chip, Icon, type IconName, SwitchFace, styles, Txt } from '@kroma/ui/kit';
+import { Box, Chip, Icon, type IconName, SwitchFace, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable } from 'react-native';
@@ -58,8 +58,8 @@ function Row({
         disabled && s.rowDisabled,
       ]}
     >
-      <Txt style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Txt>
-      {note ? <Txt style={s.rowNote}>{note}</Txt> : null}
+      <Text style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Text>
+      {note ? <Text style={s.rowNote}>{note}</Text> : null}
       {selected ? <Icon name="check" size={17} stroke={2.4} color={colors.accent} /> : null}
     </Pressable>
   );
@@ -90,11 +90,11 @@ function MenuRow({
     >
       <Icon name={icon} size={20} stroke={1.8} color={colors.textDim} />
       <Box style={s.menuText}>
-        <Txt style={s.menuLabel}>{label}</Txt>
+        <Text style={s.menuLabel}>{label}</Text>
         {!toggle && value ? (
-          <Txt lines={1} style={s.menuValue}>
+          <Text lines={1} style={s.menuValue}>
             {value}
-          </Txt>
+          </Text>
         ) : null}
       </Box>
       {toggle ? (
@@ -110,7 +110,7 @@ function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }
   return (
     <Pressable onPress={onBack} style={({ pressed }) => [s.subHeader, pressed && { opacity: 0.7 }]}>
       <Icon name="chevron-left" size={20} stroke={2.4} color={colors.text} />
-      <Txt style={s.subTitle}>{title}</Txt>
+      <Text style={s.subTitle}>{title}</Text>
     </Pressable>
   );
 }
@@ -118,7 +118,7 @@ function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }
 function ChipGroup({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
     <Box style={s.chipGroup}>
-      <Txt style={s.group}>{label}</Txt>
+      <Text style={s.group}>{label}</Text>
       <Box style={s.chipRow}>{children}</Box>
     </Box>
   );

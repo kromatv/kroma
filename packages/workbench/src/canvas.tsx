@@ -1,7 +1,7 @@
 // Where the component being inspected renders: inside a device viewport, and as
 // a variant matrix derived from the component's `sv`.
 
-import { Box, type IconName, styles, Txt, useTheme } from '@kroma/ui/kit';
+import { Box, type IconName, styles, Text, useTheme } from '@kroma/ui/kit';
 import { CANVAS, type ColorToken, colors, nestedRadius } from '@kroma/ui/tokens';
 import { useCallback, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -237,14 +237,14 @@ function Caption({
   const orientation = size.width > size.height ? 'landscape' : 'portrait';
   return (
     <Box row align="center" px={Math.round(inset * 0.75)} pt={12}>
-      <Txt variant="meta" color="textDim" style={s.caption}>
+      <Text variant="meta" color="textDim" style={s.caption}>
         {captionText([
           label,
           `${size.width} × ${size.height}`,
           oriented && orientation,
           scale < 1 && `${Math.round(scale * 100)}%`,
         ])}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -266,13 +266,13 @@ function Fit({ available, children }: Readonly<{ available: number; children: Re
   return (
     <Box gap={scaled ? 10 : 0} align="flex-start">
       {scaled ? (
-        <Txt variant="meta" color="textDim" style={s.caption}>
+        <Text variant="meta" color="textDim" style={s.caption}>
           {captionText([
             'Fit',
             `${Math.round(wanted)} × ${Math.round(natural.height)}`,
             `${Math.round(scale * 100)}%`,
           ])}
-        </Txt>
+        </Text>
       ) : null}
       <Box
         w={scaled ? Math.round(wanted * scale) : undefined}
@@ -303,9 +303,9 @@ interface MatrixProps {
 function Matrix({ rows, args, render }: Readonly<MatrixProps>) {
   if (rows.length === 0) {
     return (
-      <Txt variant="meta" color="textDim">
+      <Text variant="meta" color="textDim">
         This component declares no variants.
-      </Txt>
+      </Text>
     );
   }
   return (
@@ -313,18 +313,18 @@ function Matrix({ rows, args, render }: Readonly<MatrixProps>) {
       {rows.map((row) => (
         <Box key={row.group} gap={14}>
           <Box row align="center" gap={12}>
-            <Txt variant="overline" color="accent">
+            <Text variant="overline" color="accent">
               {row.group}
-            </Txt>
+            </Text>
             <Box flex h={1} bg={colors.border} />
           </Box>
           <Box row wrap gap={24} align="flex-start">
             {row.options.map((option) => (
               <Box key={String(option)} gap={10} align="flex-start">
                 {render({ ...args, [row.group]: option })}
-                <Txt variant="meta" color="textDim" style={s.cellLabel}>
+                <Text variant="meta" color="textDim" style={s.cellLabel}>
                   {String(option)}
-                </Txt>
+                </Text>
               </Box>
             ))}
           </Box>

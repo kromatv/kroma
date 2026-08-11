@@ -1,3 +1,4 @@
 export * from './confirm';
+export * from './confirm-dialog';
 export * from './dialog';
-export * from './dialog-actions';
+export type { DialogActionsProps } from './dialog-actions';

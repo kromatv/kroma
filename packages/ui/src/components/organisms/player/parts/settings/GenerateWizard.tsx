@@ -5,7 +5,7 @@ import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 
@@ -121,9 +121,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
       style={gradient('linear-gradient(180deg, rgba(124,92,255,0.1), rgba(124,92,255,0.02))')}
     >
       <Box row align="center" between gap={16} mb={24}>
-        <Txt variant="h2" style={{ fontSize: 24 }}>
-          {t('player.subGenerate')}
-        </Txt>
+        <Text variant="subheadingTv">{t('player.subGenerate')}</Text>
         {/* Pointer-only close: controlled at `false` so it never becomes a
             platform focus target (see ../../lib/virtual-focus.ts); not in the
             field list. */}
@@ -177,7 +175,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
           />
         ) : null}
         {mode === 'translate' && curSource == null ? (
-          <Txt style={panel.panelEmpty}>{t('player.subNoSource')}</Txt>
+          <Text style={panel.panelEmpty}>{t('player.subNoSource')}</Text>
         ) : null}
         {mode === 'transcribe' ? (
           <>
@@ -201,9 +199,9 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
         ) : null}
       </Box>
 
-      <Txt style={s.backgroundHint} color="text/40">
+      <Text style={s.backgroundHint} color="text/40">
         {t('player.subGenBackground')}
-      </Txt>
+      </Text>
 
       {/* Controlled kit button (`focused` is ALWAYS passed - the wizard's own
           list focus drives it; see ../../lib/virtual-focus.ts). */}
@@ -225,8 +223,9 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
 
 const s = styles({
   startButton: { mt: 4 },
-  backgroundHint: { mx: 2, mt: 12, mb: 4, fontWeight: '500', fontSize: 14, lineHeight: 22 },
+  backgroundHint: { mx: 2, mt: 12, mb: 4, text: 'captionTv' },
   modeTab: { flex: 1, radius: 'lg', px: 18, py: 14 },
+  modeHint: { opacity: 0.75 },
   modeDisabled: { bg: 'tint/4' },
   modeOn: { bg: 'accent' },
   modeOff: { bg: 'tint/5' },
@@ -249,12 +248,12 @@ function ModeTab({
       accessibilityState={{ selected: on, disabled: !enabled }}
       style={[s.modeTab, tone.box]}
     >
-      <Txt style={{ fontWeight: '700', fontSize: 16 }} color={tone.ink}>
+      <Text variant="strongTv" color={tone.ink}>
         {label}
-      </Txt>
-      <Txt style={{ fontSize: 12, opacity: 0.75 }} color={tone.ink}>
+      </Text>
+      <Text variant="footnoteTv" style={s.modeHint} color={tone.ink}>
         {hint}
-      </Txt>
+      </Text>
     </Pressable>
   );
 }

@@ -15,9 +15,10 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
 import { LoginBackdrop } from '#web/features/accounts/login-backdrop';
 import { LoginSettings } from '#web/features/accounts/login-settings';
-import { UserAvatar } from '#web/features/accounts/user-avatar';
 import { useAuth } from '#web/shared/lib/auth';
 import { passkeysSupported } from '#web/shared/lib/webauthn';
+import { PAGE_RADIAL } from '#web/shared/ui';
+import { UserAvatar } from '#web/shared/ui/user-avatar';
 
 type Mode =
   | { kind: 'pick' }
@@ -25,14 +26,12 @@ type Mode =
   | { kind: 'register' }
   | { kind: 'pin'; account: StoredSession };
 
-export const RADIAL = 'radial-gradient(120% 90% at 50% 0%, #15131C, #0A0A0C 70%)';
-
 export function LoginGate() {
   const { ready } = useAuth();
   return (
     <div
       className="relative flex min-h-screen w-full overflow-x-hidden"
-      style={{ background: RADIAL }}
+      style={{ background: PAGE_RADIAL }}
     >
       <LoginBackdrop />
       <LoginSettings />
@@ -67,7 +66,7 @@ export function GateLoading() {
   return (
     <div
       className="flex min-h-screen w-full items-center justify-center"
-      style={{ background: RADIAL }}
+      style={{ background: PAGE_RADIAL }}
     >
       <Spinner />
     </div>
@@ -427,10 +426,10 @@ function PinEntry({
 
       {/* key={shake} remounts the row so the shake animation replays each error. */}
       <div key={shake} className={shake ? 'animate-[otp-shake_0.4s_ease]' : ''}>
-        <OtpField
+        <OtpField.Root
           maxLength={4}
           value={pin}
-          onChange={(v) => {
+          onValueChange={(v) => {
             setError(null);
             setPin(v);
           }}

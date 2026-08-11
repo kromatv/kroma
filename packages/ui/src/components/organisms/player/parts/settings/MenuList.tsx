@@ -6,7 +6,7 @@
 
 import { Fragment } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { useT } from '#ui/services/i18n';
 import { playerStyle } from '../../lib/style';
 import type { Entry } from './entries';
@@ -32,9 +32,9 @@ export function MenuList({
       {entries.map((e, i) => (
         <Fragment key={e.id}>
           {moved > 0 && i === 0 ? (
-            <Txt style={[playerStyle.eyebrow, { fontSize: px(12) }]}>
+            <Text style={[playerStyle.eyebrow, { fontSize: px(12) }]}>
               {t('player.movedControls')}
-            </Txt>
+            </Text>
           ) : null}
           <MenuRow
             icon={e.icon}

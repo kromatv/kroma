@@ -8,7 +8,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { useControllable } from '#ui/lib/use-controllable';
 
@@ -42,9 +42,9 @@ function Disclosure({
         style={s.header}
         states={HEADER_STATES}
       >
-        <Txt variant="overline" color="accentText">
+        <Text variant="overline" color="accentText">
           {title}
-        </Txt>
+        </Text>
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color="textMuted" />
       </Focusable>
       {open ? <Box pt={4}>{children}</Box> : null}

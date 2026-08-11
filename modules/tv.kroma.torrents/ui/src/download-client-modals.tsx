@@ -5,7 +5,7 @@
 // engine has no form (configured from the Acquisition settings page).
 
 import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Dialog, DialogActions, Field } from '@kroma/ui/kit';
+import { Button, Dialog, Field } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useTorrentsApi } from './api';
@@ -52,42 +52,45 @@ export const DownloadClientModal = createCallable<
 
   return (
     <Dialog open title={t('dlclients.edit')} onClose={() => call.end(false)} width={520}>
-      <Field
-        label={t('dlclients.name')}
-        value={name}
-        onChange={setName}
-        placeholder={client.kind}
-      />
-      <Field
+      <Field.Root label={t('dlclients.name')} value={name} onValueChange={setName}>
+        <Field.Input placeholder={client.kind} />
+      </Field.Root>
+      <Field.Root
         label={t('dlclients.url')}
         hint={t('dlclients.urlHint')}
         value={url}
-        onChange={setUrl}
+        onValueChange={setUrl}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label={t('dlclients.username')} value={username} onChange={setUsername} />
-        <Field
+        <Field.Root label={t('dlclients.username')} value={username} onValueChange={setUsername} />
+        <Field.Root
           label={t('dlclients.password')}
           hint={client.hasPassword ? t('dlclients.passwordKept') : undefined}
           value={password}
-          onChange={setPassword}
-          type="password"
-        />
+          onValueChange={setPassword}
+        >
+          <Field.Input type="password" />
+        </Field.Root>
       </div>
-      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <DialogActions
+      {error ? <p className="text-[13px] font-semibold text-danger-hover">{error}</p> : null}
+      <Dialog.Actions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={save}
         confirmLabel={busy ? t('common.saving') : t('common.save')}
         busy={busy}
         disabled={!url.trim()}
-        destructive={
-          client.builtin
-            ? undefined
-            : { label: t('dlclients.delete'), onPress: remove, disabled: busy }
-        }
-      />
+      >
+        {client.builtin ? null : (
+          <Button
+            variant="dangerGhost"
+            size="sm"
+            label={t('dlclients.delete')}
+            onPress={remove}
+            disabled={busy}
+          />
+        )}
+      </Dialog.Actions>
     </Dialog>
   );
 });

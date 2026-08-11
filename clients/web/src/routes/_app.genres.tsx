@@ -57,7 +57,7 @@ function GenresPage() {
     <main className={PAGE_MAIN}>
       <h1 className={PAGE_TITLE}>{t('nav.genres')}</h1>
       {genres.length === 0 ? (
-        <EmptyState icon="category" title={t('genres.empty')} />
+        <EmptyState.Root icon="category" title={t('genres.empty')} />
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
           {genres.map((g) => (

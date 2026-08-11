@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { Focusable } from './focusable';
 
@@ -16,13 +16,13 @@ export default story({
   render: (props) => (
     <Box row wrap align="center" gap={24}>
       <Focusable {...props} autoFocus label="first" style={s.demo}>
-        <Txt>first</Txt>
+        <Text>first</Text>
       </Focusable>
       <Focusable {...props} label="second" style={s.demo}>
-        <Txt>second</Txt>
+        <Text>second</Text>
       </Focusable>
       <Focusable {...props} label="third" style={s.demo}>
-        <Txt>third</Txt>
+        <Text>third</Text>
       </Focusable>
     </Box>
   ),

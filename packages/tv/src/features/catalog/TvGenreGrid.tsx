@@ -1,10 +1,11 @@
 import { compareTitles, hasGenre, posterColors, type SortMode } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Text, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import {
+  AMBIENT_FALLBACK,
   AmbientBackdrop,
   type CatalogEntry as Entry,
   entryBackdrop,
@@ -62,30 +63,30 @@ export function TvGenreGrid() {
   const backdrop = entryBackdrop(client, focused);
 
   return (
-    <Box fill bg="bg" overflow="hidden" style={{ isolation: 'isolate' }}>
+    <Box fill bg="bg" overflow="hidden" isolate>
       <AmbientBackdrop
         src={backdrop}
-        colors={focused ? posterColors(focused.item.id) : ['#1c1c22', '#0a0a0c']}
+        colors={focused ? posterColors(focused.item.id) : AMBIENT_FALLBACK}
       />
       <Box px={64} pt={112} pb={24} gap={8}>
-        <Txt variant="overlineTv" color="accentText">
+        <Text variant="overlineTv" color="accentText">
           {t('nav.genres')}
-        </Txt>
-        <Txt variant="hero" style={TITLE}>
+        </Text>
+        <Text variant="hero" style={TITLE}>
           {name}
-        </Txt>
-        <Txt style={{ fontSize: 16, fontWeight: '600' }} color="textMuted">
+        </Text>
+        <Text variant="labelTv" color="textMuted">
           {t('person.titleCount', { count: cards.length })}
-        </Txt>
+        </Text>
       </Box>
 
       {cards.length ? (
         <PosterGrid cards={cards} />
       ) : (
         <Box flex center px={64}>
-          <Txt style={EMPTY} color="textDim">
+          <Text style={EMPTY} color="textDim">
             {t('genres.empty')}
-          </Txt>
+          </Text>
         </Box>
       )}
     </Box>

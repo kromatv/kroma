@@ -26,7 +26,7 @@ import {
   RAIL_GAP,
   Rail,
   styles,
-  Txt,
+  Text,
   tintGradient,
   useFocusNav,
   useGrowingCount,
@@ -54,7 +54,7 @@ const HERO_EMPTY_HEIGHT = 432;
 
 // What one home tile occupies, so the row can be virtualised: a <MediaCard>
 // at its default 328 width, 16:9, plus the 24px gap after it.
-const ROW_TILE = { width: 328 + RAIL_GAP, height: Math.round((328 * 9) / 16) };
+const ROW_TILE = { pitch: 328 + RAIL_GAP, height: Math.round((328 * 9) / 16) };
 
 // The design sizes the hero with viewport units and clamps; on the fixed
 // 1920x1080 stage those resolve to the values below.
@@ -294,36 +294,32 @@ export function TvHome() {
               <Box fill pointerEvents="none" style={gradient(HERO_VEIL_HORIZONTAL)} />
               <Box fill pointerEvents="none" style={gradient(HERO_VEIL_VERTICAL)} />
               <Box absolute left={64} bottom={36} z={2} maxW={820}>
-                <Txt variant="overlineTv" style={s.featuredLabel} color="accentText">
+                <Text variant="overlineTv" style={s.featuredLabel} color="accentText">
                   {t('content.featured')}
-                </Txt>
-                <Txt variant="hero" style={[s.heroTitle, { marginTop: 16, marginBottom: 14 }]}>
+                </Text>
+                <Text variant="hero" style={[s.heroTitle, { marginTop: 16, marginBottom: 14 }]}>
                   {hero.type === 'show' ? hero.show.title : hero.item.title}
-                </Txt>
+                </Text>
                 <Box row wrap align="center" gap={12} mb={14}>
                   {heroMeta?.rating ? (
                     <>
-                      <Txt style={{ fontSize: 17, fontWeight: '700' }} color="accentText">
+                      <Text variant="strongTv" color="accentText">
                         {`${heroMeta.rating.toFixed(1)}\u2605`}
-                      </Txt>
-                      <Txt style={{ fontSize: 17, fontWeight: '600' }} color="textDim">
+                      </Text>
+                      <Text variant="labelTv" color="textDim">
                         ·
-                      </Txt>
+                      </Text>
                     </>
                   ) : null}
-                  <Txt style={{ fontSize: 17, fontWeight: '600' }} color="textMuted">
+                  <Text variant="labelTv" color="textMuted">
                     {heroLine(hero)}
-                  </Txt>
+                  </Text>
                   {heroBadge ? <Badge tone={qualityTone(heroBadge)}>{heroBadge}</Badge> : null}
                 </Box>
                 {heroMeta?.overview ? (
-                  <Txt
-                    lines={3}
-                    style={{ fontSize: 20, lineHeight: 30, maxWidth: 720, marginBottom: 22 }}
-                    color="rgba(244, 243, 240, 0.82)"
-                  >
+                  <Text lines={3} variant="bodyTv" maxW={720} mb={22} color="text/82">
                     {heroMeta.overview}
-                  </Txt>
+                  </Text>
                 ) : null}
                 {/* The hero's two actions are one row: Left and Right move
                   between them, Up and Down leave for the bar or the rails. */}
@@ -361,9 +357,10 @@ export function TvHome() {
           // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the slot - see <FocusSlot>.
           <FocusSlot key={index} onActive={nearLastRow(index) ? growRows : undefined}>
             <Box mb={8} mt={18}>
-              <Rail title={row.title} titleStyle={s.rowTitle} item={ROW_TILE}>
-                {row.cards}
-              </Rail>
+              <Rail.Root>
+                <Rail.Title style={s.rowTitle}>{row.title}</Rail.Title>
+                <Rail.List {...ROW_TILE}>{row.cards}</Rail.List>
+              </Rail.Root>
             </Box>
           </FocusSlot>
         ))}

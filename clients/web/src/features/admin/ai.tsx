@@ -124,10 +124,10 @@ export function AiPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.aiTitle')}
         subtitle={t('admin.aiSub')}
-        action={<StatusChip enabled={cfg.enabled} />}
+        actions={<StatusChip enabled={cfg.enabled} />}
       />
 
       <Surface
@@ -159,10 +159,10 @@ export function AiPage() {
         />
       </Surface>
 
-      <Section
+      <Section.Root
         title={t('admin.aiProviders')}
         mt={28}
-        action={
+        actions={
           <Button
             variant="glass"
             size="sm"
@@ -174,10 +174,10 @@ export function AiPage() {
       >
         <p className="-mt-2 mb-4 text-[12.5px] text-dim">{t('admin.aiProvidersHint')}</p>
         {cfg.providers.length === 0 ? (
-          <EmptyState
+          <EmptyState.Root
             icon="sparkles"
             title={t('admin.aiNoProviders')}
-            action={
+            actions={
               <Button
                 variant="glass"
                 size="sm"
@@ -204,7 +204,7 @@ export function AiPage() {
             ))}
           </div>
         )}
-      </Section>
+      </Section.Root>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Button

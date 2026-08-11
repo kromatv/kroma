@@ -208,7 +208,7 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
         creditTitle={featured?.title}
       />
       {items.length === 0 ? (
-        <EmptyState icon={emptyIcon} title={emptyTitle} />
+        <EmptyState.Root icon={emptyIcon} title={emptyTitle} />
       ) : (
         <>
           <BrowseBar
@@ -220,7 +220,7 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
             onGenre={onGenre}
           />
           {view.length === 0 ? (
-            <EmptyState icon={emptyIcon} title={t('search.noResults')} />
+            <EmptyState.Root icon={emptyIcon} title={t('search.noResults')} />
           ) : (
             // Reserves the rail's footprint plus breathing room on the right,
             // whatever the fluid gutter currently is.

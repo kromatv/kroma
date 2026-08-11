@@ -16,10 +16,10 @@ function PinRow({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-dim">{label}</span>
-      <OtpField
+      <OtpField.Root
         maxLength={4}
         value={value}
-        onChange={onChange}
+        onValueChange={onChange}
         mask
         physicalKeyboard
         label={label}

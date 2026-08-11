@@ -28,7 +28,7 @@ const FORM_FACTOR: ThemeOverrides = {
 /**
  * The phone's form factor, as a theme the design system actually runs on.
  *
- * Without it the kit renders a phone at its 10-foot defaults: a <Txt> resolves
+ * Without it the kit renders a phone at its 10-foot defaults: a <Text> resolves
  * `variant` against the TV role table, and `sizeFix` re-derives a line height
  * from the TV body's 1.55 ratio. The corners are the phone's for the same
  * reason - a kit control here should be shaped for a hand, not for a room, and
@@ -102,7 +102,7 @@ export const colors = {
 // out, though a colour after `...type.x` in a spread still overrides it. The
 // ink is the token NAME, so a role re-resolves when the ground swaps.
 //
-// Prefer `<Txt variant="caption">` in new code: the role then carries its own
+// Prefer `<Text variant="caption">` in new code: the role then carries its own
 // line height and tracking, and this spread is only still here for the styles()
 // declarations that predate the theme.
 export const type = {

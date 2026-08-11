@@ -60,9 +60,29 @@ const end = Math.min(requestedEnd, size - 1);
 - **Private functions get no doc comment.** They are read together with their
   only caller. If a private function needs explaining, its name is wrong or it is
   doing two things.
-- **Properties, fields, struct members, interface members, enum variants,
-  constants, and props get no doc comment.** Name them so they do not need one.
-  A field called `expiresAtMs` does not need `/** Expiry timestamp in ms. */`.
+- **Properties, fields, struct members, interface members, enum variants and
+  constants get no doc comment.** Name them so they do not need one. A field
+  called `expiresAtMs` does not need `/** Expiry timestamp in ms. */`.
+- **One exception: a kit component's props.** The props of a component exported
+  from `@kroma/ui` ARE its public API — a caller outside the file reads nothing
+  else, and the workbench renders them as the component's help. So a prop gets
+  ONE line when the contract is not visible from its name and its type: a
+  default, a unit, a fallback chain, or how it interacts with another prop.
+  A prop whose name and type already say it gets nothing.
+
+```ts
+// Good - states a fallback chain the type cannot
+/** The size members fall back to, defaulting to the shell's. A member's own
+ *  `size` still wins. */
+size?: ControlSize;
+
+// Bad - restates the name and the type
+/** Design type role. Defaults to `body`. */
+variant?: TypeRole;
+```
+
+  This exception is for the kit only. Props on an app-level component, and every
+  other interface member anywhere, follow the rule above.
 - **No `@param` / `@returns` / `@type`.** TypeScript and Rust already state the
   types, and the duplicate rots the moment a signature changes. Mention a
   parameter in prose only when its meaning is genuinely surprising.

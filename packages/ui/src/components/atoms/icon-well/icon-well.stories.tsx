@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { IconWell, iconWellVariants } from './icon-well';
 
 const ROW = ['settings', 'language', 'device-tv', 'server-2', 'download'] as const;
@@ -30,7 +30,7 @@ export default story({
           {ROW.map((name) => (
             <Box key={name} row align="center" gap={14}>
               <IconWell {...props} name={name} />
-              <Txt variant="label">{name}</Txt>
+              <Text variant="label">{name}</Text>
             </Box>
           ))}
         </Box>

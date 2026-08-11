@@ -9,7 +9,7 @@ import {
   PersonCard,
   Rail,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
@@ -22,9 +22,9 @@ export function EndsAtHint({ runtimeMs }: Readonly<{ runtimeMs?: number | null }
   return (
     <Box row align="center" gap={9} mt={12}>
       <Icon name="clock" size={16} stroke={1.8} color="accentText" />
-      <Txt style={s.sectionLabelSm} color="rgba(244, 243, 240, 0.55)">
+      <Text style={s.sectionLabelSm} color="text/55">
         {t('content.endsAt', { time: at })}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -38,10 +38,10 @@ export function CastRow({ cast }: Readonly<{ cast?: CastMember[] | null }>) {
   if (!cast || cast.length === 0) return null;
   return (
     <Box mt={32} gap={16}>
-      <Txt style={s.sectionLabel} color="rgba(244, 243, 240, 0.55)">
+      <Text style={s.sectionLabel} color="text/55">
         {t('content.cast')}
-      </Txt>
-      <Rail inset={6}>
+      </Text>
+      <Rail.Root inset={6}>
         {cast.slice(0, 16).map((p, i) => (
           <PersonCard
             key={`${p.name}-${p.character ?? ''}`}
@@ -53,7 +53,7 @@ export function CastRow({ cast }: Readonly<{ cast?: CastMember[] | null }>) {
             onPress={() => nav.go('person', { name: p.name })}
           />
         ))}
-      </Rail>
+      </Rail.Root>
     </Box>
   );
 }

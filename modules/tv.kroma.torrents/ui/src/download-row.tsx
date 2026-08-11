@@ -1,6 +1,6 @@
 import { formatBytes } from '@kroma/core';
 import { type MessageKey, useT } from '@kroma/module-sdk';
-import { type ColorValue, Menu, type MenuEntry, Progress } from '@kroma/ui/kit';
+import { type ColorValue, color, Menu, Progress } from '@kroma/ui/kit';
 import { IconExternalLink, IconMovie, IconUsers } from '@tabler/icons-react';
 import { useNavigate } from '@tanstack/react-router';
 import type { DownloadView } from './schemas';
@@ -15,15 +15,15 @@ export interface LiveDl {
   state: string;
 }
 
-const STATUS_COLOR: Record<string, ColorValue> = {
-  queued: 'rgba(244,243,240,.55)',
-  downloading: '#F4B642',
-  seeding: '#46D08D',
-  completed: '#46D08D',
-  imported: '#46D08D',
-  paused: 'rgba(244,243,240,.55)',
-  failed: '#E8536A',
-  removed: 'rgba(244,243,240,.4)',
+const STATUS_TONE: Record<string, ColorValue> = {
+  queued: 'text/55',
+  downloading: 'accent',
+  seeding: 'success',
+  completed: 'success',
+  imported: 'success',
+  paused: 'text/55',
+  failed: 'danger',
+  removed: 'text/40',
 };
 
 function targetPill(dl: DownloadView): string | null {
@@ -62,15 +62,15 @@ export function DownloadRowView({
     peers: dl.peers,
     peersSeen: dl.peersSeen,
   };
-  const color = STATUS_COLOR[status] ?? 'rgba(244,243,240,.55)';
+  const tone = STATUS_TONE[status] ?? 'text/55';
   const active = status === 'downloading' || status === 'queued';
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-white/4 px-5 py-3 md:grid-cols-[minmax(0,1fr)_190px_120px_110px_84px]">
       <RowTitleCell dl={dl} />
-      <RowProgressCell dl={dl} progress={progress} color={color} />
+      <RowProgressCell dl={dl} progress={progress} tone={tone} />
       <RowSpeedCell active={active} stat={stat} />
-      <RowStatusCell dl={dl} status={status} color={color} active={active} />
+      <RowStatusCell dl={dl} status={status} tone={tone} active={active} />
       <RowActionsMenu
         dl={dl}
         status={status}
@@ -109,7 +109,7 @@ function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
             {dl.title}
           </span>
           {targetLabel ? (
-            <span className="flex-[0_0_auto] rounded-full bg-[#86A8FF]/[0.14] px-[7px] py-0.5 text-[9px] font-bold text-[#86A8FF]">
+            <span className="flex-[0_0_auto] rounded-full bg-info/[0.14] px-[7px] py-0.5 text-[9px] font-bold text-info">
               {targetLabel}
             </span>
           ) : null}
@@ -134,7 +134,9 @@ function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
           ) : null}
         </div>
         {dl.error ? (
-          <div className="mt-1 truncate text-[11.5px] font-semibold text-[#EF8091]">{dl.error}</div>
+          <div className="mt-1 truncate text-[11.5px] font-semibold text-danger-hover">
+            {dl.error}
+          </div>
         ) : null}
       </div>
     </div>
@@ -144,11 +146,11 @@ function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
 function RowProgressCell({
   dl,
   progress,
-  color,
-}: Readonly<{ dl: DownloadView; progress: number; color: ColorValue }>) {
+  tone,
+}: Readonly<{ dl: DownloadView; progress: number; tone: ColorValue }>) {
   return (
     <div className="max-md:hidden">
-      <Progress value={progress} color={color} size={5} rounded />
+      <Progress value={progress} color={tone} size={5} rounded />
       <div className="mt-1 flex items-center justify-between text-[11px] font-semibold tabular-nums text-white/45">
         <span>{Math.round(progress * 100)}%</span>
         {dl.sizeBytes != null ? <span>{formatBytes(dl.sizeBytes)}</span> : null}
@@ -169,11 +171,11 @@ function RowSpeedCell({
     <div className="text-[11.5px] font-semibold tabular-nums text-white/55 max-md:hidden">
       {active ? (
         <>
-          <div className="text-[#46D08D]">{formatBytes(stat.downBps)}/s</div>
+          <div className="text-success">{formatBytes(stat.downBps)}/s</div>
           <div className="flex items-center gap-1.5 text-white/35">
             <span>{formatBytes(stat.upBps)}/s</span>
             <span
-              className={`flex items-center gap-0.5 ${stat.peers > 0 ? 'text-[#86A8FF]' : 'text-[#F4B642]'}`}
+              className={`flex items-center gap-0.5 ${stat.peers > 0 ? 'text-info' : 'text-accent'}`}
               title={t('downloads.peersDetail', {
                 live: String(stat.peers),
                 seen: String(stat.peersSeen),
@@ -194,19 +196,20 @@ function RowSpeedCell({
 function RowStatusCell({
   dl,
   status,
-  color,
+  tone,
   active,
-}: Readonly<{ dl: DownloadView; status: string; color: string; active: boolean }>) {
+}: Readonly<{ dl: DownloadView; status: string; tone: ColorValue; active: boolean }>) {
   const t = useT();
+  const ink = color(tone);
   return (
     <div className="max-md:hidden">
       <span
         className="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[4px] text-[11px] font-bold"
-        style={{ color, background: `${STATUS_COLOR[status] ?? '#fff'}22` }}
+        style={{ color: ink, background: `color-mix(in srgb, ${ink} 13%, transparent)` }}
       >
         <span
           className={`h-1.5 w-1.5 rounded-full ${active ? 'animate-pulse' : ''}`}
-          style={{ background: color }}
+          style={{ background: ink }}
         />
         {t(`downloads.st.${status}` as MessageKey)}
       </span>
@@ -252,67 +255,62 @@ function RowActionsMenu({
         })
     : null;
 
-  const items: MenuEntry[] = [
-    ...(pausable
-      ? [
-          {
-            icon: 'player-pause',
-            label: t('downloads.pause'),
-            onSelect: onPause,
-            disabled: busy,
-          } as const,
-        ]
-      : []),
-    ...(resumable
-      ? [
-          {
-            icon: 'player-play',
-            label: t('downloads.resume'),
-            onSelect: onResume,
-            disabled: busy,
-          } as const,
-        ]
-      : []),
-    ...(canAskPeers
-      ? [
-          {
-            icon: 'users-plus',
-            label: t('downloads.askPeers'),
-            onSelect: onAskPeers,
-            disabled: busy,
-          } as const,
-        ]
-      : []),
-    // Offered in every state: the backend re-imports a completed download and
-    // resets + re-adds anything else.
-    { icon: 'refresh', label: t('downloads.retry'), onSelect: onRetry, disabled: busy } as const,
-    ...(openInKroma
-      ? [{ icon: 'info-circle', label: t('downloads.openInKroma'), onSelect: openInKroma } as const]
-      : []),
-    ...(dl.detailsUrl
-      ? [
-          {
-            icon: 'external-link',
-            label: t('downloads.viewOnTracker'),
-            onSelect: () => {
-              if (dl.detailsUrl) window.open(dl.detailsUrl, '_blank', 'noopener,noreferrer');
-            },
-          } as const,
-        ]
-      : []),
-    'separator',
-    {
-      icon: 'trash',
-      label: t('downloads.remove'),
-      onSelect: onRemove,
-      disabled: busy,
-      danger: true,
-    } as const,
-  ];
+  const openTracker = dl.detailsUrl
+    ? () => {
+        if (dl.detailsUrl) window.open(dl.detailsUrl, '_blank', 'noopener,noreferrer');
+      }
+    : null;
 
   return (
     <div className="flex justify-end">
-      <Menu label={t('downloads.rowActions')} align="end" size={32} items={items} />
+      <Menu.Root label={t('downloads.rowActions')} align="end">
+        <Menu.Trigger />
+        {pausable ? (
+          <Menu.Item
+            icon="player-pause"
+            label={t('downloads.pause')}
+            onSelect={onPause}
+            disabled={busy}
+          />
+        ) : null}
+        {resumable ? (
+          <Menu.Item
+            icon="player-play"
+            label={t('downloads.resume')}
+            onSelect={onResume}
+            disabled={busy}
+          />
+        ) : null}
+        {canAskPeers ? (
+          <Menu.Item
+            icon="users-plus"
+            label={t('downloads.askPeers')}
+            onSelect={onAskPeers}
+            disabled={busy}
+          />
+        ) : null}
+        {/* Offered in every state: the backend re-imports a completed download
+            and resets + re-adds anything else. */}
+        <Menu.Item icon="refresh" label={t('downloads.retry')} onSelect={onRetry} disabled={busy} />
+        {openInKroma ? (
+          <Menu.Item icon="info-circle" label={t('downloads.openInKroma')} onSelect={openInKroma} />
+        ) : null}
+        {openTracker ? (
+          <Menu.Item
+            icon="external-link"
+            label={t('downloads.viewOnTracker')}
+            onSelect={openTracker}
+          />
+        ) : null}
+        <Menu.Separator />
+        <Menu.Item
+          icon="trash"
+          label={t('downloads.remove')}
+          onSelect={onRemove}
+          disabled={busy}
+          tone="danger"
+        />
+      </Menu.Root>
     </div>
   );
 }

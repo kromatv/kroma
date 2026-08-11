@@ -123,13 +123,13 @@ describe('ButtonGroup.Separator', () => {
   });
 });
 
-describe('ButtonGroup.Text', () => {
+describe('ButtonGroup.Addon', () => {
   it('takes part in the shape as a prefix and as a suffix', () => {
     render(
       <ButtonGroup.Root label="Adresse">
-        <ButtonGroup.Text>https://</ButtonGroup.Text>
+        <ButtonGroup.Addon>https://</ButtonGroup.Addon>
         <Button variant="outline" label="kroma" />
-        <ButtonGroup.Text>.tv</ButtonGroup.Text>
+        <ButtonGroup.Addon>.tv</ButtonGroup.Addon>
       </ButtonGroup.Root>,
     );
     const chip = (text: string) => corners(screen.getByText(text).parentElement as Element);

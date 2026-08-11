@@ -3,6 +3,7 @@
 // neither file imports the other).
 
 import type { MessageKey, ReportCategory, ReportStatus, ReportSubjectKind } from '@kroma/core';
+import { color } from '@kroma/ui/kit';
 
 export interface Meta {
   labelKey: MessageKey;
@@ -10,17 +11,17 @@ export interface Meta {
 }
 
 const CATEGORY: Record<ReportCategory, Meta> = {
-  metadata: { labelKey: 'report.category.metadata', color: '#86A8FF' },
-  video: { labelKey: 'report.category.video', color: '#F4B642' },
-  audio: { labelKey: 'report.category.audio', color: '#46D08D' },
-  subtitles: { labelKey: 'report.category.subtitles', color: '#B98BF0' },
-  other: { labelKey: 'report.category.other', color: '#9AA0AA' },
+  metadata: { labelKey: 'report.category.metadata', color: color('info') },
+  video: { labelKey: 'report.category.video', color: color('accent') },
+  audio: { labelKey: 'report.category.audio', color: color('success') },
+  subtitles: { labelKey: 'report.category.subtitles', color: color('hdr') },
+  other: { labelKey: 'report.category.other', color: color('glyph') },
 };
 
 const STATUS: Record<ReportStatus, Meta> = {
-  open: { labelKey: 'reports.status.open', color: '#F4B642' },
-  resolved: { labelKey: 'reports.status.resolved', color: '#46D08D' },
-  dismissed: { labelKey: 'reports.status.dismissed', color: '#9AA0AA' },
+  open: { labelKey: 'reports.status.open', color: color('accent') },
+  resolved: { labelKey: 'reports.status.resolved', color: color('success') },
+  dismissed: { labelKey: 'reports.status.dismissed', color: color('glyph') },
 };
 
 const KIND: Record<ReportSubjectKind, MessageKey> = {
@@ -41,7 +42,7 @@ export function kindLabelKey(k: ReportSubjectKind): MessageKey {
   return KIND[k] ?? KIND.movie;
 }
 
-/** A translucent background for an accent colour (8-digit hex alpha). */
-export function soft(color: string): string {
-  return `${color}22`;
+/** The wash a report chip sits on: its own colour at 13%. */
+export function soft(tone: string): string {
+  return `color-mix(in srgb, ${tone} 13%, transparent)`;
 }

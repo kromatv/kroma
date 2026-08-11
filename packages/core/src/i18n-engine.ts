@@ -1,4 +1,5 @@
-// Generic i18n engine; actual languages are wired up via `createI18n`.
+// Generic i18n engine; actual languages are wired up via `createLocales`
+// (which locales exist) and `createI18n` (what they say).
 
 export type TVars = Record<string, string | number>;
 export type Translate<K extends string> = (key: K, vars?: TVars) => string;
@@ -15,12 +16,15 @@ export interface I18nInstance<L extends string, K extends string> {
     vars?: TVars,
   ) => string | undefined;
   readonly createTranslator: (locale: L) => Translate<K>;
+}
+
+export interface LocaleSet<L extends string, D extends L = L> {
   readonly detectLocale: (preferred?: string | null) => L;
   readonly isLocale: (value: unknown) => value is L;
   readonly normalizeLocale: (tag?: string | null) => L | null;
-  readonly DEFAULT_LOCALE: L;
+  readonly DEFAULT_LOCALE: D;
   readonly SUPPORTED_LOCALES: ReadonlySet<L>;
-  readonly LOCALES: ReadonlyArray<{ readonly code: L; readonly labelKey: K }>;
+  readonly LOCALES: ReadonlyArray<{ readonly code: L; readonly labelKey: `lang.${L}` }>;
 }
 
 export function interpolate(template: string, vars?: TVars): string {
@@ -75,19 +79,19 @@ export function translateIn<L extends string>(
   return template != null ? interpolate(template, vars) : undefined;
 }
 
-export type LocaleOf<I> = I extends I18nInstance<infer L, infer _K> ? L : never;
 export type MessageKeyOf<I> = I extends I18nInstance<infer _L, infer K> ? K : never;
 
-/** Create a fully-typed i18n instance from JSON catalogs: `createI18n({ fr, en }, 'fr')`. */
-export function createI18n<
-  const C extends Record<string, Record<string, string>>,
-  const D extends keyof C & string,
->(catalogs: C, defaultLocale: D): I18nInstance<keyof C & string, keyof C[D] & string> {
-  type L = keyof C & string;
-  type K = keyof C[D] & string;
+/** The locales a product ships, knowable without loading a single message:
+ *  `createLocales({ fr: 'Français', en: 'English' }, 'fr')`. The value of each
+ *  entry is the endonym `normalizeLocale` accepts next to a BCP 47 tag, because
+ *  that is how the server stores an account's language. */
+export function createLocales<
+  const N extends Record<string, string>,
+  const D extends keyof N & string,
+>(names: N, defaultLocale: D): LocaleSet<keyof N & string, D> {
+  type L = keyof N & string;
 
-  const cats = catalogs as unknown as Catalogs<L>;
-  const codes = Object.keys(catalogs) as L[];
+  const codes = Object.keys(names) as L[];
   const supported = new Set<L>(codes);
 
   const isLocale = (value: unknown): value is L =>
@@ -98,10 +102,8 @@ export function createI18n<
     const lower = tag.toLowerCase();
     const base = lower.split(/[-_]/)[0];
     if (isLocale(base)) return base;
-    // Handle display names (e.g. "Français", "English")
     for (const code of codes) {
-      const template = catalogs[code]?.[`lang.${code}`];
-      if (template?.toLowerCase() === lower) return code;
+      if (names[code]?.toLowerCase() === lower) return code;
     }
     return null;
   };
@@ -125,6 +127,31 @@ export function createI18n<
     return defaultLocale;
   };
 
+  const LOCALES = codes.map((code): LocaleSet<L, D>['LOCALES'][number] => ({
+    code,
+    labelKey: `lang.${code}`,
+  }));
+
+  return {
+    detectLocale,
+    isLocale,
+    normalizeLocale,
+    DEFAULT_LOCALE: defaultLocale,
+    SUPPORTED_LOCALES: supported,
+    LOCALES,
+  } as const;
+}
+
+/** Create a fully-typed translator from JSON catalogs: `createI18n({ fr, en }, 'fr')`. */
+export function createI18n<
+  const C extends Record<string, Record<string, string>>,
+  const D extends keyof C & string,
+>(catalogs: C, defaultLocale: D): I18nInstance<keyof C & string, keyof C[D] & string> {
+  type L = keyof C & string;
+  type K = keyof C[D] & string;
+
+  const cats = catalogs as unknown as Catalogs<L>;
+
   const translate = (locale: L, key: K, vars?: TVars): string =>
     translateIn(cats, locale, defaultLocale, key, vars) ?? key;
 
@@ -140,20 +167,9 @@ export function createI18n<
     (key, vars) =>
       translate(locale, key, vars);
 
-  const LOCALES = codes.map((code): I18nInstance<L, K>['LOCALES'][number] => ({
-    code,
-    labelKey: `lang.${code}` as K,
-  }));
-
   return {
     translate,
     translateIn: boundTranslateIn,
     createTranslator,
-    detectLocale,
-    isLocale,
-    normalizeLocale,
-    DEFAULT_LOCALE: defaultLocale,
-    SUPPORTED_LOCALES: supported,
-    LOCALES,
   } as const;
 }

@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { kromaUi } from '../bundler/index.ts';
-import { kromaTokens } from './tokens.ts';
+import { iconPass, kromaUi, sourceRoots, walkSources } from '../bundler/index.ts';
+import { alphaPass } from './alpha-scan.ts';
+import { KNOWN_COLOR_NAMES, kromaTokens } from './tokens.ts';
 
 export { tokensCss } from './tokens.ts';
 
@@ -19,8 +20,27 @@ export interface KromaUIOptions {
   repoRoot?: string;
 }
 
+function kromaScan(repoRoot: string, icons: 'subset' | 'full') {
+  return {
+    name: 'kroma-scan',
+    apply: 'build' as const,
+    buildStart() {
+      const roots = sourceRoots(repoRoot);
+      const passes = [
+        alphaPass(roots, KNOWN_COLOR_NAMES),
+        icons === 'subset' ? iconPass(repoRoot) : null,
+      ];
+      walkSources(
+        roots,
+        passes.filter((pass) => pass !== null),
+      );
+    },
+  };
+}
+
 /** Everything a browser build needs from the design system: the icon subset and
  *  the design tokens. Drop `kromaUI()` into `plugins` and nothing else. */
 export function kromaUI({ icons = 'subset', repoRoot }: KromaUIOptions = {}) {
-  return [kromaUi.vite({ repoRoot: repoRoot ?? findRepoRoot(), icons }), kromaTokens()];
+  const root = repoRoot ?? findRepoRoot();
+  return [kromaScan(root, icons), kromaUi.vite({ repoRoot: root, icons }), kromaTokens()];
 }

@@ -5,7 +5,7 @@
 
 import type { ScoredReleaseView } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconButton } from '@kroma/ui/kit';
+import { color, IconButton } from '@kroma/ui/kit';
 import { IconChevronDown, IconExternalLink } from '@tabler/icons-react';
 import { useState } from 'react';
 import { formatBytes } from '#web/shared/lib/adminFormat';
@@ -32,13 +32,13 @@ export function ReleaseList({
       {errors.map((e) => (
         <div
           key={e}
-          className="rounded-lg border border-[#F4B642]/25 bg-[#F4B642]/8 px-3 py-2 text-[12px] font-semibold text-[#F4B642]"
+          className="rounded-lg border border-accent/25 bg-accent/8 px-3 py-2 text-[12px] font-semibold text-accent"
         >
           {e}
         </div>
       ))}
       {releases.length === 0 && errors.length === 0 ? (
-        <div className="rounded-lg border border-white/[0.07] bg-[#121216] px-3 py-4 text-center text-[12.5px] font-medium text-white/45">
+        <div className="rounded-lg border border-white/[0.07] bg-surface-1 px-3 py-4 text-center text-[12.5px] font-medium text-white/45">
           {t('requests.noReleases')}
         </div>
       ) : null}
@@ -89,7 +89,7 @@ function ReleaseRow({
 
   return (
     <div
-      className={`rounded-xl border px-3 py-2.5 ${rejectedRow ? 'border-white/5 bg-[#101014] opacity-70' : 'border-white/[0.07] bg-[#121216]'}`}
+      className={`rounded-xl border px-3 py-2.5 ${rejectedRow ? 'border-white/5 bg-bg opacity-70' : 'border-white/[0.07] bg-surface-1'}`}
     >
       <div className="flex items-center gap-2.5">
         <button
@@ -157,10 +157,10 @@ function ReleaseMeta({ r }: Readonly<{ r: ScoredReleaseView }>) {
       </span>
       {r.sizeBytes != null ? <span>{formatBytes(r.sizeBytes)}</span> : null}
       {r.seeders != null ? (
-        <span className="text-[#46D08D]">{t('requests.seedersN', { n: String(r.seeders) })}</span>
+        <span className="text-success">{t('requests.seedersN', { n: String(r.seeders) })}</span>
       ) : null}
-      {r.target !== 'movie' ? <span className="text-[#86A8FF]">{targetLabel(r)}</span> : null}
-      {r.rejected ? <span className="text-[#EF8091]">{r.rejected}</span> : null}
+      {r.target !== 'movie' ? <span className="text-info">{targetLabel(r)}</span> : null}
+      {r.rejected ? <span className="text-danger-hover">{r.rejected}</span> : null}
     </div>
   );
 }
@@ -178,7 +178,7 @@ function ScoreBreakdown({ breakdown }: Readonly<{ breakdown: ScoredReleaseView['
           </span>
           <span
             className="flex-[0_0_auto] font-bold tabular-nums"
-            style={{ color: l.delta >= 0 ? '#46D08D' : '#EF8091' }}
+            style={{ color: color(l.delta >= 0 ? 'success' : 'dangerHover') }}
           >
             {l.delta >= 0 ? `+${l.delta}` : l.delta}
           </span>

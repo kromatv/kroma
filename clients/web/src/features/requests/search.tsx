@@ -40,17 +40,17 @@ export function SearchPage() {
   } else if (canDiscover) {
     body = <TrendingBrowse entries={trending.entries} loading={trending.loading} type={type} />;
   } else {
-    body = <EmptyState icon="mood-empty" title={t('discover.empty')} />;
+    body = <EmptyState.Root icon="mood-empty" title={t('discover.empty')} />;
   }
 
   return (
     <main className="min-w-0 pb-20">
       <div className="relative px-(--gutter-web) pt-9">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute inset-x-0 -top-20 h-72 bg-[radial-gradient(48%_60%_at_28%_20%,rgba(242,180,66,.10),transparent_70%)]" />
+          <div className="absolute inset-x-0 -top-20 h-72 bg-[radial-gradient(48%_60%_at_28%_20%,color-mix(in_srgb,var(--kroma-accent-wash)_10%,transparent),transparent_70%)]" />
         </div>
         <div className="relative">
-          <PageHeader
+          <PageHeader.Root
             title={t('discover.title')}
             subtitle={canDiscover ? t('discover.subtitle') : t('discover.subtitleLocal')}
           />

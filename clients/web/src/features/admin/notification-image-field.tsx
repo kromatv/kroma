@@ -11,7 +11,7 @@ import {
   InputGroup,
   Row,
   Spinner,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
@@ -30,7 +30,7 @@ export function NotificationImageField({
   };
 
   return (
-    <Field label={t('admin.notifFieldImage')} minW={0}>
+    <Field.Root label={t('admin.notifFieldImage')} minW={0}>
       <InputGroup.Root label={t('admin.notifFieldImage')}>
         <InputGroup.Addon onPress={() => setOpen(true)}>
           <Img
@@ -59,7 +59,7 @@ export function NotificationImageField({
         </InputGroup.Addon>
       </InputGroup.Root>
       <ImagePickerDialog open={open} onClose={() => setOpen(false)} onPick={pick} />
-    </Field>
+    </Field.Root>
   );
 }
 
@@ -112,9 +112,9 @@ function ImagePickerDialog({
           }}
         />
         {error ? (
-          <Txt variant="meta" color="danger">
+          <Text variant="meta" color="danger">
             {error}
-          </Txt>
+          </Text>
         ) : null}
         <ServerImageGrid onPick={onPick} />
       </Box>
@@ -144,9 +144,9 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
 
   if (failed) {
     return (
-      <Txt variant="meta" color="danger">
+      <Text variant="meta" color="danger">
         {t('error.serverBody')}
-      </Txt>
+      </Text>
     );
   }
   if (!images) {
@@ -158,7 +158,7 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
   }
   if (images.length === 0) {
     return (
-      <EmptyState
+      <EmptyState.Root
         icon="photo"
         title={t('admin.notifImageEmpty')}
         hint={t('admin.notifImageEmptyHint')}

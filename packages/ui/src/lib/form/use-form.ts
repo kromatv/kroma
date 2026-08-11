@@ -9,10 +9,10 @@ type BooleanKeys<V> = { [K in keyof V]-?: V[K] extends boolean ? K : never }[key
 type FieldErrors<V> = Partial<Record<keyof V & string, string>>;
 
 interface TextBinding<T> {
-  value: T;
-  onChange: (next: T) => void;
-  error: string | undefined;
-  onSubmit: () => void;
+  /** Spread onto `<Field.Root>`: the value it holds and the message it shows. */
+  root: { value: T; onValueChange: (next: T) => void; error: string | undefined };
+  /** Spread onto `<Field.Input>` or `<Field.Textarea>`: the return key submits. */
+  input: { onSubmit: () => void };
 }
 
 interface ToggleBinding<T> {
@@ -154,10 +154,12 @@ function useForm<Values extends Record<string, unknown>, Output>({
     submitting,
     submitted,
     field: (name) => ({
-      value: values[name],
-      onChange: (next) => setValue(name, next),
-      error: errors[name],
-      onSubmit: submit,
+      root: {
+        value: values[name],
+        onValueChange: (next) => setValue(name, next),
+        error: errors[name],
+      },
+      input: { onSubmit: submit },
     }),
     toggle: (name) => ({
       checked: values[name],

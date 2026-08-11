@@ -1,5 +1,5 @@
 import { useLocale, useT } from '@kroma/ui';
-import { ListRow, Txt } from '@kroma/ui/kit';
+import { ListRow, Text } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
 import type {
   ActionItem,
@@ -34,12 +34,9 @@ export function SettingsRows({ items }: Readonly<{ items: readonly SettingsEntry
 function Badge({ badge }: Readonly<{ badge: RowBadge }>) {
   const t = useT();
   return (
-    <Txt
-      style={{ fontSize: 15, fontWeight: '600' }}
-      color={badge.tone === 'success' ? 'success' : 'textDim'}
-    >
+    <Text variant="label" color={badge.tone === 'success' ? 'success' : 'textDim'}>
       {t(badge.label)}
-    </Txt>
+    </Text>
   );
 }
 
@@ -62,17 +59,18 @@ function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean
 
   return (
     <>
-      <ListRow
+      <ListRow.Root
         icon={item.icon}
         label={t(item.label)}
         autoFocus={first}
         onPress={list ? () => setPicking(true) : cycle}
-        trailing={
-          <Txt style={{ fontSize: 16, fontWeight: '600' }} color="accentText">
+      >
+        <ListRow.Trailing>
+          <Text variant="labelTv" color="accentText">
             {t(item.valueLabel(value))}
-          </Txt>
-        }
-      />
+          </Text>
+        </ListRow.Trailing>
+      </ListRow.Root>
       {list ? (
         <ChoicePicker
           open={picking}
@@ -92,29 +90,21 @@ function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean
   const t = useT();
   const [on, set] = item.use();
   return (
-    <ListRow
-      icon={item.icon}
-      label={t(item.label)}
-      autoFocus={first}
-      onPress={() => set(!on)}
-      trailing={
+    <ListRow.Root icon={item.icon} label={t(item.label)} autoFocus={first} onPress={() => set(!on)}>
+      <ListRow.Trailing>
         <Badge
           badge={{ label: on ? 'profileMenu.on' : 'profileMenu.off', tone: on ? 'success' : 'dim' }}
         />
-      }
-    />
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
 function ActionRow({ item, first }: Readonly<{ item: ActionItem; first?: boolean }>) {
   const t = useT();
   return (
-    <ListRow
-      icon={item.icon}
-      label={t(item.label)}
-      autoFocus={first}
-      onPress={item.run}
-      trailing={item.badge ? <Badge badge={item.badge} /> : undefined}
-    />
+    <ListRow.Root icon={item.icon} label={t(item.label)} autoFocus={first} onPress={item.run}>
+      <ListRow.Trailing>{item.badge ? <Badge badge={item.badge} /> : null}</ListRow.Trailing>
+    </ListRow.Root>
   );
 }

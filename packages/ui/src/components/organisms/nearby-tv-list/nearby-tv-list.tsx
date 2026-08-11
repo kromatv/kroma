@@ -46,17 +46,20 @@ export function NearbyTvList({
         const busy = connectingHandle === device.handle;
         const outcome = outcomeFor(device);
         return (
-          <ListRow
+          <ListRow.Root
             key={device.handle}
             size="sm"
             icon="device-tv"
             label={device.name}
             hint={handoffRowHint(device, busy, outcome, t) || undefined}
-            trailing={<RowEnd device={device} busy={busy} outcome={outcome} />}
             // A finished row is not a row to press again: the beacon behind it
             // is spent, and the row is only still here to be read.
             onPress={outcome ? undefined : () => onSelect(device)}
-          />
+          >
+            <ListRow.Trailing>
+              <RowEnd device={device} busy={busy} outcome={outcome} />
+            </ListRow.Trailing>
+          </ListRow.Root>
         );
       })}
     </ListRow.Group>

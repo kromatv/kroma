@@ -15,7 +15,6 @@ import {
 import { tvFrame } from '@kroma/bundler/tv-frame';
 import { kromaUI } from '@kroma/ui/vite';
 import babel from '@rolldown/plugin-babel';
-import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import type { ConfigEnv, UserConfig } from 'vite';
 
@@ -69,9 +68,7 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
     // tvFrame() is dev-only: letterboxes into a 1920x1080 stage in a desktop
     // browser; off in device mode, where the panel already is that canvas.
     plugins: [
-      // Before tailwindcss(): the token directive must expand first.
       kromaUI(),
-      tailwindcss(),
       react(),
       // The same auto-memoisation the web client gets, over the same kit source
       // (plugin-react v6 dropped its built-in Babel pass, so the compiler runs
@@ -131,9 +128,7 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
   if (!chrome) throw new Error(`tv.target for ${target.platform} has no legacyChrome`);
   return {
     plugins: [
-      // Before tailwindcss(): the token directive must expand first.
       kromaUI(),
-      tailwindcss(),
       react(),
       // The legacy tier wants this MORE than the modern one: these are the
       // slowest engines KROMA ships to, and the compiler's output is ordinary
@@ -180,7 +175,7 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
       outDir: 'dist/legacy',
       emptyOutDir: true,
       cssCodeSplit: false,
-      // Keep @layer intact for the post-build pass; legacyFinalize minifies.
+      // The post-build pass rewrites this stylesheet; legacyFinalize minifies.
       cssMinify: false,
       modulePreload: { polyfill: false },
       reportCompressedSize: true,

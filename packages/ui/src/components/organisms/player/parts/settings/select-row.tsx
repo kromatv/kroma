@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, type TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
 import { panel, rowStyle } from './panelStyle';
@@ -9,7 +9,7 @@ import { panel, rowStyle } from './panelStyle';
 function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>) {
   if (node == null) return null;
   if (typeof node !== 'string') return node;
-  return <Txt style={style}>{node}</Txt>;
+  return <Text style={style}>{node}</Text>;
 }
 
 /**

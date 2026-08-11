@@ -14,7 +14,7 @@ import {
   type ModuleInfo,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Dialog, DialogActions, Field, SegmentedControl, Select, Txt } from '@kroma/ui/kit';
+import { Box, Dialog, Field, SegmentedControl, Select, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useAdminHost } from './context';
@@ -78,24 +78,27 @@ export function FieldForm({
       {fields.map((f) => {
         const label = t(f.label as MessageKey);
         return f.type === 'select' ? (
-          <Field key={f.key} label={label}>
+          <Field.Root key={f.key} label={label}>
             <EngineSelect
               label={label}
               value={values[f.key] ?? ''}
               options={f.options ?? []}
               onChange={(v) => onChange(f.key, v)}
             />
-          </Field>
+          </Field.Root>
         ) : (
-          <Field
+          <Field.Root
             key={f.key}
             label={label}
-            type={f.secret ? 'password' : 'text'}
-            icon={f.secret ? 'lock' : undefined}
             value={values[f.key] ?? ''}
-            onChange={(v) => onChange(f.key, v)}
-            placeholder={f.placeholder}
-          />
+            onValueChange={(v) => onChange(f.key, v)}
+          >
+            <Field.Input
+              type={f.secret ? 'password' : 'text'}
+              icon={f.secret ? 'lock' : undefined}
+              placeholder={f.placeholder}
+            />
+          </Field.Root>
         );
       })}
     </>
@@ -118,13 +121,14 @@ function EngineSelect({
 }>) {
   const all = value && !options.includes(value) ? [value, ...options] : options;
   return (
-    <Select
-      label={label}
-      block
-      value={value}
-      onChange={onChange}
-      options={all.map((o) => ({ value: o, label: o }))}
-    />
+    <Select.Root label={label} value={value} onValueChange={onChange}>
+      <Select.Trigger block />
+      {all.map((o) => (
+        <Select.Item key={o} value={o}>
+          {o}
+        </Select.Item>
+      ))}
+    </Select.Root>
   );
 }
 
@@ -216,15 +220,17 @@ function AddEngineDialog({
         />
       ) : null}
       <Box gap={16}>
-        <Field label={t('field.name')} icon="tag" value={name} onChange={setName} />
+        <Field.Root label={t('field.name')} value={name} onValueChange={setName}>
+          <Field.Input icon="tag" />
+        </Field.Root>
         <FieldForm fields={fields} values={values} onChange={setField} />
         {error ? (
-          <Txt variant="meta" color="danger">
+          <Text variant="meta" color="danger">
             {error}
-          </Txt>
+          </Text>
         ) : null}
       </Box>
-      <DialogActions
+      <Dialog.Actions
         onCancel={() => onSettle(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={submit}

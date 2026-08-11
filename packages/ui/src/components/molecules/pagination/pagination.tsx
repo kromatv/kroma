@@ -3,7 +3,7 @@ import { Platform, type StyleProp, type ViewStyle } from 'react-native';
 import { Box, type BoxProps, Row } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
 import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
@@ -209,7 +209,7 @@ function Item({ page }: Readonly<PaginationItemProps>) {
         sv={paginationVariants}
         vars={{ size, current: on }}
       >
-        {(state) => <Txt style={state.slots.label}>{page}</Txt>}
+        {(state) => <Text style={state.slots.label}>{page}</Text>}
       </Focusable>
     </Box>
   );
@@ -235,9 +235,9 @@ interface PaginationStatusProps {
 function Status({ format = pageOfCount }: Readonly<PaginationStatusProps>) {
   const { page, pageCount, size } = usePagination('Status');
   return (
-    <Txt variant={size === 'tv' ? 'body' : 'meta'} color="textDim">
+    <Text variant={size === 'tv' ? 'body' : 'meta'} color="textDim">
       {format(page, pageCount)}
-    </Txt>
+    </Text>
   );
 }
 

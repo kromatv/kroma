@@ -4,6 +4,7 @@
 
 import type { ElementRow, MessageKey, Translate, Treatment } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { color } from '@kroma/ui/kit';
 import { IconCheck, IconLoader2, IconRefresh, IconX } from '@tabler/icons-react';
 import {
   fmtDur,
@@ -24,13 +25,13 @@ function subLine(t: Translate, el: ElementRow): { text: string; color: string } 
   if (el.overall === 'failed') {
     return {
       text: `${t('pipeline.st.failed')} : ${names((x) => x.status === 'failed')}`,
-      color: '#EF8091',
+      color: color('dangerHover'),
     };
   }
   if (el.overall === 'running') {
     return {
       text: `${t('pipeline.st.running')} : ${names((x) => x.status === 'running')}`,
-      color: 'rgba(244,243,240,.6)',
+      color: color('text/60'),
     };
   }
   const dur = fmtDur(el.durationMs);
@@ -44,7 +45,7 @@ function subLine(t: Translate, el: ElementRow): { text: string; color: string } 
   } else {
     text = [el.year ? String(el.year) : '', el.genre, dur].filter(Boolean).join(' · ');
   }
-  return { text, color: 'rgba(244,243,240,.5)' };
+  return { text, color: color('text/50') };
 }
 
 function Poster({
@@ -83,7 +84,7 @@ function FlowDots({ treatments }: Readonly<{ treatments: Treatment[] }>) {
             {i > 0 ? (
               <span
                 className="h-0.5 w-3 flex-[0_0_12px] rounded-full"
-                style={{ background: prevDone ? '#46D08D' : 'rgba(255,255,255,.12)' }}
+                style={{ background: color(prevDone ? 'success' : 'white/12') }}
               />
             ) : null}
             <span

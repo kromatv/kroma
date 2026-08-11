@@ -106,7 +106,7 @@ export function InstalledList({
   const shown = all.filter((m) => matchesQuery(m, query));
   if (modules && all.length === 0) {
     return (
-      <EmptyState
+      <EmptyState.Root
         icon="apps"
         title={t('admin.modulesInstalledEmpty')}
         hint={t('admin.modulesInstalledEmptyHint')}
@@ -115,7 +115,10 @@ export function InstalledList({
   }
   if (modules && shown.length === 0) {
     return (
-      <EmptyState icon="search" title={t('admin.modulesEmptySearch', { query: query.trim() })} />
+      <EmptyState.Root
+        icon="search"
+        title={t('admin.modulesEmptySearch', { query: query.trim() })}
+      />
     );
   }
   return (

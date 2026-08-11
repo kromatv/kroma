@@ -1,6 +1,6 @@
 import { type AdminUser, type Invite, PERMISSIONS, type Permission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, confirm, Dialog, DialogActions, Field, InputGroup } from '@kroma/ui/kit';
+import { Button, confirm, Dialog, Field, InputGroup, ListRow } from '@kroma/ui/kit';
 import { IconMail } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
@@ -22,23 +22,19 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
     }
   }
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface-1 px-5 py-3.75">
-      <div className="flex min-w-0 items-center gap-3.5">
+    <ListRow.Root
+      size="md"
+      label={inv.permissions.join(', ') || t('admin.permPlayback')}
+      hint={t('admin.expiresOn', {
+        date: new Date(inv.expiresAt * 1000).toLocaleDateString('fr-FR'),
+      })}
+    >
+      <ListRow.Leading>
         <span className="flex h-10.5 w-10.5 shrink-0 items-center justify-center rounded-full border border-dashed border-text/25">
-          <IconMail size={18} stroke={1.8} color="rgba(244,243,240,.5)" />
+          <IconMail size={18} stroke={1.8} className="text-text/50" />
         </span>
-        <div className="min-w-0">
-          <div className="truncate text-[14.5px] font-bold">
-            {inv.permissions.join(', ') || t('admin.permPlayback')}
-          </div>
-          <div className="text-[12.5px] font-medium text-text/45">
-            {t('admin.expiresOn', {
-              date: new Date(inv.expiresAt * 1000).toLocaleDateString('fr-FR'),
-            })}
-          </div>
-        </div>
-      </div>
-      <div className="flex shrink-0 gap-2.5">
+      </ListRow.Leading>
+      <ListRow.Trailing>
         <Button
           variant="glass"
           size="sm"
@@ -51,8 +47,8 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
           label={t('common.cancel')}
           onPress={() => void client.revokeInvite(inv.token).then(onChange)}
         />
-      </div>
-    </div>
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
@@ -147,7 +143,9 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       onClose={() => call.end(false)}
       width={460}
     >
-      <Field label={t('admin.name')} icon="user" value={name} onChange={setName} />
+      <Field.Root label={t('admin.name')}>
+        <Field.Input icon="user" value={name} onValueChange={setName} />
+      </Field.Root>
       <div>
         <div className="mb-2 text-[12px] font-bold uppercase tracking-[.12em] text-dim">
           {t('admin.permissions')}
@@ -155,7 +153,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
         <PermPicker selected={perms} toggle={toggle} />
         {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
       </div>
-      <DialogActions
+      <Dialog.Actions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={() => {
@@ -163,14 +161,17 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
         }}
         confirmLabel={busy ? t('common.saving') : t('common.save')}
         busy={busy}
-        destructive={{
-          label: t('admin.deleteAccount'),
-          onPress: () => {
+      >
+        <Button
+          variant="dangerGhost"
+          size="sm"
+          label={t('admin.deleteAccount')}
+          onPress={() => {
             void remove();
-          },
-          disabled: isSelf,
-        }}
-      />
+          }}
+          disabled={busy || isSelf}
+        />
+      </Dialog.Actions>
     </Dialog>
   );
 });
@@ -228,7 +229,7 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
           </InputGroup.Root>
         </div>
       ) : (
-        <DialogActions
+        <Dialog.Actions
           onCancel={close}
           cancelLabel={t('common.cancel')}
           onConfirm={() => {

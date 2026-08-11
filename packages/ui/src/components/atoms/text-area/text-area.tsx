@@ -10,7 +10,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { color, styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import { fieldSizing } from '#ui/lib/css';
@@ -138,13 +138,13 @@ function TextArea({
       ) : (
         // A television: a display, not an input, so no tap can summon the IME.
         <Box row align="flex-end" gap={2} flex minH={min}>
-          <Txt
+          <Text
             lines={maxRows}
             style={[{ flexShrink: 1 }, textStyle]}
             color={value ? 'text' : PLACEHOLDER}
           >
             {value || placeholder || ''}
-          </Txt>
+          </Text>
           <Caret height={LINE} />
         </Box>
       )}

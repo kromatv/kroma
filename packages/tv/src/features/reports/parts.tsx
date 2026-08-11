@@ -1,13 +1,13 @@
 import type { ReportCategory } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Chip, Icon, ListRow, Rail, REPORT_CATEGORIES, Txt } from '@kroma/ui/kit';
+import { Box, Chip, Icon, ListRow, Rail, REPORT_CATEGORIES, Text } from '@kroma/ui/kit';
 import type { ReportEpisode } from '#tv/app/router';
 
 export function GroupLabel({ text }: Readonly<{ text: string }>) {
   return (
-    <Txt variant="overlineTv" color="rgba(244, 243, 240, 0.45)">
+    <Text variant="overlineTv" color="text/45">
       {text}
-    </Txt>
+    </Text>
   );
 }
 
@@ -30,7 +30,7 @@ export function SubjectRow({
   return (
     <Box gap={12}>
       <GroupLabel text={t('report.subject')} />
-      <Rail inset={6} gap={10}>
+      <Rail.Root inset={6} gap={10}>
         <Chip
           variant="surface"
           focusScale={1.05}
@@ -48,7 +48,7 @@ export function SubjectRow({
             onPress={() => onSelect(ep.id)}
           />
         ))}
-      </Rail>
+      </Rail.Root>
     </Box>
   );
 }
@@ -68,21 +68,19 @@ export function CategoryRows({
       <GroupLabel text={t('report.category')} />
       <Box gap={10}>
         {REPORT_CATEGORIES.map((c, index) => (
-          <ListRow
+          <ListRow.Root
             key={c.key}
             autoFocus={index === 0}
             icon={c.icon}
             label={t(c.labelKey)}
             hint={t(c.hintKey)}
+            chevron={false}
             onPress={() => onSelect(c.key)}
-            trailing={
-              c.key === selected ? (
-                <Icon name="check" size={22} color="accentText" />
-              ) : (
-                <Box w={22} />
-              )
-            }
-          />
+          >
+            <ListRow.Trailing>
+              {c.key === selected ? <Icon name="check" size={22} color="accentText" /> : null}
+            </ListRow.Trailing>
+          </ListRow.Root>
         ))}
       </Box>
     </Box>
@@ -97,9 +95,9 @@ export function ReportSent() {
       <Box w={104} h={104} center radius="pill" bg="accent">
         <Icon name="check" size={48} color="accentInk" stroke={2.4} />
       </Box>
-      <Txt style={{ fontSize: 26, fontWeight: '600', textAlign: 'center', maxWidth: 620 }}>
+      <Text variant="headingTv" textAlign="center" maxW={620}>
         {t('report.submitted')}
-      </Txt>
+      </Text>
     </Box>
   );
 }

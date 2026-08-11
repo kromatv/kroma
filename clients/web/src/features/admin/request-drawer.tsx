@@ -12,7 +12,7 @@ import {
 } from '@kroma/core';
 import { useModuleEnabled } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, Drawer, Field, IconButton } from '@kroma/ui/kit';
+import { Avatar, Button, color, Drawer, Field, IconButton } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
@@ -89,7 +89,7 @@ function RequesterCard({ req }: Readonly<{ req: MediaRequest }>) {
       <div className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
         {t('requests.requestedBy')}
       </div>
-      <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5">
+      <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-surface-1 px-4 py-3.5">
         <Avatar name={req.requestedByName ?? '?'} size={34} circle shadow={false} />
         <div className="min-w-0">
           <div className="truncate text-[14px] font-bold">
@@ -106,7 +106,7 @@ function RequesterCard({ req }: Readonly<{ req: MediaRequest }>) {
       </div>
 
       {req.note ? (
-        <div className="mt-4 rounded-lg border border-[#E8536A]/18 bg-[#E8536A]/8 px-[11px] py-2.5 text-[12.5px] leading-[1.45] text-[#EF8091]">
+        <div className="mt-4 rounded-lg border border-danger/18 bg-danger/8 px-[11px] py-2.5 text-[12.5px] leading-[1.45] text-danger-hover">
           {req.note}
         </div>
       ) : null}
@@ -146,13 +146,13 @@ function SearchPanel({
         />
       </div>
       {search.error ? (
-        <div className="rounded-lg border border-[#E8536A]/18 bg-[#E8536A]/8 px-3 py-2 text-[12px] font-semibold text-[#EF8091]">
+        <div className="rounded-lg border border-danger/18 bg-danger/8 px-3 py-2 text-[12px] font-semibold text-danger-hover">
           {search.error}
         </div>
       ) : null}
       {grabbed ? (
         <div
-          className={`mb-2 rounded-lg border px-3 py-2 text-[12px] font-semibold ${grabbed.error ? 'border-[#E8536A]/18 bg-[#E8536A]/8 text-[#EF8091]' : 'border-[#46D08D]/25 bg-[#46D08D]/9 text-[#46D08D]'}`}
+          className={`mb-2 rounded-lg border px-3 py-2 text-[12px] font-semibold ${grabbed.error ? 'border-danger/18 bg-danger/8 text-danger-hover' : 'border-success/25 bg-success/9 text-success'}`}
         >
           {grabbed.error ? grabbed.title : `${t('requests.grabbed')} ${grabbed.title}`}
         </div>
@@ -186,14 +186,14 @@ function DenyForm({
   const t = useT();
   return (
     <div className="flex flex-col gap-2.5">
-      <Field
-        label={t('requests.denyNote')}
-        hideLabel
-        icon="note"
-        value={note}
-        onChange={onNote}
-        placeholder={t('requests.denyNote')}
-      />
+      <Field.Root label={t('requests.denyNote')} hideLabel>
+        <Field.Input
+          icon="note"
+          value={note}
+          onValueChange={onNote}
+          placeholder={t('requests.denyNote')}
+        />
+      </Field.Root>
       <div className="flex gap-2.5">
         <Button
           variant="danger"
@@ -390,4 +390,4 @@ export const RequestDrawer = createCallable<
 }, 400);
 
 // The drawers' darker fill, kept from the hand-rolled asides they replace.
-const DRAWER_FILL = { backgroundColor: '#0E0E12' } as const;
+const DRAWER_FILL = { backgroundColor: color('bg') } as const;

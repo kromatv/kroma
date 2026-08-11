@@ -2,7 +2,6 @@ import { fileURLToPath } from 'node:url';
 import { RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, webResolve } from '@kroma/bundler/rnw';
 import { buildDefine } from '@kroma/bundler/shell';
 import { kromaUI } from '@kroma/ui/vite';
-import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type UserConfig } from 'vite';
 
@@ -11,7 +10,7 @@ const shellDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig(
   ({ command }): UserConfig => ({
-    plugins: [kromaUI(), tailwindcss(), react()],
+    plugins: [kromaUI(), react()],
     define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE },
     resolve: webResolve({
       '#tv': fileURLToPath(new URL('../../packages/tv/src', import.meta.url)),

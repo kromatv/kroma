@@ -1,7 +1,7 @@
 import buildInfo from 'virtual:build-info';
 import { hasPermission, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Drawer, Logo, Menu, type MenuEntry } from '@kroma/ui/kit';
+import { color, Drawer, Logo, Menu, type MenuTriggerBind } from '@kroma/ui/kit';
 import {
   IconAlertTriangle,
   IconCalendarClock,
@@ -21,14 +21,14 @@ import {
 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
-import { type ComponentProps, useEffect, useState } from 'react';
-import { CapabilityChip } from '#web/features/accounts/capability-chip';
-import { UserAvatar } from '#web/features/accounts/user-avatar';
+import { useEffect, useState } from 'react';
 import { NotificationBell } from '#web/features/notifications/panel';
 import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
 import { serverQueries } from '#web/shared/lib/queries';
+import { CapabilityChip } from '#web/shared/ui/capability-chip';
+import { UserAvatar } from '#web/shared/ui/user-avatar';
 
 const itemCls =
   'flex items-center gap-3.5 rounded-md px-3.5 py-3 text-[15px] max-lg:text-[16px] font-semibold text-muted no-underline transition-colors duration-200 hover:bg-white/4 hover:text-text aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent';
@@ -44,7 +44,7 @@ const NAV: { labelKey: MessageKey; to: string; icon: TablerIcon; exact?: boolean
 
 export function Sidebar() {
   return (
-    <aside className="sticky top-0 hidden h-screen flex-col self-start border-r border-border bg-[#0C0C0E] lg:flex">
+    <aside className="sticky top-0 hidden h-screen flex-col self-start border-r border-border bg-bg lg:flex">
       <div className="shrink-0 px-4.5 pb-2 pt-7">
         <div className="flex items-center justify-between px-2 pb-2">
           <Logo size={24} />
@@ -108,7 +108,7 @@ export function MobileTopbar() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; pathname closes the drawer on navigation
   useEffect(() => setOpen(false), [pathname]);
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-[#0C0C0E]/95 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
+    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-bg/95 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
       <Link to="/" aria-label="KROMA">
         <Logo size={20} />
       </Link>
@@ -152,7 +152,7 @@ export function MobileTopbar() {
   );
 }
 
-const NAV_FILL = { backgroundColor: '#0C0C0E' } as const;
+const NAV_FILL = { backgroundColor: color('bg') } as const;
 
 function RequestsLink() {
   const t = useT();
@@ -271,31 +271,29 @@ function UserChip() {
   // Return to the current page after switching profile.
   const href = useRouterState({ select: (s) => s.location.href });
   if (!user) return null;
-  const items: MenuEntry[] = [
-    {
-      icon: 'user-circle',
-      label: t('nav.accountSettings'),
-      onSelect: () => void navigate({ to: '/account' }),
-    },
-    {
-      icon: 'users',
-      label: t('nav.changeProfile'),
-      onSelect: () => void navigate({ to: '/login', search: { redirect: href } }),
-    },
-    'separator',
-    { icon: 'logout', label: t('auth.logout'), onSelect: () => void logout(), danger: true },
-  ];
   return (
-    <Menu
-      label={t('nav.account')}
-      align="start"
-      items={items}
-      trigger={userChipTrigger(user, t('nav.account'))}
-    />
+    <Menu.Root label={t('nav.account')} align="start">
+      <Menu.Trigger render={userChipTrigger(user, t('nav.account'))} />
+      <Menu.Item
+        icon="user-circle"
+        label={t('nav.accountSettings')}
+        onSelect={() => void navigate({ to: '/account' })}
+      />
+      <Menu.Item
+        icon="users"
+        label={t('nav.changeProfile')}
+        onSelect={() => void navigate({ to: '/login', search: { redirect: href } })}
+      />
+      <Menu.Separator />
+      <Menu.Item
+        icon="logout"
+        label={t('auth.logout')}
+        tone="danger"
+        onSelect={() => void logout()}
+      />
+    </Menu.Root>
   );
 }
-
-type MenuTriggerBind = Parameters<NonNullable<ComponentProps<typeof Menu>['trigger']>>[0];
 
 // Built out here rather than inline in <UserChip>: a render prop is still a
 // function returning elements, and one written inside the parent remounts its
@@ -315,14 +313,14 @@ function UserChipTrigger({
   user,
   label,
 }: Readonly<{ bind: MenuTriggerBind; user: ChipUser; label: string }>) {
-  const { ref, expanded, open } = bind;
+  const { ref, expanded, onPress } = bind;
   return (
     <button
       ref={ref as unknown as React.Ref<HTMLButtonElement>}
       type="button"
       aria-haspopup="menu"
       aria-expanded={expanded}
-      onClick={open}
+      onClick={onPress}
       className={`mt-2 flex items-center gap-3 rounded-md p-2.5 text-left transition-colors hover:bg-white/4 focus:outline-none ${expanded ? 'bg-white/4' : ''}`}
       title={label}
     >

@@ -14,9 +14,11 @@ import {
   Icon,
   IconButton,
   type IconName,
+  SHADE,
   Spinner,
+  shade,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
@@ -78,7 +80,7 @@ export function ControlsLayer({
         pointerEvents="none"
       />
       <LinearGradient
-        colors={['rgba(10,10,12,0)', 'rgba(10,10,12,0.85)']}
+        colors={[SHADE.transparent, shade(0.85)]}
         style={s.scrimBottom}
         pointerEvents="none"
       />
@@ -97,13 +99,13 @@ export function ControlsLayer({
         {/* Beside the back button, like the TV bar: the title reads from the
             corner, not the centre of the picture. */}
         <Box style={s.titleBox}>
-          <Txt lines={1} style={s.title}>
+          <Text lines={1} style={s.title}>
             {title}
-          </Txt>
+          </Text>
           {sub ? (
-            <Txt lines={1} style={s.subtitle}>
+            <Text lines={1} style={s.subtitle}>
               {sub}
-            </Txt>
+            </Text>
           ) : null}
         </Box>
       </Box>
@@ -247,8 +249,8 @@ function ScrubRow({
         }}
       />
       <Box style={s.timeRow}>
-        <Txt style={s.time}>{formatTimecode(engine.cur)}</Txt>
-        <Txt style={s.time}>{formatTimecode(engine.dur)}</Txt>
+        <Text style={s.time}>{formatTimecode(engine.cur)}</Text>
+        <Text style={s.time}>{formatTimecode(engine.dur)}</Text>
       </Box>
     </Box>
   );

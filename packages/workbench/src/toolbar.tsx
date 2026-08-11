@@ -10,7 +10,7 @@ import {
   type IconName,
   styles,
   sv,
-  Txt,
+  Text,
   webWindow,
 } from '@kroma/ui/kit';
 import { type ColorToken, colors } from '@kroma/ui/tokens';
@@ -234,9 +234,9 @@ function Lens<T extends string>({
           <>
             <Face choice={current} fallback={glyph} on={open} />
             {terse ? null : (
-              <Txt variant="meta" style={slots.label}>
+              <Text variant="meta" style={slots.label}>
                 {current?.label ?? value}
-              </Txt>
+              </Text>
             )}
             <Icon
               name={open ? 'chevron-up' : 'chevron-down'}
@@ -306,14 +306,14 @@ function Item({
       {({ slots }) => (
         <>
           <Face choice={choice} fallback={fallback} on={chosen} />
-          <Txt variant="meta" style={slots.label}>
+          <Text variant="meta" style={slots.label}>
             {choice.label}
-          </Txt>
+          </Text>
           <Box flex />
           {choice.note ? (
-            <Txt variant="meta" color="textDim" style={s.itemNote}>
+            <Text variant="meta" color="textDim" style={s.itemNote}>
               {choice.note}
-            </Txt>
+            </Text>
           ) : null}
           <Box w={14} align="center">
             {chosen ? <Icon name="check" size={14} color="accent" /> : null}

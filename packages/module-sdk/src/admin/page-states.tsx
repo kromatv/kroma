@@ -36,8 +36,8 @@ export function ModuleUnavailable() {
   const t = useT();
   return (
     <Box style={PAGE}>
-      <EmptyState
-        fill
+      <EmptyState.Root
+        layout="fill"
         icon="plug-off"
         title={t('modules.unavailable')}
         hint={t('modules.unavailableHint')}
@@ -53,13 +53,13 @@ export function ModuleFailed({ retry, detail }: Readonly<{ retry?: () => void; d
   const t = useT();
   return (
     <Box style={PAGE}>
-      <EmptyState
-        fill
+      <EmptyState.Root
+        layout="fill"
         icon="alert-triangle"
         title={t('modules.loadFailed')}
         hint={t('modules.loadFailedHint')}
         detail={detail}
-        action={
+        actions={
           retry ? (
             <Button
               variant="glass"

@@ -1,6 +1,6 @@
 # Atoms
 
-Level 2. The indivisible controls: `Button`, `Txt`, `Icon`, `Switch`, `Img`,
+Level 2. The indivisible controls: `Button`, `Text`, `Icon`, `Switch`, `Img`,
 `Focusable`. Take one apart and you do not get smaller components, you get
 nothing usable.
 

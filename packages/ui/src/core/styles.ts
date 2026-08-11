@@ -4,14 +4,18 @@
 // This covers the rest: the shapes a file reuses, which had no home but a
 // module constant.
 
+import { breakpointStep } from '#ui/core/breakpoint';
 import { normalize, stabilise } from '#ui/core/normalize';
+import { declaredBreakpoints } from '#ui/core/shorthands';
 import { themeVersion } from '#ui/core/theme';
 import type { AnyStyle, StyleDecl } from '#ui/core/types';
 
 export type Styles<S> = { readonly [K in keyof S]: AnyStyle };
 
 /**
- * Resolve a named set of styles, once per theme, on first use.
+ * Resolve a named set of styles, once per theme, on first use - and once more
+ * per breakpoint the set actually names, which is never for a set that names
+ * none.
  *
  * Shaped like `StyleSheet.create` so it reads the way React Native already
  * does, but speaking the kit's vocabulary — shorthands, colour tokens and the
@@ -23,29 +27,37 @@ export type Styles<S> = { readonly [K in keyof S]: AnyStyle };
  *     label: { fontSize: 13, color: 'textMuted' },
  *   });
  *
- *   <Box style={s.row}><Txt style={s.label} /></Box>
+ *   <Box style={s.row}><Text style={s.label} /></Box>
  *
  * Each value goes through `StyleSheet.create`, so react-native-web compiles it
  * to atomic CSS classes shared with every other style that declares the same
  * thing, rather than re-serialising it onto each element.
  *
  * The binding is a live view: reading `s.row` resolves against the ACTIVE
- * theme, and a theme swap hands back fresh objects (a new identity is what
- * makes react-native-web recompile them). Read properties off it at render
- * time; a value copied out and held keeps the theme it was read under.
+ * theme and breakpoint, and either swap hands back fresh objects (a new
+ * identity is what makes react-native-web recompile them). Read properties off
+ * it at render time; a value copied out and held keeps the theme it was read
+ * under. Nothing here re-renders a component - a set that changes with the
+ * breakpoint is read by one that follows it (`useBreakpoint`, or <Box>).
  */
 export function styles<const S extends Record<string, StyleDecl>>(decls: S): Styles<S> {
   let builtAt = -1;
+  let builtStep = 0;
+  let breakpoints = 0;
   let built: Record<string, AnyStyle> = {};
   const resolve = (): Record<string, AnyStyle> => {
     const at = themeVersion();
-    if (builtAt !== at) {
+    if (builtAt !== at || breakpointStep(breakpoints) !== builtStep) {
       const resolved: Record<string, AnyStyle> = {};
+      breakpoints = 0;
       for (const name of Object.keys(decls)) {
-        resolved[name] = stabilise(normalize(decls[name] as Record<string, unknown>)) as AnyStyle;
+        const decl = decls[name] as Record<string, unknown>;
+        breakpoints |= declaredBreakpoints(decl);
+        resolved[name] = stabilise(normalize(decl)) as AnyStyle;
       }
       built = resolved;
       builtAt = at;
+      builtStep = breakpointStep(breakpoints);
     }
     return built;
   };
@@ -88,6 +100,10 @@ let sharedAt = -1;
  * Capped, because a key built from a measured number would otherwise mint an
  * entry forever; past the cap it resolves correctly and stops remembering. A
  * theme swap clears it, which is also what retires the old theme's values.
+ *
+ * The key identifies the DECLARATION, so one stating a value per breakpoint
+ * carries the step it was resolved at (see <Text>); the breakpoint is not part
+ * of the key by itself, which is what keeps a flat declaration at one entry.
  */
 export function sharedStyle(key: string, decl: StyleDecl): AnyStyle {
   const at = themeVersion();

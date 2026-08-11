@@ -14,7 +14,7 @@ describe('the kit', () => {
   });
 
   it('re-exports the four atomic levels FLAT', () => {
-    for (const name of ['Button', 'Txt', 'Icon', 'ListRow', 'Rail', 'TvStage']) {
+    for (const name of ['Button', 'Text', 'Icon', 'ListRow', 'Rail', 'TvStage']) {
       expect(names(kit)).toContain(name);
     }
   });

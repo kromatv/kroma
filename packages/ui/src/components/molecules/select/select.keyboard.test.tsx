@@ -7,10 +7,15 @@
 // `option` out of the tab order entirely.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act } from 'react';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
+import { configureRemote } from '#ui/lib/focus-remote';
+import { FocusScope } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { Select } from './select';
+
+beforeAll(() => configureRemote());
 
 afterEach(() => {
   cleanup();
@@ -25,33 +30,48 @@ function press(el: HTMLElement, key = 'Enter') {
   fireEvent.keyUp(el, { key });
 }
 
-const OPTIONS = [
-  { value: 'all', label: 'Toutes les sources' },
-  { value: 'server', label: 'kroma_server' },
-];
+function Source({
+  value = 'all',
+  onValueChange,
+  disabled,
+  block,
+}: Readonly<{
+  value?: string;
+  onValueChange?: (next: string) => void;
+  disabled?: boolean;
+  block?: boolean;
+}>) {
+  return (
+    <Select.Root label="Source" value={value} onValueChange={onValueChange} disabled={disabled}>
+      <Select.Trigger block={block} />
+      <Select.Item value="all">Toutes les sources</Select.Item>
+      <Select.Item value="server">kroma_server</Select.Item>
+    </Select.Root>
+  );
+}
 
 describe('a kit control on a web page', () => {
   it('puts the select trigger in the tab order', () => {
-    render(<Select label="Source" options={OPTIONS} value="all" onChange={() => {}} />);
+    render(<Source />);
     expect(screen.getByRole('combobox').getAttribute('tabindex')).toBe('0');
   });
 
   it('opens the select from the keyboard', () => {
-    render(<Select label="Source" options={OPTIONS} value="all" onChange={() => {}} />);
+    render(<Source />);
     const trigger = screen.getByRole('combobox');
     press(trigger);
     expect(screen.getByRole('listbox')).toBeTruthy();
   });
 
   it('opens it with Space too, the key the responder skips for a combobox', () => {
-    render(<Select label="Source" options={OPTIONS} value="all" onChange={() => {}} />);
+    render(<Source />);
     const trigger = screen.getByRole('combobox');
     press(trigger, ' ');
     expect(screen.getByRole('listbox')).toBeTruthy();
   });
 
   it('keeps the focus on the trigger and names the list from it', () => {
-    render(<Select label="Source" options={OPTIONS} value="all" onChange={() => {}} />);
+    render(<Source />);
     const trigger = screen.getByRole('combobox');
     press(trigger);
 
@@ -76,7 +96,7 @@ describe('a kit control on a web page', () => {
   it('portals the panel out of the trigger, so nothing later can paint over it', () => {
     render(
       <div data-testid="row" style={{ position: 'relative', zIndex: 0 }}>
-        <Select label="Source" options={OPTIONS} value="all" onChange={() => {}} />
+        <Source />
       </div>,
     );
     const trigger = screen.getByRole('combobox');
@@ -87,7 +107,7 @@ describe('a kit control on a web page', () => {
   });
 
   it('pins the panel to the trigger box, never narrower', () => {
-    render(<Select label="Source" options={OPTIONS} value="all" onChange={() => {}} block />);
+    render(<Source block />);
     const trigger = screen.getByRole('combobox');
     trigger.getBoundingClientRect = () =>
       ({ left: 70, right: 508, top: 100, bottom: 140, width: 438, height: 40 }) as DOMRect;
@@ -98,7 +118,7 @@ describe('a kit control on a web page', () => {
   });
 
   it('sizes the panel to its content, with the trigger as the floor', () => {
-    render(<Select label="Source" options={OPTIONS} value="all" onChange={() => {}} />);
+    render(<Source />);
     const trigger = screen.getByRole('combobox');
     press(trigger);
     const panel = screen.getByRole('listbox');
@@ -110,30 +130,32 @@ describe('a kit control on a web page', () => {
   });
 
   it('walks the options and picks one, all from the trigger', () => {
-    const onChange = vi.fn();
-    render(<Select label="Source" options={OPTIONS} value="all" onChange={onChange} />);
+    const onValueChange = vi.fn();
+    render(<Source onValueChange={onValueChange} />);
     const trigger = screen.getByRole('combobox');
     press(trigger);
     fireEvent.keyDown(trigger, { key: 'ArrowDown' });
     press(trigger);
-    expect(onChange).toHaveBeenCalledWith('server');
+    expect(onValueChange).toHaveBeenCalledWith('server', {
+      item: expect.objectContaining({ value: 'server', label: 'kroma_server' }),
+    });
   });
 
   it('does not reopen on the keyup of the press that picked', () => {
     // The panel answers Enter on keyDown; the responder underneath would
     // answer the keyUp as a press of the trigger and open the panel straight
     // back up, so a key the panel takes must not reach it at all.
-    const onChange = vi.fn();
-    render(<Select label="Source" options={OPTIONS} value="all" onChange={onChange} />);
+    const onValueChange = vi.fn();
+    render(<Source onValueChange={onValueChange} />);
     const trigger = screen.getByRole('combobox');
     press(trigger);
     press(trigger);
-    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
   it('keeps a disabled control out of the tab order', () => {
-    render(<Select label="Source" options={OPTIONS} value="all" disabled onChange={() => {}} />);
+    render(<Source disabled />);
     expect(screen.getByRole('combobox').getAttribute('tabindex')).not.toBe('0');
   });
 
@@ -174,5 +196,89 @@ describe('a kit control on a web page', () => {
   it('leaves a button to the browser', () => {
     render(<Focusable label="Ouvrir" role="button" onPress={() => {}} />);
     expect(screen.getByLabelText('Ouvrir').tagName).toBe('BUTTON');
+  });
+});
+
+describe('the parts', () => {
+  it('reports every way out with its reason', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <Select.Root label="Source" defaultValue="all" onOpenChange={onOpenChange}>
+        <Select.Trigger />
+        <Select.Item value="all">Toutes les sources</Select.Item>
+        <Select.Item value="server">kroma_server</Select.Item>
+      </Select.Root>,
+    );
+    const trigger = screen.getByRole('combobox');
+    press(trigger);
+    expect(onOpenChange).toHaveBeenLastCalledWith(true, { reason: 'trigger' });
+
+    fireEvent.keyDown(trigger, { key: 'Escape' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'escape' });
+
+    press(trigger);
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'select' });
+  });
+
+  it('runs itself when only a default is given', () => {
+    render(
+      <Select.Root label="Source" defaultValue="all">
+        <Select.Trigger />
+        <Select.Item value="all">Toutes les sources</Select.Item>
+        <Select.Item value="server">kroma_server</Select.Item>
+      </Select.Root>,
+    );
+    const trigger = screen.getByRole('combobox');
+    expect(trigger.getAttribute('aria-label')).toBe('Source: Toutes les sources');
+    press(trigger);
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(trigger.getAttribute('aria-label')).toBe('Source: kroma_server');
+  });
+
+  it('reads the placeholder until something is picked', () => {
+    render(
+      <Select.Root placeholder="Qualité">
+        <Select.Trigger />
+        <Select.Item value="1080p">1080p</Select.Item>
+      </Select.Root>,
+    );
+    expect(screen.getByRole('combobox').getAttribute('aria-label')).toBe('Qualité');
+    expect(screen.getByText('Qualité')).toBeTruthy();
+  });
+
+  it('opens in a dialog under a D-pad, and Back says so', () => {
+    const onOpenChange = vi.fn();
+    render(
+      <FocusScope>
+        <Select.Root label="Source" defaultValue="all" defaultOpen onOpenChange={onOpenChange}>
+          <Select.Trigger />
+          <Select.Item value="all">Toutes les sources</Select.Item>
+          <Select.Item value="server">kroma_server</Select.Item>
+        </Select.Root>
+      </FocusScope>,
+    );
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'back' });
+  });
+
+  it('draws the tick on the picked row through <Select.Indicator>', () => {
+    render(
+      <Select.Root label="Source" defaultValue="server">
+        <Select.Trigger />
+        <Select.Item value="all">Toutes les sources</Select.Item>
+        <Select.Item value="server">kroma_server</Select.Item>
+      </Select.Root>,
+    );
+    press(screen.getByRole('combobox'));
+    const rows = screen.getAllByRole('option');
+    expect(rows.map((row) => row.getAttribute('aria-selected'))).toEqual(['false', 'true']);
   });
 });

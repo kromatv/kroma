@@ -9,7 +9,7 @@ import {
   Img,
   qualityTone,
   styles,
-  Txt,
+  Text,
   tintGradient,
 } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
@@ -59,38 +59,34 @@ export function TvDetailScaffold({
 
       <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
         <FocusSlot>
-          <Txt variant="overlineTv" color="accentText">
+          <Text variant="overlineTv" color="accentText">
             {kind}
-          </Txt>
-          <Txt variant="hero" style={[s.title, { marginTop: 14, marginBottom: 16 }]}>
+          </Text>
+          <Text variant="hero" style={[s.title, { marginTop: 14, marginBottom: 16 }]}>
             {title}
-          </Txt>
+          </Text>
 
           <Box row wrap align="center" gap={13} mb={18}>
             {rating ? (
               <>
-                <Txt style={{ fontSize: 18, fontWeight: '700' }} color="accentText">
+                <Text variant="strongTv" color="accentText">
                   {`${rating.toFixed(1)}★`}
-                </Txt>
-                <Txt style={{ fontSize: 18, fontWeight: '600' }} color="textDim">
+                </Text>
+                <Text variant="labelTv" color="textDim">
                   ·
-                </Txt>
+                </Text>
               </>
             ) : null}
-            <Txt style={{ fontSize: 18, fontWeight: '600' }} color="textMuted">
+            <Text variant="labelTv" color="textMuted">
               {meta}
-            </Txt>
+            </Text>
             {badge ? <Badge tone={qualityTone(badge)}>{badge}</Badge> : null}
           </Box>
 
           {overview ? (
-            <Txt
-              lines={3}
-              style={{ fontSize: 20, lineHeight: 30, maxWidth: 680, marginBottom: 26 }}
-              color="rgba(244, 243, 240, 0.82)"
-            >
+            <Text lines={3} variant="bodyTv" maxW={680} mb={26} color="text/82">
               {overview}
-            </Txt>
+            </Text>
           ) : null}
 
           {actions}

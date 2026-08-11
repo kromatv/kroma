@@ -5,9 +5,10 @@ usually something that BEHAVES.
 
 - **`Rail`** — a titled horizontal row that mounts its children in chunks and
   scrolls by measured offset as focus moves (`scrollIntoView` does not exist
-  outside a browser).
-- **`Virtual`** — `VirtualRail` / `VirtualGrid`: the same idea windowed, for a
-  library that is thousands of tiles long.
+  outside a browser). `Rail.List` is its windowed row, for a strip long enough
+  that mounting it whole costs frames.
+- **`Virtual`** — `VirtualRail` / `VirtualGrid`: the windowing `Rail.List` runs
+  on, for a library that is thousands of tiles long.
 - **`Dialog`** — a modal that takes the remote: it declares a focus SCOPE so the
   D-pad cannot wander back into the page behind, and its backdrop is what a
   pointer user closes it with.

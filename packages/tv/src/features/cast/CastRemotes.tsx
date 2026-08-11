@@ -1,17 +1,15 @@
 import { useT } from '@kroma/ui';
 import {
   Avatar,
-  Box,
   Button,
   Dialog,
-  DialogFooter,
   Focusable,
   FocusColumn,
   Icon,
   ListRow,
   styles,
   sv,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
@@ -43,7 +41,9 @@ export function CastRemotes() {
         sv={chip}
       >
         <Icon name="cast" size={19} stroke={2} color="accentText" />
-        <Txt style={s.count}>{count}</Txt>
+        <Text variant="strongTv" style={s.count}>
+          {count}
+        </Text>
       </Focusable>
 
       <Dialog
@@ -53,18 +53,23 @@ export function CastRemotes() {
         description={t('cast.remotesHint')}
         width={PANEL_WIDTH}
         footer={
-          <DialogFooter>
+          <Dialog.Actions>
             <Button variant="ghost" label={t('common.close')} onPress={() => setOpen(false)} />
-          </DialogFooter>
+          </Dialog.Actions>
         }
       >
         {/* A column: <FocusRegion> is horizontal and lays several rows out side
             by side, the second landing outside the panel. */}
         <FocusColumn style={s.list}>
           {controllers.map((remote, i) => (
-            <ListRow
+            <ListRow.Root
               key={remote.id}
-              leading={
+              label={remote.username}
+              hint={remote.name}
+              autoFocus={i === 0}
+              onPress={() => kickCastController(remote.id)}
+            >
+              <ListRow.Leading>
                 <Avatar
                   name={remote.username}
                   seed={remote.username}
@@ -72,20 +77,14 @@ export function CastRemotes() {
                   roundness={0.35}
                   src={client?.resolveArt(remote.avatarUrl ?? undefined, 44)}
                 />
-              }
-              label={remote.username}
-              hint={remote.name}
-              autoFocus={i === 0}
-              onPress={() => kickCastController(remote.id)}
-              trailing={
-                <Box row align="center" gap={8}>
-                  <Icon name="plug-off" size={20} stroke={2} color="textMuted" />
-                  <Txt color="textMuted" style={s.action}>
-                    {t('cast.disconnect')}
-                  </Txt>
-                </Box>
-              }
-            />
+              </ListRow.Leading>
+              <ListRow.Trailing>
+                <Icon name="plug-off" size={20} stroke={2} color="textMuted" />
+                <Text variant="labelTv" color="textMuted">
+                  {t('cast.disconnect')}
+                </Text>
+              </ListRow.Trailing>
+            </ListRow.Root>
           ))}
         </FocusColumn>
       </Dialog>
@@ -107,7 +106,6 @@ const chip = sv({
 });
 
 const s = styles({
-  count: { fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  count: { fontVariant: ['tabular-nums'] },
   list: { gap: 8 },
-  action: { fontSize: 15, fontWeight: '600' },
 });

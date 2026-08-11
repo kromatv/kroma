@@ -1,7 +1,7 @@
 // Shared primitives for the mobile screens, re-exporting the controls and state
 // views so every screen imports them from one place.
 
-import { Box, ExpandableText as KitExpandableText, styles, Txt } from '@kroma/ui/kit';
+import { Box, ExpandableText as KitExpandableText, styles, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import type { ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,7 +69,7 @@ export function ExpandableText({
 export function SectionTitle({ children }: Readonly<{ children: ReactNode }>) {
   // Section titles sit on full-bleed pages, so they clear the notch themselves.
   const gutters = useGutters();
-  return <Txt style={[s.sectionTitle, gutters.style]}>{children}</Txt>;
+  return <Text style={[s.sectionTitle, gutters.style]}>{children}</Text>;
 }
 
 const s = styles({

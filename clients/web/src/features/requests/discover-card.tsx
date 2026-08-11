@@ -4,7 +4,7 @@
 
 import { type DiscoverEntry, posterColors, sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, backdropBlur, Icon, Row, Txt } from '@kroma/ui/kit';
+import { Box, backdropBlur, Icon, Row, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
@@ -68,9 +68,9 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
             <Image src={art} alt={entry.title} fit="cover" fill onError={() => setImgOk(false)} />
           ) : (
             <Box fill justify="flex-end" p={12}>
-              <Txt variant="label" color="white/90" lines={3}>
+              <Text variant="label" color="white/90" lines={3}>
                 {entry.title}
-              </Txt>
+              </Text>
             </Box>
           )}
 
@@ -94,9 +94,9 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
               style={RATING_PILL}
             >
               <Icon name="star-filled" size={9} color="accent" />
-              <Txt color="accent" style={RATING_LABEL}>
+              <Text color="accent" style={RATING_LABEL}>
                 {entry.rating.toFixed(1)}
-              </Txt>
+              </Text>
             </Row>
           ) : null}
 
@@ -104,29 +104,29 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
           {canRequest ? (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex translate-y-2 items-center justify-center gap-1.5 bg-linear-to-t from-black/75 to-transparent pb-3 pt-8 opacity-0 transition-all duration-200 group-hover/card:translate-y-0 group-hover/card:opacity-100 group-focus-within/card:translate-y-0 group-focus-within/card:opacity-100 pointer-coarse:translate-y-0 pointer-coarse:opacity-100">
               <Icon name="plus" size={14} stroke={2.6} color="white" />
-              <Txt color="white" style={REQUEST_LABEL}>
+              <Text color="white" style={REQUEST_LABEL}>
                 {t('discover.request')}
-              </Txt>
+              </Text>
             </div>
           ) : null}
         </div>
       </button>
       <Box mt={8} px={2}>
-        <Txt variant="label" lines={1}>
+        <Text variant="label" lines={1}>
           {entry.title}
-        </Txt>
+        </Text>
         <Row gap={6} mt={2}>
-          <Txt variant="meta" color="textDim">
+          <Text variant="meta" color="textDim">
             {entry.kind === 'show' ? t('discover.kindShow') : t('discover.kindMovie')}
-          </Txt>
+          </Text>
           {entry.year ? (
             <>
-              <Txt variant="meta" color="white/20">
+              <Text variant="meta" color="white/20">
                 ·
-              </Txt>
-              <Txt variant="meta" color="textDim">
+              </Text>
+              <Text variant="meta" color="textDim">
                 {entry.year}
-              </Txt>
+              </Text>
             </>
           ) : null}
         </Row>

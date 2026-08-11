@@ -2,7 +2,7 @@
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
 import { type SubtitleAppearance, withOpacity } from '@kroma/ui';
-import { Box, Button, Icon, Spinner, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Icon, Spinner, styles, Text } from '@kroma/ui/kit';
 import { Platform, Pressable, type TextStyle } from 'react-native';
 import { FadeImage } from '#mobile/components/FadeImage';
 import { useT } from '#mobile/lib/i18n';
@@ -61,7 +61,7 @@ export function CueLine({
   if (!cue) return null;
   return (
     <Box style={[s.cueBox, { bottom }]}>
-      <Txt style={[s.cueText, cueStyle(appearance)]}>{cue}</Txt>
+      <Text style={[s.cueText, cueStyle(appearance)]}>{cue}</Text>
     </Box>
   );
 }
@@ -106,10 +106,10 @@ export function UpNextCard({
     <Pressable onPress={onPlayNext} style={[s.upNext, { bottom }]}>
       <FadeImage uri={thumb} seed={next.id} radius={6} style={s.upNextThumb} />
       <Box style={s.upNextText}>
-        <Txt style={s.upNextLabel}>{t('player.nextEpisode')}</Txt>
-        <Txt lines={1} style={s.upNextTitle}>
+        <Text style={s.upNextLabel}>{t('player.nextEpisode')}</Text>
+        <Text lines={1} style={s.upNextTitle}>
           {next.episodeTitle ?? next.title}
-        </Txt>
+        </Text>
       </Box>
       <Icon name="player-play-filled" size={20} />
     </Pressable>

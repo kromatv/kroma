@@ -185,15 +185,18 @@ export const NamingTokenModal = createCallable<
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
           <div className="mb-4 flex items-center gap-2 text-[12px] font-semibold text-dim">
             {t('naming.separator')}
-            <Select
+            <Select.Root
               label={t('naming.separator')}
               value={separator}
-              onChange={setSeparator}
-              options={SEPARATORS.map((s) => ({
-                value: s.value,
-                label: t(s.labelKey as Parameters<typeof t>[0]),
-              }))}
-            />
+              onValueChange={setSeparator}
+            >
+              <Select.Trigger />
+              {SEPARATORS.map((s) => (
+                <Select.Item key={s.value} value={s.value}>
+                  {t(s.labelKey as Parameters<typeof t>[0])}
+                </Select.Item>
+              ))}
+            </Select.Root>
           </div>
 
           <Fieldset title={t('naming.grpPresets')}>
@@ -206,7 +209,7 @@ export const NamingTokenModal = createCallable<
                   onClick={() => onChange(tokenStr)}
                   className="w-full rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-left hover:border-accent/50 hover:bg-white/6"
                 >
-                  <div className="font-mono text-[12px] text-[#86A8FF]">{tokenStr}</div>
+                  <div className="font-mono text-[12px] text-info">{tokenStr}</div>
                 </button>
               );
             })}

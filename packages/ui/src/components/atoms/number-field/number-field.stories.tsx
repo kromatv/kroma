@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { NumberField } from './number-field';
 
@@ -10,7 +10,7 @@ function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: num
   const [temperature, setTemperature] = useState(0.7);
   return (
     <Box gap={20}>
-      <Field label="Max tokens" hint="Committed on blur, clamped to the bounds.">
+      <Field.Root label="Max tokens" hint="Committed on blur, clamped to the bounds.">
         <NumberField
           label="Max tokens"
           value={tokens}
@@ -19,8 +19,8 @@ function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: num
           max={max}
           step={step}
         />
-      </Field>
-      <Field label="Temperature">
+      </Field.Root>
+      <Field.Root label="Temperature">
         <NumberField
           label="Temperature"
           value={temperature}
@@ -29,10 +29,10 @@ function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: num
           max={2}
           step={0.1}
         />
-      </Field>
-      <Txt variant="meta" color="textDim">
+      </Field.Root>
+      <Text variant="meta" color="textDim">
         committed: {tokens} · {temperature}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -41,9 +41,9 @@ export default story({
   name: 'NumberField',
   group: 'Input',
   docs: "The numeric entry, worn inside a <Field> like any other: the same well, the same rhythm, plus a stacked **stepper pair** - the pointer's way to nudge, the arrow keys' twin on a physical keyboard, and on a television the only way to change the value at all. The buffer is text (a cleared field can be retyped in peace), only a real number is ever committed, and blur clamps to `min`/`max` and rewrites the text to the number actually stored - the field can never show one value while holding another.",
-  usage: `<Field label="Max tokens" hint="64 to 8192">
+  usage: `<Field.Root label="Max tokens" hint="64 to 8192">
   <NumberField label="Max tokens" value={maxTokens} onChange={setMaxTokens} min={64} step={256} />
-</Field>`,
+</Field.Root>`,
   guidelines: {
     do: [
       'Wrap it in a <Field> for the label row; its own `label` stays the accessible name.',

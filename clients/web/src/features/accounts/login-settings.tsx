@@ -4,8 +4,9 @@ import { useLocale, useSetLocale, useT } from '@kroma/ui';
 import { IconButton, Select } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
-import { CapabilityChip } from '#web/features/accounts/capability-chip';
 import { serverQueries } from '#web/shared/lib/queries';
+import { MODAL_SCRIM } from '#web/shared/ui';
+import { CapabilityChip } from '#web/shared/ui/capability-chip';
 
 function SectionHead({ children }: Readonly<{ children: ReactNode }>) {
   return (
@@ -69,10 +70,10 @@ export function LoginSettings() {
             type="button"
             aria-label={t('common.close')}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-60 bg-[rgba(4,4,6,.66)] backdrop-blur-[3px]"
+            className={MODAL_SCRIM}
           />
           <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-            <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0E0E12] shadow-[0_30px_90px_rgba(0,0,0,.6)]">
+            <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg shadow-[0_30px_90px_rgba(0,0,0,.6)]">
               <header className="flex items-center justify-between gap-4 border-b border-white/[0.07] px-6 py-4">
                 <h2 className="font-display text-[19px] font-bold">{t('nav.settings')}</h2>
                 <IconButton
@@ -87,13 +88,16 @@ export function LoginSettings() {
                   <span className="text-[13px] font-medium text-muted">
                     {t('account.uiLanguage')}
                   </span>
-                  <Select
+                  <Select.Root
                     label={t('account.uiLanguage')}
-                    size="sm"
                     value={locale}
-                    onChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
-                    options={LOCALES.map((l) => ({ value: l.code, label: t(l.labelKey) }))}
-                  />
+                    onValueChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
+                  >
+                    <Select.Trigger size="sm" />
+                    {LOCALES.map((l) => (
+                      <Select.Item key={l.code} value={l.code} label={t(l.labelKey)} />
+                    ))}
+                  </Select.Root>
                 </div>
 
                 <div className={DIVIDER} />
@@ -117,7 +121,7 @@ export function LoginSettings() {
                     <span className="flex min-w-0 items-center gap-1.5 normal-case tracking-normal">
                       <span
                         className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                          health.status === 'ok' ? 'bg-[#46D08D]' : 'bg-danger'
+                          health.status === 'ok' ? 'bg-success' : 'bg-danger'
                         }`}
                       />
                       <span className="truncate text-[11px] font-semibold text-white/70">

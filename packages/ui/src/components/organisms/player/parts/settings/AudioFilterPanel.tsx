@@ -1,6 +1,6 @@
 import { forwardRef, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import { audioFilterLabels } from '#ui/components/organisms/player/lib/audio-filter';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
@@ -45,7 +45,7 @@ export const AudioFilterPanel = forwardRef<PanelHandle, AudioFilterPanelProps>(
             />
           ))}
         </Box>
-        <Txt style={panel.panelHint}>{t('player.audioFilterHint')}</Txt>
+        <Text style={panel.panelHint}>{t('player.audioFilterHint')}</Text>
       </Box>
     );
   },

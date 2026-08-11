@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Radio, radioVariants } from './radio';
 
 const MODES = [
@@ -22,9 +22,9 @@ function Demo({ size }: Readonly<{ size: 'sm' | 'tv' }>) {
             checked={mode === m.value}
             onChange={() => setMode(m.value)}
           />
-          <Txt variant="body" color={mode === m.value ? 'text' : 'textMuted'}>
+          <Text variant="body" color={mode === m.value ? 'text' : 'textMuted'}>
             {m.label}
-          </Txt>
+          </Text>
         </Box>
       ))}
     </Box>

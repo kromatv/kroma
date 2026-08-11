@@ -5,7 +5,7 @@ import { filterReleases } from '#site/lib/filter-releases';
 import type { Release } from '#site/lib/release';
 import { Box, Column, Row } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { EmptyState } from '#ui/components/molecules/empty-state';
 import { Pagination, paginate } from '#ui/components/molecules/pagination';
 
@@ -31,21 +31,21 @@ export function ReleaseList({ releases, current = [] }: Readonly<ReleaseListProp
     <Column gap={20}>
       <Row gap={16} wrap between align="flex-end">
         <Column gap={4}>
-          <Txt variant="overline" color="accentText">
+          <Text variant="overline" color="accentText">
             All releases
-          </Txt>
+          </Text>
           {shown.total > 0 ? (
-            <Txt variant="meta" color="textDim">
+            <Text variant="meta" color="textDim">
               {shown.first}-{shown.last} of {shown.total}
-            </Txt>
+            </Text>
           ) : null}
         </Column>
         <ReleaseSearch value={query} onChange={search} />
       </Row>
 
       {shown.total === 0 ? (
-        <EmptyState
-          compact
+        <EmptyState.Root
+          size="sm"
           icon="search-off"
           title="No matching release"
           hint="Try a version number such as 0.1.36, or a channel such as nightly."

@@ -6,7 +6,7 @@
 // when anything changed, so the caller knows whether to refresh.
 
 import { useT } from '@kroma/ui';
-import { Button, Drawer, IconButton, Switch } from '@kroma/ui/kit';
+import { Button, Dialog, Drawer, IconButton, Switch } from '@kroma/ui/kit';
 import { type ReactNode, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { message, UninstallConflictError, uninstallModule } from '#web/features/admin/module-api';
@@ -45,22 +45,14 @@ function ConfirmStrip({
       <p className={`text-[12.5px] leading-relaxed ${danger ? 'text-danger' : 'text-muted'}`}>
         {text}
       </p>
-      <div className="flex justify-end gap-2.5">
-        <Button
-          variant="ghost"
-          size="sm"
-          label={t('common.cancel')}
-          onPress={onCancel}
-          disabled={busy}
-        />
-        <Button
-          variant="danger"
-          size="sm"
-          label={confirmLabel}
-          onPress={onConfirm}
-          loading={busy}
-        />
-      </div>
+      <Dialog.Actions
+        onCancel={onCancel}
+        cancelLabel={t('common.cancel')}
+        onConfirm={onConfirm}
+        confirmLabel={confirmLabel}
+        destructive
+        busy={busy}
+      />
     </div>
   );
 }
@@ -224,7 +216,7 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
               )}
               {installed && (
                 <span
-                  className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${installed.enabled ? 'bg-[rgba(70,208,141,.14)] text-success' : 'bg-white/6 text-dim'}`}
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${installed.enabled ? 'bg-success/14 text-success' : 'bg-white/6 text-dim'}`}
                 >
                   {installed.enabled ? t('admin.modulesEnabled') : t('admin.modulesDisabled')}
                 </span>

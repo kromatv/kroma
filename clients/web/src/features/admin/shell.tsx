@@ -11,7 +11,7 @@ import {
 } from '@kroma/core';
 import { AdminHostProvider, type ModuleNav } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Drawer, Logo } from '@kroma/ui/kit';
+import { color, Drawer, Logo } from '@kroma/ui/kit';
 import {
   IconApps,
   IconArchive,
@@ -269,7 +269,7 @@ function AdminSidebarBody() {
             <Logo markOnly size={17} />
             {serverInfo?.name ?? 'KROMA'}
           </span>
-          <IconChevronRight size={17} stroke={1.8} color="#46D08D" />
+          <IconChevronRight size={17} stroke={1.8} color={color('success')} />
         </Link>
       </div>
 
@@ -311,7 +311,7 @@ function AdminSidebarBody() {
 
 function AdminSidebar() {
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-[#0C0C0E] lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-bg lg:flex">
       <div className="mb-4 shrink-0 px-6 pt-6">
         <AdminBrand />
       </div>
@@ -327,7 +327,7 @@ function AdminMobileTopbar() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; pathname closes the drawer on navigation
   useEffect(() => setOpen(false), [pathname]);
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-[#0C0C0E]/95 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
+    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-bg/95 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
       <AdminBrand />
       <button
         type="button"
@@ -364,7 +364,7 @@ function AdminMobileTopbar() {
   );
 }
 
-const NAV_FILL = { backgroundColor: '#0C0C0E' } as const;
+const NAV_FILL = { backgroundColor: color('bg') } as const;
 
 function ModuleNavLink({ item }: Readonly<{ item: ModuleNav }>) {
   const Icon = resolveModuleIcon(item.icon);
@@ -391,7 +391,7 @@ function ServerStatusCard() {
   const t = useT();
   const { serverInfo } = useAdmin();
   return (
-    <div className="rounded-xl border border-border bg-[#121216] p-3.5">
+    <div className="rounded-xl border border-border bg-surface-1 p-3.5">
       <div className="mb-2 flex items-center gap-2.5">
         <span className="h-2 w-2 animate-[kroma-breathe_2s_ease-in-out_infinite] rounded-full bg-success" />
         <span className="text-[13px] font-bold text-success">{t('admin.online')}</span>

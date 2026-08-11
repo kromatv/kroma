@@ -9,12 +9,12 @@ export const BROWSE_TITLE =
 // No-artwork fallback: the two-tone amber/violet wash, eased in from the left
 // so nothing hard-clips at the sidebar seam.
 const GLOW =
-  'pointer-events-none absolute inset-0 bg-[radial-gradient(46%_95%_at_12%_0%,rgba(242,180,66,.17),transparent_64%),radial-gradient(42%_85%_at_88%_0%,rgba(96,78,214,.15),transparent_64%)] [mask-image:linear-gradient(90deg,transparent,black_4rem)]';
+  'pointer-events-none absolute inset-0 bg-[radial-gradient(46%_95%_at_12%_0%,color-mix(in_srgb,var(--kroma-accent-wash)_17%,transparent),transparent_64%),radial-gradient(42%_85%_at_88%_0%,rgba(96,78,214,.15),transparent_64%)] [mask-image:linear-gradient(90deg,transparent,black_4rem)]';
 
 // Near-opaque bg at the left and bottom edges: the left hides the sidebar
 // seam, the bottom hands the artwork off to the toolbar and grid below.
 const SCRIM =
-  'pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,var(--kroma-bg)_4%,rgba(10,10,12,.45)_36%,transparent_66%),linear-gradient(0deg,var(--kroma-bg)_6%,rgba(10,10,12,.3)_38%,transparent_64%)]';
+  'pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,var(--kroma-bg)_4%,color-mix(in_srgb,var(--kroma-bg)_45%,transparent)_36%,transparent_66%),linear-gradient(0deg,var(--kroma-bg)_6%,color-mix(in_srgb,var(--kroma-bg)_30%,transparent)_38%,transparent_64%)]';
 
 export interface BrowseHeroProps {
   heading: string;
@@ -49,7 +49,7 @@ export function BrowseHero({
             <Image src={backdrop} fit="cover" position="center 22%" fill />
           </div>
           <div className={SCRIM} />
-          <div className="pointer-events-none absolute inset-0 animate-[kroma-breathe_7s_var(--ease-out)_infinite] bg-[radial-gradient(58%_68%_at_76%_28%,rgba(242,180,66,.13),transparent_62%)]" />
+          <div className="pointer-events-none absolute inset-0 animate-[kroma-breathe_7s_var(--ease-out)_infinite] bg-[radial-gradient(58%_68%_at_76%_28%,color-mix(in_srgb,var(--kroma-accent-wash)_13%,transparent),transparent_62%)]" />
         </>
       ) : (
         <div className={GLOW} />

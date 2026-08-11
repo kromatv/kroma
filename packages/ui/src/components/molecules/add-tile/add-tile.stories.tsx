@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { AddTile } from './add-tile';
 
 // The tile is built to sit over artwork, so the story puts it there: on a flat
@@ -48,15 +48,15 @@ export default story({
       render: () => (
         <OverArt>
           <Box align="center" gap={12}>
-            <Txt variant="overline" color="textDim">
+            <Text variant="overline" color="textDim">
               md
-            </Txt>
+            </Text>
             <AddTile size="md" label="Ajouter" onPress={() => {}} />
           </Box>
           <Box align="center" gap={12}>
-            <Txt variant="overline" color="textDim">
+            <Text variant="overline" color="textDim">
               tv
-            </Txt>
+            </Text>
             <AddTile label="Ajouter un profil" onPress={() => {}} />
           </Box>
         </OverArt>

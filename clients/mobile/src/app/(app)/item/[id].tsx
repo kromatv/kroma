@@ -11,7 +11,7 @@ import {
   sizedImageUrl,
   type Translate,
 } from '@kroma/core';
-import { Box, Chip, styles, Txt } from '@kroma/ui/kit';
+import { Box, Chip, styles, Text } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
@@ -56,11 +56,11 @@ function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
   const rating = media.metadata?.rating;
   return (
     <>
-      {media.year ? <Txt style={s.metaText}>{media.year}</Txt> : null}
-      {runtime ? <Txt style={s.metaText}>{runtime}</Txt> : null}
+      {media.year ? <Text style={s.metaText}>{media.year}</Text> : null}
+      {runtime ? <Text style={s.metaText}>{runtime}</Text> : null}
       {badge ? <MetaBadge>{badge}</MetaBadge> : null}
       {media.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
-      {rating ? <Txt style={s.rating}>★ {rating.toFixed(1)}</Txt> : null}
+      {rating ? <Text style={s.rating}>★ {rating.toFixed(1)}</Text> : null}
     </>
   );
 }

@@ -5,7 +5,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
 import { Progress } from '#ui/components/atoms/progress';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { styles, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
@@ -68,10 +68,10 @@ function MediaCard({
         <Box fill radius="xl" style={gradient(CARD_SCRIM)} />
         {watched ? <WatchedBadge /> : null}
         <Box absolute left={18} right={18} bottom={16} gap={5}>
-          {overline ? <Txt style={s.overline}>{overline}</Txt> : null}
-          <Txt style={s.title} lines={2}>
+          {overline ? <Text style={s.overline}>{overline}</Text> : null}
+          <Text style={s.title} lines={2}>
             {title}
-          </Txt>
+          </Text>
         </Box>
         {progress == null ? null : (
           <Box absolute left={0} right={0} bottom={0}>

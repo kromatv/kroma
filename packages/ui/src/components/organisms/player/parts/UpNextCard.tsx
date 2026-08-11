@@ -4,7 +4,7 @@ import type { DimensionValue } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
@@ -69,17 +69,17 @@ function Face({ item }: Readonly<{ item: UpNextItem }>) {
       <Box fill style={[s.vignette, VIGNETTE]} />
       <Box absolute left={14} right={14} bottom={12} gap={2}>
         {item.categoryLabel ? (
-          <Txt lines={1} style={s.category} color="accentText">
+          <Text lines={1} style={s.category} color="accentText">
             {item.categoryLabel}
-          </Txt>
+          </Text>
         ) : null}
-        <Txt lines={1} style={s.title}>
+        <Text lines={1} style={s.title}>
           {item.title}
-        </Txt>
+        </Text>
         {item.subtitle ? (
-          <Txt lines={1} style={s.subtitle} color="white/72">
+          <Text lines={1} style={s.subtitle} color="white/72">
             {item.subtitle}
-          </Txt>
+          </Text>
         ) : null}
       </Box>
     </>

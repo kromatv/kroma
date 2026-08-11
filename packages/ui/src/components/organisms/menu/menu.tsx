@@ -4,87 +4,153 @@
 // ./menu-surface): an anchored panel with the menu keyboard under a pointer,
 // a dialog under a D-pad.
 
-import { type ReactNode, type RefObject, useCallback, useRef, useState } from 'react';
-import type { StyleProp, View, ViewStyle } from 'react-native';
-import type { IconName } from '#ui/components/atoms/icon';
-import { IconButton, type IconButtonVariant } from '#ui/components/atoms/icon-button';
+import {
+  Children,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  type RefObject,
+  useRef,
+} from 'react';
+import type { View } from 'react-native';
+import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
+import { useControllable } from '#ui/lib/use-controllable';
+import {
+  MenuContext,
+  type MenuDismissReason,
+  type MenuOpenDetails,
+  type MenuOpenReason,
+  type MenuState,
+  useMenu,
+} from './menu-context';
+import { Item, labelOf, type MenuItemProps, type MenuTone, Separator } from './menu-item';
 import { MenuSurface } from './menu-surface';
+import type { MenuRowSpec } from './menu-surface-dialog';
 
-interface MenuItem {
-  icon?: IconName;
-  label: string;
-  onSelect: () => void;
-  disabled?: boolean;
-  /** Red ink: the destructive tail of the list. */
-  danger?: boolean;
-}
-
-type MenuEntry = MenuItem | 'separator';
-
-interface MenuProps {
-  /** Accessible name of the trigger and the menu. */
-  label: string;
-  items: readonly MenuEntry[];
+interface MenuRootProps {
+  /** Names the menu and, unless it names itself, the trigger. */
+  label?: string;
+  open?: boolean;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean, details: MenuOpenDetails) => void;
   /** Which trigger edge the panel hugs. `end` for a right-pinned row action. */
   align?: 'start' | 'end';
-  /** Trigger glyph. */
-  icon?: IconName;
-  /** Trigger diameter. */
-  size?: number;
-  variant?: IconButtonVariant;
-  disabled?: boolean;
-  style?: StyleProp<ViewStyle>;
-  /** A custom trigger in place of the round icon button. Attach `bind.ref` to
-   *  the pressable element (it anchors the panel) and open with `bind.open`. */
-  trigger?: (bind: {
-    ref: RefObject<View | null>;
-    expanded: boolean;
-    open: () => void;
-  }) => ReactNode;
+  /** A <Menu.Trigger>, then the <Menu.Item>s and <Menu.Separator>s. Only DIRECT
+   *  children take part in the menu. */
+  children: ReactNode;
 }
 
-function Menu({
+function isItem(node: ReactNode): node is ReactElement<MenuItemProps> {
+  return isValidElement(node) && node.type === Item;
+}
+
+function isEntry(node: ReactNode): node is ReactElement {
+  return isItem(node) || (isValidElement(node) && node.type === Separator);
+}
+
+function Root({
   label,
-  items,
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
   align = 'end',
-  icon = 'dots-vertical',
-  size = 32,
-  variant = 'ghost',
-  disabled = false,
-  style,
-  trigger,
-}: Readonly<MenuProps>) {
-  const [open, setOpen] = useState(false);
-  const close = useCallback(() => setOpen(false), []);
+  children,
+}: Readonly<MenuRootProps>) {
+  const [open, setOpenState] = useControllable(openProp, defaultOpen ?? false);
   const anchor = useRef<View>(null);
+
+  const kids = Children.toArray(children);
+  const entries = kids.filter(isEntry);
+  const rows: MenuRowSpec[] = entries.flatMap((entry, at) =>
+    isItem(entry)
+      ? [
+          {
+            at,
+            label: labelOf(entry.props),
+            disabled: entry.props.disabled === true,
+            select: entry.props.onSelect,
+          },
+        ]
+      : [],
+  );
+
+  const setOpen = (next: boolean, reason: MenuOpenReason) => {
+    setOpenState(next);
+    onOpenChange?.(next, { reason });
+  };
+
+  const state: MenuState = { open, label, anchor, setOpen };
+
   return (
-    <>
-      {trigger ? (
-        trigger({ ref: anchor, expanded: open, open: () => setOpen(true) })
-      ) : (
-        <IconButton
-          ref={anchor}
-          icon={icon}
-          label={label}
-          size={size}
-          variant={variant}
-          disabled={disabled}
-          expanded={open}
-          onPress={() => setOpen(true)}
-          style={style}
-        />
-      )}
+    <MenuContext.Provider value={state}>
+      {kids.filter((node) => !isEntry(node))}
       <MenuSurface
         open={open}
-        onClose={close}
         label={label}
-        items={items}
         align={align}
+        entries={entries}
+        rows={rows}
         anchor={anchor}
+        onDismiss={(reason: MenuDismissReason) => setOpen(false, reason)}
       />
-    </>
+    </MenuContext.Provider>
   );
 }
 
-export type { MenuEntry, MenuItem, MenuProps };
+interface MenuTriggerBind {
+  ref: RefObject<View | null>;
+  expanded: boolean;
+  onPress: () => void;
+}
+
+interface MenuTriggerProps extends Omit<IconButtonProps, 'onPress' | 'expanded' | 'ref'> {
+  /** A control of your own in place of the round icon button. Spread `bind`
+   *  onto the PRESSABLE element: it anchors the surface and opens it. */
+  render?: (bind: MenuTriggerBind, state: { open: boolean }) => ReactElement;
+}
+
+/** What opens the menu. `children` are the button's FACE, not a control of
+ *  their own - a pressable in there is a second stop for the D-pad; use
+ *  `render` for a trigger the caller owns. */
+function Trigger({
+  render,
+  icon = 'dots-vertical',
+  size = 32,
+  variant = 'ghost',
+  label,
+  ...button
+}: Readonly<MenuTriggerProps>) {
+  const { open, label: menuLabel, anchor, setOpen } = useMenu('Trigger');
+  const bind: MenuTriggerBind = {
+    ref: anchor,
+    expanded: open,
+    onPress: () => setOpen(true, 'trigger'),
+  };
+  if (render) return render(bind, { open });
+  return (
+    <IconButton
+      {...button}
+      ref={anchor}
+      icon={icon}
+      label={label ?? menuLabel}
+      size={size}
+      variant={variant}
+      expanded={open}
+      onPress={bind.onPress}
+    />
+  );
+}
+
+const Menu = { Root, Trigger, Item, Separator };
+
+export type {
+  MenuDismissReason,
+  MenuItemProps,
+  MenuOpenDetails,
+  MenuOpenReason,
+  MenuRootProps,
+  MenuTone,
+  MenuTriggerBind,
+  MenuTriggerProps,
+};
 export { Menu };

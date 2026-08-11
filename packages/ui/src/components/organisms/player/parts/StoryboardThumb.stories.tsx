@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { stillArt } from '#ui/lib/sample-art';
 import { fakeTileAt } from '../player.fixture';
 import { StoryboardThumb } from './StoryboardThumb';
@@ -37,9 +37,9 @@ const tile = storyboard.tile(sec, 220);
     return (
       <Box gap={12} align="flex-start">
         <StoryboardThumb tile={tile} />
-        <Txt variant="meta" color="textDim">
+        <Text variant="meta" color="textDim">
           {`Frame at ${Math.floor(positionSec / 60)} min · drawn from a ${tile.sheetWidth}x${tile.sheetHeight} sheet at scale ${tile.scale.toFixed(2)}`}
-        </Txt>
+        </Text>
       </Box>
     );
   },

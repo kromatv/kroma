@@ -2,7 +2,7 @@
 // biometric switch row and the step-at-a-time masked PIN wizard. All state
 // and auth calls stay in the route (app/(app)/profile-pin.tsx).
 
-import { Box, Button, Keypad, OtpField, Spinner, Switch, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Keypad, OtpField, Spinner, Switch, styles, Text } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
 import { ErrorBanner } from './ui';
@@ -18,9 +18,9 @@ export function LockCard({
 }>) {
   return (
     <Box style={s.section}>
-      <Txt style={s.sectionTitle}>{title}</Txt>
+      <Text style={s.sectionTitle}>{title}</Text>
       <Box style={s.card}>
-        <Txt style={s.sub}>{sub}</Txt>
+        <Text style={s.sub}>{sub}</Text>
         {children}
       </Box>
     </Box>
@@ -40,7 +40,7 @@ export function BioSwitchRow({
 }>) {
   return (
     <Box style={s.bioRow}>
-      <Txt style={s.bioLabel}>{label}</Txt>
+      <Text style={s.bioLabel}>{label}</Text>
       <Switch checked={value} disabled={disabled} onChange={onChange} />
     </Box>
   );
@@ -65,10 +65,17 @@ export function PinWizard({
   const t = useT();
   return (
     <Box style={s.wizard}>
-      <Txt style={s.wizardSub}>{subtitle}</Txt>
+      <Text style={s.wizardSub}>{subtitle}</Text>
       {/* The kit's own pad, like <ConnectDevice>: it taps back, it cannot be
           cropped by a system keyboard, and iOS puts no AutoFill chip over it. */}
-      <OtpField self="center" maxLength={4} value={pin} onChange={onChange} mask disabled={busy} />
+      <OtpField.Root
+        self="center"
+        maxLength={4}
+        value={pin}
+        onValueChange={onChange}
+        mask
+        disabled={busy}
+      />
       <Box self="center">
         <Keypad
           size="compact"

@@ -1,6 +1,6 @@
 import { Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { styles } from '#ui/core';
@@ -28,10 +28,10 @@ export function CycleField({
 }>) {
   return (
     <Box onPointerEnter={onFocus} style={[s.cycleRow, focused ? s.cycleOn : s.cycleOff]}>
-      <Txt style={s.fieldLabel}>{label}</Txt>
+      <Text style={s.fieldLabel}>{label}</Text>
       <Box row align="center" gap={16}>
         <CycleArrow glyph="◀" label="prev" dim={!focused} onPress={onDec} />
-        <Txt style={s.fieldValue}>{value}</Txt>
+        <Text style={s.fieldValue}>{value}</Text>
         <CycleArrow glyph="▶" label="next" dim={!focused} onPress={onInc} />
       </Box>
     </Box>
@@ -51,12 +51,9 @@ function CycleArrow({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Txt
-        style={{ fontSize: 20, lineHeight: 22, paddingHorizontal: 4, opacity: dim ? 0.45 : 1 }}
-        color="accentText"
-      >
+      <Text style={[s.arrow, { opacity: dim ? 0.45 : 1 }]} color="accentText">
         {glyph}
-      </Txt>
+      </Text>
     </Pressable>
   );
 }
@@ -65,12 +62,7 @@ const s = styles({
   cycleRow: { row: true, align: 'center', between: true, gap: 18, radius: 'lg', px: 22, py: 18 },
   cycleOn: { bg: 'tint/8', ring: 'focusLift', z: 1 },
   cycleOff: { bg: 'tint/4' },
-  fieldLabel: { font: 'ui', fontWeight: '600', fontSize: 17, color: 'textMuted' },
-  fieldValue: {
-    minW: 180,
-    textAlign: 'center',
-    font: 'ui',
-    fontWeight: '700',
-    fontSize: 19,
-  },
+  fieldLabel: { text: 'labelTv', color: 'textMuted' },
+  fieldValue: { minW: 180, textAlign: 'center', text: 'strongTv' },
+  arrow: { px: 4, text: 'strongTv' },
 });

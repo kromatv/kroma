@@ -16,7 +16,7 @@ import {
   Section,
   Surface,
   Switch,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { IconBolt, IconClock } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -68,14 +68,14 @@ export function JobsPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.jobsTitle')}
         subtitle={t('admin.jobsSub')}
-        action={<RealtimeBadge />}
+        actions={<RealtimeBadge />}
       />
       {data === null ? <TableSkeleton rows={6} /> : null}
       {categories.map((cat) => (
-        <Section key={cat} title={t(`jobs.cat.${cat}` as MessageKey)} mt={28}>
+        <Section.Root key={cat} title={t(`jobs.cat.${cat}` as MessageKey)} mt={28}>
           <div className="flex flex-col gap-3.5">
             {jobs
               .filter((j) => j.category === cat)
@@ -83,9 +83,11 @@ export function JobsPage() {
                 <JobCard key={j.key} job={j} live={live[j.key]} reload={reload} />
               ))}
           </div>
-        </Section>
+        </Section.Root>
       ))}
-      {data && jobs.length === 0 ? <EmptyState icon="clock-bolt" title={t('jobs.empty')} /> : null}
+      {data && jobs.length === 0 ? (
+        <EmptyState.Root icon="clock-bolt" title={t('jobs.empty')} />
+      ) : null}
     </>
   );
 }
@@ -235,7 +237,7 @@ function JobCard({
       {prog ? <JobProgress prog={prog} /> : null}
 
       {action.error ? (
-        <div className="px-5.5 pb-3 text-[12.5px] font-semibold text-[#E8536A]">{action.error}</div>
+        <div className="px-5.5 pb-3 text-[12.5px] font-semibold text-danger">{action.error}</div>
       ) : null}
 
       {open ? <JobDetailPanel jobKey={job.key} /> : null}
@@ -262,10 +264,10 @@ function ScheduleChip({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => v
   const label = job.schedule ?? t('jobs.manual');
   return (
     <Chip variant="surface" icon="calendar-clock" onPress={onEdit} disabled={!onEdit}>
-      <Txt style={CRON} color="textMuted">
+      <Text style={CRON} color="textMuted">
         {label}
-      </Txt>
-      {job.customized ? <Txt color="accent">•</Txt> : null}
+      </Text>
+      {job.customized ? <Text color="accent">•</Text> : null}
     </Chip>
   );
 }

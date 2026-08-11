@@ -23,7 +23,7 @@ ES5 loader gated on `CSSLayerBlockRule`):
   fails the build if anything unparseable for Chromium 53 sneaks back.
 
 The whole thing is driven by `tv.target.ts` (platform, dev port, engine
-floors) through the shared factory in `clients/tv-build/shell.ts` - see that
+floors) through the shared factory in `packages/bundler/src/shell.ts` - see that
 file for how to give any shell a legacy tier.
 
 Playback on those engines: MSE cannot decode HEVC there, so `useDirectPlayback`

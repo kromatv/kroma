@@ -9,7 +9,7 @@ import {
   type IconName,
   styles,
   sv,
-  Txt,
+  Text,
   webDocument,
   webWindow,
 } from '@kroma/ui/kit';
@@ -88,9 +88,9 @@ function commandHint(): string {
 function Kbd({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <Box px={6} py={2} radius={6} bg="surface3" style={s.cap}>
-      <Txt variant="meta" color="textMuted" style={s.capInk}>
+      <Text variant="meta" color="textMuted" style={s.capInk}>
         {children}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -228,41 +228,39 @@ function CommandPalette({
       >
         <Box row align="center" px={14} style={RULE}>
           <Box flex>
-            <Field
-              value={query}
-              onChange={(next) => {
-                setQuery(next);
-                setCursor(0);
-              }}
-              onSubmit={() => choose(flat[at]?.id)}
-              placeholder="Search components…"
-              // Not "Search components": that is the sidebar button's accessible
-              // name, and two controls sharing one is ambiguous to assistive tech.
-              label="Search the component list"
-              hideLabel
-              physicalKeyboard
-              autoFocus
-              icon="search"
-              entry={{
+            {/* Not "Search components": that is the sidebar button's accessible
+                name, and two controls sharing one is ambiguous to assistive tech. */}
+            <Field.Root label="Search the component list" hideLabel>
+              <Field.Input
+                value={query}
+                onValueChange={(next) => {
+                  setQuery(next);
+                  setCursor(0);
+                }}
+                onSubmit={() => choose(flat[at]?.id)}
+                placeholder="Search components…"
+                physicalKeyboard
+                autoFocus
+                icon="search"
                 // The sheet is the shell here: the palette opens focused, and a
                 // fill, an edge or a ring on this row would outline a box the
                 // dialog's own corners clip.
-                flat: true,
-                px: 0,
-                py: 14,
-                gap: 10,
-                textStyle: s.input,
-              }}
-            />
+                flat
+                px={0}
+                py={14}
+                gap={10}
+                textStyle={s.input}
+              />
+            </Field.Root>
           </Box>
           <Kbd>esc</Kbd>
         </Box>
 
         {flat.length === 0 ? (
           <Box py={34} center>
-            <Txt variant="meta" color="textDim">
+            <Text variant="meta" color="textDim">
               No components found.
-            </Txt>
+            </Text>
           </Box>
         ) : (
           <ScrollView
@@ -280,9 +278,9 @@ function CommandPalette({
             {groups.map((group, groupAt) => (
               <Box key={group.title}>
                 <Box h={HEADING} justify="center" px={8}>
-                  <Txt variant="overline" color="textDim">
+                  <Text variant="overline" color="textDim">
                     {group.title}
-                  </Txt>
+                  </Text>
                 </Box>
                 {group.items.map((story) => {
                   const index = flat.indexOf(story);
@@ -306,9 +304,9 @@ function CommandPalette({
           <Hint keys={['↑', '↓']} label="navigate" />
           <Hint keys={['↵']} label="select" />
           <Box flex />
-          <Txt variant="meta" color="textDim" style={s.tally}>
+          <Text variant="meta" color="textDim" style={s.tally}>
             {`${flat.length} of ${stories.length}`}
-          </Txt>
+          </Text>
         </Box>
       </Box>
     </Box>
@@ -332,13 +330,13 @@ function Row({
       {({ slots }) => (
         <>
           <Icon name={glyphFor(story.group)} size={15} color={open ? 'accent' : 'textDim'} />
-          <Txt variant="meta" style={slots.name} lines={1}>
+          <Text variant="meta" style={slots.name} lines={1}>
             {story.name}
-          </Txt>
+          </Text>
           <Box flex />
-          <Txt variant="meta" color="textDim" style={s.group} lines={1}>
+          <Text variant="meta" color="textDim" style={s.group} lines={1}>
             {story.group}
-          </Txt>
+          </Text>
           {open ? <Box w={5} h={5} radius="pill" bg="accent" /> : null}
         </>
       )}
@@ -352,9 +350,9 @@ function Hint({ keys, label }: Readonly<{ keys: readonly string[]; label: string
       {keys.map((key) => (
         <Kbd key={key}>{key}</Kbd>
       ))}
-      <Txt variant="meta" color="textDim" style={s.hint}>
+      <Text variant="meta" color="textDim" style={s.hint}>
         {label}
-      </Txt>
+      </Text>
     </Box>
   );
 }

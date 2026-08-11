@@ -1,6 +1,6 @@
 import { type ElementRow, type KromaClient, KromaEvents, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState } from '@kroma/ui/kit';
+import { Button, color, EmptyState } from '@kroma/ui/kit';
 import { IconPlayerPause } from '@tabler/icons-react';
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
@@ -21,8 +21,8 @@ import { useAuth } from '#web/shared/lib/auth';
 const PER_PAGE = 30;
 
 const RESUME_FILL = {
-  backgroundColor: 'rgba(70, 208, 141, 0.14)',
-  borderColor: 'rgba(70, 208, 141, 0.4)',
+  backgroundColor: color('success/14'),
+  borderColor: color('success/40'),
 } as const;
 const apiKind = (el: ElementRow): 'item' | 'show' => (el.kind === 'series' ? 'show' : 'item');
 
@@ -188,9 +188,9 @@ export function PipelinePage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.pipelineTitle')}
-        action={
+        actions={
           <div className="flex min-w-0 flex-wrap items-center gap-3">
             {canManage ? (
               <Button
@@ -218,7 +218,7 @@ export function PipelinePage() {
       />
 
       {paused ? (
-        <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-[#F4B642]/30 bg-[#F4B642]/10 px-4 py-2.5 text-[13.5px] font-semibold text-[#F4B642]">
+        <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-accent/30 bg-accent/10 px-4 py-2.5 text-[13.5px] font-semibold text-accent">
           <IconPlayerPause size={15} stroke={2} />
           {t('pipeline.pausedBanner')}
         </div>
@@ -228,7 +228,7 @@ export function PipelinePage() {
         <Chip
           label={t('pipeline.filter.attention')}
           count={attention}
-          dot="#F4B642"
+          dot="accent"
           on={status === 'attention'}
           tone="accent"
           onClick={() => pick(setStatus)('attention')}
@@ -236,7 +236,7 @@ export function PipelinePage() {
         <Chip
           label={t('pipeline.filter.failed')}
           count={c?.failed}
-          dot="#E8536A"
+          dot="danger"
           on={status === 'failed'}
           tone="accent"
           onClick={() => pick(setStatus)('failed')}
@@ -244,7 +244,7 @@ export function PipelinePage() {
         <Chip
           label={t('pipeline.filter.running')}
           count={c?.running}
-          dot="#F4B642"
+          dot="accent"
           on={status === 'running'}
           tone="accent"
           onClick={() => pick(setStatus)('running')}
@@ -252,7 +252,7 @@ export function PipelinePage() {
         <Chip
           label={t('pipeline.filter.pending')}
           count={c?.pending}
-          dot="rgba(244,243,240,.45)"
+          dot="text/45"
           on={status === 'pending'}
           tone="accent"
           onClick={() => pick(setStatus)('pending')}
@@ -260,7 +260,7 @@ export function PipelinePage() {
         <Chip
           label={t('pipeline.filter.ok')}
           count={c?.ok}
-          dot="#46D08D"
+          dot="success"
           on={status === 'ok'}
           tone="accent"
           onClick={() => pick(setStatus)('ok')}
@@ -303,8 +303,8 @@ export function PipelinePage() {
         />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#121216] shadow-[0_10px_28px_rgba(0,0,0,.3)]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-[#15151A] px-5 py-3 md:grid-cols-[minmax(0,1fr)_150px_132px_46px]">
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-surface-1 shadow-[0_10px_28px_rgba(0,0,0,.3)]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-surface-1 px-5 py-3 md:grid-cols-[minmax(0,1fr)_150px_132px_46px]">
           <Head>{t('pipeline.colElement')}</Head>
           <Head className="max-md:hidden">{t('pipeline.treatments')}</Head>
           <Head className="max-md:hidden">{t('pipeline.colStatus')}</Head>
@@ -322,12 +322,12 @@ export function PipelinePage() {
 
         {data && rows.length === 0 ? (
           <div className="py-6">
-            <EmptyState icon="inbox" title={t('pipeline.noMatch')} />
+            <EmptyState.Root icon="inbox" title={t('pipeline.noMatch')} />
           </div>
         ) : null}
 
         {rows.length > 0 ? (
-          <div className="flex items-center justify-between gap-4 border-t border-white/6 bg-[#0F0F13] px-5 py-3.5">
+          <div className="flex items-center justify-between gap-4 border-t border-white/6 bg-bg px-5 py-3.5">
             <div className="flex items-center gap-4">
               <span className="text-[12.5px] font-semibold tabular-nums text-white/60">
                 {(start + 1).toLocaleString()}–
@@ -335,10 +335,10 @@ export function PipelinePage() {
                 {(data?.total ?? 0).toLocaleString()}
               </span>
               <div className="hidden items-center gap-3 md:flex">
-                <Legend color="#46D08D" label={t('pipeline.st.done')} />
-                <Legend color="#F4B642" label={t('pipeline.st.running')} />
-                <Legend color="rgba(255,255,255,.3)" label={t('pipeline.st.pending')} />
-                <Legend color="#E8536A" label={t('pipeline.st.failed')} />
+                <Legend tone="success" label={t('pipeline.st.done')} />
+                <Legend tone="accent" label={t('pipeline.st.running')} />
+                <Legend tone="white/30" label={t('pipeline.st.pending')} />
+                <Legend tone="danger" label={t('pipeline.st.failed')} />
               </div>
             </div>
             <div className="flex items-center gap-2.5">
@@ -367,10 +367,10 @@ export function PipelinePage() {
   );
 }
 
-function Legend({ color, label }: Readonly<{ color: string; label: string }>) {
+function Legend({ tone, label }: Readonly<{ tone: string; label: string }>) {
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/45">
-      <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+      <span className="h-2 w-2 rounded-full" style={{ background: color(tone) }} />
       {label}
     </span>
   );

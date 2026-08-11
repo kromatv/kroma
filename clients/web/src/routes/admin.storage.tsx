@@ -4,6 +4,7 @@ import {
   Button,
   confirm,
   EmptyState,
+  ListRow,
   Progress,
   Section,
   Select,
@@ -62,7 +63,7 @@ function StoragePage() {
 
   return (
     <>
-      <PageHeader title={t('admin.storageTitle')} subtitle={t('admin.storageSub')} />
+      <PageHeader.Root title={t('admin.storageTitle')} subtitle={t('admin.storageSub')} />
 
       <div className="mt-6 grid grid-cols-3 gap-4">
         <StatCard label={t('admin.totalCapacity')} value={formatBytes(data?.totalBytes ?? 0)} />
@@ -79,18 +80,18 @@ function StoragePage() {
         />
       </div>
 
-      <Section title={t('admin.volumes')} mt={28}>
+      <Section.Root title={t('admin.volumes')} mt={28}>
         <div className="flex flex-col gap-3.5">
           {(data?.volumes ?? []).map((v) => (
             <VolumeCard key={v.mount} v={v} />
           ))}
           {data?.volumes.length === 0 ? (
-            <EmptyState icon="database" title={t('admin.noVolumes')} />
+            <EmptyState.Root icon="database" title={t('admin.noVolumes')} />
           ) : null}
         </div>
-      </Section>
+      </Section.Root>
 
-      <Section title={t('admin.cacheContent')} mt={28}>
+      <Section.Root title={t('admin.cacheContent')} mt={28}>
         <div className="grid grid-cols-4 gap-4">
           <StatCard
             label={t('admin.transcodeCacheSize')}
@@ -118,10 +119,10 @@ function StoragePage() {
             value={(cache?.embeddings ?? 0).toLocaleString()}
           />
         </div>
-      </Section>
+      </Section.Root>
 
-      <Section title={t('admin.cacheMaintenance')} mt={28}>
-        <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
+      <Section.Root title={t('admin.cacheMaintenance')} mt={28}>
+        <ListRow.Group size="md">
           <MaintRow
             title={t('admin.transcodeCacheFolder')}
             desc={t('admin.transcodeCacheFolderDesc')}
@@ -171,7 +172,6 @@ function StoragePage() {
           <MaintRow
             title={t('admin.resetMetadata')}
             desc={t('admin.resetMetadataDesc')}
-            border={false}
             right={
               <Button
                 variant="danger"
@@ -182,8 +182,8 @@ function StoragePage() {
               />
             }
           />
-        </Surface>
-      </Section>
+        </ListRow.Group>
+      </Section.Root>
     </>
   );
 }
@@ -201,12 +201,12 @@ function LimitSelect({
 }>) {
   const all = options.includes(value) ? options : [value, ...options];
   return (
-    <Select
-      label={label}
-      value={value}
-      options={all.map((o) => ({ value: o, label: o }))}
-      onChange={onChange}
-    />
+    <Select.Root label={label} value={value} onValueChange={onChange}>
+      <Select.Trigger />
+      {all.map((o) => (
+        <Select.Item key={o} value={o} label={o} />
+      ))}
+    </Select.Root>
   );
 }
 
@@ -247,22 +247,10 @@ function MaintRow({
   title,
   desc,
   right,
-  border = true,
-}: Readonly<{
-  title: string;
-  desc: string;
-  right: React.ReactNode;
-  border?: boolean;
-}>) {
+}: Readonly<{ title: string; desc: string; right: React.ReactNode }>) {
   return (
-    <div
-      className={`flex items-center justify-between gap-4.5 px-5.5 py-4 ${border ? 'border-b border-border' : ''}`}
-    >
-      <div>
-        <div className="text-[14.5px] font-bold">{title}</div>
-        <div className="mt-0.75 text-[12.5px] text-dim">{desc}</div>
-      </div>
-      <div className="shrink-0">{right}</div>
-    </div>
+    <ListRow.Root label={title} hint={desc}>
+      <ListRow.Trailing>{right}</ListRow.Trailing>
+    </ListRow.Root>
   );
 }

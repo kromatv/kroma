@@ -8,7 +8,7 @@ import {
   SplashBackdrop,
   type SplashCover,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
@@ -111,8 +111,8 @@ export function OnboardingTitle({
 }: Readonly<{ title: string; subtitle?: string | null }>) {
   return (
     <Box style={s.titleBlock}>
-      <Txt style={s.headline}>{title}</Txt>
-      {subtitle ? <Txt style={s.subtitle}>{subtitle}</Txt> : null}
+      <Text style={s.headline}>{title}</Text>
+      {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
     </Box>
   );
 }

@@ -3,7 +3,7 @@
 // and only then asks for a password, always confirming before it overwrites.
 
 import { useT } from '@kroma/ui';
-import { Box, controlMetrics, Dialog, DialogActions, Field, Switch, Txt } from '@kroma/ui/kit';
+import { Box, controlMetrics, Dialog, Field, ListRow, SwitchFace, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';
@@ -28,7 +28,7 @@ function errMessage(e: unknown, fallback: string): string {
 }
 
 function ErrorLine({ text }: Readonly<{ text: string }>) {
-  return <p className="text-[13px] font-semibold text-[#E8536A]">{text}</p>;
+  return <p className="text-[13px] font-semibold text-danger">{text}</p>;
 }
 
 function ChosenFile({ name }: Readonly<{ name: string }>) {
@@ -43,9 +43,9 @@ function ChosenFile({ name }: Readonly<{ name: string }>) {
       bg={control.bg}
       border="borderStrong"
     >
-      <Txt lines={1} style={{ fontSize: control.fontSize }}>
+      <Text lines={1} style={{ fontSize: control.fontSize }}>
         {name}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -57,15 +57,17 @@ function ToggleRow({
   onChange,
 }: Readonly<{ label: string; hint: string; on: boolean; onChange: (v: boolean) => void }>) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <div className="text-[14px] font-semibold text-text">{label}</div>
-        <div className="mt-0.5 text-[12px] leading-relaxed text-dim">{hint}</div>
-      </div>
-      <div className="pt-0.5">
-        <Switch checked={on} onChange={onChange} label={label} />
-      </div>
-    </div>
+    <ListRow.Root
+      role="switch"
+      checked={on}
+      label={label}
+      hint={hint}
+      onPress={() => onChange(!on)}
+    >
+      <ListRow.Trailing>
+        <SwitchFace checked={on} />
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
@@ -115,17 +117,12 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
         onChange={setEncrypt}
       />
       {encrypt ? (
-        <Field
-          label={t('admin.backupPassword')}
-          hint={t('admin.backupPasswordHint')}
-          type="password"
-          icon="lock"
-          value={password}
-          onChange={setPassword}
-        />
+        <Field.Root label={t('admin.backupPassword')} hint={t('admin.backupPasswordHint')}>
+          <Field.Input type="password" icon="lock" value={password} onValueChange={setPassword} />
+        </Field.Root>
       ) : null}
       {error ? <ErrorLine text={error} /> : null}
-      <DialogActions
+      <Dialog.Actions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={() => void run()}
@@ -171,18 +168,13 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
         width={520}
         onClose={busy ? () => {} : () => call.end(null)}
       >
-        <Field label={t('admin.backupFile')}>
+        <Field.Root label={t('admin.backupFile')}>
           <ChosenFile name={file.name} />
-        </Field>
+        </Field.Root>
         {encrypted ? (
-          <Field
-            label={t('admin.backupPassword')}
-            hint={t('admin.backupEncryptedFile')}
-            type="password"
-            icon="lock"
-            value={password}
-            onChange={setPassword}
-          />
+          <Field.Root label={t('admin.backupPassword')} hint={t('admin.backupEncryptedFile')}>
+            <Field.Input type="password" icon="lock" value={password} onValueChange={setPassword} />
+          </Field.Root>
         ) : null}
         <ToggleRow
           label={t('admin.backupReset')}
@@ -192,7 +184,7 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
         />
         <p className="text-[12.5px] leading-relaxed text-dim">{t('admin.backupImportDesc')}</p>
         {error ? <ErrorLine text={error} /> : null}
-        <DialogActions
+        <Dialog.Actions
           onCancel={() => call.end(null)}
           cancelLabel={t('common.cancel')}
           onConfirm={() => void run()}

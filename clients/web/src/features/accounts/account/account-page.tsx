@@ -15,8 +15,6 @@ import { Panel, Section, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
 
-const USERNAME_ENTRY = { autoComplete: 'nickname' } as const;
-
 export function AccountPage() {
   const t = useT();
   const { user } = useAuth();
@@ -24,7 +22,7 @@ export function AccountPage() {
   if (!user) {
     return (
       <main className="min-w-0 px-(--gutter-web) pb-20 pt-9">
-        <EmptyState icon="user-off" title={t('account.signedOut')} />
+        <EmptyState.Root icon="user-off" title={t('account.signedOut')} />
       </main>
     );
   }
@@ -111,21 +109,18 @@ function ProfileEditor() {
 
       <Section title={t('account.sectionInfo')}>
         <Panel className="grid grid-cols-1 gap-4.5 p-5.5 sm:grid-cols-2">
-          <Field
-            label={t('auth.username')}
-            icon="at"
-            value={username}
-            onChange={setUsername}
-            entry={USERNAME_ENTRY}
-          />
-          <div className="sm:col-span-2">
-            <Field
-              label={t('auth.email')}
-              type="email"
-              icon="mail"
-              value={email}
-              onChange={setEmail}
+          <Field.Root label={t('auth.username')}>
+            <Field.Input
+              icon="at"
+              value={username}
+              onValueChange={setUsername}
+              autoComplete="nickname"
             />
+          </Field.Root>
+          <div className="sm:col-span-2">
+            <Field.Root label={t('auth.email')}>
+              <Field.Input type="email" icon="mail" value={email} onValueChange={setEmail} />
+            </Field.Root>
           </div>
         </Panel>
       </Section>

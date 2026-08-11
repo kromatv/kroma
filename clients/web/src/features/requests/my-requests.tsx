@@ -76,10 +76,10 @@ export function MyRequestsPage() {
       ) : null}
 
       {requests?.length === 0 ? (
-        <EmptyState
+        <EmptyState.Root
           icon="inbox"
           title={t('requests.myEmpty')}
-          action={
+          actions={
             <Button
               size="sm"
               label={t('requests.myEmptyCta')}
@@ -174,7 +174,7 @@ function RequestRow({
             </div>
           ) : null}
           {req.note ? (
-            <div className="mt-1 text-[12px] font-semibold text-[#EF8091]">{req.note}</div>
+            <div className="mt-1 text-[12px] font-semibold text-danger-hover">{req.note}</div>
           ) : null}
         </div>
       </button>

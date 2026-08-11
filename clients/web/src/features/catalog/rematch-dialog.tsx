@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';
-import { Image } from '#web/shared/ui';
+import { Image, MODAL_SCRIM } from '#web/shared/ui';
 
 type Kind = 'movie' | 'show';
 
@@ -62,10 +62,10 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
           type="button"
           aria-label={t('common.close')}
           onClick={() => call.end(false)}
-          className="fixed inset-0 z-60 bg-[rgba(4,4,6,.66)] backdrop-blur-[3px]"
+          className={MODAL_SCRIM}
         />
         <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-          <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0E0E12] shadow-[0_30px_90px_rgba(0,0,0,.6)]">
+          <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg shadow-[0_30px_90px_rgba(0,0,0,.6)]">
             <header className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-7 py-5">
               <div className="min-w-0">
                 <div className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
@@ -86,16 +86,16 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                 }}
               >
                 <div className="w-[220px] max-w-[42vw]">
-                  <Field
-                    label={t('rematch.searchPlaceholder')}
-                    hideLabel
-                    type="search"
-                    icon="search"
-                    value={query}
-                    onChange={setTyped}
-                    onSubmit={() => setSubmitted(query.trim() || undefined)}
-                    placeholder={t('rematch.searchPlaceholder')}
-                  />
+                  <Field.Root label={t('rematch.searchPlaceholder')} hideLabel>
+                    <Field.Input
+                      type="search"
+                      icon="search"
+                      value={query}
+                      onValueChange={setTyped}
+                      onSubmit={() => setSubmitted(query.trim() || undefined)}
+                      placeholder={t('rematch.searchPlaceholder')}
+                    />
+                  </Field.Root>
                 </div>
                 {/* Mirrors the form's implicit Enter-key submit. */}
                 <IconButton
@@ -116,7 +116,7 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
 
             <div className="flex-1 overflow-y-auto px-7 py-5">
               {error ? (
-                <p className="mb-4 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-[13px] text-red-200">
+                <p className="mb-4 rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-[13px] text-danger-hover">
                   {error}
                 </p>
               ) : null}
@@ -188,7 +188,7 @@ function CandidateCard({
       className={`group flex flex-col overflow-hidden rounded-xl border text-left transition-colors disabled:opacity-60 ${
         current
           ? 'border-accent/50 bg-accent/[0.08]'
-          : 'border-white/8 bg-[#15151A] hover:border-white/20 hover:bg-[#1a1a20]'
+          : 'border-white/8 bg-surface-1 hover:border-white/20 hover:bg-surface-2'
       }`}
     >
       <div className="relative aspect-[2/3] w-full bg-white/5">
@@ -237,8 +237,8 @@ function Confidence({ score }: Readonly<{ score: number }>) {
   const t = useT();
   const pct = Math.round(score * 100);
   let tone = 'bg-black/70 text-white/60';
-  if (pct >= 70) tone = 'bg-emerald-500/85 text-black';
-  else if (pct >= 35) tone = 'bg-amber-500/85 text-black';
+  if (pct >= 70) tone = 'bg-success/85 text-black';
+  else if (pct >= 35) tone = 'bg-accent/85 text-black';
   return (
     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm ${tone}`}>
       {t('rematch.confidence', { score: pct })}

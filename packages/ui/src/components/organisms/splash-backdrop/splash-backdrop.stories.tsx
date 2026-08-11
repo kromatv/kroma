@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { SplashBackdrop } from './splash-backdrop';
 
 // Real photographs from the workbench's sample art (see lib/sample-art): the
@@ -60,7 +60,7 @@ export default story({
     >
       <SplashBackdrop covers={COVERS} holdMs={6000} />
       <Box absolute top={0} right={0} bottom={0} left={0} center>
-        <Txt variant="h1">Qui regarde ?</Txt>
+        <Text variant="h1">Qui regarde ?</Text>
       </Box>
     </Ground>
   ),

@@ -12,7 +12,7 @@ import {
   type View,
 } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { useFocusNav } from '#ui/lib/focus-nav';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -21,7 +21,8 @@ import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { useTDefault } from '#ui/services/i18n';
-import { Content, Footer, FooterSlot, Header, type Shell, ShellContext } from './dialog-parts';
+import { Actions } from './dialog-actions';
+import { Content, Footer, Header, type Shell, ShellContext } from './dialog-parts';
 
 interface DialogProps {
   open: boolean;
@@ -124,7 +125,7 @@ function DialogSurface({
   );
   const header =
     headerPart ?? defaultHeader({ showsTitle, title, description, titleId, descriptionId });
-  const foot = footerPart ?? (footer ? <FooterSlot>{footer}</FooterSlot> : null);
+  const foot = footerPart ?? (footer ? <Footer>{footer}</Footer> : null);
   const hasHeader = Boolean(header);
   const hasFooter = Boolean(foot);
   const shell = useMemo<Shell>(() => ({ pad, hasHeader, hasFooter }), [pad, hasHeader, hasFooter]);
@@ -200,14 +201,14 @@ function defaultHeader(at: {
   return (
     <Header>
       {at.showsTitle ? (
-        <Txt nativeID={at.titleId} variant="h2">
+        <Text nativeID={at.titleId} variant="h2">
           {at.title}
-        </Txt>
+        </Text>
       ) : null}
       {at.description ? (
-        <Txt nativeID={at.descriptionId} color="textMuted" variant="body">
+        <Text nativeID={at.descriptionId} color="textMuted" variant="body">
           {at.description}
-        </Txt>
+        </Text>
       ) : null}
     </Header>
   );
@@ -224,19 +225,24 @@ const s = styles({
  * ordinary case, and composed through its parts when a panel needs its own
  * header or a footer that is not a row of buttons:
  *
+ *   <Dialog open onClose={close} footer={<Dialog.Actions … />}>…</Dialog>
+ *
  *   <Dialog open onClose={close}>
  *     <Dialog.Header>…</Dialog.Header>
  *     <Dialog.Content>…</Dialog.Content>
- *     <Dialog.Footer>…</Dialog.Footer>
+ *     <Dialog.Footer><Dialog.Actions … /></Dialog.Footer>
  *   </Dialog>
  *
  * Either way only `Content` scrolls; the header and the footer stay put.
+ * `Footer` is the pinned shelf and `Actions` is the row of controls, so the two
+ * nest rather than compete.
  */
 const DialogParts = Object.assign(Dialog, {
   Root: Dialog,
   Header,
   Content,
   Footer,
+  Actions,
 });
 
 export type { DialogProps };

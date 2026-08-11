@@ -4,6 +4,7 @@ import {
   createTranslator,
   detectLocale,
   isLocale,
+  LOCALES,
   normalizeLocale,
   translate,
   translateIn,
@@ -31,6 +32,12 @@ describe('normalizeLocale', () => {
   it('accepts the server display names', () => {
     expect(normalizeLocale('Français')).toBe('fr');
     expect(normalizeLocale('English')).toBe('en');
+  });
+
+  it('accepts every endonym the catalogs spell, so the two cannot drift apart', () => {
+    for (const { code, labelKey } of LOCALES) {
+      expect(normalizeLocale(translate(code, labelKey))).toBe(code);
+    }
   });
 
   it('returns null for unknown / empty tags', () => {

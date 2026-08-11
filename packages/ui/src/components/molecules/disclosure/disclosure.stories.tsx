@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { Disclosure } from './disclosure';
 
@@ -9,7 +9,9 @@ export default story({
   group: 'Layout',
   docs: 'A collapsible section with a divider header - the "Advanced" tail of a form that most visits never need. The header is a button announcing its **expanded** state, so assistive tech hears what the chevron shows. Uncontrolled by default (`defaultOpen`); pass `open`/`onOpenChange` to own it.',
   usage: `<Disclosure title="Advanced">
-  <Field label="Custom endpoint" placeholder="https://" />
+  <Field.Root label="Custom endpoint">
+    <Field.Input placeholder="https://" />
+  </Field.Root>
 </Disclosure>`,
   guidelines: {
     do: [
@@ -27,9 +29,11 @@ export default story({
   controls: { title: 'text', defaultOpen: 'boolean' },
   render: ({ title, defaultOpen }) => (
     <Box gap={8}>
-      <Txt color="textMuted">Everyday fields sit above the fold.</Txt>
+      <Text color="textMuted">Everyday fields sit above the fold.</Text>
       <Disclosure key={String(defaultOpen)} title={title} defaultOpen={defaultOpen}>
-        <Field label="Custom endpoint" placeholder="https://" hint="Leave empty for the default." />
+        <Field.Root label="Custom endpoint" hint="Leave empty for the default.">
+          <Field.Input placeholder="https://" />
+        </Field.Root>
       </Disclosure>
     </Box>
   ),

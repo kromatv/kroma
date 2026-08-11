@@ -254,7 +254,7 @@ but a debug build still asks :8081 until you tell that install otherwise —
 
 Every TV shell is driven by its `tv.target.ts` (platform, dev port, engine
 floors) through the shared pipeline in
-[`clients/tv-build/shell.ts`](clients/tv-build/shell.ts); webOS additionally
+[`packages/bundler/src/shell.ts`](packages/bundler/src/shell.ts); webOS additionally
 ships a **legacy tier** (ES2015 + flattened Tailwind v4 CSS, runtime-gated) for
 Chromium 53-94 TVs (2018-2023). `bun run build:tv` builds all TV shells.
 

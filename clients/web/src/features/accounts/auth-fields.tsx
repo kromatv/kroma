@@ -7,8 +7,8 @@ import { useT } from '@kroma/ui';
 import { Field } from '@kroma/ui/kit';
 import { IconPlus } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
-import { avatarGradient, initials } from '#web/features/accounts/user-avatar';
 import { Image } from '#web/shared/ui';
+import { avatarGradient, initials } from '#web/shared/ui/user-avatar';
 
 export type RegisterValues = Readonly<{ email: string; username: string; password: string }>;
 
@@ -77,40 +77,34 @@ export function RegisterFields({
 
       {/* `md` against the app's `sm` default, matching the sign-in form these
           sit beside; see the note in auth-forms.tsx. */}
-      <Field
-        w="100%"
-        size="md"
-        label={t('auth.email')}
-        hideLabel
-        type="email"
-        icon="mail"
-        placeholder={t('auth.email')}
-        value={email}
-        onChange={(v) => onChange({ ...values, email: v })}
-      />
-      <Field
-        w="100%"
-        size="md"
-        label={t('auth.username')}
-        hideLabel
-        icon="user"
-        placeholder={t('auth.username')}
-        value={username}
-        onChange={(v) => onChange({ ...values, username: v })}
-        entry={{ autoComplete: 'username' }}
-      />
-      <Field
-        w="100%"
-        size="md"
-        label={t('auth.passwordHint')}
-        hideLabel
-        type="password"
-        icon="lock"
-        placeholder={t('auth.passwordHint')}
-        value={password}
-        onChange={(v) => onChange({ ...values, password: v })}
-        entry={{ autoComplete: 'new-password' }}
-      />
+      <Field.Root w="100%" size="md" label={t('auth.email')} hideLabel>
+        <Field.Input
+          type="email"
+          icon="mail"
+          placeholder={t('auth.email')}
+          value={email}
+          onValueChange={(v) => onChange({ ...values, email: v })}
+        />
+      </Field.Root>
+      <Field.Root w="100%" size="md" label={t('auth.username')} hideLabel>
+        <Field.Input
+          icon="user"
+          placeholder={t('auth.username')}
+          value={username}
+          onValueChange={(v) => onChange({ ...values, username: v })}
+          autoComplete="username"
+        />
+      </Field.Root>
+      <Field.Root w="100%" size="md" label={t('auth.passwordHint')} hideLabel>
+        <Field.Input
+          type="password"
+          icon="lock"
+          placeholder={t('auth.passwordHint')}
+          value={password}
+          onValueChange={(v) => onChange({ ...values, password: v })}
+          autoComplete="new-password"
+        />
+      </Field.Root>
     </>
   );
 }

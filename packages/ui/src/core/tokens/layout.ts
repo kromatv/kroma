@@ -7,6 +7,31 @@ import type { TokenOf } from './registry';
  * panel, a 4K Apple TV (1920x1080 points) and an Android TV (960x540 dp). */
 export const CANVAS = { width: 1920, height: 1080 } as const;
 
+/** The design widths a layout may change at, ascending. `base` is mandatory in
+ *  a breakpoint object and means "no minimum". */
+export const BREAKPOINTS = ['base', 'md', 'lg', 'tv'] as const;
+
+export type BreakpointName = (typeof BREAKPOINTS)[number];
+
+/**
+ * What each step is for, in the units the target reports (px on a browser,
+ * points or dp natively):
+ *
+ * | `base` | a phone, and anything narrower than the next step |
+ * | `md`   | a tablet in portrait, or a half-screen split view on one |
+ * | `lg`   | a desktop window, or a tablet in landscape |
+ * | `tv`   | the 10-foot stage, which IS `CANVAS.width`, and the widest desktop |
+ *
+ * Deliberately closed, with no registry to augment: an open set would make an
+ * unknown key in `{ base: 16, xl: 40 }` legal rather than a compile error.
+ */
+export const breakpoint = {
+  base: 0,
+  md: 600,
+  lg: 1024,
+  tv: CANVAS.width,
+} as const satisfies Record<BreakpointName, number>;
+
 export const space = {
   1: 4,
   2: 8,

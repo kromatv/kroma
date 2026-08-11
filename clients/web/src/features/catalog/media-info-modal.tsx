@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createCallable } from 'react-call';
 import { FileCard } from '#web/features/catalog/media-info-card';
 import { catalogQueries } from '#web/shared/lib/queries';
+import { MODAL_SCRIM } from '#web/shared/ui';
 
 // Open with `await MediaInfoModal.call({ id, title })`; read-only, so it resolves
 // (`void`) purely on dismiss. Its root is mounted once by `CatalogModalHosts`.
@@ -27,10 +28,10 @@ export const MediaInfoModal = createCallable<{ id: string; title: string }, void
           type="button"
           aria-label={t('common.close')}
           onClick={() => call.end()}
-          className="fixed inset-0 z-60 bg-[rgba(4,4,6,.66)] backdrop-blur-[3px]"
+          className={MODAL_SCRIM}
         />
         <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-          <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0E0E12] shadow-[0_30px_90px_rgba(0,0,0,.6)]">
+          <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg shadow-[0_30px_90px_rgba(0,0,0,.6)]">
             <header className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-7 py-5">
               <div className="min-w-0">
                 <div className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">

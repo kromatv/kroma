@@ -70,7 +70,7 @@ function FileHeader({
 function Unprobed() {
   const t = useT();
   return (
-    <p className="border-t border-white/[0.06] px-4 py-3 text-[12px] text-amber-300/80">
+    <p className="border-t border-white/[0.06] px-4 py-3 text-[12px] text-accent/80">
       {t('mediaInfo.unprobed')}
     </p>
   );

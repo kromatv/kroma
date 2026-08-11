@@ -81,10 +81,10 @@ function ModulesInner() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.modulesTitle')}
         subtitle={t('admin.modulesSub')}
-        action={
+        actions={
           <div className="flex items-center gap-2">
             <Button
               variant="glass"
@@ -123,16 +123,15 @@ function ModulesInner() {
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <SegmentedControl.Root value={tab} options={tabs} onValueChange={setTab} />
         {tab !== 'updates' && (
-          <Field
-            w={256}
-            label={t('admin.modulesSearch')}
-            hideLabel
-            type="search"
-            icon="search"
-            placeholder={t('admin.modulesSearch')}
-            value={query}
-            onChange={setQuery}
-          />
+          <Field.Root w={256} label={t('admin.modulesSearch')} hideLabel>
+            <Field.Input
+              type="search"
+              icon="search"
+              placeholder={t('admin.modulesSearch')}
+              value={query}
+              onValueChange={setQuery}
+            />
+          </Field.Root>
         )}
       </div>
 

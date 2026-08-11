@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { Spinner } from '#web/features/accounts/auth-gate';
 import { useAuth } from '#web/shared/lib/auth';
+import { PAGE_RADIAL } from '#web/shared/ui';
 
 // Public invitation acceptance page. An admin (with `users.manage`) shares
 // `/join?invite=TOKEN`; the invitee creates their account here. The global
@@ -15,8 +16,6 @@ export const Route = createFileRoute('/join')({
   }),
   component: JoinPage,
 });
-
-const RADIAL = 'radial-gradient(120% 90% at 50% 0%, #15131C, #0A0A0C 70%)';
 
 function JoinPage() {
   const t = useT();
@@ -74,7 +73,7 @@ function JoinPage() {
   return (
     <main
       className="fixed inset-0 z-100 flex flex-col overflow-y-auto px-6 py-12"
-      style={{ background: RADIAL }}
+      style={{ background: PAGE_RADIAL }}
     >
       {/* Auto margins (not justify-center) so a form taller than a small phone
           viewport scrolls instead of clipping its top. */}

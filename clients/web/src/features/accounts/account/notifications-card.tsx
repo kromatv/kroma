@@ -95,7 +95,7 @@ function PushPanel() {
           {t(PUSH_BLOCKER_LABEL[blocker])}
         </p>
       )}
-      {error && <p className="text-[12.5px] text-red-300">{error}</p>}
+      {error && <p className="text-[12.5px] text-danger">{error}</p>}
 
       {subscribed && !blocker && (
         <div className="flex items-center gap-3">

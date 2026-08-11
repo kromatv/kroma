@@ -40,7 +40,7 @@ function panel(onReport?: (category: ReportCategory) => Promise<void>): ReactEle
       <SettingsPanel
         controller={controller()}
         appearance={APPEARANCE}
-        onAppearance={vi.fn()}
+        onAppearanceChange={vi.fn()}
         statsOn={false}
         onToggleStats={vi.fn()}
         subtitleGen={GEN}

@@ -63,17 +63,15 @@ export function OfficialRow({
       </div>
       <p className="text-xs text-muted">{t('admin.registriesOfficialDesc')}</p>
       <div className="flex flex-wrap items-center gap-2">
-        <Field
-          label="URL"
-          hideLabel
-          type="url"
-          icon="world"
-          value={value}
-          onChange={setValue}
-          placeholder="https://.../modules.json"
-          flex={1}
-          minW={0}
-        />
+        <Field.Root label="URL" hideLabel flex={1} minW={0}>
+          <Field.Input
+            type="url"
+            icon="world"
+            value={value}
+            onValueChange={setValue}
+            placeholder="https://.../modules.json"
+          />
+        </Field.Root>
         <Button
           variant="glass"
           size="sm"
@@ -106,15 +104,14 @@ export function ExtraRow({
   return (
     <Surface elevated pad="none" radius={16} p={16} gap={8}>
       <div className="flex flex-wrap items-center gap-2">
-        <Field
-          label={t('admin.registriesName')}
-          hideLabel
-          icon="tag"
-          value={registry.name}
-          onChange={(name) => onChange({ ...registry, name })}
-          placeholder={t('admin.registriesName')}
-          w={176}
-        />
+        <Field.Root label={t('admin.registriesName')} hideLabel w={176}>
+          <Field.Input
+            icon="tag"
+            value={registry.name}
+            onValueChange={(name) => onChange({ ...registry, name })}
+            placeholder={t('admin.registriesName')}
+          />
+        </Field.Root>
         <Switch
           checked={registry.enabled}
           onChange={(enabled) => onChange({ ...registry, enabled })}
@@ -131,15 +128,15 @@ export function ExtraRow({
           onPress={busy ? () => {} : onRemove}
         />
       </div>
-      <Field
-        label="URL"
-        hideLabel
-        type="url"
-        icon="world"
-        value={registry.url}
-        onChange={(url) => onChange({ ...registry, url })}
-        placeholder="https://.../modules.json"
-      />
+      <Field.Root label="URL" hideLabel>
+        <Field.Input
+          type="url"
+          icon="world"
+          value={registry.url}
+          onValueChange={(url) => onChange({ ...registry, url })}
+          placeholder="https://.../modules.json"
+        />
+      </Field.Root>
       <StatusLine status={status} />
     </Surface>
   );
@@ -149,7 +146,7 @@ function PreviewResult({ preview }: Readonly<{ preview: StoreRegistryPreview }>)
   const t = useT();
   if (preview.ok) {
     return (
-      <div className="rounded-lg border border-[rgba(70,208,141,.25)] bg-[rgba(70,208,141,.07)] px-3 py-2.5">
+      <div className="rounded-lg border border-success/25 bg-success/7 px-3 py-2.5">
         <p className="text-xs font-semibold text-success">
           {t('admin.registriesPreviewOk', { count: preview.moduleCount })}
         </p>
@@ -201,26 +198,23 @@ export function AddRegistry({
     <Surface elevated pad="none" radius={16} p={16} gap={10}>
       <span className="font-semibold text-text">{t('admin.registriesAdd')}</span>
       <div className="flex flex-wrap items-center gap-2">
-        <Field
-          label={t('admin.registriesName')}
-          hideLabel
-          icon="tag"
-          value={name}
-          onChange={setName}
-          placeholder={t('admin.registriesName')}
-          w={176}
-        />
-        <Field
-          label="URL"
-          hideLabel
-          type="url"
-          icon="world"
-          value={url}
-          onChange={setUrl}
-          placeholder="https://.../modules.json"
-          flex={1}
-          minW={0}
-        />
+        <Field.Root label={t('admin.registriesName')} hideLabel w={176}>
+          <Field.Input
+            icon="tag"
+            value={name}
+            onValueChange={setName}
+            placeholder={t('admin.registriesName')}
+          />
+        </Field.Root>
+        <Field.Root label="URL" hideLabel flex={1} minW={0}>
+          <Field.Input
+            type="url"
+            icon="world"
+            value={url}
+            onValueChange={setUrl}
+            placeholder="https://.../modules.json"
+          />
+        </Field.Root>
       </div>
       {url.trim() !== '' && !valid && (
         <p className="text-xs text-danger">{t('admin.registriesHttps')}</p>

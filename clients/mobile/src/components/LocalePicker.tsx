@@ -5,7 +5,7 @@
 // else.
 
 import { LOCALES, type Locale } from '@kroma/core';
-import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, styles, Text } from '@kroma/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { radius, spacing, type } from '#mobile/lib/theme';
@@ -23,9 +23,9 @@ export function LocalePicker({
           onPress={() => onPick(l.code as Locale)}
           style={({ pressed }) => [s.row, pressed && s.rowPressed]}
         >
-          <Txt style={[s.rowLabel, locale === l.code && { fontWeight: '700' }]}>
+          <Text style={[s.rowLabel, locale === l.code && { fontWeight: '700' }]}>
             {t(l.labelKey)}
-          </Txt>
+          </Text>
           {locale === l.code ? (
             <Icon name="check" size={17} stroke={2.4} color="accentText" />
           ) : null}

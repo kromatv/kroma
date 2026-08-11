@@ -16,14 +16,17 @@
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { CheckboxFace } from '#ui/components/atoms/checkbox';
+import { CheckboxFace, type CheckboxSize } from '#ui/components/atoms/checkbox';
 import { RadioFace } from '#ui/components/atoms/radio';
-import { Txt } from '#ui/components/atoms/text';
-import { ListRow, type ListRowSize } from '#ui/components/molecules/list-row';
+import { Text } from '#ui/components/atoms/text';
+import { ListRow } from '#ui/components/molecules/list-row';
+import type { ControlSize } from '#ui/lib/field-shell';
+
+const FACE: Record<ControlSize, CheckboxSize> = { sm: 'sm', md: 'sm', tv: 'tv' };
 
 interface ChoiceContext {
   mode: 'single' | 'multiple';
-  size: ListRowSize;
+  size: ControlSize;
   picked: (value: string) => boolean;
   toggle: (value: string) => void;
 }
@@ -48,7 +51,7 @@ function useItem(part: string): { value: string; on: boolean } {
 interface RootBase {
   /** Names the group to assistive tech: what the choices are choices OF. */
   label: string;
-  size?: ListRowSize;
+  size?: ControlSize;
   gap?: number;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
@@ -128,19 +131,22 @@ function Item({ value, disabled, children, label, hint, actions }: Readonly<Item
   const item = useMemo(() => ({ value, on }), [value, on]);
   return (
     <ItemContext.Provider value={item}>
-      <ListRow
+      <ListRow.Root
         size={size}
         label={label ?? value}
-        hint={children ? undefined : hint}
+        hint={hint}
         disabled={disabled}
         role={mode === 'multiple' ? 'checkbox' : 'radio'}
         checked={on}
+        chevron={false}
         onPress={() => toggle(value)}
-        leading={<Indicator />}
-        trailing={actions}
       >
+        <ListRow.Leading>
+          <Indicator />
+        </ListRow.Leading>
         {children}
-      </ListRow>
+        {actions ? <ListRow.Trailing>{actions}</ListRow.Trailing> : null}
+      </ListRow.Root>
     </ItemContext.Provider>
   );
 }
@@ -151,9 +157,9 @@ function Indicator() {
   const { mode, size } = useChoice('Indicator');
   const { on } = useItem('Indicator');
   return mode === 'multiple' ? (
-    <CheckboxFace checked={on} size={size} />
+    <CheckboxFace checked={on} size={FACE[size]} />
   ) : (
-    <RadioFace checked={on} size={size} />
+    <RadioFace checked={on} size={FACE[size]} />
   );
 }
 
@@ -161,9 +167,9 @@ function Indicator() {
 function Label({ children }: Readonly<{ children: ReactNode }>) {
   const { size } = useChoice('Label');
   return (
-    <Txt variant={size === 'tv' ? 'title' : 'label'} lines={1}>
+    <Text variant={size === 'tv' ? 'title' : 'label'} lines={1}>
       {children}
-    </Txt>
+    </Text>
   );
 }
 
@@ -171,9 +177,9 @@ function Label({ children }: Readonly<{ children: ReactNode }>) {
 function Hint({ children }: Readonly<{ children: ReactNode }>) {
   const { size } = useChoice('Hint');
   return (
-    <Txt variant={size === 'tv' ? 'body' : 'meta'} color="textDim" lines={2}>
+    <Text variant={size === 'tv' ? 'body' : 'meta'} color="textDim" lines={2}>
       {children}
-    </Txt>
+    </Text>
   );
 }
 

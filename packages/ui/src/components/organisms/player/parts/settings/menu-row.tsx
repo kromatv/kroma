@@ -3,7 +3,7 @@ import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { SwitchFace } from '#ui/components/atoms/switch';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { styles } from '#ui/core';
 import { panel, rowStyle } from './panelStyle';
@@ -54,8 +54,8 @@ export function MenuRow({
     >
       {icon}
       <Box flex style={{ minWidth: 0 }}>
-        <Txt style={panel.menuLabel}>{label}</Txt>
-        {!toggle && value != null ? <Txt style={panel.menuValue}>{value}</Txt> : null}
+        <Text style={panel.menuLabel}>{label}</Text>
+        {!toggle && value != null ? <Text style={panel.menuValue}>{value}</Text> : null}
       </Box>
       {/* The KIT's switch face, not a lookalike: the row is the control (see the
           header), so it renders the atom's visuals without its `Focusable`.

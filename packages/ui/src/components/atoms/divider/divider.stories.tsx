@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Divider } from './divider';
 
 export default story({
@@ -15,13 +15,13 @@ export default story({
   controls: { size: { min: 1, max: 6, step: 1 }, spacing: { min: 0, max: 40, step: 4 } },
   render: (props) => (
     <Box row={props.vertical} align="center">
-      <Txt variant="meta" color="textDim">
+      <Text variant="meta" color="textDim">
         before
-      </Txt>
+      </Text>
       <Divider {...props} />
-      <Txt variant="meta" color="textDim">
+      <Text variant="meta" color="textDim">
         after
-      </Txt>
+      </Text>
     </Box>
   ),
 });

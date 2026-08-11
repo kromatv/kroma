@@ -7,7 +7,7 @@
 // Everything is a `Focusable` rather than a link, so the same tree works with a
 // mouse in a browser and a D-pad on a television.
 
-import { Box, Focusable, Icon, IconButton, styles, sv, Txt } from '@kroma/ui/kit';
+import { Box, Focusable, Icon, IconButton, styles, sv, Text } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE_TOP } from './chrome';
@@ -153,12 +153,12 @@ function Brand({
     <Box row align="center" gap={10} px={16} pt={16} pb={14}>
       {brand}
       <Box>
-        <Txt variant="meta" color="accent" style={s.brand}>
+        <Text variant="meta" color="accent" style={s.brand}>
           {title}
-        </Txt>
-        <Txt variant="meta" color="textDim" style={s.tally}>
+        </Text>
+        <Text variant="meta" color="textDim" style={s.tally}>
           {`${count} components`}
-        </Txt>
+        </Text>
       </Box>
       <Box flex />
       {onClose ? (
@@ -185,9 +185,9 @@ function SearchButton({ onPress }: Readonly<{ onPress: () => void }>) {
   return (
     <Focusable label="Search components" ring={false} onPress={onPress} sv={searchButton}>
       <Icon name="search" size={15} color="textDim" />
-      <Txt variant="meta" color="textDim" style={s.searchInk}>
+      <Text variant="meta" color="textDim" style={s.searchInk}>
         Search
-      </Txt>
+      </Text>
       <Box flex />
       <Kbd>{commandHint()}</Kbd>
     </Focusable>
@@ -216,13 +216,13 @@ function Branch({
       {({ slots }) => (
         <>
           <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} color="textDim" />
-          <Txt variant="meta" style={slots.label} lines={1}>
+          <Text variant="meta" style={slots.label} lines={1}>
             {label}
-          </Txt>
+          </Text>
           <Box flex />
-          <Txt variant="meta" color="textDim" style={s.count}>
+          <Text variant="meta" color="textDim" style={s.count}>
             {count}
-          </Txt>
+          </Text>
         </>
       )}
     </Focusable>
@@ -249,9 +249,9 @@ function Leaf({
               children reading as children once the chevron above them is scrolled
               out of sight. */}
           <Box w={1} h={16} bg={active ? 'transparent' : 'border'} mr={7} shrink={0} />
-          <Txt variant="body" style={slots.label} lines={1}>
+          <Text variant="body" style={slots.label} lines={1}>
             {story.name}
-          </Txt>
+          </Text>
         </>
       )}
     </Focusable>

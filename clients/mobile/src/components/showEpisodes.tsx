@@ -1,5 +1,5 @@
 import { formatRuntime, type MediaItem, type ProgressEntry, sizedImageUrl } from '@kroma/core';
-import { Box, Button, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
@@ -25,7 +25,7 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
     return (
       <Box style={s.seasonDl}>
         <Icon name="check" size={16} stroke={2.4} color="accentText" />
-        <Txt style={s.seasonDlLabel}>{t('offline.downloaded')}</Txt>
+        <Text style={s.seasonDlLabel}>{t('offline.downloaded')}</Text>
       </Box>
     );
   }
@@ -84,11 +84,11 @@ export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: num
         ) : null}
       </Box>
       <Box style={s.upNextText}>
-        <Txt style={s.upNextLabel}>{t('content.upNext')}</Txt>
-        <Txt lines={2} style={s.upNextTitle}>
+        <Text style={s.upNextLabel}>{t('content.upNext')}</Text>
+        <Text lines={2} style={s.upNextTitle}>
           {next.episode != null ? `${next.episode}. ` : ''}
           {next.episodeTitle ?? next.title}
-        </Txt>
+        </Text>
       </Box>
       <Icon name="player-play-filled" size={20} />
     </Pressable>
@@ -137,17 +137,17 @@ export function EpisodeRow({
       </Box>
       <Box style={s.epText}>
         <Box style={s.epTitleRow}>
-          <Txt lines={1} style={s.epTitle}>
+          <Text lines={1} style={s.epTitle}>
             {episode.episode != null ? `${episode.episode}. ` : ''}
             {episode.episodeTitle ?? episode.title}
-          </Txt>
+          </Text>
           {watched ? <Icon name="check" size={14} stroke={2.4} color="success" /> : null}
         </Box>
-        {runtime ? <Txt style={s.epMeta}>{runtime}</Txt> : null}
+        {runtime ? <Text style={s.epMeta}>{runtime}</Text> : null}
         {overview ? (
-          <Txt lines={2} style={s.epOverview}>
+          <Text lines={2} style={s.epOverview}>
             {overview}
-          </Txt>
+          </Text>
         ) : null}
       </Box>
       <DownloadButton item={episode} />

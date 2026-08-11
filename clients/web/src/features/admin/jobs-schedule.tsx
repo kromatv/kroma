@@ -3,7 +3,7 @@
 
 import { type JobInfo, KromaApiError } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Chip, Dialog, DialogActions, Field, Txt } from '@kroma/ui/kit';
+import { Button, Chip, Dialog, Field, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
@@ -41,21 +41,22 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
 
   return (
     <Dialog open title={t('jobs.editSchedule')} width={520} onClose={() => call.end(false)}>
-      <Field
-        label={t('jobs.cronExpr')}
-        icon="clock"
-        value={value}
-        onChange={setValue}
-        placeholder="0 4 * * *"
-        entry={{ textStyle: MONO }}
-      />
+      <Field.Root label={t('jobs.cronExpr')}>
+        <Field.Input
+          icon="clock"
+          value={value}
+          onValueChange={setValue}
+          placeholder="0 4 * * *"
+          textStyle={MONO}
+        />
+      </Field.Root>
 
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((p) => (
           <Chip key={p.expr} variant="surface" onPress={() => setValue(p.expr)}>
-            <Txt style={CRON} color="textMuted">
+            <Text style={CRON} color="textMuted">
               {p.label}
-            </Txt>
+            </Text>
           </Chip>
         ))}
         <Chip variant="surface" label={t('jobs.manual')} onPress={() => setValue('')} />
@@ -65,16 +66,16 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
       {job.defaultSchedule && job.defaultSchedule !== value ? (
         <div className="flex">
           <Button variant="ghost" size="sm" onPress={() => setValue(job.defaultSchedule ?? '')}>
-            <Txt color="accent" style={RESET_LABEL}>
+            <Text color="accent" style={RESET_LABEL}>
               {t('jobs.resetDefault')} ({job.defaultSchedule})
-            </Txt>
+            </Text>
           </Button>
         </div>
       ) : null}
 
-      {error ? <div className="text-[12.5px] font-semibold text-[#E8536A]">{error}</div> : null}
+      {error ? <div className="text-[12.5px] font-semibold text-danger">{error}</div> : null}
 
-      <DialogActions
+      <Dialog.Actions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={save}

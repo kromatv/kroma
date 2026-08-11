@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Avatar } from './avatar';
 
 const NAMES = ['Marie Curie', 'jean.dupont', 'ada_lovelace', 'Alan Turing'];
@@ -65,9 +65,9 @@ export default story({
           {SHAPES.map((shape) => (
             <Box key={shape.label} align="center" gap={10}>
               <Avatar name={name} seed={seed} size={size} locked {...shape.props} />
-              <Txt variant="meta" color="textDim">
+              <Text variant="meta" color="textDim">
                 {shape.label}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -81,9 +81,9 @@ export default story({
           {SIZES.map((size) => (
             <Box key={size} align="center" gap={10}>
               <Avatar name={name} seed={seed} size={size} roundness={roundness} />
-              <Txt variant="meta" color="textDim">
+              <Text variant="meta" color="textDim">
                 {size}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>

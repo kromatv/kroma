@@ -7,10 +7,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Pressable, ScrollView, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Divider } from '#ui/components/atoms/divider';
-import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
 import {
   PANEL_BACKDROP,
   PANEL_SHELL,
@@ -18,12 +14,11 @@ import {
   useListKeys,
   useTriggerFocus,
 } from '#ui/lib/anchored-panel';
-import { CONTROL } from '#ui/lib/field-shell';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { Portal } from '#ui/lib/portal';
 import { useTDefault } from '#ui/services/i18n';
-import type { MenuItem } from './menu';
-import { MenuSurfaceDialog, type MenuSurfaceProps, menuItemVariants } from './menu-surface-dialog';
+import { MenuRowContext } from './menu-context';
+import { type MenuRowSpec, MenuSurfaceDialog, type MenuSurfaceProps } from './menu-surface-dialog';
 
 function MenuSurface(props: Readonly<MenuSurfaceProps>) {
   const scoped = useInsideFocusScope();
@@ -34,15 +29,13 @@ function MenuSurface(props: Readonly<MenuSurfaceProps>) {
 const MIN_WIDTH = 184;
 const MAX_HEIGHT = 400;
 const PANEL_PAD = 6;
-const ROW_RADIUS = CONTROL.sm.radius;
-// Concentric with the rows inside it: ROW_RADIUS plus PANEL_PAD.
+// Concentric with the rows inside it: the row radius plus PANEL_PAD.
 const PANEL_RADIUS = 'xl';
 
-function MenuPanel({ onClose, label, items, align, anchor }: Readonly<MenuSurfaceProps>) {
+function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<MenuSurfaceProps>) {
   const t = useTDefault();
   const baseId = useId();
   const panel = useRef<View>(null);
-  const rows = items.filter((entry): entry is MenuItem => entry !== 'separator');
   const [active, setActive] = useState(() =>
     Math.max(
       0,
@@ -59,12 +52,12 @@ function MenuPanel({ onClose, label, items, align, anchor }: Readonly<MenuSurfac
   useTriggerFocus(anchor);
 
   const fire = useCallback(
-    (row: MenuItem | undefined) => {
+    (row: MenuRowSpec | undefined) => {
       if (!row || row.disabled) return;
-      onClose();
-      row.onSelect();
+      onDismiss('select');
+      row.select();
     },
-    [onClose],
+    [onDismiss],
   );
 
   const { onKeyDown } = useListKeys({
@@ -74,7 +67,7 @@ function MenuPanel({ onClose, label, items, align, anchor }: Readonly<MenuSurfac
     disabledAt: (i) => rows[i]?.disabled === true,
     labelAt: (i) => rows[i]?.label ?? '',
     onPick: (i) => fire(rows[i]),
-    onClose,
+    onClose: () => onDismiss('escape'),
   });
 
   // The trigger keeps the focus and therefore the keyboard; see <Select>.
@@ -107,13 +100,12 @@ function MenuPanel({ onClose, label, items, align, anchor }: Readonly<MenuSurfac
 
   if (!at) return null;
 
-  let rowIndex = -1;
   return (
     <Portal>
       <Pressable
         accessibilityLabel={t('common.close')}
         tabIndex={-1}
-        onPress={onClose}
+        onPress={() => onDismiss('outside')}
         style={PANEL_BACKDROP}
       />
       <Box
@@ -139,22 +131,21 @@ function MenuPanel({ onClose, label, items, align, anchor }: Readonly<MenuSurfac
       >
         <ScrollView style={{ maxHeight: at.maxHeight }}>
           <Box p={PANEL_PAD}>
-            {items.map((entry, index) => {
-              if (entry === 'separator') {
-                // biome-ignore lint/suspicious/noArrayIndexKey: separators carry no identity
-                return <Divider key={`rule-${index}`} spacing={6} />;
-              }
-              rowIndex += 1;
-              const i = rowIndex;
+            {entries.map((entry, position) => {
+              const index = rows.findIndex((row) => row.at === position);
               return (
-                <PanelItem
-                  key={entry.label}
-                  id={`${baseId}-${i}`}
-                  item={entry}
-                  active={i === active}
-                  onHover={() => setActive(i)}
-                  onPress={() => fire(entry)}
-                />
+                <MenuRowContext.Provider
+                  key={entry.key}
+                  value={{
+                    presentation: 'panel',
+                    nativeID: `${baseId}-${index}`,
+                    active: index === active,
+                    onHoverIn: () => setActive(index),
+                    fire: () => fire(rows[index]),
+                  }}
+                >
+                  {entry}
+                </MenuRowContext.Provider>
               );
             })}
           </Box>
@@ -163,53 +154,5 @@ function MenuPanel({ onClose, label, items, align, anchor }: Readonly<MenuSurfac
     </Portal>
   );
 }
-
-function PanelItem({
-  id,
-  item,
-  active,
-  onHover,
-  onPress,
-}: Readonly<{
-  id: string;
-  item: MenuItem;
-  active: boolean;
-  onHover: () => void;
-  onPress: () => void;
-}>) {
-  const slots = menuItemVariants({ danger: item.danger ?? false });
-  return (
-    <Pressable
-      nativeID={id}
-      role="menuitem"
-      accessibilityState={{ disabled: item.disabled }}
-      tabIndex={-1}
-      onPress={onPress}
-      onHoverIn={onHover}
-      style={[
-        slots.root,
-        s.row,
-        active && item.danger ? s.activeDanger : null,
-        active && !item.danger ? s.active : null,
-        item.disabled ? s.disabled : null,
-      ]}
-    >
-      {item.icon ? (
-        <Icon name={item.icon} size={15} color={item.danger ? 'danger' : 'text/80'} />
-      ) : null}
-      <Txt variant="body" style={[slots.ink, s.label]}>
-        {item.label}
-      </Txt>
-    </Pressable>
-  );
-}
-
-const s = styles({
-  row: { radius: ROW_RADIUS },
-  active: { bg: 'tint/7' },
-  activeDanger: { bg: 'danger/14' },
-  disabled: { opacity: 0.4 },
-  label: { fontSize: 13, fontWeight: '600' },
-});
 
 export { MenuSurface };

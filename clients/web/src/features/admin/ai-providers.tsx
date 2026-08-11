@@ -14,7 +14,7 @@ import {
   SegmentedControl,
   Surface,
   Switch,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { IconCheck, IconChevronDown, IconX } from '@tabler/icons-react';
 import { type ReactNode, useState } from 'react';
@@ -153,7 +153,7 @@ function ModelField({
 }>) {
   const t = useT();
   return (
-    <Field
+    <Field.Root
       label={t('admin.aiModel')}
       hint={
         models.length > 0
@@ -173,17 +173,15 @@ function ModelField({
             style={MODEL_PICKER}
           />
         ) : (
-          <Field
-            label={t('admin.aiModel')}
-            hideLabel
-            icon="brain"
-            value={p.model}
-            onChange={onModel}
-            placeholder={modelPlaceholder}
-            w={288}
-            maxW="100%"
-            entry={{ textStyle: MONO }}
-          />
+          <Field.Root label={t('admin.aiModel')} hideLabel w={288} maxW="100%">
+            <Field.Input
+              icon="brain"
+              value={p.model}
+              onValueChange={onModel}
+              placeholder={modelPlaceholder}
+              textStyle={MONO}
+            />
+          </Field.Root>
         )}
         <Button
           variant="glass"
@@ -194,7 +192,7 @@ function ModelField({
           disabled={busy !== 'idle'}
         />
       </div>
-    </Field>
+    </Field.Root>
   );
 }
 
@@ -214,7 +212,7 @@ function AdvancedSection({
     <Disclosure title={t('admin.aiAdvanced')}>
       {spec.baseUrl === 'advanced' ? baseUrlField : null}
       {spec.temperature ? (
-        <Field label={t('admin.aiTemperature')} hint={t('admin.aiTemperatureHint')} mb={16}>
+        <Field.Root label={t('admin.aiTemperature')} hint={t('admin.aiTemperatureHint')} mb={16}>
           <NumberField
             label={t('admin.aiTemperature')}
             value={p.temperature}
@@ -223,9 +221,9 @@ function AdvancedSection({
             max={2}
             onChange={(n) => onSet({ temperature: n })}
           />
-        </Field>
+        </Field.Root>
       ) : null}
-      <Field label={t('admin.aiMaxTokens')} hint={t('admin.aiMaxTokensHint')} mb={16}>
+      <Field.Root label={t('admin.aiMaxTokens')} hint={t('admin.aiMaxTokensHint')} mb={16}>
         <NumberField
           label={t('admin.aiMaxTokens')}
           value={p.maxTokens}
@@ -233,7 +231,7 @@ function AdvancedSection({
           min={64}
           onChange={(n) => onSet({ maxTokens: n })}
         />
-      </Field>
+      </Field.Root>
       {spec.reasoning ? (
         <div className="mb-4 flex items-center justify-between gap-4">
           <div>
@@ -297,9 +295,9 @@ function CardActions({
       <div className="ml-auto">
         <Button variant="ghost" size="sm" onPress={onRemove}>
           <Icon name="trash" size={15} color="danger" />
-          <Txt color="danger" style={DANGER_LABEL}>
+          <Text color="danger" style={DANGER_LABEL}>
             {t('admin.aiRemoveProvider')}
-          </Txt>
+          </Text>
         </Button>
       </div>
     </div>
@@ -338,34 +336,36 @@ function ProviderBody({
   const t = useT();
   // Placed in the main column (openai) or under Advanced (openrouter/anthropic).
   const baseUrlField = (
-    <Field
+    <Field.Root
       label={t('admin.aiBaseUrl')}
       hint={t(BASE_HINT_KEY[p.provider] ?? 'admin.aiBaseUrlHint')}
-      icon="world"
-      value={p.baseUrl}
-      onChange={(v) => set({ baseUrl: v })}
-      placeholder={PROVIDER_BASE[p.provider] || 'http://localhost:11434/v1'}
       maxW={480}
       mb={16}
-      entry={{ textStyle: MONO }}
-    />
+    >
+      <Field.Input
+        icon="world"
+        value={p.baseUrl}
+        onValueChange={(v) => set({ baseUrl: v })}
+        placeholder={PROVIDER_BASE[p.provider] || 'http://localhost:11434/v1'}
+        textStyle={MONO}
+      />
+    </Field.Root>
   );
   const apiKeyRequirement =
     spec.apiKey === 'required' ? t('admin.aiRequired') : t('admin.aiOptional');
 
   return (
     <div className="border-t border-border px-5 pt-5">
-      <Field
-        label={t('admin.aiProviderName')}
-        icon="tag"
-        value={p.name}
-        onChange={(v) => set({ name: v })}
-        placeholder={t('admin.aiProviderNamePlaceholder')}
-        maxW={480}
-        mb={16}
-      />
+      <Field.Root label={t('admin.aiProviderName')} maxW={480} mb={16}>
+        <Field.Input
+          icon="tag"
+          value={p.name}
+          onValueChange={(v) => set({ name: v })}
+          placeholder={t('admin.aiProviderNamePlaceholder')}
+        />
+      </Field.Root>
 
-      <Field label={t('admin.aiProvider')} hint={t('admin.aiProviderHint')} mb={16}>
+      <Field.Root label={t('admin.aiProvider')} hint={t('admin.aiProviderHint')} mb={16}>
         <SegmentedControl.Root
           value={p.provider}
           onValueChange={onProvider}
@@ -375,22 +375,25 @@ function ProviderBody({
             { value: 'anthropic', label: t('admin.aiProviderAnthropic') },
           ]}
         />
-      </Field>
+      </Field.Root>
 
       {spec.baseUrl === 'required' ? baseUrlField : null}
 
-      <Field
+      <Field.Root
         label={`${t('admin.aiApiKey')} · ${apiKeyRequirement}`}
         hint={t('admin.aiApiKeyHint')}
-        type="password"
-        icon="key"
-        value={p.apiKey}
-        onChange={(v) => set({ apiKey: v })}
-        placeholder={p.hasApiKey ? t('admin.aiApiKeyKeep') : 'sk-…'}
         maxW={480}
         mb={16}
-        entry={{ textStyle: MONO }}
-      />
+      >
+        <Field.Input
+          type="password"
+          icon="key"
+          value={p.apiKey}
+          onValueChange={(v) => set({ apiKey: v })}
+          placeholder={p.hasApiKey ? t('admin.aiApiKeyKeep') : 'sk-…'}
+          textStyle={MONO}
+        />
+      </Field.Root>
 
       <ModelField
         p={p}

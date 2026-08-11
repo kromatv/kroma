@@ -6,7 +6,7 @@
 
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { VirtualRail } from './virtual-rail';
 
 afterEach(cleanup);
@@ -19,7 +19,7 @@ function mount() {
       data={DATA}
       itemWidth={200}
       style={{ height: 300 }}
-      renderItem={(label) => <Txt>{label}</Txt>}
+      renderItem={(label) => <Text>{label}</Text>}
     />,
   );
   return container;

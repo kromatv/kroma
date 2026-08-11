@@ -6,7 +6,7 @@ import {
   type User,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Box, Icon, Keypad, PinField, Spinner, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Avatar, Box, Icon, Keypad, PinField, Spinner, Text, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { makeClient } from '#tv/app/apiClient';
 import { useAuth } from '#tv/app/providers/auth';
@@ -179,21 +179,21 @@ export function TvPin() {
           src={headerUser.src}
         />
       ) : null}
-      <Txt variant="h1" style={{ fontSize: 32, fontWeight: '600', marginTop: 24, marginBottom: 4 }}>
+      <Text variant="headingTv" mt={24} mb={4}>
         {headerUser?.name}
-      </Txt>
+      </Text>
       <Box row align="center" gap={8}>
         <Icon name="lock" size={14} color="accentText" />
-        <Txt style={{ fontSize: 15, fontWeight: '500' }} color="textDim">
+        <Text variant="label" color="textDim">
           {t(subtitle)}
-        </Txt>
+        </Text>
       </Box>
 
       <Box key={shake} mt={32}>
         <PinField
-          length={PIN_LENGTH}
+          maxLength={PIN_LENGTH}
           value={buffer}
-          onChange={(next) => {
+          onValueChange={(next) => {
             if (busy || cooldown > 0) return;
             setError('');
             setBuffer(next);
@@ -208,17 +208,17 @@ export function TvPin() {
         {busy ? (
           <>
             <Spinner size={16} thickness={2} />
-            <Txt style={{ fontSize: 14, fontWeight: '500' }} color="textDim">
+            <Text variant="label" color="textDim">
               {t('pin.verifying')}
-            </Txt>
+            </Text>
           </>
         ) : null}
         {!busy && error ? (
-          <Txt style={{ fontSize: 14, fontWeight: '600' }} color="danger">
+          <Text variant="label" color="danger">
             {error === 'auth.pinLocked' && cooldown > 0
               ? t('pin.lockedRetry', { seconds: cooldown })
               : t(error)}
-          </Txt>
+          </Text>
         ) : null}
       </Box>
 
@@ -226,12 +226,9 @@ export function TvPin() {
         <Keypad onDigit={addDigit} onDelete={removeDigit} />
       </Box>
 
-      <Txt
-        style={{ fontSize: 14, fontWeight: '500', marginTop: 28 }}
-        color="rgba(244, 243, 240, 0.38)"
-      >
+      <Text variant="meta" mt={28} color="text/38">
         {t('pin.backHint')}
-      </Txt>
+      </Text>
     </AuthScreen>
   );
 }

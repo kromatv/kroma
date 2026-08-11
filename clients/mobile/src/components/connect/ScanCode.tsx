@@ -20,7 +20,7 @@
 //   viewfinder square: it computes height from width and beats the flex, which
 //   is what pushed the pad off the bottom.
 
-import { Box, Icon, Keypad, OtpField, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, Keypad, OtpField, styles, Text } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
@@ -131,15 +131,15 @@ export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>)
             style={({ pressed }) => [s.cameraOff, pressed && s.cameraOffPressed]}
           >
             <Icon name="scan" size={34} stroke={1.8} color="accentText" />
-            <Txt style={s.cameraOffLabel}>{t('connect.scanTvQr')}</Txt>
+            <Text style={s.cameraOffLabel}>{t('connect.scanTvQr')}</Text>
           </Pressable>
         )}
       </Box>
 
-      <OtpField
+      <OtpField.Root
         maxLength={CODE_LENGTH}
         value={code}
-        onChange={enter}
+        onValueChange={enter}
         invalid={state === 'error'}
         disabled={state === 'busy'}
       />

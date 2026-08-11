@@ -14,7 +14,6 @@ import {
   Box,
   Button,
   CARD_SCRIM,
-  colors,
   Frost,
   gradient,
   Icon,
@@ -22,7 +21,7 @@ import {
   Progress,
   Row,
   styles,
-  Txt,
+  Text,
   tintGradient,
 } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
@@ -65,27 +64,27 @@ function episodeStill(at: {
         h={PLAY_DISC}
         center
         radius="pill"
-        bg={at.action === 'play' ? colors.accent : 'rgba(10, 10, 12, 0.5)'}
+        bg={at.action === 'play' ? 'accent' : 'bg/50'}
       >
         <Icon
           name="player-play-filled"
           size={20}
-          color={at.action === 'play' ? colors.accentInk : '#FFFFFF'}
+          color={at.action === 'play' ? 'accentInk' : 'white'}
         />
       </Box>
       {at.tag ? (
         <Box absolute top={10} left={10} px={9} py={4} radius={7} bg={CHIP_BG}>
-          <Txt style={s.tagChip}>{at.tag}</Txt>
+          <Text style={s.tagChip}>{at.tag}</Text>
         </Box>
       ) : null}
       {at.runtime ? (
         <Box absolute bottom={11} right={11} px={8} py={3} radius={6} bg={CHIP_BG}>
-          <Txt style={s.runtimeChip}>{at.runtime}</Txt>
+          <Text style={s.runtimeChip}>{at.runtime}</Text>
         </Box>
       ) : null}
       {at.watched ? (
         <Box absolute top={10} right={10} w={26} h={26} center radius="pill" bg={SEEN_BG}>
-          <Icon name="check" size={14} color={colors.success} stroke={3} />
+          <Icon name="check" size={14} color="success" stroke={3} />
         </Box>
       ) : null}
       {at.inProgress ? (
@@ -149,9 +148,9 @@ export function EpisodeRow({
 
         <Box flex={1} gap={8}>
           <Row gap={12} wrap>
-            <Txt variant="h2" lines={1} style={s.title}>
+            <Text variant="h2" lines={1} style={s.title}>
               {title}
-            </Txt>
+            </Text>
             {watched ? (
               <Badge tone="success" size="tv">
                 {t('content.watched')}
@@ -166,15 +165,15 @@ export function EpisodeRow({
           {endsAt ? (
             <Row gap={9}>
               <Icon name="clock" size={14} stroke={1.8} color="accentText" />
-              <Txt style={s.endsAt} color="textDim">
+              <Text style={s.endsAt} color="textDim">
                 {t('content.endsAtShort', { time: endsAt })}
-              </Txt>
+              </Text>
             </Row>
           ) : null}
           {synopsis ? (
-            <Txt lines={3} style={s.synopsis} color={lit ? SYNOPSIS_LIT : SYNOPSIS_DIM}>
+            <Text lines={3} style={s.synopsis} color={lit ? SYNOPSIS_LIT : SYNOPSIS_DIM}>
               {synopsis}
-            </Txt>
+            </Text>
           ) : null}
           <Row gap={12} wrap mt={8}>
             {/* The play action wears the amber tint always (design), which is
@@ -215,10 +214,10 @@ export function EpisodeRow({
   );
 }
 
-const CHIP_BG = 'rgba(10, 10, 12, 0.68)';
-const SEEN_BG = 'rgba(10, 10, 12, 0.72)';
-const SYNOPSIS_DIM = 'rgba(244, 243, 240, 0.6)';
-const SYNOPSIS_LIT = 'rgba(244, 243, 240, 0.78)';
+const CHIP_BG = 'bg/68';
+const SEEN_BG = 'bg/72';
+const SYNOPSIS_DIM = 'text/60';
+const SYNOPSIS_LIT = 'text/78';
 
 const s = styles({
   // <Frost> blurs the artwork behind the card: CSS backdrop-filter on the

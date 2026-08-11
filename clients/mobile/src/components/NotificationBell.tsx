@@ -1,4 +1,4 @@
-import { Box, Icon, IconButton, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { useT } from '#mobile/lib/i18n';
 import { useUnreadCount } from '#mobile/lib/notifications';
@@ -23,7 +23,7 @@ export function NotificationBell() {
         {unread > 0 ? (
           <Box style={s.badge}>
             {/* Past nine the pill starts outgrowing the bell. */}
-            <Txt style={s.count}>{unread > 9 ? '9+' : unread}</Txt>
+            <Text style={s.count}>{unread > 9 ? '9+' : unread}</Text>
           </Box>
         ) : null}
       </Box>

@@ -22,7 +22,7 @@ the app from **Tizen 6.0 (2021)**, so the build emits **two bundles** and
 Without it a 2021 set cannot even *parse* the bundle (`?.` and `??` are Chrome
 80) and 2022-2023 sets drop every `@layer` block, so the app installs and shows
 a black or unstyled screen. This is the same machinery webOS uses; it is driven
-by `tv.target.ts` through the shared factory in `clients/tv-build/shell.ts`.
+by `tv.target.ts` through the shared factory in `packages/bundler/src/shell.ts`.
 
 Authoring rules that keep the legacy tier working: flex only (no CSS grid), no
 `/opacity` colour modifiers, spacing via `gap-*` (shimmed) or margins.

@@ -18,9 +18,8 @@ import {
 } from 'chart.js';
 import type { ReactNode } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
+import { CHART_INK, CHART_SERIES } from '#web/features/admin/chart-palette';
 import { formatHours } from '#web/shared/lib/adminFormat';
-
-const C = { films: '#84CE7E', tv: '#E8536A' } as const;
 
 ChartJS.register(
   CategoryScale,
@@ -39,7 +38,7 @@ ChartJS.defaults.font.family =
 // (see server/crates/kroma-engine/src/infra/metrics.rs).
 const DEFAULT_SAMPLE_SEC = 3;
 
-const GRID = 'rgba(255,255,255,.05)';
+const GRID = CHART_INK.grid;
 
 function withAlpha(hex: string, a: number): string {
   const n = Number.parseInt(hex.slice(1), 16);
@@ -114,7 +113,7 @@ export function MetricsChart({
       pointRadius: 0,
       pointHoverRadius: 4,
       pointHoverBackgroundColor: s.color,
-      pointHoverBorderColor: '#fff',
+      pointHoverBorderColor: CHART_INK.point,
     })),
   };
 
@@ -128,7 +127,7 @@ export function MetricsChart({
         grid: { display: false },
         border: { display: false },
         ticks: {
-          color: (c) => (c.tick.label === 'MAINTENANT' ? '#9b9893' : '#6f6c67'),
+          color: (c) => (c.tick.label === 'MAINTENANT' ? CHART_INK.tickNow : CHART_INK.tick),
           autoSkip: false,
           maxRotation: 0,
           font: { size: 11, weight: 500 },
@@ -140,7 +139,7 @@ export function MetricsChart({
         grid: { color: GRID },
         border: { display: false },
         ticks: {
-          color: '#6f6c67',
+          color: CHART_INK.tick,
           count: 6,
           font: { size: 11, weight: 500 },
           callback: (v) => formatValue(Number(v)),
@@ -150,13 +149,13 @@ export function MetricsChart({
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(18,18,22,.95)',
-        borderColor: 'rgba(255,255,255,.1)',
+        backgroundColor: CHART_INK.tooltipBg,
+        borderColor: CHART_INK.tooltipBorder,
         borderWidth: 1,
         padding: 10,
         cornerRadius: 9,
-        titleColor: '#9b9893',
-        bodyColor: '#f4f3f0',
+        titleColor: CHART_INK.tooltipTitle,
+        bodyColor: CHART_INK.tooltipBody,
         usePointStyle: true,
         callbacks: {
           title: (items) => {
@@ -193,14 +192,14 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
       {
         label: 'FILMS',
         data: buckets.map((b) => b.filmsMs),
-        backgroundColor: C.films,
+        backgroundColor: CHART_SERIES.films,
         borderRadius: { topLeft: 6, topRight: 6 },
         borderSkipped: false as const,
       },
       {
         label: 'TV',
         data: buckets.map((b) => b.tvMs),
-        backgroundColor: C.tv,
+        backgroundColor: CHART_SERIES.tv,
         borderRadius: { topLeft: 6, topRight: 6 },
         borderSkipped: false as const,
       },
@@ -217,7 +216,7 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
         stacked: true,
         grid: { display: false },
         border: { color: GRID },
-        ticks: { color: '#6f6c67', font: { size: 12, weight: 500 } },
+        ticks: { color: CHART_INK.tick, font: { size: 12, weight: 500 } },
       },
       y: {
         stacked: true,
@@ -225,7 +224,7 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
         grid: { color: GRID },
         border: { display: false },
         ticks: {
-          color: '#6f6c67',
+          color: CHART_INK.tick,
           count: 6,
           font: { size: 11, weight: 500 },
           callback: (v) => formatHours(Number(v)),
@@ -235,13 +234,13 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(18,18,22,.95)',
-        borderColor: 'rgba(255,255,255,.1)',
+        backgroundColor: CHART_INK.tooltipBg,
+        borderColor: CHART_INK.tooltipBorder,
         borderWidth: 1,
         padding: 10,
         cornerRadius: 9,
-        titleColor: '#9b9893',
-        bodyColor: '#f4f3f0',
+        titleColor: CHART_INK.tooltipTitle,
+        bodyColor: CHART_INK.tooltipBody,
         usePointStyle: true,
         callbacks: {
           label: (item) => ` ${item.dataset.label}: ${formatHours(item.parsed.y ?? 0)}`,
@@ -258,8 +257,8 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
       <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4">
         <Legend
           items={[
-            { label: 'FILMS', color: C.films },
-            { label: 'TV', color: C.tv },
+            { label: 'FILMS', color: CHART_SERIES.films },
+            { label: 'TV', color: CHART_SERIES.tv },
           ]}
         />
         <span className="text-[12.5px] text-dim">

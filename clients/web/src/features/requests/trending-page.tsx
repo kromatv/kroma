@@ -3,7 +3,7 @@
 
 import { hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, EmptyState, Icon, Row, Txt } from '@kroma/ui/kit';
+import { Box, Button, EmptyState, PageHeader, Row, Text } from '@kroma/ui/kit';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
@@ -47,14 +47,12 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
         {t('discover.back')}
       </Link>
 
-      {/* Not <PageHeader>: it has no slot for a glyph inside the title. */}
-      <h1 className="flex items-center gap-2.5">
-        <Icon name="flame" size={26} stroke={2} color="accent" />
-        <Txt variant="h1">{title}</Txt>
-      </h1>
+      <PageHeader.Root>
+        <PageHeader.Title icon="flame">{title}</PageHeader.Title>
+      </PageHeader.Root>
 
       {!canDiscover ? (
-        <EmptyState icon="mood-empty" title={t('discover.empty')} />
+        <EmptyState.Root icon="mood-empty" title={t('discover.empty')} />
       ) : (
         <>
           <Body state={state} />
@@ -76,7 +74,7 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
     );
   }
   if (state.entries.length === 0) {
-    return <EmptyState icon="mood-empty" title={t('discover.noResults')} />;
+    return <EmptyState.Root icon="mood-empty" title={t('discover.noResults')} />;
   }
   return (
     <div className={GRID}>
@@ -104,9 +102,9 @@ function Pager({
         onPress={() => onGo(page - 1)}
         disabled={page <= 1}
       />
-      <Txt variant="meta" color="textDim" style={PAGE_COUNT}>
+      <Text variant="meta" color="textDim" style={PAGE_COUNT}>
         {t('discover.pageOf', { page: String(page), total: String(totalPages) })}
-      </Txt>
+      </Text>
       <Button
         variant="glass"
         size="sm"

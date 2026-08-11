@@ -5,9 +5,10 @@
 
 import { apiErrorText, KromaApiError, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Disclosure, Logo } from '@kroma/ui/kit';
+import { Button, color, Disclosure, Logo } from '@kroma/ui/kit';
 import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
+import { PAGE_RADIAL } from '#web/shared/ui';
 
 type Kind = 'notFound' | 'unauthorized' | 'forbidden' | 'server';
 
@@ -25,8 +26,6 @@ function kindOf(error: unknown): Kind {
   if (status === 403) return 'forbidden';
   return 'server';
 }
-
-const RADIAL = 'radial-gradient(120% 90% at 50% 0%, #15131C, #0A0A0C 70%)';
 
 function ErrorScreen({
   kind,
@@ -48,7 +47,7 @@ function ErrorScreen({
   return (
     <main
       className="flex min-h-screen w-full flex-col items-center justify-center px-6 py-16 text-center"
-      style={{ background: RADIAL }}
+      style={{ background: PAGE_RADIAL }}
     >
       <div className="flex w-full max-w-[440px] flex-col items-center">
         <div className="mb-8 opacity-90">
@@ -58,7 +57,7 @@ function ErrorScreen({
         <div
           className="font-display text-[104px] font-extrabold leading-none tracking-[-.04em] text-transparent"
           style={{
-            backgroundImage: 'linear-gradient(180deg, #F4F3F0 0%, rgba(244,243,240,.28) 100%)',
+            backgroundImage: `linear-gradient(180deg, ${color('text')} 0%, ${color('text/28')} 100%)`,
             WebkitBackgroundClip: 'text',
             backgroundClip: 'text',
           }}

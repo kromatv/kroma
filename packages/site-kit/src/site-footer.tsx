@@ -3,7 +3,7 @@ import { Box, Column, Row } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Divider } from '#ui/components/atoms/divider';
 import { Logo } from '#ui/components/atoms/logo';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 
 /** One entry of a footer column. */
 export interface FooterLink {
@@ -65,9 +65,9 @@ function LinkColumn({ title, links }: Readonly<FooterColumn>) {
   return (
     <Column gap={8} grow={1} shrink={1} basis={160} minW={140}>
       <Box pl={16}>
-        <Txt variant="overline" color="textDim">
+        <Text variant="overline" color="textDim">
           {title}
-        </Txt>
+        </Text>
       </Box>
       <Column gap={2} align="flex-start">
         {links.map((link) => (
@@ -102,16 +102,16 @@ export function SiteFooter({
           <Row gap={36} wrap align="flex-start">
             <Column gap={16} grow={1} shrink={1} basis={300} minW={220} maxW={380}>
               <Logo size={26} />
-              <Txt color="textMuted" variant="meta">
+              <Text color="textMuted" variant="meta">
                 {blurb}
-              </Txt>
+              </Text>
               <Column gap={4}>
-                <Txt variant="overline" color="textDim">
+                <Text variant="overline" color="textDim">
                   {url.label}
-                </Txt>
-                <Txt variant="meta" font="mono" color="textMuted" lines={1}>
+                </Text>
+                <Text variant="meta" font="mono" color="textMuted" lines={1}>
                   {url.value}
-                </Txt>
+                </Text>
               </Column>
               <Row gap={8} wrap>
                 <Button
@@ -140,12 +140,12 @@ export function SiteFooter({
           <Divider />
 
           <Row gap={12} wrap between>
-            <Txt variant="meta" color="textDim">
+            <Text variant="meta" color="textDim">
               {`© 2026 KROMA. Free software under the ${site.license} license.`}
-            </Txt>
-            <Txt variant="meta" color="textDim">
+            </Text>
+            <Text variant="meta" color="textDim">
               Built to be owned, not rented.
-            </Txt>
+            </Text>
           </Row>
         </Column>
       </Box>

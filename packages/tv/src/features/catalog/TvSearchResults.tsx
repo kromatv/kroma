@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, FocusColumn, FocusScroll, Grid, Hint, PosterCard, styles, Txt } from '@kroma/ui/kit';
+import { Box, FocusColumn, FocusScroll, Grid, Hint, PosterCard, styles, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 
 /** One result, already reduced to what a poster needs. */
@@ -31,22 +31,18 @@ export function TvSearchResults({
   header,
 }: Readonly<TvSearchResultsProps>) {
   const t = useT();
-  // Posters read best around 250-280pt wide, and the room varies: 812pt beside
-  // our keyboard, whatever tvOS leaves beside its own.
-  const columns = Math.max(2, Math.floor((width + GAP) / (POSTER + GAP)));
-
   return (
     <FocusScroll style={s.scroll} offsetFromStart={80}>
       {header}
       <Box row wrap align="center" gap={14} mb={18}>
-        <Txt style={{ fontSize: 15, fontWeight: '700', letterSpacing: 0.6 }} color="textMuted">
+        <Text variant="strongTv" color="textMuted">
           {t('search.results')}
-        </Txt>
+        </Text>
         <Hint
           text={t('search.hint')}
           size={12}
           gap={3}
-          color="rgba(244, 243, 240, 0.34)"
+          color="text/34"
           textStyle={{ fontWeight: '600' }}
         />
       </Box>
@@ -55,7 +51,7 @@ export function TvSearchResults({
         // whole pane is one thing to arrive at from the keyboard beside it
         // rather than a loose pile of rows on the screen's own column.
         <FocusColumn grid>
-          <Grid width={width} columns={columns} gap={GAP}>
+          <Grid width={width} min={POSTER} gap={GAP}>
             {hits.map((h) => (
               <PosterCard
                 key={h.id}
@@ -68,12 +64,9 @@ export function TvSearchResults({
           </Grid>
         </FocusColumn>
       ) : (
-        <Txt
-          style={{ fontSize: 17, fontWeight: '500', paddingTop: 20 }}
-          color="rgba(244, 243, 240, 0.4)"
-        >
+        <Text variant="leadTv" pt={20} color="text/40">
           {query.trim() ? t('search.noResults') : t('search.empty')}
-        </Txt>
+        </Text>
       )}
     </FocusScroll>
   );

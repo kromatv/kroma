@@ -1,12 +1,18 @@
-// The search keyboard: the layout's letters as-is, with space / backspace /
-// close appended to the short tail row. Letters insert lowercase, since search
-// is case-insensitive.
+// <SearchKeyboard>: the remote-driven search grid - the layout's letters
+// as-is, with space / backspace / close appended to the short tail row. Letters
+// insert lowercase, since search is case-insensitive. Every key is a
+// <Focusable>, so the spatial focus nav reaches it and OK activates it.
+//
+// The letter order is the CALLER's (a device preference on the TV, see its
+// keyboardLayoutPref): a keyboard that read a store would tie the kit to one
+// app's settings.
 
 import type { ReactNode } from 'react';
 import type { IconName } from '#ui/components/atoms/icon';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { Key, type KeyboardSize, keyMetrics, keyRowWidth } from './key';
 import { type KeyboardLayout, LAYOUT_LETTER_ROWS } from './keyboard-layouts';
+import { usePhysicalTyping } from './use-physical-typing';
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
@@ -21,18 +27,34 @@ const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
 interface SearchKeyboardProps {
   value: string;
-  onChange: (next: string) => void;
+  onValueChange: (next: string) => void;
   onClose?: () => void;
-  layout: KeyboardLayout;
-  size: KeyboardSize;
+  /** Letter order. Defaults to the alphabetical TV grid. */
+  letters?: KeyboardLayout;
+  /** Whether a real keyboard is attached, so typing bypasses the keys. Never
+   *  true on a TV shell; a browser workbench passes it. */
+  physicalKeyboard?: boolean;
+  /** The key scale: `sm` for arm's length, `tv` for across a room. */
+  size?: KeyboardSize;
 }
 
-function SearchKeyboard({ value, onChange, onClose, layout, size }: Readonly<SearchKeyboardProps>) {
+/** The caller owns the text value; each key mutates it through
+ * `onValueChange`, and space / delete / close call the matching handler. */
+function SearchKeyboard({
+  value,
+  onValueChange,
+  onClose,
+  letters = 'abc',
+  physicalKeyboard = false,
+  size = 'sm',
+}: Readonly<SearchKeyboardProps>) {
+  usePhysicalTyping(value, onValueChange, physicalKeyboard);
+
   const metrics = keyMetrics(size);
   const FACE = { height: metrics.height, width: metrics.width, flexShrink: 0 } as const;
   const TEXT = { fontSize: metrics.fontSize } as const;
   const ROW_GAP = metrics.gap;
-  const letterRows = LAYOUT_LETTER_ROWS[layout];
+  const letterRows = LAYOUT_LETTER_ROWS[letters];
   const lastRow = letterRows.at(-1) ?? [];
   const key = (id: string, label: string, onPress: () => void, autoFocus?: boolean) => (
     <Key
@@ -49,7 +71,7 @@ function SearchKeyboard({ value, onChange, onClose, layout, size }: Readonly<Sea
     <Key key={id} size={size} icon={name} iconSize={glyphSize} onPress={onPress} style={FACE} />
   );
   const letter = (l: string, autoFocus?: boolean) =>
-    key(l, l, () => onChange(value + l.toLowerCase()), autoFocus);
+    key(l, l, () => onValueChange(value + l.toLowerCase()), autoFocus);
   // <FocusRegion>, not a plain box: without declared rows, every key is a
   // sibling in one flat list and Up/Down step through it diagonally.
   const row = (children: ReactNode, id: string) => (
@@ -62,7 +84,7 @@ function SearchKeyboard({ value, onChange, onClose, layout, size }: Readonly<Sea
     // reaches G, not wherever the next row was last left.
     <FocusColumn grid style={{ gap: ROW_GAP, width: keyRowWidth(size), alignSelf: 'center' }}>
       {row(
-        DIGITS.map((d) => key(d, d, () => onChange(value + d))),
+        DIGITS.map((d) => key(d, d, () => onValueChange(value + d))),
         'digits',
       )}
       {/* The screen opens on the first LETTER, not on the digit above it: a
@@ -77,8 +99,8 @@ function SearchKeyboard({ value, onChange, onClose, layout, size }: Readonly<Sea
       {row(
         <>
           {lastRow.map((l) => letter(l))}
-          {glyph('space', 'space', metrics.glyph, () => onChange(`${value} `))}
-          {glyph('delete', 'backspace', metrics.glyph - 2, () => onChange(value.slice(0, -1)))}
+          {glyph('space', 'space', metrics.glyph, () => onValueChange(`${value} `))}
+          {glyph('delete', 'backspace', metrics.glyph - 2, () => onValueChange(value.slice(0, -1)))}
           {glyph('close', 'x', metrics.glyph - 4, () => onClose?.())}
         </>,
         'last',

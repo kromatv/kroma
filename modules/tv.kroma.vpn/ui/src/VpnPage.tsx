@@ -15,11 +15,13 @@ import {
   usePoll,
   useT,
 } from '@kroma/module-sdk';
-import { Badge, Button, Dialog, DialogActions, Field, PageHeader, Surface } from '@kroma/ui/kit';
+import { Badge, Button, color, Dialog, Field, PageHeader, Surface } from '@kroma/ui/kit';
 import { IconShield, IconShieldCheck, IconShieldX } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useVpnApi } from './api';
 import type { VpnTestResult } from './schemas';
+
+const MONO = { fontFamily: 'monospace', fontSize: 13 } as const;
 
 // The VPN is global to several flows (torrent downloads and, optionally, indexer
 // searches), so it lives on its own page: the WireGuard config card + the
@@ -29,7 +31,7 @@ export default function VpnPage() {
   if (!useCap('settings.manage')) return <Denied />;
   return (
     <>
-      <PageHeader title={t('admin.vpnTitle')} subtitle={t('admin.vpnSub')} />
+      <PageHeader.Root title={t('admin.vpnTitle')} subtitle={t('admin.vpnSub')} />
       <div className="mt-6" />
       <VpnCard />
       <SettingsView view="vpn" titleKey="admin.vpnTitle" subtitleKey="admin.vpnSub" embedded />
@@ -130,8 +132,8 @@ function StatusIcon({
 }
 
 function statusColor(configured: boolean, connected: boolean): string {
-  if (!configured) return 'rgba(244,243,240,.5)';
-  return connected ? '#46D08D' : '#F4B642';
+  if (!configured) return color('text/50');
+  return color(connected ? 'success' : 'accent');
 }
 
 function BridgePill({ running }: Readonly<{ running: boolean }>) {
@@ -147,16 +149,16 @@ function TestResultLine({
   test,
 }: Readonly<{ test: { busy?: boolean; result?: VpnTestResult; error?: string } }>) {
   const t = useT();
-  if (test.error) return <span className="text-[#EF8091]">{test.error}</span>;
+  if (test.error) return <span className="text-danger-hover">{test.error}</span>;
   if (test.result?.sealed) {
     return (
-      <span className="text-[#46D08D]">
+      <span className="text-success">
         {t('vpn.sealed', { ip: test.result.proxiedIp ?? '?' })}
         {test.result.directIp ? ` · ${t('vpn.directIp', { ip: test.result.directIp })}` : ''}
       </span>
     );
   }
-  return <span className="text-[#F4B642]">{test.result?.error ?? t('vpn.notSealed')}</span>;
+  return <span className="text-accent">{test.result?.error ?? t('vpn.notSealed')}</span>;
 }
 
 function VpnConfigModal({
@@ -182,33 +184,35 @@ function VpnConfigModal({
   return (
     <Dialog open title={t('vpn.modalTitle')} onClose={onClose} width={520}>
       <p className="text-[13px] leading-relaxed text-dim">{t('vpn.modalHelp')}</p>
-      <Field
-        label={t('vpn.modalTitle')}
-        hideLabel
-        multiline
-        rows={9}
-        value={config}
-        onChange={setConfig}
-        placeholder={
-          '[Interface]\nPrivateKey = ...\nAddress = 10.2.0.2/32\n\n[Peer]\nPublicKey = ...\nEndpoint = ...:51820\nAllowedIPs = 0.0.0.0/0'
-        }
-        entry={{ textStyle: { fontFamily: 'monospace', fontSize: 13 } }}
-      />
+      <Field.Root label={t('vpn.modalTitle')} hideLabel value={config} onValueChange={setConfig}>
+        <Field.Textarea
+          rows={9}
+          placeholder={
+            '[Interface]\nPrivateKey = ...\nAddress = 10.2.0.2/32\n\n[Peer]\nPublicKey = ...\nEndpoint = ...:51820\nAllowedIPs = 0.0.0.0/0'
+          }
+          textStyle={MONO}
+        />
+      </Field.Root>
       {configured ? <p className="text-[12px] text-dim">{t('vpn.configKept')}</p> : null}
-      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <DialogActions
+      {error ? <p className="text-[13px] font-semibold text-danger-hover">{error}</p> : null}
+      <Dialog.Actions
         onCancel={onClose}
         cancelLabel={t('common.cancel')}
         onConfirm={() => save(config.trim())}
         confirmLabel={busy ? t('common.saving') : t('common.save')}
         busy={busy}
         disabled={!config.trim()}
-        destructive={
-          configured
-            ? { label: t('vpn.removeConfig'), onPress: () => save(''), disabled: busy }
-            : undefined
-        }
-      />
+      >
+        {configured ? (
+          <Button
+            variant="dangerGhost"
+            size="sm"
+            label={t('vpn.removeConfig')}
+            onPress={() => save('')}
+            disabled={busy}
+          />
+        ) : null}
+      </Dialog.Actions>
     </Dialog>
   );
 }

@@ -1,7 +1,7 @@
 import type { ReportCategory } from '@kroma/core';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { REPORT_CATEGORIES } from '#ui/lib/report-categories';
@@ -48,7 +48,7 @@ export const ReportPanel = forwardRef<PanelHandle, ReportPanelProps>(function Re
   if (state === 'done') {
     return (
       <Box style={panel.panelList}>
-        <Txt style={{ fontSize: 22, fontWeight: '600' }}>{t('report.submitted')}</Txt>
+        <Text variant="subheadingTv">{t('report.submitted')}</Text>
       </Box>
     );
   }
@@ -66,9 +66,9 @@ export const ReportPanel = forwardRef<PanelHandle, ReportPanelProps>(function Re
         />
       ))}
       {state === 'failed' ? (
-        <Txt style={{ fontSize: 17, fontWeight: '600' }} color="danger">
+        <Text variant="labelTv" color="danger">
           {t('report.failed')}
-        </Txt>
+        </Text>
       ) : null}
     </Box>
   );

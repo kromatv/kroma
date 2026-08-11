@@ -31,7 +31,7 @@ export default story({
   usage: `<SettingsPanel
   controller={controller}
   appearance={appearance}
-  onAppearance={setAppearance}
+  onAppearanceChange={setAppearance}
   statsOn={statsOn}
   onToggleStats={toggleStats}
   subtitleGen={subtitleGen}
@@ -66,7 +66,7 @@ export default story({
         <SettingsPanel
           controller={fakeController()}
           appearance={DEFAULT_SUB_APPEARANCE}
-          onAppearance={() => {}}
+          onAppearanceChange={() => {}}
           statsOn={statsOn}
           onToggleStats={() => {}}
           subtitleGen={NO_GEN}

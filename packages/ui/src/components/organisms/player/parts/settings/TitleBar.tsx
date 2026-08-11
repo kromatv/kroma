@@ -7,7 +7,7 @@
 
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
 import { styles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
@@ -39,9 +39,9 @@ export function TitleBar({
           label={t('player.back')}
         />
       ) : null}
-      <Txt lines={1} variant="h1" style={{ fontSize: px(38), flexShrink: 1 }}>
+      <Text lines={1} variant="h1" style={{ fontSize: px(38), flexShrink: 1 }}>
         {title}
-      </Txt>
+      </Text>
       {onClose ? (
         // Pointer-only, controlled at `false`: the remote leaves with Back.
         <IconButton

@@ -15,7 +15,7 @@ import {
   Focusable,
   Icon,
   selectTriggerVariants,
-  Txt,
+  Text,
   useAnchoredPlacement,
 } from '@kroma/ui/kit';
 import { IconCheck, IconSearch } from '@tabler/icons-react';
@@ -69,9 +69,9 @@ export function SearchSelect({
       >
         {(state) => (
           <>
-            <Txt variant="body" lines={1} style={state.slots.ink}>
+            <Text variant="body" lines={1} style={state.slots.ink}>
               {label}
-            </Txt>
+            </Text>
             <Box flex />
             <Icon name="chevron-down" size={16} color="textDim" />
           </>
@@ -171,7 +171,7 @@ function SearchPanel({
         className="fixed inset-0 z-50 cursor-default"
       />
       <div
-        className="fixed z-50 min-w-60 overflow-hidden rounded-md border border-border-strong bg-[#121216] shadow-pop"
+        className="fixed z-50 min-w-60 overflow-hidden rounded-md border border-border-strong bg-surface-1 shadow-pop"
         style={{ left: at.left, top: at.top, bottom: at.bottom, width: at.width }}
       >
         {/* The popup itself is the box, so this row takes no field ring (see styles.css). */}

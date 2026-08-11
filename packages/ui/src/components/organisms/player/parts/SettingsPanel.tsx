@@ -40,7 +40,7 @@ interface SettingsPanelProps {
    *  and the next episode all change what is on screen behind it. */
   onControl?: (id: ControlId) => void;
   appearance: SubtitleAppearance;
-  onAppearance: (p: Partial<SubtitleAppearance>) => void;
+  onAppearanceChange: (p: Partial<SubtitleAppearance>) => void;
   statsOn: boolean;
   onToggleStats: () => void;
   subtitleGen: SubtitleGenBundle;
@@ -64,7 +64,7 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
   {
     controller,
     appearance,
-    onAppearance,
+    onAppearanceChange,
     statsOn,
     onToggleStats,
     subtitleGen,
@@ -171,7 +171,7 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
               view={view}
               controller={controller}
               appearance={appearance}
-              onAppearance={onAppearance}
+              onAppearanceChange={onAppearanceChange}
               subtitleGen={subtitleGen}
               onReport={onReport}
               onBack={backToMenu}

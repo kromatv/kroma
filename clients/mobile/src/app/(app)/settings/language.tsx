@@ -2,7 +2,7 @@
 // clients so the choice follows the user everywhere.
 
 import type { Locale } from '@kroma/core';
-import { Box, styles, Txt } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { LocalePicker } from '#mobile/components/LocalePicker';
 import { PageHeader } from '#mobile/components/PageHeader';
@@ -37,7 +37,7 @@ export default function LanguageSettings() {
     <Screen padded={false}>
       <PageHeader title={t('account.uiLanguage')} />
       <Box style={s.body}>
-        <Txt style={s.hint}>{t('account.uiLanguageDesc')}</Txt>
+        <Text style={s.hint}>{t('account.uiLanguageDesc')}</Text>
         <LocalePicker locale={locale} onPick={(next) => void pick(next)} />
       </Box>
     </Screen>

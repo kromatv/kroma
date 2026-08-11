@@ -1,8 +1,6 @@
 // Legacy-engine CSS compat (old webOS: Chromium 53-94). A PostCSS plugin that
-// rewrites the modern CSS Tailwind v4 emits into equivalents those engines
-// execute. It runs BEFORE @csstools/postcss-cascade-layers (which then compiles
-// the @layer blocks away), so the rules it inserts inherit the correct layer /
-// order semantics:
+// rewrites the modern CSS the design system emits into equivalents those
+// engines execute:
 //
 //  - flex `gap` (Chrome 84) -> the negative-margin technique: the container
 //    pulls -gap/2 per axis, every child pushes +gap/2, so spacing, wrapping and
@@ -10,15 +8,9 @@
 //  - `aspect-ratio` (Chrome 88) -> a `::before` strut with percentage
 //    padding-bottom (resolves against width), which also centres in-flow
 //    children of flex tiles the way aspect-ratio does.
-//  - `scale:` / `translate:` properties (Chrome 104) -> one composed
-//    `transform`, the two utilities cooperating through the same --tw-* vars.
-//  - unwraps Tailwind's @supports fallback that seeds the @property --tw-*
-//    initial values: its Safari/Firefox-shaped condition never matches old
-//    Chromium, but the plain rules inside are exactly what it needs.
-//  - margin utilities are re-appended after the generated child-margin rules so
-//    an explicit `ml-auto` / `m-*` on a gap child still wins the cascade.
+//  - bare `display: grid` is dropped, since Chromium 53 ignores it anyway.
 
-import type { AtRule, ChildNode, Declaration, Plugin, Root, Rule } from 'postcss';
+import type { Declaration, Plugin, Root } from 'postcss';
 
 const RATIO = /(?=(\d+(?:\.\d+)?))\1\s*\/\s*(\d+(?:\.\d+)?)/;
 
@@ -86,7 +78,7 @@ function shimAspect(root: Root, ratios: Map<string, string>): void {
 }
 
 // flex `gap` -> container -gap/2 margins + a `S > *` child rule with +gap/2.
-function shimGap(root: Root, generated: WeakSet<ChildNode>): void {
+function shimGap(root: Root): void {
   const decls: Declaration[] = [];
   root.walkDecls(/^(gap|column-gap|row-gap)$/, (d) => {
     decls.push(d);
@@ -124,58 +116,14 @@ function shimGap(root: Root, generated: WeakSet<ChildNode>): void {
     });
     childRule.removeAll();
     childRule.append(...child);
-    generated.add(childRule);
-    generated.add(rule);
     decl.replaceWith(...container);
   }
 }
 
-// `scale:` / `translate:` properties -> one composed `transform`. Both rules
-// emit the SAME transform value, so whichever wins the cascade still composes
-// the other utility's `--tw-*` variables (with inline fallbacks).
-function shimScaleTranslate(root: Root): void {
-  const COMPOSED =
-    'translate(var(--tw-translate-x, 0), var(--tw-translate-y, 0)) ' +
-    'scale(var(--tw-scale-x, 1), var(--tw-scale-y, 1))';
-  const inKeyframes = (d: Declaration): boolean => {
-    for (let p = d.parent; p; p = p.parent as Declaration['parent']) {
-      if (p.type === 'atrule' && /keyframes/i.test((p as AtRule).name)) return true;
-    }
-    return false;
-  };
-  const scales: Declaration[] = [];
-  const translates: Declaration[] = [];
-  root.walkDecls('scale', (d) => {
-    if (!inKeyframes(d)) scales.push(d);
-  });
-  root.walkDecls('translate', (d) => {
-    if (!inKeyframes(d)) translates.push(d);
-  });
-  for (const d of scales) {
-    const repl: Array<{ prop: string; value: string }> = [{ prop: 'transform', value: COMPOSED }];
-    if (!d.value.includes('var(')) {
-      const [sx = '1', sy = sx] = splitSpace(d.value);
-      repl.unshift({ prop: '--tw-scale-x', value: sx }, { prop: '--tw-scale-y', value: sy });
-    }
-    d.replaceWith(...repl);
-  }
-  for (const d of translates) {
-    const repl: Array<{ prop: string; value: string }> = [{ prop: 'transform', value: COMPOSED }];
-    if (!d.value.includes('var(')) {
-      const [tx = '0', ty = '0'] = splitSpace(d.value);
-      repl.unshift(
-        { prop: '--tw-translate-x', value: tx },
-        { prop: '--tw-translate-y', value: ty },
-      );
-    }
-    d.replaceWith(...repl);
-  }
-}
-
-// Drop bare `display: grid|inline-grid` utilities. Chromium 53 ignores the
-// declaration anyway (the element stays block), so removing it just makes the
-// 87/94 legacy engines behave identically. Real grid LAYOUTS (grid-template*,
-// col-span, ...) are not silently fixed - the compat check fails the build.
+// Drop bare `display: grid|inline-grid`. Chromium 53 ignores the declaration
+// anyway (the element stays block), so removing it just makes the 87/94 legacy
+// engines behave identically. Real grid LAYOUTS (grid-template*, grid-column,
+// ...) are not silently fixed - the compat check fails the build.
 function stripGridDisplay(root: Root): void {
   const decls: Declaration[] = [];
   root.walkDecls('display', (d) => {
@@ -188,48 +136,13 @@ function stripGridDisplay(root: Root): void {
   }
 }
 
-// Unwrap Tailwind's `@supports` fallback carrying the @property --tw-* initial
-// values (recognised by its `-moz-orient` probe): old Chromium fails the
-// condition but needs exactly the rules inside it.
-function unwrapPropertyFallback(root: Root): void {
-  const targets: AtRule[] = [];
-  root.walkAtRules('supports', (at) => {
-    if (at.params.includes('-moz-orient')) targets.push(at);
-  });
-  for (const at of targets) at.replaceWith(at.nodes ?? []);
-}
-
-// Move margin-only utility rules to the end of the utilities layer, after the
-// generated `S > *` gap-child margins, so explicit margins keep winning.
-function hoistMarginUtilities(root: Root, generated: WeakSet<ChildNode>): void {
-  root.walkAtRules('layer', (at) => {
-    if (at.params !== 'utilities' || !at.nodes) return;
-    const movers: Rule[] = [];
-    at.each((node) => {
-      if (node.type !== 'rule' || generated.has(node)) return;
-      const decls = node.nodes ? node.nodes.filter((n) => n.type === 'decl') : [];
-      if (decls.length && decls.every((d) => d.prop.startsWith('margin'))) {
-        movers.push(node);
-      }
-    });
-    for (const r of movers) {
-      r.remove();
-      at.append(r);
-    }
-  });
-}
-
 export function kromaLegacyCss(): Plugin {
   return {
     postcssPlugin: 'kroma-legacy-css',
     Once(root) {
-      const generated = new WeakSet<ChildNode>();
-      unwrapPropertyFallback(root);
       stripGridDisplay(root);
       shimAspect(root, collectRatioVars(root));
-      shimGap(root, generated);
-      shimScaleTranslate(root);
-      hoistMarginUtilities(root, generated);
+      shimGap(root);
     },
   };
 }

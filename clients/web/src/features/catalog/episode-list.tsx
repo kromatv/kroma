@@ -60,7 +60,7 @@ function EpisodeRow({
               <IconCheck size={14} stroke={3} />
             </div>
           ) : null}
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-[rgba(10,10,12,.5)] backdrop-blur-xs transition-transform group-hover:scale-110">
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-bg/50 backdrop-blur-xs transition-transform group-hover:scale-110">
             <IconPlayerPlayFilled size={18} color="#fff" />
           </div>
           {progress != null && !watched ? (
@@ -185,8 +185,7 @@ function SeasonRequestCard({
 
   let tone = 'border-white/8 bg-white/3 hover:border-accent/50 hover:bg-white/6';
   if (locked) tone = 'cursor-default border-white/5 bg-white/2';
-  else if (partial)
-    tone = 'border-[#F4B642]/30 bg-[#F4B642]/6 hover:border-[#F4B642]/60 hover:bg-[#F4B642]/10';
+  else if (partial) tone = 'border-accent/30 bg-accent/6 hover:border-accent/60 hover:bg-accent/10';
 
   let trailing: ReactNode = null;
   if (s.available || s.requested) {
@@ -196,7 +195,7 @@ function SeasonRequestCard({
       <span
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${
           partial
-            ? 'bg-[#F4B642]/15 text-[#F4B642] group-hover:bg-[#F4B642] group-hover:text-black'
+            ? 'bg-accent/15 text-accent group-hover:bg-accent group-hover:text-black'
             : 'bg-accent/12 text-accent group-hover:bg-accent group-hover:text-accent-ink'
         }`}
       >
@@ -219,7 +218,7 @@ function SeasonRequestCard({
             {s.name ?? t('discover.seasonN', { n: String(s.number) })}
           </span>
           <span
-            className={`mt-0.5 block truncate text-[12px] font-medium ${partial ? 'text-[#F4B642]' : 'text-white/45'}`}
+            className={`mt-0.5 block truncate text-[12px] font-medium ${partial ? 'text-accent' : 'text-white/45'}`}
           >
             {epLabel}
           </span>

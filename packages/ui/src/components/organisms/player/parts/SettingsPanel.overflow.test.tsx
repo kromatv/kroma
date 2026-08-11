@@ -42,7 +42,7 @@ function panel(overflow: readonly ControlId[], onControl = vi.fn()): ReactElemen
       <SettingsPanel
         controller={controller()}
         appearance={APPEARANCE}
-        onAppearance={vi.fn()}
+        onAppearanceChange={vi.fn()}
         statsOn={false}
         onToggleStats={vi.fn()}
         subtitleGen={GEN}
@@ -97,7 +97,7 @@ describe('the player settings panel, holding what the row shed', () => {
         <SettingsPanel
           controller={controller()}
           appearance={APPEARANCE}
-          onAppearance={vi.fn()}
+          onAppearanceChange={vi.fn()}
           statsOn={false}
           onToggleStats={vi.fn()}
           subtitleGen={GEN}

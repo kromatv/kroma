@@ -2,7 +2,7 @@ import type { AudioTrack } from '@kroma/core';
 import { channelLabel, langName } from '@kroma/core';
 import { forwardRef, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { useT } from '#ui/services/i18n';
@@ -33,7 +33,7 @@ export const AudioPanel = forwardRef<PanelHandle, AudioPanelProps>(function Audi
   useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
   if (tracks.length === 0) {
-    return <Txt style={panel.panelEmpty}>{t('player.noAudioTracks')}</Txt>;
+    return <Text style={panel.panelEmpty}>{t('player.noAudioTracks')}</Text>;
   }
 
   return (

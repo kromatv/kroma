@@ -3,7 +3,7 @@ import { Button } from '#ui/components/atoms/button';
 import { Img } from '#ui/components/atoms/img';
 import { clamp01 } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles, sv, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
@@ -98,20 +98,22 @@ export function CreditsCard({
             />
           </Box>
           <Box w={px(42)} h={px(42)} center radius="circle" bg="#101014">
-            <Txt style={[s.countdown, { fontSize: px(COUNTDOWN_SIZE) }]}>{String(secondsLeft)}</Txt>
+            <Text style={[s.countdown, { fontSize: px(COUNTDOWN_SIZE) }]}>
+              {String(secondsLeft)}
+            </Text>
           </Box>
         </Box>
       </Box>
-      <Txt style={s.eyebrow} color="text/50">
+      <Text style={s.eyebrow} color="text/50">
         {t('player.nextEpisode')}
-      </Txt>
-      <Txt lines={1} style={s.title}>
+      </Text>
+      <Text lines={1} style={s.title}>
         {item.title}
-      </Txt>
+      </Text>
       {item.subtitle ? (
-        <Txt style={s.subtitle} color="accentText">
+        <Text style={s.subtitle} color="accentText">
           {item.subtitle}
-        </Txt>
+        </Text>
       ) : null}
       {/* Controlled kit buttons (`focused` is ALWAYS passed) so neither becomes a
           platform focus target — see ../lib/virtual-focus.ts. No hover handler:

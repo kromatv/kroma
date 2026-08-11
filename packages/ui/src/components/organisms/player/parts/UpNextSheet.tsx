@@ -13,7 +13,7 @@ import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { cellWidth } from '#ui/components/atoms/grid';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { RING_ROOM, styles } from '#ui/core';
 import { gradient, maskImage } from '#ui/lib/css';
 import { ease } from '#ui/lib/ease';
@@ -223,7 +223,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
                   gap={14}
                   onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}
                 >
-                  {grouped ? <Txt style={playerStyle.eyebrow}>{sec.title}</Txt> : null}
+                  {grouped ? <Text style={playerStyle.eyebrow}>{sec.title}</Text> : null}
                   {rowsOf(sec.items).map((row, r) => (
                     <FocusRegion
                       // The line's position IS its identity: the items in it move
@@ -321,7 +321,7 @@ function SheetHeader({
   };
   const inside = (
     <Box row align="center" gap={14}>
-      <Txt style={s.sheetTitle}>{title}</Txt>
+      <Text style={s.sheetTitle}>{title}</Text>
       <Box style={{ transform: [{ rotate: open ? '0deg' : '180deg' }] }}>
         <Chevron />
       </Box>

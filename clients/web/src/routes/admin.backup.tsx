@@ -28,7 +28,7 @@ function BackupPage() {
 
   return (
     <>
-      <PageHeader title={t('admin.backupTitle')} subtitle={t('admin.backupSub')} />
+      <PageHeader.Root title={t('admin.backupTitle')} subtitle={t('admin.backupSub')} />
 
       <Surface
         elevated
@@ -46,7 +46,7 @@ function BackupPage() {
         <p className="text-[13.5px] font-medium text-text/70">{t('admin.backupWarning')}</p>
       </Surface>
 
-      <Section title={t('admin.backupExportTitle')} mt={28}>
+      <Section.Root title={t('admin.backupExportTitle')} mt={28}>
         <ActionRow
           desc={t('admin.backupExportDesc')}
           action={
@@ -60,9 +60,9 @@ function BackupPage() {
             />
           }
         />
-      </Section>
+      </Section.Root>
 
-      <Section title={t('admin.backupImportTitle')} mt={28}>
+      <Section.Root title={t('admin.backupImportTitle')} mt={28}>
         <ActionRow
           desc={t('admin.backupImportDesc')}
           action={
@@ -89,7 +89,7 @@ function BackupPage() {
           }
         />
         {notice ? <p className="mt-3 text-[13px] font-semibold text-success">{notice}</p> : null}
-      </Section>
+      </Section.Root>
     </>
   );
 }

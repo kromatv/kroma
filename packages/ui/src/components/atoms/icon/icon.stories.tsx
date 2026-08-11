@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { DEFAULT_ICON_SIZE, DEFAULT_ICON_STROKE, hasGlyph, type IconName } from '#ui/lib/glyph';
 import { Icon } from './icon';
 
@@ -90,9 +90,9 @@ export default story({
           {IN_USE.map((name) => (
             <Box key={name} align="center" gap={6} w={76}>
               <Icon name={name} size={size} color={color} />
-              <Txt variant="overline" color="textDim">
+              <Text variant="overline" color="textDim">
                 {name}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -106,9 +106,9 @@ export default story({
           {SIZES.map((size) => (
             <Box key={size} align="center" gap={8}>
               <Icon name="player-play" size={size} stroke={stroke} color={color} />
-              <Txt variant="meta" color="textDim">
+              <Text variant="meta" color="textDim">
                 {size}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -122,9 +122,9 @@ export default story({
           {[...IN_USE.slice(0, 2), ...UNKNOWN].map((name, at) => (
             <Box key={name} align="center" gap={8} w={140}>
               <Icon name={name} size={34} stroke={stroke} color={at < 2 ? 'text' : 'textDim'} />
-              <Txt variant="meta" color={at < 2 ? 'textDim' : 'danger'}>
+              <Text variant="meta" color={at < 2 ? 'textDim' : 'danger'}>
                 {name}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>

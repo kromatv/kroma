@@ -13,7 +13,8 @@ guess where something is in a folder you have never opened:
 ```
 player/
   index.ts              the public door: what the rest of the app may import
-  Player.tsx            the component itself — assembles the parts, owns nothing else
+  Player.tsx            Player.Root — assembles the parts, owns nothing else
+  player-parts.tsx      the slots a host fills: Media, Actions, Panel
   types.ts              the contract shared across the folder (PlayerController)
   player.fixture.ts     a standing-still controller, so the parts have stories
   parts/                sub-components ONLY this component renders
@@ -34,6 +35,32 @@ rather than by clicking a television.
 
 Anything outside `index.ts` is private to the folder. The app imports `Player`;
 it does not reach for `parts/TopBar`.
+
+## The two meanings of "part"
+
+`player-parts.tsx` holds the compound's **public** parts — the three slots a host
+fills, in `DESIGN.md`'s vocabulary. `parts/` holds the **private** sub-components
+the chrome draws for itself. Only the first ever appears in a call site:
+
+```tsx
+<Player.Root controller={controller} flags={WEB_FLAGS} … onClose={leave}>
+  <Player.Media><video ref={videoRef} /></Player.Media>
+  {stopped ? <Player.Panel>…</Player.Panel> : null}
+</Player.Root>
+```
+
+Each slot renders its children and NOTHING else. `Media` in particular must add
+no element: the injected stylesheet sizes a browser surface through
+`#kroma-player-stage > video`, a direct-child rule a wrapper would break. Only a
+DIRECT child takes its slot; any other child is drawn over the chrome as it
+stands (the web's resume toast). A `<Player.Panel>` also LOCKS the chrome — the
+picture stops taking presses and only Back / OK get through.
+
+Everything else the chrome needs is data, not children: one `PlayerController`,
+the platform `flags`, and the collections that come off the wire (`chapters`,
+`markers`, `upNext`). Those are `DESIGN.md` §3 T2/T3 — the up-next sheet is a
+virtualiser, and a chapter list is a parsed payload, so neither can be written
+as JSX by a caller.
 
 ## Why the controller shape
 

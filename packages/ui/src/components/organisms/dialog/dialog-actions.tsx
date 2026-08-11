@@ -1,104 +1,85 @@
-// What a panel puts at the bottom: the footer row, the standard action pair,
-// and the whole confirmation dialog those two add up to.
+// The panel's row of controls: one focus group, right-aligned, with the
+// cancel/confirm pair written as a prop because its ORDER is policy rather than
+// a caller's choice.
 
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { styles } from '#ui/core';
 import { FocusRegion } from '#ui/lib/focus-scope';
-import { Dialog, type DialogProps } from './dialog';
 
 const s = styles({
-  footerRow: { row: true, justify: 'flex-end', gap: 12, mt: 8 },
-  actionsSplit: { row: true, align: 'center', justify: 'space-between', gap: 12, mt: 8 },
-  actionsEnd: { row: true, align: 'center', gap: 10 },
+  row: { row: true, align: 'center', justify: 'flex-end', gap: 12, mt: 8 },
+  split: { row: true, align: 'center', justify: 'space-between', gap: 12, mt: 8 },
+  end: { row: true, align: 'center', gap: 10 },
 });
 
-function DialogFooter({ children }: Readonly<{ children: ReactNode }>) {
-  return <FocusRegion style={s.footerRow}>{children}</FocusRegion>;
-}
-
 interface DialogActionsProps {
-  onCancel: () => void;
-  cancelLabel: string;
-  onConfirm: () => void;
+  /** Dismisses the panel. Drawn to the left of the confirm, and quiet. */
+  onCancel?: () => void;
+  cancelLabel?: string;
+  /** The panel's own action. Given one, the pair is drawn; without it the row
+   *  is whatever `children` say. */
+  onConfirm?: () => void;
   /** Already resolved by the caller, so it can swap to "Saving...". */
-  confirmLabel: string;
+  confirmLabel?: string;
+  /** The confirm destroys something: it goes red rather than accent. The one
+   *  spelling, shared with <ConfirmDialog> and `confirm()`. */
+  destructive?: boolean;
   /** The confirm spins and both actions ignore presses while the work runs. */
   busy?: boolean;
+  /** Disables the confirm alone: the way out stays open. */
   disabled?: boolean;
-  /** A destructive third action pinned to the far edge ("Delete account"). */
-  destructive?: { label: string; onPress: () => void; disabled?: boolean };
+  /** Controls of your own. Alone they ARE the row; beside the pair they sit at
+   *  the opposite edge, which is where a "Delete account" belongs. */
+  children?: ReactNode;
 }
 
-/** The standard dialog footer: a right-aligned cancel + primary pair, with an
- *  optional destructive action pinned left. */
-function DialogActions({
+/** The controls a panel offers, as one focus group. `<Dialog.Actions onCancel
+ *  cancelLabel onConfirm confirmLabel />` is the standard footer, `destructive`
+ *  turns the confirm red, and children are extra actions. */
+function Actions({
   onCancel,
   cancelLabel,
   onConfirm,
   confirmLabel,
+  destructive = false,
   busy = false,
   disabled = false,
-  destructive,
+  children,
 }: Readonly<DialogActionsProps>) {
-  return (
-    <FocusRegion style={destructive ? s.actionsSplit : s.footerRow}>
-      {destructive ? (
+  const pair =
+    onConfirm && confirmLabel !== undefined ? (
+      <>
+        {onCancel && cancelLabel !== undefined ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            label={cancelLabel}
+            onPress={onCancel}
+            disabled={busy}
+          />
+        ) : null}
         <Button
-          variant="dangerGhost"
-          size="sm"
-          label={destructive.label}
-          onPress={destructive.onPress}
-          disabled={busy || destructive.disabled}
-        />
-      ) : null}
-      <Box row align="center" gap={10} style={destructive ? undefined : s.actionsEnd}>
-        <Button variant="ghost" size="sm" label={cancelLabel} onPress={onCancel} disabled={busy} />
-        <Button
-          variant="primary"
+          variant={destructive ? 'danger' : 'primary'}
           size="sm"
           label={confirmLabel}
           onPress={onConfirm}
           loading={busy}
           disabled={disabled}
         />
-      </Box>
+      </>
+    ) : null;
+  const extra = Children.toArray(children);
+  if (!pair) return <FocusRegion style={s.row}>{extra}</FocusRegion>;
+  if (extra.length === 0) return <FocusRegion style={s.row}>{pair}</FocusRegion>;
+  return (
+    <FocusRegion style={s.split}>
+      <Box style={s.end}>{extra}</Box>
+      <Box style={s.end}>{pair}</Box>
     </FocusRegion>
   );
 }
 
-interface ConfirmDialogProps extends Omit<DialogProps, 'footer' | 'children'> {
-  confirmLabel: string;
-  cancelLabel: string;
-  onConfirm: () => void;
-  destructive?: boolean;
-}
-
-function ConfirmDialog({
-  confirmLabel,
-  cancelLabel,
-  onConfirm,
-  destructive = false,
-  ...dialog
-}: Readonly<ConfirmDialogProps>) {
-  return (
-    <Dialog
-      {...dialog}
-      footer={
-        <DialogFooter>
-          <Button variant="ghost" label={cancelLabel} onPress={dialog.onClose} />
-          <Button
-            variant={destructive ? 'danger' : 'primary'}
-            label={confirmLabel}
-            onPress={onConfirm}
-            autoFocus
-          />
-        </DialogFooter>
-      }
-    />
-  );
-}
-
-export type { ConfirmDialogProps, DialogActionsProps };
-export { ConfirmDialog, DialogActions, DialogFooter };
+export type { DialogActionsProps };
+export { Actions };

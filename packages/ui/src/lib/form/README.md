@@ -16,16 +16,26 @@ const form = useForm({
   onSubmit: (credentials) => signIn(credentials),
 });
 
-<Field label="Email" type="email" {...form.field('email')} />
-<Field label="Password" type="password" {...form.field('password')} />
+const email = form.field('email');
+const password = form.field('password');
+
+<Field.Root label="Email" {...email.root}>
+  <Field.Input type="email" {...email.input} />
+</Field.Root>
+<Field.Root label="Password" {...password.root}>
+  <Field.Input type="password" {...password.input} />
+</Field.Root>
 <Button label="Sign in" block loading={form.submitting} onPress={form.submit} />
 ```
 
-`form.field(name)` returns exactly what `<Field>` takes — value, `onChange`,
-`error`, and an `onSubmit` so the return key submits. `form.toggle(name)` does
-the same for `<Switch>`. Both are typed off the schema: only string keys reach
-`field`, only boolean keys reach `toggle`, and a name that is not in the schema
-does not compile.
+`form.field(name)` returns one bag per element, because `<Field>` is two of
+them: `root` carries the value and the message the Root owns, `input` carries
+the `onSubmit` that wires the return key on `<Field.Input>` or
+`<Field.Textarea>`. A field with nothing to say to its entry stays one line,
+since `<Field.Root label="Name" {...email.root} />` renders the entry itself.
+`form.toggle(name)` is a single bag because `<Switch>` is a single element. All
+of them are typed off the schema: only string keys reach `field`, only boolean
+keys reach `toggle`, and a name that is not in the schema does not compile.
 
 ## Any validator, no dependency
 

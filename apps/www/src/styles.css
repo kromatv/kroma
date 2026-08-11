@@ -93,8 +93,8 @@ a[class] {
 @utility glow-amber {
   background: radial-gradient(
     60% 60% at 50% 40%,
-    rgba(242, 180, 66, 0.18),
-    rgba(242, 180, 66, 0) 70%
+    color-mix(in srgb, var(--kroma-accent-wash) 18%, transparent),
+    transparent 70%
   );
 }
 
@@ -145,13 +145,13 @@ a[class] {
 }
 .prose-kroma p,
 .prose-kroma li {
-  color: rgba(244, 243, 240, 0.82);
+  color: color-mix(in srgb, var(--kroma-text) 82%, transparent);
 }
 .prose-kroma a {
   color: var(--kroma-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(242, 180, 66, 0.4);
+  text-decoration-color: color-mix(in srgb, var(--kroma-accent-wash) 40%, transparent);
   transition: text-decoration-color 0.2s;
 }
 .prose-kroma a:hover {

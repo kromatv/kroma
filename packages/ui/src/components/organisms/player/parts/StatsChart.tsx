@@ -9,7 +9,7 @@
 // beside a colour key, so the chart still reads in greyscale.
 
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, styles } from '#ui/core';
 import { SERIES_COLORS } from '#ui/core/tokens';
 import { Circle, Line, Path, Svg } from '#ui/lib/svg';
@@ -90,16 +90,16 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
       {/* This IS the legend: the value carries identity in text, the dot carries
           it in colour, and neither is load-bearing on its own. */}
       <Box row align="center" between gap={16}>
-        <Txt style={sx.chartLabel} color="text/50" lines={1}>
+        <Text style={sx.chartLabel} color="text/50" lines={1}>
           {meters.find((m) => m.chartLabel)?.chartLabel ?? meters.map((m) => m.label).join(' · ')}
-        </Txt>
+        </Text>
         <Box row align="center" gap={14} shrink={0}>
           {series.map((s) => (
             <Box key={s.key} row align="center" gap={6}>
               {series.length > 1 ? <Box w={7} h={7} radius="circle" bg={s.color} /> : null}
-              <Txt style={sx.chartValue} color="text/82">
+              <Text style={sx.chartValue} color="text/82">
                 {s.display}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -159,9 +159,9 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
       </Svg>
 
       {reference ? (
-        <Txt style={sx.chartFoot} color="text/38">
+        <Text style={sx.chartFoot} color="text/38">
           {reference.label}
-        </Txt>
+        </Text>
       ) : null}
     </Box>
   );

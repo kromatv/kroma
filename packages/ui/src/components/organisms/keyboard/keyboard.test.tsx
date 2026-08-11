@@ -3,15 +3,16 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FocusScope } from '#ui/lib/focus-scope';
-import { OnScreenKeyboard } from './keyboard';
+import { SearchKeyboard } from './search-keyboard';
+import { UrlKeyboard } from './url-keyboard';
 
 afterEach(cleanup);
 
-describe('OnScreenKeyboard', () => {
+describe('SearchKeyboard', () => {
   it('opens the search grid on the first letter, not on the digits row', () => {
     render(
       <FocusScope>
-        <OnScreenKeyboard value="" onChange={vi.fn()} layout="search" letters="qwerty" />
+        <SearchKeyboard value="" onValueChange={vi.fn()} letters="qwerty" />
       </FocusScope>,
     );
     // A key wears no ring (see ./key), so the entry is the one the focus scales.
@@ -19,43 +20,53 @@ describe('OnScreenKeyboard', () => {
     expect(screen.getByLabelText('1').style.transform).not.toContain('scale(1.08)');
   });
 
-  it('appends a lowercase letter from the search grid', () => {
-    const onChange = vi.fn();
-    render(<OnScreenKeyboard value="ali" onChange={onChange} layout="search" />);
+  it('appends a lowercase letter', () => {
+    const onValueChange = vi.fn();
+    render(<SearchKeyboard value="ali" onValueChange={onValueChange} />);
     fireEvent.click(screen.getByLabelText('E'));
-    expect(onChange).toHaveBeenCalledWith('alie');
+    expect(onValueChange).toHaveBeenCalledWith('alie');
   });
 
   it('follows the caller’s letter order rather than a store', () => {
-    const { rerender } = render(
-      <OnScreenKeyboard value="" onChange={vi.fn()} layout="search" letters="abc" />,
-    );
+    const { rerender } = render(<SearchKeyboard value="" onValueChange={vi.fn()} letters="abc" />);
     // The ABC grid opens its first row at A; QWERTY opens at Q.
     expect(screen.getAllByLabelText('A')[0]).toBeTruthy();
-    rerender(<OnScreenKeyboard value="" onChange={vi.fn()} layout="search" letters="qwerty" />);
+    rerender(<SearchKeyboard value="" onValueChange={vi.fn()} letters="qwerty" />);
     expect(screen.getAllByLabelText('Q')[0]).toBeTruthy();
   });
 
-  it('deletes the last character from the url grid', () => {
-    const onChange = vi.fn();
-    render(<OnScreenKeyboard value="kroma" onChange={onChange} layout="url" />);
+  it('is one focus stop per key', () => {
+    const { container } = render(<SearchKeyboard value="" onValueChange={vi.fn()} />);
+    // The ABC grid: ten digits, twenty-six letters, and space / delete / close.
+    expect(container.querySelectorAll('[tabindex]')).toHaveLength(39);
+  });
+});
+
+describe('UrlKeyboard', () => {
+  it('deletes the last character', () => {
+    const onValueChange = vi.fn();
+    render(<UrlKeyboard value="kroma" onValueChange={onValueChange} />);
     // The default locale labels it; the key is identified by its glyph role.
     fireEvent.click(screen.getByLabelText('Supprimer'));
-    expect(onChange).toHaveBeenCalledWith('krom');
+    expect(onValueChange).toHaveBeenCalledWith('krom');
   });
 
-  it('submits through the url grid’s button', () => {
+  it('submits through its own button', () => {
     const onSubmit = vi.fn();
     render(
-      <OnScreenKeyboard
+      <UrlKeyboard
         value="host:4040"
-        onChange={vi.fn()}
+        onValueChange={vi.fn()}
         onSubmit={onSubmit}
         submitLabel="Connect"
-        layout="url"
       />,
     );
     fireEvent.click(screen.getByLabelText('Connect'));
     expect(onSubmit).toHaveBeenCalled();
+  });
+
+  it('drops the submit button when there is nowhere to submit to', () => {
+    render(<UrlKeyboard value="" onValueChange={vi.fn()} submitLabel="Connect" />);
+    expect(screen.queryByLabelText('Connect')).toBeNull();
   });
 });

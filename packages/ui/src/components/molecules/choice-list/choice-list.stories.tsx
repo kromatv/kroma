@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Badge } from '#ui/components/atoms/badge';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { ChoiceList } from './choice-list';
 
 const QUALITIES = [
@@ -120,21 +120,21 @@ export default story({
       render: () => (
         <Box gap={28}>
           <Box gap={10}>
-            <Txt variant="overline" color="textDim">
+            <Text variant="overline" color="textDim">
               multiple
-            </Txt>
+            </Text>
             <Multiple />
           </Box>
           <Box gap={10}>
-            <Txt variant="overline" color="textDim">
+            <Text variant="overline" color="textDim">
               with row actions
-            </Txt>
+            </Text>
             <WithActions />
           </Box>
           <Box gap={10}>
-            <Txt variant="overline" color="textDim">
+            <Text variant="overline" color="textDim">
               composed
-            </Txt>
+            </Text>
             <Composed />
           </Box>
         </Box>

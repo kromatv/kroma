@@ -10,7 +10,7 @@ import {
   type StorePlanModule,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Spinner } from '@kroma/ui/kit';
+import { Badge, Button, Dialog, ListRow, Spinner, Text } from '@kroma/ui/kit';
 
 /** The dialog title already says the install failed, so the server's
  * `install failed:` prefix is dropped and the detail (which module, which
@@ -27,24 +27,22 @@ export function ErrorBox({ text }: Readonly<{ text: string }>) {
 function PlanRow({ m }: Readonly<{ m: StorePlanModule }>) {
   const t = useT();
   return (
-    <div className="flex items-center justify-between gap-3 py-2">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-[13.5px] font-semibold text-text">{m.name}</span>
-          {!m.requested && (
-            <span className="shrink-0 rounded bg-white/5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-dim">
-              {t('admin.modulesInstallDependency')}
-            </span>
-          )}
-        </div>
-        <div className="text-[11.5px] text-dim">
-          {m.installedVersion ? `v${m.installedVersion} → v${m.version}` : `v${m.version}`}
-        </div>
+    <ListRow.Root size="sm">
+      <div className="flex items-center gap-2">
+        <ListRow.Label>{m.name}</ListRow.Label>
+        {m.requested ? null : <Badge tone="neutral">{t('admin.modulesInstallDependency')}</Badge>}
       </div>
-      <span className="shrink-0 text-[12px] font-medium text-muted">
-        {m.size ? formatBytes(m.size) : ''}
-      </span>
-    </div>
+      <ListRow.Hint>
+        {m.installedVersion ? `v${m.installedVersion} → v${m.version}` : `v${m.version}`}
+      </ListRow.Hint>
+      {m.size ? (
+        <ListRow.Trailing>
+          <Text variant="meta" color="textMuted">
+            {formatBytes(m.size)}
+          </Text>
+        </ListRow.Trailing>
+      ) : null}
+    </ListRow.Root>
   );
 }
 
@@ -152,9 +150,9 @@ export function PlanStage({
     return (
       <>
         <ErrorBox text={error} />
-        <div className="mt-4 flex justify-end">
+        <Dialog.Actions>
           <Button variant="ghost" size="sm" label={t('common.close')} onPress={onCancel} />
-        </div>
+        </Dialog.Actions>
       </>
     );
   }
@@ -171,10 +169,12 @@ export function PlanStage({
       <p className="text-[12px] font-semibold uppercase tracking-[.12em] text-dim">
         {t('admin.modulesInstallPlanIntro')}
       </p>
-      <div className="mt-1 divide-y divide-white/5">
-        {plan.modules.map((m) => (
-          <PlanRow key={m.id} m={m} />
-        ))}
+      <div className="mt-1">
+        <ListRow.Group size="sm">
+          {plan.modules.map((m) => (
+            <PlanRow key={m.id} m={m} />
+          ))}
+        </ListRow.Group>
       </div>
       <OptInGroup
         title={t('admin.modulesInstallProviders')}

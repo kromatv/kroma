@@ -100,7 +100,7 @@ export function RequestRowView({
                 }
               }}
               title={t('requests.approve')}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#46D08D]/30 bg-[#46D08D]/10 text-[#46D08D] transition-colors hover:bg-[#46D08D]/20"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-success/30 bg-success/10 text-success transition-colors hover:bg-success/20"
             >
               <IconCheck size={14} stroke={2.6} />
             </span>
@@ -120,7 +120,7 @@ export function RequestRowView({
                 }
               }}
               title={t('requests.deny')}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E8536A]/30 bg-[#E8536A]/10 text-[#E8536A] transition-colors hover:bg-[#E8536A]/20"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/30 bg-danger/10 text-danger transition-colors hover:bg-danger/20"
             >
               <IconX size={14} stroke={2.6} />
             </span>

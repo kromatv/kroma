@@ -49,13 +49,13 @@ function Probe({
     <div>
       <input
         aria-label="email"
-        value={email.value}
-        onChange={(e) => email.onChange(e.target.value)}
+        value={email.root.value}
+        onChange={(e) => email.root.onValueChange(e.target.value)}
       />
       <input
         aria-label="password"
-        value={password.value}
-        onChange={(e) => password.onChange(e.target.value)}
+        value={password.root.value}
+        onChange={(e) => password.root.onValueChange(e.target.value)}
       />
       <input
         aria-label="remember"
@@ -63,8 +63,8 @@ function Probe({
         checked={remember.checked}
         onChange={(e) => remember.onChange(e.target.checked)}
       />
-      <output aria-label="email-error">{email.error ?? ''}</output>
-      <output aria-label="password-error">{password.error ?? ''}</output>
+      <output aria-label="email-error">{email.root.error ?? ''}</output>
+      <output aria-label="password-error">{password.root.error ?? ''}</output>
       <output aria-label="form-error">{form.error ?? ''}</output>
       <output aria-label="state">
         {form.submitting ? 'submitting' : ''}

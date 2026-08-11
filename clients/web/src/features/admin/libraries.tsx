@@ -1,6 +1,6 @@
 import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState, Surface } from '@kroma/ui/kit';
+import { Button, color, EmptyState, Surface } from '@kroma/ui/kit';
 import {
   IconDeviceTv,
   IconFolder,
@@ -55,10 +55,10 @@ function LibrariesPageInner() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.librariesTitle')}
         subtitle={t('admin.librariesSub')}
-        action={
+        actions={
           <Button
             variant="primary"
             icon="plus"
@@ -78,10 +78,10 @@ function LibrariesPageInner() {
         </div>
       ) : null}
       {data && libraries.length === 0 ? (
-        <EmptyState
+        <EmptyState.Root
           icon="library"
           title={t('admin.noLibraries')}
-          action={
+          actions={
             <Button
               variant="primary"
               icon="plus"
@@ -105,7 +105,6 @@ function LibraryCard({
   const t = useT();
   const { client } = useAuth();
   const [scanning, setScanning] = useState(false);
-  const accent = '#84CE7E';
 
   async function scan() {
     setScanning(true);
@@ -122,11 +121,11 @@ function LibraryCard({
     <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
       <div
         className="flex items-center gap-3.5 border-b border-white/5 px-5 py-4.5"
-        style={{ background: 'rgba(132,206,126,.07)' }}
+        style={{ background: color('success/7') }}
       >
         <span
           className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-xl"
-          style={{ background: 'rgba(132,206,126,.16)', color: accent }}
+          style={{ background: color('success/16'), color: color('success') }}
         >
           <LibIcon size={22} stroke={1.8} />
         </span>
@@ -156,7 +155,7 @@ function LibraryCard({
         <div className="flex flex-col gap-1.5">
           {lib.folders.map((path) => (
             <div key={path} className="flex items-center gap-2">
-              <IconFolder size={15} stroke={1.8} color={accent} className="shrink-0" />
+              <IconFolder size={15} stroke={1.8} color={color('success')} className="shrink-0" />
               <span className="min-w-0 truncate text-[13px] font-semibold text-text/70">
                 {path}
               </span>

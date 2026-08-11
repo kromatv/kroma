@@ -180,14 +180,14 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
           ) : (
             <ErrorBox text={result ?? ''} />
           )}
-          <div className="mt-5 flex justify-end">
+          <Dialog.Actions>
             <Button
               variant="glass"
               size="sm"
               label={t('common.close')}
               onPress={() => call.end(true)}
             />
-          </div>
+          </Dialog.Actions>
         </>
       )}
     </Dialog>

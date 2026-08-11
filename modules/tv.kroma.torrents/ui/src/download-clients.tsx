@@ -89,7 +89,7 @@ export function DownloadClientsSection() {
     ) : null;
 
   return (
-    <Section title={t('dlclients.sectionTitle')} action={addButton} mt={28}>
+    <Section.Root title={t('dlclients.sectionTitle')} actions={addButton} mt={28}>
       {data === null ? <TableSkeleton rows={3} /> : null}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {clients.map((c) => (
@@ -138,11 +138,15 @@ export function DownloadClientsSection() {
         ))}
       </div>
       {data && clients.length === 0 ? (
-        <EmptyState icon="server" title={t('dlclients.empty')} action={addButton ?? undefined} />
+        <EmptyState.Root
+          icon="server"
+          title={t('dlclients.empty')}
+          actions={addButton ?? undefined}
+        />
       ) : null}
 
       <DownloadClientModal />
-    </Section>
+    </Section.Root>
   );
 }
 
@@ -155,13 +159,13 @@ function TestLine({ test }: Readonly<{ test?: TestState }>) {
   }
   if (test?.error || test?.result?.error) {
     return (
-      <span className="min-w-0 truncate text-[12px] font-semibold text-[#EF8091]">
+      <span className="min-w-0 truncate text-[12px] font-semibold text-danger-hover">
         {test.error ?? test.result?.error}
       </span>
     );
   }
   if (test?.result?.ok) {
-    return <span className="text-[12px] font-semibold text-[#46D08D]">{test.result.version}</span>;
+    return <span className="text-[12px] font-semibold text-success">{test.result.version}</span>;
   }
   return <span className="text-[12px] font-medium text-white/30">{t('dlclients.notTested')}</span>;
 }

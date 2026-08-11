@@ -3,6 +3,7 @@
 // Pure data (no JSX); labels resolve through i18n in the components.
 
 import type { MessageKey, RequestStatus } from '@kroma/core';
+import { color } from '@kroma/ui/kit';
 
 export interface RequestStatusMeta {
   labelKey: MessageKey;
@@ -15,60 +16,60 @@ export interface RequestStatusMeta {
 export const REQUEST_STATUS_META: Record<RequestStatus, RequestStatusMeta> = {
   pending: {
     labelKey: 'requests.st.pending',
-    color: 'rgba(244,243,240,.7)',
-    bg: 'rgba(255,255,255,.07)',
-    dot: 'rgba(244,243,240,.45)',
+    color: color('text/70'),
+    bg: color('white/7'),
+    dot: color('text/45'),
   },
   approved: {
     labelKey: 'requests.st.approved',
-    color: '#86A8FF',
-    bg: 'rgba(134,168,255,.14)',
-    dot: '#86A8FF',
+    color: color('info'),
+    bg: color('info/14'),
+    dot: color('info'),
   },
   searching: {
     labelKey: 'requests.st.searching',
-    color: '#86A8FF',
-    bg: 'rgba(134,168,255,.14)',
-    dot: '#86A8FF',
+    color: color('info'),
+    bg: color('info/14'),
+    dot: color('info'),
     pulse: true,
   },
   downloading: {
     labelKey: 'requests.st.downloading',
-    color: '#F4B642',
-    bg: 'rgba(242,180,66,.15)',
-    dot: '#F4B642',
+    color: color('accent'),
+    bg: color('accentWash/15'),
+    dot: color('accent'),
     pulse: true,
   },
   importing: {
     labelKey: 'requests.st.importing',
-    color: '#C792EA',
-    bg: 'rgba(199,146,234,.15)',
-    dot: '#C792EA',
+    color: color('hdr'),
+    bg: color('hdr/15'),
+    dot: color('hdr'),
     pulse: true,
   },
   available: {
     labelKey: 'requests.st.available',
-    color: '#46D08D',
-    bg: 'rgba(70,208,141,.13)',
-    dot: '#46D08D',
+    color: color('success'),
+    bg: color('success/13'),
+    dot: color('success'),
   },
   partially_available: {
     labelKey: 'requests.st.partially_available',
-    color: '#46D08D',
-    bg: 'rgba(70,208,141,.09)',
-    dot: 'rgba(70,208,141,.7)',
+    color: color('success'),
+    bg: color('success/9'),
+    dot: color('success/70'),
   },
   failed: {
     labelKey: 'requests.st.failed',
-    color: '#E8536A',
-    bg: 'rgba(232,83,106,.13)',
-    dot: '#E8536A',
+    color: color('danger'),
+    bg: color('danger/13'),
+    dot: color('danger'),
   },
   denied: {
     labelKey: 'requests.st.denied',
-    color: '#E8536A',
-    bg: 'rgba(232,83,106,.09)',
-    dot: 'rgba(232,83,106,.7)',
+    color: color('danger'),
+    bg: color('danger/9'),
+    dot: color('danger/70'),
   },
 };
 

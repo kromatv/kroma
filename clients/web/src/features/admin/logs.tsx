@@ -66,10 +66,10 @@ export function LogsPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.logsTitle')}
         subtitle={t('admin.logsSub')}
-        action={<RealtimeBadge />}
+        actions={<RealtimeBadge />}
       />
       <div className="mb-4 mt-2 flex flex-wrap items-center gap-3">
         <SegmentedControl.Root
@@ -77,22 +77,21 @@ export function LogsPage() {
           options={LEVELS.map((l) => ({ value: l.value, label: t(l.labelKey) }))}
           onValueChange={setLevel}
         />
-        <Select
-          label={t('logs.allSources')}
-          value={source}
-          options={sources.map((s) => ({ value: s, label: sourceLabel(s) }))}
-          onChange={setSource}
-        />
-        <Field
-          w={256}
-          label={t('logs.searchPlaceholder')}
-          hideLabel
-          type="search"
-          icon="search"
-          placeholder={t('logs.searchPlaceholder')}
-          value={qInput}
-          onChange={setQInput}
-        />
+        <Select.Root label={t('logs.allSources')} value={source} onValueChange={setSource}>
+          <Select.Trigger />
+          {sources.map((s) => (
+            <Select.Item key={s} value={s} label={sourceLabel(s)} />
+          ))}
+        </Select.Root>
+        <Field.Root w={256} label={t('logs.searchPlaceholder')} hideLabel>
+          <Field.Input
+            type="search"
+            icon="search"
+            placeholder={t('logs.searchPlaceholder')}
+            value={qInput}
+            onValueChange={setQInput}
+          />
+        </Field.Root>
         <div className="ml-auto flex items-center gap-2 text-[13px] font-semibold text-muted">
           <span>{t('logs.follow')}</span>
           <Switch checked={follow} onChange={setFollow} label={t('logs.follow')} />
@@ -100,7 +99,7 @@ export function LogsPage() {
       </div>
       {data === null ? <TableSkeleton rows={10} /> : null}
       {data && entries.length === 0 ? (
-        <EmptyState icon="terminal-2" title={t('logs.empty')} />
+        <EmptyState.Root icon="terminal-2" title={t('logs.empty')} />
       ) : null}
       {entries.length > 0 ? (
         <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
@@ -116,8 +115,8 @@ export function LogsPage() {
 }
 
 const LEVEL_TONE: Record<string, string> = {
-  error: 'bg-red-500/15 text-red-400',
-  warn: 'bg-amber-500/15 text-amber-400',
+  error: 'bg-danger/15 text-danger-hover',
+  warn: 'bg-accent/15 text-accent',
   info: 'bg-white/6 text-muted',
   debug: 'bg-white/4 text-dim',
   trace: 'bg-white/4 text-dim',

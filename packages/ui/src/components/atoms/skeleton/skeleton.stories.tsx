@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { CardSkeleton } from './card-skeleton';
 import { PosterSkeleton } from './poster-skeleton';
 import { Skeleton } from './skeleton';
@@ -10,9 +10,9 @@ import { TableSkeleton } from './table-skeleton';
 function Labelled({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
     <Box gap={6}>
-      <Txt variant="overline" color="textDim">
+      <Text variant="overline" color="textDim">
         {label}
-      </Txt>
+      </Text>
       {children}
     </Box>
   );
@@ -29,7 +29,7 @@ export default story({
 <PosterSkeleton />                                   // a whole browse tile`,
   guidelines: {
     do: [
-      'Give a text placeholder the same `variant` as the <Txt> it stands in for: the lines then occupy exactly the height the real text will.',
+      'Give a text placeholder the same `variant` as the <Text> it stands in for: the lines then occupy exactly the height the real text will.',
       'Reach for the layout shorthands (`mt`, `w`, `self`) rather than wrapping a skeleton in a spacer view.',
     ],
     dont: [

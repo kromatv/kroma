@@ -87,33 +87,31 @@ export default function RemotePage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.remoteAccess')}
         subtitle={t('admin.remoteAccessDesc')}
-        action={<StatusChip status={st} />}
+        actions={<StatusChip status={st} />}
       />
 
       {/* Public URL (used for share / Quick Connect links; always applicable). */}
       <Surface elevated border="border" pad="none" px={22} py={20} mt={24}>
-        <Field
+        <Field.Root
           label={t('admin.customUrl')}
           hint={t('admin.customUrlHint')}
           value={url}
-          onChange={setUrl}
-          placeholder="https://kroma.example.com"
-        />
+          onValueChange={setUrl}
+        >
+          <Field.Input placeholder="https://kroma.example.com" />
+        </Field.Root>
       </Surface>
 
       {/* Managed connector (optional). */}
-      <Section title={t('admin.remoteManaged')} mt={28}>
+      <Section.Root title={t('admin.remoteManaged')} mt={28}>
         <p className="-mt-2 mb-4 text-[12.5px] text-dim">{t('admin.remoteManagedHint')}</p>
         <Surface elevated border="border" pad="none" px={22} py={20}>
           <div className="mb-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px]"
-                style={{ background: 'rgba(92,141,246,.16)', color: '#5C8DF6' }}
-              >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-info/16 text-info">
                 <IconCloud size={20} stroke={1.8} />
               </span>
               <div>
@@ -124,15 +122,18 @@ export default function RemotePage() {
             <Switch checked={enabled} onChange={toggle} label={t('admin.enableRemoteAccess')} />
           </div>
 
-          <Field
+          <Field.Root
             label={t('admin.remoteToken')}
             hint={t('admin.remoteTokenHint')}
             value={token}
-            onChange={setToken}
-            type="password"
-            placeholder={view.hasToken ? t('admin.remoteTokenKeep') : 'eyJhIjoi…'}
+            onValueChange={setToken}
             mb={12}
-          />
+          >
+            <Field.Input
+              type="password"
+              placeholder={view.hasToken ? t('admin.remoteTokenKeep') : 'eyJhIjoi…'}
+            />
+          </Field.Root>
 
           <a
             href={CF_TUNNELS_URL}
@@ -154,16 +155,16 @@ export default function RemotePage() {
               disabled={busy}
             />
             {saved ? (
-              <span className="text-[13px] font-semibold" style={{ color: '#46D08D' }}>
+              <span className="text-[13px] font-semibold text-success">
                 {t('admin.remoteSaved')}
               </span>
             ) : null}
           </div>
         </Surface>
-      </Section>
+      </Section.Root>
 
       {/* Live connector status + logs. */}
-      <Section title={t('admin.remoteLogs')} mt={28}>
+      <Section.Root title={t('admin.remoteLogs')} mt={28}>
         <Surface elevated border="border" pad="none" px={22} py={20}>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[13px]">
             <StatusChip status={st} />
@@ -175,19 +176,17 @@ export default function RemotePage() {
             {st.binaryFound ? (
               <span className="text-dim">{st.binaryVersion ?? 'cloudflared'}</span>
             ) : (
-              <span style={{ color: '#E8536A' }}>{t('admin.remoteBinaryMissing')}</span>
+              <span className="text-danger">{t('admin.remoteBinaryMissing')}</span>
             )}
           </div>
           {st.lastError ? (
-            <div className="mt-2 text-[12.5px]" style={{ color: '#E8536A' }}>
-              {st.lastError}
-            </div>
+            <div className="mt-2 text-[12.5px] text-danger">{st.lastError}</div>
           ) : null}
-          <pre className="mt-3 max-h-72 overflow-auto rounded-[9px] border border-border bg-[#0B0B0E] p-3 text-[11.5px] leading-relaxed text-muted">
+          <pre className="mt-3 max-h-72 overflow-auto rounded-[9px] border border-border bg-bg p-3 text-[11.5px] leading-relaxed text-muted">
             {st.logs.length ? st.logs.join('\n') : t('admin.remoteNoLogs')}
           </pre>
         </Surface>
-      </Section>
+      </Section.Root>
     </>
   );
 }

@@ -19,17 +19,17 @@ import { SubtitleAppearancePanel } from './SubtitleAppearancePanel';
 afterEach(cleanup);
 
 function panel(over: Partial<SubtitleAppearance> = {}) {
-  const onAppearance = vi.fn();
+  const onAppearanceChange = vi.fn();
   render(
     <I18nProvider locale="en">
       <SubtitleAppearancePanel
         appearance={{ ...DEFAULT_SUB_APPEARANCE, ...over }}
-        onAppearance={onAppearance}
+        onAppearanceChange={onAppearanceChange}
         onBack={vi.fn()}
       />
     </I18nProvider>,
   );
-  return { onAppearance };
+  return { onAppearanceChange };
 }
 
 describe('SubtitleAppearancePanel', () => {

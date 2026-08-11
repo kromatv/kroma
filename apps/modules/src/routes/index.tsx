@@ -7,7 +7,7 @@ import { SiteHeader } from '#site/components/site-header';
 import { sliceLabel, useModuleBrowse } from '#site/lib/browse';
 import { getCatalog } from '#site/lib/get-catalog';
 import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { EmptyState } from '#ui/components/molecules/empty-state';
 import { Pagination } from '#ui/components/molecules/pagination';
 import { PageMain } from '#ui/lib/landmark';
@@ -30,11 +30,11 @@ function Registry() {
         <Box px={28} py={32}>
           <Column gap={32} w="100%" maxW={1080} mx="auto">
             <Column gap={10}>
-              <Txt variant="h1">KROMA Modules</Txt>
-              <Txt color="textMuted">
+              <Text variant="h1">KROMA Modules</Text>
+              <Text color="textMuted">
                 Downloads, indexers, VPN, transcription: installed straight from your server's
                 admin.
-              </Txt>
+              </Text>
             </Column>
 
             <RegistryUrl
@@ -45,21 +45,21 @@ function Registry() {
             <Column gap={20}>
               <Row gap={16} wrap between align="flex-end">
                 <Column gap={4}>
-                  <Txt variant="overline" color="accentText">
+                  <Text variant="overline" color="accentText">
                     Modules
-                  </Txt>
+                  </Text>
                   {browse.total > 0 ? (
-                    <Txt color="textDim" variant="meta">
+                    <Text color="textDim" variant="meta">
                       {sliceLabel(browse)}
-                    </Txt>
+                    </Text>
                   ) : null}
                 </Column>
                 <ModuleSearch value={browse.query} onChange={browse.search} />
               </Row>
 
               {browse.items.length === 0 ? (
-                <EmptyState
-                  compact
+                <EmptyState.Root
+                  size="sm"
                   icon="search"
                   title="No module matches"
                   hint="Search by name, reverse-DNS id or description."

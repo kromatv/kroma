@@ -100,20 +100,21 @@ export default function NamingPage() {
 
   return (
     <>
-      <PageHeader title={t('admin.namingTitle')} subtitle={t('admin.namingSub')} />
+      <PageHeader.Root title={t('admin.namingTitle')} subtitle={t('admin.namingSub')} />
 
       <Surface elevated border="border" pad="none" p={24} mt={24}>
         {tpl ? (
           <div className="flex flex-col gap-4">
             {FIELDS.map((f) => (
               <div key={f.key} className="flex items-end gap-2">
-                <Field
+                <Field.Root
                   label={t(f.labelKey as Parameters<typeof t>[0])}
                   value={tpl[f.key]}
-                  onChange={(v) => set(f.key, v)}
-                  entry={{ textStyle: MONO }}
+                  onValueChange={(v) => set(f.key, v)}
                   flex
-                />
+                >
+                  <Field.Input textStyle={MONO} />
+                </Field.Root>
                 <Button
                   variant="glass"
                   size="sm"
@@ -125,18 +126,20 @@ export default function NamingPage() {
             ))}
 
             <div className="max-w-xs">
-              <Field label={t('naming.caseLabel')}>
-                <Select
+              <Field.Root label={t('naming.caseLabel')}>
+                <Select.Root
                   label={t('naming.caseLabel')}
                   value={tpl.case}
-                  onChange={(v) => set('case', v)}
-                  block
-                  options={CASES.map((c) => ({
-                    value: c.value,
-                    label: t(c.labelKey as Parameters<typeof t>[0]),
-                  }))}
-                />
-              </Field>
+                  onValueChange={(v) => set('case', v)}
+                >
+                  <Select.Trigger block />
+                  {CASES.map((c) => (
+                    <Select.Item key={c.value} value={c.value}>
+                      {t(c.labelKey as Parameters<typeof t>[0])}
+                    </Select.Item>
+                  ))}
+                </Select.Root>
+              </Field.Root>
             </div>
           </div>
         ) : (
@@ -144,7 +147,7 @@ export default function NamingPage() {
         )}
 
         {sample ? (
-          <div className="mt-5 rounded-xl border border-white/[0.07] bg-[#0F0F13] p-4">
+          <div className="mt-5 rounded-xl border border-white/[0.07] bg-bg p-4">
             <div className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
               {t('naming.preview')}
             </div>
@@ -163,7 +166,7 @@ export default function NamingPage() {
             disabled={!tpl}
           />
           {saved ? (
-            <span className="text-[13px] font-semibold text-[#46D08D]">{t('common.saved')}</span>
+            <span className="text-[13px] font-semibold text-success">{t('common.saved')}</span>
           ) : null}
         </div>
       </Surface>
@@ -179,7 +182,7 @@ function SampleLine({ label, value }: Readonly<{ label: string; value: string }>
   return (
     <div className="flex items-baseline gap-2 py-0.5">
       <span className="w-16 shrink-0 text-[11px] font-semibold text-dim">{label}</span>
-      <code className="min-w-0 break-all font-mono text-[12.5px] text-[#86A8FF]">{value}</code>
+      <code className="min-w-0 break-all font-mono text-[12.5px] text-info">{value}</code>
     </div>
   );
 }
@@ -222,10 +225,10 @@ function RenameSection() {
   };
 
   return (
-    <Section
+    <Section.Root
       title={t('naming.renameTitle')}
       mt={28}
-      action={
+      actions={
         <Button
           variant="glass"
           size="sm"
@@ -239,7 +242,7 @@ function RenameSection() {
       <p className="mb-3 text-[13.5px] leading-relaxed text-dim">{t('naming.renameHelp')}</p>
 
       {result ? (
-        <div className="mb-3 rounded-lg border border-white/8 bg-[#121216] px-4 py-2.5 text-[13px] font-semibold text-white/80">
+        <div className="mb-3 rounded-lg border border-white/8 bg-surface-1 px-4 py-2.5 text-[13px] font-semibold text-white/80">
           {result}
         </div>
       ) : null}
@@ -255,7 +258,7 @@ function RenameSection() {
           </div>
           {plan.moves.length > 0 ? (
             <>
-              <div className="max-h-80 overflow-y-auto rounded-xl border border-white/[0.07] bg-[#0F0F13]">
+              <div className="max-h-80 overflow-y-auto rounded-xl border border-white/[0.07] bg-bg">
                 {plan.moves.slice(0, 200).map((m) => (
                   <MoveRow key={`${m.from}`} from={m.from} to={m.to} />
                 ))}
@@ -271,13 +274,13 @@ function RenameSection() {
               </div>
             </>
           ) : (
-            <div className="py-4 text-center text-[13.5px] font-medium text-[#46D08D]">
+            <div className="py-4 text-center text-[13.5px] font-medium text-success">
               {t('naming.allMatch')}
             </div>
           )}
         </Surface>
       ) : null}
-    </Section>
+    </Section.Root>
   );
 }
 
@@ -288,7 +291,7 @@ function MoveRow({ from, to }: Readonly<{ from: string; to: string }>): ReactNod
         {from}
       </code>
       <IconArrowRight size={13} stroke={2} className="shrink-0 text-white/30" />
-      <code className="min-w-0 flex-1 truncate font-mono text-[#86A8FF]" title={to}>
+      <code className="min-w-0 flex-1 truncate font-mono text-info" title={to}>
         {to}
       </code>
     </div>

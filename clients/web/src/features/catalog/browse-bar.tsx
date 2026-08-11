@@ -28,6 +28,9 @@ const ALL_GENRES = '*';
 // tag row.
 const CHIP_PAD = { paddingVertical: 8, paddingHorizontal: 18 } as const;
 
+const GENRE_TRIGGER = { flexShrink: 0, minWidth: 150 } as const;
+const SORT_TRIGGER = { flexShrink: 0, minWidth: 196 } as const;
+
 const BAR_SKIN: Record<'floating' | 'stuck', string> = {
   floating: 'border-transparent',
   stuck:
@@ -175,31 +178,34 @@ export function BrowseBar({
           <div className="flex-1" />
         )}
         {genres.length > 0 ? (
-          <Select
+          <Select.Root
             label={t('browse.genres')}
             placeholder={t('browse.genres')}
             value={genre ?? ALL_GENRES}
-            size="sm"
-            onChange={(v) => onGenre(v === ALL_GENRES ? undefined : v)}
-            options={[
-              { value: ALL_GENRES, label: t('browse.allGenres') },
-              ...genres.map((g) => ({ value: g.name, label: g.name, note: String(g.count) })),
-            ]}
-            style={{ flexShrink: 0, minWidth: 150 }}
-          />
+            onValueChange={(v) => onGenre(v === ALL_GENRES ? undefined : v)}
+          >
+            <Select.Trigger size="sm" style={GENRE_TRIGGER} />
+            <Select.Item value={ALL_GENRES} label={t('browse.allGenres')} />
+            {genres.map((g) => (
+              <Select.Item key={g.name} value={g.name} label={g.name} note={String(g.count)} />
+            ))}
+          </Select.Root>
         ) : null}
-        <Select
+        <Select.Root
           label={t('browse.sortBy')}
           value={sort}
-          size="sm"
-          onChange={(v) => onSort(v as SortMode)}
-          options={SORT_MODES.map((mode) => ({
-            value: mode,
-            label: t(SORT_LABEL_KEY[mode]),
-            icon: SORT_ICON[mode],
-          }))}
-          style={{ flexShrink: 0, minWidth: 196 }}
-        />
+          onValueChange={(v) => onSort(v as SortMode)}
+        >
+          <Select.Trigger size="sm" style={SORT_TRIGGER} />
+          {SORT_MODES.map((mode) => (
+            <Select.Item
+              key={mode}
+              value={mode}
+              label={t(SORT_LABEL_KEY[mode])}
+              icon={SORT_ICON[mode]}
+            />
+          ))}
+        </Select.Root>
       </div>
     </div>
   );

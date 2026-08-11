@@ -6,7 +6,7 @@
 
 import { type PersonDetail, personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Button, Txt } from '@kroma/ui/kit';
+import { Button, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 
 const READ_MORE = { fontSize: 13, fontWeight: '700' } as const;
@@ -47,9 +47,9 @@ export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null
           </p>
           <div className="mt-2 flex">
             <Button variant="ghost" size="sm" onPress={() => setExpanded((v) => !v)}>
-              <Txt color="accent" style={READ_MORE}>
+              <Text color="accent" style={READ_MORE}>
                 {expanded ? t('person.readLess') : t('person.readMore')}
-              </Txt>
+              </Text>
             </Button>
           </div>
         </div>

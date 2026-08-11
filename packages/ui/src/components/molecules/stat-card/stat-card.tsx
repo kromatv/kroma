@@ -4,7 +4,7 @@
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Surface, type SurfaceProps } from '#ui/components/atoms/surface';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import type { ColorToken } from '#ui/core';
 
 interface StatCardProps extends Omit<SurfaceProps, 'children'> {
@@ -19,24 +19,24 @@ interface StatCardProps extends Omit<SurfaceProps, 'children'> {
 function StatCard({ label, value, unit, color = 'text', ...surface }: Readonly<StatCardProps>) {
   return (
     <Surface {...surface}>
-      <Txt variant="overline" color="textDim">
+      <Text variant="overline" color="textDim">
         {label}
-      </Txt>
+      </Text>
       <Box row align="baseline" gap={8} mt={10}>
-        <Txt variant="h2" color={color} style={VALUE}>
+        <Text variant="h2" color={color} style={VALUE}>
           {value}
-        </Txt>
+        </Text>
         {unit ? (
-          <Txt variant="meta" color="textDim">
+          <Text variant="meta" color="textDim">
             {unit}
-          </Txt>
+          </Text>
         ) : null}
       </Box>
     </Surface>
   );
 }
 
-// The design's stat size sits between h2 and h1; Txt re-derives line height
+// The design's stat size sits between h2 and h1; Text re-derives line height
 // and tracking from the role when a size is overridden.
 const VALUE = { fontSize: 30 } as const;
 

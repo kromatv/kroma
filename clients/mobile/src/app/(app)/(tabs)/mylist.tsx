@@ -2,7 +2,7 @@
 // catalogues, in the order the server returned them (newest first).
 
 import { ItemId, type MediaItem, type Show, ShowId } from '@kroma/core';
-import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -59,8 +59,8 @@ export default function MyList() {
   const header = (
     <Box style={{ paddingTop: insets.top + spacing.sm }}>
       <Box style={s.titleRow}>
-        <Txt style={s.title}>{t('nav.myList')}</Txt>
-        <Txt style={s.count}>{cards.length}</Txt>
+        <Text style={s.title}>{t('nav.myList')}</Text>
+        <Text style={s.count}>{cards.length}</Text>
       </Box>
       <Box style={{ height: spacing.sm }} />
     </Box>

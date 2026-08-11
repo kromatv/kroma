@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Box, Row } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { Logo } from '#ui/components/atoms/logo';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { ThemeSwitch } from '#ui/components/molecules/theme-switch';
 
 const EN = { system: 'Auto', light: 'Light', dark: 'Dark' };
@@ -21,9 +21,9 @@ export function SiteHeader({ title, actions }: Readonly<{ title: string; actions
             <Box h={18} shrink={0}>
               <Divider vertical />
             </Box>
-            <Txt color="textMuted" variant="label" lines={1}>
+            <Text color="textMuted" variant="label" lines={1}>
               {title}
-            </Txt>
+            </Text>
           </Row>
           <Row gap={10} shrink={0}>
             {actions}

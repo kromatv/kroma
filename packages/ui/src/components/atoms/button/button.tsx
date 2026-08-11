@@ -13,7 +13,7 @@ import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Spinner } from '#ui/components/atoms/spinner';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor, useTheme, type Variant } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 import { useGroupMember } from '#ui/lib/group-shape';
@@ -268,7 +268,7 @@ function ButtonContent({
   return (
     <>
       {leading}
-      {label === undefined ? null : <Txt style={labelStyle}>{label}</Txt>}
+      {label === undefined ? null : <Text style={labelStyle}>{label}</Text>}
       {children}
       {iconRight ? <Icon name={iconRight} {...glyph} /> : null}
     </>

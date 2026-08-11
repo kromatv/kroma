@@ -16,7 +16,7 @@ import {
   Section,
   SegmentedControl,
   Surface,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
@@ -70,7 +70,7 @@ export function InvitePage() {
   if (!allowed) {
     return (
       <main className={PAGE_MAIN}>
-        <EmptyState icon="lock" title={t('admin.noUsersPermission')} />
+        <EmptyState.Root icon="lock" title={t('admin.noUsersPermission')} />
       </main>
     );
   }
@@ -95,12 +95,12 @@ export function InvitePage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader title={t('nav.inviteUser')} subtitle={t('admin.inviteIntro')} />
+      <PageHeader.Root title={t('nav.inviteUser')} subtitle={t('admin.inviteIntro')} />
 
       <div className="mt-6">
         <Surface elevated pad="none" radius={16} px={22} py={20} gap={18} minW={0}>
           <Box gap={10}>
-            <Txt variant="label">{t('admin.permissions')}</Txt>
+            <Text variant="label">{t('admin.permissions')}</Text>
             <ChoiceList.Root
               mode="multiple"
               label={t('admin.permissions')}
@@ -120,7 +120,7 @@ export function InvitePage() {
 
           <Divider />
 
-          <Field label={t('admin.inviteExpiry')} hint={t('admin.inviteExpiryHint')}>
+          <Field.Root label={t('admin.inviteExpiry')} hint={t('admin.inviteExpiryHint')}>
             <SegmentedControl.Root
               label={t('admin.inviteExpiry')}
               value={expiry}
@@ -130,7 +130,7 @@ export function InvitePage() {
                 label: t('admin.inviteExpiryDays', { count: Number(days) }),
               }))}
             />
-          </Field>
+          </Field.Root>
 
           <Row gap={12} align="center" wrap>
             <Button
@@ -141,16 +141,16 @@ export function InvitePage() {
               onPress={() => void create()}
             />
             {error ? (
-              <Txt variant="meta" color="danger">
+              <Text variant="meta" color="danger">
                 {error}
-              </Txt>
+              </Text>
             ) : null}
           </Row>
           {created ? (
             <>
               <Divider />
               <Box gap={14}>
-                <Txt variant="label">{t('admin.inviteLink')}</Txt>
+                <Text variant="label">{t('admin.inviteLink')}</Text>
                 <CreatedLink link={created.link} expiresAt={created.expiresAt} />
               </Box>
             </>
@@ -159,9 +159,9 @@ export function InvitePage() {
       </div>
 
       {pending ? (
-        <Section title={t('admin.pendingInvites')} mt={28}>
+        <Section.Root title={t('admin.pendingInvites')} mt={28}>
           {pending.length === 0 ? (
-            <EmptyState
+            <EmptyState.Root
               icon="mail"
               title={t('admin.invitesEmpty')}
               hint={t('admin.invitesEmptyHint')}
@@ -169,7 +169,7 @@ export function InvitePage() {
           ) : (
             pending.map((inv) => <PendingInviteRow key={inv.token} inv={inv} onChange={refresh} />)
           )}
-        </Section>
+        </Section.Root>
       ) : null}
     </main>
   );
@@ -196,9 +196,9 @@ function CreatedLink({ link, expiresAt }: Readonly<{ link: string; expiresAt: nu
           {t('admin.expiresOn', { date: new Date(expiresAt * 1000).toLocaleDateString(locale) })}
         </Badge>
       </Row>
-      <Txt variant="meta" color="textDim">
+      <Text variant="meta" color="textDim">
         {t('admin.inviteShareHint')}
-      </Txt>
+      </Text>
     </>
   );
 }
@@ -241,14 +241,14 @@ function PendingInviteRow({ inv, onChange }: Readonly<{ inv: Invite; onChange: (
       <Row gap={14} align="center" wrap>
         <IconWell name="mail" size="sm" />
         <Box flex minW={180} gap={2}>
-          <Txt variant="label" lines={1}>
+          <Text variant="label" lines={1}>
             {labels.join(' · ') || t('admin.permPlayback')}
-          </Txt>
-          <Txt variant="meta" color="textDim" lines={1}>
+          </Text>
+          <Text variant="meta" color="textDim" lines={1}>
             {inv.createdBy
               ? `${expiresOn} · ${t('admin.inviteBy', { name: inv.createdBy })}`
               : expiresOn}
-          </Txt>
+          </Text>
         </Box>
         <Badge tone={daysLeft <= 1 ? 'warning' : 'neutral'}>
           {t('admin.inviteDaysLeft', { count: daysLeft })}

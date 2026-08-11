@@ -1,22 +1,29 @@
 import { type AdminUser, resolveImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, EmptyState, IconButton, Section, StatCard, Surface } from '@kroma/ui/kit';
+import {
+  Avatar,
+  Button,
+  color,
+  EmptyState,
+  IconButton,
+  Section,
+  StatCard,
+  Surface,
+} from '@kroma/ui/kit';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { EditUserModal, InviteModal, PendingInvite } from '#web/features/admin/users-modals';
 import { relativeSeen } from '#web/shared/lib/adminFormat';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 
-const GREEN = '#46D08D';
-
 // Roles arrive already localized from the server (Accept-Language synced), so we
 // match both locale spellings to keep the accent color right regardless of UI lang.
 function roleStyle(role: string): { c: string; bg: string } {
   if (role === 'Propriétaire' || role === 'Owner')
-    return { c: '#F4B642', bg: 'rgba(242,180,66,.16)' };
+    return { c: color('accent'), bg: color('accentWash/16') };
   if (role === 'Restreint' || role === 'Restricted')
-    return { c: '#86A8FF', bg: 'rgba(134,168,255,.14)' };
-  return { c: GREEN, bg: 'rgba(70,208,141,.14)' };
+    return { c: color('info'), bg: color('info/14') };
+  return { c: color('success'), bg: color('success/14') };
 }
 
 export function UsersScreen() {
@@ -47,10 +54,10 @@ function UsersPageInner() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.usersTitle')}
         subtitle={t('admin.usersSub')}
-        action={
+        actions={
           <Button icon="plus" label={t('nav.inviteUser')} onPress={() => void openInvite()} />
         }
       />
@@ -75,7 +82,7 @@ function UsersPageInner() {
         />
       </div>
 
-      <Section title={t('admin.membersSharing')} mt={28}>
+      <Section.Root title={t('admin.membersSharing')} mt={28}>
         <Surface elevated pad="none" overflow="hidden">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-border bg-surface-2 px-5.5 py-3.5 text-[10px] font-bold uppercase tracking-[.12em] text-text/40 md:grid-cols-[2.4fr_1fr_1.3fr_1.2fr_44px]">
             <span>{t('admin.colUser')}</span>
@@ -120,7 +127,7 @@ function UsersPageInner() {
                 <div className="inline-flex items-center gap-2 text-[13px] font-semibold text-text/60 max-md:hidden">
                   <span
                     className="h-1.75 w-1.75 rounded-full"
-                    style={{ background: u.online ? GREEN : 'rgba(244,243,240,.3)' }}
+                    style={{ background: color(u.online ? 'success' : 'text/30') }}
                   />
                   {u.online ? t('admin.online') : relativeSeen(u.lastSeen)}
                 </div>
@@ -136,26 +143,26 @@ function UsersPageInner() {
             );
           })}
           {data && users.length === 0 ? (
-            <EmptyState
+            <EmptyState.Root
               icon="users"
               title={t('admin.usersEmpty')}
               hint={t('admin.usersEmptyHint')}
-              action={
+              actions={
                 <Button icon="plus" label={t('nav.inviteUser')} onPress={() => void openInvite()} />
               }
             />
           ) : null}
         </Surface>
-      </Section>
+      </Section.Root>
 
       {invites.length > 0 ? (
-        <Section title={t('admin.pendingInvites')} mt={28}>
+        <Section.Root title={t('admin.pendingInvites')} mt={28}>
           <div className="flex flex-col gap-3">
             {invites.map((inv) => (
               <PendingInvite key={inv.token} inv={inv} onChange={reloadInvites} />
             ))}
           </div>
-        </Section>
+        </Section.Root>
       ) : null}
     </>
   );

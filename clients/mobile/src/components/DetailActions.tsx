@@ -1,7 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Box, Button, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
 import { useRef } from 'react';
 import { Alert, Pressable } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
@@ -115,7 +115,7 @@ export function DetailActions({
           />
         ) : null}
         {barIcon(state)}
-        <Txt style={[s.downloadBarLabel, bar.done && s.downloadBarLabelDone]}>{bar.label}</Txt>
+        <Text style={[s.downloadBarLabel, bar.done && s.downloadBarLabelDone]}>{bar.label}</Text>
       </Pressable>
       <Box style={s.secondaryRow}>
         <Pressable
@@ -127,9 +127,9 @@ export function DetailActions({
           ) : (
             <Icon name="plus" size={24} stroke={2.2} />
           )}
-          <Txt lines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
+          <Text lines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
             {t('nav.myList')}
-          </Txt>
+          </Text>
         </Pressable>
         {onToggleWatched ? (
           <Pressable
@@ -141,9 +141,9 @@ export function DetailActions({
             ) : (
               <Icon name="eye" size={24} stroke={1.8} />
             )}
-            <Txt lines={1} style={[s.secondaryLabel, watched && s.secondaryActive]}>
+            <Text lines={1} style={[s.secondaryLabel, watched && s.secondaryActive]}>
               {t('content.watched')}
-            </Txt>
+            </Text>
           </Pressable>
         ) : null}
         <Pressable
@@ -151,9 +151,9 @@ export function DetailActions({
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
           <Icon name="cast" size={24} stroke={1.8} />
-          <Txt lines={1} style={s.secondaryLabel}>
+          <Text lines={1} style={s.secondaryLabel}>
             {t('cast.title')}
-          </Txt>
+          </Text>
         </Pressable>
         {onReport ? (
           <Pressable
@@ -161,9 +161,9 @@ export function DetailActions({
             style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
             <Icon name="flag" size={24} stroke={1.8} />
-            <Txt lines={1} style={s.secondaryLabel}>
+            <Text lines={1} style={s.secondaryLabel}>
               {t('reports.sheet')}
-            </Txt>
+            </Text>
           </Pressable>
         ) : null}
       </Box>

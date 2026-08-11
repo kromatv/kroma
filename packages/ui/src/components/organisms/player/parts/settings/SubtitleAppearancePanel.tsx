@@ -2,7 +2,7 @@ import { forwardRef, type ReactNode, useImperativeHandle } from 'react';
 import { Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Progress } from '#ui/components/atoms/progress';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/useListFocus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import {
@@ -24,7 +24,7 @@ import { panel, rowStyle } from './panelStyle';
 
 interface SubtitleAppearancePanelProps {
   appearance: SubtitleAppearance;
-  onAppearance: (patch: Partial<SubtitleAppearance>) => void;
+  onAppearanceChange: (patch: Partial<SubtitleAppearance>) => void;
   onBack: () => void;
 }
 
@@ -69,9 +69,9 @@ interface AppRow {
  * the focused row's value.
  */
 export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearancePanelProps>(
-  function SubtitleAppearancePanel({ appearance, onAppearance, onBack }, ref) {
+  function SubtitleAppearancePanel({ appearance, onAppearanceChange, onBack }, ref) {
     const t = useT();
-    const set = (patch: Partial<SubtitleAppearance>) => onAppearance(patch);
+    const set = (patch: Partial<SubtitleAppearance>) => onAppearanceChange(patch);
 
     const rows: AppRow[] = [
       {
@@ -174,7 +174,7 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
           style={gradient('linear-gradient(135deg, #1c1c24, #0d0d11)')}
         >
           <Box style={subtitleWindowStyle(appearance)}>
-            <Txt style={subtitleStyle(appearance)}>{t('player.subPreview')}</Txt>
+            <Text style={subtitleStyle(appearance)}>{t('player.subPreview')}</Text>
           </Box>
         </Box>
         <Box gap={10}>
@@ -214,7 +214,7 @@ function AppearanceRow({
   return (
     <Box onPointerEnter={onFocus} style={rowStyle(panel.valueRow, panel.valueRowOn, focused)}>
       <Box row align="center" between mb={11}>
-        <Txt style={panel.valueLabel}>{label}</Txt>
+        <Text style={panel.valueLabel}>{label}</Text>
         <Box row align="center" gap={16}>
           <Arrow glyph="◀" label="prev" dim={!focused} onPress={onDec} />
           <Arrow glyph="▶" label="next" dim={!focused} onPress={onInc} />
@@ -238,12 +238,9 @@ function Arrow({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Txt
-        style={{ fontSize: 17, lineHeight: 20, paddingHorizontal: 4, opacity: dim ? 0.4 : 1 }}
-        color="accentText"
-      >
+      <Text style={[s.arrow, { opacity: dim ? 0.4 : 1 }]} color="accentText">
         {glyph}
-      </Txt>
+      </Text>
     </Pressable>
   );
 }
@@ -251,9 +248,9 @@ function Arrow({
 function Choice({ label }: Readonly<{ label: string }>) {
   return (
     <Box row align="center" center px={14} style={panel.pill} accessibilityRole="text">
-      <Txt style={panel.pillLabel} color="text/92">
+      <Text style={panel.pillLabel} color="text/92">
         {label}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -276,9 +273,9 @@ function Seg<V extends string>({
             accessibilityState={{ selected: on }}
             style={[panel.pill, s.segCell, on ? s.segOn : null]}
           >
-            <Txt style={panel.pillLabel} color={on ? 'accentInk' : 'text/70'}>
+            <Text style={panel.pillLabel} color={on ? 'accentInk' : 'text/70'}>
               {o.label}
-            </Txt>
+            </Text>
           </Pressable>
         );
       })}
@@ -320,18 +317,17 @@ function Meter({ value }: Readonly<{ value: number }>) {
       <Box flex>
         <Progress value={value / 100} trackColor="white/14" rounded />
       </Box>
-      <Txt style={s.meterValue}>{`${value}%`}</Txt>
+      <Text style={s.meterValue}>{`${value}%`}</Text>
     </Box>
   );
 }
 
 const s = styles({
+  arrow: { px: 4, text: 'strongTv' },
   meterValue: {
     minW: 52,
     textAlign: 'right',
-    font: 'ui',
-    fontWeight: '700',
-    fontSize: 14,
+    text: 'sectionTv',
     fontVariant: ['tabular-nums'],
   },
   segCell: { flex: 1, align: 'center' },

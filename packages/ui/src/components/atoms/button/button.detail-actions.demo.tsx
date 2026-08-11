@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Button } from './button';
 
 /**
@@ -36,9 +36,9 @@ export default function DetailActions() {
         />
         <Button variant="glass" size="tv" icon="info-circle" label="Details" />
       </Box>
-      <Txt variant="meta" color="textDim">
+      <Text variant="meta" color="textDim">
         One primary action, then toggles that read as pressed rather than as commands.
-      </Txt>
+      </Text>
     </Box>
   );
 }

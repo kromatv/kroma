@@ -4,7 +4,7 @@
 
 import type { DiscoverEntry, DiscoverType } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Icon, Row, Txt } from '@kroma/ui/kit';
+import { Box, Icon, Row, Text } from '@kroma/ui/kit';
 import { IconChevronRight } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -17,10 +17,10 @@ const CAPTION_H = 52;
 function RailHeading({ title, action }: Readonly<{ title: string; action?: ReactNode }>) {
   return (
     <Row between gap={12} mt={36} mb={16}>
-      {/* Still an <h2>: <Txt accessibilityRole="header"> can only render an h1. */}
+      {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
       <h2 className="flex items-center gap-2">
         <Icon name="flame" size={20} stroke={2} color="accent" />
-        <Txt variant="h2">{title}</Txt>
+        <Text variant="h2">{title}</Text>
       </h2>
       {action}
     </Row>

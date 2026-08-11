@@ -1,21 +1,14 @@
 import type { MetricsSnapshot, PlaybackSession, TopUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, EmptyState, Section, Select, Surface } from '@kroma/ui/kit';
+import { Avatar, color, EmptyState, Section, Select, Surface } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
+import { CHART_SERIES } from '#web/features/admin/chart-palette';
 import { HistoryBars, MetricsChart } from '#web/features/admin/charts';
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
 import { decimal, formatDuration, formatMbps } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
-
-const C = {
-  accent: '#F4B642',
-  green: '#46D08D',
-  blue: '#5C8DF6',
-  purple: '#C792EA',
-  cpuRed: '#E5566B',
-} as const;
 
 function RangeSelect({
   value,
@@ -30,15 +23,12 @@ function RangeSelect({
 }>) {
   const t = useT();
   return (
-    <Select
-      label={label}
-      value={String(value)}
-      onChange={(v) => onChange(Number(v))}
-      options={options.map((d) => ({
-        value: String(d),
-        label: t('admin.lastNdays', { count: d }),
-      }))}
-    />
+    <Select.Root label={label} value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+      <Select.Trigger />
+      {options.map((d) => (
+        <Select.Item key={d} value={String(d)} label={t('admin.lastNdays', { count: d })} />
+      ))}
+    </Select.Root>
   );
 }
 
@@ -94,15 +84,15 @@ export function DashboardScreen() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={serverInfo?.name ?? 'KROMA'}
         suffix={t('admin.dashboardSuffix')}
-        action={<RealtimeBadge />}
+        actions={<RealtimeBadge />}
       />
 
-      <Section title={t('admin.nowPlaying')} mt={28}>
+      <Section.Root title={t('admin.nowPlaying')} mt={28}>
         {sessions.length === 0 ? (
-          <EmptyState icon="player-play" title={t('admin.noPlayback')} />
+          <EmptyState.Root icon="player-play" title={t('admin.noPlayback')} />
         ) : (
           <div className="flex flex-col gap-3.5">
             {sessions.map((s) => (
@@ -115,16 +105,16 @@ export function DashboardScreen() {
             ))}
           </div>
         )}
-      </Section>
+      </Section.Root>
 
       <BandwidthSection metrics={metrics} />
       <CpuSection metrics={metrics} />
       <RamSection metrics={metrics} />
 
-      <Section
+      <Section.Root
         title={t('admin.topUsers')}
         mt={28}
-        action={
+        actions={
           <RangeSelect
             label={t('admin.topUsers')}
             value={topDays}
@@ -140,14 +130,14 @@ export function DashboardScreen() {
             ))}
           </div>
         ) : (
-          <EmptyState icon="users" title={t('admin.noHistory')} />
+          <EmptyState.Root icon="users" title={t('admin.noHistory')} />
         )}
-      </Section>
+      </Section.Root>
 
-      <Section
+      <Section.Root
         title={t('admin.playHistory')}
         mt={28}
-        action={
+        actions={
           <RangeSelect
             label={t('admin.playHistory')}
             value={historyDays}
@@ -157,7 +147,7 @@ export function DashboardScreen() {
         }
       >
         {history ? <HistoryBars buckets={history.buckets} /> : null}
-      </Section>
+      </Section.Root>
     </>
   );
 }
@@ -172,25 +162,25 @@ function BandwidthSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | nul
   const remote = metrics?.series.bwRemote ?? [];
   const max = Math.max(1, ...local, ...remote);
   return (
-    <Section title={t('admin.bandwidth')} mt={28} action={<LiveLabel />}>
+    <Section.Root title={t('admin.bandwidth')} mt={28} actions={<LiveLabel />}>
       <MetricsChart
         max={max}
         sampleSec={sampleSec(metrics)}
         formatValue={formatMbps}
         series={[
-          { label: t('admin.legendRemote'), data: remote, color: C.blue },
-          { label: t('admin.legendLocal'), data: local, color: C.accent, fill: true },
+          { label: t('admin.legendRemote'), data: remote, color: CHART_SERIES.remote },
+          { label: t('admin.legendLocal'), data: local, color: CHART_SERIES.local, fill: true },
         ]}
         legend={[
-          { label: t('admin.legendRemote'), color: C.blue },
-          { label: t('admin.legendLocal'), color: C.accent },
+          { label: t('admin.legendRemote'), color: CHART_SERIES.remote },
+          { label: t('admin.legendLocal'), color: CHART_SERIES.local },
         ]}
         footer={t('admin.bwAverages', {
           remote: formatMbps(avg(remote)),
           local: formatMbps(avg(local)),
         })}
       />
-    </Section>
+    </Section.Root>
   );
 }
 
@@ -199,25 +189,25 @@ function CpuSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) 
   const kroma = metrics?.series.cpuKroma ?? [];
   const sys = metrics?.series.cpuSystem ?? [];
   return (
-    <Section title={t('admin.cpu')} mt={28} action={<LiveLabel />}>
+    <Section.Root title={t('admin.cpu')} mt={28} actions={<LiveLabel />}>
       <MetricsChart
         max={100}
         sampleSec={sampleSec(metrics)}
         formatValue={pct}
         series={[
-          { label: t('admin.legendSystem'), data: sys, color: C.cpuRed },
-          { label: t('admin.legendKromaServer'), data: kroma, color: C.green },
+          { label: t('admin.legendSystem'), data: sys, color: CHART_SERIES.cpuSystem },
+          { label: t('admin.legendKromaServer'), data: kroma, color: CHART_SERIES.kroma },
         ]}
         legend={[
-          { label: t('admin.legendKromaServer'), color: C.green },
-          { label: t('admin.legendSystem'), color: C.cpuRed },
+          { label: t('admin.legendKromaServer'), color: CHART_SERIES.kroma },
+          { label: t('admin.legendSystem'), color: CHART_SERIES.cpuSystem },
         ]}
         footer={t('admin.cpuAverages', {
           kroma: decimal(avg(kroma), 1),
           sys: decimal(avg(sys), 1),
         })}
       />
-    </Section>
+    </Section.Root>
   );
 }
 
@@ -226,25 +216,25 @@ function RamSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) 
   const kroma = metrics?.series.ramKroma ?? [];
   const sys = metrics?.series.ramSystem ?? [];
   return (
-    <Section title={t('admin.ram')} mt={28} action={<LiveLabel />}>
+    <Section.Root title={t('admin.ram')} mt={28} actions={<LiveLabel />}>
       <MetricsChart
         max={100}
         sampleSec={sampleSec(metrics)}
         formatValue={pct}
         series={[
-          { label: t('admin.legendSystem'), data: sys, color: C.purple },
-          { label: t('admin.legendKromaServer'), data: kroma, color: C.green },
+          { label: t('admin.legendSystem'), data: sys, color: CHART_SERIES.ramSystem },
+          { label: t('admin.legendKromaServer'), data: kroma, color: CHART_SERIES.kroma },
         ]}
         legend={[
-          { label: t('admin.legendKromaServer'), color: C.green },
-          { label: t('admin.legendSystem'), color: C.purple },
+          { label: t('admin.legendKromaServer'), color: CHART_SERIES.kroma },
+          { label: t('admin.legendSystem'), color: CHART_SERIES.ramSystem },
         ]}
         footer={t('admin.ramAverages', {
           kroma: decimal(avg(kroma), 2),
           sys: decimal(avg(sys), 2),
         })}
       />
-    </Section>
+    </Section.Root>
   );
 }
 
@@ -273,17 +263,17 @@ function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
           <div
             key={r.label}
             className="flex items-center justify-between border-b border-white/4 px-5 py-2.75"
-            style={{ background: r.on ? 'rgba(242,180,66,.16)' : 'transparent' }}
+            style={{ background: r.on ? color('accentWash/16') : 'transparent' }}
           >
             <span
               className="text-[13.5px] font-semibold"
-              style={{ color: r.on ? C.accent : 'var(--kroma-text-muted)' }}
+              style={{ color: color(r.on ? 'accent' : 'textMuted') }}
             >
               {r.label}
             </span>
             <span
               className="text-[13.5px] font-semibold tabular-nums"
-              style={{ color: r.on ? C.accent : 'var(--kroma-text-muted)' }}
+              style={{ color: color(r.on ? 'accent' : 'textMuted') }}
             >
               {r.val}
             </span>

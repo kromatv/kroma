@@ -21,7 +21,7 @@ import {
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { IMG_FADE_MS, Img } from '#ui/components/atoms/img';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles, WHEEL_COLORS } from '#ui/core';
 import { gradient, promote } from '#ui/lib/css';
 import { GRADE, useDrift } from '#ui/lib/splash-motion';
@@ -200,15 +200,15 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
           >
             {cover.eyebrow ? (
               <>
-                <Txt variant="overline" color="white/50" style={s.eyebrow}>
+                <Text variant="overline" color="white/50" style={s.eyebrow}>
                   {cover.eyebrow}
-                </Txt>
+                </Text>
                 <Box w={16} h={1} bg="white/30" />
               </>
             ) : null}
-            <Txt color="white/90" lines={1} style={s.caption}>
+            <Text color="white/90" lines={1} style={s.caption}>
               {cover.caption}
-            </Txt>
+            </Text>
           </Box>
         ) : null}
       </Box>

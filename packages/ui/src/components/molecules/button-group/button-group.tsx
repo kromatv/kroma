@@ -13,7 +13,7 @@
 import { Children, isValidElement, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type CornerValue, radiusValue, styles } from '#ui/core';
 import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import {
@@ -91,14 +91,14 @@ function Root({
   );
 }
 
-interface ButtonGroupTextProps {
+interface ButtonGroupAddonProps {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
 
 /** A chip nothing can press, shaped like the members around it: a protocol, a
  *  domain suffix, the unit a neighbouring value is counted in. */
-function Text({ children, style }: Readonly<ButtonGroupTextProps>) {
+function Addon({ children, style }: Readonly<ButtonGroupAddonProps>) {
   const shape = useGroupShape();
   const size = useGroupSlot()?.size ?? entryDefaultSize();
   const metrics = CONTROL[size];
@@ -113,9 +113,9 @@ function Text({ children, style }: Readonly<ButtonGroupTextProps>) {
       radius={metrics.radius}
       style={[shape, style]}
     >
-      <Txt color="textDim" style={chip[size]}>
+      <Text color="textDim" style={chip[size]}>
         {children}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -152,7 +152,7 @@ function slotKey(child: ReactNode, index: number): string {
   return isValidElement(child) && child.key !== null ? String(child.key) : `slot-${index}`;
 }
 
-const ButtonGroup = { Root, Text, Separator };
+const ButtonGroup = { Root, Addon, Separator };
 
-export type { ButtonGroupRootProps, ButtonGroupTextProps };
+export type { ButtonGroupAddonProps, ButtonGroupRootProps };
 export { ButtonGroup };

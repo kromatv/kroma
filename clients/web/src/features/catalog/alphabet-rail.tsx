@@ -24,7 +24,7 @@ export function AlphabetRail({ available, range, onJump }: Readonly<AlphabetRail
       aria-label={t('browse.letterNav')}
       className="fixed inset-y-0 right-2.5 z-30 my-auto hidden h-fit select-none touch-none sm:block"
     >
-      <Rail
+      <Rail.Root
         letters={TITLE_LETTERS}
         available={available}
         range={range}

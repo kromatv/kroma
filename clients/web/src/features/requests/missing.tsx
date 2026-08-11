@@ -114,11 +114,11 @@ export function MissingPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader
+      <PageHeader.Root
         title={t('requests.missingTitle')}
         suffix={entries && entries.length > 0 ? String(entries.length) : undefined}
         subtitle={t('requests.missingSubtitle')}
-        action={
+        actions={
           groups.length > 0 && (canManage || selected.size > 0) ? (
             <MissingActions
               canManage={canManage}
@@ -135,11 +135,11 @@ export function MissingPage() {
       {isPending ? <MissingSkeleton /> : null}
 
       {entries?.length === 0 ? (
-        <EmptyState
+        <EmptyState.Root
           icon="circle-check"
           title={t('requests.missingEmpty')}
           hint={t('requests.missingEmptyHint')}
-          action={
+          actions={
             <Button
               variant="glass"
               size="sm"

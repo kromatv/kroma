@@ -34,50 +34,21 @@ growing a prop for every arrangement anyone might want.
 
 // Composed: the caller writes the row, the component owns the behaviour.
 <ChoiceList.Root label="Bibliotheques" value={picked} onValueChange={setPicked}>
-  <ChoiceList.Item value={lib.value} label={lib.label}>
+  <ChoiceList.Item value={lib.value}>
     <ChoiceList.Label>{lib.label}</ChoiceList.Label>
     <ChoiceList.Hint>128 titres</ChoiceList.Hint>
   </ChoiceList.Item>
 </ChoiceList.Root>
 ```
 
-What the Root owns and the parts read through context:
+That is the whole of it here. **[`DESIGN.md`](./DESIGN.md) owns the rest** — the
+part vocabulary and what each name means, the six tests that decide when a `data`
+prop beats children, the controlled/uncontrolled signature, how sugar stays one
+line without forking the implementation, the escape-hatch ladder (and why this
+kit has no `asChild`), prop naming, and the checklist a component passes before
+it is done.
 
-- **State.** Controlled by default (`value` + `onValueChange`), uncontrolled
-  through `defaultValue` where it makes sense. The parts never hold their own
-  copy of it.
-- **Semantics.** The Root draws the group role (`radiogroup`), the parts carry
-  their own (`radio`, `checkbox`) with the state that goes with them. A caller
-  cannot arrange the parts into something that lies to a screen reader.
-- **Behaviour.** Keyboard, focus, press. See `<Select>`, `<Menu>` and
-  `<Dialog>`, which each present differently under a D-pad and under a pointer
-  while the caller writes the same thing.
-
-Two rules that are ours rather than Radix's, because Radix targets the browser
-only and this kit does not:
-
-1. **The whole row is the control**, not a small box at its edge: a television
-   has one D-pad stop per row, and a pointer gets a hit area the size of the
-   thing it is aiming at. So an indicator is a FACE (`<CheckboxFace>`,
-   `<SwitchFace>`) with nothing pressable about it, and the row carries the
-   semantics.
-2. **Keep the sugar.** A part-based API must not make the common case verbose:
-   `<ChoiceList.Item label hint />` renders the ordinary row, and the named
-   parts are there for the ones it cannot describe. A design system whose
-   simplest list takes twelve lines will be worked around.
-
-3. **A container DECLARES to its parts; it cannot read them.** Radix's web
-   components let CSS do the reading: `:first-child` flattens a corner,
-   `has-[>textarea]` reshapes a shell, `order-last` moves an addon without
-   moving the markup. None of that exists here, and Yoga has no `order` at all.
-   So a Root that needs to know its own contents walks its children ONCE,
-   sorts them, and publishes what it learned through context: a position
-   (`first`/`middle`/`last`), a padding the entry must draw for itself, the
-   layout the shell takes. `<InputGroup>` and `<ButtonGroup>` are both this.
-   The corollary is real API: a part must be a DIRECT child to be sorted, and
-   only a part that reads the context takes part in the shape.
-
-Sugar is a shorthand for the parts, never a second implementation of them.
+Read it before adding a component or changing one's props.
 
 ## A component is a folder
 
@@ -106,15 +77,26 @@ import { colors } from '#ui/core/tokens';                      // 3. inside the 
 1. **`@kroma/ui/kit`** re-exports all four component levels flat. App code should
    use this and never learn which level something is at — the levels are for the
    people editing the kit.
-2. **`@kroma/ui/kit/<level>/<name>`** is one component without the rest of the
-   kit's module graph, for a package that wants `Button` and nothing else.
-   It is a single wildcard in `package.json`, so no list
-   is maintained: add a folder and it is importable.
+2. **`@kroma/ui/kit/<level>/<name>`** is one component, for a package that wants
+   `Button` and nothing else. It is a single wildcard in `package.json`, so no
+   list is maintained: add a folder and it is importable.
+
 3. **`#ui/*`** is the kit's own internal alias (package.json `imports`) so its
    files never climb `../../..`. It is NOT for consumers. Four resolvers have to
    be told about it separately, because none of them reads the others' config:
-   `tsconfig.base.json`, `vitest.config.ts`, `clients/tv-build/rnw.ts` (every web
+   `tsconfig.base.json`, `vitest.config.ts`, `packages/bundler/src/rnw.ts` (every web
    target) and `clients/expo-build/metro-workspace.js` (Metro).
+
+Doors 1 and 2 cost the same, which is why door 1 can be the default. Measured
+with the repo's own Vite, `import { Button } from '@kroma/ui/kit'` and
+`import { Button } from '@kroma/ui/kit/atoms/button'` emit the same 478,646
+bytes before gzip; `Text` and `ListRow` agree to the byte too, and gzip differs
+between them by 0.3%, which is chunk ordering. What buys that is
+`"sideEffects": false` in [`package.json`](../../package.json), the one thing
+that lets a bundler drop a barrel's untouched re-exports. Delete it and door 1
+keeps the whole kit: a single `<Text>` off the flat barrel goes from 33 KB
+gzipped to 166 KB, and `<Button>` from 120 KB to 191 KB. Nothing in this package
+runs at import time, so the field is true; do not "tidy" it away.
 
 ## Moving a component between levels
 

@@ -3,7 +3,7 @@
 // components/showEpisodes.tsx.
 
 import { sizedImageUrl } from '@kroma/core';
-import { Box, Button, Chip, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Chip, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -104,10 +104,10 @@ function ShowDetail({ id }: Readonly<{ id: string }>) {
         title={title}
         meta={
           <>
-            {show.year ? <Txt style={s.metaText}>{show.year}</Txt> : null}
-            <Txt style={s.metaText}>{t('content.seasonCount', { count: show.seasonCount })}</Txt>
+            {show.year ? <Text style={s.metaText}>{show.year}</Text> : null}
+            <Text style={s.metaText}>{t('content.seasonCount', { count: show.seasonCount })}</Text>
             {show.metadata?.rating ? (
-              <Txt style={s.rating}>★ {show.metadata.rating.toFixed(1)}</Txt>
+              <Text style={s.rating}>★ {show.metadata.rating.toFixed(1)}</Text>
             ) : null}
             {show.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
           </>
@@ -160,7 +160,7 @@ function ShowDetail({ id }: Readonly<{ id: string }>) {
           <>
             <Box style={[s.tabsRow, wide ? s.tabsRowWide : gutterPad]}>
               <Box style={s.tabActive}>
-                <Txt style={s.tabActiveText}>{t('content.episodes')}</Txt>
+                <Text style={s.tabActiveText}>{t('content.episodes')}</Text>
               </Box>
             </Box>
 

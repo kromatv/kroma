@@ -24,10 +24,10 @@ import { useAuth } from '#web/shared/lib/auth';
 type Kind = 'item' | 'show';
 
 const STATUS = {
-  done: { icon: IconCircleCheckFilled, cls: 'text-[#46D08D]' },
-  running: { icon: IconLoader2, cls: 'text-[#F4B642]', spin: true },
-  pending: { icon: IconLoader2, cls: 'text-[#F4B642]/70' },
-  failed: { icon: IconAlertTriangleFilled, cls: 'text-[#E8536A]' },
+  done: { icon: IconCircleCheckFilled, cls: 'text-success' },
+  running: { icon: IconLoader2, cls: 'text-accent', spin: true },
+  pending: { icon: IconLoader2, cls: 'text-accent/70' },
+  failed: { icon: IconAlertTriangleFilled, cls: 'text-danger' },
   missing: { icon: IconCircle, cls: 'text-white/25' },
 } satisfies Record<string, { icon: TablerIcon; cls: string; spin?: boolean }>;
 

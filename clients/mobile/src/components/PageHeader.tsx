@@ -2,7 +2,7 @@
 // The surrounding <Screen> already pads the top safe area (Dynamic Island /
 // status bar), so the header adds only its own breathing room.
 
-import { BackButton, Box, styles, Txt } from '@kroma/ui/kit';
+import { BackButton, Box, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { useT } from '#mobile/lib/i18n';
@@ -21,9 +21,9 @@ export function PageHeader({ title, right }: Readonly<{ title: string; right?: R
         label={t('common.back')}
         onPress={() => goBack(router)}
       />
-      <Txt lines={1} style={s.title}>
+      <Text lines={1} style={s.title}>
         {title}
-      </Txt>
+      </Text>
       <Box style={s.side}>{right}</Box>
     </Box>
   );

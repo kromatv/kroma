@@ -3,10 +3,10 @@
 // Docs prose supports exactly two inline marks: **bold** and `code`. A real
 // markdown pipeline (MDX, remark) is a DOM-shaped dependency the native
 // workbench cannot carry, and component docs never needed more than emphasis
-// and identifiers anyway. Everything here renders through <Txt>, so it works
+// and identifiers anyway. Everything here renders through <Text>, so it works
 // on every target the kit does, television included.
 
-import { Box, Icon, styles, Txt, type TxtProps } from '@kroma/ui/kit';
+import { Box, Icon, styles, Text, type TextProps } from '@kroma/ui/kit';
 import { MONO } from './code';
 import type { Story } from './story';
 
@@ -34,20 +34,20 @@ const s = styles({
   code: { fontFamily: MONO, fontSize: 13, color: 'accent', bg: 'white/6' },
 });
 
-interface RichTextProps extends TxtProps {
+interface RichTextProps extends TextProps {
   children: string;
 }
 
-// <Txt> that understands the two inline marks. Nested <Txt> is React Native's own rich-text
+// <Text> that understands the two inline marks. Nested <Text> is React Native's own rich-text
 // mechanism, so this composes instead of parsing.
 function RichText({ children, ...txt }: Readonly<RichTextProps>) {
   return (
-    <Txt {...txt}>
+    <Text {...txt}>
       {segments(children).map((segment, at) =>
         segment.mark === 'plain' ? (
           segment.text
         ) : (
-          <Txt
+          <Text
             // Order never changes for a given string: the index IS the identity.
             // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
             key={at}
@@ -56,10 +56,10 @@ function RichText({ children, ...txt }: Readonly<RichTextProps>) {
             style={segment.mark === 'bold' ? s.bold : s.code}
           >
             {segment.text}
-          </Txt>
+          </Text>
         ),
       )}
-    </Txt>
+    </Text>
   );
 }
 

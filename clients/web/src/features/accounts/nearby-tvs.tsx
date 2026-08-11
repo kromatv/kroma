@@ -23,7 +23,7 @@ import type { DiscoveredTv, GrantResult } from '@kroma/core';
 import { HANDOFF_CHECK_LENGTH } from '@kroma/core';
 import { useCheckPrompt, useHandoffPicker, useNearbyTvs } from '@kroma/core/react';
 import { useT } from '@kroma/ui';
-import { Button, NearbyTvList, OtpField, REGEXP_ONLY_DIGITS_AND_CHARS, Txt } from '@kroma/ui/kit';
+import { Button, NearbyTvList, OtpField, REGEXP_ONLY_DIGITS_AND_CHARS, Text } from '@kroma/ui/kit';
 import { useAuth } from '#web/shared/lib/auth';
 
 export function NearbyTvs() {
@@ -54,9 +54,9 @@ export function NearbyTvs() {
         />
       )}
 
-      <Txt style={{ fontSize: 12, marginTop: 18, textAlign: 'center' }} color="textDim">
+      <Text style={{ fontSize: 12, marginTop: 18, textAlign: 'center' }} color="textDim">
         {t('handoff.otherWays')}
-      </Txt>
+      </Text>
     </section>
   );
 }
@@ -80,10 +80,10 @@ function CheckPrompt({
   return (
     <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-surface-2 px-4 py-6">
       <p className="text-center font-display text-[15px] font-bold">{asked}</p>
-      <OtpField
+      <OtpField.Root
         maxLength={HANDOFF_CHECK_LENGTH}
         value={code}
-        onChange={setCode}
+        onValueChange={setCode}
         onComplete={(value) => void submit(value)}
         pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
         physicalKeyboard

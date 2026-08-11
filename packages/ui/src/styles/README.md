@@ -30,10 +30,12 @@ and three where Tailwind runs:
 | `@kroma/ui/css/theme` | the Tailwind v4 bridge (`bg-accent`, `text-muted`, …) |
 | `@kroma/ui/css/fonts` | the `@font-face` rules |
 | `@kroma/ui/css/motion` | the component keyframes |
+| `@kroma/ui/css/reset` | the UA stylesheet undone, and nothing else |
 | `@kroma/ui/css/base` | reset, body, focus ring, scrollbars |
 
-The parts exist for `@kroma/tv`, which wants the type and the tokens but
-supplies its own reset (it hides overflow and owns its focus visuals).
+The parts exist for `@kroma/tv`, which wants the type, the tokens and the reset
+but none of the page furniture on top of it (it hides overflow, grounds itself
+dark and owns its focus visuals).
 
 ## Two rules the builds enforce the hard way
 

@@ -2,15 +2,15 @@ import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { TextField } from '#ui/components/atoms/text-field';
 import { ButtonGroup } from './button-group';
 
 function Caption({ children }: Readonly<{ children: string }>) {
   return (
-    <Txt variant="overline" color="textDim">
+    <Text variant="overline" color="textDim">
       {children}
-    </Txt>
+    </Text>
   );
 }
 
@@ -51,13 +51,13 @@ function Chips() {
   return (
     <Box gap={20}>
       <ButtonGroup.Root label="Adresse du serveur">
-        <ButtonGroup.Text>https://</ButtonGroup.Text>
+        <ButtonGroup.Addon>https://</ButtonGroup.Addon>
         <Button variant="glass" label="kroma" />
-        <ButtonGroup.Text>.tv</ButtonGroup.Text>
+        <ButtonGroup.Addon>.tv</ButtonGroup.Addon>
       </ButtonGroup.Root>
       <ButtonGroup.Root label="Débit maximal">
         <IconButton variant="glass" icon="minus" label="Réduire le débit" />
-        <ButtonGroup.Text>8 Mb/s</ButtonGroup.Text>
+        <ButtonGroup.Addon>8 Mb/s</ButtonGroup.Addon>
         <IconButton variant="glass" icon="plus" label="Augmenter le débit" />
       </ButtonGroup.Root>
     </Box>
@@ -82,7 +82,7 @@ function WithEntry() {
         <Button label="Connecter" />
       </ButtonGroup.Root>
       <ButtonGroup.Root label="Lien de partage" size="sm">
-        <ButtonGroup.Text>https://</ButtonGroup.Text>
+        <ButtonGroup.Addon>https://</ButtonGroup.Addon>
         <TextField flex={1} minW={0} defaultValue="kroma.tv/i/8f2ad1" readOnly selectOnFocus />
         <IconButton variant="glass" icon="copy" label="Copier le lien" />
       </ButtonGroup.Root>
@@ -122,7 +122,7 @@ function Toolbar() {
 export default story({
   name: 'ButtonGroup',
   group: 'Actions',
-  docs: 'A row (or a column) of related controls rendered as ONE control: adjacent members share a single border line and their inner corners are flattened, so three buttons read as one segmented object. A split button, a toolbar cluster, a value with its unit welded to the end.\n\nThe browser does this with `:first-child` and a collapsed border. React Native has neither, so **Root counts its children and publishes each one\'s position through a context**, one provider per child, and the members shape themselves from it. It is a context rather than `cloneElement` because a member is routinely wrapped (a Tooltip trigger, a Menu trigger) and cloned props would land on the wrapper instead of the control. `Button`, `IconButton`, `TextField` and `ButtonGroup.Text` read it; **anything else keeps its own shape**, which is a visible signal that a child is not a member.\n\nIt carries no selection state: it is `role="group"` plus a shape. For one-of-N use a <SegmentedControl>, and for a set of toggles a <ChoiceList>.',
+  docs: 'A row (or a column) of related controls rendered as ONE control: adjacent members share a single border line and their inner corners are flattened, so three buttons read as one segmented object. A split button, a toolbar cluster, a value with its unit welded to the end.\n\nThe browser does this with `:first-child` and a collapsed border. React Native has neither, so **Root counts its children and publishes each one\'s position through a context**, one provider per child, and the members shape themselves from it. It is a context rather than `cloneElement` because a member is routinely wrapped (a Tooltip trigger, a Menu trigger) and cloned props would land on the wrapper instead of the control. `Button`, `IconButton`, `TextField` and `ButtonGroup.Addon` read it; **anything else keeps its own shape**, which is a visible signal that a child is not a member.\n\nIt carries no selection state: it is `role="group"` plus a shape. For one-of-N use a <SegmentedControl>, and for a set of toggles a <ChoiceList>.',
   usage: `<ButtonGroup.Root label="Abonnement">
   <Button label="Suivre" onPress={follow} />
   <ButtonGroup.Separator />

@@ -13,15 +13,7 @@ import {
   useT,
 } from '@kroma/module-sdk';
 import type { VpnStatusEvent } from '@kroma/module-vpn/schemas';
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  EmptyState,
-  PageHeader,
-  StatCard,
-  TableSkeleton,
-} from '@kroma/ui/kit';
+import { Button, Dialog, EmptyState, PageHeader, StatCard, TableSkeleton } from '@kroma/ui/kit';
 import { IconShieldCheck, IconShieldX } from '@tabler/icons-react';
 import { type ReactNode, useCallback, useRef, useState } from 'react';
 import { useTorrentsApi } from './api';
@@ -112,10 +104,10 @@ export default function DownloadsPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.downloadsTitle')}
         subtitle={t('admin.downloadsSub')}
-        action={
+        actions={
           <Button
             variant="primary"
             icon="download"
@@ -166,8 +158,8 @@ export default function DownloadsPage() {
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#121216] shadow-[0_10px_28px_rgba(0,0,0,.3)]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-[#15151A] px-5 py-3 md:grid-cols-[minmax(0,1fr)_190px_120px_110px_84px]">
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-surface-1 shadow-[0_10px_28px_rgba(0,0,0,.3)]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-surface-1 px-5 py-3 md:grid-cols-[minmax(0,1fr)_190px_120px_110px_84px]">
           <Head>{t('downloads.colRelease')}</Head>
           <Head className="max-md:hidden">{t('downloads.colProgress')}</Head>
           <Head className="max-md:hidden">{t('downloads.colSpeed')}</Head>
@@ -193,7 +185,7 @@ export default function DownloadsPage() {
         {data === null ? <TableSkeleton rows={6} /> : null}
         {data && downloads.length === 0 ? (
           <div className="py-6">
-            <EmptyState icon="download" title={t('downloads.empty')} />
+            <EmptyState.Root icon="download" title={t('downloads.empty')} />
           </div>
         ) : null}
       </div>
@@ -215,11 +207,11 @@ export default function DownloadsPage() {
               type="checkbox"
               checked={wipeData}
               onChange={(e) => setWipeData(e.target.checked)}
-              className="h-4 w-4 accent-[#E8536A]"
+              className="h-4 w-4 accent-danger"
             />
             {t('downloads.removeData')}
           </label>
-          <DialogActions
+          <Dialog.Actions
             onCancel={() => setConfirm(null)}
             cancelLabel={t('common.cancel')}
             onConfirm={() => {
@@ -250,8 +242,8 @@ function VpnBanner({
     <div
       className={`mb-4 flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-[13.5px] font-semibold ${
         vpn.connected
-          ? 'border-[#46D08D]/30 bg-[#46D08D]/10 text-[#46D08D]'
-          : 'border-[#F4B642]/30 bg-[#F4B642]/10 text-[#F4B642]'
+          ? 'border-success/30 bg-success/10 text-success'
+          : 'border-accent/30 bg-accent/10 text-accent'
       }`}
     >
       {vpn.connected ? (

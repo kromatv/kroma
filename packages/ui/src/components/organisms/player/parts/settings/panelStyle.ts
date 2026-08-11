@@ -22,47 +22,25 @@ export const panel = styles({
   panelList: { gap: 10 },
 
   selectRow: { ...ROW_BASE, gap: 16 },
-  selectLabel: { font: 'ui', fontWeight: '600', fontSize: 20, lineHeight: 25, color: 'text' },
-  selectSub: {
-    font: 'ui',
-    fontWeight: '500',
-    fontSize: 14,
-    lineHeight: 18,
-    mt: 2,
-    color: 'text/50',
-  },
+  selectLabel: { text: 'labelTv', color: 'text' },
+  selectSub: { text: 'metaTv', mt: 2, color: 'text/50' },
 
   menuRow: { ...ROW_BASE, gap: 18 },
-  menuLabel: { font: 'ui', fontWeight: '700', fontSize: 21, lineHeight: 26, color: 'text' },
-  menuValue: {
-    font: 'ui',
-    fontWeight: '500',
-    fontSize: 15,
-    lineHeight: 19,
-    mt: 2,
-    color: 'text/50',
-  },
+  menuLabel: { text: 'strongTv', color: 'text' },
+  menuValue: { text: 'metaTv', mt: 2, color: 'text/50' },
 
   valueRow: { radius: 'lg', px: 22, py: 16 },
   valueRowOn: { bg: 'tint/8', ring: 'focusLift', z: 1 },
-  valueLabel: { font: 'ui', fontWeight: '700', fontSize: 15, color: 'text' },
+  valueLabel: { text: 'sectionTv', color: 'text' },
 
-  panelHint: {
-    mt: 12,
-    mx: 2,
-    font: 'ui',
-    fontSize: 15,
-    fontWeight: '500',
-    lineHeight: 24,
-    color: 'text/50',
-  },
-  panelEmpty: { px: 2, py: 4, font: 'ui', fontSize: 15, color: 'textDim' },
+  panelHint: { mt: 12, mx: 2, text: 'captionTv', color: 'text/50' },
+  panelEmpty: { px: 2, py: 4, text: 'captionTv', color: 'textDim' },
 
   rowOn: { bg: 'tint/10', ring: 'focusLift', z: 1 },
   rowOff: { bg: 'transparent' },
 
   pill: { radius: 'sm', py: 9, bg: 'tint/6' },
-  pillLabel: { font: 'ui', fontWeight: '700', fontSize: 13 },
+  pillLabel: { text: 'footnoteTv' },
 });
 
 export const rowStyle = (base: ViewStyle, on: ViewStyle, focused: boolean): ViewStyle[] => [

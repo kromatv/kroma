@@ -3,7 +3,13 @@
 
 import { StyleSheet } from 'react-native';
 import { COLOR_KEYS, color } from '#ui/core/color';
-import { type BoxStyleProps, boxStyle, splitShorthand, textStyle } from '#ui/core/shorthands';
+import {
+  type BoxStyleProps,
+  boxStyle,
+  declaredBreakpoints,
+  splitShorthand,
+  textStyle,
+} from '#ui/core/shorthands';
 import { STATE_KEYS, type SvStateName } from '#ui/core/states';
 import type { AnyStyle } from '#ui/core/types';
 
@@ -11,6 +17,7 @@ export interface Split {
   rest: Record<string, unknown>;
   states: Partial<Record<SvStateName, Record<string, unknown>>>;
   declared: SvStateName[];
+  breakpoints: number;
 }
 
 /**
@@ -24,6 +31,7 @@ export function split(decl: Record<string, unknown> | undefined): Split | undefi
   const authored: Record<string, unknown> = {};
   const states: Split['states'] = {};
   const declared: SvStateName[] = [];
+  let breakpoints = 0;
   for (const key of Object.keys(decl)) {
     if (!key.startsWith('_')) {
       authored[key] = decl[key];
@@ -35,15 +43,22 @@ export function split(decl: Record<string, unknown> | undefined): Split | undefi
       );
     }
     const name = key.slice(1) as SvStateName;
-    states[name] = normalize(decl[key] as Record<string, unknown>);
+    const layer = decl[key] as Record<string, unknown>;
+    breakpoints |= declaredBreakpoints(layer);
+    states[name] = normalize(layer);
     declared.push(name);
   }
-  return { rest: normalize(authored), states, declared };
+  return {
+    rest: normalize(authored),
+    states,
+    declared,
+    breakpoints: breakpoints | declaredBreakpoints(authored),
+  };
 }
 
 /**
- * Rewrites one layer into React Native longhands, resolving shorthands and
- * colours.
+ * Rewrites one layer into React Native longhands, resolving shorthands, colours
+ * and, against the active breakpoint, any value stated per breakpoint.
  *
  * Per LAYER, which is what makes merging correct: merging authored keys would
  * leave `{ px: 18 }` and `{ p: 12 }` both alive, and the resolver would then

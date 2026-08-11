@@ -1,6 +1,6 @@
 import type { ElementRow, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Drawer, IconButton } from '@kroma/ui/kit';
+import { Button, color, Drawer, IconButton } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
 import { fmtDur, kindMeta, posterGrad, statusMeta } from '#web/features/admin/pipeline-meta';
 import { useAuth } from '#web/shared/lib/auth';
@@ -91,7 +91,7 @@ export const PipelineDrawer = createCallable<
             return (
               <div
                 key={tr.key}
-                className="rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5"
+                className="rounded-xl border border-white/[0.07] bg-surface-1 px-4 py-3.5"
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[14px] font-bold">
@@ -120,7 +120,7 @@ export const PipelineDrawer = createCallable<
                   </div>
                 </div>
                 {failed && tr.error ? (
-                  <div className="mt-2.5 rounded-lg border border-[#E8536A]/18 bg-[#E8536A]/8 px-[11px] py-2.5 text-[12px] leading-[1.4] text-[#EF8091]">
+                  <div className="mt-2.5 rounded-lg border border-danger/18 bg-danger/8 px-[11px] py-2.5 text-[12px] leading-[1.4] text-danger-hover">
                     {tr.error}
                   </div>
                 ) : null}
@@ -130,7 +130,7 @@ export const PipelineDrawer = createCallable<
         </div>
 
         {el.kind === 'series' && eps ? (
-          <div className="mt-5 rounded-xl border border-white/[0.07] bg-[#0F0F13] px-4 py-3.5">
+          <div className="mt-5 rounded-xl border border-white/[0.07] bg-bg px-4 py-3.5">
             <div className="mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/40">
               {t('pipeline.epsAggregated')}
             </div>
@@ -163,4 +163,4 @@ export const PipelineDrawer = createCallable<
 }, 400);
 
 // The drawers' darker fill, kept from the hand-rolled asides they replace.
-const DRAWER_FILL = { backgroundColor: '#0E0E12' } as const;
+const DRAWER_FILL = { backgroundColor: color('bg') } as const;

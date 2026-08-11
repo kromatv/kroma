@@ -3,6 +3,8 @@
 // row and drawer can share it; labels come from the i18n catalog in the
 // components.
 
+import { color } from '@kroma/ui/kit';
+
 export type Meta = { color: string; bg: string; ring: string; dot: string; pulse?: boolean };
 export type KindMeta = { color: string; bg: string; typeKey: 'movie' | 'show' | 'episode' };
 
@@ -14,31 +16,31 @@ export function fmtDur(ms?: number | null): string {
 }
 
 const PENDING: Meta = {
-  color: 'rgba(244,243,240,.55)',
-  bg: 'rgba(255,255,255,.05)',
-  ring: 'rgba(255,255,255,.12)',
-  dot: 'rgba(244,243,240,.4)',
+  color: color('text/55'),
+  bg: color('white/5'),
+  ring: color('white/12'),
+  dot: color('text/40'),
 };
 
 const STATUS_META: Record<string, Meta> = {
   done: {
-    color: '#46D08D',
-    bg: 'rgba(70,208,141,.13)',
-    ring: 'rgba(70,208,141,.4)',
-    dot: '#46D08D',
+    color: color('success'),
+    bg: color('success/13'),
+    ring: color('success/40'),
+    dot: color('success'),
   },
   running: {
-    color: '#F4B642',
-    bg: 'rgba(242,180,66,.15)',
-    ring: 'rgba(242,180,66,.5)',
-    dot: '#F4B642',
+    color: color('accent'),
+    bg: color('accentWash/15'),
+    ring: color('accentWash/50'),
+    dot: color('accent'),
     pulse: true,
   },
   failed: {
-    color: '#E8536A',
-    bg: 'rgba(232,83,106,.13)',
-    ring: 'rgba(232,83,106,.45)',
-    dot: '#E8536A',
+    color: color('danger'),
+    bg: color('danger/13'),
+    ring: color('danger/45'),
+    dot: color('danger'),
   },
   pending: PENDING,
   missing: PENDING,
@@ -47,34 +49,43 @@ export const statusMeta = (s: string): Meta => STATUS_META[s] ?? PENDING;
 
 const OVERALL_PENDING: Meta = {
   ...PENDING,
-  color: 'rgba(244,243,240,.7)',
-  bg: 'rgba(255,255,255,.06)',
-  dot: 'rgba(244,243,240,.45)',
+  color: color('text/70'),
+  bg: color('white/6'),
+  dot: color('text/45'),
 };
 const OVERALL_META: Record<string, Meta> = {
-  ok: { color: '#46D08D', bg: 'rgba(70,208,141,.13)', ring: 'rgba(70,208,141,.4)', dot: '#46D08D' },
+  ok: {
+    color: color('success'),
+    bg: color('success/13'),
+    ring: color('success/40'),
+    dot: color('success'),
+  },
   running: {
-    color: '#F4B642',
-    bg: 'rgba(242,180,66,.14)',
-    ring: 'rgba(242,180,66,.5)',
-    dot: '#F4B642',
+    color: color('accent'),
+    bg: color('accentWash/14'),
+    ring: color('accentWash/50'),
+    dot: color('accent'),
     pulse: true,
   },
   pending: OVERALL_PENDING,
   failed: {
-    color: '#E8536A',
-    bg: 'rgba(232,83,106,.13)',
-    ring: 'rgba(232,83,106,.45)',
-    dot: '#E8536A',
+    color: color('danger'),
+    bg: color('danger/13'),
+    ring: color('danger/45'),
+    dot: color('danger'),
   },
 };
 export const overallMeta = (s: string): Meta => OVERALL_META[s] ?? OVERALL_PENDING;
 
-const FILM_KIND: KindMeta = { color: '#F4B642', bg: 'rgba(242,180,66,.14)', typeKey: 'movie' };
+const FILM_KIND: KindMeta = {
+  color: color('accent'),
+  bg: color('accentWash/14'),
+  typeKey: 'movie',
+};
 const KIND_META: Record<string, KindMeta> = {
   film: FILM_KIND,
-  series: { color: '#C792EA', bg: 'rgba(199,146,234,.14)', typeKey: 'show' },
-  episode: { color: '#86A8FF', bg: 'rgba(134,168,255,.14)', typeKey: 'episode' },
+  series: { color: color('hdr'), bg: color('hdr/14'), typeKey: 'show' },
+  episode: { color: color('info'), bg: color('info/14'), typeKey: 'episode' },
 };
 export const kindMeta = (k: string): KindMeta => KIND_META[k] ?? FILM_KIND;
 

@@ -5,7 +5,7 @@
 
 import type { ConfigField } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Button, Field, NumberField, Select, Switch } from '@kroma/ui/kit';
+import { Button, Field, ListRow, NumberField, Select, Switch } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
 
@@ -64,9 +64,11 @@ export function ModuleConfigForm({
 
   return (
     <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-      {fields.map((f) => (
-        <ConfigRow key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
-      ))}
+      <ListRow.Group size="sm">
+        {fields.map((f) => (
+          <ConfigRow key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
+        ))}
+      </ListRow.Group>
       <div className="flex justify-end">
         <Button
           variant="outline"
@@ -95,13 +97,12 @@ function ConfigRow({
     control = <Switch checked={value === true} onChange={onChange} label={field.label} />;
   } else if (field.type === 'select') {
     control = (
-      <Select
-        label={field.label}
-        options={(field.options ?? []).map((opt) => ({ value: opt, label: opt }))}
-        value={String(value ?? '')}
-        onChange={onChange}
-        style={SELECT_STYLE}
-      />
+      <Select.Root label={field.label} value={String(value ?? '')} onValueChange={onChange}>
+        <Select.Trigger style={SELECT_STYLE} />
+        {(field.options ?? []).map((opt) => (
+          <Select.Item key={opt} value={opt} label={opt} />
+        ))}
+      </Select.Root>
     );
   } else if (field.type === 'number') {
     control = (
@@ -114,22 +115,20 @@ function ConfigRow({
     );
   } else {
     control = (
-      <Field
-        label={field.label}
-        hideLabel
-        type={field.secret ? 'password' : 'text'}
-        placeholder={field.placeholder}
-        value={String(value ?? '')}
-        onChange={onChange}
-        w={CONTROL_WIDTH}
-      />
+      <Field.Root label={field.label} hideLabel w={CONTROL_WIDTH}>
+        <Field.Input
+          type={field.secret ? 'password' : 'text'}
+          placeholder={field.placeholder}
+          value={String(value ?? '')}
+          onValueChange={onChange}
+        />
+      </Field.Root>
     );
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 text-xs">
-      <span className="text-muted">{field.label}</span>
-      {control}
-    </div>
+    <ListRow.Root size="sm" label={field.label}>
+      <ListRow.Trailing>{control}</ListRow.Trailing>
+    </ListRow.Root>
   );
 }

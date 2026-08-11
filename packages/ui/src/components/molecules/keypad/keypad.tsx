@@ -17,7 +17,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type RadiusToken, type StyleDecl, styles, svFor } from '#ui/core';
 import { keyFace } from '#ui/lib/field-shell';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -122,7 +122,7 @@ function Keypad({
           {kind === 'delete' ? (
             <Icon name="backspace" size={30} stroke={1.8} color="textMuted" />
           ) : (
-            <Txt style={state.slots.label}>{label}</Txt>
+            <Text style={state.slots.label}>{label}</Text>
           )}
         </>
       )}

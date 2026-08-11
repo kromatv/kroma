@@ -14,7 +14,7 @@
 
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
-import { Txt, type TxtProps } from '#ui/components/atoms/text';
+import { Text, type TextProps } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
@@ -22,7 +22,7 @@ import { ease } from '#ui/lib/ease';
 const WEB = Platform.OS === 'web';
 const GROW_MS = motion.duration.base;
 
-interface ExpandableTextProps extends Pick<TxtProps, 'variant' | 'color' | 'style'> {
+interface ExpandableTextProps extends Pick<TextProps, 'variant' | 'color' | 'style'> {
   children: string;
   /** How many lines the collapsed state shows. */
   lines?: number;
@@ -87,7 +87,7 @@ function ExpandableText({
       aria-expanded={clampable ? expanded : undefined}
     >
       <Grow height={box}>
-        <Txt
+        <Text
           variant={variant}
           color={color}
           style={style}
@@ -99,27 +99,27 @@ function ExpandableText({
           }}
         >
           {children}
-        </Txt>
+        </Text>
       </Grow>
       {/* The measuring ghost: unclamped, invisible, untouchable. */}
-      <Txt
+      <Text
         accessible={false}
         variant={variant}
         style={[style, s.ghost]}
         onLayout={(event) => setFull(event.nativeEvent.layout.height)}
       >
         {children}
-      </Txt>
+      </Text>
       {/* The affordance answers the cursor by going amber: it is the one part
           of the paragraph that does anything, and on the web that has to read
           BEFORE the click. The hover callbacks fire on the browser targets
           alone, so the phone and the TV keep the plain label. */}
       {clampable && !expanded ? (
-        <Txt
+        <Text
           variant="meta"
           color={hovered ? 'accent' : 'text'}
           style={s.more}
-        >{`… ${moreLabel}`}</Txt>
+        >{`… ${moreLabel}`}</Text>
       ) : null}
     </Pressable>
   );

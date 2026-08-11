@@ -8,7 +8,7 @@ import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { color, styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import {
@@ -216,7 +216,7 @@ function TextField({
 }
 
 // The TV spelling of the same field, so it must measure the same: the shell's
-// font size (not <Txt>'s `body` role, which is a different size at `sm`), and a
+// font size (not <Text>'s `body` role, which is a different size at `sm`), and a
 // line box exactly the content row - native CLIPS text whose lineHeight
 // overflows its box, where the web merely spills, so an inherited 1.55 ratio
 // mis-seats the value on tvOS alone.
@@ -238,13 +238,13 @@ function SoftValue({
   const shown = masked ? '•'.repeat(value.length) : value;
   return (
     <Box row align="center" flex gap={2} h={content}>
-      <Txt
+      <Text
         lines={1}
         style={[s.tvValue, { fontSize, lineHeight: content }, textStyle]}
         color={value ? 'text' : PLACEHOLDER}
       >
         {shown || placeholder || ''}
-      </Txt>
+      </Text>
       <Caret height={content} />
     </Box>
   );

@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { boxStyle, color, createTheme, KROMA, setTheme } from '#ui/core';
+import {
+  boxStyle,
+  color,
+  createTheme,
+  KROMA,
+  setTheme,
+  splitShorthand,
+  TEXT_STYLE_PROPS,
+} from '#ui/core';
 import { CIRCLE_RADIUS, radius } from '#ui/core/tokens';
 
 afterEach(() => setTheme(KROMA));
@@ -105,6 +113,36 @@ describe('boxStyle position', () => {
 
   it('lets explicit insets refine a fill', () => {
     expect(boxStyle({ fill: true, top: 24 }).top).toBe(24);
+  });
+});
+
+describe('the text half of the vocabulary', () => {
+  it('claims the layout rows and leaves the container rows to <Box>', () => {
+    const { shorthand, rest } = splitShorthand(
+      { mt: 24, maxW: 640, textAlign: 'center', row: true, bg: 'accent', onPress: 1 },
+      TEXT_STYLE_PROPS,
+    );
+    expect(shorthand).toEqual({ mt: 24, maxW: 640, textAlign: 'center' });
+    expect(rest).toEqual({ row: true, bg: 'accent', onPress: 1 });
+  });
+
+  it('resolves through the same table <Box> reads', () => {
+    expect(boxStyle({ textAlign: 'center' } as never)).toEqual({ textAlign: 'center' });
+    expect(boxStyle({ isolate: true })).toEqual({ isolation: 'isolate' });
+    expect(boxStyle({ isolate: false })).toEqual({});
+  });
+});
+
+describe('splitShorthand keys', () => {
+  it('answers the same key whatever order the props were written in', () => {
+    expect(splitShorthand({ row: true, gap: 4 }).key).toBe(
+      splitShorthand({ gap: 4, row: true }).key,
+    );
+  });
+
+  it('answers an empty key when nothing needs resolving', () => {
+    expect(splitShorthand({ onLayout: 1 }).key).toBe('');
+    expect(splitShorthand({ gap: undefined }).key).toBe('');
   });
 });
 

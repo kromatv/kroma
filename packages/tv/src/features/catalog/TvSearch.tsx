@@ -11,7 +11,7 @@ import {
   IconButton,
   keyRowWidth,
   styles,
-  Txt,
+  Text,
   useFocusNav,
 } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -25,7 +25,7 @@ import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchH
 import type { SearchResult } from '#tv/features/catalog/TvSearchResults';
 import { TvSearchResults } from '#tv/features/catalog/TvSearchResults';
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
-import { KromaMark, OnScreenKeyboard } from '#tv/shared/ui';
+import { KromaMark, SearchKeyboard } from '#tv/shared/ui';
 
 const DEBOUNCE_MS = 250;
 
@@ -135,10 +135,10 @@ export function TvSearch() {
   }, [query, client, toHit, localHits]);
 
   const recentPills = recent.length ? (
-    <Box mt={28} gap={12} style={{ minHeight: 0 }}>
-      <Txt style={s.recentLabel} color="textDim">
+    <Box mt={28} gap={12} minH={0}>
+      <Text variant="overlineTv" color="textDim">
         {t('search.recent')}
-      </Txt>
+      </Text>
       {/* A row to the navigator too, or Left/Right do nothing between the pills
           and Down walks them one by one. */}
       <FocusRegion style={s.recentRow}>
@@ -182,9 +182,9 @@ export function TvSearch() {
         {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
         <KromaMark size={28} />
         <Box flex />
-        <Txt style={{ fontSize: 14, fontWeight: '600' }} color="textDim">
+        <Text variant="label" color="textDim">
           {t('search.backHint')}
-        </Txt>
+        </Text>
       </Box>
 
       {/* Two columns to the NAVIGATOR, not only to the eye: a plain box is
@@ -194,30 +194,33 @@ export function TvSearch() {
           walking Down past every row and every pill. */}
       <FocusRegion style={s.columns}>
         <FocusColumn style={s.keyboardColumn}>
-          <Field
-            value={query}
-            onChange={setQuery}
-            icon="search"
+          <Field.Root
             // No label drawn: a full-width search box under a screen titled
             // "Search" does not need one. It still names the input for VoiceOver.
             label={t('nav.search')}
             hideLabel
-            physicalKeyboard={physicalKeyboard}
+            value={query}
+            onValueChange={setQuery}
             mb={26}
-            trailing={
-              voice ? (
-                <IconButton
-                  icon="microphone"
-                  control="tv"
-                  glyph={24}
-                  variant="ghost"
-                  label={t('search.voice')}
-                  onPress={() => setSpeaking(true)}
-                />
-              ) : null
-            }
-          />
-          <OnScreenKeyboard value={query} onChange={setQuery} onClose={nav.back} layout="search" />
+          >
+            <Field.Input
+              icon="search"
+              physicalKeyboard={physicalKeyboard}
+              trailing={
+                voice ? (
+                  <IconButton
+                    icon="microphone"
+                    control="tv"
+                    glyph={24}
+                    variant="ghost"
+                    label={t('search.voice')}
+                    onPress={() => setSpeaking(true)}
+                  />
+                ) : null
+              }
+            />
+          </Field.Root>
+          <SearchKeyboard value={query} onValueChange={setQuery} onClose={nav.back} />
 
           {/* recent searches: focusable pills that re-run the query */}
           {recentPills}
@@ -252,7 +255,6 @@ const s = styles({
   columns: { row: true, flex: true, gap: COLUMN_GAP, minH: 0 },
   keyboardColumn: { w: KEYBOARD_W, shrink: 0 },
   recentRow: { row: true, wrap: true, gap: 10 },
-  recentLabel: { fontSize: 13, fontWeight: '700', letterSpacing: 0.52 },
 });
 
 // The results grid draws 254pt posters, served from the server's 320 bucket.

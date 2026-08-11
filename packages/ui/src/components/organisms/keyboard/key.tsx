@@ -5,7 +5,7 @@ import type { TextStyle, ViewStyle } from 'react-native';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type RadiusToken, type StyleDecl, svFor } from '#ui/core';
 import { keyFace } from '#ui/lib/field-shell';
 
@@ -97,7 +97,7 @@ function Key({
           {icon ? (
             <Icon name={icon} size={iconSize ?? 24} {...slots.glyph} />
           ) : (
-            <Txt style={[slots.label, textStyle]}>{label}</Txt>
+            <Text style={[slots.label, textStyle]}>{label}</Text>
           )}
         </>
       )}

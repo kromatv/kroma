@@ -2,7 +2,7 @@ import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { Drawer } from './drawer';
 
@@ -13,9 +13,9 @@ function Demo({ side }: Readonly<{ side: 'left' | 'right' }>) {
       <Button variant="glass" label={`Open ${side} drawer`} onPress={() => setOpen(true)} />
       <Drawer open={open} onClose={() => setOpen(false)} title="Edit registry" side={side}>
         <Box p={28} gap={20}>
-          <Txt variant="h2">Edit registry</Txt>
-          <Field label="Name" defaultValue="Official" />
-          <Field label="URL" defaultValue="https://modules.kroma.tv" />
+          <Text variant="h2">Edit registry</Text>
+          <Field.Root label="Name" defaultValue="Official" />
+          <Field.Root label="URL" defaultValue="https://modules.kroma.tv" />
           <Box row justify="flex-end" gap={10}>
             <Button variant="ghost" size="sm" label="Cancel" onPress={() => setOpen(false)} />
             <Button variant="primary" size="sm" label="Save" onPress={() => setOpen(false)} />

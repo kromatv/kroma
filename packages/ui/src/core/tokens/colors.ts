@@ -60,14 +60,14 @@ export const colors = {
   info: '#86A8FF',
   hdr: '#C792EA',
   h265: '#5FD3C4',
-  danger: '#E53935',
+  danger: '#E8536A',
   /** The lit step of `danger`, for the same job `accentHover` does for the
    *  accent: a pointer resting on a destructive button. A LIGHTER red rather
    *  than a darker one - a hover has to read as the control coming forward, and
    *  every other variant's hover brightens too. */
-  dangerHover: '#EF5350',
+  dangerHover: '#EF8091',
   /** See `accentPress`. */
-  dangerPress: '#C62F2B',
+  dangerPress: '#D43E55',
 } as const;
 
 /** The light palette. `accent` deepens because one token is both fill and text,
@@ -103,9 +103,9 @@ export const lightColors: Record<keyof typeof colors, string> = {
   info: '#2F4FAE',
   hdr: '#6B3E9E',
   h265: '#106A5E',
-  danger: '#A62520',
-  dangerHover: '#8C1E1A',
-  dangerPress: '#711512',
+  danger: '#A62035',
+  dangerHover: '#8C1A2C',
+  dangerPress: '#711221',
 };
 
 /**

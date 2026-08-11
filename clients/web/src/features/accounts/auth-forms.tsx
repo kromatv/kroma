@@ -8,7 +8,7 @@ import { Button, Field } from '@kroma/ui/kit';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
-import { UserAvatar } from '#web/features/accounts/user-avatar';
+import { UserAvatar } from '#web/shared/ui/user-avatar';
 
 export function LoginForm({
   profile,
@@ -67,33 +67,37 @@ export function LoginForm({
           is `md` whatever the entries are - left alone, the form would stack a
           40px field under a 50px button. */}
       {profile ? null : (
-        <Field
+        <Field.Root
           w="100%"
           size="md"
           label={t('auth.emailOrUsername')}
-          hideLabel
-          icon="user"
-          placeholder={t('auth.emailOrUsername')}
-          value={identifier}
-          onChange={setIdentifier}
-          entry={{ autoComplete: 'username' }}
-          // Deliberate: the sign-in field is what this screen is for.
-          autoFocus
-        />
+          hideLabel // Deliberate: the sign-in field is what this screen is for.
+        >
+          <Field.Input
+            icon="user"
+            placeholder={t('auth.emailOrUsername')}
+            value={identifier}
+            onValueChange={setIdentifier}
+            autoComplete="username"
+            autoFocus
+          />
+        </Field.Root>
       )}
-      <Field
+      <Field.Root
         w="100%"
         size="md"
         label={t('auth.password')}
-        hideLabel
-        type="password"
-        icon="lock"
-        placeholder={t('auth.password')}
-        value={password}
-        onChange={setPassword}
-        // Deliberate: with a profile already picked, the password is the only thing left to type.
-        autoFocus={Boolean(profile)}
-      />
+        hideLabel // Deliberate: with a profile already picked, the password is the only thing left to type.
+      >
+        <Field.Input
+          type="password"
+          icon="lock"
+          placeholder={t('auth.password')}
+          value={password}
+          onValueChange={setPassword}
+          autoFocus={Boolean(profile)}
+        />
+      </Field.Root>
 
       {error ? <p className="text-[13px] font-medium text-danger">{error}</p> : null}
 

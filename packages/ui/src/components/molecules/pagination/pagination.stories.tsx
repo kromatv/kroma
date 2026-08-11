@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { type ReactNode, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import type { ControlSize } from '#ui/lib/field-shell';
 import { Pagination } from './pagination';
 
@@ -48,9 +48,9 @@ function Composed({ pageCount, siblings, size }: Readonly<DemoProps>) {
 function Labelled({ children, name }: Readonly<{ children: ReactNode; name: string }>) {
   return (
     <Box gap={10}>
-      <Txt variant="overline" color="textDim">
+      <Text variant="overline" color="textDim">
         {name}
-      </Txt>
+      </Text>
       {children}
     </Box>
   );

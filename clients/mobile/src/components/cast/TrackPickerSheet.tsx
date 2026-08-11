@@ -5,7 +5,7 @@
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { CastTrack } from '@kroma/core';
-import { Icon, styles, Txt } from '@kroma/ui/kit';
+import { Icon, styles, Text } from '@kroma/ui/kit';
 import { forwardRef } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { SheetBody, SheetTitle, sheetChrome } from '#mobile/components/ui';
@@ -59,9 +59,9 @@ function Row({
       accessibilityState={{ selected }}
       style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
     >
-      <Txt lines={1} style={[s.rowLabel, selected && s.rowLabelActive]}>
+      <Text lines={1} style={[s.rowLabel, selected && s.rowLabelActive]}>
         {label}
-      </Txt>
+      </Text>
       {selected ? <Icon name="check" size={20} stroke={2.4} color="accentText" /> : null}
     </Pressable>
   );

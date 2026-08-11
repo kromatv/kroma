@@ -18,19 +18,21 @@ import type {
   TorrentFileView,
 } from '@kroma/module-acquisition/schemas';
 import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Button, Dialog, DialogActions, Field, SegmentedControl } from '@kroma/ui/kit';
+import { Button, color, Dialog, Field, SegmentedControl } from '@kroma/ui/kit';
 import { IconDownload } from '@tabler/icons-react';
 import { useState } from 'react';
 
 type Kind = 'movie' | 'episode' | 'season';
 
-const KIND_COLOR: Record<string, string> = {
-  movie: '#F4B642',
-  episode: '#86A8FF',
-  season: '#C792EA',
-  series: '#C792EA',
-  unknown: 'rgba(244,243,240,.55)',
+const KIND_TONE: Record<string, string> = {
+  movie: 'accent',
+  episode: 'info',
+  season: 'hdr',
+  series: 'hdr',
+  unknown: 'text/55',
 };
+
+const kindInk = (kind: string) => color(KIND_TONE[kind] ?? 'text/55');
 
 /** Derive the pre-filled target from the detected content. Absent `season` /
  * `episode` keys mean "leave the current value untouched". */
@@ -219,29 +221,34 @@ export function ManualGrabModal({
       />
 
       {/* magnet + analyze */}
-      <Field
+      <Field.Root
         label={t('manual.magnet')}
         hint={t('manual.magnetHint')}
         value={magnet}
-        onChange={(v) => {
+        onValueChange={(v) => {
           setMagnet(v);
           setDetailsUrl(null);
           resetAnalysis();
         }}
-        placeholder="magnet:?xt=urn:btih:..."
-        trailing={
-          <Button
-            variant="glass"
-            size="sm"
-            icon="wand"
-            label={t('manual.analyze')}
-            onPress={analyze}
-            disabled={!magnet.trim()}
-            loading={analyzing}
-          />
-        }
-      />
-      {analyzeErr ? <p className="text-[12px] font-semibold text-[#EF8091]">{analyzeErr}</p> : null}
+      >
+        <Field.Input
+          placeholder="magnet:?xt=urn:btih:..."
+          trailing={
+            <Button
+              variant="glass"
+              size="sm"
+              icon="wand"
+              label={t('manual.analyze')}
+              onPress={analyze}
+              disabled={!magnet.trim()}
+              loading={analyzing}
+            />
+          }
+        />
+      </Field.Root>
+      {analyzeErr ? (
+        <p className="text-[12px] font-semibold text-danger-hover">{analyzeErr}</p>
+      ) : null}
 
       {/* analysis result: detected kind + file selection */}
       {analysis ? (
@@ -256,7 +263,7 @@ export function ManualGrabModal({
       ) : null}
 
       {/* target form */}
-      <Field label={t('manual.kind')}>
+      <Field.Root label={t('manual.kind')}>
         <SegmentedControl.Root
           value={kind}
           onValueChange={setKind}
@@ -267,33 +274,35 @@ export function ManualGrabModal({
             { value: 'season' as const, label: t('manual.kindSeason') },
           ]}
         />
-      </Field>
+      </Field.Root>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_100px]">
-        <Field
+        <Field.Root
           label={t('manual.titleLabel')}
           hint={t('manual.titleHint')}
           value={title}
-          onChange={setTitle}
-          placeholder="The Matrix"
-        />
-        <Field label={t('manual.year')} value={year} onChange={setYear} placeholder="1999" />
+          onValueChange={setTitle}
+        >
+          <Field.Input placeholder="The Matrix" />
+        </Field.Root>
+        <Field.Root label={t('manual.year')} value={year} onValueChange={setYear}>
+          <Field.Input placeholder="1999" />
+        </Field.Root>
       </div>
       {kind !== 'movie' ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label={t('manual.season')} value={season} onChange={setSeason} placeholder="1" />
+          <Field.Root label={t('manual.season')} value={season} onValueChange={setSeason}>
+            <Field.Input placeholder="1" />
+          </Field.Root>
           {kind === 'episode' ? (
-            <Field
-              label={t('manual.episode')}
-              value={episode}
-              onChange={setEpisode}
-              placeholder="1"
-            />
+            <Field.Root label={t('manual.episode')} value={episode} onValueChange={setEpisode}>
+              <Field.Input placeholder="1" />
+            </Field.Root>
           ) : null}
         </div>
       ) : null}
 
-      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <DialogActions
+      {error ? <p className="text-[13px] font-semibold text-danger-hover">{error}</p> : null}
+      <Dialog.Actions
         onCancel={onClose}
         cancelLabel={t('common.cancel')}
         onConfirm={add}
@@ -324,13 +333,13 @@ function AnalysisPanel({
   const seasonTags = analysis.seasons.map((s) => `S${s}`).join(' ');
   const seasonsLabel = analysis.seasons.length > 0 ? ` · ${seasonTags}` : '';
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#0F0F13] p-3">
+    <div className="rounded-xl border border-white/[0.07] bg-bg p-3">
       <div className="mb-2 flex items-center justify-between">
         <span
           className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-[.06em]"
           style={{
-            color: KIND_COLOR[analysis.kind],
-            background: `${KIND_COLOR[analysis.kind]}1f`,
+            color: kindInk(analysis.kind),
+            background: `color-mix(in srgb, ${kindInk(analysis.kind)} 12%, transparent)`,
           }}
         >
           {t(`manual.detected.${analysis.kind}` as Parameters<typeof t>[0])}
@@ -395,9 +404,7 @@ function FileRow({
       >
         {f.path.split('/').pop()}
       </span>
-      {label ? (
-        <span className="shrink-0 text-[11px] font-bold text-[#86A8FF]">{label}</span>
-      ) : null}
+      {label ? <span className="shrink-0 text-[11px] font-bold text-info">{label}</span> : null}
       <span className="shrink-0 text-[11px] tabular-nums text-dim">{formatBytes(f.sizeBytes)}</span>
     </label>
   );
@@ -424,16 +431,19 @@ function SearchPanel({
   return (
     <div>
       <div className="flex gap-2">
-        <Field
+        <Field.Root
           label={t('manual.search')}
           hideLabel
-          icon="search"
           flex
           value={query}
-          onChange={setQuery}
-          onSubmit={onSearch}
-          placeholder={t('manual.searchPlaceholder')}
-        />
+          onValueChange={setQuery}
+        >
+          <Field.Input
+            icon="search"
+            onSubmit={onSearch}
+            placeholder={t('manual.searchPlaceholder')}
+          />
+        </Field.Root>
         <Button
           variant="primary"
           size="sm"
@@ -444,10 +454,10 @@ function SearchPanel({
         />
       </div>
       {searchErr ? (
-        <p className="mt-1.5 text-[12px] font-semibold text-[#F4B642]">{searchErr}</p>
+        <p className="mt-1.5 text-[12px] font-semibold text-accent">{searchErr}</p>
       ) : null}
       {results ? (
-        <div className="mt-2 max-h-44 overflow-y-auto rounded-xl border border-white/[0.07] bg-[#0F0F13]">
+        <div className="mt-2 max-h-44 overflow-y-auto rounded-xl border border-white/[0.07] bg-bg">
           {results.length === 0 ? (
             <div className="px-3 py-4 text-center text-[12.5px] font-medium text-dim">
               {t('manual.noResults')}
@@ -477,13 +487,11 @@ function ResultRow({ r, onPick }: Readonly<{ r: ManualReleaseView; onPick: () =>
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] font-semibold text-dim">
           <span>{r.indexerName}</span>
-          {r.resolution ? <span className="text-[#86A8FF]">{r.resolution}</span> : null}
-          {r.codec ? <span className="text-[#C792EA]">{r.codec}</span> : null}
+          {r.resolution ? <span className="text-info">{r.resolution}</span> : null}
+          {r.codec ? <span className="text-hdr">{r.codec}</span> : null}
           {r.sizeBytes != null ? <span>{formatBytes(r.sizeBytes)}</span> : null}
           {r.seeders != null ? (
-            <span className="text-[#46D08D]">
-              {t('requests.seedersN', { n: String(r.seeders) })}
-            </span>
+            <span className="text-success">{t('requests.seedersN', { n: String(r.seeders) })}</span>
           ) : null}
           {r.detailsUrl ? (
             <span className="text-white/30">· {t('downloads.hasTrackerPage')}</span>

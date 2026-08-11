@@ -1,11 +1,12 @@
 import type { RequestStatus } from '@kroma/core';
+import { color } from '@kroma/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { REQUEST_STATUS_META, requestStatusMeta, seasonsSummary } from './status';
 
 describe('requestStatusMeta', () => {
   it('returns the matching meta for every known status', () => {
-    expect(requestStatusMeta('available').color).toBe('#46D08D');
-    expect(requestStatusMeta('failed').dot).toBe('#E8536A');
+    expect(requestStatusMeta('available').color).toBe(color('success'));
+    expect(requestStatusMeta('failed').dot).toBe(color('danger'));
     expect(requestStatusMeta('pending').labelKey).toBe('requests.st.pending');
   });
 

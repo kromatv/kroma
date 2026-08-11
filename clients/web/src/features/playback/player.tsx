@@ -12,19 +12,18 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import { Button, Icon } from '@kroma/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';
 import { castPicker } from '#web/features/playback/cast/cast-picker';
-import { IconStopped } from '#web/features/playback/icons';
 import { Toast } from '#web/features/playback/player-toast';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
-import { useStoryboard } from '#web/features/playback/use-storyboard';
 import { useWebController } from '#web/features/playback/use-web-controller';
 import { useWebUpNext } from '#web/features/playback/use-web-upnext';
 import { kromaClient, type MovieView } from '#web/shared/lib/api';
+import { useStoryboard } from '#web/shared/lib/use-storyboard';
 
 const PREVIEW_W = 176;
 
@@ -120,7 +119,7 @@ export function Player({
   );
 
   return (
-    <UnifiedPlayer
+    <UnifiedPlayer.Root
       controller={controller}
       flags={flags}
       title={item.title}
@@ -139,25 +138,24 @@ export function Player({
       markers={item.markers ?? undefined}
       tileAt={tileAt}
       appearance={appearance}
-      onAppearance={setAppearance}
+      onAppearanceChange={setAppearance}
       subtitleGen={subtitleGen}
       upNext={upNext}
       onPlayItem={(i) => onPlayItem?.(i.id)}
       onPlayNext={onPlayNext}
       nextTitle={nextTitle}
-      intro={
-        intro ? { active: introActive, onSkip: () => pb.seekTo(intro.endMs / 1000) } : undefined
-      }
-      surface={surface}
+      introActive={introActive}
+      onSkipIntro={intro ? () => pb.seekTo(intro.endMs / 1000) : undefined}
       // The shared chrome is typed against React Native, but under
       // react-native-web this ref receives the DOM node (requestFullscreen).
-      rootRef={containerRef as unknown as Ref<View>}
-      terminated={
-        terminated ? (
+      ref={containerRef as unknown as Ref<View>}
+      onClose={onClose}
+    >
+      <UnifiedPlayer.Media>{surface}</UnifiedPlayer.Media>
+      {terminated ? (
+        <UnifiedPlayer.Panel>
           <div className="absolute inset-0 z-80 flex flex-col items-center justify-center gap-5 bg-black/85 px-8 text-center backdrop-blur-sm">
-            <span className="text-[#E8536A]">
-              <IconStopped size={52} />
-            </span>
+            <Icon name="player-stop-filled" size={52} color="danger" />
             <p className="max-w-115 text-[15px] text-white/80">{terminated}</p>
             <Button
               variant="primary"
@@ -167,10 +165,8 @@ export function Player({
               onPress={onClose}
             />
           </div>
-        ) : null
-      }
-      onClose={onClose}
-    >
+        </UnifiedPlayer.Panel>
+      ) : null}
       {showResume && resumeAt != null ? (
         <Toast
           variant="info"
@@ -191,6 +187,6 @@ export function Player({
           ⏵ {t('player.resumeAt', { time: fmtTime(resumeAt) })}
         </Toast>
       ) : null}
-    </UnifiedPlayer>
+    </UnifiedPlayer.Root>
   );
 }

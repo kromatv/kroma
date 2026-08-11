@@ -1,8 +1,14 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { iconPass } from '../bundler/index.ts';
+import { alphaPass } from './alpha-scan.ts';
 import { kromaUI } from './index.ts';
+import { KNOWN_COLOR_NAMES, SOURCE_ROOTS } from './tokens.ts';
+
+const REPO = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 
 function cwd(files: Record<string, string> = {}): string {
   const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-vite-'));
@@ -16,8 +22,21 @@ afterEach(() => {
 });
 
 describe('kromaUI', () => {
-  it('is the icon subset and the token expansion, in that order', () => {
-    expect(kromaUI().map((p) => p.name)).toEqual(['kroma-ui', 'kroma-tokens']);
+  it('is the shared scan, the icon subset and the token expansion, in that order', () => {
+    expect(kromaUI().map((p) => p.name)).toEqual(['kroma-scan', 'kroma-ui', 'kroma-tokens']);
+  });
+
+  it('answers both collectors from one walk, and only on a build', () => {
+    const scan = kromaUI().find((plugin) => 'buildStart' in plugin);
+    if (!scan || !('buildStart' in scan)) throw new Error('kromaUI() lost its scan');
+    expect(scan.apply).toBe('build');
+    expect(alphaPass(SOURCE_ROOTS, KNOWN_COLOR_NAMES)).not.toBeNull();
+
+    scan.buildStart();
+
+    // Null on both sides is the walk each would otherwise have made itself.
+    expect(alphaPass(SOURCE_ROOTS, KNOWN_COLOR_NAMES)).toBeNull();
+    expect(iconPass(REPO)).toBeNull();
   });
 
   it('discovers the workspace root, so a shell config passes nothing', () => {

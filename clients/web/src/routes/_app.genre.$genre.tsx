@@ -67,7 +67,7 @@ function GenrePage() {
     <main className={PAGE_MAIN}>
       <h1 className={PAGE_TITLE}>{genre}</h1>
       {entries.length === 0 ? (
-        <EmptyState icon="category" title={t('search.noResults')} />
+        <EmptyState.Root icon="category" title={t('search.noResults')} />
       ) : (
         <>
           <BrowseBar

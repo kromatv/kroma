@@ -9,9 +9,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Pressable, ScrollView, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
 import {
   PANEL_BACKDROP,
   PANEL_SHELL,
@@ -19,12 +16,11 @@ import {
   useListKeys,
   useTriggerFocus,
 } from '#ui/lib/anchored-panel';
-import { CONTROL } from '#ui/lib/field-shell';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { Portal } from '#ui/lib/portal';
 import { useTDefault } from '#ui/services/i18n';
-import type { SelectOption } from './select';
-import { optionVariants, SelectOptionsDialog } from './select-options-dialog';
+import { type SelectOption, SelectRowContext, type SelectRowState } from './select-context';
+import { SelectOptionsDialog } from './select-options-dialog';
 import type { SelectSurfaceProps } from './select-surface';
 
 function SelectOptions(props: Readonly<SelectSurfaceProps>) {
@@ -41,8 +37,7 @@ const MIN_WIDTH = 160;
 const MAX_HEIGHT = 320;
 const ROW_GUESS = 44;
 const PANEL_PAD = 6;
-const ROW_RADIUS = CONTROL.sm.radius;
-// Concentric with the rows inside it: ROW_RADIUS plus PANEL_PAD.
+// Concentric with the rows inside it: the row radius plus PANEL_PAD.
 const PANEL_RADIUS = 'xl';
 
 function firstEnabled(options: readonly SelectOption[], value: string): number {
@@ -55,9 +50,10 @@ function firstEnabled(options: readonly SelectOption[], value: string): number {
 }
 
 function SelectPopover({
-  onClose,
+  onDismiss,
   label,
   options,
+  items,
   value,
   onPick,
   anchor,
@@ -85,7 +81,7 @@ function SelectPopover({
       const option = options[i];
       if (option) onPick(option.value);
     },
-    onClose,
+    onClose: () => onDismiss('escape'),
   });
 
   useEffect(() => {
@@ -128,6 +124,14 @@ function SelectPopover({
     }
   }, [active]);
 
+  const row = (index: number): SelectRowState => ({
+    presentation: 'panel',
+    nativeID: `${baseId}-${index}`,
+    active: index === active,
+    onHoverIn: () => setActive(index),
+    onLayout: (y) => rows.current.set(index, y),
+  });
+
   if (!at) return null;
 
   return (
@@ -136,7 +140,7 @@ function SelectPopover({
       <Pressable
         accessibilityLabel={t('common.close')}
         tabIndex={-1}
-        onPress={onClose}
+        onPress={() => onDismiss('outside')}
         style={PANEL_BACKDROP}
       />
       <Box
@@ -162,19 +166,10 @@ function SelectPopover({
       >
         <ScrollView ref={scroller} style={{ maxHeight: at.maxHeight }}>
           <Box p={PANEL_PAD}>
-            {options.map((option, index) => (
-              <PopoverOption
-                key={option.value}
-                id={`${baseId}-${index}`}
-                option={option}
-                chosen={option.value === value}
-                active={index === active}
-                onHover={() => setActive(index)}
-                onPress={() => {
-                  if (!option.disabled) onPick(option.value);
-                }}
-                onLayout={(y) => rows.current.set(index, y)}
-              />
+            {items.map((item, index) => (
+              <SelectRowContext.Provider key={item.key} value={row(index)}>
+                {item}
+              </SelectRowContext.Provider>
             ))}
           </Box>
         </ScrollView>
@@ -183,60 +178,8 @@ function SelectPopover({
   );
 }
 
-function PopoverOption({
-  id,
-  option,
-  chosen,
-  active,
-  onHover,
-  onPress,
-  onLayout,
-}: Readonly<{
-  id: string;
-  option: SelectOption;
-  chosen: boolean;
-  active: boolean;
-  onHover: () => void;
-  onPress: () => void;
-  onLayout: (y: number) => void;
-}>) {
-  const slots = optionVariants({ chosen });
-  return (
-    <Pressable
-      nativeID={id}
-      role="option"
-      accessibilityState={{ selected: chosen, disabled: option.disabled }}
-      tabIndex={-1}
-      onPress={onPress}
-      onHoverIn={onHover}
-      onLayout={(event) => onLayout(event.nativeEvent.layout.y)}
-      style={[slots.root, s.row, active ? s.active : null, option.disabled ? s.disabled : null]}
-    >
-      {option.icon ? <Icon name={option.icon} size={18} color="textMuted" /> : null}
-      <Txt variant="body" lines={1} style={slots.ink}>
-        {option.label}
-      </Txt>
-      <Box flex />
-      {option.note ? (
-        <Txt variant="meta" color="textDim">
-          {option.note}
-        </Txt>
-      ) : null}
-      <Box w={18} align="center">
-        {chosen ? <Icon name="check" size={16} color="accentText" /> : null}
-      </Box>
-    </Pressable>
-  );
-}
-
 // `listbox` reaches the DOM through react-native-web even though React
 // Native's `Role` union stops short of it.
 const LISTBOX = 'listbox' as import('react-native').Role;
-
-const s = styles({
-  row: { radius: ROW_RADIUS },
-  active: { bg: 'tint/8' },
-  disabled: { opacity: 0.4 },
-});
 
 export { SelectOptions };

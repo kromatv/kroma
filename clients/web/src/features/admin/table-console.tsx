@@ -3,7 +3,7 @@
 // chips, column heads, a count summary, a floating toast and an event-driven,
 // throttled reload. These live here once instead of being copy/pasted per page.
 
-import { type ColorValue, Field, IconButton, Chip as KitChip } from '@kroma/ui/kit';
+import { type ColorValue, color, Field, IconButton, Chip as KitChip } from '@kroma/ui/kit';
 import { type ReactNode, useCallback, useRef, useState } from 'react';
 
 /** Coalesce event-driven reloads to at most one call per 1.5 s. */
@@ -38,26 +38,26 @@ export function ConsoleSearch({
 }: Readonly<{ value: string; onChange: (v: string) => void; placeholder: string }>) {
   return (
     <div className="w-80 max-w-full">
-      <Field
-        label={placeholder}
-        hideLabel
-        type="search"
-        icon="search"
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        trailing={
-          value ? (
-            <IconButton
-              variant="ghost"
-              size={28}
-              glyph={16}
-              icon="x"
-              onPress={() => onChange('')}
-            />
-          ) : null
-        }
-      />
+      <Field.Root label={placeholder} hideLabel>
+        <Field.Input
+          type="search"
+          icon="search"
+          placeholder={placeholder}
+          value={value}
+          onValueChange={onChange}
+          trailing={
+            value ? (
+              <IconButton
+                variant="ghost"
+                size={28}
+                glyph={16}
+                icon="x"
+                onPress={() => onChange('')}
+              />
+            ) : null
+          }
+        />
+      </Field.Root>
     </div>
   );
 }
@@ -91,7 +91,7 @@ export function Head({
   );
 }
 
-const BLUE_ACTIVE = { backgroundColor: '#86A8FF' } as const;
+const BLUE_ACTIVE = { backgroundColor: color('info') } as const;
 
 /** A filter chip on the kit pill. `tone` picks the active fill (defaults to the
  * amber accent; `blue` keeps the console's type-filter family). */
@@ -132,7 +132,7 @@ export function ConsoleToast({ toast }: Readonly<{ toast: { text: string; on: bo
         transform: `translateX(-50%) translateY(${toast.on ? 0 : 12}px)`,
       }}
     >
-      <div className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-[#1C1C22] px-[18px] py-2.5 shadow-pop">
+      <div className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-surface-2 px-[18px] py-2.5 shadow-pop">
         <span className="h-2 w-2 flex-[0_0_8px] rounded-full bg-accent" />
         <span className="text-[13.5px] font-semibold text-white">{toast.text}</span>
       </div>

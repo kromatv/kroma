@@ -1,5 +1,5 @@
 import { story } from '@kroma/workbench/story';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Surface, surfaceVariants } from './surface';
 
 export default story({
@@ -11,9 +11,9 @@ export default story({
   controls: { w: { min: 120, max: 480, step: 20 } },
   render: (props) => (
     <Surface {...props}>
-      <Txt variant="meta" color="textMuted">
+      <Text variant="meta" color="textMuted">
         Panel content
-      </Txt>
+      </Text>
     </Surface>
   ),
 });

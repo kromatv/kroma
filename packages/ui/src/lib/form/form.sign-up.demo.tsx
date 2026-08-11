@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Switch } from '#ui/components/atoms/switch';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { msg, useForm } from '#ui/lib/form';
 import { useT } from '#ui/services/i18n';
@@ -39,39 +39,46 @@ export default function SignUpForm() {
       if (email === 'ada@example.org') throw new Error('That email is already registered.');
     },
   });
+  const email = form.field('email');
+  const password = form.field('password');
+  const confirm = form.field('confirm');
 
   return (
     <Box w={380} gap={18}>
-      <Field
-        label="Email"
-        type="email"
-        icon="message"
-        placeholder="you@example.org"
-        hint="Try ada@example.org to be refused."
-        physicalKeyboard
-        {...form.field('email')}
-      />
-      <Field label="Password" type="password" physicalKeyboard {...form.field('password')} />
-      <Field label="Repeat it" type="password" physicalKeyboard {...form.field('confirm')} />
+      <Field.Root label="Email" hint="Try ada@example.org to be refused." {...email.root}>
+        <Field.Input
+          type="email"
+          icon="message"
+          placeholder="you@example.org"
+          physicalKeyboard
+          {...email.input}
+        />
+      </Field.Root>
+      <Field.Root label="Password" {...password.root}>
+        <Field.Input type="password" physicalKeyboard {...password.input} />
+      </Field.Root>
+      <Field.Root label="Repeat it" {...confirm.root}>
+        <Field.Input type="password" physicalKeyboard {...confirm.input} />
+      </Field.Root>
 
       <Box row align="center" gap={14}>
         <Switch {...form.toggle('terms')} />
-        <Txt variant="meta" color={form.errors.terms ? 'danger' : 'textMuted'}>
+        <Text variant="meta" color={form.errors.terms ? 'danger' : 'textMuted'}>
           I have read the terms
-        </Txt>
+        </Text>
       </Box>
 
       <Button label="Create account" block loading={form.submitting} onPress={form.submit} />
 
       {form.error ? (
-        <Txt variant="meta" color="danger">
+        <Text variant="meta" color="danger">
           {form.error}
-        </Txt>
+        </Text>
       ) : null}
       {form.submitted ? (
-        <Txt variant="meta" color="success">
+        <Text variant="meta" color="success">
           Account created. Nothing was sent anywhere.
-        </Txt>
+        </Text>
       ) : null}
     </Box>
   );

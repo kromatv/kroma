@@ -5,7 +5,7 @@
 
 import { formatBytes, type StoreModule } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState, Surface } from '@kroma/ui/kit';
+import { Button, EmptyState, ListRow } from '@kroma/ui/kit';
 import { IconArrowRight } from '@tabler/icons-react';
 import type { OpModule } from '#web/features/admin/module-ops';
 import { OpProgress } from '#web/features/admin/module-store';
@@ -26,41 +26,35 @@ function UpdateRow({
 }>) {
   const t = useT();
   return (
-    <div className="flex items-center gap-3.5 border-b border-white/4 px-5 py-3.5 last:border-b-0">
-      <button type="button" onClick={onOpen} aria-label={m.name} className="shrink-0">
+    <ListRow.Root size="md" label={m.name} onPress={onOpen}>
+      <ListRow.Leading>
         {m.icon ? (
           <Image src={m.icon} fit="cover" className="h-9 w-9 rounded-lg" />
         ) : (
           <div className="h-9 w-9 rounded-lg bg-white/5" />
         )}
-      </button>
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="block max-w-full truncate text-left text-[14px] font-bold text-text transition-colors hover:text-accent"
-        >
-          {m.name}
-        </button>
-        <div className="flex items-center gap-1.5 text-[12px] font-medium text-dim">
-          <span>v{m.installedVersion}</span>
-          <IconArrowRight size={12} stroke={2.2} />
-          <span className="font-semibold text-accent">v{m.version}</span>
-          {m.size ? <span>· {formatBytes(m.size)}</span> : null}
-        </div>
+      </ListRow.Leading>
+      <ListRow.Label>{m.name}</ListRow.Label>
+      <div className="flex items-center gap-1.5 text-[12px] font-medium text-dim">
+        <span>v{m.installedVersion}</span>
+        <IconArrowRight size={12} stroke={2.2} />
+        <span className="font-semibold text-accent">v{m.version}</span>
+        {m.size ? <span>· {formatBytes(m.size)}</span> : null}
       </div>
-      {op ? (
-        <OpProgress op={op} />
-      ) : (
-        <Button
-          variant="glass"
-          size="sm"
-          label={t('admin.modulesUpdate')}
-          onPress={onUpdate}
-          disabled={busy}
-        />
-      )}
-    </div>
+      <ListRow.Trailing>
+        {op ? (
+          <OpProgress op={op} />
+        ) : (
+          <Button
+            variant="glass"
+            size="sm"
+            label={t('admin.modulesUpdate')}
+            onPress={onUpdate}
+            disabled={busy}
+          />
+        )}
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
@@ -84,7 +78,7 @@ export function UpdatesList({
   const t = useT();
   if (updates.length === 0) {
     return (
-      <EmptyState
+      <EmptyState.Root
         icon="circle-check"
         title={t('admin.modulesUpToDate')}
         hint={t('admin.modulesUpToDateHint')}
@@ -109,7 +103,7 @@ export function UpdatesList({
           disabled={busy}
         />
       </div>
-      <Surface elevated pad="none" radius={16} overflow="hidden">
+      <ListRow.Group size="md">
         {updates.map((m) => (
           <UpdateRow
             key={m.id}
@@ -120,7 +114,7 @@ export function UpdatesList({
             onOpen={() => onOpen(m.id)}
           />
         ))}
-      </Surface>
+      </ListRow.Group>
     </div>
   );
 }

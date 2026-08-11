@@ -5,7 +5,7 @@
 //
 // `rich.ts` keeps its extension because Node needs one inside this package
 // (see `allowImportingTsExtensions` in tsconfig.json).
-import { colors, WHEEL_COLORS } from '@kroma/ui/tokens/colors';
+import { colors, WHEEL_COLORS, withAlpha } from '@kroma/ui/tokens/colors';
 import { parseRich } from '../src/lib/rich.ts';
 
 // Rendered by Satori (JSX -> SVG) rather than a headless browser, so this is
@@ -103,7 +103,7 @@ export function OgCard({ title, sub }: Readonly<OgCardProps>) {
           left: -180,
           width: 900,
           height: 700,
-          backgroundImage: `radial-gradient(circle at 30% 30%, rgba(242,180,66,0.20), rgba(242,180,66,0) 70%)`,
+          backgroundImage: `radial-gradient(circle at 30% 30%, ${withAlpha(colors.accentWash, 0.2)}, ${withAlpha(colors.accentWash, 0)} 70%)`,
         }}
       />
       <div
@@ -113,7 +113,7 @@ export function OgCard({ title, sub }: Readonly<OgCardProps>) {
           left: 40,
           right: 40,
           bottom: 40,
-          border: `1.5px solid rgba(244,182,66,0.16)`,
+          border: `1.5px solid ${withAlpha(colors.accent, 0.16)}`,
           borderRadius: 28,
         }}
       />

@@ -2,7 +2,7 @@ import { formatTimecode } from '@kroma/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles, sv, themed } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
@@ -154,16 +154,16 @@ export function SeekBar({
       {/* The chapter title is the one string of unbounded length here, so it
           shrinks and truncates rather than growing into the runtime. */}
       <Box row align="baseline" between gap={px(12)} mb={px(13)}>
-        <Txt lines={1} style={sized.timeShrink}>
+        <Text lines={1} style={sized.timeShrink}>
           {elapsed}
           {chapterLabel ? (
-            <Txt style={sized.timeMuted} color="text/50">{` · ${chapterLabel}`}</Txt>
+            <Text style={sized.timeMuted} color="text/50">{` · ${chapterLabel}`}</Text>
           ) : null}
-        </Txt>
-        <Txt lines={1} style={sized.time} color="text/50">
+        </Text>
+        <Text lines={1} style={sized.time} color="text/50">
           {total}
-          {endsAt ? <Txt style={sized.timeMuted} color="text/38">{` · ${endsAt}`}</Txt> : null}
-        </Txt>
+          {endsAt ? <Text style={sized.timeMuted} color="text/38">{` · ${endsAt}`}</Text> : null}
+        </Text>
       </Box>
 
       {/* track */}
@@ -193,7 +193,7 @@ export function SeekBar({
           >
             {previewTile ? <StoryboardThumb tile={previewTile} /> : null}
             <Box radius="md" bg="black/80" px={px(12)} py={px(4)}>
-              <Txt style={sized.stamp}>{formatTimecode(previewSec)}</Txt>
+              <Text style={sized.stamp}>{formatTimecode(previewSec)}</Text>
             </Box>
           </Box>
         ) : null}

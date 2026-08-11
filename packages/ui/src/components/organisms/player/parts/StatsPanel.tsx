@@ -3,7 +3,7 @@ import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
 import { CHART_WINDOW } from '../lib/chart-geometry';
@@ -90,9 +90,9 @@ export function StatsPanel({
         gap={16}
       >
         <Box row align="center" between gap={24}>
-          <Txt style={sx.panelTitle} color="text/50">
+          <Text style={sx.panelTitle} color="text/50">
             {t('stats.title')}
-          </Txt>
+          </Text>
           {/* Pointer-only: `focused={false}` keeps this out of the focus
               navigator (see ../lib/virtual-focus.ts). */}
           <IconButton
@@ -142,13 +142,13 @@ function SummaryBlockView({ headline, pairs }: Readonly<{ headline?: string; pai
   if (!headline && pairs.length === 0) return null;
   return (
     <Box gap={8}>
-      {headline ? <Txt style={sx.headline}>{headline}</Txt> : null}
+      {headline ? <Text style={sx.headline}>{headline}</Text> : null}
       {pairs.length > 0 ? (
         <Box row wrap gap={PAIR_GAP} align="center">
           {pairs.map((pair) => (
-            <Txt key={pair} style={sx.summaryPair} color="textMuted">
+            <Text key={pair} style={sx.summaryPair} color="textMuted">
               {pair}
-            </Txt>
+            </Text>
           ))}
         </Box>
       ) : null}
@@ -192,9 +192,9 @@ function StatBlock({ title, rows }: Readonly<{ title: string; rows: [string, str
   if (rows.length === 0) return null;
   return (
     <Box gap={8} style={sx.column}>
-      <Txt style={sx.blockTitle} color="text/38">
+      <Text style={sx.blockTitle} color="text/38">
         {title}
-      </Txt>
+      </Text>
       {rows.map(([label, value]) => (
         <StatRow key={label} label={label} value={value} />
       ))}
@@ -205,12 +205,12 @@ function StatBlock({ title, rows }: Readonly<{ title: string; rows: [string, str
 function StatRow({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <Box row between gap={16}>
-      <Txt style={sx.statLabel} color="text/50">
+      <Text style={sx.statLabel} color="text/50">
         {label}
-      </Txt>
-      <Txt style={sx.statValue} color="text/82">
+      </Text>
+      <Text style={sx.statValue} color="text/82">
         {value}
-      </Txt>
+      </Text>
     </Box>
   );
 }

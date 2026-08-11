@@ -6,7 +6,7 @@ import { ReleaseList } from '#site/components/release-list';
 import { SiteFooter } from '#site/components/site-footer';
 import { getCatalog } from '#site/lib/get-catalog';
 import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { PageMain } from '#ui/lib/landmark';
 
 export const Route = createFileRoute('/browse')({
@@ -30,11 +30,11 @@ function Browse() {
         <Box px={28} py={32}>
           <Column gap={32} w="100%" maxW={1080} mx="auto">
             <Column gap={10}>
-              <Txt variant="h1">KROMA for Synology</Txt>
-              <Txt color="textMuted">
+              <Text variant="h1">KROMA for Synology</Text>
+              <Text color="textMuted">
                 Self-hosted, direct-play HEVC media streaming for Synology DSM 7 (x86_64). One
                 package, no dependencies.
-              </Txt>
+              </Text>
             </Column>
 
             <InstallCard url={source} />
@@ -46,9 +46,9 @@ function Browse() {
 
             <ReleaseList releases={rows} current={current} />
 
-            <Txt color="textDim" variant="meta">
+            <Text color="textDim" variant="meta">
               {`Served from github.com/${repo} · ${freshness}`}
-            </Txt>
+            </Text>
           </Column>
         </Box>
       </PageMain>

@@ -1,7 +1,7 @@
 // The section switcher at the top of every browse screen; the capsule itself is
 // the kit's `NavPill`.
 
-import { Frost, type IconName, NavPill as KitNavPill, NavPillItem } from '@kroma/ui/kit';
+import { Frost, type IconName, NavPill as KitNavPill } from '@kroma/ui/kit';
 
 export interface NavItem {
   key: string;
@@ -20,9 +20,12 @@ export function NavPill({
   return (
     // Platforms without a blur (legacy panels, an unregistered shell) keep the
     // pill's solid fill.
-    <KitNavPill size="tv" backdrop={<Frost amount={16} />}>
+    <KitNavPill.Root size="tv">
+      <KitNavPill.Backdrop>
+        <Frost amount={16} />
+      </KitNavPill.Backdrop>
       {items.map((item) => (
-        <NavPillItem
+        <KitNavPill.Item
           key={item.key}
           icon={item.icon}
           label={item.label}
@@ -30,6 +33,6 @@ export function NavPill({
           onPress={item.onPress}
         />
       ))}
-    </KitNavPill>
+    </KitNavPill.Root>
   );
 }

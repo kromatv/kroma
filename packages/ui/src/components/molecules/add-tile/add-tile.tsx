@@ -15,7 +15,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconProps } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 
@@ -122,7 +122,7 @@ function AddTile({ label, size = 'tv', icon = 'plus', style, ...focus }: Readonl
             <Frost radius={radius} />
             <Icon name={icon} stroke={1.6} {...slots.glyph} />
           </Box>
-          <Txt style={slots.label}>{label}</Txt>
+          <Text style={slots.label}>{label}</Text>
         </>
       )}
     </Focusable>

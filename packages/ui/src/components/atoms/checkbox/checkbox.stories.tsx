@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Checkbox, checkboxVariants } from './checkbox';
 
 function Demo({ size }: Readonly<{ size: 'sm' | 'tv' }>) {
@@ -22,19 +22,19 @@ function Demo({ size }: Readonly<{ size: 'sm' | 'tv' }>) {
             setAudio(next);
           }}
         />
-        <Txt variant="body">Tout sélectionner</Txt>
+        <Text variant="body">Tout sélectionner</Text>
       </Box>
       <Box row align="center" gap={10} ml={22}>
         <Checkbox size={size} label="Sous-titres" checked={subs} onChange={setSubs} />
-        <Txt variant="body" color="textMuted">
+        <Text variant="body" color="textMuted">
           Sous-titres
-        </Txt>
+        </Text>
       </Box>
       <Box row align="center" gap={10} ml={22}>
         <Checkbox size={size} label="Pistes audio" checked={audio} onChange={setAudio} />
-        <Txt variant="body" color="textMuted">
+        <Text variant="body" color="textMuted">
           Pistes audio
-        </Txt>
+        </Text>
       </Box>
     </Box>
   );
@@ -48,7 +48,7 @@ export default story({
 <Checkbox label="Tout" checked={all} indeterminate={some && !all} onChange={setAll} />`,
   guidelines: {
     do: [
-      'Give it a `label`: it is the accessible name, even when a <Txt> beside it carries the visible one.',
+      'Give it a `label`: it is the accessible name, even when a <Text> beside it carries the visible one.',
       'Use `indeterminate` for a parent row rather than leaving it unchecked, which claims nothing under it is picked.',
     ],
     dont: [

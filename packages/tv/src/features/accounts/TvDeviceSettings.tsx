@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, Hint, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Hint, Text, useFocusNav } from '@kroma/ui/kit';
 import { useNav } from '#tv/app/router';
 import { aboutItem, DEVICE_SETTINGS, quitAppItem } from '#tv/app/settings/registry';
 import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
@@ -17,12 +17,9 @@ export function TvDeviceSettings() {
       <Box mb={32}>
         <KromaMark size={GATE_MARK} />
       </Box>
-      <Txt
-        variant="hero"
-        style={{ fontSize: 44, lineHeight: 44, fontWeight: '600', marginBottom: 36 }}
-      >
+      <Text variant="titleTv" mb={36}>
         {t('deviceSettings.title')}
-      </Txt>
+      </Text>
 
       <Box w="100%" maxW={560} gap={12}>
         <SettingsRows items={[...DEVICE_SETTINGS, aboutItem(() => nav.go('about')), quitAppItem]} />
@@ -33,7 +30,7 @@ export function TvDeviceSettings() {
         size={14}
         gap={4}
         mt={28}
-        color="rgba(244, 243, 240, 0.4)"
+        color="text/40"
         textStyle={{ fontWeight: '500' }}
       />
     </AuthScreen>

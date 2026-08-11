@@ -1,4 +1,4 @@
-import { Box, Chip, color, Icon, IconButton, styles, Txt } from '@kroma/ui/kit';
+import { Box, Chip, color, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { RefreshControl, ScrollView, useWindowDimensions } from 'react-native';
@@ -38,7 +38,7 @@ function DownloadsGlyph() {
       ) : null}
       {pending > 1 ? (
         <Box style={s.dlCount}>
-          <Txt style={s.dlCountText}>{pending}</Txt>
+          <Text style={s.dlCountText}>{pending}</Text>
         </Box>
       ) : null}
     </Box>

@@ -176,7 +176,10 @@ export function StoreGrid({
     .sort((a, b) => a.name.localeCompare(b.name));
   if (shown.length === 0) {
     return (
-      <EmptyState icon="search" title={t('admin.modulesEmptySearch', { query: query.trim() })} />
+      <EmptyState.Root
+        icon="search"
+        title={t('admin.modulesEmptySearch', { query: query.trim() })}
+      />
     );
   }
   return (

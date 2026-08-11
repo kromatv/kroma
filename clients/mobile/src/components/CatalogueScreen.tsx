@@ -10,7 +10,7 @@ import {
   type SortMode,
   sortTitles,
 } from '@kroma/core';
-import { Box, Chip, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Chip, Icon, styles, Text } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -76,8 +76,8 @@ export function CatalogueScreen<T extends MediaItem | Show>({
   const header = (
     <Box style={{ paddingTop: insets.top + spacing.sm }}>
       <Box style={s.titleRow}>
-        <Txt style={s.title}>{title}</Txt>
-        <Txt style={s.count}>{cards.length}</Txt>
+        <Text style={s.title}>{title}</Text>
+        <Text style={s.count}>{cards.length}</Text>
       </Box>
       <ScrollView
         horizontal

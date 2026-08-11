@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Platform } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type ColorToken, styles } from '#ui/core';
 import { hasGlyph } from '#ui/lib/icons/glyphs';
 import type { ToastOptions } from './toast';
@@ -66,13 +66,13 @@ function ToastCard({
           </Box>
         ) : null}
         <Box style={s.text}>
-          <Txt lines={1} style={s.message}>
+          <Text lines={1} style={s.message}>
             {entry.message}
-          </Txt>
+          </Text>
           {entry.detail ? (
-            <Txt lines={1} style={s.detail} color="textMuted">
+            <Text lines={1} style={s.detail} color="textMuted">
               {entry.detail}
-            </Txt>
+            </Text>
           ) : null}
         </Box>
       </Box>

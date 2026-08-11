@@ -1,7 +1,7 @@
 // The inspector: what a story says about itself, and what you can change. It is a
 // column beside the canvas, or a dock under it that collapses to its tab row.
 
-import { Box, Focusable, Icon, IconButton, type IconName, styles, sv, Txt } from '@kroma/ui/kit';
+import { Box, Focusable, Icon, IconButton, type IconName, styles, sv, Text } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE, RULE_TOP, TAB } from './chrome';
@@ -34,9 +34,9 @@ interface Tab {
 function Section({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
     <Box gap={10}>
-      <Txt variant="overline" color="accent">
+      <Text variant="overline" color="accent">
         {title}
-      </Txt>
+      </Text>
       {children}
     </Box>
   );
@@ -54,17 +54,17 @@ function PropTable({ props }: Readonly<{ props: readonly PropDoc[] }>) {
           style={at === props.length - 1 ? undefined : RULE}
         >
           <Box row align="baseline" gap={8} wrap>
-            <Txt variant="meta" style={s.propName}>
+            <Text variant="meta" style={s.propName}>
               {prop.name}
-            </Txt>
+            </Text>
             {prop.optional ? null : (
-              <Txt variant="meta" color="danger" style={s.propRequired}>
+              <Text variant="meta" color="danger" style={s.propRequired}>
                 required
-              </Txt>
+              </Text>
             )}
-            <Txt variant="meta" color="textDim" style={s.propType} lines={1}>
+            <Text variant="meta" color="textDim" style={s.propType} lines={1}>
               {prop.type}
-            </Txt>
+            </Text>
           </Box>
           {prop.docs ? (
             <RichText variant="meta" color="textMuted">
@@ -179,9 +179,9 @@ function Panel({ story, args, onChange, onReset, showControls, layout }: Readonl
             />
           ) : (
             (active?.body ?? (
-              <Txt variant="meta" color="textDim">
+              <Text variant="meta" color="textDim">
                 This story has nothing to adjust.
-              </Txt>
+              </Text>
             ))
           )}
         </ScrollView>
@@ -200,14 +200,14 @@ function TabButton({
       {({ slots }) => (
         <>
           <Icon name={tab.glyph} size={14} color={active ? 'accent' : 'textDim'} />
-          <Txt variant="meta" lines={1} style={slots.label}>
+          <Text variant="meta" lines={1} style={slots.label}>
             {tab.name}
-          </Txt>
+          </Text>
           {tab.count === undefined ? null : (
             <Box px={5} shrink={0} radius="pill" bg={active ? 'accentSoft' : 'surface2'}>
-              <Txt variant="meta" color={active ? 'accent' : 'textDim'} style={s.badge}>
+              <Text variant="meta" color={active ? 'accent' : 'textDim'} style={s.badge}>
                 {tab.count}
-              </Txt>
+              </Text>
             </Box>
           )}
         </>

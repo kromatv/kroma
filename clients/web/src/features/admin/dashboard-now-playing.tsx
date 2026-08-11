@@ -1,17 +1,15 @@
 import { type PlaybackSession, resolveImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, Dialog, Field, Icon, IconButton, Progress, Surface } from '@kroma/ui/kit';
+import { Avatar, color, Dialog, Field, Icon, IconButton, Progress, Surface } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
-import { useStoryboard } from '#web/features/playback/use-storyboard';
 import { formatMbps, posterGradient, timecode } from '#web/shared/lib/adminFormat';
 import { apiBase, kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { useStoryboard } from '#web/shared/lib/use-storyboard';
 import { Image } from '#web/shared/ui';
 
 const THUMB_W = 132;
-
-const C = { accent: '#F4B642', green: '#46D08D', blue: '#5C8DF6' } as const;
 
 // The current storyboard frame when the sheet is ready, else the item poster,
 // else a title-seeded gradient.
@@ -63,24 +61,24 @@ export function NowPlayingCard({
   const remux = s.mode === 'remux';
   const lan = s.network === 'LAN';
 
-  let stateColor = 'rgba(244,243,240,.5)';
+  let stateColor = color('text/50');
   let stateLabel = t('admin.paused');
   if (buffering) {
-    stateColor = C.accent;
+    stateColor = color('accent');
     stateLabel = t('admin.buffering');
   } else if (playing) {
-    stateColor = C.green;
+    stateColor = color('success');
     stateLabel = t('admin.playing');
   }
 
   let pipe: { color: string; bg: string; label: string } = {
-    color: C.green,
-    bg: 'rgba(70,208,141,.14)',
+    color: color('success'),
+    bg: color('success/14'),
     label: t('admin.directPlay'),
   };
   if (transcode)
-    pipe = { color: C.accent, bg: 'rgba(242,180,66,.14)', label: t('admin.audioTranscode') };
-  else if (remux) pipe = { color: C.blue, bg: 'rgba(92,141,246,.14)', label: t('admin.remux') };
+    pipe = { color: color('accent'), bg: color('accentWash/14'), label: t('admin.audioTranscode') };
+  else if (remux) pipe = { color: color('info'), bg: color('info/14'), label: t('admin.remux') };
   let sub = '';
   if (s.kind === 'episode' && s.season != null)
     sub = t('admin.episodeShort', { season: s.season, episode: s.episode ?? '' });
@@ -153,14 +151,14 @@ export function NowPlayingCard({
             </span>
           </Stat>
           <Stat label={t('admin.statVideo')}>
-            <span className="text-[13px] font-semibold" style={{ color: C.green }}>
+            <span className="text-[13px] font-semibold" style={{ color: color('success') }}>
               {s.videoLabel}
             </span>
           </Stat>
           <Stat label={t('admin.statAudioTrack')}>
             <span
               className="text-[13px] font-semibold"
-              style={{ color: transcode ? C.accent : C.green }}
+              style={{ color: color(transcode ? 'accent' : 'success') }}
             >
               {transcode ? `${s.audioLabel} → AAC` : s.audioLabel}
             </span>
@@ -177,8 +175,8 @@ export function NowPlayingCard({
             <span
               className="inline-flex items-center gap-1.5 rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
               style={{
-                color: lan ? C.green : C.blue,
-                background: lan ? 'rgba(70,208,141,.12)' : 'rgba(92,141,246,.12)',
+                color: color(lan ? 'success' : 'info'),
+                background: color(lan ? 'success/12' : 'info/12'),
               }}
             >
               {s.network} · {s.ip}
@@ -225,29 +223,22 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
         <p className="text-[13px] text-dim">
           {t('admin.stopStreamDesc', { user: session.username })}
         </p>
-        <Field
-          label={t('admin.stopMessageLabel')}
-          multiline
-          rows={2}
-          value={message}
-          onChange={setMessage}
-          placeholder={t('admin.stopMessagePlaceholder')}
+        <Field.Root label={t('admin.stopMessageLabel')}>
+          <Field.Textarea
+            rows={2}
+            value={message}
+            onValueChange={setMessage}
+            placeholder={t('admin.stopMessagePlaceholder')}
+          />
+        </Field.Root>
+        <Dialog.Actions
+          onCancel={() => call.end(false)}
+          cancelLabel={t('common.cancel')}
+          onConfirm={() => void stop()}
+          confirmLabel={t('admin.stopStream')}
+          destructive
+          busy={busy}
         />
-        <div className="flex justify-end gap-2.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            label={t('common.cancel')}
-            onPress={() => call.end(false)}
-          />
-          <Button
-            variant="danger"
-            size="sm"
-            label={t('admin.stopStream')}
-            onPress={() => void stop()}
-            loading={busy}
-          />
-        </div>
       </Dialog>
     );
   },

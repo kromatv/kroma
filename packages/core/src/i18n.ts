@@ -1,30 +1,18 @@
-import {
-  createI18n,
-  type Translate as GenericTranslate,
-  type LocaleOf,
-  type MessageKeyOf,
-} from './i18n-engine';
+import { createI18n, type Translate as GenericTranslate, type MessageKeyOf } from './i18n-engine';
+import { DEFAULT_LOCALE, type Locale } from './i18n-locales';
 
 import en from './locales/en.json';
 import fr from './locales/fr.json';
 
 export { interpolate } from './i18n-engine';
+export * from './i18n-locales';
 
-export const i18n = createI18n({ fr, en }, 'fr');
+const catalogs = { fr, en } satisfies Record<Locale, Readonly<Record<string, string>>>;
 
-export const {
-  translate,
-  translateIn,
-  createTranslator,
-  detectLocale,
-  isLocale,
-  normalizeLocale,
-  DEFAULT_LOCALE,
-  SUPPORTED_LOCALES,
-  LOCALES,
-} = i18n;
+export const i18n = createI18n(catalogs, DEFAULT_LOCALE);
 
-export type Locale = LocaleOf<typeof i18n>;
+export const { translate, translateIn, createTranslator } = i18n;
+
 export type MessageKey = MessageKeyOf<typeof i18n>;
 export type Translate = GenericTranslate<MessageKey>;
 

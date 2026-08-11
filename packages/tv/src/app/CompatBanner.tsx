@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, Text } from '@kroma/ui/kit';
 import { CLIENT_BUILD } from '#tv/app/clientBuild';
 import { useConnection } from '#tv/app/providers/connection';
 
@@ -27,19 +27,15 @@ export function CompatBanner() {
       pointerEvents="none"
       accessibilityRole="alert"
     >
-      <Icon name="alert-triangle" size={22} color="#FFFFFF" />
-      <Txt style={s.line} color="#FFFFFF">
+      <Icon name="alert-triangle" size={22} color="white" />
+      <Text variant="labelTv" textAlign="center" color="white">
         {t('compat.serverOutdated', {
           server: serverVersion ?? '?',
           client: CLIENT_BUILD.version,
         })}
-      </Txt>
+      </Text>
     </Box>
   );
 }
 
 const WARN_BG = '#8A5A00';
-
-const s = styles({
-  line: { fontSize: 17, fontWeight: '600', textAlign: 'center' },
-});

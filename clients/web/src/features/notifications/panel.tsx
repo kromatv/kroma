@@ -11,11 +11,11 @@ import {
   sizedImageUrl,
 } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Drawer } from '@kroma/ui/kit';
+import { color, Drawer, EmptyState, ListRow } from '@kroma/ui/kit';
 import { IconBell, IconChecks, IconLoader2, IconX, type TablerIcon } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { usePanelState, useUnreadCount } from '#web/features/notifications/use-notifications';
 import { kromaClient } from '#web/shared/lib/api';
 import { userQueries } from '#web/shared/lib/queries';
@@ -42,7 +42,7 @@ export function NotificationBell({ className }: Readonly<{ className?: string }>
         {unread > 0 && (
           <span
             // Caps at 9+ so the badge doesn't outgrow the bell.
-            className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[18px] tabular-nums text-accent-ink ring-2 ring-[#0C0C0E]"
+            className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[18px] tabular-nums text-accent-ink ring-2 ring-bg"
           >
             {unread > 9 ? '9+' : unread}
           </span>
@@ -98,7 +98,7 @@ function PanelHeader({ onClose }: Readonly<{ onClose: () => void }>) {
   );
 }
 
-const PANEL_FILL = { backgroundColor: '#101014' } as const;
+const PANEL_FILL = { backgroundColor: color('bg') } as const;
 
 function IconAction({
   icon: Icon,
@@ -150,13 +150,13 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
   const items = data?.notifications ?? [];
   if (items.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-1.5 px-10 pb-12 text-center">
-        <IconBell size={26} stroke={1.6} className="mb-1 text-dim" />
-        <p className="text-[14px] font-semibold text-text">{t('notifications.empty')}</p>
-        <p className="max-w-[16rem] text-[12.5px] leading-relaxed text-dim">
-          {t('notifications.emptyHint')}
-        </p>
-      </div>
+      <EmptyState.Root
+        size="sm"
+        layout="fill"
+        icon="bell"
+        title={t('notifications.empty')}
+        hint={t('notifications.emptyHint')}
+      />
     );
   }
 
@@ -167,16 +167,14 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
         // second "Earlier" run, and two sections must not share a key.
         <section key={group.items[0]?.id}>
           {/* h3, not h2: the panel header renders the h2. */}
-          <h3 className="sticky top-0 z-10 bg-[#101014] px-2 pb-1.5 pt-3 text-[11px] font-semibold text-dim">
+          <h3 className="sticky top-0 z-10 bg-bg px-2 pb-1.5 pt-3 text-[11px] font-semibold text-dim">
             {t(NOTIFICATION_DAY_LABEL[group.day])}
           </h3>
-          <ul>
+          <ListRow.Group size="sm">
             {group.items.map((n) => (
-              <li key={n.id}>
-                <NotificationRow notification={n} onNavigate={onNavigate} />
-              </li>
+              <NotificationRow key={n.id} notification={n} onNavigate={onNavigate} />
             ))}
-          </ul>
+          </ListRow.Group>
         </section>
       ))}
     </div>
@@ -189,7 +187,6 @@ function NotificationRow({
 }: Readonly<{ notification: Notification; onNavigate: () => void }>) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const labelId = useId();
 
   // Navigation doesn't wait on the read-write — a receipt isn't worth a frame
   // of dead click.
@@ -211,33 +208,32 @@ function NotificationRow({
 
   const unread = !notification.read;
   return (
-    <div className="relative rounded-xl transition-colors hover:bg-white/[0.04]">
-      {/* One hit target for the whole card, laid under the content. */}
-      <button
-        type="button"
-        onClick={open}
-        aria-labelledby={`${labelId}-title ${labelId}-body`}
-        className="absolute inset-0 rounded-xl"
-      />
+    <ListRow.Root
+      size="sm"
+      label={notification.title}
+      onPress={open}
+      chevron={false}
+      style={ROW_PAD}
+    >
       <NotificationCard
-        className="pointer-events-none relative"
         event={notification.event}
         src={notification.imageUrl ? sizedImageUrl(notification.imageUrl, 96) : null}
         unread={unread}
         title={notification.title}
         titleTone={unread ? 'text-text' : 'text-text/70'}
-        titleId={`${labelId}-title`}
         body={notification.body}
-        bodyId={`${labelId}-body`}
         time={
           <time dateTime={new Date(notification.createdAt).toISOString()} className="tabular-nums">
             <RelativeTime at={notification.createdAt} />
           </time>
         }
       />
-    </div>
+    </ListRow.Root>
   );
 }
+
+// The card draws its own gutter, so the row's leading inset is the gutter's.
+const ROW_PAD = { paddingLeft: 8 } as const;
 
 /** A notification row's contents: gutter, tile, title/time line, clamped body.
  * Exported so the admin composer's preview renders the real row markup rather

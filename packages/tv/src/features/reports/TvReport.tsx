@@ -1,12 +1,12 @@
 import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
 import { apiErrorText } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, Field, ListRow, styles, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Button, Field, ListRow, Text, useFocusNav } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import { CategoryRows, GroupLabel, ReportSent, SubjectRow } from '#tv/features/reports/parts';
-import { AuthScreen, OnScreenKeyboard } from '#tv/shared/ui';
+import { AuthScreen, UrlKeyboard } from '#tv/shared/ui';
 
 // Long enough to read one confirmation sentence from a sofa, short enough
 // not to feel stuck.
@@ -88,24 +88,24 @@ export function TvReport() {
     return (
       <AuthScreen>
         <Box w="100%" maxW={720} gap={20}>
-          <Txt variant="h1" style={s.heading}>
-            {t('report.message')}
-          </Txt>
-          <Field
-            value={message}
-            onChange={setMessage}
-            onSubmit={() => setTyping(false)}
-            icon="message"
-            placeholder={t('report.messagePlaceholder')}
+          <Text variant="headingTv">{t('report.message')}</Text>
+          <Field.Root
             label={t('report.message')}
             hideLabel
-            physicalKeyboard={physicalKeyboard}
-          />
-          <OnScreenKeyboard
             value={message}
-            onChange={setMessage}
+            onValueChange={setMessage}
+          >
+            <Field.Input
+              icon="message"
+              placeholder={t('report.messagePlaceholder')}
+              physicalKeyboard={physicalKeyboard}
+              onSubmit={() => setTyping(false)}
+            />
+          </Field.Root>
+          <UrlKeyboard
+            value={message}
+            onValueChange={setMessage}
             onSubmit={() => setTyping(false)}
-            layout="url"
             submitLabel={t('common.done')}
           />
         </Box>
@@ -117,12 +117,10 @@ export function TvReport() {
     <AuthScreen>
       <Box w="100%" maxW={720} gap={24}>
         <Box gap={6}>
-          <Txt variant="h1" style={s.heading}>
-            {t('report.title')}
-          </Txt>
-          <Txt lines={1} style={{ fontSize: 17, fontWeight: '600' }} color="accentText">
+          <Text variant="headingTv">{t('report.title')}</Text>
+          <Text lines={1} variant="labelTv" color="accentText">
             {title}
-          </Txt>
+          </Text>
         </Box>
 
         {episodes?.length ? (
@@ -138,7 +136,7 @@ export function TvReport() {
 
         <Box gap={12}>
           <GroupLabel text={t('report.message')} />
-          <ListRow
+          <ListRow.Root
             icon="message"
             label={t('report.addMessage')}
             hint={message.trim() || t('report.messageEmpty')}
@@ -147,9 +145,9 @@ export function TvReport() {
         </Box>
 
         {error ? (
-          <Txt style={{ fontSize: 16, fontWeight: '600' }} color="danger">
+          <Text variant="labelTv" color="danger">
             {error}
-          </Txt>
+          </Text>
         ) : null}
 
         <Button
@@ -164,7 +162,3 @@ export function TvReport() {
     </AuthScreen>
   );
 }
-
-const s = styles({
-  heading: { fontSize: 34, fontWeight: '600' },
-});

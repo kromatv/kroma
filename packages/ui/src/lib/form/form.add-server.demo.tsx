@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { z } from 'zod';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { Select } from '#ui/components/molecules/select';
 import { msg, useForm } from '#ui/lib/form';
@@ -26,8 +26,8 @@ const AddServer = z.object({
 /**
  * A `<Select>` is not a text entry, so it reads `form.values` and reports through
  * `form.setValue` - and still wears its label and error by sitting inside a
- * `<Field>`. The port shows the other half of the schema: what is typed is text,
- * what `onSubmit` receives is a number.
+ * `<Field.Root>`. The port shows the other half of the schema: what is typed is
+ * text, what `onSubmit` receives is a number.
  *
  * @name Add a server
  */
@@ -40,6 +40,9 @@ export default function AddServerForm() {
     t: useT(),
     onSubmit: ({ address, port }) => setSaved(`${address}:${port}`),
   });
+  const name = form.field('name');
+  const address = form.field('address');
+  const port = form.field('port');
 
   const clear = () => {
     setSaved(null);
@@ -48,28 +51,37 @@ export default function AddServerForm() {
 
   return (
     <Box w={380} gap={18}>
-      <Field label="Name" placeholder="Living room" physicalKeyboard {...form.field('name')} />
+      <Field.Root label="Name" {...name.root}>
+        <Field.Input placeholder="Living room" physicalKeyboard {...name.input} />
+      </Field.Root>
       <Box row gap={14}>
-        <Field
-          label="Address"
-          icon="server"
-          placeholder="kroma.local"
-          physicalKeyboard
-          grow={1}
-          {...form.field('address')}
-        />
-        <Field label="Port" w={110} physicalKeyboard {...form.field('port')} />
+        <Field.Root label="Address" grow={1} {...address.root}>
+          <Field.Input
+            icon="server"
+            placeholder="kroma.local"
+            physicalKeyboard
+            {...address.input}
+          />
+        </Field.Root>
+        <Field.Root label="Port" w={110} {...port.root}>
+          <Field.Input physicalKeyboard {...port.input} />
+        </Field.Root>
       </Box>
 
-      <Field label="Quality" error={form.errors.quality}>
-        <Select
+      <Field.Root label="Quality" error={form.errors.quality}>
+        <Select.Root
           label="Quality"
-          options={QUALITY}
           value={form.values.quality}
-          onChange={(next) => form.setValue('quality', next)}
-          invalid={Boolean(form.errors.quality)}
-        />
-      </Field>
+          onValueChange={(next) => form.setValue('quality', next)}
+        >
+          <Select.Trigger block invalid={Boolean(form.errors.quality)} />
+          {QUALITY.map((quality) => (
+            <Select.Item key={quality.value} value={quality.value}>
+              {quality.label}
+            </Select.Item>
+          ))}
+        </Select.Root>
+      </Field.Root>
 
       <Box row gap={14}>
         <Box grow={1}>
@@ -79,9 +91,9 @@ export default function AddServerForm() {
       </Box>
 
       {saved ? (
-        <Txt variant="meta" color="success">
+        <Text variant="meta" color="success">
           {`Added ${saved}. Nothing was sent anywhere.`}
-        </Txt>
+        </Text>
       ) : null}
     </Box>
   );

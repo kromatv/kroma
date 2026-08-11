@@ -5,7 +5,7 @@ import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
 import { bySize, CONTROL } from '#ui/lib/field-shell';
 import {
@@ -85,8 +85,8 @@ function Item<T extends string>({
             {icon ? (
               <Icon name={icon} size={glyph} color={active ? 'accentText' : 'text/75'} />
             ) : null}
-            {iconOnly && icon ? null : <Txt style={state.slots.label}>{label}</Txt>}
-            {desc ? <Txt style={state.slots.desc}>{desc}</Txt> : null}
+            {iconOnly && icon ? null : <Text style={state.slots.label}>{label}</Text>}
+            {desc ? <Text style={state.slots.desc}>{desc}</Text> : null}
           </>
         )}
       </Focusable>

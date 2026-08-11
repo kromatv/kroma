@@ -8,8 +8,8 @@ import { Button } from '@kroma/ui/kit';
 import { IconCamera } from '@tabler/icons-react';
 import { useRef } from 'react';
 import { Panel, StatusText, useSave } from '#web/features/accounts/account/ui';
-import { UserAvatar } from '#web/features/accounts/user-avatar';
 import { useAuth } from '#web/shared/lib/auth';
+import { UserAvatar } from '#web/shared/ui/user-avatar';
 
 export function PhotoCard() {
   const t = useT();

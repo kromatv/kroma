@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Platform } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Portal } from '#ui/lib/portal';
 import { KromaIntro } from './kroma-intro';
 
@@ -26,12 +26,12 @@ function Stage({ tagline, lite, loop, breakVideo }: Readonly<StageProps>) {
   if (Platform.OS !== 'web') {
     return (
       <Box gap={8}>
-        <Txt variant="label">Not this platform</Txt>
-        <Txt variant="meta" color="textDim">
+        <Text variant="label">Not this platform</Text>
+        <Text variant="meta" color="textDim">
           {'`KromaIntro` renders `null` here by design: the film is a <video> element and the '}
           {'fallback is CSS keyframes. This client plays the same film through `expo-video` in '}
           {'its own shell - see `packages/tv/src/app/BrandIntro.tsx`.'}
-        </Txt>
+        </Text>
       </Box>
     );
   }
@@ -39,12 +39,12 @@ function Stage({ tagline, lite, loop, breakVideo }: Readonly<StageProps>) {
   return (
     <Box gap={16}>
       <Box gap={6}>
-        <Txt variant="label">Takes over the viewport</Txt>
-        <Txt variant="meta" color="textDim">
+        <Text variant="label">Takes over the viewport</Text>
+        <Text variant="meta" color="textDim">
           Full screen, with sound. Enter, Space or Escape skips - the keys a remote sends - and `r`
           restarts the choreography. It also ends itself with the sting, so it hands back even if
           playback stalls.
-        </Txt>
+        </Text>
       </Box>
       <Button
         label={breakVideo ? 'Play the CSS scene' : 'Play the film'}

@@ -11,7 +11,7 @@ import { Pressable, type StyleProp, type TextInput, type ViewStyle } from 'react
 import { Box } from '#ui/components/atoms/box';
 import { Button, type ButtonProps } from '#ui/components/atoms/button';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
 import { styles } from '#ui/core';
@@ -217,9 +217,9 @@ function GroupIconButton({ style, ...props }: Readonly<IconButtonProps>) {
 /** Unit text inside an addon. */
 function GroupText({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Txt variant="meta" color="textDim">
+    <Text variant="meta" color="textDim">
       {children}
-    </Txt>
+    </Text>
   );
 }
 

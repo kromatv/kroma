@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import {
   type SubtitleAppearance,
   subtitleStyle,
@@ -220,10 +220,10 @@ export function SubtitleRenderer({
           cue for nothing. */}
       {appearance.windowOpacity > 0 ? (
         <Box style={subtitleWindowStyle(appearance)}>
-          <Txt style={subtitleStyle(appearance)}>{text}</Txt>
+          <Text style={subtitleStyle(appearance)}>{text}</Text>
         </Box>
       ) : (
-        <Txt style={subtitleStyle(appearance)}>{text}</Txt>
+        <Text style={subtitleStyle(appearance)}>{text}</Text>
       )}
     </Box>
   );

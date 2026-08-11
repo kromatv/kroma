@@ -199,7 +199,9 @@ function TitleBody({
   return (
     <>
       {error ? (
-        <p className="mt-2 px-(--gutter-web) text-[13.5px] font-semibold text-[#EF8091]">{error}</p>
+        <p className="mt-2 px-(--gutter-web) text-[13.5px] font-semibold text-danger-hover">
+          {error}
+        </p>
       ) : null}
 
       {owned && localId ? (

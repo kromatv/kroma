@@ -61,7 +61,7 @@ export function ComingSoonPage() {
       ) : null}
 
       {entries?.length === 0 ? (
-        <EmptyState
+        <EmptyState.Root
           icon="calendar-clock"
           title={t('requests.calendarEmpty')}
           hint={t('requests.calendarEmptyHint')}
@@ -136,7 +136,7 @@ function CalendarRow({
           <span className="text-accent">{epTag}</span>
           {entry.year ? <span>· {entry.year}</span> : null}
           {entry.status === 'grabbed' ? (
-            <span className="inline-flex items-center gap-0.5 text-[#5FD08A]">
+            <span className="inline-flex items-center gap-0.5 text-success">
               · <IconChecks size={13} stroke={2} /> {t('requests.securedShort')}
             </span>
           ) : null}

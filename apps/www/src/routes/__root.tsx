@@ -1,4 +1,5 @@
 import { site } from '@kroma/site-meta';
+import { colors } from '@kroma/ui/tokens';
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { SiteFooter } from '#site/components/site-footer';
@@ -14,7 +15,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { name: 'theme-color', content: '#0A0A0C' },
+      { name: 'theme-color', content: colors.bg },
       // No og:* here: Open Graph is keyed by `property`, not `name`, and
       // seo() already emits the real `property="og:site_name"` per page.
       { title: site.name },

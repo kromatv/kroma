@@ -133,20 +133,20 @@ export default function IndexersPage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.indexersTitle')}
         subtitle={t('admin.indexersSub')}
-        action={addButtons ?? undefined}
+        actions={addButtons ?? undefined}
       />
 
       {data === null ? <TableSkeleton rows={5} /> : null}
 
       {indexers.length === 0 && data ? (
-        <EmptyState
+        <EmptyState.Root
           icon="antenna"
           title={t('indexers.emptyTitle')}
           hint={engines.length === 0 ? t('indexers.noEngines') : t('indexers.emptyBody')}
-          action={addButtons ?? undefined}
+          actions={addButtons ?? undefined}
         />
       ) : null}
 
@@ -239,14 +239,14 @@ function TestLine({ ix, test }: Readonly<{ ix: IndexerView; test?: TestState }>)
   }
   if (test?.error || test?.result?.error) {
     return (
-      <span className="min-w-0 truncate text-[12.5px] font-semibold text-[#EF8091]">
+      <span className="min-w-0 truncate text-[12.5px] font-semibold text-danger-hover">
         {test.error ?? test.result?.error}
       </span>
     );
   }
   if (test?.result) {
     return (
-      <span className="text-[12.5px] font-semibold text-[#46D08D]">
+      <span className="text-[12.5px] font-semibold text-success">
         {t('indexers.testOk', {
           ms: String(test.result.latencyMs),
           server: test.result.serverTitle ?? 'Torznab',
@@ -257,7 +257,7 @@ function TestLine({ ix, test }: Readonly<{ ix: IndexerView; test?: TestState }>)
   }
   if (ix.lastError) {
     return (
-      <span className="min-w-0 truncate text-[12.5px] font-semibold text-[#EF8091]">
+      <span className="min-w-0 truncate text-[12.5px] font-semibold text-danger-hover">
         {ix.lastError}
       </span>
     );

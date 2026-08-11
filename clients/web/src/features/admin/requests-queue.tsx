@@ -104,9 +104,9 @@ export function RequestsQueuePage() {
 
   return (
     <>
-      <PageHeader
+      <PageHeader.Root
         title={t('admin.requestsTitle')}
-        action={
+        actions={
           <ConsoleSearch value={q} onChange={setQ} placeholder={t('requests.searchPlaceholder')} />
         }
       />
@@ -121,28 +121,28 @@ export function RequestsQueuePage() {
         <Chip
           label={t('requests.filter.pending')}
           count={c?.pending}
-          dot="rgba(244,243,240,.45)"
+          dot="text/45"
           on={bucket === 'pending'}
           onClick={() => setBucket('pending')}
         />
         <Chip
           label={t('requests.filter.active')}
           count={c?.active}
-          dot="#F4B642"
+          dot="accent"
           on={bucket === 'active'}
           onClick={() => setBucket('active')}
         />
         <Chip
           label={t('requests.filter.available')}
           count={c?.available}
-          dot="#46D08D"
+          dot="success"
           on={bucket === 'available'}
           onClick={() => setBucket('available')}
         />
         <Chip
           label={t('requests.filter.closed')}
           count={(c?.denied ?? 0) + (c?.failed ?? 0)}
-          dot="#E8536A"
+          dot="danger"
           on={bucket === 'closed'}
           onClick={() => setBucket('closed')}
         />
@@ -154,8 +154,8 @@ export function RequestsQueuePage() {
         />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#121216] shadow-[0_10px_28px_rgba(0,0,0,.3)]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-[#15151A] px-5 py-3 md:grid-cols-[minmax(0,1fr)_190px_110px_132px_76px]">
+      <div className="overflow-hidden rounded-2xl border border-white/8 bg-surface-1 shadow-[0_10px_28px_rgba(0,0,0,.3)]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-surface-1 px-5 py-3 md:grid-cols-[minmax(0,1fr)_190px_110px_132px_76px]">
           <Head>{t('requests.colTitle')}</Head>
           <Head className="max-md:hidden">{t('requests.colRequester')}</Head>
           <Head className="max-md:hidden">{t('requests.colDate')}</Head>
@@ -178,7 +178,7 @@ export function RequestsQueuePage() {
 
         {data && rows.length === 0 ? (
           <div className="py-6">
-            <EmptyState
+            <EmptyState.Root
               icon="inbox"
               title={all.length === 0 ? t('requests.empty') : t('requests.noMatch')}
             />
