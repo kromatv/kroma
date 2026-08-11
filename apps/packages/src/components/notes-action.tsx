@@ -1,9 +1,9 @@
+import { Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Dialog } from '@kroma/ui/kit/organisms/dialog';
 import { useState } from 'react';
 import { NotesBody } from '#site/components/notes-body';
 import type { Release } from '#site/lib/release';
-import { Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Dialog } from '#ui/components/organisms/dialog';
 
 export function NotesAction({ release }: Readonly<{ release: Release }>) {
   const [open, setOpen] = useState(false);

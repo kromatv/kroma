@@ -1,14 +1,14 @@
+import { Box, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Icon } from '@kroma/ui/kit/atoms/icon';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
+import { Tooltip } from '@kroma/ui/kit/molecules/tooltip';
 import { useState } from 'react';
 import { ChannelBadge } from '#site/components/channel-badge';
 import { NotesAction } from '#site/components/notes-action';
 import type { Release } from '#site/lib/release';
 import { shortHash } from '#site/lib/ui';
-import { Box, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Icon } from '#ui/components/atoms/icon';
-import { Text } from '#ui/components/atoms/text';
-import { CopyButton } from '#ui/components/molecules/copy-button';
-import { Tooltip } from '#ui/components/molecules/tooltip';
 
 export interface ReleaseRowProps {
   release: Release;

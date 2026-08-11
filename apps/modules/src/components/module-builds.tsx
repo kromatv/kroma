@@ -1,11 +1,11 @@
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Divider } from '@kroma/ui/kit/atoms/divider';
+import { Icon } from '@kroma/ui/kit/atoms/icon';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
 import type { Download } from '#site/lib/artifacts';
 import { mb, platformLabel, shortHash } from '#site/lib/ui';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Divider } from '#ui/components/atoms/divider';
-import { Icon } from '#ui/components/atoms/icon';
-import { Text } from '#ui/components/atoms/text';
-import { CopyButton } from '#ui/components/molecules/copy-button';
 
 export interface ModuleBuildsProps {
   files: Download[];

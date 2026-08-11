@@ -1,10 +1,10 @@
+import { Badge } from '@kroma/ui/kit/atoms/badge';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Divider } from '@kroma/ui/kit/atoms/divider';
+import { Text } from '@kroma/ui/kit/atoms/text';
 import type { VersionRow } from '#site/lib/history';
 import { mb } from '#site/lib/ui';
-import { Badge } from '#ui/components/atoms/badge';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Divider } from '#ui/components/atoms/divider';
-import { Text } from '#ui/components/atoms/text';
 
 export interface ModuleHistoryProps {
   rows: VersionRow[];

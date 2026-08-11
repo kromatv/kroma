@@ -1,5 +1,5 @@
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Text } from '#ui/components/atoms/text';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Text } from '@kroma/ui/kit/atoms/text';
 
 interface Line {
   id: string;

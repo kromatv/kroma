@@ -1,13 +1,13 @@
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Divider } from '@kroma/ui/kit/atoms/divider';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { EmptyState } from '@kroma/ui/kit/molecules/empty-state';
+import { Pagination, paginate } from '@kroma/ui/kit/molecules/pagination';
 import { useState } from 'react';
 import { ReleaseRow } from '#site/components/release-row';
 import { ReleaseSearch } from '#site/components/release-search';
 import { filterReleases } from '#site/lib/filter-releases';
 import type { Release } from '#site/lib/release';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Divider } from '#ui/components/atoms/divider';
-import { Text } from '#ui/components/atoms/text';
-import { EmptyState } from '#ui/components/molecules/empty-state';
-import { Pagination, paginate } from '#ui/components/molecules/pagination';
 
 const PAGE_SIZE = 25;
 

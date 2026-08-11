@@ -1,17 +1,17 @@
+import { Badge } from '@kroma/ui/kit/atoms/badge';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Divider } from '@kroma/ui/kit/atoms/divider';
+import { Icon, type IconName } from '@kroma/ui/kit/atoms/icon';
+import { Img } from '@kroma/ui/kit/atoms/img';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
 import type { ReactNode } from 'react';
 import type { ModuleEntry } from '#site/catalog';
 import { ModuleDownload, useDownloadPick } from '#site/components/module-download';
 import { downloads } from '#site/lib/artifacts';
 import { type Dependency, depEntries } from '#site/lib/deps';
 import { shortHash } from '#site/lib/ui';
-import { Badge } from '#ui/components/atoms/badge';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Divider } from '#ui/components/atoms/divider';
-import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { Img } from '#ui/components/atoms/img';
-import { Text } from '#ui/components/atoms/text';
-import { CopyButton } from '#ui/components/molecules/copy-button';
 
 const ICON = 60;
 const ICON_RADIUS = 15;

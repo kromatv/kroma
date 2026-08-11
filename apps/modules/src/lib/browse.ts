@@ -1,6 +1,6 @@
+import { type Page, paginate } from '@kroma/ui/kit/molecules/pagination';
 import { useMemo, useState } from 'react';
 import type { ModuleEntry } from '#site/catalog';
-import { type Page, paginate } from '#ui/components/molecules/pagination';
 
 const PAGE_SIZE = 8;
 

@@ -1,13 +1,13 @@
 import { SiteHeader } from '@kroma/site-kit/site-header';
+import { PageMain } from '@kroma/ui/kit';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Text } from '@kroma/ui/kit/atoms/text';
 import { createFileRoute } from '@tanstack/react-router';
 import { InstallCard } from '#site/components/install-card';
 import { ReleaseHeadline } from '#site/components/release-headline';
 import { ReleaseList } from '#site/components/release-list';
 import { SiteFooter } from '#site/components/site-footer';
 import { getCatalog } from '#site/lib/get-catalog';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Text } from '#ui/components/atoms/text';
-import { PageMain } from '#ui/lib/landmark';
 
 export const Route = createFileRoute('/browse')({
   loader: () => getCatalog(),

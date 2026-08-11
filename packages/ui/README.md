@@ -128,13 +128,15 @@ children. `textAlign` is spelled in full because `align` already means
 **Type is set by a role, never at a call site.** There is no `size`/`weight`
 prop and `style={{ fontSize }}` is drift: if no role fits, the ramp is missing
 one. The ramp has a base tier and a 10-foot tier authored for three metres
-rather than scaled up from the phone's. `TV_RAMP` is the 10-foot ladder in
-order, 96 down to 13:
+rather than scaled up from the phone's. Each is a named ladder in order:
+`BASE_RAMP` runs 66 down to 11, `TV_RAMP` 96 down to 13.
 
-| Face | Roles, largest first |
-| --- | --- |
-| `display` | `codeTv` 96 · `heroTv` 82 · `bannerTv` 59 · `titleTv` 44 · `headingTv` 32 · `subheadingTv` 28 |
-| `ui` | `bodyTv` 20 · `leadTv`/`labelTv`/`strongTv` 17 · `captionTv`/`metaTv`/`sectionTv` 15 · `footnoteTv`/`overlineTv` 13 |
+| Tier | Face | Roles, largest first |
+| --- | --- | --- |
+| base | `display` | `hero` 66 · `h1` 38 · `heading` 30 · `subheading` 26 · `h2` 22 · `title` 20 |
+| base | `ui` | `body` 16 · `label` 15 · `meta` 13 · `overline` 11 |
+| 10-foot | `display` | `codeTv` 96 · `heroTv` 82 · `bannerTv` 59 · `titleTv` 44 · `headingTv` 32 · `subheadingTv` 28 |
+| 10-foot | `ui` | `bodyTv` 20 · `leadTv`/`labelTv`/`strongTv` 17 · `captionTv`/`metaTv`/`sectionTv` 15 · `footnoteTv`/`overlineTv` 13 |
 
 A step is a size AND its leading (and its tracking where the design has one),
 which is why a role carries a `ratio` rather than a second number to keep in
@@ -324,15 +326,21 @@ one, and it carries the signature 10-foot affordance: a solid amber ring plus a
 dark lift, with an optional scale (1.06 for rail tiles, 1.05 for posters, 1.04
 for the primary action).
 
-`useFocusNav()` wires a screen's remote. What it does underneath differs, and
-that difference is the only reason the focus engine is platform-split:
+The spatial navigator (`react-tv-space-navigation`) owns directional movement on
+every target, so a browser TV and an Apple TV move focus by the same rules
+rather than by two engines that drift apart. What is platform-split is only how
+the remote reaches it, which is what `useFocusNav()` wires, plus the keys the
+navigator has no opinion about:
 
-- **Native**: the OS focus engine owns directional movement (UIFocusEngine on
-  tvOS, `nextFocus` resolution on Android TV). The kit only bridges Back and
-  PlayPause, which the OS does not route to a focusable.
-- **Web**: there is no OS focus engine, so movement is geometric: the nearest
-  focusable in the pressed direction, with cross-axis drift weighted x2 so
-  straight-line neighbours win.
+- **Native**: the remote arrives through `useTVEventHandler` and is posted to
+  the navigator as directions (`lib/focus-remote.ts`). A full-screen
+  transparent Pressable holds the platform's focus so the app hears the keys at
+  all. Back and PlayPause are bridged separately, since the OS does not route
+  them to a focusable.
+- **Web**: the remote arrives as ordinary `keydown` events on the document and
+  feeds the same navigator (`lib/focus-remote.web.ts`), which is why the
+  library is in the browser bundles too. Back, the transport keys and a held
+  OK's auto-repeats are handled beside it.
 - **Phones**: the TV remote APIs only exist in the react-native-tvos fork, so
   everything remote-shaped degrades to a no-op and a `<Focusable>` is simply a
   touch target. Android's hardware back button still routes through `onBack`.
@@ -357,7 +365,7 @@ reason too:
 
 | Reason | Where | Why the two platforms cannot share the file |
 | --- | --- | --- |
-| Focus and the remote | `lib/focus-{nav,here,remote,root,transition}`, `player/lib/virtual-focus`, `player/hooks/usePlayerKeys` | the OS focus engine owns movement natively; on the web there is none, so movement is geometric |
+| Focus and the remote | `lib/focus-{nav,here,remote,root,transition}`, `player/lib/virtual-focus`, `player/hooks/usePlayerKeys` | one shared navigator owns movement, but the remote reaches it as TV events natively and as document keydowns on the web |
 | Browser APIs with no RN equivalent | `lib/{portal,modal-portal,landmark,scroll-lock,drag-select,loop,wheel-pan,perf-memory}` | a DOM portal, a landmark role, pointer capture and `performance.memory` have no React Native spelling |
 | Drawing primitives | `lib/{css,svg}`, `lib/icons/stroke-prop` | React Native prefixes gradients `experimental_`; react-native-svg vs the browser's own SVG parser |
 | Motion | `lib/{progress-motion,splash-motion}`, `organisms/kroma-intro` | a CSS transition vs an `Animated` value |

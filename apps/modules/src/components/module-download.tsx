@@ -1,11 +1,11 @@
+import { Column } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { ButtonGroup } from '@kroma/ui/kit/molecules/button-group';
+import { Menu } from '@kroma/ui/kit/organisms/menu';
 import { useState } from 'react';
 import type { Download } from '#site/lib/artifacts';
 import { mb, platformLabel } from '#site/lib/ui';
-import { Column } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Text } from '#ui/components/atoms/text';
-import { ButtonGroup } from '#ui/components/molecules/button-group';
-import { Menu } from '#ui/components/organisms/menu';
 
 const PICK = 'Choose a platform';
 

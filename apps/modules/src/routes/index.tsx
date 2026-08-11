@@ -1,3 +1,8 @@
+import { PageMain } from '@kroma/ui/kit';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { EmptyState } from '@kroma/ui/kit/molecules/empty-state';
+import { Pagination } from '@kroma/ui/kit/molecules/pagination';
 import { createFileRoute } from '@tanstack/react-router';
 import { ModuleCard } from '#site/components/module-card';
 import { ModuleSearch } from '#site/components/module-search';
@@ -6,11 +11,6 @@ import { SiteFooter } from '#site/components/site-footer';
 import { SiteHeader } from '#site/components/site-header';
 import { sliceLabel, useModuleBrowse } from '#site/lib/browse';
 import { getCatalog } from '#site/lib/get-catalog';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Text } from '#ui/components/atoms/text';
-import { EmptyState } from '#ui/components/molecules/empty-state';
-import { Pagination } from '#ui/components/molecules/pagination';
-import { PageMain } from '#ui/lib/landmark';
 
 export const Route = createFileRoute('/')({
   loader: () => getCatalog(),

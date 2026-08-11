@@ -1,5 +1,5 @@
-import { IconButton } from '#ui/components/atoms/icon-button';
-import { Field } from '#ui/components/molecules/field';
+import { IconButton } from '@kroma/ui/kit/atoms/icon-button';
+import { Field } from '@kroma/ui/kit/molecules/field';
 
 export interface ReleaseSearchProps {
   value: string;

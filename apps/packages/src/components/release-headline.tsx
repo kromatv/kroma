@@ -1,9 +1,9 @@
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Text } from '@kroma/ui/kit/atoms/text';
 import { ChannelBadge } from '#site/components/channel-badge';
 import { NotesAction } from '#site/components/notes-action';
 import type { Release } from '#site/lib/release';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Text } from '#ui/components/atoms/text';
 
 export interface ReleaseHeadlineProps {
   label: string;

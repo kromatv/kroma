@@ -1,3 +1,12 @@
+import { PageMain } from '@kroma/ui/kit';
+import { Badge } from '@kroma/ui/kit/atoms/badge';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Icon } from '@kroma/ui/kit/atoms/icon';
+import { Img } from '@kroma/ui/kit/atoms/img';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
+import { EmptyState } from '@kroma/ui/kit/molecules/empty-state';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import type { ModuleEntry } from '#site/catalog';
@@ -11,15 +20,6 @@ import { downloads } from '#site/lib/artifacts';
 import { depEntries } from '#site/lib/deps';
 import { getCatalog } from '#site/lib/get-catalog';
 import { getModuleHistory } from '#site/lib/get-module';
-import { Badge } from '#ui/components/atoms/badge';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Icon } from '#ui/components/atoms/icon';
-import { Img } from '#ui/components/atoms/img';
-import { Text } from '#ui/components/atoms/text';
-import { CopyButton } from '#ui/components/molecules/copy-button';
-import { EmptyState } from '#ui/components/molecules/empty-state';
-import { PageMain } from '#ui/lib/landmark';
 
 export const Route = createFileRoute('/module/$id')({
   loader: async ({ params }) => {

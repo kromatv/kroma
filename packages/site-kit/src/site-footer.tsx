@@ -1,9 +1,9 @@
 import { site } from '@kroma/site-meta';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Divider } from '#ui/components/atoms/divider';
-import { Logo } from '#ui/components/atoms/logo';
-import { Text } from '#ui/components/atoms/text';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Divider } from '@kroma/ui/kit/atoms/divider';
+import { Logo } from '@kroma/ui/kit/atoms/logo';
+import { Text } from '@kroma/ui/kit/atoms/text';
 
 /** One entry of a footer column. */
 export interface FooterLink {
