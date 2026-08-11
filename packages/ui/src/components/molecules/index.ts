@@ -12,6 +12,8 @@ export type {
   GroupPosition,
 } from './button-group';
 export { ButtonGroup, useGroupMember, useGroupShape } from './button-group';
+export type { CalloutRootProps, CalloutTone } from './callout';
+export { Callout } from './callout';
 export type { CategoryTileProps, CategoryTileSize } from './category-tile';
 export { CategoryTile, categoryTileVariants } from './category-tile';
 export type {
@@ -23,6 +25,8 @@ export type {
 export { ChoiceList } from './choice-list';
 export type { CopyButtonProps } from './copy-button';
 export { CopyButton } from './copy-button';
+export type { DataFieldRootProps, DataFieldValueProps } from './data-field';
+export { DataField } from './data-field';
 export type { DisclosureProps } from './disclosure';
 export { Disclosure } from './disclosure';
 export type { EmptyStateLayout, EmptyStateRootProps, EmptyStateSize } from './empty-state';
@@ -35,10 +39,12 @@ export type { InputGroupAddonProps, InputGroupRootProps } from './input-group';
 export { InputGroup } from './input-group';
 export type { KeypadProps } from './keypad';
 export { Keypad } from './keypad';
+export type { LegendItemProps, LegendRootProps } from './legend';
+export { Legend } from './legend';
 export type { ListGroupProps, ListRowRootProps, ListRowSize } from './list-row';
 export { ListRow, listRowVariants } from './list-row';
 export type { MediaCardProps } from './media-card';
-export { CARD_SCRIM, MediaCard, tintGradient } from './media-card';
+export { MediaCard, tintGradient } from './media-card';
 export type {
   NavPillIcon,
   NavPillItemProps,
@@ -71,7 +77,7 @@ export { PersonCard, personCardVariants } from './person-card';
 export type { PinFieldProps } from './pin-field';
 export { PinField } from './pin-field';
 export type { PosterCardProps } from './poster-card';
-export { POSTER_SCRIM, PosterCard } from './poster-card';
+export { PosterCard } from './poster-card';
 export type { SectionRootProps } from './section';
 export { Section } from './section';
 export type { SegmentedOption, SegmentedRootProps } from './segmented-control';

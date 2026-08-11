@@ -1,6 +1,6 @@
 import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, color, EmptyState, Surface } from '@kroma/ui/kit';
+import { Button, color, DataField, EmptyState, Surface } from '@kroma/ui/kit';
 import {
   IconDeviceTv,
   IconFolder,
@@ -188,10 +188,7 @@ function Stat({
 }: Readonly<{ label: string; value: string; border?: boolean }>) {
   return (
     <div className={`flex-1 px-5 py-3.5 ${border ? 'border-r border-white/5' : ''}`}>
-      <div className="mb-1.5 text-[9.5px] font-bold uppercase tracking-[.12em] text-text/38">
-        {label}
-      </div>
-      <div className="text-[14px] font-semibold text-text/78">{value}</div>
+      <DataField.Root size="sm" label={label} value={value} />
     </div>
   );
 }

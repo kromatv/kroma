@@ -6,7 +6,7 @@
 
 import { apiErrorText, type MatchCandidate } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Field, IconButton } from '@kroma/ui/kit';
+import { Button, Callout, Field, IconButton } from '@kroma/ui/kit';
 import { IconCheck, IconLoader2, IconSearch } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -116,9 +116,9 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
 
             <div className="flex-1 overflow-y-auto px-7 py-5">
               {error ? (
-                <p className="mb-4 rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-[13px] text-danger-hover">
-                  {error}
-                </p>
+                <div className="mb-4">
+                  <Callout.Root tone="danger" title={error} />
+                </div>
               ) : null}
               {isPending ? (
                 <div className="flex justify-center py-16 text-white/40">

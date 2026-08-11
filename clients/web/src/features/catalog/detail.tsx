@@ -11,7 +11,7 @@ import {
   type VideoTrack,
 } from '@kroma/core';
 import { useT, useThemeAudio } from '@kroma/ui';
-import { BackButton, Badge, Button, Ground, IconButton } from '@kroma/ui/kit';
+import { BackButton, Badge, Button, DataField, Ground, IconButton } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import { HeroBackdrop } from '#web/features/catalog/hero-backdrop';
@@ -63,17 +63,6 @@ export function audioFlagLabel(
 export function subString(t: Translate, item: Pick<MediaItem, 'subtitles'>): string {
   const langs = [...new Set(item.subtitles.map((s) => langName(t, s.language)).filter(Boolean))];
   return langs.length ? langs.join(', ') : t('subtitle.none');
-}
-
-function Field({ label, value }: Readonly<{ label: string; value: string }>) {
-  return (
-    <div>
-      <div className="mb-1.75 text-[11px] font-semibold uppercase tracking-widest text-white/45">
-        {label}
-      </div>
-      <div className="text-[14px] font-medium text-white/85 max-sm:text-[15px]">{value}</div>
-    </div>
-  );
 }
 
 export interface DetailHeroProps {
@@ -323,8 +312,12 @@ function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subtitles?:
   if (audio == null && subtitles == null) return null;
   return (
     <div className="flex flex-wrap gap-x-6 gap-y-4 border-t border-white/8 py-4.5 sm:gap-x-11">
-      {audio != null ? <Field label={t('content.fieldAudio')} value={audio} /> : null}
-      {subtitles != null ? <Field label={t('content.fieldSubtitles')} value={subtitles} /> : null}
+      {audio != null ? (
+        <DataField.Root size="md" label={t('content.fieldAudio')} value={audio} />
+      ) : null}
+      {subtitles != null ? (
+        <DataField.Root size="md" label={t('content.fieldSubtitles')} value={subtitles} />
+      ) : null}
     </div>
   );
 }

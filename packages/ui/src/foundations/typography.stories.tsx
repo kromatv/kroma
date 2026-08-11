@@ -8,15 +8,13 @@ import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import {
+  BASE_RAMP,
   mobileType,
   mobileTypeSpec,
   TV_RAMP,
-  type TypeRole,
   type TypeSpec,
   typeSpec,
 } from '#ui/core/tokens';
-
-const BASE: TypeRole[] = ['hero', 'h1', 'h2', 'title', 'body', 'label', 'meta', 'overline'];
 
 const SPECIMEN = 'Blade Runner 2049';
 
@@ -91,9 +89,9 @@ export default story({
       </Section>
       <Section
         title="Base"
-        hint="Arm's length: the web client, the desktop shell and the kit's own chrome."
+        hint="Arm's length: the web client, the desktop shell and the kit's own chrome. The same ladder in order, largest first, with the display face above and the ui face below."
       >
-        {BASE.map((role) => {
+        {BASE_RAMP.map((role) => {
           const spec = typeSpec[role];
           return (
             <Row key={role} name={role} detail={metrics(spec)}>

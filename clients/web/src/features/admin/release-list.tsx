@@ -5,7 +5,7 @@
 
 import type { ScoredReleaseView } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { color, IconButton } from '@kroma/ui/kit';
+import { Callout, color, IconButton } from '@kroma/ui/kit';
 import { IconChevronDown, IconExternalLink } from '@tabler/icons-react';
 import { useState } from 'react';
 import { formatBytes } from '#web/shared/lib/adminFormat';
@@ -30,12 +30,7 @@ export function ReleaseList({
   return (
     <div className="flex flex-col gap-2">
       {errors.map((e) => (
-        <div
-          key={e}
-          className="rounded-lg border border-accent/25 bg-accent/8 px-3 py-2 text-[12px] font-semibold text-accent"
-        >
-          {e}
-        </div>
+        <Callout.Root key={e} tone="accent" title={e} />
       ))}
       {releases.length === 0 && errors.length === 0 ? (
         <div className="rounded-lg border border-white/[0.07] bg-surface-1 px-3 py-4 text-center text-[12.5px] font-medium text-white/45">

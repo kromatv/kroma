@@ -3,6 +3,7 @@
 // The same anatomy as <MediaCard> at a different aspect and type scale. It fills
 // its grid cell rather than declaring a width, so the grid owns the column maths.
 
+import { ArtScrim } from '#ui/components/atoms/art-scrim';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
@@ -11,20 +12,6 @@ import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { tintGradient } from '#ui/components/molecules/media-card';
 import { styles, useTheme } from '#ui/core';
-import { gradient } from '#ui/lib/css';
-
-// Steeper than the rail tile's scrim: a poster is taller, so the fade has
-// further to travel before it reaches the title.
-const POSTER_SCRIM = [
-  'linear-gradient(to top,',
-  'rgba(0, 0, 0, 0.92) 0%,',
-  // The title's own band. It has to be dark BEFORE the text starts, not at the
-  // last pixel: a two-line title occupies roughly the bottom fifth of the card.
-  'rgba(0, 0, 0, 0.78) 20%,',
-  'rgba(0, 0, 0, 0.32) 42%,',
-  'rgba(0, 0, 0, 0.08) 62%,',
-  'rgba(0, 0, 0, 0) 78%)',
-].join(' ');
 
 interface PosterCardProps {
   title: string;
@@ -69,7 +56,7 @@ function PosterCard({
             doesn't reliably apply an `overflow: hidden` + `border-radius` clip
             to a composited descendant like the `<img>` below. */}
         <Img src={art} background={tintGradient(tint)} radius={radius.lg} fill />
-        <Box fill radius="lg" style={gradient(POSTER_SCRIM)} />
+        <ArtScrim variant="deep" radius="lg" />
         {watched ? <WatchedBadge size={26} /> : null}
         <Box absolute left={14} right={14} bottom={12}>
           <Text style={s.title} lines={2}>
@@ -97,4 +84,4 @@ const s = styles({
 });
 
 export type { PosterCardProps };
-export { POSTER_SCRIM, PosterCard };
+export { PosterCard };

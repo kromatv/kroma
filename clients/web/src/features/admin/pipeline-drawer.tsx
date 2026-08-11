@@ -1,6 +1,6 @@
 import type { ElementRow, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, color, Drawer, IconButton } from '@kroma/ui/kit';
+import { Button, Callout, color, Drawer, IconButton } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
 import { fmtDur, kindMeta, posterGrad, statusMeta } from '#web/features/admin/pipeline-meta';
 import { useAuth } from '#web/shared/lib/auth';
@@ -120,8 +120,8 @@ export const PipelineDrawer = createCallable<
                   </div>
                 </div>
                 {failed && tr.error ? (
-                  <div className="mt-2.5 rounded-lg border border-danger/18 bg-danger/8 px-[11px] py-2.5 text-[12px] leading-[1.4] text-danger-hover">
-                    {tr.error}
+                  <div className="mt-2.5">
+                    <Callout.Root tone="danger" title={tr.error} />
                   </div>
                 ) : null}
               </div>

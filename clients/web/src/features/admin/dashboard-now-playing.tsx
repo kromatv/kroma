@@ -1,6 +1,16 @@
 import { type PlaybackSession, resolveImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, color, Dialog, Field, Icon, IconButton, Progress, Surface } from '@kroma/ui/kit';
+import {
+  Avatar,
+  color,
+  DataField,
+  Dialog,
+  Field,
+  Icon,
+  IconButton,
+  Progress,
+  Surface,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { formatMbps, posterGradient, timecode } from '#web/shared/lib/adminFormat';
@@ -142,38 +152,38 @@ export function NowPlayingCard({
         </div>
 
         <div className="flex flex-wrap gap-x-6.5 gap-y-2.5 border-t border-border pt-3">
-          <Stat label={t('admin.statPlayback')}>
+          <DataField.Root size="sm" label={t('admin.statPlayback')}>
             <span
-              className="inline-flex items-center gap-1.5 rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
+              className="inline-flex items-center gap-1.5 self-start rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
               style={{ color: pipe.color, background: pipe.bg }}
             >
               {pipe.label}
             </span>
-          </Stat>
-          <Stat label={t('admin.statVideo')}>
+          </DataField.Root>
+          <DataField.Root size="sm" label={t('admin.statVideo')}>
             <span className="text-[13px] font-semibold" style={{ color: color('success') }}>
               {s.videoLabel}
             </span>
-          </Stat>
-          <Stat label={t('admin.statAudioTrack')}>
+          </DataField.Root>
+          <DataField.Root size="sm" label={t('admin.statAudioTrack')}>
             <span
               className="text-[13px] font-semibold"
               style={{ color: color(transcode ? 'accent' : 'success') }}
             >
               {transcode ? `${s.audioLabel} → AAC` : s.audioLabel}
             </span>
-          </Stat>
-          <Stat label={t('admin.statSubtitles')}>
+          </DataField.Root>
+          <DataField.Root size="sm" label={t('admin.statSubtitles')}>
             <span className="text-[13px] font-semibold text-text/78">{s.subtitle}</span>
-          </Stat>
-          <Stat label={t('admin.statBitrate')}>
+          </DataField.Root>
+          <DataField.Root size="sm" label={t('admin.statBitrate')}>
             <span className="text-[13px] font-semibold tabular-nums text-text/78">
               {formatMbps(s.bitrate)} Mb/s
             </span>
-          </Stat>
-          <Stat label={t('admin.statNetwork')}>
+          </DataField.Root>
+          <DataField.Root size="sm" label={t('admin.statNetwork')}>
             <span
-              className="inline-flex items-center gap-1.5 rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
+              className="inline-flex items-center gap-1.5 self-start rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
               style={{
                 color: color(lan ? 'success' : 'info'),
                 background: color(lan ? 'success/12' : 'info/12'),
@@ -181,21 +191,10 @@ export function NowPlayingCard({
             >
               {s.network} · {s.ip}
             </span>
-          </Stat>
+          </DataField.Root>
         </div>
       </div>
     </Surface>
-  );
-}
-
-function Stat({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
-  return (
-    <div>
-      <div className="mb-1 text-[9.5px] font-bold uppercase tracking-[.12em] text-text/38">
-        {label}
-      </div>
-      {children}
-    </div>
   );
 }
 

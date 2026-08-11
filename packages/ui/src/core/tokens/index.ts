@@ -18,4 +18,4 @@ export {
 export type { MobileTypeRole } from './mobile';
 export { mobileFonts, mobileRadius, mobileSpace, mobileType, mobileTypeSpec } from './mobile';
 export type { FontRegistry, FontToken, TypeRole, TypeRoleRegistry, TypeSpec } from './typography';
-export { fonts, TV_RAMP, toType, tracking, type, typeSpec } from './typography';
+export { BASE_RAMP, fonts, TV_RAMP, toType, tracking, type, typeSpec } from './typography';

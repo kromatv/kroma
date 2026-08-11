@@ -1,6 +1,6 @@
 import { type AdminUser, type Invite, PERMISSIONS, type Permission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, confirm, Dialog, Field, InputGroup, ListRow } from '@kroma/ui/kit';
+import { Button, Callout, confirm, Dialog, Field, InputGroup, ListRow } from '@kroma/ui/kit';
 import { IconMail } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
@@ -213,10 +213,7 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
         <PermPicker selected={perms} toggle={toggle} />
       </div>
       {link ? (
-        <div className="rounded-xl border border-accent/40 bg-accent-soft p-4">
-          <div className="mb-2 text-[12px] font-bold uppercase tracking-[.12em] text-accent">
-            {t('admin.inviteLink')}
-          </div>
+        <Callout.Root tone="accent" title={t('admin.inviteLink')}>
           <InputGroup.Root label={t('admin.inviteLink')}>
             <InputGroup.Input value={link} autoFocus={false} />
             <InputGroup.Addon align="inline-end">
@@ -227,7 +224,7 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
               />
             </InputGroup.Addon>
           </InputGroup.Root>
-        </div>
+        </Callout.Root>
       ) : (
         <Dialog.Actions
           onCancel={close}

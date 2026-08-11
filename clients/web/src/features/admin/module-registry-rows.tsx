@@ -4,7 +4,7 @@
 
 import type { StoreRegistry, StoreRegistryPreview } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Field, IconButton, Surface, Switch } from '@kroma/ui/kit';
+import { Button, Callout, Field, IconButton, Surface, Switch } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { adminApi, message, previewRegistry } from '#web/features/admin/module-api';
@@ -146,23 +146,23 @@ function PreviewResult({ preview }: Readonly<{ preview: StoreRegistryPreview }>)
   const t = useT();
   if (preview.ok) {
     return (
-      <div className="rounded-lg border border-success/25 bg-success/7 px-3 py-2.5">
-        <p className="text-xs font-semibold text-success">
-          {t('admin.registriesPreviewOk', { count: preview.moduleCount })}
-        </p>
-        {preview.modules.length > 0 && (
-          <p className="mt-1 text-[11px] text-muted">
-            {preview.modules.map((m) => `${m.name} v${m.version}`).join(' · ')}
-          </p>
-        )}
-      </div>
+      <Callout.Root
+        tone="success"
+        title={t('admin.registriesPreviewOk', { count: preview.moduleCount })}
+        detail={
+          preview.modules.length > 0
+            ? preview.modules.map((m) => `${m.name} v${m.version}`).join(' · ')
+            : undefined
+        }
+      />
     );
   }
   return (
-    <div className="rounded-lg border border-danger/25 bg-danger/8 px-3 py-2.5">
-      <p className="text-xs font-semibold text-danger">{t('admin.registriesPreviewFail')}</p>
-      {preview.error && <p className="mt-1 break-all text-[11px] text-muted">{preview.error}</p>}
-    </div>
+    <Callout.Root
+      tone="danger"
+      title={t('admin.registriesPreviewFail')}
+      detail={preview.error || undefined}
+    />
   );
 }
 

@@ -58,8 +58,8 @@ const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   },
   variants: {
     kind: {
-      digit: { label: { fontSize: 28 } },
-      delete: { label: { fontSize: 22 } },
+      digit: { label: { text: 'subheading' } },
+      delete: {},
     },
     size: {
       // A remote's key, sized for the far end of a room.
@@ -68,7 +68,7 @@ const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
       // viewfinder above them on the shortest phone. Sized against that budget
       // rather than picked - a remote's 88x72 overflows, and anything under
       // this is small for a thumb without buying room anything else needs.
-      compact: { root: { w: 80, h: 64 }, label: { fontSize: 26 } },
+      compact: { root: { w: 80, h: 64 } },
     },
   },
   defaults: { kind: 'digit', size: 'tv' },

@@ -10,7 +10,7 @@ import {
   type StorePlanModule,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Button, Dialog, ListRow, Spinner, Text } from '@kroma/ui/kit';
+import { Badge, Button, Callout, Dialog, ListRow, Spinner, Text } from '@kroma/ui/kit';
 
 /** The dialog title already says the install failed, so the server's
  * `install failed:` prefix is dropped and the detail (which module, which
@@ -18,9 +18,11 @@ import { Badge, Button, Dialog, ListRow, Spinner, Text } from '@kroma/ui/kit';
 export function ErrorBox({ text }: Readonly<{ text: string }>) {
   const clean = text.replace(/^install failed:\s*/i, '').replace(/^update failed:\s*/i, '');
   return (
-    <div className="rounded-lg border border-danger/25 bg-danger/8 px-3.5 py-3">
-      <p className="break-words font-mono text-[11.5px] leading-relaxed text-danger">{clean}</p>
-    </div>
+    <Callout.Root tone="danger">
+      <Text variant="meta" font="mono" color="danger">
+        {clean}
+      </Text>
+    </Callout.Root>
   );
 }
 
@@ -113,14 +115,16 @@ function MissingWarnings({ missing }: Readonly<{ missing: StoreMissingCapability
   const t = useT();
   if (missing.length === 0) return null;
   return (
-    <div className="mt-4 rounded-lg border border-accent/25 bg-accent-soft px-3.5 py-3">
+    <div className="mt-4 flex flex-col gap-2">
       {missing.map((m) => (
-        <p key={`${m.kind}:${m.for}`} className="text-[12px] font-medium text-accent">
-          {t('admin.modulesInstallMissing', {
+        <Callout.Root
+          key={`${m.kind}:${m.for}`}
+          tone="accent"
+          title={t('admin.modulesInstallMissing', {
             kind: m.id ? `${m.kind}:${m.id}` : m.kind,
             name: m.for,
           })}
-        </p>
+        />
       ))}
     </div>
   );

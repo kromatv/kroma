@@ -45,6 +45,8 @@ export interface TypeSpec {
 export const typeSpec = {
   hero: { family: 'display', weight: '700', size: 66, ratio: 0.98, em: tracking.display },
   h1: { family: 'display', weight: '700', size: 38, ratio: 1, em: tracking.display },
+  heading: { family: 'display', weight: '700', size: 30, ratio: 1.05, em: tracking.display },
+  subheading: { family: 'display', weight: '700', size: 26, ratio: 1.07, em: tracking.display },
   h2: { family: 'display', weight: '700', size: 22, ratio: 1.1, em: tracking.display },
   title: { family: 'display', weight: '700', size: 20, ratio: 1.05, em: tracking.display },
   body: { family: 'ui', weight: '400', size: 16, ratio: 1.55 },
@@ -89,6 +91,22 @@ export const typeSpec = {
     uppercase: true,
   },
 } as const satisfies Record<string, TypeSpec>;
+
+/** The base tier, largest first: what the web client, the desktop shell and the
+ *  phone-facing components read. Same order and the same purpose as
+ *  {@link TV_RAMP}. */
+export const BASE_RAMP = [
+  'hero',
+  'h1',
+  'heading',
+  'subheading',
+  'h2',
+  'title',
+  'body',
+  'label',
+  'meta',
+  'overline',
+] as const satisfies readonly (keyof typeof typeSpec)[];
 
 /** The 10-foot tier, largest first. The ramp's own order, so a caller reaching
  *  for "one step down" reads it off rather than guessing, and so the invariants

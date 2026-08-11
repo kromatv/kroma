@@ -1,7 +1,6 @@
 import { type ElementRow, type KromaClient, KromaEvents, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, color, EmptyState } from '@kroma/ui/kit';
-import { IconPlayerPause } from '@tabler/icons-react';
+import { Button, Callout, color, EmptyState, Legend } from '@kroma/ui/kit';
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
 import { ElementRowView } from '#web/features/admin/pipeline-row';
@@ -218,9 +217,8 @@ export function PipelinePage() {
       />
 
       {paused ? (
-        <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-accent/30 bg-accent/10 px-4 py-2.5 text-[13.5px] font-semibold text-accent">
-          <IconPlayerPause size={15} stroke={2} />
-          {t('pipeline.pausedBanner')}
+        <div className="mb-4">
+          <Callout.Root tone="accent" icon="player-pause" title={t('pipeline.pausedBanner')} />
         </div>
       ) : null}
 
@@ -334,11 +332,13 @@ export function PipelinePage() {
                 {Math.min(start + PER_PAGE, data?.total ?? 0).toLocaleString()} /{' '}
                 {(data?.total ?? 0).toLocaleString()}
               </span>
-              <div className="hidden items-center gap-3 md:flex">
-                <Legend tone="success" label={t('pipeline.st.done')} />
-                <Legend tone="accent" label={t('pipeline.st.running')} />
-                <Legend tone="white/30" label={t('pipeline.st.pending')} />
-                <Legend tone="danger" label={t('pipeline.st.failed')} />
+              <div className="hidden md:block">
+                <Legend.Root>
+                  <Legend.Item color="success" label={t('pipeline.st.done')} />
+                  <Legend.Item color="accent" label={t('pipeline.st.running')} />
+                  <Legend.Item color="white/30" label={t('pipeline.st.pending')} />
+                  <Legend.Item color="danger" label={t('pipeline.st.failed')} />
+                </Legend.Root>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
@@ -364,15 +364,6 @@ export function PipelinePage() {
 
       <ConsoleToast toast={toast} />
     </>
-  );
-}
-
-function Legend({ tone, label }: Readonly<{ tone: string; label: string }>) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/45">
-      <span className="h-2 w-2 rounded-full" style={{ background: color(tone) }} />
-      {label}
-    </span>
   );
 }
 

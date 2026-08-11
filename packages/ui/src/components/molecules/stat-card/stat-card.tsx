@@ -23,7 +23,7 @@ function StatCard({ label, value, unit, color = 'text', ...surface }: Readonly<S
         {label}
       </Text>
       <Box row align="baseline" gap={8} mt={10}>
-        <Text variant="h2" color={color} style={VALUE}>
+        <Text variant="heading" color={color}>
           {value}
         </Text>
         {unit ? (
@@ -35,10 +35,6 @@ function StatCard({ label, value, unit, color = 'text', ...surface }: Readonly<S
     </Surface>
   );
 }
-
-// The design's stat size sits between h2 and h1; Text re-derives line height
-// and tracking from the role when a size is overridden.
-const VALUE = { fontSize: 30 } as const;
 
 export type { StatCardProps };
 export { StatCard };

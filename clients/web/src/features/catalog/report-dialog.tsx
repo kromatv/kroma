@@ -9,7 +9,7 @@ import {
   type ReportSubjectKind,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Field, IconButton } from '@kroma/ui/kit';
+import { Button, Callout, Field, IconButton } from '@kroma/ui/kit';
 import {
   IconCheck,
   IconDotsCircleHorizontal,
@@ -176,11 +176,7 @@ export const ReportDialog = createCallable<
                 </Field.Root>
               </div>
 
-              {error ? (
-                <div className="rounded-lg border border-danger/18 bg-danger/8 px-3.5 py-2.5 text-[12.5px] font-semibold text-danger-hover">
-                  {error}
-                </div>
-              ) : null}
+              {error ? <Callout.Root tone="danger" title={error} /> : null}
 
               <div className="flex gap-2.5">
                 <Button label={t('report.submit')} onPress={submit} loading={busy} style={FLEX_1} />

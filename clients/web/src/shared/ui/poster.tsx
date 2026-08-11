@@ -1,6 +1,6 @@
 import { sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Ground, IconButton, Progress, VirtualRail } from '@kroma/ui/kit';
+import { ArtScrim, Ground, IconButton, Progress, VirtualRail } from '@kroma/ui/kit';
 import { type ReactElement, useState } from 'react';
 import { Image } from '#web/shared/ui/image';
 
@@ -96,7 +96,7 @@ export function Poster({
             fill
             onError={() => setImgOk(false)}
           />
-          <div className="absolute inset-0 bg-linear-to-b from-black/5 via-transparent to-black/70" />
+          <ArtScrim radius="lg" />
           <div
             className={`absolute inset-x-3.5 bottom-3.5 ${
               showImg ? 'opacity-0 transition-opacity duration-200 group-hover:opacity-100' : ''

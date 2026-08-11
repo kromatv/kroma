@@ -10,12 +10,12 @@ const SLOT_RADIUS = { md: 'lg', tv: 'xl' } as const satisfies Record<OtpSize, Ra
 const otpVariants = sv({
   slots: {
     slot: { center: true, bg: CONTROL.md.bg, border: 'borderStrong' },
-    char: { fontWeight: '600', color: 'text' },
+    char: { color: 'text' },
   },
   variants: {
     size: {
-      md: { slot: { w: 52, h: 60, radius: SLOT_RADIUS.md }, char: { fontSize: 26 } },
-      tv: { slot: { w: 72, h: 84, radius: SLOT_RADIUS.tv }, char: { fontSize: 38 } },
+      md: { slot: { w: 52, h: 60, radius: SLOT_RADIUS.md }, char: { text: 'subheading' } },
+      tv: { slot: { w: 72, h: 84, radius: SLOT_RADIUS.tv }, char: { text: 'h1' } },
     },
     /** `active` is the slot the next character lands in, and the only one with a caret. */
     state: {

@@ -65,7 +65,7 @@ never an input device, never a boolean spelled as a string.
 | `Detail` | The technical particular behind the hint: an error's cause, a code. | Distinct from `Hint`. `Hint` helps a user act; `Detail` is what they paste into a bug report. |
 | `Actions` | The controls a surface offers: pinned to the end of a header, or under an empty state. | Always plural, even when it holds one button. It is a region, and `Action` beside `Actions` is a name one letter from another name. |
 | `Input` / `Textarea` | The text entry a field owns. | Named for the entry, not the field. |
-| `Value` | Renders the current selection inside the trigger. | |
+| `Value` | The thing being reported: a selection inside a trigger, a readout beside its `Label`. | Reports, never controls. `Select.Value` and `DataField.Value` are the same role. |
 | `Media` | The mark that stands for the thing: a glyph, a poster, an avatar, an illustration. | Takes a `name` sugar for a glyph the kit can size, and children for media it cannot. shadcn's `EmptyMedia` is the same idea. |
 | `Icon` | A glyph that is an affordance on a control. | A **prop** (`<Button icon>`), never a part. Where the mark is the subject rather than an affordance, it is `Media`. |
 | `Group` / `Separator` | A section of items; a divider. | A separator is always semantic. |

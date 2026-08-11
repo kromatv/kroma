@@ -12,7 +12,7 @@ import {
 } from '@kroma/core';
 import { useModuleEnabled } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, color, Drawer, Field, IconButton } from '@kroma/ui/kit';
+import { Avatar, Button, Callout, color, Drawer, Field, IconButton } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
@@ -106,8 +106,8 @@ function RequesterCard({ req }: Readonly<{ req: MediaRequest }>) {
       </div>
 
       {req.note ? (
-        <div className="mt-4 rounded-lg border border-danger/18 bg-danger/8 px-[11px] py-2.5 text-[12.5px] leading-[1.45] text-danger-hover">
-          {req.note}
+        <div className="mt-4">
+          <Callout.Root tone="danger" title={req.note} />
         </div>
       ) : null}
     </>
@@ -145,16 +145,13 @@ function SearchPanel({
           loading={search.busy}
         />
       </div>
-      {search.error ? (
-        <div className="rounded-lg border border-danger/18 bg-danger/8 px-3 py-2 text-[12px] font-semibold text-danger-hover">
-          {search.error}
-        </div>
-      ) : null}
+      {search.error ? <Callout.Root tone="danger" title={search.error} /> : null}
       {grabbed ? (
-        <div
-          className={`mb-2 rounded-lg border px-3 py-2 text-[12px] font-semibold ${grabbed.error ? 'border-danger/18 bg-danger/8 text-danger-hover' : 'border-success/25 bg-success/9 text-success'}`}
-        >
-          {grabbed.error ? grabbed.title : `${t('requests.grabbed')} ${grabbed.title}`}
+        <div className="mb-2">
+          <Callout.Root
+            tone={grabbed.error ? 'danger' : 'success'}
+            title={grabbed.error ? grabbed.title : `${t('requests.grabbed')} ${grabbed.title}`}
+          />
         </div>
       ) : null}
       {search.view ? (

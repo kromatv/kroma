@@ -6,7 +6,7 @@
 
 import { type PersonDetail, personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Button, Text } from '@kroma/ui/kit';
+import { Button, DataField, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 
 const READ_MORE = { fontSize: 13, fontWeight: '700' } as const;
@@ -23,16 +23,11 @@ export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null
   return (
     <section className="mb-9 grid gap-5 border-border/60 border-b pb-7">
       {facts.length ? (
-        <dl className="flex flex-wrap gap-x-10 gap-y-4">
+        <div className="flex flex-wrap gap-x-10 gap-y-4">
           {facts.map((f) => (
-            <div key={f.key}>
-              <dt className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-                {f.label}
-              </dt>
-              <dd className="mt-1 text-[14.5px] font-semibold text-white/85">{f.value}</dd>
-            </div>
+            <DataField.Root key={f.key} size="md" label={f.label} value={f.value} />
           ))}
-        </dl>
+        </div>
       ) : null}
 
       {biography ? (

@@ -13,6 +13,7 @@ import {
   type VideoTrack,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { DataField } from '@kroma/ui/kit';
 import { IconFileInfo } from '@tabler/icons-react';
 import { formatBytes, formatDuration } from '#web/shared/lib/adminFormat';
 
@@ -26,17 +27,17 @@ export function FileCard({
     <div className="overflow-hidden rounded-xl border border-white/8 bg-white/[0.02]">
       <FileHeader file={file} index={index} multi={multi} />
 
-      <dl className="grid grid-cols-2 gap-x-5 gap-y-2.5 px-4 py-3.5 sm:grid-cols-3">
-        <Field label={t('mediaInfo.container')} value={file.container.toUpperCase()} />
-        <Field
+      <div className="grid grid-cols-2 gap-x-5 gap-y-2.5 px-4 py-3.5 sm:grid-cols-3">
+        <FileField label={t('mediaInfo.container')} value={file.container.toUpperCase()} />
+        <FileField
           label={t('mediaInfo.size')}
           value={file.size != null ? formatBytes(file.size) : '-'}
         />
-        <Field
+        <FileField
           label={t('mediaInfo.duration')}
           value={file.durationMs != null ? formatDuration(file.durationMs) : '-'}
         />
-      </dl>
+      </div>
 
       {file.probed ? <FileTracks file={file} /> : <Unprobed />}
     </div>
@@ -174,12 +175,11 @@ function TrackLine({
   );
 }
 
-function Field({ label, value }: Readonly<{ label: string; value: string }>) {
+function FileField({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="min-w-0">
-      <dt className="text-[10px] font-bold uppercase tracking-[.1em] text-white/35">{label}</dt>
-      <dd className="mt-0.5 truncate text-[13px] text-white/85">{value}</dd>
-    </div>
+    <DataField.Root size="sm" label={label}>
+      <DataField.Value lines={1}>{value}</DataField.Value>
+    </DataField.Root>
   );
 }
 

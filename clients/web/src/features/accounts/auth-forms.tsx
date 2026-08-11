@@ -4,8 +4,7 @@
 
 import { isEmail, isPassword, isUsername, type PublicUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Field } from '@kroma/ui/kit';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { Button, Callout, Field } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
@@ -56,9 +55,8 @@ export function LoginForm({
       </h1>
 
       {notice ? (
-        <div className="flex w-full items-center gap-2.5 rounded-md border border-accent/25 bg-accent-soft px-3.5 py-2.5 text-[13.5px] font-medium text-accent">
-          <IconInfoCircle size={17} stroke={1.9} className="flex-none" />
-          <span>{notice}</span>
+        <div className="w-full">
+          <Callout.Root tone="accent" size="md" icon="info-circle" title={notice} />
         </div>
       ) : null}
 

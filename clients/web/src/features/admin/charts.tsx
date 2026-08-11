@@ -1,9 +1,11 @@
 // Admin-dashboard charts, rendered with Chart.js (react-chartjs-2): a reusable
 // multi-series line/area chart (Débit / CPU / RAM) and the stacked films-vs-TV
-// history bars. Chart.js owns the plot, axes, grid and tooltips; the legend and
-// footer are kept as bespoke React to match the "Admin Serveur" design.
+// history bars. Chart.js owns the plot, axes, grid and tooltips; the key under
+// each plot is the kit's <Legend>, and the footer is bespoke React.
 
 import type { HistoryBucket } from '@kroma/core';
+import type { ColorValue } from '@kroma/ui/kit';
+import { Legend } from '@kroma/ui/kit';
 import {
   BarElement,
   CategoryScale,
@@ -93,7 +95,7 @@ export function MetricsChart({
   series: SeriesDef[];
   max: number;
   formatValue: (v: number) => string;
-  legend: { label: string; color: string }[];
+  legend: { label: string; color: ColorValue }[];
   footer?: ReactNode;
   sampleSec?: number;
 }>) {
@@ -174,7 +176,11 @@ export function MetricsChart({
         <Line data={data} options={options} />
       </div>
       <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4">
-        <Legend items={legend} />
+        <Legend.Root>
+          {legend.map((l) => (
+            <Legend.Item key={l.label} color={l.color} label={l.label} />
+          ))}
+        </Legend.Root>
         {footer ? <span className="text-[12.5px] text-dim">{footer}</span> : null}
       </div>
     </div>
@@ -255,32 +261,14 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
         <Bar data={data} options={options} />
       </div>
       <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4">
-        <Legend
-          items={[
-            { label: 'FILMS', color: CHART_SERIES.films },
-            { label: 'TV', color: CHART_SERIES.tv },
-          ]}
-        />
+        <Legend.Root>
+          <Legend.Item color={CHART_SERIES.films} label="FILMS" />
+          <Legend.Item color={CHART_SERIES.tv} label="TV" />
+        </Legend.Root>
         <span className="text-[12.5px] text-dim">
           Totaux : Films {formatHours(totalFilms)} · TV {formatHours(totalTv)}
         </span>
       </div>
-    </div>
-  );
-}
-
-function Legend({ items }: Readonly<{ items: { label: string; color: string }[] }>) {
-  return (
-    <div className="flex flex-wrap gap-4.5">
-      {items.map((l) => (
-        <span
-          key={l.label}
-          className="inline-flex items-center gap-1.75 text-[12px] font-semibold tracking-[.06em] text-muted"
-        >
-          <span className="h-2.25 w-2.25 rounded-full" style={{ background: l.color }} />
-          {l.label}
-        </span>
-      ))}
     </div>
   );
 }
