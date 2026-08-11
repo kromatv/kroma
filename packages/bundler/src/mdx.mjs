@@ -40,6 +40,36 @@ function isLayoutWhitespace(child) {
   return child.type === 'text' && /^\s*$/.test(child.value) && child.value.includes('\n');
 }
 
+const WHITESPACE = /\s/;
+
+// A soft wrap is a space, the way every other markdown renderer reads it, and
+// unlike a `br`, which arrives as an element of its own.
+//
+// Scanned rather than matched: a pattern that wants a newline after a run of
+// spaces re-tries that run from every position on a line that has none, which
+// is quadratic in its length. Here each character is read once, and a stretch
+// of whitespace collapses only if a newline is somewhere inside it.
+function collapseSoftWraps(text) {
+  let out = '';
+  let at = 0;
+  while (at < text.length) {
+    if (!WHITESPACE.test(text[at])) {
+      out += text[at];
+      at += 1;
+      continue;
+    }
+    let end = at;
+    let wrapped = false;
+    while (end < text.length && WHITESPACE.test(text[end])) {
+      if (text[end] === '\n') wrapped = true;
+      end += 1;
+    }
+    out += wrapped ? ' ' : text.slice(at, end);
+    at = end;
+  }
+  return out;
+}
+
 function rehypeFixWhitespace() {
   return (tree) => {
     const walk = (node, verbatim) => {
@@ -50,13 +80,7 @@ function rehypeFixWhitespace() {
       }
       const inside = verbatim || VERBATIM.has(name);
       for (const child of node.children) {
-        // A soft wrap is a space, the way every other markdown renderer reads
-        // it - and unlike a `br`, which arrives as an element of its own.
-        // The leading run excludes the newline on purpose: `\s*\n\s*` lets the
-        // engine split one stretch of whitespace many ways, which is quadratic
-        // on a long one. This spelling has exactly one way to match.
-        if (child.type === 'text' && !inside)
-          child.value = child.value.replace(/[^\S\n]*\n\s*/g, ' ');
+        if (child.type === 'text' && !inside) child.value = collapseSoftWraps(child.value);
         walk(child, inside);
       }
     };
