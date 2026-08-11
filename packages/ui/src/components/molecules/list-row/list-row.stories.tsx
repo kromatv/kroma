@@ -86,7 +86,7 @@ export default story({
               <Badge tone="4K">4K</Badge>
             </ListRow.Trailing>
           </ListRow.Root>
-          <ListRow.Root label="Salon" hint="192.168.1.24">
+          <ListRow.Root label="Salon" hint="salon.local">
             <ListRow.Leading>
               <StatusDot online />
             </ListRow.Leading>
