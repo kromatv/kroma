@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { daysFromToday, monthKey, monthLabel, relativeAirDate, shortDayLabel } from './airdate';
+import {
+  daysFromToday,
+  monthKey,
+  monthLabel,
+  relativeAirDate,
+  sentenceCase,
+  shortDayLabel,
+} from './airdate';
 
 // A fixed "now" (a Wednesday, mid-month) keeps every relative result stable.
 const NOW = new Date('2026-07-15T14:30:00');
@@ -37,6 +44,27 @@ describe('relativeAirDate', () => {
   it('localizes (french)', () => {
     expect(relativeAirDate('2026-07-16', 'fr', NOW)).toBe('demain');
     expect(relativeAirDate('2026-05-15', 'fr', NOW)).toBe('il y a 2 mois');
+  });
+});
+
+describe('sentenceCase', () => {
+  it('opens a relative date as a sentence, and leaves the rest of it alone', () => {
+    expect(sentenceCase(relativeAirDate('2026-07-18', 'fr', NOW), 'fr')).toBe('Dans 3 jours');
+  });
+
+  it('has nothing to capitalise in an undated value', () => {
+    expect(sentenceCase('', 'fr')).toBe('');
+  });
+
+  it('leaves a line that opens on a digit as it is', () => {
+    expect(sentenceCase('3 jours', 'fr')).toBe('3 jours');
+  });
+
+  it('capitalises the way the locale does, not the way ASCII does', () => {
+    // Turkish is the case where a locale-blind uppercase is visibly wrong: the
+    // capital of a dotted "i" keeps its dot.
+    expect(sentenceCase('istanbul', 'tr')).toBe('İstanbul');
+    expect(sentenceCase('istanbul', 'en')).toBe('Istanbul');
   });
 });
 
