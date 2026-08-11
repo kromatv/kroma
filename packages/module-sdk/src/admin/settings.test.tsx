@@ -7,7 +7,7 @@
 import type { SettingGroup } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';
 import { setEntryDefaults } from '@kroma/ui/kit';
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminHostProvider } from './context';
@@ -59,6 +59,14 @@ function mount(
 // jsdom types on a real keyboard, so the kit entries render real inputs.
 setEntryDefaults({ physicalKeyboard: true });
 
+// react-native-web's press responder fires on the keyUp that follows a keyDown,
+// so a keyboard press is both halves.
+function press(el: HTMLElement) {
+  el.focus();
+  fireEvent.keyDown(el, { key: 'Enter' });
+  fireEvent.keyUp(el, { key: 'Enter' });
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -103,6 +111,20 @@ describe('rendering', () => {
     const { container } = mount([group([{ kind: 'value', applied: false }])]);
     await waitFor(() => expect(container.textContent).toContain('Row 0'));
     expect(container.textContent).not.toContain('preference saved');
+  });
+
+  it('prints a value row that is not a string', async () => {
+    const { container } = mount([
+      group([
+        { kind: 'value', value: 4040, label: 'Port' },
+        { kind: 'value', value: { host: 'nas' }, label: 'Peer' },
+        { kind: 'value', value: null, label: 'Nothing' },
+      ]),
+    ]);
+    await waitFor(() => expect(container.textContent).toContain('Port'));
+    expect(container.textContent).toContain('4040');
+    // An object would otherwise read as "[object Object]".
+    expect(container.textContent).toContain('{"host":"nas"}');
   });
 
   it('asks the server for the view it was given', async () => {
@@ -199,7 +221,72 @@ describe('secret rows', () => {
   });
 });
 
+describe('select rows', () => {
+  const language = (options: string[], value = 'fr') =>
+    group([{ kind: 'select', value, options, label: 'Language' }]);
+
+  it('saves the option that was picked', async () => {
+    const { container, client } = mount([language(['fr', 'en'])]);
+    await waitFor(() => expect(container.textContent).toContain('Language'));
+
+    press(screen.getByRole('combobox'));
+    fireEvent.click(screen.getAllByRole('option')[1] as HTMLElement);
+    await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: 'en' }));
+  });
+
+  // A stored setting the schema no longer names would otherwise fall to the
+  // placeholder, reading as a setting nobody ever made.
+  it('keeps a stored value the list no longer offers', async () => {
+    const { container } = mount([language(['fr', 'en'], 'sv')]);
+    await waitFor(() => expect(container.textContent).toContain('Language'));
+
+    press(screen.getByRole('combobox'));
+    expect(screen.getAllByRole('option').map((row) => row.textContent)).toEqual(['sv', 'fr', 'en']);
+  });
+});
+
+describe('text rows', () => {
+  const name = group([{ kind: 'text', value: 'kroma', label: 'Server name' }]);
+
+  const field = (container: HTMLElement) => container.querySelector('input') as HTMLInputElement;
+
+  it('commits what was typed when the field is left', async () => {
+    const { container, client } = mount([name]);
+    await waitFor(() => expect(container.textContent).toContain('Server name'));
+
+    fireEvent.change(field(container), { target: { value: 'salon' } });
+    fireEvent.blur(field(container));
+    await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: 'salon' }));
+  });
+
+  it('says nothing when the field is left as it was found', async () => {
+    const { container, client } = mount([name]);
+    await waitFor(() => expect(container.textContent).toContain('Server name'));
+
+    fireEvent.blur(field(container));
+    expect(client.updateSettings).not.toHaveBeenCalled();
+  });
+});
+
 describe('failures', () => {
+  it('keeps the page up when a save is refused', async () => {
+    const { container, client } = mount(
+      [group([{ kind: 'toggle', value: false, label: 'Scan' }])],
+      {
+        over: {
+          updateSettings: vi.fn(async () => {
+            throw new Error('offline');
+          }),
+        },
+      },
+    );
+    await waitFor(() => expect(container.textContent).toContain('Scan'));
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Scan' }));
+    await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: true }));
+    expect(container.textContent).toContain('Scan');
+  });
+
   it('renders an empty page when the fetch fails rather than throwing', async () => {
     const { container } = mount([], {
       over: {

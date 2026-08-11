@@ -17,10 +17,26 @@ function commandKey(): void {
   fireEvent.keyDown(document, { key: 'k', metaKey: true });
 }
 
+// jsdom lays nothing out, so react-native-web reads the window through the
+// documentElement box it is told about here. Zero is "unmeasured", which the
+// layout answers with its desk-sized default.
+function windowIs(width: number, height: number): void {
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    configurable: true,
+    value: width,
+  });
+  Object.defineProperty(document.documentElement, 'clientHeight', {
+    configurable: true,
+    value: height,
+  });
+  fireEvent(window, new Event('resize'));
+}
+
 afterEach(() => {
   cleanup();
   // jsdom keeps one URL for the whole file, and `pathRouter` mounts on it.
   history.replaceState(null, '', '/');
+  windowIs(0, 0);
 });
 
 describe('the kit site', () => {
@@ -186,6 +202,78 @@ describe('the command palette', () => {
       target: { value: 'zzzz' },
     });
     expect(screen.getByText('No components found.')).toBeTruthy();
+  });
+});
+
+describe('the canvas', () => {
+  it('applies a control to the story and to the snippet, and puts it back', () => {
+    const { container } = render(<Kit />);
+    press('Expand Actions', 'Button', 'Show code');
+    expect(container.textContent).not.toContain('variant="glass"');
+
+    press('glass');
+    expect(container.textContent).toContain('variant="glass"');
+
+    press('Reset');
+    expect(container.textContent).not.toContain('variant="glass"');
+  });
+
+  it('opens a demo with its source already showing', () => {
+    render(<Kit />);
+    press('Expand Actions', 'Button', 'Destructive pair');
+    // A worked example is read with its code, unlike a preview whose code is a
+    // one-line snippet.
+    expect(screen.getByRole('button', { name: 'Hide code' })).toBeTruthy();
+    press('Hide code');
+    expect(screen.getByRole('button', { name: 'Show code' })).toBeTruthy();
+  });
+
+  it('repaints in the theme that was picked', () => {
+    render(<Kit />);
+    expect(screen.getByRole('button', { name: 'Theme: KROMA' })).toBeTruthy();
+    press('Theme: KROMA', 'Ocean');
+    expect(screen.getByRole('button', { name: 'Theme: Ocean' })).toBeTruthy();
+  });
+});
+
+describe('a phone-sized window', () => {
+  const closers = () => screen.getAllByRole('button', { name: 'Close component list' });
+
+  it('moves the component list into a drawer, shut from either side of it', () => {
+    render(<Kit />);
+    windowIs(500, 800);
+    expect(screen.queryByRole('button', { name: 'Collapse Foundations' })).toBeNull();
+
+    press('Browse components');
+    expect(screen.getByRole('button', { name: 'Collapse Foundations' })).toBeTruthy();
+    fireEvent.click(closers()[0] as HTMLElement);
+    expect(screen.queryByRole('button', { name: 'Collapse Foundations' })).toBeNull();
+
+    // The sliver of canvas beside the drawer is the other way out.
+    press('Browse components');
+    fireEvent.click(closers()[1] as HTMLElement);
+    expect(screen.queryByRole('button', { name: 'Collapse Foundations' })).toBeNull();
+  });
+});
+
+// `?shot` is what the screenshot runner opens: the story alone on the page,
+// with nothing of the workbench around it.
+describe('a screenshot', () => {
+  it('draws the story on its own, with no chrome', () => {
+    history.replaceState(null, '', '/story/button?shot');
+    render(<Kit />);
+
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Search components' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Preview' })).toBeNull();
+  });
+
+  it('answers with the story ids when no story is named', () => {
+    history.replaceState(null, '', '/?shot');
+    render(<Kit />);
+
+    const ids = screen.getByText(/^KROMA_STORY_IDS:/).textContent ?? '';
+    expect(ids.slice('KROMA_STORY_IDS:'.length).split(',')).toContain('button');
   });
 });
 

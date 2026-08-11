@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { Text } from '#ui/components/atoms/text';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
@@ -107,6 +108,66 @@ describe('<Menu>', () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });
     expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'back' });
+  });
+
+  it('fires the dialog row a press lands on, and closes first there too', () => {
+    const order: string[] = [];
+    render(
+      <FocusScope>
+        <Menu.Root
+          label="Row actions"
+          defaultOpen
+          onOpenChange={(open, details) => order.push(`${open}:${details.reason}`)}
+        >
+          <Menu.Trigger />
+          <Menu.Separator />
+          <Menu.Item onSelect={() => order.push('select')}>Renommer</Menu.Item>
+        </Menu.Root>
+      </FocusScope>,
+    );
+    clearPressGuard();
+    fireEvent.click(screen.getByText('Renommer'));
+    expect(order).toEqual(['false:select', 'select']);
+  });
+
+  it('moves the active row under the pointer, so Enter fires what the mouse is on', () => {
+    const onRemove = vi.fn();
+    render(<Actions onRemove={onRemove} />);
+    const trigger = screen.getByLabelText('Row actions');
+    fireEvent.click(trigger);
+    // The panel keeps DOM focus on the trigger, so the hovered row is named
+    // rather than focused.
+    fireEvent.pointerEnter(screen.getByLabelText('Supprimer'));
+    expect(trigger.getAttribute('aria-activedescendant')).toBe(
+      screen.getByLabelText('Supprimer').getAttribute('id'),
+    );
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it('types ahead to the row a printable key names', () => {
+    const onRemove = vi.fn();
+    render(<Actions onRemove={onRemove} />);
+    const trigger = screen.getByLabelText('Row actions');
+    fireEvent.click(trigger);
+    fireEvent.keyDown(trigger, { key: 's' });
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads a number child as the label, and leaves a written row alone', () => {
+    render(
+      <Menu.Root label="Piste">
+        <Menu.Trigger />
+        <Menu.Item onSelect={() => {}}>{1080}</Menu.Item>
+        <Menu.Item label="Profil" onSelect={() => {}}>
+          <Text>Max · 4K</Text>
+        </Menu.Item>
+      </Menu.Root>,
+    );
+    fireEvent.click(screen.getByLabelText('Piste'));
+    expect(screen.getByLabelText('1080').textContent).toBe('1080');
+    expect(screen.getByLabelText('Profil').textContent).toBe('Max · 4K');
   });
 
   it('takes a trigger the caller owns, through render', () => {

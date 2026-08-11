@@ -8,6 +8,12 @@ import { UrlKeyboard } from './url-keyboard';
 
 afterEach(cleanup);
 
+// space / delete / close, in that order: the tail keys draw a glyph and carry
+// no label, so there is no name to find them by.
+function tailKeys(container: HTMLElement): Element[] {
+  return Array.from(container.querySelectorAll('[tabindex]')).slice(-3);
+}
+
 describe('SearchKeyboard', () => {
   it('opens the search grid on the first letter, not on the digits row', () => {
     render(
@@ -40,6 +46,25 @@ describe('SearchKeyboard', () => {
     // The ABC grid: ten digits, twenty-six letters, and space / delete / close.
     expect(container.querySelectorAll('[tabindex]')).toHaveLength(39);
   });
+
+  it('types a space and deletes the last character from the tail row', () => {
+    const onValueChange = vi.fn();
+    const { container } = render(<SearchKeyboard value="ali" onValueChange={onValueChange} />);
+    const [space, del] = tailKeys(container);
+    fireEvent.click(space as Element);
+    expect(onValueChange).toHaveBeenCalledWith('ali ');
+    fireEvent.click(del as Element);
+    expect(onValueChange).toHaveBeenCalledWith('al');
+  });
+
+  it('closes from the key at the end of the tail row', () => {
+    const onClose = vi.fn();
+    const { container } = render(
+      <SearchKeyboard value="ali" onValueChange={vi.fn()} onClose={onClose} />,
+    );
+    fireEvent.click(tailKeys(container)[2] as Element);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('UrlKeyboard', () => {
@@ -49,6 +74,27 @@ describe('UrlKeyboard', () => {
     // The default locale labels it; the key is identified by its glyph role.
     fireEvent.click(screen.getByLabelText('Supprimer'));
     expect(onValueChange).toHaveBeenCalledWith('krom');
+  });
+
+  it('appends the key that was pressed, URL specials included', () => {
+    const onValueChange = vi.fn();
+    render(<UrlKeyboard value="kroma" onValueChange={onValueChange} />);
+    fireEvent.click(screen.getByLabelText(':'));
+    expect(onValueChange).toHaveBeenCalledWith('kroma:');
+  });
+
+  it('carries a dot key of its own on the tail row', () => {
+    const onValueChange = vi.fn();
+    render(<UrlKeyboard value="kroma" onValueChange={onValueChange} />);
+    fireEvent.click(screen.getByLabelText('.'));
+    expect(onValueChange).toHaveBeenCalledWith('kroma.');
+  });
+
+  it('empties the whole value from the clear key', () => {
+    const onValueChange = vi.fn();
+    render(<UrlKeyboard value="kroma.local:4040" onValueChange={onValueChange} />);
+    fireEvent.click(screen.getByLabelText('Effacer'));
+    expect(onValueChange).toHaveBeenCalledWith('');
   });
 
   it('submits through its own button', () => {

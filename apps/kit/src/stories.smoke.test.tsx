@@ -3,7 +3,7 @@
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
 import { MDX_COMPONENTS } from '@kroma/workbench';
-import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { STORIES } from './stories';
@@ -57,6 +57,32 @@ describe('interactive stories respond to a press', () => {
     clearPressGuard();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByText(String(story.args.title))).toBeNull();
+  });
+
+  it('fills, submits and clears the Add-a-server demo', async () => {
+    const story = STORIES.find((entry) => entry.name === 'Form');
+    const demo = story?.demos.find((entry) => entry.name === 'Add a server');
+    if (!demo) throw new Error('the Add a server demo has gone missing');
+    render(demo.render());
+
+    const fill = (label: string, text: string) =>
+      fireEvent.change(screen.getByLabelText(label), { target: { value: text } });
+    fill('Name', 'Salon');
+    fill('Address', 'kroma.local');
+
+    const quality = screen.getByRole('combobox');
+    fireEvent.click(quality);
+    clearPressGuard();
+    fireEvent.click(screen.getByText('1080p'));
+    expect(quality.getAttribute('aria-label')).toBe('Quality: 1080p');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    });
+    expect(screen.getByText('Added kroma.local:4040. Nothing was sent anywhere.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(screen.queryByText(/^Added /)).toBeNull();
   });
 
   it('closes a dialog when the backdrop is pressed', () => {

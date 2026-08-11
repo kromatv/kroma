@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
 import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import { Player } from './Player';
+import type { CreditsCardItem } from './parts/CreditsCard';
 import type { SubtitleGenBundle } from './parts/settings/gen';
 import { fakeController } from './player.fixture';
 import { type PlayerCloseDetails, type PlayerController, WEB_FLAGS } from './types';
@@ -34,6 +35,8 @@ interface Over {
   onClose?: (details: PlayerCloseDetails) => void;
   controller?: PlayerController;
   ref?: Ref<View>;
+  onPlayNext?: () => void;
+  nextTitle?: CreditsCardItem;
 }
 
 function player(children: ReactNode, over: Over = {}) {
@@ -49,6 +52,8 @@ function player(children: ReactNode, over: Over = {}) {
         onAppearanceChange={() => {}}
         subtitleGen={NO_GEN}
         upNext={{ nextEpisodes: [], recommendations: [] }}
+        onPlayNext={over.onPlayNext}
+        nextTitle={over.nextTitle}
         onClose={over.onClose ?? (() => {})}
       >
         {children}
@@ -111,6 +116,38 @@ describe('<Player.Root> says why it was closed', () => {
     render(player(media, { onClose }));
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledWith({ reason: 'back' });
+  });
+});
+
+describe('<Player.Root> and the overlays it owns', () => {
+  it('raises the stats overlay from the settings menu, and leaves it up when the panel goes', () => {
+    render(player(media));
+    fireEvent.click(screen.getByLabelText('Settings'));
+    fireEvent.click(screen.getByLabelText('Statistics'));
+    // The headline the fixture controller reports, so the overlay is the panel's
+    // own rather than the settings row that flipped it on.
+    expect(screen.getByText('Direct · HEVC passthrough')).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByLabelText('Statistics')).toBeNull();
+    expect(screen.getByText('Direct · HEVC passthrough')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText('Close'));
+    expect(screen.queryByText('Direct · HEVC passthrough')).toBeNull();
+  });
+
+  it('plays the next title from the credits card', () => {
+    const onPlayNext = vi.fn();
+    render(
+      player(media, {
+        // Inside the last 30s, which is where the card comes up unmarked.
+        controller: fakeController({ cur: 9835 }),
+        onPlayNext,
+        nextTitle: { title: 'Blade Runner', subtitle: 'S1 E2' },
+      }),
+    );
+    fireEvent.click(screen.getByLabelText('Play now'));
+    expect(onPlayNext).toHaveBeenCalledTimes(1);
   });
 });
 

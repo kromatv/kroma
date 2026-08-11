@@ -82,6 +82,15 @@ describe('<Rail> mounting', () => {
     expect(screen.queryAllByText('Chip 9')).toHaveLength(0);
   });
 
+  it('is a plain scrolled row, whole, where no navigator is mounted', () => {
+    // No onScreen(): the browser app is a mouse-and-keyboard page, and there is
+    // no focus for a window to grow towards.
+    render(<Rail.Root>{CHIPS}</Rail.Root>);
+    for (const at of [1, 8, 9, 14]) {
+      expect(screen.getAllByText(`Chip ${at}`).length).toBeGreaterThan(0);
+    }
+  });
+
   it('mounts every child under grow={false}, for a strip of controls', () => {
     // The browse screens' sort + genre filters are one Rail: growing it would
     // open the strip on its first eight chips and read as missing filters.

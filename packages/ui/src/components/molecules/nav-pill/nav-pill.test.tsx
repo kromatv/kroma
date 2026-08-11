@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { layout } from '#ui/testing';
 import { NavPill, type NavPillRootProps } from './nav-pill';
 
 afterEach(cleanup);
@@ -149,6 +150,27 @@ describe('NavPill items', () => {
     expect(screen.getByText('Home')).toBeTruthy();
     fireEvent.click(screen.getByText('Home'));
     expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it('hands the lens the box the active item measured, and only that item', () => {
+    const { container } = render(
+      <NavPill.Root size="tv">
+        <NavPill.Item icon="home" label="Home" onPress={vi.fn()} />
+        <NavPill.Item icon="user" label="Profile" active onPress={vi.fn()} />
+      </NavPill.Root>,
+    );
+    const capsule = container.firstElementChild as HTMLElement;
+    const item = (name: string) => screen.getByLabelText(name).parentElement as HTMLElement;
+    expect(capsule.children).toHaveLength(2);
+
+    layout(item('Home'), { x: 8, y: 4, width: 96, height: 44 });
+    expect(capsule.children).toHaveLength(2);
+
+    layout(item('Profile'), { x: 128, y: 4, width: 120, height: 44 });
+    expect(capsule.children).toHaveLength(3);
+    const lens = capsule.firstElementChild as HTMLElement;
+    expect(lens.style.transform).toBe('translateX(128px)');
+    expect(lens.style.width).toBe('120px');
   });
 
   it('survives having no active item at all', () => {

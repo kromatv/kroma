@@ -1,5 +1,10 @@
+// @vitest-environment jsdom
+
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { cellWidth, columnsFor } from './grid';
+import { Text } from '#ui/components/atoms/text';
+import { layout } from '#ui/testing';
+import { cellWidth, columnsFor, Grid } from './grid';
 
 describe('columnsFor', () => {
   it('fits as many cells as the room allows', () => {
@@ -40,5 +45,33 @@ describe('an auto-filled cell', () => {
       const used = cellWidth(room, columns, gap) * columns + gap * (columns - 1);
       expect(used).toBeLessThanOrEqual(room);
     }
+  });
+});
+
+describe('a grid that was handed no width', () => {
+  const tiles = Array.from({ length: 7 }, (_, index) => `tile ${index + 1}`).map((title) => (
+    <Text key={title}>{title}</Text>
+  ));
+
+  it('paints nothing until it has measured its own box', () => {
+    const { container } = render(<Grid min={260}>{tiles}</Grid>);
+    expect(screen.queryByText('tile 1')).toBeNull();
+
+    layout(container.firstElementChild as HTMLElement, { width: 1000 });
+    expect(screen.getByText('tile 1')).toBeTruthy();
+    expect(getComputedStyle(screen.getByText('tile 1').parentElement as HTMLElement).width).toBe(
+      `${cellWidth(1000, 3, 24)}px`,
+    );
+  });
+
+  it('re-measures into a new column count when the room changes', () => {
+    const { container } = render(<Grid min={260}>{tiles}</Grid>);
+    const box = container.firstElementChild as HTMLElement;
+
+    layout(box, { width: 1000 });
+    expect(box.children).toHaveLength(3);
+
+    layout(box, { width: 560 });
+    expect(box.children).toHaveLength(4);
   });
 });

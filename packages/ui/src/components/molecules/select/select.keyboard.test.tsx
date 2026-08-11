@@ -10,10 +10,12 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
+import { Text } from '#ui/components/atoms/text';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
-import { Select } from './select';
+import { layout } from '#ui/testing';
+import { Select, type SelectRootProps } from './select';
 
 beforeAll(() => configureRemote());
 
@@ -220,6 +222,10 @@ describe('the parts', () => {
     fireEvent.keyDown(trigger, { key: 'ArrowDown' });
     fireEvent.keyDown(trigger, { key: 'Enter' });
     expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'select' });
+
+    press(trigger);
+    fireEvent.click(screen.getByLabelText('Fermer'));
+    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'outside' });
   });
 
   it('runs itself when only a default is given', () => {
@@ -269,6 +275,53 @@ describe('the parts', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'back' });
   });
 
+  it('picks the row the remote pressed in the dialog', () => {
+    const onValueChange = vi.fn();
+    render(
+      <FocusScope>
+        <Select.Root label="Source" defaultValue="all" defaultOpen onValueChange={onValueChange}>
+          <Select.Trigger />
+          <Select.Item value="all">Toutes les sources</Select.Item>
+          <Select.Item value="server">kroma_server</Select.Item>
+        </Select.Root>
+      </FocusScope>,
+    );
+    clearPressGuard();
+    fireEvent.click(screen.getAllByRole('option')[1] as HTMLElement);
+    expect(onValueChange).toHaveBeenCalledWith('server', {
+      item: expect.objectContaining({ value: 'server' }),
+    });
+  });
+
+  it('takes a number written as the row for its label', () => {
+    render(
+      <Select.Root label="Débit" defaultValue="8">
+        <Select.Trigger />
+        <Select.Item value="8">{8}</Select.Item>
+        <Select.Item value="12">{12}</Select.Item>
+      </Select.Root>,
+    );
+    expect(screen.getByRole('combobox').getAttribute('aria-label')).toBe('Débit: 8');
+  });
+
+  it('names a composed row from its label, and still draws the row as written', () => {
+    render(
+      <Select.Root label="Source" defaultValue="server">
+        <Select.Trigger />
+        <Select.Item value="all" label="Toutes les sources">
+          <Text>Toutes</Text>
+        </Select.Item>
+        <Select.Item value="server" label="kroma_server">
+          <Text>kroma</Text>
+        </Select.Item>
+      </Select.Root>,
+    );
+    expect(screen.getByRole('combobox').getAttribute('aria-label')).toBe('Source: kroma_server');
+
+    press(screen.getByRole('combobox'));
+    expect(screen.getByText('kroma')).toBeTruthy();
+  });
+
   it('draws the tick on the picked row through <Select.Indicator>', () => {
     render(
       <Select.Root label="Source" defaultValue="server">
@@ -280,5 +333,106 @@ describe('the parts', () => {
     press(screen.getByRole('combobox'));
     const rows = screen.getAllByRole('option');
     expect(rows.map((row) => row.getAttribute('aria-selected'))).toEqual(['false', 'true']);
+  });
+});
+
+const RATES = ['1080p', '720p', '480p', '360p', '240p'];
+const ROW_HEIGHT = 44;
+const FOLD = ROW_HEIGHT * 2;
+
+function Quality({ onValueChange }: Readonly<Pick<SelectRootProps, 'onValueChange'>>) {
+  return (
+    <Select.Root label="Qualité" defaultValue="1080p" onValueChange={onValueChange}>
+      <Select.Trigger />
+      {RATES.map((rate) => (
+        <Select.Item key={rate} value={rate}>
+          {rate}
+        </Select.Item>
+      ))}
+    </Select.Root>
+  );
+}
+
+describe('the anchored listbox', () => {
+  it('picks the row that was clicked', () => {
+    const onValueChange = vi.fn();
+    render(<Quality onValueChange={onValueChange} />);
+    press(screen.getByRole('combobox'));
+
+    fireEvent.click(screen.getAllByRole('option')[2] as HTMLElement);
+    expect(onValueChange).toHaveBeenCalledWith('480p', {
+      item: expect.objectContaining({ value: '480p' }),
+    });
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('opens on the first row that can be picked when nothing is', () => {
+    render(
+      <Select.Root placeholder="Qualité">
+        <Select.Trigger />
+        <Select.Item value="original" disabled>
+          Original
+        </Select.Item>
+        <Select.Item value="1080p">1080p</Select.Item>
+      </Select.Root>,
+    );
+    const trigger = screen.getByRole('combobox');
+    press(trigger);
+    const rows = screen.getAllByRole('option');
+    expect(trigger.getAttribute('aria-activedescendant')).toBe(rows[1]?.getAttribute('id'));
+  });
+
+  it('types ahead to the row the key names', () => {
+    render(<Quality />);
+    const trigger = screen.getByRole('combobox');
+    press(trigger);
+
+    fireEvent.keyDown(trigger, { key: '4' });
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(trigger.getAttribute('aria-label')).toBe('Qualité: 480p');
+  });
+
+  it('hands the active row to whichever one the pointer is over', () => {
+    render(<Quality />);
+    const trigger = screen.getByRole('combobox');
+    press(trigger);
+
+    const rows = screen.getAllByRole('option');
+    fireEvent.pointerEnter(rows[3] as HTMLElement);
+    expect(trigger.getAttribute('aria-activedescendant')).toBe(rows[3]?.getAttribute('id'));
+
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(trigger.getAttribute('aria-label')).toBe('Qualité: 360p');
+  });
+
+  it('keeps the active row in sight as the keyboard walks past the fold', () => {
+    render(<Quality />);
+    const trigger = screen.getByRole('combobox');
+    press(trigger);
+
+    const scroller = screen.getByRole('listbox').firstElementChild as HTMLElement;
+    let scrollTop = 0;
+    // jsdom lays nothing out and scrolls nothing, so the panel is told the two
+    // measurements it reads back off the scroller.
+    Object.defineProperty(scroller, 'scrollTop', {
+      configurable: true,
+      get: () => scrollTop,
+      set: (next: number) => {
+        scrollTop = next;
+      },
+    });
+    Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: FOLD });
+    const rows = screen.getAllByRole('option');
+    for (const [index, row] of rows.entries()) {
+      layout(row, { y: index * ROW_HEIGHT, height: ROW_HEIGHT });
+    }
+
+    const last = ROW_HEIGHT * (rows.length - 1);
+    fireEvent.keyDown(trigger, { key: 'End' });
+    expect(scrollTop).toBeLessThanOrEqual(last);
+    expect(scrollTop + FOLD).toBeGreaterThanOrEqual(last + ROW_HEIGHT);
+
+    fireEvent.keyDown(trigger, { key: 'Home' });
+    expect(scrollTop).toBe(0);
   });
 });

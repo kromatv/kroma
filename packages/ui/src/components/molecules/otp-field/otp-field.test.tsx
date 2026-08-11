@@ -16,6 +16,11 @@ function type(container: HTMLElement, text: string) {
   fireEvent.change(input, { target: { value: text } });
 }
 
+const carets = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('div')).filter(
+    (node) => getComputedStyle(node).width === '2px',
+  );
+
 describe('OtpField', () => {
   it('is a namespace of parts, not a component', () => {
     expect(typeof OtpField).toBe('object');
@@ -101,6 +106,19 @@ describe('OtpField', () => {
     const faces = Array.from(row(container).children).slice(2) as HTMLElement[];
     expect(faces).toHaveLength(3);
     for (const face of faces) expect(getComputedStyle(face).pointerEvents).toBe('none');
+  });
+
+  it('lands the caret from a press anywhere on the row, and blinks it nowhere else', () => {
+    const { container } = render(<OtpField.Root maxLength={4} physicalKeyboard />);
+    const input = entry(container) as HTMLInputElement;
+    expect(carets(container)).toHaveLength(0);
+
+    fireEvent.click(row(container).children[1] as HTMLElement);
+    expect(document.activeElement).toBe(input);
+    expect(carets(container)).toHaveLength(1);
+
+    fireEvent.blur(input);
+    expect(carets(container)).toHaveLength(0);
   });
 
   it('names the whole field once, on the entry that owns the text', () => {

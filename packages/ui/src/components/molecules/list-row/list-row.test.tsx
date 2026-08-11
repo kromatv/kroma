@@ -47,6 +47,17 @@ describe('ListRow', () => {
     expect(screen.getByLabelText('Maxime')).toBeTruthy();
   });
 
+  it('takes no name from a label that is not plain text', () => {
+    render(
+      <ListRow.Root onPress={vi.fn()}>
+        <ListRow.Label>
+          <Text>Maxime</Text>
+        </ListRow.Label>
+      </ListRow.Root>,
+    );
+    expect(screen.getByRole('button').hasAttribute('aria-label')).toBe(false);
+  });
+
   it('sorts the head and the tail out of any order, keeping the middle as written', () => {
     const { container } = render(
       <ListRow.Root>
