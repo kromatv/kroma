@@ -252,16 +252,21 @@ describe('text rows', () => {
 
   it('commits what was typed when the field is left', async () => {
     const { container, client } = mount([name]);
-    await waitFor(() => expect(container.textContent).toContain('Server name'));
+    await waitFor(() => expect(field(container)).not.toBeNull());
 
-    fireEvent.change(field(container), { target: { value: 'salon' } });
-    fireEvent.blur(field(container));
+    // The row holds a draft and commits it against the value it was given, so
+    // the typing has to have landed before the blur means anything.
+    const input = field(container);
+    fireEvent.change(input, { target: { value: 'salon' } });
+    await waitFor(() => expect(input.value).toBe('salon'));
+
+    fireEvent.blur(input);
     await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: 'salon' }));
   });
 
   it('says nothing when the field is left as it was found', async () => {
     const { container, client } = mount([name]);
-    await waitFor(() => expect(container.textContent).toContain('Server name'));
+    await waitFor(() => expect(field(container)).not.toBeNull());
 
     fireEvent.blur(field(container));
     expect(client.updateSettings).not.toHaveBeenCalled();
