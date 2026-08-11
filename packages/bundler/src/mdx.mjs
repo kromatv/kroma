@@ -52,7 +52,11 @@ function rehypeFixWhitespace() {
       for (const child of node.children) {
         // A soft wrap is a space, the way every other markdown renderer reads
         // it - and unlike a `br`, which arrives as an element of its own.
-        if (child.type === 'text' && !inside) child.value = child.value.replace(/\s*\n\s*/g, ' ');
+        // The leading run excludes the newline on purpose: `\s*\n\s*` lets the
+        // engine split one stretch of whitespace many ways, which is quadratic
+        // on a long one. This spelling has exactly one way to match.
+        if (child.type === 'text' && !inside)
+          child.value = child.value.replace(/[^\S\n]*\n\s*/g, ' ');
         walk(child, inside);
       }
     };

@@ -24,7 +24,7 @@ async function elementsOf(path: string): Promise<string[]> {
   const compiled = await compileMdx(readFileSync(path, 'utf8'), path);
   const table = /const _components = \{([\s\S]*?)\.\.\.props\.components/.exec(compiled)?.[1];
   if (!table) throw new Error('MDX emitted no element table: the fixture compiled to nothing.');
-  return [...table.matchAll(/(\w+): "\w+"/g)].map((pair) => pair[1] as string);
+  return [...table.matchAll(/(\w{1,64}): "\w{1,64}"/g)].map((pair) => pair[1] as string);
 }
 
 // Everything mdast-util-to-hast plus GFM can produce. The derived list above is
@@ -109,8 +109,10 @@ describe('rendering a compiled document', () => {
   // The rehype pass in @kroma/bundler's mdx.mjs is what settles both.
   it('carries no newline outside a code block', async () => {
     const compiled = await compileMdx(readFileSync(FIXTURE, 'utf8'), FIXTURE);
+    // The lazy run is bounded: unbounded, a fixture that never closes the child
+    // makes every start position rescan the rest of the file.
     const outsideCode = compiled.replace(
-      /className: "language-\w+",\s*children: "[\s\S]*?"\n/g,
+      /className: "language-\w{1,32}",\s{0,64}children: "[\s\S]{0,8000}?"\n/g,
       '',
     );
     expect(outsideCode).not.toContain('\\n');
