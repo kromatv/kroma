@@ -12,8 +12,8 @@ import {
 } from '@kroma/ui/kit';
 import { useState } from 'react';
 import type { ViewStyle } from 'react-native';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import type { TitleSeason } from '#web/shared/lib/titleView';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 export function SeasonPicker({
   seasons,

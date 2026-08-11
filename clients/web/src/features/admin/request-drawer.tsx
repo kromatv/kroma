@@ -32,10 +32,10 @@ import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
 import { ReleaseList } from '#web/features/admin/release-list';
 import { useAsyncAction, usePoll } from '#web/features/admin/shell';
 import { SCROLL_PANE } from '#web/features/admin/web-style';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
-import { seasonsSummary } from '#web/features/requests/status';
 import { useAuth } from '#web/shared/lib/auth';
+import { seasonsSummary } from '#web/shared/lib/request-status';
 import { Image } from '#web/shared/ui';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 // Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;

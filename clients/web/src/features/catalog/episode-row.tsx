@@ -7,9 +7,9 @@ import { useT } from '@kroma/ui';
 import { Box, backdropBlur, color, Focusable, gradient, IconButton, sv, Text } from '@kroma/ui/kit';
 import { IconCheck, IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import { kromaClient } from '#web/shared/lib/api';
 import { Image } from '#web/shared/ui';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 const ROW_GAP = { base: 12, md: 20 } as const;
 const STILL_W = { base: 128, md: 200 } as const;

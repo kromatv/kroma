@@ -1,7 +1,7 @@
 import type { RequestStatus } from '@kroma/core';
 import { color } from '@kroma/ui/kit';
 import { describe, expect, it } from 'vitest';
-import { REQUEST_STATUS_META, requestStatusMeta, seasonsSummary } from './status';
+import { REQUEST_STATUS_META, requestStatusMeta, seasonsSummary } from './request-status';
 
 describe('requestStatusMeta', () => {
   it('returns the matching meta for every known status', () => {

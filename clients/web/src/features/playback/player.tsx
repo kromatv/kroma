@@ -16,7 +16,6 @@ import { Box, Button, backdropBlur, Icon, Text } from '@kroma/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';
-import { castPicker } from '#web/features/playback/cast/cast-picker';
 import { Toast } from '#web/features/playback/player-toast';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
@@ -24,6 +23,7 @@ import { useWebController } from '#web/features/playback/use-web-controller';
 import { useWebUpNext } from '#web/features/playback/use-web-upnext';
 import { kromaClient, type MovieView } from '#web/shared/lib/api';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
+import { castPicker } from '#web/shared/ui/cast-picker';
 
 const PREVIEW_W = 176;
 

@@ -26,8 +26,8 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { HeroBackdrop } from '#web/features/catalog/hero-backdrop';
-import { CastButton } from '#web/features/playback/cast/cast-button';
 import { Image } from '#web/shared/ui';
+import { CastButton } from '#web/shared/ui/cast-button';
 
 export type { SimilarItem } from '#web/features/catalog/detail-rails';
 // Re-exported so existing importers (the person route, AvDrawer, the movie

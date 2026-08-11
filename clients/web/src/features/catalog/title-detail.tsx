@@ -25,13 +25,13 @@ import {
 import { SeasonSection } from '#web/features/catalog/episode-list';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { TreatmentsPanel } from '#web/features/catalog/treatments-panel';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
-import { SeasonPicker } from '#web/features/requests/season-picker';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 import { userQueries } from '#web/shared/lib/queries';
 import { type TitleView, tmdbMetaLine } from '#web/shared/lib/titleView';
 import { useWatched } from '#web/shared/lib/watched';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
+import { SeasonPicker } from '#web/shared/ui/season-picker';
 
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.

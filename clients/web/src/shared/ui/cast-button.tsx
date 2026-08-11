@@ -7,7 +7,7 @@
 import type { ItemId } from '@kroma/core';
 import { useCast, useT } from '@kroma/ui';
 import { Button } from '@kroma/ui/kit';
-import { castPicker } from '#web/features/playback/cast/cast-picker';
+import { castPicker } from '#web/shared/ui/cast-picker';
 
 export function CastButton({ itemId }: Readonly<{ itemId: ItemId }>) {
   const t = useT();

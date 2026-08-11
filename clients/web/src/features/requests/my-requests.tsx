@@ -24,12 +24,12 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
-import { seasonsSummary } from '#web/features/requests/status';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
+import { seasonsSummary } from '#web/shared/lib/request-status';
 import { PAGE_MAIN, Skeleton } from '#web/shared/ui';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 export function MyRequestsPage() {
   const t = useT();

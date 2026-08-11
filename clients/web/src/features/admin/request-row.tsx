@@ -7,9 +7,9 @@ import { Avatar, Box, Row, Text } from '@kroma/ui/kit';
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
 import { TABULAR, Table } from '#web/features/admin/table';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
-import { seasonsSummary } from '#web/features/requests/status';
+import { seasonsSummary } from '#web/shared/lib/request-status';
 import { Image } from '#web/shared/ui';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 function Poster({ req }: Readonly<{ req: MediaRequest }>) {
   return (

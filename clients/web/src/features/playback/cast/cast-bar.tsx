@@ -18,8 +18,8 @@ import {
 } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { castPicker } from '#web/features/playback/cast/cast-picker';
 import { kromaClient } from '#web/shared/lib/api';
+import { castPicker } from '#web/shared/ui/cast-picker';
 
 const SKIP_MS = 10_000;
 

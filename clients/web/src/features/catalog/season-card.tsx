@@ -6,8 +6,8 @@ import { useT } from '@kroma/ui';
 import { Box, color, Focusable, sv, Text } from '@kroma/ui/kit';
 import { IconPlus } from '@tabler/icons-react';
 import type { CSSProperties } from 'react';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import type { TitleSeason } from '#web/shared/lib/titleView';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 const BOLD = { fontWeight: '700' } as const;
 

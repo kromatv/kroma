@@ -12,10 +12,10 @@ import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
 import { MobileTopbar, Sidebar } from '#web/features/catalog/sidebar';
 import { useNotificationStream } from '#web/features/notifications/use-notifications';
 import { CastBar } from '#web/features/playback/cast/cast-bar';
-import { CastPicker } from '#web/features/playback/cast/cast-picker';
 import { ensureSession, isAuthed, kromaClient } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth';
+import { CastPicker } from '#web/shared/ui/cast-picker';
 
 export const Route = createFileRoute('/_app')({
   // Exchange the stored access token for a session bearer before any child

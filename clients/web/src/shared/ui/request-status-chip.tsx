@@ -4,7 +4,7 @@
 import type { RequestStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, backdropBlur, Row, Text, useLoop } from '@kroma/ui/kit';
-import { requestStatusMeta } from '#web/features/requests/status';
+import { requestStatusMeta } from '#web/shared/lib/request-status';
 
 const PULSE_MS = 2000;
 const RING_MS = 500;

@@ -18,7 +18,7 @@ import {
 } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useState } from 'react';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 const RATING_PILL = backdropBlur(4);
 const RATING_LABEL = { fontSize: 10.5, fontWeight: '700' } as const;
