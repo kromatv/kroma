@@ -27,10 +27,16 @@ interface PreloadPlugin {
 
 const toUrlPath = (path: string) => path.split(sep).join('/');
 
-const joinUrl = (base: string, path: string) => `${base.replace(/\/+$/, '')}/${path}`;
+const withoutTrailingSlash = (url: string) => {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') end -= 1;
+  return url.slice(0, end);
+};
+
+const joinUrl = (base: string, path: string) => `${withoutTrailingSlash(base)}/${path}`;
 
 const servedUrl = (file: string, { root, base = '/' }: DevConfig) => {
-  const inside = `${toUrlPath(root).replace(/\/+$/, '')}/`;
+  const inside = `${withoutTrailingSlash(toUrlPath(root))}/`;
   const path = toUrlPath(file);
   return joinUrl(base, path.startsWith(inside) ? path.slice(inside.length) : `@fs${path}`);
 };

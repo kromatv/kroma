@@ -10,6 +10,8 @@ import {
   type ReactElement,
   type ReactNode,
   type RefObject,
+  useCallback,
+  useMemo,
   useRef,
 } from 'react';
 import type { View } from 'react-native';
@@ -23,7 +25,7 @@ import {
   type MenuState,
   useMenu,
 } from './menu-context';
-import { Item, labelOf, type MenuItemProps, type MenuTone, Separator } from './menu-item';
+import { Item, labelOf, type MenuItemProps, Separator } from './menu-item';
 import { MenuSurface } from './menu-surface';
 import type { MenuRowSpec } from './menu-surface-dialog';
 
@@ -74,12 +76,20 @@ function Root({
       : [],
   );
 
-  const setOpen = (next: boolean, reason: MenuOpenReason) => {
-    setOpenState(next);
-    onOpenChange?.(next, { reason });
-  };
+  const setOpen = useCallback(
+    (next: boolean, reason: MenuOpenReason) => {
+      setOpenState(next);
+      onOpenChange?.(next, { reason });
+    },
+    [setOpenState, onOpenChange],
+  );
 
-  const state: MenuState = { open, label, anchor, setOpen };
+  const dismiss = useCallback((reason: MenuDismissReason) => setOpen(false, reason), [setOpen]);
+
+  const state = useMemo<MenuState>(
+    () => ({ open, label, anchor, setOpen }),
+    [open, label, setOpen],
+  );
 
   return (
     <MenuContext.Provider value={state}>
@@ -91,7 +101,7 @@ function Root({
         entries={entries}
         rows={rows}
         anchor={anchor}
-        onDismiss={(reason: MenuDismissReason) => setOpen(false, reason)}
+        onDismiss={dismiss}
       />
     </MenuContext.Provider>
   );
@@ -143,13 +153,13 @@ function Trigger({
 
 const Menu = { Root, Trigger, Item, Separator };
 
+export type { MenuTone } from './menu-item';
 export type {
   MenuDismissReason,
   MenuItemProps,
   MenuOpenDetails,
   MenuOpenReason,
   MenuRootProps,
-  MenuTone,
   MenuTriggerBind,
   MenuTriggerProps,
 };

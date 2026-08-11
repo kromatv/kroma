@@ -2,8 +2,8 @@
 // drives a TV. It shows what the TV last reported, not what was last asked of
 // it, with the position interpolated between the receiver's heartbeats.
 
-import { formatTimecode } from '@kroma/core';
-import { useCast, useT } from '@kroma/ui';
+import { type CastNowPlaying, formatTimecode, type MediaItem } from '@kroma/core';
+import { type Cast, useCast, useT } from '@kroma/ui';
 import {
   Box,
   breakpoint,
@@ -26,21 +26,11 @@ const SKIP_MS = 10_000;
 export function CastBar() {
   const t = useT();
   const { active, positionMs, send, select } = useCast();
-  // While a drag is in flight the bar follows the finger: the receiver's
-  // heartbeats would otherwise yank the handle back mid-gesture.
-  const [dragMs, setDragMs] = useState<number | null>(null);
   const wide = useWindowDimensions().width >= breakpoint.md;
 
   if (!active) return null;
 
   const playing = active.nowPlaying;
-  const item = playing?.item;
-  const title = item ? (item.metadata?.title ?? item.title) : t('cast.idle');
-  const poster = item ? kromaClient().posterFor(item, 96) : null;
-  const durationMs = playing?.durationMs ?? 0;
-  const shownMs = dragMs ?? positionMs;
-  // Buffering is playing, stalled: the button a viewer needs is still Pause.
-  const isPlaying = playing?.state === 'playing' || playing?.state === 'buffering';
   const playingOn = t('cast.playingOn', { device: active.name });
 
   return (
@@ -61,95 +51,12 @@ export function CastBar() {
       }}
     >
       <Row self="center" w="100%" maxW={1024} gap={12} px={16} py={10}>
-        {poster ? (
-          <Box w={32} h={48} shrink={0}>
-            <Img src={poster} radius="sm" fill />
-          </Box>
-        ) : null}
-
-        <Box minW={0} shrink={0} basis={{ base: 112, md: 192 }}>
-          <Text variant="meta" lines={1}>
-            {title}
-          </Text>
-          <Focusable
-            label={playingOn}
-            onPress={async () => {
-              const picked = await castPicker({ offerLocal: true });
-              if (picked !== undefined) select(picked);
-            }}
-          >
-            {(state) => (
-              <Row gap={4}>
-                <Icon name="cast" size={13} stroke={1.8} color="accent" />
-                <Text
-                  variant="meta"
-                  color="accent"
-                  lines={1}
-                  style={state.hovered ? UNDERLINE : undefined}
-                >
-                  {playingOn}
-                </Text>
-              </Row>
-            )}
-          </Focusable>
-        </Box>
+        <NowPlaying item={playing?.item} playingOn={playingOn} onSelect={select} />
 
         {playing ? (
           <>
-            <Row gap={4}>
-              <Transport
-                icon="rewind-backward-10"
-                label={t('player.back10')}
-                onPress={() => void send({ type: 'skip', deltaMs: -SKIP_MS })}
-              />
-              <Transport
-                icon={isPlaying ? 'player-pause-filled' : 'player-play-filled'}
-                label={t(isPlaying ? 'player.pause' : 'player.play')}
-                onPress={() => void send({ type: 'togglePlay' })}
-                primary
-              />
-              <Transport
-                icon="rewind-forward-10"
-                label={t('player.fwd10')}
-                onPress={() => void send({ type: 'skip', deltaMs: SKIP_MS })}
-              />
-              {item?.kind === 'episode' ? (
-                <Transport
-                  icon="player-track-next"
-                  label={t('player.nextEpisode')}
-                  onPress={() => void send({ type: 'skipNext' })}
-                />
-              ) : null}
-            </Row>
-
-            {wide ? (
-              <>
-                <Text variant="meta" color="textDim" shrink={0} style={TABULAR}>
-                  {formatTimecode(shownMs / 1000)}
-                </Text>
-                <input
-                  type="range"
-                  aria-label={t('player.seekBar')}
-                  min={0}
-                  max={Math.max(durationMs, 1)}
-                  value={Math.min(shownMs, durationMs || shownMs)}
-                  onChange={(e) => setDragMs(Number(e.target.value))}
-                  onPointerUp={() => commit()}
-                  onKeyUp={() => commit()}
-                  onBlur={() => commit()}
-                  style={{
-                    height: 4,
-                    minWidth: 0,
-                    flex: 1,
-                    cursor: 'pointer',
-                    accentColor: color('accent'),
-                  }}
-                />
-                <Text variant="meta" color="textDim" shrink={0} style={TABULAR}>
-                  {durationMs ? formatTimecode(durationMs / 1000) : '--:--'}
-                </Text>
-              </>
-            ) : null}
+            <TransportKeys playing={playing} send={send} />
+            {wide ? <Scrubber playing={playing} positionMs={positionMs} send={send} /> : null}
           </>
         ) : (
           <Text flex variant="meta" color="textDim">
@@ -168,12 +75,135 @@ export function CastBar() {
       </Row>
     </aside>
   );
+}
 
-  function commit() {
+function NowPlaying({
+  item,
+  playingOn,
+  onSelect,
+}: Readonly<{ item?: MediaItem; playingOn: string; onSelect: Cast['select'] }>) {
+  const t = useT();
+  const poster = item ? kromaClient().posterFor(item, 96) : null;
+  return (
+    <>
+      {poster ? (
+        <Box w={32} h={48} shrink={0}>
+          <Img src={poster} radius="sm" fill />
+        </Box>
+      ) : null}
+
+      <Box minW={0} shrink={0} basis={{ base: 112, md: 192 }}>
+        <Text variant="meta" lines={1}>
+          {item ? (item.metadata?.title ?? item.title) : t('cast.idle')}
+        </Text>
+        <Focusable
+          label={playingOn}
+          onPress={async () => {
+            const picked = await castPicker({ offerLocal: true });
+            if (picked !== undefined) onSelect(picked);
+          }}
+        >
+          {(state) => (
+            <Row gap={4}>
+              <Icon name="cast" size={13} stroke={1.8} color="accent" />
+              <Text
+                variant="meta"
+                color="accent"
+                lines={1}
+                style={state.hovered ? UNDERLINE : undefined}
+              >
+                {playingOn}
+              </Text>
+            </Row>
+          )}
+        </Focusable>
+      </Box>
+    </>
+  );
+}
+
+function TransportKeys({
+  playing,
+  send,
+}: Readonly<{ playing: CastNowPlaying; send: Cast['send'] }>) {
+  const t = useT();
+  // Buffering is playing, stalled: the button a viewer needs is still Pause.
+  const isPlaying = playing.state === 'playing' || playing.state === 'buffering';
+  return (
+    <Row gap={4}>
+      <Transport
+        icon="rewind-backward-10"
+        label={t('player.back10')}
+        onPress={() => void send({ type: 'skip', deltaMs: -SKIP_MS })}
+      />
+      <Transport
+        icon={isPlaying ? 'player-pause-filled' : 'player-play-filled'}
+        label={t(isPlaying ? 'player.pause' : 'player.play')}
+        onPress={() => void send({ type: 'togglePlay' })}
+        primary
+      />
+      <Transport
+        icon="rewind-forward-10"
+        label={t('player.fwd10')}
+        onPress={() => void send({ type: 'skip', deltaMs: SKIP_MS })}
+      />
+      {playing.item.kind === 'episode' ? (
+        <Transport
+          icon="player-track-next"
+          label={t('player.nextEpisode')}
+          onPress={() => void send({ type: 'skipNext' })}
+        />
+      ) : null}
+    </Row>
+  );
+}
+
+function Scrubber({
+  playing,
+  positionMs,
+  send,
+}: Readonly<{ playing: CastNowPlaying; positionMs: number; send: Cast['send'] }>) {
+  const t = useT();
+  // While a drag is in flight the bar follows the finger: the receiver's
+  // heartbeats would otherwise yank the handle back mid-gesture.
+  const [dragMs, setDragMs] = useState<number | null>(null);
+  const durationMs = playing.durationMs ?? 0;
+  const shownMs = dragMs ?? positionMs;
+
+  const commit = () => {
     if (dragMs == null) return;
     void send({ type: 'seek', positionMs: Math.round(dragMs) });
     setDragMs(null);
-  }
+  };
+
+  return (
+    <>
+      <Text variant="meta" color="textDim" shrink={0} style={TABULAR}>
+        {formatTimecode(shownMs / 1000)}
+      </Text>
+      <input
+        type="range"
+        aria-label={t('player.seekBar')}
+        min={0}
+        max={Math.max(durationMs, 1)}
+        value={Math.min(shownMs, durationMs || shownMs)}
+        onChange={(e) => setDragMs(Number(e.target.value))}
+        onPointerUp={() => commit()}
+        onKeyUp={() => commit()}
+        onBlur={() => commit()}
+        style={{
+          height: 4,
+          minWidth: 0,
+          flex: 1,
+          cursor: 'pointer',
+          accentColor: color('accent'),
+        }}
+      />
+      <Text variant="meta" color="textDim" shrink={0} style={TABULAR}>
+        {durationMs ? formatTimecode(durationMs / 1000) : '--:--'}
+      </Text>
+    </>
+  );
 }
 
 const UNDERLINE = { textDecorationLine: 'underline' } as const;

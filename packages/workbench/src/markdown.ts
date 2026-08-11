@@ -131,11 +131,42 @@ function closingFence(lines: readonly string[], from: number): number {
   return -1;
 }
 
-/** The document as blocks. Consecutive non-blank lines join into one paragraph,
- * the way a soft-wrapped markdown file means them to. */
-function blocks(md: string): Block[] {
-  const lines = md.replace(/\r\n?/g, '\n').split('\n');
-  const out: Block[] = [];
+interface Fenced {
+  block: Block;
+  next: number;
+}
+
+function fencedBlock(line: string, lines: readonly string[], from: number): Fenced | null {
+  const fence = FENCE.exec(line);
+  if (!fence) return null;
+  const end = closingFence(lines, from);
+  // An unclosed fence falls through and stays literal, so a stray ``` cannot
+  // swallow the rest of the page.
+  if (end === -1) return null;
+  const code = lines.slice(from, end).join('\n');
+  return {
+    block: { kind: 'code', code, ...(fence[1] ? { lang: fence[1] } : null) },
+    next: end + 1,
+  };
+}
+
+function headingBlock(line: string): Block | null {
+  const heading = HEADING.exec(line);
+  if (!heading?.[1] || !heading[2]) return null;
+  return { kind: 'heading', level: heading[1].length === 1 ? 1 : 2, text: heading[2] };
+}
+
+function bulletItem(line: string): string | null {
+  return BULLET.exec(line)?.[1] ?? null;
+}
+
+interface Pending {
+  paragraph(line: string): void;
+  item(text: string): void;
+  flush(): void;
+}
+
+function pendingBlocks(out: Block[]): Pending {
   let para: string[] = [];
   let items: string[] = [];
 
@@ -147,53 +178,61 @@ function blocks(md: string): Block[] {
     if (items.length > 0) out.push({ kind: 'list', items });
     items = [];
   };
-  const flush = () => {
-    flushParagraph();
-    flushList();
+
+  return {
+    paragraph(line) {
+      flushList();
+      para.push(line);
+    },
+    item(text) {
+      flushParagraph();
+      items.push(text);
+    },
+    flush() {
+      flushParagraph();
+      flushList();
+    },
   };
+}
+
+/** The document as blocks. Consecutive non-blank lines join into one paragraph,
+ * the way a soft-wrapped markdown file means them to. */
+function blocks(md: string): Block[] {
+  const lines = md.replace(/\r\n?/g, '\n').split('\n');
+  const out: Block[] = [];
+  const pending = pendingBlocks(out);
 
   let at = 0;
   while (at < lines.length) {
     const line = (lines[at] ?? '').trim();
     at += 1;
 
-    const fence = FENCE.exec(line);
-    if (fence) {
-      const end = closingFence(lines, at);
-      // An unclosed fence falls through and stays literal, so a stray ``` cannot
-      // swallow the rest of the page.
-      if (end !== -1) {
-        flush();
-        const code = lines.slice(at, end).join('\n');
-        out.push({ kind: 'code', code, ...(fence[1] ? { lang: fence[1] } : null) });
-        at = end + 1;
-        continue;
-      }
+    const fenced = fencedBlock(line, lines, at);
+    if (fenced) {
+      pending.flush();
+      out.push(fenced.block);
+      at = fenced.next;
+      continue;
     }
 
     if (!line) {
-      flush();
+      pending.flush();
       continue;
     }
 
-    const heading = HEADING.exec(line);
-    if (heading?.[1] && heading[2]) {
-      flush();
-      out.push({ kind: 'heading', level: heading[1].length === 1 ? 1 : 2, text: heading[2] });
+    const heading = headingBlock(line);
+    if (heading) {
+      pending.flush();
+      out.push(heading);
       continue;
     }
 
-    const bullet = BULLET.exec(line);
-    if (bullet?.[1]) {
-      flushParagraph();
-      items.push(bullet[1]);
-      continue;
-    }
-
-    flushList();
-    para.push(line);
+    const item = bulletItem(line);
+    if (item) pending.item(item);
+    else pending.paragraph(line);
   }
-  flush();
+
+  pending.flush();
   return out;
 }
 

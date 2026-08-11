@@ -10,24 +10,28 @@ import {
   type BoxProps,
   type ColorToken,
   color,
+  Focusable,
   Icon,
   type IconName,
   Surface,
   Text,
+  Tooltip,
   useTheme,
 } from '@kroma/ui/kit';
 import {
   type CSSProperties,
   createContext,
-  type KeyboardEvent,
-  type MouseEvent,
   type ReactNode,
   useContext,
+  useId,
   useMemo,
-  useState,
 } from 'react';
-import type { TextStyle } from 'react-native';
-import { ADMIN_TABLE_HEAD, ADMIN_TABLE_ROW } from '#web/features/admin/web-style';
+import type { TextStyle, ViewStyle } from 'react-native';
+import {
+  ADMIN_TABLE_HEAD,
+  ADMIN_TABLE_PRESS,
+  ADMIN_TABLE_ROW,
+} from '#web/features/admin/web-style';
 
 /** Numerals that line up from row to row, for a date or a count column. */
 export const TABULAR: TextStyle = { fontVariant: ['tabular-nums'] };
@@ -77,7 +81,8 @@ function Header({ children }: Readonly<{ children: ReactNode }>) {
 
 interface TableRowProps {
   /** Makes the whole row the control, so it is one pointer target and one tab
-   *  stop rather than a row of them. */
+   *  stop rather than a row of them. The row still reads as its own cells: the
+   *  press layer takes its name from them. */
   onPress?: () => void;
   children: ReactNode;
 }
@@ -85,6 +90,7 @@ interface TableRowProps {
 /** One record. */
 function Row({ onPress, children }: Readonly<TableRowProps>) {
   const style = useTemplate('Row');
+  const id = useId();
   if (!onPress) {
     return (
       <div className={ADMIN_TABLE_ROW} style={style}>
@@ -93,9 +99,10 @@ function Row({ onPress, children }: Readonly<TableRowProps>) {
     );
   }
   return (
-    <button type="button" className={ADMIN_TABLE_ROW} style={style} onClick={onPress}>
+    <div className={ADMIN_TABLE_ROW} data-pressable="true" id={id} style={style}>
+      <button type="button" className={ADMIN_TABLE_PRESS} aria-labelledby={id} onClick={onPress} />
       {children}
-    </button>
+    </div>
   );
 }
 
@@ -125,16 +132,13 @@ function Column({ wide, children }: Readonly<{ wide?: boolean; children?: ReactN
   );
 }
 
-const ACTION: CSSProperties = {
-  display: 'flex',
+const ACTION: ViewStyle = {
   alignItems: 'center',
   justifyContent: 'center',
   width: 32,
   height: 32,
   borderWidth: 1,
-  borderStyle: 'solid',
   cursor: 'pointer',
-  transition: 'background-color var(--dur-fast) var(--ease-out)',
 };
 
 interface TableActionProps {
@@ -146,44 +150,25 @@ interface TableActionProps {
   onPress: () => void;
 }
 
-/**
- * A shortcut inside a pressable row.
- *
- * Not an <IconButton>: the row is already the control, and a `<button>` cannot
- * hold another one, so this is a span that stops the row's press rather than a
- * second real button.
- */
+/** A shortcut sitting in a row, next to whatever the row's own press does. */
 function Action({ tone, icon, label, onPress }: Readonly<TableActionProps>) {
-  const [hover, setHover] = useState(false);
   const radius = useTheme().radius.sm;
-  const fire = (event: MouseEvent | KeyboardEvent) => {
-    event.stopPropagation();
-    onPress();
-  };
   return (
-    // biome-ignore lint/a11y/useSemanticElements: cannot be a native <button> because it lives inside the row's <button>
-    <span
-      role="button"
-      tabIndex={-1}
-      title={label}
-      aria-label={label}
-      onClick={fire}
-      onKeyDown={(event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        fire(event);
-      }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        ...ACTION,
-        borderRadius: radius,
-        borderColor: color(`${tone}/30`),
-        background: color(hover ? `${tone}/20` : `${tone}/10`),
-      }}
-    >
-      <Icon name={icon} size={14} color={tone} stroke={2.6} />
-    </span>
+    <Tooltip label={label}>
+      <Focusable
+        label={label}
+        onPress={onPress}
+        style={{
+          ...ACTION,
+          borderRadius: radius,
+          borderColor: color(`${tone}/30`),
+          backgroundColor: color(`${tone}/10`),
+        }}
+        states={{ hover: { bg: `${tone}/20` } }}
+      >
+        <Icon name={icon} size={14} color={tone} stroke={2.6} />
+      </Focusable>
+    </Tooltip>
   );
 }
 

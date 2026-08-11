@@ -327,18 +327,24 @@ function applyRule(out: Record<string, unknown>, rule: Rule, value: unknown): vo
   }
 }
 
-/**
- * Resolves a prop bag into React Native longhands at a breakpoint, defaulting to
- * the active one. A bag stating nothing per breakpoint never walks a cascade and
- * resolves exactly as it did before there was an axis at all.
- */
-export function boxStyle(p: Readonly<BoxStyleProps>, index?: number): ViewStyle {
-  const out: Record<string, unknown> = {};
-  let at = index ?? -1;
+function isPerBreakpoint(raw: unknown): raw is object {
+  return typeof raw === 'object' && raw !== null;
+}
+
+function flatAt(raw: unknown, index: number): unknown {
+  return isPerBreakpoint(raw) ? valueAt(raw, index) : raw;
+}
+
+function applyShorthands(
+  out: Record<string, unknown>,
+  p: Readonly<BoxStyleProps>,
+  index: number,
+): number {
+  let at = index;
   for (const key of RULE_KEYS) {
     const raw = (p as Record<string, unknown>)[key];
     if (raw === undefined) continue;
-    if (typeof raw !== 'object' || raw === null) {
+    if (!isPerBreakpoint(raw)) {
       applyRule(out, RULES[key], raw);
       continue;
     }
@@ -346,19 +352,31 @@ export function boxStyle(p: Readonly<BoxStyleProps>, index?: number): ViewStyle 
     const value = valueAt(raw, at);
     if (value !== undefined) applyRule(out, RULES[key], value);
   }
-  if (p.radius === undefined) return out as ViewStyle;
-  if (at < 0) at = breakpointIndex();
-  // A disc is half of ITSELF, so a stated side beats the clamped fallback.
-  if (flatAt(p.radius, at) === 'circle') {
-    const height = flatAt(p.h, at);
-    const stated = typeof height === 'number' ? height : flatAt(p.w, at);
-    out.borderRadius = radiusValue('circle', typeof stated === 'number' ? stated : undefined);
-  }
-  return out as ViewStyle;
+  return at;
 }
 
-function flatAt(raw: unknown, index: number): unknown {
-  return typeof raw === 'object' && raw !== null ? valueAt(raw, index) : raw;
+function applyCircleRadius(
+  out: Record<string, unknown>,
+  p: Readonly<BoxStyleProps>,
+  at: number,
+): void {
+  if (flatAt(p.radius, at) !== 'circle') return;
+  // A disc is half of ITSELF, so a stated side beats the clamped fallback.
+  const height = flatAt(p.h, at);
+  const stated = typeof height === 'number' ? height : flatAt(p.w, at);
+  out.borderRadius = radiusValue('circle', typeof stated === 'number' ? stated : undefined);
+}
+
+/**
+ * Resolves a prop bag into React Native longhands at a breakpoint, defaulting to
+ * the active one. A bag stating nothing per breakpoint never walks a cascade and
+ * resolves exactly as it did before there was an axis at all.
+ */
+export function boxStyle(p: Readonly<BoxStyleProps>, index?: number): ViewStyle {
+  const out: Record<string, unknown> = {};
+  const at = applyShorthands(out, p, index ?? -1);
+  if (p.radius !== undefined) applyCircleRadius(out, p, at < 0 ? breakpointIndex() : at);
+  return out as ViewStyle;
 }
 
 /**

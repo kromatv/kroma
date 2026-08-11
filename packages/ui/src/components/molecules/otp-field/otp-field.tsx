@@ -26,14 +26,9 @@ import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
 import { useCompleteOnce } from '#ui/lib/use-complete-once';
 import { useControllable } from '#ui/lib/use-controllable';
-import {
-  OtpFieldContext,
-  type OtpFieldState,
-  OtpGroupStartContext,
-  useOtpSlot,
-} from './otp-field-context';
+import { OtpFieldContext, type OtpFieldState, OtpGroupStartContext } from './otp-field-context';
 import { Group, Separator, SLOT_GAP, Slot } from './otp-field-parts';
-import { type OtpSize, otpVariants } from './otp-field-variants';
+import type { OtpSize } from './otp-field-variants';
 
 const REGEXP_ONLY_DIGITS = String.raw`^\d+$`;
 const REGEXP_ONLY_CHARS = '^[a-zA-Z]+$';
@@ -266,13 +261,8 @@ const s = styles({
 const OtpField = { Root, Group, Slot, Separator };
 
 export type { OtpSlot } from './otp-field-context';
+export { useOtpSlot } from './otp-field-context';
 export type { OtpGroupProps } from './otp-field-parts';
+export { otpVariants } from './otp-field-variants';
 export type { OtpFieldRootProps, OtpSize };
-export {
-  OtpField,
-  otpVariants,
-  REGEXP_ONLY_CHARS,
-  REGEXP_ONLY_DIGITS,
-  REGEXP_ONLY_DIGITS_AND_CHARS,
-  useOtpSlot,
-};
+export { OtpField, REGEXP_ONLY_CHARS, REGEXP_ONLY_DIGITS, REGEXP_ONLY_DIGITS_AND_CHARS };

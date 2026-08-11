@@ -126,7 +126,10 @@ function Root({
   const step = size ?? entryDefaultSize();
   const metrics = CONTROL[step];
   const at = useMemo(() => sort(children), [children]);
-  const context: Context = { shape: SHAPE[step], paint: TONE[tone], metrics };
+  const context = useMemo<Context>(
+    () => ({ shape: SHAPE[step], paint: TONE[tone], metrics }),
+    [step, tone, metrics],
+  );
 
   const leading = slot(at.leading, icon === undefined ? null : <Media name={icon} />);
   const trailing = slot(at.trailing, actions === undefined ? null : <Actions>{actions}</Actions>);

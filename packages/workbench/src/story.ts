@@ -165,38 +165,71 @@ function slug(name: string): string {
   );
 }
 
-// `const A`: without it `args: { icon: 'volume' }` infers `string` and every
-// story feeding a union-typed prop stops compiling.
-function story<const A extends Args = Record<string, never>>(def: StoryDef<A>): Story {
-  const args: Args = { ...def.args };
-  const controls: ResolvedControl[] = [];
-  const matrix: MatrixRow[] = [];
+interface VariantGroup {
+  control: ResolvedControl;
+  row: MatrixRow;
+  value: unknown;
+}
 
-  const omitted = new Set(def.omit ?? []);
-  for (const [group, raw] of Object.entries(def.variants?.options ?? {})) {
-    if (omitted.has(group)) continue;
-    const options = raw.map(String);
-    const fallback = def.variants?.defaults?.[group];
-    if (isBooleanGroup(options)) {
-      controls.push({ key: group, control: { kind: 'boolean' }, variant: true });
-      matrix.push({ group, options: [false, true] });
-      args[group] ??= String(fallback) === 'true';
-    } else {
-      controls.push({ key: group, control: { kind: 'select', options }, variant: true });
-      matrix.push({ group, options });
-      args[group] ??= fallback === undefined ? options[0] : String(fallback);
-    }
+function variantGroup(
+  group: string,
+  raw: readonly string[],
+  fallback: AnySv['defaults'][string],
+): VariantGroup {
+  const options = raw.map(String);
+  if (isBooleanGroup(options)) {
+    return {
+      control: { key: group, control: { kind: 'boolean' }, variant: true },
+      row: { group, options: [false, true] },
+      value: String(fallback) === 'true',
+    };
   }
+  return {
+    control: { key: group, control: { kind: 'select', options }, variant: true },
+    row: { group, options },
+    value: fallback === undefined ? options[0] : String(fallback),
+  };
+}
 
+interface DerivedVariants {
+  controls: ResolvedControl[];
+  matrix: MatrixRow[];
+  defaults: Args;
+}
+
+function variantControls(
+  variants: AnySv | undefined,
+  omit: readonly string[] = [],
+): DerivedVariants {
+  const omitted = new Set(omit);
+  const derived: DerivedVariants = { controls: [], matrix: [], defaults: {} };
+  for (const [group, raw] of Object.entries(variants?.options ?? {})) {
+    if (omitted.has(group)) continue;
+    const { control, row, value } = variantGroup(group, raw, variants?.defaults?.[group]);
+    derived.controls.push(control);
+    derived.matrix.push(row);
+    derived.defaults[group] = value;
+  }
+  return derived;
+}
+
+function argControls<A extends Args>(
+  def: StoryDef<A>,
+  variantKeys: ReadonlySet<string>,
+): ResolvedControl[] {
+  const out: ResolvedControl[] = [];
   for (const [key, value] of Object.entries(def.args ?? {})) {
     // A prop that is also a variant already has its control from the `sv`.
-    if (controls.some((existing) => existing.key === key)) continue;
+    if (variantKeys.has(key)) continue;
     const spec = def.controls?.[key as keyof A];
     const control = spec ? resolveSpec(spec) : inferSpec(value);
-    if (control) controls.push({ key, control, variant: false });
+    if (control) out.push({ key, control, variant: false });
   }
+  return out;
+}
 
-  const scenes: Scene[] = (def.scenes ?? []).map((scene) => ({
+function resolveScenes<A extends Args>(def: StoryDef<A>): Scene[] {
+  return (def.scenes ?? []).map((scene) => ({
     name: scene.name,
     docs: scene.docs,
     render: (current: Args) => {
@@ -204,6 +237,19 @@ function story<const A extends Args = Record<string, never>>(def: StoryDef<A>): 
       return (scene.render ?? def.render)(merged);
     },
   }));
+}
+
+// `const A`: without it `args: { icon: 'volume' }` infers `string` and every
+// story feeding a union-typed prop stops compiling.
+function story<const A extends Args = Record<string, never>>(def: StoryDef<A>): Story {
+  const variants = variantControls(def.variants, def.omit);
+
+  const args: Args = { ...def.args };
+  for (const [group, value] of Object.entries(variants.defaults)) args[group] ??= value;
+
+  const variantKeys = new Set(variants.controls.map((control) => control.key));
+  const controls = [...variants.controls, ...argControls(def, variantKeys)];
+  const scenes = resolveScenes(def);
 
   return {
     id: slug(def.name),
@@ -214,7 +260,7 @@ function story<const A extends Args = Record<string, never>>(def: StoryDef<A>): 
     docs: def.docs,
     args,
     controls,
-    matrix: def.matrix === false ? [] : matrix,
+    matrix: def.matrix === false ? [] : variants.matrix,
     scenes,
     demos: [],
     props: [],

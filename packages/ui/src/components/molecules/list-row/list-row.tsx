@@ -15,7 +15,7 @@ import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell
 import { ListGroup, useListGroup } from './list-group';
 import { ListRowContext } from './list-row-context';
 import { Hint, Label, Leading, Trailing } from './list-row-parts';
-import { type ListRowSize, listRowVariants } from './list-row-variants';
+import { listRowVariants } from './list-row-variants';
 
 // The well has two steps to the shell's three, and a phone's row takes the
 // pointer-sized one.
@@ -167,5 +167,6 @@ function Root({
 
 const ListRow = { Root, Leading, Label, Hint, Trailing, Group: ListGroup };
 
-export type { ListRowRootProps, ListRowSize };
+export type { ListRowSize } from './list-row-variants';
+export type { ListRowRootProps };
 export { ListRow, listRowVariants };

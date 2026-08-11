@@ -4,7 +4,7 @@
 // keys type ahead, Esc returns to the trigger. DOM focus stays on the panel
 // and `aria-activedescendant` names the active row.
 
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { type ReactElement, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import {
@@ -17,7 +17,7 @@ import {
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { Portal } from '#ui/lib/portal';
 import { useTDefault } from '#ui/services/i18n';
-import { MenuRowContext } from './menu-context';
+import { MenuRowContext, type MenuRowState } from './menu-context';
 import { type MenuRowSpec, MenuSurfaceDialog, type MenuSurfaceProps } from './menu-surface-dialog';
 
 function MenuSurface(props: Readonly<MenuSurfaceProps>) {
@@ -31,6 +31,36 @@ const MAX_HEIGHT = 400;
 const PANEL_PAD = 6;
 // Concentric with the rows inside it: the row radius plus PANEL_PAD.
 const PANEL_RADIUS = 'xl';
+
+interface PanelEntryProps {
+  entry: ReactElement;
+  nativeID: string;
+  index: number;
+  active: boolean;
+  onActivate: (index: number) => void;
+  onFire: (index: number) => void;
+}
+
+function PanelEntry({
+  entry,
+  nativeID,
+  index,
+  active,
+  onActivate,
+  onFire,
+}: Readonly<PanelEntryProps>) {
+  const row = useMemo<MenuRowState>(
+    () => ({
+      presentation: 'panel',
+      nativeID,
+      active,
+      onHoverIn: () => onActivate(index),
+      fire: () => onFire(index),
+    }),
+    [nativeID, index, active, onActivate, onFire],
+  );
+  return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
+}
 
 function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<MenuSurfaceProps>) {
   const t = useTDefault();
@@ -59,6 +89,8 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
     },
     [onDismiss],
   );
+
+  const fireAt = useCallback((index: number) => fire(rows[index]), [fire, rows]);
 
   const { onKeyDown } = useListKeys({
     count: rows.length,
@@ -134,18 +166,15 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
             {entries.map((entry, position) => {
               const index = rows.findIndex((row) => row.at === position);
               return (
-                <MenuRowContext.Provider
+                <PanelEntry
                   key={entry.key}
-                  value={{
-                    presentation: 'panel',
-                    nativeID: `${baseId}-${index}`,
-                    active: index === active,
-                    onHoverIn: () => setActive(index),
-                    fire: () => fire(rows[index]),
-                  }}
-                >
-                  {entry}
-                </MenuRowContext.Provider>
+                  entry={entry}
+                  nativeID={`${baseId}-${index}`}
+                  index={index}
+                  active={index === active}
+                  onActivate={setActive}
+                  onFire={fireAt}
+                />
               );
             })}
           </Box>

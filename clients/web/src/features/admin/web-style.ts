@@ -32,3 +32,7 @@ export const ADMIN_TABLE_HEAD = 'admin-table-head';
 
 /** One record of an aligned table, pressable or not. */
 export const ADMIN_TABLE_ROW = 'admin-table-row';
+
+/** The press of a pressable row: a button covering the row from under its
+ *  cells, so the row's own controls stay real buttons beside it. */
+export const ADMIN_TABLE_PRESS = 'admin-table-press';

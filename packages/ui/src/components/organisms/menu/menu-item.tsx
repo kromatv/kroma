@@ -3,7 +3,7 @@
 // decision, handed down through the row context.
 
 import type { ReactNode } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, type StyleProp, type TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -11,7 +11,7 @@ import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles, sv } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
-import { useMenuRow } from './menu-context';
+import { type MenuRowState, useMenuRow } from './menu-context';
 
 const menuItemVariants = sv({
   slots: {
@@ -58,48 +58,68 @@ function labelOf(props: Readonly<MenuItemProps>): string {
   return props.label ?? textOf(props.children) ?? '';
 }
 
-function Item(props: Readonly<MenuItemProps>) {
-  const { children, icon, disabled = false, tone = 'default' } = props;
-  const row = useMenuRow('Item');
-  const danger = tone === 'danger';
-  const label = labelOf(props);
-  const composed = children !== undefined && textOf(children) === undefined;
+interface RowFaceProps {
+  icon: IconName | undefined;
+  label: string;
+  danger: boolean;
+  iconSize: number;
+  ink: StyleProp<TextStyle>;
+}
 
-  if (row.presentation === 'panel') {
-    const slots = menuItemVariants({ danger });
-    return (
-      <Pressable
-        nativeID={row.nativeID}
-        role="menuitem"
-        accessibilityLabel={label}
-        // The panel is a web-only presentation, and react-native-web reads the
-        // flat aria props rather than the state object.
-        aria-disabled={disabled}
-        tabIndex={-1}
-        onPress={row.fire}
-        onHoverIn={row.onHoverIn}
-        style={[
-          slots.root,
-          s.row,
-          row.active && danger ? s.activeDanger : null,
-          row.active && !danger ? s.active : null,
-          disabled ? s.disabled : null,
-        ]}
-      >
-        {composed ? (
-          children
-        ) : (
-          <>
-            {icon ? <Icon name={icon} size={15} color={danger ? 'danger' : 'text/80'} /> : null}
-            <Text variant="body" style={[slots.ink, s.label]}>
-              {label}
-            </Text>
-          </>
-        )}
-      </Pressable>
-    );
-  }
+function RowFace({ icon, label, danger, iconSize, ink }: Readonly<RowFaceProps>) {
+  const glyph = danger ? 'danger' : 'text/80';
+  return (
+    <>
+      {icon ? <Icon name={icon} size={iconSize} color={glyph} /> : null}
+      <Text variant="body" style={ink}>
+        {label}
+      </Text>
+    </>
+  );
+}
 
+interface RowProps {
+  row: MenuRowState;
+  label: string;
+  icon: IconName | undefined;
+  disabled: boolean;
+  danger: boolean;
+  composed: boolean;
+  children: ReactNode;
+}
+
+function PanelRow({ row, label, icon, disabled, danger, composed, children }: Readonly<RowProps>) {
+  const slots = menuItemVariants({ danger });
+  const wash = danger ? s.activeDanger : s.active;
+  return (
+    <Pressable
+      nativeID={row.nativeID}
+      role="menuitem"
+      accessibilityLabel={label}
+      // The panel is a web-only presentation, and react-native-web reads the
+      // flat aria props rather than the state object.
+      aria-disabled={disabled}
+      tabIndex={-1}
+      onPress={row.fire}
+      onHoverIn={row.onHoverIn}
+      style={[slots.root, s.row, row.active ? wash : null, disabled ? s.disabled : null]}
+    >
+      {composed ? (
+        children
+      ) : (
+        <RowFace
+          icon={icon}
+          label={label}
+          danger={danger}
+          iconSize={15}
+          ink={[slots.ink, s.label]}
+        />
+      )}
+    </Pressable>
+  );
+}
+
+function DialogRow({ row, label, icon, disabled, danger, composed, children }: Readonly<RowProps>) {
   return (
     <Focusable
       role="menuitem"
@@ -114,16 +134,35 @@ function Item(props: Readonly<MenuItemProps>) {
           children
         ) : (
           <>
-            {icon ? <Icon name={icon} size={16} color={danger ? 'danger' : 'text/80'} /> : null}
-            <Text variant="body" style={focus.slots.ink}>
-              {label}
-            </Text>
+            <RowFace
+              icon={icon}
+              label={label}
+              danger={danger}
+              iconSize={16}
+              ink={focus.slots.ink}
+            />
             <Box flex />
           </>
         )
       }
     </Focusable>
   );
+}
+
+function Item(props: Readonly<MenuItemProps>) {
+  const { children, icon, disabled = false, tone = 'default' } = props;
+  const row = useMenuRow('Item');
+  const shared = {
+    row,
+    label: labelOf(props),
+    icon,
+    disabled,
+    danger: tone === 'danger',
+    composed: children !== undefined && textOf(children) === undefined,
+  };
+
+  if (row.presentation === 'panel') return <PanelRow {...shared}>{children}</PanelRow>;
+  return <DialogRow {...shared}>{children}</DialogRow>;
 }
 
 /** A rule between two groups of actions. */

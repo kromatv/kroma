@@ -301,12 +301,29 @@ select:focus-visible,
 .admin-table-row:last-child {
   border-bottom: 0;
 }
-button.admin-table-row {
-  cursor: pointer;
+/* A pressable row is a <button> UNDER its cells rather than around them, because
+   a button cannot hold the action buttons a row carries. The cells are inert so
+   the press reaches through them; the real controls inside them are not. */
+.admin-table-row[data-pressable] {
+  position: relative;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
-button.admin-table-row:hover {
+.admin-table-row[data-pressable]:hover {
   background: color-mix(in srgb, var(--kroma-tint) 3%, transparent);
+}
+.admin-table-row[data-pressable] > *:not(.admin-table-press) {
+  pointer-events: none;
+}
+.admin-table-row[data-pressable] :is(a, button, input, select, textarea, [tabindex]) {
+  pointer-events: auto;
+}
+.admin-table-press {
+  position: absolute;
+  inset: 0;
+  appearance: none;
+  border: 0;
+  background: none;
+  cursor: pointer;
 }
 @media (min-width: 600px) {
   .admin-table-head,

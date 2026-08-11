@@ -9,7 +9,9 @@ import {
   isValidElement,
   type ReactElement,
   type ReactNode,
+  useCallback,
   useContext,
+  useMemo,
   useRef,
 } from 'react';
 import type { StyleProp, View, ViewStyle } from 'react-native';
@@ -99,34 +101,33 @@ function Root({
   const [open, setOpenState] = useControllable(openProp, defaultOpen ?? false);
   const anchor = useRef<View>(null);
 
-  const kids = Children.toArray(children);
-  const items = kids.filter(isItem);
-  const options = items.map((item) => optionOf(item.props));
+  const kids = useMemo(() => Children.toArray(children), [children]);
+  const items = useMemo(() => kids.filter(isItem), [kids]);
+  const options = useMemo(() => items.map((item) => optionOf(item.props)), [items]);
   const current = options.find((option) => option.value === value);
 
-  const setOpen = (next: boolean, reason: SelectOpenReason) => {
-    setOpenState(next);
-    onOpenChange?.(next, { reason });
-  };
+  const setOpen = useCallback(
+    (next: boolean, reason: SelectOpenReason) => {
+      setOpenState(next);
+      onOpenChange?.(next, { reason });
+    },
+    [setOpenState, onOpenChange],
+  );
 
-  const pick = (next: string) => {
-    const item = options.find((option) => option.value === next);
-    setValue(next);
-    if (item) onValueChange?.(next, { item });
-    setOpen(false, 'select');
-  };
+  const pick = useCallback(
+    (next: string) => {
+      const item = options.find((option) => option.value === next);
+      setValue(next);
+      if (item) onValueChange?.(next, { item });
+      setOpen(false, 'select');
+    },
+    [options, setValue, onValueChange, setOpen],
+  );
 
-  const state: SelectState = {
-    value,
-    current,
-    label,
-    placeholder,
-    open,
-    disabled,
-    anchor,
-    setOpen,
-    pick,
-  };
+  const state = useMemo<SelectState>(
+    () => ({ value, current, label, placeholder, open, disabled, anchor, setOpen, pick }),
+    [value, current, label, placeholder, open, disabled, setOpen, pick],
+  );
 
   return (
     <SelectContext.Provider value={state}>

@@ -306,6 +306,24 @@ function RowStatusCell({
   );
 }
 
+function useOpenInKroma(dl: DownloadView): (() => void) | null {
+  const navigate = useNavigate();
+  const localId = dl.localId;
+  if (!localId) return null;
+  return () =>
+    navigate({
+      to: dl.kind === 'movie' ? '/movie/$id' : '/show/$id',
+      params: { id: localId },
+    });
+}
+
+function openTrackerPage(url: string | null | undefined): (() => void) | null {
+  if (!url) return null;
+  return () => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+}
+
 function RowActionsMenu({
   dl,
   status,
@@ -328,26 +346,12 @@ function RowActionsMenu({
   onRemove: () => void;
 }>) {
   const t = useT();
-  const navigate = useNavigate();
   const pausable = active;
   const resumable = status === 'paused';
   // Only meaningful while the torrent is live in the engine.
   const canAskPeers = active || status === 'seeding';
-
-  const localId = dl.localId;
-  const openInKroma = localId
-    ? () =>
-        navigate({
-          to: dl.kind === 'movie' ? '/movie/$id' : '/show/$id',
-          params: { id: localId },
-        })
-    : null;
-
-  const openTracker = dl.detailsUrl
-    ? () => {
-        if (dl.detailsUrl) window.open(dl.detailsUrl, '_blank', 'noopener,noreferrer');
-      }
-    : null;
+  const openInKroma = useOpenInKroma(dl);
+  const openTracker = openTrackerPage(dl.detailsUrl);
 
   return (
     <Row justify="flex-end">

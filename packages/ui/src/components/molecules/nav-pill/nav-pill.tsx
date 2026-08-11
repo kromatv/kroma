@@ -27,7 +27,7 @@ import {
   type SlideTarget,
   useNavPill,
 } from './nav-pill-context';
-import { Item, type NavPillIcon, type NavPillItemProps } from './nav-pill-item';
+import { Item } from './nav-pill-item';
 import { Lens } from './nav-pill-lens';
 
 // The capsule's padding IS the room a focused item's ring needs, plus a hairline
@@ -252,5 +252,6 @@ function Root({
  */
 const NavPill = { Root, Item, Backdrop };
 
-export type { NavPillIcon, NavPillItemProps, NavPillLabels, NavPillRootProps, NavPillSize };
+export type { NavPillIcon, NavPillItemProps } from './nav-pill-item';
+export type { NavPillLabels, NavPillRootProps, NavPillSize };
 export { NavPill };

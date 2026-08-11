@@ -1,12 +1,12 @@
 // The D-pad presentation of <Menu>'s items: a <Dialog>, for the same reason
 // <Select> uses one (the remote is confined to the options).
 
-import type { ReactElement, RefObject } from 'react';
+import { type ReactElement, type RefObject, useCallback, useMemo } from 'react';
 import type { View } from 'react-native';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { FocusColumn } from '#ui/lib/focus-scope';
 import { pointerDriving } from '#ui/lib/input-source';
-import { type MenuDismissReason, MenuRowContext } from './menu-context';
+import { type MenuDismissReason, MenuRowContext, type MenuRowState } from './menu-context';
 
 /** One actionable row, in the order the items were written. `at` is the
  *  position among the ENTRIES, which count the separators too. */
@@ -35,6 +35,26 @@ function dismissReason(): MenuDismissReason {
   return pointerDriving() ? 'outside' : 'back';
 }
 
+interface DialogEntryProps {
+  entry: ReactElement;
+  spec: MenuRowSpec | undefined;
+  onFire: (spec: MenuRowSpec) => void;
+}
+
+function DialogEntry({ entry, spec, onFire }: Readonly<DialogEntryProps>) {
+  const row = useMemo<MenuRowState>(
+    () => ({
+      presentation: 'dialog',
+      active: false,
+      fire: () => {
+        if (spec) onFire(spec);
+      },
+    }),
+    [spec, onFire],
+  );
+  return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
+}
+
 export function MenuSurfaceDialog({
   open,
   onDismiss,
@@ -42,31 +62,25 @@ export function MenuSurfaceDialog({
   entries,
   rows,
 }: Readonly<MenuSurfaceProps>) {
-  const fire = (spec: MenuRowSpec) => {
-    if (spec.disabled) return;
-    onDismiss('select');
-    spec.select();
-  };
+  const fire = useCallback(
+    (spec: MenuRowSpec) => {
+      if (spec.disabled) return;
+      onDismiss('select');
+      spec.select();
+    },
+    [onDismiss],
+  );
   return (
     <Dialog open={open} onClose={() => onDismiss(dismissReason())} title={label} width={480}>
       <FocusColumn>
-        {entries.map((entry, at) => {
-          const spec = rows.find((row) => row.at === at);
-          return (
-            <MenuRowContext.Provider
-              key={entry.key}
-              value={{
-                presentation: 'dialog',
-                active: false,
-                fire: () => {
-                  if (spec) fire(spec);
-                },
-              }}
-            >
-              {entry}
-            </MenuRowContext.Provider>
-          );
-        })}
+        {entries.map((entry, at) => (
+          <DialogEntry
+            key={entry.key}
+            entry={entry}
+            spec={rows.find((row) => row.at === at)}
+            onFire={fire}
+          />
+        ))}
       </FocusColumn>
     </Dialog>
   );

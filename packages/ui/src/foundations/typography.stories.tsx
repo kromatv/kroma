@@ -18,11 +18,15 @@ import {
 
 const SPECIMEN = 'Blade Runner 2049';
 
+function tracking(em: number | undefined) {
+  if (em === undefined) return '';
+  const sign = em > 0 ? '+' : '';
+  return ` · ${sign}${em}em`;
+}
+
 function metrics(spec: TypeSpec) {
-  const em = 'em' in spec ? spec.em : undefined;
   const leading = `${Math.round(spec.size * spec.ratio)} (${spec.ratio})`;
-  const track = em === undefined ? '' : ` · ${em > 0 ? '+' : ''}${em}em`;
-  return `${spec.size} / ${spec.weight} · ${leading}${track}`;
+  return `${spec.size} / ${spec.weight} · ${leading}${tracking(spec.em)}`;
 }
 
 function Row({

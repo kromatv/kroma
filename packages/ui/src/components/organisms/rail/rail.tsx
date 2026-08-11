@@ -12,7 +12,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { gutter, type TypeRole } from '#ui/core/tokens';
 import { RailContext, useRail } from './rail-context';
-import { GrowingRow, List, type RailListProps } from './rail-row';
+import { GrowingRow, List } from './rail-row';
 
 /**
  * A rail's gap between tiles. Tighter than what a focused tile puts outside
@@ -114,5 +114,6 @@ function Root({
  */
 const Rail = { Root, Title, List };
 
-export type { RailListProps, RailRootProps, RailTitleProps };
+export type { RailListProps } from './rail-row';
+export type { RailRootProps, RailTitleProps };
 export { RAIL_GAP, Rail };
