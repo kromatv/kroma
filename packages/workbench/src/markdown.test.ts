@@ -95,4 +95,17 @@ describe('blocks', () => {
   it('has nothing to say about nothing', () => {
     expect(blocks('')).toEqual([]);
   });
+
+  it('reads an unclosed mark in linear time rather than rescanning per start', () => {
+    // The shape that backtracks: an opener whose closer never arrives, so every
+    // start position would otherwise scan to the end of the line.
+    const started = performance.now();
+    blocks(`**${'a'.repeat(60_000)}`);
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
+
+  it('leaves a span longer than the bound as plain text rather than dropping it', () => {
+    const long = 'a'.repeat(500);
+    expect(blocks(`**${long}**`)).toEqual([{ kind: 'paragraph', text: `**${long}**` }]);
+  });
 });

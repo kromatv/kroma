@@ -26,7 +26,16 @@ type Block =
 // Split rather than scan: the capture group keeps the marked spans in place, so
 // the pass cannot lose text it did not recognise. Leftmost wins, which is what
 // puts a `**bold**` inside a code span on the code span's side.
-const INLINE = /(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^\s)]+\))/g;
+//
+// Every run is bounded. An unclosed `**` would otherwise make each start
+// position rescan to the end of the line, which is quadratic in its length; a
+// bound also states the real limit, since an inline span longer than this is
+// prose that wanted a paragraph.
+const SPAN = 400;
+const INLINE = new RegExp(
+  `(\`[^\`]{1,${SPAN}}\`|\\*\\*[^*]{1,${SPAN}}\\*\\*|\\[[^\\]]{1,${SPAN}}\\]\\([^\\s)]{1,${SPAN}}\\))`,
+  'g',
+);
 const LINK = /^\[([^\]]+)\]\(([^\s)]+)\)$/;
 
 /** The inline spans of one line of prose, in order. */
