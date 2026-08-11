@@ -1,6 +1,6 @@
 import { ItemId, ShowId } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Box, EmptyState, PageHeader } from '@kroma/ui/kit';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -8,7 +8,7 @@ import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
 import { useMyList } from '#web/shared/lib/mylist';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/mylist')({
   // The catalogue is public/SSR while the per-user list hydrates client-side,
@@ -28,10 +28,10 @@ function MyListPending() {
   const t = useT();
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{t('nav.myList')}</h1>
-      <div className="mt-6">
+      <PageHeader.Root title={t('nav.myList')} />
+      <Box mt={24}>
         <SkeletonRow count={10} />
-      </div>
+      </Box>
     </main>
   );
 }
@@ -57,13 +57,13 @@ function MyListPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{t('nav.myList')}</h1>
+      <PageHeader.Root title={t('nav.myList')} />
       {ready && entries.length === 0 ? (
         <EmptyState.Root icon="list-details" title={t('content.myListEmpty')} />
       ) : (
-        <div className="mt-6">
+        <Box mt={24}>
           <CatalogGrid entries={entries} />
-        </div>
+        </Box>
       )}
     </main>
   );

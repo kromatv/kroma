@@ -5,7 +5,6 @@
 import type { DiscoverEntry, DiscoverType } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Icon, Row, Text } from '@kroma/ui/kit';
-import { IconChevronRight } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -18,9 +17,11 @@ function RailHeading({ title, action }: Readonly<{ title: string; action?: React
   return (
     <Row between gap={12} mt={36} mb={16}>
       {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
-      <h2 className="flex items-center gap-2">
-        <Icon name="flame" size={20} stroke={2} color="accent" />
-        <Text variant="h2">{title}</Text>
+      <h2 style={HEADING}>
+        <Row gap={8}>
+          <Icon name="flame" size={20} stroke={2} color="accent" />
+          <Text variant="h2">{title}</Text>
+        </Row>
       </h2>
       {action}
     </Row>
@@ -39,13 +40,11 @@ function TrendRail({
       <RailHeading
         title={title}
         action={
-          <Link
-            to="/trending/$type"
-            params={{ type: linkType }}
-            className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-dim transition-colors hover:text-accent"
-          >
-            {t('discover.seeAll')}
-            <IconChevronRight size={15} stroke={2.4} />
+          <Link to="/trending/$type" params={{ type: linkType }} style={INLINE_LINK}>
+            <Text variant="meta" color="textDim">
+              {t('discover.seeAll')}
+            </Text>
+            <Icon name="chevron-right" size={15} stroke={2.4} color="textDim" />
           </Link>
         }
       />
@@ -76,7 +75,7 @@ export function TrendingBrowse({
   const wantShows = type !== 'movie';
 
   return (
-    <div className="animate-[fade-in_.3s_var(--ease-out)]">
+    <div style={FADE_IN}>
       {wantMovies ? (
         <TrendRail title={t('discover.trendingMovies')} entries={movies} linkType="movie" />
       ) : null}
@@ -86,3 +85,15 @@ export function TrendingBrowse({
     </div>
   );
 }
+
+const HEADING = { margin: 0 } as const;
+
+const INLINE_LINK = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  flexShrink: 0,
+  textDecoration: 'none',
+} as const;
+
+const FADE_IN = { animation: 'fade-in .3s var(--ease-out)' } as const;

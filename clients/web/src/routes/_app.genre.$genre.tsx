@@ -1,6 +1,6 @@
 import { compareTitles, hasGenre, isSortMode, type Sortable, type SortMode } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Box, EmptyState, PageHeader } from '@kroma/ui/kit';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -9,7 +9,7 @@ import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
 
 interface GenreSearch {
   sort?: SortMode;
@@ -33,10 +33,10 @@ function GenrePending() {
   const { genre } = Route.useParams();
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{genre}</h1>
-      <div className="mt-6">
+      <PageHeader.Root title={genre} />
+      <Box mt={24}>
         <SkeletonRow count={14} />
-      </div>
+      </Box>
     </main>
   );
 }
@@ -65,7 +65,7 @@ function GenrePage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{genre}</h1>
+      <PageHeader.Root title={genre} />
       {entries.length === 0 ? (
         <EmptyState.Root icon="category" title={t('search.noResults')} />
       ) : (

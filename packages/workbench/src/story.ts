@@ -2,7 +2,7 @@
 // and what about it is worth changing. A component's `sv` supplies the controls.
 
 import type { VariantSource } from '@kroma/ui/kit';
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type { PropDoc } from './props';
 
 type AnySv = VariantSource;
@@ -38,6 +38,15 @@ interface MatrixRow {
 /** How much width the canvas gives a story: a fixed width, the whole stage, or
  * the stage clamped. Omit it for a component sized by its own content. */
 type StoryWidth = number | 'fill' | { min?: number; max?: number };
+
+/** A `<story>.docs.mdx` compiled to a component. `components` is the element
+ * map the workbench hands it (`MDX_COMPONENTS`); MDX types it loosely because
+ * every host maps a different set. */
+type DocComponent = ComponentType<{ components?: Record<string, unknown> }>;
+
+/** A story's prose: the inline `docs:` string, or the sibling `.docs.mdx` that
+ * replaces it. */
+type StoryDocs = string | DocComponent;
 
 type Widen<T> = T extends string
   ? string
@@ -94,7 +103,7 @@ interface Story {
   name: string;
   group: string;
   tier: string;
-  docs?: string;
+  docs?: StoryDocs;
   args: Args;
   controls: ResolvedControl[];
   matrix: MatrixRow[];
@@ -287,11 +296,13 @@ export type {
   Control,
   ControlSpec,
   DemoDef,
+  DocComponent,
   MatrixRow,
   ResolvedControl,
   Scene,
   Story,
   StoryDef,
+  StoryDocs,
   StoryWidth,
 };
 export {

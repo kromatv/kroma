@@ -4,7 +4,7 @@
 
 import { posterColors, type SearchHit } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, Text } from '@kroma/ui/kit';
+import { Box, EmptyState, Row, Text } from '@kroma/ui/kit';
 
 import { useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -26,18 +26,24 @@ function Section({
   children,
 }: Readonly<{ title: string; count: number; children: ReactNode }>) {
   return (
-    <section className="mb-9 animate-[fade-in_.25s_var(--ease-out)]">
+    <section style={BAND}>
       {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
-      <h2 className="mb-4 flex items-baseline gap-2.5">
-        <Text variant="title">{title}</Text>
-        <Text variant="meta" color="textDim" style={COUNT}>
-          {count}
-        </Text>
+      <h2 style={HEADING}>
+        <Row align="baseline" gap={10} mb={16}>
+          <Text variant="title">{title}</Text>
+          <Text variant="meta" color="textDim" style={COUNT}>
+            {count}
+          </Text>
+        </Row>
       </h2>
       <div className={GRID}>{children}</div>
     </section>
   );
 }
+
+const BAND = { marginBottom: 36, animation: 'fade-in .25s var(--ease-out)' } as const;
+
+const HEADING = { margin: 0 } as const;
 
 function LocalHit({ hit }: Readonly<{ hit: SearchHit }>) {
   const { client } = useAuth();

@@ -6,6 +6,7 @@ import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { collectBuildInfo, productVersion } from '@kroma/build-info';
 import { legacyFinalize } from '@kroma/bundler/legacy-finalize';
+import { kromaMdx } from '@kroma/bundler/mdx';
 import {
   KROMA_SOURCE_PACKAGES,
   RNW_DEFINE,
@@ -69,6 +70,9 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
     // browser; off in device mode, where the panel already is that canvas.
     plugins: [
       kromaUI(),
+      // Before react(): the workbench behind `?workbench` reads the kit's
+      // `.docs.mdx` files, which have to be JSX before the React transform.
+      kromaMdx(),
       react(),
       // The same auto-memoisation the web client gets, over the same kit source
       // (plugin-react v6 dropped its built-in Babel pass, so the compiler runs

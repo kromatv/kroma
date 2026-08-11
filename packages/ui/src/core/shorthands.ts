@@ -52,6 +52,14 @@ export interface BoxStyleProps {
   grow?: Responsive<number>;
   basis?: Size;
   gap?: Spacing;
+  /** The gap along one axis only, for a wrapping row whose columns and rows
+   *  breathe differently. Both are real React Native style keys, so they mean
+   *  the same thing on every target. */
+  gapX?: Spacing;
+  gapY?: Spacing;
+  /** How WRAPPED lines are packed against the cross axis. `align` positions the
+   *  items inside their line; this positions the lines. */
+  alignContent?: Responsive<NonNullable<ViewStyle['alignContent']>>;
   between?: Flag;
 
   w?: Size;
@@ -177,6 +185,9 @@ const RULES = {
   grow: 'flexGrow',
   basis: 'flexBasis',
   gap: 'gap',
+  gapX: 'columnGap',
+  gapY: 'rowGap',
+  alignContent: 'alignContent',
 
   w: 'width',
   h: 'height',

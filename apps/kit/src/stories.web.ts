@@ -6,7 +6,7 @@ import { PROPS } from 'virtual:kroma-props';
 import { discoverVite } from '@kroma/workbench';
 
 export const STORIES = discoverVite(
-  import.meta.glob('#ui/**/*.{stories,demo}.tsx', { eager: true }),
+  import.meta.glob('#ui/**/*.{stories.tsx,demo.tsx,docs.mdx}', { eager: true }),
   import.meta.glob('#ui/**/*.demo.tsx', { eager: true, query: '?raw', import: 'default' }),
   PROPS,
 );

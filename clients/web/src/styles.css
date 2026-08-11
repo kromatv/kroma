@@ -35,6 +35,33 @@
 /* (Fluid layout tokens --gutter-web/--card-w + the kroma-breathe/fade-in/pop-in
    keyframes now live in the shared @kroma/ui/tailwind.css imported above.) */
 
+/* The two shapes shared/ui/page.tsx names. They are CSS rather than <Box>
+   props because neither has a React Native spelling: a page frame hangs off the
+   <main> LANDMARK, which stays an element, and its side padding is the fluid
+   --gutter-web clamp() that no style number can carry; a scrim is
+   `position: fixed` plus a backdrop filter. Layered, so a utility on the same
+   element still wins. */
+@layer components {
+  .page-main {
+    min-width: 0;
+    padding-inline: var(--gutter-web);
+    padding-top: 36px;
+    padding-bottom: 80px;
+  }
+
+  /* The ink here is the one raw colour left in the app, and deliberately not a
+     token: a dialog has to read as sitting IN FRONT of the page, which it
+     cannot do while painted in the page's own ground. See shared/ui/page.tsx. */
+  .modal-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(4, 4, 6, 0.66);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+  }
+}
+
 /* Notification centre (features/notifications/panel.tsx). An edge-anchored
    drawer has to arrive from its edge; the shared `fade-in` reads as a panel
    materialising in place. */
@@ -108,6 +135,145 @@ select:focus-visible,
   border-color: var(--kroma-accent);
   outline: var(--ring-field);
   outline-offset: 0;
+}
+
+/* THE ADMIN TABLES (features/admin/table.tsx). Columns that must line up across
+   rows are a real CSS grid; React Native has none, so the kit carries no <Table>
+   and the shape lives here. Each table states its own template through
+   `--admin-table-columns`; below the kit's `md` step every table collapses to
+   its title column plus the trailing one, and the columns that do not fit drop
+   out. The two queries are the same boundary from both sides and must stay so. */
+.admin-table-head,
+.admin-table-row {
+  display: grid;
+  grid-template-columns: var(--admin-table-narrow, minmax(0, 1fr) auto);
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 20px;
+  /* A row is a <button> where it is pressable, so the shape is stated in full
+     rather than inherited from whatever reset the page happens to carry. */
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.admin-table-head {
+  background: var(--kroma-surface-1);
+  border-bottom: 1px solid color-mix(in srgb, var(--kroma-tint) 6%, transparent);
+}
+.admin-table-row {
+  border-bottom: 1px solid color-mix(in srgb, var(--kroma-tint) 4%, transparent);
+}
+.admin-table-row:last-child {
+  border-bottom: 0;
+}
+button.admin-table-row {
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+button.admin-table-row:hover {
+  background: color-mix(in srgb, var(--kroma-tint) 3%, transparent);
+}
+@media (min-width: 600px) {
+  .admin-table-head,
+  .admin-table-row {
+    grid-template-columns: var(--admin-table-columns);
+  }
+}
+@media (max-width: 599px) {
+  .admin-table-head > [data-wide],
+  .admin-table-row > [data-wide] {
+    display: none;
+  }
+}
+
+/* A side panel that stays put while the column beside it scrolls. `sticky` has
+   no React Native spelling, and it only earns its keep once the two columns sit
+   side by side. */
+@media (min-width: 1024px) {
+  .admin-sticky-aside {
+    position: sticky;
+    top: 20px;
+  }
+}
+
+/* THE ADMIN CONSOLE SHELL (features/admin/web-style.ts names these). All four
+   are browser-only shapes React Native has no word for - `position: sticky`, a
+   viewport-tall column, single-axis overflow, and swapping which of the two
+   navigations exists at a width - so they are CSS rather than <Box> props. */
+.admin-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--kroma-bg);
+  color: var(--kroma-text);
+}
+.admin-sidebar {
+  display: none;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  width: 256px;
+  flex-shrink: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--kroma-border);
+  background: var(--kroma-bg);
+}
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+  border-bottom: 1px solid var(--kroma-border);
+  background: var(--kroma-bg);
+}
+.admin-sidebar-nav {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+@media (min-width: 1024px) {
+  .admin-shell {
+    flex-direction: row;
+  }
+  .admin-sidebar {
+    display: flex;
+  }
+  .admin-topbar {
+    display: none;
+  }
+}
+
+/* A navigation link is a router <a>, which is the one control the kit does not
+   render (components/DESIGN.md §4), so its rest, hover and current-page faces
+   are stated here. The glyph inside inherits `color`, which is why it stays a
+   DOM icon. */
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font: var(--type-label);
+  color: var(--kroma-text-muted);
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.admin-nav-link:hover {
+  background: color-mix(in srgb, var(--kroma-tint) 4%, transparent);
+  color: var(--kroma-text);
+}
+.admin-nav-link[aria-current="page"] {
+  background: var(--kroma-accent-soft);
+  color: var(--kroma-accent-text);
 }
 
 /* Same for the Radix dropdown menu (the sidebar account menu): it's mouse-driven

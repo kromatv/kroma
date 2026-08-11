@@ -537,9 +537,32 @@ Vite primitive (`?raw`) that Metro has no answer for, so on Apple TV and Android
 TV a demo renders with no code panel rather than a stale one. See
 `workbench/demos.ts`.
 
-**Stories and demos are discovered, never listed.** Drop a `*.stories.tsx` or a
-`*.demo.tsx` anywhere under `src/` and it is in the workbench: there is no
-registry to regenerate and no generated file to fall behind. That needs a bundler
+**Writing the prose.** `docs:` above is a markdown string, which is right for a
+sentence and wrong for a page. A component with more to say puts it in a
+`<story-id>.docs.mdx` beside the story, where it is a real document rather than
+an escaped template literal - and where it can render the component in the middle
+of it:
+
+```mdx
+// components/molecules/list-row/list-row.docs.mdx
+import { ListRow } from './list-row'
+
+One **D-pad stop** per row, and a pointer-sized hit area.
+
+<ListRow.Root label="Qualité" hint="1080p" />
+```
+
+The file replaces the story's `docs:` string. Unlike a demo's code panel this
+does NOT thin out on a television: MDX is a plain compiler, so Vite runs it as a
+plugin and Metro runs it as a transformer, and `@kroma/workbench`'s `mdx.tsx`
+maps every HTML element MDX emits to a kit component - a mapping its own test
+holds to a real compile, because a missing element is a crash on the one platform
+that cannot render it.
+
+**Stories, demos and docs are discovered, never listed.** Drop a `*.stories.tsx`,
+a `*.demo.tsx` or a `*.docs.mdx` anywhere under `src/` and it is in the
+workbench: there is no registry to regenerate and no generated file to fall
+behind. That needs a bundler
 primitive, and the two bundlers spell it differently, so this is one of the kit's
 `.web` splits: `registry.ts` uses Metro's `require.context`, `registry.web.ts`
 uses Vite's `import.meta.glob`. Every state is a deep link

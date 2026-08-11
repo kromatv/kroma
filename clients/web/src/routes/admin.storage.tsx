@@ -1,19 +1,23 @@
 import type { Volume } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
+  Box,
   Button,
   confirm,
   EmptyState,
+  Grid,
+  Icon,
   ListRow,
   Progress,
   Section,
   Select,
   StatCard,
   Surface,
+  Text,
 } from '@kroma/ui/kit';
-import { IconDatabase } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import type { TextStyle } from 'react-native';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { formatBytes } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
@@ -65,34 +69,36 @@ function StoragePage() {
     <>
       <PageHeader.Root title={t('admin.storageTitle')} subtitle={t('admin.storageSub')} />
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
-        <StatCard label={t('admin.totalCapacity')} value={formatBytes(data?.totalBytes ?? 0)} />
-        <StatCard
-          label={t('admin.used')}
-          value={formatBytes(data?.usedBytes ?? 0)}
-          unit={`${pctUsed}%`}
-          color="accent"
-        />
-        <StatCard
-          label={t('admin.available')}
-          value={formatBytes(data?.availableBytes ?? 0)}
-          color="success"
-        />
-      </div>
+      <Box mt={24}>
+        <Grid columns={3} gap={16}>
+          <StatCard label={t('admin.totalCapacity')} value={formatBytes(data?.totalBytes ?? 0)} />
+          <StatCard
+            label={t('admin.used')}
+            value={formatBytes(data?.usedBytes ?? 0)}
+            unit={`${pctUsed}%`}
+            color="accent"
+          />
+          <StatCard
+            label={t('admin.available')}
+            value={formatBytes(data?.availableBytes ?? 0)}
+            color="success"
+          />
+        </Grid>
+      </Box>
 
       <Section.Root title={t('admin.volumes')} mt={28}>
-        <div className="flex flex-col gap-3.5">
+        <Box gap={14}>
           {(data?.volumes ?? []).map((v) => (
             <VolumeCard key={v.mount} v={v} />
           ))}
           {data?.volumes.length === 0 ? (
             <EmptyState.Root icon="database" title={t('admin.noVolumes')} />
           ) : null}
-        </div>
+        </Box>
       </Section.Root>
 
       <Section.Root title={t('admin.cacheContent')} mt={28}>
-        <div className="grid grid-cols-4 gap-4">
+        <Grid columns={4} gap={16}>
           <StatCard
             label={t('admin.transcodeCacheSize')}
             value={formatBytes(cache?.transcodeBytes ?? 0)}
@@ -118,7 +124,7 @@ function StoragePage() {
             label={t('admin.cacheEmbeddings')}
             value={(cache?.embeddings ?? 0).toLocaleString()}
           />
-        </div>
+        </Grid>
       </Section.Root>
 
       <Section.Root title={t('admin.cacheMaintenance')} mt={28}>
@@ -127,9 +133,9 @@ function StoragePage() {
             title={t('admin.transcodeCacheFolder')}
             desc={t('admin.transcodeCacheFolderDesc')}
             right={
-              <span className="rounded-md border border-border-strong bg-surface-2 px-3 py-2 text-[13px] font-semibold text-text">
-                {data?.cache.dir ?? '-'}
-              </span>
+              <Box radius="xs" border="borderStrong" bg="surface2" px={12} py={8}>
+                <Text variant="meta">{data?.cache.dir ?? '-'}</Text>
+              </Box>
             }
           />
           <MaintRow
@@ -216,32 +222,37 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
   const nearFull = pct >= 80;
   return (
     <Surface elevated pad="none" radius={16} border="border" px={22} py={18}>
-      <div className="mb-3 flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
-            <IconDatabase size={20} stroke={1.8} />
-          </span>
-          <div className="min-w-0">
+      <Box row align="center" justify="space-between" gap={16} mb={12}>
+        <Box row align="center" gap={14} minW={0}>
+          <Box w={40} h={40} shrink={0} center radius="xs" bg="accentSoft">
+            <Icon name="database" size={20} stroke={1.8} color="accent" />
+          </Box>
+          <Box minW={0}>
             <div className="font-display text-[16px] font-bold">{v.name || v.mount}</div>
-            <div className="truncate text-[12.5px] font-semibold text-text/45">
+            <Text variant="meta" color="text/45" lines={1}>
               {v.mount} · {v.fs}
-            </div>
-          </div>
-        </div>
-        <div className="shrink-0 text-right">
-          <div className="text-[15px] font-bold tabular-nums">
+            </Text>
+          </Box>
+        </Box>
+        <Box shrink={0} align="flex-end">
+          <Text variant="label" style={FIGURES}>
             {formatBytes(v.usedBytes)}{' '}
-            <span className="font-medium text-text/40">/ {formatBytes(v.totalBytes)}</span>
-          </div>
-          <div className={`text-[12px] font-semibold ${nearFull ? 'text-danger' : 'text-accent'}`}>
+            <Text variant="label" color="text/40" style={QUIET}>
+              / {formatBytes(v.totalBytes)}
+            </Text>
+          </Text>
+          <Text variant="meta" color={nearFull ? 'danger' : 'accent'}>
             {t('admin.pctUsed', { pct })}
-          </div>
-        </div>
-      </div>
+          </Text>
+        </Box>
+      </Box>
       <Progress value={pct / 100} color={nearFull ? 'danger' : 'accent'} size={9} rounded />
     </Surface>
   );
 }
+
+const FIGURES: TextStyle = { fontVariant: ['tabular-nums'] };
+const QUIET = { fontWeight: '500' } as const;
 
 function MaintRow({
   title,

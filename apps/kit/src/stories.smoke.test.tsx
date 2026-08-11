@@ -2,6 +2,7 @@
 
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
+import { MDX_COMPONENTS } from '@kroma/workbench';
 import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -27,6 +28,15 @@ describe('every story renders', () => {
       it(`${story.group} / ${story.name}: demo "${entry.name}"`, () => {
         expect(() => render(entry.render())).not.toThrow();
         expect(entry.code, `demo ${at} has no code`).toBeTruthy();
+      });
+    }
+
+    // A `.docs.mdx` can put the live component in the middle of the prose, so
+    // it renders like anything else and fails like anything else.
+    if (typeof story.docs === 'function') {
+      const Docs = story.docs;
+      it(`${story.group} / ${story.name}: docs`, () => {
+        expect(() => render(<Docs components={MDX_COMPONENTS} />)).not.toThrow();
       });
     }
   }

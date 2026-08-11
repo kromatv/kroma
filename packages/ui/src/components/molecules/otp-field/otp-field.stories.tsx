@@ -4,7 +4,6 @@ import { OtpField, type OtpSize } from './otp-field';
 export default story({
   name: 'OtpField',
   group: 'Input',
-  docs: "The one-time-code entry: a row of character slots with the caret on the next empty one. It replaces the web client's `input-otp` wrapper, which was a hidden DOM `<input>` and therefore could never run on a television. Here one off-screen entry owns the text - so paste, SMS autofill and typing all still work - while the slots are ordinary views.\n\nThe parts are shadcn's **InputOTP** anatomy: **OtpField.Root** holds the code, **OtpField.Group** is a run of slots, **OtpField.Slot** is one character and **OtpField.Separator** divides two groups. A slot takes no `index`: its place in the code comes from where it sits in its group. `groups={[3, 3]}` writes that arrangement for you.\n\nThe caret blinks only while the entry holds focus, so a form stacking three codes (current PIN, new, confirm) shows one caret rather than three. Click a row below to give it the focus and watch the caret appear.",
   usage: `<OtpField.Root maxLength={6} groups={[3, 3]} physicalKeyboard onComplete={verify} />
 
 <OtpField.Root maxLength={6} physicalKeyboard onComplete={verify}>

@@ -7,7 +7,16 @@
 
 import { type CalendarEntry, hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState, IconButton, PageHeader } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  Divider,
+  EmptyState,
+  IconButton,
+  PageHeader,
+  Row,
+  Surface,
+} from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
@@ -151,7 +160,7 @@ export function MissingPage() {
         />
       ) : null}
 
-      <div className="mt-6 flex flex-col gap-3">
+      <Box mt={24} gap={12}>
         {groups.map((g) => (
           <MissingGroupCard
             key={g.requestId ?? `tmdb:${g.tmdbId}`}
@@ -174,7 +183,7 @@ export function MissingPage() {
             }
           />
         ))}
-      </div>
+      </Box>
     </main>
   );
 }
@@ -196,7 +205,7 @@ function MissingActions({
 }>) {
   const t = useT();
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <Row wrap gap={8}>
       {selectedCount > 0 ? (
         <>
           <Button
@@ -217,7 +226,7 @@ function MissingActions({
         </>
       ) : null}
       {canManage ? <SearchAllButton state={searchAll} onClick={onSearchAll} /> : null}
-    </div>
+    </Row>
   );
 }
 
@@ -242,34 +251,35 @@ const SKELETON_ROWS = [3, 2, 4];
 
 function MissingSkeleton() {
   return (
-    <div className="mt-6 flex flex-col gap-3" aria-busy="true">
+    <Box mt={24} gap={12} aria-busy>
       {SKELETON_ROWS.map((rows, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder cards
         <GroupSkeleton key={i} rows={rows} />
       ))}
-    </div>
+    </Box>
   );
 }
 
 function GroupSkeleton({ rows }: Readonly<{ rows: number }>) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface-1">
-      <div className="flex items-center gap-3.5 border-b border-white/6 p-3.5">
+    <Surface pad="none" radius="2xl" border="border" overflow="hidden">
+      <Row gap={14} p={14}>
         <Skeleton w={20} h={20} radius="sm" />
         <Skeleton w={36} h={52} radius="sm" />
-        <div className="min-w-0 flex-1">
+        <Box minW={0} flex>
           <Skeleton shape="text" lines={2} variant="meta" maxW={220} />
-        </div>
+        </Box>
         <Skeleton w={110} h={40} radius="md" />
-      </div>
+      </Row>
+      <Divider color="tint/6" />
       {Array.from({ length: rows }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
-        <div key={i} className="flex items-center gap-3.5 px-3.5 py-3.5">
+        <Row key={i} gap={14} px={14} py={14}>
           <Skeleton w={20} h={20} radius="sm" />
           <Skeleton w={62} h={12} radius="pill" />
           <Skeleton w="28%" h={12} radius="pill" />
-        </div>
+        </Row>
       ))}
-    </div>
+    </Surface>
   );
 }

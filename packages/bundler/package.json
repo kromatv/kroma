@@ -9,6 +9,8 @@
     "./exit-after-build": "./src/exit-after-build.ts",
     "./legacy-css": "./src/legacy-css.ts",
     "./legacy-finalize": "./src/legacy-finalize.ts",
+    "./mdx": "./src/mdx.mjs",
+    "./mdx-transformer": "./src/mdx-transformer.cjs",
     "./message-subset": "./src/message-subset.ts",
     "./polyfills-legacy": "./src/polyfills-legacy.ts",
     "./props-docs": "./src/props-docs.ts",
@@ -25,6 +27,8 @@
   "dependencies": {
     "@kroma/build-info": "workspace:*",
     "@kroma/ui": "workspace:*",
+    "@mdx-js/mdx": "^3.1.1",
+    "@mdx-js/rollup": "^3.1.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/react-start": "^1.168.40",
     "@vitejs/plugin-react": "^6.0.4",
@@ -32,6 +36,7 @@
     "esbuild": "^0.28.2",
     "lightningcss": "^1.33.0",
     "postcss": "^8.5.23",
+    "remark-gfm": "^4.0.1",
     "typescript": "^7.0.2"
   },
   "peerDependencies": {

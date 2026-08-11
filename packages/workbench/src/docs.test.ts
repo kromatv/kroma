@@ -1,24 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { segments, snippet } from './docs';
+import { snippet } from './docs';
 import { type Story, story } from './story';
-
-describe('segments', () => {
-  it('splits bold and code out of prose, in order', () => {
-    expect(segments('a **bold** and `code` end')).toEqual([
-      { text: 'a ', mark: 'plain' },
-      { text: 'bold', mark: 'bold' },
-      { text: ' and ', mark: 'plain' },
-      { text: 'code', mark: 'code' },
-      { text: ' end', mark: 'plain' },
-    ]);
-  });
-
-  it('leaves unclosed marks literal instead of eating the paragraph', () => {
-    expect(segments('a ** loose star and ` tick')).toEqual([
-      { text: 'a ** loose star and ` tick', mark: 'plain' },
-    ]);
-  });
-});
 
 describe('snippet', () => {
   const make = (over: Partial<Story>): Story =>

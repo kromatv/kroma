@@ -4,10 +4,9 @@
 // avatar-removal endpoint, so there is no reset here.)
 
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
-import { IconCamera } from '@tabler/icons-react';
+import { Box, Button, Icon, Row, Surface, Text } from '@kroma/ui/kit';
 import { useRef } from 'react';
-import { Panel, StatusText, useSave } from '#web/features/accounts/account/ui';
+import { StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
 
@@ -28,8 +27,18 @@ export function PhotoCard() {
   };
 
   return (
-    <Panel className="flex flex-wrap items-center gap-6 p-5.5">
-      <div className="relative flex-none">
+    <Surface
+      elevated
+      pad="none"
+      p={22}
+      radius="lg"
+      border="border"
+      row
+      wrap
+      align="center"
+      gap={24}
+    >
+      <Box shrink={0}>
         <UserAvatar
           name={user.username}
           avatarUrl={user.avatarUrl}
@@ -37,14 +46,26 @@ export function PhotoCard() {
           size={96}
           radius={22}
         />
-        <span className="absolute -bottom-1 -right-1 flex size-8 items-center justify-center rounded-full border border-border-strong bg-surface-2 text-accent">
-          <IconCamera size={15} stroke={1.9} />
-        </span>
-      </div>
+        <Box
+          absolute
+          bottom={-4}
+          right={-4}
+          center
+          w={32}
+          h={32}
+          radius="circle"
+          border="borderStrong"
+          bg="surface2"
+        >
+          <Icon name="camera" size={15} stroke={1.9} color="accent" />
+        </Box>
+      </Box>
 
-      <div className="min-w-[min(240px,100%)] flex-1">
-        <p className="mb-3 text-[13px] font-semibold text-muted">{t('account.photoHint')}</p>
-        <div className="flex items-center gap-3">
+      <Box flex minW={{ base: '100%', md: 240 }}>
+        <Text variant="meta" color="textMuted" mb={12}>
+          {t('account.photoHint')}
+        </Text>
+        <Row gap={12}>
           <Button
             variant="glass"
             size="sm"
@@ -53,16 +74,16 @@ export function PhotoCard() {
             loading={avatar.status === 'saving'}
           />
           <StatusText status={avatar.status} error={avatar.error} />
-        </div>
-      </div>
+        </Row>
+      </Box>
 
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        hidden
         onChange={(e) => pickAvatar(e.target.files?.[0] ?? null)}
       />
-    </Panel>
+    </Surface>
   );
 }

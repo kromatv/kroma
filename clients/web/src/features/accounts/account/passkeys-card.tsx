@@ -5,8 +5,7 @@
 
 import { apiErrorText, type PasskeyInfo } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, IconWell, ListRow, Text } from '@kroma/ui/kit';
-import { IconKey } from '@tabler/icons-react';
+import { Box, Button, Icon, IconWell, ListRow, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { relativeSeen } from '#web/shared/lib/adminFormat';
@@ -14,8 +13,6 @@ import { kromaClient } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { userQueries } from '#web/shared/lib/queries';
 import { createPasskey, passkeysSupported } from '#web/shared/lib/webauthn';
-
-const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
 function isCancel(e: unknown): boolean {
   return e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'AbortError');
@@ -51,13 +48,13 @@ function PasskeyRow({
       hint={passkey.lastUsed ? relativeSeen(passkey.lastUsed) : t('account.passkeyNeverUsed')}
     >
       <ListRow.Leading>
-        <span className="flex size-9.5 flex-none items-center justify-center rounded-md border border-border bg-surface-2 text-success">
-          <IconKey size={18} stroke={1.7} />
-        </span>
+        <Box center w={38} h={38} radius="xs" border="border" bg="surface2">
+          <Icon name="key" size={18} stroke={1.7} color="success" />
+        </Box>
       </ListRow.Leading>
       <ListRow.Trailing>
         <Button variant="ghost" size="sm" onPress={remove} loading={removing}>
-          <Text color="danger" style={DANGER_LABEL}>
+          <Text variant="meta" color="danger">
             {removing ? t('common.saving') : t('common.delete')}
           </Text>
         </Button>

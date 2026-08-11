@@ -4,10 +4,14 @@
 
 import { isEmail, isPassword, isUsername, type PublicUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Callout, Field } from '@kroma/ui/kit';
-import { useState } from 'react';
+import { Box, Button, Callout, Field, Text } from '@kroma/ui/kit';
+import { type CSSProperties, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
+
+const FORM: CSSProperties = { width: '100%' };
+
+const COLUMN = 380;
 
 export function LoginForm({
   profile,
@@ -40,97 +44,103 @@ export function LoginForm({
         e.preventDefault();
         if (identifier.trim() && password) onSubmit(identifier.trim(), password);
       }}
-      className="flex w-full max-w-95 flex-col items-center gap-5"
+      style={FORM}
     >
-      {profile ? (
-        <UserAvatar
-          name={profile.username}
-          avatarUrl={profile.avatarUrl}
-          seed={profile.id}
-          size={96}
-        />
-      ) : null}
-      <h1 className="font-display text-[28px] font-semibold">
-        {profile ? profile.username : t('auth.signinTitle')}
-      </h1>
+      <Box w="100%" maxW={COLUMN} mx="auto" align="center" gap={20}>
+        {profile ? (
+          <UserAvatar
+            name={profile.username}
+            avatarUrl={profile.avatarUrl}
+            seed={profile.id}
+            size={96}
+          />
+        ) : null}
+        <Text variant="subheading" accessibilityRole="header">
+          {profile ? profile.username : t('auth.signinTitle')}
+        </Text>
 
-      {notice ? (
-        <div className="w-full">
-          <Callout.Root tone="accent" size="md" icon="info-circle" title={notice} />
-        </div>
-      ) : null}
+        {notice ? (
+          <Box w="100%">
+            <Callout.Root tone="accent" size="md" icon="info-circle" title={notice} />
+          </Box>
+        ) : null}
 
-      {/* `size="md"` against the app's `sm` default (see router.tsx): the gate
-          is a full-screen front door rather than a console page, and <Button>
-          is `md` whatever the entries are - left alone, the form would stack a
-          40px field under a 50px button. */}
-      {profile ? null : (
+        {/* `size="md"` against the app's `sm` default (see router.tsx): the gate
+            is a full-screen front door rather than a console page, and <Button>
+            is `md` whatever the entries are - left alone, the form would stack a
+            40px field under a 50px button. */}
+        {profile ? null : (
+          <Field.Root
+            w="100%"
+            size="md"
+            label={t('auth.emailOrUsername')}
+            hideLabel // Deliberate: the sign-in field is what this screen is for.
+          >
+            <Field.Input
+              icon="user"
+              placeholder={t('auth.emailOrUsername')}
+              value={identifier}
+              onValueChange={setIdentifier}
+              autoComplete="username"
+              autoFocus
+            />
+          </Field.Root>
+        )}
         <Field.Root
           w="100%"
           size="md"
-          label={t('auth.emailOrUsername')}
-          hideLabel // Deliberate: the sign-in field is what this screen is for.
+          label={t('auth.password')}
+          hideLabel // Deliberate: with a profile already picked, the password is the only thing left to type.
         >
           <Field.Input
-            icon="user"
-            placeholder={t('auth.emailOrUsername')}
-            value={identifier}
-            onValueChange={setIdentifier}
-            autoComplete="username"
-            autoFocus
+            type="password"
+            icon="lock"
+            placeholder={t('auth.password')}
+            value={password}
+            onValueChange={setPassword}
+            autoFocus={Boolean(profile)}
           />
         </Field.Root>
-      )}
-      <Field.Root
-        w="100%"
-        size="md"
-        label={t('auth.password')}
-        hideLabel // Deliberate: with a profile already picked, the password is the only thing left to type.
-      >
-        <Field.Input
-          type="password"
-          icon="lock"
-          placeholder={t('auth.password')}
-          value={password}
-          onValueChange={setPassword}
-          autoFocus={Boolean(profile)}
-        />
-      </Field.Root>
 
-      {error ? <p className="text-[13px] font-medium text-danger">{error}</p> : null}
+        {error ? (
+          <Text variant="meta" color="danger">
+            {error}
+          </Text>
+        ) : null}
 
-      {/* Hidden native submit keeps Enter-to-submit working; the visible
-          control is the kit Button, so it matches the passkey one below. */}
-      <input type="submit" hidden />
-      <Button
-        block
-        label={busy ? t('auth.loggingIn') : t('auth.login')}
-        loading={busy}
-        disabled={busy || !password}
-        onPress={() => {
-          if (identifier.trim() && password) onSubmit(identifier.trim(), password);
-        }}
-        style={{ marginTop: 4 }}
-      />
-      {canUsePasskey && onPasskey ? (
+        {/* Hidden native submit keeps Enter-to-submit working; the visible
+            control is the kit Button, so it matches the passkey one below. */}
+        <input type="submit" hidden />
         <Button
           block
-          variant="glass"
-          icon="key"
-          label={t('auth.passkeyLogin')}
-          onPress={() => onPasskey()}
-          disabled={busy}
+          label={busy ? t('auth.loggingIn') : t('auth.login')}
+          loading={busy}
+          disabled={busy || !password}
+          onPress={() => {
+            if (identifier.trim() && password) onSubmit(identifier.trim(), password);
+          }}
+          style={{ marginTop: 4 }}
         />
-      ) : null}
-      {canGoBack ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          icon="chevron-left"
-          label={t('common.back')}
-          onPress={onBack}
-        />
-      ) : null}
+        {canUsePasskey && onPasskey ? (
+          <Button
+            block
+            variant="glass"
+            icon="key"
+            label={t('auth.passkeyLogin')}
+            onPress={() => onPasskey()}
+            disabled={busy}
+          />
+        ) : null}
+        {canGoBack ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="chevron-left"
+            label={t('common.back')}
+            onPress={onBack}
+          />
+        ) : null}
+      </Box>
     </form>
   );
 }
@@ -162,32 +172,40 @@ export function RegisterForm({
         e.preventDefault();
         if (valid) onSubmit(email.trim(), username.trim(), password, avatar);
       }}
-      className="flex w-full max-w-95 flex-col items-center gap-5"
+      style={FORM}
     >
-      <h1 className="font-display text-[28px] font-semibold">{t('auth.newAccount')}</h1>
+      <Box w="100%" maxW={COLUMN} mx="auto" align="center" gap={20}>
+        <Text variant="subheading" accessibilityRole="header">
+          {t('auth.newAccount')}
+        </Text>
 
-      <RegisterFields values={values} onChange={setValues} onAvatar={setAvatar} />
+        <RegisterFields values={values} onChange={setValues} onAvatar={setAvatar} />
 
-      {error ? <p className="text-[13px] font-medium text-danger">{error}</p> : null}
+        {error ? (
+          <Text variant="meta" color="danger">
+            {error}
+          </Text>
+        ) : null}
 
-      <Button
-        block
-        label={busy ? t('auth.creating') : t('auth.createAccount')}
-        onPress={() => {
-          if (valid) onSubmit(email.trim(), username.trim(), password, avatar);
-        }}
-        loading={busy}
-        disabled={!valid}
-      />
-      {canGoBack ? (
         <Button
-          variant="ghost"
-          size="sm"
-          icon="chevron-left"
-          label={t('common.back')}
-          onPress={onBack}
+          block
+          label={busy ? t('auth.creating') : t('auth.createAccount')}
+          onPress={() => {
+            if (valid) onSubmit(email.trim(), username.trim(), password, avatar);
+          }}
+          loading={busy}
+          disabled={!valid}
         />
-      ) : null}
+        {canGoBack ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="chevron-left"
+            label={t('common.back')}
+            onPress={onBack}
+          />
+        ) : null}
+      </Box>
     </form>
   );
 }

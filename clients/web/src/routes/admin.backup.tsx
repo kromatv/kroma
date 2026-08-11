@@ -1,6 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Button, Section, Surface } from '@kroma/ui/kit';
-import { IconAlertTriangle } from '@tabler/icons-react';
+import { Box, Button, Icon, Section, Surface, Text } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { ExportModal, ImportModal, isEncryptedFile } from '#web/features/admin/backup-modals';
@@ -42,8 +41,12 @@ function BackupPage() {
         py={16}
         mt={24}
       >
-        <IconAlertTriangle size={20} stroke={1.8} className="mt-0.5 shrink-0 text-accent" />
-        <p className="text-[13.5px] font-medium text-text/70">{t('admin.backupWarning')}</p>
+        <Box mt={2} shrink={0}>
+          <Icon name="alert-triangle" size={20} stroke={1.8} color="accent" />
+        </Box>
+        <Text variant="meta" color="text/70">
+          {t('admin.backupWarning')}
+        </Text>
       </Surface>
 
       <Section.Root title={t('admin.backupExportTitle')} mt={28}>
@@ -71,7 +74,7 @@ function BackupPage() {
                 ref={fileRef}
                 type="file"
                 accept=".zip,.kroma,.json,application/zip,application/json"
-                className="hidden"
+                style={{ display: 'none' }}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) void onFilePicked(file);
@@ -88,7 +91,11 @@ function BackupPage() {
             </>
           }
         />
-        {notice ? <p className="mt-3 text-[13px] font-semibold text-success">{notice}</p> : null}
+        {notice ? (
+          <Text variant="meta" color="success" mt={12}>
+            {notice}
+          </Text>
+        ) : null}
       </Section.Root>
     </>
   );
@@ -108,8 +115,10 @@ function ActionRow({ desc, action }: Readonly<{ desc: string; action: React.Reac
       px={22}
       py={18}
     >
-      <p className="max-w-160 text-[13.5px] text-dim">{desc}</p>
-      <div className="shrink-0">{action}</div>
+      <Text variant="meta" color="textDim" maxW={640}>
+        {desc}
+      </Text>
+      <Box shrink={0}>{action}</Box>
     </Surface>
   );
 }

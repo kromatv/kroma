@@ -1,66 +1,101 @@
 // Story documentation, rendered by the kit itself.
 //
-// Docs prose supports exactly two inline marks: **bold** and `code`. A real
-// markdown pipeline (MDX, remark) is a DOM-shaped dependency the native
-// workbench cannot carry, and component docs never needed more than emphasis
-// and identifiers anyway. Everything here renders through <Text>, so it works
-// on every target the kit does, television included.
+// Two spellings, one look: a sibling `<story>.docs.mdx` compiled by the bundler
+// (see `mdx.tsx` for the element map), or the inline `docs:` string a one-line
+// description does not need a file for. The string is parsed by `markdown.ts`
+// and drawn through THE SAME components, so neither spelling has a rendering of
+// its own to drift.
 
-import { Box, Icon, styles, Text, type TextProps } from '@kroma/ui/kit';
-import { MONO } from './code';
-import type { Story } from './story';
+import { Box, Icon, type TextProps } from '@kroma/ui/kit';
+import type { ReactNode } from 'react';
+import { blocks, segments } from './markdown';
+import { MDX_COMPONENTS, MdxDoc, Prose } from './mdx';
+import type { Story, StoryDocs } from './story';
 
-type Mark = 'plain' | 'bold' | 'code';
+const {
+  a: A,
+  code: Code,
+  h1: H1,
+  h2: H2,
+  li: Li,
+  p: P,
+  pre: Pre,
+  strong: Strong,
+  ul: Ul,
+} = MDX_COMPONENTS;
 
-// One pass over the prose, splitting out the marked spans in order. Anything unclosed stays
-// literal, so a stray backtick cannot eat the paragraph.
-function segments(text: string): { text: string; mark: Mark }[] {
-  const out: { text: string; mark: Mark }[] = [];
-  for (const part of text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)) {
-    if (!part) continue;
-    if (part.startsWith('**') && part.endsWith('**')) {
-      out.push({ text: part.slice(2, -2), mark: 'bold' });
-    } else if (part.startsWith('`') && part.endsWith('`') && part.length > 1) {
-      out.push({ text: part.slice(1, -1), mark: 'code' });
-    } else {
-      out.push({ text: part, mark: 'plain' });
+// The inline marks, as the elements MDX would have emitted for them.
+function marks(text: string): ReactNode[] {
+  return segments(text).map((segment, at) => {
+    // Order never changes for a given string: the index IS the identity.
+    const key = `${at}-${segment.mark}`;
+    if (segment.mark === 'bold') return <Strong key={key}>{segment.text}</Strong>;
+    if (segment.mark === 'code') return <Code key={key}>{segment.text}</Code>;
+    if (segment.mark === 'link') {
+      return (
+        <A key={key} href={segment.href}>
+          {segment.text}
+        </A>
+      );
     }
-  }
-  return out;
+    return segment.text;
+  });
 }
 
-const s = styles({
-  bold: { fontWeight: '700' },
-  code: { fontFamily: MONO, fontSize: 13, color: 'accent', bg: 'white/6' },
-});
-
-interface RichTextProps extends TextProps {
+interface RichTextProps {
   children: string;
+  variant?: TextProps['variant'];
+  color?: TextProps['color'];
 }
 
-// <Text> that understands the two inline marks. Nested <Text> is React Native's own rich-text
-// mechanism, so this composes instead of parsing.
-function RichText({ children, ...txt }: Readonly<RichTextProps>) {
+/** One line of prose with its inline marks: a demo's description, a prop's
+ * documentation. Nested <Text> is React Native's own rich-text mechanism, so
+ * this composes instead of parsing. */
+function RichText({ children, variant = 'meta', color = 'textMuted' }: Readonly<RichTextProps>) {
   return (
-    <Text {...txt}>
-      {segments(children).map((segment, at) =>
-        segment.mark === 'plain' ? (
-          segment.text
-        ) : (
-          <Text
-            // Order never changes for a given string: the index IS the identity.
-            // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-            key={at}
-            variant={txt.variant}
-            color={txt.color}
-            style={segment.mark === 'bold' ? s.bold : s.code}
-          >
-            {segment.text}
-          </Text>
-        ),
-      )}
-    </Text>
+    <Prose variant={variant} color={color}>
+      {marks(children)}
+    </Prose>
   );
+}
+
+/** A block of markdown written as a string. A one-line description parses as a
+ * single paragraph, which is what keeps the inline `docs:` spelling working. */
+function Markdown({ children }: Readonly<{ children: string }>) {
+  return (
+    <Box>
+      {blocks(children).map((block, at) => {
+        // The document order is fixed for a given string: the index IS the identity.
+        const key = `${at}-${block.kind}`;
+        if (block.kind === 'code') {
+          return (
+            <Pre key={key}>
+              <Code>{block.code}</Code>
+            </Pre>
+          );
+        }
+        if (block.kind === 'heading') {
+          const Heading = block.level === 1 ? H1 : H2;
+          return <Heading key={key}>{marks(block.text)}</Heading>;
+        }
+        if (block.kind === 'list') {
+          return (
+            <Ul key={key}>
+              {block.items.map((item) => (
+                <Li key={item}>{marks(item)}</Li>
+              ))}
+            </Ul>
+          );
+        }
+        return <P key={key}>{marks(block.text)}</P>;
+      })}
+    </Box>
+  );
+}
+
+/** A story's prose, however it was written. */
+function StoryProse({ docs }: Readonly<{ docs: StoryDocs }>) {
+  return typeof docs === 'string' ? <Markdown>{docs}</Markdown> : <MdxDoc content={docs} />;
 }
 
 // One imperative line of guidance, ticked or crossed.
@@ -71,9 +106,7 @@ function GuidelineRow({ text, good }: Readonly<{ text: string; good: boolean }>)
         <Icon name={good ? 'check' : 'x'} size={14} color={good ? 'success' : 'danger'} />
       </Box>
       <Box flex>
-        <RichText variant="meta" color="textMuted">
-          {text}
-        </RichText>
+        <RichText>{text}</RichText>
       </Box>
     </Box>
   );
@@ -123,4 +156,4 @@ function snippet(story: Story, args: Record<string, unknown>): string {
 }
 
 export type { RichTextProps };
-export { Guidelines, RichText, segments, snippet };
+export { Guidelines, Markdown, RichText, StoryProse, snippet };

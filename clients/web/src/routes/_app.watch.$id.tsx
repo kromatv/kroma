@@ -1,3 +1,4 @@
+import { color } from '@kroma/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { Player } from '#web/features/playback/player';
@@ -13,7 +14,9 @@ export const Route = createFileRoute('/_app/watch/$id')({
   },
   // Player is fullscreen with its own buffering spinner; a black hold beats a
   // structural skeleton here.
-  pendingComponent: () => <div className="fixed inset-0 bg-black" />,
+  pendingComponent: () => (
+    <div style={{ position: 'fixed', inset: 0, background: color('black') }} />
+  ),
   component: WatchPage,
 });
 

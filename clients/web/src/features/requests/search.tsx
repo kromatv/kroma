@@ -44,12 +44,12 @@ export function SearchPage() {
   }
 
   return (
-    <main className="min-w-0 pb-20">
-      <div className="relative px-(--gutter-web) pt-9">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute inset-x-0 -top-20 h-72 bg-[radial-gradient(48%_60%_at_28%_20%,color-mix(in_srgb,var(--kroma-accent-wash)_10%,transparent),transparent_70%)]" />
+    <main style={PAGE}>
+      <div style={HERO}>
+        <div style={WASH_CLIP}>
+          <div style={WASH} />
         </div>
-        <div className="relative">
+        <div style={ABOVE_WASH}>
           <PageHeader.Root
             title={t('discover.title')}
             subtitle={canDiscover ? t('discover.subtitle') : t('discover.subtitleLocal')}
@@ -90,7 +90,32 @@ export function SearchPage() {
         </div>
       </div>
 
-      <div className="px-(--gutter-web)">{body}</div>
+      <div style={GUTTER}>{body}</div>
     </main>
   );
 }
+
+const PAGE = { minWidth: 0, paddingBottom: 80 } as const;
+
+const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
+
+const HERO = { ...GUTTER, position: 'relative', paddingTop: 36 } as const;
+
+const WASH_CLIP = {
+  position: 'absolute',
+  inset: 0,
+  overflow: 'hidden',
+  pointerEvents: 'none',
+} as const;
+
+const WASH = {
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  top: -80,
+  height: 288,
+  background:
+    'radial-gradient(48% 60% at 28% 20%, color-mix(in srgb, var(--kroma-accent-wash) 10%, transparent), transparent 70%)',
+} as const;
+
+const ABOVE_WASH = { position: 'relative' } as const;

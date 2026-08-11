@@ -30,7 +30,7 @@ export { Focusable } from './focusable';
 export type { FrostBackdropProps, FrostProps } from './frost';
 export { Frost, registerFrost } from './frost';
 export type { GridProps } from './grid';
-export { cellWidth, Grid } from './grid';
+export { cellWidth, columnsFor, Grid } from './grid';
 export type { GroundProps } from './ground';
 export { Ground } from './ground';
 export type { IconName, IconProps } from './icon';

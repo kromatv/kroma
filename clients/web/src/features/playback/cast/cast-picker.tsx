@@ -5,7 +5,7 @@
 // state to ask. Its single root is mounted in the app shell.
 
 import { useCast, useT } from '@kroma/ui';
-import { Dialog, Icon } from '@kroma/ui/kit';
+import { Dialog, EmptyState, Icon, type IconName, ListRow } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
 
 export interface CastPickerProps {
@@ -20,37 +20,36 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
   const { receivers, active } = useCast();
   return (
     <Dialog open title={t('cast.title')} onClose={() => call.end(undefined)} width={460}>
-      <div className="flex flex-col gap-1">
-        {offerLocal ? (
-          <DeviceRow
-            icon="device-desktop"
-            name={t('cast.thisDevice')}
-            detail={t('cast.playHere')}
-            selected={!active}
-            onClick={() => call.end(null)}
-          />
-        ) : null}
-        {receivers.map((r) => (
-          <DeviceRow
-            key={r.id}
-            icon="device-tv"
-            name={r.name}
-            detail={
-              r.nowPlaying
-                ? (r.nowPlaying.item.metadata?.title ?? r.nowPlaying.item.title)
-                : `${r.username} · ${t('cast.idle')}`
-            }
-            selected={active?.id === r.id}
-            onClick={() => call.end(r.id)}
-          />
-        ))}
-        {receivers.length === 0 ? (
-          <div className="py-6 text-center">
-            <p className="text-[14px] text-text">{t('cast.noDevices')}</p>
-            <p className="mt-1 text-[13px] text-dim">{t('cast.noDevicesHint')}</p>
-          </div>
-        ) : null}
-      </div>
+      {offerLocal || receivers.length > 0 ? (
+        <ListRow.Group size="sm">
+          {offerLocal ? (
+            <DeviceRow
+              icon="device-desktop"
+              name={t('cast.thisDevice')}
+              detail={t('cast.playHere')}
+              selected={!active}
+              onPick={() => call.end(null)}
+            />
+          ) : null}
+          {receivers.map((r) => (
+            <DeviceRow
+              key={r.id}
+              icon="device-tv"
+              name={r.name}
+              detail={
+                r.nowPlaying
+                  ? (r.nowPlaying.item.metadata?.title ?? r.nowPlaying.item.title)
+                  : `${r.username} · ${t('cast.idle')}`
+              }
+              selected={active?.id === r.id}
+              onPick={() => call.end(r.id)}
+            />
+          ))}
+        </ListRow.Group>
+      ) : null}
+      {receivers.length === 0 ? (
+        <EmptyState.Root size="sm" title={t('cast.noDevices')} hint={t('cast.noDevicesHint')} />
+      ) : null}
     </Dialog>
   );
 });
@@ -60,32 +59,33 @@ function DeviceRow({
   name,
   detail,
   selected,
-  onClick,
+  onPick,
 }: Readonly<{
-  icon: 'device-tv' | 'device-desktop';
+  icon: IconName;
   name: string;
   detail: string;
   selected: boolean;
-  onClick: () => void;
+  onPick: () => void;
 }>) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={selected}
-      className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/5"
+    <ListRow.Root
+      size="sm"
+      role="option"
+      label={name}
+      hint={detail}
+      selected={selected}
+      chevron={false}
+      onPress={onPick}
     >
-      <Icon name={icon} size={22} stroke={1.8} color={selected ? 'accent' : 'text'} />
-      <span className="min-w-0 flex-1">
-        <span
-          className={`block truncate text-[14px] font-semibold ${selected ? 'text-accent' : 'text-text'}`}
-        >
-          {name}
-        </span>
-        <span className="block truncate text-[12px] text-dim">{detail}</span>
-      </span>
-      {selected ? <Icon name="check" size={18} stroke={2.4} color="accent" /> : null}
-    </button>
+      <ListRow.Leading>
+        <Icon name={icon} size={22} stroke={1.8} color={selected ? 'accent' : 'text'} />
+      </ListRow.Leading>
+      {selected ? (
+        <ListRow.Trailing>
+          <Icon name="check" size={18} stroke={2.4} color="accent" />
+        </ListRow.Trailing>
+      ) : null}
+    </ListRow.Root>
   );
 }
 

@@ -97,7 +97,7 @@ export function InvitePage() {
     <main className={PAGE_MAIN}>
       <PageHeader.Root title={t('nav.inviteUser')} subtitle={t('admin.inviteIntro')} />
 
-      <div className="mt-6">
+      <Box mt={24}>
         <Surface elevated pad="none" radius={16} px={22} py={20} gap={18} minW={0}>
           <Box gap={10}>
             <Text variant="label">{t('admin.permissions')}</Text>
@@ -156,7 +156,7 @@ export function InvitePage() {
             </>
           ) : null}
         </Surface>
-      </div>
+      </Box>
 
       {pending ? (
         <Section.Root title={t('admin.pendingInvites')} mt={28}>

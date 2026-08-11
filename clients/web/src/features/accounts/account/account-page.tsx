@@ -1,9 +1,20 @@
 import type { AccountPatch } from '@kroma/core';
 import { prefValue } from '@kroma/core/react';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState, Field } from '@kroma/ui/kit';
-import { IconCheck } from '@tabler/icons-react';
-import { useState } from 'react';
+import {
+  Box,
+  Button,
+  color,
+  EmptyState,
+  Field,
+  Icon,
+  PageHeader,
+  Row,
+  Section,
+  Surface,
+  Text,
+} from '@kroma/ui/kit';
+import { type CSSProperties, useState } from 'react';
 import { NotificationsCard } from '#web/features/accounts/account/notifications-card';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card';
 import { PinCard } from '#web/features/accounts/account/pin-card';
@@ -11,9 +22,9 @@ import { NONE, PreferencesCard } from '#web/features/accounts/account/preference
 import { PhotoCard } from '#web/features/accounts/account/profile-card';
 import { SecurityCard } from '#web/features/accounts/account/security-card';
 import { SessionsCard } from '#web/features/accounts/account/sessions-card';
-import { Panel, Section, useSave } from '#web/features/accounts/account/ui';
+import { useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_SUBTITLE, PAGE_TITLE } from '#web/shared/ui';
+import { PAGE_MAIN } from '#web/shared/ui';
 
 export function AccountPage() {
   const t = useT();
@@ -21,7 +32,7 @@ export function AccountPage() {
 
   if (!user) {
     return (
-      <main className="min-w-0 px-(--gutter-web) pb-20 pt-9">
+      <main className={PAGE_MAIN}>
         <EmptyState.Root icon="user-off" title={t('account.signedOut')} />
       </main>
     );
@@ -88,70 +99,84 @@ function ProfileEditor() {
   };
 
   return (
-    <main className="min-w-0 px-(--gutter-web) pb-20 pt-9">
-      <header className="mb-2 flex items-start gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className={PAGE_TITLE}>{t('account.title')}</h1>
-          <p className={`max-w-[560px] ${PAGE_SUBTITLE}`}>{t('account.subtitle')}</p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon="logout"
-          label={t('auth.logout')}
-          onPress={() => void logout()}
-        />
-      </header>
+    <main className={PAGE_MAIN}>
+      <PageHeader.Root
+        title={t('account.title')}
+        subtitle={t('account.subtitle')}
+        actions={
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="logout"
+            label={t('auth.logout')}
+            onPress={() => void logout()}
+          />
+        }
+      />
 
-      <Section title={t('account.sectionPhoto')}>
-        <PhotoCard />
-      </Section>
+      <Box gap={28} mt={24}>
+        <Section.Root title={t('account.sectionPhoto')}>
+          <PhotoCard />
+        </Section.Root>
 
-      <Section title={t('account.sectionInfo')}>
-        <Panel className="grid grid-cols-1 gap-4.5 p-5.5 sm:grid-cols-2">
-          <Field.Root label={t('auth.username')}>
-            <Field.Input
-              icon="at"
-              value={username}
-              onValueChange={setUsername}
-              autoComplete="nickname"
-            />
-          </Field.Root>
-          <div className="sm:col-span-2">
+        <Section.Root title={t('account.sectionInfo')}>
+          <Surface elevated pad="none" p={22} radius="lg" border="border" gap={18}>
+            <Box maxW={{ base: '100%', md: '50%' }}>
+              <Field.Root label={t('auth.username')}>
+                <Field.Input
+                  icon="at"
+                  value={username}
+                  onValueChange={setUsername}
+                  autoComplete="nickname"
+                />
+              </Field.Root>
+            </Box>
             <Field.Root label={t('auth.email')}>
               <Field.Input type="email" icon="mail" value={email} onValueChange={setEmail} />
             </Field.Root>
-          </div>
-        </Panel>
-      </Section>
+          </Surface>
+        </Section.Root>
 
-      <Section title={t('account.sectionPrefs')}>
-        <PreferencesCard
-          audio={audio}
-          subtitle={subtitle}
-          onAudio={setAudio}
-          onSubtitle={setSubtitle}
-        />
-      </Section>
+        <Section.Root title={t('account.sectionPrefs')}>
+          <PreferencesCard
+            audio={audio}
+            subtitle={subtitle}
+            onAudio={setAudio}
+            onSubtitle={setSubtitle}
+          />
+        </Section.Root>
 
-      <Section title={t('account.sectionNotifications')}>
-        <NotificationsCard />
-      </Section>
+        <Section.Root title={t('account.sectionNotifications')}>
+          <NotificationsCard />
+        </Section.Root>
 
-      <Section title={t('account.sectionSecurity')}>
-        <SecurityCard />
-        <PinCard />
-        <PasskeysCard />
-        <SessionsCard />
-      </Section>
+        <Section.Root title={t('account.sectionSecurity')}>
+          <SecurityCard />
+          <PinCard />
+          <PasskeysCard />
+          <SessionsCard />
+        </Section.Root>
+      </Box>
 
-      <div className="sticky bottom-0 mt-6 bg-linear-to-t from-bg via-bg/90 to-transparent pb-5 pt-6">
+      {/* Plain CSS: neither `position: sticky` nor a gradient has a React Native
+          spelling, so the kit's vocabulary cannot carry this frame. */}
+      <div style={dockStyle()}>
         {dirty || save.status !== 'idle' ? (
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-border-strong bg-surface-2 py-3 pl-5 pr-3 shadow-pop">
-            <div className="flex min-w-0 items-center gap-2.5">
+          <Row
+            between
+            gap={16}
+            radius="sm"
+            border="borderStrong"
+            bg="surface2"
+            shadow="pop"
+            py={12}
+            pl={20}
+            pr={12}
+          >
+            <Row minW={0} gap={10}>
               <SaveStatusLabel dirty={dirty} status={save.status} error={save.error} />
-            </div>
-            <div className="flex flex-none gap-2.5">
+            </Row>
+            <Row shrink={0} gap={10}>
               <Button
                 variant="glass"
                 size="sm"
@@ -167,12 +192,23 @@ function ProfileEditor() {
                 loading={save.status === 'saving'}
                 disabled={!canSave}
               />
-            </div>
-          </div>
+            </Row>
+          </Row>
         ) : null}
       </div>
     </main>
   );
+}
+
+function dockStyle(): CSSProperties {
+  return {
+    position: 'sticky',
+    bottom: 0,
+    marginTop: 24,
+    paddingTop: 24,
+    paddingBottom: 20,
+    backgroundImage: `linear-gradient(to top, ${color('bg')} 0%, ${color('bg/90')} 60%, ${color('bg/0')} 100%)`,
+  };
 }
 
 function SaveStatusLabel({
@@ -183,19 +219,27 @@ function SaveStatusLabel({
   const t = useT();
   if (status === 'saved')
     return (
-      <span className="inline-flex items-center gap-2 text-[13.5px] font-bold text-success">
-        <IconCheck size={16} stroke={2.4} />
-        {t('account.profileSaved')}
-      </span>
+      <Row gap={8}>
+        <Icon name="check" size={16} stroke={2.4} color="success" />
+        <Text variant="meta" color="success">
+          {t('account.profileSaved')}
+        </Text>
+      </Row>
     );
   if (status === 'error')
-    return <span className="text-[13.5px] font-semibold text-danger">{error}</span>;
+    return (
+      <Text variant="meta" color="danger">
+        {error}
+      </Text>
+    );
   if (dirty)
     return (
-      <span className="inline-flex items-center gap-2.5 text-[13.5px] font-semibold text-muted">
-        <span className="size-[7px] rounded-full bg-accent" />
-        {t('account.unsaved')}
-      </span>
+      <Row gap={10}>
+        <Box w={7} h={7} radius="circle" bg="accent" />
+        <Text variant="meta" color="textMuted">
+          {t('account.unsaved')}
+        </Text>
+      </Row>
     );
   return null;
 }

@@ -9,18 +9,25 @@ export type { DemoFile, DiscoveredDemo } from './demos';
 export { attachDemos } from './demos';
 export type { Context, GlobHost, Modules, PropDocs, Sources } from './discover';
 export { discoverMetro, discoverVite } from './discover';
+export type { Block, Mark, Segment } from './markdown';
+export { blocks, segments } from './markdown';
+export { MDX_COMPONENTS } from './mdx';
 export type { PropDoc } from './props';
+export type { DocsFile } from './prose';
+export { attachDocs } from './prose';
 export type { Navigate, View, WorkbenchLocation, WorkbenchRouter } from './router';
 export { memoryRouter, pathRouter, searchParamsRouter } from './router';
 export type {
   Control,
   ControlSpec,
   DemoDef,
+  DocComponent,
   MatrixRow,
   ResolvedControl,
   Scene,
   Story,
   StoryDef,
+  StoryDocs,
 } from './story';
 export {
   attachTiers,

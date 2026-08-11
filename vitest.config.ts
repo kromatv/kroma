@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { kromaMdx } from '@kroma/bundler/mdx';
 import { propDocs } from '@kroma/bundler/props-docs';
 import { WEB_EXTENSIONS } from '@kroma/bundler/rnw';
 import { kromaModule } from '@kroma/module-sdk/vite';
@@ -10,6 +11,9 @@ const plugins = () => [
   // Real prop docs (not a stub) - the only way stories.web.ts can be imported
   // under the runner at all.
   propDocs({ tsconfig: dir('./packages/ui/tsconfig.json') }),
+  // A story's prose is a `.docs.mdx`, which the runner has to compile like a
+  // shell does.
+  kromaMdx(),
   // Without this, `defineModule({ ... })` throws "no manifest" on import: a
   // module's entry file imports neither its manifest nor its locales.
   kromaModule(),
@@ -126,6 +130,22 @@ export default defineConfig({
       provider: 'istanbul',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage',
+      // Without this, a file no test imports is absent from the report rather
+      // than reported at zero, so the local number reads far higher than the
+      // one Sonar computes over the same tree. `.tsx` is left out because
+      // sonar.coverage.exclusions leaves it out, and the two must agree.
+      all: true,
+      include: [
+        '{apps,packages,clients}/*/{src,worker,bundler,vite}/**/*.ts',
+        'modules/*/ui/src/**/*.ts',
+      ],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.native.test.ts',
+        '**/*.d.ts',
+        '**/*.config.ts',
+        '**/scripts/**',
+      ],
     },
   },
 });

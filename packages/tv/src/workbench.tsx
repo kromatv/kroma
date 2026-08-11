@@ -12,7 +12,9 @@ declare const require: {
   context(directory: string, useSubdirectories: boolean, regExp: RegExp): Context;
 };
 
-const STORIES = discoverMetro(require.context('../../ui/src', true, /\.(stories|demo)\.tsx$/));
+const STORIES = discoverMetro(
+  require.context('../../ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+);
 
 // memoryRouter: a native target has no address bar to keep in step.
 const Workbench = defineWorkbench({ ...KROMA_WORKBENCH, stories: STORIES, router: memoryRouter() });

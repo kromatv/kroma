@@ -1,6 +1,6 @@
 import { personDisplayName, personInvolvement, posterColors, roleLabels } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Box, color, EmptyState, gradient, PageHeader, Row, Text } from '@kroma/ui/kit';
 
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
@@ -9,7 +9,7 @@ import { initials } from '#web/features/catalog/detail';
 import { PersonProfile } from '#web/features/catalog/person-profile';
 import { imageUrl, isAuthed, kromaClient, toMovieView, toShowView } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { Image, PAGE_MAIN, PAGE_TITLE, PageSkeleton } from '#web/shared/ui';
+import { Image, PAGE_MAIN, PageSkeleton } from '#web/shared/ui';
 
 /** `/person/<name>` every movie + show one cast/crew member is credited in. */
 export const Route = createFileRoute('/_app/person/$name')({
@@ -48,26 +48,42 @@ function PersonPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <header className="mb-9 flex items-center gap-5.5">
-        <Image
-          className="h-20 w-20 rounded-full shadow-[0_8px_22px_rgba(0,0,0,.45)] sm:h-26 sm:w-26"
-          src={photo}
-          alt={name}
-          placeholder={<PersonInitials name={name} g1={g1} g2={g2} />}
-          fallback={<PersonInitials name={name} g1={g1} g2={g2} />}
-        />
-        <div className="min-w-0">
-          <h1 className={PAGE_TITLE}>{name}</h1>
-          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[14px] font-medium text-muted">
-            {roles.length ? (
-              <>
-                <span className="text-accent">{roles.join(' · ')}</span>
-                <span className="text-dim">·</span>
-              </>
-            ) : null}
-            <span>{t('person.titleCount', { count: entries.length })}</span>
-          </div>
-        </div>
+      <header>
+        <Row gap={22} mb={36}>
+          <Box
+            w={{ base: 80, md: 104 }}
+            h={{ base: 80, md: 104 }}
+            radius="circle"
+            overflow="hidden"
+            shadow="card"
+          >
+            <Image
+              src={photo}
+              alt={name}
+              fill
+              placeholder={<PersonInitials name={name} g1={g1} g2={g2} />}
+              fallback={<PersonInitials name={name} g1={g1} g2={g2} />}
+            />
+          </Box>
+          <Box minW={0}>
+            <PageHeader.Title>{name}</PageHeader.Title>
+            <Box row wrap align="center" gap={8} mt={6}>
+              {roles.length ? (
+                <>
+                  <Text variant="meta" color="accent">
+                    {roles.join(' · ')}
+                  </Text>
+                  <Text variant="meta" color="textDim">
+                    ·
+                  </Text>
+                </>
+              ) : null}
+              <Text variant="meta" color="textMuted">
+                {t('person.titleCount', { count: entries.length })}
+              </Text>
+            </Box>
+          </Box>
+        </Row>
       </header>
       <PersonProfile detail={detail} />
       {entries.length ? (
@@ -81,12 +97,16 @@ function PersonPage() {
 
 function PersonInitials({ name, g1, g2 }: Readonly<{ name: string; g1: string; g2: string }>) {
   return (
-    <span
-      className="relative flex h-full w-full items-center justify-center font-display text-[34px] font-bold text-white/90"
-      style={{ background: `linear-gradient(158deg, ${g1}, ${g2})` }}
-    >
-      <span className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_22%,rgba(255,255,255,.2),transparent_60%)]" />
-      <span className="relative">{initials(name)}</span>
-    </span>
+    <Box fill center style={gradient(`linear-gradient(158deg, ${g1}, ${g2})`)}>
+      <Box
+        fill
+        style={gradient(
+          `radial-gradient(70% 60% at 50% 22%, ${color('white/20')}, transparent 60%)`,
+        )}
+      />
+      <Text variant="heading" color="white/90">
+        {initials(name)}
+      </Text>
+    </Box>
   );
 }

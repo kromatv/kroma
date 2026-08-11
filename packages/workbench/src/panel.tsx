@@ -7,7 +7,7 @@ import { ScrollView } from 'react-native';
 import { RULE, RULE_TOP, TAB } from './chrome';
 import { CodeBlock, MONO } from './code';
 import { Controls } from './controls';
-import { Guidelines, RichText } from './docs';
+import { Guidelines, RichText, StoryProse } from './docs';
 import type { WorkbenchLayout } from './layout';
 import type { PropDoc } from './props';
 import type { Story } from './story';
@@ -66,11 +66,7 @@ function PropTable({ props }: Readonly<{ props: readonly PropDoc[] }>) {
               {prop.type}
             </Text>
           </Box>
-          {prop.docs ? (
-            <RichText variant="meta" color="textMuted">
-              {prop.docs}
-            </RichText>
-          ) : null}
+          {prop.docs ? <RichText>{prop.docs}</RichText> : null}
         </Box>
       ))}
     </Box>
@@ -100,9 +96,7 @@ function tabsFor(story: Story, showControls: boolean): Tab[] {
         <Box gap={24}>
           {story.docs ? (
             <Section title="What it's for">
-              <RichText variant="meta" color="textMuted">
-                {story.docs}
-              </RichText>
+              <StoryProse docs={story.docs} />
             </Section>
           ) : null}
           {story.usage ? (

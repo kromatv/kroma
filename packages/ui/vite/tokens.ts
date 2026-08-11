@@ -154,6 +154,20 @@ const SUBSETS = {
 
 const FONT_DIR = fileURLToPath(new URL('../src/assets/fonts/', import.meta.url));
 
+const slug = (family: string) => family.toLowerCase().replace(/\s+/g, '-');
+
+const fontFile = (family: string, subset: string) => `${FONT_DIR}${slug(family)}-${subset}.woff2`;
+
+/**
+ * The woff2 a first paint cannot start without, absolute on disk: the latin
+ * subset of each self-hosted family. `latin-ext` is left out because nothing on
+ * a first screen is written in it, and a preload the page does not use is a
+ * console warning and wasted bytes on a television's link.
+ */
+export const FIRST_PAINT_FONTS: readonly string[] = SELF_HOSTED.map((family) =>
+  fontFile(family, 'latin'),
+);
+
 /**
  * The two typefaces, self-hosted: a KROMA install can have no route to a CDN.
  *
@@ -161,7 +175,6 @@ const FONT_DIR = fileURLToPath(new URL('../src/assets/fonts/', import.meta.url))
  * stylesheet lives.
  */
 export function fontsCss(): string {
-  const slug = (family: string) => family.toLowerCase().replace(/\s+/g, '-');
   return SELF_HOSTED.flatMap((family) =>
     Object.entries(SUBSETS).map(([subset, range]) =>
       rule('@font-face', [
@@ -169,9 +182,11 @@ export function fontsCss(): string {
         'font-style: normal;',
         'font-weight: 400 800;',
         // `optional`, not `swap`: swapping the face after first paint moved the
-        // whole column (0.78 CLS). The shells preload so it lands in time.
+        // whole column (0.78 CLS). `optional` has no swap period at all, so the
+        // face only ever lands because kromaFontPreload() puts a matching
+        // <link rel=preload> in the document head (see font-preload.ts).
         'font-display: optional;',
-        `src: url("${FONT_DIR}${slug(family)}-${subset}.woff2") format("woff2");`,
+        `src: url("${fontFile(family, subset)}") format("woff2");`,
         `unicode-range: ${range};`,
       ]),
     ),

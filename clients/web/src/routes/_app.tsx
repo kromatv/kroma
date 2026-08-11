@@ -5,6 +5,7 @@
 // (login, join) and the admin console live outside this layout.
 
 import { CastProvider } from '@kroma/ui';
+import { Box } from '@kroma/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
@@ -63,9 +64,9 @@ function AppLayout() {
       {/* Above the player (z-60): the picker opens from INSIDE it ("play this on
           a TV"), and at the shared modal z-index it mounted behind the opaque
           player, reading as a cast button that did nothing. */}
-      <div className="relative z-[70]">
+      <Box z={70}>
         <CastPicker />
-      </div>
+      </Box>
     </CastProvider>
   );
 }

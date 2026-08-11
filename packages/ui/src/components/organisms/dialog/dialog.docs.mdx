@@ -1,0 +1,30 @@
+A modal box. It declares a focus SCOPE, which keeps the D-pad from wandering
+back into the page left behind: that is the difference between an overlay and a
+true modal on a television.
+
+## Three bands, one scroller
+
+The panel is made of three bands, and only the middle one scrolls:
+
+| Band | Scrolls | Holds |
+| --- | --- | --- |
+| `Dialog.Header` | no | the title and the description |
+| `Dialog.Content` | yes | the body, however long it gets |
+| `Dialog.Footer` | no | a shelf for `Dialog.Actions` |
+
+So a long form never scrolls its own title away or its actions out of reach.
+**Dialog.Actions** is the row of controls itself - one focus group,
+right-aligned - so a footer is a shelf holding an actions row rather than a
+second row competing with it.
+
+## Sugar, then parts
+
+Pass `title` / `description` / `footer` for the ordinary case and the panel
+arranges the bands for you; reach for the parts when a panel needs a header of
+its own.
+
+```tsx
+<Dialog open={open} onClose={close} title="Delete this profile?" footer={actions}>
+  <Text>This cannot be undone.</Text>
+</Dialog>
+```

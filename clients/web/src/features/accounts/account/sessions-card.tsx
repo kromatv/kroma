@@ -1,7 +1,6 @@
 import type { SessionInfo } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Button, ListRow, Text } from '@kroma/ui/kit';
-import { IconDeviceDesktop, IconDeviceMobile, IconDeviceTv } from '@tabler/icons-react';
+import { Badge, Box, Button, Icon, type IconName, ListRow, Row, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { relativeSeen } from '#web/shared/lib/adminFormat';
@@ -9,10 +8,10 @@ import { kromaClient } from '#web/shared/lib/api';
 import { type DeviceKind, deviceInfo } from '#web/shared/lib/device';
 import { userQueries } from '#web/shared/lib/queries';
 
-const DEVICE_ICON: Record<DeviceKind, typeof IconDeviceDesktop> = {
-  tv: IconDeviceTv,
-  mobile: IconDeviceMobile,
-  desktop: IconDeviceDesktop,
+const DEVICE_ICON: Record<DeviceKind, IconName> = {
+  tv: 'device-tv',
+  mobile: 'device-mobile',
+  desktop: 'device-desktop',
 };
 
 function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
@@ -20,7 +19,6 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
   const qc = useQueryClient();
   const [revoking, setRevoking] = useState(false);
   const { label, kind } = deviceInfo(session.userAgent, t('account.unknownDevice'));
-  const Icon = DEVICE_ICON[kind];
 
   const revoke = async () => {
     setRevoking(true);
@@ -35,14 +33,14 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
   return (
     <ListRow.Root>
       <ListRow.Leading>
-        <span className="flex size-9.5 flex-none items-center justify-center rounded-md border border-border bg-surface-2 text-muted">
-          <Icon size={19} stroke={1.7} />
-        </span>
+        <Box center w={38} h={38} radius="xs" border="border" bg="surface2">
+          <Icon name={DEVICE_ICON[kind]} size={19} stroke={1.7} color="textMuted" />
+        </Box>
       </ListRow.Leading>
-      <div className="flex items-center gap-2.5">
+      <Row gap={10}>
         <ListRow.Label>{label}</ListRow.Label>
         {session.current ? <Badge tone="success">{t('account.thisDevice')}</Badge> : null}
-      </div>
+      </Row>
       <ListRow.Hint>{relativeSeen(session.lastSeen)}</ListRow.Hint>
       <ListRow.Trailing>
         {session.current ? (

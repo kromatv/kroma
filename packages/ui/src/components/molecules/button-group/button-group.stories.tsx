@@ -122,7 +122,6 @@ function Toolbar() {
 export default story({
   name: 'ButtonGroup',
   group: 'Actions',
-  docs: 'A row (or a column) of related controls rendered as ONE control: adjacent members share a single border line and their inner corners are flattened, so three buttons read as one segmented object. A split button, a toolbar cluster, a value with its unit welded to the end.\n\nThe browser does this with `:first-child` and a collapsed border. React Native has neither, so **Root counts its children and publishes each one\'s position through a context**, one provider per child, and the members shape themselves from it. It is a context rather than `cloneElement` because a member is routinely wrapped (a Tooltip trigger, a Menu trigger) and cloned props would land on the wrapper instead of the control. `Button`, `IconButton`, `TextField` and `ButtonGroup.Addon` read it; **anything else keeps its own shape**, which is a visible signal that a child is not a member.\n\nIt carries no selection state: it is `role="group"` plus a shape. For one-of-N use a <SegmentedControl>, and for a set of toggles a <ChoiceList>.',
   usage: `<ButtonGroup.Root label="Abonnement">
   <Button label="Suivre" onPress={follow} />
   <ButtonGroup.Separator />

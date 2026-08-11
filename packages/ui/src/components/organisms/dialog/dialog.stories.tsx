@@ -26,7 +26,6 @@ function Demo({
 export default story({
   name: 'Dialog',
   group: 'Overlays',
-  docs: 'A modal box. It declares a focus SCOPE, which keeps the D-pad from wandering back into the page left behind: that is the difference between an overlay and a true modal on a television.\n\nThe panel is made of three bands, and only the middle one scrolls: **Dialog.Header** and **Dialog.Footer** stay put while **Dialog.Content** moves under them, so a long form never scrolls its own title away or its actions out of reach. **Dialog.Actions** is the row of controls itself - one focus group, right-aligned - so a footer is a shelf holding an actions row rather than a second row competing with it.\n\nPass `title` / `description` / `footer` for the ordinary case and the panel arranges the bands for you; reach for the parts when a panel needs a header of its own.',
   usage: `<Dialog
   open={open}
   onClose={close}

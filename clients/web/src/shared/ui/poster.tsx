@@ -1,6 +1,6 @@
 import { sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { ArtScrim, Ground, IconButton, Progress, VirtualRail } from '@kroma/ui/kit';
+import { ArtScrim, Box, Ground, IconButton, Progress, Text, VirtualRail } from '@kroma/ui/kit';
 import { type ReactElement, useState } from 'react';
 import { Image } from '#web/shared/ui/image';
 
@@ -103,16 +103,18 @@ export function Poster({
             }`}
           >
             {genre ? (
-              <div className="mb-1 text-[10px] font-bold uppercase tracking-[.12em] text-white/60">
+              <Text variant="overline" color="white/60" mb={4}>
                 {genre}
-              </div>
+              </Text>
             ) : null}
-            <div className="font-display text-[20px] font-bold text-white">{title}</div>
+            <Text variant="title" color="white">
+              {title}
+            </Text>
           </div>
           {progress != null ? (
-            <div className="absolute inset-x-0 bottom-0">
+            <Box absolute left={0} right={0} bottom={0}>
               <Progress value={progress / 100} size={5} trackColor="white/20" />
-            </div>
+            </Box>
           ) : null}
         </div>
       </button>

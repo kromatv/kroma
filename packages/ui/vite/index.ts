@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { iconPass, kromaUi, sourceRoots, walkSources } from '../bundler/index.ts';
 import { alphaPass } from './alpha-scan.ts';
+import { kromaFontPreload } from './font-preload.ts';
 import { KNOWN_COLOR_NAMES, kromaTokens } from './tokens.ts';
 
 export { tokensCss } from './tokens.ts';
@@ -42,5 +43,10 @@ function kromaScan(repoRoot: string, icons: 'subset' | 'full') {
  *  the design tokens. Drop `kromaUI()` into `plugins` and nothing else. */
 export function kromaUI({ icons = 'subset', repoRoot }: KromaUIOptions = {}) {
   const root = repoRoot ?? findRepoRoot();
-  return [kromaScan(root, icons), kromaUi.vite({ repoRoot: root, icons }), kromaTokens()];
+  return [
+    kromaScan(root, icons),
+    kromaUi.vite({ repoRoot: root, icons }),
+    kromaTokens(),
+    kromaFontPreload(),
+  ];
 }

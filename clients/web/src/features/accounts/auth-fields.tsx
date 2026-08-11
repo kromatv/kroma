@@ -4,13 +4,33 @@
 // block lives here once and is driven by controlled props.
 
 import { useT } from '@kroma/ui';
-import { Field } from '@kroma/ui/kit';
-import { IconPlus } from '@tabler/icons-react';
+import { Box, Field, Focusable, gradient, Icon, type StyleDecl, svFor, Text } from '@kroma/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { Image } from '#web/shared/ui';
 import { avatarGradient, initials } from '#web/shared/ui/user-avatar';
 
 export type RegisterValues = Readonly<{ email: string; username: string; password: string }>;
+
+const TILE = 112;
+
+// The caption only shows while the tile is under a pointer or holds focus, so
+// the initials read unobstructed the rest of the time.
+const avatarPicker = svFor<{ root: StyleDecl; caption: StyleDecl }>()({
+  slots: {
+    root: { w: TILE, h: TILE, radius: 'lg', overflow: 'hidden' },
+    caption: {
+      absolute: true,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      py: 4,
+      bg: 'black/55',
+      opacity: 0,
+      _hover: { opacity: 1 },
+      _focus: { opacity: 1 },
+    },
+  },
+});
 
 /** Avatar picker tile + the three registration inputs, controlled by the parent
  * form. The object-URL preview and hidden file input are managed internally; the
@@ -43,35 +63,39 @@ export function RegisterFields({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        className="group relative h-28 w-28 overflow-hidden rounded-xl focus:outline-none"
-        aria-label={t('auth.chooseAvatar')}
+      <Focusable
+        sv={avatarPicker}
+        label={t('auth.chooseAvatar')}
+        onPress={() => fileRef.current?.click()}
       >
-        {preview ? (
-          <Image src={preview} fit="cover" fill />
-        ) : (
-          <div
-            className="flex h-full w-full items-center justify-center text-white/85"
-            style={{ background: avatarGradient(username || email || 'new') }}
-          >
-            {username.trim() ? (
-              <span className="font-display text-[40px] font-bold">{initials(username)}</span>
+        {({ slots }) => (
+          <>
+            {preview ? (
+              <Image src={preview} fit="cover" fill />
             ) : (
-              <IconPlus size={34} stroke={1.6} />
+              <Box fill center style={gradient(avatarGradient(username || email || 'new'))}>
+                {username.trim() ? (
+                  <Text variant="h1" font="display" color="white/85">
+                    {initials(username)}
+                  </Text>
+                ) : (
+                  <Icon name="plus" size={34} stroke={1.6} color="white/85" />
+                )}
+              </Box>
             )}
-          </div>
+            <Box style={slots.caption}>
+              <Text variant="overline" color="white" textAlign="center">
+                {t('common.photo')}
+              </Text>
+            </Box>
+          </>
         )}
-        <span className="absolute inset-x-0 bottom-0 bg-black/55 py-1 text-center text-[11px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100">
-          {t('common.photo')}
-        </span>
-      </button>
+      </Focusable>
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        hidden
         onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
       />
 

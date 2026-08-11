@@ -52,10 +52,12 @@ function subset(c: UserConfig): Record<string, string> {
 describe('kromaSite', () => {
   it('is the message subset, the design system, TanStack Start and React, in that order', () => {
     const listed = names(config(siteRoot()));
-
-    const kit = ['kroma-scan', 'kroma-ui', 'kroma-tokens'];
+    const kit = listed.filter((n) => n.startsWith('kroma-'));
 
     expect(listed[0]).toBe('kroma:message-subset');
+    expect(kit.length).toBeGreaterThan(0);
+    // The design system is one contiguous run, so a plugin added to kromaUI()
+    // cannot land on the far side of TanStack and lose its `enforce: 'pre'`.
     expect(listed.slice(1, 1 + kit.length)).toEqual(kit);
     expect(listed.findIndex((n) => n.startsWith('tanstack'))).toBe(1 + kit.length);
     expect(listed.at(-1)).toMatch(/^vite:react/);

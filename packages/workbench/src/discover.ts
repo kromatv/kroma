@@ -1,5 +1,6 @@
-// Turns what a bundler found into a story registry: drop a `*.stories.tsx` or
-// `*.demo.tsx` anywhere in the source tree and it appears here, nothing to register.
+// Turns what a bundler found into a story registry: drop a `*.stories.tsx`,
+// `*.demo.tsx` or `*.docs.mdx` anywhere in the source tree and it appears here,
+// nothing to register.
 //
 // The glob itself must live in the host, not this package: `import.meta.glob`
 // (Vite) and `require.context` (Metro) are compile-time transforms resolved
@@ -9,7 +10,8 @@
 import type { ComponentType } from 'react';
 import { attachDemos, type DemoFile } from './demos';
 import type { PropDoc } from './props';
-import { attachTiers, orderStories, type Story } from './story';
+import { attachDocs, type DocsFile } from './prose';
+import { attachTiers, type DocComponent, orderStories, type Story } from './story';
 
 /** Narrows `import.meta.glob` (a Vite compile-time transform with no runtime
  * types) to the two shapes a host needs, so a package also built by Metro
@@ -37,6 +39,7 @@ interface Context {
 
 const STORY = '.stories.tsx';
 const DEMO = '.demo.tsx';
+const DOCS = '.docs.mdx';
 
 // Deliberately not localeCompare: that orders by the host's locale, so the same
 // tree would sort differently on a laptop than in CI.
@@ -55,12 +58,15 @@ function assemble(
   paths: readonly string[],
   storyAt: (path: string) => Story,
   demos: readonly DemoFile[],
+  docs: readonly DocsFile[],
 ): readonly Story[] {
-  return attachDemos(orderStories(attachTiers(paths.map(storyAt), paths)), demos);
+  return attachDocs(attachDemos(orderStories(attachTiers(paths.map(storyAt), paths)), demos), docs);
 }
 
 /** Assembles the registry from Vite's globs: `sources` (the `?raw` text glob)
- * gives a demo its code panel; `props` documents a component matched by name. */
+ * gives a demo its code panel; `props` documents a component matched by name.
+ * A `.docs.mdx` arrives in `modules` like any other module, because that is
+ * what MDX compiles it to. */
 function discoverVite(
   modules: Modules,
   sources: Sources = {},
@@ -72,6 +78,10 @@ function discoverVite(
     component: (modules[path] as { default: ComponentType }).default,
     source: sources[path],
   }));
+  const docs: DocsFile[] = pathsEnding(found, DOCS).map((path) => ({
+    path,
+    content: (modules[path] as { default: DocComponent }).default,
+  }));
   return assemble(
     pathsEnding(found, STORY),
     (path) => {
@@ -81,22 +91,30 @@ function discoverVite(
       return documented?.length ? { ...story, props: documented } : story;
     },
     demos,
+    docs,
   );
 }
 
-/** Assembles the registry from Metro's context. No sources, since Metro can't
- * hand a module its own text - a demo renders without a code panel and the
- * Props tab stays empty, rather than either carrying a stale hand-written copy. */
+/** Assembles the registry from Metro's context. A demo renders without a code
+ * panel and the Props tab stays empty, since Metro can't hand a module its own
+ * TEXT, rather than either carrying a stale hand-written copy. A `.docs.mdx` is
+ * not that case: Metro compiles it to a component like any other module, so the
+ * prose is whole here. */
 function discoverMetro(context: Context): readonly Story[] {
   const found = context.keys();
   const demos: DemoFile[] = pathsEnding(found, DEMO).map((path) => ({
     path,
     component: context<{ default: ComponentType }>(path).default,
   }));
+  const docs: DocsFile[] = pathsEnding(found, DOCS).map((path) => ({
+    path,
+    content: context<{ default: DocComponent }>(path).default,
+  }));
   return assemble(
     pathsEnding(found, STORY),
     (path) => context<{ default: Story }>(path).default,
     demos,
+    docs,
   );
 }
 

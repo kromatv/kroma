@@ -6,8 +6,7 @@
 
 import { type CalendarEntry, episodeTag, posterColors, sizedImageUrl } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
-import { IconChecks } from '@tabler/icons-react';
+import { Box, EmptyState, Icon, Img, ListRow, PageHeader, Row, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -15,10 +14,11 @@ import {
   monthKey,
   monthLabel,
   relativeAirDate,
+  sentenceCase,
   shortDayLabel,
 } from '#web/features/requests/airdate';
 import { userQueries } from '#web/shared/lib/queries';
-import { Image, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
+import { PAGE_MAIN, Skeleton } from '#web/shared/ui';
 
 // Releases at most this many days out get the accent "imminent" date.
 const IMMINENT_DAYS = 7;
@@ -48,16 +48,18 @@ export function ComingSoonPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{t('requests.calendarTitle')}</h1>
-      <p className={PAGE_SUBTITLE}>{t('requests.calendarSubtitle')}</p>
+      <PageHeader.Root
+        title={t('requests.calendarTitle')}
+        subtitle={t('requests.calendarSubtitle')}
+      />
 
       {isPending ? (
-        <div className="mt-6 flex flex-col gap-2.5">
+        <Box mt={24} gap={10}>
           {Array.from({ length: 5 }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
             <Skeleton key={i} h={76} radius={16} />
           ))}
-        </div>
+        </Box>
       ) : null}
 
       {entries?.length === 0 ? (
@@ -69,14 +71,18 @@ export function ComingSoonPage() {
       ) : null}
 
       {groups.map((g) => (
-        <section key={g.key} className="mt-7">
-          <h2 className="mb-2.5 flex items-baseline gap-2 text-[13px] font-bold uppercase tracking-wide text-dim">
-            <span>{g.label}</span>
-            <span className="text-[11.5px] font-semibold normal-case text-white/35">
-              {t('requests.releaseCount', { count: g.items.length })}
-            </span>
+        <section key={g.key}>
+          <h2 style={HEADING}>
+            <Row align="baseline" gap={8} mt={28} mb={10}>
+              <Text variant="overline" color="textDim">
+                {g.label}
+              </Text>
+              <Text variant="meta" color="white/35">
+                {t('requests.releaseCount', { count: g.items.length })}
+              </Text>
+            </Row>
           </h2>
-          <div className="flex flex-col gap-2.5">
+          <Box gap={10}>
             {g.items.map((e) => (
               <CalendarRow
                 key={`${e.requestId}:${e.season ?? 0}:${e.episode ?? 0}`}
@@ -93,7 +99,7 @@ export function ComingSoonPage() {
                 }
               />
             ))}
-          </div>
+          </Box>
         </section>
       ))}
     </main>
@@ -117,43 +123,46 @@ function CalendarRow({
   const imminent = days != null && days >= 0 && days <= IMMINENT_DAYS;
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="group flex items-center gap-4 rounded-2xl border border-border bg-surface-1 p-3 text-left transition-colors hover:border-white/20 hover:bg-white/2"
-    >
-      <div
-        className="relative h-[60px] w-[40px] flex-[0_0_40px] overflow-hidden rounded-lg"
-        style={{ background: `linear-gradient(158deg, ${c1}, ${c2})` }}
-      >
-        <Image src={poster} fit="cover" fill />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-[15px] font-bold transition-colors group-hover:text-accent">
-          {entry.title}
-        </div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-dim">
-          <span className="text-accent">{epTag}</span>
-          {entry.year ? <span>· {entry.year}</span> : null}
-          {entry.status === 'grabbed' ? (
-            <span className="inline-flex items-center gap-0.5 text-success">
-              · <IconChecks size={13} stroke={2} /> {t('requests.securedShort')}
-            </span>
-          ) : null}
-        </div>
-      </div>
-      <div className="flex flex-col items-end text-right">
-        <div className={`text-[14px] font-bold ${imminent ? 'text-accent' : ''}`}>
-          {airDate ? shortDayLabel(airDate, locale) : ''}
-        </div>
-        <div
-          className={`text-[12px] font-medium first-letter:uppercase ${
-            imminent ? 'text-accent/80' : 'text-dim'
-          }`}
-        >
-          {relativeAirDate(airDate, locale)}
-        </div>
-      </div>
-    </button>
+    <ListRow.Root size="md" onPress={onOpen} chevron={false}>
+      <ListRow.Leading>
+        <Box w={40} h={60}>
+          <Img src={poster} background={`linear-gradient(158deg, ${c1}, ${c2})`} radius="lg" fill />
+        </Box>
+      </ListRow.Leading>
+      <ListRow.Label>{entry.title}</ListRow.Label>
+      <Row gap={6} mt={2}>
+        <Text variant="meta" color="accent">
+          {epTag}
+        </Text>
+        {entry.year ? (
+          <Text variant="meta" color="textDim">
+            · {entry.year}
+          </Text>
+        ) : null}
+        {entry.status === 'grabbed' ? (
+          <Row gap={3}>
+            <Text variant="meta" color="textDim">
+              ·
+            </Text>
+            <Icon name="checks" size={13} stroke={2} color="success" />
+            <Text variant="meta" color="success">
+              {t('requests.securedShort')}
+            </Text>
+          </Row>
+        ) : null}
+      </Row>
+      <ListRow.Trailing>
+        <Box align="flex-end">
+          <Text variant="label" color={imminent ? 'accent' : 'text'}>
+            {airDate ? shortDayLabel(airDate, locale) : ''}
+          </Text>
+          <Text variant="meta" color={imminent ? 'accent/80' : 'textDim'}>
+            {sentenceCase(relativeAirDate(airDate, locale), locale)}
+          </Text>
+        </Box>
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
+
+const HEADING = { margin: 0 } as const;

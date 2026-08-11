@@ -3,8 +3,7 @@
 
 import { hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, EmptyState, PageHeader, Row, Text } from '@kroma/ui/kit';
-import { IconArrowLeft } from '@tabler/icons-react';
+import { Box, Button, EmptyState, Icon, PageHeader, Row, Text } from '@kroma/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -20,6 +19,15 @@ const GRID =
   'mt-8 grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
 
 const PAGE_COUNT = { fontVariant: ['tabular-nums' as const] };
+
+const BACK_LINK = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  alignSelf: 'flex-start',
+  gap: 6,
+  marginBottom: 24,
+  textDecoration: 'none',
+} as const;
 
 export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   const t = useT();
@@ -39,12 +47,11 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
 
   return (
     <main ref={topRef} className={PAGE_MAIN}>
-      <Link
-        to="/search"
-        className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-dim transition-colors hover:text-text"
-      >
-        <IconArrowLeft size={16} stroke={2.2} />
-        {t('discover.back')}
+      <Link to="/search" style={BACK_LINK}>
+        <Icon name="arrow-left" size={16} stroke={2.2} color="textDim" />
+        <Text variant="meta" color="textDim">
+          {t('discover.back')}
+        </Text>
       </Link>
 
       <PageHeader.Root>

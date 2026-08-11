@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { IconButton } from '@kroma/ui/kit';
+import { Box, backdropBlur, IconButton, Row, Text } from '@kroma/ui/kit';
 
 /** Centered top toast for transient player notices (audio re-encode, resume, errors). */
 export function Toast({
@@ -14,21 +14,33 @@ export function Toast({
   children: React.ReactNode;
 }>) {
   const t = useT();
-  const border = variant === 'danger' ? 'border-danger/40' : 'border-white/15';
   return (
-    <div
-      className={`absolute left-1/2 top-6 z-40 flex max-w-160 -translate-x-1/2 items-center gap-3 rounded-xl border ${border} bg-black/80 px-4 py-3 backdrop-blur-md`}
-    >
-      <span className="text-[13px] text-white/90">{children}</span>
-      {action}
-      <IconButton
-        variant="ghost"
-        size={28}
-        glyph={16}
-        icon="x"
-        label={t('player.dismiss')}
-        onPress={onDismiss}
-      />
-    </div>
+    <Box absolute top={24} left={0} right={0} z={40} align="center" pointerEvents="box-none">
+      <Row
+        maxW={640}
+        gap={12}
+        px={16}
+        py={12}
+        radius="xl"
+        bg="black/80"
+        border={variant === 'danger' ? 'danger/40' : 'white/15'}
+        style={FROST}
+      >
+        <Text variant="meta" color="white/90">
+          {children}
+        </Text>
+        {action}
+        <IconButton
+          variant="ghost"
+          size={28}
+          glyph={16}
+          icon="x"
+          label={t('player.dismiss')}
+          onPress={onDismiss}
+        />
+      </Row>
+    </Box>
   );
 }
+
+const FROST = backdropBlur(12);

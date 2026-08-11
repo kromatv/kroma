@@ -22,8 +22,13 @@ afterEach(() => {
 });
 
 describe('kromaUI', () => {
-  it('is the shared scan, the icon subset and the token expansion, in that order', () => {
-    expect(kromaUI().map((p) => p.name)).toEqual(['kroma-scan', 'kroma-ui', 'kroma-tokens']);
+  it('is the shared scan, the icon subset, the tokens and the font preload, in order', () => {
+    expect(kromaUI().map((p) => p.name)).toEqual([
+      'kroma-scan',
+      'kroma-ui',
+      'kroma-tokens',
+      'kroma-font-preload',
+    ]);
   });
 
   it('answers both collectors from one walk, and only on a build', () => {

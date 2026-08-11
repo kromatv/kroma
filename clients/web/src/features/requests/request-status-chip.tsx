@@ -3,7 +3,11 @@
 
 import type { RequestStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Box, backdropBlur, Row, Text, useLoop } from '@kroma/ui/kit';
 import { requestStatusMeta } from '#web/features/requests/status';
+
+const PULSE_MS = 2000;
+const RING_MS = 500;
 
 function Ring({ value, size, color }: Readonly<{ value: number; size: number; color: string }>) {
   const sw = size <= 12 ? 2 : 2.5;
@@ -16,7 +20,7 @@ function Ring({ value, size, color }: Readonly<{ value: number; size: number; co
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      className="-rotate-90 shrink-0"
+      style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}
       aria-hidden="true"
     >
       <circle
@@ -38,11 +42,23 @@ function Ring({ value, size, color }: Readonly<{ value: number; size: number; co
         strokeLinecap="round"
         strokeDasharray={circ}
         strokeDashoffset={offset}
-        className="transition-[stroke-dashoffset] duration-500"
+        style={{ transition: `stroke-dashoffset ${RING_MS}ms` }}
       />
     </svg>
   );
 }
+
+const SHAPE = {
+  card: { dot: 4, ring: 11, gap: 4, px: 8, py: 3 },
+  row: { dot: 6, ring: 13, gap: 6, px: 11, py: 5 },
+  hero: { dot: 8, ring: 16, gap: 8, px: 16, py: 8 },
+} as const;
+
+const BOLD = { fontWeight: '700' } as const;
+
+const TABULAR = { fontVariant: ['tabular-nums' as const] };
+
+const CARD_FROST = backdropBlur(6);
 
 export function RequestStatusChip({
   status,
@@ -55,60 +71,53 @@ export function RequestStatusChip({
 }>) {
   const t = useT();
   const m = requestStatusMeta(status);
+  const shape = SHAPE[size];
   const downloading = status === 'downloading' && progress != null;
   const pct = downloading ? `${Math.round((progress ?? 0) * 100)}%` : null;
+  const pulse = useLoop('pulse', PULSE_MS, m.pulse === true);
 
-  let dotSize = 'h-1.5 w-1.5';
-  let ringSize = 13;
-  if (size === 'card') {
-    dotSize = 'h-1 w-1';
-    ringSize = 11;
-  } else if (size === 'hero') {
-    dotSize = 'h-2 w-2';
-    ringSize = 16;
-  }
+  const fill = { backgroundColor: m.bg };
   const lead = downloading ? (
-    <Ring value={progress ?? 0} size={ringSize} color={m.dot} />
+    <Ring value={progress ?? 0} size={shape.ring} color={m.dot} />
   ) : (
-    <span
-      className={`${dotSize} rounded-full ${m.pulse ? 'animate-pulse' : ''}`}
-      style={{ background: m.dot }}
+    <Box
+      w={shape.dot}
+      h={shape.dot}
+      shrink={0}
+      radius="circle"
+      style={[{ backgroundColor: m.dot }, pulse]}
     />
   );
 
   if (size === 'card') {
     return (
-      <span
-        className="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[9.5px] font-bold uppercase tracking-[.06em] backdrop-blur-[6px]"
-        style={{ color: m.color, background: m.bg }}
+      <Row
+        self="flex-start"
+        gap={shape.gap}
+        px={shape.px}
+        py={shape.py}
+        radius="pill"
+        style={[fill, CARD_FROST]}
       >
         {lead}
-        {pct ?? t(m.labelKey)}
-      </span>
-    );
-  }
-
-  if (size === 'hero') {
-    return (
-      <span
-        className="inline-flex items-center gap-2 self-start rounded-full px-4 py-2 text-[13.5px] font-bold"
-        style={{ color: m.color, background: m.bg }}
-      >
-        {lead}
-        {t(m.labelKey)}
-        {pct ? <span className="tabular-nums">{pct}</span> : null}
-      </span>
+        <Text variant="overline" color={m.color}>
+          {pct ?? t(m.labelKey)}
+        </Text>
+      </Row>
     );
   }
 
   return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full px-[11px] py-[5px] text-[11.5px] font-bold"
-      style={{ color: m.color, background: m.bg }}
-    >
+    <Row self="flex-start" gap={shape.gap} px={shape.px} py={shape.py} radius="pill" style={fill}>
       {lead}
-      {t(m.labelKey)}
-      {pct ? <span className="tabular-nums">{pct}</span> : null}
-    </span>
+      <Text variant={size === 'hero' ? 'label' : 'meta'} color={m.color} style={BOLD}>
+        {t(m.labelKey)}
+      </Text>
+      {pct ? (
+        <Text variant={size === 'hero' ? 'label' : 'meta'} color={m.color} style={[BOLD, TABULAR]}>
+          {pct}
+        </Text>
+      ) : null}
+    </Row>
   );
 }

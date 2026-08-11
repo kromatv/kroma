@@ -49,7 +49,7 @@ function HomePage() {
     );
   }
   return (
-    <main className="min-w-0 px-(--gutter-web) pb-20 pt-9">
+    <main className={PAGE_MAIN}>
       {hero ? <Hero entry={hero} /> : null}
       <ContinueRow />
       <HomeSections excludeId={heroId} />

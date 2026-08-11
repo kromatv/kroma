@@ -11,43 +11,68 @@ import {
   sizedImageUrl,
 } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { color, Drawer, EmptyState, ListRow } from '@kroma/ui/kit';
-import { IconBell, IconChecks, IconLoader2, IconX, type TablerIcon } from '@tabler/icons-react';
+import {
+  Box,
+  color,
+  Divider,
+  Drawer,
+  EmptyState,
+  Icon,
+  IconButton,
+  ListRow,
+  Row,
+  Skeleton,
+  Spacer,
+  Spinner,
+  Text,
+} from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import type { ViewStyle } from 'react-native';
 import { usePanelState, useUnreadCount } from '#web/features/notifications/use-notifications';
 import { kromaClient } from '#web/shared/lib/api';
 import { userQueries } from '#web/shared/lib/queries';
 import { NotificationCard } from '#web/shared/ui/notification-card';
 
 /** Bell + badge + drawer. Mounted in the sidebar (desktop) and topbar (mobile). */
-export function NotificationBell({ className }: Readonly<{ className?: string }>) {
+export function NotificationBell() {
   const t = useT();
   const unread = useUnreadCount();
   const { open, setOpen, everOpened } = usePanelState();
 
   return (
     <>
-      <button
-        type="button"
-        aria-label={
-          unread > 0 ? `${t('notifications.title')} (${unread})` : t('notifications.title')
-        }
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-        className={`relative flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/6 hover:text-text ${open ? 'bg-white/8 text-text' : ''} ${className ?? ''}`}
+      <IconButton
+        variant={open ? 'glass' : 'ghost'}
+        size={40}
+        radius="md"
+        label={unread > 0 ? `${t('notifications.title')} (${unread})` : t('notifications.title')}
+        expanded={open}
+        onPress={() => setOpen(true)}
       >
-        <IconBell size={20} />
-        {unread > 0 && (
-          <span
-            // Caps at 9+ so the badge doesn't outgrow the bell.
-            className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[18px] tabular-nums text-accent-ink ring-2 ring-bg"
+        <Icon name="bell" size={20} />
+        {unread > 0 ? (
+          // Caps at 9+ so the badge doesn't outgrow the bell.
+          <Box
+            absolute
+            top={-2}
+            right={-2}
+            minW={18}
+            h={18}
+            px={4}
+            center
+            radius="pill"
+            bg="accent"
+            border="bg"
+            borderWidth={2}
           >
-            {unread > 9 ? '9+' : unread}
-          </span>
-        )}
-      </button>
+            <Text variant="overline" color="accentInk">
+              {unread > 9 ? '9+' : unread}
+            </Text>
+          </Box>
+        ) : null}
+      </IconButton>
       <Drawer
         open={open}
         onClose={() => setOpen(false)}
@@ -80,52 +105,50 @@ function PanelHeader({ onClose }: Readonly<{ onClose: () => void }>) {
     }
   }
 
+  const markAllOff = unread === 0 || busy;
   return (
-    <div className="flex shrink-0 items-center gap-2 border-b border-white/[0.07] px-4 pb-3 pt-[max(1.15rem,env(safe-area-inset-top))]">
-      <h2 className="text-[16px] font-semibold text-text">{t('notifications.title')}</h2>
-      <div className="ml-auto flex items-center gap-0.5">
+    <>
+      <Row shrink={0} gap={8} px={16} pb={12} style={SAFE_TOP}>
+        <h2 style={HEADING}>
+          <Text variant="label">{t('notifications.title')}</Text>
+        </h2>
+        <Spacer />
         {/* Icon-only: the label is long in every language and crowded the title. */}
-        <IconAction
-          icon={IconChecks}
-          label={t('notifications.markAllRead')}
-          onClick={() => void markAll()}
-          disabled={unread === 0}
-          busy={busy}
-        />
-        <IconAction icon={IconX} label={t('common.close')} onClick={onClose} />
-      </div>
-    </div>
+        <Row gap={2}>
+          <IconButton
+            variant="ghost"
+            size={36}
+            radius="lg"
+            label={t('notifications.markAllRead')}
+            onPress={() => void markAll()}
+            disabled={markAllOff}
+            style={markAllOff ? OFF : undefined}
+          >
+            {busy ? <Spinner size={17} /> : <Icon name="checks" size={18} />}
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            size={36}
+            radius="lg"
+            icon="x"
+            glyph={18}
+            label={t('common.close')}
+            onPress={onClose}
+          />
+        </Row>
+      </Row>
+      <Divider />
+    </>
   );
 }
 
 const PANEL_FILL = { backgroundColor: color('bg') } as const;
 
-function IconAction({
-  icon: Icon,
-  label,
-  onClick,
-  disabled,
-  busy,
-}: Readonly<{
-  icon: TablerIcon;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  busy?: boolean;
-}>) {
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled === true || busy === true}
-      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-white/6 hover:text-text disabled:pointer-events-none disabled:opacity-30"
-    >
-      {busy === true ? <IconLoader2 size={17} className="animate-spin" /> : <Icon size={18} />}
-    </button>
-  );
-}
+const SAFE_TOP = { paddingTop: 'max(1.15rem, env(safe-area-inset-top))' } as unknown as ViewStyle;
+
+const HEADING = { margin: 0 } as const;
+
+const OFF = { opacity: 0.3 } as const;
 
 function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
   const t = useT();
@@ -133,17 +156,17 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
 
   if (isPending) {
     return (
-      <div className="flex-1 px-2 pt-3">
+      <Box flex px={8} pt={12}>
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex animate-pulse gap-3 p-2.5 pl-4">
-            <div className="h-12 w-12 shrink-0 rounded-xl bg-white/6" />
-            <div className="flex-1 space-y-2 pt-1">
-              <div className="h-3 w-2/5 rounded-full bg-white/6" />
-              <div className="h-2.5 w-4/5 rounded-full bg-white/4" />
-            </div>
-          </div>
+          <Row key={i} align="flex-start" gap={12} p={10} pl={16}>
+            <Skeleton w={48} h={48} radius="xl" />
+            <Box flex gap={8} pt={4}>
+              <Skeleton h={12} w="40%" radius="pill" />
+              <Skeleton h={10} w="80%" radius="pill" />
+            </Box>
+          </Row>
         ))}
-      </div>
+      </Box>
     );
   }
 
@@ -161,14 +184,18 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto overscroll-contain px-2 pb-3 [scrollbar-color:rgba(255,255,255,0.16)_transparent] [scrollbar-width:thin]">
+    <Box flex px={8} pb={12} style={SCROLL}>
       {groupNotificationsByDay(items).map((group) => (
         // Keyed on the run's first row, not the day: an unsorted inbox can open a
         // second "Earlier" run, and two sections must not share a key.
         <section key={group.items[0]?.id}>
           {/* h3, not h2: the panel header renders the h2. */}
-          <h3 className="sticky top-0 z-10 bg-bg px-2 pb-1.5 pt-3 text-[11px] font-semibold text-dim">
-            {t(NOTIFICATION_DAY_LABEL[group.day])}
+          <h3 style={DAY_LABEL}>
+            <Box bg="bg" px={8} pt={12} pb={6}>
+              <Text variant="meta" color="textDim">
+                {t(NOTIFICATION_DAY_LABEL[group.day])}
+              </Text>
+            </Box>
           </h3>
           <ListRow.Group size="sm">
             {group.items.map((n) => (
@@ -177,9 +204,13 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
           </ListRow.Group>
         </section>
       ))}
-    </div>
+    </Box>
   );
 }
+
+const SCROLL = { overflowY: 'auto', overscrollBehavior: 'contain' } as unknown as ViewStyle;
+
+const DAY_LABEL = { position: 'sticky', top: 0, zIndex: 10, margin: 0 } as const;
 
 function NotificationRow({
   notification,
@@ -223,7 +254,7 @@ function NotificationRow({
         titleTone={unread ? 'text-text' : 'text-text/70'}
         body={notification.body}
         time={
-          <time dateTime={new Date(notification.createdAt).toISOString()} className="tabular-nums">
+          <time dateTime={new Date(notification.createdAt).toISOString()} style={TABULAR}>
             <RelativeTime at={notification.createdAt} />
           </time>
         }
@@ -234,6 +265,8 @@ function NotificationRow({
 
 // The card draws its own gutter, so the row's leading inset is the gutter's.
 const ROW_PAD = { paddingLeft: 8 } as const;
+
+const TABULAR = { fontVariantNumeric: 'tabular-nums' } as const;
 
 /** A notification row's contents: gutter, tile, title/time line, clamped body.
  * Exported so the admin composer's preview renders the real row markup rather

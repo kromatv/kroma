@@ -8,14 +8,14 @@ import {
   sizedImageUrl,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Box, EmptyState, PageHeader, Text } from '@kroma/ui/kit';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { Image, PAGE_MAIN, PAGE_TITLE, SkeletonRow } from '#web/shared/ui';
+import { Image, PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/genres')({
   loader: async ({ context: { queryClient } }) => {
@@ -33,10 +33,10 @@ function GenresPending() {
   const t = useT();
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{t('nav.genres')}</h1>
-      <div className="mt-6">
+      <PageHeader.Root title={t('nav.genres')} />
+      <Box mt={24}>
         <SkeletonRow count={10} />
-      </div>
+      </Box>
     </main>
   );
 }
@@ -55,7 +55,7 @@ function GenresPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{t('nav.genres')}</h1>
+      <PageHeader.Root title={t('nav.genres')} />
       {genres.length === 0 ? (
         <EmptyState.Root icon="category" title={t('genres.empty')} />
       ) : (
@@ -94,22 +94,21 @@ function GenreTile({
         fill
         className="transition-transform duration-500 group-hover:scale-105"
       />
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: genreTint(genre.name) }}
-      />
-      <div className="absolute inset-x-4 bottom-3.5 sm:inset-x-5 sm:bottom-4">
-        <div
-          className="mb-1.5 h-1 w-6 rounded-full"
-          style={{ background: genreAccent(genre.name) }}
-        />
+      <div style={{ position: 'absolute', inset: 0, background: genreTint(genre.name) }} />
+      <Box
+        absolute
+        left={{ base: 16, md: 20 }}
+        right={{ base: 16, md: 20 }}
+        bottom={{ base: 14, md: 16 }}
+      >
+        <Box w={24} h={4} mb={6} radius="pill" bg={genreAccent(genre.name)} />
         <div className="font-display text-[16px] font-bold leading-tight tracking-[-.01em] text-white sm:text-[19px]">
           {genre.name}
         </div>
-        <div className="mt-0.5 text-[12px] font-medium text-white/70 tabular-nums sm:text-[13px]">
+        <Text variant="meta" color="white/70" mt={2}>
           {count}
-        </div>
-      </div>
+        </Text>
+      </Box>
     </Link>
   );
 }

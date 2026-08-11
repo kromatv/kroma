@@ -1,0 +1,31 @@
+import { OtpField } from './otp-field';
+
+The one-time-code entry: a row of character slots with the caret on the next
+empty one. It replaces the web client's `input-otp` wrapper, which was a hidden
+DOM `input` and therefore could never run on a television. Here one off-screen
+entry owns the text - so paste, SMS autofill and typing all still work - while
+the slots are ordinary views.
+
+<OtpField.Root maxLength={4} groups={[2, 2]} value="12" />
+
+## The parts
+
+The anatomy is [shadcn's InputOTP](https://ui.shadcn.com/docs/components/input-otp):
+
+- **OtpField.Root** holds the code.
+- **OtpField.Group** is a run of slots.
+- **OtpField.Slot** is one character.
+- **OtpField.Separator** divides two groups.
+
+A slot takes no `index`: its place in the code comes from where it sits in its
+group. `groups={[3, 3]}` writes that arrangement for you.
+
+```tsx
+<OtpField.Root maxLength={6} groups={[3, 3]} physicalKeyboard onComplete={verify} />
+```
+
+## The caret
+
+It blinks only while the entry holds focus, so a form stacking three codes
+(current PIN, new, confirm) shows one caret rather than three. Click a row below
+to give it the focus and watch the caret appear.

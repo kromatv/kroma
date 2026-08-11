@@ -55,24 +55,28 @@ resolves aliases, so no app counts `../` to the components:
 
 ```ts
 export const STORIES = discoverVite(
-  import.meta.glob('#ui/**/*.{stories,demo}.tsx', { eager: true }),
-  import.meta.glob('#ui/components/**/*.tsx', { eager: true, query: '?raw', import: 'default' }),
+  import.meta.glob('#ui/**/*.{stories.tsx,demo.tsx,docs.mdx}', { eager: true }),
+  import.meta.glob('#ui/**/*.demo.tsx', { eager: true, query: '?raw', import: 'default' }),
 );
 
-// Metro: one context, both file names
+// Metro: one context, all three file names
 export const STORIES = discoverMetro(
-  require.context('../../ui/src', true, /\.(stories|demo)\.tsx$/),
+  require.context('../../ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
 );
 ```
 
 One glob for the modules, one for the same tree as **text** — the second is optional,
 and what it feeds (a demo's code panel, the Props tab) is simply absent without it.
-Stories and demos are told apart by their own file names, inside `discover`, so a
+Stories, demos and docs are told apart by their own file names, inside `discover`, so a
 host cannot hand over demos and demo sources that disagree.
 
+A `.docs.mdx` is in the **module** glob, not the text one: both bundlers compile it
+to a component (`@kroma/bundler/mdx` on Vite, `@kroma/bundler/mdx-transformer` on
+Metro), so a host has to load the MDX plugin — see *A story's prose* below.
+
 `discoverVite` / `discoverMetro` do everything that happens to the result:
-levelling by folder, ordering, attaching demos, reading each component's props out
-of its own JSDoc. Nothing is listed and nothing is registered — drop a
+levelling by folder, ordering, attaching demos and docs, reading each component's
+props out of its own JSDoc. Nothing is listed and nothing is registered — drop a
 `*.stories.tsx` beside a component and it appears.
 
 > Both the pattern **and** the options must be written out as literals at every
@@ -164,6 +168,40 @@ Its file name becomes the tab, its doc comment the prose, and **the file itself*
 the code sample (`demos.ts`). Demos used to carry a hand-written copy of their own
 source and every one had already drifted; a sample cannot drift from the demo when
 it IS the demo.
+
+### A story's prose
+
+Two spellings, and the file wins:
+
+| | |
+| --- | --- |
+| `docs: '...'` in the story | one or two sentences. Markdown, in a string: paragraphs, `#`/`##`, `-` lists, fenced code, links, `**bold**` and `` `code` `` |
+| `<story>.docs.mdx` beside it | a real document. Everything above, plus GFM (tables, `~~strike~~`, task lists) — and **live components** |
+
+```mdx
+import { ListRow } from './list-row'
+
+One **D-pad stop** per row, and a pointer-sized hit area.
+
+<ListRow.Root label="Qualité" hint="1080p" />
+```
+
+That last line is why MDX rather than markdown: a design system's documentation
+should be able to render the component beside the sentence describing it.
+
+The file's first segment is the story's id (`list-row.docs.mdx` documents
+`ListRow`), the same rule a demo follows, and a file naming a story that does not
+exist throws rather than disappearing. A story carrying both spellings shows the
+file: two sources with a silent winner is the thing this rule exists to prevent.
+
+**It runs on native too.** MDX compiles to HTML element names — `p`, `ul`,
+`code`, the table set — and React Native has none of them, so `mdx.tsx` maps
+every one to a kit component and `mdx.test.tsx` derives the list of elements
+from a real compile and fails if the map has a hole. The inline `docs:` strings
+render through that same map, so neither spelling has a look of its own.
+
+A host has to compile `.mdx`: `kromaMdx()` from `@kroma/bundler/mdx` in a Vite
+config (before `react()`), and `expoWorkspaceConfig` already wires Metro's half.
 
 ## What derives itself
 

@@ -12,7 +12,7 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kroma/ui';
-import { Button, Icon } from '@kroma/ui/kit';
+import { Box, Button, backdropBlur, Icon, Text } from '@kroma/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';
@@ -26,6 +26,8 @@ import { kromaClient, type MovieView } from '#web/shared/lib/api';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
 
 const PREVIEW_W = 176;
+
+const FROST = backdropBlur(4);
 
 /** Adapts the web engine to the shared unified `<Player>`; layers on web-only
  *  concerns (resume prompt, admin-stop overlay, session heartbeat). */
@@ -154,9 +156,11 @@ export function Player({
       <UnifiedPlayer.Media>{surface}</UnifiedPlayer.Media>
       {terminated ? (
         <UnifiedPlayer.Panel>
-          <div className="absolute inset-0 z-80 flex flex-col items-center justify-center gap-5 bg-black/85 px-8 text-center backdrop-blur-sm">
+          <Box fill z={80} center gap={20} px={32} bg="black/85" style={FROST}>
             <Icon name="player-stop-filled" size={52} color="danger" />
-            <p className="max-w-115 text-[15px] text-white/80">{terminated}</p>
+            <Text variant="body" color="white/80" maxW={460} textAlign="center">
+              {terminated}
+            </Text>
             <Button
               variant="primary"
               size="sm"
@@ -164,7 +168,7 @@ export function Player({
               label={t('player.back')}
               onPress={onClose}
             />
-          </div>
+          </Box>
         </UnifiedPlayer.Panel>
       ) : null}
       {showResume && resumeAt != null ? (
@@ -172,16 +176,15 @@ export function Player({
           variant="info"
           onDismiss={() => setShowResume(false)}
           action={
-            <button
-              type="button"
-              onClick={() => {
+            <Button
+              variant="glass"
+              size="sm"
+              label={t('player.restart')}
+              onPress={() => {
                 pb.seekTo(0);
                 setShowResume(false);
               }}
-              className="rounded-md bg-white/10 px-2.5 py-1 text-[12px] font-semibold text-white hover:bg-white/20"
-            >
-              {t('player.restart')}
-            </button>
+            />
           }
         >
           ⏵ {t('player.resumeAt', { time: fmtTime(resumeAt) })}
