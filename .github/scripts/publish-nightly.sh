@@ -12,9 +12,10 @@ gh release view nightly >/dev/null 2>&1 \
 # Previous nightly sha (for the commit log) before we overwrite it.
 LAST="$(gh release download nightly -p nightly-manifest.json -O - 2>/dev/null | jq -r '.sha // empty' || true)"
 
-# Clear last night's assets; keep the per-push canary .spk pair.
+# Clear last night's assets; keep every per-push canary .spk pair, which is
+# named for the version it carries and pruned by the job that uploads it.
 for A in $(gh api "repos/${GH_REPO}/releases/tags/nightly" \
-    --jq '.assets[] | select(.name | startswith("kroma-nightly-x86_64.spk") | not) | .id'); do
+    --jq '.assets[] | select((.name | test("\\.spk(\\.info\\.json)?$")) | not) | .id'); do
   gh api -X DELETE "repos/${GH_REPO}/releases/assets/${A}" >/dev/null
 done
 

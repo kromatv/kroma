@@ -360,10 +360,15 @@ jobs:
   # commit being promoted, so the .spk on a Release is the artifact that was
   # built and approved rather than a same-source rebuild.
 
-  # main -> rolling `nightly` prerelease with a FIXED asset name, so the catalog
-  # link stays stable while the .spk bytes (and INFO version) change each build.
-  # The .info.json sidecar rides along so the dynamic source knows the real
-  # canary version + md5 without downloading the .spk.
+  # main -> rolling `nightly` prerelease, one asset per build, named for the
+  # version it carries. It used to be a single fixed name clobbered on every
+  # push: DSM records the md5 it read from the catalog and verifies the bytes it
+  # downloads against that, so the next push silently made every already-listed
+  # build uninstallable ("Failed to verify the package ... by MD5"). A build now
+  # keeps its own URL until it ages out, and a client holding a slightly stale
+  # catalog still downloads bytes whose md5 matches. The .info.json sidecar
+  # rides along so the dynamic source knows the real canary version + md5
+  # without downloading the .spk.
   publish-nightly:
     name: Publish nightly prerelease
     if: always() && !cancelled() && needs.build.result == 'success' && github.ref == 'refs/heads/main'
@@ -386,9 +391,17 @@ jobs:
           path: dist
       - name: Upload to the nightly prerelease
         run: |
-          cp dist/*.spk kroma-nightly-x86_64.spk
-          bun packages/synology-repo/src/gen-spk-info.ts kroma-nightly-x86_64.spk --beta
+          SPK="$(ls dist/*.spk | head -1)"
+          NAME="$(basename "$SPK")"
+          bun packages/synology-repo/src/gen-spk-info.ts "$SPK" --beta
           gh release view nightly >/dev/null 2>&1 \
             || gh release create nightly --prerelease --title "KROMA nightly" \
                  --notes "Rolling nightly build from main. Unstable; auto-updates via the nightly package source."
-          gh release upload nightly kroma-nightly-x86_64.spk kroma-nightly-x86_64.spk.info.json --clobber
+          gh release upload nightly "$SPK" "$SPK.info.json" --clobber
+          gh api "repos/${GH_REPO}/releases/tags/nightly" \
+            --jq '.assets[].name | select(endswith(".spk"))' \
+            | grep -vxF "$NAME" | sort -Vr | tail -n +3 \
+            | while read -r OLD; do
+                gh release delete-asset nightly "$OLD" -y || true
+                gh release delete-asset nightly "$OLD.info.json" -y || true
+              done

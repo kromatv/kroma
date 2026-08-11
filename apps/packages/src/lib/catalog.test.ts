@@ -336,7 +336,7 @@ describe('loadCatalog', () => {
         published_at: '2026-07-10T19:42:27Z',
         assets: [
           {
-            ...asset('kroma-nightly-x86_64.spk'),
+            ...asset('kroma-1.0.0.7-x86_64.spk'),
             updated_at: '2026-08-10T11:27:55Z',
           },
         ],
@@ -349,6 +349,22 @@ describe('loadCatalog', () => {
     expect(nightly?.publishedAt).toBe('2026-08-10T11:27:55Z');
     // A tagged release keeps the release date; only the rolling tag is special.
     expect(stable?.publishedAt).toBe('2026-07-31T00:00:00Z');
+  });
+
+  it('lists the newest .spk when the nightly tag holds several builds', async () => {
+    ghServing([
+      release({
+        tag_name: 'nightly',
+        prerelease: true,
+        assets: [
+          { ...asset('kroma-0.1.36.100-x86_64.spk'), updated_at: '2026-08-09T00:00:00Z' },
+          { ...asset('kroma-0.1.36.300-x86_64.spk'), updated_at: '2026-08-11T00:00:00Z' },
+          { ...asset('kroma-0.1.36.200-x86_64.spk'), updated_at: '2026-08-10T00:00:00Z' },
+        ],
+      }),
+    ]);
+    const [entry] = (await loadCatalog({}, () => undefined)).entries;
+    expect(entry?.spkName).toBe('kroma-0.1.36.300-x86_64.spk');
   });
 
   it('names an unnamed release by its tag and tolerates a missing publish date', async () => {

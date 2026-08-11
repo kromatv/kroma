@@ -37,19 +37,19 @@ export function ReleaseRow({ release, current = false }: Readonly<ReleaseRowProp
         </Box>
         <ChannelBadge channel={release.channel} current={current} />
       </Row>
-      <Row gap={16} shrink={1} minW={0}>
+      <Row gap={16} shrink={1} minW={0} wrap>
         {release.md5 ? <Checksum md5={release.md5} /> : null}
-        <Box w={92}>
-          <Txt variant="meta" color="textDim" font="mono">
+        <Box minW={92}>
+          <Txt variant="meta" color="textDim" font="mono" lines={1}>
             {release.day}
           </Txt>
         </Box>
-        <Box w={76} align="flex-end">
-          <Txt variant="meta" color="textDim" font="mono">
+        <Box minW={76} align="flex-end">
+          <Txt variant="meta" color="textDim" font="mono" lines={1}>
             {release.size}
           </Txt>
         </Box>
-        <Row gap={8}>
+        <Row gap={8} shrink={0}>
           <NotesAction release={release} />
           <Button variant="primary" size="sm" icon="download" href={release.spk} label=".spk" />
         </Row>

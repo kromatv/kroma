@@ -90,7 +90,7 @@ async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
   const entries: Entry[] = [];
   for (const r of releases) {
     if (r.draft) continue;
-    const spk = r.assets.find((a) => a.name.endsWith('.spk'));
+    const spk = newestSpk(r.assets);
     if (!spk) continue; // desktop-latest & friends carry no package
     const nonNightly = r.prerelease ? null : 'stable';
     const channel = r.tag_name === 'nightly' ? 'nightly' : nonNightly;
@@ -164,6 +164,11 @@ function jsonResponse(body: string, maxAge: number): Response {
     headers: { 'content-type': 'application/json', 'cache-control': `public, max-age=${maxAge}` },
   });
 }
+
+const newestSpk = (assets: GhAsset[]): GhAsset | undefined =>
+  assets
+    .filter((a) => a.name.endsWith('.spk'))
+    .sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''))[0];
 
 /** `kroma-0.1.25-3439372-x86_64.spk` -> `0.1.25-3439372`. Prefix-agnostic so
  * pre-rebrand `luma-*.spk` releases still parse their version. */
