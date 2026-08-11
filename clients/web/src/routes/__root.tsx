@@ -54,7 +54,10 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     // `lang` is the SSR default; LocaleProvider updates it client-side to match
     // the active locale (account preference → device → browser).
-    <html lang="fr">
+    // The app is dark-only for now: an unstamped root is the `system` choice and
+    // would follow prefers-color-scheme into a light palette nothing here has
+    // been designed against.
+    <html lang="fr" data-theme="dark">
       <head>
         <HeadContent />
       </head>
