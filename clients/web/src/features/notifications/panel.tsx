@@ -251,7 +251,7 @@ function NotificationRow({
         src={notification.imageUrl ? sizedImageUrl(notification.imageUrl, 96) : null}
         unread={unread}
         title={notification.title}
-        titleTone={unread ? 'text-text' : 'text-text/70'}
+        titleTone={unread ? 'text' : 'textMuted'}
         body={notification.body}
         time={
           <time dateTime={new Date(notification.createdAt).toISOString()} style={TABULAR}>

@@ -1,4 +1,3 @@
-import { color } from '@kroma/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { fmtDur, kindMeta, overallMeta, posterGrad, statusMeta } from './pipeline-meta';
 
@@ -22,8 +21,8 @@ describe('fmtDur', () => {
 
 describe('statusMeta', () => {
   it('resolves the known per-treatment statuses', () => {
-    expect(statusMeta('done').dot).toBe(color('success'));
-    expect(statusMeta('failed').dot).toBe(color('danger'));
+    expect(statusMeta('done').dot).toBe('success');
+    expect(statusMeta('failed').dot).toBe('danger');
     expect(statusMeta('running').pulse).toBe(true);
   });
 
@@ -37,9 +36,9 @@ describe('statusMeta', () => {
 
 describe('overallMeta', () => {
   it('resolves the known roll-up states', () => {
-    expect(overallMeta('ok').dot).toBe(color('success'));
+    expect(overallMeta('ok').dot).toBe('success');
     expect(overallMeta('running').pulse).toBe(true);
-    expect(overallMeta('failed').color).toBe(color('danger'));
+    expect(overallMeta('failed').color).toBe('danger');
   });
 
   it('falls back to the pending roll-up for unknown states', () => {

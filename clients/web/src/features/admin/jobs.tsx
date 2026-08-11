@@ -8,23 +8,26 @@ import { useT } from '@kroma/ui';
 import {
   Badge,
   type BadgeTone,
+  Box,
   Button,
   Chip,
   EmptyState,
+  Icon,
   IconButton,
   Progress,
+  Row,
   Section,
   Surface,
   Switch,
   Text,
 } from '@kroma/ui/kit';
-import { IconBolt, IconClock } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { JobDetailPanel } from '#web/features/admin/jobs-detail';
 import { dur, rel } from '#web/features/admin/jobs-format';
 import { ScheduleModal } from '#web/features/admin/jobs-schedule';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAsyncAction, useCap, usePoll } from '#web/features/admin/shell';
+import { TABULAR } from '#web/features/admin/table';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
@@ -76,13 +79,13 @@ export function JobsPage() {
       {data === null ? <TableSkeleton rows={6} /> : null}
       {categories.map((cat) => (
         <Section.Root key={cat} title={t(`jobs.cat.${cat}` as MessageKey)} mt={28}>
-          <div className="flex flex-col gap-3.5">
+          <Box gap={14}>
             {jobs
               .filter((j) => j.category === cat)
               .map((j) => (
                 <JobCard key={j.key} job={j} live={live[j.key]} reload={reload} />
               ))}
-          </div>
+          </Box>
         </Section.Root>
       ))}
       {data && jobs.length === 0 ? (
@@ -95,23 +98,27 @@ export function JobsPage() {
 function JobMeta({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => void }>) {
   const t = useT();
   return (
-    <div className="min-w-0">
-      <div className="flex items-center gap-2.5">
-        <span className="font-display text-[16px] font-bold">{t(job.name as MessageKey)}</span>
+    <Box minW={0}>
+      <Row gap={10}>
+        <Text variant="title">{t(job.name as MessageKey)}</Text>
         <StatusPill job={job} />
-      </div>
-      <div className="mt-0.75 text-[12.5px] text-dim">{t(job.description as MessageKey)}</div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px] text-text/55">
+      </Row>
+      <Text variant="meta" color="textDim" mt={3}>
+        {t(job.description as MessageKey)}
+      </Text>
+      <Row wrap gap={8} mt={8}>
         <ScheduleChip job={job} onEdit={onEdit} />
         {job.schedule && job.enabled && job.nextRunAt ? (
-          <span className="inline-flex items-center gap-1.5">
-            <IconClock size={13} stroke={1.8} />
-            {t('jobs.next')} {rel(job.nextRunAt)}
-          </span>
+          <Row gap={6}>
+            <Icon name="clock" size={13} stroke={1.8} color="textMuted" />
+            <Text variant="meta" color="textMuted">
+              {t('jobs.next')} {rel(job.nextRunAt)}
+            </Text>
+          </Row>
         ) : null}
         <LastRun job={job} />
-      </div>
-    </div>
+      </Row>
+    </Box>
   );
 }
 
@@ -136,7 +143,7 @@ function JobActions({
 }>) {
   const t = useT();
   return (
-    <div className="flex shrink-0 items-center gap-3">
+    <Row shrink={0} gap={12}>
       {job.schedule ? (
         <Switch
           checked={job.enabled}
@@ -169,30 +176,32 @@ function JobActions({
         label={t('jobs.history')}
         onPress={onToggleOpen}
       />
-    </div>
+    </Row>
   );
 }
 
 function JobProgress({ prog }: Readonly<{ prog: { done: number; total: number } }>) {
   const t = useT();
   return (
-    <div className="px-5.5 pb-4">
+    <Box px={22} pb={16}>
       {prog.total > 0 ? (
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
+        <Row gap={12}>
+          <Box flex>
             <Progress value={prog.done / prog.total} rounded />
-          </div>
-          <span className="shrink-0 text-[12px] font-semibold tabular-nums text-text/60">
+          </Box>
+          <Text variant="meta" color="textMuted" shrink={0} style={TABULAR}>
             {prog.done}/{prog.total}
-          </span>
-        </div>
+          </Text>
+        </Row>
       ) : (
-        <div className="flex items-center gap-2 text-[12.5px] font-semibold text-accent">
-          <IconBolt size={14} stroke={2} />
-          {t('jobs.runningNow')}
-        </div>
+        <Row gap={8}>
+          <Icon name="bolt" size={14} stroke={2} color="accent" />
+          <Text variant="meta" color="accentText">
+            {t('jobs.runningNow')}
+          </Text>
+        </Row>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -219,8 +228,8 @@ function JobCard({
     : null;
 
   return (
-    <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
-      <div className="flex items-center justify-between gap-4 px-5.5 py-4.5">
+    <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
+      <Row between gap={16} px={22} py={18}>
         <JobMeta job={job} onEdit={canManage ? () => void editSchedule() : undefined} />
         <JobActions
           job={job}
@@ -232,12 +241,16 @@ function JobCard({
           onToggle={toggle}
           onToggleOpen={() => setOpen((o) => !o)}
         />
-      </div>
+      </Row>
 
       {prog ? <JobProgress prog={prog} /> : null}
 
       {action.error ? (
-        <div className="px-5.5 pb-3 text-[12.5px] font-semibold text-danger">{action.error}</div>
+        <Box px={22} pb={12}>
+          <Text variant="meta" color="danger">
+            {action.error}
+          </Text>
+        </Box>
       ) : null}
 
       {open ? <JobDetailPanel jobKey={job.key} /> : null}
@@ -277,10 +290,10 @@ function LastRun({ job }: Readonly<{ job: JobInfo }>) {
   const last = job.lastRun;
   if (!last || job.running) return null;
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <Text variant="meta" color="textMuted">
       {t('jobs.last')} {rel(last.startedAt)}
       {last.durationMs != null ? ` · ${dur(last.durationMs)}` : ''}
-    </span>
+    </Text>
   );
 }
 

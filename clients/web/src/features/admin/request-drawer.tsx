@@ -12,12 +12,26 @@ import {
 } from '@kroma/core';
 import { useModuleEnabled } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, Callout, color, Drawer, Field, IconButton } from '@kroma/ui/kit';
+import {
+  Avatar,
+  Box,
+  Button,
+  Callout,
+  color,
+  Divider,
+  Drawer,
+  Field,
+  IconButton,
+  Row,
+  Text,
+} from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { createCallable } from 'react-call';
+import { Pill } from '#web/features/admin/pill';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
 import { ReleaseList } from '#web/features/admin/release-list';
 import { useAsyncAction, usePoll } from '#web/features/admin/shell';
+import { SCROLL_PANE } from '#web/features/admin/web-style';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import { seasonsSummary } from '#web/features/requests/status';
 import { useAuth } from '#web/shared/lib/auth';
@@ -35,12 +49,10 @@ type GrabbedState = { title: string; error: boolean } | null;
 
 function DrawerPoster({ req }: Readonly<{ req: MediaRequest }>) {
   return (
-    <div
-      className="relative h-[104px] w-[70px] flex-[0_0_70px] overflow-hidden rounded-md shadow-[0_10px_24px_rgba(0,0,0,.5)]"
-      style={{ background: posterGrad(req.title) }}
-    >
+    <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden" shadow="pop">
+      <div style={{ position: 'absolute', inset: 0, background: posterGrad(req.title) }} />
       <Image src={req.posterUrl} fit="cover" fill />
-    </div>
+    </Box>
   );
 }
 
@@ -55,30 +67,34 @@ function DrawerHeader({ req, onClose }: Readonly<{ req: MediaRequest; onClose: (
     .filter(Boolean)
     .join(' · ');
   return (
-    <div className="border-b border-white/[0.07] px-6 py-5">
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-          {t('requests.sheet')}
-        </span>
-        <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
-      </div>
-      <div className="flex gap-4">
-        <DrawerPoster req={req} />
-        <div className="min-w-0 pt-1">
-          <span
-            className="rounded-full px-[9px] py-[3px] text-[9.5px] font-bold uppercase tracking-widest"
-            style={{ color: km.color, background: km.bg }}
-          >
-            {t(`pipeline.type.${km.typeKey}` as MessageKey)}
-          </span>
-          <h2 className="mt-2.5 font-display text-[21px] font-bold leading-[1.12]">{req.title}</h2>
-          <div className="mt-1.5 text-[12.5px] font-medium text-white/50">{meta}</div>
-          <div className="mt-2.5">
-            <RequestStatusChip status={req.status} />
-          </div>
-        </div>
-      </div>
-    </div>
+    <>
+      <Box px={24} py={20}>
+        <Row between mb={16}>
+          <Text variant="overline" color="textDim">
+            {t('requests.sheet')}
+          </Text>
+          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
+        </Row>
+        <Box row gap={16}>
+          <DrawerPoster req={req} />
+          <Box minW={0} pt={4} align="flex-start">
+            <Pill ink={km.color} bg={km.bg} variant="overline">
+              {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+            </Pill>
+            <Text variant="h2" accessibilityRole="header" mt={10}>
+              {req.title}
+            </Text>
+            <Text variant="meta" color="textDim" mt={6}>
+              {meta}
+            </Text>
+            <Box mt={10}>
+              <RequestStatusChip status={req.status} />
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+      <Divider color="tint/7" />
+    </>
   );
 }
 
@@ -86,29 +102,29 @@ function RequesterCard({ req }: Readonly<{ req: MediaRequest }>) {
   const t = useT();
   return (
     <>
-      <div className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+      <Text variant="overline" color="textDim" mb={12}>
         {t('requests.requestedBy')}
-      </div>
-      <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-surface-1 px-4 py-3.5">
+      </Text>
+      <Row gap={12} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
         <Avatar name={req.requestedByName ?? '?'} size={34} circle shadow={false} />
-        <div className="min-w-0">
-          <div className="truncate text-[14px] font-bold">
+        <Box minW={0}>
+          <Text variant="label" lines={1}>
             {req.requestedByName ?? t('requests.unknownUser')}
-          </div>
-          <div className="text-[12px] font-medium text-white/45">
+          </Text>
+          <Text variant="meta" color="textDim">
             {new Date(req.createdAt).toLocaleDateString()}{' '}
             {new Date(req.createdAt).toLocaleTimeString([], {
               hour: '2-digit',
               minute: '2-digit',
             })}
-          </div>
-        </div>
-      </div>
+          </Text>
+        </Box>
+      </Row>
 
       {req.note ? (
-        <div className="mt-4">
+        <Box mt={16}>
           <Callout.Root tone="danger" title={req.note} />
-        </div>
+        </Box>
       ) : null}
     </>
   );
@@ -131,11 +147,11 @@ function SearchPanel({
 }>) {
   const t = useT();
   return (
-    <div className="mt-5">
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+    <Box mt={20}>
+      <Row between mb={12}>
+        <Text variant="overline" color="textDim">
           {t('requests.interactiveSearch')}
-        </span>
+        </Text>
         <Button
           variant="glass"
           size="sm"
@@ -144,15 +160,15 @@ function SearchPanel({
           onPress={onSearch}
           loading={search.busy}
         />
-      </div>
+      </Row>
       {search.error ? <Callout.Root tone="danger" title={search.error} /> : null}
       {grabbed ? (
-        <div className="mb-2">
+        <Box mb={8}>
           <Callout.Root
             tone={grabbed.error ? 'danger' : 'success'}
             title={grabbed.error ? grabbed.title : `${t('requests.grabbed')} ${grabbed.title}`}
           />
-        </div>
+        </Box>
       ) : null}
       {search.view ? (
         <ReleaseList
@@ -163,7 +179,7 @@ function SearchPanel({
           onGrab={onGrab}
         />
       ) : null}
-    </div>
+    </Box>
   );
 }
 
@@ -182,7 +198,7 @@ function DenyForm({
 }>) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-2.5">
+    <Box gap={10}>
       <Field.Root label={t('requests.denyNote')} hideLabel>
         <Field.Input
           icon="note"
@@ -191,7 +207,7 @@ function DenyForm({
           placeholder={t('requests.denyNote')}
         />
       </Field.Root>
-      <div className="flex gap-2.5">
+      <Row gap={10}>
         <Button
           variant="danger"
           icon="x"
@@ -201,8 +217,8 @@ function DenyForm({
           style={FLEX_1}
         />
         <Button variant="glass" label={t('common.cancel')} onPress={onCancel} />
-      </div>
-    </div>
+      </Row>
+    </Box>
   );
 }
 
@@ -221,7 +237,7 @@ function ModerationButtons({
 }>) {
   const t = useT();
   return (
-    <div className="flex gap-2.5">
+    <Row gap={10}>
       {req.status === 'pending' || req.status === 'failed' ? (
         <Button
           icon="check"
@@ -247,7 +263,7 @@ function ModerationButtons({
         onPress={onDelete}
         disabled={busy}
       />
-    </div>
+    </Row>
   );
 }
 
@@ -344,41 +360,46 @@ export const RequestDrawer = createCallable<
         <>
           <DrawerHeader req={req} onClose={() => call.end()} />
 
-          <div className="flex-1 overflow-y-auto px-6 py-5">
-            <RequesterCard req={req} />
+          <div style={SCROLL_PANE}>
+            <Box px={24} py={20}>
+              <RequesterCard req={req} />
 
-            {showSearch ? (
-              <SearchPanel
-                canReview={canReview}
-                busy={busy}
-                search={search}
-                grabbed={grabbed}
-                onSearch={runSearch}
-                onGrab={grab}
-              />
-            ) : null}
+              {showSearch ? (
+                <SearchPanel
+                  canReview={canReview}
+                  busy={busy}
+                  search={search}
+                  grabbed={grabbed}
+                  onSearch={runSearch}
+                  onGrab={grab}
+                />
+              ) : null}
+            </Box>
           </div>
 
           {canReview ? (
-            <div className="border-t border-white/[0.07] px-6 py-4.5">
-              {denying ? (
-                <DenyForm
-                  busy={busy}
-                  note={note}
-                  onNote={setNote}
-                  onDeny={submitDeny}
-                  onCancel={() => setDenying(false)}
-                />
-              ) : (
-                <ModerationButtons
-                  req={req}
-                  busy={busy}
-                  onApprove={submitApprove}
-                  onStartDeny={() => setDenying(true)}
-                  onDelete={submitDelete}
-                />
-              )}
-            </div>
+            <>
+              <Divider color="tint/7" />
+              <Box px={24} py={18}>
+                {denying ? (
+                  <DenyForm
+                    busy={busy}
+                    note={note}
+                    onNote={setNote}
+                    onDeny={submitDeny}
+                    onCancel={() => setDenying(false)}
+                  />
+                ) : (
+                  <ModerationButtons
+                    req={req}
+                    busy={busy}
+                    onApprove={submitApprove}
+                    onStartDeny={() => setDenying(true)}
+                    onDelete={submitDelete}
+                  />
+                )}
+              </Box>
+            </>
           ) : null}
         </>
       ) : null}

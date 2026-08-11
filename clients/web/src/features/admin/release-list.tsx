@@ -5,10 +5,26 @@
 
 import type { ScoredReleaseView } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Callout, color, IconButton } from '@kroma/ui/kit';
-import { IconChevronDown, IconExternalLink } from '@tabler/icons-react';
-import { useState } from 'react';
+import { Box, Callout, Divider, Icon, IconButton, Row, Text } from '@kroma/ui/kit';
+import { type CSSProperties, useState } from 'react';
+import { TABULAR } from '#web/features/admin/table';
 import { formatBytes } from '#web/shared/lib/adminFormat';
+
+// The row's own disclosure: a bare control, so it states the shape a page reset
+// would otherwise have given it.
+const DISCLOSURE: CSSProperties = {
+  display: 'flex',
+  flex: 1,
+  minWidth: 0,
+  alignItems: 'center',
+  gap: 8,
+  margin: 0,
+  padding: 0,
+  border: 0,
+  background: 'none',
+  textAlign: 'left',
+  cursor: 'pointer',
+};
 
 export function ReleaseList({
   releases,
@@ -28,14 +44,16 @@ export function ReleaseList({
   const rejected = releases.filter((r) => r.score == null);
 
   return (
-    <div className="flex flex-col gap-2">
+    <Box gap={8}>
       {errors.map((e) => (
         <Callout.Root key={e} tone="accent" title={e} />
       ))}
       {releases.length === 0 && errors.length === 0 ? (
-        <div className="rounded-lg border border-white/[0.07] bg-surface-1 px-3 py-4 text-center text-[12.5px] font-medium text-white/45">
-          {t('requests.noReleases')}
-        </div>
+        <Box px={12} py={16} radius="sm" bg="surface1" border="tint/7">
+          <Text variant="meta" color="textDim" textAlign="center">
+            {t('requests.noReleases')}
+          </Text>
+        </Box>
       ) : null}
       {accepted.map((r) => (
         <ReleaseRow
@@ -47,9 +65,9 @@ export function ReleaseList({
         />
       ))}
       {rejected.length > 0 ? (
-        <div className="mt-1 text-[10px] font-bold uppercase tracking-[.12em] text-white/35">
+        <Text variant="overline" color="textDim" mt={4}>
           {t('requests.rejectedReleases', { count: String(rejected.length) })}
-        </div>
+        </Text>
       ) : null}
       {rejected.slice(0, 30).map((r) => (
         <ReleaseRow
@@ -61,7 +79,7 @@ export function ReleaseList({
           override
         />
       ))}
-    </div>
+    </Box>
   );
 }
 
@@ -83,28 +101,32 @@ function ReleaseRow({
   const rejectedRow = r.score == null;
 
   return (
-    <div
-      className={`rounded-xl border px-3 py-2.5 ${rejectedRow ? 'border-white/5 bg-bg opacity-70' : 'border-white/[0.07] bg-surface-1'}`}
+    <Box
+      px={12}
+      py={10}
+      radius="lg"
+      bg={rejectedRow ? 'bg' : 'surface1'}
+      border={rejectedRow ? 'tint/5' : 'tint/7'}
+      opacity={rejectedRow ? 0.7 : 1}
     >
-      <div className="flex items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-        >
-          <IconChevronDown
+      <Row gap={10}>
+        <button type="button" onClick={() => setOpen((o) => !o)} style={DISCLOSURE}>
+          <Icon
+            name={open ? 'chevron-down' : 'chevron-right'}
             size={13}
             stroke={2.4}
-            className={`flex-[0_0_13px] text-white/40 transition-transform ${open ? '' : '-rotate-90'}`}
+            color="textDim"
           />
-          <span className="truncate text-[12.5px] font-semibold" title={r.title}>
+          <Text variant="meta" lines={1}>
             {r.title}
-          </span>
+          </Text>
         </button>
         {r.score != null ? (
-          <span className="flex-[0_0_auto] rounded-full bg-accent/[0.14] px-2 py-0.5 text-[11px] font-bold tabular-nums text-accent">
-            {r.score}
-          </span>
+          <Row shrink={0} radius="pill" bg="accentWash/14" px={8} py={2}>
+            <Text variant="meta" color="accentText" style={TABULAR}>
+              {r.score}
+            </Text>
+          </Row>
         ) : null}
         {canGrab && r.grabbable ? (
           <IconButton
@@ -116,12 +138,12 @@ function ReleaseRow({
             disabled={busy}
           />
         ) : null}
-      </div>
+      </Row>
 
       <ReleaseMeta r={r} />
 
       {open && r.breakdown.length > 0 ? <ScoreBreakdown breakdown={r.breakdown} /> : null}
-    </div>
+    </Box>
   );
 }
 
@@ -135,50 +157,69 @@ function targetLabel(r: ScoredReleaseView): string {
 function ReleaseMeta({ r }: Readonly<{ r: ScoredReleaseView }>) {
   const t = useT();
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 pl-[23px] text-[11px] font-semibold text-white/45">
-      <span className="inline-flex items-center gap-1">
-        {r.indexerName}
+    <Row wrap gapX={12} gapY={2} mt={4} pl={23}>
+      <Row gap={4}>
+        <Text variant="meta" color="textDim">
+          {r.indexerName}
+        </Text>
         {r.detailsUrl ? (
           <a
             href={r.detailsUrl}
             target="_blank"
             rel="noreferrer"
             title={t('downloads.viewOnTracker')}
-            className="text-white/40 hover:text-accent"
           >
-            <IconExternalLink size={11} stroke={2} />
+            <Icon name="external-link" size={11} stroke={2} color="textDim" />
           </a>
         ) : null}
-      </span>
-      {r.sizeBytes != null ? <span>{formatBytes(r.sizeBytes)}</span> : null}
-      {r.seeders != null ? (
-        <span className="text-success">{t('requests.seedersN', { n: String(r.seeders) })}</span>
+      </Row>
+      {r.sizeBytes != null ? (
+        <Text variant="meta" color="textDim">
+          {formatBytes(r.sizeBytes)}
+        </Text>
       ) : null}
-      {r.target !== 'movie' ? <span className="text-info">{targetLabel(r)}</span> : null}
-      {r.rejected ? <span className="text-danger-hover">{r.rejected}</span> : null}
-    </div>
+      {r.seeders != null ? (
+        <Text variant="meta" color="success">
+          {t('requests.seedersN', { n: String(r.seeders) })}
+        </Text>
+      ) : null}
+      {r.target !== 'movie' ? (
+        <Text variant="meta" color="info">
+          {targetLabel(r)}
+        </Text>
+      ) : null}
+      {r.rejected ? (
+        <Text variant="meta" color="dangerHover">
+          {r.rejected}
+        </Text>
+      ) : null}
+    </Row>
   );
 }
 
 function ScoreBreakdown({ breakdown }: Readonly<{ breakdown: ScoredReleaseView['breakdown'] }>) {
   return (
-    <div className="mt-2 flex flex-col gap-1 border-t border-white/5 pl-[23px] pt-2">
-      {breakdown.map((l) => (
-        <div
-          key={`${l.rule}-${l.note}`}
-          className="flex items-center justify-between gap-3 text-[11px]"
-        >
-          <span className="min-w-0 truncate font-medium text-white/55">
-            {l.rule} · {l.note}
-          </span>
-          <span
-            className="flex-[0_0_auto] font-bold tabular-nums"
-            style={{ color: color(l.delta >= 0 ? 'success' : 'dangerHover') }}
-          >
-            {l.delta >= 0 ? `+${l.delta}` : l.delta}
-          </span>
-        </div>
-      ))}
-    </div>
+    <>
+      <Box mt={8}>
+        <Divider color="tint/5" />
+      </Box>
+      <Box gap={4} pl={23} pt={8}>
+        {breakdown.map((l) => (
+          <Row key={`${l.rule}-${l.note}`} between gap={12}>
+            <Text variant="meta" color="textDim" lines={1} minW={0}>
+              {l.rule} · {l.note}
+            </Text>
+            <Text
+              variant="meta"
+              color={l.delta >= 0 ? 'success' : 'dangerHover'}
+              shrink={0}
+              style={TABULAR}
+            >
+              {l.delta >= 0 ? `+${l.delta}` : l.delta}
+            </Text>
+          </Row>
+        ))}
+      </Box>
+    </>
   );
 }

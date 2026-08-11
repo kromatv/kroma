@@ -1,16 +1,16 @@
 import { type ElementRow, type KromaClient, KromaEvents, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Callout, color, EmptyState, Legend } from '@kroma/ui/kit';
+import { Box, Button, Callout, color, Divider, EmptyState, Legend, Row, Text } from '@kroma/ui/kit';
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
 import { ElementRowView } from '#web/features/admin/pipeline-row';
 import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
+import { TABULAR, Table } from '#web/features/admin/table';
 import {
   Chip,
   ConsoleSearch,
   ConsoleSummary,
   ConsoleToast,
-  Head,
   useConsoleToast,
   useThrottledReload,
 } from '#web/features/admin/table-console';
@@ -190,7 +190,7 @@ export function PipelinePage() {
       <PageHeader.Root
         title={t('admin.pipelineTitle')}
         actions={
-          <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <Row wrap minW={0} gap={12}>
             {canManage ? (
               <Button
                 variant="glass"
@@ -206,7 +206,7 @@ export function PipelinePage() {
               onChange={setQ}
               placeholder={t('pipeline.searchPlaceholder')}
             />
-          </div>
+          </Row>
         }
       />
       <ConsoleSummary
@@ -217,12 +217,12 @@ export function PipelinePage() {
       />
 
       {paused ? (
-        <div className="mb-4">
+        <Box mb={16}>
           <Callout.Root tone="accent" icon="player-pause" title={t('pipeline.pausedBanner')} />
-        </div>
+        </Box>
       ) : null}
 
-      <div className="mb-4 flex flex-wrap items-center gap-2.5">
+      <Row wrap gap={10} mb={16}>
         <Chip
           label={t('pipeline.filter.attention')}
           count={attention}
@@ -270,7 +270,7 @@ export function PipelinePage() {
           tone="accent"
           onClick={() => pick(setStatus)('all')}
         />
-        <span className="mx-1 h-[22px] w-px bg-white/12" />
+        <Box mx={4} w={1} h={22} bg="tint/12" />
         <Chip
           label={t('pipeline.filter.allTypes')}
           count={total}
@@ -299,15 +299,15 @@ export function PipelinePage() {
           tone="blue"
           onClick={() => pick(setKind)('episode')}
         />
-      </div>
+      </Row>
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-surface-1 shadow-[0_10px_28px_rgba(0,0,0,.3)]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-surface-1 px-5 py-3 md:grid-cols-[minmax(0,1fr)_150px_132px_46px]">
-          <Head>{t('pipeline.colElement')}</Head>
-          <Head className="max-md:hidden">{t('pipeline.treatments')}</Head>
-          <Head className="max-md:hidden">{t('pipeline.colStatus')}</Head>
-          <span />
-        </div>
+      <Table.Root columns="minmax(0,1fr) 150px 132px 46px">
+        <Table.Header>
+          <Table.Column>{t('pipeline.colElement')}</Table.Column>
+          <Table.Column wide>{t('pipeline.treatments')}</Table.Column>
+          <Table.Column wide>{t('pipeline.colStatus')}</Table.Column>
+          <Table.Cell />
+        </Table.Header>
 
         {rows.map((el) => (
           <ElementRowView
@@ -319,48 +319,49 @@ export function PipelinePage() {
         ))}
 
         {data && rows.length === 0 ? (
-          <div className="py-6">
+          <Box py={24}>
             <EmptyState.Root icon="inbox" title={t('pipeline.noMatch')} />
-          </div>
+          </Box>
         ) : null}
 
         {rows.length > 0 ? (
-          <div className="flex items-center justify-between gap-4 border-t border-white/6 bg-bg px-5 py-3.5">
-            <div className="flex items-center gap-4">
-              <span className="text-[12.5px] font-semibold tabular-nums text-white/60">
-                {(start + 1).toLocaleString()}–
-                {Math.min(start + PER_PAGE, data?.total ?? 0).toLocaleString()} /{' '}
-                {(data?.total ?? 0).toLocaleString()}
-              </span>
-              <div className="hidden md:block">
+          <>
+            <Divider color="tint/6" />
+            <Row between wrap gap={16} px={20} py={14} bg="bg">
+              <Row wrap gap={16}>
+                <Text variant="meta" color="textDim" style={TABULAR}>
+                  {(start + 1).toLocaleString()}–
+                  {Math.min(start + PER_PAGE, data?.total ?? 0).toLocaleString()} /{' '}
+                  {(data?.total ?? 0).toLocaleString()}
+                </Text>
                 <Legend.Root>
                   <Legend.Item color="success" label={t('pipeline.st.done')} />
                   <Legend.Item color="accent" label={t('pipeline.st.running')} />
-                  <Legend.Item color="white/30" label={t('pipeline.st.pending')} />
+                  <Legend.Item color="tint/30" label={t('pipeline.st.pending')} />
                   <Legend.Item color="danger" label={t('pipeline.st.failed')} />
                 </Legend.Root>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <Pager
-                dir="prev"
-                disabled={page <= 0}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                label={t('pipeline.prev')}
-              />
-              <span className="text-[12.5px] font-semibold tabular-nums text-white/55">
-                {t('pipeline.page')} {page + 1} / {(data?.pages ?? 1).toLocaleString()}
-              </span>
-              <Pager
-                dir="next"
-                disabled={page >= (data?.pages ?? 1) - 1}
-                onClick={() => setPage((p) => p + 1)}
-                label={t('pipeline.next')}
-              />
-            </div>
-          </div>
+              </Row>
+              <Row gap={10}>
+                <Pager
+                  dir="prev"
+                  disabled={page <= 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  label={t('pipeline.prev')}
+                />
+                <Text variant="meta" color="textDim" style={TABULAR}>
+                  {t('pipeline.page')} {page + 1} / {(data?.pages ?? 1).toLocaleString()}
+                </Text>
+                <Pager
+                  dir="next"
+                  disabled={page >= (data?.pages ?? 1) - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                  label={t('pipeline.next')}
+                />
+              </Row>
+            </Row>
+          </>
         ) : null}
-      </div>
+      </Table.Root>
 
       <ConsoleToast toast={toast} />
     </>

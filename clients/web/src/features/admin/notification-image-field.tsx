@@ -3,9 +3,11 @@ import { useT } from '@kroma/ui';
 import {
   Box,
   Button,
+  color,
   Dialog,
   EmptyState,
   Field,
+  Grid,
   Icon,
   Img,
   InputGroup,
@@ -13,7 +15,23 @@ import {
   Spinner,
   Text,
 } from '@kroma/ui/kit';
-import { useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
+
+// A file input is a handle for the button beside it, never a control a reader
+// sees; a tile is a bare press target. Neither `display: none` nor a button
+// reset has a React Native spelling.
+const OFFSCREEN: CSSProperties = { display: 'none' };
+
+const TILE_BUTTON: CSSProperties = {
+  minWidth: 0,
+  margin: 0,
+  padding: 0,
+  border: 0,
+  background: 'none',
+  textAlign: 'left',
+  cursor: 'pointer',
+};
+
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { kromaClient } from '#web/shared/lib/api';
 
@@ -38,7 +56,7 @@ export function NotificationImageField({
             alt=""
             radius={4}
             style={THUMB}
-            background="rgba(255, 255, 255, 0.04)"
+            background={WASH}
             fallback={<Icon name="photo" size={18} color="textDim" />}
           />
         </InputGroup.Addon>
@@ -66,6 +84,8 @@ export function NotificationImageField({
 function imageName(value: string): string {
   return value.split('/').at(-1) || value;
 }
+
+const WASH = color('tint/4');
 
 const THUMB = { width: 20, height: 20 } as const;
 const TILE = { width: '100%', aspectRatio: 16 / 9 } as const;
@@ -104,7 +124,7 @@ function ImagePickerDialog({
           ref={fileRef}
           type="file"
           accept="image/*"
-          className="hidden"
+          style={OFFSCREEN}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) void upload(file);
@@ -166,24 +186,21 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
     );
   }
   return (
-    <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+    <Grid min={140} gap={12}>
       {images.map((img) => (
-        <button
-          key={img.name}
-          type="button"
-          onClick={() => onPick(img.url)}
-          className="min-w-0 rounded-lg text-left hover:opacity-85"
-        >
+        <button key={img.name} type="button" onClick={() => onPick(img.url)} style={TILE_BUTTON}>
           <Img
             src={kromaClient().resolveArt(img.url, 320)}
             alt={img.name}
             radius={8}
             style={TILE}
-            background="rgba(255, 255, 255, 0.04)"
+            background={WASH}
           />
-          <span className="mt-1.5 block truncate text-[11px] text-dim">{img.name}</span>
+          <Text variant="meta" color="textDim" lines={1} mt={6}>
+            {img.name}
+          </Text>
         </button>
       ))}
-    </div>
+    </Grid>
   );
 }

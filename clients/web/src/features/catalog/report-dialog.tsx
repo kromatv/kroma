@@ -9,7 +9,7 @@ import {
   type ReportSubjectKind,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Callout, Field, IconButton } from '@kroma/ui/kit';
+import { Box, Button, Callout, color, Field, Focusable, IconButton, sv, Text } from '@kroma/ui/kit';
 import {
   IconCheck,
   IconDotsCircleHorizontal,
@@ -20,17 +20,46 @@ import {
 } from '@tabler/icons-react';
 import { type ComponentType, useState } from 'react';
 import { createCallable } from 'react-call';
+import {
+  HEADER_RULE,
+  MODAL_BODY,
+  MODAL_LAYER,
+  modalPanel,
+} from '#web/features/catalog/modal-shell';
 import { useAuth } from '#web/shared/lib/auth';
 import { MODAL_SCRIM } from '#web/shared/ui';
 
 // Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
 
+const PANEL = modalPanel(512);
+
+const categoryRow = sv({
+  base: {
+    row: true,
+    align: 'flex-start',
+    gap: 12,
+    radius: 'xl',
+    px: 14,
+    py: 12,
+    border: 'white/8',
+    bg: 'surface1',
+    _hover: { bg: 'surface2' },
+  },
+  variants: {
+    on: {
+      true: { border: 'accent/45', bg: 'accent/12', _hover: { bg: 'accent/12' } },
+      false: {},
+    },
+  },
+  defaults: { on: false },
+});
+
 interface CategoryMeta {
   key: ReportCategory;
   labelKey: MessageKey;
   descKey: MessageKey;
-  Icon: ComponentType<{ size?: number; stroke?: number }>;
+  Icon: ComponentType<{ size?: number; stroke?: number; color?: string }>;
 }
 
 // `metadata` = a wrong fiche.
@@ -99,73 +128,81 @@ export const ReportDialog = createCallable<
         onClick={() => call.end()}
         className={MODAL_SCRIM}
       />
-      <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-        <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg shadow-[0_30px_90px_rgba(0,0,0,.6)]">
-          <header className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-7 py-5">
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+      <div style={MODAL_LAYER}>
+        <section style={PANEL}>
+          <Box row align="flex-start" between gap={16} px={28} py={20} style={HEADER_RULE}>
+            <Box minW={0}>
+              <Text variant="overline" color="white/40">
                 {t('report.title')}
-              </div>
-              <h2 className="mt-1 truncate font-display text-[20px] font-bold">{subjectTitle}</h2>
-            </div>
+              </Text>
+              <h2>
+                <Text variant="title" mt={4} lines={1}>
+                  {subjectTitle}
+                </Text>
+              </h2>
+            </Box>
             <IconButton
               control="sm"
               icon="x"
               label={t('common.close')}
               onPress={() => call.end()}
             />
-          </header>
+          </Box>
 
           {sent ? (
-            <div className="flex flex-col items-center gap-4 px-7 py-12 text-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
-                <IconCheck size={30} stroke={2.4} />
-              </span>
-              <p className="text-[15px] font-semibold text-white/85">{t('report.submitted')}</p>
+            <Box align="center" gap={16} px={28} py={48}>
+              <Box center w={56} h={56} radius="circle" bg="success/15">
+                <IconCheck size={30} stroke={2.4} color={color('success')} />
+              </Box>
+              <Text variant="label" color="white/85" textAlign="center">
+                {t('report.submitted')}
+              </Text>
               <Button size="sm" label={t('common.close')} onPress={() => call.end()} />
-            </div>
+            </Box>
           ) : (
-            <div className="flex-1 space-y-5 overflow-y-auto px-7 py-5">
-              <div>
-                <div className="mb-2.5 text-[10px] font-bold uppercase tracking-[.12em] text-white/40">
+            <div style={MODAL_BODY}>
+              <Box>
+                <Text variant="overline" color="white/40" mb={10}>
                   {t('report.category')}
-                </div>
-                <div className="grid gap-2">
+                </Text>
+                <Box gap={8}>
                   {CATEGORIES.map((c) => {
                     const on = c.key === category;
                     return (
-                      <button
+                      <Focusable
                         key={c.key}
-                        type="button"
-                        onClick={() => setCategory(c.key)}
-                        aria-pressed={on}
-                        className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors ${
-                          on
-                            ? 'border-accent/45 bg-accent/[0.12]'
-                            : 'border-white/8 bg-surface-1 hover:bg-surface-2'
-                        }`}
+                        sv={categoryRow}
+                        vars={{ on }}
+                        role="radio"
+                        checked={on}
+                        label={t(c.labelKey)}
+                        onPress={() => setCategory(c.key)}
                       >
-                        <span className={`mt-0.5 shrink-0 ${on ? 'text-accent' : 'text-white/45'}`}>
-                          <c.Icon size={19} stroke={1.9} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-[13.5px] font-semibold text-white">
+                        <Box mt={2} shrink={0}>
+                          <c.Icon
+                            size={19}
+                            stroke={1.9}
+                            color={color(on ? 'accent' : 'white/45')}
+                          />
+                        </Box>
+                        <Box minW={0}>
+                          <Text variant="label" color="white">
                             {t(c.labelKey)}
-                          </span>
-                          <span className="mt-0.5 block text-[12px] font-medium leading-snug text-white/45">
+                          </Text>
+                          <Text variant="meta" color="white/45" mt={2}>
                             {t(c.descKey)}
-                          </span>
-                        </span>
-                      </button>
+                          </Text>
+                        </Box>
+                      </Focusable>
                     );
                   })}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              <div>
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/40">
+              <Box>
+                <Text variant="overline" color="white/40" mb={8}>
                   {t('report.message')}
-                </div>
+                </Text>
                 <Field.Root label={t('report.message')} hideLabel>
                   <Field.Textarea
                     rows={3}
@@ -174,14 +211,14 @@ export const ReportDialog = createCallable<
                     placeholder={t('report.messagePlaceholder')}
                   />
                 </Field.Root>
-              </div>
+              </Box>
 
               {error ? <Callout.Root tone="danger" title={error} /> : null}
 
-              <div className="flex gap-2.5">
+              <Box row gap={10}>
                 <Button label={t('report.submit')} onPress={submit} loading={busy} style={FLEX_1} />
                 <Button variant="glass" label={t('common.cancel')} onPress={() => call.end()} />
-              </div>
+              </Box>
             </div>
           )}
         </section>

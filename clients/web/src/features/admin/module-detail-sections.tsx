@@ -6,7 +6,7 @@
 import type { StoreCatalog, StoreModule } from '@kroma/core';
 import { moduleIconUrl } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Progress } from '@kroma/ui/kit';
+import { Badge, Box, DataField, Grid, Progress, Row, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { ModuleConfigForm } from '#web/features/admin/module-config-form';
@@ -18,22 +18,19 @@ import { Image } from '#web/shared/ui';
 
 export function Label({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+    <Text variant="overline" color="textDim" mb={8}>
       {children}
-    </div>
+    </Text>
   );
 }
 
 export function Meta({ rows }: Readonly<{ rows: [string, ReactNode][] }>) {
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+    <Grid columns={2} gap={16} rowGap={12}>
       {rows.map(([k, v]) => (
-        <div key={k}>
-          <div className="text-[10px] font-bold uppercase tracking-[.12em] text-dim">{k}</div>
-          <div className="mt-0.5 break-words text-[13px] font-semibold text-text">{v}</div>
-        </div>
+        <DataField.Root key={k} size="sm" label={k} value={v} />
       ))}
-    </div>
+    </Grid>
   );
 }
 
@@ -46,9 +43,9 @@ function DepChips({ entry, all }: Readonly<{ entry: StoreModule; all: AdminModul
   ];
   if (deps.length === 0) return null;
   return (
-    <div>
+    <Box>
       <Label>{t('admin.modulesDependsOn')}</Label>
-      <div className="flex flex-wrap gap-1.5">
+      <Row wrap gap={6}>
         {deps.map((d) => (
           <DepChip
             key={d.id}
@@ -56,8 +53,8 @@ function DepChips({ entry, all }: Readonly<{ entry: StoreModule; all: AdminModul
             state={depState(byId.get(d.id), d.optional)}
           />
         ))}
-      </div>
-    </div>
+      </Row>
+    </Box>
   );
 }
 
@@ -66,34 +63,33 @@ function DepChips({ entry, all }: Readonly<{ entry: StoreModule; all: AdminModul
 function CapabilityChips({ entry }: Readonly<{ entry: StoreModule }>) {
   const t = useT();
   if (entry.provides.length === 0 && entry.requires.length === 0) return null;
-  const chip = 'rounded bg-white/5 px-2 py-0.5 text-[11px] text-muted';
   return (
-    <div className="flex flex-col gap-3">
+    <Box gap={12}>
       {entry.provides.length > 0 && (
-        <div>
+        <Box>
           <Label>{t('admin.modulesProvides')}</Label>
-          <div className="flex flex-wrap gap-1.5">
+          <Row wrap gap={6}>
             {entry.provides.map((c) => (
-              <span key={`${c.kind}:${c.id}`} className={chip}>
+              <Badge key={`${c.kind}:${c.id}`} tone="neutral">
                 {c.kind}:{c.id}
-              </span>
+              </Badge>
             ))}
-          </div>
-        </div>
+          </Row>
+        </Box>
       )}
       {entry.requires.length > 0 && (
-        <div>
+        <Box>
           <Label>{t('admin.modulesRequires')}</Label>
-          <div className="flex flex-wrap gap-1.5">
+          <Row wrap gap={6}>
             {entry.requires.map((r) => (
-              <span key={`${r.kind}:${r.id ?? ''}`} className={chip}>
+              <Badge key={`${r.kind}:${r.id ?? ''}`} tone="neutral">
                 {r.id ? `${r.kind}:${r.id}` : r.kind}
-              </span>
+              </Badge>
             ))}
-          </div>
-        </div>
+          </Row>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -130,22 +126,19 @@ export function Addons({
   );
   if (addons.length === 0) return null;
   return (
-    <div>
+    <Box>
       <Label>{t('admin.modulesAddons')}</Label>
-      <div className="flex flex-wrap gap-1.5">
+      <Row wrap gap={6}>
         {addons.map((m) => (
-          <span
-            key={m.id}
-            className={`rounded bg-white/5 px-2 py-0.5 text-[11px] ${m.installedVersion ? 'text-success' : 'text-muted'}`}
-          >
+          <Badge key={m.id} tone={m.installedVersion ? 'success' : 'neutral'}>
             {m.name}
             {m.installedVersion
               ? ` (${t('admin.modulesInstalled').toLowerCase()})`
               : ` · v${m.version}`}
-          </span>
+          </Badge>
         ))}
-      </div>
-    </div>
+      </Row>
+    </Box>
   );
 }
 
@@ -158,15 +151,15 @@ export function DrawerSettings({
   const fields = module.config ?? [];
   if (panels.length === 0 && fields.length === 0) return null;
   return (
-    <div>
+    <Box>
       <Label>{t('admin.modulesSettings')}</Label>
       {host &&
         panels.map((p) => {
           const Panel = p.component;
           return (
-            <div key={p.id} className="mb-3">
+            <Box key={p.id} mb={12}>
               <Panel host={host} />
-            </div>
+            </Box>
           );
         })}
       {fields.length > 0 && (
@@ -177,7 +170,7 @@ export function DrawerSettings({
           onSaved={onSaved}
         />
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -186,36 +179,35 @@ export function HeaderIcon({
   installed,
   icon,
 }: Readonly<{ id: string; installed: boolean; icon: string | null | undefined }>) {
-  if (installed) {
-    return (
-      <Image
-        src={moduleIconUrl(id, apiBase())}
-        fit="cover"
-        className="h-14 w-14 shrink-0 rounded-2xl"
-      />
-    );
-  }
-  if (icon) {
-    return <Image src={icon} fit="cover" className="h-14 w-14 shrink-0 rounded-2xl" />;
-  }
-  return <div className="h-14 w-14 shrink-0 rounded-2xl bg-white/5" />;
+  const src = installed ? moduleIconUrl(id, apiBase()) : icon;
+  return (
+    <Box w={56} h={56} shrink={0} radius="xl" overflow="hidden" bg={src ? undefined : 'tint/5'}>
+      {src ? <Image src={src} fit="cover" fill /> : null}
+    </Box>
+  );
 }
 
 export function FooterProgress({ op }: Readonly<{ op: OpModule }>) {
   const t = useT();
   const pct = opPct(op);
   return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold text-dim">
-        <span>{t(PHASE_KEY[op.phase])}</span>
-        {pct !== null && <span>{pct}%</span>}
-      </div>
+    <Box>
+      <Row between mb={6}>
+        <Text variant="meta" color="textDim">
+          {t(PHASE_KEY[op.phase])}
+        </Text>
+        {pct !== null && (
+          <Text variant="meta" color="textDim">
+            {pct}%
+          </Text>
+        )}
+      </Row>
       <Progress
         value={runningPct(op.phase, pct) / 100}
         size={5}
         color={op.phase === 'done' ? 'success' : 'accent'}
         rounded
       />
-    </div>
+    </Box>
   );
 }

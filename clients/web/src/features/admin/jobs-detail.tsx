@@ -5,11 +5,15 @@
 
 import type { JobLog, JobRun, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { color, ListRow } from '@kroma/ui/kit';
-import { useState } from 'react';
+import { Box, type ColorValue, Divider, ListRow, Row, Text } from '@kroma/ui/kit';
+import { type CSSProperties, useState } from 'react';
 import { clock, dur, rel } from '#web/features/admin/jobs-format';
 import { usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
+
+// A pane that scrolls: `overflow-y` and a capped height have no React Native
+// spelling, so the pane stays a real element.
+const PANE: CSSProperties = { maxHeight: 320, overflowY: 'auto' };
 
 export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: string }>) {
   const t = useT();
@@ -27,31 +31,46 @@ export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: string }>) {
   const logs = logsData?.logs ?? [];
 
   return (
-    <div className="grid gap-px border-t border-border bg-border md:grid-cols-[270px_1fr]">
-      <div className="max-h-80 overflow-y-auto bg-surface-1 p-2.5">
-        {runs.length === 0 ? (
-          <div className="px-2 py-6 text-center text-[12.5px] text-dim">{t('jobs.noRuns')}</div>
-        ) : (
-          <ListRow.Group size="sm">
-            {runs.map((r) => (
-              <RunRow
-                key={r.id}
-                run={r}
-                active={r.id === runId}
-                onClick={() => setSelected(r.id)}
-              />
-            ))}
-          </ListRow.Group>
-        )}
-      </div>
-      <div className="max-h-80 overflow-y-auto bg-bg p-3.5 font-mono text-[12px] leading-relaxed">
-        {logs.length === 0 ? (
-          <div className="text-[12.5px] text-dim">{t('jobs.noLogs')}</div>
-        ) : (
-          logs.map((l) => <LogLine key={`${l.ts}-${l.message}`} log={l} />)
-        )}
-      </div>
-    </div>
+    <>
+      <Divider />
+      <Box row={{ base: false, md: true }}>
+        <Box w={{ base: '100%', md: 270 }} shrink={0} bg="surface1">
+          <div style={PANE}>
+            <Box p={10}>
+              {runs.length === 0 ? (
+                <Text variant="meta" color="textDim" textAlign="center" px={8} py={24}>
+                  {t('jobs.noRuns')}
+                </Text>
+              ) : (
+                <ListRow.Group size="sm">
+                  {runs.map((r) => (
+                    <RunRow
+                      key={r.id}
+                      run={r}
+                      active={r.id === runId}
+                      onClick={() => setSelected(r.id)}
+                    />
+                  ))}
+                </ListRow.Group>
+              )}
+            </Box>
+          </div>
+        </Box>
+        <Box flex minW={0} bg="bg">
+          <div style={PANE}>
+            <Box p={14} gap={2}>
+              {logs.length === 0 ? (
+                <Text variant="meta" color="textDim">
+                  {t('jobs.noLogs')}
+                </Text>
+              ) : (
+                logs.map((l) => <LogLine key={`${l.ts}-${l.message}`} log={l} />)
+              )}
+            </Box>
+          </div>
+        </Box>
+      </Box>
+    </>
   );
 }
 
@@ -65,10 +84,7 @@ function RunRow({
   return (
     <ListRow.Root size="sm" selected={active} chevron={false} onPress={onClick} label={status}>
       <ListRow.Leading>
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: statusColor(run.status) }}
-        />
+        <Box w={8} h={8} shrink={0} radius="circle" bg={statusColor(run.status)} />
       </ListRow.Leading>
       <ListRow.Label>
         {status} · {t(`jobs.trigger.${run.trigger}` as MessageKey)}
@@ -81,27 +97,28 @@ function RunRow({
   );
 }
 
-function logColor(level: string): string {
-  if (level === 'error') return color('danger');
-  if (level === 'warn') return color('accent');
-  return color('glyph');
+function logColor(level: string): ColorValue {
+  if (level === 'error') return 'danger';
+  if (level === 'warn') return 'accent';
+  return 'glyph';
 }
 
 function LogLine({ log }: Readonly<{ log: JobLog }>) {
-  const color = logColor(log.level);
   return (
-    <div className="flex gap-2.5">
-      <span className="shrink-0 text-text/35">{clock(log.ts)}</span>
-      <span className="whitespace-pre-wrap wrap-break-word" style={{ color }}>
+    <Row align="flex-start" gap={10}>
+      <Text variant="meta" font="mono" color="textDim" shrink={0}>
+        {clock(log.ts)}
+      </Text>
+      <Text variant="meta" font="mono" color={logColor(log.level)} flex={1}>
         {log.message}
-      </span>
-    </div>
+      </Text>
+    </Row>
   );
 }
 
-function statusColor(status: string): string {
-  if (status === 'success') return color('success');
-  if (status === 'failed') return color('danger');
-  if (status === 'running') return color('accent');
-  return color('glyph');
+function statusColor(status: string): ColorValue {
+  if (status === 'success') return 'success';
+  if (status === 'failed') return 'danger';
+  if (status === 'running') return 'accent';
+  return 'glyph';
 }

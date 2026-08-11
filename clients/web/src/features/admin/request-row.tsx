@@ -3,21 +3,20 @@
 
 import type { MediaRequest, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar } from '@kroma/ui/kit';
-import { IconCheck, IconX } from '@tabler/icons-react';
+import { Avatar, Box, Row, Text } from '@kroma/ui/kit';
+import { Pill } from '#web/features/admin/pill';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
+import { TABULAR, Table } from '#web/features/admin/table';
 import { RequestStatusChip } from '#web/features/requests/request-status-chip';
 import { seasonsSummary } from '#web/features/requests/status';
 import { Image } from '#web/shared/ui';
 
 function Poster({ req }: Readonly<{ req: MediaRequest }>) {
   return (
-    <div
-      style={{ background: posterGrad(req.title) }}
-      className="relative h-[46px] w-8 flex-[0_0_32px] overflow-hidden rounded-sm shadow-[0_5px_14px_rgba(0,0,0,.45)]"
-    >
+    <Box w={32} h={46} shrink={0} radius={4} overflow="hidden" shadow="card">
+      <div style={{ position: 'absolute', inset: 0, background: posterGrad(req.title) }} />
       <Image src={req.posterUrl} fit="cover" fill />
-    </div>
+    </Box>
   );
 }
 
@@ -45,88 +44,54 @@ export function RequestRowView({
     .join(' · ');
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-white/4 px-5 py-3 text-left transition-colors hover:bg-white/[0.028] md:grid-cols-[minmax(0,1fr)_190px_110px_132px_76px]"
-    >
-      <div className="flex min-w-0 items-center gap-3.5">
+    <Table.Row onPress={onOpen}>
+      <Table.Cell row gap={14}>
         <Poster req={req} />
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <span className="truncate text-[14.5px] font-bold">{req.title}</span>
-            <span
-              className="flex-[0_0_auto] rounded-full px-[7px] py-0.5 text-[8px] font-bold uppercase tracking-[.08em]"
-              style={{ color: km.color, background: km.bg }}
-            >
+        <Box minW={0}>
+          <Row gap={10}>
+            <Text variant="label" lines={1}>
+              {req.title}
+            </Text>
+            <Pill ink={km.color} bg={km.bg} variant="overline">
               {t(`pipeline.type.${km.typeKey}` as MessageKey)}
-            </span>
-          </div>
-          <div className="mt-[3px] truncate text-[12px] font-medium text-white/50">{sub}</div>
-        </div>
-      </div>
+            </Pill>
+          </Row>
+          <Text variant="meta" color="textDim" lines={1} mt={3}>
+            {sub}
+          </Text>
+        </Box>
+      </Table.Cell>
 
-      <div className="flex min-w-0 items-center gap-2.5 max-md:hidden">
+      <Table.Cell wide row gap={10}>
         <Avatar name={req.requestedByName ?? '?'} size={26} circle shadow={false} />
-        <span className="truncate text-[13px] font-semibold text-white/75">
+        <Text variant="meta" color="textMuted" lines={1}>
           {req.requestedByName ?? t('requests.unknownUser')}
-        </span>
-      </div>
+        </Text>
+      </Table.Cell>
 
-      <span className="text-[12.5px] font-semibold tabular-nums text-white/55 max-md:hidden">
-        {new Date(req.createdAt).toLocaleDateString()}
-      </span>
+      <Table.Cell wide>
+        <Text variant="meta" color="textDim" style={TABULAR}>
+          {new Date(req.createdAt).toLocaleDateString()}
+        </Text>
+      </Table.Cell>
 
-      <div className="max-md:hidden">
+      <Table.Cell wide align="flex-start">
         <RequestStatusChip status={req.status} progress={req.progress} />
-      </div>
+      </Table.Cell>
 
-      <div className="flex justify-end gap-1.5">
+      <Table.Cell row gap={6} justify="flex-end">
         {canReview && req.status === 'pending' ? (
           <>
-            {/* biome-ignore lint/a11y/useSemanticElements: cannot be a native <button> because it lives inside the row's <button> */}
-            <span
-              role="button"
-              tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-                onApprove();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onApprove();
-                }
-              }}
-              title={t('requests.approve')}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-success/30 bg-success/10 text-success transition-colors hover:bg-success/20"
-            >
-              <IconCheck size={14} stroke={2.6} />
-            </span>
-            {/* biome-ignore lint/a11y/useSemanticElements: cannot be a native <button> because it lives inside the row's <button> */}
-            <span
-              role="button"
-              tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeny();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDeny();
-                }
-              }}
-              title={t('requests.deny')}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-danger/30 bg-danger/10 text-danger transition-colors hover:bg-danger/20"
-            >
-              <IconX size={14} stroke={2.6} />
-            </span>
+            <Table.Action
+              tone="success"
+              icon="check"
+              label={t('requests.approve')}
+              onPress={onApprove}
+            />
+            <Table.Action tone="danger" icon="x" label={t('requests.deny')} onPress={onDeny} />
           </>
         ) : null}
-      </div>
-    </button>
+      </Table.Cell>
+    </Table.Row>
   );
 }

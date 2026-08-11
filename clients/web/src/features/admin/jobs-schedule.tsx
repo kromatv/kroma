@@ -3,7 +3,7 @@
 
 import { type JobInfo, KromaApiError } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Chip, Dialog, Field, Text } from '@kroma/ui/kit';
+import { Box, Button, Chip, Dialog, Field, Row, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
@@ -51,7 +51,7 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
         />
       </Field.Root>
 
-      <div className="flex flex-wrap gap-2">
+      <Row wrap gap={8}>
         {PRESETS.map((p) => (
           <Chip key={p.expr} variant="surface" onPress={() => setValue(p.expr)}>
             <Text style={CRON} color="textMuted">
@@ -60,20 +60,26 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
           </Chip>
         ))}
         <Chip variant="surface" label={t('jobs.manual')} onPress={() => setValue('')} />
-      </div>
+      </Row>
 
-      <p className="text-[12px] leading-relaxed text-dim">{t('jobs.cronHint')}</p>
+      <Text variant="meta" color="textDim">
+        {t('jobs.cronHint')}
+      </Text>
       {job.defaultSchedule && job.defaultSchedule !== value ? (
-        <div className="flex">
+        <Box self="flex-start">
           <Button variant="ghost" size="sm" onPress={() => setValue(job.defaultSchedule ?? '')}>
-            <Text color="accent" style={RESET_LABEL}>
+            <Text color="accentText" style={RESET_LABEL}>
               {t('jobs.resetDefault')} ({job.defaultSchedule})
             </Text>
           </Button>
-        </div>
+        </Box>
       ) : null}
 
-      {error ? <div className="text-[12.5px] font-semibold text-danger">{error}</div> : null}
+      {error ? (
+        <Text variant="meta" color="danger">
+          {error}
+        </Text>
+      ) : null}
 
       <Dialog.Actions
         onCancel={() => call.end(false)}

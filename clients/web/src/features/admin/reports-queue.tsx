@@ -4,18 +4,19 @@
 
 import { KromaEvents, type Report, type ReportCategory, type ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, EmptyState } from '@kroma/ui/kit';
+import { Avatar, Box, EmptyState, Row, Text } from '@kroma/ui/kit';
 
 import { useEffect, useState } from 'react';
+import { Pill, PillDot } from '#web/features/admin/pill';
 import { ReportDrawer } from '#web/features/admin/report-drawer';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
 import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
+import { TABULAR, Table } from '#web/features/admin/table';
 import {
   Chip,
   ConsoleSearch,
   ConsoleSummary,
   ConsoleToast,
-  Head,
   useConsoleToast,
   useThrottledReload,
 } from '#web/features/admin/table-console';
@@ -33,49 +34,42 @@ function ReportRow({ report, onOpen }: Readonly<{ report: Report; onOpen: () => 
   const cat = categoryMeta(report.category);
   const st = statusMeta(report.status);
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-white/4 px-5 py-3 text-left transition-colors hover:bg-white/[0.028] md:grid-cols-[minmax(0,1fr)_128px_150px_96px_116px]"
-    >
-      <div className="min-w-0">
-        <div className="truncate text-[14.5px] font-bold">{report.subjectTitle}</div>
-        <div className="mt-[3px] truncate text-[12px] font-medium text-white/50">
+    <Table.Row onPress={onOpen}>
+      <Table.Cell>
+        <Text variant="label" lines={1}>
+          {report.subjectTitle}
+        </Text>
+        <Text variant="meta" color="textDim" lines={1} mt={3}>
           {t(kindLabelKey(report.subjectKind))}
           {report.message ? ` · ${report.message}` : ''}
-        </div>
-      </div>
+        </Text>
+      </Table.Cell>
 
-      <span className="max-md:hidden">
-        <span
-          className="rounded-full px-[9px] py-1 text-[10px] font-bold uppercase tracking-wide"
-          style={{ color: cat.color, background: soft(cat.color) }}
-        >
+      <Table.Cell wide>
+        <Pill ink={cat.color} bg={soft(cat.color)} variant="overline">
           {t(cat.labelKey)}
-        </span>
-      </span>
+        </Pill>
+      </Table.Cell>
 
-      <div className="flex min-w-0 items-center gap-2.5 max-md:hidden">
+      <Table.Cell wide row gap={10}>
         <Avatar name={report.reportedByName ?? '?'} size={26} circle shadow={false} />
-        <span className="truncate text-[13px] font-semibold text-white/75">
+        <Text variant="meta" color="textMuted" lines={1}>
           {report.reportedByName ?? t('reports.unknownUser')}
-        </span>
-      </div>
+        </Text>
+      </Table.Cell>
 
-      <span className="text-[12.5px] font-semibold tabular-nums text-white/55 max-md:hidden">
-        {new Date(report.createdAt).toLocaleDateString()}
-      </span>
+      <Table.Cell wide>
+        <Text variant="meta" color="textDim" style={TABULAR}>
+          {new Date(report.createdAt).toLocaleDateString()}
+        </Text>
+      </Table.Cell>
 
-      <span className="max-md:hidden">
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-[9px] py-1 text-[11px] font-bold"
-          style={{ color: st.color, background: soft(st.color) }}
-        >
-          <span className="h-[6px] w-[6px] rounded-full" style={{ background: st.color }} />
+      <Table.Cell wide>
+        <Pill ink={st.color} bg={soft(st.color)} leading={<PillDot tone={st.color} />}>
           {t(st.labelKey)}
-        </span>
-      </span>
-    </button>
+        </Pill>
+      </Table.Cell>
+    </Table.Row>
   );
 }
 
@@ -161,7 +155,7 @@ export function ReportsQueuePage() {
         accentLabel={t('reports.openLabel')}
       />
 
-      <div className="mb-3 flex flex-wrap items-center gap-2.5">
+      <Row wrap gap={10} mb={12}>
         <Chip
           label={t('reports.status.open')}
           count={c?.open}
@@ -189,9 +183,9 @@ export function ReportsQueuePage() {
           on={status === 'all'}
           onClick={() => setStatus('all')}
         />
-      </div>
+      </Row>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <Row wrap gap={8} mb={16}>
         <Chip
           label={t('reports.filterAll')}
           on={category === 'all'}
@@ -208,16 +202,16 @@ export function ReportsQueuePage() {
             onClick={() => setCategory(cat)}
           />
         ))}
-      </div>
+      </Row>
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-surface-1 shadow-[0_10px_28px_rgba(0,0,0,.3)]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-surface-1 px-5 py-3 md:grid-cols-[minmax(0,1fr)_128px_150px_96px_116px]">
-          <Head>{t('reports.colTitle')}</Head>
-          <Head className="max-md:hidden">{t('reports.colCategory')}</Head>
-          <Head className="max-md:hidden">{t('reports.colReporter')}</Head>
-          <Head className="max-md:hidden">{t('reports.colDate')}</Head>
-          <Head className="max-md:hidden">{t('reports.colStatus')}</Head>
-        </div>
+      <Table.Root columns="minmax(0,1fr) 128px 150px 96px 116px">
+        <Table.Header>
+          <Table.Column>{t('reports.colTitle')}</Table.Column>
+          <Table.Column wide>{t('reports.colCategory')}</Table.Column>
+          <Table.Column wide>{t('reports.colReporter')}</Table.Column>
+          <Table.Column wide>{t('reports.colDate')}</Table.Column>
+          <Table.Column wide>{t('reports.colStatus')}</Table.Column>
+        </Table.Header>
 
         {rows.map((r) => (
           <ReportRow key={r.id} report={r} onOpen={() => void openDrawer(r)} />
@@ -226,14 +220,14 @@ export function ReportsQueuePage() {
         {data === null ? <TableSkeleton rows={8} /> : null}
 
         {data && rows.length === 0 ? (
-          <div className="py-6">
+          <Box py={24}>
             <EmptyState.Root
               icon="flag"
               title={all.length === 0 ? t('reports.empty') : t('reports.noMatch')}
             />
-          </div>
+          </Box>
         ) : null}
-      </div>
+      </Table.Root>
 
       <ConsoleToast toast={toast} />
     </>

@@ -3,12 +3,20 @@
 // items arrive we render them in the same Poster/Rail as the home + similar rails.
 
 import { useAiSuggest, useT } from '@kroma/ui';
-import { ProgressRing } from '@kroma/ui/kit';
+import { Box, ProgressRing, Row, Text } from '@kroma/ui/kit';
+import type { CSSProperties } from 'react';
 import { SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
 import { PosterRail } from '#web/shared/ui';
 
-const HEADING = 'mb-1 px-(--gutter-web) font-display text-[22px] font-bold tracking-[-.02em]';
+// The page gutter is a fluid CSS custom property, which no style number can
+// carry, so anything indented by it stays a plain element.
+const GUTTER: CSSProperties = {
+  paddingLeft: 'var(--gutter-web)',
+  paddingRight: 'var(--gutter-web)',
+};
+
+const RAIL_SECTION: CSSProperties = { marginTop: 44 };
 
 export function AiSuggestRail({ id }: Readonly<{ id: string }>) {
   const t = useT();
@@ -17,14 +25,22 @@ export function AiSuggestRail({ id }: Readonly<{ id: string }>) {
 
   if (section && section.items.length > 0) {
     return (
-      <section className="mt-11">
-        <h2 className={HEADING}>{section.title}</h2>
+      <section style={RAIL_SECTION}>
+        <h2 style={GUTTER}>
+          <Text variant="h2" mb={4}>
+            {section.title}
+          </Text>
+        </h2>
         {section.reason ? (
-          <p className="mb-4 px-(--gutter-web) text-[14px] text-white/45">{section.reason}</p>
+          <div style={GUTTER}>
+            <Text variant="meta" color="white/45" mb={16}>
+              {section.reason}
+            </Text>
+          </div>
         ) : (
-          <div className="mb-3" />
+          <Box mb={12} />
         )}
-        <div className="px-(--gutter-web)">
+        <div style={GUTTER}>
           <PosterRail
             data={section.items}
             renderItem={(entry) => <SectionPoster entry={entry} />}
@@ -38,11 +54,19 @@ export function AiSuggestRail({ id }: Readonly<{ id: string }>) {
   // Terminal-empty or gave up → render nothing.
   if (pending) {
     return (
-      <section className="mt-11">
-        <h2 className={HEADING}>{t('content.aiSuggestions')}</h2>
-        <div className="mt-3 flex items-center gap-3 px-(--gutter-web)">
-          <ProgressRing value={progress} />
-          <span className="text-[14px] text-white/40">{t('content.aiSuggestionsLoading')}</span>
+      <section style={RAIL_SECTION}>
+        <h2 style={GUTTER}>
+          <Text variant="h2" mb={4}>
+            {t('content.aiSuggestions')}
+          </Text>
+        </h2>
+        <div style={GUTTER}>
+          <Row gap={12} mt={12}>
+            <ProgressRing value={progress} />
+            <Text variant="meta" color="white/40">
+              {t('content.aiSuggestionsLoading')}
+            </Text>
+          </Row>
         </div>
       </section>
     );

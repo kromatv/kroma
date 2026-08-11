@@ -5,7 +5,17 @@
 
 import type { ConfigField } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Button, Field, ListRow, NumberField, Select, Switch } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  Divider,
+  Field,
+  ListRow,
+  NumberField,
+  Row,
+  Select,
+  Switch,
+} from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
 
@@ -63,23 +73,28 @@ export function ModuleConfigForm({
   };
 
   return (
-    <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-      <ListRow.Group size="sm">
-        {fields.map((f) => (
-          <ConfigRow key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
-        ))}
-      </ListRow.Group>
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          active
-          size="sm"
-          label={t('common.save')}
-          onPress={() => void save()}
-          loading={saving}
-        />
-      </div>
-    </div>
+    <>
+      <Box mt={12}>
+        <Divider />
+      </Box>
+      <Box gap={8} pt={12}>
+        <ListRow.Group size="sm">
+          {fields.map((f) => (
+            <ConfigRow key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
+          ))}
+        </ListRow.Group>
+        <Row justify="flex-end">
+          <Button
+            variant="outline"
+            active
+            size="sm"
+            label={t('common.save')}
+            onPress={() => void save()}
+            loading={saving}
+          />
+        </Row>
+      </Box>
+    </>
   );
 }
 

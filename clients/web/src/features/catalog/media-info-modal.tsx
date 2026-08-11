@@ -5,13 +5,20 @@
 
 import type { MediaFile, MediaItem } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconButton } from '@kroma/ui/kit';
-import { IconLoader2 } from '@tabler/icons-react';
+import { Box, IconButton, Spinner, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { createCallable } from 'react-call';
 import { FileCard } from '#web/features/catalog/media-info-card';
+import {
+  HEADER_RULE,
+  MODAL_BODY,
+  MODAL_LAYER,
+  modalPanel,
+} from '#web/features/catalog/modal-shell';
 import { catalogQueries } from '#web/shared/lib/queries';
 import { MODAL_SCRIM } from '#web/shared/ui';
+
+const PANEL = modalPanel(768);
 
 // Open with `await MediaInfoModal.call({ id, title })`; read-only, so it resolves
 // (`void`) purely on dismiss. Its root is mounted once by `CatalogModalHosts`.
@@ -30,33 +37,37 @@ export const MediaInfoModal = createCallable<{ id: string; title: string }, void
           onClick={() => call.end()}
           className={MODAL_SCRIM}
         />
-        <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-          <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-bg shadow-[0_30px_90px_rgba(0,0,0,.6)]">
-            <header className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-7 py-5">
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+        <div style={MODAL_LAYER}>
+          <section style={PANEL}>
+            <Box row align="flex-start" between gap={16} px={28} py={20} style={HEADER_RULE}>
+              <Box minW={0}>
+                <Text variant="overline" color="white/40">
                   {t('mediaInfo.title')}
-                </div>
-                <h2 className="mt-1 truncate font-display text-[20px] font-bold">{title}</h2>
-              </div>
+                </Text>
+                <h2>
+                  <Text variant="title" mt={4} lines={1}>
+                    {title}
+                  </Text>
+                </h2>
+              </Box>
               <IconButton
                 control="sm"
                 icon="x"
                 label={t('common.close')}
                 onPress={() => call.end()}
               />
-            </header>
+            </Box>
 
-            <div className="flex-1 space-y-5 overflow-y-auto px-7 py-5">
+            <div style={MODAL_BODY}>
               {isPending ? (
-                <div className="flex justify-center py-16 text-white/40">
-                  <IconLoader2 size={26} stroke={2.2} className="animate-spin" />
-                </div>
+                <Box align="center" py={64}>
+                  <Spinner size={26} color="white/40" />
+                </Box>
               ) : null}
               {!isPending && files.length === 0 ? (
-                <p className="py-16 text-center text-[13px] text-white/40">
+                <Text variant="meta" color="white/40" textAlign="center" py={64}>
                   {t('mediaInfo.noFile')}
-                </p>
+                </Text>
               ) : null}
               {files.map((f, i) => (
                 <FileCard key={f.id} file={f} index={i} multi={files.length > 1} />

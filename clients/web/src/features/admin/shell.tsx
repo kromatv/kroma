@@ -11,7 +11,7 @@ import {
 } from '@kroma/core';
 import { AdminHostProvider, type ModuleNav } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { color, Drawer, Logo } from '@kroma/ui/kit';
+import { Box, color, Drawer, IconButton, Logo, Row, Text } from '@kroma/ui/kit';
 import {
   IconApps,
   IconArchive,
@@ -23,7 +23,6 @@ import {
   IconInbox,
   IconLayoutDashboard,
   IconLibrary,
-  IconMenu2,
   IconSettings,
   IconSitemap,
   IconSparkles,
@@ -31,19 +30,36 @@ import {
   IconTransform,
   IconUsers,
   IconWorld,
-  IconX,
   type TablerIcon,
 } from '@tabler/icons-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useRouterState } from '@tanstack/react-router';
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  type CSSProperties,
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import type { ViewStyle } from 'react-native';
 import { usePoll } from '#web/features/admin/hooks';
 import { AdminModalHosts } from '#web/features/admin/modal-hosts';
+import { PillDot } from '#web/features/admin/pill';
+import {
+  ADMIN_NAV_LINK,
+  ADMIN_SHELL,
+  ADMIN_SIDEBAR,
+  ADMIN_SIDEBAR_NAV,
+  ADMIN_TOPBAR,
+} from '#web/features/admin/web-style';
 import { useModuleNavAll } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { formatUptime } from '#web/shared/lib/adminFormat';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { PAGE_MAIN } from '#web/shared/ui';
 
 export { PageHeader } from '@kroma/ui/kit';
 // Data hooks + capability helpers and the page header live in sibling modules;
@@ -226,20 +242,23 @@ const NAV_GROUPS: { labelKey: MessageKey; section: string; items: NavItem[] }[] 
   },
 ];
 
-const linkCls =
-  'flex items-center gap-3 rounded-md px-3.5 py-2.5 text-[14px] font-semibold text-muted no-underline transition-colors hover:bg-white/4 hover:text-text aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent';
-
 function AdminBrand() {
   const t = useT();
   return (
-    <div className="flex items-center gap-2.5">
+    <Row gap={10}>
       <Logo size={19} />
-      <span className="rounded-sm bg-accent px-1.5 py-0.75 text-[8.5px] font-bold tracking-[.13em] text-accent-ink">
-        {t('admin.badge')}
-      </span>
-    </div>
+      <Box radius={4} bg="accent" px={6} py={3}>
+        <Text variant="overline" color="accentInk">
+          {t('admin.badge')}
+        </Text>
+      </Box>
+    </Row>
   );
 }
+
+// The server card at the head of the sidebar is a router <a>, so it carries its
+// own reset rather than the kit's.
+const SERVER_LINK: CSSProperties = { display: 'block', textDecoration: 'none' };
 
 function AdminSidebarBody() {
   const t = useT();
@@ -260,61 +279,64 @@ function AdminSidebarBody() {
   const orphanModules = moduleNav.filter((m) => !knownSections.has(m.section ?? 'library'));
   return (
     <>
-      <div className="shrink-0 px-3.5 pb-2">
-        <Link
-          to="/"
-          className="flex items-center justify-between rounded-md border border-border-strong bg-surface-2 px-3.5 py-2.5 no-underline"
-        >
-          <span className="inline-flex items-center gap-2.5 text-[14px] font-bold text-accent">
-            <Logo markOnly size={17} />
-            {serverInfo?.name ?? 'KROMA'}
-          </span>
-          <IconChevronRight size={17} stroke={1.8} color={color('success')} />
+      <Box shrink={0} px={14} pb={8}>
+        <Link to="/" style={SERVER_LINK}>
+          <Row between px={14} py={10} radius="md" bg="surface2" border="borderStrong">
+            <Row gap={10}>
+              <Logo markOnly size={17} />
+              <Text variant="label" color="accentText">
+                {serverInfo?.name ?? 'KROMA'}
+              </Text>
+            </Row>
+            <IconChevronRight size={17} stroke={1.8} color={color('success')} />
+          </Row>
         </Link>
-      </div>
+      </Box>
 
       {/* The only part of the sidebar that scrolls when sections overflow. */}
-      <nav className="min-h-0 flex-1 overflow-y-auto px-3.5 pb-3">
-        {groups.map((g) => (
-          <SidebarGroup key={g.labelKey} label={t(g.labelKey)}>
-            {g.items.map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                className={linkCls}
-                activeOptions={{ exact: n.exact ?? false }}
-              >
-                <n.icon size={18} stroke={1.7} />
-                {t(n.labelKey)}
-              </Link>
-            ))}
-            {g.modules.map((m) => (
-              <ModuleNavLink key={`${m.moduleId}:${m.to}`} item={m} />
-            ))}
-          </SidebarGroup>
-        ))}
-        {orphanModules.length > 0 && (
-          <SidebarGroup label={t('admin.groupModulePages')}>
-            {orphanModules.map((m) => (
-              <ModuleNavLink key={`${m.moduleId}:${m.to}`} item={m} />
-            ))}
-          </SidebarGroup>
-        )}
+      <nav className={ADMIN_SIDEBAR_NAV}>
+        <Box px={14} pb={12}>
+          {groups.map((g) => (
+            <SidebarGroup key={g.labelKey} label={t(g.labelKey)}>
+              {g.items.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  className={ADMIN_NAV_LINK}
+                  activeOptions={{ exact: n.exact ?? false }}
+                >
+                  <n.icon size={18} stroke={1.7} />
+                  {t(n.labelKey)}
+                </Link>
+              ))}
+              {g.modules.map((m) => (
+                <ModuleNavLink key={`${m.moduleId}:${m.to}`} item={m} />
+              ))}
+            </SidebarGroup>
+          ))}
+          {orphanModules.length > 0 && (
+            <SidebarGroup label={t('admin.groupModulePages')}>
+              {orphanModules.map((m) => (
+                <ModuleNavLink key={`${m.moduleId}:${m.to}`} item={m} />
+              ))}
+            </SidebarGroup>
+          )}
+        </Box>
       </nav>
 
-      <div className="shrink-0 px-3.5 pb-6 pt-2">
+      <Box shrink={0} px={14} pt={8} pb={24}>
         <ServerStatusCard />
-      </div>
+      </Box>
     </>
   );
 }
 
 function AdminSidebar() {
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-bg lg:flex">
-      <div className="mb-4 shrink-0 px-6 pt-6">
+    <aside className={ADMIN_SIDEBAR}>
+      <Box shrink={0} px={24} pt={24} mb={16}>
         <AdminBrand />
-      </div>
+      </Box>
       <AdminSidebarBody />
     </aside>
   );
@@ -327,17 +349,15 @@ function AdminMobileTopbar() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; pathname closes the drawer on navigation
   useEffect(() => setOpen(false), [pathname]);
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-bg/95 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
+    <header className={ADMIN_TOPBAR}>
       <AdminBrand />
-      <button
-        type="button"
-        aria-label={t('nav.menu')}
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
-        className="flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/4 hover:text-text"
-      >
-        <IconMenu2 size={22} />
-      </button>
+      <IconButton
+        variant="ghost"
+        icon="menu-2"
+        glyph={22}
+        label={t('nav.menu')}
+        onPress={() => setOpen(true)}
+      />
       <Drawer
         open={open}
         onClose={() => setOpen(false)}
@@ -347,17 +367,16 @@ function AdminMobileTopbar() {
         fullBelow={640}
         panelStyle={NAV_FILL}
       >
-        <div className="mb-4 flex shrink-0 items-center justify-between px-6 pr-4 pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <Box row between shrink={0} pl={24} pr={16} mb={16} style={DRAWER_HEAD}>
           <AdminBrand />
-          <button
-            type="button"
-            aria-label={t('common.close')}
-            onClick={() => setOpen(false)}
-            className="flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/4 hover:text-text"
-          >
-            <IconX size={20} />
-          </button>
-        </div>
+          <IconButton
+            variant="ghost"
+            icon="x"
+            glyph={20}
+            label={t('common.close')}
+            onPress={() => setOpen(false)}
+          />
+        </Box>
         <AdminSidebarBody />
       </Drawer>
     </header>
@@ -366,10 +385,13 @@ function AdminMobileTopbar() {
 
 const NAV_FILL = { backgroundColor: color('bg') } as const;
 
+// `env()` has no React Native spelling, so the drawer's top inset stays CSS.
+const DRAWER_HEAD = { paddingTop: 'max(24px, env(safe-area-inset-top))' } as unknown as ViewStyle;
+
 function ModuleNavLink({ item }: Readonly<{ item: ModuleNav }>) {
   const Icon = resolveModuleIcon(item.icon);
   return (
-    <Link to={item.to} className={linkCls}>
+    <Link to={item.to} className={ADMIN_NAV_LINK}>
       <Icon size={18} stroke={1.7} />
       {item.label}
     </Link>
@@ -379,9 +401,9 @@ function ModuleNavLink({ item }: Readonly<{ item: ModuleNav }>) {
 function SidebarGroup({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
     <>
-      <div className="px-3 pb-2 pt-4.5 text-[10px] font-bold uppercase tracking-[.16em] text-dim first:pt-1">
+      <Text variant="overline" color="textDim" px={12} pt={18} pb={8}>
         {label}
-      </div>
+      </Text>
       {children}
     </>
   );
@@ -391,29 +413,31 @@ function ServerStatusCard() {
   const t = useT();
   const { serverInfo } = useAdmin();
   return (
-    <div className="rounded-xl border border-border bg-surface-1 p-3.5">
-      <div className="mb-2 flex items-center gap-2.5">
-        <span className="h-2 w-2 animate-[kroma-breathe_2s_ease-in-out_infinite] rounded-full bg-success" />
-        <span className="text-[13px] font-bold text-success">{t('admin.online')}</span>
-      </div>
-      <div className="text-[12.5px] font-semibold text-text">
+    <Box p={14} radius="lg" bg="surface1" border="border">
+      <Row gap={10} mb={8}>
+        <PillDot tone="success" size={8} pulse />
+        <Text variant="meta" color="success">
+          {t('admin.online')}
+        </Text>
+      </Row>
+      <Text variant="meta">
         {serverInfo ? `${serverInfo.hostname} · v${serverInfo.version}` : '…'}
-      </div>
-      <div className="mt-0.75 text-[11px] font-medium text-dim">
+      </Text>
+      <Text variant="meta" color="textDim" mt={3}>
         {serverInfo ? t('admin.uptime', { uptime: formatUptime(serverInfo.uptimeSec) }) : ''}
-      </div>
-    </div>
+      </Text>
+    </Box>
   );
 }
 
 export function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <AdminProvider>
-      <div className="flex min-h-screen w-full flex-col bg-bg text-text lg:flex-row">
+      <div className={ADMIN_SHELL}>
         <AdminSidebar />
         <AdminMobileTopbar />
         {/* Same gutter + vertical rhythm as the catalogue pages (PAGE_MAIN) so every page aligns. */}
-        <main className="min-w-0 flex-1 px-(--gutter-web) pb-20 pt-9">{children}</main>
+        <main className={PAGE_MAIN}>{children}</main>
       </div>
       <AdminModalHosts />
     </AdminProvider>

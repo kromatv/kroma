@@ -1,6 +1,16 @@
 import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, confirm, Dialog, Field, SegmentedControl, Switch } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  confirm,
+  Dialog,
+  Field,
+  Row,
+  SegmentedControl,
+  Switch,
+  Text,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { FolderField } from '#web/features/admin/folder-picker';
@@ -43,7 +53,7 @@ function FolderListEditor({
 }: Readonly<{ folders: string[]; onChange: (folders: string[]) => void }>) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-2">
+    <Box gap={8}>
       {folders.map((path) => (
         <FolderField
           key={path}
@@ -60,7 +70,7 @@ function FolderListEditor({
           if (!folders.includes(path)) onChange([...folders, path]);
         }}
       />
-    </div>
+    </Box>
   );
 }
 
@@ -165,13 +175,15 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
         <Field.Root label={t('admin.scannedFolders')}>
           <FolderListEditor folders={folders} onChange={setFolders} />
         </Field.Root>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[14px] font-bold">{t('admin.autoScan')}</div>
-            <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.autoScanHint')}</div>
-          </div>
+        <Row between gap={16}>
+          <Box>
+            <Text variant="label">{t('admin.autoScan')}</Text>
+            <Text variant="meta" color="textDim" mt={2}>
+              {t('admin.autoScanHint')}
+            </Text>
+          </Box>
           <Switch checked={autoScan} onChange={setAutoScan} label={t('admin.autoScan')} />
-        </div>
+        </Row>
         <Dialog.Actions
           onCancel={() => call.end(false)}
           cancelLabel={t('common.cancel')}

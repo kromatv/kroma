@@ -5,7 +5,8 @@
 
 import type { HistoryBucket } from '@kroma/core';
 import type { ColorValue } from '@kroma/ui/kit';
-import { Legend } from '@kroma/ui/kit';
+import { Box, Legend, Row, Text } from '@kroma/ui/kit';
+import { withAlpha } from '@kroma/ui/tokens/colors';
 import {
   BarElement,
   CategoryScale,
@@ -41,11 +42,6 @@ ChartJS.defaults.font.family =
 const DEFAULT_SAMPLE_SEC = 3;
 
 const GRID = CHART_INK.grid;
-
-function withAlpha(hex: string, a: number): string {
-  const n = Number.parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
 
 function areaFill(color: string) {
   return (ctx: ScriptableContext<'line'>) => {
@@ -171,19 +167,23 @@ export function MetricsChart({
   };
 
   return (
-    <div>
-      <div className="h-52">
+    <Box>
+      <Box h={208}>
         <Line data={data} options={options} />
-      </div>
-      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4">
+      </Box>
+      <Row wrap between gap={16} mt={14}>
         <Legend.Root>
           {legend.map((l) => (
             <Legend.Item key={l.label} color={l.color} label={l.label} />
           ))}
         </Legend.Root>
-        {footer ? <span className="text-[12.5px] text-dim">{footer}</span> : null}
-      </div>
-    </div>
+        {footer ? (
+          <Text variant="meta" color="textDim">
+            {footer}
+          </Text>
+        ) : null}
+      </Row>
+    </Box>
   );
 }
 
@@ -256,19 +256,19 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
   };
 
   return (
-    <div>
-      <div className="h-64">
+    <Box>
+      <Box h={256}>
         <Bar data={data} options={options} />
-      </div>
-      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4">
+      </Box>
+      <Row wrap between gap={16} mt={14}>
         <Legend.Root>
           <Legend.Item color={CHART_SERIES.films} label="FILMS" />
           <Legend.Item color={CHART_SERIES.tv} label="TV" />
         </Legend.Root>
-        <span className="text-[12.5px] text-dim">
+        <Text variant="meta" color="textDim">
           Totaux : Films {formatHours(totalFilms)} · TV {formatHours(totalTv)}
-        </span>
-      </div>
-    </div>
+        </Text>
+      </Row>
+    </Box>
   );
 }

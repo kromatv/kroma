@@ -4,35 +4,37 @@
 
 import type { KNOWN_NOTIFICATION_EVENTS, NotificationEvent } from '@kroma/core';
 import { Box, type ColorToken, Icon, type IconName, Row, Text, useTheme } from '@kroma/ui/kit';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 const CARD_ROW = { display: 'flex', flex: 1, alignItems: 'flex-start' } as const;
 
 export function NotificationCard({
-  className = '',
+  style,
   event,
   src,
   unread,
   title,
-  titleTone = 'text-text',
+  titleTone = 'text',
   body,
-  bodyTone = 'text-muted',
+  bodyTone = 'textMuted',
   time,
 }: Readonly<{
   /** The shell the card sits in, padding included: a drawer row takes its
    *  <ListRow.Root>'s, the composer's preview draws its own. */
-  className?: string;
+  style?: CSSProperties;
   event: NotificationEvent;
   src: string | null;
   unread: boolean;
   title: ReactNode;
-  titleTone?: string;
+  /** Quietens the title for a row already read, or for a composer preview with
+   *  nothing typed into it yet. */
+  titleTone?: ColorToken;
   body: ReactNode;
-  bodyTone?: string;
+  bodyTone?: ColorToken;
   time: ReactNode;
 }>) {
   return (
-    <div className={className} style={CARD_ROW}>
+    <div style={style ? { ...CARD_ROW, ...style } : CARD_ROW}>
       {/* The gutter is reserved on every row, empty or not, so nothing shifts. */}
       <Row w={6} h={48} shrink={0} mr={8}>
         {unread ? <Box w={6} h={6} radius="circle" bg="accent" /> : null}
@@ -40,16 +42,16 @@ export function NotificationCard({
       <NotificationTile event={event} src={src} />
       <Box minW={0} flex={1}>
         <Box row align="flex-start" gap={8}>
-          <p
-            className={`min-w-0 flex-1 truncate text-[13.5px] font-semibold leading-5 ${titleTone}`}
-          >
+          <Text variant="label" color={titleTone} lines={1} minW={0} flex={1}>
             {title}
-          </p>
+          </Text>
           <Text variant="meta" color="textDim" shrink={0} pt={3}>
             {time}
           </Text>
         </Box>
-        <p className={`mt-0.5 line-clamp-2 text-[12.5px] leading-[1.45] ${bodyTone}`}>{body}</p>
+        <Text variant="meta" color={bodyTone} lines={2} mt={2}>
+          {body}
+        </Text>
       </Box>
     </div>
   );

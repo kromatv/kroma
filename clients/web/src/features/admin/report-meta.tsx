@@ -3,25 +3,25 @@
 // neither file imports the other).
 
 import type { MessageKey, ReportCategory, ReportStatus, ReportSubjectKind } from '@kroma/core';
-import { color } from '@kroma/ui/kit';
+import type { ColorToken, ColorValue } from '@kroma/ui/kit';
 
 export interface Meta {
   labelKey: MessageKey;
-  color: string;
+  color: ColorToken;
 }
 
 const CATEGORY: Record<ReportCategory, Meta> = {
-  metadata: { labelKey: 'report.category.metadata', color: color('info') },
-  video: { labelKey: 'report.category.video', color: color('accent') },
-  audio: { labelKey: 'report.category.audio', color: color('success') },
-  subtitles: { labelKey: 'report.category.subtitles', color: color('hdr') },
-  other: { labelKey: 'report.category.other', color: color('glyph') },
+  metadata: { labelKey: 'report.category.metadata', color: 'info' },
+  video: { labelKey: 'report.category.video', color: 'accent' },
+  audio: { labelKey: 'report.category.audio', color: 'success' },
+  subtitles: { labelKey: 'report.category.subtitles', color: 'hdr' },
+  other: { labelKey: 'report.category.other', color: 'glyph' },
 };
 
 const STATUS: Record<ReportStatus, Meta> = {
-  open: { labelKey: 'reports.status.open', color: color('accent') },
-  resolved: { labelKey: 'reports.status.resolved', color: color('success') },
-  dismissed: { labelKey: 'reports.status.dismissed', color: color('glyph') },
+  open: { labelKey: 'reports.status.open', color: 'accent' },
+  resolved: { labelKey: 'reports.status.resolved', color: 'success' },
+  dismissed: { labelKey: 'reports.status.dismissed', color: 'glyph' },
 };
 
 const KIND: Record<ReportSubjectKind, MessageKey> = {
@@ -43,6 +43,6 @@ export function kindLabelKey(k: ReportSubjectKind): MessageKey {
 }
 
 /** The wash a report chip sits on: its own colour at 13%. */
-export function soft(tone: string): string {
-  return `color-mix(in srgb, ${tone} 13%, transparent)`;
+export function soft(tone: ColorToken): ColorValue {
+  return `${tone}/13`;
 }

@@ -2,15 +2,19 @@ import { type AdminUser, resolveImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Avatar,
+  Box,
   Button,
-  color,
+  type ColorValue,
   EmptyState,
+  Grid,
   IconButton,
   Section,
   StatCard,
-  Surface,
+  Text,
 } from '@kroma/ui/kit';
+import { Pill, PillDot } from '#web/features/admin/pill';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
+import { Table } from '#web/features/admin/table';
 import { EditUserModal, InviteModal, PendingInvite } from '#web/features/admin/users-modals';
 import { relativeSeen } from '#web/shared/lib/adminFormat';
 import { apiBase } from '#web/shared/lib/api';
@@ -18,12 +22,11 @@ import { useAuth } from '#web/shared/lib/auth';
 
 // Roles arrive already localized from the server (Accept-Language synced), so we
 // match both locale spellings to keep the accent color right regardless of UI lang.
-function roleStyle(role: string): { c: string; bg: string } {
+function roleStyle(role: string): { ink: ColorValue; bg: ColorValue } {
   if (role === 'Propriétaire' || role === 'Owner')
-    return { c: color('accent'), bg: color('accentWash/16') };
-  if (role === 'Restreint' || role === 'Restricted')
-    return { c: color('info'), bg: color('info/14') };
-  return { c: color('success'), bg: color('success/14') };
+    return { ink: 'accentText', bg: 'accentWash/16' };
+  if (role === 'Restreint' || role === 'Restricted') return { ink: 'info', bg: 'info/14' };
+  return { ink: 'success', bg: 'success/14' };
 }
 
 export function UsersScreen() {
@@ -62,35 +65,37 @@ function UsersPageInner() {
         }
       />
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
-          label={t('admin.statUsers')}
-          value={users.length}
-          unit={t('admin.statAccounts')}
-        />
-        <StatCard
-          label={t('admin.statOnline')}
-          value={online}
-          unit={t('admin.statNow')}
-          color="success"
-        />
-        <StatCard
-          label={t('admin.statInvites')}
-          value={invites.length}
-          unit={t('admin.statPending')}
-          color="accent"
-        />
-      </div>
+      <Box mt={24}>
+        <Grid min={200} gap={16}>
+          <StatCard
+            label={t('admin.statUsers')}
+            value={users.length}
+            unit={t('admin.statAccounts')}
+          />
+          <StatCard
+            label={t('admin.statOnline')}
+            value={online}
+            unit={t('admin.statNow')}
+            color="success"
+          />
+          <StatCard
+            label={t('admin.statInvites')}
+            value={invites.length}
+            unit={t('admin.statPending')}
+            color="accent"
+          />
+        </Grid>
+      </Box>
 
       <Section.Root title={t('admin.membersSharing')} mt={28}>
-        <Surface elevated pad="none" overflow="hidden">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-border bg-surface-2 px-5.5 py-3.5 text-[10px] font-bold uppercase tracking-[.12em] text-text/40 md:grid-cols-[2.4fr_1fr_1.3fr_1.2fr_44px]">
-            <span>{t('admin.colUser')}</span>
-            <span className="max-md:hidden">{t('admin.colRole')}</span>
-            <span className="max-md:hidden">{t('admin.colAccess')}</span>
-            <span className="max-md:hidden">{t('admin.colLastActivity')}</span>
-            <span />
-          </div>
+        <Table.Root columns="2.4fr 1fr 1.3fr 1.2fr 44px">
+          <Table.Header>
+            <Table.Column>{t('admin.colUser')}</Table.Column>
+            <Table.Column wide>{t('admin.colRole')}</Table.Column>
+            <Table.Column wide>{t('admin.colAccess')}</Table.Column>
+            <Table.Column wide>{t('admin.colLastActivity')}</Table.Column>
+            <Table.Cell />
+          </Table.Header>
           {users.map((u) => {
             const rs = roleStyle(u.role);
             const access =
@@ -98,11 +103,8 @@ function UsersPageInner() {
                 ? t('admin.allLibraries')
                 : t('admin.libraryCount', { count: libraryCount });
             return (
-              <div
-                key={u.id}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-white/4 px-5.5 py-3.75 md:grid-cols-[2.4fr_1fr_1.3fr_1.2fr_44px]"
-              >
-                <div className="flex min-w-0 items-center gap-3.5">
+              <Table.Row key={u.id}>
+                <Table.Cell row gap={14}>
                   <Avatar
                     name={u.username}
                     src={resolveImageUrl(apiBase(), u.avatarUrl)}
@@ -110,36 +112,40 @@ function UsersPageInner() {
                     circle
                     shadow={false}
                   />
-                  <div className="min-w-0">
-                    <div className="truncate text-[14.5px] font-bold">{u.username}</div>
-                    <div className="truncate text-[12.5px] font-medium text-text/45">{u.email}</div>
-                  </div>
-                </div>
-                <div className="max-md:hidden">
-                  <span
-                    className="inline-flex rounded-full px-2.75 py-1.25 text-[11.5px] font-bold"
-                    style={{ color: rs.c, background: rs.bg }}
-                  >
+                  <Box minW={0}>
+                    <Text variant="label" lines={1}>
+                      {u.username}
+                    </Text>
+                    <Text variant="meta" color="textDim" lines={1}>
+                      {u.email}
+                    </Text>
+                  </Box>
+                </Table.Cell>
+                <Table.Cell wide>
+                  <Pill ink={rs.ink} bg={rs.bg}>
                     {u.role}
-                  </span>
-                </div>
-                <div className="text-[13px] font-semibold text-text/72 max-md:hidden">{access}</div>
-                <div className="inline-flex items-center gap-2 text-[13px] font-semibold text-text/60 max-md:hidden">
-                  <span
-                    className="h-1.75 w-1.75 rounded-full"
-                    style={{ background: color(u.online ? 'success' : 'text/30') }}
-                  />
-                  {u.online ? t('admin.online') : relativeSeen(u.lastSeen)}
-                </div>
-                <div className="flex justify-end">
+                  </Pill>
+                </Table.Cell>
+                <Table.Cell wide>
+                  <Text variant="meta" color="textMuted">
+                    {access}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell wide row gap={8}>
+                  <PillDot tone={u.online ? 'success' : 'text/30'} size={7} />
+                  <Text variant="meta" color="textDim">
+                    {u.online ? t('admin.online') : relativeSeen(u.lastSeen)}
+                  </Text>
+                </Table.Cell>
+                <Table.Cell row justify="flex-end">
                   <IconButton
                     variant="ghost"
                     icon="dots"
                     label={t('admin.editUserAction')}
                     onPress={() => void openEdit(u)}
                   />
-                </div>
-              </div>
+                </Table.Cell>
+              </Table.Row>
             );
           })}
           {data && users.length === 0 ? (
@@ -152,16 +158,16 @@ function UsersPageInner() {
               }
             />
           ) : null}
-        </Surface>
+        </Table.Root>
       </Section.Root>
 
       {invites.length > 0 ? (
         <Section.Root title={t('admin.pendingInvites')} mt={28}>
-          <div className="flex flex-col gap-3">
+          <Box gap={12}>
             {invites.map((inv) => (
               <PendingInvite key={inv.token} inv={inv} onChange={reloadInvites} />
             ))}
-          </div>
+          </Box>
         </Section.Root>
       ) : null}
     </>

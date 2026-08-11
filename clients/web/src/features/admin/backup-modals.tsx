@@ -28,7 +28,11 @@ function errMessage(e: unknown, fallback: string): string {
 }
 
 function ErrorLine({ text }: Readonly<{ text: string }>) {
-  return <p className="text-[13px] font-semibold text-danger">{text}</p>;
+  return (
+    <Text variant="meta" color="danger">
+      {text}
+    </Text>
+  );
 }
 
 function ChosenFile({ name }: Readonly<{ name: string }>) {
@@ -182,7 +186,9 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
           on={reset}
           onChange={setReset}
         />
-        <p className="text-[12.5px] leading-relaxed text-dim">{t('admin.backupImportDesc')}</p>
+        <Text variant="meta" color="textDim">
+          {t('admin.backupImportDesc')}
+        </Text>
         {error ? <ErrorLine text={error} /> : null}
         <Dialog.Actions
           onCancel={() => call.end(null)}

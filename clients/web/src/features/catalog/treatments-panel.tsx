@@ -6,7 +6,7 @@
 
 import { hasPermission, type MessageKey, type Treatment } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import { Box, Button, color, Spinner, Text } from '@kroma/ui/kit';
 import {
   IconAlertTriangleFilled,
   IconCircle,
@@ -15,7 +15,7 @@ import {
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { MediaInfoModal } from '#web/features/catalog/media-info-modal';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog';
 import { kromaClient } from '#web/shared/lib/api';
@@ -24,12 +24,21 @@ import { useAuth } from '#web/shared/lib/auth';
 type Kind = 'item' | 'show';
 
 const STATUS = {
-  done: { icon: IconCircleCheckFilled, cls: 'text-success' },
-  running: { icon: IconLoader2, cls: 'text-accent', spin: true },
-  pending: { icon: IconLoader2, cls: 'text-accent/70' },
-  failed: { icon: IconAlertTriangleFilled, cls: 'text-danger' },
-  missing: { icon: IconCircle, cls: 'text-white/25' },
-} satisfies Record<string, { icon: TablerIcon; cls: string; spin?: boolean }>;
+  done: { icon: IconCircleCheckFilled, ink: 'success' },
+  running: { icon: IconLoader2, ink: 'accent', spin: true },
+  pending: { icon: IconLoader2, ink: 'accent/70' },
+  failed: { icon: IconAlertTriangleFilled, ink: 'danger' },
+  missing: { icon: IconCircle, ink: 'white/25' },
+} satisfies Record<string, { icon: TablerIcon; ink: string; spin?: boolean }>;
+
+const PANEL_PAD = { base: 24, md: 64 } as const;
+
+// A <span> so the native tooltip survives: react-native-web drops a `title`.
+const TREATMENT: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+};
 
 export function TreatmentsPanel({
   kind,
@@ -85,11 +94,24 @@ export function TreatmentsPanel({
   };
 
   return (
-    <section className="mt-8 px-6 md:px-16">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 rounded-xl border border-white/8 bg-white/3 px-5 py-4">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-white/45">
+    <section>
+      <Box
+        row
+        wrap
+        align="center"
+        gapX={24}
+        gapY={10}
+        mt={32}
+        mx={PANEL_PAD}
+        px={20}
+        py={16}
+        radius="xl"
+        border="white/8"
+        bg="white/3"
+      >
+        <Text variant="overline" color="white/45">
           {t('pipeline.treatments')}
-        </span>
+        </Text>
         {(treatments ?? []).map((tr) => {
           const meta = STATUS[tr.status as keyof typeof STATUS] ?? STATUS.missing;
           const Icon = meta.icon;
@@ -97,15 +119,21 @@ export function TreatmentsPanel({
           return (
             <span
               key={tr.key}
-              className="inline-flex items-center gap-1.5 text-[13.5px]"
+              style={TREATMENT}
               title={t(`pipeline.st.${tr.status}` as MessageKey)}
             >
-              <Icon size={16} className={`${meta.cls} ${spin ? 'animate-spin' : ''}`} />
-              <span className="text-white/80">{t(`pipeline.t.${tr.key}` as MessageKey)}</span>
+              {spin ? (
+                <Spinner size={16} color={meta.ink} />
+              ) : (
+                <Icon size={16} color={color(meta.ink)} />
+              )}
+              <Text variant="meta" color="white/80">
+                {t(`pipeline.t.${tr.key}` as MessageKey)}
+              </Text>
             </span>
           );
         })}
-        <div className="ml-auto flex items-center gap-2">
+        <Box row align="center" gap={8} ml="auto">
           {admin && kind === 'item' ? (
             <Button
               variant="glass"
@@ -134,8 +162,8 @@ export function TreatmentsPanel({
               loading={busy}
             />
           ) : null}
-        </div>
-      </div>
+        </Box>
+      </Box>
     </section>
   );
 }

@@ -4,11 +4,13 @@
 
 import type { Report, ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, color, Drawer, IconButton } from '@kroma/ui/kit';
+import { Avatar, Box, Button, color, Divider, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
+import { Pill } from '#web/features/admin/pill';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
+import { SCROLL_PANE } from '#web/features/admin/web-style';
 
 // Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
@@ -18,32 +20,31 @@ function Header({ report, onClose }: Readonly<{ report: Report; onClose: () => v
   const cat = categoryMeta(report.category);
   const st = statusMeta(report.status);
   return (
-    <div className="border-b border-white/[0.07] px-6 py-5">
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-          {t('reports.sheet')}
-        </span>
-        <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
-      </div>
-      <div className="mb-2.5 flex flex-wrap items-center gap-2">
-        <span
-          className="rounded-full px-[9px] py-[3px] text-[9.5px] font-bold uppercase tracking-widest"
-          style={{ color: cat.color, background: soft(cat.color) }}
-        >
-          {t(cat.labelKey)}
-        </span>
-        <span
-          className="rounded-full px-[9px] py-[3px] text-[9.5px] font-bold uppercase tracking-widest"
-          style={{ color: st.color, background: soft(st.color) }}
-        >
-          {t(st.labelKey)}
-        </span>
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
-          {t(kindLabelKey(report.subjectKind))}
-        </span>
-      </div>
-      <h2 className="font-display text-[21px] font-bold leading-[1.15]">{report.subjectTitle}</h2>
-    </div>
+    <>
+      <Box px={24} py={20}>
+        <Row between mb={16}>
+          <Text variant="overline" color="textDim">
+            {t('reports.sheet')}
+          </Text>
+          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
+        </Row>
+        <Row wrap gap={8} mb={10}>
+          <Pill ink={cat.color} bg={soft(cat.color)} variant="overline">
+            {t(cat.labelKey)}
+          </Pill>
+          <Pill ink={st.color} bg={soft(st.color)} variant="overline">
+            {t(st.labelKey)}
+          </Pill>
+          <Text variant="overline" color="textDim">
+            {t(kindLabelKey(report.subjectKind))}
+          </Text>
+        </Row>
+        <Text variant="h2" accessibilityRole="header">
+          {report.subjectTitle}
+        </Text>
+      </Box>
+      <Divider color="tint/7" />
+    </>
   );
 }
 
@@ -100,85 +101,94 @@ export const ReportDrawer = createCallable<
     >
       <Header report={report} onClose={close} />
 
-      <div className="flex-1 overflow-y-auto px-6 py-5">
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-          {t('reports.reportedBy')}
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-surface-1 px-4 py-3.5">
-          <Avatar name={report.reportedByName ?? '?'} size={34} circle shadow={false} />
-          <div className="min-w-0">
-            <div className="truncate text-[14px] font-bold">
-              {report.reportedByName ?? t('reports.unknownUser')}
-            </div>
-            <div className="text-[12px] font-medium text-white/45">
-              {new Date(report.createdAt).toLocaleDateString()}{' '}
-              {new Date(report.createdAt).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </div>
-          </div>
-        </div>
+      <div style={SCROLL_PANE}>
+        <Box px={24} py={20}>
+          <Text variant="overline" color="textDim" mb={12}>
+            {t('reports.reportedBy')}
+          </Text>
+          <Row gap={12} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
+            <Avatar name={report.reportedByName ?? '?'} size={34} circle shadow={false} />
+            <Box minW={0}>
+              <Text variant="label" lines={1}>
+                {report.reportedByName ?? t('reports.unknownUser')}
+              </Text>
+              <Text variant="meta" color="textDim">
+                {new Date(report.createdAt).toLocaleDateString()}{' '}
+                {new Date(report.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </Box>
+          </Row>
 
-        {report.message ? (
-          <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/[0.07] bg-surface-1 px-4 py-3.5 text-[13.5px] leading-[1.5] text-white/80">
-            {report.message}
-          </div>
-        ) : (
-          <p className="mt-4 text-[13px] italic text-white/35">{t('reports.noMessage')}</p>
-        )}
+          {report.message ? (
+            <Box mt={16} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
+              <Text variant="meta" color="textMuted">
+                {report.message}
+              </Text>
+            </Box>
+          ) : (
+            <Text variant="meta" color="textDim" mt={16}>
+              {t('reports.noMessage')}
+            </Text>
+          )}
 
-        {ficheTo ? (
-          <div className="mt-4 flex">
-            <Button
-              variant="glass"
-              size="sm"
-              icon="external-link"
-              label={t('reports.viewTitle')}
-              onPress={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
-            />
-          </div>
-        ) : null}
+          {ficheTo ? (
+            <Row mt={16} self="flex-start">
+              <Button
+                variant="glass"
+                size="sm"
+                icon="external-link"
+                label={t('reports.viewTitle')}
+                onPress={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
+              />
+            </Row>
+          ) : null}
+        </Box>
       </div>
 
       {canManage ? (
-        <div className="flex gap-2.5 border-t border-white/[0.07] px-6 py-4.5">
-          {report.status === 'open' ? (
-            <>
-              <Button
-                icon="check"
-                label={t('reports.actionResolve')}
-                onPress={() => run(onResolve, 'resolved')}
-                loading={busy}
-                style={FLEX_1}
-              />
+        <>
+          <Divider color="tint/7" />
+          <Row gap={10} px={24} py={18}>
+            {report.status === 'open' ? (
+              <>
+                <Button
+                  icon="check"
+                  label={t('reports.actionResolve')}
+                  onPress={() => run(onResolve, 'resolved')}
+                  loading={busy}
+                  style={FLEX_1}
+                />
+                <Button
+                  variant="glass"
+                  icon="x"
+                  label={t('reports.actionDismiss')}
+                  onPress={() => run(onDismiss, 'dismissed')}
+                  disabled={busy}
+                  style={FLEX_1}
+                />
+              </>
+            ) : (
               <Button
                 variant="glass"
-                icon="x"
-                label={t('reports.actionDismiss')}
-                onPress={() => run(onDismiss, 'dismissed')}
+                icon="arrow-back-up"
+                label={t('reports.actionReopen')}
+                onPress={() => run(onReopen, 'open')}
                 disabled={busy}
                 style={FLEX_1}
               />
-            </>
-          ) : (
-            <Button
-              variant="glass"
-              icon="arrow-back-up"
-              label={t('reports.actionReopen')}
-              onPress={() => run(onReopen, 'open')}
+            )}
+            <IconButton
+              control="md"
+              icon="trash"
+              label={t('reports.actionDelete')}
+              onPress={del}
               disabled={busy}
-              style={FLEX_1}
             />
-          )}
-          <IconButton
-            control="md"
-            icon="trash"
-            label={t('reports.actionDelete')}
-            onPress={del}
-            disabled={busy}
-          />
-        </div>
+          </Row>
+        </>
       ) : null}
     </Drawer>
   );

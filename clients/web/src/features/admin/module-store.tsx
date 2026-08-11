@@ -6,11 +6,54 @@
 
 import { formatBytes, type StoreCatalog, type StoreModule } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, CardSkeleton, EmptyState, Progress, Surface } from '@kroma/ui/kit';
-import { IconCircleCheckFilled } from '@tabler/icons-react';
+import {
+  Badge,
+  Box,
+  Button,
+  CardSkeleton,
+  EmptyState,
+  Grid,
+  Icon,
+  Progress,
+  Row,
+  Surface,
+  Text,
+} from '@kroma/ui/kit';
+import { type CSSProperties, useState } from 'react';
 import { matchesQuery } from '#web/features/admin/module-api';
 import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
 import { Image } from '#web/shared/ui';
+
+// A title that is also the way into the drawer: a bare control, so it states
+// the shape a page reset would otherwise have given it.
+const TITLE_BUTTON: CSSProperties = {
+  minWidth: 0,
+  margin: 0,
+  padding: 0,
+  border: 0,
+  background: 'none',
+  textAlign: 'left',
+  cursor: 'pointer',
+};
+
+const ICON_BUTTON: CSSProperties = { ...TITLE_BUTTON, flexShrink: 0 };
+
+function TitleButton({ label, onPress }: Readonly<{ label: string; onPress: () => void }>) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={TITLE_BUTTON}
+    >
+      <Text variant="label" color={hover ? 'accentText' : 'text'} lines={1}>
+        {label}
+      </Text>
+    </button>
+  );
+}
 
 /** Compact live progress: the phase label above a thin bar. */
 export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
@@ -18,13 +61,19 @@ export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
   const pct = opPct(op);
   const label = t(PHASE_KEY[op.phase]);
   return (
-    <div className="w-28 shrink-0">
-      <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-dim">
-        <span>{label}</span>
-        {pct !== null && op.phase === 'download' && <span>{pct}%</span>}
-      </div>
+    <Box w={112} shrink={0}>
+      <Row between mb={4}>
+        <Text variant="overline" color="textDim">
+          {label}
+        </Text>
+        {pct !== null && op.phase === 'download' && (
+          <Text variant="overline" color="textDim">
+            {pct}%
+          </Text>
+        )}
+      </Row>
       <Progress value={runningPct(op.phase, pct) / 100} size={4} rounded />
-    </div>
+    </Box>
   );
 }
 
@@ -42,11 +91,7 @@ function CardAction({
   const t = useT();
   if (op) return <OpProgress op={op} />;
   if (!m.compatible) {
-    return (
-      <span className="shrink-0 rounded bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-dim">
-        {t('admin.modulesIncompatible')}
-      </span>
-    );
+    return <Badge tone="neutral">{t('admin.modulesIncompatible')}</Badge>;
   }
   if (m.installedVersion && m.updateAvailable) {
     return (
@@ -55,10 +100,12 @@ function CardAction({
   }
   if (m.installedVersion) {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-success">
-        <IconCircleCheckFilled size={15} />
-        {t('admin.modulesInstalled')}
-      </span>
+      <Row shrink={0} gap={4}>
+        <Icon name="circle-check-filled" size={15} color="success" />
+        <Text variant="meta" color="success">
+          {t('admin.modulesInstalled')}
+        </Text>
+      </Row>
     );
   }
   return <Button variant="glass" size="sm" label={t('admin.modulesInstall')} onPress={onInstall} />;
@@ -89,43 +136,50 @@ function StoreCard({
       align="flex-start"
       opacity={m.compatible ? 1 : 0.7}
     >
-      <button type="button" onClick={onOpen} aria-label={m.name} className="shrink-0">
-        {m.icon ? (
-          <Image src={m.icon} fit="cover" className="mt-0.5 h-10 w-10 rounded-xl" />
-        ) : (
-          <div className="mt-0.5 h-10 w-10 rounded-xl bg-white/5" />
-        )}
+      <button type="button" onClick={onOpen} aria-label={m.name} style={ICON_BUTTON}>
+        <Box w={40} h={40} mt={2} radius="lg" overflow="hidden" bg={m.icon ? undefined : 'tint/5'}>
+          {m.icon ? <Image src={m.icon} fit="cover" fill /> : null}
+        </Box>
       </button>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onOpen}
-            className="truncate text-left font-semibold text-text transition-colors hover:text-accent"
-          >
-            {m.name}
-          </button>
+      <Box flex minW={0}>
+        <Row between gap={12}>
+          <TitleButton label={m.name} onPress={onOpen} />
           <CardAction m={m} op={op} onInstall={onInstall} onUpdate={onUpdate} />
-        </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-dim">
-          <span>v{m.version}</span>
-          {m.size ? <span>· {formatBytes(m.size)}</span> : null}
-          <span>·</span>
-          <span className={m.source === 'Official' ? 'font-semibold text-accent' : ''}>
-            {m.source === 'Official' ? t('admin.modulesOfficial') : m.source}
-          </span>
-          {m.library && <span>· {t('admin.modulesLibraryChip')}</span>}
-          {m.installedVersion && m.updateAvailable && (
-            <span className="font-semibold text-accent">
-              · {t('admin.modulesUpdateChip', { version: m.version })}
-            </span>
+        </Row>
+        <Row wrap gap={6} mt={2}>
+          <Text variant="meta" color="textDim">
+            v{m.version}
+          </Text>
+          {m.size ? (
+            <Text variant="meta" color="textDim">
+              · {formatBytes(m.size)}
+            </Text>
+          ) : null}
+          <Text variant="meta" color={m.source === 'Official' ? 'accentText' : 'textDim'}>
+            · {m.source === 'Official' ? t('admin.modulesOfficial') : m.source}
+          </Text>
+          {m.library && (
+            <Text variant="meta" color="textDim">
+              · {t('admin.modulesLibraryChip')}
+            </Text>
           )}
-        </div>
-        {m.description && <p className="mt-1 line-clamp-2 text-xs text-muted">{m.description}</p>}
-        {!m.compatible && m.reason && (
-          <p className="mt-1 text-[11px] font-semibold text-danger">{m.reason}</p>
+          {m.installedVersion && m.updateAvailable && (
+            <Text variant="meta" color="accentText">
+              · {t('admin.modulesUpdateChip', { version: m.version })}
+            </Text>
+          )}
+        </Row>
+        {m.description && (
+          <Text variant="meta" color="textMuted" lines={2} mt={4}>
+            {m.description}
+          </Text>
         )}
-      </div>
+        {!m.compatible && m.reason && (
+          <Text variant="meta" color="danger" mt={4}>
+            {m.reason}
+          </Text>
+        )}
+      </Box>
     </Surface>
   );
 }
@@ -151,12 +205,12 @@ export function StoreGrid({
   const t = useT();
   if (!catalog) {
     return (
-      <div className="grid gap-3 md:grid-cols-2">
+      <Grid min={320} gap={12}>
         <CardSkeleton />
         <CardSkeleton />
         <CardSkeleton />
         <CardSkeleton />
-      </div>
+      </Grid>
     );
   }
   // Only a total blackout is an error here: with several registries configured,
@@ -164,10 +218,16 @@ export function StoreGrid({
   // reported on its row in the Registries drawer.
   if (catalog.modules.length === 0 && catalog.error) {
     return (
-      <Surface elevated pad="none" radius={16} p={20} gap={8}>
-        <p className="text-sm font-semibold text-danger">{t('admin.modulesCatalogError')}</p>
-        <p className="break-all text-xs text-muted">{catalog.error}</p>
-        <p className="text-xs text-muted">{t('admin.modulesCatalogErrorHint')}</p>
+      <Surface elevated pad="none" radius="xl" p={20} gap={8}>
+        <Text variant="label" color="danger">
+          {t('admin.modulesCatalogError')}
+        </Text>
+        <Text variant="meta" color="textMuted">
+          {catalog.error}
+        </Text>
+        <Text variant="meta" color="textMuted">
+          {t('admin.modulesCatalogErrorHint')}
+        </Text>
       </Surface>
     );
   }
@@ -183,7 +243,7 @@ export function StoreGrid({
     );
   }
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <Grid min={320} gap={12}>
       {shown.map((m) => (
         <StoreCard
           key={m.id}
@@ -194,6 +254,6 @@ export function StoreGrid({
           onUpdate={() => onUpdate(m.id)}
         />
       ))}
-    </div>
+    </Grid>
   );
 }

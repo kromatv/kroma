@@ -3,150 +3,33 @@
 // request card for a missing or partial season, so a partially-owned show
 // plays what it has and requests the gaps on one screen.
 
-import { type CastMember, formatRuntime, type MediaItem, posterColors } from '@kroma/core';
+import type { CastMember, MediaItem } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Chip, IconButton } from '@kroma/ui/kit';
-import { IconCheck, IconPlayerPlayFilled, IconPlus } from '@tabler/icons-react';
-import { type ReactNode, useState } from 'react';
+import { Box, Button, Chip, Text } from '@kroma/ui/kit';
+import { type CSSProperties, useState } from 'react';
 import { CastRail } from '#web/features/catalog/detail';
-import { ReportDialog } from '#web/features/catalog/report-dialog';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
-import { kromaClient } from '#web/shared/lib/api';
+import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row';
+import { SeasonRequestCard } from '#web/features/catalog/season-card';
 import type { TitleSeason } from '#web/shared/lib/titleView';
-import { Image } from '#web/shared/ui';
 
-function EpisodeRow({
-  episode,
-  watched,
-  progress,
-  onPlay,
-  onToggleWatched,
-}: Readonly<{
-  episode: MediaItem;
-  progress: number | null;
-  watched: boolean;
-  onPlay: () => void;
-  onToggleWatched: () => void;
-}>) {
-  const t = useT();
-  const [g1, g2] = posterColors(episode.id);
-  const runtime = formatRuntime(episode.durationMs);
-  const synopsis = episode.metadata?.overview;
-  const still = kromaClient().backdropFor(episode);
-  const num =
-    episode.season != null && episode.episode != null
-      ? `S${String(episode.season).padStart(2, '0')}E${String(episode.episode).padStart(2, '0')} · `
-      : '';
-  const reportLabel = `${num}${episode.episodeTitle ?? episode.title}`;
-  return (
-    <div
-      className={`group flex items-center gap-3 rounded-lg border bg-white/2.5 p-3.5 transition-colors hover:bg-white/6 sm:gap-5 ${
-        watched ? 'border-accent/30' : 'border-white/5'
-      }`}
-    >
-      <button
-        type="button"
-        onClick={onPlay}
-        className="flex min-w-0 flex-1 items-center gap-3 text-left focus:outline-none sm:gap-5"
-      >
-        <div
-          className="relative flex aspect-video w-32 shrink-0 items-center justify-center overflow-hidden rounded-md sm:w-50"
-          style={{ background: `linear-gradient(135deg, ${g1}, ${g2})` }}
-        >
-          <Image src={still} fit="cover" fill className={watched ? 'opacity-60' : ''} />
-          <div className="absolute inset-0 bg-[linear-gradient(170deg,rgba(0,0,0,.05),rgba(0,0,0,.45))]" />
-          {watched ? (
-            <div className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-black shadow-card">
-              <IconCheck size={14} stroke={3} />
-            </div>
-          ) : null}
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-bg/50 backdrop-blur-xs transition-transform group-hover:scale-110">
-            <IconPlayerPlayFilled size={18} color="#fff" />
-          </div>
-          {progress != null && !watched ? (
-            <div className="absolute inset-x-0 bottom-0 h-1 bg-white/25">
-              <div className="h-full bg-accent" style={{ width: `${progress}%` }} />
-            </div>
-          ) : null}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="mb-1.5 flex items-center gap-2.5">
-            <span
-              className={`min-w-0 truncate text-[17px] font-bold ${watched ? 'text-white/55' : ''}`}
-            >
-              {episode.episode}. {episode.episodeTitle ?? episode.title}
-            </span>
-            {runtime ? (
-              <span className="shrink-0 text-[13px] font-medium text-white/45 max-sm:text-[14px]">
-                {runtime}
-              </span>
-            ) : null}
-          </div>
-          {synopsis ? (
-            <p className="line-clamp-2 text-[14px] leading-normal text-white/60 max-sm:text-[15px]">
-              {synopsis}
-            </p>
-          ) : null}
-        </div>
-      </button>
-      <IconButton
-        icon="flag"
-        label={t('report.action')}
-        onPress={() =>
-          void ReportDialog.call({
-            subjectKind: 'episode',
-            subjectId: episode.id,
-            subjectTitle: reportLabel,
-          })
-        }
-      />
-      <IconButton
-        icon="check"
-        active={watched}
-        label={watched ? t('content.markUnwatched') : t('content.markWatched')}
-        onPress={onToggleWatched}
-      />
-    </div>
-  );
-}
+// The page gutter is a fluid CSS custom property and `overflow-x` names one
+// axis, so both stay plain elements around kit content.
+const GUTTER: CSSProperties = {
+  paddingLeft: 'var(--gutter-web)',
+  paddingRight: 'var(--gutter-web)',
+};
 
-function MissingEpisodeRow({
-  episode,
-  pending,
-  busy,
-  onRequest,
-}: Readonly<{
-  season: number;
-  episode: number;
-  pending: boolean;
-  busy: boolean;
-  onRequest: () => void;
-}>) {
-  const t = useT();
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/1.5 p-3.5 sm:gap-5">
-      <div className="flex aspect-video w-32 shrink-0 items-center justify-center rounded-md bg-white/4 text-white/35 sm:w-50">
-        <span className="text-[15px] font-bold">{episode}</span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <span className="min-w-0 truncate text-[17px] font-bold text-white/70">
-          {t('content.episodeN', { n: episode })}
-        </span>
-      </div>
-      {pending ? (
-        <RequestStatusChip status="pending" size="card" />
-      ) : (
-        <IconButton
-          icon="plus"
-          active
-          label={t('requests.requestEpisode')}
-          onPress={onRequest}
-          disabled={busy}
-        />
-      )}
-    </div>
-  );
-}
+// `scrollbar-width` only; the legacy `::-webkit-scrollbar` rule it used to pair
+// with needs a stylesheet, which an inline style has no way to reach.
+const CHIP_SCROLLER: CSSProperties = {
+  ...GUTTER,
+  display: 'flex',
+  gap: 8,
+  overflowX: 'auto',
+  scrollbarWidth: 'none',
+};
+
+const SECTION: CSSProperties = { marginTop: 40 };
 
 function SeasonSwitcher({
   seasons,
@@ -155,7 +38,7 @@ function SeasonSwitcher({
 }: Readonly<{ seasons: TitleSeason[]; current: number; onPick: (n: number) => void }>) {
   const t = useT();
   return (
-    <div className="flex gap-2 overflow-x-auto px-(--gutter-web) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div style={CHIP_SCROLLER}>
       {seasons.map((s) => (
         <Chip
           key={s.number}
@@ -167,68 +50,6 @@ function SeasonSwitcher({
     </div>
   );
 }
-
-function SeasonRequestCard({
-  s,
-  canRequest,
-  onPick,
-}: Readonly<{ s: TitleSeason; canRequest: boolean; onPick: () => void }>) {
-  const t = useT();
-  const partial = !s.available && s.episodesAvailable > 0;
-  const locked = s.available || s.requested || !canRequest;
-  const epLabel = partial
-    ? t('discover.episodesPartial', {
-        have: String(s.episodesAvailable),
-        total: String(s.episodeCount),
-      })
-    : t('discover.episodesN', { n: String(s.episodeCount) });
-
-  let tone = 'border-white/8 bg-white/3 hover:border-accent/50 hover:bg-white/6';
-  if (locked) tone = 'cursor-default border-white/5 bg-white/2';
-  else if (partial) tone = 'border-accent/30 bg-accent/6 hover:border-accent/60 hover:bg-accent/10';
-
-  let trailing: ReactNode = null;
-  if (s.available || s.requested) {
-    trailing = <RequestStatusChip status={s.available ? 'available' : 'pending'} size="card" />;
-  } else if (canRequest) {
-    trailing = (
-      <span
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${
-          partial
-            ? 'bg-accent/15 text-accent group-hover:bg-accent group-hover:text-black'
-            : 'bg-accent/12 text-accent group-hover:bg-accent group-hover:text-accent-ink'
-        }`}
-      >
-        <IconPlus size={16} stroke={2.6} />
-      </span>
-    );
-  }
-
-  return (
-    <div className="px-(--gutter-web)">
-      <button
-        type="button"
-        disabled={locked}
-        onClick={onPick}
-        title={partial ? t('discover.fillGapsHint') : undefined}
-        className={`group flex w-full max-w-md items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${tone}`}
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14px] font-bold">
-            {s.name ?? t('discover.seasonN', { n: String(s.number) })}
-          </span>
-          <span
-            className={`mt-0.5 block truncate text-[12px] font-medium ${partial ? 'text-accent' : 'text-white/45'}`}
-          >
-            {epLabel}
-          </span>
-        </span>
-        {trailing}
-      </button>
-    </div>
-  );
-}
-
 export function SeasonSection({
   seasons,
   fallbackCast,
@@ -266,38 +87,42 @@ export function SeasonSection({
   const { ownedByNum, ordered, perEpisode } = mergeEpisodes(current, canRequest);
 
   return (
-    <section className="mt-10">
-      <div className="mb-4 flex items-center justify-between gap-3 px-(--gutter-web)">
-        <h2 className="font-display text-[24px] font-bold tracking-[-.02em]">
-          {t('content.episodes')}
-        </h2>
-        {hasOpen ? (
-          <Button
-            variant="outline"
-            active
-            size="sm"
-            icon="plus"
-            iconRight="chevron-right"
-            label={t('discover.requestSeasons')}
-            onPress={onPickAll}
-          />
-        ) : null}
+    <section style={SECTION}>
+      <div style={GUTTER}>
+        <Box row align="center" between gap={12} mb={16}>
+          <h2>
+            <Text variant="h2">{t('content.episodes')}</Text>
+          </h2>
+          {hasOpen ? (
+            <Button
+              variant="outline"
+              active
+              size="sm"
+              icon="plus"
+              iconRight="chevron-right"
+              label={t('discover.requestSeasons')}
+              onPress={onPickAll}
+            />
+          ) : null}
+        </Box>
       </div>
 
       {seasons.length > 1 ? (
-        <div className="mb-2">
+        <Box mb={8}>
           <SeasonSwitcher seasons={seasons} current={current.number} onPick={setSeason} />
-        </div>
+        </Box>
       ) : null}
 
       <CastRail cast={current.cast.length ? current.cast : fallbackCast} />
 
       {ordered.length > 0 ? (
         <>
-          <div className="mb-5 mt-4 px-(--gutter-web) text-[14px] font-medium text-white/45">
-            {t('content.episodeCount', {
-              count: perEpisode ? current.episodeCount : current.episodes.length,
-            })}
+          <div style={GUTTER}>
+            <Text variant="meta" color="white/45" mt={16} mb={20}>
+              {t('content.episodeCount', {
+                count: perEpisode ? current.episodeCount : current.episodes.length,
+              })}
+            </Text>
           </div>
           <SeasonEpisodes
             current={current}
@@ -312,23 +137,23 @@ export function SeasonSection({
             requestBusy={requestBusy}
           />
           {partialCurrent ? (
-            <div className="mt-3.5">
+            <Box mt={14}>
               <SeasonRequestCard
-                s={current}
+                season={current}
                 canRequest={canRequest}
                 onPick={() => onPickSeason(current.number)}
               />
-            </div>
+            </Box>
           ) : null}
         </>
       ) : (
-        <div className="mt-4">
+        <Box mt={16}>
           <SeasonRequestCard
-            s={current}
+            season={current}
             canRequest={canRequest}
             onPick={() => onPickSeason(current.number)}
           />
-        </div>
+        </Box>
       )}
     </section>
   );
@@ -373,32 +198,34 @@ function SeasonEpisodes({
   requestBusy: boolean;
 }>) {
   return (
-    <div className="flex flex-col gap-3.5 px-(--gutter-web)">
-      {ordered.map((n) => {
-        const owned = ownedByNum.get(n);
-        if (owned) {
+    <div style={GUTTER}>
+      <Box gap={14}>
+        {ordered.map((n) => {
+          const owned = ownedByNum.get(n);
+          if (owned) {
+            return (
+              <EpisodeRow
+                key={owned.id}
+                episode={owned}
+                watched={isWatched(owned.id)}
+                progress={progressOf(owned.id)}
+                onPlay={() => onPlay(owned.id)}
+                onToggleWatched={() => toggleWatched(owned.id)}
+              />
+            );
+          }
           return (
-            <EpisodeRow
-              key={owned.id}
-              episode={owned}
-              watched={isWatched(owned.id)}
-              progress={progressOf(owned.id)}
-              onPlay={() => onPlay(owned.id)}
-              onToggleWatched={() => toggleWatched(owned.id)}
+            <MissingEpisodeRow
+              key={`m-${n}`}
+              season={current.number}
+              episode={n}
+              pending={current.requested || pendingEpisodes.has(`${current.number}-${n}`)}
+              busy={requestBusy}
+              onRequest={() => onRequestEpisode(current.number, n)}
             />
           );
-        }
-        return (
-          <MissingEpisodeRow
-            key={`m-${n}`}
-            season={current.number}
-            episode={n}
-            pending={current.requested || pendingEpisodes.has(`${current.number}-${n}`)}
-            busy={requestBusy}
-            onRequest={() => onRequestEpisode(current.number, n)}
-          />
-        );
-      })}
+        })}
+      </Box>
     </div>
   );
 }

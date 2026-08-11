@@ -7,7 +7,7 @@
 // refresh.
 
 import { useT } from '@kroma/ui';
-import { Button, Drawer, IconButton } from '@kroma/ui/kit';
+import { Box, Button, Divider, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
 import { useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction, usePoll } from '#web/features/admin/hooks';
@@ -18,6 +18,7 @@ import {
   ExtraRow,
   OfficialRow,
 } from '#web/features/admin/module-registry-rows';
+import { SCROLL_PANE } from '#web/features/admin/web-style';
 
 // A row's React key is minted once and then carried through every edit. Keying
 // on the URL itself would remount the row on each keystroke, dropping focus.
@@ -76,71 +77,84 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
       title={t('admin.registriesTitle')}
       width={520}
     >
-      <div className="border-b border-white/[0.07] px-6 py-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display text-[19px] font-bold">{t('admin.registriesTitle')}</h2>
-            <p className="mt-0.5 text-[12.5px] text-muted">{t('admin.registriesSub')}</p>
-          </div>
+      <Box px={24} py={20}>
+        <Row between>
+          <Box>
+            <Text variant="h2" accessibilityRole="header">
+              {t('admin.registriesTitle')}
+            </Text>
+            <Text variant="meta" color="textMuted" mt={2}>
+              {t('admin.registriesSub')}
+            </Text>
+          </Box>
           <IconButton
             variant="ghost"
             icon="x"
             label={t('common.close')}
             onPress={() => call.end(changed.current)}
           />
-        </div>
-      </div>
+        </Row>
+      </Box>
+      <Divider color="tint/7" />
 
-      <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-6 py-5">
-        {error && <p className="text-xs font-semibold text-danger">{error}</p>}
-        {registries.length === 0 ? (
-          <p className="text-xs text-muted">{t('common.loading')}</p>
-        ) : (
-          <>
-            {official && <OfficialRow status={official} onSaved={markSaved} />}
-            {list.map(({ key, ...registry }) => (
-              <ExtraRow
-                key={key}
-                registry={registry}
-                status={
-                  byUrl.get(registry.url) ?? {
-                    ...registry,
-                    official: false,
-                    moduleCount: 0,
-                    shadowed: [],
+      <div style={SCROLL_PANE}>
+        <Box gap={12} px={24} py={20}>
+          {error && (
+            <Text variant="meta" color="danger">
+              {error}
+            </Text>
+          )}
+          {registries.length === 0 ? (
+            <Text variant="meta" color="textMuted">
+              {t('common.loading')}
+            </Text>
+          ) : (
+            <>
+              {official && <OfficialRow status={official} onSaved={markSaved} />}
+              {list.map(({ key, ...registry }) => (
+                <ExtraRow
+                  key={key}
+                  registry={registry}
+                  status={
+                    byUrl.get(registry.url) ?? {
+                      ...registry,
+                      official: false,
+                      moduleCount: 0,
+                      shadowed: [],
+                    }
                   }
-                }
+                  busy={saving}
+                  onChange={(next) =>
+                    setDraft(list.map((r) => (r.key === key ? { ...next, key } : r)))
+                  }
+                  onRemove={() => commit(list.filter((r) => r.key !== key))}
+                />
+              ))}
+              {draft !== null && (
+                <Row gap={8}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    label={t('common.save')}
+                    onPress={() => commit(list)}
+                    loading={saving}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    label={t('common.cancel')}
+                    onPress={() => setDraft(null)}
+                    disabled={saving}
+                  />
+                </Row>
+              )}
+              <AddRegistry
                 busy={saving}
-                onChange={(next) =>
-                  setDraft(list.map((r) => (r.key === key ? { ...next, key } : r)))
-                }
-                onRemove={() => commit(list.filter((r) => r.key !== key))}
+                onAdd={(r) => commit([...list, { ...r, key: `added-${nextKey.current++}` }])}
               />
-            ))}
-            {draft !== null && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  label={t('common.save')}
-                  onPress={() => commit(list)}
-                  loading={saving}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  label={t('common.cancel')}
-                  onPress={() => setDraft(null)}
-                  disabled={saving}
-                />
-              </div>
-            )}
-            <AddRegistry
-              busy={saving}
-              onAdd={(r) => commit([...list, { ...r, key: `added-${nextKey.current++}` }])}
-            />
-          </>
-        )}
+            </>
+          )}
+        </Box>
       </div>
     </Drawer>
   );

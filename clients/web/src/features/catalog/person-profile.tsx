@@ -6,10 +6,11 @@
 
 import { type PersonDetail, personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Button, DataField, Text } from '@kroma/ui/kit';
+import { Box, Button, color, DataField, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 
-const READ_MORE = { fontSize: 13, fontWeight: '700' } as const;
+const READ_MORE = { fontWeight: '700' } as const;
+const RULE = { borderBottomWidth: 1, borderBottomColor: color('border') } as const;
 
 export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null }>) {
   const t = useT();
@@ -21,34 +22,36 @@ export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null
   if (!facts.length && !biography) return null;
 
   return (
-    <section className="mb-9 grid gap-5 border-border/60 border-b pb-7">
-      {facts.length ? (
-        <div className="flex flex-wrap gap-x-10 gap-y-4">
-          {facts.map((f) => (
-            <DataField.Root key={f.key} size="md" label={f.label} value={f.value} />
-          ))}
-        </div>
-      ) : null}
+    <section>
+      <Box gap={20} mb={36} pb={28} style={RULE}>
+        {facts.length ? (
+          <Box row wrap gapX={40} gapY={16}>
+            {facts.map((f) => (
+              <DataField.Root key={f.key} size="md" label={f.label} value={f.value} />
+            ))}
+          </Box>
+        ) : null}
 
-      {biography ? (
-        <div className="max-w-3xl">
-          <h2 className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-            {t('person.biography')}
-          </h2>
-          <p
-            className={`text-[15px] leading-relaxed text-white/70 ${expanded ? '' : 'line-clamp-4'}`}
-          >
-            {biography}
-          </p>
-          <div className="mt-2 flex">
-            <Button variant="ghost" size="sm" onPress={() => setExpanded((v) => !v)}>
-              <Text color="accent" style={READ_MORE}>
-                {expanded ? t('person.readLess') : t('person.readMore')}
+        {biography ? (
+          <Box maxW={768}>
+            <h2>
+              <Text variant="overline" color="white/40" mb={8}>
+                {t('person.biography')}
               </Text>
-            </Button>
-          </div>
-        </div>
-      ) : null}
+            </h2>
+            <Text variant="body" color="white/70" lines={expanded ? undefined : 4}>
+              {biography}
+            </Text>
+            <Box row mt={8}>
+              <Button variant="ghost" size="sm" onPress={() => setExpanded((v) => !v)}>
+                <Text variant="meta" color="accent" style={READ_MORE}>
+                  {expanded ? t('person.readLess') : t('person.readMore')}
+                </Text>
+              </Button>
+            </Box>
+          </Box>
+        ) : null}
+      </Box>
     </section>
   );
 }

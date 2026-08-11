@@ -4,6 +4,7 @@
 
 import { depEntries } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
+import { Badge, type BadgeTone, Box, Row, Text } from '@kroma/ui/kit';
 import type { AdminModule } from '#web/features/admin/module-api';
 
 export type DepState = 'ok' | 'missing' | 'disabled' | 'optional';
@@ -13,14 +14,15 @@ export function depState(target: AdminModule | undefined, optional: boolean): De
   return target.enabled ? 'ok' : 'disabled';
 }
 
+const DEP_TONE: Record<DepState, BadgeTone> = {
+  ok: 'success',
+  missing: 'danger',
+  disabled: 'neutral',
+  optional: 'neutral',
+};
+
 export function DepChip({ label, state }: Readonly<{ label: string; state: DepState }>) {
   const t = useT();
-  const cls: Record<DepState, string> = {
-    ok: 'text-success',
-    missing: 'text-danger',
-    disabled: 'text-muted',
-    optional: 'text-dim',
-  };
   const suffix: Record<DepState, string> = {
     ok: '',
     missing: ` (${t('admin.modulesMissingSuffix')})`,
@@ -28,10 +30,10 @@ export function DepChip({ label, state }: Readonly<{ label: string; state: DepSt
     optional: ` (${t('admin.modulesOptionalSuffix')})`,
   };
   return (
-    <span className={`rounded bg-white/5 px-2 py-0.5 text-[11px] ${cls[state]}`}>
+    <Badge tone={DEP_TONE[state]}>
       {label}
       {suffix[state]}
-    </span>
+    </Badge>
   );
 }
 
@@ -63,13 +65,13 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
   const requiredBy = dependents(module, all);
   if (deps.length === 0 && reqs.length === 0 && requiredBy.length === 0) return null;
   return (
-    <div className="mt-2 flex flex-col gap-1.5">
+    <Box mt={8} gap={6}>
       {(deps.length > 0 || reqs.length > 0) && (
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-dim">
+        <Box gap={4}>
+          <Text variant="overline" color="textDim">
             {t('admin.modulesDependsOn')}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
+          </Text>
+          <Row wrap gap={6}>
             {deps.map((d) => {
               const state = depState(byId.get(d.id), d.optional);
               return (
@@ -94,21 +96,21 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
                 />
               );
             })}
-          </div>
-        </div>
+          </Row>
+        </Box>
       )}
       {requiredBy.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-dim">
+        <Box gap={4}>
+          <Text variant="overline" color="textDim">
             {t('admin.modulesRequiredBy')}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
+          </Text>
+          <Row wrap gap={6}>
             {requiredBy.map((d) => (
               <DepChip key={d.id} label={d.name} state={d.enabled ? 'ok' : 'disabled'} />
             ))}
-          </div>
-        </div>
+          </Row>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

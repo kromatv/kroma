@@ -6,9 +6,8 @@
 
 import type { StoreOptionalModule, StorePlan } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Dialog, Progress } from '@kroma/ui/kit';
-import { IconCircleCheckFilled } from '@tabler/icons-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, Dialog, Divider, Icon, Progress, Row, Text } from '@kroma/ui/kit';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { fetchInstallPlan, installById, message } from '#web/features/admin/module-api';
 import { ErrorBox, PlanStage } from '#web/features/admin/module-install-plan';
@@ -27,21 +26,23 @@ function RunningRow({ name, op }: Readonly<{ name: string; op: OpModule | undefi
   const phase = op?.phase ?? 'wait';
   const pct = op ? opPct(op) : null;
   return (
-    <div className="py-2">
-      <div className="mb-1.5 flex items-center justify-between gap-3 text-[12.5px]">
-        <span className="truncate font-semibold text-text">{name}</span>
-        <span className={`shrink-0 font-medium ${phase === 'done' ? 'text-success' : 'text-dim'}`}>
+    <Box py={8}>
+      <Row between gap={12} mb={6}>
+        <Text variant="meta" lines={1}>
+          {name}
+        </Text>
+        <Text variant="meta" color={phase === 'done' ? 'success' : 'textDim'} shrink={0}>
           {t(PHASE_KEY[phase])}
           {phase === 'download' && pct !== null ? ` · ${pct}%` : ''}
-        </span>
-      </div>
+        </Text>
+      </Row>
       <Progress
         value={runningPct(phase, pct) / 100}
         color={phase === 'done' ? 'success' : 'accent'}
         size={5}
         rounded
       />
-    </div>
+    </Box>
   );
 }
 
@@ -147,36 +148,44 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
           error={planError}
           optional={optional}
           include={include}
-          onToggle={(mid, on) =>
-            setInclude((prev) => (on ? [...prev, mid] : prev.filter((x) => x !== mid)))
-          }
+          onIncludeChange={setInclude}
           onCancel={() => call.end(false)}
           onRun={run}
         />
       )}
 
       {stage === 'running' && (
-        <div className="divide-y divide-white/5">
-          {rows.map((r) => (
-            <RunningRow key={r.id} name={r.name} op={op?.modules[r.id]} />
+        <Box>
+          {rows.map((r, at) => (
+            <Fragment key={r.id}>
+              {at > 0 ? <Divider color="tint/5" /> : null}
+              <RunningRow name={r.name} op={op?.modules[r.id]} />
+            </Fragment>
           ))}
-        </div>
+        </Box>
       )}
 
       {(stage === 'done' || stage === 'error') && (
         <>
           {stage === 'error' && rows.length > 0 && (
-            <div className="mb-4 divide-y divide-white/5">
-              {rows.map((r) => (
-                <RunningRow key={r.id} name={r.name} op={op?.modules[r.id]} />
+            <Box mb={16}>
+              {rows.map((r, at) => (
+                <Fragment key={r.id}>
+                  {at > 0 ? <Divider color="tint/5" /> : null}
+                  <RunningRow name={r.name} op={op?.modules[r.id]} />
+                </Fragment>
               ))}
-            </div>
+            </Box>
           )}
           {stage === 'done' ? (
-            <div className="flex items-start gap-2.5 text-[13.5px] text-success">
-              <IconCircleCheckFilled size={18} className="mt-0.5 shrink-0" />
-              <p className="break-words font-semibold">{result}</p>
-            </div>
+            <Box row align="flex-start" gap={10}>
+              <Box mt={2} shrink={0}>
+                <Icon name="circle-check-filled" size={18} color="success" />
+              </Box>
+              <Text variant="meta" color="success">
+                {result}
+              </Text>
+            </Box>
           ) : (
             <ErrorBox text={result ?? ''} />
           )}

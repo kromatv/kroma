@@ -5,10 +5,28 @@
 
 import type { LogEntry, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState, Field, SegmentedControl, Select, Surface, Switch } from '@kroma/ui/kit';
-import { useEffect, useRef, useState } from 'react';
+import {
+  Box,
+  type ColorValue,
+  EmptyState,
+  Field,
+  Row,
+  SegmentedControl,
+  Select,
+  Spacer,
+  Surface,
+  Switch,
+  Text,
+} from '@kroma/ui/kit';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
+
+// A viewport-relative height and a single-axis scroll have no React Native
+// spelling, so the log viewport stays a real element.
+const VIEWPORT: CSSProperties = { maxHeight: '70vh', overflowY: 'auto' };
+
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
+import { TABULAR } from '#web/features/admin/table';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
@@ -71,7 +89,7 @@ export function LogsPage() {
         subtitle={t('admin.logsSub')}
         actions={<RealtimeBadge />}
       />
-      <div className="mb-4 mt-2 flex flex-wrap items-center gap-3">
+      <Row wrap gap={12} mt={8} mb={16}>
         <SegmentedControl.Root
           value={level}
           options={LEVELS.map((l) => ({ value: l.value, label: t(l.labelKey) }))}
@@ -92,21 +110,26 @@ export function LogsPage() {
             onValueChange={setQInput}
           />
         </Field.Root>
-        <div className="ml-auto flex items-center gap-2 text-[13px] font-semibold text-muted">
-          <span>{t('logs.follow')}</span>
+        <Spacer />
+        <Row gap={8}>
+          <Text variant="meta" color="textMuted">
+            {t('logs.follow')}
+          </Text>
           <Switch checked={follow} onChange={setFollow} label={t('logs.follow')} />
-        </div>
-      </div>
+        </Row>
+      </Row>
       {data === null ? <TableSkeleton rows={10} /> : null}
       {data && entries.length === 0 ? (
         <EmptyState.Root icon="terminal-2" title={t('logs.empty')} />
       ) : null}
       {entries.length > 0 ? (
-        <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
-          <div ref={scroller} className="max-h-[70vh] overflow-y-auto px-4 py-3">
-            {entries.map((e) => (
-              <LogLine key={`${e.ts}-${e.source}-${e.message}`} entry={e} />
-            ))}
+        <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
+          <div ref={scroller} style={VIEWPORT}>
+            <Box px={16} py={12}>
+              {entries.map((e) => (
+                <LogLine key={`${e.ts}-${e.source}-${e.message}`} entry={e} />
+              ))}
+            </Box>
           </div>
         </Surface>
       ) : null}
@@ -114,33 +137,40 @@ export function LogsPage() {
   );
 }
 
-const LEVEL_TONE: Record<string, string> = {
-  error: 'bg-danger/15 text-danger-hover',
-  warn: 'bg-accent/15 text-accent',
-  info: 'bg-white/6 text-muted',
-  debug: 'bg-white/4 text-dim',
-  trace: 'bg-white/4 text-dim',
+const LEVEL_TONE: Record<string, { bg: ColorValue; ink: ColorValue }> = {
+  error: { bg: 'danger/15', ink: 'dangerHover' },
+  warn: { bg: 'accentWash/15', ink: 'accentText' },
+  info: { bg: 'tint/6', ink: 'textMuted' },
+  debug: { bg: 'tint/4', ink: 'textDim' },
+  trace: { bg: 'tint/4', ink: 'textDim' },
 };
+
+const INFO_TONE = { bg: 'tint/6', ink: 'textMuted' } as const;
 
 function LogLine({ entry }: Readonly<{ entry: LogEntry }>) {
   const time = new Date(entry.ts).toLocaleTimeString(undefined, { hour12: false });
+  const tone = LEVEL_TONE[entry.level] ?? INFO_TONE;
   return (
-    <div className="flex items-baseline gap-2.5 border-b border-white/4 py-1 font-mono text-[12px] leading-relaxed last:border-b-0">
-      <span className="shrink-0 tabular-nums text-dim">{time}</span>
-      <span
-        className={`w-13 shrink-0 rounded px-1.5 text-center text-[10px] font-bold uppercase ${LEVEL_TONE[entry.level] ?? LEVEL_TONE.info}`}
-      >
-        {entry.level}
-      </span>
+    <Row align="baseline" gap={10} py={4}>
+      <Text variant="meta" font="mono" color="textDim" shrink={0} style={TABULAR}>
+        {time}
+      </Text>
+      <Box w={52} shrink={0} radius={4} bg={tone.bg} px={6}>
+        <Text variant="overline" color={tone.ink} textAlign="center">
+          {entry.level}
+        </Text>
+      </Box>
       {entry.source !== 'core' ? (
-        <span className="shrink-0 rounded bg-accent-soft px-1.5 text-[10px] font-semibold text-accent">
-          {entry.source.replace(/^dev\.kroma\./, '')}
-        </span>
+        <Box shrink={0} radius={4} bg="accentSoft" px={6}>
+          <Text variant="overline" color="accentText">
+            {entry.source.replace(/^dev\.kroma\./, '')}
+          </Text>
+        </Box>
       ) : null}
-      <span className="min-w-0 wrap-break-word text-text/85">
-        {entry.target ? <span className="text-dim">{entry.target}: </span> : null}
+      <Text variant="meta" font="mono" color="textMuted" flex={1} minW={0}>
+        {entry.target ? <Text color="textDim">{entry.target}: </Text> : null}
         {entry.message}
-      </span>
-    </div>
+      </Text>
+    </Row>
   );
 }

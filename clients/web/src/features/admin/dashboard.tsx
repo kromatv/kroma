@@ -1,12 +1,25 @@
 import type { MetricsSnapshot, PlaybackSession, TopUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, color, EmptyState, Section, Select, Surface } from '@kroma/ui/kit';
+import {
+  Avatar,
+  Box,
+  color,
+  Divider,
+  EmptyState,
+  Grid,
+  Row,
+  Section,
+  Select,
+  Surface,
+  Text,
+} from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
 import { CHART_SERIES } from '#web/features/admin/chart-palette';
 import { HistoryBars, MetricsChart } from '#web/features/admin/charts';
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
+import { TABULAR } from '#web/features/admin/table';
 import { decimal, formatDuration, formatMbps } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -35,9 +48,9 @@ function RangeSelect({
 function LiveLabel() {
   const t = useT();
   return (
-    <span className="inline-flex cursor-default items-center gap-1.5 text-[14px] font-semibold text-muted">
+    <Text variant="label" color="textMuted">
       {t('admin.realtime')}
-    </span>
+    </Text>
   );
 }
 
@@ -94,7 +107,7 @@ export function DashboardScreen() {
         {sessions.length === 0 ? (
           <EmptyState.Root icon="player-play" title={t('admin.noPlayback')} />
         ) : (
-          <div className="flex flex-col gap-3.5">
+          <Box gap={14}>
             {sessions.map((s) => (
               <NowPlayingCard
                 key={s.id}
@@ -103,7 +116,7 @@ export function DashboardScreen() {
                 onStop={() => void askStop(s)}
               />
             ))}
-          </div>
+          </Box>
         )}
       </Section.Root>
 
@@ -124,11 +137,11 @@ export function DashboardScreen() {
         }
       >
         {top && top.users.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Grid min={200} gap={16}>
             {top.users.slice(0, 3).map((u) => (
               <TopUserCard key={u.username} u={u} />
             ))}
-          </div>
+          </Grid>
         ) : (
           <EmptyState.Root icon="users" title={t('admin.noHistory')} />
         )}
@@ -151,6 +164,8 @@ export function DashboardScreen() {
     </>
   );
 }
+
+const ROW_RULE = { borderBottomWidth: 1, borderBottomColor: color('tint/4') } as const;
 
 const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 
@@ -245,41 +260,42 @@ function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
     { label: t('admin.tv'), val: formatDuration(u.tvMs), on: u.tvMs > u.filmsMs },
   ];
   return (
-    <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
-      <div className="flex items-center gap-3.5 px-5 py-4.5">
+    <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
+      <Row gap={14} px={20} py={18}>
         <Avatar name={u.username} size={48} circle />
-        <div>
-          <div className="font-display text-[16px] font-bold">
+        <Box>
+          <Text variant="title">
             {u.plays} {u.plays > 1 ? t('admin.plays') : t('admin.play')}
-          </div>
-          <div className="text-[13px] font-medium text-text/55">{formatDuration(u.watchedMs)}</div>
-        </div>
-      </div>
-      <div className="border-y border-white/5 bg-surface-2 px-5 py-2.75 text-[15px] font-bold">
-        {u.username}
-      </div>
-      <div>
+          </Text>
+          <Text variant="meta" color="textMuted">
+            {formatDuration(u.watchedMs)}
+          </Text>
+        </Box>
+      </Row>
+      <Divider color="tint/5" />
+      <Box bg="surface2" px={20} py={11}>
+        <Text variant="label">{u.username}</Text>
+      </Box>
+      <Divider color="tint/5" />
+      <Box>
         {rows.map((r) => (
-          <div
+          <Row
             key={r.label}
-            className="flex items-center justify-between border-b border-white/4 px-5 py-2.75"
-            style={{ background: r.on ? color('accentWash/16') : 'transparent' }}
+            between
+            px={20}
+            py={11}
+            bg={r.on ? 'accentWash/16' : 'transparent'}
+            style={ROW_RULE}
           >
-            <span
-              className="text-[13.5px] font-semibold"
-              style={{ color: color(r.on ? 'accent' : 'textMuted') }}
-            >
+            <Text variant="meta" color={r.on ? 'accentText' : 'textMuted'}>
               {r.label}
-            </span>
-            <span
-              className="text-[13.5px] font-semibold tabular-nums"
-              style={{ color: color(r.on ? 'accent' : 'textMuted') }}
-            >
+            </Text>
+            <Text variant="meta" color={r.on ? 'accentText' : 'textMuted'} style={TABULAR}>
               {r.val}
-            </span>
-          </div>
+            </Text>
+          </Row>
         ))}
-      </div>
+      </Box>
     </Surface>
   );
 }

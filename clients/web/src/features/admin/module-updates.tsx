@@ -5,8 +5,7 @@
 
 import { formatBytes, type StoreModule } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState, ListRow } from '@kroma/ui/kit';
-import { IconArrowRight } from '@tabler/icons-react';
+import { Box, Button, EmptyState, Icon, ListRow, Row, Text } from '@kroma/ui/kit';
 import type { OpModule } from '#web/features/admin/module-ops';
 import { OpProgress } from '#web/features/admin/module-store';
 import { Image } from '#web/shared/ui';
@@ -28,19 +27,25 @@ function UpdateRow({
   return (
     <ListRow.Root size="md" label={m.name} onPress={onOpen}>
       <ListRow.Leading>
-        {m.icon ? (
-          <Image src={m.icon} fit="cover" className="h-9 w-9 rounded-lg" />
-        ) : (
-          <div className="h-9 w-9 rounded-lg bg-white/5" />
-        )}
+        <Box w={36} h={36} radius="sm" overflow="hidden" bg={m.icon ? undefined : 'tint/5'}>
+          {m.icon ? <Image src={m.icon} fit="cover" fill /> : null}
+        </Box>
       </ListRow.Leading>
       <ListRow.Label>{m.name}</ListRow.Label>
-      <div className="flex items-center gap-1.5 text-[12px] font-medium text-dim">
-        <span>v{m.installedVersion}</span>
-        <IconArrowRight size={12} stroke={2.2} />
-        <span className="font-semibold text-accent">v{m.version}</span>
-        {m.size ? <span>· {formatBytes(m.size)}</span> : null}
-      </div>
+      <Row gap={6}>
+        <Text variant="meta" color="textDim">
+          v{m.installedVersion}
+        </Text>
+        <Icon name="arrow-right" size={12} stroke={2.2} color="textDim" />
+        <Text variant="meta" color="accentText">
+          v{m.version}
+        </Text>
+        {m.size ? (
+          <Text variant="meta" color="textDim">
+            · {formatBytes(m.size)}
+          </Text>
+        ) : null}
+      </Row>
       <ListRow.Trailing>
         {op ? (
           <OpProgress op={op} />
@@ -87,13 +92,17 @@ export function UpdatesList({
   }
   const totalSize = updates.reduce((sum, m) => sum + (m.size ?? 0), 0);
   return (
-    <div className="flex flex-col gap-3">
-      {error && <p className="text-xs font-semibold text-danger">{error}</p>}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-[13px] font-semibold text-muted">
+    <Box gap={12}>
+      {error && (
+        <Text variant="meta" color="danger">
+          {error}
+        </Text>
+      )}
+      <Row wrap between gap={12}>
+        <Text variant="meta" color="textMuted">
           {t('admin.modulesUpdatesCount', { count: updates.length })}
-          {totalSize > 0 && <span className="text-dim"> · {formatBytes(totalSize)}</span>}
-        </span>
+          {totalSize > 0 && <Text color="textDim"> · {formatBytes(totalSize)}</Text>}
+        </Text>
         <Button
           variant="primary"
           size="sm"
@@ -102,7 +111,7 @@ export function UpdatesList({
           loading={busy}
           disabled={busy}
         />
-      </div>
+      </Row>
       <ListRow.Group size="md">
         {updates.map((m) => (
           <UpdateRow
@@ -115,6 +124,6 @@ export function UpdatesList({
           />
         ))}
       </ListRow.Group>
-    </div>
+    </Box>
   );
 }
