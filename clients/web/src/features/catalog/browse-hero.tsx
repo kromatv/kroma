@@ -5,8 +5,7 @@ import { Image } from '#web/shared/ui';
 
 /** The browse pages' display title, shared with the routes' pending headers so
  * the skeleton does not jump on settle. */
-export const BROWSE_TITLE =
-  'font-display text-[clamp(36px,4.5vw,56px)] font-bold leading-[.95] tracking-[-.03em]';
+export const BROWSE_TITLE = 'browse-title';
 
 // Bled to the content edges: the gutter is a fluid CSS custom property, which
 // no style number can carry, so the band stays a plain element.

@@ -15,10 +15,10 @@ const TRACKS: readonly { value: string; label: string; note?: string; icon: Icon
 ];
 
 interface TriggerArgs {
-  size: ControlSize;
-  invalid: boolean;
-  block: boolean;
-  filled: boolean;
+  size?: ControlSize;
+  invalid?: boolean;
+  block?: boolean;
+  filled?: boolean;
 }
 
 function Tracks({ size, invalid, block, filled }: Readonly<TriggerArgs>) {
@@ -108,7 +108,7 @@ export default story({
   variants: selectTriggerVariants,
   matrix: false,
   width: 420,
-  args: { size: 'md' as ControlSize, invalid: false, block: false, filled: true },
+  args: { filled: true },
   render: (args: TriggerArgs) => (
     <Box gap={24}>
       <Tracks {...args} />

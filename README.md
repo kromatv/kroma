@@ -167,7 +167,7 @@ kroma/
 │  ├─ ui/     @kroma/ui      design-system React components + tokens (from design/)
 │  └─ tv/     @kroma/tv      shared 10-foot experience (spatial focus nav, home, detail, player)
 ├─ clients/
-│  ├─ web/    @kroma/web     desktop browser shell (sidebar) TanStack Start SSR + Tailwind v4
+│  ├─ web/    @kroma/web     desktop browser shell (sidebar) TanStack Start SSR
 │  ├─ tizen/  @kroma/tizen   Samsung TV thin shell + config.xml → .wgt
 │  ├─ webos/  @kroma/webos   LG TV thin shell (modern + legacy tiers) → .ipk
 │  ├─ tv-native/ @kroma/tv-native  Apple TV + Android TV native app (React Native) → .ipa/.apk
@@ -255,7 +255,7 @@ but a debug build still asks :8081 until you tell that install otherwise —
 Every TV shell is driven by its `tv.target.ts` (platform, dev port, engine
 floors) through the shared pipeline in
 [`packages/bundler/src/shell.ts`](packages/bundler/src/shell.ts); webOS additionally
-ships a **legacy tier** (ES2015 + flattened Tailwind v4 CSS, runtime-gated) for
+ships a **legacy tier** (ES2015 + flattened CSS, runtime-gated) for
 Chromium 53-94 TVs (2018-2023). `bun run build:tv` builds all TV shells.
 
 **Installing on real devices** (TV developer mode, macOS quarantine, sideloading):

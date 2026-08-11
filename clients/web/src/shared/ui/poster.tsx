@@ -46,9 +46,7 @@ export function PosterRail<T>({
       style={{ height: Math.round(RAIL_TILE * 1.5) + extra + RAIL_PAD * 2 }}
       contentStyle={{ paddingVertical: RAIL_PAD }}
       onEndReached={onEndReached}
-      renderItem={(item, index) => (
-        <div className="mx-auto w-full max-w-52 *:w-full!">{renderItem(item, index)}</div>
-      )}
+      renderItem={(item, index) => <div className="poster-cell">{renderItem(item, index)}</div>}
     />
   );
 }
@@ -75,21 +73,9 @@ export function Poster({
   const showToggle = watched != null && Boolean(onToggleWatched);
 
   return (
-    <div
-      style={{ width: width ?? 'var(--card-w)' }}
-      className="group relative block shrink-0 text-left transition-transform duration-200 ease-out hover:-translate-y-1.5"
-    >
-      <button type="button" onClick={onClick} className="block w-full text-left focus:outline-none">
-        {/* The accent ring is an outline, not a second box-shadow: a shadow list
-            interpolates item by item, so growing [card] into [ring, pop] faded the
-            card's 28px blur into the ring's slot and the ring arrived as a halo
-            before it snapped. An outline has no blur radius at any frame. */}
-        <div
-          className="relative aspect-2/3 overflow-hidden rounded-lg shadow-card outline-3 outline-transparent transition-[box-shadow,outline-color] duration-200
-            group-hover:shadow-pop group-hover:outline-accent
-            group-focus-within:shadow-pop group-focus-within:outline-accent"
-          style={{ background: gradient }}
-        >
+    <div style={{ width: width ?? 'var(--card-w)' }} className="poster-tile">
+      <button type="button" onClick={onClick} className="poster-hit">
+        <div className="poster-art" style={{ background: gradient }}>
           <Image
             src={poster ? sizedImageUrl(poster, width ?? 208) : null}
             fit="cover"
@@ -97,11 +83,7 @@ export function Poster({
             onError={() => setImgOk(false)}
           />
           <ArtScrim radius="lg" />
-          <div
-            className={`absolute inset-x-3.5 bottom-3.5 ${
-              showImg ? 'opacity-0 transition-opacity duration-200 group-hover:opacity-100' : ''
-            }`}
-          >
+          <div className="poster-caption" data-reveal={showImg ? '' : undefined}>
             {genre ? (
               <Text variant="overline" color="white/60" mb={4}>
                 {genre}
@@ -119,11 +101,7 @@ export function Poster({
         </div>
       </button>
       {showToggle ? (
-        <div
-          className={`absolute left-2.5 top-2.5 z-2 transition-opacity duration-150 ${
-            watched ? '' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
-          }`}
-        >
+        <div className="poster-toggle" data-reveal={watched ? undefined : ''}>
           <Ground tone="dark">
             <IconButton
               variant={watched ? 'primary' : 'scrim'}

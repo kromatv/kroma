@@ -17,7 +17,6 @@
       "!**/*.template.html",
       "!clients/synology",
       "!server",
-      "!clients/web/src/styles.css",
       "!apps/www/src/styles.css",
       "!packages/ui/src/styles/tailwind.css",
       "!apps/modules/src/styles.css",

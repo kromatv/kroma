@@ -17,15 +17,20 @@ import {
 } from '@kroma/module-sdk';
 import {
   Badge,
+  Box,
   Button,
+  Divider,
   EmptyState,
+  Grid,
+  Icon,
   IconButton,
   PageHeader,
+  Row,
   Surface,
   Switch,
   TableSkeleton,
+  Text,
 } from '@kroma/ui/kit';
-import { IconAntenna } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useIndexerApi } from './api';
 import {
@@ -116,7 +121,7 @@ export default function IndexersPage() {
   // opens the generic field form. No engines -> no add buttons.
   const addButtons =
     engines.length > 0 ? (
-      <div className="flex items-center gap-2">
+      <Row gap={8}>
         {engines.map((engine) => (
           <Button
             key={engine.id}
@@ -128,7 +133,7 @@ export default function IndexersPage() {
             }
           />
         ))}
-      </div>
+      </Row>
     ) : null;
 
   return (
@@ -150,18 +155,20 @@ export default function IndexersPage() {
         />
       ) : null}
 
-      <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {indexers.map((ix) => (
-          <IndexerCard
-            key={ix.id}
-            ix={ix}
-            test={tests[ix.id]}
-            onToggle={(v) => toggle(ix, v)}
-            onTest={() => test(ix)}
-            onEdit={() => void openEdit(ix)}
-          />
-        ))}
-      </div>
+      <Box mt={24}>
+        <Grid min={448} gap={16}>
+          {indexers.map((ix) => (
+            <IndexerCard
+              key={ix.id}
+              ix={ix}
+              test={tests[ix.id]}
+              onToggle={(v) => toggle(ix, v)}
+              onTest={() => test(ix)}
+              onEdit={() => void openEdit(ix)}
+            />
+          ))}
+        </Grid>
+      </Box>
 
       <IndexerModal />
       <DefinitionPickerModal />
@@ -186,23 +193,27 @@ function IndexerCard({
   const t = useT();
   return (
     <Surface elevated border="border">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span className="flex h-11 w-11 flex-[0_0_44px] items-center justify-center rounded-xl border border-border-strong bg-surface-2 text-accent">
-            <IconAntenna size={20} stroke={1.8} />
-          </span>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
-              <span className="truncate text-[15.5px] font-bold">{ix.name}</span>
+      <Box row align="flex-start" between gap={16}>
+        <Row shrink={1} minW={0} gap={14}>
+          <Row center w={44} h={44} shrink={0} radius="lg" border="borderStrong" bg="surface2">
+            <Icon name="antenna" size={20} stroke={1.8} color="accent" />
+          </Row>
+          <Box shrink={1} minW={0}>
+            <Row gap={10}>
+              <Text variant="cardTitle" lines={1} shrink={1} minW={0}>
+                {ix.name}
+              </Text>
               {!ix.enabled ? <Badge tone="neutral">{t('indexers.disabled')}</Badge> : null}
-            </div>
-            <div className="mt-0.5 truncate text-[12.5px] font-medium text-dim">{ix.url}</div>
-          </div>
-        </div>
+            </Row>
+            <Text variant="meta" color="textDim" lines={1} mt={2}>
+              {ix.url}
+            </Text>
+          </Box>
+        </Row>
         <Switch checked={ix.enabled} onChange={onToggle} label={ix.name} />
-      </div>
+      </Box>
 
-      <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[12px] font-semibold text-white/55">
+      <Row wrap gap={8} mt={14}>
         <Badge tone={ix.kind === 'builtin' ? 'warning' : 'info'}>
           {ix.kind === 'builtin' ? t('indexers.builtin') : t('indexers.torznab')}
         </Badge>
@@ -211,21 +222,24 @@ function IndexerCard({
           <Badge tone="neutral">{t('indexers.prio', { prio: String(ix.priority) })}</Badge>
         ) : null}
         {ix.hasApiKey ? <Badge tone="success">{t('indexers.keySet')}</Badge> : null}
-      </div>
+      </Row>
 
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/6 pt-3.5">
-        <TestLine ix={ix} test={test} />
-        <div className="flex items-center gap-2">
-          <Button
-            variant="glass"
-            size="sm"
-            label={t('indexers.test')}
-            onPress={onTest}
-            loading={test?.busy}
-          />
-          <IconButton icon="pencil" label={t('indexers.edit')} onPress={onEdit} />
-        </div>
-      </div>
+      <Box mt={16}>
+        <Divider color="tint/6" />
+        <Row between gap={12} pt={14}>
+          <TestLine ix={ix} test={test} />
+          <Row gap={8}>
+            <Button
+              variant="glass"
+              size="sm"
+              label={t('indexers.test')}
+              onPress={onTest}
+              loading={test?.busy}
+            />
+            <IconButton icon="pencil" label={t('indexers.edit')} onPress={onEdit} />
+          </Row>
+        </Row>
+      </Box>
     </Surface>
   );
 }
@@ -234,42 +248,46 @@ function TestLine({ ix, test }: Readonly<{ ix: IndexerView; test?: TestState }>)
   const t = useT();
   if (test?.busy) {
     return (
-      <span className="text-[12.5px] font-semibold text-white/45">{t('indexers.testing')}</span>
+      <Text variant="meta" color="textDim" shrink={1} minW={0}>
+        {t('indexers.testing')}
+      </Text>
     );
   }
   if (test?.error || test?.result?.error) {
     return (
-      <span className="min-w-0 truncate text-[12.5px] font-semibold text-danger-hover">
+      <Text variant="meta" color="dangerHover" lines={1} shrink={1} minW={0}>
         {test.error ?? test.result?.error}
-      </span>
+      </Text>
     );
   }
   if (test?.result) {
     return (
-      <span className="text-[12.5px] font-semibold text-success">
+      <Text variant="meta" color="success" shrink={1} minW={0}>
         {t('indexers.testOk', {
           ms: String(test.result.latencyMs),
           server: test.result.serverTitle ?? 'Torznab',
         })}
         {test.result.supportsTmdb ? ` · ${t('indexers.tmdbOk')}` : ''}
-      </span>
+      </Text>
     );
   }
   if (ix.lastError) {
     return (
-      <span className="min-w-0 truncate text-[12.5px] font-semibold text-danger-hover">
+      <Text variant="meta" color="dangerHover" lines={1} shrink={1} minW={0}>
         {ix.lastError}
-      </span>
+      </Text>
     );
   }
   if (ix.lastOkAt) {
     return (
-      <span className="text-[12.5px] font-medium text-white/45">
+      <Text variant="meta" color="textDim" shrink={1} minW={0}>
         {t('indexers.lastOk', { date: new Date(ix.lastOkAt).toLocaleString() })}
-      </span>
+      </Text>
     );
   }
   return (
-    <span className="text-[12.5px] font-medium text-white/35">{t('indexers.neverTested')}</span>
+    <Text variant="meta" color="textDim" shrink={1} minW={0}>
+      {t('indexers.neverTested')}
+    </Text>
   );
 }

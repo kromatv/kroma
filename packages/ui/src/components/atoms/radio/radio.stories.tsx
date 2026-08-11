@@ -10,7 +10,7 @@ const MODES = [
   { value: 'transcode', label: 'Transcodage' },
 ];
 
-function Demo({ size }: Readonly<{ size: 'sm' | 'tv' }>) {
+function Demo({ size }: Readonly<{ size?: 'sm' | 'tv' }>) {
   const [mode, setMode] = useState('auto');
   return (
     <Box gap={14} role="radiogroup" accessibilityLabel="Mode de lecture">
@@ -52,7 +52,5 @@ export default story({
   },
   variants: radioVariants,
   matrix: false,
-  args: { size: 'sm' as 'sm' | 'tv' },
-  controls: { size: ['sm', 'tv'] },
-  render: ({ size }) => <Demo size={size} />,
+  render: (props) => <Demo {...props} />,
 });

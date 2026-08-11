@@ -8,6 +8,10 @@
  *  padding and the app's vertical rhythm. */
 export const PAGE_MAIN = 'page-main';
 
+/** The auto-filled poster grid every catalogue listing and result page renders
+ *  into: cells as wide as the fluid `--card-w`, as many as the row holds. */
+export const POSTER_GRID = 'poster-grid';
+
 /**
  * The scrim a modal drops over the page.
  *

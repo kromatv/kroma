@@ -59,16 +59,18 @@ function GenresPage() {
       {genres.length === 0 ? (
         <EmptyState.Root icon="category" title={t('genres.empty')} />
       ) : (
-        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          {genres.map((g) => (
-            <GenreTile
-              key={g.name}
-              genre={g}
-              count={t('person.titleCount', { count: g.count })}
-              backdrop={showcases.get(g.name)?.backdrop ?? null}
-            />
-          ))}
-        </div>
+        <Box mt={24}>
+          <div className="genre-grid">
+            {genres.map((g) => (
+              <GenreTile
+                key={g.name}
+                genre={g}
+                count={t('person.titleCount', { count: g.count })}
+                backdrop={showcases.get(g.name)?.backdrop ?? null}
+              />
+            ))}
+          </div>
+        </Box>
       )}
     </main>
   );
@@ -84,7 +86,7 @@ function GenreTile({
     <Link
       to="/genre/$genre"
       params={{ genre: genre.name }}
-      className="group relative block aspect-video overflow-hidden rounded-2xl border border-white/6 no-underline transition-colors hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="genre-tile"
       style={{ background: `linear-gradient(150deg, ${c1}, ${c2})` }}
     >
       <Image
@@ -92,7 +94,7 @@ function GenreTile({
         fit="cover"
         position="50% 25%"
         fill
-        className="transition-transform duration-500 group-hover:scale-105"
+        className="genre-tile-art"
       />
       <div style={{ position: 'absolute', inset: 0, background: genreTint(genre.name) }} />
       <Box
@@ -102,9 +104,9 @@ function GenreTile({
         bottom={{ base: 14, md: 16 }}
       >
         <Box w={24} h={4} mb={6} radius="pill" bg={genreAccent(genre.name)} />
-        <div className="font-display text-[16px] font-bold leading-tight tracking-[-.01em] text-white sm:text-[19px]">
+        <Text variant="cardTitle" color="white">
           {genre.name}
-        </div>
+        </Text>
         <Text variant="meta" color="white/70" mt={2}>
           {count}
         </Text>

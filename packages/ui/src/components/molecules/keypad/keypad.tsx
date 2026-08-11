@@ -177,4 +177,4 @@ const s = styles({
 });
 
 export type { KeypadProps };
-export { Keypad };
+export { Keypad, keypadVariants };

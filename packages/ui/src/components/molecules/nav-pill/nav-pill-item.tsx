@@ -136,4 +136,4 @@ function Item({ icon, label, active = false, onPress, ref, ...focus }: Readonly<
 }
 
 export type { NavPillIcon, NavPillItemProps };
-export { Item };
+export { Item, navPillItemVariants };

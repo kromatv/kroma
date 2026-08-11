@@ -11,12 +11,8 @@ import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
 import type { DiscoverSearchState } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { SkeletonRow } from '#web/shared/ui';
+import { POSTER_GRID, SkeletonRow } from '#web/shared/ui';
 import { Poster } from '#web/shared/ui/poster';
-
-// Same auto-fill poster grid as the catalogue (see cards.tsx GRID).
-const GRID =
-  'grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
 
 const COUNT = { fontVariant: ['tabular-nums' as const] };
 
@@ -36,7 +32,7 @@ function Section({
           </Text>
         </Row>
       </h2>
-      <div className={GRID}>{children}</div>
+      <div className={POSTER_GRID}>{children}</div>
     </section>
   );
 }

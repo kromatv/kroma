@@ -2,12 +2,16 @@ import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
+import { type KeyboardSize, keyVariants } from './key';
 import { KEYBOARD_LAYOUTS } from './keyboard-layouts';
 import { UrlKeyboard } from './url-keyboard';
 
 // A component, not a `render` body: the value is state, and a hook in a
 // render callback is a hook outside a component.
-function UrlDemo({ letters }: Readonly<{ letters: (typeof KEYBOARD_LAYOUTS)[number] }>) {
+function UrlDemo({
+  letters,
+  size,
+}: Readonly<{ letters: (typeof KEYBOARD_LAYOUTS)[number]; size?: KeyboardSize }>) {
   const [value, setValue] = useState('');
   return (
     <Box gap={16} style={{ alignSelf: 'stretch' }}>
@@ -18,6 +22,7 @@ function UrlDemo({ letters }: Readonly<{ letters: (typeof KEYBOARD_LAYOUTS)[numb
         onSubmit={() => undefined}
         submitLabel="Connecter"
         letters={letters}
+        size={size}
       />
     </Box>
   );
@@ -44,7 +49,8 @@ export default story({
       "Don't translate the letter rows: they are layouts, not copy.",
     ],
   },
+  variants: keyVariants,
   args: { letters: 'abc' as (typeof KEYBOARD_LAYOUTS)[number] },
   controls: { letters: KEYBOARD_LAYOUTS },
-  render: ({ letters }) => <UrlDemo letters={letters} />,
+  render: (props) => <UrlDemo {...props} />,
 });

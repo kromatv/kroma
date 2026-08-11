@@ -5,7 +5,7 @@
 // engine has no form (configured from the Acquisition settings page).
 
 import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Button, Dialog, Field } from '@kroma/ui/kit';
+import { Box, Button, Dialog, Field, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useTorrentsApi } from './api';
@@ -61,18 +61,28 @@ export const DownloadClientModal = createCallable<
         value={url}
         onValueChange={setUrl}
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field.Root label={t('dlclients.username')} value={username} onValueChange={setUsername} />
+      <Box row={{ base: false, md: true }} gap={16}>
+        <Field.Root
+          label={t('dlclients.username')}
+          value={username}
+          onValueChange={setUsername}
+          flex={{ base: 0, md: 1 }}
+        />
         <Field.Root
           label={t('dlclients.password')}
           hint={client.hasPassword ? t('dlclients.passwordKept') : undefined}
           value={password}
           onValueChange={setPassword}
+          flex={{ base: 0, md: 1 }}
         >
           <Field.Input type="password" />
         </Field.Root>
-      </div>
-      {error ? <p className="text-[13px] font-semibold text-danger-hover">{error}</p> : null}
+      </Box>
+      {error ? (
+        <Text variant="meta" color="dangerHover">
+          {error}
+        </Text>
+      ) : null}
       <Dialog.Actions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}

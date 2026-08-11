@@ -2,9 +2,29 @@
 // apply a library-wide rename.
 
 import { apiErrorText, Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kroma/module-sdk';
-import { Button, confirm, Field, PageHeader, Section, Select, Surface } from '@kroma/ui/kit';
-import { IconArrowRight } from '@tabler/icons-react';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Box,
+  Button,
+  Callout,
+  confirm,
+  Field,
+  Icon,
+  PageHeader,
+  Row,
+  Section,
+  Select,
+  Surface,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
+import {
+  type CSSProperties,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useTorrentsApi } from './api';
 import { NamingTokenModal } from './naming-tokens';
 import type { NamingTemplatesView, OrganizePlan } from './schemas';
@@ -26,6 +46,39 @@ const CASES: { value: string; labelKey: string }[] = [
 ];
 
 const MONO = { fontFamily: 'monospace', fontSize: 13 } as const;
+
+const SAMPLE_PATH: CSSProperties = {
+  minWidth: 0,
+  overflowWrap: 'anywhere',
+  font: 'var(--type-meta)',
+  fontFamily: 'var(--font-mono)',
+  color: 'var(--kroma-info)',
+};
+
+const MOVE_LIST: CSSProperties = {
+  maxHeight: 320,
+  overflowY: 'auto',
+  borderRadius: 'var(--radius-xl)',
+  border: '1px solid color-mix(in srgb, var(--kroma-tint) 7%, transparent)',
+  background: 'var(--kroma-bg)',
+};
+
+const MOVE_PATH: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  font: 'var(--type-meta)',
+  fontFamily: 'var(--font-mono)',
+};
+
+const MOVE_FROM: CSSProperties = { ...MOVE_PATH, color: 'var(--kroma-text-dim)' };
+const MOVE_TO: CSSProperties = { ...MOVE_PATH, color: 'var(--kroma-info)' };
+
+const s = styles({
+  moveRule: { borderBottomWidth: 1, borderBottomColor: 'tint/4' },
+});
 
 export default function NamingPage() {
   const t = useT();
@@ -103,60 +156,56 @@ export default function NamingPage() {
       <PageHeader.Root title={t('admin.namingTitle')} subtitle={t('admin.namingSub')} />
 
       <Surface elevated border="border" pad="none" p={24} mt={24}>
-        {tpl ? (
-          <div className="flex flex-col gap-4">
-            {FIELDS.map((f) => (
-              <div key={f.key} className="flex items-end gap-2">
-                <Field.Root
-                  label={t(f.labelKey as Parameters<typeof t>[0])}
-                  value={tpl[f.key]}
-                  onValueChange={(v) => set(f.key, v)}
-                  flex
-                >
-                  <Field.Input textStyle={MONO} />
-                </Field.Root>
-                <Button
-                  variant="glass"
-                  size="sm"
-                  icon="braces"
-                  label={t('naming.tokens')}
-                  onPress={() => openTokens(f.key)}
-                />
-              </div>
-            ))}
-
-            <div className="max-w-xs">
-              <Field.Root label={t('naming.caseLabel')}>
-                <Select.Root
-                  label={t('naming.caseLabel')}
-                  value={tpl.case}
-                  onValueChange={(v) => set('case', v)}
-                >
-                  <Select.Trigger block />
-                  {CASES.map((c) => (
-                    <Select.Item key={c.value} value={c.value}>
-                      {t(c.labelKey as Parameters<typeof t>[0])}
-                    </Select.Item>
-                  ))}
-                </Select.Root>
+        <Box gap={16}>
+          {FIELDS.map((f) => (
+            <Row key={f.key} align="flex-end" gap={8}>
+              <Field.Root
+                label={t(f.labelKey as Parameters<typeof t>[0])}
+                value={tpl[f.key]}
+                onValueChange={(v) => set(f.key, v)}
+                flex
+              >
+                <Field.Input textStyle={MONO} />
               </Field.Root>
-            </div>
-          </div>
-        ) : (
-          <div className="py-6 text-center text-dim">…</div>
-        )}
+              <Button
+                variant="glass"
+                size="sm"
+                icon="braces"
+                label={t('naming.tokens')}
+                onPress={() => openTokens(f.key)}
+              />
+            </Row>
+          ))}
+
+          <Box maxW={320}>
+            <Field.Root label={t('naming.caseLabel')}>
+              <Select.Root
+                label={t('naming.caseLabel')}
+                value={tpl.case}
+                onValueChange={(v) => set('case', v)}
+              >
+                <Select.Trigger block />
+                {CASES.map((c) => (
+                  <Select.Item key={c.value} value={c.value}>
+                    {t(c.labelKey as Parameters<typeof t>[0])}
+                  </Select.Item>
+                ))}
+              </Select.Root>
+            </Field.Root>
+          </Box>
+        </Box>
 
         {sample ? (
-          <div className="mt-5 rounded-xl border border-white/[0.07] bg-bg p-4">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+          <Box mt={20} radius="xl" border="tint/7" bg="bg" p={16}>
+            <Text variant="overline" color="textDim" mb={8}>
               {t('naming.preview')}
-            </div>
+            </Text>
             <SampleLine label={t('naming.exMovie')} value={sample.movie} />
             <SampleLine label={t('naming.exEpisode')} value={sample.episode} />
-          </div>
+          </Box>
         ) : null}
 
-        <div className="mt-5 flex items-center gap-3">
+        <Row gap={12} mt={20}>
           <Button
             variant="primary"
             size="sm"
@@ -166,9 +215,11 @@ export default function NamingPage() {
             disabled={!tpl}
           />
           {saved ? (
-            <span className="text-[13px] font-semibold text-success">{t('common.saved')}</span>
+            <Text variant="meta" color="success">
+              {t('common.saved')}
+            </Text>
           ) : null}
-        </div>
+        </Row>
       </Surface>
 
       <RenameSection />
@@ -180,10 +231,12 @@ export default function NamingPage() {
 
 function SampleLine({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="flex items-baseline gap-2 py-0.5">
-      <span className="w-16 shrink-0 text-[11px] font-semibold text-dim">{label}</span>
-      <code className="min-w-0 break-all font-mono text-[12.5px] text-info">{value}</code>
-    </div>
+    <Row align="baseline" gap={8} py={2}>
+      <Text variant="meta" color="textDim" w={64} shrink={0}>
+        {label}
+      </Text>
+      <code style={SAMPLE_PATH}>{value}</code>
+    </Row>
   );
 }
 
@@ -239,31 +292,38 @@ function RenameSection() {
         />
       }
     >
-      <p className="mb-3 text-[13.5px] leading-relaxed text-dim">{t('naming.renameHelp')}</p>
+      <Text variant="meta" color="textDim" mb={12}>
+        {t('naming.renameHelp')}
+      </Text>
 
       {result ? (
-        <div className="mb-3 rounded-lg border border-white/8 bg-surface-1 px-4 py-2.5 text-[13px] font-semibold text-white/80">
-          {result}
-        </div>
+        <Box mb={12}>
+          <Callout.Root size="sm" title={result} />
+        </Box>
       ) : null}
 
       {plan ? (
         <Surface elevated border="border" pad="none" p={16}>
-          <div className="mb-3 text-[13px] font-semibold text-white/70">
+          <Text variant="meta" color="textMuted" mb={12}>
             {t('naming.planSummary', {
               moves: String(plan.moves.length),
               matching: String(plan.matching),
               total: String(plan.totalFiles),
             })}
-          </div>
+          </Text>
           {plan.moves.length > 0 ? (
             <>
-              <div className="max-h-80 overflow-y-auto rounded-xl border border-white/[0.07] bg-bg">
-                {plan.moves.slice(0, 200).map((m) => (
-                  <MoveRow key={`${m.from}`} from={m.from} to={m.to} />
+              <div style={MOVE_LIST}>
+                {plan.moves.slice(0, 200).map((m, index, shown) => (
+                  <MoveRow
+                    key={`${m.from}`}
+                    from={m.from}
+                    to={m.to}
+                    last={index === shown.length - 1}
+                  />
                 ))}
               </div>
-              <div className="mt-4 flex">
+              <Row mt={16}>
                 <Button
                   variant="primary"
                   size="sm"
@@ -271,12 +331,14 @@ function RenameSection() {
                   onPress={() => void askApply()}
                   disabled={busy}
                 />
-              </div>
+              </Row>
             </>
           ) : (
-            <div className="py-4 text-center text-[13.5px] font-medium text-success">
-              {t('naming.allMatch')}
-            </div>
+            <Box py={16}>
+              <Text variant="meta" color="success" textAlign="center">
+                {t('naming.allMatch')}
+              </Text>
+            </Box>
           )}
         </Surface>
       ) : null}
@@ -284,16 +346,22 @@ function RenameSection() {
   );
 }
 
-function MoveRow({ from, to }: Readonly<{ from: string; to: string }>): ReactNode {
+function MoveRow({
+  from,
+  to,
+  last,
+}: Readonly<{ from: string; to: string; last: boolean }>): ReactNode {
   return (
-    <div className="flex items-center gap-2 border-b border-white/4 px-3 py-2 text-[11.5px] last:border-0">
-      <code className="min-w-0 flex-1 truncate font-mono text-white/45" title={from}>
+    <Row gap={8} px={12} py={8} style={last ? undefined : s.moveRule}>
+      <code title={from} style={MOVE_FROM}>
         {from}
       </code>
-      <IconArrowRight size={13} stroke={2} className="shrink-0 text-white/30" />
-      <code className="min-w-0 flex-1 truncate font-mono text-info" title={to}>
+      <Box shrink={0}>
+        <Icon name="arrow-right" size={13} stroke={2} color="glyphDim" />
+      </Box>
+      <code title={to} style={MOVE_TO}>
         {to}
       </code>
-    </div>
+    </Row>
   );
 }

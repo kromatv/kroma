@@ -78,6 +78,10 @@ interface StoryDef<A extends Args> {
   group: string;
   docs?: string;
   variants?: AnySv;
+  /** Variant groups to leave out of the derived controls, for a recipe that
+   *  belongs to a PART while the story renders the Root: the Root cannot take
+   *  them, so a control for one moves nothing and reads as broken. */
+  omit?: readonly string[];
   args?: A;
   controls?: { [K in keyof A]?: ControlSpec };
   render: (args: A) => ReactNode;
@@ -168,7 +172,9 @@ function story<const A extends Args = Record<string, never>>(def: StoryDef<A>): 
   const controls: ResolvedControl[] = [];
   const matrix: MatrixRow[] = [];
 
+  const omitted = new Set(def.omit ?? []);
   for (const [group, raw] of Object.entries(def.variants?.options ?? {})) {
+    if (omitted.has(group)) continue;
     const options = raw.map(String);
     const fallback = def.variants?.defaults?.[group];
     if (isBooleanGroup(options)) {

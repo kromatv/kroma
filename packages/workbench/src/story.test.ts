@@ -53,6 +53,22 @@ describe('story()', () => {
     render: () => null,
   });
 
+  it('leaves out a variant group the story cannot drive, control and matrix row alike', () => {
+    const partial = story({
+      name: 'Partial',
+      group: 'Media',
+      variants,
+      omit: ['size'],
+      render: () => null,
+    });
+    const keys = partial.controls.map((c) => c.key);
+
+    expect(keys).toContain('variant');
+    expect(keys).not.toContain('size');
+    expect(partial.matrix.map((row) => row.group)).not.toContain('size');
+    expect(partial.args).not.toHaveProperty('size');
+  });
+
   it('slugs the name into a stable id', () => {
     expect(built.id).toBe('poster-card');
     expect(slug('ProgressRing')).toBe('progress-ring');

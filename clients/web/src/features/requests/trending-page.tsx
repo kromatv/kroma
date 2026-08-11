@@ -12,11 +12,7 @@ import {
   useTrendingPage,
 } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
-
-// Same auto-fill poster grid as the catalogue (see cards.tsx GRID).
-const GRID =
-  'mt-8 grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
+import { PAGE_MAIN, POSTER_GRID, SkeletonRow } from '#web/shared/ui';
 
 const PAGE_COUNT = { fontVariant: ['tabular-nums' as const] };
 
@@ -84,11 +80,13 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
     return <EmptyState.Root icon="mood-empty" title={t('discover.noResults')} />;
   }
   return (
-    <div className={GRID}>
-      {state.entries.map((entry) => (
-        <DiscoverCard key={`${entry.kind}-${entry.tmdbId}`} entry={entry} />
-      ))}
-    </div>
+    <Box mt={32}>
+      <div className={POSTER_GRID}>
+        {state.entries.map((entry) => (
+          <DiscoverCard key={`${entry.kind}-${entry.tmdbId}`} entry={entry} />
+        ))}
+      </div>
+    </Box>
   );
 }
 

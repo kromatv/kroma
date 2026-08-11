@@ -1,8 +1,9 @@
 import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
-import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
 import { NavPill, type NavPillRootProps } from './nav-pill';
+import type { NavPillLabels } from './nav-pill-context';
+import { navPillItemVariants } from './nav-pill-item';
 
 const SECTIONS = [
   { key: 'home', label: 'Home', icon: 'home' },
@@ -30,8 +31,6 @@ function Switcher(props: Readonly<Omit<NavPillRootProps, 'children'>>) {
   );
 }
 
-// The composed form: a backdrop is a part, so it sits behind the items and the
-// capsule thins its own fill without being told.
 function Frosted() {
   const [active, setActive] = useState('films');
   return (
@@ -55,7 +54,7 @@ function Frosted() {
 export default story({
   name: 'NavPill',
   group: 'Layout',
-  docs: 'The floating section switcher: a capsule of icon + label items with the current section in its own amber lens. The Apple TV top nav and the iPhone tab bar are this one design at two distances, which is what `size` means: **tv** keeps every label (a viewer is reading, and the capsule must hold its width under the travelling ring), **sm** labels only the active item (a thumb is on the glass). On glass the capsule is also a slider: land a finger (or mouse) and travel, and the lens and amber ink chase as a preview - lifting commits the section it rests on, the native tab bar drag; a tap still works as ever, and a television never sees any of it. `labels` overrides the size policy (`none` below is the icon-only bar) and stays on the Root because it has to be the same answer for every item; `slide={false}` keeps a capsule tap-only, and `onPreview` reports each crossing for the host to hang haptics on. Composed: `<NavPill.Item>` is a part, so a host can ref one for focus wiring or badge another - things an `items` array cannot say - and `<NavPill.Backdrop>` is where a blur goes.',
+  docs: 'The floating section switcher: a capsule of icon + label items with the current section in its own amber lens. The Apple TV top nav and the iPhone tab bar are this one design at two distances, which is what `size` means: **tv** keeps every label (a viewer is reading, and the capsule must hold its width under the travelling ring), **sm** labels only the active item (a thumb is on the glass). On glass the capsule is also a slider: land a finger (or mouse) and travel, and the lens and amber ink chase as a preview - lifting commits the section it rests on, the native tab bar drag; a tap still works as ever, and a television never sees any of it. `labels` overrides the size policy (`none` is the icon-only bar) and stays on the Root because it has to be the same answer for every item; `slide={false}` keeps a capsule tap-only, and `onPreview` reports each crossing for the host to hang haptics on. Composed: `<NavPill.Item>` is a part, so a host can ref one for focus wiring or badge another - things an `items` array cannot say - and `<NavPill.Backdrop>` is where a blur goes.',
   usage: `<NavPill.Root size="tv">
   <NavPill.Item icon="home" label="Accueil" active onPress={goHome} />
   <NavPill.Item icon="search" label="Rechercher" onPress={goSearch} />
@@ -77,14 +76,17 @@ export default story({
       "Don't blur on a television - Tizen composites it on the CPU and pays in frames, which is why the default fill is solid.",
     ],
   },
+  variants: navPillItemVariants,
+  omit: ['lit', 'active'],
   matrix: false,
-  args: {},
-  render: () => (
-    <Box gap={28} align="flex-start">
-      <Switcher size="tv" />
-      <Switcher size="sm" />
-      <Switcher size="sm" labels="none" />
-      <Frosted />
-    </Box>
-  ),
+  args: { labels: 'all' as NavPillLabels },
+  controls: { labels: ['all', 'active', 'none'] },
+  render: (props) => <Switcher {...props} />,
+  scenes: [
+    {
+      name: 'Frosted',
+      docs: 'The composed form: a backdrop is a part, so the capsule thins its own fill for the blur behind it without being told.',
+      render: () => <Frosted />,
+    },
+  ],
 });

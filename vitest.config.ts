@@ -134,18 +134,12 @@ export default defineConfig({
       // than reported at zero, so the local number reads far higher than the
       // one Sonar computes over the same tree. `.tsx` is left out because
       // sonar.coverage.exclusions leaves it out, and the two must agree.
-      all: true,
-      include: [
-        '{apps,packages,clients}/*/{src,worker,bundler,vite}/**/*.ts',
-        'modules/*/ui/src/**/*.ts',
-      ],
-      exclude: [
-        '**/*.test.ts',
-        '**/*.native.test.ts',
-        '**/*.d.ts',
-        '**/*.config.ts',
-        '**/scripts/**',
-      ],
+      // Deliberately no `all`: the report covers what the tests loaded, and
+      // SONAR is what measures the tree. Instrumenting every file here produces
+      // a third number that matches neither this one nor Sonar's, because
+      // Sonar's scope is `sonar.sources` minus `sonar.exclusions`, a far larger
+      // list than the coverage exclusions and one that would have to be
+      // duplicated here to agree.
     },
   },
 });

@@ -6,9 +6,20 @@
 // One control drives the connector: the enable toggle (auto-saved). The server
 // reconciles the running connector to match it, so disabling always stops it.
 import { Denied, ModuleFailed, ModuleLoading, useCap, useT } from '@kroma/module-sdk';
-import { Badge, Button, Field, PageHeader, Section, Surface, Switch } from '@kroma/ui/kit';
-import { IconCloud, IconExternalLink } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import {
+  Badge,
+  Box,
+  Button,
+  Field,
+  Icon,
+  PageHeader,
+  Row,
+  Section,
+  Surface,
+  Switch,
+  Text,
+} from '@kroma/ui/kit';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { useRemoteApi } from './api';
 import type { RemoteAccessView } from './schemas';
 
@@ -16,6 +27,29 @@ import type { RemoteAccessView } from './schemas';
 // signed-in account) where a tunnel's connector token is created and shown in the
 // `cloudflared … run --token <TOKEN>` command.
 const CF_TUNNELS_URL = 'https://one.dash.cloudflare.com/?to=/:account/networks/tunnels';
+
+const TOKEN_LINK: CSSProperties = {
+  display: 'inline-flex',
+  alignSelf: 'flex-start',
+  alignItems: 'center',
+  gap: 6,
+  marginBottom: 16,
+  textDecoration: 'none',
+};
+
+const LOG_PANE: CSSProperties = {
+  margin: 0,
+  marginTop: 12,
+  maxHeight: 288,
+  overflow: 'auto',
+  padding: 12,
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid var(--kroma-border)',
+  background: 'var(--kroma-bg)',
+  font: 'var(--type-meta)',
+  fontFamily: 'var(--font-mono)',
+  color: 'var(--kroma-text-muted)',
+};
 
 export default function RemotePage() {
   const t = useT();
@@ -107,20 +141,24 @@ export default function RemotePage() {
 
       {/* Managed connector (optional). */}
       <Section.Root title={t('admin.remoteManaged')} mt={28}>
-        <p className="-mt-2 mb-4 text-[12.5px] text-dim">{t('admin.remoteManagedHint')}</p>
+        <Text variant="meta" color="textDim" mt={-8} mb={16}>
+          {t('admin.remoteManagedHint')}
+        </Text>
         <Surface elevated border="border" pad="none" px={22} py={20}>
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-info/16 text-info">
-                <IconCloud size={20} stroke={1.8} />
-              </span>
-              <div>
-                <div className="text-[15px] font-bold">{t('admin.enableRemoteAccess')}</div>
-                <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.remoteAccessDesc')}</div>
-              </div>
-            </div>
+          <Row between gap={16} mb={16}>
+            <Row shrink={1} minW={0} gap={14}>
+              <Row center w={40} h={40} shrink={0} radius="md" bg="info/16">
+                <Icon name="cloud" size={20} stroke={1.8} color="info" />
+              </Row>
+              <Box shrink={1} minW={0}>
+                <Text variant="cardTitle">{t('admin.enableRemoteAccess')}</Text>
+                <Text variant="meta" color="textDim" mt={2}>
+                  {t('admin.remoteAccessDesc')}
+                </Text>
+              </Box>
+            </Row>
             <Switch checked={enabled} onChange={toggle} label={t('admin.enableRemoteAccess')} />
-          </div>
+          </Row>
 
           <Field.Root
             label={t('admin.remoteToken')}
@@ -135,17 +173,14 @@ export default function RemotePage() {
             />
           </Field.Root>
 
-          <a
-            href={CF_TUNNELS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mb-4 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-accent hover:underline"
-          >
-            <IconExternalLink size={13} stroke={2} />
-            {t('admin.remoteGetToken')}
+          <a href={CF_TUNNELS_URL} target="_blank" rel="noopener noreferrer" style={TOKEN_LINK}>
+            <Icon name="external-link" size={13} stroke={2} color="accent" />
+            <Text variant="meta" color="accent">
+              {t('admin.remoteGetToken')}
+            </Text>
           </a>
 
-          <div className="mt-1 flex flex-wrap items-center gap-3">
+          <Row wrap gap={12} mt={4}>
             <Button
               label={busy ? t('admin.aiSaving') : t('common.save')}
               icon="device-floppy"
@@ -155,34 +190,40 @@ export default function RemotePage() {
               disabled={busy}
             />
             {saved ? (
-              <span className="text-[13px] font-semibold text-success">
+              <Text variant="meta" color="success">
                 {t('admin.remoteSaved')}
-              </span>
+              </Text>
             ) : null}
-          </div>
+          </Row>
         </Surface>
       </Section.Root>
 
       {/* Live connector status + logs. */}
       <Section.Root title={t('admin.remoteLogs')} mt={28}>
         <Surface elevated border="border" pad="none" px={22} py={20}>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-[13px]">
+          <Row wrap gapX={24} gapY={6}>
             <StatusChip status={st} />
             {st.since ? (
-              <span className="text-dim">
+              <Text variant="meta" color="textDim">
                 {t('admin.remoteSince')} {new Date(st.since).toLocaleString()}
-              </span>
+              </Text>
             ) : null}
             {st.binaryFound ? (
-              <span className="text-dim">{st.binaryVersion ?? 'cloudflared'}</span>
+              <Text variant="meta" color="textDim">
+                {st.binaryVersion ?? 'cloudflared'}
+              </Text>
             ) : (
-              <span className="text-danger">{t('admin.remoteBinaryMissing')}</span>
+              <Text variant="meta" color="danger">
+                {t('admin.remoteBinaryMissing')}
+              </Text>
             )}
-          </div>
+          </Row>
           {st.lastError ? (
-            <div className="mt-2 text-[12.5px] text-danger">{st.lastError}</div>
+            <Text variant="meta" color="danger" mt={8}>
+              {st.lastError}
+            </Text>
           ) : null}
-          <pre className="mt-3 max-h-72 overflow-auto rounded-[9px] border border-border bg-bg p-3 text-[11.5px] leading-relaxed text-muted">
+          <pre style={LOG_PANE}>
             {st.logs.length ? st.logs.join('\n') : t('admin.remoteNoLogs')}
           </pre>
         </Surface>

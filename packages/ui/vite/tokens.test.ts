@@ -144,6 +144,13 @@ describe('the plugin', () => {
     expect(transform('@import "@kroma/ui/css/base";')).toBe(baseCss());
   });
 
+  it('leaves the reset out of the page furniture, for a target with its own', () => {
+    const page = transform('@import "@kroma/ui/css/page";') ?? '';
+    expect(page).toContain('::-webkit-scrollbar');
+    expect(page).not.toContain('font-size: inherit');
+    expect(transform('@import "@kroma/ui/css/base";')).toContain('font-size: inherit');
+  });
+
   it('accepts single quotes and stray whitespace', () => {
     expect(transform("@import '@kroma/ui/css/tokens' ;")).toBe(tokensCss());
   });

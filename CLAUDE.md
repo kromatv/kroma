@@ -221,7 +221,7 @@ clients/    thin shells only: web · tizen · webos · tv-web · tv-native · mo
 
 Each shell is driven by its `tv.target.ts` (platform, dev port, engine floors)
 through the shared pipeline in [`packages/bundler/src/shell.ts`](packages/bundler/src/shell.ts).
-webOS additionally ships a **legacy tier** (ES2015 + flattened Tailwind CSS,
+webOS additionally ships a **legacy tier** (ES2015 + flattened CSS,
 runtime-gated) for Chromium 53–94 TVs; `build:webos` runs a compat guard that fails
 the build on anything a legacy engine cannot parse.
 

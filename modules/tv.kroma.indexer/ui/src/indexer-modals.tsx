@@ -4,8 +4,19 @@
 //    generated from the definition's own settings schema.
 
 import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Button, Dialog, Field, Select, Switch } from '@kroma/ui/kit';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  Badge,
+  Box,
+  Button,
+  Dialog,
+  Field,
+  ListRow,
+  Row,
+  Select,
+  Switch,
+  Text,
+} from '@kroma/ui/kit';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useIndexerApi } from './api';
 import type {
@@ -14,6 +25,10 @@ import type {
   IndexerView,
   SaveIndexerBody,
 } from './schemas';
+
+const DEFINITION_PANE: CSSProperties = { maxHeight: '46vh', overflowY: 'auto' };
+
+const SETTINGS_PANE: CSSProperties = { maxHeight: '52vh', overflowY: 'auto', paddingRight: 2 };
 
 /** Parse a comma-separated Newznab category list into positive category ids. */
 export function parseCats(text: string): number[] {
@@ -103,21 +118,27 @@ function TorznabIndexerForm({
       >
         <Field.Input type="password" />
       </Field.Root>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <Box row={{ base: false, md: true }} gap={16}>
         <Field.Root
+          flex
           label={t('indexers.categories')}
           hint={t('indexers.categoriesHint')}
           value={cats}
           onValueChange={setCats}
         />
         <Field.Root
+          flex
           label={t('indexers.priority')}
           hint={t('indexers.priorityHint')}
           value={priority}
           onValueChange={setPriority}
         />
-      </div>
-      {error ? <p className="text-[13px] font-semibold text-danger-hover">{error}</p> : null}
+      </Box>
+      {error ? (
+        <Text variant="meta" color="dangerHover">
+          {error}
+        </Text>
+      ) : null}
       <Dialog.Actions
         onCancel={() => end(false)}
         cancelLabel={t('common.cancel')}
@@ -185,7 +206,7 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
 
   return (
     <Dialog open title={t('indexers.pickTitle')} onClose={() => call.end(null)} width={520}>
-      <div className="flex items-center gap-2">
+      <Row gap={8}>
         <Field.Root label={t('indexers.searchDefs')} hideLabel flex value={q} onValueChange={setQ}>
           <Field.Input icon="search" placeholder={t('indexers.searchDefs')} />
         </Field.Root>
@@ -196,33 +217,40 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
           onPress={sync}
           loading={syncing}
         />
-      </div>
+      </Row>
 
-      {error ? <p className="text-[13px] font-semibold text-danger-hover">{error}</p> : null}
-
-      {defs && !synced && defs.length === 0 ? (
-        <p className="py-8 text-center text-[13px] text-dim">{t('indexers.syncFirst')}</p>
+      {error ? (
+        <Text variant="meta" color="dangerHover">
+          {error}
+        </Text>
       ) : null}
 
-      <div className="max-h-[46vh] overflow-y-auto">
-        {(defs === null ? [] : filtered).map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            onClick={() => call.end(d.id)}
-            className="flex w-full items-center justify-between gap-3 border-b border-white/5 px-1 py-2.5 text-left hover:bg-white/3"
-          >
-            <div className="min-w-0">
-              <div className="truncate text-[13.5px] font-bold text-text">{d.name}</div>
-              <div className="truncate text-[12px] text-dim">{d.description || d.id}</div>
-            </div>
-            <span className="shrink-0 rounded-full border border-white/12 px-2 py-0.5 text-[11px] font-semibold text-white/55">
-              {d.kind === 'public' ? t('indexers.public') : t('indexers.private')}
-            </span>
-          </button>
-        ))}
+      {defs && !synced && defs.length === 0 ? (
+        <Text variant="meta" color="textDim" textAlign="center" py={32}>
+          {t('indexers.syncFirst')}
+        </Text>
+      ) : null}
+
+      <div style={DEFINITION_PANE}>
+        {defs !== null && filtered.length > 0 ? (
+          <ListRow.Group size="sm">
+            {filtered.map((d) => (
+              <ListRow.Root key={d.id} size="sm" onPress={() => call.end(d.id)} label={d.name}>
+                <ListRow.Label>{d.name}</ListRow.Label>
+                <ListRow.Hint>{d.description || d.id}</ListRow.Hint>
+                <ListRow.Trailing>
+                  <Badge tone="neutral">
+                    {d.kind === 'public' ? t('indexers.public') : t('indexers.private')}
+                  </Badge>
+                </ListRow.Trailing>
+              </ListRow.Root>
+            ))}
+          </ListRow.Group>
+        ) : null}
         {defs === null ? (
-          <p className="py-8 text-center text-[13px] text-dim">{t('indexers.loading')}</p>
+          <Text variant="meta" color="textDim" textAlign="center" py={32}>
+            {t('indexers.loading')}
+          </Text>
         ) : null}
       </div>
 
@@ -321,14 +349,18 @@ function BuiltinIndexerForm({
   return (
     <Dialog open title={title} onClose={() => end(false)} width={520}>
       {loadError ? (
-        <p className="text-[13px] font-semibold text-danger-hover">{loadError}</p>
+        <Text variant="meta" color="dangerHover">
+          {loadError}
+        </Text>
       ) : null}
       {detail === null && !loadError ? (
-        <p className="py-8 text-center text-[13px] text-dim">{t('indexers.loading')}</p>
+        <Text variant="meta" color="textDim" textAlign="center" py={32}>
+          {t('indexers.loading')}
+        </Text>
       ) : null}
 
       {detail ? (
-        <div className="max-h-[52vh] overflow-y-auto pr-0.5">
+        <div style={SETTINGS_PANE}>
           {detail.links.length > 1 ? (
             <Field.Root label={t('indexers.baseUrl')} mb={16}>
               <Select.Root label={t('indexers.baseUrl')} value={baseUrl} onValueChange={setBaseUrl}>
@@ -355,14 +387,16 @@ function BuiltinIndexerForm({
               const configured = indexer?.configuredSettings.includes(s.name);
               if (s.kind === 'checkbox') {
                 return (
-                  <div key={s.name} className="mb-4 flex items-center justify-between gap-4">
-                    <span className="text-[13.5px] font-semibold text-text">{s.label}</span>
+                  <Row key={s.name} between gap={16} mb={16}>
+                    <Text variant="label" shrink={1} minW={0}>
+                      {s.label}
+                    </Text>
                     <Switch
                       checked={settings[s.name] === 'true'}
                       onChange={(v) => setField(s.name, v ? 'true' : 'false')}
                       label={s.label}
                     />
-                  </div>
+                  </Row>
                 );
               }
               if (s.kind === 'select') {
@@ -398,24 +432,30 @@ function BuiltinIndexerForm({
               );
             })}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Box row={{ base: false, md: true }} gap={16}>
             <Field.Root
+              flex
               label={t('indexers.categories')}
               hint={t('indexers.categoriesHint')}
               value={cats}
               onValueChange={setCats}
             />
             <Field.Root
+              flex
               label={t('indexers.priority')}
               hint={t('indexers.priorityHint')}
               value={priority}
               onValueChange={setPriority}
             />
-          </div>
+          </Box>
         </div>
       ) : null}
 
-      {error ? <p className="text-[13px] font-semibold text-danger-hover">{error}</p> : null}
+      {error ? (
+        <Text variant="meta" color="dangerHover">
+          {error}
+        </Text>
+      ) : null}
       <Dialog.Actions
         onCancel={() => end(false)}
         cancelLabel={t('common.cancel')}

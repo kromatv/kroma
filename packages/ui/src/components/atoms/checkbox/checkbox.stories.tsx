@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { Checkbox, checkboxVariants } from './checkbox';
 
-function Demo({ size }: Readonly<{ size: 'sm' | 'tv' }>) {
+function Demo({ size }: Readonly<{ size?: 'sm' | 'tv' }>) {
   const [subs, setSubs] = useState(true);
   const [audio, setAudio] = useState(false);
   const all = subs && audio;
@@ -58,7 +58,5 @@ export default story({
   },
   variants: checkboxVariants,
   matrix: false,
-  args: { size: 'sm' as 'sm' | 'tv' },
-  controls: { size: ['sm', 'tv'] },
-  render: ({ size }) => <Demo size={size} />,
+  render: (props) => <Demo {...props} />,
 });

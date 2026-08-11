@@ -106,4 +106,4 @@ function Key({
 }
 
 export type { KeyboardSize, KeyProps };
-export { Key, keyMetrics, keyRowWidth };
+export { face as keyVariants, Key, keyMetrics, keyRowWidth };

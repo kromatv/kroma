@@ -5,21 +5,30 @@
 import { addEngine, apiErrorText, useEnabledEngines, usePoll, useT } from '@kroma/module-sdk';
 import {
   Badge,
+  Box,
   Button,
   EmptyState,
+  Grid,
+  Icon,
   IconButton,
+  Row,
   Section,
   Surface,
   Switch,
+  styles,
   TableSkeleton,
+  Text,
 } from '@kroma/ui/kit';
-import { IconCpu, IconServer } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useTorrentsApi } from './api';
 import { DownloadClientModal } from './download-client-modals';
 import type { ClientTestResult, DownloadClientView } from './schemas';
 
 type TestState = { busy?: boolean; result?: ClientTestResult; error?: string };
+
+const s = styles({
+  footRule: { borderTopWidth: 1, borderTopColor: 'tint/6' },
+});
 
 export function DownloadClientsSection() {
   const t = useT();
@@ -66,12 +75,15 @@ export function DownloadClientsSection() {
       .catch(() => reload());
   };
   const test = (c: DownloadClientView) => {
-    setTests((s) => ({ ...s, [c.id]: { busy: true } }));
+    setTests((prev) => ({ ...prev, [c.id]: { busy: true } }));
     torrents
       .testClient(c.id)
-      .then((result) => setTests((s) => ({ ...s, [c.id]: { result } })))
+      .then((result) => setTests((prev) => ({ ...prev, [c.id]: { result } })))
       .catch((e) =>
-        setTests((s) => ({ ...s, [c.id]: { error: apiErrorText(e, t('dlclients.testFailed')) } })),
+        setTests((prev) => ({
+          ...prev,
+          [c.id]: { error: apiErrorText(e, t('dlclients.testFailed')) },
+        })),
       );
   };
 
@@ -91,33 +103,39 @@ export function DownloadClientsSection() {
   return (
     <Section.Root title={t('dlclients.sectionTitle')} actions={addButton} mt={28}>
       {data === null ? <TableSkeleton rows={3} /> : null}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <Grid min={360} gap={16}>
         {clients.map((c) => (
           <Surface key={c.id} elevated border="border" pad="none" p={18}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 flex-[0_0_40px] items-center justify-center rounded-xl border border-border-strong bg-surface-2 text-accent">
-                  {c.builtin ? (
-                    <IconCpu size={18} stroke={1.8} />
-                  ) : (
-                    <IconServer size={18} stroke={1.8} />
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-[14.5px] font-bold">{c.name}</span>
+            <Row align="flex-start" between gap={16}>
+              <Row minW={0} gap={12}>
+                <Box
+                  w={40}
+                  h={40}
+                  shrink={0}
+                  center
+                  radius="xl"
+                  border="borderStrong"
+                  bg="surface2"
+                >
+                  <Icon name={c.builtin ? 'cpu' : 'server'} size={18} stroke={1.8} color="accent" />
+                </Box>
+                <Box minW={0}>
+                  <Row gap={8}>
+                    <Text variant="label" lines={1}>
+                      {c.name}
+                    </Text>
                     <Badge tone="info">{c.builtin ? t('dlclients.embedded') : c.kind}</Badge>
-                  </div>
-                  <div className="mt-0.5 truncate text-[12px] font-medium text-dim">
+                  </Row>
+                  <Text variant="meta" color="textDim" lines={1} mt={2}>
                     {c.builtin ? t('dlclients.embeddedSub') : c.url}
-                  </div>
-                </div>
-              </div>
+                  </Text>
+                </Box>
+              </Row>
               <Switch checked={c.enabled} onChange={(v) => toggle(c, v)} label={c.name} />
-            </div>
-            <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-white/6 pt-3">
+            </Row>
+            <Row between gap={12} mt={14} pt={12} style={s.footRule}>
               <TestLine test={tests[c.id]} />
-              <div className="flex items-center gap-2">
+              <Row gap={8}>
                 <Button
                   variant="glass"
                   size="sm"
@@ -132,11 +150,11 @@ export function DownloadClientsSection() {
                     onPress={() => void openEdit(c)}
                   />
                 ) : null}
-              </div>
-            </div>
+              </Row>
+            </Row>
           </Surface>
         ))}
-      </div>
+      </Grid>
       {data && clients.length === 0 ? (
         <EmptyState.Root
           icon="server"
@@ -154,18 +172,28 @@ function TestLine({ test }: Readonly<{ test?: TestState }>) {
   const t = useT();
   if (test?.busy) {
     return (
-      <span className="text-[12px] font-semibold text-white/45">{t('dlclients.testing')}</span>
+      <Text variant="meta" color="text/45">
+        {t('dlclients.testing')}
+      </Text>
     );
   }
   if (test?.error || test?.result?.error) {
     return (
-      <span className="min-w-0 truncate text-[12px] font-semibold text-danger-hover">
+      <Text variant="meta" color="dangerHover" minW={0} lines={1}>
         {test.error ?? test.result?.error}
-      </span>
+      </Text>
     );
   }
   if (test?.result?.ok) {
-    return <span className="text-[12px] font-semibold text-success">{test.result.version}</span>;
+    return (
+      <Text variant="meta" color="success">
+        {test.result.version}
+      </Text>
+    );
   }
-  return <span className="text-[12px] font-medium text-white/30">{t('dlclients.notTested')}</span>;
+  return (
+    <Text variant="meta" color="text/30">
+      {t('dlclients.notTested')}
+    </Text>
+  );
 }

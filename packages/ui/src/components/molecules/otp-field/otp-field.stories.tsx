@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
-import { OtpField, type OtpSize } from './otp-field';
+import { OtpField } from './otp-field';
+import { otpVariants } from './otp-field-variants';
 
 export default story({
   name: 'OtpField',
@@ -32,19 +33,17 @@ export default story({
       "Don't put a separator inside a group: it would take a slot's place in the code.",
     ],
   },
-  // Not wired to `otpVariants`: those describe one slot's states, derived from
-  // the value rather than passed in, so they are not part of the API.
+  variants: otpVariants,
+  omit: ['state'],
   matrix: false,
   args: {
     maxLength: 6,
     value: '123',
-    size: 'md' as OtpSize,
     mask: false,
     invalid: false as boolean,
-    disabled: false,
     physicalKeyboard: true,
   },
-  controls: { maxLength: { min: 3, max: 8 }, size: ['md', 'tv'] },
+  controls: { maxLength: { min: 3, max: 8 } },
   render: ({ value, ...props }) => (
     <OtpField.Root {...props} key={`${props.maxLength}-${value}`} defaultValue={value} />
   ),

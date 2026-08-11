@@ -1,8 +1,22 @@
 import { formatBytes } from '@kroma/core';
 import { type MessageKey, useT } from '@kroma/module-sdk';
-import { type ColorValue, color, Menu, Progress } from '@kroma/ui/kit';
-import { IconExternalLink, IconMovie, IconUsers } from '@tabler/icons-react';
+import {
+  Badge,
+  Box,
+  type ColorValue,
+  color,
+  Icon,
+  Img,
+  Menu,
+  Progress,
+  Row,
+  styles,
+  Text,
+  Tooltip,
+  useBreakpoint,
+} from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
+import type { CSSProperties, ReactNode } from 'react';
 import type { DownloadView } from './schemas';
 
 /** Live per-download overlay fed by `download.progress` WS frames. */
@@ -26,11 +40,71 @@ const STATUS_TONE: Record<string, ColorValue> = {
   removed: 'text/40',
 };
 
+const WIDE_COLUMNS = 'minmax(0, 1fr) 190px 120px 110px 84px';
+const NARROW_COLUMNS = 'minmax(0, 1fr) auto';
+
+const TABLE_CELLS: CSSProperties = {
+  display: 'grid',
+  alignItems: 'center',
+  gap: 16,
+  padding: '12px 20px',
+};
+
+const TABLE_HEAD: CSSProperties = {
+  ...TABLE_CELLS,
+  background: 'var(--kroma-surface-1)',
+  borderBottom: '1px solid color-mix(in srgb, var(--kroma-tint) 6%, transparent)',
+};
+
+const TABLE_ROW: CSSProperties = {
+  ...TABLE_CELLS,
+  borderBottom: '1px solid color-mix(in srgb, var(--kroma-tint) 4%, transparent)',
+};
+
+const TABLE_HEAD_WIDE: CSSProperties = { ...TABLE_HEAD, gridTemplateColumns: WIDE_COLUMNS };
+const TABLE_HEAD_NARROW: CSSProperties = { ...TABLE_HEAD, gridTemplateColumns: NARROW_COLUMNS };
+const TABLE_ROW_WIDE: CSSProperties = { ...TABLE_ROW, gridTemplateColumns: WIDE_COLUMNS };
+const TABLE_ROW_NARROW: CSSProperties = { ...TABLE_ROW, gridTemplateColumns: NARROW_COLUMNS };
+
+const STATUS_DOT: CSSProperties = { width: 6, height: 6, borderRadius: '50%', flex: '0 0 auto' };
+const BREATHE = 'kroma-breathe 2s ease-in-out infinite';
+const TRACKER_LINK: CSSProperties = { display: 'inline-flex', flex: '0 0 auto' };
+
+const s = styles({
+  tabular: { fontVariant: ['tabular-nums'] },
+});
+
 function targetPill(dl: DownloadView): string | null {
-  const s = String(dl.season ?? 0).padStart(2, '0');
-  if (dl.kind === 'season') return `S${s}`;
-  if (dl.kind === 'episode') return `S${s}E${String(dl.episodes?.[0] ?? 0).padStart(2, '0')}`;
+  const season = String(dl.season ?? 0).padStart(2, '0');
+  if (dl.kind === 'season') return `S${season}`;
+  if (dl.kind === 'episode') {
+    return `S${season}E${String(dl.episodes?.[0] ?? 0).padStart(2, '0')}`;
+  }
   return null;
+}
+
+/** The heading band of the download table. It shares its column template with
+ *  <DownloadRowView>, which is why the two live together. */
+export function DownloadTableHead() {
+  const t = useT();
+  const wide = useBreakpoint() !== 'base';
+  return (
+    <div style={wide ? TABLE_HEAD_WIDE : TABLE_HEAD_NARROW}>
+      <HeadCell>{t('downloads.colRelease')}</HeadCell>
+      {wide ? <HeadCell>{t('downloads.colProgress')}</HeadCell> : null}
+      {wide ? <HeadCell>{t('downloads.colSpeed')}</HeadCell> : null}
+      {wide ? <HeadCell>{t('downloads.colStatus')}</HeadCell> : null}
+      <span />
+    </div>
+  );
+}
+
+function HeadCell({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <Text variant="overline" color="textDim">
+      {children}
+    </Text>
+  );
 }
 
 export function DownloadRowView({
@@ -52,6 +126,7 @@ export function DownloadRowView({
   onAskPeers: () => void;
   onRemove: () => void;
 }>) {
+  const wide = useBreakpoint() !== 'base';
   const status = live?.state && dl.status !== 'imported' ? live.state : dl.status;
   const progress = live?.progress ?? dl.progress;
   // Fall back to the polled row so speed + peers still show when the WebSocket
@@ -66,11 +141,11 @@ export function DownloadRowView({
   const active = status === 'downloading' || status === 'queued';
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-white/4 px-5 py-3 md:grid-cols-[minmax(0,1fr)_190px_120px_110px_84px]">
+    <div style={wide ? TABLE_ROW_WIDE : TABLE_ROW_NARROW}>
       <RowTitleCell dl={dl} />
-      <RowProgressCell dl={dl} progress={progress} tone={tone} />
-      <RowSpeedCell active={active} stat={stat} />
-      <RowStatusCell dl={dl} status={status} tone={tone} active={active} />
+      {wide ? <RowProgressCell dl={dl} progress={progress} tone={tone} /> : null}
+      {wide ? <RowSpeedCell active={active} stat={stat} /> : null}
+      {wide ? <RowStatusCell dl={dl} status={status} tone={tone} active={active} /> : null}
       <RowActionsMenu
         dl={dl}
         status={status}
@@ -90,36 +165,29 @@ function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
   const t = useT();
   const targetLabel = targetPill(dl);
   return (
-    <div className="flex min-w-0 items-center gap-3">
-      {dl.posterUrl ? (
-        <img
-          src={dl.posterUrl}
-          alt=""
-          loading="lazy"
-          className="h-11 w-[30px] flex-[0_0_auto] rounded-[3px] bg-white/5 object-cover"
-        />
-      ) : (
-        <div className="flex h-11 w-[30px] flex-[0_0_auto] items-center justify-center rounded-[3px] bg-white/5">
-          <IconMovie size={13} className="text-white/25" />
-        </div>
-      )}
-      <div className="min-w-0">
-        <div className="flex items-center gap-2.5">
-          <span className="truncate text-[13.5px] font-bold" title={dl.releaseTitle}>
+    <Row gap={12} minW={0}>
+      <Box w={30} h={44} shrink={0} center radius={3} overflow="hidden" bg="tint/5">
+        {dl.posterUrl ? (
+          <Img src={dl.posterUrl} fill />
+        ) : (
+          <Icon name="movie" size={13} color="glyphDim" />
+        )}
+      </Box>
+      <Box minW={0}>
+        <Row gap={10}>
+          <Text variant="label" lines={1}>
             {dl.title}
-          </span>
-          {targetLabel ? (
-            <span className="flex-[0_0_auto] rounded-full bg-info/[0.14] px-[7px] py-0.5 text-[9px] font-bold text-info">
-              {targetLabel}
-            </span>
-          ) : null}
-        </div>
-        <div className="mt-[3px] flex items-center gap-1.5 text-[11.5px] font-medium text-white/40">
-          <span className="truncate" title={dl.releaseTitle}>
+          </Text>
+          {targetLabel ? <Badge tone="info">{targetLabel}</Badge> : null}
+        </Row>
+        <Row gap={6} mt={3} minW={0}>
+          <Text variant="meta" color="text/40" lines={1}>
             {dl.releaseTitle}
-          </span>
+          </Text>
           {dl.indexerName ? (
-            <span className="flex-[0_0_auto] text-white/30">· {dl.indexerName}</span>
+            <Text variant="meta" color="text/30" shrink={0}>
+              · {dl.indexerName}
+            </Text>
           ) : null}
           {dl.detailsUrl ? (
             <a
@@ -127,19 +195,19 @@ function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
               target="_blank"
               rel="noreferrer"
               title={t('downloads.viewOnTracker')}
-              className="flex-[0_0_auto] text-white/40 hover:text-accent"
+              style={TRACKER_LINK}
             >
-              <IconExternalLink size={12} stroke={2} />
+              <Icon name="external-link" size={12} stroke={2} color="glyph" />
             </a>
           ) : null}
-        </div>
+        </Row>
         {dl.error ? (
-          <div className="mt-1 truncate text-[11.5px] font-semibold text-danger-hover">
+          <Text variant="meta" color="dangerHover" lines={1} mt={4}>
             {dl.error}
-          </div>
+          </Text>
         ) : null}
-      </div>
-    </div>
+      </Box>
+    </Row>
   );
 }
 
@@ -149,13 +217,19 @@ function RowProgressCell({
   tone,
 }: Readonly<{ dl: DownloadView; progress: number; tone: ColorValue }>) {
   return (
-    <div className="max-md:hidden">
+    <Box>
       <Progress value={progress} color={tone} size={5} rounded />
-      <div className="mt-1 flex items-center justify-between text-[11px] font-semibold tabular-nums text-white/45">
-        <span>{Math.round(progress * 100)}%</span>
-        {dl.sizeBytes != null ? <span>{formatBytes(dl.sizeBytes)}</span> : null}
-      </div>
-    </div>
+      <Row between mt={4}>
+        <Text variant="meta" color="text/45" style={s.tabular}>
+          {Math.round(progress * 100)}%
+        </Text>
+        {dl.sizeBytes != null ? (
+          <Text variant="meta" color="text/45" style={s.tabular}>
+            {formatBytes(dl.sizeBytes)}
+          </Text>
+        ) : null}
+      </Row>
+    </Box>
   );
 }
 
@@ -167,29 +241,38 @@ function RowSpeedCell({
   stat: { downBps: number; upBps: number; peers: number; peersSeen: number };
 }>) {
   const t = useT();
+  if (!active) {
+    return (
+      <Text variant="meta" color="text/30">
+        -
+      </Text>
+    );
+  }
+  const peerTone = stat.peers > 0 ? 'info' : 'accent';
   return (
-    <div className="text-[11.5px] font-semibold tabular-nums text-white/55 max-md:hidden">
-      {active ? (
-        <>
-          <div className="text-success">{formatBytes(stat.downBps)}/s</div>
-          <div className="flex items-center gap-1.5 text-white/35">
-            <span>{formatBytes(stat.upBps)}/s</span>
-            <span
-              className={`flex items-center gap-0.5 ${stat.peers > 0 ? 'text-info' : 'text-accent'}`}
-              title={t('downloads.peersDetail', {
-                live: String(stat.peers),
-                seen: String(stat.peersSeen),
-              })}
-            >
-              <IconUsers size={11} stroke={2} />
+    <Box>
+      <Text variant="meta" color="success" style={s.tabular}>
+        {formatBytes(stat.downBps)}/s
+      </Text>
+      <Row gap={6}>
+        <Text variant="meta" color="text/35" style={s.tabular}>
+          {formatBytes(stat.upBps)}/s
+        </Text>
+        <Tooltip
+          label={t('downloads.peersDetail', {
+            live: String(stat.peers),
+            seen: String(stat.peersSeen),
+          })}
+        >
+          <Row gap={2}>
+            <Icon name="users" size={11} stroke={2} color={peerTone} />
+            <Text variant="meta" color={peerTone} style={s.tabular}>
               {stat.peersSeen > stat.peers ? `${stat.peers}/${stat.peersSeen}` : stat.peers}
-            </span>
-          </div>
-        </>
-      ) : (
-        <span className="text-white/30">-</span>
-      )}
-    </div>
+            </Text>
+          </Row>
+        </Tooltip>
+      </Row>
+    </Box>
   );
 }
 
@@ -202,19 +285,24 @@ function RowStatusCell({
   const t = useT();
   const ink = color(tone);
   return (
-    <div className="max-md:hidden">
-      <span
-        className="inline-flex items-center gap-1.5 rounded-full px-[10px] py-[4px] text-[11px] font-bold"
-        style={{ color: ink, background: `color-mix(in srgb, ${ink} 13%, transparent)` }}
+    <Box>
+      <Row
+        self="flex-start"
+        gap={6}
+        px={10}
+        py={4}
+        radius="pill"
+        style={{ backgroundColor: `color-mix(in srgb, ${ink} 13%, transparent)` }}
       >
-        <span
-          className={`h-1.5 w-1.5 rounded-full ${active ? 'animate-pulse' : ''}`}
-          style={{ background: ink }}
-        />
-        {t(`downloads.st.${status}` as MessageKey)}
-      </span>
-      <div className="mt-1 text-[10.5px] font-medium text-white/35">{dl.clientName}</div>
-    </div>
+        <span style={{ ...STATUS_DOT, background: ink, animation: active ? BREATHE : undefined }} />
+        <Text variant="meta" color={tone}>
+          {t(`downloads.st.${status}` as MessageKey)}
+        </Text>
+      </Row>
+      <Text variant="meta" color="text/35" mt={4}>
+        {dl.clientName}
+      </Text>
+    </Box>
   );
 }
 
@@ -262,7 +350,7 @@ function RowActionsMenu({
     : null;
 
   return (
-    <div className="flex justify-end">
+    <Row justify="flex-end">
       <Menu.Root label={t('downloads.rowActions')} align="end">
         <Menu.Trigger />
         {pausable ? (
@@ -311,6 +399,6 @@ function RowActionsMenu({
           tone="danger"
         />
       </Menu.Root>
-    </div>
+    </Row>
   );
 }

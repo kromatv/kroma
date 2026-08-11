@@ -3,16 +3,16 @@ import { type ReactNode, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import type { ControlSize } from '#ui/lib/field-shell';
-import { Pagination } from './pagination';
+import { Pagination, paginationVariants } from './pagination';
 
 interface DemoProps {
-  pageCount: number;
-  siblings: number;
-  size: ControlSize;
+  pageCount?: number;
+  siblings?: number;
+  size?: ControlSize;
   start?: number;
 }
 
-function Demo({ pageCount, siblings, size, start = 1 }: Readonly<DemoProps>) {
+function Demo({ pageCount = 24, siblings, size, start = 1 }: Readonly<DemoProps>) {
   const [page, setPage] = useState(start);
   return (
     <Pagination.Root
@@ -26,7 +26,7 @@ function Demo({ pageCount, siblings, size, start = 1 }: Readonly<DemoProps>) {
   );
 }
 
-function Composed({ pageCount, siblings, size }: Readonly<DemoProps>) {
+function Composed({ pageCount = 24, siblings, size }: Readonly<DemoProps>) {
   const [page, setPage] = useState(6);
   return (
     <Pagination.Root
@@ -80,53 +80,33 @@ export default story({
       "Don't reach for it when the whole list fits: that is a scroll, not a page.",
     ],
   },
+  variants: paginationVariants,
+  omit: ['current'],
   matrix: false,
-  args: { pageCount: 24, siblings: 1, size: 'md' },
+  args: { pageCount: 24, siblings: 1 },
   controls: {
     pageCount: { min: 1, max: 60, step: 1 },
     siblings: { min: 0, max: 3, step: 1 },
-    size: ['sm', 'md', 'tv'],
   },
-  render: ({ pageCount, siblings, size }) => (
-    <Demo
-      key={`${pageCount}-${siblings}-${size}`}
-      pageCount={pageCount}
-      siblings={siblings}
-      size={size}
-    />
-  ),
+  render: (props) => <Demo {...props} key={props.pageCount} />,
   scenes: [
     {
       name: 'The ends',
       docs: 'On the first page previous is dim, on the last one next is; both keep their place, so the numbers never slide sideways.',
-      render: ({ pageCount, siblings, size }) => (
+      render: (props) => (
         <Box gap={28}>
           <Labelled name="first page">
-            <Demo
-              key={`first-${pageCount}-${siblings}-${size}`}
-              pageCount={pageCount}
-              siblings={siblings}
-              size={size}
-              start={1}
-            />
+            <Demo {...props} key={`first-${props.pageCount}`} start={1} />
           </Labelled>
           <Labelled name="mid range">
             <Demo
-              key={`mid-${pageCount}-${siblings}-${size}`}
-              pageCount={pageCount}
-              siblings={siblings}
-              size={size}
-              start={Math.ceil(pageCount / 2)}
+              {...props}
+              key={`mid-${props.pageCount}`}
+              start={Math.ceil(props.pageCount / 2)}
             />
           </Labelled>
           <Labelled name="last page">
-            <Demo
-              key={`last-${pageCount}-${siblings}-${size}`}
-              pageCount={pageCount}
-              siblings={siblings}
-              size={size}
-              start={pageCount}
-            />
+            <Demo {...props} key={`last-${props.pageCount}`} start={props.pageCount} />
           </Labelled>
         </Box>
       ),
@@ -134,13 +114,13 @@ export default story({
     {
       name: 'Short range',
       docs: 'Under eight pages nothing is hidden, so no ellipsis is drawn at all.',
-      render: ({ siblings, size }) => (
+      render: (props) => (
         <Box gap={28}>
           <Labelled name="7 pages">
-            <Demo key={`seven-${siblings}-${size}`} pageCount={7} siblings={siblings} size={size} />
+            <Demo {...props} pageCount={7} />
           </Labelled>
           <Labelled name="1 page">
-            <Demo key={`one-${siblings}-${size}`} pageCount={1} siblings={siblings} size={size} />
+            <Demo {...props} pageCount={1} />
           </Labelled>
         </Box>
       ),
@@ -148,14 +128,7 @@ export default story({
     {
       name: 'Composed',
       docs: 'The reason the parts are named: a row the props API could not describe, here with the count spelled out ahead of the controls.',
-      render: ({ pageCount, siblings, size }) => (
-        <Composed
-          key={`composed-${pageCount}-${siblings}-${size}`}
-          pageCount={pageCount}
-          siblings={siblings}
-          size={size}
-        />
-      ),
+      render: (props) => <Composed {...props} key={`composed-${props.pageCount}`} />,
     },
   ],
 });

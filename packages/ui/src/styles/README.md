@@ -15,11 +15,16 @@ An app's entry stylesheet writes one line:
 @import "@kroma/ui/css";
 ```
 
-and three where Tailwind runs:
+and where Tailwind runs, the same stylesheet in parts, because Tailwind's own
+preflight is already a reset and a second unlayered one would outrank every
+utility it collides with (`h1 { font-size: inherit }` beats `text-4xl`):
 
 ```css
 @import "tailwindcss";
-@import "@kroma/ui/css";
+@import "@kroma/ui/css/fonts";
+@import "@kroma/ui/css/tokens";
+@import "@kroma/ui/css/motion";
+@import "@kroma/ui/css/page";
 @import "@kroma/ui/css/theme";
 ```
 
@@ -31,11 +36,13 @@ and three where Tailwind runs:
 | `@kroma/ui/css/fonts` | the `@font-face` rules |
 | `@kroma/ui/css/motion` | the component keyframes |
 | `@kroma/ui/css/reset` | the UA stylesheet undone, and nothing else |
+| `@kroma/ui/css/page` | body, focus ring, scrollbars, with the reset left out |
 | `@kroma/ui/css/base` | reset, body, focus ring, scrollbars |
 
 The parts exist for `@kroma/tv`, which wants the type, the tokens and the reset
 but none of the page furniture on top of it (it hides overflow, grounds itself
-dark and owns its focus visuals).
+dark and owns its focus visuals), and for `apps/www`, which wants the furniture
+without the reset.
 
 ## The fonts come with a preload, not just a `@font-face`
 

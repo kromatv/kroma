@@ -1,25 +1,4 @@
-@import "tailwindcss";
 @import "@kroma/ui/css";
-@import "@kroma/ui/css/theme";
-
-/* Tailwind v4 auto-detects sources rooted at this app, so it misses class names
-   in packages/modules that live OUTSIDE clients/web: the admin UI kit and every
-   COMPILE-TIME module's ui/ (which contribute full admin pages, bundled into
-   this build). Source them explicitly, or their unique utilities (e.g. a module
-   page's grid template) never get emitted and the layout breaks. (Runtime .tar
-   modules ship their own CSS instead - see the shared entry above.) */
-@source "../../../packages/ui/src/components/**/*.{ts,tsx}";
-@source "../../../modules/*/ui/src/**/*.{ts,tsx}";
-
-@layer base {
-  html,
-  body {
-    margin: 0;
-    background: var(--kroma-bg);
-    color: var(--kroma-text);
-    font-family: var(--font-sans);
-  }
-}
 
 /* Phones: form fields at 16px minimum. Below that iOS Safari force-zooms the
    page on focus, and the app's 13-15px field text reads tiny on a handset.
@@ -33,33 +12,186 @@
 }
 
 /* (Fluid layout tokens --gutter-web/--card-w + the kroma-breathe/fade-in/pop-in
-   keyframes now live in the shared @kroma/ui/tailwind.css imported above.) */
+   keyframes come from @kroma/ui/css above.) */
 
-/* The two shapes shared/ui/page.tsx names. They are CSS rather than <Box>
-   props because neither has a React Native spelling: a page frame hangs off the
+/* THE APP FRAME (routes/_app.tsx). One column on a handset, with the sidebar
+   swapped for a sticky topbar; a fixed rail beside the content from `lg` up.
+   The two navigations swap by existing or not, which is a media query and has
+   no <Box> spelling. */
+.app-frame {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+@media (min-width: 1024px) {
+  .app-frame {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+  }
+}
+
+/* The three shapes shared/ui/page.tsx names. They are CSS rather than <Box>
+   props because none has a React Native spelling: a page frame hangs off the
    <main> LANDMARK, which stays an element, and its side padding is the fluid
    --gutter-web clamp() that no style number can carry; a scrim is
-   `position: fixed` plus a backdrop filter. Layered, so a utility on the same
-   element still wins. */
-@layer components {
-  .page-main {
-    min-width: 0;
-    padding-inline: var(--gutter-web);
-    padding-top: 36px;
-    padding-bottom: 80px;
-  }
+   `position: fixed` plus a backdrop filter; and an auto-filled grid measures
+   itself in the engine rather than in a layout pass. */
+.page-main {
+  min-width: 0;
+  padding-inline: var(--gutter-web);
+  padding-top: 36px;
+  padding-bottom: 80px;
+}
 
-  /* The ink here is the one raw colour left in the app, and deliberately not a
-     token: a dialog has to read as sitting IN FRONT of the page, which it
-     cannot do while painted in the page's own ground. See shared/ui/page.tsx. */
-  .modal-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 60;
-    background: rgba(4, 4, 6, 0.66);
-    -webkit-backdrop-filter: blur(3px);
-    backdrop-filter: blur(3px);
+/* The ink here is the one raw colour left in the app, and deliberately not a
+   token: a dialog has to read as sitting IN FRONT of the page, which it
+   cannot do while painted in the page's own ground. See shared/ui/page.tsx. */
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(4, 4, 6, 0.66);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--card-w), 100%), 1fr));
+  column-gap: 18px;
+  row-gap: 24px;
+}
+.poster-grid > * {
+  /* biome-ignore lint/complexity/noImportantStyles: a tile states its own width inline so it can size its art request, and in a grid the cell has to win instead. */
+  width: 100% !important;
+}
+
+/* THE POSTER TILE (shared/ui/poster.tsx). One pointer over the tile moves three
+   different descendants at once - the card takes the accent ring and the deeper
+   shadow, the caption fades up, the watched toggle appears - and a state on the
+   PARENT painting a CHILD is the one thing no style prop can express on any
+   renderer. `data-reveal` marks the faces that are hidden until then: artwork
+   hides the caption it would fight with, and an unwatched title hides its
+   toggle, while a watched one keeps it in view. */
+.poster-cell {
+  width: 100%;
+  max-width: 208px;
+  margin-inline: auto;
+}
+.poster-cell > * {
+  /* biome-ignore lint/complexity/noImportantStyles: same inline width as the grid above. */
+  width: 100% !important;
+}
+.poster-tile {
+  position: relative;
+  flex-shrink: 0;
+  text-align: left;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.poster-tile:hover {
+  transform: translateY(var(--hover-lift));
+}
+.poster-hit {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+/* The card's outline below IS this button's focus visual, so it must not draw
+   a second ring around the whole tile. */
+.poster-hit:focus-visible {
+  outline: none;
+}
+/* The accent ring is an outline, not a second box-shadow: a shadow list
+   interpolates item by item, so growing [card] into [ring, pop] faded the
+   card's 28px blur into the ring's slot and the ring arrived as a halo before
+   it snapped. An outline has no blur radius at any frame. */
+.poster-art {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  outline: 3px solid transparent;
+  transition:
+    box-shadow var(--dur-base) var(--ease-out),
+    outline-color var(--dur-base) var(--ease-out);
+}
+.poster-tile:hover .poster-art,
+.poster-tile:focus-within .poster-art {
+  box-shadow: var(--shadow-pop);
+  outline-color: var(--kroma-accent);
+}
+.poster-caption {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+.poster-toggle {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 2;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.poster-caption[data-reveal],
+.poster-toggle[data-reveal] {
+  opacity: 0;
+}
+.poster-tile:hover .poster-caption[data-reveal],
+.poster-tile:hover .poster-toggle[data-reveal],
+.poster-tile:focus-within .poster-caption[data-reveal],
+.poster-tile:focus-within .poster-toggle[data-reveal] {
+  opacity: 1;
+}
+
+/* THE BROWSE PAGES' DISPLAY TITLE (features/catalog/browse-hero.tsx), also
+   rendered by the routes' pending headers so the skeleton does not jump on
+   settle. Not a type role: it is fluid between two of them, and the ramp holds
+   sizes rather than clamps. */
+.browse-title {
+  font: 700 clamp(36px, 4.5vw, 56px) / 0.95 var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+/* THE GENRE WALL (routes/_app.genres.tsx). A count of columns per width is a
+   media query, and a router <a> is the one control the kit does not render
+   (components/DESIGN.md §4), so its rest and hover faces are stated here. The
+   focus ring is deliberately absent: the app's own ring already lands on it. */
+.genre-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (min-width: 600px) {
+  .genre-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+@media (min-width: 1024px) {
+  .genre-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.genre-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--kroma-tint) 6%, transparent);
+  border-radius: var(--radius-2xl);
+  transition: border-color var(--dur-base) var(--ease-out);
+}
+.genre-tile:hover {
+  border-color: color-mix(in srgb, var(--kroma-accent) 50%, transparent);
+}
+.genre-tile-art {
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.genre-tile:hover .genre-tile-art {
+  transform: scale(1.05);
 }
 
 /* Notification centre (features/notifications/panel.tsx). An edge-anchored
@@ -111,23 +243,21 @@
   --ring-field: var(--ring-width) solid color-mix(in srgb, var(--kroma-accent) 32%, transparent);
 }
 
-/* THE FIELD FOCUS VISUAL, for every text entry on the web.
-   Unlayered on purpose, so it beats Tailwind's layered utilities: a field
-   can neither opt out of it nor dress its own focus from a class. It is the
-   field ring above plus the accent border the fields already ask for.
+/* THE FIELD FOCUS VISUAL, for every text entry on the web: the field ring
+   above plus the accent border the fields already ask for.
    A borderless control whose WRAPPER is the box a reader sees (a search box
    with a glyph in it, an InputGroup) marks itself `data-focus-ring="off"`:
    the control takes no ring, and its direct parent lights up instead.
    `[role="combobox"]` is included because a select chip is a FIELD even
    though it is built from a button. */
 input:not(
-    [type="checkbox"],
-    [type="radio"],
-    [type="range"],
-    [type="file"],
-    [type="submit"],
-    [type="button"]
-  ):focus-visible:not([data-focus-ring="off"]),
+  [type="checkbox"],
+  [type="radio"],
+  [type="range"],
+  [type="file"],
+  [type="submit"],
+  [type="button"]
+):focus-visible:not([data-focus-ring="off"]),
 textarea:focus-visible:not([data-focus-ring="off"]),
 select:focus-visible,
 [role="combobox"]:focus-visible,
@@ -265,7 +395,9 @@ button.admin-table-row:hover {
   font: var(--type-label);
   color: var(--kroma-text-muted);
   text-decoration: none;
-  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
 .admin-nav-link:hover {
   background: color-mix(in srgb, var(--kroma-tint) 4%, transparent);

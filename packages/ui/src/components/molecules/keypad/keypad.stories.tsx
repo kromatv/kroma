@@ -2,7 +2,7 @@ import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { PinField } from '#ui/components/molecules/pin-field';
-import { Keypad } from './keypad';
+import { Keypad, keypadVariants } from './keypad';
 
 function PinEntry() {
   const [code, setCode] = useState('');
@@ -31,6 +31,8 @@ export default story({
       "Don't use it where the platform has a real keyboard; that shell types into the field directly.",
     ],
   },
+  variants: keypadVariants,
+  omit: ['kind'],
   matrix: false,
   args: { autoFocus: false, disabled: false },
   render: (props) => <Keypad {...props} onDigit={() => {}} onDelete={() => {}} />,

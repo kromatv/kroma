@@ -51,7 +51,7 @@ function AppLayout() {
     // Which TV this browser is driving is shell-wide: the button on a title
     // page and the docked remote are two views of one session.
     <CastProvider client={kromaClient()} enabled deviceName={BROWSER_LABEL}>
-      <div className="flex min-h-screen flex-col lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+      <div className="app-frame">
         <Sidebar />
         <MobileTopbar />
         <Outlet />

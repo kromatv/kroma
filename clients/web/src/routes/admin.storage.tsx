@@ -228,7 +228,7 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
             <Icon name="database" size={20} stroke={1.8} color="accent" />
           </Box>
           <Box minW={0}>
-            <div className="font-display text-[16px] font-bold">{v.name || v.mount}</div>
+            <Text variant="cardTitle">{v.name || v.mount}</Text>
             <Text variant="meta" color="text/45" lines={1}>
               {v.mount} · {v.fs}
             </Text>

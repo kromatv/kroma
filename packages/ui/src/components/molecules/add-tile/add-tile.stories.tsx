@@ -1,7 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Text } from '#ui/components/atoms/text';
-import { AddTile } from './add-tile';
+import { AddTile, addTileVariants } from './add-tile';
 
 // The tile is built to sit over artwork, so the story puts it there: on a flat
 // panel a ghost outline looks fine, which is exactly how the bare version
@@ -36,40 +35,12 @@ export default story({
       "Don't put it on an opaque panel expecting the ghost look; the fill is deliberate.",
     ],
   },
-  render: () => (
+  variants: addTileVariants,
+  args: { label: 'Ajouter un profil', icon: 'plus' as 'plus' | 'server' | 'device-tv' },
+  controls: { icon: ['plus', 'server', 'device-tv'] },
+  render: (props) => (
     <OverArt>
-      <AddTile label="Ajouter un profil" onPress={() => {}} />
+      <AddTile {...props} onPress={() => {}} />
     </OverArt>
   ),
-  scenes: [
-    {
-      name: 'Both sizes',
-      docs: 'The phone tile is the ten-foot one at a hand-held scale: same dashes, same glass, same corner ratio.',
-      render: () => (
-        <OverArt>
-          <Box align="center" gap={12}>
-            <Text variant="overline" color="textDim">
-              md
-            </Text>
-            <AddTile size="md" label="Ajouter" onPress={() => {}} />
-          </Box>
-          <Box align="center" gap={12}>
-            <Text variant="overline" color="textDim">
-              tv
-            </Text>
-            <AddTile label="Ajouter un profil" onPress={() => {}} />
-          </Box>
-        </OverArt>
-      ),
-    },
-    {
-      name: 'Another glyph',
-      docs: 'The same slot for a row of servers rather than profiles.',
-      render: () => (
-        <OverArt>
-          <AddTile icon="server" label="Ajouter un serveur" onPress={() => {}} />
-        </OverArt>
-      ),
-    },
-  ],
 });

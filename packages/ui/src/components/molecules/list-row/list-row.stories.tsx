@@ -30,6 +30,7 @@ export default story({
     ],
   },
   variants: listRowVariants,
+  omit: ['standalone', 'pressable'],
   // The row is `width: 100%` of whatever holds it, so the canvas has to say how
   // wide that is. A range rather than a number: a settings column and a TV menu
   // are different widths, and the label truncating is what has to hold in both.

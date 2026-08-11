@@ -203,9 +203,14 @@ export const motionCss = () => readCss('motion');
  *  needs whatever chrome it goes on to supply itself. */
 export const resetCss = () => readCss('reset');
 
+/** The page furniture on top of a reset: the grounded body, the focus ring and
+ *  the scrollbars. Taken alone by a target that brings its own reset - a
+ *  Tailwind app has preflight, and two unlayered resets would fight. */
+export const pageCss = () => readCss('base');
+
 /** The reset and page furniture a browser target wants. A TV shell takes the
  *  reset alone, so this is not in the `tokens` half every target shares. */
-export const baseCss = () => [resetCss(), readCss('base')].join('\n\n');
+export const baseCss = () => [resetCss(), pageCss()].join('\n\n');
 
 /** The whole design system, framework-free: type, tokens, motion and the reset.
  *  A Tailwind app adds `@import "tailwindcss"` and `@kroma/ui/css/theme`. */
@@ -224,6 +229,7 @@ const EXPANSION: Record<string, () => string> = {
   '/fonts': fontsCss,
   '/motion': motionCss,
   '/reset': resetCss,
+  '/page': pageCss,
   '/base': baseCss,
 };
 
