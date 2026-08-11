@@ -35,7 +35,8 @@ const MIN_WIDTH = 184;
 const MAX_HEIGHT = 400;
 const PANEL_PAD = 6;
 const ROW_RADIUS = CONTROL.sm.radius;
-const PANEL_RADIUS = ROW_RADIUS + PANEL_PAD;
+// Concentric with the rows inside it: ROW_RADIUS plus PANEL_PAD.
+const PANEL_RADIUS = 'xl';
 
 function MenuPanel({ onClose, label, items, align, anchor }: Readonly<MenuSurfaceProps>) {
   const t = useTDefault();
@@ -205,7 +206,7 @@ function PanelItem({
 
 const s = styles({
   row: { radius: ROW_RADIUS },
-  active: { bg: 'white/7' },
+  active: { bg: 'tint/7' },
   activeDanger: { bg: 'danger/14' },
   disabled: { opacity: 0.4 },
   label: { fontSize: 13, fontWeight: '600' },

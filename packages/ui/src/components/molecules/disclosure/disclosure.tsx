@@ -42,7 +42,7 @@ function Disclosure({
         style={s.header}
         states={HEADER_STATES}
       >
-        <Txt variant="overline" color="accent">
+        <Txt variant="overline" color="accentText">
           {title}
         </Txt>
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color="textMuted" />

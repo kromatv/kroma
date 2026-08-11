@@ -2,42 +2,17 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    // Stated because auto-inclusion does not pick @types/node up here: `node`
-    // for app.config.ts and the plugins, which run in Node at prebuild time.
+    "allowImportingTsExtensions": true,
     "types": ["node", "react"],
-    // `#mobile/*` mirrors the repo's per-package alias convention (`#tv/*` in
-    // packages/tv, `#web/*` in clients/web), so a module is named by what it is
-    // rather than by how far up the tree it sits. Declared in package.json
-    // "imports" as well, so Metro resolves it as a real Node subpath import and
-    // not only through this TypeScript-level mapping.
     "paths": {
       "#mobile/*": ["./src/*"],
       "#mobile-assets/*": ["./assets/*"],
-      // This config extends expo's base rather than the repo's, so the aliases
-      // the workspace packages import THEMSELVES by have to be repeated here:
-      // typechecking this app pulls @kroma/ui's own sources into the program,
-      // and those name each other `#ui/...`. Metro resolves them from
-      // packages/ui's package.json "imports" - this is the TypeScript half.
       "#ui/*": ["../../packages/ui/src/*"],
       "#tv/*": ["../../packages/tv/src/*"],
-      // And `#web/*`, for the one place a mobile test asserts the OTHER half of
-      // a contract it shares with the browser: the phone writes a User-Agent
-      // and the web account page reads it back, so `lib/device.test.ts` checks
-      // both ends together (the runner already resolves it from the root
-      // vitest config; this is the TypeScript half).
       "#web/*": ["../web/src/*"],
-      // ONE react-native for the whole program. This app aliases react-native
-      // to the TV fork, but dependencies with their own nested copies (bun
-      // links them the PLAIN package) dragged upstream's types into the same
-      // program as the fork's, and identical shapes failed as "not assignable"
-      // to each other (ViewStyle vs ViewStyle, from two copies). Every bare
-      // `react-native` now names the copy this app actually ships.
       "react-native": ["./node_modules/react-native"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  // metro.config.ts imports the untyped CommonJS factory in clients/expo-build,
-  // and including it would pull that whole file into this strict program. The
-  // rest re-states the expo base's exclude list, which this field replaces.
   "exclude": ["node_modules", "metro.config.ts", "android", "ios"]
 }

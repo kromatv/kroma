@@ -2,19 +2,20 @@
 
 Everything that makes KROMA installable from Synology's Package Center:
 
-- **`worker/`** the DYNAMIC package source (a Cloudflare Worker, SynoCommunity
-  style): paste the bare worker URL under **Package Center > Settings > Package
-  Sources** and DSM's POST gets a live catalog assembled from the GitHub
-  Releases API (all releases, stable + nightly channels, arch/DSM filtered,
-  edge-cached 5 min). Publishing a release is the whole deploy; nothing is
-  rebuilt. Browsers hitting the same URL get a landing page listing EVERY
-  version. Deploy: `cd worker && bunx wrangler deploy`
-  (CI: `.github/workflows/repo-worker.yml`, on worker changes only).
+- **`apps/packages`** (not here) the DYNAMIC package source (a Cloudflare
+  Worker, SynoCommunity style): paste the bare worker URL under **Package
+  Center > Settings > Package Sources** and DSM's POST gets a live catalog
+  assembled from the GitHub Releases API (all releases, stable + nightly
+  channels, arch/DSM filtered, edge-cached 5 min). Publishing a release is the
+  whole deploy; nothing is rebuilt. Browsers hitting the same URL get a landing
+  page listing EVERY version. Deploy:
+  `bun run --filter '@kroma/package-source' deploy`
+  (CI: `.github/workflows/repo-worker.yml`, on app changes only).
 - **`src/gen-catalog.ts`** the STATIC catalog generator (`catalog.json` +
   landing page + icon) for GitHub Pages, kept as a zero-infra fallback.
 - **`src/gen-spk-info.ts`** emits the `<spk>.info.json` sidecar CI attaches
   next to every released `.spk` (version, md5, size, description read from the
-  package itself); the worker aggregates these.
+  package itself); the package source aggregates these.
 - **`src/backfill-info.ts`** one-time backfill of those sidecars onto
   pre-existing releases: `bun packages/synology-repo/src/backfill-info.ts`.
 

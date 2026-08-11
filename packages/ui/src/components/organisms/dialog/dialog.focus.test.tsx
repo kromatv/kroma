@@ -8,7 +8,8 @@ import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
 import { OverlayHost } from '#ui/lib/overlay-host';
 import { clearPressGuard } from '#ui/lib/press-guard';
-import { Dialog, DialogFooter } from './dialog';
+import { Dialog } from './dialog';
+import { DialogFooter } from './dialog-actions';
 
 beforeAll(() => configureRemote());
 

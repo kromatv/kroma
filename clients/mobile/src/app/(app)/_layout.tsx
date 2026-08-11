@@ -1,7 +1,7 @@
+import { color } from '@kroma/ui/kit';
 import { Redirect, Stack } from 'expo-router';
 import { isTablet } from '#mobile/lib/layout';
 import { useSession } from '#mobile/lib/session';
-import { colors } from '#mobile/lib/theme';
 
 /** Everything behind the auth gate: tabs, detail pages, the player. */
 export default function AppLayout() {
@@ -12,7 +12,7 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.bg },
+        contentStyle: { backgroundColor: color('bg') },
         orientation: isTablet ? 'default' : 'portrait',
       }}
     >

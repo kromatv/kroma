@@ -4,15 +4,15 @@
 
 import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
 import { Box, Button, Field, Icon, styles, Txt } from '@kroma/ui/kit';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
-import { goBack } from '#mobile/lib/nav';
+import { goBack, routeParam } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 const CATEGORIES: { key: ReportCategory; label: string; hint: string }[] = [
   { key: 'metadata', label: 'report.category.metadata', hint: 'report.category.metadataHint' },
@@ -22,8 +22,13 @@ const CATEGORIES: { key: ReportCategory; label: string; hint: string }[] = [
   { key: 'other', label: 'report.category.other', hint: 'report.category.otherHint' },
 ] as const;
 
-export default function ReportProblem() {
-  const { id, kind, title } = useLocalSearchParams<{ id: string; kind: string; title?: string }>();
+export default function ReportRoute() {
+  const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
+  return id ? <ReportProblem id={id} /> : <Redirect href="/" />;
+}
+
+function ReportProblem({ id }: Readonly<{ id: string }>) {
+  const { kind, title } = useLocalSearchParams<{ kind: string; title?: string }>();
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -57,7 +62,7 @@ export default function ReportProblem() {
       {state === 'done' ? (
         <Box style={s.done}>
           <Box style={s.doneBadge}>
-            <Icon name="check" size={30} stroke={2.4} color={colors.accentInk} />
+            <Icon name="check" size={30} stroke={2.4} color="accentInk" />
           </Box>
           <Txt style={s.doneText}>{t('report.submitted')}</Txt>
         </Box>
@@ -69,7 +74,7 @@ export default function ReportProblem() {
           <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
             {title ? (
               <Box style={s.subjectRow}>
-                <Icon name="flag" size={16} stroke={1.8} color={colors.accent} />
+                <Icon name="flag" size={16} stroke={1.8} color="accentText" />
                 <Txt lines={1} style={s.subject}>
                   {title}
                 </Txt>
@@ -87,17 +92,17 @@ export default function ReportProblem() {
                     style={({ pressed }) => [
                       s.card,
                       active && s.cardActive,
-                      pressed && !active && { backgroundColor: colors.surfaceRaised },
+                      pressed && !active && s.cardPressed,
                     ]}
                   >
                     <Box style={s.cardText}>
-                      <Txt style={[s.cardLabel, active && { color: colors.accent }]}>
+                      <Txt style={[s.cardLabel, active && s.cardLabelActive]}>
                         {t(c.label as never)}
                       </Txt>
                       <Txt style={s.cardHint}>{t(c.hint as never)}</Txt>
                     </Box>
                     {active ? (
-                      <Icon name="check" size={18} stroke={2.4} color={colors.accent} />
+                      <Icon name="check" size={18} stroke={2.4} color="accentText" />
                     ) : null}
                   </Pressable>
                 );
@@ -148,8 +153,10 @@ const s = styles({
     borderWidth: 1.5,
   },
   cardActive: { bg: 'accentSoft', borderColor: 'accent' },
+  cardPressed: { bg: 'surface2' },
   cardText: { flex: true, gap: 2 },
   cardLabel: { ...type.body, fontWeight: '700' },
+  cardLabelActive: { color: 'accentText' },
   cardHint: { ...type.small },
   message: { minH: 96, pt: 12, textAlignVertical: 'top' },
   error: { color: 'danger', fontSize: 13 },

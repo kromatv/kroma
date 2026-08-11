@@ -2,9 +2,36 @@
 // `textMuted` (62% ink) and its `textFaint` is the kit's `textDim` (45% ink).
 // Aligning them would silently degrade contrast across the whole app.
 
-import { colors as kit, mobileType } from '@kroma/ui/kit';
-import { describe, expect, it } from 'vitest';
-import { colors, posterWidth, TAB_BAR_CLEARANCE, type } from './theme';
+import {
+  KROMA,
+  KROMA_LIGHT,
+  colors as kit,
+  mobileRadius,
+  mobileType,
+  mobileTypeSpec,
+  setTheme,
+} from '@kroma/ui/kit';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  colors,
+  MOBILE,
+  MOBILE_LIGHT,
+  mobileTheme,
+  posterWidth,
+  shades,
+  TAB_BAR_CLEARANCE,
+  type,
+} from './theme';
+
+vi.mock('react-native', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  useTVEventHandler: undefined,
+  Platform: { OS: 'ios', select: (o: Record<string, unknown>) => o.ios ?? o.default },
+}));
+
+afterEach(() => {
+  setTheme(KROMA);
+});
 
 describe('the colour mapping', () => {
   it('takes every value from the kit rather than holding its own', () => {
@@ -54,10 +81,10 @@ describe('the type ramp', () => {
 
   it('dims the two small roles and not the rest', () => {
     for (const role of ['display', 'title', 'heading', 'section', 'body'] as const) {
-      expect(type[role].color).toBe(kit.text);
+      expect(type[role].color).toBe('text');
     }
-    expect(type.caption.color).toBe(kit.textMuted);
-    expect(type.small.color).toBe(kit.textMuted);
+    expect(type.caption.color).toBe('textMuted');
+    expect(type.small.color).toBe('textMuted');
   });
 
   it('covers the kit’s whole ramp, so no role falls back to black', () => {
@@ -104,6 +131,58 @@ describe('posterWidth', () => {
 
   it('grows with the screen', () => {
     expect(posterWidth(430)).toBeGreaterThan(posterWidth(390));
+  });
+});
+
+describe('mobileTheme', () => {
+  it('answers with the twin that matches the ground the app is on', () => {
+    expect(mobileTheme()).toBe(MOBILE);
+    setTheme(KROMA_LIGHT);
+    expect(mobileTheme()).toBe(MOBILE_LIGHT);
+  });
+
+  it('takes the ground it is handed over the one that is lit', () => {
+    expect(mobileTheme(KROMA_LIGHT)).toBe(MOBILE_LIGHT);
+    setTheme(KROMA_LIGHT);
+    expect(mobileTheme(KROMA)).toBe(MOBILE);
+  });
+
+  it('shapes both twins for a hand, not for a room', () => {
+    for (const theme of [MOBILE, MOBILE_LIGHT]) {
+      expect(theme.typeSpec.body).toEqual(mobileTypeSpec.body);
+      expect(theme.typeSpec.title).toEqual(mobileTypeSpec.title);
+      expect(theme.radius.md).toBe(mobileRadius.md);
+    }
+    expect(MOBILE.typeSpec.body).not.toEqual(KROMA.typeSpec.body);
+    expect(MOBILE.radius.md).not.toBe(KROMA.radius.md);
+  });
+
+  it('gives the paper twin the paper ground and the same ramp', () => {
+    expect(MOBILE_LIGHT.colors.bg).not.toBe(MOBILE.colors.bg);
+    expect(MOBILE_LIGHT.colors.bg).toBe(KROMA_LIGHT.colors.bg);
+    expect(MOBILE_LIGHT.type).toEqual(MOBILE.type);
+  });
+});
+
+describe('shades', () => {
+  it('fades from nothing to the ground, at the ground that is lit', () => {
+    const dark = shades();
+    expect(dark.transparent).toMatch(/, 0\)$/);
+    expect(dark.mid).toMatch(/, 0\.55\)$/);
+    expect(dark.full).toMatch(/, 1\)$/);
+
+    setTheme(KROMA_LIGHT);
+    const paper = shades();
+    expect(paper.full).not.toBe(dark.full);
+    expect(paper.transparent).toMatch(/, 0\)$/);
+  });
+
+  it('is read at call time, so a swap after import still lands', () => {
+    const first = shades().full;
+    setTheme(KROMA_LIGHT);
+    expect(shades().full).not.toBe(first);
+    setTheme(KROMA);
+    expect(shades().full).toBe(first);
   });
 });
 

@@ -11,7 +11,7 @@ name: Synology
 #                  4/5 and other ARM64 hosts)
 #
 # The package source is the DYNAMIC Cloudflare Worker at packages.kroma.tv
-# (packages/synology-repo/worker); it reads releases + the .info.json sidecars
+# (apps/packages); it reads releases + the .info.json sidecars
 # straight from the GitHub API, so it needs NO deploy here. Stable + nightly
 # share one build job (only the version differs).
 on:

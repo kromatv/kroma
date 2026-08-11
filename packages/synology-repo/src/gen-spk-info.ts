@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // Emit the `<spk>.info.json` sidecar published next to every .spk release asset. The dynamic
-// package-source worker (packages/synology-repo/worker) aggregates these sidecars from the
+// package-source app (apps/packages) aggregates these sidecars from the
 // GitHub Releases API into the live catalog DSM's Package Center queries - no per-release
 // redeploy anywhere. Usage: bun packages/synology-repo/src/gen-spk-info.ts <path/to/pkg.spk>
 // [--beta] [--out <file>] Prints the sidecar path on success.

@@ -14,7 +14,7 @@ import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';
 import { SheetTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 export interface CastDeviceListProps {
   onPick: (receiverId: string | null) => void;
@@ -160,7 +160,7 @@ function NoDevices() {
   return (
     <Box style={s.empty}>
       <Box style={s.emptyDisc}>
-        <Icon name="device-tv" size={34} stroke={1.4} color={colors.textDim} />
+        <Icon name="device-tv" size={34} stroke={1.4} color="textMuted" />
       </Box>
       <Txt style={s.emptyTitle}>{t('cast.noDevices')}</Txt>
       <Txt style={s.emptyHint}>{t('cast.noDevicesHint')}</Txt>
@@ -226,16 +226,16 @@ function DeviceRow({
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >
-      <Icon name={icon} size={24} stroke={1.8} color={selected ? colors.accent : colors.text} />
+      <Icon name={icon} size={24} stroke={1.8} color={selected ? 'accentText' : 'text'} />
       <Box style={s.rowText}>
-        <Txt lines={1} style={[s.rowName, selected && { color: colors.accent }]}>
+        <Txt lines={1} style={[s.rowName, selected && s.rowNameActive]}>
           {name}
         </Txt>
         <Txt lines={1} style={s.rowDetail}>
           {detail}
         </Txt>
       </Box>
-      {selected ? <Icon name="check" size={20} stroke={2.4} color={colors.accent} /> : null}
+      {selected ? <Icon name="check" size={20} stroke={2.4} color="accentText" /> : null}
     </Pressable>
   );
 }
@@ -244,6 +244,7 @@ const s = styles({
   row: { row: true, align: 'center', gap: spacing.sm, minH: 56, px: spacing.sm, radius: radius.md },
   rowText: { flex: true },
   rowName: { ...type.body, color: 'text', fontWeight: '600' },
+  rowNameActive: { color: 'accentText' },
   rowDetail: { ...type.caption, color: 'textMuted' },
   empty: { align: 'center', gap: 6, pt: spacing.md, pb: spacing.lg },
   searchingRow: { align: 'center' },

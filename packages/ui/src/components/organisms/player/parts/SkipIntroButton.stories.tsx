@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { SkipIntroButton } from './SkipIntroButton';
 
 export default story({
@@ -32,9 +33,11 @@ export default story({
   render: ({ visible, focused, lift }) => (
     // It positions itself absolutely against the player surface, so the story
     // provides a 16:9 one to sit in; `lift` is measured from the bottom of it.
-    <Box aspect={16 / 9} minH={280} bg="surface2" radius="lg" overflow="hidden">
-      <SkipIntroButton visible={visible} focused={focused} lift={lift} onSkip={() => {}} />
-    </Box>
+    <Ground tone="dark">
+      <Box aspect={16 / 9} minH={280} bg="surface2" radius="lg" overflow="hidden">
+        <SkipIntroButton visible={visible} focused={focused} lift={lift} onSkip={() => {}} />
+      </Box>
+    </Ground>
   ),
   scenes: [
     { name: 'Focused', docs: 'What the remote resting on it looks like.', args: { focused: true } },

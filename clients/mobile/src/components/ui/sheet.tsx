@@ -54,8 +54,12 @@ const s = styles({
   title: { ...type.title, mb: spacing.md, color: 'text' },
 });
 
-export const sheetChrome = {
-  backdropComponent: SheetBackdrop,
-  backgroundStyle: s.surface,
-  handleIndicatorStyle: s.grabber,
-};
+/** The backdrop, surface and grabber every drawer spreads onto its modal.
+ *  Called during render, so the surface follows the active ground. */
+export function sheetChrome() {
+  return {
+    backdropComponent: SheetBackdrop,
+    backgroundStyle: s.surface,
+    handleIndicatorStyle: s.grabber,
+  };
+}

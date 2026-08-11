@@ -21,12 +21,17 @@ const alias = [
   { find: /^#tv\//, replacement: dir('./packages/tv/src/') },
   { find: /^#ui\//, replacement: dir('./packages/ui/src/') },
   { find: /^#web\//, replacement: dir('./clients/web/src/') },
-  { find: /^#site\//, replacement: dir('./clients/site/src/') },
   // @kroma/ui is written against React Native, which under the test runner
   // (as in every browser target) resolves to react-native-web.
   { find: /^react-native$/, replacement: 'react-native-web' },
   // Mirrors packages/bundler/src/rnw.ts.
   { find: /^@tabler\/icons-react-native$/, replacement: '@tabler/icons-react' },
+  // workerd's own module. The stand-in throws exactly as the platform's absence
+  // does unless a test names the ambient bindings on `globalThis.KROMA_WORKERD`.
+  {
+    find: /^cloudflare:workers$/,
+    replacement: dir('./packages/site-kit/test/cloudflare-workers.ts'),
+  },
   // The spatial navigator's webpack UMD bundle resolves its own `require`s past
   // the alias above and lands on React Native's Flow source ("Unexpected token
   // 'typeof'"); point the runner at its TS sources instead.
@@ -66,8 +71,8 @@ const setupFiles = [dir('./vitest.setup.ts')];
 // root (`@kroma/lan-beacon`, whose entry point IS its root), its source tree,
 // and the build-time trees beside it (`worker/`, `bundler/`, `vite/`).
 const include = [
-  '{packages,clients}/*/*.test.ts',
-  '{packages,clients}/*/{src,worker,bundler,vite}/**/*.test.{ts,tsx}',
+  '{apps,packages,clients}/*/*.test.ts',
+  '{apps,packages,clients}/*/{src,worker,bundler,vite}/**/*.test.{ts,tsx}',
   'modules/*/ui/src/**/*.test.{ts,tsx}',
 ];
 

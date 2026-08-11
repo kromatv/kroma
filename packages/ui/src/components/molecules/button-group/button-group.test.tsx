@@ -5,7 +5,7 @@ import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
-import { CONTROL } from '#ui/lib/field-shell';
+import { CONTROL, controlRadius } from '#ui/lib/field-shell';
 import { onScreen } from '#ui/testing';
 import { ButtonGroup } from './button-group';
 
@@ -13,7 +13,7 @@ const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 afterEach(cleanup);
 
-const R = `${CONTROL.md.radius}px`;
+const R = `${controlRadius(CONTROL.md)}px`;
 const O = '0px';
 
 // Clockwise from the top left, which is how the four corners read as a shape.
@@ -172,7 +172,7 @@ describe('a nested ButtonGroup', () => {
   });
 
   it('inherits the size and the corner of the group around it', () => {
-    const SM = `${CONTROL.sm.radius}px`;
+    const SM = `${controlRadius(CONTROL.sm)}px`;
     render(
       <ButtonGroup.Root label="Barre d’outils" size="sm">
         <ButtonGroup.Root label="Zoom">

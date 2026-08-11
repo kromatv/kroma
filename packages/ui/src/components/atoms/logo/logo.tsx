@@ -22,7 +22,7 @@ function Logo({ size = 24, markOnly = false, spin, color }: Readonly<LogoProps>)
   if (markOnly) return <Wheel size={size} spin={spin} />;
   const s = size / KROMA_LOCKUP.height;
   return (
-    <Box row align="center" accessibilityLabel="KROMA">
+    <Box row align="center" accessibilityRole="image" accessibilityLabel="KROMA">
       <Svg
         width={KROMA_LOCKUP.krWidth * s}
         height={size}

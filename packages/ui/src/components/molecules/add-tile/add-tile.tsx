@@ -44,7 +44,7 @@ const addTileVariants = svFor<{
       center: true,
       borderStyle: 'dashed',
       borderWidth: 2,
-      border: 'white/35',
+      border: 'tint/35',
       // The same glass every other control wears (lib/field-shell): the
       // translucent well, the hairline lift, and a <Frost> under it. Over
       // artwork the dashes need something behind them to read against, and
@@ -58,7 +58,7 @@ const addTileVariants = svFor<{
     // A SOLID ink, never an alpha: the plus is two crossing strokes, and a
     // translucent colour double-paints where they overlap into a brighter knot
     // at the centre.
-    glyph: { color: '#BDBCC4', _hover: { color: 'accent' }, _focus: { color: 'accent' } },
+    glyph: { color: '#BDBCC4', _hover: { color: 'accentText' }, _focus: { color: 'accentText' } },
     label: { color: 'text/80', fontWeight: '500' },
   },
   variants: {

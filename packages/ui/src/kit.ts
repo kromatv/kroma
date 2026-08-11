@@ -14,6 +14,7 @@ export type {
   StyleDecl,
   SvState,
   Theme,
+  ThemeMode,
   ThemeOverrides,
   ThemeTokens,
   Variant,
@@ -22,11 +23,16 @@ export type {
 } from './core';
 export {
   activeTheme,
+  applyMode,
   boxStyle,
   color,
   createTheme,
+  groundShade,
   KROMA,
+  KROMA_LIGHT,
+  onPaper,
   onThemeChange,
+  readMode,
   setTheme,
   sharedStyle,
   style,
@@ -35,7 +41,9 @@ export {
   svFor,
   ThemeProvider,
   themeVersion,
+  useSystemGround,
   useTheme,
+  writeMode,
 } from './core';
 export * from './core/tokens';
 export type { AnchorPlacement } from './lib/anchor';

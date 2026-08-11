@@ -1,9 +1,11 @@
 // Authored declaration -> the canonical form the resolver merges. Runs once per
 // declaration at module load, never per render.
 
+import { StyleSheet } from 'react-native';
 import { COLOR_KEYS, color } from '#ui/core/color';
 import { type BoxStyleProps, boxStyle, splitShorthand, textStyle } from '#ui/core/shorthands';
 import { STATE_KEYS, type SvStateName } from '#ui/core/states';
+import type { AnyStyle } from '#ui/core/types';
 
 export interface Split {
   rest: Record<string, unknown>;
@@ -84,16 +86,19 @@ const RN_SHORTHANDS: ReadonlySet<string> = new Set([
 const rank = (key: string) => (RN_SHORTHANDS.has(key) ? 0 : 1);
 
 /**
- * Freezes a merged value with its keys in a canonical order: React Native's own
- * shorthands first, then everything else alphabetically.
+ * Registers a merged value, with its keys in a canonical order: React Native's
+ * own shorthands first, then everything else alphabetically.
  *
- * react-native-web compiles a style object into atomic CSS, so an order that
- * varied with which layers contributed would mean an unstable stylesheet between
- * builds. Sorting alone is not enough — see `RN_SHORTHANDS`.
+ * Registration is what makes react-native-web compile the declarations into
+ * atomic classes rather than re-serialise them onto every element. It hands the
+ * same object back, so the result is still a plain style a caller can read.
+ *
+ * An order that varied with which layers contributed would mean an unstable
+ * stylesheet between builds. Sorting alone is not enough, see `RN_SHORTHANDS`.
  */
 export function stabilise(merged: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   const keys = Object.keys(merged).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : 1));
   for (const key of keys) out[key] = merged[key];
-  return Object.freeze(out);
+  return Object.freeze(StyleSheet.create({ s: out as AnyStyle }).s) as Record<string, unknown>;
 }

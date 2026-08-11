@@ -10,7 +10,7 @@ type BadgeTone = Variant<typeof badgeVariants, 'tone'>;
 
 const badgeVariants = sv({
   slots: {
-    root: { self: 'flex-start', radius: 6 },
+    root: { self: 'flex-start', radius: 'xs' },
     label: { font: 'ui', fontWeight: '700' },
   },
   variants: {
@@ -18,18 +18,18 @@ const badgeVariants = sv({
      * suffix, resolved at declaration time because no target can compute
      * color-mix() (old webOS cannot, React Native cannot). */
     tone: {
-      '4K': { root: { bg: 'accentSoft' }, label: { color: 'accent' } },
+      '4K': { root: { bg: 'accentSoft' }, label: { color: 'accentText' } },
       HDR: { root: { bg: 'hdr/16' }, label: { color: 'hdr' } },
       'H.265': { root: { bg: 'h265/16' }, label: { color: 'h265' } },
       success: { root: { bg: 'success/16' }, label: { color: 'success' } },
       info: { root: { bg: 'info/16' }, label: { color: 'info' } },
       danger: { root: { bg: 'danger/16' }, label: { color: 'danger' } },
-      warning: { root: { bg: 'accentSoft' }, label: { color: 'accent' } },
-      neutral: { root: { bg: 'white/8' }, label: { color: 'text/85' } },
+      warning: { root: { bg: 'accentSoft' }, label: { color: 'accentText' } },
+      neutral: { root: { bg: 'tint/8' }, label: { color: 'text/85' } },
     },
     size: {
       sm: { root: { py: 4, px: 9 }, label: { fontSize: 11, letterSpacing: 0.44 } },
-      tv: { root: { py: 5, px: 11, radius: 7 }, label: { fontSize: 13, letterSpacing: 0.26 } },
+      tv: { root: { py: 5, px: 11 }, label: { fontSize: 13, letterSpacing: 0.26 } },
     },
   },
   defaults: { tone: '4K', size: 'sm' },

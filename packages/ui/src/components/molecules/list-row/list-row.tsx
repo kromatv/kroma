@@ -18,7 +18,7 @@ import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { IconWell } from '#ui/components/atoms/icon-well';
 import { Txt } from '#ui/components/atoms/text';
-import { radius, type StyleDecl, svFor } from '#ui/core';
+import { type StyleDecl, svFor } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 import { ListGroup, useInListGroup } from './list-group';
 
@@ -131,7 +131,7 @@ function ListRow({
           {/* Blur what shows through the translucent fill: the row reads as
               one glass surface rather than a window on the artwork. A member
               of a group is inside the card that already did this. */}
-          {standalone ? <Frost radius={radius.xl} /> : null}
+          {standalone ? <Frost radius="xl" /> : null}
           {leading ?? (icon ? <IconWell name={icon} size={size} /> : null)}
           {/* minW 0: without it a long label pushes the trailing slot off the
               row instead of ellipsing, which is the one thing a row of a

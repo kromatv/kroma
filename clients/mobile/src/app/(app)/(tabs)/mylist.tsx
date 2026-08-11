@@ -13,7 +13,7 @@ import { EmptyState, ErrorView, Loading } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
-import { colors, spacing, type } from '#mobile/lib/theme';
+import { spacing, type } from '#mobile/lib/theme';
 
 export default function MyList() {
   const t = useT();
@@ -74,7 +74,7 @@ export default function MyList() {
         header={header}
         empty={
           <EmptyState
-            icon={<Icon name="bookmark" size={34} stroke={1.8} color={colors.textDim} />}
+            icon={<Icon name="bookmark" size={34} stroke={1.8} color="textMuted" />}
             title={t('nav.myList')}
             hint={t('content.myListEmpty')}
           />

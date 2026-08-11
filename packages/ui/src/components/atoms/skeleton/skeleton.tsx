@@ -2,7 +2,7 @@
 // keyframe in a browser, never a per-frame JS callback per skeleton.
 
 import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
-import { type BoxStyleProps, boxStyle, styles, useTheme } from '#ui/core';
+import { type BoxStyleProps, boxStyle, radiusValue, styles, useTheme } from '#ui/core';
 import { motion, type TypeRole, type TypeSpec } from '#ui/core/tokens';
 import { useLoop } from '#ui/lib/loop';
 
@@ -76,7 +76,9 @@ function Skeleton({
   }
 
   const shaped =
-    shape === 'circle' ? { width: size, height: size, borderRadius: theme.radius.pill } : s[shape];
+    shape === 'circle'
+      ? { width: size, height: size, borderRadius: radiusValue('circle', size) }
+      : s[shape];
 
   return <Animated.View style={[s.wash, shaped, boxStyle(box), style, pulse]} />;
 }

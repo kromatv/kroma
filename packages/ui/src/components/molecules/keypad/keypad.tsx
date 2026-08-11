@@ -18,7 +18,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
-import { radius, type StyleDecl, styles, svFor } from '#ui/core';
+import { type RadiusToken, type StyleDecl, styles, svFor } from '#ui/core';
 import { keyFace } from '#ui/lib/field-shell';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
@@ -47,10 +47,13 @@ const ROWS = [
 type KeyKind = 'digit' | 'delete';
 type KeypadSize = 'tv' | 'compact';
 
+// By name, not in px: the face and the blur behind it must follow one theme.
+const KEY_RADIUS: RadiusToken = '2xl';
+
 const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   slots: {
     // The shared key face (lib/field-shell); the pad brings only its own box.
-    root: { ...keyFace.root, radius: radius['2xl'] },
+    root: { ...keyFace.root, radius: KEY_RADIUS },
     label: keyFace.label,
   },
   variants: {
@@ -115,7 +118,7 @@ function Keypad({
         <>
           {/* The fill is translucent (lib/field-shell), so blur what shows
               through: the pad reads as glass over the artwork behind it. */}
-          <Frost radius={radius['2xl']} />
+          <Frost radius={KEY_RADIUS} />
           {kind === 'delete' ? (
             <Icon name="backspace" size={30} stroke={1.8} color="textMuted" />
           ) : (

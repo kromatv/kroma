@@ -77,7 +77,7 @@ function Tooltip({ label, children }: Readonly<TooltipProps>) {
 }
 
 function Bubble({ id, label, spot }: Readonly<{ id: string; label: string; spot: Spot }>) {
-  const { colors } = activeTheme();
+  const { colors, radius } = activeTheme();
   return (
     <Portal>
       <span
@@ -91,7 +91,7 @@ function Bubble({ id, label, spot }: Readonly<{ id: string; label: string; spot:
           zIndex: 120,
           maxWidth: 280,
           padding: '6px 10px',
-          borderRadius: 8,
+          borderRadius: radius.sm,
           border: `1px solid ${colors.borderStrong}`,
           background: colors.surface2,
           color: colors.text,

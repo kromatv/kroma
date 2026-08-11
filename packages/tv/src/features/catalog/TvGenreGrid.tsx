@@ -68,7 +68,7 @@ export function TvGenreGrid() {
         colors={focused ? posterColors(focused.item.id) : ['#1c1c22', '#0a0a0c']}
       />
       <Box px={64} pt={112} pb={24} gap={8}>
-        <Txt variant="overlineTv" color="accent">
+        <Txt variant="overlineTv" color="accentText">
           {t('nav.genres')}
         </Txt>
         <Txt variant="hero" style={TITLE}>

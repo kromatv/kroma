@@ -14,7 +14,7 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
+import { type CornerValue, radiusValue, styles } from '#ui/core';
 import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import {
   type GroupOrientation,
@@ -33,8 +33,9 @@ interface ButtonGroupRootProps {
   orientation?: GroupOrientation;
   /** Names the group to assistive tech: what these controls are controls of. */
   label: string;
-  /** The group's outer corner. Defaults to the one that goes with `size`. */
-  radius?: number;
+  /** The group's outer corner, by token name or in px. Defaults to the one
+   *  that goes with `size`. */
+  radius?: CornerValue;
   /** The size members fall back to, defaulting to the shell's. A member's own
    *  `size` still wins. */
   size?: ControlSize;
@@ -56,7 +57,7 @@ function Root({
   // ends rounded.
   const outer = useGroupSlot();
   const shell = size ?? outer?.size ?? entryDefaultSize();
-  const corner = radius ?? outer?.radius ?? CONTROL[shell].radius;
+  const corner = radiusValue(radius ?? outer?.radius ?? CONTROL[shell].radius);
   const items = Children.toArray(children);
   // A group inside a group is a cluster of its own: the outer group stops
   // collapsing borders and spaces the clusters instead, which is how a toolbar

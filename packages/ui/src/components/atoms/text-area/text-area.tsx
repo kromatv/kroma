@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Txt } from '#ui/components/atoms/text';
-import { styles, useTheme } from '#ui/core';
+import { color, styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import { fieldSizing } from '#ui/lib/css';
 import {
@@ -114,7 +114,7 @@ function TextArea({
             onBlur?.();
           }}
           placeholder={placeholder}
-          placeholderTextColor={PLACEHOLDER}
+          placeholderTextColor={color(PLACEHOLDER)}
           accessibilityLabel={label}
           autoFocus={autoFocus}
           autoCorrect={false}

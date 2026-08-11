@@ -4,22 +4,27 @@
 import { hasGenre, type MediaItem, type Show, sortTitles } from '@kroma/core';
 import { Icon } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { PosterGrid } from '#mobile/components/PosterGrid';
 import { EmptyState, Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
+import { routeParam } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { colors, posterWidth } from '#mobile/lib/theme';
+import { posterWidth } from '#mobile/lib/theme';
 
 function isShow(entry: MediaItem | Show): entry is Show {
   return 'seasonCount' in entry;
 }
 
-export default function GenrePage() {
-  const { name } = useLocalSearchParams<{ name: string }>();
+export default function GenreRoute() {
+  const name = routeParam(useLocalSearchParams<{ name?: string }>().name);
+  return name ? <GenrePage name={name} /> : <Redirect href="/" />;
+}
+
+function GenrePage({ name }: Readonly<{ name: string }>) {
   const genre = decodeURIComponent(name);
   const t = useT();
   const client = useClient();
@@ -52,7 +57,7 @@ export default function GenrePage() {
         cards={cards}
         empty={
           <EmptyState
-            icon={<Icon name="movie" size={34} stroke={1.8} color={colors.textDim} />}
+            icon={<Icon name="movie" size={34} stroke={1.8} color="textMuted" />}
             title={t('search.noResults')}
           />
         }

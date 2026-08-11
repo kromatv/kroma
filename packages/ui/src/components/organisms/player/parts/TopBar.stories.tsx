@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { TopBar } from './TopBar';
 
 export default story({
@@ -32,9 +33,11 @@ export default story({
   render: ({ warn, ...props }) => (
     // The bar positions itself absolutely, so the story gives it a surface to
     // sit on, deep enough to see the scrim fade out.
-    <Box minH={200} bg="surface2" radius="lg" overflow="hidden">
-      <TopBar {...props} warn={warn || null} onBack={() => {}} />
-    </Box>
+    <Ground tone="dark">
+      <Box minH={200} bg="surface2" radius="lg" overflow="hidden">
+        <TopBar {...props} warn={warn || null} onBack={() => {}} />
+      </Box>
+    </Ground>
   ),
   scenes: [
     {

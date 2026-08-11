@@ -165,7 +165,7 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
         <Box
           minH={92}
           center
-          radius={14}
+          radius="lg"
           borderWidth={1}
           border="white/6"
           px={20}
@@ -240,7 +240,7 @@ function Arrow({
     >
       <Txt
         style={{ fontSize: 17, lineHeight: 20, paddingHorizontal: 4, opacity: dim ? 0.4 : 1 }}
-        color="accent"
+        color="accentText"
       >
         {glyph}
       </Txt>

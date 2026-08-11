@@ -5,7 +5,7 @@
 import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 export interface PopoverAnchor {
   x: number;
@@ -85,13 +85,13 @@ export function PopoverMenu({
                 item.onPress();
                 onClose();
               }}
-              style={({ pressed }) => [s.row, pressed && { backgroundColor: colors.surfaceHigh }]}
+              style={({ pressed }) => [s.row, pressed && s.rowPressed]}
             >
               <Txt style={[s.label, item.active && s.labelActive]}>{item.label}</Txt>
               <Box style={s.right}>
                 {item.detail ? <Txt style={s.detail}>{item.detail}</Txt> : null}
                 {item.active ? (
-                  <Icon name="check" size={16} stroke={2.4} color={colors.accent} />
+                  <Icon name="check" size={16} stroke={2.4} color="accentText" />
                 ) : null}
               </Box>
             </Pressable>
@@ -127,8 +127,9 @@ const s = styles({
     px: spacing.sm,
     radius: radius.sm,
   },
+  rowPressed: { bg: 'surface3' },
   label: { ...type.body, color: 'text' },
-  labelActive: { fontWeight: '800', color: 'accent' },
+  labelActive: { fontWeight: '800', color: 'accentText' },
   right: { row: true, align: 'center', gap: 8 },
   detail: { ...type.small },
 });

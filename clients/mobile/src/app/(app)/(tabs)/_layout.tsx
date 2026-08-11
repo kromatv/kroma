@@ -1,10 +1,9 @@
-import { Icon, type IconName } from '@kroma/ui/kit';
+import { Icon, type IconName, useTheme } from '@kroma/ui/kit';
 import { Tabs } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import type { ColorValue } from 'react-native';
 import { PillTabBar } from '#mobile/components/PillTabBar';
 import { useT } from '#mobile/lib/i18n';
-import { colors } from '#mobile/lib/theme';
 
 const renderTabBar = (props: BottomTabBarProps) => <PillTabBar {...props} />;
 
@@ -28,12 +27,13 @@ const SCREENS = TABS.map((tab) => ({
 
 export default function TabsLayout() {
   const t = useT();
+  const theme = useTheme();
   return (
     <Tabs
       tabBar={renderTabBar}
       screenOptions={{
         headerShown: false,
-        sceneStyle: { backgroundColor: colors.bg },
+        sceneStyle: { backgroundColor: theme.colors.bg },
       }}
     >
       {SCREENS.map(({ name, title, tabBarIcon }) => (

@@ -294,7 +294,7 @@ export function TvHome() {
               <Box fill pointerEvents="none" style={gradient(HERO_VEIL_HORIZONTAL)} />
               <Box fill pointerEvents="none" style={gradient(HERO_VEIL_VERTICAL)} />
               <Box absolute left={64} bottom={36} z={2} maxW={820}>
-                <Txt variant="overlineTv" style={s.featuredLabel} color="accent">
+                <Txt variant="overlineTv" style={s.featuredLabel} color="accentText">
                   {t('content.featured')}
                 </Txt>
                 <Txt variant="hero" style={[s.heroTitle, { marginTop: 16, marginBottom: 14 }]}>
@@ -303,7 +303,7 @@ export function TvHome() {
                 <Box row wrap align="center" gap={12} mb={14}>
                   {heroMeta?.rating ? (
                     <>
-                      <Txt style={{ fontSize: 17, fontWeight: '700' }} color="accent">
+                      <Txt style={{ fontSize: 17, fontWeight: '700' }} color="accentText">
                         {`${heroMeta.rating.toFixed(1)}\u2605`}
                       </Txt>
                       <Txt style={{ fontSize: 17, fontWeight: '600' }} color="textDim">

@@ -10,13 +10,13 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import { LANG_OFF, langOptions, offeredLang } from '@kroma/core';
-import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, color, Icon, styles, Txt } from '@kroma/ui/kit';
 import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SheetTitle, sheetChrome } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 // Must equal every row's actual rendered height: `getItemLayout` assumes a
 // constant row height and scrolls to the wrong place otherwise.
@@ -99,7 +99,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
     return (
       <BottomSheetModal
         ref={ref}
-        {...sheetChrome}
+        {...sheetChrome()}
         snapPoints={SNAP_POINTS}
         enableDynamicSizing={false}
         onChange={onChange}
@@ -113,7 +113,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
         <Box style={s.header}>
           <SheetTitle>{title}</SheetTitle>
           <Box style={s.searchBox}>
-            <Icon name="search" size={17} stroke={2} color={colors.textFaint} />
+            <Icon name="search" size={17} stroke={2} color="textDim" />
             <BottomSheetTextInput
               value={query}
               // Reset scroll on each keystroke, or a prior scroll offset can
@@ -123,7 +123,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
                 list.current?.scrollToOffset({ offset: 0, animated: false });
               }}
               placeholder={t('account.langSearch')}
-              placeholderTextColor={colors.textFaint}
+              placeholderTextColor={color('textDim')}
               autoCorrect={false}
               autoCapitalize="none"
               returnKeyType="search"
@@ -139,7 +139,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
                 accessibilityLabel={t('common.clear')}
                 hitSlop={10}
               >
-                <Icon name="x" size={16} stroke={2.4} color={colors.textFaint} />
+                <Icon name="x" size={16} stroke={2.4} color="textDim" />
               </Pressable>
             ) : null}
           </Box>
@@ -186,16 +186,12 @@ function LangRow({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
-      style={({ pressed }) => [
-        s.row,
-        ruled && s.ruled,
-        pressed && { backgroundColor: colors.surfaceHigh },
-      ]}
+      style={({ pressed }) => [s.row, ruled && s.ruled, pressed && s.rowPressed]}
     >
       <Txt lines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
         {row.label}
       </Txt>
-      {active ? <Icon name="check" size={17} stroke={2.4} color={colors.accent} /> : null}
+      {active ? <Icon name="check" size={17} stroke={2.4} color="accentText" /> : null}
       {row.code && !active ? <Txt style={s.rowCode}>{row.code.toUpperCase()}</Txt> : null}
     </Pressable>
   );
@@ -234,8 +230,9 @@ const s = styles({
   // Border must be inset, not additive, or it breaks the fixed ROW_HEIGHT
   // getItemLayout relies on.
   ruled: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'border' },
+  rowPressed: { bg: 'surface3' },
   rowLabel: { ...type.body, shrink: 1, color: 'text', fontWeight: '500' },
-  rowLabelActive: { color: 'accent', fontWeight: '800' },
+  rowLabelActive: { color: 'accentText', fontWeight: '800' },
   rowCode: { ...type.small, color: 'textDim', letterSpacing: 0.5 },
   empty: { ...type.caption, py: spacing.lg, textAlign: 'center' },
 });

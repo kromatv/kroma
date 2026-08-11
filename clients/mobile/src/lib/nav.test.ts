@@ -1,24 +1,23 @@
-import { describe, expect, it, vi } from 'vitest';
-import { goBack } from './nav';
+import { describe, expect, it } from 'vitest';
+import { routeParam } from './nav';
 
-const router = (canGoBack: boolean) => ({
-  canGoBack: () => canGoBack,
-  back: vi.fn(),
-  replace: vi.fn(),
-});
-
-describe('goBack', () => {
-  it('pops the stack when there is something to pop', () => {
-    const r = router(true);
-    goBack(r as never);
-    expect(r.back).toHaveBeenCalled();
-    expect(r.replace).not.toHaveBeenCalled();
+describe('routeParam', () => {
+  it('keeps a real segment', () => {
+    expect(routeParam('abc123')).toBe('abc123');
   });
 
-  it('lands on Home when the screen was the first one', () => {
-    const r = router(false);
-    goBack(r as never);
-    expect(r.replace).toHaveBeenCalledWith('/');
-    expect(r.back).not.toHaveBeenCalled();
+  it('reads the literals a template writes for an absent value as no value', () => {
+    expect(routeParam('undefined')).toBeNull();
+    expect(routeParam('null')).toBeNull();
+  });
+
+  it('answers null for a missing or empty segment', () => {
+    expect(routeParam(undefined)).toBeNull();
+    expect(routeParam('')).toBeNull();
+  });
+
+  it('takes the first of a repeated segment', () => {
+    expect(routeParam(['a', 'b'])).toBe('a');
+    expect(routeParam([])).toBeNull();
   });
 });

@@ -1,9 +1,6 @@
-/* KROMA web Tailwind v4. The shared entry (`@kroma/ui/tailwind.css`) brings the
-   design tokens + fonts + `tailwindcss` + the @theme mapping + keyframes + fluid
-   layout tokens; the SAME file is imported by every module so a runtime-installed
-   module ships a self-contained CSS with the identical design. This file adds
-   only the app-specific bits below. */
-@import "@kroma/ui/tailwind.css";
+@import "tailwindcss";
+@import "@kroma/ui/css";
+@import "@kroma/ui/css/theme";
 
 /* Tailwind v4 auto-detects sources rooted at this app, so it misses class names
    in packages/modules that live OUTSIDE clients/web: the admin UI kit and every

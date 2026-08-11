@@ -1,0 +1,34 @@
+{
+  "name": "@kroma/site-kit",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "sideEffects": false,
+  "description": "The spine the KROMA site apps share: the document shell and its head, the header and footer chrome, and the Cloudflare worker environment lookup.",
+  "exports": {
+    "./site-document": "./src/site-document.tsx",
+    "./site-header": "./src/site-header.tsx",
+    "./site-footer": "./src/site-footer.tsx",
+    "./worker-env": "./src/worker-env.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kroma/site-meta": "workspace:*",
+    "@kroma/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-router": ">=1.170",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@tanstack/react-router": "^1.170.23",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.18",
+    "react": "19.2.8",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10"
+  }
+}

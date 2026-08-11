@@ -4,7 +4,7 @@
 // React Native 0.76+ implements boxShadow on both native platforms, and
 // react-native-web maps it straight to CSS. One value, three renderers.
 
-import { colors } from './colors';
+import { colors } from './colors.ts';
 import type { TokenOf } from './registry';
 
 export const shadow = {
@@ -12,6 +12,14 @@ export const shadow = {
   pop: '0 20px 50px rgba(0, 0, 0, 0.55)',
   hero: '0 20px 50px rgba(0, 0, 0, 0.6)',
 } as const;
+
+/** The same elevations on paper: a tight contact shadow under a wide, very
+ *  faint ambient one, where the dark ground's single opaque drop would smear. */
+export const lightShadow: Record<keyof typeof shadow, string> = {
+  card: '0 1px 2px rgba(22, 21, 26, 0.06), 0 8px 24px rgba(22, 21, 26, 0.06)',
+  pop: '0 2px 4px rgba(22, 21, 26, 0.08), 0 16px 40px rgba(22, 21, 26, 0.1)',
+  hero: '0 2px 6px rgba(22, 21, 26, 0.08), 0 24px 60px rgba(22, 21, 26, 0.12)',
+};
 
 /** Shadows a theme adds. Augment it and the name is legal wherever an elevation
  *  is written — the `shadow:` shorthand, <Box shadow> (see `ColorRegistry`). */
@@ -37,7 +45,7 @@ export const RING_WIDTH = 4;
  * Done with padding, every component owes the same sum by hand - outer = inner
  * + gap - and gets it wrong (a 6px frame around a 13px corner needs a 19px
  * radius, not 16). */
-export const RING_GAP = 4;
+export const RING_GAP = 6;
 
 /** How much room a focused control needs beside it, for anything that clips or
  * abuts it - a scroll view's edge, the capsule a nav item sits in: the gap, the
@@ -80,6 +88,11 @@ export function standoff(color: string, lift?: string): RingStyle {
 export function standoffInside(color: string): RingStyle {
   return { ...standoff(color), outlineOffset: -(RING_GAP + RING_WIDTH) };
 }
+
+/** The steps the theme derives from the accent wash, as the `/NN` percentages a
+ *  colour is written with everywhere else. The build emits one property per
+ *  step, so a new one has to be added to the derived list in `vite/tokens.ts`. */
+export const WASH_ALPHA = { glow: 40, play: 32, ring: 28 } as const;
 
 export const LIFT_SHADOW = '0 10px 28px rgba(0, 0, 0, 0.5)';
 

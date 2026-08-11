@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kroma-modules",
+  "main": "./worker.js",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "vars": {
+    "GITHUB_REPO": "maxscharwath/kroma"
+  },
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS"
+  },
+  "routes": [{ "pattern": "modules.kroma.tv", "custom_domain": true }]
+}

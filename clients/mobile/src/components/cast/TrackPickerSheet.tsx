@@ -9,7 +9,7 @@ import { Icon, styles, Txt } from '@kroma/ui/kit';
 import { forwardRef } from 'react';
 import { Pressable, ScrollView } from 'react-native';
 import { SheetBody, SheetTitle, sheetChrome } from '#mobile/components/ui';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 interface TrackPickerSheetProps {
   title: string;
@@ -22,7 +22,7 @@ interface TrackPickerSheetProps {
 export const TrackPickerSheet = forwardRef<BottomSheetModal, TrackPickerSheetProps>(
   function TrackPickerSheet({ title, tracks, activeIndex, offLabel, onPick }, ref) {
     return (
-      <BottomSheetModal ref={ref} {...sheetChrome}>
+      <BottomSheetModal ref={ref} {...sheetChrome()}>
         <SheetBody>
           <SheetTitle>{title}</SheetTitle>
           {/* Bounded: a long-dubbed film can carry a dozen tracks, so the sheet
@@ -59,10 +59,10 @@ function Row({
       accessibilityState={{ selected }}
       style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
     >
-      <Txt lines={1} style={[s.rowLabel, selected && { color: colors.accent }]}>
+      <Txt lines={1} style={[s.rowLabel, selected && s.rowLabelActive]}>
         {label}
       </Txt>
-      {selected ? <Icon name="check" size={20} stroke={2.4} color={colors.accent} /> : null}
+      {selected ? <Icon name="check" size={20} stroke={2.4} color="accentText" /> : null}
     </Pressable>
   );
 }
@@ -71,4 +71,5 @@ const s = styles({
   list: { maxH: 380 },
   row: { row: true, align: 'center', gap: spacing.sm, minH: 52, px: spacing.sm, radius: radius.md },
   rowLabel: { ...type.body, flex: true, color: 'text' },
+  rowLabelActive: { color: 'accentText' },
 });

@@ -82,7 +82,7 @@ function StoreCard({
     <Surface
       elevated
       pad="none"
-      radius={16}
+      radius="xl"
       p={16}
       gap={12}
       row

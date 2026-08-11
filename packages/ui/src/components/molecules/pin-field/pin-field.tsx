@@ -98,7 +98,7 @@ function PinField({
 
 function dotEdge(filled: boolean, error: boolean): ColorValue {
   if (filled) return 'accent';
-  return error ? 'danger' : 'white/25';
+  return error ? 'danger' : 'tint/25';
 }
 
 export type { PinFieldProps };

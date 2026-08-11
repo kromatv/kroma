@@ -31,7 +31,7 @@ export function TvVoiceSearch({
     <Dialog open onClose={onDone} title={t('search.voice')} width={720}>
       <Box row align="center" gap={22}>
         <Pulse>
-          <Icon name="microphone" size={34} color="accent" />
+          <Icon name="microphone" size={34} color="accentText" />
         </Pulse>
         <Box flex gap={6}>
           <Txt variant="h2" lines={2} color={heard ? 'text' : 'textMuted'}>

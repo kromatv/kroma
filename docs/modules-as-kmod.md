@@ -42,7 +42,7 @@ it, supervises it, and reverse-proxies its HTTP.**
   the release workflow packs every target, attaches the `.kmod`s + the catalog
   (`modules.json`) to the GitHub Release, and the server's default registry is
   `https://modules.kroma.tv/modules.json`, the registry worker
-  (`packages/module-registry`) that serves the release catalog with edge
+  (`apps/modules`) that serves the release catalog with edge
   caching, a browsable page, and a `<link rel="kroma-modules">` autodiscovery
   tag (overridable via `moduleRegistryUrl`).
   The in-app Store (Admin -> Modules) browses the catalog enriched with this

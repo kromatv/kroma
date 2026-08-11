@@ -5,9 +5,9 @@ into anything smaller. `#F4B642`. `16`. `Hanken Grotesk`. Everything else in the
 design system is made of these.
 
 `colors.ts` says it in its own header and it is worth repeating: **this is the
-single source of truth.** The CSS custom properties under
-[`../../styles/tokens/`](../../styles/tokens) are GENERATED from these files by
-`bun run tokens:gen`, and CI fails if they have drifted. Never edit the CSS.
+single source of truth.** The CSS custom properties are emitted from these files
+by `kromaUI()` (see [`../../styles/`](../../styles)) at build time, so there is
+no stylesheet copy that can drift.
 
 **Why the values are plain strings.** No `oklch()`, no `color-mix()`, no
 viewport units. A token has to drop unchanged into a React Native `StyleSheet`,

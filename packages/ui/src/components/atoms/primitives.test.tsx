@@ -11,13 +11,13 @@ import { act, cleanup, fireEvent, render as renderRaw, screen } from '@testing-l
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
-import { colors, radius, typeSpec } from '#ui/core/tokens';
+import { radius, typeSpec } from '#ui/core/tokens';
 import { CONTROL } from '#ui/lib/field-shell';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { onScreen } from '#ui/testing';
 import { AVATAR_GRADIENTS, Avatar, gradientFor, initialsOf } from './avatar';
 import { Badge } from './badge';
-import { Button } from './button';
+import { Button, buttonVariants } from './button';
 import { Chip } from './chip';
 import { Icon } from './icon';
 import { IconButton } from './icon-button';
@@ -50,28 +50,12 @@ const padlock = (container: HTMLElement) =>
 // On the browser targets a control is one element, so this is the labelled host itself.
 const inner = (label: string) => screen.getByLabelText(label);
 
-// jsdom normalises every colour to `rgb()`, so compare through the same lens.
-function rgb(hex: string): string {
-  const m = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
-  if (!m) return hex;
-  const [r, g, b] = [m[1], m[2], m[3]].map((h) => Number.parseInt(h as string, 16));
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
-// The alpha spelling, for a token like `accent/50`.
-function rgba(hex: string, alpha: number): string {
-  const m = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
-  if (!m) return hex;
-  const [r, g, b] = [m[1], m[2], m[3]].map((h) => Number.parseInt(h as string, 16));
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 describe('Icon', () => {
   it('draws an outline glyph as a stroked svg', () => {
     const { container } = render(<Icon name="check" size={32} color="accent" />);
     const svg = container.querySelector('svg');
     expect(svg?.getAttribute('width')).toBe('32');
-    expect(svg?.getAttribute('stroke')).toBe(colors.accent);
+    expect(svg?.getAttribute('stroke')).toBe('var(--kroma-accent)');
     expect(svg?.getAttribute('fill')).toBe('none');
     expect(svg?.querySelectorAll('path').length).toBeGreaterThan(0);
   });
@@ -79,7 +63,7 @@ describe('Icon', () => {
   it('draws a filled glyph as a painted svg with no stroke', () => {
     const { container } = render(<Icon name="player-play-filled" />);
     const svg = container.querySelector('svg');
-    expect(svg?.getAttribute('fill')).toBe(colors.text);
+    expect(svg?.getAttribute('fill')).toBe('var(--kroma-text)');
     expect(svg?.getAttribute('stroke')).toBe('none');
   });
 
@@ -106,7 +90,7 @@ describe('Button', () => {
         <Button label="B" variant="ghost" />
       </>,
     );
-    expect(css(inner('A')).backgroundColor).toBe(rgb(colors.accent));
+    expect(css(inner('A')).backgroundColor).toBe('var(--kroma-accent)');
     // jsdom resolves the `transparent` keyword to its rgba() equivalent.
     expect(css(inner('B')).backgroundColor).toBe('rgba(0, 0, 0, 0)');
   });
@@ -121,7 +105,7 @@ describe('Button', () => {
     // opacity would make the element its own backdrop root and blind the
     // frost layer's backdrop-filter (see button.tsx).
     expect(css(el).opacity).not.toBe('0.5');
-    expect(css(el).backgroundColor).toBe(rgba(colors.accent, 0.5));
+    expect(css(el).backgroundColor).toBe('var(--kroma-accent-50)');
     expect(css(screen.getByText('Off').parentElement as HTMLElement).opacity).toBe('0.5');
     fireEvent.click(el);
     expect(onPress).not.toHaveBeenCalled();
@@ -135,20 +119,36 @@ describe('Button', () => {
       </>,
     );
     fireEvent.pointerOver(inner('A'));
-    expect(css(inner('A')).backgroundColor).toBe(rgb(colors.accentHover));
+    expect(css(inner('A')).backgroundColor).toBe('var(--kroma-accent-hover)');
     fireEvent.pointerOut(inner('A'));
-    expect(css(inner('A')).backgroundColor).toBe(rgb(colors.accent));
+    expect(css(inner('A')).backgroundColor).toBe('var(--kroma-accent)');
 
     // A toggle that is already on stays AMBER under the cursor: the white wash
     // the other variants hover with would read as it switching itself off.
     fireEvent.pointerOver(inner('B'));
-    expect(css(inner('B')).backgroundColor).toBe(colors.accentSoftHover);
+    expect(css(inner('B')).backgroundColor).toBe('var(--kroma-accent-soft-hover)');
   });
+
+  it('deepens under the finger, a step PAST hover rather than a repeat of it', () => {
+    const at = (state: Record<string, boolean>) =>
+      buttonVariants({ variant: 'primary' }, state).root as Record<string, unknown>;
+    expect(at({ hover: true }).backgroundColor).toBe('var(--kroma-accent-hover)');
+    expect(at({ hover: true, press: true }).backgroundColor).toBe('var(--kroma-accent-press)');
+  });
+
+  it.each(['primary', 'glass', 'ghost', 'danger', 'dangerGhost', 'scrim', 'outline'] as const)(
+    'answers a pointer on %s three different ways: rest, hover, pressed',
+    (variant) => {
+      const at = (state: Record<string, boolean>) => buttonVariants({ variant }, state).root;
+      expect(at({ hover: true })).not.toEqual(at({}));
+      expect(at({ hover: true, press: true })).not.toEqual(at({ hover: true }));
+    },
+  );
 
   it('does not light under the pointer while it is busy', () => {
     render(<Button label="Envoi" loading />);
     fireEvent.pointerOver(inner('Envoi'));
-    expect(css(inner('Envoi')).backgroundColor).toBe(rgb(colors.accent));
+    expect(css(inner('Envoi')).backgroundColor).toBe('var(--kroma-accent)');
   });
 
   it('renders leading and trailing glyphs', () => {
@@ -172,8 +172,8 @@ describe('Badge and Chip', () => {
         <Chip label="EN" />
       </>,
     );
-    expect(css(inner('FR')).backgroundColor).toBe(rgb(colors.accent));
-    expect(css(inner('EN')).backgroundColor).not.toBe(rgb(colors.accent));
+    expect(css(inner('FR')).backgroundColor).toBe('var(--kroma-accent)');
+    expect(css(inner('EN')).backgroundColor).not.toBe('var(--kroma-accent)');
   });
 
   it('lifts a chip under the pointer, up its own ladder either way', () => {
@@ -184,10 +184,10 @@ describe('Badge and Chip', () => {
       </>,
     );
     fireEvent.pointerOver(inner('EN'));
-    expect(css(inner('EN')).backgroundColor).toBe('rgba(255, 255, 255, 0.13)');
+    expect(css(inner('EN')).backgroundColor).toBe('var(--kroma-tint-13)');
     // An active chip is a solid accent fill, so it climbs the amber ladder.
     fireEvent.pointerOver(inner('FR'));
-    expect(css(inner('FR')).backgroundColor).toBe(rgb(colors.accentHover));
+    expect(css(inner('FR')).backgroundColor).toBe('var(--kroma-accent-hover)');
   });
 });
 
@@ -199,15 +199,15 @@ describe('IconButton', () => {
         <IconButton icon="eye" label="Vu" active />
       </>,
     );
-    expect(css(inner('Fermer')).backgroundColor).toBe('rgba(255, 255, 255, 0.12)');
+    expect(css(inner('Fermer')).backgroundColor).toBe('var(--kroma-tint-12)');
 
     fireEvent.pointerOver(inner('Fermer'));
-    expect(css(inner('Fermer')).backgroundColor).toBe('rgba(255, 255, 255, 0.18)');
+    expect(css(inner('Fermer')).backgroundColor).toBe('var(--kroma-tint-18)');
     fireEvent.pointerOut(inner('Fermer'));
-    expect(css(inner('Fermer')).backgroundColor).toBe('rgba(255, 255, 255, 0.12)');
+    expect(css(inner('Fermer')).backgroundColor).toBe('var(--kroma-tint-12)');
 
     fireEvent.pointerOver(inner('Vu'));
-    expect(css(inner('Vu')).backgroundColor).toBe(colors.accentSoftHover);
+    expect(css(inner('Vu')).backgroundColor).toBe('var(--kroma-accent-soft-hover)');
   });
 });
 
@@ -406,7 +406,7 @@ describe('Skeleton', () => {
     const avatar = render(<Skeleton shape="circle" size={42} />);
     expect(css(disc(avatar.container)).width).toBe('42px');
     expect(css(disc(avatar.container)).height).toBe('42px');
-    expect(css(disc(avatar.container)).borderTopLeftRadius).toBe(`${radius.pill}px`);
+    expect(css(disc(avatar.container)).borderTopLeftRadius).toBe('21px');
   });
 
   it('lets a caller override the shape it was handed', () => {
@@ -424,7 +424,7 @@ describe('Txt', () => {
     );
     const el = screen.getByText('Films');
     expect(css(el).fontSize).toBe('38px');
-    expect(css(el).color).toBe(rgb(colors.accent));
+    expect(css(el).color).toBe('var(--kroma-accent)');
   });
 
   it('rescales the line height when a style overrides the font size', () => {

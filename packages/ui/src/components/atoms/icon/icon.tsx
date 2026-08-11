@@ -15,11 +15,11 @@ export type { IconName, IconProps } from '#ui/lib/glyph';
 
 // The palette holds a handful of alphas, and icons re-render on every focus
 // move in a 10-foot grid, so the fade styles are worth remembering.
-const FADES = new Map<number, ViewStyle>();
-function fade(opacity: number): ViewStyle {
+const FADES = new Map<number | string, ViewStyle>();
+function fade(opacity: number | string): ViewStyle {
   const hit = FADES.get(opacity);
   if (hit) return hit;
-  const style: ViewStyle = { opacity, alignItems: 'flex-start' };
+  const style = { opacity, alignItems: 'flex-start' } as unknown as ViewStyle;
   FADES.set(opacity, style);
   return style;
 }
@@ -34,7 +34,7 @@ function Icon(props: Readonly<IconProps>) {
   // one composite, rather than each of its strokes - see `splitAlpha`. The
   // wrapper only appears when there is alpha to apply, so the opaque case, which
   // is nearly all of them, still renders the glyph and nothing else.
-  return opacity < 1 ? <View style={fade(opacity)}>{glyph}</View> : glyph;
+  return opacity === 1 ? glyph : <View style={fade(opacity)}>{glyph}</View>;
 }
 
 export { Icon };

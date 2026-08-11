@@ -10,7 +10,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
-import { Dialog, DialogActions, DialogFooter } from './dialog';
+import { Dialog } from './dialog';
+import { DialogActions, DialogFooter } from './dialog-actions';
 
 afterEach(cleanup);
 

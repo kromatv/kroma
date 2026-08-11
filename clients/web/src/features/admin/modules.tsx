@@ -121,7 +121,7 @@ function ModulesInner() {
       )}
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <SegmentedControl value={tab} options={tabs} onChange={setTab} />
+        <SegmentedControl.Root value={tab} options={tabs} onValueChange={setTab} />
         {tab !== 'updates' && (
           <Field
             w={256}

@@ -135,9 +135,8 @@ cp "$WORK/package.tgz" "$SPK/package.tgz"
 # needed ~190 GB after extraction.
 EXT_SIZE="$(( $(gzip -dc "$WORK/package.tgz" | wc -c | tr -d ' ') / 1024 ))"
 # Canary/nightly builds share one X.Y.Z, so BUILD sits in a 4th feature segment
-# to keep each one strictly newer than the last (see the version note above). It
-# is stamped ONCE: deploy.yml promotes a canary .spk as-is into the stable
-# Release, so a repeated suffix ships to everyone as `X.Y.Z.BUILD-BUILD`.
+# to keep each one strictly newer than the last (see the version note above).
+# Stamped ONCE: deploy.yml promotes a canary .spk as-is into the stable Release.
 if [ "$CANARY" = "1" ]; then
   INFO_VERSION="$VERSION.$BUILD"
 else

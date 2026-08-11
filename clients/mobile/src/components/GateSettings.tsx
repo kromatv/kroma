@@ -32,7 +32,7 @@ export function GateSettings() {
         label={t('nav.settings')}
         onPress={() => sheet.current?.present()}
       />
-      <BottomSheetModal ref={sheet} {...sheetChrome}>
+      <BottomSheetModal ref={sheet} {...sheetChrome()}>
         <SheetBody>
           <SheetTitle>{t('account.uiLanguage')}</SheetTitle>
           <LocalePicker

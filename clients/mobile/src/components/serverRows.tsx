@@ -5,7 +5,7 @@
 
 import { Box, ListRow, Spinner, styles, Txt } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
-import { colors, spacing, type } from '#mobile/lib/theme';
+import { spacing, type } from '#mobile/lib/theme';
 
 /** The card the rows stack in. */
 export const ServerList = ListRow.Group;
@@ -46,7 +46,7 @@ export function ServerSectionHeader({
   return (
     <Box style={s.sectionHeader}>
       <Txt style={s.sectionTitle}>{title}</Txt>
-      {loading ? <Spinner size={18} color={colors.textFaint} /> : null}
+      {loading ? <Spinner size={18} color="textDim" /> : null}
     </Box>
   );
 }

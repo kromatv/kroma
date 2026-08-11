@@ -6,7 +6,7 @@ import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, type } from '#mobile/lib/theme';
+import { radius, type } from '#mobile/lib/theme';
 import { DownloadButton } from './DownloadButton';
 import { FadeImage } from './FadeImage';
 import { ProgressRing } from './ProgressRing';
@@ -24,8 +24,8 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
   if (done === episodes.length) {
     return (
       <Box style={s.seasonDl}>
-        <Icon name="check" size={16} stroke={2.4} color={colors.accent} />
-        <Txt style={[s.seasonDlLabel, { color: colors.accent }]}>{t('offline.downloaded')}</Txt>
+        <Icon name="check" size={16} stroke={2.4} color="accentText" />
+        <Txt style={s.seasonDlLabel}>{t('offline.downloaded')}</Txt>
       </Box>
     );
   }
@@ -115,7 +115,7 @@ export function EpisodeRow({
     <Pressable
       onPress={() => void play(episode.id)}
       onLongPress={() => router.push(`/item/${episode.id}` as never)}
-      style={({ pressed }) => [s.episode, pressed && { backgroundColor: colors.surface }]}
+      style={({ pressed }) => [s.episode, pressed && s.episodePressed]}
     >
       <Box>
         <FadeImage
@@ -141,7 +141,7 @@ export function EpisodeRow({
             {episode.episode != null ? `${episode.episode}. ` : ''}
             {episode.episodeTitle ?? episode.title}
           </Txt>
-          {watched ? <Icon name="check" size={14} stroke={2.4} color={colors.success} /> : null}
+          {watched ? <Icon name="check" size={14} stroke={2.4} color="success" /> : null}
         </Box>
         {runtime ? <Txt style={s.epMeta}>{runtime}</Txt> : null}
         {overview ? (
@@ -157,7 +157,7 @@ export function EpisodeRow({
 
 const s = styles({
   seasonDl: { row: true, align: 'center', gap: 8 },
-  seasonDlLabel: { ...type.caption, color: 'text', fontWeight: '600' },
+  seasonDlLabel: { ...type.caption, color: 'accentText', fontWeight: '600' },
   upNextCard: {
     row: true,
     align: 'center',
@@ -171,9 +171,10 @@ const s = styles({
   upNextTrack: { absolute: true, right: 5, bottom: 5, left: 5, h: 3, bg: 'text/30', radius: 2 },
   upNextFill: { h: 3, bg: 'accent', radius: 2 },
   upNextText: { flex: true, gap: 2 },
-  upNextLabel: { ...type.small, color: 'accent', fontWeight: '700' },
+  upNextLabel: { ...type.small, color: 'accentText', fontWeight: '700' },
   upNextTitle: { ...type.body, fontWeight: '600' },
   episode: { row: true, align: 'center', gap: 12, p: 8, radius: radius.md },
+  episodePressed: { bg: 'surface1' },
   epThumb: { w: 140, h: 79 },
   epPlayBadge: { fill: true, center: true },
   epPlayCircle: { center: true, w: 34, h: 34, bg: 'bg/55', radius: 17 },

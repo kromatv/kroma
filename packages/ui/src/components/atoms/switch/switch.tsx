@@ -46,14 +46,14 @@ const switchVariants = sv({
     // The OFF colours live on the base and the amber is a layer over them, so
     // the state change is a crossfade rather than a repaint. `overflow` keeps
     // the fill layer's corners inside the pill.
-    bg: 'white/10',
+    bg: 'tint/10',
     border: 'borderStrong',
     overflow: 'hidden',
     // The off wash and the hairline both come up under a pointer. Brightening
     // the wash cannot be mistaken for the state: the amber on-fill is a layer
     // that covers the track entirely (see `s.fill`), so this only ever lifts
     // the off colour.
-    _hover: { bg: 'white/18', border: 'white/32' },
+    _hover: { bg: 'tint/18', border: 'tint/32' },
     _disabled: { opacity: 0.5 },
   },
   variants: {

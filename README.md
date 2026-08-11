@@ -240,7 +240,7 @@ bun run dev:webos      # :5175   LG
 | **LG TV** (webOS) | `bun run dev:webos` | `ares-package clients/webos/dist --no-minify` → `.ipk` ([webos README](clients/webos/README.md)) |
 | **Apple TV / Android TV / Google TV** | `bun run run:tv-native:appletv` · `run:tv-native:androidtv` | Expo prebuild + native build; `bun run bundle:tv-native` is the JS-only gate ([tv-native](clients/tv-native)) |
 | **iPhone / iPad / Android** | `bun run run:mobile:ios` · `run:mobile:android` | Expo prebuild + native build; `bun run bundle:mobile` is the JS-only gate ([mobile README](clients/mobile/README.md)) |
-| **Design system workbench** | `bun run dev:kit` · `run:kit:appletv` · `run:kit:ios` | `bun run deploy:kit` → ui.kroma.tv ([kit README](clients/kit/README.md)) |
+| **Design system workbench** | `bun run dev:kit` · `run:kit:appletv` · `run:kit:ios` | `bun run deploy:kit` → ui.kroma.tv ([kit README](apps/kit/README.md)) |
 
 The `run:` scripts pass their extra flags straight through to Expo: a physical
 device is `bun run run:tv-native:appletv --device "Salon"`, and adding

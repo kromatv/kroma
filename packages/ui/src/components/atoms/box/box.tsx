@@ -19,6 +19,9 @@ interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
    *  prop, so no forwardRef wrapper is needed; it is declared explicitly because
    *  ViewProps does not carry it. */
   ref?: Ref<View>;
+  /** Browser targets only: becomes `data-*` on the host element. Declared here
+   *  because only react-native-web's own `ViewProps` carries it. */
+  dataSet?: Record<string, string | number | undefined>;
 }
 
 function Box({ children, style, ref, ...props }: Readonly<BoxProps>) {

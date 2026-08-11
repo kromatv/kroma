@@ -42,7 +42,7 @@ export function CastRemotes() {
         focusScale={1.08}
         sv={chip}
       >
-        <Icon name="cast" size={19} stroke={2} color="accent" />
+        <Icon name="cast" size={19} stroke={2} color="accentText" />
         <Txt style={s.count}>{count}</Txt>
       </Focusable>
 

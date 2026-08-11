@@ -3,45 +3,48 @@
 The CSS half of the design system, for the targets that read CSS. The TV and
 native apps never load any of it — they consume the TypeScript tokens directly.
 
+**There is no CSS to maintain here.** `kroma.css` is a placeholder; everything
+real is emitted by `kromaUI()` (`@kroma/ui/vite`) from the TypeScript tokens, so
+the design system has one representation and the two halves cannot drift.
+
+## Using it
+
+An app's entry stylesheet writes one line:
+
+```css
+@import "@kroma/ui/css";
 ```
-styles.css        the global stylesheet: `import '@kroma/ui/styles.css'`, once
-tailwind.css      the Tailwind v4 entry: tokens mapped onto utilities
-fonts.css         the two families
-tokens/*.css      GENERATED from src/core/tokens — never edit
+
+and three where Tailwind runs:
+
+```css
+@import "tailwindcss";
+@import "@kroma/ui/css";
+@import "@kroma/ui/css/theme";
 ```
 
-## tokens/ is generated
+| Specifier | Emits |
+| --- | --- |
+| `@kroma/ui/css` | fonts + tokens + motion + base |
+| `@kroma/ui/css/tokens` | the custom properties, both palettes |
+| `@kroma/ui/css/theme` | the Tailwind v4 bridge (`bg-accent`, `text-muted`, …) |
+| `@kroma/ui/css/fonts` | the `@font-face` rules |
+| `@kroma/ui/css/motion` | the component keyframes |
+| `@kroma/ui/css/base` | reset, body, focus ring, scrollbars |
 
-`bun run tokens:gen` reads the TypeScript tokens and writes
-`tokens/{colors,spacing,effects,typography}.css` as `:root` custom properties.
-**The TS is the source; these files are downstream.** `bun run tokens:check`
-regenerates and fails on any diff, so a hand edit here cannot survive.
+The parts exist for `@kroma/tv`, which wants the type and the tokens but
+supplies its own reset (it hides overflow and owns its focus visuals).
 
-Why generate at all: nothing can import a `.ts` from a stylesheet, and a token has
-to exist in both languages — React Native needs the object, Tailwind's `@theme`
-and old-Chromium CSS need the custom property. It is a format translation, not a
-redundant copy, and there is no list to maintain because the generator walks the
-token objects.
+## Two rules the builds enforce the hard way
 
-The generator also refuses to lose one: a colour declared in `colors.ts` but never
-emitted fails the run, with the name in the message. That guard exists because it
-happened — `wash` was added and silently never reached CSS, so the web side
-resolved `var(--kroma-wash)` to nothing.
+**`kromaUI()` comes before `tailwindcss()`.** Tailwind resolves `@import`
+itself, so if it reaches the stylesheet first it silently drops the specifier it
+does not know and every custom property is missing from the bundle.
 
-## tailwind.css
+**The directive belongs in the app's own entry stylesheet.** Vite inlines nested
+CSS `@import`s inside its own CSS plugin, where the plugin container's
+`transform` never sees them. `generateBundle` sweeps the emitted assets as a
+backstop, but Tailwind can consume a nested file before that runs.
 
-Maps the KROMA tokens onto Tailwind utilities (`bg-accent`, `rounded-lg`,
-`shadow-card`) by referencing the custom properties rather than copying values, so
-a token change moves the utilities with it.
-
-It is imported by the web app **and by every module's own stylesheet**, which is
-what lets a runtime-installed module ship self-contained CSS carrying the full
-design instead of depending on whichever utility classes the host happened to
-generate. Each build's Tailwind scans its own source.
-
-## Values are plain strings, deliberately
-
-No `oklch()`, no `color-mix()`, no viewport units anywhere in the tokens. A value
-has to drop unchanged into a React Native `StyleSheet`, into a CSS variable, and
-into a Chromium 53 webOS bundle. The moment a token needs computing, one of those
-three cannot read it.
+Both failures are silent: the build succeeds and ships
+`body { background: var(--kroma-bg) }` pointing at nothing.

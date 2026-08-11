@@ -27,7 +27,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import { ErrorBanner } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 // expo-camera is a NATIVE module and expo-router imports every route at boot:
 // a static import would crash the whole app on a binary built before the
@@ -128,12 +128,9 @@ export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>)
           <Pressable
             onPress={() => void enableCamera()}
             disabled={!camera}
-            style={({ pressed }) => [
-              s.cameraOff,
-              pressed && { backgroundColor: colors.surfaceHigh },
-            ]}
+            style={({ pressed }) => [s.cameraOff, pressed && s.cameraOffPressed]}
           >
-            <Icon name="scan" size={34} stroke={1.8} color={colors.accent} />
+            <Icon name="scan" size={34} stroke={1.8} color="accentText" />
             <Txt style={s.cameraOffLabel}>{t('connect.scanTvQr')}</Txt>
           </Pressable>
         )}
@@ -172,7 +169,8 @@ const s = styles({
     overflow: 'hidden',
   },
   cameraOff: { fill: true, center: true, gap: 10, px: spacing.md },
-  cameraOffLabel: { ...type.caption, color: 'accent', fontWeight: '700', textAlign: 'center' },
+  cameraOffPressed: { bg: 'surface3' },
+  cameraOffLabel: { ...type.caption, color: 'accentText', fontWeight: '700', textAlign: 'center' },
   cameraFrame: {
     absolute: true,
     top: 16,

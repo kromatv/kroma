@@ -1,0 +1,114 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* The root, not just the body: the overscroll gutter and the canvas behind a
+   short page are painted from here. */
+html {
+  background: var(--kroma-bg);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* An unstamped document is the `system` choice. */
+@media (prefers-color-scheme: light) {
+  html:not([data-theme]) {
+    color-scheme: light;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--kroma-bg);
+  color: var(--kroma-text);
+  font: var(--type-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--kroma-accent-soft);
+  color: var(--kroma-text);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font-ui);
+}
+
+/* The ring is an outline standing off the control, so it already takes the
+   control's corners: this must never set border-radius. */
+:focus-visible {
+  outline: var(--ring-outline);
+  outline-offset: var(--ring-gap);
+}
+
+/* Except inside a field, where <TextField> owns the focus visual. */
+input:focus-visible,
+textarea:focus-visible {
+  box-shadow: none;
+}
+
+.kroma-overline {
+  font: var(--type-overline);
+  letter-spacing: var(--tracking-overline);
+  text-transform: uppercase;
+  color: var(--kroma-text-muted);
+}
+
+/* Off-screen tiles skip layout and paint but stay in the DOM, so focus reaches them. */
+.kroma-poster {
+  content-visibility: auto;
+  contain-intrinsic-size: 200px 320px;
+}
+
+/* Fluid, unlayered so they beat the token defaults, which are TV constants. */
+:root {
+  --gutter-web: clamp(1rem, 4vw, 3.5rem);
+  --card-w: clamp(8.25rem, 30vw, 13rem);
+}
+
+* {
+  scrollbar-color: var(--kroma-border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-color: var(--kroma-border-strong);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--kroma-text-dim);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

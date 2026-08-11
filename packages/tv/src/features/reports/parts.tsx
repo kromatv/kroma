@@ -76,7 +76,11 @@ export function CategoryRows({
             hint={t(c.hintKey)}
             onPress={() => onSelect(c.key)}
             trailing={
-              c.key === selected ? <Icon name="check" size={22} color="accent" /> : <Box w={22} />
+              c.key === selected ? (
+                <Icon name="check" size={22} color="accentText" />
+              ) : (
+                <Box w={22} />
+              )
             }
           />
         ))}

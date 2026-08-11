@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { stillArt } from '#ui/lib/sample-art';
 import { UP_NEXT_COLUMNS, UP_NEXT_GAP, UpNextCard } from './UpNextCard';
 
@@ -36,19 +37,21 @@ export default story({
   },
   render: ({ title, subtitle, categoryLabel, interactive, artwork }) => (
     // Capped rather than pinned: one card at 960 would be a hero, not a card.
-    <Box maxW={420}>
-      <UpNextCard
-        item={{
-          id: 'up-next-1',
-          title,
-          subtitle,
-          categoryLabel,
-          posterUrl: artwork ? stillArt(2) : null,
-        }}
-        interactive={Boolean(interactive)}
-        onActivate={() => {}}
-      />
-    </Box>
+    <Ground tone="dark">
+      <Box maxW={420}>
+        <UpNextCard
+          item={{
+            id: 'up-next-1',
+            title,
+            subtitle,
+            categoryLabel,
+            posterUrl: artwork ? stillArt(2) : null,
+          }}
+          interactive={Boolean(interactive)}
+          onActivate={() => {}}
+        />
+      </Box>
+    </Ground>
   ),
   scenes: [
     {
@@ -58,13 +61,15 @@ export default story({
       // layout - it divides the width it measures by three - so the scene shows
       // the same arithmetic instead of one width where it happens to land.
       render: ({ interactive }) => (
-        <Box row gap={UP_NEXT_GAP}>
-          {ROW.map((item) => (
-            <Box key={item.id} flex>
-              <UpNextCard item={item} interactive={Boolean(interactive)} onActivate={() => {}} />
-            </Box>
-          ))}
-        </Box>
+        <Ground tone="dark">
+          <Box row gap={UP_NEXT_GAP}>
+            {ROW.map((item) => (
+              <Box key={item.id} flex>
+                <UpNextCard item={item} interactive={Boolean(interactive)} onActivate={() => {}} />
+              </Box>
+            ))}
+          </Box>
+        </Ground>
       ),
     },
     {

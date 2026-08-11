@@ -42,7 +42,7 @@ export function PersonHeader({
       <Avatar name={name} src={photo} size={132} circle />
       <Box style={{ minWidth: 0, flex: 1 }} gap={8}>
         {roles.length ? (
-          <Txt variant="overlineTv" color="accent">
+          <Txt variant="overlineTv" color="accentText">
             {roles.join(' · ')}
           </Txt>
         ) : null}

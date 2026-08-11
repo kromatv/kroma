@@ -78,11 +78,11 @@ export function SearchPage() {
             </InputGroup.Root>
 
             {canDiscover ? (
-              <SegmentedControl
+              <SegmentedControl.Root
                 size="md"
                 label={t('discover.title')}
                 value={type}
-                onChange={setType}
+                onValueChange={setType}
                 options={TYPES.map((tp) => ({ value: tp.value, label: t(tp.labelKey) }))}
               />
             ) : null}

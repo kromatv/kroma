@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { StyleSheet } from 'react-native';
 import { describe, expect, it } from 'vitest';
-import { colors } from '#ui/core/tokens';
 import { sharedStyle, style, styles } from './styles';
 
 const flat = (s: unknown) => StyleSheet.flatten(s as never) as Record<string, unknown>;
@@ -25,7 +24,7 @@ describe('styles', () => {
   });
 
   it('resolves colour tokens and the alpha suffix', () => {
-    expect(flat(s.label).color).toBe(colors.textMuted);
+    expect(flat(s.label).color).toBe('var(--kroma-text-muted)');
     expect(flat(s.wash).backgroundColor).toBe('rgba(255, 255, 255, 0.06)');
   });
 
@@ -75,7 +74,7 @@ describe('style', () => {
     expect(flat(style({ px: 12, bg: 'surface2' }))).toEqual({
       paddingLeft: 12,
       paddingRight: 12,
-      backgroundColor: colors.surface2,
+      backgroundColor: 'var(--kroma-surface-2)',
     });
   });
 });

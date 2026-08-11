@@ -27,21 +27,21 @@ const chipVariants = svFor<{
   slots: {
     root: { row: true, align: 'center', gap: 8, py: 6, px: 14, radius: 'pill', border: 'border' },
     label: { font: 'ui', fontWeight: '600' },
-    dot: { w: 7, h: 7, radius: 'pill', shrink: 0 },
+    dot: { w: 7, h: 7, radius: 'circle', shrink: 0 },
     count: { font: 'ui', fontWeight: '600', opacity: 0.6 },
     icon: { color: 'text' },
   },
   variants: {
     variant: {
       solid: {
-        root: { bg: 'white/7', _hover: { bg: 'white/13' } },
+        root: { bg: 'tint/7', _hover: { bg: 'tint/13' } },
         label: { color: 'text' },
         count: { color: 'text' },
       },
       /** `subtle` is the strip that floats over the browse screens' ambient art:
        *  a fainter wash, no border, and muted text so it recedes until focused. */
       subtle: {
-        root: { bg: 'white/8', borderWidth: 0, _hover: { bg: 'white/14' } },
+        root: { bg: 'tint/8', borderWidth: 0, _hover: { bg: 'tint/14' } },
         label: { color: 'textMuted' },
         count: { color: 'textMuted' },
         icon: { color: 'textMuted' },

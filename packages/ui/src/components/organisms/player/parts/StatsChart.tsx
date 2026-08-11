@@ -96,7 +96,7 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
         <Box row align="center" gap={14} shrink={0}>
           {series.map((s) => (
             <Box key={s.key} row align="center" gap={6}>
-              {series.length > 1 ? <Box w={7} h={7} radius="pill" bg={s.color} /> : null}
+              {series.length > 1 ? <Box w={7} h={7} radius="circle" bg={s.color} /> : null}
               <Txt style={sx.chartValue} color="text/82">
                 {s.display}
               </Txt>

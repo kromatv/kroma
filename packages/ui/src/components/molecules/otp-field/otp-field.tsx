@@ -18,7 +18,7 @@ import { Pressable, TextInput } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
 import { Txt } from '#ui/components/atoms/text';
-import { radius, styles, sv } from '#ui/core';
+import { type RadiusToken, styles, sv } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import { CONTROL } from '#ui/lib/field-shell';
 import { useCompleteOnce } from '#ui/lib/use-complete-once';
@@ -30,7 +30,7 @@ const REGEXP_ONLY_DIGITS_AND_CHARS = '^[a-zA-Z0-9]+$';
 
 // <Frost> clips itself to the corner rather than inheriting it, so the radius
 // each size gives its slot has to be stated where the frost can read it too.
-const SLOT_RADIUS = { md: radius.lg, tv: radius.xl } as const;
+const SLOT_RADIUS = { md: 'lg', tv: 'xl' } as const satisfies Record<string, RadiusToken>;
 
 const otpVariants = sv({
   slots: {

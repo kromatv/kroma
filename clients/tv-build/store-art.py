@@ -26,7 +26,7 @@ from PIL import Image
 REPO = Path(__file__).resolve().parents[2]
 WORK = Path(sys.argv[1])
 
-# Brand tokens, straight from packages/ui/src/styles/tokens/colors.css.
+# Brand tokens, straight from packages/ui/src/core/tokens/colors.ts.
 BG = (0x0A, 0x0A, 0x0C)
 ACCENT = (0xF4, 0xB6, 0x42)
 

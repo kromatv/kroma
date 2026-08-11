@@ -1,6 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { fakeController, liveMeters, TV_STATS } from '../player.fixture';
 import type { PlayerStats } from '../types';
 import { StatsPanel } from './StatsPanel';
@@ -12,7 +13,13 @@ import { StatsPanel } from './StatsPanel';
  * own, which the canvas is already deciding (see `width` below).
  */
 function Surface({ children }: Readonly<{ children: ReactNode }>) {
-  return <Box minH={620}>{children}</Box>;
+  return (
+    <Ground tone="dark">
+      <Box minH={620} bg="bg">
+        {children}
+      </Box>
+    </Ground>
+  );
 }
 
 export default story({

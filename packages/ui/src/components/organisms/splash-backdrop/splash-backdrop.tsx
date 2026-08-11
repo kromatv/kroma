@@ -19,6 +19,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { IMG_FADE_MS, Img } from '#ui/components/atoms/img';
 import { Txt } from '#ui/components/atoms/text';
 import { styles, WHEEL_COLORS } from '#ui/core';
@@ -153,67 +154,70 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   if (!cover) return null;
 
   return (
-    <Box
-      fill
-      bg="bg"
-      overflow="hidden"
-      pointerEvents="none"
-      aria-hidden
-      onLayout={onLayout}
-      style={style}
-    >
-      <Animated.View style={[s.art, drift]}>
-        {/* The long dissolve belongs to the HANDOVER between two covers; the
-            gate's first sight of any artwork takes the kit's short reveal
-            instead, since a 2.8s ramp from the page colour reads as a fade
-            from black rather than as a cross-fade. */}
-        <Img
-          src={cover.url}
-          fill
-          duration={slide === 0 ? IMG_FADE_MS : FADE_MS}
-          position="50% 40%"
-          style={GRADE}
-        />
-      </Animated.View>
-      <Box fill style={VEIL} />
-      <Box fill style={VIGNETTE} />
-      <Box absolute left={0} right={0} bottom={0} h={FOOT_H} style={FOOT} />
-      <Box absolute left={0} right={0} bottom={0} h={RULE_H} row>
-        {WHEEL_COLORS.map((segment) => (
-          <Box key={segment} flex bg={segment} />
-        ))}
-      </Box>
-      {cover.caption ? (
-        // Bounded on BOTH sides and clipped to one line: a long title on a
-        // portrait phone otherwise runs off the left edge.
-        <Box
-          absolute
-          left={20}
-          right={20}
-          bottom={20}
-          row
-          align="center"
-          justify="flex-end"
-          gap={13}
-        >
-          {cover.eyebrow ? (
-            <>
-              <Txt variant="overline" color="white/50" style={s.eyebrow}>
-                {cover.eyebrow}
-              </Txt>
-              <Box w={16} h={1} bg="white/30" />
-            </>
-          ) : null}
-          <Txt color="white/90" lines={1} style={s.caption}>
-            {cover.caption}
-          </Txt>
+    <Ground tone="dark" style={s.ground}>
+      <Box
+        fill
+        bg="bg"
+        overflow="hidden"
+        pointerEvents="none"
+        aria-hidden
+        onLayout={onLayout}
+        style={style}
+      >
+        <Animated.View style={[s.art, drift]}>
+          {/* The long dissolve belongs to the HANDOVER between two covers; the
+              gate's first sight of any artwork takes the kit's short reveal
+              instead, since a 2.8s ramp from the page colour reads as a fade
+              from black rather than as a cross-fade. */}
+          <Img
+            src={cover.url}
+            fill
+            duration={slide === 0 ? IMG_FADE_MS : FADE_MS}
+            position="50% 40%"
+            style={GRADE}
+          />
+        </Animated.View>
+        <Box fill style={VEIL} />
+        <Box fill style={VIGNETTE} />
+        <Box absolute left={0} right={0} bottom={0} h={FOOT_H} style={FOOT} />
+        <Box absolute left={0} right={0} bottom={0} h={RULE_H} row>
+          {WHEEL_COLORS.map((segment) => (
+            <Box key={segment} flex bg={segment} />
+          ))}
         </Box>
-      ) : null}
-    </Box>
+        {cover.caption ? (
+          // Bounded on BOTH sides and clipped to one line: a long title on a
+          // portrait phone otherwise runs off the left edge.
+          <Box
+            absolute
+            left={20}
+            right={20}
+            bottom={20}
+            row
+            align="center"
+            justify="flex-end"
+            gap={13}
+          >
+            {cover.eyebrow ? (
+              <>
+                <Txt variant="overline" color="white/50" style={s.eyebrow}>
+                  {cover.eyebrow}
+                </Txt>
+                <Box w={16} h={1} bg="white/30" />
+              </>
+            ) : null}
+            <Txt color="white/90" lines={1} style={s.caption}>
+              {cover.caption}
+            </Txt>
+          </Box>
+        ) : null}
+      </Box>
+    </Ground>
   );
 }
 
 const s = styles({
+  ground: { fill: true, pointerEvents: 'none' },
   art: { absolute: true, top: 0, right: 0, bottom: 0, left: 0 },
   eyebrow: { fontSize: 10, letterSpacing: 2.6, shrink: 0 },
   caption: { fontSize: 14, fontWeight: '500', shrink: 1 },

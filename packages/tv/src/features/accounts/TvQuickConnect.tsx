@@ -155,7 +155,7 @@ export function TvQuickConnect() {
             <Txt style={{ fontSize: 17, fontWeight: '700' }}>{t('nav.connectDevice')}</Txt>
             {t('connect.orInAppSuffix')}
           </Txt>
-          <Txt style={s.code} color="accent">
+          <Txt style={s.code} color="accentText">
             {info.code}
           </Txt>
           <Box

@@ -1,8 +1,8 @@
 // Where the component being inspected renders: inside a device viewport, and as
 // a variant matrix derived from the component's `sv`.
 
-import { Box, type IconName, styles, Txt } from '@kroma/ui/kit';
-import { CANVAS, type ColorToken, colors, radius } from '@kroma/ui/tokens';
+import { Box, type IconName, styles, Txt, useTheme } from '@kroma/ui/kit';
+import { CANVAS, type ColorToken, colors, nestedRadius } from '@kroma/ui/tokens';
 import { useCallback, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { ScrollView } from 'react-native';
@@ -119,6 +119,7 @@ function ViewportFrame({
   children,
 }: Readonly<ViewportFrameProps>) {
   const [area, onLayout] = useMeasuredSize();
+  const theme = useTheme();
   const device = frameSize(viewport, rotate && canRotate(viewport));
 
   if (!device) {
@@ -173,7 +174,7 @@ function ViewportFrame({
         <Box
           bg="surface3"
           p={BEZEL}
-          radius={radius.lg + BEZEL}
+          radius={nestedRadius(theme.radius.lg, -BEZEL)}
           style={[s.case, { transform: [{ scale }], borderWidth: hairline(scale) }]}
         >
           <Box

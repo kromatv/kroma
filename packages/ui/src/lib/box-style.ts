@@ -24,9 +24,8 @@ import { themeVersion } from '#ui/core/theme';
  * it - token values resolve inside `boxStyle` - and the fresh identities are
  * what make styleq recompile.
  *
- * The engine's `sharedStyle` looks the same and is not: this one REGISTERS, so
- * a <Box> gets atomic classes, and its result is opaque. Use that one where the
- * style has to stay readable or land inline.
+ * The engine's `sharedStyle` is the same thing for a declaration in the kit's
+ * own vocabulary; this one takes <Box>'s prop bag.
  */
 const shared = new Map<string, ViewStyle>();
 

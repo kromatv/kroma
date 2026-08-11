@@ -86,7 +86,7 @@ export const TopBar = memo(function TopBar({
             // title does: a codec notice is a sentence, and it wraps to two
             // lines sooner than it crowds out what is playing.
             <Box shrink={1} radius="pill" bg="accentSoft" px={px(14)} py={px(8)}>
-              <Txt lines={2} style={[s.warn, { fontSize: px(WARN_SIZE) }]} color="accent">
+              <Txt lines={2} style={[s.warn, { fontSize: px(WARN_SIZE) }]} color="accentText">
                 {warn}
               </Txt>
             </Box>

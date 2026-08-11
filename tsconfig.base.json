@@ -8,18 +8,11 @@
     "paths": {
       "#tv/*": ["./packages/tv/src/*"],
       "#ui/*": ["./packages/ui/src/*"],
-      // The kit's build-time half, which the TV shells' vite config imports by
-      // package name. It needs a mapping because `clients/tv-build` is not a
-      // package of its own, so node resolution from that directory never finds
-      // the workspace symlink (the shells that LOAD the config do have it).
       "@kroma/ui/bundler": ["./packages/ui/bundler/index.ts"],
       "#web/*": ["./clients/web/src/*"]
     },
-    // Vite 8's native config loader is Node's own type stripping, which does no
-    // extension guessing: a config's relative imports have to name the file it
-    // actually is (`./tv.target.ts`). Every project here is type-check-only, so
-    // nothing is emitted that would have to rewrite the specifier back to `.js`.
     "allowImportingTsExtensions": true,
+    "incremental": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

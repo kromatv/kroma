@@ -13,7 +13,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { colors, ring } from '#ui/core/tokens';
+import { activeTheme } from '#ui/core';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
 import { armPressGuard, clearPressGuard } from '#ui/lib/press-guard';
@@ -64,9 +64,9 @@ describe('Focusable on react-native-web', () => {
       </>,
     );
     const entry = painted('Entree');
-    expect(entry.style.outlineWidth).toBe(`${ring.focusLift.outlineWidth}px`);
-    expect(entry.style.outlineOffset).toBe(`${ring.focusLift.outlineOffset}px`);
-    expect(entry.style.boxShadow.replace(/\s+/g, ' ')).toBe(ring.focusLift.boxShadow);
+    expect(entry.style.outlineWidth).toBe(`${activeTheme().ring.focusLift.outlineWidth}px`);
+    expect(entry.style.outlineOffset).toBe(`${activeTheme().ring.focusLift.outlineOffset}px`);
+    expect(entry.style.boxShadow.replace(/\s+/g, ' ')).toBe(activeTheme().ring.focusLift.boxShadow);
     expect(ringed('Premier')).toBe(false);
   });
 
@@ -180,7 +180,9 @@ describe('Focusable on react-native-web', () => {
 
   it('applies a focus state layer from the design tokens', () => {
     screenWith(<Focusable label="Chip" autoFocus states={{ focus: { bg: 'accentSoft' } }} />);
-    expect(painted('Chip').style.backgroundColor.replace(/\s+/g, ' ')).toBe(colors.accentSoft);
+    expect(painted('Chip').style.backgroundColor.replace(/\s+/g, ' ')).toBe(
+      'var(--kroma-accent-soft)',
+    );
   });
 
   // The pointer's own state, which only these browser targets have at all. Two
@@ -195,7 +197,9 @@ describe('Focusable on react-native-web', () => {
     expect(painted('Survol').style.backgroundColor).toBe('');
 
     fireEvent.pointerOver(host('Survol'));
-    expect(painted('Survol').style.backgroundColor.replace(/\s+/g, ' ')).toBe(colors.accentSoft);
+    expect(painted('Survol').style.backgroundColor.replace(/\s+/g, ' ')).toBe(
+      'var(--kroma-accent-soft)',
+    );
 
     fireEvent.pointerOut(host('Survol'));
     expect(painted('Survol').style.backgroundColor).toBe('');
@@ -228,15 +232,16 @@ describe('Focusable on react-native-web', () => {
     // clients/web. Nothing can focus it and no finger will press it, so the
     // hover is the ONLY answer a cursor gets there.
     render(<Focusable label="Nu" states={{ hover: { bg: 'accentSoft' } }} />);
-    expect(painted('Nu').style.backgroundColor).toBe('');
+    const wash = () => getComputedStyle(painted('Nu')).backgroundColor;
+    expect(wash()).toBe('rgba(0, 0, 0, 0)');
 
     // A Pressable listens for the hover itself (react-native-web's useHover),
     // straight on the element rather than through React's delegation.
     fireEvent.pointerEnter(host('Nu'));
-    expect(painted('Nu').style.backgroundColor.replace(/\s+/g, ' ')).toBe(colors.accentSoft);
+    expect(wash()).toBe('var(--kroma-accent-soft)');
 
     fireEvent.pointerLeave(host('Nu'));
-    expect(painted('Nu').style.backgroundColor).toBe('');
+    expect(wash()).toBe('rgba(0, 0, 0, 0)');
   });
 });
 

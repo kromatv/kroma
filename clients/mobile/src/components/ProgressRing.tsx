@@ -3,7 +3,7 @@
 // means "indeterminate", shown as the platform spinner instead of a ring
 // stuck at zero.
 
-import { colors, ProgressRing as Ring, Spinner } from '@kroma/ui/kit';
+import { color, ProgressRing as Ring, Spinner } from '@kroma/ui/kit';
 
 export function ProgressRing({
   progress,
@@ -14,7 +14,7 @@ export function ProgressRing({
   size?: number;
   stroke?: number;
 }>) {
-  if (progress < 0) return <Spinner size={20} color={colors.accent} />;
+  if (progress < 0) return <Spinner size={20} color="accent" />;
   return (
     <Ring
       // A ring at exactly 0 reads as broken rather than as "just started", so
@@ -22,8 +22,8 @@ export function ProgressRing({
       value={Math.max(0.02, progress)}
       size={size}
       stroke={stroke}
-      track={colors.borderStrong}
-      fill={colors.accent}
+      track={color('borderStrong')}
+      fill={color('accent')}
     />
   );
 }

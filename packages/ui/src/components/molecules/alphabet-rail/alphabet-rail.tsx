@@ -73,7 +73,7 @@ const letterVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   variants: {
     tone: {
       idle: { label: { color: 'textMuted', _hover: { color: 'text' } } },
-      dim: { label: { color: 'white/15' } },
+      dim: { label: { color: 'tint/15' } },
       lit: { label: { color: 'accentInk' } },
       litDim: { label: { color: INK_DIM } },
     },
@@ -292,7 +292,7 @@ function AlphabetRail({
           align="center"
           justify="center"
           bg="accent"
-          radius={22}
+          radius="2xl"
           style={{
             right: ROW_W + PAD * 2 + 18,
             top: bubble.y - BUBBLE / 2,

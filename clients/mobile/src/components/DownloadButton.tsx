@@ -7,7 +7,6 @@ import { useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
-import { colors } from '#mobile/lib/theme';
 import { ProgressRing } from './ProgressRing';
 
 const RING = 34;
@@ -61,7 +60,7 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
       <Box style={s.pausedBox}>
         <ProgressRing progress={Math.max(0.02, state.progress)} />
         <Box pointerEvents="none" style={s.pausedGlyph}>
-          <Icon name="player-pause-filled" size={11} color={colors.textDim} />
+          <Icon name="player-pause-filled" size={11} color="textMuted" />
         </Box>
       </Box>
     );
@@ -69,7 +68,7 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   else if (state.status === 'done')
     glyph = (
       <Box style={s.doneBadge}>
-        <Icon name="check" size={size - 6} stroke={2.4} color={colors.accentInk} />
+        <Icon name="check" size={size - 6} stroke={2.4} color="accentInk" />
       </Box>
     );
 

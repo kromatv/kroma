@@ -25,7 +25,7 @@ function StatusDot({ online, size = 10, overArt = false }: Readonly<StatusDotPro
       w={size}
       h={size}
       shrink={0}
-      radius="pill"
+      radius="circle"
       bg={look.bg}
       style={shadow ? { boxShadow: shadow } : null}
     />
@@ -37,7 +37,7 @@ function lookOf(online?: boolean) {
   return online ? UP : DOWN;
 }
 
-const PENDING: Look = { bg: 'white/25', glow: null };
+const PENDING: Look = { bg: 'tint/25', glow: null };
 const UP: Look = { bg: 'success', glow: '0 0 7px rgba(70, 208, 141, 0.75)' };
 const DOWN: Look = { bg: 'danger', glow: '0 0 7px rgba(229, 57, 53, 0.75)' };
 

@@ -10,7 +10,7 @@ import {
   NOTIFICATION_CATEGORY_LABEL,
   PUSH_BLOCKER_LABEL,
 } from '@kroma/core';
-import { Box, Switch, styles, Txt } from '@kroma/ui/kit';
+import { Box, color, Switch, styles, Txt } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
@@ -20,7 +20,7 @@ import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { nativePush } from '#mobile/lib/notifications/push';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function NotificationSettings() {
   const t = useT();
@@ -88,7 +88,7 @@ export default function NotificationSettings() {
                 style={({ pressed }) => [s.action, pressed && s.actionPressed]}
               >
                 {toggle.isPending ? (
-                  <ActivityIndicator color={colors.text} size="small" />
+                  <ActivityIndicator color={color('text')} size="small" />
                 ) : (
                   <Txt style={s.actionLabel}>
                     {subscribed ? t('push.disable') : t('push.enable')}
@@ -146,7 +146,7 @@ const s = styles({
   error: { ...type.small, mt: spacing.sm, color: '#ff8080' },
   action: { align: 'center', minW: 88, px: 14, py: 8, bg: 'accentSoft', radius: radius.md },
   actionPressed: { opacity: 0.7 },
-  actionLabel: { ...type.small, color: 'accent', fontWeight: '600' },
+  actionLabel: { ...type.small, color: 'accentText', fontWeight: '600' },
   headerRow: { row: true, align: 'center', pb: 6 },
   headerSpacer: { flex: true },
   headerCell: {

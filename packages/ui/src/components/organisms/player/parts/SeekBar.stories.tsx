@@ -2,6 +2,7 @@ import { formatTimecode } from '@kroma/core';
 import { story } from '@kroma/workbench/story';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { stillArt } from '#ui/lib/sample-art';
 import { currentChapter } from '../lib/chapters';
 import { fakeTileAt } from '../player.fixture';
@@ -59,27 +60,29 @@ function Scrubbable({
   const shown = seekPreview ?? cur;
 
   return (
-    <Box flex justify="flex-end" px={34} pb={60}>
-      <SeekBar
-        cur={cur}
-        dur={dur}
-        bufEnd={bufEnd}
-        chapters={chapters}
-        seekPreview={seekPreview}
-        focused={focused}
-        elapsed={formatTimecode(shown)}
-        chapterLabel={currentChapter(chapters, shown * 1000)?.title ?? ''}
-        total={formatTimecode(dur)}
-        endsAt={endsAt}
-        tileAt={
-          withPreview
-            ? fakeTileAt([stillArt(0), stillArt(1), stillArt(2), stillArt(3)])
-            : () => null
-        }
-        onScrub={onScrub}
-        onScrubCommit={onScrubCommit}
-      />
-    </Box>
+    <Ground tone="dark" flex>
+      <Box flex justify="flex-end" bg="bg" px={34} pb={60}>
+        <SeekBar
+          cur={cur}
+          dur={dur}
+          bufEnd={bufEnd}
+          chapters={chapters}
+          seekPreview={seekPreview}
+          focused={focused}
+          elapsed={formatTimecode(shown)}
+          chapterLabel={currentChapter(chapters, shown * 1000)?.title ?? ''}
+          total={formatTimecode(dur)}
+          endsAt={endsAt}
+          tileAt={
+            withPreview
+              ? fakeTileAt([stillArt(0), stillArt(1), stillArt(2), stillArt(3)])
+              : () => null
+          }
+          onScrub={onScrub}
+          onScrubCommit={onScrubCommit}
+        />
+      </Box>
+    </Ground>
   );
 }
 

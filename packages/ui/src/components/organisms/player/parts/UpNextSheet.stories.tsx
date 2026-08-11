@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { stillArt } from '#ui/lib/sample-art';
 import type { UpNextItem } from './UpNextCard';
 import { UpNextSheet } from './UpNextSheet';
@@ -54,16 +55,18 @@ export default story({
     // The sheet positions itself against the player surface and rises to ~62% of
     // it, so the story gives it one shaped like the picture, with a floor under
     // it so the cards still have room at the narrow end.
-    <Box aspect={16 / 9} minH={560} bg="surface2" radius="lg" overflow="hidden">
-      <UpNextSheet
-        data={empty ? { nextEpisodes: [], recommendations: [] } : DATA}
-        open={open}
-        revealed={revealed}
-        onOpen={() => {}}
-        onClose={() => {}}
-        onPlay={() => {}}
-      />
-    </Box>
+    <Ground tone="dark">
+      <Box aspect={16 / 9} minH={560} bg="surface2" radius="lg" overflow="hidden">
+        <UpNextSheet
+          data={empty ? { nextEpisodes: [], recommendations: [] } : DATA}
+          open={open}
+          revealed={revealed}
+          onOpen={() => {}}
+          onClose={() => {}}
+          onPlay={() => {}}
+        />
+      </Box>
+    </Ground>
   ),
   scenes: [
     {

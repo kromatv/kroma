@@ -11,7 +11,7 @@ import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { SHADE, spacing, type } from '#mobile/lib/theme';
+import { shades, spacing, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
 export { DetailActions } from './DetailActions';
@@ -57,13 +57,14 @@ export function DetailHero({
       transform: [{ translateY: y / 2 }, { scale: 1 - y / height }],
     };
   });
+  const ground = shades();
 
   return (
     <Box style={{ height }}>
       <Animated.View style={[StyleSheet.absoluteFill, stretch]}>
         <FadeImage uri={art} seed={seed} style={StyleSheet.absoluteFill} />
         <LinearGradient
-          colors={[SHADE.mid, SHADE.transparent, SHADE.transparent, SHADE.mid, SHADE.full]}
+          colors={[ground.mid, ground.transparent, ground.transparent, ground.mid, ground.full]}
           locations={[0, 0.2, 0.45, 0.75, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -117,7 +118,7 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
 const s = styles({
   back: { absolute: true, z: 2 },
   heroText: { absolute: true, bottom: spacing.sm, gap: 6 },
-  context: { ...type.caption, color: 'accent', fontWeight: '700' },
+  context: { ...type.caption, color: 'accentText', fontWeight: '700' },
   heroTitle: {
     ...type.display,
     fontSize: 32,

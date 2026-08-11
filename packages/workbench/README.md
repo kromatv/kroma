@@ -25,7 +25,7 @@ are inspecting the components on the device that has to display them.
 
 `defineWorkbench` takes the facts and returns the component. A config file is then
 declarative — no hooks, no memos, nothing with a lifecycle to get wrong, because all
-of that happens inside. `clients/kit/src/config.tsx` is the real one, and it is about
+of that happens inside. `apps/kit/src/config.tsx` is the real one, and it is about
 thirty lines:
 
 ```tsx
@@ -252,7 +252,7 @@ own checker) rather than shipping every component's source to the browser for a
 regex to read. That is what lets the panel follow `extends`.
 
 Nothing here is exported from `@kroma/ui/kit`: it is a tool, and it pulls in every
-story. Each KROMA host configures its own — `clients/kit` (the site, and the
+story. Each KROMA host configures its own — `apps/kit` (the site, and the
 phone/TV app of the same name), `packages/tv/src/workbench{,.web}.tsx`
 (`?workbench` on the TV shells), and `clients/mobile/src/app/workbench.tsx`.
 

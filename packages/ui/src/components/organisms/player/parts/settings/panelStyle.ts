@@ -16,7 +16,7 @@
 import type { ViewStyle } from 'react-native';
 import { styles } from '#ui/core';
 
-const ROW_BASE = { w: '100%', row: true, align: 'center', radius: 14, px: 22, py: 18 } as const;
+const ROW_BASE = { w: '100%', row: true, align: 'center', radius: 'lg', px: 22, py: 18 } as const;
 
 export const panel = styles({
   panelList: { gap: 10 },
@@ -43,8 +43,8 @@ export const panel = styles({
     color: 'text/50',
   },
 
-  valueRow: { radius: 14, px: 22, py: 16 },
-  valueRowOn: { bg: 'white/8', ring: 'focusLift', z: 1 },
+  valueRow: { radius: 'lg', px: 22, py: 16 },
+  valueRowOn: { bg: 'tint/8', ring: 'focusLift', z: 1 },
   valueLabel: { font: 'ui', fontWeight: '700', fontSize: 15, color: 'text' },
 
   panelHint: {
@@ -58,10 +58,10 @@ export const panel = styles({
   },
   panelEmpty: { px: 2, py: 4, font: 'ui', fontSize: 15, color: 'textDim' },
 
-  rowOn: { bg: 'white/10', ring: 'focusLift', z: 1 },
+  rowOn: { bg: 'tint/10', ring: 'focusLift', z: 1 },
   rowOff: { bg: 'transparent' },
 
-  pill: { radius: 9, py: 9, bg: 'white/6' },
+  pill: { radius: 'sm', py: 9, bg: 'tint/6' },
   pillLabel: { font: 'ui', fontWeight: '700', fontSize: 13 },
 });
 

@@ -34,16 +34,16 @@ describe('normalize', () => {
   });
 
   it('resolves colours behind a shorthand', () => {
-    expect(normalize({ bg: 'accent' })).toEqual({ backgroundColor: '#F4B642' });
+    expect(normalize({ bg: 'accent' })).toEqual({ backgroundColor: 'var(--kroma-accent)' });
     expect(normalize({ bg: 'white/12' })).toEqual({
       backgroundColor: 'rgba(255, 255, 255, 0.12)',
     });
   });
 
   it('resolves colours behind a longhand, which is what a props slot writes', () => {
-    expect(normalize({ color: 'accent' })).toEqual({ color: '#F4B642' });
+    expect(normalize({ color: 'accent' })).toEqual({ color: 'var(--kroma-accent)' });
     expect(normalize({ color: 'white/50' })).toEqual({ color: 'rgba(255, 255, 255, 0.5)' });
-    expect(normalize({ shadowColor: 'bg' })).toEqual({ shadowColor: '#0A0A0C' });
+    expect(normalize({ shadowColor: 'bg' })).toEqual({ shadowColor: 'var(--kroma-bg)' });
   });
 
   it('leaves a non-string colour value alone', () => {
@@ -68,8 +68,8 @@ describe('split', () => {
 
   it('separates the rest value from the per-state layers', () => {
     const s = split({ bg: 'accent', _hover: { bg: 'accentHover' } });
-    expect(s?.rest).toEqual({ backgroundColor: '#F4B642' });
-    expect(s?.states.hover).toEqual({ backgroundColor: '#FFC862' });
+    expect(s?.rest).toEqual({ backgroundColor: 'var(--kroma-accent)' });
+    expect(s?.states.hover).toEqual({ backgroundColor: 'var(--kroma-accent-hover)' });
   });
 
   it('normalises the state layers too', () => {

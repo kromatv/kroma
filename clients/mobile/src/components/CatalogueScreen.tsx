@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
-import { colors, spacing, type } from '#mobile/lib/theme';
+import { spacing, type } from '#mobile/lib/theme';
 import { type CardModel, movieCard, showCard } from './cards';
 import { gridMetrics, PosterGrid } from './PosterGrid';
 import { EmptyState, ErrorView, Loading } from './ui';
@@ -128,7 +128,7 @@ export function CatalogueScreen<T extends MediaItem | Show>({
         header={header}
         empty={
           <EmptyState
-            icon={<Icon name="movie" size={34} stroke={1.8} color={colors.textDim} />}
+            icon={<Icon name="movie" size={34} stroke={1.8} color="textMuted" />}
             title={t('search.noResults')}
           />
         }

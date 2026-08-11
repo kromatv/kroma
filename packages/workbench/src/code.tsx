@@ -2,7 +2,7 @@
 // it works on web and Apple TV without an HTML-emitting dependency.
 
 import { Box, Icon, IconButton, type IconName, styles, Txt } from '@kroma/ui/kit';
-import { type ColorToken, colors, radius } from '@kroma/ui/tokens';
+import { type ColorToken, colors } from '@kroma/ui/tokens';
 import { useCallback, useMemo } from 'react';
 import { Platform, ScrollView } from 'react-native';
 import { type CopyState, useCopy } from './clipboard';
@@ -224,7 +224,7 @@ function CopyButton({ code }: Readonly<{ code: string }>) {
       <IconButton
         variant="ghost"
         size={COPY_BOX}
-        radius={radius.sm}
+        radius="sm"
         label={COPY_FACE[state].label}
         ring={false}
         focusScale={1}

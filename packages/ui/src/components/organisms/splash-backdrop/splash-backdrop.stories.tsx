@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { Txt } from '#ui/components/atoms/text';
 import { SplashBackdrop } from './splash-backdrop';
 
@@ -47,7 +48,8 @@ export default story({
     // Everything inside is absolutely positioned, so the frame must bring its
     // own size: the whole stage where the stage has a height (the device
     // viewports), a tall fixed frame where it does not (Fit).
-    <Box
+    <Ground
+      tone="dark"
       style={{
         alignSelf: 'stretch',
         width: '100%',
@@ -60,6 +62,6 @@ export default story({
       <Box absolute top={0} right={0} bottom={0} left={0} center>
         <Txt variant="h1">Qui regarde ?</Txt>
       </Box>
-    </Box>
+    </Ground>
   ),
 });

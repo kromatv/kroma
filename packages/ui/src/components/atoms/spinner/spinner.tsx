@@ -3,12 +3,14 @@
 // off the JS thread on every platform.
 
 import { Animated } from 'react-native';
-import { useTheme } from '#ui/core';
+import { color as ink, radiusValue, useTheme } from '#ui/core';
 import { useLoop } from '#ui/lib/loop';
 
 interface SpinnerProps {
   size?: number;
   thickness?: number;
+  /** A token name (`accent`, `textMuted`, `tint/40`) or a colour. Defaults to
+   *  the accent. */
   color?: string;
 }
 
@@ -29,11 +31,11 @@ function Spinner({
         {
           width: size,
           height: size,
-          borderRadius: theme.radius.pill,
+          borderRadius: radiusValue('circle'),
           borderWidth: thickness,
           // Three faint quadrants leave one visible arc: the spinner is the turn.
-          borderColor: 'rgba(255, 255, 255, 0.14)',
-          borderTopColor: color ?? theme.colors.accent,
+          borderColor: ink('tint/14'),
+          borderTopColor: color ? ink(color) : theme.colors.accent,
         },
         spin,
       ]}

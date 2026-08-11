@@ -13,7 +13,7 @@ export default story({
   name: 'Icons',
   group: 'Foundations',
   docs: 'Every Tabler glyph, by its kebab-case name: `<Icon name="wave-sine" />`. Nothing has to be registered first, and a name that does not exist draws the fallback `help-circle` rather than crashing. Type in `find` to search.',
-  usage: `<Icon name="player-play-filled" size={24} color="accent" />`,
+  usage: `<Icon name="player-play-filled" size={24} color="accentText" />`,
   guidelines: {
     do: [
       'Use the kebab-case Tabler slug: `chevron-right`, `player-pause-filled`.',

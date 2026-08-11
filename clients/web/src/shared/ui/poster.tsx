@@ -1,6 +1,6 @@
 import { sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconButton, Progress, VirtualRail } from '@kroma/ui/kit';
+import { Ground, IconButton, Progress, VirtualRail } from '@kroma/ui/kit';
 import { type ReactElement, useState } from 'react';
 import { Image } from '#web/shared/ui/image';
 
@@ -122,14 +122,16 @@ export function Poster({
             watched ? '' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
           }`}
         >
-          <IconButton
-            variant={watched ? 'primary' : 'scrim'}
-            size={28}
-            glyph={15}
-            icon="check"
-            label={watched ? t('content.markUnwatched') : t('content.markWatched')}
-            onPress={() => onToggleWatched?.()}
-          />
+          <Ground tone="dark">
+            <IconButton
+              variant={watched ? 'primary' : 'scrim'}
+              size={28}
+              glyph={15}
+              icon="check"
+              label={watched ? t('content.markUnwatched') : t('content.markWatched')}
+              onPress={() => onToggleWatched?.()}
+            />
+          </Ground>
         </div>
       ) : null}
     </div>

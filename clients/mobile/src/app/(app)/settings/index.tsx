@@ -1,8 +1,8 @@
-// App settings: interface language (dedicated page), server identity, and what
-// build of the app this actually is.
+// App settings: appearance, interface language (dedicated page), server
+// identity, and what build of the app this actually is.
 
 import { formatBuildDate, LOCALES } from '@kroma/core';
-import { Box, Icon, type IconName, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, type IconName, styles, ThemeSwitch, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -13,7 +13,7 @@ import { buildInfo, commitLabel, repoLabel } from '#mobile/lib/buildInfo';
 import { useI18n, useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function Settings() {
   const t = useT();
@@ -32,6 +32,17 @@ export default function Settings() {
       <PageHeader title={t('nav.settings')} />
       <ScrollView contentContainerStyle={s.body}>
         <Box style={s.card}>
+          <Box style={s.row}>
+            <Txt style={s.rowLabel}>{t('appearance.title')}</Txt>
+            <ThemeSwitch
+              label={t('appearance.title')}
+              labels={{
+                system: t('appearance.system'),
+                light: t('appearance.light'),
+                dark: t('appearance.dark'),
+              }}
+            />
+          </Box>
           <Row
             label={t('account.uiLanguage')}
             value={localeLabel ? t(localeLabel) : locale}
@@ -94,7 +105,7 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
         <Txt lines={1} style={mono ? s.rowValueMono : s.rowValue}>
           {value}
         </Txt>
-        {icon ? <Icon name={icon} size={16} stroke={2.2} color={colors.textFaint} /> : null}
+        {icon ? <Icon name={icon} size={16} stroke={2.2} color="textDim" /> : null}
       </Box>
     </>
   );

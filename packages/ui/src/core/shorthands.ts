@@ -21,11 +21,11 @@
 
 import type { DimensionValue, ViewStyle } from 'react-native';
 import { type ColorValue, color } from '#ui/core/color';
-import { activeTheme, type RingToken } from '#ui/core/theme';
+import { activeTheme, type RingToken, radiusValue } from '#ui/core/theme';
 import {
   absoluteFill,
+  type CornerValue,
   type FontToken,
-  type RadiusToken,
   type ShadowToken,
   type TypeRole,
 } from '#ui/core/tokens';
@@ -44,6 +44,7 @@ export interface BoxStyleProps {
   self?: NonNullable<ViewStyle['alignSelf']>;
   shrink?: number;
   grow?: number;
+  basis?: DimensionValue;
   gap?: Spacing;
   between?: boolean;
 
@@ -79,7 +80,8 @@ export interface BoxStyleProps {
   ml?: Spacing;
 
   bg?: ColorValue;
-  radius?: RadiusToken | number;
+  /** A radius token, a raw px value, or `'circle'`; see {@link CornerValue}. */
+  radius?: CornerValue;
   border?: ColorValue;
   borderWidth?: number;
   shadow?: ShadowToken;
@@ -116,6 +118,7 @@ const RULES = {
   self: 'alignSelf',
   shrink: 'flexShrink',
   grow: 'flexGrow',
+  basis: 'flexBasis',
   gap: 'gap',
 
   w: 'width',
@@ -152,9 +155,7 @@ const RULES = {
   ml: 'marginLeft',
 
   bg: (v) => ({ backgroundColor: color(v as string) }),
-  radius: (v) => ({
-    borderRadius: typeof v === 'number' ? v : activeTheme().radius[v as RadiusToken],
-  }),
+  radius: (v) => ({ borderRadius: radiusValue(v as CornerValue) }),
   // Before `borderWidth`, so an explicit width always beats the hairline.
   border: (v) => ({ borderColor: color(v as string), borderWidth: 1 }),
   borderWidth: 'borderWidth',
@@ -197,21 +198,29 @@ export function splitShorthand(props: Readonly<Record<string, unknown>>): {
   return { shorthand, rest, any };
 }
 
+function applyRule(out: Record<string, unknown>, rule: Rule, value: unknown): void {
+  if (typeof rule === 'string') {
+    out[rule] = value;
+  } else if (typeof rule === 'function') {
+    Object.assign(out, rule(value));
+  } else if (Array.isArray(rule)) {
+    for (const longhand of rule) out[longhand] = value;
+  } else if (value) {
+    Object.assign(out, rule);
+  }
+}
+
 export function boxStyle(p: Readonly<BoxStyleProps>): ViewStyle {
   const out: Record<string, unknown> = {};
   for (const key of RULE_KEYS) {
     const value = (p as Record<string, unknown>)[key];
     if (value === undefined) continue;
-    const rule: Rule = RULES[key];
-    if (typeof rule === 'string') {
-      out[rule] = value;
-    } else if (typeof rule === 'function') {
-      Object.assign(out, rule(value));
-    } else if (Array.isArray(rule)) {
-      for (const longhand of rule) out[longhand] = value;
-    } else if (value) {
-      Object.assign(out, rule);
-    }
+    applyRule(out, RULES[key], value);
+  }
+  // A disc is half of ITSELF, so a stated side beats the clamped fallback.
+  if (p.radius === 'circle') {
+    const stated = typeof p.h === 'number' ? p.h : p.w;
+    out.borderRadius = radiusValue('circle', typeof stated === 'number' ? stated : undefined);
   }
   return out as ViewStyle;
 }

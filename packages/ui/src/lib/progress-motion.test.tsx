@@ -62,7 +62,7 @@ describe('the ring', () => {
 describe('the bar', () => {
   it('keeps a determinate fill pinned to the track left edge', () => {
     const bar = barIn(render(<Progress value={0.42} />).container);
-    expect(bar.style.left).toBe('0px');
+    expect(getComputedStyle(bar).left).toBe('0px');
     expect(Number.parseFloat(bar.style.right)).toBeCloseTo(58);
   });
 

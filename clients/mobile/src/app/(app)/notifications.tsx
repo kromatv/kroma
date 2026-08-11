@@ -6,7 +6,7 @@
 
 import type { Notification, NotificationEvent } from '@kroma/core';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kroma/core';
-import { Box, Icon, IconButton, type IconName, styles, Txt } from '@kroma/ui/kit';
+import { Box, color, Icon, IconButton, type IconName, styles, Txt } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, SectionList } from 'react-native';
@@ -20,7 +20,7 @@ import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { mobileRoute, useNotifications, useRefreshNotifications } from '#mobile/lib/notifications';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 export default function NotificationsScreen() {
   const t = useT();
@@ -67,7 +67,7 @@ export default function NotificationsScreen() {
               label={t('notifications.markAllRead')}
               onPress={() => void markAll()}
             >
-              <Icon name="checks" size={22} stroke={2} color={colors.accent} />
+              <Icon name="checks" size={22} stroke={2} color="accentText" />
             </IconButton>
           ) : null
         }
@@ -75,7 +75,7 @@ export default function NotificationsScreen() {
 
       {rows.length === 0 && !isPending ? (
         <EmptyState
-          icon={<Icon name="bell" size={34} stroke={1.4} color={colors.textDim} />}
+          icon={<Icon name="bell" size={34} stroke={1.4} color="textMuted" />}
           title={t('notifications.empty')}
           hint={t('notifications.emptyHint')}
         />
@@ -89,7 +89,7 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={() => void refetch()}
-              tintColor={colors.textDim}
+              tintColor={color('textMuted')}
             />
           }
           renderSectionHeader={({ section }) => <Txt style={s.dayLabel}>{section.title}</Txt>}
@@ -197,25 +197,25 @@ function destinationOf(row: Notification): string | null {
 const DANGER_INK = '#F87171';
 
 const EVENT_GLYPH: Record<string, { name: IconName; color: string }> = {
-  'request.submitted': { name: 'inbox', color: colors.accent },
-  'request.approved': { name: 'circle-check', color: colors.success },
+  'request.submitted': { name: 'inbox', color: 'accentText' },
+  'request.approved': { name: 'circle-check', color: 'success' },
   'request.denied': { name: 'circle-x', color: DANGER_INK },
-  'request.available': { name: 'sparkles', color: colors.accent },
-  'media.added': { name: 'player-play-filled', color: colors.info },
-  'media.episode': { name: 'device-tv', color: colors.info },
-  'report.submitted': { name: 'flag-3', color: colors.hdr },
-  'report.resolved': { name: 'circle-check', color: colors.success },
-  'report.dismissed': { name: 'circle-minus', color: colors.textDim },
-  'download.imported': { name: 'download', color: colors.h265 },
+  'request.available': { name: 'sparkles', color: 'accentText' },
+  'media.added': { name: 'player-play-filled', color: 'info' },
+  'media.episode': { name: 'device-tv', color: 'info' },
+  'report.submitted': { name: 'flag-3', color: 'hdr' },
+  'report.resolved': { name: 'circle-check', color: 'success' },
+  'report.dismissed': { name: 'circle-minus', color: 'textMuted' },
+  'download.imported': { name: 'download', color: 'h265' },
   'download.failed': { name: 'alert-triangle', color: DANGER_INK },
   'system.job.failed': { name: 'server-bolt', color: DANGER_INK },
-  'system.disk.low': { name: 'database', color: colors.accent },
-  'system.test': { name: 'bell-ringing', color: colors.accent },
-  custom: { name: 'sparkles', color: colors.textDim },
+  'system.disk.low': { name: 'database', color: 'accentText' },
+  'system.test': { name: 'bell-ringing', color: 'accentText' },
+  custom: { name: 'sparkles', color: 'textMuted' },
 };
 
 function eventGlyph(event: NotificationEvent): { name: IconName; color: string } {
-  return EVENT_GLYPH[event] ?? { name: 'bell', color: colors.textDim };
+  return EVENT_GLYPH[event] ?? { name: 'bell', color: 'textMuted' };
 }
 
 // Spelled with catalog keys rather than `Intl.RelativeTimeFormat`: Hermes

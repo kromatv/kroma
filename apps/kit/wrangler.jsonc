@@ -1,0 +1,29 @@
+// KROMA Kit — the @kroma/ui workbench as a static site on ui.kroma.tv.
+//
+// An assets-only Worker (no `main`): Cloudflare serves apps/kit/dist
+// straight from the edge, so there is no script to run and nothing to keep
+// warm. Deploy from this directory:
+//   bun run deploy          (builds dist/ first, then wrangler deploy)
+//   bunx wrangler@4 deploy  (assumes dist/ is already built)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kroma-ui",
+  "compatibility_date": "2026-07-01",
+  "observability": { "enabled": true },
+  // Keep the <name>.workers.dev URL alongside the custom domain (fallback +
+  // while the ui.kroma.tv cert provisions).
+  "workers_dev": true,
+  // The workbench routes on real paths (`/story/button/matrix`), so a reload or a
+  // shared link arrives at a path with no file behind it and has to be rehydrated
+  // into the SPA. That is what `single-page-application` does — and it is why
+  // `base` is absolute in vite.config.ts: relative asset URLs would resolve
+  // against `/story/` and 404.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  // Served at https://ui.kroma.tv/. Requires the kroma.tv zone on this
+  // Cloudflare account; wrangler provisions the custom domain + DNS record on
+  // deploy.
+  "routes": [{ "pattern": "ui.kroma.tv", "custom_domain": true }]
+}

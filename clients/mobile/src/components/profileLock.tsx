@@ -4,7 +4,7 @@
 
 import { Box, Button, Keypad, OtpField, Spinner, Switch, styles, Txt } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 import { ErrorBanner } from './ui';
 
 export function LockCard({
@@ -80,7 +80,7 @@ export function PinWizard({
       </Box>
       {busy ? (
         <Box self="center">
-          <Spinner size={24} color={colors.textDim} />
+          <Spinner size={24} color="textMuted" />
         </Box>
       ) : null}
       <ErrorBanner message={error} />

@@ -1,6 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { sv } from './recipe';
-import { createTheme, KROMA, onThemeChange, setTheme, themed, themeVersion } from './theme';
+import {
+  createTheme,
+  groundShade,
+  KROMA,
+  KROMA_LIGHT,
+  onPaper,
+  onThemeChange,
+  setTheme,
+  themed,
+  themeVersion,
+} from './theme';
 
 afterEach(() => setTheme(KROMA));
 
@@ -9,7 +19,7 @@ describe('createTheme', () => {
     const ocean = createTheme({ colors: { accent: '#3FB6F2' } });
     expect(ocean.colors.accent).toBe('#3FB6F2');
     expect(ocean.colors.bg).toBe(KROMA.colors.bg);
-    expect(KROMA.colors.accent).toBe('#F4B642');
+    expect(KROMA.colors.accent).toBe('var(--kroma-accent)');
   });
 
   it('re-derives what follows from other groups', () => {
@@ -58,14 +68,33 @@ describe('themed', () => {
   });
 });
 
+describe('groundShade', () => {
+  it('fades the ground through the property the cascade owns', () => {
+    expect(groundShade(0.5)).toBe('var(--kroma-bg-50)');
+  });
+
+  it('follows the ACTIVE theme, rather than the one loaded at import', () => {
+    setTheme(KROMA_LIGHT);
+    expect(groundShade(0.5)).toBe('rgba(247, 245, 241, 0.5)');
+  });
+});
+
+describe('onPaper', () => {
+  it('is false on a browser whatever the ground, because the cascade owns it', () => {
+    expect(onPaper(KROMA_LIGHT)).toBe(false);
+    setTheme(KROMA_LIGHT);
+    expect(onPaper()).toBe(false);
+  });
+});
+
 describe('setTheme', () => {
   it('re-resolves a recipe against the new palette, then back', () => {
     const r = sv({ base: { bg: 'accent' } });
-    expect(r().root).toMatchObject({ backgroundColor: '#F4B642' });
+    expect(r().root).toMatchObject({ backgroundColor: 'var(--kroma-accent)' });
     setTheme(createTheme({ colors: { accent: '#3FB6F2' } }));
     expect(r().root).toMatchObject({ backgroundColor: '#3FB6F2' });
     setTheme(KROMA);
-    expect(r().root).toMatchObject({ backgroundColor: '#F4B642' });
+    expect(r().root).toMatchObject({ backgroundColor: 'var(--kroma-accent)' });
   });
 
   it('hands back fresh identities after a swap, so styleq recompiles', () => {

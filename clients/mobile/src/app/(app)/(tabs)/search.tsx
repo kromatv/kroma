@@ -16,7 +16,7 @@ import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
+import { radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
 
 function useDebounced(value: string, ms: number): string {
   const [debounced, setDebounced] = useState(value);
@@ -35,11 +35,7 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
   return (
     <Pressable
       onPress={() => router.push(`/item/${item.id}` as never)}
-      style={({ pressed }) => [
-        s.suggestRow,
-        gutters.style,
-        pressed && { backgroundColor: colors.surface },
-      ]}
+      style={({ pressed }) => [s.suggestRow, gutters.style, pressed && s.suggestRowPressed]}
     >
       <FadeImage
         uri={sizedImageUrl(client.backdropFor(item) ?? client.posterFor(item), 480)}
@@ -53,10 +49,7 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
       <Pressable
         onPress={() => void play(item.id)}
         hitSlop={8}
-        style={({ pressed }) => [
-          s.suggestPlay,
-          pressed && { borderColor: colors.text, backgroundColor: colors.surfaceRaised },
-        ]}
+        style={({ pressed }) => [s.suggestPlay, pressed && s.suggestPlayPressed]}
       >
         <Icon name="player-play-filled" size={16} />
       </Pressable>
@@ -96,7 +89,7 @@ export default function Search() {
     if (q.length >= 2 && results.isSuccess)
       return (
         <EmptyState
-          icon={<Icon name="search" size={34} stroke={1.8} color={colors.textDim} />}
+          icon={<Icon name="search" size={34} stroke={1.8} color="textMuted" />}
           title={t('search.noResults')}
           hint={t('search.placeholder')}
         />
@@ -139,7 +132,9 @@ const s = styles({
   pageTitle: { ...type.display, fontSize: 30 },
   suggestHeader: { ...type.section, mb: spacing.sm },
   suggestRow: { row: true, align: 'center', gap: 12, py: 6 },
+  suggestRowPressed: { bg: 'surface1' },
   suggestThumb: { w: 130, h: 73 },
   suggestTitle: { ...type.body, flex: true, fontWeight: '600' },
   suggestPlay: { center: true, w: 38, h: 38, radius: 19, border: 'textMuted', borderWidth: 1.5 },
+  suggestPlayPressed: { border: 'text', bg: 'surface2' },
 });

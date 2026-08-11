@@ -1,4 +1,4 @@
-import { Box, Chip, Icon, IconButton, styles, Txt } from '@kroma/ui/kit';
+import { Box, Chip, color, Icon, IconButton, styles, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { RefreshControl, ScrollView, useWindowDimensions } from 'react-native';
@@ -21,7 +21,7 @@ import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
-import { colors, posterWidth, spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
+import { posterWidth, spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
 
 function DownloadsGlyph() {
   const downloads = useDownloads();
@@ -181,7 +181,7 @@ export default function Home() {
             void cont.refetch();
             void featured.refetch();
           }}
-          tintColor={colors.textDim}
+          tintColor={color('textMuted')}
         />
       }
     >

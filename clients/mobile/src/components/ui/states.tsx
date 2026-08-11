@@ -4,7 +4,7 @@
 import { Box, Button, Icon, Spinner, styles, Txt } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 /** Tinted banner with a shake on message change; renders nothing while
  * `message` is null. */
@@ -27,7 +27,7 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   if (!message) return null;
   return (
     <Animated.View style={[s.box, { opacity: fade, transform: [{ translateX: shake }] }]}>
-      <Icon name="alert-circle" size={17} stroke={2} color={colors.danger} />
+      <Icon name="alert-circle" size={17} stroke={2} color="danger" />
       <Txt style={s.boxText}>{message}</Txt>
     </Animated.View>
   );
@@ -36,7 +36,7 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
 export function Loading({ label }: Readonly<{ label?: string }>) {
   return (
     <Box style={s.center}>
-      <Spinner size={36} color={colors.textDim} />
+      <Spinner size={36} color="textMuted" />
       {label ? <Txt style={[s.centerText, s.loadingLabel]}>{label}</Txt> : null}
     </Box>
   );

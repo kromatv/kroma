@@ -72,10 +72,10 @@ export function LogsPage() {
         action={<RealtimeBadge />}
       />
       <div className="mb-4 mt-2 flex flex-wrap items-center gap-3">
-        <SegmentedControl
+        <SegmentedControl.Root
           value={level}
           options={LEVELS.map((l) => ({ value: l.value, label: t(l.labelKey) }))}
-          onChange={setLevel}
+          onValueChange={setLevel}
         />
         <Select
           label={t('logs.allSources')}

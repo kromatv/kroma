@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KROMA Kit</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Paint the stage black before the bundled CSS loads, so the launch
+         never flashes a white body. The bundle's base.css takes both back onto
+         the theme's ground, so this is a launch colour and not the page's. -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0a0a0c;
+      }
+      /* React Native Web's flex:1 needs a flex ancestor; AppRegistry usually
+         provides one, but this site mounts with createRoot directly. Fixing the
+         root's height also keeps the workbench from growing past the viewport
+         (and the first autofocus from scrolling the page). */
+      #root {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

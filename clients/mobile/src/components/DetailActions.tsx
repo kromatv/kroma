@@ -7,7 +7,7 @@ import { Alert, Pressable } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { type DownloadState, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 function downloadBarLabel(
   state: DownloadState,
@@ -36,15 +36,15 @@ function downloadBarLabel(
 
 function barIcon(state: DownloadState) {
   if (state.status === 'done')
-    return <Icon name="check" size={20} stroke={2.4} color={colors.accent} />;
+    return <Icon name="check" size={20} stroke={2.4} color="accentText" />;
   if (state.status === 'paused')
-    return <Icon name="player-pause-filled" size={18} color={colors.textDim} />;
+    return <Icon name="player-pause-filled" size={18} color="textMuted" />;
   return (
     <Icon
       name="download"
       size={20}
       stroke={2}
-      color={state.status === 'downloading' ? colors.accent : colors.text}
+      color={state.status === 'downloading' ? 'accent' : 'text'}
     />
   );
 }
@@ -115,7 +115,7 @@ export function DetailActions({
           />
         ) : null}
         {barIcon(state)}
-        <Txt style={[s.downloadBarLabel, bar.done && { color: colors.accent }]}>{bar.label}</Txt>
+        <Txt style={[s.downloadBarLabel, bar.done && s.downloadBarLabelDone]}>{bar.label}</Txt>
       </Pressable>
       <Box style={s.secondaryRow}>
         <Pressable
@@ -123,7 +123,7 @@ export function DetailActions({
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
           {inList ? (
-            <Icon name="check" size={24} stroke={2.4} color={colors.accent} />
+            <Icon name="check" size={24} stroke={2.4} color="accentText" />
           ) : (
             <Icon name="plus" size={24} stroke={2.2} />
           )}
@@ -137,7 +137,7 @@ export function DetailActions({
             style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
             {watched ? (
-              <Icon name="eye-check" size={24} stroke={1.8} color={colors.accent} />
+              <Icon name="eye-check" size={24} stroke={1.8} color="accentText" />
             ) : (
               <Icon name="eye" size={24} stroke={1.8} />
             )}
@@ -193,6 +193,7 @@ const s = styles({
     overflow: 'hidden',
   },
   downloadBarLabel: { color: 'text', fontSize: 15, fontWeight: '700' },
+  downloadBarLabelDone: { color: 'accentText' },
   downloadBarFill: {
     absolute: true,
     top: 0,
@@ -204,5 +205,5 @@ const s = styles({
   secondaryRow: { row: true, justify: 'center', gap: spacing.lg, mt: spacing.xs },
   secondary: { align: 'center', gap: 5, w: 84, py: 2 },
   secondaryLabel: { ...type.small, color: 'textMuted' },
-  secondaryActive: { color: 'accent' },
+  secondaryActive: { color: 'accentText' },
 });

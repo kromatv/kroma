@@ -18,15 +18,15 @@ const BOX = { sm: 20, tv: 28 } as const;
 const checkboxVariants = sv({
   base: {
     center: true,
-    radius: 6,
+    radius: 'xs',
     border: 'borderStrong',
-    bg: 'white/6',
+    bg: 'tint/6',
     _disabled: { opacity: 0.5 },
   },
   variants: {
     size: {
       sm: { w: BOX.sm, h: BOX.sm },
-      tv: { w: BOX.tv, h: BOX.tv, radius: 8 },
+      tv: { w: BOX.tv, h: BOX.tv, radius: 'sm' },
     },
     /** Checked and mixed both paint the amber fill: a parent row of a partly
      *  selected group is as much "acted on" as a fully selected one. The hover
@@ -38,7 +38,7 @@ const checkboxVariants = sv({
         border: 'accent',
         _hover: { bg: 'accentHover', border: 'accentHover' },
       },
-      false: { _hover: { bg: 'white/12', border: 'white/32' } },
+      false: { _hover: { bg: 'tint/12', border: 'tint/32' } },
     },
   },
   defaults: { size: 'sm', checked: false },

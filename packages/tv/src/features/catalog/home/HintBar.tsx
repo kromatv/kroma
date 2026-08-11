@@ -34,7 +34,7 @@ export function HintBar({
       <Hint text={t(browseKey)} size={13} gap={3} color="textDim" textStyle={s.hint} />
       <Hint text={t('content.hintRows')} size={13} gap={3} color="textDim" textStyle={s.hint} />
       <Txt style={s.hint} color="textDim">
-        <Txt style={s.hintKey} color="accent">
+        <Txt style={s.hintKey} color="accentText">
           {t('content.hintOk')}
         </Txt>
         {` ${t('content.hintOpen')}`}

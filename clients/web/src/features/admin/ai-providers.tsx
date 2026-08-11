@@ -366,9 +366,9 @@ function ProviderBody({
       />
 
       <Field label={t('admin.aiProvider')} hint={t('admin.aiProviderHint')} mb={16}>
-        <SegmentedControl
+        <SegmentedControl.Root
           value={p.provider}
-          onChange={onProvider}
+          onValueChange={onProvider}
           options={[
             { value: 'openai', label: t('admin.aiProviderOpenai') },
             { value: 'openrouter', label: t('admin.aiProviderOpenrouter') },

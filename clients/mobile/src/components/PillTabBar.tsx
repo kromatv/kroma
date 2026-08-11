@@ -2,7 +2,7 @@
 // the iOS/Android backdrop split. Screens scroll underneath, padding by
 // TAB_BAR_CLEARANCE.
 
-import { Box, NavPill, NavPillItem, styles } from '@kroma/ui/kit';
+import { Box, NavPill, NavPillItem, onPaper, styles } from '@kroma/ui/kit';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 // expo-router vendors react-navigation and does not re-export this type from its root.
@@ -27,7 +27,11 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
           }}
           backdrop={
             Platform.OS === 'ios' ? (
-              <BlurView tint="dark" intensity={60} style={StyleSheet.absoluteFill} />
+              <BlurView
+                tint={onPaper() ? 'light' : 'dark'}
+                intensity={60}
+                style={StyleSheet.absoluteFill}
+              />
             ) : undefined
           }
         >

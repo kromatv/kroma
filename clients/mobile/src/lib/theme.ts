@@ -7,12 +7,23 @@
 // names but takes the system's values.
 
 import {
+  activeTheme,
   createTheme,
+  groundShade,
+  KROMA_LIGHT,
   colors as kit,
   mobileRadius,
   mobileType,
   mobileTypeSpec,
+  onPaper,
+  type Theme,
+  type ThemeOverrides,
 } from '@kroma/ui/kit';
+
+const FORM_FACTOR: ThemeOverrides = {
+  typeSpec: { body: mobileTypeSpec.body, title: mobileTypeSpec.title },
+  radius: mobileRadius,
+};
 
 /**
  * The phone's form factor, as a theme the design system actually runs on.
@@ -31,21 +42,34 @@ import {
  * 10-foot ramp has no opinion about. They reach the screens through `type`
  * below, which is spec-derived and so now carries their real line heights.
  */
-export const MOBILE = createTheme({
-  typeSpec: { body: mobileTypeSpec.body, title: mobileTypeSpec.title },
-  radius: mobileRadius,
-});
+export const MOBILE = createTheme(FORM_FACTOR);
+
+/** The same form factor on the paper ground. `applyMode` swaps the BASE theme,
+ *  so without a light twin a phone that chooses the light ground would also
+ *  lose its type ramp and its corners. */
+export const MOBILE_LIGHT = createTheme(FORM_FACTOR, KROMA_LIGHT);
+
+/** The phone's theme for whichever ground is currently set. */
+export function mobileTheme(ground: Theme = activeTheme()): Theme {
+  return onPaper(ground) ? MOBILE_LIGHT : MOBILE;
+}
 
 // Straight pass-throughs: re-exported rather than rebound, so no local name
 // stands between the screens and the token they are actually using.
 export {
   absoluteFill,
+  groundShade,
   mobileRadius as radius,
   mobileSpace as spacing,
-  SHADE,
-  shade,
   WHEEL_COLORS,
 } from '@kroma/ui/kit';
+
+/** The stops artwork fades into, on whichever ground is active. Not the kit's
+ *  `SHADE`, which names the dark one and would band black across a hero on
+ *  paper. Call it during render. */
+export function shades(): { transparent: string; mid: string; full: string } {
+  return { transparent: groundShade(0), mid: groundShade(0.55), full: groundShade(1) };
+}
 
 export const colors = {
   bg: kit.bg,
@@ -75,19 +99,20 @@ export const colors = {
 
 // React Native's silent default text colour is black, invisible on this app's
 // near-black surfaces; this ramp bakes in ink so no role needs it spelled
-// out, though a colour after `...type.x` in a spread still overrides it.
+// out, though a colour after `...type.x` in a spread still overrides it. The
+// ink is the token NAME, so a role re-resolves when the ground swaps.
 //
 // Prefer `<Txt variant="caption">` in new code: the role then carries its own
 // line height and tracking, and this spread is only still here for the styles()
 // declarations that predate the theme.
 export const type = {
-  display: { ...mobileType.display, color: kit.text },
-  title: { ...mobileType.title, color: kit.text },
-  heading: { ...mobileType.heading, color: kit.text },
-  section: { ...mobileType.section, color: kit.text },
-  body: { ...mobileType.body, color: kit.text },
-  caption: { ...mobileType.caption, color: kit.textMuted },
-  small: { ...mobileType.small, color: kit.textMuted },
+  display: { ...mobileType.display, color: 'text' },
+  title: { ...mobileType.title, color: 'text' },
+  heading: { ...mobileType.heading, color: 'text' },
+  section: { ...mobileType.section, color: 'text' },
+  body: { ...mobileType.body, color: 'text' },
+  caption: { ...mobileType.caption, color: 'textMuted' },
+  small: { ...mobileType.small, color: 'textMuted' },
 } as const;
 
 export const TAB_BAR_CLEARANCE = 108;

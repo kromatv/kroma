@@ -28,12 +28,12 @@ function Row({ size }: Readonly<{ size: ControlSize }>) {
   const [source, setSource] = useState('all');
   return (
     <Box row align="center" gap={12} wrap>
-      <SegmentedControl
+      <SegmentedControl.Root
         size={size}
         label="Niveau"
         value={level}
         options={LEVELS}
-        onChange={setLevel}
+        onValueChange={setLevel}
       />
       <Select size={size} label="Source" value={source} options={SOURCES} onChange={setSource} />
       <Field
@@ -72,7 +72,7 @@ export default story({
 setEntryDefaults({ physicalKeyboard: true, size: 'sm' });
 
 // ...and every control follows, or says so itself.
-<SegmentedControl label="Niveau" value={level} options={LEVELS} onChange={setLevel} />
+<SegmentedControl.Root label="Niveau" value={level} options={LEVELS} onValueChange={setLevel} />
 <Select label="Source" value={source} options={SOURCES} onChange={setSource} />
 <Field label="Filtrer" hideLabel icon="search" placeholder="Filtrer les lignes…" />`,
   guidelines: {

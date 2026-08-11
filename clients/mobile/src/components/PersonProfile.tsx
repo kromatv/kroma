@@ -65,7 +65,7 @@ const s = styles({
   wrap: { gap: spacing.md, pb: spacing.sm },
   identity: { row: true, align: 'center', gap: spacing.md },
   facts: { flex: true, gap: 6 },
-  roles: { ...type.caption, color: 'accent', fontWeight: '700' },
+  roles: { ...type.caption, color: 'accentText', fontWeight: '700' },
   fact: { gap: 1 },
   factLabel: { ...type.small, color: 'textDim', textTransform: 'uppercase', letterSpacing: 1 },
   factValue: { ...type.caption, color: 'text', fontWeight: '600' },

@@ -9,7 +9,6 @@ import { useRouter } from 'expo-router';
 import { useRef } from 'react';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { useT } from '#mobile/lib/i18n';
-import { colors } from '#mobile/lib/theme';
 
 export function CastIconButton({
   size = 40,
@@ -30,7 +29,7 @@ export function CastIconButton({
         label={active ? t('cast.playingOn', { device: active.name }) : t('cast.title')}
         onPress={() => devices.current?.present()}
       >
-        <Icon name="cast" size={glyph} stroke={2} color={active ? colors.accent : colors.text} />
+        <Icon name="cast" size={glyph} stroke={2} color={active ? 'accent' : 'text'} />
       </IconButton>
       <CastSheet
         ref={devices}

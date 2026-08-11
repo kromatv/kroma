@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { posterArt } from '#ui/lib/sample-art';
 import { CreditsCard } from './CreditsCard';
 
@@ -41,14 +42,16 @@ export default story({
   },
   controls: { secondsLeft: { min: 0, max: 10, step: 1 }, total: { min: 1, max: 10, step: 1 } },
   render: ({ title, subtitle, ...props }) => (
-    <Box aspect={16 / 9} minH={400} bg="surface2" radius="lg" overflow="hidden">
-      <CreditsCard
-        {...props}
-        item={{ title, subtitle, posterUrl: posterArt(1) }}
-        onPlay={() => {}}
-        onCancel={() => {}}
-      />
-    </Box>
+    <Ground tone="dark">
+      <Box aspect={16 / 9} minH={400} bg="surface2" radius="lg" overflow="hidden">
+        <CreditsCard
+          {...props}
+          item={{ title, subtitle, posterUrl: posterArt(1) }}
+          onPlay={() => {}}
+          onCancel={() => {}}
+        />
+      </Box>
+    </Ground>
   ),
   scenes: [
     {

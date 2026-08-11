@@ -1,5 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import type { ControlId } from '../lib/nav';
 import { DEFAULT_SUB_APPEARANCE } from '../lib/subtitle-appearance';
 import { fakeController } from '../player.fixture';
@@ -60,20 +61,22 @@ export default story({
     // The drawer is inset to the full height of the surface it slides over, so
     // the frame is the picture's shape with a floor under it - a menu shown 300pt
     // tall would be scrolling for a reason no surface has.
-    <Box aspect={16 / 9} minH={560} bg="surface2" radius="lg" overflow="hidden">
-      <SettingsPanel
-        controller={fakeController()}
-        appearance={DEFAULT_SUB_APPEARANCE}
-        onAppearance={() => {}}
-        statsOn={statsOn}
-        onToggleStats={() => {}}
-        subtitleGen={NO_GEN}
-        onReport={canReport ? async () => {} : undefined}
-        overflow={narrow ? NARROW_OVERFLOW : undefined}
-        onControl={() => {}}
-        onClose={() => {}}
-      />
-    </Box>
+    <Ground tone="dark">
+      <Box aspect={16 / 9} minH={560} bg="surface2" radius="lg" overflow="hidden">
+        <SettingsPanel
+          controller={fakeController()}
+          appearance={DEFAULT_SUB_APPEARANCE}
+          onAppearance={() => {}}
+          statsOn={statsOn}
+          onToggleStats={() => {}}
+          subtitleGen={NO_GEN}
+          onReport={canReport ? async () => {} : undefined}
+          overflow={narrow ? NARROW_OVERFLOW : undefined}
+          onControl={() => {}}
+          onClose={() => {}}
+        />
+      </Box>
+    </Ground>
   ),
   scenes: [
     {

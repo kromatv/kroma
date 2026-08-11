@@ -206,9 +206,9 @@ function AddEngineDialog({
   return (
     <Dialog open title={ask.title} width={560} onClose={() => onSettle(false)}>
       {ask.engines.length > 1 ? (
-        <SegmentedControl
+        <SegmentedControl.Root
           value={engineId}
-          onChange={setEngineId}
+          onValueChange={setEngineId}
           options={ask.engines.map((e) => ({
             value: e.id,
             label: t((e.label ?? e.id) as MessageKey),

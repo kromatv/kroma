@@ -183,7 +183,7 @@ export function TvPin() {
         {headerUser?.name}
       </Txt>
       <Box row align="center" gap={8}>
-        <Icon name="lock" size={14} color="accent" />
+        <Icon name="lock" size={14} color="accentText" />
         <Txt style={{ fontSize: 15, fontWeight: '500' }} color="textDim">
           {t(subtitle)}
         </Txt>

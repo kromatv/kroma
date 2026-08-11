@@ -59,7 +59,7 @@ export function TvDetailScaffold({
 
       <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
         <FocusSlot>
-          <Txt variant="overlineTv" color="accent">
+          <Txt variant="overlineTv" color="accentText">
             {kind}
           </Txt>
           <Txt variant="hero" style={[s.title, { marginTop: 14, marginBottom: 16 }]}>
@@ -69,7 +69,7 @@ export function TvDetailScaffold({
           <Box row wrap align="center" gap={13} mb={18}>
             {rating ? (
               <>
-                <Txt style={{ fontSize: 18, fontWeight: '700' }} color="accent">
+                <Txt style={{ fontSize: 18, fontWeight: '700' }} color="accentText">
                   {`${rating.toFixed(1)}★`}
                 </Txt>
                 <Txt style={{ fontSize: 18, fontWeight: '600' }} color="textDim">

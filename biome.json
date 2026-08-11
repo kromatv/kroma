@@ -18,9 +18,9 @@
       "!clients/synology",
       "!server",
       "!clients/web/src/styles.css",
-      "!clients/site/src/styles.css",
+      "!apps/www/src/styles.css",
       "!packages/ui/src/styles/tailwind.css",
-      "!packages/module-registry/src/styles.css",
+      "!apps/modules/src/styles.css",
       "!packages/tv/src/tv.css",
       "!clients/mobile/google-services.json"
     ]

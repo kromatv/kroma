@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { colors } from '#ui/core/tokens';
 import { COLOR_KEYS, color, withAlpha } from './color';
 
 describe('color', () => {
   it('resolves a palette token', () => {
-    expect(color('accent')).toBe(colors.accent);
-    expect(color('surface1')).toBe(colors.surface1);
+    expect(color('accent')).toBe('var(--kroma-accent)');
+    expect(color('surface1')).toBe('var(--kroma-surface-1)');
   });
 
   it('resolves white and black, which are not palette tokens', () => {
@@ -32,8 +31,8 @@ describe('color', () => {
     });
 
     it('applies to palette tokens', () => {
-      expect(color('bg/55')).toBe('rgba(10, 10, 12, 0.55)');
-      expect(color('accent/45')).toBe('rgba(244, 182, 66, 0.45)');
+      expect(color('bg/55')).toBe('var(--kroma-bg-55)');
+      expect(color('accent/45')).toBe('var(--kroma-accent-45)');
     });
 
     it('handles the extremes', () => {

@@ -17,6 +17,7 @@ import {
 import type { LayoutChangeEvent, View, ViewStyle } from 'react-native';
 import { Animated, Dimensions, Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { Spinner } from '#ui/components/atoms/spinner';
 import { styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
@@ -376,194 +377,196 @@ export function Player(props: Readonly<PlayerProps>) {
       onLayout={onStageLayout}
       onPointerMove={input.onPointerMove}
     >
-      {/* The id is what injectStageStyles hooks to size an in-page <video>; a
-          native surface sizes itself and never sees that rule. */}
-      <AnimatedPressable
-        {...VIRTUAL_FOCUS}
-        accessibilityRole="button"
-        accessibilityLabel={c.playing ? t('player.pause') : t('player.play')}
-        onPress={input.onStagePress}
-        onLongPress={input.onStageLongPress}
-        nativeID={STAGE_ID}
-        style={[
-          s.stage,
-          settingsShrink ? { backgroundColor: '#000000', boxShadow: STAGE_SHADOW } : null,
-          stage.style,
-        ]}
-      >
-        {/* The surface rounds ITSELF: a rounded parent does not clip a native
-            video layer. Renders no element, so the web client's direct-child
-            `<video>` rule still matches. */}
-        <SurfaceRadiusProvider radius={stage.radius}>{props.surface}</SurfaceRadiusProvider>
-        {/* Carries the spinner + subtitles into the card when a native plane
-            shrinks; the stage itself must not move then. */}
-        <Box fill overflow="hidden" style={[s.inert, contentShrink]}>
-          <SubtitleRenderer
-            positionSec={c.cur}
-            playing={c.playing}
-            subtitles={c.subtitles}
-            activeIndex={c.subtitleIndex}
-            appearance={props.appearance}
-            raised={nav.revealed}
-          />
-          {c.waiting && !locked ? (
-            <Box fill z={4} center>
-              <Spinner size={56} thickness={3} />
-            </Box>
-          ) : null}
-        </Box>
-      </AnimatedPressable>
+      <Ground tone="dark" flex>
+        {/* The id is what injectStageStyles hooks to size an in-page <video>; a
+            native surface sizes itself and never sees that rule. */}
+        <AnimatedPressable
+          {...VIRTUAL_FOCUS}
+          accessibilityRole="button"
+          accessibilityLabel={c.playing ? t('player.pause') : t('player.play')}
+          onPress={input.onStagePress}
+          onLongPress={input.onStageLongPress}
+          nativeID={STAGE_ID}
+          style={[
+            s.stage,
+            settingsShrink ? { backgroundColor: '#000000', boxShadow: STAGE_SHADOW } : null,
+            stage.style,
+          ]}
+        >
+          {/* The surface rounds ITSELF: a rounded parent does not clip a native
+              video layer. Renders no element, so the web client's direct-child
+              `<video>` rule still matches. */}
+          <SurfaceRadiusProvider radius={stage.radius}>{props.surface}</SurfaceRadiusProvider>
+          {/* Carries the spinner + subtitles into the card when a native plane
+              shrinks; the stage itself must not move then. */}
+          <Box fill overflow="hidden" style={[s.inert, contentShrink]}>
+            <SubtitleRenderer
+              positionSec={c.cur}
+              playing={c.playing}
+              subtitles={c.subtitles}
+              activeIndex={c.subtitleIndex}
+              appearance={props.appearance}
+              raised={nav.revealed}
+            />
+            {c.waiting && !locked ? (
+              <Box fill z={4} center>
+                <Spinner size={56} thickness={3} />
+              </Box>
+            ) : null}
+          </Box>
+        </AnimatedPressable>
 
-      {/* A hardware plane has no corner radius of its own, so this masks the
-          card. Static geometry with only the opacity animated, so the surround
-          shadow rasterizes once instead of repainting every frame. */}
-      {hasPlane ? (
+        {/* A hardware plane has no corner radius of its own, so this masks the
+            card. Static geometry with only the opacity animated, so the surround
+            shadow rasterizes once instead of repainting every frame. */}
+        {hasPlane ? (
+          <Box
+            absolute
+            left={`${card.rect.x * 100}%`}
+            top={`${card.rect.y * 100}%`}
+            w={`${card.rect.w * 100}%`}
+            h={`${card.rect.h * 100}%`}
+            z={3}
+            radius={24}
+            opacity={nativeShrink ? 1 : 0}
+            style={s.maskSurround}
+          />
+        ) : null}
+
+        {/* skip intro (§13) */}
+        {props.intro ? (
+          <SkipIntroButton
+            visible={props.intro.active}
+            focused={props.intro.active && !nav.overlay && !credits.show}
+            scale={metrics.scale}
+            lift={introLift}
+            onSkip={props.intro.onSkip}
+          />
+        ) : null}
+
+        {/* credits autoplay (§11) */}
+        {credits.show && props.nextTitle ? (
+          <CreditsCard
+            item={props.nextTitle}
+            secondsLeft={credits.secondsLeft}
+            total={credits.total}
+            playFocused={creditsFocus === 'play'}
+            cancelFocused={creditsFocus === 'cancel'}
+            scale={metrics.scale}
+            onPlay={() => props.onPlayNext?.()}
+            onCancel={credits.cancel}
+          />
+        ) : null}
+
+        {/* stats (§9) */}
+        {statsOn ? <StatsPanel controller={c} onClose={() => setStatsOn(false)} /> : null}
+
+        {/* top bar */}
         <Box
           absolute
-          left={`${card.rect.x * 100}%`}
-          top={`${card.rect.y * 100}%`}
-          w={`${card.rect.w * 100}%`}
-          h={`${card.rect.h * 100}%`}
-          z={3}
-          radius={24}
-          opacity={nativeShrink ? 1 : 0}
-          style={s.maskSurround}
-        />
-      ) : null}
-
-      {/* skip intro (§13) */}
-      {props.intro ? (
-        <SkipIntroButton
-          visible={props.intro.active}
-          focused={props.intro.active && !nav.overlay && !credits.show}
-          scale={metrics.scale}
-          lift={introLift}
-          onSkip={props.intro.onSkip}
-        />
-      ) : null}
-
-      {/* credits autoplay (§11) */}
-      {credits.show && props.nextTitle ? (
-        <CreditsCard
-          item={props.nextTitle}
-          secondsLeft={credits.secondsLeft}
-          total={credits.total}
-          playFocused={creditsFocus === 'play'}
-          cancelFocused={creditsFocus === 'cancel'}
-          scale={metrics.scale}
-          onPlay={() => props.onPlayNext?.()}
-          onCancel={credits.cancel}
-        />
-      ) : null}
-
-      {/* stats (§9) */}
-      {statsOn ? <StatsPanel controller={c} onClose={() => setStatsOn(false)} /> : null}
-
-      {/* top bar */}
-      <Box
-        absolute
-        left={0}
-        right={0}
-        top={0}
-        z={20}
-        opacity={chromeShown ? 1 : 0}
-        style={chromeShown ? s.chromeLive : s.inert}
-      >
-        <TopBar
-          title={props.title}
-          subtitle={props.subtitle}
-          warn={props.warn}
-          actions={props.actions}
-          scale={metrics.scale}
-          backFocused={nav.zone === 'back'}
-          onBack={props.onClose}
-        />
-      </Box>
-
-      {/* up-next sheet (peek + expand, §10) */}
-      <UpNextSheet
-        ref={sheetOpen ? panelRef : null}
-        data={props.upNext}
-        open={sheetOpen}
-        revealed={peekVisible || sheetOpen}
-        onOpen={openSheet}
-        onClose={nav.closeOverlay}
-        onPlay={playUpNextItem}
-      />
-
-      {/* The gradient stays anchored to the screen bottom and the controls are
-          lifted above the up-next peek with padding instead, so the peek overlays
-          its dark foot rather than the gradient ending in a hard band. */}
-      <Box
-        absolute
-        left={0}
-        right={0}
-        bottom={0}
-        z={15}
-        px={px(GUTTER)}
-        pt={px(80)}
-        // Not scaled: it is the peek's own height, from the sheet that draws it.
-        pb={bottomInset}
-        opacity={chromeShown ? 1 : 0}
-        style={[chromeShown ? s.chromeLive : s.inert, BOTTOM_SCRIM]}
-      >
-        {/* Measured so the skip-intro pill can sit clear of it; the layout is
-            kept while the chrome fades (opacity, not display). */}
-        <Box onLayout={onTransportLayout}>
-          <SeekBar
-            cur={c.cur}
-            dur={c.dur}
-            bufEnd={c.bufEnd}
-            seekPreview={c.seekPreview}
-            chapters={chapters}
-            tileAt={props.tileAt}
-            focused={nav.zone === 'progress'}
-            elapsed={fmtTime(shown)}
-            chapterLabel={curChapter?.title || undefined}
-            total={fmtTime(c.dur)}
-            endsAt={endsAt ? t('content.endsAtShort', { time: endsAt }) : ''}
+          left={0}
+          right={0}
+          top={0}
+          z={20}
+          opacity={chromeShown ? 1 : 0}
+          style={chromeShown ? s.chromeLive : s.inert}
+        >
+          <TopBar
+            title={props.title}
+            subtitle={props.subtitle}
+            warn={props.warn}
+            actions={props.actions}
             scale={metrics.scale}
-            onScrub={c.scrubPreview}
-            onScrubCommit={c.scrubCommit}
-          />
-          <ControlCluster
-            focused={nav.focusedControl}
-            playing={c.playing}
-            muted={c.muted}
-            volume={c.volume}
-            pipActive={c.pipActive}
-            fullscreen={c.fullscreen}
-            metrics={metrics}
-            onActivate={nav.activate}
-            onFocus={nav.focusControl}
-            onVolume={c.setVolume}
+            backFocused={nav.zone === 'back'}
+            onBack={props.onClose}
           />
         </Box>
-      </Box>
 
-      {/* settings / audio / subtitles panel (§5) */}
-      {settingsOpen ? (
-        <SettingsPanel
-          ref={panelRef}
-          initialView={initialView}
-          width={panel.width}
-          covers={panel.covers}
-          scale={metrics.scale}
-          controller={c}
-          appearance={props.appearance}
-          onAppearance={props.onAppearance}
-          statsOn={statsOn}
-          onToggleStats={() => setStatsOn((s) => !s)}
-          subtitleGen={props.subtitleGen}
-          onReport={props.onReport}
-          overflow={metrics.overflow}
-          onControl={runOverflow}
-          onClose={() => nav.closeOverlay()}
+        {/* up-next sheet (peek + expand, §10) */}
+        <UpNextSheet
+          ref={sheetOpen ? panelRef : null}
+          data={props.upNext}
+          open={sheetOpen}
+          revealed={peekVisible || sheetOpen}
+          onOpen={openSheet}
+          onClose={nav.closeOverlay}
+          onPlay={playUpNextItem}
         />
-      ) : null}
 
-      {props.terminated}
-      {props.children}
+        {/* The gradient stays anchored to the screen bottom and the controls are
+            lifted above the up-next peek with padding instead, so the peek overlays
+            its dark foot rather than the gradient ending in a hard band. */}
+        <Box
+          absolute
+          left={0}
+          right={0}
+          bottom={0}
+          z={15}
+          px={px(GUTTER)}
+          pt={px(80)}
+          // Not scaled: it is the peek's own height, from the sheet that draws it.
+          pb={bottomInset}
+          opacity={chromeShown ? 1 : 0}
+          style={[chromeShown ? s.chromeLive : s.inert, BOTTOM_SCRIM]}
+        >
+          {/* Measured so the skip-intro pill can sit clear of it; the layout is
+              kept while the chrome fades (opacity, not display). */}
+          <Box onLayout={onTransportLayout}>
+            <SeekBar
+              cur={c.cur}
+              dur={c.dur}
+              bufEnd={c.bufEnd}
+              seekPreview={c.seekPreview}
+              chapters={chapters}
+              tileAt={props.tileAt}
+              focused={nav.zone === 'progress'}
+              elapsed={fmtTime(shown)}
+              chapterLabel={curChapter?.title || undefined}
+              total={fmtTime(c.dur)}
+              endsAt={endsAt ? t('content.endsAtShort', { time: endsAt }) : ''}
+              scale={metrics.scale}
+              onScrub={c.scrubPreview}
+              onScrubCommit={c.scrubCommit}
+            />
+            <ControlCluster
+              focused={nav.focusedControl}
+              playing={c.playing}
+              muted={c.muted}
+              volume={c.volume}
+              pipActive={c.pipActive}
+              fullscreen={c.fullscreen}
+              metrics={metrics}
+              onActivate={nav.activate}
+              onFocus={nav.focusControl}
+              onVolume={c.setVolume}
+            />
+          </Box>
+        </Box>
+
+        {/* settings / audio / subtitles panel (§5) */}
+        {settingsOpen ? (
+          <SettingsPanel
+            ref={panelRef}
+            initialView={initialView}
+            width={panel.width}
+            covers={panel.covers}
+            scale={metrics.scale}
+            controller={c}
+            appearance={props.appearance}
+            onAppearance={props.onAppearance}
+            statsOn={statsOn}
+            onToggleStats={() => setStatsOn((s) => !s)}
+            subtitleGen={props.subtitleGen}
+            onReport={props.onReport}
+            overflow={metrics.overflow}
+            onControl={runOverflow}
+            onClose={() => nav.closeOverlay()}
+          />
+        ) : null}
+
+        {props.terminated}
+        {props.children}
+      </Ground>
     </Box>
   );
 }

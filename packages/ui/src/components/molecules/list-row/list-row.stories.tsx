@@ -42,7 +42,7 @@ export default story({
             label="Audio"
             hint="Default track"
             trailing={
-              <Txt color="accent" style={{ fontSize: 16, fontWeight: '600' }}>
+              <Txt color="accentText" style={{ fontSize: 16, fontWeight: '600' }}>
                 English
               </Txt>
             }

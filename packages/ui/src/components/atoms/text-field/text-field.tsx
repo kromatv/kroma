@@ -9,7 +9,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
-import { styles, useTheme } from '#ui/core';
+import { color, styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import {
   type ControlSize,
@@ -146,7 +146,7 @@ function TextField({
           never set the row height. */}
       {icon ? (
         <Box w={CONTENT} h={CONTENT} center>
-          <Icon name={icon} size={20} stroke={1.8} color="rgba(244, 243, 240, 0.5)" />
+          <Icon name={icon} size={20} stroke={1.8} color="text/50" />
         </Box>
       ) : null}
       {physicalKeyboard ? (
@@ -167,7 +167,7 @@ function TextField({
           readOnly={readOnly}
           selectTextOnFocus={selectOnFocus}
           placeholder={placeholder}
-          placeholderTextColor={PLACEHOLDER}
+          placeholderTextColor={color(PLACEHOLDER)}
           accessibilityLabel={label}
           autoFocus={autoFocus}
           autoCorrect={false}
@@ -264,19 +264,14 @@ function RevealButton({
         style={s.reveal}
         states={REVEAL_STATES}
       >
-        <Icon
-          name={revealed ? 'eye-off' : 'eye'}
-          size={REVEAL_SIZE}
-          stroke={1.8}
-          color="rgba(244, 243, 240, 0.5)"
-        />
+        <Icon name={revealed ? 'eye-off' : 'eye'} size={REVEAL_SIZE} stroke={1.8} color="text/50" />
       </Focusable>
     </Box>
   );
 }
 
 const REVEAL_SIZE = 20;
-const REVEAL_STATES = { hover: { bg: 'white/10' } } as const;
+const REVEAL_STATES = { hover: { bg: 'tint/10' } } as const;
 
 const s = styles({
   input: { flex: true, minW: 0, borderWidth: 0, bg: 'transparent', p: 0 },

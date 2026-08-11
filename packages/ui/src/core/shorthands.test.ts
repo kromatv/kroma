@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { boxStyle, color } from '#ui/core';
-import { colors, radius, shadow } from '#ui/core/tokens';
+import { afterEach, describe, expect, it } from 'vitest';
+import { boxStyle, color, createTheme, KROMA, setTheme } from '#ui/core';
+import { CIRCLE_RADIUS, radius } from '#ui/core/tokens';
+
+afterEach(() => setTheme(KROMA));
 
 describe('boxStyle flex shorthands', () => {
   it('turns `flex` into flex: 1 but keeps an explicit factor', () => {
@@ -52,9 +54,9 @@ describe('boxStyle spacing', () => {
 
 describe('boxStyle paint', () => {
   it('resolves a palette token but passes a raw colour through', () => {
-    expect(boxStyle({ bg: 'accent' }).backgroundColor).toBe(colors.accent);
+    expect(boxStyle({ bg: 'accent' }).backgroundColor).toBe('var(--kroma-accent)');
     expect(boxStyle({ bg: 'rgba(0,0,0,0.5)' }).backgroundColor).toBe('rgba(0,0,0,0.5)');
-    expect(color('surface1')).toBe(colors.surface1);
+    expect(color('surface1')).toBe('var(--kroma-surface-1)');
   });
 
   it('resolves a radius token but passes a raw number through', () => {
@@ -62,9 +64,23 @@ describe('boxStyle paint', () => {
     expect(boxStyle({ radius: 7 }).borderRadius).toBe(7);
   });
 
+  it('takes `circle` from the box\u2019s own side, and clamps without one', () => {
+    expect(boxStyle({ radius: 'circle', w: 40, h: 40 }).borderRadius).toBe(20);
+    // Height wins: a disc is measured on the side a capsule would cap.
+    expect(boxStyle({ radius: 'circle', w: 80, h: 24 }).borderRadius).toBe(12);
+    expect(boxStyle({ radius: 'circle', w: '100%' }).borderRadius).toBe(CIRCLE_RADIUS);
+    expect(boxStyle({ radius: 'circle' }).borderRadius).toBe(CIRCLE_RADIUS);
+  });
+
+  it('keeps a circle round under a theme that squares every corner', () => {
+    setTheme(createTheme({ radius: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0, '2xl': 0, pill: 0 } }));
+    expect(boxStyle({ radius: 'pill', w: 40, h: 40 }).borderRadius).toBe(0);
+    expect(boxStyle({ radius: 'circle', w: 40, h: 40 }).borderRadius).toBe(20);
+  });
+
   it('defaults a border to 1px when only the colour is given', () => {
     expect(boxStyle({ border: 'border' })).toEqual({
-      borderColor: colors.border,
+      borderColor: 'var(--kroma-border)',
       borderWidth: 1,
     });
     expect(boxStyle({ border: 'accent', borderWidth: 4 }).borderWidth).toBe(4);
@@ -72,7 +88,7 @@ describe('boxStyle paint', () => {
   });
 
   it('maps the elevation token to a boxShadow', () => {
-    expect(boxStyle({ shadow: 'card' })).toEqual({ boxShadow: shadow.card });
+    expect(boxStyle({ shadow: 'card' })).toEqual({ boxShadow: 'var(--shadow-card)' });
   });
 });
 
@@ -101,12 +117,12 @@ describe('color() alpha syntax', () => {
 
   it('applies it to palette tokens too', () => {
     // bg is #0A0A0C — the scrim wash the player already used, spelled once.
-    expect(color('bg/55')).toBe('rgba(10, 10, 12, 0.55)');
-    expect(color('accent/45')).toBe('rgba(244, 182, 66, 0.45)');
+    expect(color('bg/55')).toBe('var(--kroma-bg-55)');
+    expect(color('accent/45')).toBe('var(--kroma-accent-45)');
   });
 
   it('leaves a bare token and a raw colour alone', () => {
-    expect(color('accent')).toBe('#F4B642');
+    expect(color('accent')).toBe('var(--kroma-accent)');
     expect(color('rgba(1, 2, 3, 0.5)')).toBe('rgba(1, 2, 3, 0.5)');
     expect(color('#123456')).toBe('#123456');
   });

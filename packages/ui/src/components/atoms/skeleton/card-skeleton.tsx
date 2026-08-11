@@ -16,8 +16,8 @@ function CardSkeleton({ fields = 4 }: Readonly<CardSkeletonProps>) {
       {Array.from({ length: fields }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder fields
         <Box key={i} gap={8}>
-          <Skeleton h={14} w={112} bg="white/4" />
-          <Skeleton h={40} self="stretch" radius={8} />
+          <Skeleton h={14} w={112} bg="tint/4" />
+          <Skeleton h={40} self="stretch" radius="sm" />
         </Box>
       ))}
     </Box>

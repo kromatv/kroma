@@ -6,6 +6,7 @@
   "workspaces": [
     "packages/*",
     "clients/*",
+    "apps/*",
     "modules/*/ui"
   ],
   "scripts": {
@@ -17,8 +18,6 @@
     "modules:test": "bun run modules cargo test",
     "modules:clippy": "bun run modules cargo clippy --all-targets",
     "modules:check": "bun run modules:validate && bun run modules:gen && git diff --exit-code -- modules server/crates/kroma-modules-generated packages/modules-generated",
-    "tokens:gen": "bun run --filter '@kroma/ui' gen:css",
-    "tokens:check": "bun run tokens:gen && git diff --exit-code -- packages/ui/src/styles/tokens",
     "shots": "bun run --filter '@kroma/ui' shots",
     "store:art": "bun clients/tv-build/store-art.ts .store-art && python3 clients/tv-build/store-art.py .store-art",
     "start": "bun run tizen:prepare && bun run dev",
@@ -42,6 +41,7 @@
     "deploy:tv-web": "bun run --filter '@kroma/tv-web' deploy",
     "deploy:site": "bun run --filter '@kroma/site' deploy",
     "deploy:modules": "bun run --filter '@kroma/module-registry' deploy",
+    "deploy:packages": "bun run --filter '@kroma/package-source' deploy",
     "build": "bun run --filter '*' build",
     "build:web": "bun run --filter '@kroma/web' build",
     "build:site": "bun run --filter '@kroma/site' build",

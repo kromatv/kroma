@@ -19,6 +19,9 @@ const GLYPH_SOURCE = join('packages', 'ui', 'src', 'lib', 'icons', 'glyph-source
 type TablerPkg = '@tabler/icons-react' | '@tabler/icons-react-native';
 
 const SOURCE_EXT = /\.(ts|tsx)$/;
+// A slug a fixture happens to spell is a false hit costing a real glyph.
+// Stories are NOT excluded: the workbench ships them.
+const NOT_SHIPPED = /\.(test|spec)\.(ts|tsx)$/;
 // `ios`, `android` and `src-tauri` hold no TypeScript, and `ios/Pods` alone is
 // ~7,100 directories - most of the walk's cost on every Metro start.
 const SKIP = new Set([
@@ -87,7 +90,7 @@ function* sourceFiles(dir: string): Generator<string> {
     if (e.name.startsWith('.') || SKIP.has(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) yield* sourceFiles(p);
-    else if (SOURCE_EXT.test(e.name)) yield p;
+    else if (SOURCE_EXT.test(e.name) && !NOT_SHIPPED.test(e.name)) yield p;
   }
 }
 
@@ -108,7 +111,7 @@ function iconSubset(repoRoot: string, pkg: TablerPkg): { code: string; note: str
   const available = iconModules(tablerDir(repoRoot, pkg), pkg);
 
   const used = new Set(['IconHelpCircle']); // the fallback, always drawn
-  for (const root of ['packages', 'clients']) {
+  for (const root of ['packages', 'clients', 'apps', 'modules']) {
     for (const file of sourceFiles(join(repoRoot, root))) {
       for (const [, slug] of readFileSync(file, 'utf8').matchAll(LITERAL)) {
         const name = exportName(slug as string);

@@ -257,9 +257,9 @@ export function ManualGrabModal({
 
       {/* target form */}
       <Field label={t('manual.kind')}>
-        <SegmentedControl
+        <SegmentedControl.Root
           value={kind}
-          onChange={setKind}
+          onValueChange={setKind}
           label={t('manual.kind')}
           options={[
             { value: 'movie' as const, label: t('manual.kindMovie') },

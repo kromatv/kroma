@@ -261,5 +261,5 @@ export default function ProfilePin() {
 const s = styles({
   body: { gap: spacing.lg, p: spacing.md, ...boxed(contentWidth.form) },
   buttons: { gap: 10 },
-  saved: { ...type.caption, color: 'accent', textAlign: 'center' },
+  saved: { ...type.caption, color: 'accentText', textAlign: 'center' },
 });

@@ -24,7 +24,7 @@ function Section({
       {title || action ? (
         <Box row align="center" gap={12}>
           {title ? (
-            <Txt variant="overline" color="accent">
+            <Txt variant="overline" color="accentText">
               {title}
             </Txt>
           ) : null}

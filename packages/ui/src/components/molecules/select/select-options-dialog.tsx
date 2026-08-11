@@ -20,7 +20,7 @@ const optionVariants = sv({
       px: 14,
       py: 12,
       radius: 'md',
-      _hover: { bg: 'white/8' },
+      _hover: { bg: 'tint/8' },
     },
     ink: { shrink: 1 },
   },
@@ -65,7 +65,9 @@ function SelectOptionsDialog({
                   </Txt>
                 ) : null}
                 <Box w={18} align="center">
-                  {option.value === value ? <Icon name="check" size={16} color="accent" /> : null}
+                  {option.value === value ? (
+                    <Icon name="check" size={16} color="accentText" />
+                  ) : null}
                 </Box>
               </>
             )}

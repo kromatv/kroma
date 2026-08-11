@@ -85,6 +85,7 @@ jobs:
               - 'rust-toolchain.toml'
               - '.github/workflows/ci.yml'
             fleet:
+              - 'apps/**'
               - 'clients/**'
               - 'packages/**'
               # clients/web bundles the modules/*/ui workspaces at build time.
@@ -120,12 +121,6 @@ jobs:
       - name: Unit tests (vitest)
         run: bun run test
 
-      # Hard gate: the generated token CSS matches the TypeScript tokens it is
-      # generated FROM. Without this a hand edit to src/styles/tokens survives,
-      # and the two halves of the design system drift apart silently.
-      - name: Design tokens are in step
-        run: bun run tokens:check
-
       # Hard gate: the Biome backlog is cleared (`bun run check` is clean), so
       # lint + format regressions now fail CI.
       - name: Biome (lint + format)
@@ -149,7 +144,7 @@ jobs:
           # here rather than at deploy time.
           - name: site
             build: bun run build:site
-            dist: clients/site/dist/client
+            dist: apps/www/dist/client
           - name: tizen
             build: bun run build:tizen
             dist: clients/tizen/dist
@@ -215,8 +210,18 @@ jobs:
       - name: Prebuild the Android project
         run: bun run --filter '@kroma/tv-native' prebuild -- --platform android
 
+      # Same two knobs the release APK already uses (_release-tv.yml).
+      # --build-cache: without it every run reported "368 actionable tasks: 368
+      # executed" and recompiled the whole Expo/RN module graph. setup-gradle
+      # already persists ~/.gradle/caches, which is where the local build cache
+      # lives. Entries are keyed on task inputs, so a hit means those exact
+      # inputs compiled before - the gate is as strict, the recompile is not.
+      # The heap is raised because the generated gradle.properties asks for 2GB,
+      # a third of what this runner has, which costs GC time on C++ and Hermes.
       - name: Compile the APK
-        run: gradle -p clients/tv-native/android assembleDebug
+        env:
+          GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
+        run: gradle -p clients/tv-native/android assembleDebug --build-cache
 
   desktop-shell:
     name: Desktop shell (cargo check, Linux/mpv path)

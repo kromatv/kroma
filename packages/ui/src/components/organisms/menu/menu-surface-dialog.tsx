@@ -31,7 +31,7 @@ export const menuItemVariants = sv({
       px: 12,
       py: 9,
       radius: 'md',
-      _hover: { bg: 'white/7' },
+      _hover: { bg: 'tint/7' },
     },
     ink: { color: 'text/80' },
   },

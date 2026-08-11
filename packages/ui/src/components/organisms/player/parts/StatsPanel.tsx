@@ -1,6 +1,7 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Txt } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
@@ -30,6 +31,10 @@ export function StatsPanel({
   maxHeight?: number;
 }>) {
   const t = useT();
+  const place = useMemo(
+    () => ({ position: 'absolute' as const, top, left, zIndex: 20 }),
+    [top, left],
+  );
   const [s, setS] = useState<PlayerStats>(() => controller.getStats());
   const historyRef = useRef<Map<string, number[]>>(new Map());
   // The controller is rebuilt on every parent render (~4x/s while playing, via
@@ -72,60 +77,58 @@ export function StatsPanel({
   const groups = groupBlocks(s, charted);
 
   return (
-    <Box
-      absolute
-      top={top}
-      left={left}
-      z={20}
-      w={width}
-      maxH={maxHeight}
-      radius={14}
-      borderWidth={1}
-      border="white/10"
-      bg="bg/94"
-      px={PANEL_PAD}
-      py={18}
-      gap={16}
-    >
-      <Box row align="center" between gap={24}>
-        <Txt style={sx.panelTitle} color="text/50">
-          {t('stats.title')}
-        </Txt>
-        {/* Pointer-only: `focused={false}` keeps this out of the focus
-            navigator (see ../lib/virtual-focus.ts). */}
-        <IconButton
-          variant="ghost"
-          size={24}
-          icon="x"
-          glyph={15}
-          focused={false}
-          hitSlop={6}
-          onPress={onClose}
-          label={t('common.close')}
-        />
+    <Ground tone="dark" style={place}>
+      <Box
+        w={width}
+        maxH={maxHeight}
+        radius="lg"
+        borderWidth={1}
+        border="white/10"
+        bg="bg/94"
+        px={PANEL_PAD}
+        py={18}
+        gap={16}
+      >
+        <Box row align="center" between gap={24}>
+          <Txt style={sx.panelTitle} color="text/50">
+            {t('stats.title')}
+          </Txt>
+          {/* Pointer-only: `focused={false}` keeps this out of the focus
+              navigator (see ../lib/virtual-focus.ts). */}
+          <IconButton
+            variant="ghost"
+            size={24}
+            icon="x"
+            glyph={15}
+            focused={false}
+            hitSlop={6}
+            onPress={onClose}
+            label={t('common.close')}
+          />
+        </Box>
+
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={sx.body}>
+          <SummaryBlock headline={summary.headline} pairs={summary.pairs} />
+
+          {charts.length > 0 ? (
+            <Box row={!stackCharts} gap={stackCharts ? 12 : COL_GAP} align="stretch">
+              {charts.map((group) => (
+                <Box key={group.id} grow={1} shrink={1} style={stackCharts ? null : sx.chartCell}>
+                  <StatsChart
+                    meters={group.meters}
+                    history={historyRef.current}
+                    width={chartWidth(stackCharts ? 1 : charts.length, width)}
+                    slot={group.slot}
+                  />
+                </Box>
+              ))}
+            </Box>
+          ) : null}
+
+          <GroupGrid groups={groups} />
+        </ScrollView>
       </Box>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={sx.body}>
-        <SummaryBlock headline={summary.headline} pairs={summary.pairs} />
-
-        {charts.length > 0 ? (
-          <Box row={!stackCharts} gap={stackCharts ? 12 : COL_GAP} align="stretch">
-            {charts.map((group) => (
-              <Box key={group.id} grow={1} shrink={1} style={stackCharts ? null : sx.chartCell}>
-                <StatsChart
-                  meters={group.meters}
-                  history={historyRef.current}
-                  width={chartWidth(stackCharts ? 1 : charts.length, width)}
-                  slot={group.slot}
-                />
-              </Box>
-            ))}
-          </Box>
-        ) : null}
-
-        <GroupGrid groups={groups} />
-      </ScrollView>
-    </Box>
+    </Ground>
   );
 }
 
@@ -290,7 +293,7 @@ const sx = styles({
   column: { flexBasis: 200, grow: 1, shrink: 1, minW: 180 },
   chartCell: { flexBasis: 0, minW: 0 },
   body: { gap: 16 },
-  topRule: { borderTopWidth: 1, borderTopColor: 'white/8', pt: 16 },
+  topRule: { borderTopWidth: 1, borderTopColor: 'tint/8', pt: 16 },
   headline: { font: 'ui', fontSize: 17, fontWeight: '700', color: 'text' },
   summaryPair: { font: 'ui', fontSize: 12, fontWeight: '500' },
   blockTitle: {

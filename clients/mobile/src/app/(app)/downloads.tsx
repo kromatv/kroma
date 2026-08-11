@@ -2,7 +2,7 @@
 // ones are swipe-to-delete rows.
 
 import { episodeTag, formatRuntime, type MediaItem } from '@kroma/core';
-import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, type ColorValue, Icon, styles, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
@@ -19,7 +19,7 @@ import { type DownloadEntry, formatBytes, useDownloads } from '#mobile/lib/downl
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
   return (
@@ -65,7 +65,7 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
     >
       <Pressable
         onPress={() => router.push(`/player/${item.id}` as never)}
-        style={({ pressed }) => [s.row, pressed && { backgroundColor: colors.surface }]}
+        style={({ pressed }) => [s.row, pressed && s.rowPressed]}
       >
         <RowArt uri={entry.backdropUrl ?? entry.posterUrl} seed={item.id} />
         <Box style={s.text}>
@@ -150,7 +150,7 @@ function ActiveRow({
           <Box style={s.pausedRing}>
             <ProgressRing progress={Math.max(0.02, progress)} size={36} />
             <Box pointerEvents="none" style={s.pausedRingGlyph}>
-              <Icon name="player-pause-filled" size={12} color={colors.textDim} />
+              <Icon name="player-pause-filled" size={12} color="textMuted" />
             </Box>
           </Box>
         ) : (
@@ -161,21 +161,10 @@ function ActiveRow({
   );
 }
 
-function LegendItem({
-  color,
-  outlined,
-  label,
-}: Readonly<{ color?: string; outlined?: boolean; label: string }>) {
+function LegendItem({ tint, label }: Readonly<{ tint?: ColorValue; label: string }>) {
   return (
     <Box style={s.legendItem}>
-      <Box
-        style={[
-          s.legendDot,
-          outlined
-            ? { borderWidth: 1.5, borderColor: colors.borderStrong }
-            : { backgroundColor: color },
-        ]}
-      />
+      <Box bg={tint} style={[s.legendDot, !tint && s.legendDotOutlined]} />
       <Txt style={s.legendText}>{label}</Txt>
     </Box>
   );
@@ -203,24 +192,22 @@ function StorageMeter() {
         {app > 0 ? (
           <Box
             style={[
-              s.meterFill,
+              s.meterFillApp,
               // A film on a terabyte of flash is a fraction of a pixel; a
               // download that exists must stay visible.
-              { flex: app / total, minWidth: 6, backgroundColor: colors.accent },
+              { flex: app / total, minWidth: 6 },
             ]}
           />
         ) : null}
         <Box style={{ flex: free / total }} />
       </Box>
       <Box style={s.meterLegend}>
-        {app > 0 ? (
-          <LegendItem color={colors.accent} label={`KROMA · ${formatBytes(app)}`} />
-        ) : null}
+        {app > 0 ? <LegendItem tint="accent" label={`KROMA · ${formatBytes(app)}`} /> : null}
         <LegendItem
-          color={colors.borderStrong}
+          tint="borderStrong"
           label={`${t('offline.storageOther')} · ${formatBytes(other)}`}
         />
-        <LegendItem outlined label={`${t('offline.storageFree')} · ${formatBytes(free)}`} />
+        <LegendItem label={`${t('offline.storageFree')} · ${formatBytes(free)}`} />
       </Box>
     </Box>
   );
@@ -265,7 +252,7 @@ export default function Downloads() {
         />
       ) : (
         <EmptyState
-          icon={<Icon name="download" size={34} stroke={2} color={colors.textDim} />}
+          icon={<Icon name="download" size={34} stroke={2} color="textMuted" />}
           title={t('offline.downloads')}
           hint={t('offline.empty')}
         />
@@ -278,6 +265,7 @@ const s = styles({
   list: { gap: 4, px: spacing.md, pb: spacing.xl, ...boxed(contentWidth.reading) },
   activeBlock: { gap: 4, mb: spacing.sm },
   row: { row: true, align: 'center', gap: 12, p: 8, bg: 'bg', radius: radius.md },
+  rowPressed: { bg: 'surface1' },
   thumb: { w: 130, h: 73 },
   playBadge: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
   playCircle: { center: true, w: 32, h: 32, bg: 'bg/55', radius: 16 },
@@ -292,8 +280,10 @@ const s = styles({
   meter: { gap: 10, px: 8, mt: spacing.lg },
   meterTrack: { row: true, gap: 2, h: 8, bg: 'surface2', radius: 999, overflow: 'hidden' },
   meterFill: { bg: 'borderStrong', radius: 999 },
+  meterFillApp: { bg: 'accent', radius: 999 },
   meterLegend: { row: true, wrap: true, justify: 'center', columnGap: spacing.md, rowGap: 6 },
   legendItem: { row: true, align: 'center', gap: 6 },
   legendDot: { w: 8, h: 8, radius: 4 },
+  legendDotOutlined: { border: 'borderStrong', borderWidth: 1.5 },
   legendText: { ...type.small, color: 'textMuted' },
 });

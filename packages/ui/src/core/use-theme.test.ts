@@ -3,11 +3,15 @@ import { act, renderHook } from '@testing-library/react';
 import { createElement, type ReactNode, useEffect } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createTheme, KROMA, setTheme } from './theme';
-import { ThemeProvider, useTheme } from './use-theme';
+import { applyMode, writeMode } from './theme-mode';
+import { ThemeProvider, useSystemGround, useTheme } from './use-theme';
 
 const OCEAN = createTheme({ colors: { accent: '#3FB6F2' } });
 
-afterEach(() => setTheme(KROMA));
+afterEach(() => {
+  setTheme(KROMA);
+  writeMode('system');
+});
 
 describe('useTheme', () => {
   it('reads the active theme and follows a swap', () => {
@@ -56,5 +60,55 @@ describe('ThemeProvider', () => {
     act(() => setTheme(OCEAN));
     expect(unmounts).toBe(1);
     expect(mounts).toBe(2);
+  });
+});
+
+describe('useSystemGround', () => {
+  const wake = () => document.dispatchEvent(new Event('visibilitychange'));
+
+  const visibility = (state: 'hidden' | 'visible') =>
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => state,
+    });
+
+  afterEach(() => visibility('visible'));
+
+  it('re-applies the system ground when the app comes back to the front', () => {
+    applyMode('light');
+    renderHook(() => useSystemGround());
+
+    wake();
+
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+  });
+
+  it('leaves a ground the visitor pinned alone', () => {
+    writeMode('light');
+    renderHook(() => useSystemGround());
+
+    wake();
+
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
+  it('does not repaint while the app is in the background', () => {
+    applyMode('light');
+    renderHook(() => useSystemGround());
+    visibility('hidden');
+
+    wake();
+
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
+  it('stops listening once the app root unmounts', () => {
+    const { unmount } = renderHook(() => useSystemGround());
+    unmount();
+    applyMode('light');
+
+    wake();
+
+    expect(document.documentElement.dataset.theme).toBe('light');
   });
 });

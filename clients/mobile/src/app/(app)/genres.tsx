@@ -20,7 +20,7 @@ import { PageHeader } from '#mobile/components/PageHeader';
 import { Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
-import { radius, SHADE, shade, spacing, type } from '#mobile/lib/theme';
+import { groundShade, radius, spacing, type } from '#mobile/lib/theme';
 
 interface GenreTileModel {
   name: string;
@@ -88,7 +88,7 @@ export default function Genres() {
                 <FadeImage uri={tile.art} seed={tile.name} style={StyleSheet.absoluteFill} />
               ) : null}
               <LinearGradient
-                colors={[SHADE.transparent, SHADE.transparent, shade(0.85)]}
+                colors={[groundShade(0), groundShade(0), groundShade(0.85)]}
                 locations={[0, 0.45, 1]}
                 style={StyleSheet.absoluteFill}
               />

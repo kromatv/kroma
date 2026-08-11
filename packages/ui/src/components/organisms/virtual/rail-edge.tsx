@@ -162,10 +162,10 @@ const s = styles({
     h: 44,
     radius: 'pill',
     center: true,
-    bg: 'white/12',
+    bg: 'tint/12',
     border: 'borderStrong',
     shadow: 'card',
   },
-  arrowHover: { bg: 'white/20' },
-  arrowPressed: { bg: 'white/28', transform: [{ scale: 0.94 }] },
+  arrowHover: { bg: 'tint/20' },
+  arrowPressed: { bg: 'tint/28', transform: [{ scale: 0.94 }] },
 });

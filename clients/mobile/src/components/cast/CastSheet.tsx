@@ -10,7 +10,7 @@ import { SheetBody, sheetChrome } from '#mobile/components/ui';
 export const CastSheet = forwardRef<BottomSheetModal, CastDeviceListProps>(
   function CastSheet(props, ref) {
     return (
-      <BottomSheetModal ref={ref} {...sheetChrome}>
+      <BottomSheetModal ref={ref} {...sheetChrome()}>
         <SheetBody style={s.body}>
           {/* Passed through rather than re-defaulted: the list owns what its own
             props mean, and a second default here can only drift from it. */}

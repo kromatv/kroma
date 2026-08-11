@@ -4,7 +4,7 @@
 
 import { Box, Spinner, StatusDot, styles, Txt } from '@kroma/ui/kit';
 import { Pressable } from 'react-native';
-import { colors, type } from '#mobile/lib/theme';
+import { type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
 
 const TILE_AVATAR = 104;
@@ -44,7 +44,7 @@ export function ProfileTile({
         />
         {busy ? (
           <Box style={s.tileBusy}>
-            <Spinner size={24} color={colors.text} />
+            <Spinner size={24} color="text" />
           </Box>
         ) : null}
       </Box>
@@ -54,7 +54,7 @@ export function ProfileTile({
       {caption ? (
         <Box style={s.captionRow}>
           <StatusDot online={!offline} size={7} />
-          <Txt lines={1} style={[s.tileCaption, offline && { color: colors.danger }]}>
+          <Txt lines={1} style={[s.tileCaption, offline && s.tileCaptionOffline]}>
             {caption}
           </Txt>
         </Box>
@@ -77,5 +77,6 @@ const s = styles({
   },
   tileName: { ...type.caption, mt: 2, color: 'text', fontWeight: '600' },
   tileCaption: { ...type.small },
+  tileCaptionOffline: { color: 'danger' },
   captionRow: { row: true, align: 'center', gap: 5, mt: -2 },
 });

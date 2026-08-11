@@ -15,10 +15,10 @@ function TableSkeleton({ rows = 8 }: Readonly<TableSkeletonProps>) {
       {Array.from({ length: rows }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
         <Box key={i} row align="center" gap={16} py={8}>
-          <Skeleton w={36} h={36} radius={8} />
+          <Skeleton w={36} h={36} radius="sm" />
           <Skeleton h={16} flex />
           <Skeleton h={16} w={96} />
-          <Skeleton h={32} w={80} radius={8} />
+          <Skeleton h={32} w={80} radius="sm" />
         </Box>
       ))}
     </Box>

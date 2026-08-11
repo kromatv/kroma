@@ -92,7 +92,7 @@ describe('sv shorthands', () => {
       paddingLeft: 18,
       paddingRight: 18,
       borderRadius: 999,
-      backgroundColor: '#1C1C22',
+      backgroundColor: 'var(--kroma-surface-2)',
     });
   });
 
@@ -108,7 +108,7 @@ describe('sv shorthands', () => {
 
   it('resolves a token name through the palette and leaves a raw colour alone', () => {
     const one = sv({ slots: { a: { bg: 'accent' }, b: { bg: 'rgba(1, 2, 3, 0.5)' } } });
-    expect(one().a).toEqual({ backgroundColor: '#F4B642' });
+    expect(one().a).toEqual({ backgroundColor: 'var(--kroma-accent)' });
     expect(one().b).toEqual({ backgroundColor: 'rgba(1, 2, 3, 0.5)' });
   });
 });
@@ -162,7 +162,7 @@ describe('sv states', () => {
       backgroundColor: 'rgba(255, 255, 255, 0.18)',
     });
     expect(iconButton({ variant: 'primary' }, { hover: true }).root).toMatchObject({
-      backgroundColor: '#FFC862',
+      backgroundColor: 'var(--kroma-accent-hover)',
     });
   });
 
@@ -179,7 +179,7 @@ describe('sv states', () => {
   it('lets a later variant group raise the state an earlier one set', () => {
     // `active` is declared after `variant`, so its `_hover` wins.
     expect(iconButton({ variant: 'glass', active: 'true' }, { hover: true }).root).toMatchObject({
-      backgroundColor: 'rgba(242, 180, 66, 0.16)',
+      backgroundColor: 'var(--kroma-accent-soft)',
     });
   });
 
@@ -190,9 +190,12 @@ describe('sv states', () => {
   });
 
   it('resolves colours in a props slot, not only in a painted one', () => {
-    expect(iconButton().icon).toEqual({ color: '#F4F3F0', size: 24 });
-    expect(iconButton({ variant: 'primary' }).icon).toEqual({ color: '#0A0A0C', size: 24 });
-    expect(iconButton({ active: 'true' }).icon).toEqual({ color: '#F4B642', size: 24 });
+    expect(iconButton().icon).toEqual({ color: 'var(--kroma-text)', size: 24 });
+    expect(iconButton({ variant: 'primary' }).icon).toEqual({
+      color: 'var(--kroma-accent-ink)',
+      size: 24,
+    });
+    expect(iconButton({ active: 'true' }).icon).toEqual({ color: 'var(--kroma-accent)', size: 24 });
   });
 
   it('keeps the identity guarantee across the state axis', () => {
@@ -231,7 +234,7 @@ describe('sv flat form', () => {
 
   it('layers flat options and their states', () => {
     expect(pill({ tone: 'loud' }, { hover: true }).root).toMatchObject({
-      backgroundColor: '#FFC862',
+      backgroundColor: 'var(--kroma-accent-hover)',
     });
     expect(pill({ tone: 'quiet' }, { hover: true }).root).toMatchObject({
       backgroundColor: 'rgba(255, 255, 255, 0.18)',
@@ -277,7 +280,7 @@ describe('sv shorthand conflicts across layers', () => {
       variants: { tone: { loud: { bg: 'accent' } } },
       defaults: { tone: 'loud' },
     });
-    expect(r().root).toEqual({ backgroundColor: '#F4B642' });
+    expect(r().root).toEqual({ backgroundColor: 'var(--kroma-accent)' });
   });
 
   it('overrides only the edges a later layer names', () => {
@@ -330,7 +333,7 @@ describe('sv state masking', () => {
       variants: { tone: { loud: { _hover: { bg: 'accent' } } } },
       defaults: { tone: 'loud' },
     });
-    expect(r({}, { hover: true }).root).toMatchObject({ backgroundColor: '#F4B642' });
+    expect(r({}, { hover: true }).root).toMatchObject({ backgroundColor: 'var(--kroma-accent)' });
   });
 });
 
@@ -367,7 +370,7 @@ describe('sv cache bounds', () => {
     // Undeclared picks each mint a key; well past the cap the recipe still
     // resolves correctly, it simply stops remembering.
     for (let i = 0; i < 1200; i++) r({ n: `x${i}` as 'a' });
-    expect(r({ n: 'a' }).root).toEqual({ backgroundColor: '#F4B642' });
+    expect(r({ n: 'a' }).root).toEqual({ backgroundColor: 'var(--kroma-accent)' });
   });
 });
 

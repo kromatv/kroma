@@ -8,7 +8,6 @@
 // mouse in a browser and a D-pad on a television.
 
 import { Box, Focusable, Icon, IconButton, styles, sv, Txt } from '@kroma/ui/kit';
-import { radius } from '@kroma/ui/tokens';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE_TOP } from './chrome';
@@ -166,7 +165,7 @@ function Brand({
         <IconButton
           variant="ghost"
           size={CLOSE_BOX}
-          radius={radius.sm}
+          radius="sm"
           label="Close component list"
           ring={false}
           focusScale={1}

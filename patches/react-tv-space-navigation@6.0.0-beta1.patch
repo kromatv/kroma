@@ -1,5 +1,5 @@
 diff --git a/dist/index.js b/dist/index.js
-index 878c408263af6c4ea6919801b415fe16579b899a..44d581e6ab15b85a474a0864ff87a3a541e446f8 100644
+index 878c408263af6c4ea6919801b415fe16579b899a..9b37183efddce253fee3ae2a3eed1d4b907740a1 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -3066,8 +3066,34 @@ const useWebVirtualizedListAnimation = ({
@@ -85,6 +85,33 @@ index e91dd866eac4e7cab8a02d7f588939fe83a685f7..a6540d896be4f54f0d9fdde7bd02a63f
      /** The size of the list in its scrollable axis */
      listSizeInPx: number;
      scrollBehavior?: ScrollBehavior;
+diff --git a/package.json b/package.json
+index d9345869722595960697999abb1bf507b6bbc7ca..482ba389f35a8fbfc182898b6036b8d505801713 100644
+--- a/package.json
++++ b/package.json
+@@ -2,6 +2,7 @@
+   "name": "react-tv-space-navigation",
+   "version": "6.0.0-beta1",
+   "main": "dist/index.js",
++  "module": "src/index.ts",
+   "repository": {
+     "type": "git",
+     "url": "git+https://github.com/bamlab/react-tv-space-navigation.git"
+diff --git a/src/index.ts b/src/index.ts
+index 7aab22520e3a06814dd6e9208b14ed4951adb49a..43704021e0571a94b215934efa76e21a0658589d 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -9,8 +9,8 @@ export { SpatialNavigationVirtualizedList } from './spatial-navigation/component
+ export { SpatialNavigationVirtualizedGrid } from './spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid';
+ export { useSpatialNavigatorFocusableAccessibilityProps } from './spatial-navigation/hooks/useSpatialNavigatorFocusableAccessibilityProps';
+ export { useLockSpatialNavigation } from './spatial-navigation/context/LockSpatialNavigationContext';
+-export { SpatialNavigationNodeRef } from './spatial-navigation/types/SpatialNavigationNodeRef';
+-export { SpatialNavigationVirtualizedListRef } from './spatial-navigation/types/SpatialNavigationVirtualizedListRef';
++export type { SpatialNavigationNodeRef } from './spatial-navigation/types/SpatialNavigationNodeRef';
++export type { SpatialNavigationVirtualizedListRef } from './spatial-navigation/types/SpatialNavigationVirtualizedListRef';
+ export { SpatialNavigationFocusableView } from './spatial-navigation/components/FocusableView';
+ export { SpatialNavigationDeviceTypeProvider } from './spatial-navigation/context/DeviceContext';
+ 
 diff --git a/src/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.tsx b/src/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.tsx
 index 654d9aebde58bce7296031ef1a47641ef470ef89..967415114eb29c18ac48750943fd7281183e6af1 100644
 --- a/src/spatial-navigation/components/virtualizedGrid/SpatialNavigationVirtualizedGrid.tsx

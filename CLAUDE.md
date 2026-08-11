@@ -34,7 +34,6 @@ These are the CI hard gates (`.github/workflows/ci.yml`):
 ```bash
 bun run typecheck        # every TS workspace
 bun run test             # vitest (two projects: web + native)
-bun run tokens:check     # generated token CSS matches the TS tokens
 bun run check            # biome format + lint  (check:fix to write)
 cd server && cargo clippy --workspace --all-targets && cargo test --workspace
 bun run modules:clippy && bun run modules:test   # the module workspaces
@@ -206,8 +205,9 @@ clients/    thin shells only: web · tizen · webos · tv-web · tv-native · mo
 - Wire types come only from `@kroma/core`, never hand-redefined. Adding or changing
   a payload means editing the zod schema in `packages/client/src/schemas/`.
 - Subpath imports: `#ui/*`, `#tv/*`, `#web/*` (see `tsconfig.base.json`).
-- Design tokens are generated: edit the TypeScript tokens, run `bun run tokens:gen`,
-  commit the CSS. `tokens:check` fails if they drift.
+- Design tokens live in TypeScript only. `kromaUI()` (`@kroma/ui/vite`) expands
+  `@import "@kroma/ui/css"` into them at build time, so there is no generated CSS
+  to commit and nothing to keep in step.
 - `react-native` is aliased repo-wide to `react-native-tvos` via root `overrides`
   **and** a root dependency — both entries are load-bearing (the long comment in
   `package.json` explains why); do not "clean them up".

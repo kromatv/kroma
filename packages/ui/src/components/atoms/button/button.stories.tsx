@@ -30,7 +30,14 @@ export default story({
     loading: false,
   },
   controls: { icon: 'icon', iconRight: 'icon' },
+  // The empty `onPress` is load-bearing: react-native-web engages its press
+  // responder only for a control that has one.
   render: ({ icon, iconRight, ...props }) => (
-    <Button {...props} icon={icon || undefined} iconRight={iconRight || undefined} />
+    <Button
+      {...props}
+      icon={icon || undefined}
+      iconRight={iconRight || undefined}
+      onPress={() => {}}
+    />
   ),
 });

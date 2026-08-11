@@ -13,7 +13,7 @@ import {
 } from '@kroma/core';
 import { Box, Chip, styles, Txt } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { MediaRail, movieCard } from '#mobile/components/cards';
@@ -21,6 +21,7 @@ import { CastRail, DetailActions, DetailHero, MetaBadge } from '#mobile/componen
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { SplitColumns, useGutters } from '#mobile/lib/layout';
+import { routeParam } from '#mobile/lib/nav';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { posterWidth, spacing, type } from '#mobile/lib/theme';
@@ -64,8 +65,12 @@ function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
   );
 }
 
-export default function ItemDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function ItemRoute() {
+  const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
+  return id ? <ItemDetail id={id} /> : <Redirect href="/" />;
+}
+
+function ItemDetail({ id }: Readonly<{ id: string }>) {
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -195,6 +200,6 @@ const s = styles({
   screen: { flex: true, bg: 'bg' },
   body: { gap: spacing.md, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },
-  rating: { ...type.caption, color: 'accent', fontWeight: '700' },
+  rating: { ...type.caption, color: 'accentText', fontWeight: '700' },
   genreRow: { row: true, wrap: true, gap: 8 },
 });

@@ -3,7 +3,7 @@
 import { personInvolvement, roleLabels } from '@kroma/core';
 import { Icon } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
 import { PageHeader } from '#mobile/components/PageHeader';
@@ -11,13 +11,17 @@ import { PersonProfile } from '#mobile/components/PersonProfile';
 import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
 import { EmptyState, Loading, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
+import { routeParam } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { colors } from '#mobile/lib/theme';
 
 const PORTRAIT_W = 280;
 
-export default function PersonPage() {
-  const { name } = useLocalSearchParams<{ name: string }>();
+export default function PersonRoute() {
+  const name = routeParam(useLocalSearchParams<{ name?: string }>().name);
+  return name ? <PersonPage name={name} /> : <Redirect href="/" />;
+}
+
+function PersonPage({ name }: Readonly<{ name: string }>) {
   const person = decodeURIComponent(name);
   const t = useT();
   const client = useClient();
@@ -72,7 +76,7 @@ export default function PersonPage() {
         }
         empty={
           <EmptyState
-            icon={<Icon name="user-circle" size={34} stroke={1.8} color={colors.textDim} />}
+            icon={<Icon name="user-circle" size={34} stroke={1.8} color="textMuted" />}
             title={t('search.noResults')}
           />
         }

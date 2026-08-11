@@ -11,7 +11,7 @@ import { useT } from '#mobile/lib/i18n';
 import { useLangPrefs } from '#mobile/lib/langPrefs';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 type Note = { text: string; ok: boolean } | null;
 
@@ -26,9 +26,7 @@ function Section({ title, children }: Readonly<{ title: string; children: React.
 
 function Message({ note }: Readonly<{ note: Note }>) {
   if (!note) return null;
-  return (
-    <Txt style={[s.message, { color: note.ok ? colors.accent : colors.danger }]}>{note.text}</Txt>
-  );
+  return <Txt style={[s.message, note.ok ? s.messageOk : s.messageBad]}>{note.text}</Txt>;
 }
 
 function PrefRow({
@@ -45,7 +43,7 @@ function PrefRow({
     >
       <Box style={s.rowIconLabel}>
         <Box style={s.rowIconBox}>
-          <Icon name={icon} size={19} stroke={1.8} color={colors.accent} />
+          <Icon name={icon} size={19} stroke={1.8} color="accentText" />
         </Box>
         {/* The label yields to an ellipsis, the value never does. */}
         <Txt lines={1} style={s.rowLabel}>
@@ -56,7 +54,7 @@ function PrefRow({
         <Txt lines={1} style={s.rowValue}>
           {value}
         </Txt>
-        <Icon name="selector" size={16} stroke={2} color={colors.textFaint} />
+        <Icon name="selector" size={16} stroke={2} color="textDim" />
       </Box>
     </Pressable>
   );
@@ -187,9 +185,9 @@ export default function EditProfile() {
               <Avatar uri={avatar} name={user?.username} size={104} />
               <Box style={s.editBadge}>
                 {avatarBusy ? (
-                  <Spinner size={14} thickness={2} color={colors.accentInk} />
+                  <Spinner size={14} thickness={2} color="accentInk" />
                 ) : (
-                  <Icon name="camera" size={14} stroke={2} color={colors.accentInk} />
+                  <Icon name="camera" size={14} stroke={2} color="accentInk" />
                 )}
               </Box>
             </Pressable>
@@ -325,4 +323,6 @@ const s = styles({
   rowValue: { ...type.caption },
   submit: { mt: 4 },
   message: { ...type.caption, textAlign: 'center' },
+  messageOk: { color: 'accentText' },
+  messageBad: { color: 'danger' },
 });

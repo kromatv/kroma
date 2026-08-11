@@ -100,6 +100,11 @@ function platformRole(role: FocusRole): AccessibilityRole {
   return role === 'option' ? 'menuitem' : role;
 }
 
+function linkProps(href: string | undefined, role: FocusRole): object | null {
+  if (!WEB || !href) return null;
+  return role === 'link' ? { href, accessibilityRole: undefined } : { href };
+}
+
 interface FocusState<R extends AnySv = AnySv> {
   focused: boolean;
   pressed: boolean;
@@ -128,6 +133,10 @@ interface FocusableProps<R extends AnySv = AnySv> {
    *  focus states from this prop. */
   focused?: boolean;
   hitSlop?: number | Insets;
+  /** A destination rather than an action: the control renders as an `<a href>`
+   *  on the browser targets, so it is a real link to open in a tab, copy or
+   *  download. Ignored on the native platforms, which have no document. */
+  href?: string;
   /** Reachable by the remote, but painting no interaction state: a control that
    *  is busy rather than unavailable. A spinner already says what is happening,
    *  and a hover highlight would promise a press that is not being taken. */
@@ -211,9 +220,64 @@ type WebKeys = {
   onKeyDown: (event: { nativeEvent: { key: string }; preventDefault: () => void }) => void;
 } | null;
 
+function useWebKeys(
+  active: boolean,
+  role: FocusRole,
+  press: RefObject<() => void>,
+): { pressable: WebKeys; view: WebKeys } | null {
+  return useMemo(() => {
+    if (!WEB || !active) return null;
+    const answering = (owns: (key: string) => boolean): WebKeys => ({
+      tabIndex: 0,
+      onKeyDown: (event) => {
+        if (!owns(event.nativeEvent.key)) return;
+        event.preventDefault();
+        press.current();
+      },
+    });
+    return {
+      pressable: answering((key) => key === ' ' && role !== 'button'),
+      view: answering((key) => key === 'Enter' || key === ' '),
+    };
+  }, [active, role, press]);
+}
+
+function disabledForm(at: {
+  role: FocusRole;
+  a11yState: A11yState;
+  label: string | undefined;
+  style: StyleProp<ViewStyle>;
+  focusedStyle: ViewStyle | undefined;
+  animated: FocusableProps['style'];
+  focused: boolean;
+  hovered: boolean;
+  slots: ReturnType<AnySv>;
+  children: FocusableProps['children'];
+}): ReactNode {
+  return (
+    <Animated.View
+      accessibilityRole={platformRole(at.role)}
+      accessibilityState={at.a11yState ? { ...at.a11yState, disabled: true } : { disabled: true }}
+      accessibilityLabel={at.label}
+      aria-disabled
+      style={[at.style, at.focused ? at.focusedStyle : null, at.animated]}
+    >
+      {typeof at.children === 'function'
+        ? at.children({
+            focused: at.focused,
+            pressed: false,
+            hovered: at.hovered,
+            slots: at.slots,
+          })
+        : at.children}
+    </Animated.View>
+  );
+}
+
 function touchForm(at: {
   boxRef: (view: View | null) => void;
   webKeys: WebKeys;
+  href: string | undefined;
   label: string | undefined;
   role: FocusRole;
   a11yState: A11yState;
@@ -253,6 +317,7 @@ function touchForm(at: {
     <TouchPressable
       boxRef={at.boxRef}
       webKeys={at.webKeys}
+      href={at.href}
       label={at.label}
       role={at.role}
       a11yState={at.a11yState}
@@ -282,6 +347,7 @@ function touchForm(at: {
 function navigatorForm(at: {
   entry: RefObject<SpatialNavigationNodeRef | null>;
   webKeys: WebKeys;
+  href: string | undefined;
   layers: ReturnType<typeof splitBoxLayers> | null;
   style: FocusableProps['style'];
   focusedStyle: ViewStyle | undefined;
@@ -298,10 +364,13 @@ function navigatorForm(at: {
   label: string | undefined;
   role: FocusRole;
   a11yState: A11yState;
+  pressed: boolean;
   pressedStyle: StyleProp<ViewStyle>;
   hoveredStyle: ViewStyle | undefined;
   onHoverIn: () => void;
   onHoverOut: () => void;
+  onPointerDown: () => void;
+  onPointerUp: () => void;
   onLongPress: FocusableProps['onLongPress'];
   hitSlop: FocusableProps['hitSlop'];
   resolve: Resolve;
@@ -310,6 +379,7 @@ function navigatorForm(at: {
   const painted = [
     at.layers ? at.layers.face : at.style,
     at.hovered ? at.hoveredStyle : null,
+    at.pressed ? at.pressedStyle : null,
     at.focusVisible ? at.focusedStyle : null,
     // Above its neighbours for as long as it holds focus. react-native-web
     // gives every view an explicit `z-index: 0`, so equal siblings paint in DOM
@@ -335,13 +405,22 @@ function navigatorForm(at: {
         {
           accessibilityRole: platformRole(at.role),
           ...(at.a11yState as object | undefined),
+          ...linkProps(at.href, at.role),
           ...(at.webKeys ?? null),
           accessibilityLabel: at.label,
           ref: at.setBox,
           // Browser targets only: this view is a plain <View>, so there is no
           // hover callback to lean on and react-native-web forwards these two
           // straight to the element.
-          ...(WEB ? { onPointerEnter: at.onHoverIn, onPointerLeave: at.onHoverOut } : null),
+          ...(WEB
+            ? {
+                onPointerEnter: at.onHoverIn,
+                onPointerLeave: at.onHoverOut,
+                onPointerDown: at.onPointerDown,
+                onPointerUp: at.onPointerUp,
+                onPointerCancel: at.onPointerUp,
+              }
+            : null),
         } as NavigatorViewProps
       }
     >
@@ -355,7 +434,7 @@ function navigatorForm(at: {
                 slots: at.resolve(pressed),
               })
             : at.children;
-        if (WEB) return <>{render(false)}</>;
+        if (WEB) return <>{render(at.pressed)}</>;
         return (
           <Painted
             painted={painted}
@@ -385,6 +464,7 @@ function Focusable<R extends AnySv = AnySv>({
   disabled = false,
   focused: controlledFocus,
   hitSlop,
+  href,
   inert = false,
   focusScale = 1,
   ring: showRing = true,
@@ -392,7 +472,7 @@ function Focusable<R extends AnySv = AnySv>({
   states,
   children,
   label,
-  role = 'button',
+  role = href ? 'link' : 'button',
   checked,
   selected,
   expanded,
@@ -428,22 +508,7 @@ function Focusable<R extends AnySv = AnySv>({
     return { accessibilityState: { checked, selected, expanded } };
   }, [checked, selected, expanded]);
 
-  const webKeys = useMemo(() => {
-    if (!WEB) return null;
-    if (disabled || inert || !onPress) return null;
-    const answering = (owns: (key: string) => boolean): WebKeys => ({
-      tabIndex: 0,
-      onKeyDown: (event) => {
-        if (!owns(event.nativeEvent.key)) return;
-        event.preventDefault();
-        pressRef.current();
-      },
-    });
-    return {
-      pressable: answering((key) => key === ' ' && role !== 'button'),
-      view: answering((key) => key === 'Enter' || key === ' '),
-    };
-  }, [disabled, inert, onPress, role]);
+  const webKeys = useWebKeys(!disabled && !inert && Boolean(onPress), role, pressRef);
 
   const lift = useFocusLift();
   const [hovered, setHovered] = useState(false);
@@ -451,7 +516,16 @@ function Focusable<R extends AnySv = AnySv>({
     setHovered(true);
     onHoverIn?.();
   }, [onHoverIn]);
-  const hoverOut = useCallback(() => setHovered(false), []);
+  // The navigator path renders a plain view rather than a <Pressable>, so it has
+  // no onPressIn and leans on the pointer events react-native-web forwards.
+  const [pointerPressed, setPointerPressed] = useState(false);
+  const pointerDown = useCallback(() => setPointerPressed(true), []);
+  const pointerUp = useCallback(() => setPointerPressed(false), []);
+  // A pointer that leaves mid-press ends the press.
+  const hoverOut = useCallback(() => {
+    setHovered(false);
+    setPointerPressed(false);
+  }, []);
 
   // The scale answers the pointer as well as the remote: it is what carries
   // hover on artwork controls, which have no fill for `hoveredStyle` to paint.
@@ -548,13 +622,10 @@ function Focusable<R extends AnySv = AnySv>({
   // computed once and reused, because it is what the outer render paints with
   // and what every unpressed child asks for.
   // Whether anything downstream can report a press, so a recipe's `_press` is
-  // only resolved where it can land: the browser's navigator path renders the
-  // view directly and never presses, and a pointerless television mounts a
-  // plain view rather than a Pressable.
-  const canPress = WEB ? controlled || !scoped : !Platform.isTV || TV_HAS_POINTER;
-  // Normalised once per distinct set, and NOT registered: these are coats over
-  // whatever the recipe resolved, so they have to stay plain styles the render
-  // forms can compose.
+  // only resolved where it can land: a pointerless television cannot.
+  const canPress = WEB || !Platform.isTV || TV_HAS_POINTER;
+  // Normalised once per distinct set: these are coats over whatever the recipe
+  // resolved, layered on top of it by the render forms below.
   const coats = useMemo(
     () => ({ focus: coat(states?.focus), hover: coat(states?.hover), press: coat(states?.press) }),
     [states],
@@ -579,10 +650,6 @@ function Focusable<R extends AnySv = AnySv>({
   // there is no caller style - the common case.
   const root = recipe ? (rest.root as StyleProp<ViewStyle>) : undefined;
   const painted = usePair(root, style);
-  // The press coat rides the `pressedStyle` channel, which is the only one that
-  // can see a Pressable's own state. Skipped entirely where nothing can report a
-  // press: the browser targets render the navigator's view directly, and a
-  // pointerless television never mounts a Pressable at all.
   // Only what the press ADDS, not the whole root: the press coat lands after the
   // caller's `style`, so re-applying the resolved root there would revert a
   // one-off override (a `radius={12}` snapping back to the recipe's pill) for as
@@ -602,19 +669,18 @@ function Focusable<R extends AnySv = AnySv>({
   // A disabled control is not a node at all, so the remote walks straight past
   // it rather than stopping on something that does nothing.
   if (disabled) {
-    return (
-      <Animated.View
-        accessibilityRole={platformRole(role)}
-        accessibilityState={a11yState ? { ...a11yState, disabled: true } : { disabled: true }}
-        accessibilityLabel={label}
-        aria-disabled
-        style={[painted, focused ? focusedStyle : null, animated]}
-      >
-        {typeof children === 'function'
-          ? children({ focused, pressed: false, hovered, slots: rest as ReturnType<R> })
-          : children}
-      </Animated.View>
-    );
+    return disabledForm({
+      role,
+      a11yState,
+      label,
+      style: painted,
+      focusedStyle,
+      animated,
+      focused,
+      hovered,
+      slots: rest,
+      children,
+    });
   }
 
   // Unscoped on a television is deliberately not handled here: an unscoped TV
@@ -624,6 +690,7 @@ function Focusable<R extends AnySv = AnySv>({
     return touchForm({
       boxRef: setBox,
       webKeys: webKeys?.pressable ?? null,
+      href,
       label,
       role,
       a11yState,
@@ -653,6 +720,7 @@ function Focusable<R extends AnySv = AnySv>({
   const node = navigatorForm({
     entry,
     webKeys: webKeys?.view ?? null,
+    href,
     layers,
     style: painted,
     role,
@@ -669,10 +737,13 @@ function Focusable<R extends AnySv = AnySv>({
     handleBlur,
     setBox,
     label,
+    pressed: pointerPressed,
     pressedStyle: paintedPressed,
     hoveredStyle,
     onHoverIn: hoverIn,
     onHoverOut: hoverOut,
+    onPointerDown: pointerDown,
+    onPointerUp: pointerUp,
     onLongPress,
     hitSlop,
     resolve,
@@ -742,6 +813,7 @@ function TouchPressable({
   role = 'button',
   a11yState,
   webKeys,
+  href,
   boxRef,
   children,
 }: Readonly<{
@@ -757,6 +829,7 @@ function TouchPressable({
   role?: FocusRole;
   a11yState: A11yState;
   webKeys?: WebKeys;
+  href?: string;
   boxRef?: Ref<View>;
   children: (pressed: boolean) => ReactNode;
 }>) {
@@ -766,6 +839,7 @@ function TouchPressable({
       ref={boxRef}
       {...(unfocusable ? (UNFOCUSABLE as object) : (webKeys ?? null))}
       accessibilityRole={platformRole(role)}
+      {...linkProps(href, role)}
       {...a11yState}
       accessibilityLabel={label}
       onPress={onPress}

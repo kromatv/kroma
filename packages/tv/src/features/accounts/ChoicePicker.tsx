@@ -66,7 +66,7 @@ export function ChoicePicker({
             trailing={
               <Box w={TICK} align="center">
                 {option === value ? (
-                  <Icon name="check" size={20} stroke={2.4} color="accent" />
+                  <Icon name="check" size={20} stroke={2.4} color="accentText" />
                 ) : null}
               </Box>
             }

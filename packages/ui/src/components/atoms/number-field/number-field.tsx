@@ -153,13 +153,13 @@ function Step({
   );
 }
 
-const STEP_STATES = { hover: { bg: 'white/10' } } as const;
+const STEP_STATES = { hover: { bg: 'tint/10' } } as const;
 
 // Digits that keep their width, so 99 -> 100 does not make the box breathe.
 const TABULAR = { fontVariant: ['tabular-nums' as const] };
 
 const s = styles({
-  step: { w: 24, center: true, radius: 4 },
+  step: { w: 24, center: true, radius: 'xs' },
   ...bySize((m) => ({ h: Math.floor((m.line - 2) / 2) })),
 });
 

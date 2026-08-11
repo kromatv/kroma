@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { colors } from '#ui/core/tokens';
 import { chipVariants } from './chip';
 
 const VARIANTS = ['solid', 'subtle', 'surface'] as const;
@@ -7,20 +6,20 @@ const SIZES = ['sm', 'tv'] as const;
 
 describe('chip design', () => {
   it('gives every variant an idle fill of its own', () => {
-    expect(chipVariants({ variant: 'solid' }).root.backgroundColor).toBe(
-      'rgba(255, 255, 255, 0.07)',
+    expect(chipVariants({ variant: 'solid' }).root.backgroundColor).toBe('var(--kroma-tint-7)');
+    expect(chipVariants({ variant: 'subtle' }).root.backgroundColor).toBe('var(--kroma-tint-8)');
+    expect(chipVariants({ variant: 'surface' }).root.backgroundColor).toBe(
+      'var(--kroma-surface-2)',
     );
-    expect(chipVariants({ variant: 'subtle' }).root.backgroundColor).toBe(
-      'rgba(255, 255, 255, 0.08)',
-    );
-    expect(chipVariants({ variant: 'surface' }).root.backgroundColor).toBe(colors.surface2);
   });
 
   it("paints an active chip's dot in ink, whatever colour the caller asked for", () => {
     // The status hues ARE the accent and its neighbours, so a dot that kept
     // its own colour would vanish into the active fill. Every variant flips.
     for (const variant of VARIANTS) {
-      expect(chipVariants({ variant, active: true }).dot.backgroundColor).toBe(colors.accentInk);
+      expect(chipVariants({ variant, active: true }).dot.backgroundColor).toBe(
+        'var(--kroma-accent-ink)',
+      );
       expect(chipVariants({ variant }).dot.backgroundColor).toBeUndefined();
     }
   });
@@ -31,7 +30,7 @@ describe('chip design', () => {
       expect(idle.count.color).toBe(idle.label.color);
       const on = chipVariants({ variant, active: true });
       expect(on.count.color).toBe(on.label.color);
-      expect(on.count.color).toBe(colors.accentInk);
+      expect(on.count.color).toBe('var(--kroma-accent-ink)');
     }
     for (const size of SIZES) {
       const at = chipVariants({ size });
@@ -48,25 +47,25 @@ describe('chip design', () => {
   it('lifts each variant to its own wash under a cursor', () => {
     const hovered = (variant: (typeof VARIANTS)[number]) =>
       chipVariants({ variant }, { hover: true }).root.backgroundColor;
-    expect(hovered('solid')).toBe('rgba(255, 255, 255, 0.13)');
-    expect(hovered('subtle')).toBe('rgba(255, 255, 255, 0.14)');
-    expect(hovered('surface')).toBe(colors.surface3);
+    expect(hovered('solid')).toBe('var(--kroma-tint-13)');
+    expect(hovered('subtle')).toBe('var(--kroma-tint-14)');
+    expect(hovered('surface')).toBe('var(--kroma-surface-3)');
   });
 
   describe('active', () => {
     it('takes the accent over every variant, ink and all', () => {
       for (const variant of VARIANTS) {
         const s = chipVariants({ variant, active: true });
-        expect(s.root.backgroundColor).toBe(colors.accent);
-        expect(s.label.color).toBe(colors.accentInk);
-        expect(s.icon.color).toBe(colors.accentInk);
+        expect(s.root.backgroundColor).toBe('var(--kroma-accent)');
+        expect(s.label.color).toBe('var(--kroma-accent-ink)');
+        expect(s.icon.color).toBe('var(--kroma-accent-ink)');
       }
     });
 
     it('hovers UP the amber ladder rather than back to a white wash', () => {
       for (const variant of VARIANTS) {
         expect(chipVariants({ variant, active: true }, { hover: true }).root.backgroundColor).toBe(
-          colors.accentHover,
+          'var(--kroma-accent-hover)',
         );
       }
     });
@@ -76,7 +75,7 @@ describe('chip design', () => {
       // stomp the fill each variant chose. Before, the order was reversed and a
       // compound had to put the accent back.
       expect(chipVariants({ variant: 'surface', active: false }).root.backgroundColor).toBe(
-        colors.surface2,
+        'var(--kroma-surface-2)',
       );
     });
 

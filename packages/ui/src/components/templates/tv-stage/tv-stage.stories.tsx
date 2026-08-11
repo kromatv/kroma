@@ -32,7 +32,7 @@ export default story({
     <Box aspect={16 / 9} overflow="hidden" bg="surface1" radius="lg">
       <TvStage>
         <Box flex px={64} py={48} gap={24} justify="center">
-          <Txt variant="overline" color="accent">
+          <Txt variant="overline" color="accentText">
             1920 x 1080
           </Txt>
           <Txt variant="hero">Everything is authored here</Txt>

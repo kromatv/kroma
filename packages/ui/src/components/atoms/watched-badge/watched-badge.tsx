@@ -18,7 +18,7 @@ function WatchedBadge({ size = 28 }: Readonly<WatchedBadgeProps>) {
       w={size}
       h={size}
       center
-      radius="pill"
+      radius="circle"
       bg="accent"
       shadow="card"
     >

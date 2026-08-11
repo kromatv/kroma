@@ -1,7 +1,7 @@
 name: Kit site
 
 # Builds the @kroma/ui workbench as a standalone site and deploys it to
-# ui.kroma.tv (the `kroma-ui` assets-only Worker, clients/kit/wrangler.jsonc).
+# ui.kroma.tv (the `kroma-ui` assets-only Worker, apps/kit/wrangler.jsonc).
 #
 # The build runs on PRs too, so a change that breaks the showcase fails before
 # it lands; only pushes to main deploy.
@@ -19,7 +19,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'clients/kit/**'
+      - 'apps/kit/**'
       - 'packages/ui/**'
       - 'packages/core/**'
       # vite.config.ts imports @kroma/bundler/props-docs.
@@ -28,7 +28,7 @@ on:
       - '.github/workflows/kit.yml'
   pull_request:
     paths:
-      - 'clients/kit/**'
+      - 'apps/kit/**'
       - 'packages/ui/**'
       - 'packages/core/**'
       - 'packages/bundler/**'
@@ -68,7 +68,7 @@ jobs:
           fi
           git fetch --no-tags --depth=1 origin "$last" 2>/dev/null || true
           # An unfetchable sha (force-push, expired) errors the diff -> deploy.
-          if git diff --quiet "$last" HEAD -- clients/kit packages/ui packages/core packages/bundler clients/tv-build/rnw.ts .github/workflows/kit.yml 2>/dev/null; then
+          if git diff --quiet "$last" HEAD -- apps/kit packages/ui packages/core packages/bundler clients/tv-build/rnw.ts .github/workflows/kit.yml 2>/dev/null; then
             echo "::notice::ui.kroma.tv is already serving this tree (last deployed $last); skipping."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
@@ -109,7 +109,7 @@ jobs:
       # workspace `deploy` script (which would rebuild it).
       - name: Deploy the kit site (ui.kroma.tv)
         if: steps.guard.outputs.has_token == 'true'
-        working-directory: clients/kit
+        working-directory: apps/kit
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: bunx wrangler@4 deploy

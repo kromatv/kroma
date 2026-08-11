@@ -13,13 +13,10 @@
    `@kroma/ui/fonts.css` is woff2 the bundler emits into the package rather than
    a CDN <link>: a TV with no route to the internet is a normal deployment for a
    self-hosted server, and there a <link> can only block first paint. */
-@import "@kroma/ui/fonts.css";
-@import "@kroma/ui/tokens/colors.css";
-@import "@kroma/ui/tokens/typography.css";
-@import "@kroma/ui/tokens/spacing.css";
-@import "@kroma/ui/tokens/effects.css";
-@import "@kroma/ui/img.css";
 @import "tailwindcss";
+@import "@kroma/ui/css/fonts";
+@import "@kroma/ui/css/tokens";
+@import "@kroma/ui/css/motion";
 
 /* Tailwind ignores node_modules; the TV components live in this workspace
    package (symlinked), so scan them explicitly for utility class names. */

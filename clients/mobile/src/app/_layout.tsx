@@ -1,16 +1,29 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { lanBeacon } from '@kroma/lan-beacon';
 import { CastProvider, I18nProvider as KitI18nProvider } from '@kroma/ui';
-import { registerFrost, setEntryDefaults, setImageBackend, setTheme } from '@kroma/ui/kit';
+import {
+  applyMode,
+  onPaper,
+  readMode,
+  registerFrost,
+  setEntryDefaults,
+  setImageBackend,
+  setTheme,
+  styles,
+  ThemeProvider,
+  useSystemGround,
+  useTheme,
+} from '@kroma/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BlurView } from 'expo-blur';
 import * as Device from 'expo-device';
-import { Stack } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { installDeviceStore } from '#mobile/lib/deviceStore';
 import { DownloadsProvider } from '#mobile/lib/downloads';
 import { I18nProvider, useI18n } from '#mobile/lib/i18n';
 import { expoImageBackend } from '#mobile/lib/image-backend';
@@ -18,9 +31,11 @@ import { isTablet } from '#mobile/lib/layout';
 import { useNotificationStream } from '#mobile/lib/notifications';
 import { usePushGrantRefresh, usePushLabels, usePushTaps } from '#mobile/lib/notifications/usePush';
 import { SessionProvider, useSession } from '#mobile/lib/session';
-import { colors, MOBILE } from '#mobile/lib/theme';
+import { MOBILE, mobileTheme } from '#mobile/lib/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+installDeviceStore();
 
 // The design system draws artwork through whichever decoder the app registers.
 // A phone wants expo-image's memory + disk cache; see lib/image-backend.
@@ -40,7 +55,8 @@ setEntryDefaults({ physicalKeyboard: true, size: 'md' });
 // corners and spacing, so a kit component here is sized for a hand rather than
 // for a room. Module scope, before the first render - a swap after one is legal
 // (every recipe re-resolves lazily) but would repaint the whole tree.
-setTheme(MOBILE);
+applyMode(readMode());
+setTheme(mobileTheme());
 
 function KitI18nBridge({ children }: Readonly<{ children: ReactNode }>) {
   return <KitI18nProvider locale={useI18n().locale}>{children}</KitI18nProvider>;
@@ -71,6 +87,18 @@ function makeQueryClient(): QueryClient {
 
 function Shell() {
   const { status, user, client } = useSession();
+  // The gate and the player sit over artwork and keep the dark ground. Decided here
+  // because one theme store means a subtree driving it from an effect remounts itself.
+  const segments: string[] = useSegments();
+  const overArtwork = status !== 'signedIn' || segments.includes('player');
+  const ground = useTheme();
+  const theme = overArtwork ? MOBILE : mobileTheme(ground);
+  // The store moved to get here, so the stored mode is re-derived on the way out.
+  useEffect(() => {
+    if (overArtwork) return;
+    applyMode(readMode());
+    setTheme(mobileTheme());
+  }, [overArtwork]);
   // One cache per signed-in account: switching users drops everything.
   const [clients] = useState(() => new Map<string, QueryClient>());
   const cacheKey = user?.id ?? 'anon';
@@ -101,16 +129,21 @@ function Shell() {
             >
               <NotificationStream />
               <BottomSheetModalProvider>
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: colors.bg },
-                    animation: 'fade',
-                    // Phones are portrait-only outside the player (which sets its
-                    // own landscape lock in (app)/_layout); tablets rotate freely.
-                    orientation: isTablet ? 'default' : 'portrait',
-                  }}
-                />
+                {/* Innermost: a theme swap REMOUNTS this subtree, so every provider
+                    above it survives one and only the screens are drawn again. */}
+                <ThemeProvider theme={theme}>
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      contentStyle: { backgroundColor: theme.colors.bg },
+                      animation: 'fade',
+                      // Phones are portrait-only outside the player (which sets
+                      // its own landscape lock in (app)/_layout); tablets rotate
+                      // freely.
+                      orientation: isTablet ? 'default' : 'portrait',
+                    }}
+                  />
+                </ThemeProvider>
               </BottomSheetModalProvider>
             </CastProvider>
           </DownloadsProvider>
@@ -121,12 +154,16 @@ function Shell() {
 }
 
 export default function RootLayout() {
+  useSystemGround();
+  const paper = onPaper(useTheme());
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <GestureHandlerRootView style={s.root}>
       <SessionProvider>
-        <StatusBar style="light" />
+        <StatusBar style={paper ? 'dark' : 'light'} />
         <Shell />
       </SessionProvider>
     </GestureHandlerRootView>
   );
 }
+
+const s = styles({ root: { flex: true, bg: 'bg' } });

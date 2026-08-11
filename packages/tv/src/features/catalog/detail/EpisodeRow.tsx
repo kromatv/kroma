@@ -21,7 +21,6 @@ import {
   Img,
   Progress,
   Row,
-  radius,
   styles,
   Txt,
   tintGradient,
@@ -55,7 +54,7 @@ function episodeStill(at: {
       <Img
         src={at.still}
         background={tintGradient(posterColors(at.episode.id))}
-        radius={radius.lg}
+        radius="lg"
         position="50% 30%"
         fill
         style={at.watched ? s.dimmed : undefined}
@@ -166,7 +165,7 @@ export function EpisodeRow({
           </Row>
           {endsAt ? (
             <Row gap={9}>
-              <Icon name="clock" size={14} stroke={1.8} color="accent" />
+              <Icon name="clock" size={14} stroke={1.8} color="accentText" />
               <Txt style={s.endsAt} color="textDim">
                 {t('content.endsAtShort', { time: endsAt })}
               </Txt>
@@ -224,8 +223,8 @@ const SYNOPSIS_LIT = 'rgba(244, 243, 240, 0.78)';
 const s = styles({
   // <Frost> blurs the artwork behind the card: CSS backdrop-filter on the
   // browser tiers, the shell's registered blur view on Apple TV.
-  row: { p: 18, radius: 20, bg: 'white/2.5', border: 'white/5' },
-  rowLit: { bg: 'white/6', borderColor: 'white/12' },
+  row: { p: 18, radius: 20, bg: 'tint/2.5', border: 'tint/5' },
+  rowLit: { bg: 'tint/6', borderColor: 'tint/12' },
   rowWatched: { borderColor: 'accentWash/22' },
   dimmed: { opacity: 0.55 },
   actionBtn: { py: 12, px: 19, radius: 11 },

@@ -1,4 +1,4 @@
-// Type roles, the source of truth for both renderers (see gen-token-css.ts).
+// Type roles, the source of truth for both renderers (see ../../../vite/tokens.ts).
 // Roles store the authored ratio/em and derive the absolute px React Native
 // needs, rather than storing px and dividing back (which round-trips lossily).
 
@@ -8,7 +8,12 @@ import type { TokenOf } from './registry';
 export const fonts = {
   display: 'Bricolage Grotesque',
   ui: 'Hanken Grotesk',
+  mono: 'ui-monospace, SFMono-Regular, Menlo, monospace',
 } as const;
+
+/** The families KROMA serves as woff2. `mono` is absent on purpose: it is a
+ *  system stack, so there is no file to name, fingerprint or preload. */
+export const SELF_HOSTED: readonly string[] = [fonts.display, fonts.ui];
 
 /** Families a theme adds. Augment it and the name is legal wherever a family is
  *  written — a `font:` shorthand, a role's `family` (see `ColorRegistry`). */

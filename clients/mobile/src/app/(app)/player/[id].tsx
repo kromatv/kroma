@@ -7,7 +7,7 @@ import { useCast } from '@kroma/ui';
 import { Box, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import type { VideoView as VideoViewRef } from 'expo-video';
 import { VideoView } from 'expo-video';
 import { useEffect, useRef, useState } from 'react';
@@ -17,7 +17,7 @@ import { ErrorView, Loading } from '#mobile/components/ui';
 import { type DownloadEntry, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { useLangPrefs } from '#mobile/lib/langPrefs';
-import { goBack } from '#mobile/lib/nav';
+import { goBack, routeParam } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
 import { useKromaEngine } from '#mobile/player/engine';
 import { useHeartbeat } from '#mobile/player/heartbeat';
@@ -230,10 +230,15 @@ function PlayerBody({
   );
 }
 
-export default function PlayerScreen() {
+export default function PlayerRoute() {
+  const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
+  return id ? <PlayerScreen id={id} /> : <Redirect href="/" />;
+}
+
+function PlayerScreen({ id }: Readonly<{ id: string }>) {
   // `start` (seconds) is set when playback is handed BACK from a TV: the remote
   // knows the exact position, which is better than the last persisted beat.
-  const { id, start } = useLocalSearchParams<{ id: string; start?: string }>();
+  const { start } = useLocalSearchParams<{ start?: string }>();
   const handedBack = start ? Number(start) : null;
   const t = useT();
   const client = useClient();

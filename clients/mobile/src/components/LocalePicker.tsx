@@ -8,7 +8,7 @@ import { LOCALES, type Locale } from '@kroma/core';
 import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
 import { Pressable } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 export function LocalePicker({
   locale,
@@ -27,7 +27,7 @@ export function LocalePicker({
             {t(l.labelKey)}
           </Txt>
           {locale === l.code ? (
-            <Icon name="check" size={17} stroke={2.4} color={colors.accent} />
+            <Icon name="check" size={17} stroke={2.4} color="accentText" />
           ) : null}
         </Pressable>
       ))}

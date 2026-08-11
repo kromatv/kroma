@@ -259,6 +259,28 @@ describe('the scan', () => {
     }
   });
 
+  it('ignores a name only a test spells, since no test reaches an artifact', () => {
+    // Fixtures are full of words that happen to be Tabler slugs, each displacing a real glyph.
+    const dir = rootWithBarrel(
+      [
+        "export { default as IconHelpCircle } from './icons/IconHelpCircle.mjs';",
+        "export { default as IconRocket } from './icons/IconRocket.mjs';",
+        "export { default as IconBanana } from './icons/IconBanana.mjs';",
+      ].join('\n'),
+    );
+    try {
+      const app = join(dir, 'clients', 'web', 'src');
+      mkdirSync(app, { recursive: true });
+      writeFileSync(join(app, 'page.tsx'), "const icon = 'rocket';\n");
+      writeFileSync(join(app, 'page.test.tsx'), "const fruit = 'banana';\n");
+      const code = kromaUi.vite({ repoRoot: dir }).load.call({}, join(dir, GLYPH_SOURCE));
+      expect(code).toContain('IconRocket');
+      expect(code).not.toContain('IconBanana');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('leaves out a real Tabler icon that nothing mentions', () => {
     // The other half of the same claim: it is a SUBSET, not a rename of the
     // barrel. Picked from Tabler's own exports so the absence means "not used"

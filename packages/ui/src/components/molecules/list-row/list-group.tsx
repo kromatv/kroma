@@ -18,7 +18,6 @@ import {
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
-import { radius } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 
 const InGroup = createContext(false);
@@ -53,7 +52,7 @@ function ListGroup({ children, divider = 20, style }: Readonly<ListGroupProps>) 
       overflow="hidden"
       style={style}
     >
-      <Frost radius={radius.xl} />
+      <Frost radius="xl" />
       <InGroup.Provider value={true}>
         {items.map((child, index) => (
           <Fragment key={memberKey(child, index)}>

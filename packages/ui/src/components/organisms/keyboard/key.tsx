@@ -6,7 +6,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Txt } from '#ui/components/atoms/text';
-import { radius, type StyleDecl, svFor } from '#ui/core';
+import { type RadiusToken, type StyleDecl, svFor } from '#ui/core';
 import { keyFace } from '#ui/lib/field-shell';
 
 /** A keyboard's scale: `sm` is arm's length, `tv` is across a room. */
@@ -33,10 +33,7 @@ function keyMetrics(size: KeyboardSize) {
 // one, so the whole small grid arrives as circles. Both are radius tokens, and
 // `tv` is deliberately the keypad's own - that is what makes a keyboard key and
 // a keypad key the same object at two scales.
-const keyRadius = { sm: radius.lg, tv: radius['2xl'] } as const satisfies Record<
-  KeyboardSize,
-  number
->;
+const keyRadius = { sm: 'lg', tv: '2xl' } as const satisfies Record<KeyboardSize, RadiusToken>;
 
 /** The width of a ten-key row: what a grid measures itself against. */
 function keyRowWidth(size: KeyboardSize): number {

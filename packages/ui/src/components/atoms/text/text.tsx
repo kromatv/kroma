@@ -11,7 +11,24 @@ import {
   type TextProps,
   type TextStyle,
 } from 'react-native';
-import { activeTheme, type ColorToken, sharedStyle, type TypeRole } from '#ui/core';
+import {
+  activeTheme,
+  type ColorToken,
+  type FontToken,
+  sharedStyle,
+  type TypeRole,
+  themed,
+} from '#ui/core';
+
+// Registered, not spread: a role read straight off the theme is a plain object,
+// which react-native-web re-serialises onto every string it paints.
+const typeStyles = themed((theme) => StyleSheet.create({ ...theme.type }));
+
+const familyStyles = themed((theme) =>
+  StyleSheet.create(
+    Object.fromEntries(Object.entries(theme.fonts).map(([k, v]) => [k, { fontFamily: v }])),
+  ),
+);
 
 interface TxtProps extends Omit<TextProps, 'style' | 'role'> {
   /** Design type role. Defaults to `body`. (Named `variant`, not `role`, which
@@ -20,6 +37,9 @@ interface TxtProps extends Omit<TextProps, 'style' | 'role'> {
   /** Palette token, or any raw colour string for a one-off (the design uses a
    *  few literal rgba washes that are not tokens). Defaults to `text`. */
   color?: ColorToken | (string & {});
+  /** Overrides the family the role names, keeping its size, weight and rhythm.
+   *  This is how a version string or a URL is set in `mono`. */
+  font?: FontToken;
   /** Escape hatch for one-off sizing/weight, merged last. */
   style?: StyleProp<TextStyle>;
   /** Clamp to N lines with an ellipsis (the RN spelling of line-clamp). */
@@ -46,7 +66,14 @@ function sizeFix(variant: TypeRole, style: StyleProp<TextStyle>): TextStyle | nu
   };
 }
 
-function Txt({ variant = 'body', color = 'text', style, lines, ...rest }: Readonly<TxtProps>) {
+function Txt({
+  variant = 'body',
+  color = 'text',
+  font,
+  style,
+  lines,
+  ...rest
+}: Readonly<TxtProps>) {
   // Shared by identity per (colour, theme): a fresh `{ color }` per render
   // would be a styleq miss for every string on the screen.
   const ink = sharedStyle(`txt:${color}`, { color });
@@ -54,7 +81,13 @@ function Txt({ variant = 'body', color = 'text', style, lines, ...rest }: Readon
     <RNText
       {...rest}
       numberOfLines={lines}
-      style={[activeTheme().type[variant], ink, style, sizeFix(variant, style)]}
+      style={[
+        typeStyles()[variant],
+        font ? familyStyles()[font] : null,
+        ink,
+        style,
+        sizeFix(variant, style),
+      ]}
     />
   );
 }

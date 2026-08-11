@@ -26,7 +26,7 @@ import { ScanCode } from '#mobile/components/connect/ScanCode';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
-import { colors, spacing, type } from '#mobile/lib/theme';
+import { spacing, type } from '#mobile/lib/theme';
 
 // `network` leads because it is the one that asks nothing of the reader.
 const MODES = ['network', 'scan'] as const;
@@ -43,7 +43,7 @@ export default function ConnectDevice() {
         <PageHeader title={t('connect.title')} />
         <Box style={s.done}>
           <Box style={s.doneBadge}>
-            <Icon name="check" size={34} stroke={2.4} color={colors.accentInk} />
+            <Icon name="check" size={34} stroke={2.4} color="accentInk" />
           </Box>
           <Txt style={s.doneTitle}>{t('connect.connected')}</Txt>
           <Txt style={s.modeDesc}>{t('connect.willConnectSoon')}</Txt>
@@ -56,9 +56,9 @@ export default function ConnectDevice() {
     <Screen padded={false}>
       <PageHeader title={t('connect.title')} />
       <Box style={s.body}>
-        <SegmentedControl
+        <SegmentedControl.Root
           value={mode}
-          onChange={setMode}
+          onValueChange={setMode}
           label={t('connect.title')}
           options={MODES.map((m) => ({ value: m, label: t(`connect.mode.${m}`) }))}
           stretch

@@ -120,7 +120,7 @@ export function TvReport() {
           <Txt variant="h1" style={s.heading}>
             {t('report.title')}
           </Txt>
-          <Txt lines={1} style={{ fontSize: 17, fontWeight: '600' }} color="accent">
+          <Txt lines={1} style={{ fontSize: 17, fontWeight: '600' }} color="accentText">
             {title}
           </Txt>
         </Box>

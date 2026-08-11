@@ -13,7 +13,7 @@ import {
   webResolve,
 } from '@kroma/bundler/rnw';
 import { tvFrame } from '@kroma/bundler/tv-frame';
-import { kromaUi } from '@kroma/ui/bundler';
+import { kromaUI } from '@kroma/ui/vite';
 import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
@@ -69,6 +69,8 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
     // tvFrame() is dev-only: letterboxes into a 1920x1080 stage in a desktop
     // browser; off in device mode, where the panel already is that canvas.
     plugins: [
+      // Before tailwindcss(): the token directive must expand first.
+      kromaUI(),
       tailwindcss(),
       react(),
       // The same auto-memoisation the web client gets, over the same kit source
@@ -77,7 +79,6 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
       // re-render nobody needed.
       babel({ presets: [reactCompilerPreset()] }),
       tvFrame({ enabled: !deviceDev }),
-      kromaUi.vite({ repoRoot }),
     ],
     resolve: webResolve({ '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)) }),
     // Packaged TV apps load from a local path: assets must be referenced relatively.
@@ -130,6 +131,8 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
   if (!chrome) throw new Error(`tv.target for ${target.platform} has no legacyChrome`);
   return {
     plugins: [
+      // Before tailwindcss(): the token directive must expand first.
+      kromaUI(),
       tailwindcss(),
       react(),
       // The legacy tier wants this MORE than the modern one: these are the
@@ -137,8 +140,6 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
       // JS that legacyFinalize goes on to transpile down like everything else.
       babel({ presets: [reactCompilerPreset()] }),
       legacyFinalize({ distDir: fileURLToPath(new URL('dist', shellUrl)), chrome }),
-      // Inlines every chunk into one IIFE; without this it duplicates Tabler.
-      kromaUi.vite({ repoRoot }),
     ],
     // `import.meta` doesn't exist in a classic script; the IIFE output substitutes
     // `{}` for it, so `new URL(asset, import.meta.url)` throws at module init.

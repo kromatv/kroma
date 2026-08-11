@@ -1,14 +1,22 @@
 // Shared scaffold for the onboarding/login surfaces. The lockup is the one
 // anchor: same size and position on every phase, with content swapping beneath.
 
-import { BackButton, Box, SplashBackdrop, type SplashCover, styles, Txt } from '@kroma/ui/kit';
+import {
+  BackButton,
+  Box,
+  color,
+  SplashBackdrop,
+  type SplashCover,
+  styles,
+  Txt,
+} from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, type KeyboardAvoidingViewProps, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth, useIsWide } from '#mobile/lib/layout';
-import { colors, SHADE, spacing, type } from '#mobile/lib/theme';
+import { groundShade, spacing, type } from '#mobile/lib/theme';
 import { GateSettings } from './GateSettings';
 import { KromaLockup } from './KromaLockup';
 
@@ -44,7 +52,7 @@ export function OnboardingScreen({
     <Box style={s.screen}>
       {covers && covers.length > 0 ? <SplashBackdrop covers={covers} /> : null}
       <LinearGradient
-        colors={[colors.accentSoft, SHADE.transparent]}
+        colors={[color('accentSoft'), groundShade(0)]}
         style={s.wash}
         pointerEvents="none"
       />

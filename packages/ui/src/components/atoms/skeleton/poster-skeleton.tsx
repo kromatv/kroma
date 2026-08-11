@@ -15,7 +15,7 @@ function PosterSkeleton({ width }: Readonly<PosterSkeletonProps>) {
     <Box w={width ?? '100%'} aria-hidden>
       <Skeleton shape="poster" w="100%" />
       <Skeleton h={14} w="75%" mt={10} />
-      <Skeleton h={12} w="33%" mt={6} bg="white/4" />
+      <Skeleton h={12} w="33%" mt={6} bg="tint/4" />
     </Box>
   );
 }

@@ -53,7 +53,7 @@ export function BrowseHeader({
     // FOCUS_BLEED (32px) past its bounds to clear a focused tile's ring
     // (organisms/virtual/clip.ts), which would otherwise paint over this chrome.
     <Box h={208} shrink={0} justify="flex-end" px={64} pb={8} style={{ zIndex: 1 }}>
-      <Txt variant="overlineTv" color="accent">
+      <Txt variant="overlineTv" color="accentText">
         {label}
         {hasItems ? <Txt variant="overlineTv" color="textDim">{` · ${count}`}</Txt> : null}
       </Txt>
@@ -75,7 +75,7 @@ function FocusEcho({ entry }: Readonly<{ entry: CatalogEntry }>) {
       </Txt>
       <Box row align="center" gap={10}>
         {rating ? (
-          <Txt style={{ fontSize: 15, fontWeight: '700' }} color="accent">
+          <Txt style={{ fontSize: 15, fontWeight: '700' }} color="accentText">
             {`${rating.toFixed(1)}★`}
           </Txt>
         ) : null}

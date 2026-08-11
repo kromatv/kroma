@@ -68,7 +68,7 @@ function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean
         autoFocus={first}
         onPress={list ? () => setPicking(true) : cycle}
         trailing={
-          <Txt style={{ fontSize: 16, fontWeight: '600' }} color="accent">
+          <Txt style={{ fontSize: 16, fontWeight: '600' }} color="accentText">
             {t(item.valueLabel(value))}
           </Txt>
         }

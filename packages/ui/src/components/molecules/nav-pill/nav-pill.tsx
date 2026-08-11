@@ -52,9 +52,13 @@ type NavPillSize = 'sm' | 'tv';
 /** `auto` is the size's own policy: every label at `tv`, the active item's at `sm`. */
 type NavPillLabels = 'auto' | 'all' | 'active' | 'none';
 
+// The item's WHOLE box, measured: `onLayout` reports the content box while an
+// absolute child is placed against the padding box, so a derived height misses.
 interface LensRect {
   x: number;
+  y: number;
   width: number;
+  height: number;
 }
 
 interface SlideTarget {
@@ -266,8 +270,6 @@ function WebLens({ rect, chase }: Readonly<{ rect: LensRect | null; chase: boole
   return (
     <Box
       absolute
-      top={PAD}
-      bottom={PAD}
       radius="pill"
       bg="accentSoft"
       style={
@@ -282,7 +284,9 @@ function WebLens({ rect, chase }: Readonly<{ rect: LensRect | null; chase: boole
           // the length of every move; the box is absolutely positioned, so
           // laying it out disturbs nothing around it.
           left: 0,
+          top: box.y,
           width: box.width,
+          height: box.height,
           transform: `translateX(${box.x}px)`,
           opacity: rect ? 1 : 0,
           transitionProperty: had ? 'transform, width, opacity' : 'opacity',
@@ -329,8 +333,14 @@ function NativeLens({ rect, chase }: Readonly<{ rect: LensRect | null; chase: bo
     Animated.timing(shown, { toValue: 0, ...eased }).start();
   }, [rect, chase, left, width, shown]);
 
-  if (!last.current && !rect) return null;
-  return <Animated.View style={[s.lens, { left, width, opacity: shown }]} />;
+  const box = rect ?? last.current;
+  if (!box) return null;
+  // Only x and width travel: every item shares the row's height and baseline.
+  return (
+    <Animated.View
+      style={[s.lens, { left, width, opacity: shown, top: box.y, height: box.height }]}
+    />
+  );
 }
 
 /** A kit glyph by name, or a host's own component handed the item's current ink. */
@@ -346,7 +356,7 @@ const navPillItemVariants = svFor<{
   slots: {
     root: { row: true, align: 'center', radius: 'pill' },
     label: { fontWeight: '700', letterSpacing: 0.2, color: 'textMuted' },
-    icon: { color: 'textMuted', stroke: 1.9 },
+    icon: { color: 'glyph', stroke: 1.9 },
   },
   variants: {
     size: {
@@ -361,14 +371,14 @@ const navPillItemVariants = svFor<{
     /** Under the lens: the current section, or the one a slide is previewing.
      *  It stays amber while focused, so only an unlit item brightens. */
     lit: {
-      true: { label: { color: 'accentBright' }, icon: { color: 'accentBright' } },
+      true: { label: { color: 'accentText' }, icon: { color: 'accentText' } },
       false: {
         label: { _focus: { color: 'text' } },
         icon: { _focus: { color: 'text' } },
       },
     },
     /** The active item already wears the lens, so it takes no focus wash on top. */
-    active: { true: {}, false: { root: { _focus: { bg: 'white/10' } } } },
+    active: { true: {}, false: { root: { _focus: { bg: 'tint/10' } } } },
   },
   defaults: { size: 'tv', lit: false, active: false },
 });
@@ -396,8 +406,8 @@ function NavPillItem({
   const rect = useRef<LensRect | null>(null);
   const onLayout = useCallback(
     (event: LayoutChangeEvent) => {
-      const { x, width } = event.nativeEvent.layout;
-      rect.current = { x, width };
+      const { x, y, width, height } = event.nativeEvent.layout;
+      rect.current = { x, y, width, height };
       if (active) claim(id, rect.current);
     },
     [active, claim, id],
@@ -458,7 +468,7 @@ const PILL_FILL = 'surface1/78';
 const BACKDROP_FILL = 'surface1/55';
 
 const s = styles({
-  lens: { absolute: true, top: PAD, bottom: PAD, radius: 'pill', bg: 'accentSoft' },
+  lens: { absolute: true, radius: 'pill', bg: 'accentSoft' },
 });
 
 export type { NavPillIcon, NavPillItemProps, NavPillLabels, NavPillProps, NavPillSize };

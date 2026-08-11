@@ -12,7 +12,8 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Icon } from '#ui/components/atoms/icon';
 import { colors } from '#ui/core/tokens';
-import { DEFAULT_ICON_SIZE, resolveIcon, splitAlpha } from './glyph';
+import { splitAlpha } from '#ui/core/tokens/colors';
+import { DEFAULT_ICON_SIZE, resolveIcon } from './glyph';
 
 afterEach(cleanup);
 
@@ -37,7 +38,7 @@ describe('splitAlpha', () => {
   });
 
   it('lifts the alpha out of an rgba token', () => {
-    expect(splitAlpha(colors.textDim)).toEqual({ color: 'rgb(244, 243, 240)', opacity: 0.45 });
+    expect(splitAlpha(colors.textDim)).toEqual({ color: 'rgb(244, 243, 240)', opacity: 0.48 });
     expect(splitAlpha(colors.textMuted)).toEqual({ color: 'rgb(244, 243, 240)', opacity: 0.62 });
   });
 
@@ -68,15 +69,50 @@ describe('splitAlpha', () => {
 describe('resolveIcon', () => {
   it('resolves a token to an opaque paint plus its alpha', () => {
     expect(resolveIcon({ name: 'volume-off', color: 'textDim' })).toMatchObject({
-      color: 'rgb(244, 243, 240)',
-      opacity: 0.45,
+      color: 'var(--kroma-text-dim-opaque)',
+      opacity: 'var(--kroma-text-dim-alpha)',
       size: DEFAULT_ICON_SIZE,
+    });
+  });
+
+  it('takes the alpha the caller wrote, over the base token', () => {
+    expect(resolveIcon({ name: 'player-play', color: 'accent/45' })).toMatchObject({
+      color: 'var(--kroma-accent)',
+      opacity: 0.45,
     });
   });
 
   it('leaves an opaque token at full opacity, so nothing wraps it', () => {
     expect(resolveIcon({ name: 'player-play', color: 'accent' })).toMatchObject({
-      color: colors.accent,
+      color: 'var(--kroma-accent)',
+      opacity: 1,
+    });
+  });
+
+  it('reads a faded token at its own step as the single property the build emits', () => {
+    expect(resolveIcon({ name: 'volume-off', color: 'textDim/40' })).toMatchObject({
+      color: 'var(--kroma-text-dim-40)',
+      opacity: 1,
+    });
+  });
+
+  it('mixes an alpha into a raw colour the cascade knows nothing about', () => {
+    expect(resolveIcon({ name: 'player-play', color: '#F4B642/50' })).toMatchObject({
+      color: 'rgb(244, 182, 66)',
+      opacity: 0.5,
+    });
+  });
+
+  it('parses a raw colour whose slash is not an alpha suffix', () => {
+    expect(resolveIcon({ name: 'player-play', color: 'rgb(255 0 0 / 50%)' })).toMatchObject({
+      color: 'rgb(255, 0, 0)',
+      opacity: 0.5,
+    });
+  });
+
+  it('paints body text when the caller names no colour', () => {
+    expect(resolveIcon({ name: 'player-play' })).toMatchObject({
+      color: 'var(--kroma-text)',
       opacity: 1,
     });
   });
@@ -86,16 +122,16 @@ describe('<Icon>', () => {
   it('strokes opaque and fades the whole glyph', () => {
     const { container } = render(<Icon name="volume-off" color="textDim" />);
     const svg = svgIn(container);
-    expect(svg.getAttribute('stroke')).toBe('rgb(244, 243, 240)');
+    expect(svg.getAttribute('stroke')).toBe('var(--kroma-text-dim-opaque)');
     // The alpha is on the element ABOVE the paths, which is what makes the
     // crossings inside the glyph invisible.
-    expect(parentOf(svg).style.opacity).toBe('0.45');
+    expect(parentOf(svg).style.opacity).toBe('var(--kroma-text-dim-alpha)');
   });
 
   it('draws an opaque glyph with no wrapper at all', () => {
     const { container } = render(<Icon name="player-play" color="accent" />);
     const svg = svgIn(container);
-    expect(svg.getAttribute('stroke')).toBe(colors.accent);
+    expect(svg.getAttribute('stroke')).toBe('var(--kroma-accent)');
     expect(parentOf(svg).style.opacity).toBe('');
   });
 });

@@ -338,12 +338,9 @@ hand-written map is a small change, local to `glyphs.ts`.
 ## Tokens
 
 `src/core/tokens/*.ts` is the **single source of truth** for the design; it is
-also what builds the default theme (see "Styling: Themes"). `bun run tokens:gen`
-generates the CSS custom properties the web and desktop clients consume
-(`src/styles/tokens/*.css`) from it. CI runs `bun run tokens:check`, which
-regenerates and fails on any diff, so the two cannot drift.
-
-Never edit the generated CSS.
+also what builds the default theme (see "Styling: Themes"). `kromaUI()`
+(`@kroma/ui/vite`) emits the CSS custom properties the web and desktop clients
+consume from it at build time, so there is no stylesheet copy that can drift.
 
 Components never import token VALUES for styling — the vocabulary carries them
 by name (`bg="accent"`, `radius="lg"`, `text: 'hero'`), which is what lets a
@@ -462,7 +459,7 @@ its titlebar, so the component keeps the room on a phone.
 
 The workbench is `@kroma/workbench`, a package of its own. This one provides the
 stories and the demos and nothing else: no registry, no config, no mark. Each
-shell configures its own — see `clients/kit/src/config.tsx`.
+shell configures its own — see `apps/kit/src/config.tsx`.
 It is a tool, not part of the library, and it drags in every story: an app that
 is not being inspected should not pay for it. The TV entry loads it lazily,
 behind the `?workbench` flag.

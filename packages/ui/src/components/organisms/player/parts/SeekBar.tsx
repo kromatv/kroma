@@ -242,7 +242,7 @@ export function SeekBar({
             left={0}
             w={px(16)}
             h={px(16)}
-            radius="pill"
+            radius="circle"
             bg="#FFFFFF"
             style={[
               s.inert,

@@ -26,7 +26,8 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { absoluteFill } from '#ui/core/tokens';
+import { radiusValue } from '#ui/core';
+import { absoluteFill, type CornerValue } from '#ui/core/tokens';
 import { coverRect, parsePosition } from '#ui/lib/cover-rect';
 import { gradient } from '#ui/lib/css';
 import { imageBackend } from '#ui/lib/image-backend';
@@ -47,8 +48,8 @@ export interface ImgProps {
   /** CSS background painted behind the art: the instant-visible fallback fill
    *  shown while loading and on error. */
   background?: string;
-  /** Corner radius; the container clips the art to it. */
-  radius?: number;
+  /** Corner, by token name or in px; the container clips the art to it. */
+  radius?: CornerValue;
   /** Stretch to fill a positioned parent (absolute, inset 0). */
   fill?: boolean;
   /** Drawn under the art while it loads (a blur hash, a glyph). */
@@ -190,7 +191,7 @@ function Img({
   fit = 'cover',
   position = '50% 50%',
   background,
-  radius,
+  radius: corner,
   fill = false,
   placeholder,
   fallback,
@@ -210,6 +211,7 @@ function Img({
   const [natural, setNatural] = useState<Size | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const focal = useMemo(() => parsePosition(position), [position]);
+  const radius = corner === undefined ? undefined : radiusValue(corner);
 
   // Each new source starts transparent again. Before paint, not in an effect
   // after it: the leaf remounts with this source's key in the same commit, and

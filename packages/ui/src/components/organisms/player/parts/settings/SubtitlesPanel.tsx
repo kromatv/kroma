@@ -10,7 +10,6 @@ import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { IconAi } from '#ui/components/organisms/player/parts/icons';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { styles } from '#ui/core';
-import { radius } from '#ui/core/tokens';
 import { useT } from '#ui/services/i18n';
 import { GenerateWizard } from './GenerateWizard';
 import type { SubtitleGenBundle } from './gen';
@@ -155,7 +154,7 @@ function AiBadge() {
       align="center"
       gap={4}
       shrink={0}
-      radius={5}
+      radius="xs"
       px={6}
       py={2}
       bg="rgba(124, 92, 255, 0.18)"
@@ -175,7 +174,7 @@ function TrashButton({ label, onPress }: Readonly<{ label: string; onPress: () =
       size={36}
       icon="trash"
       glyph={16}
-      radius={radius.md}
+      radius="md"
       focused={false}
       onPress={onPress}
       label={label}
@@ -190,7 +189,7 @@ function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel:
   const engine = gen.mode === 'translate' ? t('player.subAiBadge') : 'Whisper';
   return (
     <Box
-      radius={14}
+      radius="lg"
       borderWidth={1}
       border="rgba(124, 92, 255, 0.4)"
       bg="rgba(124, 92, 255, 0.06)"
@@ -203,7 +202,7 @@ function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel:
       </Box>
       <Box row align="center" between mt={8}>
         <Box row align="center" gap={8}>
-          {!err ? <Box w={6} h={6} radius="pill" bg="#8B7FF0" /> : null}
+          {!err ? <Box w={6} h={6} radius="circle" bg="#8B7FF0" /> : null}
           <Txt style={s.genStage} color={err ? '#E8536A' : '#9A8FF0'}>
             {err
               ? (gen.error ?? t(subtitleStageKey(gen.stage)))

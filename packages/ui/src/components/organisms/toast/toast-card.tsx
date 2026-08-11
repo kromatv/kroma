@@ -55,7 +55,7 @@ function ToastCard({
             w={40}
             h={40}
             center
-            radius="pill"
+            radius="circle"
             style={typeof entry.icon === 'string' ? s.well : undefined}
           >
             {typeof entry.icon === 'string' && hasGlyph(entry.icon) ? (
@@ -96,7 +96,7 @@ const s = styles({
     // native shadow props cost a rasterisation pass a TV does not need to spend.
     ...(Platform.OS === 'web' ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
   },
-  well: { bg: 'white/8' },
+  well: { bg: 'tint/8' },
   text: { minW: 0, shrink: 1 },
   message: { font: 'ui', fontSize: 17, fontWeight: '600' },
   detail: { font: 'ui', fontSize: 14, mt: 2 },

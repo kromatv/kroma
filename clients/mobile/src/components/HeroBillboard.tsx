@@ -12,7 +12,7 @@ import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
-import { radius, SHADE, spacing, type } from '#mobile/lib/theme';
+import { radius, shades, spacing, type } from '#mobile/lib/theme';
 import { FadeImage } from './FadeImage';
 
 export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
@@ -59,13 +59,14 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   const h = backdrop
     ? Math.min(Math.round(w * 0.52), Math.round(height * 0.5))
     : Math.min(Math.round(w * 1.42), Math.round(height * 0.72));
+  const ground = shades();
 
   return (
     <Box style={[s.wrap, { width: w, height: h }]}>
       <Pressable onPress={() => router.push(detailRoute as never)} style={StyleSheet.absoluteFill}>
         <FadeImage uri={art} seed={id} radius={radius.xl} style={StyleSheet.absoluteFill} />
         <LinearGradient
-          colors={[SHADE.transparent, SHADE.transparent, SHADE.mid, SHADE.full]}
+          colors={[ground.transparent, ground.transparent, ground.mid, ground.full]}
           locations={[0, 0.55, 0.78, 1]}
           style={[StyleSheet.absoluteFill, { borderRadius: radius.xl }]}
         />

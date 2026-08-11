@@ -4,7 +4,6 @@
 // This covers the rest: the shapes a file reuses, which had no home but a
 // module constant.
 
-import { StyleSheet } from 'react-native';
 import { normalize, stabilise } from '#ui/core/normalize';
 import { themeVersion } from '#ui/core/theme';
 import type { AnyStyle, StyleDecl } from '#ui/core/types';
@@ -45,7 +44,7 @@ export function styles<const S extends Record<string, StyleDecl>>(decls: S): Sty
       for (const name of Object.keys(decls)) {
         resolved[name] = stabilise(normalize(decls[name] as Record<string, unknown>)) as AnyStyle;
       }
-      built = StyleSheet.create(resolved) as Record<string, AnyStyle>;
+      built = resolved;
       builtAt = at;
     }
     return built;
@@ -82,10 +81,9 @@ let sharedAt = -1;
  * A style shared by identity with every caller passing the same `key`, for the
  * values a render computes rather than declares.
  *
- * Not registered, unlike `styles` and `sharedBoxStyle`: what a render computes
- * stays a plain style object, so it can still be read back and lands inline.
- * Identity is the point here — styleq keys its compiled-style cache on the leaf
- * object, so resolving one per render is a guaranteed miss.
+ * Registered like `styles`, and shared by identity on top of that: styleq keys
+ * its compiled-style cache on the leaf object, so resolving one per render is a
+ * guaranteed miss even once the declaration compiles to a class.
  *
  * Capped, because a key built from a measured number would otherwise mint an
  * entry forever; past the cap it resolves correctly and stops remembering. A

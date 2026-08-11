@@ -5,7 +5,7 @@
 import { sizedImageUrl } from '@kroma/core';
 import { Box, Button, Chip, styles, Txt } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, type View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
@@ -15,12 +15,17 @@ import { EpisodeRow, SeasonDownload, UpNextCard } from '#mobile/components/showE
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
+import { routeParam } from '#mobile/lib/nav';
 import { usePlay } from '#mobile/lib/play';
 import { useClient } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
 
-export default function ShowDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function ShowRoute() {
+  const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
+  return id ? <ShowDetail id={id} /> : <Redirect href="/" />;
+}
+
+function ShowDetail({ id }: Readonly<{ id: string }>) {
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -229,7 +234,7 @@ const s = styles({
   screen: { flex: true, bg: 'bg' },
   body: { gap: spacing.md, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },
-  rating: { ...type.caption, color: 'accent', fontWeight: '700' },
+  rating: { ...type.caption, color: 'accentText', fontWeight: '700' },
   genreRow: { row: true, wrap: true, gap: 8 },
   reportRow: { self: 'flex-start' },
   tabsRow: {

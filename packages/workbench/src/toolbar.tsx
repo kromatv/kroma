@@ -13,7 +13,7 @@ import {
   Txt,
   webWindow,
 } from '@kroma/ui/kit';
-import { type ColorToken, colors, radius } from '@kroma/ui/tokens';
+import { type ColorToken, colors } from '@kroma/ui/tokens';
 import { type ReactNode, useCallback, useState } from 'react';
 import { canRotate, SURFACES, VIEWPORTS, type ViewportName } from './canvas';
 import { RULE } from './chrome';
@@ -334,7 +334,7 @@ function IconTool({
     <IconButton
       variant="ghost"
       size={TOOL_BOX}
-      radius={radius.sm}
+      radius="sm"
       active={active}
       label={label}
       ring={false}
@@ -355,7 +355,7 @@ function CopyLink() {
       <IconButton
         variant="ghost"
         size={TOOL_BOX}
-        radius={radius.sm}
+        radius="sm"
         label={LINK_FACE[state].label}
         ring={false}
         focusScale={1}

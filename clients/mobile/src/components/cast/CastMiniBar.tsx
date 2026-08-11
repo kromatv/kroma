@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 
 export function CastMiniBar() {
   const t = useT();
@@ -35,7 +35,7 @@ export function CastMiniBar() {
         <Image source={{ uri: poster }} style={s.poster} contentFit="cover" />
       ) : (
         <Box style={[s.poster, s.posterFallback]}>
-          <Icon name="device-tv" size={18} stroke={1.8} color={colors.textDim} />
+          <Icon name="device-tv" size={18} stroke={1.8} color="textMuted" />
         </Box>
       )}
       <Box style={s.text}>
@@ -57,7 +57,7 @@ export function CastMiniBar() {
           <Icon
             name={isPlaying ? 'player-pause-filled' : 'player-play-filled'}
             size={22}
-            color={colors.text}
+            color="text"
           />
         </Pressable>
       ) : null}
@@ -89,7 +89,7 @@ const s = styles({
   posterFallback: { center: true, bg: 'surface1' },
   text: { flex: true, gap: 1 },
   title: { ...type.body, color: 'text', fontWeight: '600' },
-  device: { ...type.small, color: 'accent' },
+  device: { ...type.small, color: 'accentText' },
   transport: { p: 4 },
   track: { absolute: true, right: 0, bottom: 0, left: 0, h: 2, bg: 'border' },
   fill: { h: 2, bg: 'accent' },

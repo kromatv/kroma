@@ -15,7 +15,7 @@ import { EmptyState, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
 import { useClient } from '#mobile/lib/session';
-import { colors, radius, spacing, type } from '#mobile/lib/theme';
+import { radius, spacing, type } from '#mobile/lib/theme';
 import { ScrubBar } from '#mobile/player/ScrubBar';
 
 const SKIP_MS = 10_000;
@@ -86,7 +86,7 @@ function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
         <Image source={{ uri: art }} style={s.art} contentFit="cover" transition={200} />
       ) : (
         <Box style={[s.art, s.artFallback]}>
-          <Icon name="device-tv" size={40} stroke={1.4} color={colors.textFaint} />
+          <Icon name="device-tv" size={40} stroke={1.4} color="textDim" />
         </Box>
       )}
       <Txt lines={2} style={s.title}>
@@ -114,7 +114,7 @@ export default function CastRemoteScreen() {
       <Screen>
         <Header title={t('cast.remote')} onBack={() => goBack(router)} />
         <EmptyState
-          icon={<Icon name="cast" size={40} stroke={1.4} color={colors.textFaint} />}
+          icon={<Icon name="cast" size={40} stroke={1.4} color="textDim" />}
           title={t('cast.noDevices')}
           hint={t('cast.noDevicesHint')}
         />
@@ -132,13 +132,13 @@ export default function CastRemoteScreen() {
     <Screen>
       <Header title={active.name} onBack={() => goBack(router)} />
       <Pressable onPress={() => devices.current?.present()} style={s.deviceRow}>
-        <Icon name="cast" size={18} stroke={1.8} color={playing ? colors.accent : colors.textDim} />
+        <Icon name="cast" size={18} stroke={1.8} color={playing ? 'accent' : 'textMuted'} />
         <Txt style={[s.deviceText, !playing && s.deviceTextIdle]}>
           {t(playing ? 'cast.playingOn' : 'cast.connectedTo', {
             device: `${active.name} · ${active.username}`,
           })}
         </Txt>
-        <Icon name="chevron-right" size={16} stroke={2} color={colors.textDim} />
+        <Icon name="chevron-right" size={16} stroke={2} color="textMuted" />
       </Pressable>
 
       {playing ? (
@@ -204,7 +204,7 @@ export default function CastRemoteScreen() {
         </ScrollView>
       ) : (
         <EmptyState
-          icon={<Icon name="device-tv" size={40} stroke={1.4} color={colors.textFaint} />}
+          icon={<Icon name="device-tv" size={40} stroke={1.4} color="textDim" />}
           title={t('cast.idleTitle')}
           hint={t('cast.idleHint', { device: active.name })}
           actionLabel={t('cast.disconnect')}
@@ -279,7 +279,7 @@ function Round({
       accessibilityLabel={label}
       style={({ pressed }) => [s.round, big && s.roundBig, pressed && { opacity: 0.7 }]}
     >
-      <Icon name={icon} size={big ? 34 : 26} stroke={1.8} color={colors.text} />
+      <Icon name={icon} size={big ? 34 : 26} stroke={1.8} color="text" />
     </Pressable>
   );
 }
@@ -296,7 +296,7 @@ function Wide({
       accessibilityRole="button"
       style={({ pressed }) => [s.wide, pressed && { opacity: 0.75 }]}
     >
-      <Icon name={icon} size={20} stroke={1.8} color={colors.text} />
+      <Icon name={icon} size={20} stroke={1.8} color="text" />
       <Txt lines={1} style={s.wideLabel}>
         {label}
       </Txt>
@@ -315,7 +315,7 @@ const s = styles({
   headerSpacer: { w: 26 },
   body: { gap: spacing.md, pb: spacing.xl },
   deviceRow: { row: true, align: 'center', gap: spacing.xs, py: spacing.xs, mb: spacing.sm },
-  deviceText: { ...type.caption, flex: true, color: 'accent' },
+  deviceText: { ...type.caption, flex: true, color: 'accentText' },
   deviceTextIdle: { color: 'textMuted' },
   art: { w: '100%', aspect: 16 / 9, bg: 'surface1', radius: radius.md },
   artFallback: { center: true },

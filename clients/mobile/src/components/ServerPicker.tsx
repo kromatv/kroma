@@ -4,7 +4,6 @@
 
 import { Icon } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
-import { colors } from '#mobile/lib/theme';
 import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
 import { ServerList, ServerRow, ServerSectionHeader, ServerSectionHint } from './serverRows';
 import { ErrorBanner } from './ui';
@@ -51,7 +50,7 @@ export function ServerPicker({
         })}
         <ServerRow
           name={t('connect.addServerTitle')}
-          icon={<Icon name="plus" size={17} stroke={2.2} color={colors.accent} />}
+          icon={<Icon name="plus" size={17} stroke={2.2} color="accentText" />}
           onPress={onAddServer}
         />
       </ServerList>

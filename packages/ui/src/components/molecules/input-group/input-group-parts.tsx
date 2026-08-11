@@ -16,6 +16,7 @@ import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
 import { styles } from '#ui/core';
 import { nestedRadius } from '#ui/core/tokens';
+import { controlRadius } from '#ui/lib/field-shell';
 import {
   type AddonAlign,
   AddonContext,
@@ -172,7 +173,7 @@ function useInShell(part: string): { box: number; radius: number; pull: ViewStyl
     const edge = slot?.edge ? slot.align : null;
     return {
       box: metrics.height - INSET * 2,
-      radius: nestedRadius(metrics.radius, INSET),
+      radius: nestedRadius(controlRadius(metrics), INSET),
       pull: {
         ...(edge === 'inline-start' ? { marginLeft: by } : null),
         ...(edge === 'inline-end' ? { marginRight: by } : null),

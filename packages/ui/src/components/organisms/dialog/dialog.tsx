@@ -2,19 +2,19 @@
 // On a TV it locks the navigator behind it and mounts its own, so the remote
 // cannot reach — or fire OK on — anything under the panel.
 
-import { type ReactNode, useId, useRef } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, type View } from 'react-native';
+import { Children, isValidElement, type ReactNode, useId, useMemo, useRef } from 'react';
+import { Modal, Platform, Pressable, StyleSheet, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
 import { Txt } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { useFocusNav } from '#ui/lib/focus-nav';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
-import { FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
+import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { useTDefault } from '#ui/services/i18n';
+import { Content, Footer, FooterSlot, Header, type Shell, ShellContext } from './dialog-parts';
 
 interface DialogProps {
   open: boolean;
@@ -63,11 +63,11 @@ function Dialog({
       titleHidden={titleHidden}
       title={title}
       description={description}
+      footer={footer}
       trapped={navigated}
       bridge={!hosted}
     >
       {children}
-      {footer}
     </DialogSurface>
   ) : null;
   // A TV mounts an <OverlayHost> and renders the panel there: a <Modal>'s view
@@ -91,6 +91,7 @@ function DialogSurface({
   title,
   titleHidden,
   description,
+  footer,
   trapped,
   bridge,
   children,
@@ -103,14 +104,29 @@ function DialogSurface({
   const titleId = useId();
   const descriptionId = useId();
   const showsTitle = Boolean(title) && !titleHidden;
-  // The panel names itself: by reference on the web when the title is visible
-  // (so a screen reader can also jump to it), by value otherwise.
+  const kids = Children.toArray(children);
+  const part = (which: unknown) => kids.find((node) => isValidElement(node) && node.type === which);
+  const headerPart = part(Header);
+  const contentPart = part(Content);
+  const footerPart = part(Footer);
+  const loose = kids.filter(
+    (node) => node !== headerPart && node !== contentPart && node !== footerPart,
+  );
+  const header =
+    headerPart ?? defaultHeader({ showsTitle, title, description, titleId, descriptionId });
+  const foot = footerPart ?? (footer ? <FooterSlot>{footer}</FooterSlot> : null);
+  const hasHeader = Boolean(header);
+  const hasFooter = Boolean(foot);
+  const shell = useMemo<Shell>(() => ({ pad, hasHeader, hasFooter }), [pad, hasHeader, hasFooter]);
+  // By reference only when this panel rendered the node carrying the id: a
+  // composed <Dialog.Header> replaces the fallback, and those ids go with it.
+  const namesOwnTitle = !headerPart && showsTitle;
   const naming =
     Platform.OS === 'web'
       ? {
-          'aria-labelledby': showsTitle ? titleId : undefined,
-          'aria-label': showsTitle ? undefined : title,
-          'aria-describedby': description ? descriptionId : undefined,
+          'aria-labelledby': namesOwnTitle ? titleId : undefined,
+          'aria-label': namesOwnTitle ? undefined : title,
+          'aria-describedby': !headerPart && description ? descriptionId : undefined,
         }
       : { accessibilityLabel: title };
   const panel = (
@@ -146,22 +162,11 @@ function DialogSurface({
         aria-modal
         {...naming}
       >
-        {/* The panel scrolls as a whole (the old admin modal's contract): with
-            the page scroll locked behind the overlay, a form taller than the
-            viewport would otherwise clip with its actions unreachable. */}
-        <ScrollView contentContainerStyle={{ padding: pad, gap: pad > 0 ? 24 : 0 }}>
-          {showsTitle ? (
-            <Txt nativeID={titleId} variant="h2">
-              {title}
-            </Txt>
-          ) : null}
-          {description ? (
-            <Txt nativeID={descriptionId} color="textMuted" variant="body">
-              {description}
-            </Txt>
-          ) : null}
-          {children}
-        </ScrollView>
+        <ShellContext.Provider value={shell}>
+          {header}
+          {contentPart ?? <Content>{loose}</Content>}
+          {foot}
+        </ShellContext.Provider>
       </Box>
     </Box>
   );
@@ -174,100 +179,55 @@ function DialogSurface({
   );
 }
 
+function defaultHeader(at: {
+  showsTitle: boolean;
+  title: string | undefined;
+  description: string | undefined;
+  titleId: string;
+  descriptionId: string;
+}): ReactNode {
+  if (!at.showsTitle && !at.description) return null;
+  return (
+    <Header>
+      {at.showsTitle ? (
+        <Txt nativeID={at.titleId} variant="h2">
+          {at.title}
+        </Txt>
+      ) : null}
+      {at.description ? (
+        <Txt nativeID={at.descriptionId} color="textMuted" variant="body">
+          {at.description}
+        </Txt>
+      ) : null}
+    </Header>
+  );
+}
+
 const FOCUS_SCOPE = { focusScope: '' } as const;
 
 const s = styles({
   fill: { flex: true },
-  footerRow: { row: true, justify: 'flex-end', gap: 12, mt: 8 },
-  actionsSplit: { row: true, align: 'center', justify: 'space-between', gap: 12, mt: 8 },
-  actionsEnd: { row: true, align: 'center', gap: 10 },
 });
 
-function DialogFooter({ children }: Readonly<{ children: ReactNode }>) {
-  return <FocusRegion style={s.footerRow}>{children}</FocusRegion>;
-}
+/**
+ * The modal panel. Callable with `title` / `description` / `footer` for the
+ * ordinary case, and composed through its parts when a panel needs its own
+ * header or a footer that is not a row of buttons:
+ *
+ *   <Dialog open onClose={close}>
+ *     <Dialog.Header>…</Dialog.Header>
+ *     <Dialog.Content>…</Dialog.Content>
+ *     <Dialog.Footer>…</Dialog.Footer>
+ *   </Dialog>
+ *
+ * Either way only `Content` scrolls; the header and the footer stay put.
+ */
+const DialogParts = Object.assign(Dialog, {
+  Root: Dialog,
+  Header,
+  Content,
+  Footer,
+});
 
-interface DialogActionsProps {
-  onCancel: () => void;
-  cancelLabel: string;
-  onConfirm: () => void;
-  /** Already resolved by the caller, so it can swap to "Saving...". */
-  confirmLabel: string;
-  /** The confirm spins and both actions ignore presses while the work runs. */
-  busy?: boolean;
-  disabled?: boolean;
-  /** A destructive third action pinned to the far edge ("Delete account"). */
-  destructive?: { label: string; onPress: () => void; disabled?: boolean };
-}
-
-/** The standard dialog footer: a right-aligned cancel + primary pair, with an
- *  optional destructive action pinned left. */
-function DialogActions({
-  onCancel,
-  cancelLabel,
-  onConfirm,
-  confirmLabel,
-  busy = false,
-  disabled = false,
-  destructive,
-}: Readonly<DialogActionsProps>) {
-  return (
-    <FocusRegion style={destructive ? s.actionsSplit : s.footerRow}>
-      {destructive ? (
-        <Button
-          variant="dangerGhost"
-          size="sm"
-          label={destructive.label}
-          onPress={destructive.onPress}
-          disabled={busy || destructive.disabled}
-        />
-      ) : null}
-      <Box row align="center" gap={10} style={destructive ? undefined : s.actionsEnd}>
-        <Button variant="ghost" size="sm" label={cancelLabel} onPress={onCancel} disabled={busy} />
-        <Button
-          variant="primary"
-          size="sm"
-          label={confirmLabel}
-          onPress={onConfirm}
-          loading={busy}
-          disabled={disabled}
-        />
-      </Box>
-    </FocusRegion>
-  );
-}
-
-interface ConfirmDialogProps extends Omit<DialogProps, 'footer' | 'children'> {
-  confirmLabel: string;
-  cancelLabel: string;
-  onConfirm: () => void;
-  destructive?: boolean;
-}
-
-function ConfirmDialog({
-  confirmLabel,
-  cancelLabel,
-  onConfirm,
-  destructive = false,
-  ...dialog
-}: Readonly<ConfirmDialogProps>) {
-  return (
-    <Dialog
-      {...dialog}
-      footer={
-        <DialogFooter>
-          <Button variant="ghost" label={cancelLabel} onPress={dialog.onClose} />
-          <Button
-            variant={destructive ? 'danger' : 'primary'}
-            label={confirmLabel}
-            onPress={onConfirm}
-            autoFocus
-          />
-        </DialogFooter>
-      }
-    />
-  );
-}
-
-export type { ConfirmDialogProps, DialogActionsProps, DialogProps };
-export { ConfirmDialog, Dialog, DialogActions, DialogFooter };
+export type { DialogProps };
+export { DialogParts as Dialog };

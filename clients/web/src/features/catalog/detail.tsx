@@ -11,7 +11,7 @@ import {
   type VideoTrack,
 } from '@kroma/core';
 import { useT, useThemeAudio } from '@kroma/ui';
-import { BackButton, Badge, Button, IconButton, radius } from '@kroma/ui/kit';
+import { BackButton, Badge, Button, Ground, IconButton } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import { HeroBackdrop } from '#web/features/catalog/hero-backdrop';
@@ -152,7 +152,9 @@ export function DetailHero({
       <HeroBackdrop backdrop={art.backdrop} gradient={heroGradient} />
 
       <div className="absolute left-4 top-4 z-3 sm:left-8 sm:top-6.5">
-        <BackButton size={42} label={t('common.back')} onPress={onBack} />
+        <Ground tone="dark">
+          <BackButton size={42} label={t('common.back')} onPress={onBack} />
+        </Ground>
       </div>
 
       <ThemeToggle theme={theme} />
@@ -230,14 +232,16 @@ function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudi
   if (!theme.active) return null;
   return (
     <div className="absolute right-4 top-4 z-3 sm:right-8 sm:top-6.5">
-      <IconButton
-        variant="scrim"
-        size={42}
-        glyph={19}
-        icon={theme.muted ? 'volume-off' : 'volume'}
-        label={theme.muted ? t('content.unmuteTheme') : t('content.muteTheme')}
-        onPress={theme.toggle}
-      />
+      <Ground tone="dark">
+        <IconButton
+          variant="scrim"
+          size={42}
+          glyph={19}
+          icon={theme.muted ? 'volume-off' : 'volume'}
+          label={theme.muted ? t('content.unmuteTheme') : t('content.muteTheme')}
+          onPress={theme.toggle}
+        />
+      </Ground>
     </div>
   );
 }
@@ -290,7 +294,7 @@ function ListButton({ inList, onToggle }: Readonly<{ inList?: boolean; onToggle?
     <IconButton
       size={50}
       glyph={20}
-      radius={radius.md}
+      radius="md"
       active={inList ?? false}
       icon={inList ? 'check' : 'plus'}
       label={inList ? t('content.removeFromList') : t('content.addToList')}
@@ -306,7 +310,7 @@ function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
     <IconButton
       size={50}
       glyph={19}
-      radius={radius.md}
+      radius="md"
       icon="flag"
       label={t('report.action')}
       onPress={onReport}

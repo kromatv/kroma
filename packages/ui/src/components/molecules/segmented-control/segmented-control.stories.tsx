@@ -13,7 +13,12 @@ function Demo({ withDescs }: Readonly<{ withDescs: boolean }>) {
   const [mode, setMode] = useState<string>('auto');
   const options = withDescs ? MODES : MODES.map(({ value, label }) => ({ value, label }));
   return (
-    <SegmentedControl label="Playback mode" value={mode} options={options} onChange={setMode} />
+    <SegmentedControl.Root
+      label="Playback mode"
+      value={mode}
+      options={options}
+      onValueChange={setMode}
+    />
   );
 }
 
@@ -21,14 +26,14 @@ export default story({
   name: 'SegmentedControl',
   group: 'Input',
   docs: 'One selected option among a few, all visible at once - the choice a dropdown would hide. A **radiogroup** to assistive tech: each segment is a radio carrying its checked state, and on a physical keyboard the arrow keys move the selection the way a native radio group does. An option can carry a quieter `desc` second line for the fact that settles the choice.',
-  usage: `<SegmentedControl
+  usage: `<SegmentedControl.Root
   label="Playback mode"
   value={mode}
   options={[
     { value: 'auto', label: 'Auto', desc: 'Recommended' },
     { value: 'direct', label: 'Direct play' },
   ]}
-  onChange={setMode}
+  onValueChange={setMode}
 />`,
   guidelines: {
     do: [

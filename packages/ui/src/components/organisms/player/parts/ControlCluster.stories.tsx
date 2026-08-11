@@ -1,6 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { useEffect, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
 import { chromeMetrics, GUTTER } from '../lib/metrics';
 import type { ControlId } from '../lib/nav';
 import { ControlCluster } from './ControlCluster';
@@ -42,25 +43,28 @@ function Live({ focused: focusedArg, playing, muted, volume, ...rest }: Readonly
   const metrics = chromeMetrics(ALL, width);
 
   return (
-    <Box
-      flex
-      justify="flex-end"
-      px={GUTTER}
-      pb={40}
-      onLayout={(e) => setWidth(Math.round(e.nativeEvent.layout.width))}
-    >
-      <ControlCluster
-        {...rest}
-        focused={state.focused}
-        playing={state.playing}
-        muted={state.muted}
-        volume={state.volume}
-        metrics={metrics}
-        onActivate={activate}
-        onFocus={(id) => setState((prev) => ({ ...prev, focused: id }))}
-        onVolume={(next) => setState((prev) => ({ ...prev, muted: false, volume: next }))}
-      />
-    </Box>
+    <Ground tone="dark" flex>
+      <Box
+        flex
+        justify="flex-end"
+        bg="bg"
+        px={GUTTER}
+        pb={40}
+        onLayout={(e) => setWidth(Math.round(e.nativeEvent.layout.width))}
+      >
+        <ControlCluster
+          {...rest}
+          focused={state.focused}
+          playing={state.playing}
+          muted={state.muted}
+          volume={state.volume}
+          metrics={metrics}
+          onActivate={activate}
+          onFocus={(id) => setState((prev) => ({ ...prev, focused: id }))}
+          onVolume={(next) => setState((prev) => ({ ...prev, muted: false, volume: next }))}
+        />
+      </Box>
+    </Ground>
   );
 }
 

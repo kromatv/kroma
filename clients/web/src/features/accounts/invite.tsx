@@ -121,10 +121,10 @@ export function InvitePage() {
           <Divider />
 
           <Field label={t('admin.inviteExpiry')} hint={t('admin.inviteExpiryHint')}>
-            <SegmentedControl
+            <SegmentedControl.Root
               label={t('admin.inviteExpiry')}
               value={expiry}
-              onChange={setExpiry}
+              onValueChange={setExpiry}
               options={EXPIRY_DAYS.map((days) => ({
                 value: days,
                 label: t('admin.inviteExpiryDays', { count: Number(days) }),

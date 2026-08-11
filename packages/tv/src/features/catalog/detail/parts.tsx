@@ -21,7 +21,7 @@ export function EndsAtHint({ runtimeMs }: Readonly<{ runtimeMs?: number | null }
   if (!at) return null;
   return (
     <Box row align="center" gap={9} mt={12}>
-      <Icon name="clock" size={16} stroke={1.8} color="accent" />
+      <Icon name="clock" size={16} stroke={1.8} color="accentText" />
       <Txt style={s.sectionLabelSm} color="rgba(244, 243, 240, 0.55)">
         {t('content.endsAt', { time: at })}
       </Txt>

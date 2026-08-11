@@ -19,7 +19,7 @@ export default story({
   render: () => (
     <Box gap={40}>
       <Box gap={16}>
-        <Txt variant="overline" color="accent">
+        <Txt variant="overline" color="accentText">
           10-foot
         </Txt>
         {ROLES.map((role) => (
@@ -34,7 +34,7 @@ export default story({
         ))}
       </Box>
       <Box gap={16}>
-        <Txt variant="overline" color="accent">
+        <Txt variant="overline" color="accentText">
           Mobile
         </Txt>
         {(Object.keys(mobileType) as (keyof typeof mobileType)[]).map((role) => (

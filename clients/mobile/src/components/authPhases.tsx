@@ -2,7 +2,7 @@
 
 import { Box, Button, Field, OtpField, Spinner, styles, Txt } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
-import { colors, spacing, type } from '#mobile/lib/theme';
+import { spacing, type } from '#mobile/lib/theme';
 import { Avatar } from './Avatar';
 import { OnboardingBox, OnboardingTitle } from './OnboardingScreen';
 import { ErrorBanner } from './ui';
@@ -56,7 +56,7 @@ export function PinPhase({
       />
       {checking ? (
         <Box self="center">
-          <Spinner size={24} color={colors.textDim} />
+          <Spinner size={24} color="textMuted" />
         </Box>
       ) : null}
       <ErrorBanner message={error} />

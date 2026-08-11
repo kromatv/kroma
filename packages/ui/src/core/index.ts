@@ -24,12 +24,25 @@ export type { RingToken, Theme, ThemeOverrides, ThemeTokens } from './theme';
 export {
   activeTheme,
   createTheme,
+  groundShade,
   KROMA,
+  KROMA_LIGHT,
+  onPaper,
   onThemeChange,
+  radiusValue,
   setTheme,
   themed,
   themeVersion,
 } from './theme';
+export type { ThemeMode } from './theme-mode';
+export {
+  applyMode,
+  isThemeMode,
+  readMode,
+  resolveMode,
+  THEME_COOKIE,
+  writeMode,
+} from './theme-mode';
 export * from './tokens';
 export type {
   AnyStyle,
@@ -53,4 +66,4 @@ export type {
   VariantProps,
   VariantSource,
 } from './types';
-export { ThemeProvider, useTheme } from './use-theme';
+export { ThemeProvider, useSystemGround, useTheme } from './use-theme';

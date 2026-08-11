@@ -17,14 +17,14 @@ const radioVariants = sv({
   slots: {
     root: {
       center: true,
-      radius: 'pill',
+      radius: 'circle',
       border: 'borderStrong',
-      bg: 'white/6',
+      bg: 'tint/6',
       _disabled: { opacity: 0.5 },
     },
     // The dot is a layer rather than a glyph: a circle inside a circle stays
     // concentric at any size, where a check mark has to be optically nudged.
-    dot: { radius: 'pill', bg: 'accentInk' },
+    dot: { radius: 'circle', bg: 'accentInk' },
   },
   variants: {
     size: {
@@ -39,7 +39,7 @@ const radioVariants = sv({
           _hover: { bg: 'accentHover', border: 'accentHover' },
         },
       },
-      false: { root: { _hover: { bg: 'white/12', border: 'white/32' } } },
+      false: { root: { _hover: { bg: 'tint/12', border: 'tint/32' } } },
     },
   },
   defaults: { size: 'sm', checked: false },

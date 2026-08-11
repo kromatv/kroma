@@ -3,7 +3,7 @@
 // boolean - no open-state at the call site, no one-off confirm modals.
 
 import { useEffect, useState } from 'react';
-import { ConfirmDialog } from './dialog';
+import { ConfirmDialog } from './dialog-actions';
 
 export interface ConfirmOptions {
   title: string;

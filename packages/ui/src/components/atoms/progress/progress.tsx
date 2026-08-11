@@ -34,12 +34,12 @@ function Progress({
   value = 0,
   size = 6,
   color = 'accent',
-  trackColor = 'white/25',
+  trackColor = 'tint/25',
   rounded = false,
   indeterminate = false,
 }: Readonly<ProgressProps>) {
   const sweep = useLoop('sweep', SWEEP_MS, indeterminate);
-  const corner = rounded ? 'pill' : 0;
+  const corner = rounded ? 'circle' : 0;
   // Pinned to the track's left edge and left open on the right, which is where
   // both the fill's inset and the sweep's travel land.
   const bar = barStyle(color, corner);
@@ -72,7 +72,7 @@ export { clamp01, Progress };
 // Shared by identity across every bar asking for the same paint: styleq keys its
 // compiled-style cache on the leaf object, so resolving one per render is a
 // guaranteed miss for every bar on a browse grid.
-function barStyle(color: ColorValue, corner: 'pill' | 0) {
+function barStyle(color: ColorValue, corner: 'circle' | 0) {
   return sharedStyle(`bar:${color}:${corner}`, {
     absolute: true,
     top: 0,

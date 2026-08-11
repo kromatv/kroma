@@ -24,9 +24,9 @@ export function LibraryTypeSelect({
 }: Readonly<{ value: LibKind; onChange: (v: LibKind) => void }>) {
   const t = useT();
   return (
-    <SegmentedControl<LibKind>
+    <SegmentedControl.Root<LibKind>
       value={value}
-      onChange={onChange}
+      onValueChange={onChange}
       options={[
         { value: '', label: t('admin.typeAuto') },
         { value: 'movies', label: t('admin.typeMovies') },

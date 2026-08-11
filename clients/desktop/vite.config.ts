@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, webResolve } from '@kroma/bundler/rnw';
 import { buildDefine } from '@kroma/bundler/shell';
-import { kromaUi } from '@kroma/ui/bundler';
+import { kromaUI } from '@kroma/ui/vite';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type UserConfig } from 'vite';
@@ -9,37 +9,16 @@ import { defineConfig, type UserConfig } from 'vite';
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const shellDir = fileURLToPath(new URL('.', import.meta.url));
 
-// Unlike the Tizen / webOS shells, the Steam Deck runs a current desktop Chromium
-// (SteamOS 3, Arch-based), so there is no old-webview floor: no Lightning CSS
-// down-levelling and a modern build target. The shared @kroma/tv CSS (Tailwind v4
-// cascade layers, color-mix, oklch) is emitted as-is and the browser handles it.
-// Return type pinned to UserConfig so the config resolves against a single
-// defineConfig overload (some TypeScript builds otherwise report a spurious TS2769
-// "no overload matches" on the function form across platforms).
 export default defineConfig(
   ({ command }): UserConfig => ({
-    // Same icon subset the TV shells get: the desktop app is packaged too, and
-    // it renders no module UI, so it has no reason to carry all 6232 glyphs.
-    plugins: [tailwindcss(), react(), kromaUi.vite({ repoRoot })],
-    // This build's identity: its version for the server-compatibility banner (see
-    // @kroma/tv CompatBanner / @kroma/core checkServerCompat), and the commit /
-    // date / repository the About screen shows.
+    plugins: [kromaUI(), tailwindcss(), react()],
     define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE },
-    // `#tv/*` -> the @kroma/tv package src (mirrors tsconfig.base paths; Vite needs
-    // it explicitly), plus the shared react-native -> react-native-web redirect.
     resolve: webResolve({
       '#tv': fileURLToPath(new URL('../../packages/tv/src', import.meta.url)),
     }),
-    // Loadable both from a served origin and directly via file:// in a kiosk, so keep
-    // assets relative. The app talks to the KROMA server cross-origin either way (same
-    // as the TV clients), via the in-app connect flow.
     base: './',
     server: {
-      // Bind 0.0.0.0 so a Deck on the LAN can load the dev server and get HMR while
-      // you iterate on a real device.
       host: true,
-      // 5174 = tizen, 5175 = webos, 5178 = steamdeck (5176/5177 are commonly taken by
-      // other local dev servers; keeping the Deck a couple ports clear avoids clashes).
       port: 5178,
       fs: { allow: [repoRoot] },
     },
@@ -50,15 +29,11 @@ export default defineConfig(
     build: {
       target: 'es2022',
       outDir: 'dist',
-      // One JS + one CSS file: simplest to host / drop onto the device.
       cssCodeSplit: false,
       modulePreload: { polyfill: false },
       reportCompressedSize: true,
       rollupOptions: { output: { manualChunks: undefined } },
     },
-    // Keep console.* during dev (LAN debugging); strip in builds. `drop` is valid at
-    // runtime but missing from some resolved `ESBuildOptions` type versions (CI vs
-    // local Vite), which broke `tsc` on the fresh literal — cast to the field type.
     esbuild: {
       drop: command === 'build' ? ['console', 'debugger'] : [],
       legalComments: 'none',

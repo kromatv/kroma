@@ -55,7 +55,7 @@ export function SelectRow({
         <Line node={sub} style={panel.selectSub} />
       </Box>
       {trailing}
-      {selected ? <IconOk size={24} color="accent" /> : null}
+      {selected ? <IconOk size={24} color="accentText" /> : null}
     </Pressable>
   );
 }

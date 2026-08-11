@@ -40,14 +40,14 @@ import {
   IconVolLow,
 } from './icons';
 
-const circleFill = sv({ base: { _focus: { bg: 'white/22' } } });
+const circleFill = sv({ base: { _focus: { bg: 'tint/22' } } });
 const playFill = sv({ base: { _focus: { bg: 'accentHover' } } });
 // The volume pill's wrapper isn't a kit atom (it holds a button AND a slider),
 // so its focus visuals live on the wrapper itself.
 const volumePill = sv({
   base: {
-    bg: 'white/12',
-    _focus: { bg: 'white/22', ring: 'focusLift', transform: [{ scale: FOCUS_SCALE }], z: 1 },
+    bg: 'tint/12',
+    _focus: { bg: 'tint/22', ring: 'focusLift', transform: [{ scale: FOCUS_SCALE }], z: 1 },
   },
 });
 

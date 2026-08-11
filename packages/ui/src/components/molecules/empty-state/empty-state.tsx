@@ -64,7 +64,7 @@ function EmptyState({
   const m = metrics(tv, fill, compact);
   return (
     <Box center flex={m.flex} justify={m.justify} mt={m.mt} py={m.py} gap={m.gap}>
-      <Box center w={m.badge} h={m.badge} radius="pill" bg="white/5" border="white/8">
+      <Box center w={m.badge} h={m.badge} radius="circle" bg="tint/5" border="tint/8">
         <Icon name={icon} size={m.glyph} color="textDim" />
       </Box>
       <Txt variant={m.titleVariant} style={[s.centred, m.titleStyle]}>

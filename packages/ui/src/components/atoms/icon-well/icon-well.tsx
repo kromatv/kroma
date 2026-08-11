@@ -18,7 +18,7 @@ const iconWellVariants = sv({
       tv: { root: { w: 42, h: 42 } },
     },
     tone: {
-      neutral: { root: { bg: 'white/6' } },
+      neutral: { root: { bg: 'tint/6' } },
       accent: { root: { bg: 'accentSoft' } },
     },
   },

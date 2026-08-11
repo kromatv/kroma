@@ -42,7 +42,8 @@ const MAX_HEIGHT = 320;
 const ROW_GUESS = 44;
 const PANEL_PAD = 6;
 const ROW_RADIUS = CONTROL.sm.radius;
-const PANEL_RADIUS = ROW_RADIUS + PANEL_PAD;
+// Concentric with the rows inside it: ROW_RADIUS plus PANEL_PAD.
+const PANEL_RADIUS = 'xl';
 
 function firstEnabled(options: readonly SelectOption[], value: string): number {
   const chosen = options.findIndex((option) => option.value === value && !option.disabled);
@@ -222,7 +223,7 @@ function PopoverOption({
         </Txt>
       ) : null}
       <Box w={18} align="center">
-        {chosen ? <Icon name="check" size={16} color="accent" /> : null}
+        {chosen ? <Icon name="check" size={16} color="accentText" /> : null}
       </Box>
     </Pressable>
   );
@@ -234,7 +235,7 @@ const LISTBOX = 'listbox' as import('react-native').Role;
 
 const s = styles({
   row: { radius: ROW_RADIUS },
-  active: { bg: 'white/8' },
+  active: { bg: 'tint/8' },
   disabled: { opacity: 0.4 },
 });
 
