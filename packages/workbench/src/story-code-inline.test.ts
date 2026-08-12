@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inlineArgs } from './story-code-inline';
+import { fullyInlined, inlineArgs } from './story-code-inline';
 
 describe('inlineArgs', () => {
   it('drops the arrow a story format requires and writes its args in', () => {
@@ -88,5 +88,50 @@ describe('inlineArgs', () => {
 
   <Chip label="Other" />
 </Group>`);
+  });
+  it('writes the whole bag out where a render spreads it', () => {
+    const code = '(props) => <EmptyState.Root {...props} />';
+    expect(inlineArgs(code, { title: 'No results', compact: true, note: '' })).toBe(
+      '<EmptyState.Root title="No results" compact />',
+    );
+  });
+});
+
+describe('fullyInlined', () => {
+  it('is the inlined markup when every parameter was written back', () => {
+    const code = '({ label }) => <Chip label={label} />';
+    expect(fullyInlined(code, { label: 'HDR' })).toBe('<Chip label="HDR" />');
+  });
+
+  it('is nothing when a rest spread stands for props the source never names', () => {
+    const code = '({ icon, ...props }) => <Chip {...props} icon={icon} />';
+    expect(fullyInlined(code, { icon: 'star', tone: 'danger' })).toBeNull();
+    expect(inlineArgs(code, { icon: 'star', tone: 'danger' })).toContain('{...props}');
+  });
+
+  it('is nothing for a block body, which is statements before it is markup', () => {
+    expect(fullyInlined('({ n }) => { return <X n={n} />; }', { n: 1 })).toBeNull();
+  });
+
+  it('is nothing for markup that took no args, which cannot follow a control', () => {
+    expect(fullyInlined('<Chip label="HDR" />', {})).toBeNull();
+  });
+
+  it('is nothing when there is no code at all', () => {
+    expect(fullyInlined(undefined, {})).toBeNull();
+  });
+  it('reads a parameter that carries its type', () => {
+    const code = '(args: TriggerArgs) => <Select {...args} />';
+    expect(fullyInlined(code, { size: 'md', filled: true })).toBe('<Select size="md" filled />');
+  });
+
+  it('reads a destructured parameter that carries its type', () => {
+    const code = '({ label }: Props) => <Chip label={label} />';
+    expect(fullyInlined(code, { label: 'HDR' })).toBe('<Chip label="HDR" />');
+  });
+
+  it('does not pass an unreadable parameter list off as an empty one', () => {
+    const code = '([first, second]) => <Pair a={first} />';
+    expect(fullyInlined(code, { first: 1 })).toBeNull();
   });
 });

@@ -10,6 +10,10 @@
 
 interface Head {
   names: string[];
+  /** The parameter that IS the whole args bag, when there is one. */
+  bag: string | null;
+  /** Whether the arrow genuinely took nothing, as against a list unread. */
+  empty: boolean;
   end: number;
 }
 
@@ -23,12 +27,28 @@ function head(code: string): Head | null {
     if (close < 0) return null;
     const arrow = code.slice(close + 1).match(/^\s*=>\s*/);
     if (!arrow) return null;
-    const params = code.slice(1, close).trim();
-    return { names: destructured(params), end: close + 1 + arrow[0].length };
+    const params = binding(code.slice(1, close));
+    return {
+      names: destructured(params),
+      bag: whole(params),
+      empty: params === '',
+      end: close + 1 + arrow[0].length,
+    };
   }
   const single = code.match(/^([A-Za-z_$][\w$]*)\s*=>\s*/);
   if (!single?.[1]) return null;
-  return { names: [single[1]], end: single[0].length };
+  return { names: [single[1]], bag: single[1], empty: false, end: single[0].length };
+}
+
+// The parameter without its type, since a story may write `(args: Args) =>` and
+// what is bound is the part before the colon.
+function binding(params: string): string {
+  const text = params.trim();
+  if (text.startsWith('{')) {
+    const close = matching(text, 0);
+    return close < 0 ? text : text.slice(0, close + 1);
+  }
+  return text.match(/^[A-Za-z_$][\w$]*/)?.[0] ?? text;
 }
 
 function destructured(params: string): string[] {
@@ -39,6 +59,27 @@ function destructured(params: string): string[] {
     .split(',')
     .map((part) => part.split(/[:=]/)[0]?.trim() ?? '')
     .filter((name) => NAME.test(name));
+}
+
+// `(props) => ... {...props}` spreads the whole bag, so the attributes it stands
+// for are the args themselves. A REST of a destructured bag is not this: what it
+// holds is whatever was not named, which the source alone does not say.
+function whole(params: string): string | null {
+  return NAME.test(params.trim()) ? params.trim() : null;
+}
+
+function attributes(args: Record<string, unknown>): string | null {
+  const out: string[] = [];
+  for (const [key, value] of Object.entries(args)) {
+    if (value === undefined || value === null || value === '') continue;
+    if (value === true) out.push(key);
+    else {
+      const written = asAttribute(value);
+      if (written === null) return null;
+      out.push(`${key}=${written}`);
+    }
+  }
+  return out.join(' ');
 }
 
 // The index of the bracket closing the one at `from`, ignoring anything inside
@@ -127,9 +168,14 @@ interface Written {
 function resolve(
   hole: Hole,
   names: readonly string[],
+  bag: string | null,
   args: Record<string, unknown>,
 ): Written | null {
   const inner = hole.inner.trim();
+  if (bag && inner === `...${bag}`) {
+    const written = attributes(args);
+    return written === null ? null : { text: written, nested: false };
+  }
   if (names.includes(inner)) {
     const written = hole.attribute ? asAttribute(args[inner]) : asChild(args[inner]);
     return written === null ? null : { text: written, nested: false };
@@ -145,25 +191,52 @@ function resolve(
   return { text: empty ? '' : taken, nested: !empty };
 }
 
-function substitute(text: string, names: readonly string[], args: Record<string, unknown>): string {
+interface Pass {
+  text: string;
+  /** Whether every reference to a parameter was written back. */
+  whole: boolean;
+}
+
+function substitute(
+  text: string,
+  names: readonly string[],
+  bag: string | null,
+  args: Record<string, unknown>,
+): Pass {
   let out = '';
   let at = 0;
+  let entire = true;
   while (at < text.length) {
     const open = text.indexOf('{', at);
-    if (open < 0) return out + text.slice(at);
+    if (open < 0) return { text: out + text.slice(at), whole: entire };
     const hole = holeAt(text, open);
-    if (!hole) return out + text.slice(at);
+    if (!hole) return { text: out + text.slice(at), whole: false };
     const close = open + hole.inner.length + 2;
-    const written = resolve(hole, names, args);
+    const written = resolve(hole, names, bag, args);
     if (written === null) {
+      // A spread left standing is always incomplete: it holds props the markup
+      // never names, so what is on screen is not the whole call.
+      if (hole.inner.trim().startsWith('...') || mentions(hole.inner, names, bag)) {
+        entire = false;
+      }
       out += text.slice(at, close);
+    } else if (written.nested) {
+      const inner = substitute(written.text, names, bag, args);
+      entire = entire && inner.whole;
+      out += text.slice(at, open) + inner.text;
     } else {
-      const piece = written.nested ? substitute(written.text, names, args) : written.text;
-      out += text.slice(at, open) + piece;
+      out += text.slice(at, open) + written.text;
     }
     at = close;
   }
-  return out;
+  return { text: out, whole: entire };
+}
+
+// Whether an expression this could not write back still leans on a parameter,
+// which is what makes the result code with a free name in it.
+function mentions(inner: string, names: readonly string[], bag: string | null): boolean {
+  const all = bag ? [...names, bag] : names;
+  return all.some((name) => new RegExp(`(^|[^\\w$.])${name}([^\\w$]|$)`).test(inner));
 }
 
 // A line left holding nothing after a conditional resolved away, which would
@@ -183,13 +256,31 @@ function tidy(before: string, after: string): string {
  * Source this cannot account for is returned unchanged.
  */
 function inlineArgs(code: string | undefined, args: Record<string, unknown>): string | null {
-  if (!code) return null;
-  const at = head(code);
-  if (!at) return code;
-  const inner = body(code.slice(at.end));
-  if (inner === null) return code;
-  if (!at.names.length) return inner;
-  return tidy(inner, substitute(inner, at.names, args));
+  return unwrap(code, args)?.text ?? null;
 }
 
-export { inlineArgs };
+/**
+ * The same, but only when there was a function AND every parameter was written
+ * back. Markup that took no args cannot follow a control, and a render spreading
+ * a bag this cannot account for would name things that are not there; both are
+ * better shown as a generated call site.
+ */
+function fullyInlined(code: string | undefined, args: Record<string, unknown>): string | null {
+  const done = unwrap(code, args);
+  return done?.whole ? done.text : null;
+}
+
+function unwrap(code: string | undefined, args: Record<string, unknown>): Pass | null {
+  if (!code) return null;
+  const at = head(code);
+  if (!at) return { text: code, whole: false };
+  const inner = body(code.slice(at.end));
+  if (inner === null) return { text: code, whole: false };
+  // A parameterless arrow has nothing to write in and is whole as it stands; a
+  // parameter list this could not read is not, and must not pass as one.
+  if (!at.names.length && !at.bag) return { text: inner, whole: at.empty };
+  const done = substitute(inner, at.names, at.bag, args);
+  return { text: tidy(inner, done.text), whole: done.whole };
+}
+
+export { fullyInlined, inlineArgs };

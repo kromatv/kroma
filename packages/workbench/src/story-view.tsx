@@ -17,7 +17,7 @@ import type { WorkbenchLayout } from './layout';
 import type { PlayRunner } from './play';
 import type { PlayFunction } from './play-types';
 import type { Story } from './story';
-import { inlineArgs } from './story-code-inline';
+import { fullyInlined, inlineArgs } from './story-code-inline';
 import { PREVIEW_THEMES } from './themes';
 import { Toolbar, type ToolbarLens } from './toolbar';
 import { type View, viewIndex } from './view';
@@ -180,16 +180,24 @@ function viewDocs(story: Story, view: View): string | undefined {
 }
 
 // Every view's code is the code its author WROTE, wherever a build could read
-// it: a demo's whole file, a scene's JSX, the story's own render. The generated
-// call site keeps the live preview of a story with variants, because it is the
-// one code here that FOLLOWS the controls; the render fills in the previews that
-// had nothing to show at all.
+// it: a demo's whole file, a scene's JSX, the story's own render, each with the
+// args the canvas drew it with written in.
+//
+// A generated call site is the fallback rather than the rule. It is the only
+// thing to show for a render that spreads a bag of props into one element,
+// where the source says nothing a reader could copy; but it flattens a compound
+// into props it does not have, so authored markup wins wherever there is any.
 function viewCode(story: Story, view: View, args: Record<string, unknown>): string | null {
   if (view.startsWith('demo:')) return story.demos[viewIndex(view)]?.code ?? null;
   if (view.startsWith('scene:')) return inlineArgs(story.scenes[viewIndex(view)]?.code, args);
   if (view !== 'preview') return null;
+  const authored = fullyInlined(story.code, args);
+  if (authored) return authored;
   if (story.controls.some((control) => control.variant)) return snippet(story, args);
-  return story.code ?? null;
+  // Nothing resolved cleanly and there is no variant to generate a call from, so
+  // the authored markup stands, minus the arrow around it: an expression left
+  // unwritten is the source itself, which reads.
+  return inlineArgs(story.code, args);
 }
 
 function CodeBar({
