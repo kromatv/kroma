@@ -171,7 +171,20 @@ function ChartTooltip() {
   const name = state.labels[at];
   return (
     <>
-      <Box absolute top={0} left={x} w={1} h={state.plot.height} bg="tint/14" />
+      {/* The rule is drawn AT the pointer, so without this it becomes the event
+          target and the plot reads `offsetX` from a box one pixel wide: the
+          readout jumps to the first sample, the rule follows it away from the
+          pointer, and the pair flickers. Every part of the plot is decoration
+          and none of it takes the pointer. */}
+      <Box
+        absolute
+        top={0}
+        left={x}
+        w={1}
+        h={state.plot.height}
+        bg="tint/14"
+        pointerEvents="none"
+      />
       <Box
         absolute
         top={0}

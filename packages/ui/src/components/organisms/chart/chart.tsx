@@ -224,7 +224,7 @@ function Root({
             >
               {kids.filter((kid) => isPart(kid, ChartGrid))}
               {plot.width > 0 && plot.height > 0 ? (
-                <Svg width={plot.width} height={plot.height}>
+                <Svg width={plot.width} height={plot.height} pointerEvents="none">
                   {marks}
                 </Svg>
               ) : null}
